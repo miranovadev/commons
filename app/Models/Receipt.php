@@ -8,4 +8,8 @@ use Illuminate\Database\Eloquent\Model;
 class Receipt extends Model
 {
     use HasUlids;
+
+    public $keyType = 'string';
+
+    public $incrementing = false;
 }

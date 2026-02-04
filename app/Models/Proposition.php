@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Epithet;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 
@@ -9,11 +10,15 @@ class Proposition extends Model
 {
     use HasUlids;
 
+    public $keyType = 'string';
+
+    public $incrementing = false;
+
     public $appends = [
-        // 'epithet',
+        'epithet',
     ];
 
     public function getEpithetAttribute() {
-        return 'Undefined';
+        return Epithet::for($this->tier, $this->register);
     }
 }

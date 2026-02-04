@@ -12,15 +12,18 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('participants', function (Blueprint $table) {
-            $table->ulid('id');
-            $table->string('name');
-            $table->string('caption')->nullable();
-            $table->text('profile')->nullable();
+            $table->ulid('id')->primary();
+            $table->string('callsign');
+            $table->string('designation')->nullable();
+            $table->text('dossier')->nullable();
             $table->timestamps();
         });
 
         Schema::create('propositions', function (Blueprint $table) {
             $table->ulid('id')->primary();
+
+            // The creating participant
+            $table->ulid('participant_id');
 
             $table->enum('register', [
                 'coherence',
@@ -38,12 +41,17 @@ return new class extends Migration
             $table->enum('visibility', ['internal', 'external']);
 
             // Content
-            $table->text('content');
+            $table->text('statement');
 
             // Minimal metadata hook (future-proof, keep empty for now)
             $table->jsonb('meta')->nullable();
 
             $table->timestamps();
+
+            $table->foreign('participant_id')
+                ->references('id')
+                ->on('participants')
+                ->restrictOnDelete();
 
             // Indexes for the Commons feed
             $table->index(['register', 'tier']);
@@ -54,44 +62,60 @@ return new class extends Migration
         Schema::create('attestations', function (Blueprint $table) {
             $table->ulid('id')->primary();
 
+            // The creating participant
+            $table->ulid('participant_id');
+
             // What proposition is being attested?
             $table->ulid('proposition_id');
 
-            // Attestation type triad
-            $table->enum('type', ['support', 'refute', 'cite']);
+            // Attestation stance triad
+            $table->enum('stance', ['support', 'refute', 'cite']);
 
             // Optional content
-            $table->text('content')->nullable();
+            $table->text('rationale')->nullable();
 
             $table->timestamps();
+
+            $table->foreign('participant_id')
+                ->references('id')
+                ->on('participants')
+                ->restrictOnDelete();
 
             $table->foreign('proposition_id')
                 ->references('id')
                 ->on('propositions')
                 ->cascadeOnDelete();
 
-            $table->index(['proposition_id', 'type']);
+            $table->index(['proposition_id', 'stance']);
         });
 
         Schema::create('receipts', function (Blueprint $table) {
             $table->ulid('id')->primary();
 
+            // The creating participant
+            $table->ulid('participant_id');
+
             $table->ulidMorphs('receiptable');
 
-            $table->enum('type', [
+            $table->enum('kind', [
                 'dataset',
                 'storage',
                 'url',
             ]);
 
-            $table->text('content');
+            $table->text('reference');
 
             // Optional structured payload (future)
             $table->jsonb('meta')->nullable();
 
             $table->timestamps();
 
-            $table->index(['type']);
+            $table->foreign('participant_id')
+                ->references('id')
+                ->on('participants')
+                ->restrictOnDelete();
+
+            $table->index(['kind']);
         });
     }
 
@@ -101,8 +125,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('attestations');
-        Schema::dropIfExists('participants');
         Schema::dropIfExists('propositions');
         Schema::dropIfExists('receipts');
+        Schema::dropIfExists('participants');
     }
 };
