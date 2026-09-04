@@ -1,0 +1,51 @@
+name: Laravel 13 upgrade verification
+
+on:
+  push:
+    branches:
+      - chore/upgrade-laravel-13
+    paths:
+      - composer.json
+      - .github/workflows/laravel-13-upgrade.yml
+
+permissions:
+  contents: write
+
+jobs:
+  upgrade:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out upgrade branch
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, xml, sqlite3
+          coverage: none
+
+      - name: Resolve Laravel 13 dependencies
+        run: composer update --with-all-dependencies --no-interaction --prefer-dist
+
+      - name: Validate Composer metadata
+        run: composer validate --strict
+
+      - name: Prepare test environment
+        run: |
+          cp .env.example .env
+          touch database/database.sqlite
+          php artisan key:generate
+
+      - name: Run tests
+        run: composer test
+
+      - name: Commit generated lock file
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/laravel-13-upgrade.yml
+          git add composer.lock
+          git commit -m "Update dependency lock file"
+          git push
