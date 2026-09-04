@@ -11,8 +11,7 @@ final readonly class InputSchemaService
 {
     public function __construct(
         private PhaseService $phases,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string, mixed>
