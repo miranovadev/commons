@@ -13,8 +13,7 @@ final readonly class ContributionService
     public function __construct(
         private InputSchemaService $schemas,
         private Validator $validator,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string, mixed>
@@ -30,7 +29,7 @@ final readonly class ContributionService
      * Dispatching valid contributions is intentionally left to the domain
      * services introduced as each operation is implemented.
      *
-     * @param array<string, mixed> $input
+     * @param  array<string, mixed>  $input
      */
     public function validate(Participant $participant, array $input): void
     {
@@ -43,7 +42,7 @@ final readonly class ContributionService
             return;
         }
 
-        $errors = (new ErrorFormatter())->format($result->error(), true);
+        $errors = (new ErrorFormatter)->format($result->error(), true);
 
         throw new InvalidArgumentException(
             json_encode($errors, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES)
