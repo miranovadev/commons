@@ -1,0 +1,49 @@
+name: Phase schema verification
+
+on:
+  push:
+    branches:
+      - refactor/phase-input-schemas
+    paths:
+      - app/**
+      - config/**
+      - tests/**
+      - .github/workflows/phase-schema-verification.yml
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, xml, sqlite3
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Prepare test environment
+        run: |
+          cp .env.example .env
+          touch database/database.sqlite
+          php artisan key:generate
+
+      - name: Verify configuration caching
+        run: |
+          php artisan config:cache
+          php artisan config:clear
+
+      - name: Run tests
+        run: composer test
+
+      - name: Check formatting
+        run: vendor/bin/pint --test
