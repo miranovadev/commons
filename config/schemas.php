@@ -1,131 +1,151 @@
 <?php
 
-return [
+$ulid = [
+    'type' => 'string',
+    'pattern' => '^[0-9A-HJKMNP-TV-Z]{26}$',
+];
 
-    /*
-    |--------------------------------------------------------------------------
-    | Proposition - Create
-    |--------------------------------------------------------------------------
-    |
-    |
-    */
-    'proposition' => [
-        'create' => [
-            '$schema' => 'https://json-schema.org/draft/2020-12/schema',
-            '$id'     => 'https://commons.online/schemas/proposition.create.schema.json',
-
-            'title' => 'Proposition Create',
-            'type'  => 'object',
-
-            // Reject unknown keys (tight input discipline)
-            'additionalProperties' => false,
-
-            // Required DB fields
-            'required' => [
-                'register',
-                'tier',
-                'visibility',
-                'statement',
+$proposition = static function (string $action, string $supersession) use ($ulid): array {
+    return [
+        'title' => ucfirst($supersession).' proposition',
+        'type' => 'object',
+        'additionalProperties' => false,
+        'required' => ['action', 'source_proposition_id', 'statement'],
+        'properties' => [
+            'action' => ['const' => $action],
+            'source_proposition_id' => $ulid,
+            'statement' => [
+                'type' => 'string',
+                'minLength' => 1,
+                'maxLength' => 20000,
             ],
+        ],
+    ];
+};
 
+return [
+    'version' => 1,
+
+    'cache' => [
+        'store' => env('COMMONS_SCHEMA_CACHE_STORE'),
+        'ttl' => env('COMMONS_SCHEMA_CACHE_TTL'),
+    ],
+
+    '$defs' => [
+        'ulid' => $ulid,
+    ],
+
+    'actions' => [
+        'proposition.variant' => $proposition('proposition.variant', 'variant'),
+        'proposition.revise' => $proposition('proposition.revise', 'revised'),
+        'proposition.reclassify' => [
+            ...$proposition('proposition.reclassify', 'reclassified'),
             'properties' => [
-
-                // Optional: client may supply ULID, otherwise server generates one
-                'id' => [
-                    'description' => 'Optional client-supplied ULID. If omitted, the server generates one.',
-                    'type'        => 'string',
-                    'pattern'     => '^[0-9A-HJKMNP-TV-Z]{26}$',
-                ],
-
-                // Miranova DoF register
+                ...$proposition('proposition.reclassify', 'reclassified')['properties'],
                 'register' => [
                     'type' => 'string',
                     'enum' => [
-                        'coherence',
-                        'entropy',
-                        'activation',
-                        'salience',
-                        'excitation',
-                        'modality',
-                        'stimulus',
-                        'valence',
-                        'resonance',
+                        'activity',
+                        'frontier',
+                        'canon',
+                        'signal',
+                        'stance',
+                        'concord',
                     ],
                 ],
-
-                // Expressive vs Committal tier
-                'tier' => [
-                    'type' => 'string',
-                    'enum' => [
-                        'expressive',
-                        'committal',
-                    ],
-                ],
-
-                // Internal vs External visibility
-                'visibility' => [
-                    'type' => 'string',
-                    'enum' => [
-                        'internal',
-                        'external',
-                    ],
-                ],
-
-                // Core proposition statement
-                'statement' => [
-                    'description' => 'The human-readable proposition statement.',
-                    'type'        => 'string',
-                    'minLength'   => 1,
-                    'maxLength'   => 20000,
-                ],
-
-                // Optional metadata payload (future-proof hook)
-                // 'meta' => [
-                //     'description' => 'Optional structured metadata for future use. Keep small; server may impose limits.',
-                //     'type'        => ['object', 'null'],
-                //     'default'     => null,
-
-                //     // Allow arbitrary metadata keys for now
-                //     'additionalProperties' => true,
-                // ],
             ],
-
-            // Required properties
             'required' => [
+                'action',
+                'source_proposition_id',
                 'register',
-                'tier',
-                'visibility',
                 'statement',
             ],
-
-            // Reusable ULID definition (future schema composition)
-            '$defs' => [
-                'ulid' => [
-                    'type'    => 'string',
-                    'pattern' => '^[0-9A-HJKMNP-TV-Z]{26}$',
+        ],
+        'proposition.reconcile' => [
+            'title' => 'Reconcile propositions',
+            'type' => 'object',
+            'additionalProperties' => false,
+            'required' => ['action', 'source_proposition_ids', 'statement'],
+            'properties' => [
+                'action' => ['const' => 'proposition.reconcile'],
+                'source_proposition_ids' => [
+                    'type' => 'array',
+                    'items' => $ulid,
+                    'minItems' => 2,
+                    'maxItems' => 2,
+                    'uniqueItems' => true,
                 ],
-            ],
-
-            // Example payloads
-            'examples' => [
-                [
-                    'register'   => 'entropy',
-                    'tier'       => 'expressive',
-                    'visibility' => 'internal',
-                    'statement'  => 'Should the Commons require a receipt for any external committal claim?',
-                ],
-                [
-                    'register'   => 'coherence',
-                    'tier'       => 'committal',
-                    'visibility' => 'external',
-                    'statement'    => 'No external commitment without a Receipt.',
-                    // 'meta'       => [
-                    //     'seed'   => true,
-                    //     'source' => 'constitution',
-                    // ],
+                'statement' => [
+                    'type' => 'string',
+                    'minLength' => 1,
+                    'maxLength' => 20000,
                 ],
             ],
         ],
-    ]
-
+        'proposition.commit' => [
+            'title' => 'Commit proposition',
+            'type' => 'object',
+            'additionalProperties' => false,
+            'required' => ['action', 'source_proposition_id'],
+            'properties' => [
+                'action' => ['const' => 'proposition.commit'],
+                'source_proposition_id' => $ulid,
+            ],
+        ],
+        'attestation.create' => [
+            'title' => 'Create attestation',
+            'type' => 'object',
+            'additionalProperties' => false,
+            'required' => ['action', 'proposition_id', 'direction'],
+            'properties' => [
+                'action' => ['const' => 'attestation.create'],
+                'proposition_id' => $ulid,
+                'direction' => [
+                    'type' => 'string',
+                    'enum' => ['support', 'refute'],
+                ],
+                'rationale' => [
+                    'type' => 'string',
+                    'minLength' => 1,
+                    'maxLength' => 20000,
+                ],
+            ],
+        ],
+        'receipt.create' => [
+            'title' => 'Create receipt',
+            'type' => 'object',
+            'additionalProperties' => false,
+            'required' => [
+                'action',
+                'receiptable_type',
+                'receiptable_id',
+                'type',
+                'reference',
+            ],
+            'properties' => [
+                'action' => ['const' => 'receipt.create'],
+                'receiptable_type' => [
+                    'type' => 'string',
+                    'enum' => ['proposition', 'attestation'],
+                ],
+                'receiptable_id' => $ulid,
+                'type' => [
+                    'type' => 'string',
+                    'enum' => ['citation', 'artefact', 'hyperlink'],
+                ],
+                'reference' => [
+                    'type' => 'string',
+                    'minLength' => 1,
+                ],
+                'signature' => [
+                    'type' => 'string',
+                    'minLength' => 1,
+                ],
+                'metadata' => [
+                    'type' => 'object',
+                    'additionalProperties' => true,
+                ],
+            ],
+        ],
+    ],
 ];
