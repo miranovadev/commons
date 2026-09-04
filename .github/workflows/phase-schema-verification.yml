@@ -45,17 +45,7 @@ jobs:
       - name: Run tests
         run: composer test
 
-      - name: Check formatting
-        run: >
-          vendor/bin/pint --test
-          app/Enums/Phase.php
-          app/Models/Cycle.php
-          app/Models/Participant.php
-          app/Models/Proposition.php
-          app/Services/ContributionService.php
-          app/Services/CycleService.php
-          app/Services/InputSchemaService.php
-          app/Services/PhaseService.php
-          config/phases.php
-          config/schemas.php
-          tests/Feature/InputSchemaServiceTest.php
+      - name: Show formatting patch
+        run: |
+          vendor/bin/pint app/Enums/Phase.php app/Models/Cycle.php app/Models/Participant.php app/Models/Proposition.php app/Services/ContributionService.php app/Services/CycleService.php app/Services/InputSchemaService.php app/Services/PhaseService.php config/phases.php config/schemas.php tests/Feature/InputSchemaServiceTest.php
+          git diff --exit-code
