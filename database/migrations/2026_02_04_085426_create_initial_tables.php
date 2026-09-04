@@ -13,109 +13,107 @@ return new class extends Migration
     {
         Schema::create('participants', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->string('callsign');
+            $table->string('callsign')->unique();
             $table->string('designation')->nullable();
-            $table->text('dossier')->nullable();
             $table->timestamps();
+        });
+
+        Schema::create('cycles', function (Blueprint $table) {
+            $table->ulid('id')->primary();
+            $table->foreignUlid('participant_id')
+                ->constrained()
+                ->restrictOnDelete();
+            $table->unsignedBigInteger('sequence');
+            $table->unsignedTinyInteger('current_phase')
+                ->default(1)
+                ->comment('Current position within the seven-phase cycle.');
+            $table->timestamp('completed_at')->nullable();
+            $table->timestamps();
+
+            $table->unique(['participant_id', 'sequence']);
         });
 
         Schema::create('propositions', function (Blueprint $table) {
             $table->ulid('id')->primary();
-
-            // The creating participant
-            $table->ulid('participant_id');
-
+            $table->foreignUlid('cycle_id')
+                ->constrained()
+                ->restrictOnDelete();
             $table->enum('register', [
-                'coherence',
-                'entropy',
-                'activation',
-                'salience',
-                'excitation',
-                'modality',
-                'stimulus',
-                'valence',
-                'resonance',
+                'activity',
+                'frontier',
+                'canon',
+                'signal',
+                'stance',
+                'concord',
             ]);
-
             $table->enum('tier', ['expressive', 'committal']);
-            $table->enum('visibility', ['internal', 'external']);
-
-            // Content
             $table->text('statement');
-
-            // Minimal metadata hook (future-proof, keep empty for now)
-            $table->jsonb('meta')->nullable();
-
             $table->timestamps();
 
-            $table->foreign('participant_id')
-                ->references('id')
-                ->on('participants')
-                ->restrictOnDelete();
-
-            // Indexes for the Commons feed
             $table->index(['register', 'tier']);
-            $table->index(['visibility']);
-            $table->index(['created_at']);
+            $table->index('created_at');
+        });
+
+        Schema::create('supersessions', function (Blueprint $table) {
+            $table->ulid('id')->primary();
+            $table->foreignUlid('cycle_id')
+                ->constrained()
+                ->restrictOnDelete();
+            $table->foreignUlid('source_proposition_id')
+                ->constrained('propositions')
+                ->restrictOnDelete();
+            $table->foreignUlid('target_proposition_id')
+                ->constrained('propositions')
+                ->restrictOnDelete();
+            $table->enum('type', [
+                'revise',
+                'reclassify',
+                'variant',
+                'reconcile',
+                'commit',
+            ]);
+            $table->timestamps();
+
+            $table->unique([
+                'source_proposition_id',
+                'target_proposition_id',
+                'type',
+            ]);
+            $table->index(['target_proposition_id', 'type']);
         });
 
         Schema::create('attestations', function (Blueprint $table) {
             $table->ulid('id')->primary();
-
-            // The creating participant
-            $table->ulid('participant_id');
-
-            // What proposition is being attested?
-            $table->ulid('proposition_id');
-
-            // Attestation stance triad
-            $table->enum('stance', ['support', 'refute', 'cite']);
-
-            // Optional content
+            $table->foreignUlid('cycle_id')
+                ->constrained()
+                ->restrictOnDelete();
+            $table->foreignUlid('proposition_id')
+                ->constrained()
+                ->restrictOnDelete();
+            $table->enum('direction', ['support', 'refute']);
             $table->text('rationale')->nullable();
-
             $table->timestamps();
 
-            $table->foreign('participant_id')
-                ->references('id')
-                ->on('participants')
-                ->restrictOnDelete();
-
-            $table->foreign('proposition_id')
-                ->references('id')
-                ->on('propositions')
-                ->cascadeOnDelete();
-
-            $table->index(['proposition_id', 'stance']);
+            $table->index(['proposition_id', 'direction']);
         });
 
         Schema::create('receipts', function (Blueprint $table) {
             $table->ulid('id')->primary();
-
-            // The creating participant
-            $table->ulid('participant_id');
-
+            $table->foreignUlid('cycle_id')
+                ->constrained()
+                ->restrictOnDelete();
             $table->ulidMorphs('receiptable');
-
-            $table->enum('kind', [
-                'dataset',
-                'storage',
-                'url',
+            $table->enum('type', [
+                'citation',
+                'artefact',
+                'hyperlink',
             ]);
-
             $table->text('reference');
-
-            // Optional structured payload (future)
-            $table->jsonb('meta')->nullable();
-
+            $table->string('signature')->nullable()->unique();
+            $table->jsonb('metadata')->nullable();
             $table->timestamps();
 
-            $table->foreign('participant_id')
-                ->references('id')
-                ->on('participants')
-                ->restrictOnDelete();
-
-            $table->index(['kind']);
+            $table->index('type');
         });
     }
 
@@ -124,9 +122,11 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('attestations');
-        Schema::dropIfExists('propositions');
         Schema::dropIfExists('receipts');
+        Schema::dropIfExists('attestations');
+        Schema::dropIfExists('supersessions');
+        Schema::dropIfExists('propositions');
+        Schema::dropIfExists('cycles');
         Schema::dropIfExists('participants');
     }
 };
