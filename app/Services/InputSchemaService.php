@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Enums\Phase;
 use App\Models\Participant;
 use DomainException;
-use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Support\Facades\Cache;
 
 final readonly class InputSchemaService
