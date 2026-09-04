@@ -10,8 +10,7 @@ final readonly class PhaseService
 {
     public function __construct(
         private CycleService $cycles,
-    ) {
-    }
+    ) {}
 
     public function currentFor(Participant $participant): Phase
     {
