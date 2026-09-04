@@ -109,7 +109,7 @@ return new class extends Migration
                 'hyperlink',
             ]);
             $table->text('reference');
-            $table->string('fingerprint')->nullable()->unique();
+            $table->string('signature')->nullable()->unique();
             $table->jsonb('metadata')->nullable();
             $table->timestamps();
 
