@@ -33,7 +33,7 @@ class InputSchemaServiceTest extends TestCase
             array_keys($schema['$defs']['actions']),
         );
 
-        $validator = new Validator();
+        $validator = new Validator;
 
         $variant = $validator->validate(
             Helper::toJSON([
