@@ -12,5 +12,6 @@ return [
         'substrates.manage' => 'Manage substrate configuration and membership.',
         'participants.manage' => 'Manage participants within a substrate.',
         'participants.act' => 'Submit phase actions as a participant.',
+        'connections.manage' => 'Manage a Participant’s external connections.',
     ],
 ];

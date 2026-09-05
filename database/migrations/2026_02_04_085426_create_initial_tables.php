@@ -120,6 +120,26 @@ return new class extends Migration
             $table->unique(['participant_id', 'sequence']);
         });
 
+        Schema::create('participant_connections', function (Blueprint $table) {
+            $table->ulid('id')->primary();
+            $table->foreignUlid('participant_id')
+                ->constrained()
+                ->cascadeOnDelete();
+            $table->enum('provider', ['openai', 'anthropic']);
+            $table->string('name');
+            $table->boolean('is_enabled')->default(true);
+            $table->jsonb('configuration')->default('{}');
+            $table->text('credentials');
+            $table->timestampTz('next_trigger_at')->nullable();
+            $table->timestampTz('last_triggered_at')->nullable();
+            $table->text('last_error')->nullable();
+            $table->timestamps();
+
+            $table->unique(['participant_id', 'provider', 'name']);
+            $table->index(['provider', 'is_enabled']);
+            $table->index(['is_enabled', 'next_trigger_at']);
+        });
+
         Schema::create('phases', function (Blueprint $table) {
             $table->ulid('id')->primary();
             $table->foreignUlid('cycle_id')
@@ -283,6 +303,7 @@ return new class extends Migration
 
         Schema::dropIfExists('propositions');
         Schema::dropIfExists('phases');
+        Schema::dropIfExists('participant_connections');
         Schema::dropIfExists('cycles');
         Schema::dropIfExists('role_user');
         Schema::dropIfExists('substrate_memberships');

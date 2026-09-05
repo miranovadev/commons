@@ -43,4 +43,9 @@ class Participant extends Model
     {
         return $this->hasMany(Cycle::class);
     }
+
+    public function connections(): HasMany
+    {
+        return $this->hasMany(ParticipantConnection::class);
+    }
 }

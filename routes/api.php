@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Api\BootstrapController;
+use App\Http\Controllers\Api\ConnectionOptionController;
+use App\Http\Controllers\Api\ParticipantConnectionController;
 use App\Http\Controllers\Api\ParticipantController;
 use App\Http\Controllers\Api\SessionController;
 use App\Http\Controllers\Api\SubstrateController;
@@ -20,6 +22,7 @@ Route::middleware('web')->group(function (): void {
     Route::middleware('auth')->group(function (): void {
         Route::get('/session', [SessionController::class, 'show']);
         Route::delete('/session', [SessionController::class, 'destroy']);
+        Route::get('/connection-options', ConnectionOptionController::class);
 
         Route::apiResource('substrates', SubstrateController::class)
             ->only(['index', 'store', 'show']);
@@ -29,6 +32,11 @@ Route::middleware('web')->group(function (): void {
                 'substrates.participants',
                 ParticipantController::class,
             )->only(['index', 'store', 'show']);
+
+            Route::apiResource(
+                'substrates.participants.connections',
+                ParticipantConnectionController::class,
+            )->except(['create', 'edit']);
         });
     });
 });
