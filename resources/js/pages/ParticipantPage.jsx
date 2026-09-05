@@ -1,11 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Alert, Badge, Box, Breadcrumbs, Button, Card, Container, Divider, Group, Loader, Paper, SimpleGrid, Stack, Text, ThemeIcon, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { IconAlertCircle, IconBolt, IconGitBranch, IconPencil, IconPlugConnected, IconRefresh, IconRoute, IconTool, IconUserHexagon, IconWhirl } from '@tabler/icons-react';
 import { Link, useParams } from 'react-router-dom';
-import { api, messageFrom } from '../api';
+import { messageFrom } from '../errors';
 import { PropositionGraph } from '../components/PropositionGraph';
 import { ConnectionsPanel } from '../components/ConnectionsPanel';
+import { useGetParticipantPlanQuery, useGetParticipantQuery, useGetPropositionsQuery } from '../services/commonsApi';
 
 const actions = {
   'proposition.variant': { label: 'Variant', color: 'blue', icon: IconGitBranch },
@@ -20,26 +21,12 @@ const actions = {
 
 export function ParticipantPage() {
   const { slug, participantId } = useParams();
-  const [participant, setParticipant] = useState(null);
-  const [plan, setPlan] = useState(null);
-  const [propositions, setPropositions] = useState([]);
-  const [error, setError] = useState('');
+  const parameters = { slug, participantId };
+  const { data: participant, isLoading: participantLoading, error: participantError } = useGetParticipantQuery(parameters);
+  const { data: plan, isLoading: planLoading, error: planError } = useGetParticipantPlanQuery(parameters);
+  const { data: propositions = [] } = useGetPropositionsQuery(slug);
+  const error = participantError || planError;
   const [connectionsOpened, { open: openConnections, close: closeConnections }] = useDisclosure(false);
-
-  useEffect(() => {
-    let active = true;
-    Promise.all([
-      api.get(`/substrates/${slug}/participants/${participantId}`),
-      api.get(`/substrates/${slug}/participants/${participantId}/plan`),
-      api.get(`/substrates/${slug}/propositions`),
-    ]).then(([participantResponse, planResponse, graphResponse]) => {
-      if (!active) return;
-      setParticipant(participantResponse.data.data);
-      setPlan(planResponse.data.data);
-      setPropositions(graphResponse.data.data);
-    }).catch((requestError) => active && setError(messageFrom(requestError, 'This cycle is not ready yet.')));
-    return () => { active = false; };
-  }, [slug, participantId]);
 
   const availableActions = useMemo(() => plan?.schema?.oneOf?.map((schema) => schema.properties?.action?.const).filter(Boolean) || [], [plan]);
   const graph = useMemo(() => {
@@ -51,10 +38,10 @@ export function ParticipantPage() {
   return (
     <Container size="xl">
       <Breadcrumbs mb="lg"><Text component={Link} to="/" size="sm" c="dimmed">Substrates</Text><Text component={Link} to={`/substrates/${slug}`} size="sm" c="dimmed">{slug}</Text><Text size="sm">Participant</Text></Breadcrumbs>
-      {!participant && !error && <Stack align="center" py={100}><Loader color="indigo" /><Text c="dimmed">Finding your current position…</Text></Stack>}
+      {(participantLoading || planLoading) && !error && <Stack align="center" py={100}><Loader color="indigo" /><Text c="dimmed">Finding your current position…</Text></Stack>}
       {error && (
         <Alert color="indigo" variant="light" icon={<IconAlertCircle size={18} />} title="The cycle is waiting">
-          {error} This is expected while cycle creation and Potential Charge selection are still being implemented.
+          {messageFrom(error, 'This cycle is not ready yet.')} This is expected while cycle creation and Potential Charge selection are still being implemented.
         </Alert>
       )}
       {participant && plan && (

@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import {
   Alert,
   Badge,
@@ -23,23 +22,12 @@ import { useForm } from '@mantine/form';
 import { useDisclosure } from '@mantine/hooks';
 import { IconAlertCircle, IconArrowUpRight, IconLock, IconPlus, IconTopologyStar3, IconUsers, IconWorld } from '@tabler/icons-react';
 import { Link } from 'react-router-dom';
-import { api, csrf, messageFrom } from '../api';
+import { messageFrom } from '../errors';
+import { useCreateSubstrateMutation, useGetSubstratesQuery } from '../services/commonsApi';
 
 export function SubstratesPage({ user }) {
-  const [substrates, setSubstrates] = useState(null);
-  const [error, setError] = useState('');
+  const { data: substrates = [], isLoading, error } = useGetSubstratesQuery();
   const [opened, { open, close }] = useDisclosure(false);
-
-  async function load() {
-    try {
-      const response = await api.get('/substrates');
-      setSubstrates(response.data.data);
-    } catch (requestError) {
-      setError(messageFrom(requestError, 'Substrates could not be loaded.'));
-    }
-  }
-
-  useEffect(() => { load(); }, [user]);
 
   return (
     <Container size="lg">
@@ -52,9 +40,9 @@ export function SubstratesPage({ user }) {
         {user?.has_system_access && <Button color="blue" leftSection={<IconPlus size={17} />} onClick={open}>New substrate</Button>}
       </Group>
 
-      {error && <Alert color="red" mb="lg" icon={<IconAlertCircle size={18} />}>{error}</Alert>}
+      {error && <Alert color="red" mb="lg" icon={<IconAlertCircle size={18} />}>{messageFrom(error, 'Substrates could not be loaded.')}</Alert>}
 
-      {substrates === null ? (
+      {isLoading ? (
         <SimpleGrid cols={{ base: 1, sm: 2 }}><Skeleton h={210} radius="lg" /><Skeleton h={210} radius="lg" /></SimpleGrid>
       ) : substrates.length ? (
         <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg">
@@ -69,7 +57,7 @@ export function SubstratesPage({ user }) {
         </Card>
       )}
 
-      <CreateSubstrateModal opened={opened} onClose={close} onCreated={(substrate) => { setSubstrates((current) => [...(current || []), substrate].sort((a, b) => a.title.localeCompare(b.title))); close(); }} />
+      <CreateSubstrateModal opened={opened} onClose={close} onCreated={close} />
     </Container>
   );
 }
@@ -93,6 +81,7 @@ function SubstrateCard({ substrate }) {
 }
 
 function CreateSubstrateModal({ opened, onClose, onCreated }) {
+  const [createSubstrate] = useCreateSubstrateMutation();
   const form = useForm({
     initialValues: { title: '', slug: '', description: '', visibility: 'public', maximum_participants: 100 },
     validate: { title: (v) => v.trim() ? null : 'A title is required.', slug: (v) => /^[a-z0-9-]+$/.test(v) ? null : 'Use lowercase letters, numbers and hyphens.' },
@@ -107,16 +96,15 @@ function CreateSubstrateModal({ opened, onClose, onCreated }) {
   async function submit(values) {
     form.clearErrors();
     try {
-      await csrf();
-      const response = await api.post('/substrates', {
+      await createSubstrate({
         title: values.title,
         slug: values.slug,
         description: values.description || null,
         visibility: values.visibility,
         configuration: { maximum_participants: values.maximum_participants },
-      });
+      }).unwrap();
       form.reset();
-      onCreated(response.data.data);
+      onCreated();
     } catch (error) {
       form.setFieldError('title', messageFrom(error, 'The substrate could not be created.'));
     }

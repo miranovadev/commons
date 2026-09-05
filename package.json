@@ -11,10 +11,11 @@
         "@mantine/core": "^8.3.1",
         "@mantine/form": "^8.3.1",
         "@mantine/hooks": "^8.3.1",
+        "@reduxjs/toolkit": "^2.9.0",
         "@tabler/icons-react": "^3.35.0",
-        "axios": "^1.11.0",
         "react": "^19.1.1",
         "react-dom": "^19.1.1",
+        "react-redux": "^9.2.0",
         "react-router-dom": "^7.8.2"
     },
     "devDependencies": {

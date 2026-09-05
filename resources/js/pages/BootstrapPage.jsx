@@ -1,10 +1,12 @@
-import { Alert, Anchor, Box, Button, Center, Container, Paper, PasswordInput, Stack, Text, TextInput, Title } from '@mantine/core';
+import { Alert, Box, Button, Center, Container, Paper, PasswordInput, Stack, Text, TextInput, Title } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconArrowRight, IconInfoCircle } from '@tabler/icons-react';
-import { api, csrf, messageFrom } from '../api';
 import { CommonsLogo } from '../components/CommonsLogo';
+import { messageFrom } from '../errors';
+import { useBootstrapMutation } from '../services/commonsApi';
 
 export function BootstrapPage({ onComplete }) {
+  const [bootstrap] = useBootstrapMutation();
   const form = useForm({
     initialValues: { name: '', email: '', password: '', password_confirmation: '' },
     validate: {
@@ -18,9 +20,8 @@ export function BootstrapPage({ onComplete }) {
   async function submit(values) {
     form.clearErrors();
     try {
-      await csrf();
-      const response = await api.post('/bootstrap', values);
-      onComplete(response.data.data.user);
+      await bootstrap(values).unwrap();
+      onComplete();
     } catch (error) {
       form.setFieldError('email', messageFrom(error, 'The Commons could not be initialised.'));
     }

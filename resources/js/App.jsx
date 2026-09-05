@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import {
   ActionIcon,
   AppShell,
@@ -18,8 +18,11 @@ import {
 import { useDisclosure } from '@mantine/hooks';
 import { IconChevronDown, IconLogin2, IconLogout2, IconMoon, IconSun } from '@tabler/icons-react';
 import { BrowserRouter, Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
-import { api, csrf } from './api';
+import { useDispatch, useSelector } from 'react-redux';
 import { CommonsLogo } from './components/CommonsLogo';
+import { commonsApi, useGetSessionQuery, useLogoutMutation } from './services/commonsApi';
+import { systemBootstrapped } from './systemSlice';
+import { HTTP_PRECONDITION_REQUIRED } from './http';
 import { theme } from './theme';
 import { BootstrapPage } from './pages/BootstrapPage';
 import { LoginPage } from './pages/LoginPage';
@@ -37,52 +40,31 @@ export function App() {
 
 function CommonsApp() {
   const [opened, { toggle, close }] = useDisclosure(false);
-  const [bootState, setBootState] = useState('loading');
-  const [user, setUser] = useState(null);
+  const dispatch = useDispatch();
+  const bootstrapRequired = useSelector((state) => state.system.bootstrapRequired);
+  const { data: user, isLoading, isError, error } = useGetSessionQuery();
+  const [logoutRequest] = useLogoutMutation();
   const location = useLocation();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    let active = true;
-    (async () => {
-      try {
-        await api.get('/bootstrap');
-        if (!active) return;
-        setBootState('ready');
-        try {
-          const response = await api.get('/session');
-          if (active) setUser(response.data.data);
-        } catch (error) {
-          if (error.response?.status !== 401) throw error;
-        }
-      } catch (error) {
-        if (!active) return;
-        if (error.response?.status === 428) setBootState('required');
-        else setBootState('error');
-      }
-    })();
-    return () => { active = false; };
-  }, []);
 
   useEffect(close, [location.pathname]);
 
   async function logout() {
-    await csrf();
-    await api.delete('/session');
-    setUser(null);
+    await logoutRequest().unwrap();
+    dispatch(commonsApi.util.resetApiState());
     navigate('/');
   }
 
-  if (bootState === 'loading') {
+  if (isLoading) {
     return <Center mih="100vh"><Loader color="indigo" /></Center>;
   }
 
-  if (bootState === 'error') {
+  if (isError && error?.status !== 401 && error?.status !== HTTP_PRECONDITION_REQUIRED) {
     return <Center mih="100vh"><Text c="red">The Commons could not be reached.</Text></Center>;
   }
 
-  if (bootState === 'required') {
-    return <Routes><Route path="*" element={<BootstrapPage onComplete={(created) => { setUser(created); setBootState('ready'); navigate('/'); }} />} /></Routes>;
+  if (bootstrapRequired) {
+    return <Routes><Route path="*" element={<BootstrapPage onComplete={() => { dispatch(systemBootstrapped()); navigate('/'); }} />} /></Routes>;
   }
 
   return (
@@ -129,7 +111,7 @@ function CommonsApp() {
       <AppShell.Main>
         <Routes>
           <Route path="/" element={<SubstratesPage user={user} />} />
-          <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage onLogin={setUser} />} />
+          <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage />} />
           <Route path="/substrates/:slug" element={<SubstratePage user={user} />} />
           <Route path="/substrates/:slug/participants/:participantId" element={user ? <ParticipantPage /> : <Navigate to="/login" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -11,6 +11,7 @@ use App\Models\Substrate;
 use App\Models\Supersession;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Symfony\Component\HttpFoundation\Response;
 use Tests\TestCase;
 
 class CommonsUiApiTest extends TestCase
@@ -19,13 +20,13 @@ class CommonsUiApiTest extends TestCase
 
     public function test_client_is_told_when_system_bootstrap_is_required(): void
     {
-        $this->getJson('/api/bootstrap')
-            ->assertStatus(428)
+        $this->getJson('/api/substrates')
+            ->assertStatus(Response::HTTP_PRECONDITION_REQUIRED)
             ->assertJsonPath('code', 'bootstrap_required');
 
         User::factory()->create();
 
-        $this->getJson('/api/bootstrap')->assertNoContent();
+        $this->getJson('/api/substrates')->assertOk();
     }
 
     public function test_guest_can_list_and_view_only_public_substrates(): void

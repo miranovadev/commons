@@ -2,19 +2,19 @@ import { Alert, Box, Button, Container, Paper, PasswordInput, Stack, Text, TextI
 import { useForm } from '@mantine/form';
 import { IconAlertCircle, IconLogin2 } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
-import { api, csrf, messageFrom } from '../api';
+import { messageFrom } from '../errors';
+import { useLoginMutation } from '../services/commonsApi';
 
-export function LoginPage({ onLogin }) {
+export function LoginPage() {
   const navigate = useNavigate();
+  const [login] = useLoginMutation();
   const form = useForm({ initialValues: { email: '', password: '', remember: true } });
   const error = form.errors.form;
 
   async function submit(values) {
     form.setFieldError('form', null);
     try {
-      await csrf();
-      const response = await api.post('/session', values);
-      onLogin(response.data.data);
+      await login(values).unwrap();
       navigate('/');
     } catch (requestError) {
       form.setFieldError('form', messageFrom(requestError, 'Sign in failed.'));
