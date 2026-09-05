@@ -109,7 +109,7 @@ final class ContextLineageComparisonService
         }
 
         $lineagePropositions = $propositions
-            ->only($selected->keys())
+            ->only($selected->keys()->all())
             ->sortBy(
                 fn (Proposition $item) => $item->ledgerEntry->sequence,
             )

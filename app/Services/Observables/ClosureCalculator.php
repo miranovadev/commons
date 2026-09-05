@@ -106,6 +106,7 @@ final readonly class ClosureCalculator
 
                 return $sequences
                     ->slice(1)
+                    ->values()
                     ->map(
                         fn ($sequence, int $index) => max(
                             1,
