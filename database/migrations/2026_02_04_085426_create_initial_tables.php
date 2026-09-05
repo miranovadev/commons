@@ -130,16 +130,14 @@ return new class extends Migration
             $table->boolean('is_enabled')->default(true);
             $table->jsonb('configuration')->default('{}');
             $table->text('credentials');
-            $table->foreignUlid('last_triggered_cycle_id')
-                ->nullable()
-                ->constrained('cycles')
-                ->nullOnDelete();
+            $table->timestampTz('next_trigger_at')->nullable();
             $table->timestampTz('last_triggered_at')->nullable();
             $table->text('last_error')->nullable();
             $table->timestamps();
 
             $table->unique(['participant_id', 'provider', 'name']);
             $table->index(['provider', 'is_enabled']);
+            $table->index(['is_enabled', 'next_trigger_at']);
         });
 
         Schema::create('phases', function (Blueprint $table) {
