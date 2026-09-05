@@ -53,14 +53,14 @@ final class SystemBootstrapService
                         'scope' => 'substrate',
                         'description' => 'Act within a joined substrate.',
                     ]);
-                    $participantPermission = $permissions->firstWhere(
-                        'name',
-                        'participants.act',
-                    );
                     $participant->permissions()->sync(
-                        $participantPermission === null
-                            ? []
-                            : [$participantPermission->getKey()],
+                        $permissions
+                            ->whereIn('name', [
+                                'participants.act',
+                                'connections.manage',
+                            ])
+                            ->pluck('id')
+                            ->all(),
                     );
 
                     $user = User::query()->create($attributes);
