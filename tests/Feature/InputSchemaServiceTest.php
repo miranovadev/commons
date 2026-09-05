@@ -303,8 +303,18 @@ class InputSchemaServiceTest extends TestCase
     {
         $now = now();
 
+        DB::table('substrates')->insertOrIgnore([
+            'id' => '01ARZ3NDEKTSV4RRFFQ69G5000',
+            'slug' => 'schema-tests',
+            'title' => 'Schema tests',
+            'visibility' => 'private',
+            'configuration' => '{}',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
         DB::table('participants')->insert([
             'id' => $participantId,
+            'substrate_id' => '01ARZ3NDEKTSV4RRFFQ69G5000',
             'callsign' => $callsign,
             'max_read_count' => 25,
             'created_at' => $now,
