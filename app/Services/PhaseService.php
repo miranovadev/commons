@@ -36,7 +36,7 @@ final readonly class PhaseService
      *     gate: string,
      *     write_registers: array<string, string>,
      *     actions: list<string>,
-     *     constraints?: array<string, string>
+     *     constraints?: array<string, list<string>>
      * }
      */
     public function plan(PhaseKind $phase): array
