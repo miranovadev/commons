@@ -315,7 +315,7 @@ class InputSchemaServiceTest extends TestCase
         DB::table('phases')->insert([
             'id' => $phaseId,
             'cycle_id' => $cycleId,
-            'position' => $kind->value,
+            'kind' => $kind->value,
             'write_register' => $writeRegister,
             'started_at' => $now,
             'created_at' => $now,
