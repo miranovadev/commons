@@ -21,7 +21,10 @@ class BootstrapController extends Controller
 
         return response()->json([
             'data' => [
-                'user' => $user->only(['id', 'name', 'email']),
+                'user' => [
+                    ...$user->only(['id', 'name', 'email']),
+                    'has_system_access' => true,
+                ],
                 'role' => config(
                     'authorization.roles.system_administrator',
                 ),

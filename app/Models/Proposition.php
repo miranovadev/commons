@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Proposition extends Model
@@ -23,5 +24,25 @@ class Proposition extends Model
     public function instrumentExecutions(): HasMany
     {
         return $this->hasMany(InstrumentExecution::class);
+    }
+
+    public function parents(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            self::class,
+            'supersessions',
+            'target_proposition_id',
+            'source_proposition_id',
+        )->withPivot('type');
+    }
+
+    public function children(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            self::class,
+            'supersessions',
+            'source_proposition_id',
+            'target_proposition_id',
+        )->withPivot('type');
     }
 }
