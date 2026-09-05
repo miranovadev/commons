@@ -40,6 +40,14 @@ return new class extends Migration
             $table->ulid('gate_proposition_id')->nullable()->index();
             $table->unsignedTinyInteger('position')
                 ->comment('Position within the seven-phase cycle.');
+            $table->enum('write_register', [
+                'activity',
+                'frontier',
+                'canon',
+                'signal',
+                'stance',
+                'concord',
+            ])->nullable();
             $table->timestamp('started_at')->nullable();
             $table->timestamp('completed_at')->nullable();
             $table->timestamps();
@@ -119,9 +127,41 @@ return new class extends Migration
             $table->index(['proposition_id', 'direction']);
         });
 
-        Schema::create('receipts', function (Blueprint $table) {
+        Schema::create('instrument_executions', function (Blueprint $table) {
             $table->ulid('id')->primary();
             $table->foreignUlid('phase_id')
+                ->constrained()
+                ->restrictOnDelete();
+            $table->foreignUlid('proposition_id')
+                ->constrained()
+                ->restrictOnDelete();
+            $table->enum('kind', [
+                'citation',
+                'artefact',
+                'hyperlink',
+            ]);
+            $table->text('reference');
+            $table->enum('status', [
+                'pending',
+                'completed',
+                'failed',
+            ])->default('pending');
+            $table->jsonb('input')->nullable();
+            $table->jsonb('metadata')->nullable();
+            $table->timestamp('started_at')->nullable();
+            $table->timestamp('completed_at')->nullable();
+            $table->timestamp('failed_at')->nullable();
+            $table->text('failure_reason')->nullable();
+            $table->timestamps();
+
+            $table->index(['phase_id', 'status']);
+            $table->index(['proposition_id', 'status']);
+        });
+
+        Schema::create('receipts', function (Blueprint $table) {
+            $table->ulid('id')->primary();
+            $table->foreignUlid('instrument_execution_id')
+                ->unique()
                 ->constrained()
                 ->restrictOnDelete();
             $table->ulidMorphs('receiptable');
@@ -131,7 +171,7 @@ return new class extends Migration
                 'hyperlink',
             ]);
             $table->text('reference');
-            $table->string('signature')->nullable()->unique();
+            $table->string('signature')->unique();
             $table->jsonb('metadata')->nullable();
             $table->timestamps();
 
@@ -145,6 +185,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('receipts');
+        Schema::dropIfExists('instrument_executions');
         Schema::dropIfExists('attestations');
         Schema::dropIfExists('supersessions');
 
