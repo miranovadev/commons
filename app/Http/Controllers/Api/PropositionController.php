@@ -23,6 +23,7 @@ class PropositionController extends Controller
             )
             ->with([
                 'phase.cycle.participant:id,callsign',
+                'measurement',
                 'parents:id',
                 'children:id',
             ])
