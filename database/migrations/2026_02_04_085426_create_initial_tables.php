@@ -38,8 +38,8 @@ return new class extends Migration
                 ->constrained()
                 ->restrictOnDelete();
             $table->ulid('gate_proposition_id')->nullable()->index();
-            $table->unsignedTinyInteger('position')
-                ->comment('Position within the seven-phase cycle.');
+            $table->unsignedTinyInteger('kind')
+                ->comment('Kind and position within the seven-phase cycle.');
             $table->enum('write_register', [
                 'activity',
                 'frontier',
@@ -52,7 +52,7 @@ return new class extends Migration
             $table->timestamp('completed_at')->nullable();
             $table->timestamps();
 
-            $table->unique(['cycle_id', 'position']);
+            $table->unique(['cycle_id', 'kind']);
             $table->index(['cycle_id', 'completed_at']);
         });
 
