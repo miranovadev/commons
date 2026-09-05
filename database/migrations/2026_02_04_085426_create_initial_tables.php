@@ -32,9 +32,25 @@ return new class extends Migration
             $table->unique(['participant_id', 'sequence']);
         });
 
-        Schema::create('propositions', function (Blueprint $table) {
+        Schema::create('phases', function (Blueprint $table) {
             $table->ulid('id')->primary();
             $table->foreignUlid('cycle_id')
+                ->constrained()
+                ->restrictOnDelete();
+            $table->ulid('gate_proposition_id')->nullable()->index();
+            $table->unsignedTinyInteger('position')
+                ->comment('Position within the seven-phase cycle.');
+            $table->timestamp('started_at')->nullable();
+            $table->timestamp('completed_at')->nullable();
+            $table->timestamps();
+
+            $table->unique(['cycle_id', 'position']);
+            $table->index(['cycle_id', 'completed_at']);
+        });
+
+        Schema::create('propositions', function (Blueprint $table) {
+            $table->ulid('id')->primary();
+            $table->foreignUlid('phase_id')
                 ->constrained()
                 ->restrictOnDelete();
             $table->enum('register', [
@@ -53,28 +69,16 @@ return new class extends Migration
             $table->index('created_at');
         });
 
-        Schema::create('phases', function (Blueprint $table) {
-            $table->ulid('id')->primary();
-            $table->foreignUlid('cycle_id')
-                ->constrained()
+        Schema::table('phases', function (Blueprint $table) {
+            $table->foreign('gate_proposition_id')
+                ->references('id')
+                ->on('propositions')
                 ->restrictOnDelete();
-            $table->foreignUlid('gate_proposition_id')
-                ->nullable()
-                ->constrained('propositions')
-                ->restrictOnDelete();
-            $table->unsignedTinyInteger('position')
-                ->comment('Position within the seven-phase cycle.');
-            $table->timestamp('started_at')->nullable();
-            $table->timestamp('completed_at')->nullable();
-            $table->timestamps();
-
-            $table->unique(['cycle_id', 'position']);
-            $table->index(['cycle_id', 'completed_at']);
         });
 
         Schema::create('supersessions', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->foreignUlid('cycle_id')
+            $table->foreignUlid('phase_id')
                 ->constrained()
                 ->restrictOnDelete();
             $table->foreignUlid('source_proposition_id')
@@ -102,7 +106,7 @@ return new class extends Migration
 
         Schema::create('attestations', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->foreignUlid('cycle_id')
+            $table->foreignUlid('phase_id')
                 ->constrained()
                 ->restrictOnDelete();
             $table->foreignUlid('proposition_id')
@@ -117,7 +121,7 @@ return new class extends Migration
 
         Schema::create('receipts', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->foreignUlid('cycle_id')
+            $table->foreignUlid('phase_id')
                 ->constrained()
                 ->restrictOnDelete();
             $table->ulidMorphs('receiptable');
@@ -143,8 +147,13 @@ return new class extends Migration
         Schema::dropIfExists('receipts');
         Schema::dropIfExists('attestations');
         Schema::dropIfExists('supersessions');
-        Schema::dropIfExists('phases');
+
+        Schema::table('phases', function (Blueprint $table) {
+            $table->dropForeign(['gate_proposition_id']);
+        });
+
         Schema::dropIfExists('propositions');
+        Schema::dropIfExists('phases');
         Schema::dropIfExists('cycles');
         Schema::dropIfExists('participants');
     }
