@@ -19,7 +19,7 @@ final readonly class InputPlanService
     public function forParticipant(Participant $participant): array
     {
         $phase = $this->phases->currentFor($participant);
-        $gate = $this->gates->currentFor($participant);
+        $gate = $this->gates->forPhase($phase);
         $lineage = $this->lineage->endingAt(
             $gate,
             $participant->max_read_count,
@@ -27,7 +27,11 @@ final readonly class InputPlanService
         );
 
         return [
-            'phase' => $phase->value,
+            'phase' => [
+                'id' => $phase->getKey(),
+                'position' => $phase->position->value,
+                'started_at' => $phase->started_at,
+            ],
             'gate' => $gate->only([
                 'id',
                 'register',
@@ -46,7 +50,7 @@ final readonly class InputPlanService
                 ])
                 ->values()
                 ->all(),
-            'schema' => $this->schemas->forPhase($phase),
+            'schema' => $this->schemas->forPhase($phase->position),
         ];
     }
 }
