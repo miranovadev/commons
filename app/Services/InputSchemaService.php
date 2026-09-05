@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Enums\Phase;
+use App\Enums\PhaseKind;
 use App\Models\Participant;
 use DomainException;
 use Illuminate\Support\Facades\Cache;
@@ -16,13 +16,18 @@ final readonly class InputSchemaService
     ) {}
 
     /**
+     * @param  list<string>  $writeOptionIds
+     * @param  list<string>  $gateOptionIds
      * @return array<string, mixed>
      */
-    public function forParticipant(Participant $participant): array
-    {
+    public function forParticipant(
+        Participant $participant,
+        array $writeOptionIds,
+        array $gateOptionIds,
+    ): array {
         $occurrence = $this->phases->currentFor($participant);
-        $phase = $occurrence->position;
-        $plan = $this->phases->plan($phase);
+        $kind = $occurrence->position;
+        $plan = $this->phases->plan($kind);
         $gate = $this->gates->forPhase($occurrence);
         $ownsGate = $this->ownership->ownedBy($gate, $participant);
 
@@ -39,20 +44,26 @@ final readonly class InputSchemaService
             },
         ));
 
-        return $this->forPhase($phase, $actions);
+        return $this->specialize(
+            $this->forPhase($kind, $actions),
+            $writeOptionIds,
+            $gateOptionIds,
+        );
     }
 
     /**
      * @param  list<string>|null  $actions
      * @return array<string, mixed>
      */
-    public function forPhase(Phase $phase, ?array $actions = null): array
-    {
-        $plan = $this->phases->plan($phase);
+    public function forPhase(
+        PhaseKind $kind,
+        ?array $actions = null,
+    ): array {
+        $plan = $this->phases->plan($kind);
         $actionNames = $actions ?? $plan['actions'];
         $version = (int) config('schemas.version', 1);
         $variant = sha1(implode('|', $actionNames));
-        $key = "commons:input-schema:v{$version}:phase:{$phase->value}:{$variant}";
+        $key = "commons:input-schema:v{$version}:phase:{$kind->value}:{$variant}";
         $cache = Cache::store(config('schemas.cache.store'));
         $ttl = config('schemas.cache.ttl');
 
@@ -60,13 +71,13 @@ final readonly class InputSchemaService
             return $cache->remember(
                 $key,
                 (int) $ttl,
-                fn (): array => $this->build($phase, $actionNames),
+                fn (): array => $this->build($kind, $actionNames),
             );
         }
 
         return $cache->rememberForever(
             $key,
-            fn (): array => $this->build($phase, $actionNames),
+            fn (): array => $this->build($kind, $actionNames),
         );
     }
 
@@ -74,9 +85,9 @@ final readonly class InputSchemaService
      * @param  list<string>  $actionNames
      * @return array<string, mixed>
      */
-    private function build(Phase $phase, array $actionNames): array
+    private function build(PhaseKind $kind, array $actionNames): array
     {
-        $plan = $this->phases->plan($phase);
+        $plan = $this->phases->plan($kind);
         $available = config('schemas.actions', []);
         $actions = [];
 
@@ -106,10 +117,10 @@ final readonly class InputSchemaService
                 'actions' => $actions,
             ],
             'x-commons' => [
-                'phase' => $plan['name'],
+                'kind' => $plan['name'],
+                'description' => $plan['description'],
                 'one_action' => true,
                 'gate' => $plan['gate'],
-                'write_registers' => $plan['write_registers'],
                 'constraints' => array_intersect_key(
                     $plan['constraints'] ?? [],
                     $actions,
@@ -117,10 +128,72 @@ final readonly class InputSchemaService
                 'server_governed' => [
                     'gate_proposition_id',
                     'domain',
-                    'register',
+                    'write_register',
                     'tier',
                 ],
             ],
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $schema
+     * @param  list<string>  $writeOptionIds
+     * @param  list<string>  $gateOptionIds
+     * @return array<string, mixed>
+     */
+    private function specialize(
+        array $schema,
+        array $writeOptionIds,
+        array $gateOptionIds,
+    ): array {
+        $bindings = [
+            'proposition.select' => [
+                'property' => 'proposition_id',
+                'values' => $writeOptionIds,
+            ],
+            'attestation.create' => [
+                'property' => 'proposition_id',
+                'values' => $writeOptionIds,
+            ],
+            'instrument.execute' => [
+                'property' => 'proposition_id',
+                'values' => $writeOptionIds,
+            ],
+            'proposition.reconcile' => [
+                'property' => 'other_proposition_id',
+                'values' => $gateOptionIds,
+            ],
+        ];
+
+        foreach ($bindings as $action => $binding) {
+            if (! isset($schema['$defs']['actions'][$action])) {
+                continue;
+            }
+
+            if ($binding['values'] === []) {
+                unset($schema['$defs']['actions'][$action]);
+
+                continue;
+            }
+
+            $schema['$defs']['actions'][$action]['properties']
+                [$binding['property']]['enum'] = $binding['values'];
+        }
+
+        $actions = $schema['$defs']['actions'];
+        $schema['oneOf'] = array_values(array_filter(
+            $schema['oneOf'],
+            static function (array $reference) use ($actions): bool {
+                $name = basename($reference['$ref']);
+
+                return isset($actions[$name]);
+            },
+        ));
+        $schema['x-commons']['constraints'] = array_intersect_key(
+            $schema['x-commons']['constraints'],
+            $actions,
+        );
+
+        return $schema;
     }
 }
