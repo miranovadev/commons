@@ -18,7 +18,9 @@ class SubstrateController extends Controller
         $user = request()->user();
         $query = Substrate::query()->withCount('participants');
 
-        if (! $user->hasSystemAccess()) {
+        if ($user === null) {
+            $query->where('visibility', 'public');
+        } elseif (! $user->hasSystemAccess()) {
             $query->where(function ($query) use ($user): void {
                 $query->where('visibility', 'public')
                     ->orWhereHas(

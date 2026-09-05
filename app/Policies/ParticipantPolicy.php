@@ -12,6 +12,15 @@ class ParticipantPolicy
         return $user->hasSystemAccess() ? true : null;
     }
 
+    public function act(User $user, Participant $participant): bool
+    {
+        return $this->ownsParticipant($user, $participant)
+            && $user->hasPermission(
+                'participants.act',
+                $participant->substrate,
+            );
+    }
+
     public function viewConnections(
         User $user,
         Participant $participant,

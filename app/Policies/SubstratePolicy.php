@@ -7,23 +7,23 @@ use App\Models\User;
 
 class SubstratePolicy
 {
-    public function before(User $user): ?bool
+    public function before(?User $user): ?bool
     {
-        return $user->hasSystemAccess() ? true : null;
+        return $user?->hasSystemAccess() ? true : null;
     }
 
-    public function viewAny(User $user): bool
+    public function viewAny(?User $user): bool
     {
         return true;
     }
 
-    public function view(User $user, Substrate $substrate): bool
+    public function view(?User $user, Substrate $substrate): bool
     {
         return $substrate->isPublic()
-            || $substrate->memberships()
+            || ($user !== null && $substrate->memberships()
                 ->whereBelongsTo($user)
                 ->whereIn('status', ['invited', 'active'])
-                ->exists();
+                ->exists());
     }
 
     public function create(User $user): bool

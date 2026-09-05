@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   test:
-    name: PHP 8.5 / PostgreSQL 18
+    name: PHP 8.5 / PostgreSQL 18 / Node 24
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -70,8 +70,20 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-php-8.5-composer-
 
-      - name: Install dependencies
+      - name: Install PHP dependencies
         run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
 
       - name: Run test suite
         run: php artisan test
