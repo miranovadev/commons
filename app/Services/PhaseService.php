@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Enums\Phase as PhaseKind;
+use App\Enums\PhaseKind;
 use App\Models\Participant;
 use App\Models\Phase;
 use DomainException;
@@ -33,19 +33,19 @@ final readonly class PhaseService
     /**
      * @return array{
      *     name: string,
+     *     description: string,
      *     gate: string,
-     *     write_registers: array<string, string>,
      *     actions: list<string>,
      *     constraints?: array<string, list<string>>
      * }
      */
-    public function plan(PhaseKind $phase): array
+    public function plan(PhaseKind $kind): array
     {
-        $plan = config("phases.{$phase->value}");
+        $plan = config("phases.{$kind->value}");
 
         if (! is_array($plan)) {
             throw new DomainException(
-                "No input plan exists for phase {$phase->value}."
+                "No input plan exists for phase {$kind->value}."
             );
         }
 
