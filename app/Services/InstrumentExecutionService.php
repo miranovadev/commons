@@ -44,7 +44,7 @@ final class InstrumentExecutionService
     public function complete(
         InstrumentExecution $execution,
         Model $receiptable,
-        string $signature,
+        ?string $signature = null,
         array $metadata = [],
     ): Receipt
     {
