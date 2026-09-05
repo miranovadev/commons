@@ -33,8 +33,7 @@ final readonly class GateService
 
     public function advance(Phase $phase, Proposition $proposition): void
     {
-        $phase->update([
-            'gate_proposition_id' => $proposition->getKey(),
-        ]);
+        $phase->gate_proposition_id = $proposition->getKey();
+        $phase->save();
     }
 }
