@@ -15,6 +15,10 @@ class ParticipantConnection extends Model
 
     protected $keyType = 'string';
 
+    protected $hidden = [
+        'credentials',
+    ];
+
     protected function casts(): array
     {
         return [
