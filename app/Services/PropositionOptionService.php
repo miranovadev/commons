@@ -59,6 +59,13 @@ final class PropositionOptionService
         // their measurements are available.
         return Proposition::query()
             ->whereHas(
+                'phase.cycle.participant',
+                fn (Builder $query) => $query->where(
+                    'substrate_id',
+                    $phase->cycle->participant->substrate_id,
+                ),
+            )
+            ->whereHas(
                 'phase.cycle',
                 fn (Builder $query) => $query->whereNull('completed_at'),
             )
