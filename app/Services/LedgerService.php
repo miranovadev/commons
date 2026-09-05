@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\Attestation;
 use App\Models\Proposition;
 use Illuminate\Support\Facades\DB;
-use App\Support\Epithet;
 
 final class LedgerService
 {
@@ -101,9 +100,6 @@ final class LedgerService
             $rAtt  = (int) (($attReceiptCounts[$p->id]->receipt_count ?? 0));
             $rTotal = $rProp + $rAtt;
 
-            $epithet = Epithet::for($p->tier, $p->register);
-            // $alias = Epithet::alias($epithet);
-
             // Optional qualifiers (not epithets)
             $qualifiers = [];
             $qualifiers[] = $rTotal > 0 ? 'Evidence-backed' : 'Receiptless';
@@ -120,8 +116,6 @@ final class LedgerService
                 'created_at' => (string) $p->created_at,
                 'updated_at' => (string) $p->updated_at,
 
-                'epithet' => $epithet,
-                // 'epithet_alias' => $alias,
                 'qualifiers' => $qualifiers,
 
                 'counts' => [
