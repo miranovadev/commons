@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\ConnectionTriggerMode;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -42,13 +43,13 @@ class UpdateParticipantConnectionRequest extends FormRequest
             ],
             'configuration.trigger' => ['sometimes', 'array'],
             'configuration.trigger.mode' => [
-                'sometimes',
-                Rule::in(['every_cycle', 'cycle_interval', 'manual']),
+                'required_with:configuration.trigger',
+                Rule::enum(ConnectionTriggerMode::class),
             ],
-            'configuration.trigger.interval' => [
-                'required_if:configuration.trigger.mode,cycle_interval',
+            'configuration.trigger.interval_minutes' => [
+                'required_if:configuration.trigger.mode,interval',
                 'integer',
-                'min:2',
+                'min:1',
             ],
             'credentials' => ['sometimes', 'array'],
             'credentials.api_key' => [
