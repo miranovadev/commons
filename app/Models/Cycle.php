@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
-use App\Enums\Phase;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Cycle extends Model
 {
@@ -18,7 +18,6 @@ class Cycle extends Model
     protected function casts(): array
     {
         return [
-            'current_phase' => Phase::class,
             'completed_at' => 'immutable_datetime',
         ];
     }
@@ -28,8 +27,8 @@ class Cycle extends Model
         return $this->belongsTo(Participant::class);
     }
 
-    public function gate(): BelongsTo
+    public function phases(): HasMany
     {
-        return $this->belongsTo(Proposition::class, 'gate_proposition_id');
+        return $this->hasMany(Phase::class);
     }
 }
