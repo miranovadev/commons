@@ -42,6 +42,7 @@ class InputSchemaServiceTest extends TestCase
             Phase::Constrain->value => [
                 'proposition.revise',
                 'proposition.reclassify_with_receipt',
+                'attestation.create',
                 'phase.rest',
             ],
             Phase::Disperse->value => [
@@ -148,8 +149,9 @@ class InputSchemaServiceTest extends TestCase
         $now = now();
         $participantId = '01ARZ3NDEKTSV4RRFFQ69G5FAA';
         $cycleId = '01ARZ3NDEKTSV4RRFFQ69G5FAB';
-        $sourceId = '01ARZ3NDEKTSV4RRFFQ69G5FAC';
-        $gateId = '01ARZ3NDEKTSV4RRFFQ69G5FAD';
+        $phaseId = '01ARZ3NDEKTSV4RRFFQ69G5FAC';
+        $sourceId = '01ARZ3NDEKTSV4RRFFQ69G5FAD';
+        $gateId = '01ARZ3NDEKTSV4RRFFQ69G5FAE';
 
         DB::table('participants')->insert([
             'id' => $participantId,
@@ -162,14 +164,21 @@ class InputSchemaServiceTest extends TestCase
             'id' => $cycleId,
             'participant_id' => $participantId,
             'sequence' => 1,
-            'current_phase' => Phase::Distinguish->value,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        DB::table('phases')->insert([
+            'id' => $phaseId,
+            'phase_id' => $phaseId,
+            'position' => Phase::Distinguish->value,
+            'started_at' => $now,
             'created_at' => $now,
             'updated_at' => $now,
         ]);
         DB::table('propositions')->insert([
             [
                 'id' => $sourceId,
-                'cycle_id' => $cycleId,
+                'phase_id' => $phaseId,
                 'register' => 'canon',
                 'tier' => 'committal',
                 'statement' => 'Historical source.',
@@ -178,7 +187,7 @@ class InputSchemaServiceTest extends TestCase
             ],
             [
                 'id' => $gateId,
-                'cycle_id' => $cycleId,
+                'phase_id' => $phaseId,
                 'register' => 'canon',
                 'tier' => 'committal',
                 'statement' => 'Current gate.',
@@ -187,16 +196,16 @@ class InputSchemaServiceTest extends TestCase
             ],
         ]);
         DB::table('supersessions')->insert([
-            'id' => '01ARZ3NDEKTSV4RRFFQ69G5FAE',
-            'cycle_id' => $cycleId,
+            'id' => '01ARZ3NDEKTSV4RRFFQ69G5FAF',
+            'phase_id' => $phaseId,
             'source_proposition_id' => $sourceId,
             'target_proposition_id' => $gateId,
             'type' => 'variant',
             'created_at' => $now,
             'updated_at' => $now,
         ]);
-        DB::table('cycles')
-            ->where('id', $cycleId)
+        DB::table('phases')
+            ->where('id', $phaseId)
             ->update(['gate_proposition_id' => $gateId]);
 
         $plan = app(InputPlanService::class)->forParticipant(
