@@ -62,11 +62,13 @@ final class SubstrateMembershipService
             ]);
             $participant->save();
 
-            $membership = SubstrateMembership::query()->firstOrNew([
+            $membership = SubstrateMembership::query()
+                ->where('substrate_id', $lockedSubstrate->getKey())
+                ->where('user_id', $user->getKey())
+                ->first() ?? new SubstrateMembership;
+            $membership->forceFill([
                 'substrate_id' => $lockedSubstrate->getKey(),
                 'user_id' => $user->getKey(),
-            ]);
-            $membership->forceFill([
                 'participant_id' => $participant->getKey(),
                 'status' => 'active',
                 'joined_at' => now(),
