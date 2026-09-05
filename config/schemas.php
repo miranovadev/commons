@@ -11,26 +11,18 @@ $statement = [
     'maxLength' => 20000,
 ];
 
-$receipt = [
+$instrument = [
     'type' => 'object',
     'additionalProperties' => false,
-    'required' => ['type', 'reference'],
+    'required' => ['kind', 'reference'],
     'properties' => [
-        'type' => [
+        'kind' => [
             'type' => 'string',
             'enum' => ['citation', 'artefact', 'hyperlink'],
         ],
         'reference' => [
             'type' => 'string',
             'minLength' => 1,
-        ],
-        'signature' => [
-            'type' => 'string',
-            'minLength' => 1,
-        ],
-        'metadata' => [
-            'type' => 'object',
-            'additionalProperties' => true,
         ],
     ],
 ];
@@ -49,26 +41,30 @@ $proposition = static function (string $action, string $title) use ($statement):
 };
 
 return [
-    'version' => 3,
+    'version' => 4,
 
     'cache' => [
         'store' => env('COMMONS_SCHEMA_CACHE_STORE'),
         'ttl' => env('COMMONS_SCHEMA_CACHE_TTL'),
     ],
 
+    'options' => [
+        'limit' => (int) env('COMMONS_INPUT_OPTION_LIMIT', 10),
+    ],
+
     '$defs' => [
         'ulid' => $ulid,
-        'receipt' => $receipt,
+        'instrument' => $instrument,
     ],
 
     'actions' => [
-        'phase.rest' => [
-            'title' => 'Rest on an existing proposition',
+        'proposition.select' => [
+            'title' => 'Select an existing proposition and rest this phase',
             'type' => 'object',
             'additionalProperties' => false,
             'required' => ['action', 'proposition_id'],
             'properties' => [
-                'action' => ['const' => 'phase.rest'],
+                'action' => ['const' => 'proposition.select'],
                 'proposition_id' => $ulid,
             ],
         ],
@@ -84,18 +80,18 @@ return [
             'proposition.reclassify',
             'Reclassify the current gate',
         ),
-        'proposition.reclassify_with_receipt' => [
+        'proposition.reclassify_with_instrument' => [
             ...$proposition(
                 'proposition.reclassify',
-                'Reclassify the current gate with a receipt',
+                'Reclassify the current gate using an instrument',
             ),
-            'required' => ['action', 'statement', 'receipt'],
+            'required' => ['action', 'statement', 'instrument'],
             'properties' => [
                 ...$proposition(
                     'proposition.reclassify',
-                    'Reclassify the current gate with a receipt',
+                    'Reclassify the current gate using an instrument',
                 )['properties'],
-                'receipt' => ['$ref' => '#/$defs/receipt'],
+                'instrument' => ['$ref' => '#/$defs/instrument'],
             ],
         ],
         'proposition.reconcile' => [
@@ -124,15 +120,15 @@ return [
                 'rationale' => $statement,
             ],
         ],
-        'receipt.create' => [
-            'title' => 'Attach a receipt to a proposition',
+        'instrument.execute' => [
+            'title' => 'Execute an instrument against a proposition',
             'type' => 'object',
             'additionalProperties' => false,
-            'required' => ['action', 'proposition_id', 'receipt'],
+            'required' => ['action', 'proposition_id', 'instrument'],
             'properties' => [
-                'action' => ['const' => 'receipt.create'],
+                'action' => ['const' => 'instrument.execute'],
                 'proposition_id' => $ulid,
-                'receipt' => ['$ref' => '#/$defs/receipt'],
+                'instrument' => ['$ref' => '#/$defs/instrument'],
             ],
         ],
         'proposition.commit' => [
