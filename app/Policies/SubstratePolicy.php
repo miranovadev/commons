@@ -22,7 +22,7 @@ class SubstratePolicy
         return $substrate->isPublic()
             || $substrate->memberships()
                 ->whereBelongsTo($user)
-                ->where('status', 'active')
+                ->whereIn('status', ['invited', 'active'])
                 ->exists();
     }
 
@@ -35,7 +35,11 @@ class SubstratePolicy
         User $user,
         Substrate $substrate,
     ): bool {
-        return $this->view($user, $substrate);
+        return $substrate->isPublic()
+            || $substrate->memberships()
+                ->whereBelongsTo($user)
+                ->where('status', 'active')
+                ->exists();
     }
 
     public function join(User $user, Substrate $substrate): bool
