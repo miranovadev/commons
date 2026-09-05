@@ -5,9 +5,26 @@ namespace App\Services;
 use App\Enums\ConnectionTriggerMode;
 use App\Models\Cycle;
 use App\Models\ParticipantConnection;
+use Illuminate\Support\Collection;
 
 final class ParticipantConnectionTriggerService
 {
+    /**
+     * @return Collection<int, ParticipantConnection>
+     */
+    public function dueForCycle(Cycle $cycle): Collection
+    {
+        return $cycle->participant
+            ->connections()
+            ->where('is_enabled', true)
+            ->get()
+            ->filter(
+                fn (ParticipantConnection $connection): bool =>
+                    $this->isDue($connection, $cycle),
+            )
+            ->values();
+    }
+
     public function isDue(
         ParticipantConnection $connection,
         Cycle $cycle,
@@ -63,6 +80,7 @@ final class ParticipantConnectionTriggerService
             'last_triggered_at' => now(),
             'last_error' => null,
         ])->save();
+        $connection->unsetRelation('lastTriggeredCycle');
     }
 
     public function recordFailure(
@@ -75,5 +93,6 @@ final class ParticipantConnectionTriggerService
             'last_triggered_at' => now(),
             'last_error' => $error,
         ])->save();
+        $connection->unsetRelation('lastTriggeredCycle');
     }
 }
