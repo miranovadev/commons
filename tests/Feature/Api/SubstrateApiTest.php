@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Api;
 
-use App\Models\Role;
 use App\Models\Substrate;
 use App\Models\SubstrateMembership;
 use App\Models\User;
@@ -65,7 +64,7 @@ class SubstrateApiTest extends TestCase
 
     public function test_user_can_join_public_but_not_uninvited_private_substrate(): void
     {
-        $system = $this->bootstrapSystem();
+        $this->bootstrapSystem();
         $public = $this->substrate('public-space', 'public');
         $private = $this->substrate('private-space', 'private');
 
@@ -157,7 +156,7 @@ class SubstrateApiTest extends TestCase
         $substrate = new Substrate;
         $substrate->forceFill([
             'slug' => $slug,
-            'title' => str($slug)->headline(),
+            'title' => (string) str($slug)->headline(),
             'visibility' => $visibility,
             'configuration' => [
                 'maximum_participants' => $maximumParticipants,
