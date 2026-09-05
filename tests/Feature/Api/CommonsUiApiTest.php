@@ -31,6 +31,8 @@ class CommonsUiApiTest extends TestCase
 
     public function test_guest_can_list_and_view_only_public_substrates(): void
     {
+        User::factory()->create();
+
         $public = $this->substrate('open-space', 'public');
         $private = $this->substrate('quiet-space', 'private');
 
@@ -45,6 +47,8 @@ class CommonsUiApiTest extends TestCase
 
     public function test_graph_endpoint_exposes_navigable_proposition_edges(): void
     {
+        User::factory()->create();
+
         $substrate = $this->substrate('growing-space', 'public');
         $participant = new Participant;
         $participant->forceFill([
