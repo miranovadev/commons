@@ -25,7 +25,7 @@ class SubstrateController extends Controller
                         'memberships',
                         fn ($membership) => $membership
                             ->whereBelongsTo($user)
-                            ->where('status', 'active'),
+                            ->whereIn('status', ['invited', 'active']),
                     );
             });
         }
