@@ -268,7 +268,7 @@ class InputSchemaServiceTest extends TestCase
         $receipt = $service->complete(
             $execution,
             $proposition,
-            'sha256:test-signature',
+            null,
             ['observed' => true],
         );
 
