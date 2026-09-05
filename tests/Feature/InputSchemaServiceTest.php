@@ -272,7 +272,10 @@ class InputSchemaServiceTest extends TestCase
             ['observed' => true],
         );
 
-        $this->assertSame($execution->getKey(), $receipt->instrument_execution_id);
+        $this->assertSame(
+            $execution->getKey(),
+            $receipt->instrument_execution_id,
+        );
         $this->assertSame($proposition->getKey(), $receipt->receiptable_id);
         $this->assertSame(
             'completed',
@@ -295,7 +298,8 @@ class InputSchemaServiceTest extends TestCase
         string $cycleId = '01ARZ3NDEKTSV4RRFFQ69G5FAB',
         string $phaseId = '01ARZ3NDEKTSV4RRFFQ69G5FAC',
         string $gateId = '01ARZ3NDEKTSV4RRFFQ69G5FAD',
-    ): array {
+    ): array
+    {
         $now = now();
 
         DB::table('participants')->insert([
