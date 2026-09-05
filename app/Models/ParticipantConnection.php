@@ -26,6 +26,7 @@ class ParticipantConnection extends Model
             'is_enabled' => 'boolean',
             'configuration' => 'array',
             'credentials' => 'encrypted:array',
+            'next_trigger_at' => 'immutable_datetime',
             'last_triggered_at' => 'immutable_datetime',
         ];
     }
@@ -33,13 +34,5 @@ class ParticipantConnection extends Model
     public function participant(): BelongsTo
     {
         return $this->belongsTo(Participant::class);
-    }
-
-    public function lastTriggeredCycle(): BelongsTo
-    {
-        return $this->belongsTo(
-            Cycle::class,
-            'last_triggered_cycle_id',
-        );
     }
 }
