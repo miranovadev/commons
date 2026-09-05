@@ -19,7 +19,7 @@ class Phase extends Model
     protected function casts(): array
     {
         return [
-            'position' => PhaseKind::class,
+            'kind' => PhaseKind::class,
             'started_at' => 'immutable_datetime',
             'completed_at' => 'immutable_datetime',
         ];
