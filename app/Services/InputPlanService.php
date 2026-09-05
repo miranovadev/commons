@@ -50,7 +50,7 @@ final readonly class InputPlanService
                 ])
                 ->values()
                 ->all(),
-            'schema' => $this->schemas->forPhase($phase->position),
+            'schema' => $this->schemas->forParticipant($participant),
         ];
     }
 }
