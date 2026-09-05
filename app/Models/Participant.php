@@ -14,6 +14,14 @@ class Participant extends Model
 
     protected $keyType = 'string';
 
+    protected function casts(): array
+    {
+        return [
+            'max_read_count' => 'integer',
+            'max_token_count' => 'integer',
+        ];
+    }
+
     public function cycles(): HasMany
     {
         return $this->hasMany(Cycle::class);

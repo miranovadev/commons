@@ -3,15 +3,20 @@
 namespace Tests\Feature;
 
 use App\Enums\Phase;
+use App\Models\Participant;
+use App\Services\InputPlanService;
 use App\Services\InputSchemaService;
-use DomainException;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Opis\JsonSchema\Helper;
 use Opis\JsonSchema\Validator;
 use Tests\TestCase;
 
 class InputSchemaServiceTest extends TestCase
 {
+    use RefreshDatabase;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -20,50 +25,316 @@ class InputSchemaServiceTest extends TestCase
         Cache::store('array')->clear();
     }
 
-    public function test_distinguish_exposes_only_variant_propositions(): void
+    public function test_each_phase_exposes_its_single_move_contract(): void
+    {
+        $expected = [
+            Phase::Distinguish->value => [
+                'proposition.variant',
+                'phase.rest',
+            ],
+            Phase::Persist->value => [
+                'proposition.variant',
+                'proposition.revise',
+                'proposition.reclassify',
+                'attestation.create',
+                'phase.rest',
+            ],
+            Phase::Constrain->value => [
+                'proposition.revise',
+                'proposition.reclassify_with_receipt',
+                'attestation.create',
+                'phase.rest',
+            ],
+            Phase::Disperse->value => [
+                'proposition.variant',
+                'receipt.create',
+                'phase.rest',
+            ],
+            Phase::Mediate->value => [
+                'proposition.reconcile',
+                'phase.rest',
+            ],
+            Phase::Bias->value => [
+                'proposition.reconcile',
+                'receipt.create',
+                'phase.rest',
+            ],
+            Phase::Order->value => [
+                'proposition.commit',
+            ],
+        ];
+
+        foreach (Phase::cases() as $phase) {
+            $schema = app(InputSchemaService::class)->forPhase($phase);
+
+            $this->assertSame(
+                $expected[$phase->value],
+                array_keys($schema['$defs']['actions']),
+            );
+            $this->assertTrue($schema['x-commons']['one_action']);
+        }
+    }
+
+    public function test_distinguish_accepts_a_variant_or_rest_but_not_a_register_choice(): void
     {
         $schema = app(InputSchemaService::class)->forPhase(Phase::Distinguish);
 
-        $this->assertSame(
-            [['$ref' => '#/$defs/actions/proposition.variant']],
-            $schema['oneOf'],
-        );
-        $this->assertSame(
-            ['proposition.variant'],
-            array_keys($schema['$defs']['actions']),
-        );
-
-        $validator = new Validator;
-
-        $variant = $validator->validate(
-            Helper::toJSON([
-                'action' => 'proposition.variant',
-                'source_proposition_id' => '01ARZ3NDEKTSV4RRFFQ69G5FAV',
-                'statement' => 'What if the distinction is relational?',
-            ]),
-            Helper::toJSON($schema),
-        );
-
-        $attestation = $validator->validate(
-            Helper::toJSON([
-                'action' => 'attestation.create',
-                'proposition_id' => '01ARZ3NDEKTSV4RRFFQ69G5FAV',
-                'direction' => 'support',
-            ]),
-            Helper::toJSON($schema),
-        );
-
-        $this->assertTrue($variant->isValid());
-        $this->assertFalse($attestation->isValid());
+        $this->assertValid($schema, [
+            'action' => 'proposition.variant',
+            'statement' => 'What if the distinction is relational?',
+        ]);
+        $this->assertValid($schema, [
+            'action' => 'phase.rest',
+            'proposition_id' => '01ARZ3NDEKTSV4RRFFQ69G5FAV',
+        ]);
+        $this->assertInvalid($schema, [
+            'action' => 'proposition.variant',
+            'statement' => 'I should not be able to select the register.',
+            'register' => 'canon',
+        ]);
     }
 
-    public function test_unconfigured_phases_do_not_expose_a_permissive_schema(): void
+    public function test_constrain_reclassification_requires_an_atomic_receipt(): void
     {
-        $this->expectException(DomainException::class);
-        $this->expectExceptionMessage(
-            'Inputs for the persist phase have not been configured.'
+        $schema = app(InputSchemaService::class)->forPhase(Phase::Constrain);
+
+        $this->assertInvalid($schema, [
+            'action' => 'proposition.reclassify',
+            'statement' => 'Move this into the governed committal register.',
+        ]);
+        $this->assertValid($schema, [
+            'action' => 'proposition.reclassify',
+            'statement' => 'Move this into the governed committal register.',
+            'receipt' => [
+                'type' => 'citation',
+                'reference' => 'https://example.test/evidence',
+            ],
+        ]);
+    }
+
+    public function test_reconciliation_only_accepts_the_participant_selected_side(): void
+    {
+        $schema = app(InputSchemaService::class)->forPhase(Phase::Mediate);
+
+        $this->assertValid($schema, [
+            'action' => 'proposition.reconcile',
+            'other_proposition_id' => '01ARZ3NDEKTSV4RRFFQ69G5FAV',
+            'statement' => 'A mediated expression.',
+        ]);
+        $this->assertInvalid($schema, [
+            'action' => 'proposition.reconcile',
+            'source_proposition_ids' => [
+                '01ARZ3NDEKTSV4RRFFQ69G5FAV',
+                '01ARZ3NDEKTSV4RRFFQ69G5FAW',
+            ],
+            'statement' => 'The client cannot replace the governed gate.',
+        ]);
+    }
+
+    public function test_order_commit_operates_on_the_current_gate(): void
+    {
+        $schema = app(InputSchemaService::class)->forPhase(Phase::Order);
+
+        $this->assertValid($schema, [
+            'action' => 'proposition.commit',
+        ]);
+        $this->assertInvalid($schema, [
+            'action' => 'proposition.commit',
+            'source_proposition_id' => '01ARZ3NDEKTSV4RRFFQ69G5FAV',
+        ]);
+    }
+
+    public function test_non_owner_schema_hides_revise_and_reclassify(): void
+    {
+        $now = now();
+        $ownerId = '01ARZ3NDEKTSV4RRFFQ69G5FAG';
+        $participantId = '01ARZ3NDEKTSV4RRFFQ69G5FAH';
+        $ownerCycleId = '01ARZ3NDEKTSV4RRFFQ69G5FAJ';
+        $participantCycleId = '01ARZ3NDEKTSV4RRFFQ69G5FAK';
+        $ownerPhaseId = '01ARZ3NDEKTSV4RRFFQ69G5FAM';
+        $participantPhaseId = '01ARZ3NDEKTSV4RRFFQ69G5FAN';
+        $gateId = '01ARZ3NDEKTSV4RRFFQ69G5FAP';
+
+        DB::table('participants')->insert([
+            [
+                'id' => $ownerId,
+                'callsign' => 'owner',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+            [
+                'id' => $participantId,
+                'callsign' => 'participant',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+        ]);
+        DB::table('cycles')->insert([
+            [
+                'id' => $ownerCycleId,
+                'participant_id' => $ownerId,
+                'sequence' => 1,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+            [
+                'id' => $participantCycleId,
+                'participant_id' => $participantId,
+                'sequence' => 1,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+        ]);
+        DB::table('phases')->insert([
+            [
+                'id' => $ownerPhaseId,
+                'cycle_id' => $ownerCycleId,
+                'position' => Phase::Constrain->value,
+                'started_at' => $now,
+                'completed_at' => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+            [
+                'id' => $participantPhaseId,
+                'cycle_id' => $participantCycleId,
+                'position' => Phase::Constrain->value,
+                'started_at' => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+        ]);
+        DB::table('propositions')->insert([
+            'id' => $gateId,
+            'phase_id' => $ownerPhaseId,
+            'register' => 'frontier',
+            'tier' => 'expressive',
+            'statement' => 'Owned by another participant.',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        DB::table('phases')
+            ->where('id', $participantPhaseId)
+            ->update(['gate_proposition_id' => $gateId]);
+
+        $schema = app(InputSchemaService::class)->forParticipant(
+            Participant::query()->findOrFail($participantId),
         );
 
-        app(InputSchemaService::class)->forPhase(Phase::Persist);
+        $this->assertSame(
+            ['attestation.create', 'phase.rest'],
+            array_keys($schema['$defs']['actions']),
+        );
+    }
+
+    public function test_input_plan_contains_the_governed_gate_and_bounded_lineage(): void
+    {
+        $now = now();
+        $participantId = '01ARZ3NDEKTSV4RRFFQ69G5FAA';
+        $cycleId = '01ARZ3NDEKTSV4RRFFQ69G5FAB';
+        $phaseId = '01ARZ3NDEKTSV4RRFFQ69G5FAC';
+        $sourceId = '01ARZ3NDEKTSV4RRFFQ69G5FAD';
+        $gateId = '01ARZ3NDEKTSV4RRFFQ69G5FAE';
+
+        DB::table('participants')->insert([
+            'id' => $participantId,
+            'callsign' => 'plan-test',
+            'max_read_count' => 2,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        DB::table('cycles')->insert([
+            'id' => $cycleId,
+            'participant_id' => $participantId,
+            'sequence' => 1,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        DB::table('phases')->insert([
+            'id' => $phaseId,
+            'cycle_id' => $cycleId,
+            'position' => Phase::Distinguish->value,
+            'started_at' => $now,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        DB::table('propositions')->insert([
+            [
+                'id' => $sourceId,
+                'phase_id' => $phaseId,
+                'register' => 'canon',
+                'tier' => 'committal',
+                'statement' => 'Historical source.',
+                'created_at' => $now->copy()->subSecond(),
+                'updated_at' => $now->copy()->subSecond(),
+            ],
+            [
+                'id' => $gateId,
+                'phase_id' => $phaseId,
+                'register' => 'canon',
+                'tier' => 'committal',
+                'statement' => 'Current gate.',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+        ]);
+        DB::table('supersessions')->insert([
+            'id' => '01ARZ3NDEKTSV4RRFFQ69G5FAF',
+            'phase_id' => $phaseId,
+            'source_proposition_id' => $sourceId,
+            'target_proposition_id' => $gateId,
+            'type' => 'variant',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        DB::table('phases')
+            ->where('id', $phaseId)
+            ->update(['gate_proposition_id' => $gateId]);
+
+        $plan = app(InputPlanService::class)->forParticipant(
+            Participant::query()->findOrFail($participantId),
+        );
+
+        $this->assertSame($gateId, $plan['gate']['id']);
+        $this->assertSame(
+            [$gateId, $sourceId],
+            array_column($plan['lineage'], 'id'),
+        );
+        $this->assertSame(
+            'highest-potential-charge',
+            $plan['schema']['x-commons']['gate'],
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $schema
+     * @param  array<string, mixed>  $input
+     */
+    private function assertValid(array $schema, array $input): void
+    {
+        $validator = new Validator;
+
+        $this->assertTrue(
+            $validator->validate(
+                Helper::toJSON($input),
+                Helper::toJSON($schema),
+            )->isValid(),
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $schema
+     * @param  array<string, mixed>  $input
+     */
+    private function assertInvalid(array $schema, array $input): void
+    {
+        $validator = new Validator;
+
+        $this->assertFalse(
+            $validator->validate(
+                Helper::toJSON($input),
+                Helper::toJSON($schema),
+            )->isValid(),
+        );
     }
 }

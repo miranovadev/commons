@@ -3,50 +3,119 @@
 return [
     1 => [
         'name' => 'distinguish',
+        'gate' => 'highest-potential-charge',
+        'write_registers' => [
+            'emergence' => 'activity',
+            'settlement' => 'signal',
+        ],
         'actions' => [
             'proposition.variant',
+            'phase.rest',
         ],
     ],
-
-    // These phases remain deliberately unconfigured until their write
-    // constraints have been settled.
     2 => [
         'name' => 'persist',
-        'actions' => [],
+        'gate' => 'previous-phase-selection',
+        'write_registers' => [
+            'emergence' => 'frontier',
+            'settlement' => 'stance',
+        ],
+        'actions' => [
+            'proposition.variant',
+            'proposition.revise',
+            'proposition.reclassify',
+            'attestation.create',
+            'phase.rest',
+        ],
+        'constraints' => [
+            'proposition.revise' => ['gate-owner'],
+            'proposition.reclassify' => ['gate-owner'],
+        ],
     ],
     3 => [
         'name' => 'constrain',
-        'actions' => [],
+        'gate' => 'previous-phase-selection',
+        'write_registers' => [
+            'emergence' => 'canon',
+            'settlement' => 'concord',
+        ],
+        'actions' => [
+            'proposition.revise',
+            'proposition.reclassify_with_receipt',
+            'attestation.create',
+            'phase.rest',
+        ],
+        'constraints' => [
+            'proposition.revise' => ['gate-owner'],
+            'proposition.reclassify_with_receipt' => [
+                'gate-owner',
+                'receipt-required',
+            ],
+        ],
     ],
     4 => [
         'name' => 'disperse',
-        'actions' => [],
-    ],
-
-    5 => [
-        'name' => 'mediate',
+        'gate' => 'previous-phase-selection',
+        'write_registers' => [
+            'emergence' => 'activity',
+            'settlement' => 'signal',
+        ],
         'actions' => [
-            'proposition.reconcile',
-            'proposition.revise',
-            'proposition.reclassify',
+            'proposition.variant',
+            'receipt.create',
+            'phase.rest',
         ],
         'constraints' => [
-            'reconcile' => 'touched-cycle',
-            'revise' => 'owner',
-            'reclassify' => 'owner',
+            'receipt.create' => ['write-register'],
+        ],
+    ],
+    5 => [
+        'name' => 'mediate',
+        'gate' => 'previous-phase-selection',
+        'write_registers' => [
+            'emergence' => 'frontier',
+            'settlement' => 'stance',
+        ],
+        'actions' => [
+            'proposition.reconcile',
+            'phase.rest',
+        ],
+        'constraints' => [
+            'proposition.reconcile' => [
+                'homeostatically-admissible-counterpart',
+            ],
         ],
     ],
     6 => [
         'name' => 'bias',
+        'gate' => 'previous-phase-selection',
+        'write_registers' => [
+            'emergence' => 'canon',
+            'settlement' => 'concord',
+        ],
         'actions' => [
-            'attestation.create',
+            'proposition.reconcile',
             'receipt.create',
+            'phase.rest',
+        ],
+        'constraints' => [
+            'proposition.reconcile' => [
+                'homeostatically-admissible-counterpart',
+            ],
+            'receipt.create' => ['write-register'],
         ],
     ],
     7 => [
         'name' => 'order',
+        'gate' => 'previous-phase-selection',
+        'write_registers' => [],
         'actions' => [
             'proposition.commit',
+        ],
+        'constraints' => [
+            'proposition.commit' => [
+                'depth-cadence-and-hysteresis-admissible',
+            ],
         ],
     ],
 ];

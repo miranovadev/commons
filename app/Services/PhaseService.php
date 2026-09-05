@@ -2,8 +2,9 @@
 
 namespace App\Services;
 
-use App\Enums\Phase;
+use App\Enums\Phase as PhaseKind;
 use App\Models\Participant;
+use App\Models\Phase;
 use DomainException;
 
 final readonly class PhaseService
@@ -14,13 +15,31 @@ final readonly class PhaseService
 
     public function currentFor(Participant $participant): Phase
     {
-        return $this->cycles->currentFor($participant)->current_phase;
+        $cycle = $this->cycles->currentFor($participant);
+        $phase = $cycle->phases()
+            ->whereNull('completed_at')
+            ->latest('position')
+            ->first();
+
+        if ($phase === null) {
+            throw new DomainException(
+                "Participant {$participant->getKey()} has no active phase."
+            );
+        }
+
+        return $phase;
     }
 
     /**
-     * @return array{name: string, actions: list<string>, constraints?: array<string, string>}
+     * @return array{
+     *     name: string,
+     *     gate: string,
+     *     write_registers: array<string, string>,
+     *     actions: list<string>,
+     *     constraints?: array<string, list<string>>
+     * }
      */
-    public function plan(Phase $phase): array
+    public function plan(PhaseKind $phase): array
     {
         $plan = config("phases.{$phase->value}");
 
