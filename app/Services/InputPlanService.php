@@ -22,7 +22,7 @@ final readonly class InputPlanService
     public function forParticipant(Participant $participant): array
     {
         $phase = $this->phases->currentFor($participant);
-        $plan = $this->phases->plan($phase->position);
+        $plan = $this->phases->plan($phase->kind);
         $gate = $this->gates->forPhase($phase);
         $lineage = $this->lineage->endingAt(
             $gate,
