@@ -14,6 +14,9 @@ class PropositionResource extends JsonResource
         $measurement = $this->relationLoaded('measurement')
             ? $this->measurement
             : null;
+        $horizon = $this->relationLoaded('contextHorizonMembership')
+            ? $this->contextHorizonMembership?->horizon
+            : null;
 
         return [
             'id' => $this->getKey(),
@@ -49,6 +52,10 @@ class PropositionResource extends JsonResource
                 'chirality' => $measurement?->chirality,
                 'closure' => $measurement?->closure,
                 'calculated_at' => $measurement?->calculated_at,
+            ],
+            'context_horizon' => $horizon === null ? null : [
+                'sequence' => $horizon->sequence,
+                'domain' => $horizon->domain->value,
             ],
             'created_at' => $this->created_at,
         ];

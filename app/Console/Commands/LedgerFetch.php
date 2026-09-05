@@ -2,61 +2,62 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Substrate;
 use App\Services\LedgerService;
 use Illuminate\Console\Command;
 
 class LedgerFetch extends Command
 {
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
     protected $signature = 'commons:ledger-fetch
-        {--limit=25 : Number of propositions to return}
-        {--offset=0 : Offset for pagination}
-        {--visibility= : Optional filter: internal|external}
+        {substrate : Substrate slug}
+        {--limit=25 : Number of entries to return}
+        {--before= : Return entries before this sequence}
         {--pretty : Pretty-print JSON output}';
 
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Fetch the Commons ledger as JSON.';
+    protected $description = 'Fetch an ordered slice of a substrate ledger.';
 
-    /**
-     * Execute the console command.
-     */
-    public function handle(LedgerService $ledger)
+    public function handle(LedgerService $ledger): int
     {
         $limit = (int) $this->option('limit');
-        $offset = (int) $this->option('offset');
-        $visibility = $this->option('visibility');
+        $before = $this->option('before');
 
         if ($limit < 1 || $limit > 200) {
-            $this->error('--limit must be between 1 and 200');
+            $this->error('--limit must be between 1 and 200.');
+
             return self::FAILURE;
         }
 
-        if ($offset < 0) {
-            $this->error('--offset must be >= 0');
+        if (
+            $before !== null
+            && (! ctype_digit((string) $before) || (int) $before < 1)
+        ) {
+            $this->error('--before must be a positive ledger sequence.');
+
             return self::FAILURE;
         }
 
-        if ($visibility !== null && !in_array($visibility, ['internal', 'external'], true)) {
-            $this->error('--visibility must be internal or external (or omitted)');
+        $substrate = Substrate::query()
+            ->where('slug', $this->argument('substrate'))
+            ->first();
+
+        if ($substrate === null) {
+            $this->error('The requested substrate does not exist.');
+
             return self::FAILURE;
         }
 
-        $result = $ledger->fetch($limit, $offset, $visibility);
-
+        $result = $ledger->fetch(
+            $substrate,
+            $limit,
+            $before === null ? null : (int) $before,
+        );
         $flags = JSON_UNESCAPED_SLASHES;
+
         if ($this->option('pretty')) {
             $flags |= JSON_PRETTY_PRINT;
         }
 
-        $this->line(json_encode($result, $flags));
+        $this->line(json_encode($result, $flags | JSON_THROW_ON_ERROR));
 
         return self::SUCCESS;
     }

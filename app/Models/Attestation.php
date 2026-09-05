@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasLedgerEntry;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Attestation extends Model
 {
-    use HasUlids;
+    use HasLedgerEntry, HasUlids;
 
     public $incrementing = false;
 

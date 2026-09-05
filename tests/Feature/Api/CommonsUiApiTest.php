@@ -10,6 +10,7 @@ use App\Models\Proposition;
 use App\Models\Substrate;
 use App\Models\Supersession;
 use App\Models\User;
+use App\Services\LedgerService;
 use App\Services\PropositionMeasurementService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Symfony\Component\HttpFoundation\Response;
@@ -103,6 +104,11 @@ class CommonsUiApiTest extends TestCase
         ]);
         $supersession->save();
 
+        $ledger = app(LedgerService::class);
+        $ledger->record($origin);
+        $ledger->record($child);
+        $ledger->record($supersession);
+
         $response = $this->getJson(
             "/api/substrates/{$substrate->slug}/propositions",
         )->assertOk()->assertJsonCount(2, 'data');
@@ -115,6 +121,11 @@ class CommonsUiApiTest extends TestCase
             ->assertJsonPath('data.1.observables.correspondence', 0.75)
             ->assertJsonPath('data.1.observables.chirality', -0.25)
             ->assertJsonPath('data.1.observables.closure', null)
+            ->assertJsonPath('data.1.context_horizon.sequence', 1)
+            ->assertJsonPath(
+                'data.1.context_horizon.domain',
+                'emergence',
+            )
             ->assertJsonPath(
                 'data.1.observables.calculated_at',
                 fn ($value): bool => is_string($value),

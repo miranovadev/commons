@@ -10,8 +10,12 @@ use DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
-final class InstrumentExecutionService
+final readonly class InstrumentExecutionService
 {
+    public function __construct(
+        private LedgerService $ledger,
+    ) {}
+
     /**
      * @param  array<string, mixed>  $input
      */
@@ -21,8 +25,7 @@ final class InstrumentExecutionService
         string $kind,
         string $reference,
         array $input = [],
-    ): InstrumentExecution
-    {
+    ): InstrumentExecution {
         $execution = new InstrumentExecution;
         $execution->forceFill([
             'phase_id' => $phase->getKey(),
@@ -46,8 +49,7 @@ final class InstrumentExecutionService
         Model $receiptable,
         ?string $signature = null,
         array $metadata = [],
-    ): Receipt
-    {
+    ): Receipt {
         return DB::transaction(function () use (
             $execution,
             $receiptable,
@@ -75,6 +77,8 @@ final class InstrumentExecutionService
             $receipt->receiptable()->associate($receiptable);
             $receipt->save();
 
+            $this->ledger->record($receipt);
+
             $locked->status = 'completed';
             $locked->metadata = $metadata;
             $locked->completed_at = now();
@@ -87,8 +91,7 @@ final class InstrumentExecutionService
     public function fail(
         InstrumentExecution $execution,
         string $reason,
-    ): void
-    {
+    ): void {
         DB::transaction(function () use ($execution, $reason): void {
             $locked = InstrumentExecution::query()
                 ->lockForUpdate()

@@ -36,6 +36,21 @@ class Substrate extends Model
         return $this->hasMany(SubstrateMembership::class);
     }
 
+    public function ledgerEntries(): HasMany
+    {
+        return $this->hasMany(SubstrateLedgerEntry::class);
+    }
+
+    public function commitmentSnapshots(): HasMany
+    {
+        return $this->hasMany(CommitmentSnapshot::class);
+    }
+
+    public function contextHorizons(): HasMany
+    {
+        return $this->hasMany(ContextHorizon::class);
+    }
+
     public function isPublic(): bool
     {
         return $this->visibility === 'public';
