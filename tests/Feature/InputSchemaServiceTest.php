@@ -4,7 +4,9 @@ namespace Tests\Feature;
 
 use App\Enums\PhaseKind;
 use App\Models\Participant;
+use App\Models\Proposition;
 use App\Services\InputPlanService;
+use App\Services\InstrumentExecutionService;
 use App\Services\InputSchemaService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
@@ -242,6 +244,40 @@ class InputSchemaServiceTest extends TestCase
             Schema::hasColumn('receipts', 'instrument_execution_id'),
         );
         $this->assertFalse(Schema::hasColumn('receipts', 'phase_id'));
+    }
+
+    public function test_instrument_completion_creates_its_attached_receipt(): void
+    {
+        $state = $this->seedPhase(
+            PhaseKind::Disperse,
+            'activity',
+        );
+        $proposition = Proposition::query()->findOrFail($state['gate_id']);
+        $service = app(InstrumentExecutionService::class);
+
+        $execution = $service->start(
+            $proposition->phase,
+            $proposition,
+            'citation',
+            'https://example.test/evidence',
+        );
+
+        $this->assertSame('pending', $execution->status);
+        $this->assertNull($execution->receipt);
+
+        $receipt = $service->complete(
+            $execution,
+            $proposition,
+            'sha256:test-signature',
+            ['observed' => true],
+        );
+
+        $this->assertSame($execution->getKey(), $receipt->instrument_execution_id);
+        $this->assertSame($proposition->getKey(), $receipt->receiptable_id);
+        $this->assertSame(
+            'completed',
+            $execution->fresh()->status,
+        );
     }
 
     /**
