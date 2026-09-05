@@ -51,7 +51,7 @@ final class SystemBootstrapService
                             'authorization.roles.participant',
                         ),
                         'scope' => 'substrate',
-                        'description' => 'Act within an joined substrate.',
+                        'description' => 'Act within a joined substrate.',
                     ]);
                     $participantPermission = $permissions->firstWhere(
                         'name',
