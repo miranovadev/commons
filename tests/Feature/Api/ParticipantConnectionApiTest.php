@@ -127,6 +127,10 @@ class ParticipantConnectionApiTest extends TestCase
         $triggers = app(ParticipantConnectionTriggerService::class);
 
         $this->assertTrue($triggers->isDue($connection, $first));
+        $this->assertSame(
+            [$connection->getKey()],
+            $triggers->dueForCycle($first)->modelKeys(),
+        );
 
         $triggers->recordSuccess($connection, $first);
 
