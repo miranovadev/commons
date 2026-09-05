@@ -171,7 +171,7 @@ return new class extends Migration
                 'hyperlink',
             ]);
             $table->text('reference');
-            $table->string('signature')->unique();
+            $table->string('signature')->nullable()->unique();
             $table->jsonb('metadata')->nullable();
             $table->timestamps();
 
