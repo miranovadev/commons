@@ -24,6 +24,7 @@ class PropositionController extends Controller
             ->with([
                 'phase.cycle.participant:id,callsign',
                 'measurement',
+                'contextHorizonMembership.horizon',
                 'parents:id',
                 'children:id',
             ])

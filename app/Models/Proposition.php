@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasLedgerEntry;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Proposition extends Model
 {
-    use HasUlids;
+    use HasLedgerEntry, HasUlids;
 
     public $incrementing = false;
 
@@ -30,6 +31,16 @@ class Proposition extends Model
     public function measurement(): HasOne
     {
         return $this->hasOne(PropositionMeasurement::class);
+    }
+
+    public function commitmentSnapshot(): HasOne
+    {
+        return $this->hasOne(CommitmentSnapshot::class);
+    }
+
+    public function contextHorizonMembership(): HasOne
+    {
+        return $this->hasOne(ContextHorizonMembership::class);
     }
 
     public function parents(): BelongsToMany

@@ -2,141 +2,199 @@
 
 namespace App\Services;
 
+use App\Enums\LedgerEntryKind;
 use App\Models\Attestation;
+use App\Models\Phase;
 use App\Models\Proposition;
+use App\Models\Receipt;
+use App\Models\Substrate;
+use App\Models\SubstrateLedgerEntry;
+use App\Models\Supersession;
+use DomainException;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
-final class LedgerService
+final readonly class LedgerService
 {
-    /**
-     * Fetch a Commons "feed" (ledger slice).
-     *
-     * @return array<string, mixed>
-     */
-    public function fetch(int $limit = 25, int $offset = 0, ?string $visibility = null): array
+    public function __construct(
+        private ContextHorizonProjector $horizons,
+    ) {}
+
+    public function record(Model $ledgerable): SubstrateLedgerEntry
     {
-        // Base proposition query
-        $propQuery = DB::table('propositions')
-            ->select([
-                'propositions.id',
-                'propositions.participant_id',
-                'propositions.register',
-                'propositions.tier',
-                'propositions.visibility',
-                'propositions.statement',
-                'propositions.meta',
-                'propositions.created_at',
-                'propositions.updated_at',
-            ])
-            ->orderByDesc('propositions.created_at')
+        if (! $ledgerable->exists) {
+            throw new DomainException(
+                'Only persisted contributions can enter the substrate ledger.'
+            );
+        }
+
+        [$kind, $substrate] = $this->describe($ledgerable);
+
+        return DB::transaction(function () use (
+            $ledgerable,
+            $kind,
+            $substrate,
+        ): SubstrateLedgerEntry {
+            $locked = Substrate::query()
+                ->lockForUpdate()
+                ->findOrFail($substrate->getKey());
+
+            $entry = SubstrateLedgerEntry::query()
+                ->where('ledgerable_type', $ledgerable->getMorphClass())
+                ->where('ledgerable_id', $ledgerable->getKey())
+                ->first();
+            $wasRecorded = $entry !== null;
+
+            if ($entry === null) {
+                $sequence = (int) SubstrateLedgerEntry::query()
+                    ->whereBelongsTo($locked)
+                    ->max('sequence') + 1;
+
+                $entry = new SubstrateLedgerEntry;
+                $entry->forceFill([
+                    'substrate_id' => $locked->getKey(),
+                    'sequence' => $sequence,
+                    'kind' => $kind,
+                    'recorded_at' => now(),
+                ]);
+                $entry->ledgerable()->associate($ledgerable);
+                $entry->save();
+            }
+
+            if ($entry->substrate_id !== $locked->getKey()) {
+                throw new DomainException(
+                    'A contribution cannot be recorded in multiple substrates.'
+                );
+            }
+
+            if (
+                ! $wasRecorded
+                && $kind === LedgerEntryKind::Proposition
+            ) {
+                $this->horizons->include($entry);
+            }
+
+            return $entry;
+        });
+    }
+
+    /**
+     * @return array{
+     *     meta: array{limit: int, before: ?int, count: int},
+     *     items: list<array<string, mixed>>
+     * }
+     */
+    public function fetch(
+        Substrate $substrate,
+        int $limit = 25,
+        ?int $before = null,
+    ): array {
+        $entries = SubstrateLedgerEntry::query()
+            ->whereBelongsTo($substrate)
+            ->when(
+                $before !== null,
+                fn ($query) => $query->where('sequence', '<', $before),
+            )
+            ->latest('sequence')
             ->limit($limit)
-            ->offset($offset);
-
-        if ($visibility !== null) {
-            $propQuery->where('propositions.visibility', $visibility);
-        }
-
-        $propositions = $propQuery->get();
-
-        // If empty, return quickly
-        if ($propositions->isEmpty()) {
-            return [
-                'meta' => [
-                    'limit' => $limit,
-                    'offset' => $offset,
-                    'visibility' => $visibility,
-                    'count' => 0,
-                ],
-                'items' => [],
-            ];
-        }
-
-        $propIds = $propositions->pluck('id')->all();
-
-        // Attestation counts per proposition
-        $attCounts = DB::table('attestations')
-            ->select('proposition_id')
-            ->selectRaw("sum(case when stance = 'support' then 1 else 0 end) as support_count")
-            ->selectRaw("sum(case when stance = 'refute' then 1 else 0 end) as refute_count")
-            ->selectRaw("sum(case when stance = 'cite' then 1 else 0 end) as cite_count")
-            ->whereIn('proposition_id', $propIds)
-            ->groupBy('proposition_id')
-            ->get()
-            ->keyBy('proposition_id');
-
-        // Receipts directly on propositions
-        $propReceiptCounts = DB::table('receipts')
-            ->select('receiptable_id')
-            ->selectRaw('count(*) as receipt_count')
-            ->where('receiptable_type', Proposition::class)
-            ->whereIn('receiptable_id', $propIds)
-            ->groupBy('receiptable_id')
-            ->get()
-            ->keyBy('receiptable_id');
-
-        // Receipts on attestations (join attestations->receipts)
-        $attReceiptCounts = DB::table('receipts')
-            ->join('attestations', function ($join) {
-                $join->on('receipts.receiptable_id', '=', 'attestations.id')
-                    ->where('receipts.receiptable_type', '=', Attestation::class);
-            })
-            ->select('attestations.proposition_id')
-            ->selectRaw('count(*) as receipt_count')
-            ->whereIn('attestations.proposition_id', $propIds)
-            ->groupBy('attestations.proposition_id')
-            ->get()
-            ->keyBy('proposition_id');
-
-        // Assemble response
-        $items = [];
-
-        foreach ($propositions as $p) {
-            $ac = $attCounts[$p->id] ?? null;
-            $support = (int) ($ac->support_count ?? 0);
-            $refute  = (int) ($ac->refute_count ?? 0);
-            $cite    = (int) ($ac->cite_count ?? 0);
-
-            $rProp = (int) (($propReceiptCounts[$p->id]->receipt_count ?? 0));
-            $rAtt  = (int) (($attReceiptCounts[$p->id]->receipt_count ?? 0));
-            $rTotal = $rProp + $rAtt;
-
-            // Optional qualifiers (not epithets)
-            $qualifiers = [];
-            $qualifiers[] = $rTotal > 0 ? 'Evidence-backed' : 'Receiptless';
-            if ($support > 0 && $refute > 0) $qualifiers[] = 'Contested';
-
-            $items[] = [
-                'id' => $p->id,
-                'participant_id' => $p->participant_id,
-                'register' => $p->register,
-                'tier' => $p->tier,
-                'visibility' => $p->visibility,
-                'statement' => $p->statement,
-                'meta' => $p->meta,
-                'created_at' => (string) $p->created_at,
-                'updated_at' => (string) $p->updated_at,
-
-                'qualifiers' => $qualifiers,
-
-                'counts' => [
-                    'support' => $support,
-                    'refute' => $refute,
-                    'cite' => $cite,
-                    'receipts_direct' => $rProp,
-                    'receipts_attestations' => $rAtt,
-                    'receipts_total' => $rTotal,
-                ],
-            ];
-        }
+            ->get();
 
         return [
             'meta' => [
                 'limit' => $limit,
-                'offset' => $offset,
-                'visibility' => $visibility,
-                'count' => count($items),
+                'before' => $before,
+                'count' => $entries->count(),
             ],
-            'items' => $items,
+            'items' => $entries->map(fn (SubstrateLedgerEntry $entry) => [
+                'id' => $entry->getKey(),
+                'sequence' => $entry->sequence,
+                'kind' => $entry->kind->value,
+                'subject_id' => $entry->ledgerable_id,
+                'recorded_at' => $entry->recorded_at,
+            ])->values()->all(),
         ];
+    }
+
+    /**
+     * @return array{LedgerEntryKind, Substrate}
+     */
+    private function describe(Model $ledgerable): array
+    {
+        if ($ledgerable instanceof Proposition) {
+            return [
+                LedgerEntryKind::Proposition,
+                $this->substrateForPhase($ledgerable->phase),
+            ];
+        }
+
+        if ($ledgerable instanceof Supersession) {
+            $substrate = $this->substrateForPhase($ledgerable->phase);
+            $this->assertSameSubstrate(
+                $substrate,
+                $this->substrateForPhase($ledgerable->source->phase),
+                $this->substrateForPhase($ledgerable->target->phase),
+            );
+
+            return [LedgerEntryKind::Supersession, $substrate];
+        }
+
+        if ($ledgerable instanceof Attestation) {
+            $substrate = $this->substrateForPhase($ledgerable->phase);
+            $this->assertSameSubstrate(
+                $substrate,
+                $this->substrateForPhase($ledgerable->proposition->phase),
+            );
+
+            return [LedgerEntryKind::Attestation, $substrate];
+        }
+
+        if ($ledgerable instanceof Receipt) {
+            $execution = $ledgerable->instrumentExecution;
+            $substrate = $this->substrateForPhase($execution->phase);
+            $receiptable = $ledgerable->receiptable;
+            $receiptableSubstrate = match (true) {
+                $receiptable instanceof Proposition => $this->substrateForPhase(
+                    $receiptable->phase,
+                ),
+                $receiptable instanceof Attestation => $this->substrateForPhase(
+                    $receiptable->phase,
+                ),
+                default => throw new DomainException(
+                    'A Receipt must reinforce a Proposition or Attestation.'
+                ),
+            };
+            $this->assertSameSubstrate(
+                $substrate,
+                $this->substrateForPhase($execution->proposition->phase),
+                $receiptableSubstrate,
+            );
+
+            return [LedgerEntryKind::Receipt, $substrate];
+        }
+
+        throw new DomainException(
+            sprintf(
+                '%s is not a ledgerable Commons contribution.',
+                $ledgerable::class,
+            ),
+        );
+    }
+
+    private function substrateForPhase(Phase $phase): Substrate
+    {
+        return $phase->cycle->participant->substrate;
+    }
+
+    private function assertSameSubstrate(
+        Substrate $expected,
+        Substrate ...$related,
+    ): void {
+        foreach ($related as $substrate) {
+            if ($substrate->getKey() !== $expected->getKey()) {
+                throw new DomainException(
+                    'A contribution cannot cross substrate boundaries.'
+                );
+            }
+        }
     }
 }

@@ -71,6 +71,12 @@ npm run build
 
 # Format PHP code
 ./vendor/bin/pint
+
+# Inspect the newest entries in a substrate ledger
+php artisan commons:ledger-fetch {substrate-slug} --pretty
+
+# Rebuild disposable Context Horizon projections
+php artisan commons:horizons-rebuild {substrate-slug}
 ```
 
 GitHub Actions runs the frontend build and PHP test suite against PostgreSQL for every push.
