@@ -11,6 +11,8 @@ use Tests\TestCase;
 
 class InputSchemaServiceTest extends TestCase
 {
+    use RefreshDatabase;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -135,6 +137,77 @@ class InputSchemaServiceTest extends TestCase
             'action' => 'proposition.commit',
             'source_proposition_id' => '01ARZ3NDEKTSV4RRFFQ69G5FAV',
         ]);
+    }
+
+    public function test_input_plan_contains_the_governed_gate_and_bounded_lineage(): void
+    {
+        $now = now();
+        $participantId = '01ARZ3NDEKTSV4RRFFQ69G5FAA';
+        $cycleId = '01ARZ3NDEKTSV4RRFFQ69G5FAB';
+        $sourceId = '01ARZ3NDEKTSV4RRFFQ69G5FAC';
+        $gateId = '01ARZ3NDEKTSV4RRFFQ69G5FAD';
+
+        DB::table('participants')->insert([
+            'id' => $participantId,
+            'callsign' => 'plan-test',
+            'max_read_count' => 2,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        DB::table('cycles')->insert([
+            'id' => $cycleId,
+            'participant_id' => $participantId,
+            'sequence' => 1,
+            'current_phase' => Phase::Distinguish->value,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        DB::table('propositions')->insert([
+            [
+                'id' => $sourceId,
+                'cycle_id' => $cycleId,
+                'register' => 'canon',
+                'tier' => 'committal',
+                'statement' => 'Historical source.',
+                'created_at' => $now->copy()->subSecond(),
+                'updated_at' => $now->copy()->subSecond(),
+            ],
+            [
+                'id' => $gateId,
+                'cycle_id' => $cycleId,
+                'register' => 'canon',
+                'tier' => 'committal',
+                'statement' => 'Current gate.',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+        ]);
+        DB::table('supersessions')->insert([
+            'id' => '01ARZ3NDEKTSV4RRFFQ69G5FAE',
+            'cycle_id' => $cycleId,
+            'source_proposition_id' => $sourceId,
+            'target_proposition_id' => $gateId,
+            'type' => 'variant',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        DB::table('cycles')
+            ->where('id', $cycleId)
+            ->update(['gate_proposition_id' => $gateId]);
+
+        $plan = app(InputPlanService::class)->forParticipant(
+            Participant::query()->findOrFail($participantId),
+        );
+
+        $this->assertSame($gateId, $plan['gate']['id']);
+        $this->assertSame(
+            [$gateId, $sourceId],
+            array_column($plan['lineage'], 'id'),
+        );
+        $this->assertSame(
+            'highest-potential-charge',
+            $plan['schema']['x-commons']['gate'],
+        );
     }
 
     /**
