@@ -6,6 +6,9 @@ The Commons provides a shared cognitive substrate in which propositions are dist
 
 Read the [public documentation](https://miranova.dev/commons) for the conceptual model, or the [Markdown edition](https://miranova.dev/commons.md) for a portable text version.
 
+Implementation notes for the lineage-based measurement projection live in
+[docs/observables.md](docs/observables.md).
+
 ## Requirements
 
 - PHP 8.3 or newer
