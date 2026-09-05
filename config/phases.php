@@ -27,6 +27,10 @@ return [
             'attestation.create',
             'phase.rest',
         ],
+        'constraints' => [
+            'proposition.revise' => ['gate-owner'],
+            'proposition.reclassify' => ['gate-owner'],
+        ],
     ],
     3 => [
         'name' => 'constrain',
@@ -38,10 +42,15 @@ return [
         'actions' => [
             'proposition.revise',
             'proposition.reclassify_with_receipt',
+            'attestation.create',
             'phase.rest',
         ],
         'constraints' => [
-            'reclassify' => 'receipt-required',
+            'proposition.revise' => ['gate-owner'],
+            'proposition.reclassify_with_receipt' => [
+                'gate-owner',
+                'receipt-required',
+            ],
         ],
     ],
     4 => [
@@ -57,7 +66,7 @@ return [
             'phase.rest',
         ],
         'constraints' => [
-            'receipt' => 'write-register',
+            'receipt.create' => ['write-register'],
         ],
     ],
     5 => [
@@ -72,7 +81,9 @@ return [
             'phase.rest',
         ],
         'constraints' => [
-            'reconcile' => 'homeostatically-admissible-counterpart',
+            'proposition.reconcile' => [
+                'homeostatically-admissible-counterpart',
+            ],
         ],
     ],
     6 => [
@@ -88,8 +99,10 @@ return [
             'phase.rest',
         ],
         'constraints' => [
-            'reconcile' => 'homeostatically-admissible-counterpart',
-            'receipt' => 'write-register',
+            'proposition.reconcile' => [
+                'homeostatically-admissible-counterpart',
+            ],
+            'receipt.create' => ['write-register'],
         ],
     ],
     7 => [
@@ -100,7 +113,9 @@ return [
             'proposition.commit',
         ],
         'constraints' => [
-            'commit' => 'depth-cadence-and-hysteresis-admissible',
+            'proposition.commit' => [
+                'depth-cadence-and-hysteresis-admissible',
+            ],
         ],
     ],
 ];
