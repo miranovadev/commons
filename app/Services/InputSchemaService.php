@@ -24,7 +24,8 @@ final readonly class InputSchemaService
         Participant $participant,
         array $writeOptionIds,
         array $gateOptionIds,
-    ): array {
+    ): array
+    {
         $occurrence = $this->phases->currentFor($participant);
         $kind = $occurrence->kind;
         $plan = $this->phases->plan($kind);
@@ -58,7 +59,8 @@ final readonly class InputSchemaService
     public function forPhase(
         PhaseKind $kind,
         ?array $actions = null,
-    ): array {
+    ): array
+    {
         $plan = $this->phases->plan($kind);
         $actionNames = $actions ?? $plan['actions'];
         $version = (int) config('schemas.version', 1);
@@ -145,7 +147,8 @@ final readonly class InputSchemaService
         array $schema,
         array $writeOptionIds,
         array $gateOptionIds,
-    ): array {
+    ): array
+    {
         $bindings = [
             'proposition.select' => [
                 'property' => 'proposition_id',
@@ -176,8 +179,8 @@ final readonly class InputSchemaService
                 continue;
             }
 
-            $schema['$defs']['actions'][$action]['properties']
-                [$binding['property']]['enum'] = $binding['values'];
+            $schema['$defs']['actions'][$action]['properties'][$binding['property']]
+                ['enum'] = $binding['values'];
         }
 
         $actions = $schema['$defs']['actions'];
