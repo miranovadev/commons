@@ -15,6 +15,13 @@ class Receipt extends Model
 
     protected $keyType = 'string';
 
+    protected function casts(): array
+    {
+        return [
+            'metadata' => 'array',
+        ];
+    }
+
     public function instrumentExecution(): BelongsTo
     {
         return $this->belongsTo(InstrumentExecution::class);
