@@ -8,6 +8,11 @@ use App\Models\ParticipantConnection;
 
 final class ParticipantConnectionService
 {
+    public function __construct(
+        private readonly ParticipantConnectionTriggerService $triggers,
+    ) {
+    }
+
     /**
      * @param  array<string, mixed>  $attributes
      */
@@ -28,7 +33,9 @@ final class ParticipantConnectionService
         ]);
         $connection->save();
 
-        return $connection;
+        $this->triggers->reschedule($connection);
+
+        return $connection->refresh();
     }
 
     /**
@@ -38,6 +45,15 @@ final class ParticipantConnectionService
         ParticipantConnection $connection,
         array $attributes,
     ): ParticipantConnection {
+        $scheduleChanged = array_key_exists('is_enabled', $attributes)
+            || (
+                array_key_exists('configuration', $attributes)
+                && array_key_exists(
+                    'trigger',
+                    $attributes['configuration'],
+                )
+            );
+
         if (array_key_exists('configuration', $attributes)) {
             $attributes['configuration'] = $this->configuration(
                 array_replace_recursive(
@@ -50,7 +66,11 @@ final class ParticipantConnectionService
         $connection->forceFill($attributes);
         $connection->save();
 
-        return $connection;
+        if ($scheduleChanged) {
+            $this->triggers->reschedule($connection);
+        }
+
+        return $connection->refresh();
     }
 
     /**
@@ -61,8 +81,7 @@ final class ParticipantConnectionService
     {
         $configuration = array_replace_recursive([
             'trigger' => [
-                'mode' => ConnectionTriggerMode::EveryCycle->value,
-                'interval' => 1,
+                'mode' => ConnectionTriggerMode::Manual->value,
             ],
         ], $configuration);
 
@@ -70,12 +89,8 @@ final class ParticipantConnectionService
             $configuration['trigger']['mode'],
         );
 
-        if ($mode === ConnectionTriggerMode::EveryCycle) {
-            $configuration['trigger']['interval'] = 1;
-        }
-
         if ($mode === ConnectionTriggerMode::Manual) {
-            unset($configuration['trigger']['interval']);
+            unset($configuration['trigger']['interval_minutes']);
         }
 
         return $configuration;
