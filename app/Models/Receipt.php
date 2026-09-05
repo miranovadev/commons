@@ -15,9 +15,16 @@ class Receipt extends Model
 
     protected $keyType = 'string';
 
-    public function phase(): BelongsTo
+    protected function casts(): array
     {
-        return $this->belongsTo(Phase::class);
+        return [
+            'metadata' => 'array',
+        ];
+    }
+
+    public function instrumentExecution(): BelongsTo
+    {
+        return $this->belongsTo(InstrumentExecution::class);
     }
 
     public function receiptable(): MorphTo

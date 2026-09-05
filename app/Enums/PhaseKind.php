@@ -2,7 +2,7 @@
 
 namespace App\Enums;
 
-enum Phase: int
+enum PhaseKind: int
 {
     case Distinguish = 1;
     case Persist = 2;

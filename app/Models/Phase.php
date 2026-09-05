@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Enums\Phase as PhaseKind;
+use App\Enums\PhaseKind;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -19,7 +19,7 @@ class Phase extends Model
     protected function casts(): array
     {
         return [
-            'position' => PhaseKind::class,
+            'kind' => PhaseKind::class,
             'started_at' => 'immutable_datetime',
             'completed_at' => 'immutable_datetime',
         ];
@@ -50,8 +50,8 @@ class Phase extends Model
         return $this->hasMany(Attestation::class);
     }
 
-    public function receipts(): HasMany
+    public function instrumentExecutions(): HasMany
     {
-        return $this->hasMany(Receipt::class);
+        return $this->hasMany(InstrumentExecution::class);
     }
 }
