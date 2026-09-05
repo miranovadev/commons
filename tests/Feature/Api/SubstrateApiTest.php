@@ -136,6 +136,44 @@ class SubstrateApiTest extends TestCase
             ->assertJsonValidationErrors('substrate');
     }
 
+    public function test_session_can_be_ended_and_recreated(): void
+    {
+        $this->bootstrapSystem();
+
+        $this->deleteJson('/api/session')->assertNoContent();
+        $this->assertGuest();
+
+        $this->postJson('/api/session', [
+            'email' => 'system@example.test',
+            'password' => 'correct horse battery staple',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.email', 'system@example.test');
+
+        $this->assertAuthenticated();
+    }
+
+    public function test_nested_participant_binding_cannot_cross_substrates(): void
+    {
+        $this->bootstrapSystem();
+        $firstSubstrate = $this->substrate('first-space', 'public');
+        $secondSubstrate = $this->substrate('second-space', 'public');
+        $user = User::factory()->create();
+
+        $participantId = $this->actingAs($user)
+            ->postJson(
+                "/api/substrates/{$firstSubstrate->slug}/participants",
+                ['callsign' => 'bounded'],
+            )
+            ->assertCreated()
+            ->json('data.id');
+
+        $this->getJson(
+            "/api/substrates/{$secondSubstrate->slug}"
+            ."/participants/{$participantId}",
+        )->assertNotFound();
+    }
+
     private function bootstrapSystem(): User
     {
         $this->postJson('/api/bootstrap', [
