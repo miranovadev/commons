@@ -73,8 +73,8 @@ jobs:
       - name: Install dependencies
         run: composer install --prefer-dist --no-interaction --no-progress
 
-      - name: Check code style
-        run: vendor/bin/pint --test
-
       - name: Run test suite
         run: php artisan test
+
+      - name: Check code style
+        run: vendor/bin/pint --test
