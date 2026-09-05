@@ -2,21 +2,25 @@
 
 namespace App\Services;
 
-use App\Models\Cycle;
 use App\Models\Participant;
+use App\Models\Phase;
 use App\Models\Proposition;
 use DomainException;
 
 final readonly class GateService
 {
     public function __construct(
-        private CycleService $cycles,
+        private PhaseService $phases,
     ) {}
 
     public function currentFor(Participant $participant): Proposition
     {
-        $cycle = $this->cycles->currentFor($participant);
-        $gate = $cycle->gate()->first();
+        return $this->forPhase($this->phases->currentFor($participant));
+    }
+
+    public function forPhase(Phase $phase): Proposition
+    {
+        $gate = $phase->gate()->first();
 
         if ($gate === null) {
             throw new DomainException(
@@ -27,9 +31,9 @@ final readonly class GateService
         return $gate;
     }
 
-    public function advance(Cycle $cycle, Proposition $proposition): void
+    public function advance(Phase $phase, Proposition $proposition): void
     {
-        $cycle->update([
+        $phase->update([
             'gate_proposition_id' => $proposition->getKey(),
         ]);
     }
