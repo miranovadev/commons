@@ -15,6 +15,8 @@ return new class extends Migration
             $table->ulid('id')->primary();
             $table->string('callsign')->unique();
             $table->string('designation')->nullable();
+            $table->unsignedSmallInteger('max_read_count')->default(25);
+            $table->unsignedInteger('max_token_count')->nullable();
             $table->timestamps();
         });
 
@@ -23,6 +25,7 @@ return new class extends Migration
             $table->foreignUlid('participant_id')
                 ->constrained()
                 ->restrictOnDelete();
+            $table->ulid('gate_proposition_id')->nullable()->index();
             $table->unsignedBigInteger('sequence');
             $table->unsignedTinyInteger('current_phase')
                 ->default(1)
@@ -52,6 +55,13 @@ return new class extends Migration
 
             $table->index(['register', 'tier']);
             $table->index('created_at');
+        });
+
+        Schema::table('cycles', function (Blueprint $table) {
+            $table->foreign('gate_proposition_id')
+                ->references('id')
+                ->on('propositions')
+                ->restrictOnDelete();
         });
 
         Schema::create('supersessions', function (Blueprint $table) {
@@ -125,6 +135,11 @@ return new class extends Migration
         Schema::dropIfExists('receipts');
         Schema::dropIfExists('attestations');
         Schema::dropIfExists('supersessions');
+
+        Schema::table('cycles', function (Blueprint $table) {
+            $table->dropForeign(['gate_proposition_id']);
+        });
+
         Schema::dropIfExists('propositions');
         Schema::dropIfExists('cycles');
         Schema::dropIfExists('participants');
