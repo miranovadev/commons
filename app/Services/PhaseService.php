@@ -18,7 +18,7 @@ final readonly class PhaseService
         $cycle = $this->cycles->currentFor($participant);
         $phase = $cycle->phases()
             ->whereNull('completed_at')
-            ->latest('position')
+            ->latest('kind')
             ->first();
 
         if ($phase === null) {
