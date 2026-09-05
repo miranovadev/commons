@@ -27,4 +27,9 @@ class Cycle extends Model
     {
         return $this->belongsTo(Participant::class);
     }
+
+    public function gate(): BelongsTo
+    {
+        return $this->belongsTo(Proposition::class, 'gate_proposition_id');
+    }
 }
