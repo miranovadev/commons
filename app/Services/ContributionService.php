@@ -11,20 +11,20 @@ use Opis\JsonSchema\Validator;
 final readonly class ContributionService
 {
     public function __construct(
-        private InputSchemaService $schemas,
+        private InputPlanService $plans,
         private Validator $validator,
     ) {}
 
     /**
      * @return array<string, mixed>
      */
-    public function schemaFor(Participant $participant): array
+    public function planFor(Participant $participant): array
     {
-        return $this->schemas->forParticipant($participant);
+        return $this->plans->forParticipant($participant);
     }
 
     /**
-     * Validate a response against the participant's currently admissible inputs.
+     * Validate a response against the participant's currently admissible move.
      *
      * Dispatching valid contributions is intentionally left to the domain
      * services introduced as each operation is implemented.
@@ -33,9 +33,10 @@ final readonly class ContributionService
      */
     public function validate(Participant $participant, array $input): void
     {
+        $plan = $this->planFor($participant);
         $result = $this->validator->validate(
             Helper::toJSON($input),
-            Helper::toJSON($this->schemaFor($participant)),
+            Helper::toJSON($plan['schema']),
         );
 
         if ($result->isValid()) {
