@@ -2,13 +2,14 @@
 
 namespace Tests\Feature;
 
-use App\Enums\Phase;
+use App\Enums\PhaseKind;
 use App\Models\Participant;
 use App\Services\InputPlanService;
 use App\Services\InputSchemaService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Opis\JsonSchema\Helper;
 use Opis\JsonSchema\Validator;
 use Tests\TestCase;
@@ -25,221 +26,246 @@ class InputSchemaServiceTest extends TestCase
         Cache::store('array')->clear();
     }
 
-    public function test_each_phase_exposes_its_single_move_contract(): void
+    public function test_each_phase_exposes_its_static_single_move_contract(): void
     {
         $expected = [
-            Phase::Distinguish->value => [
+            PhaseKind::Distinguish->value => [
                 'proposition.variant',
-                'phase.rest',
+                'proposition.select',
             ],
-            Phase::Persist->value => [
+            PhaseKind::Persist->value => [
                 'proposition.variant',
                 'proposition.revise',
                 'proposition.reclassify',
                 'attestation.create',
-                'phase.rest',
+                'proposition.select',
             ],
-            Phase::Constrain->value => [
+            PhaseKind::Constrain->value => [
                 'proposition.revise',
-                'proposition.reclassify_with_receipt',
+                'proposition.reclassify_with_instrument',
                 'attestation.create',
-                'phase.rest',
+                'proposition.select',
             ],
-            Phase::Disperse->value => [
+            PhaseKind::Disperse->value => [
                 'proposition.variant',
-                'receipt.create',
-                'phase.rest',
+                'instrument.execute',
+                'proposition.select',
             ],
-            Phase::Mediate->value => [
+            PhaseKind::Mediate->value => [
                 'proposition.reconcile',
-                'phase.rest',
+                'proposition.select',
             ],
-            Phase::Bias->value => [
+            PhaseKind::Bias->value => [
                 'proposition.reconcile',
-                'receipt.create',
-                'phase.rest',
+                'instrument.execute',
+                'proposition.select',
             ],
-            Phase::Order->value => [
+            PhaseKind::Order->value => [
                 'proposition.commit',
             ],
         ];
 
-        foreach (Phase::cases() as $phase) {
-            $schema = app(InputSchemaService::class)->forPhase($phase);
+        foreach (PhaseKind::cases() as $kind) {
+            $schema = app(InputSchemaService::class)->forPhase($kind);
 
             $this->assertSame(
-                $expected[$phase->value],
+                $expected[$kind->value],
                 array_keys($schema['$defs']['actions']),
             );
-            $this->assertTrue($schema['x-commons']['one_action']);
+            $this->assertSame(
+                strtolower($kind->name),
+                $schema['x-commons']['kind'],
+            );
+            $this->assertNotEmpty(
+                $schema['x-commons']['description'],
+            );
         }
     }
 
-    public function test_distinguish_accepts_a_variant_or_rest_but_not_a_register_choice(): void
+    public function test_constrain_reclassification_executes_an_instrument(): void
     {
-        $schema = app(InputSchemaService::class)->forPhase(Phase::Distinguish);
-
-        $this->assertValid($schema, [
-            'action' => 'proposition.variant',
-            'statement' => 'What if the distinction is relational?',
-        ]);
-        $this->assertValid($schema, [
-            'action' => 'phase.rest',
-            'proposition_id' => '01ARZ3NDEKTSV4RRFFQ69G5FAV',
-        ]);
-        $this->assertInvalid($schema, [
-            'action' => 'proposition.variant',
-            'statement' => 'I should not be able to select the register.',
-            'register' => 'canon',
-        ]);
-    }
-
-    public function test_constrain_reclassification_requires_an_atomic_receipt(): void
-    {
-        $schema = app(InputSchemaService::class)->forPhase(Phase::Constrain);
+        $schema = app(InputSchemaService::class)
+            ->forPhase(PhaseKind::Constrain);
 
         $this->assertInvalid($schema, [
             'action' => 'proposition.reclassify',
-            'statement' => 'Move this into the governed committal register.',
+            'statement' => 'Move this into the committal register.',
         ]);
         $this->assertValid($schema, [
             'action' => 'proposition.reclassify',
-            'statement' => 'Move this into the governed committal register.',
-            'receipt' => [
-                'type' => 'citation',
+            'statement' => 'Move this into the committal register.',
+            'instrument' => [
+                'kind' => 'citation',
                 'reference' => 'https://example.test/evidence',
             ],
         ]);
-    }
-
-    public function test_reconciliation_only_accepts_the_participant_selected_side(): void
-    {
-        $schema = app(InputSchemaService::class)->forPhase(Phase::Mediate);
-
         $this->assertValid($schema, [
-            'action' => 'proposition.reconcile',
-            'other_proposition_id' => '01ARZ3NDEKTSV4RRFFQ69G5FAV',
-            'statement' => 'A mediated expression.',
-        ]);
-        $this->assertInvalid($schema, [
-            'action' => 'proposition.reconcile',
-            'source_proposition_ids' => [
-                '01ARZ3NDEKTSV4RRFFQ69G5FAV',
-                '01ARZ3NDEKTSV4RRFFQ69G5FAW',
-            ],
-            'statement' => 'The client cannot replace the governed gate.',
+            'action' => 'attestation.create',
+            'proposition_id' => '01ARZ3NDEKTSV4RRFFQ69G5FAV',
+            'direction' => 'support',
         ]);
     }
 
-    public function test_order_commit_operates_on_the_current_gate(): void
+    public function test_input_plan_specializes_selection_and_gate_options(): void
     {
-        $schema = app(InputSchemaService::class)->forPhase(Phase::Order);
+        $state = $this->seedPhase(
+            PhaseKind::Mediate,
+            'frontier',
+        );
+        $candidateId = '01ARZ3NDEKTSV4RRFFQ69G5FAQ';
 
-        $this->assertValid($schema, [
-            'action' => 'proposition.commit',
+        DB::table('propositions')->insert([
+            'id' => $candidateId,
+            'phase_id' => $state['phase_id'],
+            'register' => 'frontier',
+            'tier' => 'expressive',
+            'statement' => 'An admissible active head.',
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
-        $this->assertInvalid($schema, [
-            'action' => 'proposition.commit',
-            'source_proposition_id' => '01ARZ3NDEKTSV4RRFFQ69G5FAV',
-        ]);
+
+        $plan = app(InputPlanService::class)->forParticipant(
+            $state['participant'],
+        );
+
+        $this->assertSame('mediate', $plan['phase']['kind']);
+        $this->assertSame('frontier', $plan['phase']['write_register']);
+        $this->assertNotEmpty($plan['phase']['description']);
+        $this->assertSame(
+            [$candidateId],
+            array_column($plan['write_options'], 'id'),
+        );
+        $this->assertSame(
+            [$candidateId],
+            array_column($plan['gate_options'], 'id'),
+        );
+        $this->assertSame(
+            [$candidateId],
+            $plan['schema']['$defs']['actions']['proposition.select']
+                ['properties']['proposition_id']['enum'],
+        );
+        $this->assertSame(
+            [$candidateId],
+            $plan['schema']['$defs']['actions']['proposition.reconcile']
+                ['properties']['other_proposition_id']['enum'],
+        );
+    }
+
+    public function test_write_and_gate_options_are_limited_to_ten(): void
+    {
+        config()->set('schemas.options.limit', 10);
+
+        $state = $this->seedPhase(
+            PhaseKind::Bias,
+            'concord',
+        );
+
+        foreach (range(1, 12) as $sequence) {
+            DB::table('propositions')->insert([
+                'id' => sprintf(
+                    '01ARZ3NDEKTSV4RRFFQ69G%04d',
+                    $sequence,
+                ),
+                'phase_id' => $state['phase_id'],
+                'register' => 'concord',
+                'tier' => 'expressive',
+                'statement' => "Candidate {$sequence}.",
+                'created_at' => now()->addSeconds($sequence),
+                'updated_at' => now()->addSeconds($sequence),
+            ]);
+        }
+
+        $plan = app(InputPlanService::class)->forParticipant(
+            $state['participant'],
+        );
+
+        $this->assertCount(10, $plan['write_options']);
+        $this->assertCount(10, $plan['gate_options']);
     }
 
     public function test_non_owner_schema_hides_revise_and_reclassify(): void
     {
-        $now = now();
-        $ownerId = '01ARZ3NDEKTSV4RRFFQ69G5FAG';
-        $participantId = '01ARZ3NDEKTSV4RRFFQ69G5FAH';
-        $ownerCycleId = '01ARZ3NDEKTSV4RRFFQ69G5FAJ';
-        $participantCycleId = '01ARZ3NDEKTSV4RRFFQ69G5FAK';
-        $ownerPhaseId = '01ARZ3NDEKTSV4RRFFQ69G5FAM';
-        $participantPhaseId = '01ARZ3NDEKTSV4RRFFQ69G5FAN';
-        $gateId = '01ARZ3NDEKTSV4RRFFQ69G5FAP';
+        $owner = $this->seedPhase(
+            PhaseKind::Persist,
+            'frontier',
+            'owner',
+            '01ARZ3NDEKTSV4RRFFQ69G5FAR',
+            '01ARZ3NDEKTSV4RRFFQ69G5FAS',
+            '01ARZ3NDEKTSV4RRFFQ69G5FAT',
+            '01ARZ3NDEKTSV4RRFFQ69G5FAV',
+        );
+        $participant = $this->seedPhase(
+            PhaseKind::Persist,
+            'frontier',
+            'participant',
+            '01ARZ3NDEKTSV4RRFFQ69G5FAW',
+            '01ARZ3NDEKTSV4RRFFQ69G5FAX',
+            '01ARZ3NDEKTSV4RRFFQ69G5FAY',
+            '01ARZ3NDEKTSV4RRFFQ69G5FAZ',
+        );
 
-        DB::table('participants')->insert([
-            [
-                'id' => $ownerId,
-                'callsign' => 'owner',
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-            [
-                'id' => $participantId,
-                'callsign' => 'participant',
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-        ]);
-        DB::table('cycles')->insert([
-            [
-                'id' => $ownerCycleId,
-                'participant_id' => $ownerId,
-                'sequence' => 1,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-            [
-                'id' => $participantCycleId,
-                'participant_id' => $participantId,
-                'sequence' => 1,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-        ]);
-        DB::table('phases')->insert([
-            [
-                'id' => $ownerPhaseId,
-                'cycle_id' => $ownerCycleId,
-                'position' => Phase::Constrain->value,
-                'started_at' => $now,
-                'completed_at' => $now,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-            [
-                'id' => $participantPhaseId,
-                'cycle_id' => $participantCycleId,
-                'position' => Phase::Constrain->value,
-                'started_at' => $now,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-        ]);
-        DB::table('propositions')->insert([
-            'id' => $gateId,
-            'phase_id' => $ownerPhaseId,
-            'register' => 'frontier',
-            'tier' => 'expressive',
-            'statement' => 'Owned by another participant.',
-            'created_at' => $now,
-            'updated_at' => $now,
-        ]);
         DB::table('phases')
-            ->where('id', $participantPhaseId)
-            ->update(['gate_proposition_id' => $gateId]);
+            ->where('id', $participant['phase_id'])
+            ->update(['gate_proposition_id' => $owner['gate_id']]);
 
         $schema = app(InputSchemaService::class)->forParticipant(
-            Participant::query()->findOrFail($participantId),
+            $participant['participant'],
+            [],
+            [],
         );
 
         $this->assertSame(
-            ['attestation.create', 'phase.rest'],
+            ['proposition.variant'],
             array_keys($schema['$defs']['actions']),
         );
     }
 
-    public function test_input_plan_contains_the_governed_gate_and_bounded_lineage(): void
+    public function test_receipts_require_an_instrument_execution(): void
     {
+        $this->assertTrue(Schema::hasTable('instrument_executions'));
+        $this->assertTrue(
+            Schema::hasColumns('instrument_executions', [
+                'phase_id',
+                'proposition_id',
+                'kind',
+                'reference',
+                'status',
+                'input',
+                'metadata',
+                'started_at',
+                'completed_at',
+                'failed_at',
+                'failure_reason',
+            ]),
+        );
+        $this->assertTrue(
+            Schema::hasColumn('receipts', 'instrument_execution_id'),
+        );
+        $this->assertFalse(Schema::hasColumn('receipts', 'phase_id'));
+    }
+
+    /**
+     * @return array{
+     *     participant: Participant,
+     *     phase_id: string,
+     *     gate_id: string
+     * }
+     */
+    private function seedPhase(
+        PhaseKind $kind,
+        ?string $writeRegister,
+        string $callsign = 'participant',
+        string $participantId = '01ARZ3NDEKTSV4RRFFQ69G5FAA',
+        string $cycleId = '01ARZ3NDEKTSV4RRFFQ69G5FAB',
+        string $phaseId = '01ARZ3NDEKTSV4RRFFQ69G5FAC',
+        string $gateId = '01ARZ3NDEKTSV4RRFFQ69G5FAD',
+    ): array {
         $now = now();
-        $participantId = '01ARZ3NDEKTSV4RRFFQ69G5FAA';
-        $cycleId = '01ARZ3NDEKTSV4RRFFQ69G5FAB';
-        $phaseId = '01ARZ3NDEKTSV4RRFFQ69G5FAC';
-        $sourceId = '01ARZ3NDEKTSV4RRFFQ69G5FAD';
-        $gateId = '01ARZ3NDEKTSV4RRFFQ69G5FAE';
 
         DB::table('participants')->insert([
             'id' => $participantId,
-            'callsign' => 'plan-test',
-            'max_read_count' => 2,
+            'callsign' => $callsign,
+            'max_read_count' => 25,
             'created_at' => $now,
             'updated_at' => $now,
         ]);
@@ -253,37 +279,18 @@ class InputSchemaServiceTest extends TestCase
         DB::table('phases')->insert([
             'id' => $phaseId,
             'cycle_id' => $cycleId,
-            'position' => Phase::Distinguish->value,
+            'position' => $kind->value,
+            'write_register' => $writeRegister,
             'started_at' => $now,
             'created_at' => $now,
             'updated_at' => $now,
         ]);
         DB::table('propositions')->insert([
-            [
-                'id' => $sourceId,
-                'phase_id' => $phaseId,
-                'register' => 'canon',
-                'tier' => 'committal',
-                'statement' => 'Historical source.',
-                'created_at' => $now->copy()->subSecond(),
-                'updated_at' => $now->copy()->subSecond(),
-            ],
-            [
-                'id' => $gateId,
-                'phase_id' => $phaseId,
-                'register' => 'canon',
-                'tier' => 'committal',
-                'statement' => 'Current gate.',
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-        ]);
-        DB::table('supersessions')->insert([
-            'id' => '01ARZ3NDEKTSV4RRFFQ69G5FAF',
+            'id' => $gateId,
             'phase_id' => $phaseId,
-            'source_proposition_id' => $sourceId,
-            'target_proposition_id' => $gateId,
-            'type' => 'variant',
+            'register' => 'canon',
+            'tier' => 'committal',
+            'statement' => 'Current gate.',
             'created_at' => $now,
             'updated_at' => $now,
         ]);
@@ -291,19 +298,11 @@ class InputSchemaServiceTest extends TestCase
             ->where('id', $phaseId)
             ->update(['gate_proposition_id' => $gateId]);
 
-        $plan = app(InputPlanService::class)->forParticipant(
-            Participant::query()->findOrFail($participantId),
-        );
-
-        $this->assertSame($gateId, $plan['gate']['id']);
-        $this->assertSame(
-            [$gateId, $sourceId],
-            array_column($plan['lineage'], 'id'),
-        );
-        $this->assertSame(
-            'highest-potential-charge',
-            $plan['schema']['x-commons']['gate'],
-        );
+        return [
+            'participant' => Participant::query()->findOrFail($participantId),
+            'phase_id' => $phaseId,
+            'gate_id' => $gateId,
+        ];
     }
 
     /**
