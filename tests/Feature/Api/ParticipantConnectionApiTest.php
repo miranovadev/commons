@@ -3,12 +3,12 @@
 namespace Tests\Feature\Api;
 
 use App\Enums\ConnectionProvider;
-use App\Models\Cycle;
 use App\Models\Participant;
 use App\Models\ParticipantConnection;
 use App\Models\Substrate;
 use App\Models\User;
 use App\Services\ParticipantConnectionTriggerService;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -29,8 +29,8 @@ class ParticipantConnectionApiTest extends TestCase
                 'configuration' => [
                     'model' => 'example-model',
                     'trigger' => [
-                        'mode' => 'cycle_interval',
-                        'interval' => 3,
+                        'mode' => 'interval',
+                        'interval_minutes' => 30,
                     ],
                 ],
                 'credentials' => [
@@ -44,10 +44,14 @@ class ParticipantConnectionApiTest extends TestCase
             ->assertJsonPath('data.provider', 'openai')
             ->assertJsonPath('data.has_credentials', true)
             ->assertJsonPath(
-                'data.configuration.trigger.interval',
-                3,
+                'data.configuration.trigger.interval_minutes',
+                30,
             )
             ->assertJsonMissing(['credentials']);
+
+        $this->assertNotNull(
+            $response->json('data.next_trigger_at'),
+        );
 
         $connection = ParticipantConnection::query()->firstOrFail();
         $storedCredentials = DB::table('participant_connections')
@@ -86,8 +90,9 @@ class ParticipantConnectionApiTest extends TestCase
                 'data.configuration.trigger.mode',
                 'manual',
             )
+            ->assertJsonPath('data.next_trigger_at', null)
             ->assertJsonMissingPath(
-                'data.configuration.trigger.interval',
+                'data.configuration.trigger.interval_minutes',
             );
 
         $this->assertSame(
@@ -112,39 +117,72 @@ class ParticipantConnectionApiTest extends TestCase
         )->assertForbidden();
     }
 
-    public function test_cycle_interval_connections_are_due_at_the_configured_frequency(): void
+    public function test_interval_connections_are_due_on_the_wall_clock_schedule(): void
     {
         [, $participant] = $this->environment();
         $connection = $this->connection($participant, [
             'trigger' => [
-                'mode' => 'cycle_interval',
-                'interval' => 2,
+                'mode' => 'interval',
+                'interval_minutes' => 15,
             ],
         ]);
-        $first = $this->cycle($participant, 1);
-        $second = $this->cycle($participant, 2);
-        $third = $this->cycle($participant, 3);
+        $clock = CarbonImmutable::parse('2026-09-05 10:00:00 UTC');
         $triggers = app(ParticipantConnectionTriggerService::class);
 
-        $this->assertTrue($triggers->isDue($connection, $first));
+        $triggers->reschedule($connection, $clock);
+        $connection->refresh();
+
+        $this->assertTrue(
+            $connection->next_trigger_at->equalTo(
+                $clock->addMinutes(15),
+            ),
+        );
+        $this->assertFalse(
+            $triggers->isDue(
+                $connection,
+                $clock->addMinutes(14),
+            ),
+        );
+        $this->assertTrue(
+            $triggers->isDue(
+                $connection,
+                $clock->addMinutes(15),
+            ),
+        );
         $this->assertSame(
             [$connection->getKey()],
-            $triggers->dueForCycle($first)->modelKeys(),
+            $triggers->due($clock->addMinutes(15))->modelKeys(),
         );
 
-        $triggers->recordSuccess($connection, $first);
+        $triggers->recordTriggered(
+            $connection,
+            $clock->addMinutes(15),
+        );
+        $connection->refresh();
 
-        $this->assertFalse($triggers->isDue($connection, $first));
-        $this->assertFalse($triggers->isDue($connection, $second));
-        $this->assertTrue($triggers->isDue($connection, $third));
+        $this->assertTrue(
+            $connection->last_triggered_at->equalTo(
+                $clock->addMinutes(15),
+            ),
+        );
+        $this->assertTrue(
+            $connection->next_trigger_at->equalTo(
+                $clock->addMinutes(30),
+            ),
+        );
+        $this->assertFalse(
+            $triggers->isDue(
+                $connection,
+                $clock->addMinutes(15),
+            ),
+        );
 
-        $connection->configuration = [
-            'model' => 'example-model',
-            'trigger' => ['mode' => 'manual'],
-        ];
-        $connection->save();
+        $triggers->recordFailure($connection, 'Provider unavailable');
 
-        $this->assertFalse($triggers->isDue($connection, $third));
+        $this->assertSame(
+            'Provider unavailable',
+            $connection->fresh()->last_error,
+        );
     }
 
     public function test_connection_options_describe_supported_providers_and_triggers(): void
@@ -155,8 +193,7 @@ class ParticipantConnectionApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.providers', ['openai', 'anthropic'])
             ->assertJsonPath('data.trigger_modes', [
-                'every_cycle',
-                'cycle_interval',
+                'interval',
                 'manual',
             ]);
     }
@@ -213,7 +250,7 @@ class ParticipantConnectionApiTest extends TestCase
             'is_enabled' => true,
             'configuration' => [
                 'model' => 'example-model',
-                'trigger' => ['mode' => 'every_cycle', 'interval' => 1],
+                'trigger' => ['mode' => 'manual'],
                 ...$configuration,
             ],
             'credentials' => ['api_key' => 'connection-secret'],
@@ -221,20 +258,6 @@ class ParticipantConnectionApiTest extends TestCase
         $connection->save();
 
         return $connection;
-    }
-
-    private function cycle(
-        Participant $participant,
-        int $sequence,
-    ): Cycle {
-        $cycle = new Cycle;
-        $cycle->forceFill([
-            'participant_id' => $participant->getKey(),
-            'sequence' => $sequence,
-        ]);
-        $cycle->save();
-
-        return $cycle;
     }
 
     private function connectionsUrl(
