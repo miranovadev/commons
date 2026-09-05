@@ -18,7 +18,7 @@ final readonly class InputSchemaService
      */
     public function forParticipant(Participant $participant): array
     {
-        return $this->forPhase($this->phases->currentFor($participant));
+        return $this->forPhase($this->phases->currentFor($participant)->position);
     }
 
     /**
