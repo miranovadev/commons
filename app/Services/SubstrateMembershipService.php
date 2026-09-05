@@ -76,17 +76,15 @@ final class SubstrateMembershipService
             $role = Role::query()
                 ->where('name', config('authorization.roles.participant'))
                 ->where('scope', 'substrate')
-                ->first();
+                ->firstOrFail();
 
-            if ($role !== null) {
-                DB::table('role_user')->insertOrIgnore([
-                    'role_id' => $role->getKey(),
-                    'user_id' => $user->getKey(),
-                    'substrate_id' => $lockedSubstrate->getKey(),
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            }
+            DB::table('role_user')->insertOrIgnore([
+                'role_id' => $role->getKey(),
+                'user_id' => $user->getKey(),
+                'substrate_id' => $lockedSubstrate->getKey(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
 
             return $participant;
         });
