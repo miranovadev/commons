@@ -43,7 +43,7 @@ final class SystemBootstrapService
                         'description' => 'Unrestricted system-level access.',
                     ]);
                     $administrator->permissions()->sync(
-                        $permissions->modelKeys(),
+                        $permissions->pluck('id')->all(),
                     );
 
                     $participant = Role::query()->create([
