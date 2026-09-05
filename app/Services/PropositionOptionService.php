@@ -71,7 +71,6 @@ final class PropositionOptionService
                         'propositions.id',
                     ),
             );
-
     }
 
     private function limit(): int
