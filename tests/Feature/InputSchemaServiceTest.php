@@ -277,6 +277,7 @@ class InputSchemaServiceTest extends TestCase
             $receipt->instrument_execution_id,
         );
         $this->assertSame($proposition->getKey(), $receipt->receiptable_id);
+        $this->assertNull($receipt->signature);
         $this->assertSame(
             'completed',
             $execution->fresh()->status,
