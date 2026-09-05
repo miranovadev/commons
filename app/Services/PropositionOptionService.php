@@ -33,7 +33,7 @@ final class PropositionOptionService
     public function gateOptionsFor(Phase $phase): Collection
     {
         if (! in_array(
-            $phase->position,
+            $phase->kind,
             [PhaseKind::Mediate, PhaseKind::Bias],
             true,
         )) {
