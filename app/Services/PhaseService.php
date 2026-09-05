@@ -18,7 +18,13 @@ final readonly class PhaseService
     }
 
     /**
-     * @return array{name: string, actions: list<string>, constraints?: array<string, string>}
+     * @return array{
+     *     name: string,
+     *     gate: string,
+     *     write_registers: array<string, string>,
+     *     actions: list<string>,
+     *     constraints?: array<string, string>
+     * }
      */
     public function plan(Phase $phase): array
     {
