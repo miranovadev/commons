@@ -1,0 +1,50 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+class Substrate extends Model
+{
+    use HasUlids;
+
+    public $incrementing = false;
+
+    protected $keyType = 'string';
+
+    protected function casts(): array
+    {
+        return [
+            'configuration' => 'array',
+        ];
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
+
+    public function participants(): HasMany
+    {
+        return $this->hasMany(Participant::class);
+    }
+
+    public function memberships(): HasMany
+    {
+        return $this->hasMany(SubstrateMembership::class);
+    }
+
+    public function isPublic(): bool
+    {
+        return $this->visibility === 'public';
+    }
+
+    public function maximumParticipants(): ?int
+    {
+        $maximum = data_get($this->configuration, 'maximum_participants');
+
+        return $maximum === null ? null : (int) $maximum;
+    }
+}

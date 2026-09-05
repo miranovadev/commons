@@ -11,13 +11,101 @@ return new class extends Migration
      */
     public function up(): void
     {
+        Schema::create('substrates', function (Blueprint $table) {
+            $table->ulid('id')->primary();
+            $table->string('slug')->unique();
+            $table->string('title');
+            $table->text('description')->nullable();
+            $table->enum('visibility', ['public', 'private'])
+                ->default('private');
+            $table->jsonb('configuration')->default('{}');
+            $table->timestamps();
+        });
+
+        Schema::create('permissions', function (Blueprint $table) {
+            $table->id();
+            $table->string('name')->unique();
+            $table->string('description')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('roles', function (Blueprint $table) {
+            $table->id();
+            $table->string('name')->unique();
+            $table->enum('scope', ['system', 'substrate']);
+            $table->string('description')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('permission_role', function (Blueprint $table) {
+            $table->foreignId('permission_id')
+                ->constrained()
+                ->cascadeOnDelete();
+            $table->foreignId('role_id')
+                ->constrained()
+                ->cascadeOnDelete();
+
+            $table->primary(['permission_id', 'role_id']);
+        });
+
         Schema::create('participants', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->string('callsign')->unique();
+            $table->foreignUlid('substrate_id')
+                ->constrained()
+                ->restrictOnDelete();
+            $table->foreignId('user_id')
+                ->nullable()
+                ->constrained()
+                ->nullOnDelete();
+            $table->string('callsign');
             $table->string('designation')->nullable();
             $table->unsignedSmallInteger('max_read_count')->default(25);
             $table->unsignedInteger('max_token_count')->nullable();
             $table->timestamps();
+
+            $table->unique(['substrate_id', 'callsign']);
+            $table->unique(['substrate_id', 'user_id']);
+        });
+
+        Schema::create('substrate_memberships', function (Blueprint $table) {
+            $table->ulid('id')->primary();
+            $table->foreignUlid('substrate_id')
+                ->constrained()
+                ->restrictOnDelete();
+            $table->foreignId('user_id')
+                ->constrained()
+                ->restrictOnDelete();
+            $table->foreignUlid('participant_id')
+                ->nullable()
+                ->constrained()
+                ->restrictOnDelete();
+            $table->enum('status', ['invited', 'active'])
+                ->default('invited');
+            $table->foreignId('invited_by_user_id')
+                ->nullable()
+                ->constrained('users')
+                ->nullOnDelete();
+            $table->timestamp('joined_at')->nullable();
+            $table->timestamps();
+
+            $table->unique(['substrate_id', 'user_id']);
+            $table->unique(['substrate_id', 'participant_id']);
+        });
+
+        Schema::create('role_user', function (Blueprint $table) {
+            $table->foreignId('role_id')
+                ->constrained()
+                ->cascadeOnDelete();
+            $table->foreignId('user_id')
+                ->constrained()
+                ->cascadeOnDelete();
+            $table->foreignUlid('substrate_id')
+                ->nullable()
+                ->constrained()
+                ->cascadeOnDelete();
+            $table->timestamps();
+
+            $table->unique(['role_id', 'user_id', 'substrate_id']);
         });
 
         Schema::create('cycles', function (Blueprint $table) {
@@ -196,6 +284,12 @@ return new class extends Migration
         Schema::dropIfExists('propositions');
         Schema::dropIfExists('phases');
         Schema::dropIfExists('cycles');
+        Schema::dropIfExists('role_user');
+        Schema::dropIfExists('substrate_memberships');
         Schema::dropIfExists('participants');
+        Schema::dropIfExists('permission_role');
+        Schema::dropIfExists('roles');
+        Schema::dropIfExists('permissions');
+        Schema::dropIfExists('substrates');
     }
 };
