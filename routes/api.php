@@ -9,12 +9,13 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('web')->group(function (): void {
     Route::get('/csrf-cookie', fn () => response()->noContent());
 
-    Route::middleware('guest')->group(function (): void {
-        Route::post('/bootstrap', [BootstrapController::class, 'store'])
-            ->middleware('throttle:3,1');
-        Route::post('/session', [SessionController::class, 'store'])
-            ->middleware('throttle:6,1');
-    });
+    Route::post('/bootstrap', [BootstrapController::class, 'store'])
+        ->middleware('throttle:3,1');
+
+    Route::middleware('guest')->post(
+        '/session',
+        [SessionController::class, 'store'],
+    )->middleware('throttle:6,1');
 
     Route::middleware('auth')->group(function (): void {
         Route::get('/session', [SessionController::class, 'show']);
