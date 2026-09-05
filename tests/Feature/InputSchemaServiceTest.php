@@ -144,6 +144,89 @@ class InputSchemaServiceTest extends TestCase
         ]);
     }
 
+    public function test_non_owner_schema_hides_revise_and_reclassify(): void
+    {
+        $now = now();
+        $ownerId = '01ARZ3NDEKTSV4RRFFQ69G5FAG';
+        $participantId = '01ARZ3NDEKTSV4RRFFQ69G5FAH';
+        $ownerCycleId = '01ARZ3NDEKTSV4RRFFQ69G5FAJ';
+        $participantCycleId = '01ARZ3NDEKTSV4RRFFQ69G5FAK';
+        $ownerPhaseId = '01ARZ3NDEKTSV4RRFFQ69G5FAM';
+        $participantPhaseId = '01ARZ3NDEKTSV4RRFFQ69G5FAN';
+        $gateId = '01ARZ3NDEKTSV4RRFFQ69G5FAP';
+
+        DB::table('participants')->insert([
+            [
+                'id' => $ownerId,
+                'callsign' => 'owner',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+            [
+                'id' => $participantId,
+                'callsign' => 'participant',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+        ]);
+        DB::table('cycles')->insert([
+            [
+                'id' => $ownerCycleId,
+                'participant_id' => $ownerId,
+                'sequence' => 1,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+            [
+                'id' => $participantCycleId,
+                'participant_id' => $participantId,
+                'sequence' => 1,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+        ]);
+        DB::table('phases')->insert([
+            [
+                'id' => $ownerPhaseId,
+                'cycle_id' => $ownerCycleId,
+                'position' => Phase::Constrain->value,
+                'started_at' => $now,
+                'completed_at' => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+            [
+                'id' => $participantPhaseId,
+                'cycle_id' => $participantCycleId,
+                'position' => Phase::Constrain->value,
+                'started_at' => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+        ]);
+        DB::table('propositions')->insert([
+            'id' => $gateId,
+            'phase_id' => $ownerPhaseId,
+            'register' => 'frontier',
+            'tier' => 'expressive',
+            'statement' => 'Owned by another participant.',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        DB::table('phases')
+            ->where('id', $participantPhaseId)
+            ->update(['gate_proposition_id' => $gateId]);
+
+        $schema = app(InputSchemaService::class)->forParticipant(
+            Participant::query()->findOrFail($participantId),
+        );
+
+        $this->assertSame(
+            ['attestation.create', 'phase.rest'],
+            array_keys($schema['$defs']['actions']),
+        );
+    }
+
     public function test_input_plan_contains_the_governed_gate_and_bounded_lineage(): void
     {
         $now = now();
