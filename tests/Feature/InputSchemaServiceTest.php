@@ -246,7 +246,7 @@ class InputSchemaServiceTest extends TestCase
         $this->assertFalse(Schema::hasColumn('receipts', 'phase_id'));
     }
 
-    public function test_instrument_completion_creates_its_attached_receipt(): void
+    public function test_instrument_completion_can_create_an_unsigned_attached_receipt(): void
     {
         $state = $this->seedPhase(
             PhaseKind::Disperse,
