@@ -4,13 +4,14 @@ namespace App\Http\Requests;
 
 use App\Models\Substrate;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
 class StoreParticipantRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return Gate::allows('join', $this->route('substrate'));
     }
 
     public function rules(): array
