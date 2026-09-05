@@ -5,26 +5,51 @@ $ulid = [
     'pattern' => '^[0-9A-HJKMNP-TV-Z]{26}$',
 ];
 
-$proposition = static function (string $action, string $supersession) use ($ulid): array {
+$statement = [
+    'type' => 'string',
+    'minLength' => 1,
+    'maxLength' => 20000,
+];
+
+$receipt = [
+    'type' => 'object',
+    'additionalProperties' => false,
+    'required' => ['type', 'reference'],
+    'properties' => [
+        'type' => [
+            'type' => 'string',
+            'enum' => ['citation', 'artefact', 'hyperlink'],
+        ],
+        'reference' => [
+            'type' => 'string',
+            'minLength' => 1,
+        ],
+        'signature' => [
+            'type' => 'string',
+            'minLength' => 1,
+        ],
+        'metadata' => [
+            'type' => 'object',
+            'additionalProperties' => true,
+        ],
+    ],
+];
+
+$proposition = static function (string $action, string $title) use ($statement): array {
     return [
-        'title' => ucfirst($supersession).' proposition',
+        'title' => $title,
         'type' => 'object',
         'additionalProperties' => false,
-        'required' => ['action', 'source_proposition_id', 'statement'],
+        'required' => ['action', 'statement'],
         'properties' => [
             'action' => ['const' => $action],
-            'source_proposition_id' => $ulid,
-            'statement' => [
-                'type' => 'string',
-                'minLength' => 1,
-                'maxLength' => 20000,
-            ],
+            'statement' => $statement,
         ],
     ];
 };
 
 return [
-    'version' => 1,
+    'version' => 2,
 
     'cache' => [
         'store' => env('COMMONS_SCHEMA_CACHE_STORE'),
@@ -33,67 +58,59 @@ return [
 
     '$defs' => [
         'ulid' => $ulid,
+        'receipt' => $receipt,
     ],
 
     'actions' => [
-        'proposition.variant' => $proposition('proposition.variant', 'variant'),
-        'proposition.revise' => $proposition('proposition.revise', 'revised'),
-        'proposition.reclassify' => [
-            ...$proposition('proposition.reclassify', 'reclassified'),
+        'phase.rest' => [
+            'title' => 'Rest on an existing proposition',
+            'type' => 'object',
+            'additionalProperties' => false,
+            'required' => ['action', 'proposition_id'],
             'properties' => [
-                ...$proposition('proposition.reclassify', 'reclassified')['properties'],
-                'register' => [
-                    'type' => 'string',
-                    'enum' => [
-                        'activity',
-                        'frontier',
-                        'canon',
-                        'signal',
-                        'stance',
-                        'concord',
-                    ],
-                ],
+                'action' => ['const' => 'phase.rest'],
+                'proposition_id' => $ulid,
             ],
-            'required' => [
-                'action',
-                'source_proposition_id',
-                'register',
-                'statement',
+        ],
+        'proposition.variant' => $proposition(
+            'proposition.variant',
+            'Create a variant from the current gate',
+        ),
+        'proposition.revise' => $proposition(
+            'proposition.revise',
+            'Revise the current gate',
+        ),
+        'proposition.reclassify' => $proposition(
+            'proposition.reclassify',
+            'Reclassify the current gate',
+        ),
+        'proposition.reclassify_with_receipt' => [
+            ...$proposition(
+                'proposition.reclassify',
+                'Reclassify the current gate with a receipt',
+            ),
+            'required' => ['action', 'statement', 'receipt'],
+            'properties' => [
+                ...$proposition(
+                    'proposition.reclassify',
+                    'Reclassify the current gate with a receipt',
+                )['properties'],
+                'receipt' => ['$ref' => '#/$defs/receipt'],
             ],
         ],
         'proposition.reconcile' => [
-            'title' => 'Reconcile propositions',
+            'title' => 'Reconcile the current gate with another proposition',
             'type' => 'object',
             'additionalProperties' => false,
-            'required' => ['action', 'source_proposition_ids', 'statement'],
+            'required' => ['action', 'other_proposition_id', 'statement'],
             'properties' => [
                 'action' => ['const' => 'proposition.reconcile'],
-                'source_proposition_ids' => [
-                    'type' => 'array',
-                    'items' => $ulid,
-                    'minItems' => 2,
-                    'maxItems' => 2,
-                    'uniqueItems' => true,
-                ],
-                'statement' => [
-                    'type' => 'string',
-                    'minLength' => 1,
-                    'maxLength' => 20000,
-                ],
-            ],
-        ],
-        'proposition.commit' => [
-            'title' => 'Commit proposition',
-            'type' => 'object',
-            'additionalProperties' => false,
-            'required' => ['action', 'source_proposition_id'],
-            'properties' => [
-                'action' => ['const' => 'proposition.commit'],
-                'source_proposition_id' => $ulid,
+                'other_proposition_id' => $ulid,
+                'statement' => $statement,
             ],
         ],
         'attestation.create' => [
-            'title' => 'Create attestation',
+            'title' => 'Create an attestation',
             'type' => 'object',
             'additionalProperties' => false,
             'required' => ['action', 'proposition_id', 'direction'],
@@ -104,47 +121,27 @@ return [
                     'type' => 'string',
                     'enum' => ['support', 'refute'],
                 ],
-                'rationale' => [
-                    'type' => 'string',
-                    'minLength' => 1,
-                    'maxLength' => 20000,
-                ],
+                'rationale' => $statement,
             ],
         ],
         'receipt.create' => [
-            'title' => 'Create receipt',
+            'title' => 'Attach a receipt to a proposition',
             'type' => 'object',
             'additionalProperties' => false,
-            'required' => [
-                'action',
-                'receiptable_type',
-                'receiptable_id',
-                'type',
-                'reference',
-            ],
+            'required' => ['action', 'proposition_id', 'receipt'],
             'properties' => [
                 'action' => ['const' => 'receipt.create'],
-                'receiptable_type' => [
-                    'type' => 'string',
-                    'enum' => ['proposition', 'attestation'],
-                ],
-                'receiptable_id' => $ulid,
-                'type' => [
-                    'type' => 'string',
-                    'enum' => ['citation', 'artefact', 'hyperlink'],
-                ],
-                'reference' => [
-                    'type' => 'string',
-                    'minLength' => 1,
-                ],
-                'signature' => [
-                    'type' => 'string',
-                    'minLength' => 1,
-                ],
-                'metadata' => [
-                    'type' => 'object',
-                    'additionalProperties' => true,
-                ],
+                'proposition_id' => $ulid,
+                'receipt' => ['$ref' => '#/$defs/receipt'],
+            ],
+        ],
+        'proposition.commit' => [
+            'title' => 'Commit the current gate',
+            'type' => 'object',
+            'additionalProperties' => false,
+            'required' => ['action'],
+            'properties' => [
+                'action' => ['const' => 'proposition.commit'],
             ],
         ],
     ],
