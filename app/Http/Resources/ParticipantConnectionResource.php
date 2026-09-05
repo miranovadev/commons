@@ -17,7 +17,7 @@ class ParticipantConnectionResource extends JsonResource
             'is_enabled' => $this->is_enabled,
             'configuration' => $this->configuration,
             'has_credentials' => $this->credentials !== null,
-            'last_triggered_cycle_id' => $this->last_triggered_cycle_id,
+            'next_trigger_at' => $this->next_trigger_at,
             'last_triggered_at' => $this->last_triggered_at,
             'last_error' => $this->last_error,
             'created_at' => $this->created_at,
