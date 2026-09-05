@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Proposition extends Model
 {
@@ -24,6 +25,11 @@ class Proposition extends Model
     public function instrumentExecutions(): HasMany
     {
         return $this->hasMany(InstrumentExecution::class);
+    }
+
+    public function measurement(): HasOne
+    {
+        return $this->hasOne(PropositionMeasurement::class);
     }
 
     public function parents(): BelongsToMany

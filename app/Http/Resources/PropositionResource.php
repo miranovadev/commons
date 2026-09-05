@@ -11,6 +11,9 @@ class PropositionResource extends JsonResource
     public function toArray(Request $request): array
     {
         $firstLine = str($this->statement)->before("\n")->trim()->toString();
+        $measurement = $this->relationLoaded('measurement')
+            ? $this->measurement
+            : null;
 
         return [
             'id' => $this->getKey(),
@@ -42,9 +45,10 @@ class PropositionResource extends JsonResource
                     && $this->parents->isEmpty(),
             ),
             'observables' => [
-                'correspondence' => null,
-                'chirality' => null,
-                'closure' => null,
+                'correspondence' => $measurement?->correspondence,
+                'chirality' => $measurement?->chirality,
+                'closure' => $measurement?->closure,
+                'calculated_at' => $measurement?->calculated_at,
             ],
             'created_at' => $this->created_at,
         ];

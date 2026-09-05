@@ -10,6 +10,7 @@ use App\Models\Proposition;
 use App\Models\Substrate;
 use App\Models\Supersession;
 use App\Models\User;
+use App\Services\PropositionMeasurementService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\TestCase;
@@ -86,6 +87,13 @@ class CommonsUiApiTest extends TestCase
             'A new expressive branch begins here.',
         );
 
+        app(PropositionMeasurementService::class)->project(
+            $child,
+            correspondence: 0.75,
+            chirality: -0.25,
+            closure: null,
+        );
+
         $supersession = new Supersession;
         $supersession->forceFill([
             'phase_id' => $phase->getKey(),
@@ -104,7 +112,13 @@ class CommonsUiApiTest extends TestCase
             ->assertJsonPath('data.0.children.0.id', $child->getKey())
             ->assertJsonPath('data.0.children.0.type', 'variant')
             ->assertJsonPath('data.1.parent_ids.0', $origin->getKey())
-            ->assertJsonPath('data.1.observables.chirality', null);
+            ->assertJsonPath('data.1.observables.correspondence', 0.75)
+            ->assertJsonPath('data.1.observables.chirality', -0.25)
+            ->assertJsonPath('data.1.observables.closure', null)
+            ->assertJsonPath(
+                'data.1.observables.calculated_at',
+                fn ($value): bool => is_string($value),
+            );
     }
 
     private function substrate(string $slug, string $visibility): Substrate
