@@ -156,6 +156,67 @@ class ContextHorizonProjectorTest extends TestCase
         $this->assertDatabaseCount('context_horizons', 0);
     }
 
+    public function test_cross_substrate_edges_cannot_enter_the_ledger(): void
+    {
+        $otherSubstrate = new Substrate;
+        $otherSubstrate->forceFill([
+            'slug' => 'other-substrate',
+            'title' => 'Other substrate',
+            'visibility' => 'private',
+            'configuration' => [],
+        ]);
+        $otherSubstrate->save();
+
+        $otherParticipant = new Participant;
+        $otherParticipant->forceFill([
+            'substrate_id' => $otherSubstrate->getKey(),
+            'callsign' => 'other-observer',
+        ]);
+        $otherParticipant->save();
+
+        $otherCycle = new Cycle;
+        $otherCycle->forceFill([
+            'participant_id' => $otherParticipant->getKey(),
+            'sequence' => 1,
+        ]);
+        $otherCycle->save();
+
+        $otherPhase = new Phase;
+        $otherPhase->forceFill([
+            'cycle_id' => $otherCycle->getKey(),
+            'kind' => PhaseKind::Distinguish,
+            'write_register' => 'activity',
+            'started_at' => now(),
+        ]);
+        $otherPhase->save();
+
+        $source = new Proposition;
+        $source->forceFill([
+            'phase_id' => $otherPhase->getKey(),
+            'register' => 'activity',
+            'tier' => 'expressive',
+            'statement' => 'A proposition elsewhere.',
+        ]);
+        $source->save();
+
+        $target = $this->proposition('A local proposition.');
+        $supersession = new Supersession;
+        $supersession->forceFill([
+            'phase_id' => $this->phase->getKey(),
+            'source_proposition_id' => $source->getKey(),
+            'target_proposition_id' => $target->getKey(),
+            'type' => 'variant',
+        ]);
+        $supersession->save();
+
+        $this->expectException(DomainException::class);
+        $this->expectExceptionMessage(
+            'A contribution cannot cross substrate boundaries.'
+        );
+
+        app(LedgerService::class)->record($supersession);
+    }
+
     public function test_commitments_create_horizons_only_on_direction_change(): void
     {
         [$origin, $originSnapshot] = $this->commit(
