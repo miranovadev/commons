@@ -54,6 +54,9 @@ final class PropositionOptionService
 
     private function activeHeads(Phase $phase): Builder
     {
+        // Context Horizon membership, participant visibility, homeostatic
+        // admissibility and predicted Tension reduction belong here once
+        // their measurements are available.
         return Proposition::query()
             ->whereHas(
                 'phase.cycle',
@@ -69,9 +72,6 @@ final class PropositionOptionService
                     ),
             );
 
-        // Context Horizon membership, participant visibility, homeostatic
-        // admissibility and predicted Tension reduction belong here once
-        // their measurements are available.
     }
 
     private function limit(): int
