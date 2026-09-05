@@ -169,7 +169,7 @@ class InputSchemaServiceTest extends TestCase
         ]);
         DB::table('phases')->insert([
             'id' => $phaseId,
-            'phase_id' => $phaseId,
+            'cycle_id' => $cycleId,
             'position' => Phase::Distinguish->value,
             'started_at' => $now,
             'created_at' => $now,
