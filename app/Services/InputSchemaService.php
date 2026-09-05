@@ -26,7 +26,7 @@ final readonly class InputSchemaService
         array $gateOptionIds,
     ): array {
         $occurrence = $this->phases->currentFor($participant);
-        $kind = $occurrence->position;
+        $kind = $occurrence->kind;
         $plan = $this->phases->plan($kind);
         $gate = $this->gates->forPhase($occurrence);
         $ownsGate = $this->ownership->ownedBy($gate, $participant);
