@@ -182,6 +182,9 @@ class ParticipantConnectionApiTest extends TestCase
         ]);
         $substrate->save();
 
+        $owner = User::factory()->create();
+        $this->actingAs($owner);
+
         $participantId = $this->postJson(
             "/api/substrates/{$substrate->slug}/participants",
             ['callsign' => 'connection-owner'],
