@@ -1,7 +1,7 @@
-import { Badge, Box, Drawer, Group, ScrollArea, Stack, Tabs, Text, Title } from '@mantine/core';
+import { Badge, Box, Drawer, ScrollArea, Stack, Text } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
-import { metaForRegister } from '../registers';
-import { MeasurementRails, structuralDeltaSummary } from './MeasurementRails';
+import { structuralDeltaSummary } from './MeasurementRails';
+import { PropositionContent } from './PropositionContent';
 
 export function PropositionInspector({ selection, onClose }) {
   const mobile = useMediaQuery('(max-width: 74em)');
@@ -34,51 +34,34 @@ function InspectorContent({ selection }) {
     );
   }
 
-  const proposition = selection.proposition;
-  const register = metaForRegister(proposition?.register);
+  const proposition = selection.proposition || {};
   const projected = selection.projectedObservables;
-  const summary = structuralDeltaSummary(proposition?.observables, projected);
+  const summary = structuralDeltaSummary(proposition.observables, projected);
 
   return (
     <Stack gap="md" p="md">
-      <Box>
-        <Group gap={6} mb={6}>
-          {proposition?.tier && <Badge size="xs" color={proposition.tier === 'committal' ? 'indigo' : 'gray'}>{proposition.tier}</Badge>}
-          {proposition?.register && <Badge size="xs" color={register.color} variant="light">{register.label}</Badge>}
-          {selection.kind && <Badge size="xs" color="gray" variant="outline">{selection.kind}</Badge>}
-        </Group>
-        <Title order={4}>{selection.title || proposition?.title || proposition?.statement?.split('\n')[0] || 'Available move'}</Title>
-        {proposition?.statement && <Text size="sm" c="dimmed" mt={5}>{proposition.statement}</Text>}
+      {selection.kind && <Badge size="xs" color="gray" variant="outline" style={{ alignSelf: 'flex-start' }}>{selection.kind}</Badge>}
+
+      <Box className="inspector-section">
+        <PropositionContent
+          proposition={{ ...proposition, title: selection.title || proposition.title }}
+          mode="detailed"
+          projectedObservables={projected}
+        />
       </Box>
 
-      <Tabs defaultValue="structural">
-        <Tabs.List>
-          <Tabs.Tab value="structural">Structural State</Tabs.Tab>
-          <Tabs.Tab value="overview">Overview</Tabs.Tab>
-        </Tabs.List>
-        <Tabs.Panel value="structural" pt="md">
-          <Stack gap="lg">
-            <Box className="inspector-section">
-              <Text fw={750} size="sm" mb="md">Measurement position</Text>
-              <MeasurementRails observables={proposition?.observables} projectedObservables={projected} />
-            </Box>
-            {summary.length > 0 && (
-              <Box className="inspector-section">
-                <Text fw={750} size="sm" mb="sm">Structural delta</Text>
-                <Stack gap={6}>
-                  {summary.map((item) => <Text key={item} size="sm">{item}</Text>)}
-                </Stack>
-              </Box>
-            )}
-            {!projected && (
-              <Text size="xs" c="dimmed">Projected structural measurements are not currently supplied for this selection, so no resulting position is fabricated here.</Text>
-            )}
+      {summary.length > 0 && (
+        <Box className="inspector-section">
+          <Text fw={750} size="sm" mb="sm">Structural delta</Text>
+          <Stack gap={6}>
+            {summary.map((item) => <Text key={item} size="sm">{item}</Text>)}
           </Stack>
-        </Tabs.Panel>
-        <Tabs.Panel value="overview" pt="md">
-          <Text size="sm" c="dimmed">This view intentionally stays close to the state already exposed by the participation plan.</Text>
-        </Tabs.Panel>
-      </Tabs>
+        </Box>
+      )}
+
+      {!projected && (
+        <Text size="xs" c="dimmed">This is the observed structural state. A projected position appears here only when an admissible move supplies one.</Text>
+      )}
     </Stack>
   );
 }
