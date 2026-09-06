@@ -1,6 +1,7 @@
-import { Box, Center, Group, Paper, Text, ThemeIcon, Title } from '@mantine/core';
+import { Box, Group, Paper, Text, ThemeIcon, Title } from '@mantine/core';
 import { IconArrowsMove, IconSparkles } from '@tabler/icons-react';
 import { useMemo, useRef, useState } from 'react';
+import '../../css/substrate-graph.css';
 import { PropositionCard } from './PropositionCard';
 
 const NODE_WIDTH = 190;
