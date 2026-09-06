@@ -97,7 +97,7 @@
   box-shadow: 0 5px 18px color-mix(in srgb, var(--mantine-color-dark-9) 10%, transparent);
 }
 
-.substrate-graph-node .proposition-card--mini.proposition-card--committal {
+.substrate-graph-node .proposition-card--mini.proposition-card--indigo {
   border-color: color-mix(in srgb, var(--mantine-color-indigo-5) 68%, transparent);
   background: light-dark(
     color-mix(in srgb, var(--mantine-color-indigo-0) 82%, var(--mantine-color-white)),
