@@ -49,7 +49,22 @@ class ParticipationApiTest extends TestCase
                 $payload['origin']['statement'],
             )
             ->assertJsonPath('data.plan.gate.register', 'canon')
-            ->assertJsonPath('data.plan.gate.tier', 'committal');
+            ->assertJsonPath('data.plan.gate.tier', 'committal')
+            ->assertJsonPath('data.plan.workspace.domain', 'settlement')
+            ->assertJsonPath(
+                'data.plan.workspace.provenance.statement',
+                $payload['origin']['statement'],
+            )
+            ->assertJsonStructure([
+                'data' => [
+                    'plan' => [
+                        'workspace' => [
+                            'horizon' => ['id', 'sequence', 'opened_at'],
+                            'registers' => ['signal', 'stance', 'concord'],
+                        ],
+                    ],
+                ],
+            ]);
 
         $originId = $response->json('data.plan.gate.id');
 
@@ -129,33 +144,47 @@ class ParticipationApiTest extends TestCase
         $this->assertDatabaseCount('substrate_ledger_entries', 0);
     }
 
-    public function test_entry_to_an_established_substrate_waits_for_potential(): void
+    public function test_a_second_participant_enters_an_established_substrate_via_potential(): void
     {
-        [$substrate, $participant] = $this->participant();
-        $endpoint = $this->endpoint($substrate, $participant);
+        [$substrate, $originParticipant] = $this->participant();
 
-        $this->postJson($endpoint.'/enter', $this->originPayload())
+        $originResponse = $this->postJson(
+            $this->endpoint($substrate, $originParticipant).'/enter',
+            $this->originPayload(),
+        )
             ->assertCreated();
+        $originId = $originResponse->json('data.plan.gate.id');
 
-        Cycle::query()
-            ->whereBelongsTo($participant)
-            ->whereNull('completed_at')
-            ->update(['completed_at' => now()]);
+        $participant = new Participant;
+        $participant->forceFill([
+            'substrate_id' => $substrate->getKey(),
+            'callsign' => 'second-observer',
+        ]);
+        $participant->save();
+        $endpoint = $this->endpoint($substrate, $participant);
 
         $this->getJson($endpoint)
             ->assertOk()
             ->assertJsonPath('data.status', 'waiting')
             ->assertJsonPath('data.entry.mode', 'potential')
-            ->assertJsonPath('data.entry.available', false);
+            ->assertJsonPath('data.entry.available', true);
 
-        $this->postJson($endpoint.'/enter', $this->originPayload())
-            ->assertConflict()
-            ->assertJsonPath(
-                'message',
-                'The substrate already has an Origin. Potential must select the next Cycle Gate.',
-            );
+        $this->postJson($endpoint.'/enter', [])
+            ->assertCreated()
+            ->assertJsonPath('data.status', 'ready')
+            ->assertJsonPath('data.cycle.sequence', 1)
+            ->assertJsonPath('data.plan.phase.kind', 'distinguish')
+            ->assertJsonPath('data.plan.phase.write_register', 'signal')
+            ->assertJsonPath('data.plan.gate.id', $originId);
 
         $this->assertDatabaseCount('propositions', 1);
+        $this->assertDatabaseCount('cycles', 3);
+        $this->assertDatabaseHas('phases', [
+            'gate_proposition_id' => $originId,
+            'kind' => PhaseKind::Distinguish->value,
+        ]);
+
+        $this->postJson($endpoint.'/enter', [])->assertConflict();
     }
 
     public function test_ready_state_includes_the_plan_and_attenuation_seam(): void
@@ -175,6 +204,11 @@ class ParticipationApiTest extends TestCase
             ->assertJsonPath(
                 'data.perspective.attenuation.value',
                 null,
+            )
+            ->assertJsonPath('data.plan.workspace.domain', 'emergence')
+            ->assertJsonPath(
+                'data.plan.workspace.provenance.statement',
+                'The Origin.',
             );
     }
 
@@ -197,6 +231,11 @@ class ParticipationApiTest extends TestCase
             ->assertJsonPath('data.plan.phase.kind', 'persist')
             ->assertJsonPath(
                 'data.plan.gate.statement',
+                'A first expressive distinction.',
+            )
+            ->assertJsonPath('data.plan.workspace.domain', 'emergence')
+            ->assertJsonPath(
+                'data.plan.workspace.registers.activity.0.statement',
                 'A first expressive distinction.',
             );
 

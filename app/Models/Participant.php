@@ -44,6 +44,11 @@ class Participant extends Model
         return $this->hasMany(Cycle::class);
     }
 
+    public function latestCycle(): HasOne
+    {
+        return $this->hasOne(Cycle::class)->ofMany('sequence', 'max');
+    }
+
     public function connections(): HasMany
     {
         return $this->hasMany(ParticipantConnection::class);

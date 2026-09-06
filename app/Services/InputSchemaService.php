@@ -18,14 +18,15 @@ final readonly class InputSchemaService
     /**
      * @param  list<string>  $writeOptionIds
      * @param  list<string>  $gateOptionIds
+     * @param  list<string>  $revisionOptionIds
      * @return array<string, mixed>
      */
     public function forParticipant(
         Participant $participant,
         array $writeOptionIds,
         array $gateOptionIds,
-    ): array
-    {
+        array $revisionOptionIds = [],
+    ): array {
         $occurrence = $this->phases->currentFor($participant);
         $kind = $occurrence->kind;
         $plan = $this->phases->plan($kind);
@@ -49,6 +50,7 @@ final readonly class InputSchemaService
             $this->forPhase($kind, $actions),
             $writeOptionIds,
             $gateOptionIds,
+            $revisionOptionIds,
         );
     }
 
@@ -59,8 +61,7 @@ final readonly class InputSchemaService
     public function forPhase(
         PhaseKind $kind,
         ?array $actions = null,
-    ): array
-    {
+    ): array {
         $plan = $this->phases->plan($kind);
         $actionNames = $actions ?? $plan['actions'];
         $version = (int) config('schemas.version', 1);
@@ -141,18 +142,23 @@ final readonly class InputSchemaService
      * @param  array<string, mixed>  $schema
      * @param  list<string>  $writeOptionIds
      * @param  list<string>  $gateOptionIds
+     * @param  list<string>  $revisionOptionIds
      * @return array<string, mixed>
      */
     private function specialize(
         array $schema,
         array $writeOptionIds,
         array $gateOptionIds,
-    ): array
-    {
+        array $revisionOptionIds,
+    ): array {
         $bindings = [
             'proposition.select' => [
                 'property' => 'proposition_id',
                 'values' => $writeOptionIds,
+            ],
+            'proposition.revise' => [
+                'property' => 'proposition_id',
+                'values' => $revisionOptionIds,
             ],
             'attestation.create' => [
                 'property' => 'proposition_id',

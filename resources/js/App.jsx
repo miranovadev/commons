@@ -1,41 +1,25 @@
 import { useEffect } from 'react';
-import {
-  ActionIcon,
-  AppShell,
-  Avatar,
-  Box,
-  Burger,
-  Button,
-  Center,
-  Group,
-  Loader,
-  MantineProvider,
-  Menu,
-  Text,
-  Title,
-  useMantineColorScheme,
-} from '@mantine/core';
+import { ActionIcon, AppShell, Avatar, Box, Burger, Button, Center, Group, Loader, MantineProvider, Menu, NavLink, Stack, Text, useMantineColorScheme } from '@mantine/core';
 import { useDisclosure, useMediaQuery } from '@mantine/hooks';
-import { IconChevronDown, IconLogin2, IconLogout2, IconMoon, IconSun } from '@tabler/icons-react';
-import { BrowserRouter, Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { IconAdjustments, IconBinaryTree2, IconChevronDown, IconLogin2, IconLogout2, IconMoon, IconPlugConnected, IconSettings, IconSun, IconTopologyStar3, IconUserHexagon } from '@tabler/icons-react';
+import { BrowserRouter, Link, Navigate, Route, Routes, matchPath, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
+import '../css/ui-polish.css';
 import { CommonsLogo } from './components/CommonsLogo';
-import { commonsApi, useGetSessionQuery, useLogoutMutation } from './services/commonsApi';
+import { commonsApi, useGetSessionQuery, useGetSubstrateQuery, useLogoutMutation } from './services/commonsApi';
 import { systemBootstrapped } from './systemSlice';
 import { HTTP_PRECONDITION_REQUIRED } from './http';
 import { theme } from './theme';
 import { BootstrapPage } from './pages/BootstrapPage';
+import { ConnectionsPage } from './pages/ConnectionsPage';
 import { LoginPage } from './pages/LoginPage';
 import { ParticipantPage } from './pages/ParticipantPage';
+import { ParticipantsPage } from './pages/ParticipantsPage';
 import { SubstratePage } from './pages/SubstratePage';
 import { SubstratesPage } from './pages/SubstratesPage';
 
 export function App() {
-  return (
-    <MantineProvider theme={theme} defaultColorScheme="auto">
-      <BrowserRouter><CommonsApp /></BrowserRouter>
-    </MantineProvider>
-  );
+  return <MantineProvider theme={theme} defaultColorScheme="auto"><BrowserRouter><CommonsApp /></BrowserRouter></MantineProvider>;
 }
 
 function CommonsApp() {
@@ -47,6 +31,10 @@ function CommonsApp() {
   const [logoutRequest] = useLogoutMutation();
   const location = useLocation();
   const navigate = useNavigate();
+  const substrateMatch = matchPath({ path: '/substrates/:slug/*', end: false }, location.pathname)
+    || matchPath('/substrates/:slug', location.pathname);
+  const substrateSlug = substrateMatch?.params?.slug;
+  const { data: selectedSubstrate } = useGetSubstrateQuery(substrateSlug, { skip: !substrateSlug });
 
   useEffect(close, [location.pathname]);
 
@@ -56,33 +44,32 @@ function CommonsApp() {
     navigate('/');
   }
 
-  if (isLoading) {
-    return <Center mih="100vh"><Loader color="indigo" /></Center>;
-  }
+  if (isLoading) return <Center mih="100vh"><Loader /></Center>;
+  if (isError && error?.status !== 401 && error?.status !== HTTP_PRECONDITION_REQUIRED) return <Center mih="100vh"><Text c="red">The Commons could not be reached.</Text></Center>;
+  if (bootstrapRequired) return <Routes><Route path="*" element={<BootstrapPage onComplete={() => { dispatch(systemBootstrapped()); navigate('/'); }} />} /></Routes>;
 
-  if (isError && error?.status !== 401 && error?.status !== HTTP_PRECONDITION_REQUIRED) {
-    return <Center mih="100vh"><Text c="red">The Commons could not be reached.</Text></Center>;
-  }
-
-  if (bootstrapRequired) {
-    return <Routes><Route path="*" element={<BootstrapPage onComplete={() => { dispatch(systemBootstrapped()); navigate('/'); }} />} /></Routes>;
-  }
+  const participantDetailActive = location.pathname.includes('/participants/') && !location.pathname.endsWith('/participants');
+  const participantsActive = Boolean(substrateSlug) && (location.pathname === `/substrates/${substrateSlug}/participants` || participantDetailActive);
+  const connectionsActive = location.pathname === '/connections';
+  const substrateRoot = substrateSlug && location.pathname === `/substrates/${substrateSlug}`;
+  const flushMain = participantDetailActive || substrateRoot;
+  const substratesListActive = location.pathname === '/';
 
   return (
     <AppShell
-      header={{ height: 68 }}
-      navbar={{ width: 260, breakpoint: 'sm', collapsed: { mobile: !opened, desktop: true } }}
-      padding={{ base: 'md', sm: 'xl' }}
+      header={{ height: 58 }}
+      navbar={{ width: 214, breakpoint: 'sm', collapsed: { mobile: !opened, desktop: false } }}
+      padding={flushMain ? 0 : { base: 'md', sm: 'xl' }}
     >
       <AppShell.Header className="app-header">
-        <Group h="100%" px={{ base: 'md', sm: 'xl' }} justify="space-between">
+        <Group h="100%" px="md" justify="space-between">
           <Group gap="sm">
             <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
-            <Group component={Link} to="/" gap="sm" className="brand-link">
-              <CommonsLogo size={40} />
+            <Group component={Link} to="/" gap="xs" className="brand-link">
+              <CommonsLogo size={30} />
               <Box>
-                <Title order={3} lh={1}>The Commons</Title>
-                <Text size="xs" c="dimmed" mt={3}>Shared cognitive substrate</Text>
+                <Text fw={750} size="sm" lh={1.1}>The Commons</Text>
+                <Text size="10px" c="dimmed" visibleFrom="sm" mt={2}>A Shared Cognitive Substrate</Text>
               </Box>
             </Group>
           </Group>
@@ -90,39 +77,48 @@ function CommonsApp() {
             <ColorSchemeButton />
             {user ? (
               <Menu position="bottom-end" width={210}>
-                <Menu.Target>
-                  <Button
-                    variant="subtle"
-                    color="gray"
-                    px={mobile ? 0 : 'xs'}
-                    rightSection={mobile ? undefined : <IconChevronDown size={14} />}
-                    aria-label={mobile ? `Open ${user.name}'s menu` : undefined}
-                  >
-                    <Group gap="xs">
-                      <Avatar size={28} color="indigo" name={user.name} />
-                      {!mobile && <Text size="sm" fw={500}>{user.name}</Text>}
-                    </Group>
-                  </Button>
-                </Menu.Target>
+                <Menu.Target><Button variant="subtle" color="gray" px={mobile ? 0 : 'xs'} rightSection={mobile ? undefined : <IconChevronDown size={14} />}><Group gap="xs"><Avatar size={26} color="indigo" name={user.name} />{!mobile && <Text size="sm" fw={500}>{user.name}</Text>}</Group></Button></Menu.Target>
                 <Menu.Dropdown>
                   <Menu.Label>{user.email}</Menu.Label>
+                  <Menu.Item leftSection={<IconSettings size={16} />}>Account Settings</Menu.Item>
+                  <Menu.Divider />
                   <Menu.Item color="red" leftSection={<IconLogout2 size={16} />} onClick={logout}>Sign out</Menu.Item>
                 </Menu.Dropdown>
               </Menu>
-            ) : (
-              <Button component={Link} to="/login" variant="default" leftSection={<IconLogin2 size={16} />}>Sign in</Button>
-            )}
+            ) : <Button component={Link} to="/login" leftSection={<IconLogin2 size={16} />}>Sign in</Button>}
           </Group>
         </Group>
       </AppShell.Header>
-      <AppShell.Navbar p="md">
-        <Button component={Link} to="/" variant="subtle" justify="flex-start">Substrates</Button>
+      <AppShell.Navbar className="commons-navbar" p="sm">
+        <Stack h="100%" gap={4} pt="xs">
+          <NavLink
+            component={Link}
+            to="/"
+            label="Substrates"
+            leftSection={<IconTopologyStar3 size={18} />}
+            active={substratesListActive || Boolean(substrateSlug)}
+            className={substrateSlug && !substratesListActive ? 'substrates-nav-context' : undefined}
+          />
+          {substrateSlug && (
+            <Box className="substrate-nav-section">
+              <Text className="substrate-nav-section__title" size="xs" fw={700} lineClamp={2}>{selectedSubstrate?.title || substrateSlug}</Text>
+              <Stack gap={2} mt={4}>
+                <NavLink component={Link} to={`/substrates/${substrateSlug}`} label="Graph" leftSection={<IconBinaryTree2 size={16} />} active={Boolean(substrateRoot)} />
+                <NavLink component={Link} to={`/substrates/${substrateSlug}/participants`} label="Participants" leftSection={<IconUserHexagon size={16} />} active={participantsActive} />
+                <NavLink label="Settings" leftSection={<IconAdjustments size={16} />} disabled />
+              </Stack>
+            </Box>
+          )}
+          {user && <NavLink component={Link} to="/connections" label="Connections" leftSection={<IconPlugConnected size={18} />} active={connectionsActive} />}
+        </Stack>
       </AppShell.Navbar>
-      <AppShell.Main>
+      <AppShell.Main className="app-main">
         <Routes>
           <Route path="/" element={<SubstratesPage user={user} />} />
           <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage />} />
+          <Route path="/connections" element={user ? <ConnectionsPage /> : <Navigate to="/login" replace />} />
           <Route path="/substrates/:slug" element={<SubstratePage user={user} />} />
+          <Route path="/substrates/:slug/participants" element={user ? <ParticipantsPage user={user} /> : <Navigate to="/login" replace />} />
           <Route path="/substrates/:slug/participants/:participantId" element={user ? <ParticipantPage /> : <Navigate to="/login" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
@@ -132,10 +128,7 @@ function CommonsApp() {
 }
 
 function ColorSchemeButton() {
-  const { colorScheme, toggleColorScheme } = useMantineColorScheme();
-  return (
-    <ActionIcon variant="subtle" color="gray" size="lg" onClick={toggleColorScheme} aria-label="Toggle colour scheme">
-      {colorScheme === 'dark' ? <IconSun size={19} /> : <IconMoon size={19} />}
-    </ActionIcon>
-  );
+  const { colorScheme, setColorScheme } = useMantineColorScheme();
+  const dark = colorScheme === 'dark';
+  return <ActionIcon variant="subtle" color="gray" aria-label="Toggle color scheme" onClick={() => setColorScheme(dark ? 'light' : 'dark')}>{dark ? <IconSun size={18} /> : <IconMoon size={18} />}</ActionIcon>;
 }

@@ -14,11 +14,10 @@ final readonly class InstrumentExecutionService
 {
     public function __construct(
         private LedgerService $ledger,
+        private PropositionMeasurementService $measurements,
     ) {}
 
-    /**
-     * @param  array<string, mixed>  $input
-     */
+    /** @param array<string, mixed> $input */
     public function start(
         Phase $phase,
         Proposition $proposition,
@@ -41,9 +40,7 @@ final readonly class InstrumentExecutionService
         return $execution;
     }
 
-    /**
-     * @param  array<string, mixed>  $metadata
-     */
+    /** @param array<string, mixed> $metadata */
     public function complete(
         InstrumentExecution $execution,
         Model $receiptable,
@@ -83,6 +80,11 @@ final readonly class InstrumentExecutionService
             $locked->metadata = $metadata;
             $locked->completed_at = now();
             $locked->save();
+
+            $proposition = $locked->proposition()->first();
+            if ($proposition !== null) {
+                $this->measurements->recalculateIfMeasurable($proposition);
+            }
 
             return $receipt;
         });

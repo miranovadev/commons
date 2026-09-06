@@ -35,10 +35,14 @@ final readonly class ContributionDispatcher
             'proposition.select' => Proposition::query()
                 ->findOrFail($input['proposition_id']),
             'proposition.variant',
-            'proposition.revise',
             'proposition.reclassify' => $this->proposition(
                 $phase,
                 $gate,
+                $input,
+            ),
+            'proposition.revise' => $this->revise(
+                $participant,
+                $phase,
                 $input,
             ),
             'proposition.reconcile' => $this->reconcile(
@@ -62,9 +66,33 @@ final readonly class ContributionDispatcher
         };
     }
 
-    /**
-     * @param  array<string, mixed>  $input
-     */
+    /** @param array<string, mixed> $input */
+    private function revise(
+        Participant $participant,
+        Phase $phase,
+        array $input,
+    ): Proposition {
+        $source = Proposition::query()
+            ->whereKey($input['proposition_id'])
+            ->whereKeyNot($phase->gate_proposition_id)
+            ->where('register', $phase->write_register)
+            ->whereHas(
+                'phase.cycle',
+                fn ($query) => $query->whereBelongsTo($participant),
+            )
+            ->whereDoesntHave('children')
+            ->first();
+
+        if ($source === null) {
+            throw new DomainException(
+                'Revision requires an owned active head in the current write register.'
+            );
+        }
+
+        return $this->proposition($phase, $source, $input);
+    }
+
+    /** @param array<string, mixed> $input */
     private function proposition(
         Phase $phase,
         Proposition $gate,
@@ -88,12 +116,10 @@ final readonly class ContributionDispatcher
 
         $this->ledger->record($supersession);
 
-        return $target;
+        return $this->refreshMeasurement($target);
     }
 
-    /**
-     * @param  array<string, mixed>  $input
-     */
+    /** @param array<string, mixed> $input */
     private function reconcile(
         Phase $phase,
         Proposition $gate,
@@ -118,12 +144,10 @@ final readonly class ContributionDispatcher
             );
         }
 
-        return $target;
+        return $this->refreshMeasurement($target);
     }
 
-    /**
-     * @param  array<string, mixed>  $input
-     */
+    /** @param array<string, mixed> $input */
     private function attest(
         Participant $participant,
         Phase $phase,
@@ -155,12 +179,10 @@ final readonly class ContributionDispatcher
         $attestation->save();
         $this->ledger->record($attestation);
 
-        return $proposition;
+        return $this->refreshMeasurement($proposition);
     }
 
-    /**
-     * @param  array<string, mixed>  $input
-     */
+    /** @param array<string, mixed> $input */
     private function executeInstrument(
         Phase $phase,
         array $input,
@@ -217,8 +239,7 @@ final readonly class ContributionDispatcher
             'commit',
         );
         $this->ledger->record($supersession);
-        $values = $this->measurements
-            ->recalculate($target);
+        $values = $this->measurements->recalculate($target);
         $projections = $this->projections->from(
             new ObservableValues(
                 $values->correspondence,
@@ -237,9 +258,7 @@ final readonly class ContributionDispatcher
         return $target;
     }
 
-    /**
-     * @param  array{kind: string, reference: string}  $instrument
-     */
+    /** @param array{kind: string, reference: string} $instrument */
     private function startInstrument(
         Phase $phase,
         Proposition $proposition,
@@ -294,5 +313,12 @@ final readonly class ContributionDispatcher
         $supersession->save();
 
         return $supersession;
+    }
+
+    private function refreshMeasurement(Proposition $proposition): Proposition
+    {
+        $this->measurements->recalculate($proposition);
+
+        return $proposition;
     }
 }

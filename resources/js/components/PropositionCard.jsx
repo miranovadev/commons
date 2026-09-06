@@ -1,56 +1,49 @@
-import { Badge, Card, Group, HoverCard, Stack, Text, ThemeIcon, Tooltip } from '@mantine/core';
-import { IconBolt, IconCirclesRelation, IconLock, IconWhirl } from '@tabler/icons-react';
+import { Card } from '@mantine/core';
+import { metaForRegister } from '../registers';
+import { PropositionContent } from './PropositionContent';
 
-const observableMeta = {
-  correspondence: { label: 'Correspondence', description: 'Structural similarity between complementary Domains.', icon: IconCirclesRelation, color: 'blue' },
-  chirality: { label: 'Chirality', description: 'Directional alignment of active Attestations between Domains.', icon: IconWhirl, color: 'violet' },
-  closure: { label: 'Closure', description: 'Persistence across participatory depth and cadence.', icon: IconLock, color: 'teal' },
-};
+export function PropositionCard({
+  proposition,
+  selected = false,
+  compact = false,
+  mini = false,
+  wireframe = false,
+  muted = false,
+  indigoHighlight = false,
+  actionLabel,
+  actionIcon,
+  projectedObservables,
+  onClick,
+}) {
+  const register = metaForRegister(proposition.register);
+  const structurallyHighlighted = indigoHighlight || proposition.tier === 'committal';
+  const classes = [
+    'proposition-card',
+    mini && 'proposition-card--mini',
+    selected && 'proposition-card--selected',
+    wireframe && 'proposition-card--wireframe',
+    muted && 'proposition-card--muted',
+    structurallyHighlighted && 'proposition-card--indigo',
+  ].filter(Boolean).join(' ');
 
-export function PropositionCard({ proposition, selected = false, compact = false, onClick }) {
   return (
     <Card
       component={onClick ? 'button' : 'div'}
       type={onClick ? 'button' : undefined}
       withBorder
-      padding={compact ? 'md' : 'lg'}
-      className={`proposition-card ${selected ? 'proposition-card--selected' : ''}`}
+      padding={mini ? 'xs' : compact ? 'sm' : 'lg'}
+      className={classes}
+      style={{ '--register-color': `var(--mantine-color-${register.color}-6)` }}
       onClick={onClick}
     >
-      <Group justify="space-between" align="flex-start" wrap="nowrap">
-        <Stack gap={5} miw={0}>
-          <Group gap={7}>
-            <Badge size="xs" color={proposition.tier === 'committal' ? 'indigo' : 'gray'} variant={proposition.tier === 'committal' ? 'filled' : 'light'}>{proposition.tier}</Badge>
-            <Text size="xs" c="dimmed" tt="capitalize">{proposition.register}</Text>
-          </Group>
-          <Text fw={650} lineClamp={1}>{proposition.title}</Text>
-        </Stack>
-        {proposition.tier === 'committal' && <Tooltip label="Committed structure"><ThemeIcon color="indigo" variant="light" size="sm"><IconBolt size={13} /></ThemeIcon></Tooltip>}
-      </Group>
-      <Text size="sm" c="dimmed" lineClamp={compact ? 2 : 3} mt="sm">{proposition.statement}</Text>
-      <Group gap={5} mt="md" onClick={(event) => event.stopPropagation()}>
-        {Object.entries(observableMeta).map(([key, meta]) => <Observable key={key} name={key} value={proposition.observables?.[key]} {...meta} />)}
-      </Group>
+      <PropositionContent
+        proposition={proposition}
+        mode={mini ? 'minimal' : 'card'}
+        actionLabel={actionLabel}
+        actionIcon={actionIcon}
+        wireframe={wireframe}
+        projectedObservables={projectedObservables}
+      />
     </Card>
-  );
-}
-
-function Observable({ name, value, label, description, icon: Icon, color }) {
-  const display = typeof value === 'number' ? `${value >= 0 ? '+' : ''}${value.toFixed(2)}` : '—';
-  const speed = name === 'chirality' && typeof value === 'number' ? Math.max(2, 8 - Math.abs(value) * 6) : null;
-  return (
-    <HoverCard width={245} shadow="md" openDelay={250} position="top">
-      <HoverCard.Target>
-        <Group gap={4} className="observable-pill" data-empty={value == null || undefined}>
-          <Icon size={14} className={name === 'chirality' && value != null ? 'chirality-icon' : ''} style={speed ? { '--spin-speed': `${speed}s` } : undefined} />
-          <Text size="xs" fw={650}>{display}</Text>
-        </Group>
-      </HoverCard.Target>
-      <HoverCard.Dropdown>
-        <Group gap="xs" mb={6}><ThemeIcon color={color} variant="light" size="sm"><Icon size={14} /></ThemeIcon><Text fw={650} size="sm">{label}</Text></Group>
-        <Text size="xs" c="dimmed">{description}</Text>
-        {value == null && <Text size="xs" mt="xs" c="indigo">Awaiting the observable measurement layer.</Text>}
-      </HoverCard.Dropdown>
-    </HoverCard>
   );
 }

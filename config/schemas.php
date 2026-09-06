@@ -41,7 +41,7 @@ $proposition = static function (string $action, string $title) use ($statement):
 };
 
 return [
-    'version' => 4,
+    'version' => 5,
 
     'cache' => [
         'store' => env('COMMONS_SCHEMA_CACHE_STORE'),
@@ -72,10 +72,17 @@ return [
             'proposition.variant',
             'Create a variant from the current gate',
         ),
-        'proposition.revise' => $proposition(
-            'proposition.revise',
-            'Revise the current gate',
-        ),
+        'proposition.revise' => [
+            'title' => 'Revise a proposition in the current write register',
+            'type' => 'object',
+            'additionalProperties' => false,
+            'required' => ['action', 'proposition_id', 'statement'],
+            'properties' => [
+                'action' => ['const' => 'proposition.revise'],
+                'proposition_id' => $ulid,
+                'statement' => $statement,
+            ],
+        ],
         'proposition.reclassify' => $proposition(
             'proposition.reclassify',
             'Reclassify the current gate',

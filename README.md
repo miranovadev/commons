@@ -23,7 +23,7 @@ The resumable participant interaction contract is described in
 Clone the repository and enter its directory:
 
 ```bash
-git clone https://github.com/clairemira/commons.git
+git clone https://github.com/miranovadev/commons.git
 cd commons
 ```
 
@@ -44,7 +44,7 @@ composer run dev
 
 Open [http://localhost:8000](http://localhost:8000). On a fresh database, the interface will direct you to the bootstrap form. The first account created there becomes the system administrator.
 
-The development command runs the Laravel server, queue listener, application log viewer, and Vite development server together. Press `Ctrl+C` to stop them.
+The development command runs the Laravel server, queue listener, application log viewer, and Vite development server together. Press `Ctrl+C` to stop them. When using Sail, `docker compose up` also starts dedicated scheduler and queue-worker containers for automated Participant wakes.
 
 ## Using PostgreSQL
 
@@ -82,6 +82,9 @@ php artisan commons:ledger-fetch {substrate-slug} --pretty
 
 # Rebuild disposable Context Horizon projections
 php artisan commons:horizons-rebuild {substrate-slug}
+
+# Queue wake jobs for Participant connections that are currently due
+php artisan commons:participants-wake-due
 ```
 
 GitHub Actions runs the frontend build and PHP test suite against PostgreSQL for every push.

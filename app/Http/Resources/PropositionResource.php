@@ -17,6 +17,9 @@ class PropositionResource extends JsonResource
         $horizon = $this->relationLoaded('contextHorizonMembership')
             ? $this->contextHorizonMembership?->horizon
             : null;
+        $parent = $this->relationLoaded('parents')
+            ? $this->parents->first()
+            : null;
 
         return [
             'id' => $this->getKey(),
@@ -35,6 +38,12 @@ class PropositionResource extends JsonResource
                 'parents',
                 fn () => $this->parents->modelKeys(),
             ),
+            'transition' => $parent === null ? null : [
+                'type' => $parent->pivot->type,
+                'from' => $parent->register,
+                'to' => $this->register,
+                'source_id' => $parent->getKey(),
+            ],
             'children' => $this->whenLoaded(
                 'children',
                 fn () => $this->children->map(fn ($child): array => [

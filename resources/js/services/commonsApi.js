@@ -69,7 +69,15 @@ const data = (response) => response.data;
 export const commonsApi = createApi({
   reducerPath: 'commonsApi',
   baseQuery,
-  tagTypes: ['Session', 'Substrate', 'Participant', 'Proposition', 'Participation', 'Connection'],
+  tagTypes: [
+    'Session',
+    'Substrate',
+    'Participant',
+    'Proposition',
+    'Participation',
+    'Connection',
+    'ParticipantConnection',
+  ],
   endpoints: (builder) => ({
     getSession: builder.query({ query: () => '/session', transformResponse: data, providesTags: ['Session'] }),
     login: builder.mutation({ query: (body) => ({ url: '/session', method: 'POST', body }), transformResponse: data, invalidatesTags: ['Session', 'Substrate'] }),
@@ -80,7 +88,19 @@ export const commonsApi = createApi({
     getSubstrate: builder.query({ query: (slug) => `/substrates/${slug}`, transformResponse: data, providesTags: (result) => result ? [{ type: 'Substrate', id: result.id }] : [] }),
     getPropositions: builder.query({ query: (slug) => `/substrates/${slug}/propositions`, transformResponse: data, providesTags: ['Proposition'] }),
     getParticipants: builder.query({ query: (slug) => `/substrates/${slug}/participants`, transformResponse: data, providesTags: (result) => result ? [...result.map(({ id }) => ({ type: 'Participant', id })), { type: 'Participant', id: 'LIST' }] : [{ type: 'Participant', id: 'LIST' }] }),
-    joinParticipant: builder.mutation({ query: ({ slug, ...body }) => ({ url: `/substrates/${slug}/participants`, method: 'POST', body }), transformResponse: data, invalidatesTags: [{ type: 'Participant', id: 'LIST' }, { type: 'Substrate', id: 'LIST' }] }),
+    joinParticipant: builder.mutation({
+      query: ({ slug, ...body }) => ({
+        url: `/substrates/${slug}/participants`,
+        method: 'POST',
+        body,
+      }),
+      transformResponse: data,
+      invalidatesTags: [
+        { type: 'Participant', id: 'LIST' },
+        { type: 'Substrate', id: 'LIST' },
+        { type: 'Connection', id: 'LIST' },
+      ],
+    }),
     getParticipant: builder.query({ query: ({ slug, participantId }) => `/substrates/${slug}/participants/${participantId}`, transformResponse: data }),
     getParticipantPlan: builder.query({ query: ({ slug, participantId }) => `/substrates/${slug}/participants/${participantId}/plan`, transformResponse: data }),
     getParticipation: builder.query({
@@ -101,28 +121,106 @@ export const commonsApi = createApi({
       query: ({ slug, participantId, origin }) => ({
         url: `/substrates/${slug}/participants/${participantId}/participate/enter`,
         method: 'POST',
-        body: { origin },
+        body: origin ? { origin } : {},
       }),
       transformResponse: data,
       invalidatesTags: ['Participation', 'Proposition', 'Substrate'],
     }),
     getConnectionOptions: builder.query({ query: () => '/connection-options', transformResponse: data }),
-    getConnections: builder.query({ query: ({ slug, participantId }) => `/substrates/${slug}/participants/${participantId}/connections`, transformResponse: data, providesTags: (result) => result ? [...result.map(({ id }) => ({ type: 'Connection', id })), { type: 'Connection', id: 'LIST' }] : [{ type: 'Connection', id: 'LIST' }] }),
-    createConnection: builder.mutation({ query: ({ slug, participantId, ...body }) => ({ url: `/substrates/${slug}/participants/${participantId}/connections`, method: 'POST', body }), invalidatesTags: [{ type: 'Connection', id: 'LIST' }] }),
-    updateConnection: builder.mutation({ query: ({ slug, participantId, connectionId, ...body }) => ({ url: `/substrates/${slug}/participants/${participantId}/connections/${connectionId}`, method: 'PATCH', body }), invalidatesTags: (_result, _error, { connectionId }) => [{ type: 'Connection', id: connectionId }] }),
-    deleteConnection: builder.mutation({ query: ({ slug, participantId, connectionId }) => ({ url: `/substrates/${slug}/participants/${participantId}/connections/${connectionId}`, method: 'DELETE' }), invalidatesTags: (_result, _error, { connectionId }) => [{ type: 'Connection', id: connectionId }, { type: 'Connection', id: 'LIST' }] }),
+    getConnections: builder.query({
+      query: () => '/connections',
+      transformResponse: data,
+      providesTags: (result) => result
+        ? [
+            ...result.map(({ id }) => ({ type: 'Connection', id })),
+            { type: 'Connection', id: 'LIST' },
+          ]
+        : [{ type: 'Connection', id: 'LIST' }],
+    }),
+    createConnection: builder.mutation({
+      query: (body) => ({ url: '/connections', method: 'POST', body }),
+      transformResponse: data,
+      invalidatesTags: [{ type: 'Connection', id: 'LIST' }],
+    }),
+    updateConnection: builder.mutation({
+      query: ({ connectionId, ...body }) => ({
+        url: `/connections/${connectionId}`,
+        method: 'PATCH',
+        body,
+      }),
+      transformResponse: data,
+      invalidatesTags: (_result, _error, { connectionId }) => [
+        { type: 'Connection', id: connectionId },
+        { type: 'Connection', id: 'LIST' },
+      ],
+    }),
+    deleteConnection: builder.mutation({
+      query: ({ connectionId }) => ({ url: `/connections/${connectionId}`, method: 'DELETE' }),
+      invalidatesTags: (_result, _error, { connectionId }) => [
+        { type: 'Connection', id: connectionId },
+        { type: 'Connection', id: 'LIST' },
+        { type: 'ParticipantConnection', id: 'LIST' },
+      ],
+    }),
+    getParticipantConnections: builder.query({
+      query: ({ slug, participantId }) => `/substrates/${slug}/participants/${participantId}/connections`,
+      transformResponse: data,
+      providesTags: (result) => result
+        ? [
+            ...result.map(({ id }) => ({ type: 'ParticipantConnection', id })),
+            { type: 'ParticipantConnection', id: 'LIST' },
+          ]
+        : [{ type: 'ParticipantConnection', id: 'LIST' }],
+    }),
+    createParticipantConnection: builder.mutation({
+      query: ({ slug, participantId, ...body }) => ({
+        url: `/substrates/${slug}/participants/${participantId}/connections`,
+        method: 'POST',
+        body,
+      }),
+      transformResponse: data,
+      invalidatesTags: [
+        { type: 'ParticipantConnection', id: 'LIST' },
+        { type: 'Connection', id: 'LIST' },
+      ],
+    }),
+    updateParticipantConnection: builder.mutation({
+      query: ({ slug, participantId, participantConnectionId, ...body }) => ({
+        url: `/substrates/${slug}/participants/${participantId}/connections/${participantConnectionId}`,
+        method: 'PATCH',
+        body,
+      }),
+      transformResponse: data,
+      invalidatesTags: (_result, _error, { participantConnectionId }) => [
+        { type: 'ParticipantConnection', id: participantConnectionId },
+      ],
+    }),
+    deleteParticipantConnection: builder.mutation({
+      query: ({ slug, participantId, participantConnectionId }) => ({
+        url: `/substrates/${slug}/participants/${participantId}/connections/${participantConnectionId}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: (_result, _error, { participantConnectionId }) => [
+        { type: 'ParticipantConnection', id: participantConnectionId },
+        { type: 'ParticipantConnection', id: 'LIST' },
+        { type: 'Connection', id: 'LIST' },
+      ],
+    }),
   }),
 });
 
 export const {
   useBootstrapMutation,
   useCreateConnectionMutation,
+  useCreateParticipantConnectionMutation,
   useCreateSubstrateMutation,
   useContributeMutation,
   useDeleteConnectionMutation,
+  useDeleteParticipantConnectionMutation,
   useEnterCycleMutation,
   useGetConnectionOptionsQuery,
   useGetConnectionsQuery,
+  useGetParticipantConnectionsQuery,
   useGetParticipantPlanQuery,
   useGetParticipationQuery,
   useGetParticipantQuery,
@@ -135,4 +233,5 @@ export const {
   useLoginMutation,
   useLogoutMutation,
   useUpdateConnectionMutation,
+  useUpdateParticipantConnectionMutation,
 } = commonsApi;

@@ -22,7 +22,6 @@ return [
             'proposition.select',
         ],
         'constraints' => [
-            'proposition.revise' => ['gate-owner'],
             'proposition.reclassify' => ['gate-owner'],
         ],
     ],
@@ -37,7 +36,6 @@ return [
             'proposition.select',
         ],
         'constraints' => [
-            'proposition.revise' => ['gate-owner'],
             'proposition.reclassify_with_instrument' => [
                 'gate-owner',
                 'instrument-required',

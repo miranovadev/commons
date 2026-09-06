@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\ConnectionTriggerMode;
+use App\Models\Connection;
 use App\Models\Participant;
 use App\Models\ParticipantConnection;
 
@@ -10,67 +11,59 @@ final class ParticipantConnectionService
 {
     public function __construct(
         private readonly ParticipantConnectionTriggerService $triggers,
-    ) {
-    }
+    ) {}
 
     /**
      * @param  array<string, mixed>  $attributes
      */
     public function create(
         Participant $participant,
-        array $attributes,
+        Connection $connection,
+        array $attributes = [],
     ): ParticipantConnection {
-        $connection = new ParticipantConnection;
-        $connection->forceFill([
+        $participantConnection = new ParticipantConnection;
+        $participantConnection->forceFill([
             'participant_id' => $participant->getKey(),
-            'provider' => $attributes['provider'],
-            'name' => $attributes['name'],
+            'connection_id' => $connection->getKey(),
             'is_enabled' => $attributes['is_enabled'] ?? true,
             'configuration' => $this->configuration(
-                $attributes['configuration'],
+                $attributes['configuration'] ?? [],
             ),
-            'credentials' => $attributes['credentials'],
         ]);
-        $connection->save();
+        $participantConnection->save();
 
-        $this->triggers->reschedule($connection);
+        $this->triggers->reschedule($participantConnection);
 
-        return $connection->refresh();
+        return $participantConnection->refresh()->load('connection');
     }
 
     /**
      * @param  array<string, mixed>  $attributes
      */
     public function update(
-        ParticipantConnection $connection,
+        ParticipantConnection $participantConnection,
         array $attributes,
     ): ParticipantConnection {
         $scheduleChanged = array_key_exists('is_enabled', $attributes)
-            || (
-                array_key_exists('configuration', $attributes)
-                && array_key_exists(
-                    'trigger',
-                    $attributes['configuration'],
-                )
-            );
+            || array_key_exists('configuration', $attributes);
 
         if (array_key_exists('configuration', $attributes)) {
             $attributes['configuration'] = $this->configuration(
                 array_replace_recursive(
-                    $connection->configuration,
+                    $participantConnection->configuration ?? [],
                     $attributes['configuration'],
                 ),
             );
         }
 
-        $connection->forceFill($attributes);
-        $connection->save();
+        $participantConnection->forceFill($attributes);
+        $participantConnection->save();
 
         if ($scheduleChanged) {
-            $this->triggers->reschedule($connection);
+            $this->triggers->reschedule($participantConnection);
         }
 
-        return $connection->refresh();
+        return $participantConnection->refresh()->load('connection');
     }
 
     /**
@@ -93,6 +86,8 @@ final class ParticipantConnectionService
             unset($configuration['trigger']['interval_minutes']);
         }
 
-        return $configuration;
+        return [
+            'trigger' => $configuration['trigger'],
+        ];
     }
 }

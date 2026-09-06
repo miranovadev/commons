@@ -2,17 +2,22 @@
 
 namespace App\Services;
 
+use App\Models\Connection;
 use App\Models\Participant;
 use App\Models\Role;
 use App\Models\Substrate;
 use App\Models\SubstrateMembership;
 use App\Models\User;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
-use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 final class SubstrateMembershipService
 {
+    public function __construct(
+        private readonly ParticipantConnectionService $participantConnections,
+    ) {}
+
     /**
      * @param  array<string, mixed>  $attributes
      */
@@ -26,20 +31,11 @@ final class SubstrateMembershipService
             $substrate,
             $attributes,
         ): Participant {
+            $connectionAttributes = Arr::pull($attributes, 'connection');
+
             $lockedSubstrate = Substrate::query()
                 ->lockForUpdate()
                 ->findOrFail($substrate->getKey());
-
-            $existing = Participant::query()
-                ->whereBelongsTo($lockedSubstrate)
-                ->whereBelongsTo($user)
-                ->first();
-
-            if ($existing !== null) {
-                throw new ConflictHttpException(
-                    'The user already has a Participant in this substrate.',
-                );
-            }
 
             $maximum = $lockedSubstrate->maximumParticipants();
 
@@ -66,13 +62,21 @@ final class SubstrateMembershipService
                 ->where('substrate_id', $lockedSubstrate->getKey())
                 ->where('user_id', $user->getKey())
                 ->first() ?? new SubstrateMembership;
+
             $membership->forceFill([
                 'substrate_id' => $lockedSubstrate->getKey(),
                 'user_id' => $user->getKey(),
-                'participant_id' => $participant->getKey(),
                 'status' => 'active',
-                'joined_at' => now(),
+                'joined_at' => $membership->joined_at ?? now(),
             ]);
+
+            // participant_id predates support for multiple Participants. Keep the
+            // first Participant as the membership representative for backwards
+            // compatibility; ownership itself lives on participants.user_id.
+            if ($membership->participant_id === null) {
+                $membership->participant_id = $participant->getKey();
+            }
+
             $membership->save();
 
             $role = Role::query()
@@ -87,6 +91,19 @@ final class SubstrateMembershipService
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+
+            if (is_array($connectionAttributes)) {
+                $connection = Connection::query()
+                    ->whereKey($connectionAttributes['id'])
+                    ->whereBelongsTo($user)
+                    ->firstOrFail();
+
+                $this->participantConnections->create(
+                    $participant,
+                    $connection,
+                    Arr::except($connectionAttributes, 'id'),
+                );
+            }
 
             return $participant;
         });

@@ -28,6 +28,12 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'openai' => [
+        'base_url' => env('OPENAI_BASE_URL', 'https://api.openai.com/v1'),
+        'connect_timeout' => (int) env('OPENAI_CONNECT_TIMEOUT', 10),
+        'timeout' => (int) env('OPENAI_TIMEOUT', 90),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
