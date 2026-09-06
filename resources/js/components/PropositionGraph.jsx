@@ -14,6 +14,7 @@ export function PropositionGraph({ propositions, initialFocusId, perspectiveLimi
   const viewportRef = useRef(null);
   const dragState = useRef(null);
   const [dragging, setDragging] = useState(false);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [selectedId, setSelectedId] = useState(initialFocusId || null);
   const layout = useMemo(() => buildGraphLayout(propositions), [propositions]);
 
@@ -34,19 +35,20 @@ export function PropositionGraph({ propositions, initialFocusId, perspectiveLimi
     dragState.current = {
       x: event.clientX,
       y: event.clientY,
-      scrollLeft: viewport.scrollLeft,
-      scrollTop: viewport.scrollTop,
+      offsetX: offset.x,
+      offsetY: offset.y,
     };
     viewport.setPointerCapture(event.pointerId);
     setDragging(true);
   }
 
   function moveDrag(event) {
-    const viewport = viewportRef.current;
     const start = dragState.current;
-    if (!viewport || !start) return;
-    viewport.scrollLeft = start.scrollLeft - (event.clientX - start.x);
-    viewport.scrollTop = start.scrollTop - (event.clientY - start.y);
+    if (!start) return;
+    setOffset({
+      x: start.offsetX + (event.clientX - start.x),
+      y: start.offsetY + (event.clientY - start.y),
+    });
   }
 
   function endDrag(event) {
@@ -72,7 +74,14 @@ export function PropositionGraph({ propositions, initialFocusId, perspectiveLimi
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
       >
-        <Box className="substrate-graph-canvas" style={{ width: layout.width, height: layout.height }}>
+        <Box
+          className="substrate-graph-canvas"
+          style={{
+            width: layout.width,
+            height: layout.height,
+            transform: `translate3d(${offset.x}px, ${offset.y}px, 0)`,
+          }}
+        >
           <svg className="substrate-graph-edges" width={layout.width} height={layout.height} aria-hidden="true">
             {layout.edges.map((edge) => (
               <path key={`${edge.from}-${edge.to}`} d={edge.path} />
