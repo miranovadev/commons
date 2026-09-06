@@ -17,6 +17,7 @@ final readonly class InputPlanService
         private LineageService $lineage,
         private PropositionOptionService $options,
         private InputSchemaService $schemas,
+        private PropositionMeasurementService $measurements,
     ) {}
 
     /** @return array<string, mixed> */
@@ -104,6 +105,9 @@ final readonly class InputPlanService
                 ->latest('propositions.created_at')
                 ->limit(max(1, (int) ($participant->max_read_count ?? 25)))
                 ->get();
+
+        $this->measurements->repairMissing($propositions);
+
         $provenance = $horizon?->opened_by_proposition_id === null
             ? $lineage->first(
                 fn (Proposition $item): bool => $item->tier === 'committal'
@@ -118,6 +122,7 @@ final readonly class InputPlanService
             'parents',
             'phase.cycle.participant:id,callsign',
         ]);
+        $this->measurements->repairMissing(collect([$provenance]));
 
         return [
             'domain' => $domain->value,
@@ -162,15 +167,17 @@ final readonly class InputPlanService
             $propositions = $propositions->concat($collection);
         }
 
-        $gate->newCollection(
+        $collection = $gate->newCollection(
             $propositions->unique(
                 fn (Proposition $proposition): string => $proposition->getKey()
             )->values()->all()
-        )->loadMissing([
+        );
+        $collection->loadMissing([
             'measurement',
             'parents',
             'phase.cycle.participant:id,callsign',
         ]);
+        $this->measurements->repairMissing($collection);
     }
 
     /**
