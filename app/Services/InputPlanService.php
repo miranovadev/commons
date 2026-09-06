@@ -46,8 +46,8 @@ final readonly class InputPlanService
             'gate_options' => $this->propositions($gateOptions),
             'schema' => $this->schemas->forParticipant(
                 $participant,
-                $writeOptions->modelKeys(),
-                $gateOptions->modelKeys(),
+                $writeOptions->pluck('id')->all(),
+                $gateOptions->pluck('id')->all(),
             ),
         ];
     }

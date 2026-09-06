@@ -15,7 +15,7 @@ import {
   Title,
   useMantineColorScheme,
 } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
+import { useDisclosure, useMediaQuery } from '@mantine/hooks';
 import { IconChevronDown, IconLogin2, IconLogout2, IconMoon, IconSun } from '@tabler/icons-react';
 import { BrowserRouter, Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -40,6 +40,7 @@ export function App() {
 
 function CommonsApp() {
   const [opened, { toggle, close }] = useDisclosure(false);
+  const mobile = useMediaQuery('(max-width: 47.99em)');
   const dispatch = useDispatch();
   const bootstrapRequired = useSelector((state) => state.system.bootstrapRequired);
   const { data: user, isLoading, isError, error } = useGetSessionQuery();
@@ -90,8 +91,17 @@ function CommonsApp() {
             {user ? (
               <Menu position="bottom-end" width={210}>
                 <Menu.Target>
-                  <Button variant="subtle" color="gray" px="xs" rightSection={<IconChevronDown size={14} />}>
-                    <Group gap="xs"><Avatar size={28} color="indigo" name={user.name} /><Text size="sm" fw={500}>{user.name}</Text></Group>
+                  <Button
+                    variant="subtle"
+                    color="gray"
+                    px={mobile ? 0 : 'xs'}
+                    rightSection={mobile ? undefined : <IconChevronDown size={14} />}
+                    aria-label={mobile ? `Open ${user.name}'s menu` : undefined}
+                  >
+                    <Group gap="xs">
+                      <Avatar size={28} color="indigo" name={user.name} />
+                      {!mobile && <Text size="sm" fw={500}>{user.name}</Text>}
+                    </Group>
                   </Button>
                 </Menu.Target>
                 <Menu.Dropdown>

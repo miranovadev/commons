@@ -4,11 +4,31 @@ namespace App\Services;
 
 use App\Models\Proposition;
 use App\Models\PropositionMeasurement;
+use App\Services\Observables\ObservableService;
 use DateTimeInterface;
 use InvalidArgumentException;
 
 final class PropositionMeasurementService
 {
+    public function __construct(
+        private readonly ObservableService $observables,
+    ) {}
+
+    public function recalculate(
+        Proposition $proposition,
+        ?DateTimeInterface $calculatedAt = null,
+    ): PropositionMeasurement {
+        $values = $this->observables->calculate($proposition);
+
+        return $this->project(
+            $proposition,
+            $values->correspondence,
+            $values->chirality,
+            $values->closure,
+            $calculatedAt,
+        );
+    }
+
     public function project(
         Proposition $proposition,
         ?float $correspondence,
