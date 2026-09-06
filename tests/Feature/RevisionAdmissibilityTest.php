@@ -130,6 +130,8 @@ class RevisionAdmissibilityTest extends TestCase
         $participant->forceFill([
             'substrate_id' => $substrate->getKey(),
             'callsign' => 'owner',
+            'max_read_count' => 25,
+            'max_token_count' => null,
         ]);
         $participant->save();
 
