@@ -38,6 +38,10 @@
   color: light-dark(var(--mantine-color-indigo-9), var(--mantine-color-indigo-0));
 }
 
+.workspace-context {
+  justify-content: flex-start;
+}
+
 .horizon-provenance {
   width: min(34rem, 100%);
 }
