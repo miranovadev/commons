@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Cycle extends Model
 {
@@ -30,5 +31,12 @@ class Cycle extends Model
     public function phases(): HasMany
     {
         return $this->hasMany(Phase::class);
+    }
+
+    public function currentPhase(): HasOne
+    {
+        return $this->hasOne(Phase::class)
+            ->whereNotNull('started_at')
+            ->ofMany('kind', 'max');
     }
 }
