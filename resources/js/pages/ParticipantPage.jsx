@@ -1,33 +1,20 @@
 import { useMemo, useState } from 'react';
-import { Alert, Badge, Box, Breadcrumbs, Button, Card, Container, Divider, Group, Loader, Paper, SimpleGrid, Stack, Text, ThemeIcon, Title } from '@mantine/core';
+import { Alert, Badge, Box, Breadcrumbs, Button, Card, Container, Group, Loader, Stack, Text, ThemeIcon, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconAlertCircle, IconBolt, IconGitBranch, IconPencil, IconPlugConnected, IconRefresh, IconRoute, IconSparkles, IconTool, IconUserHexagon, IconWhirl } from '@tabler/icons-react';
+import { IconAlertCircle, IconPlugConnected, IconSparkles, IconUserHexagon } from '@tabler/icons-react';
 import { Link, useParams } from 'react-router-dom';
 import { messageFrom } from '../errors';
 import { ConnectionsPanel } from '../components/ConnectionsPanel';
 import { ContributionForm } from '../components/ContributionForm';
 import { OriginCycleForm } from '../components/OriginCycleForm';
-import { ParticipantWorkspace, workspaceActionNames } from '../components/ParticipantWorkspace';
-import { metaForRegister } from '../registers';
-import { useContributeMutation, useEnterCycleMutation, useGetParticipantQuery, useGetParticipationQuery, useGetPropositionsQuery } from '../services/commonsApi';
-
-const actions = {
-  'proposition.variant': { label: 'Variant', color: 'blue', icon: IconGitBranch },
-  'proposition.revise': { label: 'Revise', color: 'cyan', icon: IconPencil },
-  'proposition.reclassify': { label: 'Reclassify', color: 'orange', icon: IconRefresh },
-  'proposition.reconcile': { label: 'Reconcile', color: 'grape', icon: IconRoute },
-  'attestation.create': { label: 'Attest', color: 'violet', icon: IconWhirl },
-  'instrument.execute': { label: 'Instrument', color: 'yellow', icon: IconTool },
-  'proposition.commit': { label: 'Commit', color: 'indigo', icon: IconBolt },
-  'proposition.select': { label: 'Select', color: 'gray', icon: IconRoute },
-};
+import { ParticipantWorkspace } from '../components/ParticipantWorkspace';
+import { useContributeMutation, useEnterCycleMutation, useGetParticipantQuery, useGetParticipationQuery } from '../services/commonsApi';
 
 export function ParticipantPage() {
   const { slug, participantId } = useParams();
   const parameters = { slug, participantId };
   const { data: participant, isLoading: participantLoading, error: participantError } = useGetParticipantQuery(parameters);
   const { data: participation, isLoading: participationLoading, error: participationError } = useGetParticipationQuery(parameters);
-  const { data: propositions = [] } = useGetPropositionsQuery(slug);
   const [contribute, contribution] = useContributeMutation();
   const [enterCycle, cycleEntry] = useEnterCycleMutation();
   const [selectedAction, setSelectedAction] = useState(null);
@@ -42,11 +29,6 @@ export function ParticipantPage() {
       .filter(Boolean) || [],
     [plan],
   );
-  const secondaryActions = useMemo(
-    () => availableActions.filter((name) => !workspaceActionNames.has(name)),
-    [availableActions],
-  );
-
   function openAction(name, initialValues = {}) {
     contribution.reset();
     setSelectedAction({ name, initialValues });
@@ -76,8 +58,8 @@ export function ParticipantPage() {
   }
 
   return (
-    <Container size="xl">
-      <Breadcrumbs mb="lg"><Text component={Link} to="/" size="sm" c="dimmed">Substrates</Text><Text component={Link} to={`/substrates/${slug}`} size="sm" c="dimmed">{slug}</Text><Text size="sm">Participant</Text></Breadcrumbs>
+    <Container fluid className={plan ? 'participant-page participant-page--active' : 'participant-page'}>
+      <Breadcrumbs className="participant-page__breadcrumbs" mb={plan ? 'sm' : 'lg'}><Text component={Link} to="/" size="sm" c="dimmed">Substrates</Text><Text component={Link} to={`/substrates/${slug}`} size="sm" c="dimmed">{slug}</Text><Text size="sm">Participant</Text></Breadcrumbs>
       {(participantLoading || participationLoading) && !error && <Stack align="center" py={100}><Loader color="indigo" /><Text c="dimmed">Finding your current position…</Text></Stack>}
       {error && (
         <Alert color="red" variant="light" icon={<IconAlertCircle size={18} />} title="The Commons could not load this position">
@@ -106,49 +88,24 @@ export function ParticipantPage() {
         </Card>
       )}
       {participant && plan && (
-        <>
-          <Group justify="space-between" align="flex-start" mb="xl">
-            <Box><Badge color="indigo" variant="light" leftSection={<IconUserHexagon size={12} />}>PARTICIPANT</Badge><Title order={1} mt="sm">{participant.callsign}</Title><Text c="dimmed">{participant.designation || 'Commons participant'} · Phase {plan.phase.kind}</Text></Box>
-            <Group><Button variant="default" leftSection={<IconPlugConnected size={17} />} onClick={openConnections}>Connections</Button><Badge size="lg" color={metaForRegister(plan.phase.write_register).color} variant="light">{metaForRegister(plan.phase.write_register).label}</Badge></Group>
+        <Box className="participant-cycle-shell">
+          <Group justify="space-between" align="center" mb="sm" wrap="nowrap">
+            <Group gap="sm" wrap="nowrap" miw={0}>
+              <Badge color="indigo" variant="light" leftSection={<IconUserHexagon size={12} />}>PARTICIPANT</Badge>
+              <Box miw={0}>
+                <Text fw={750} truncate>{participant.callsign}</Text>
+                <Text size="xs" c="dimmed" truncate>{participant.designation || 'Commons participant'}</Text>
+              </Box>
+            </Group>
+            <Button size="xs" variant="default" leftSection={<IconPlugConnected size={15} />} onClick={openConnections}>
+              Connections
+            </Button>
           </Group>
-
-          <SimpleGrid cols={{ base: 1, lg: 4 }} spacing="lg">
-            <Paper withBorder p="lg" style={{ gridColumn: 'span 3' }}>
-              <Group justify="space-between" mb="lg">
-                <Box>
-                  <Title order={3}>Current Perspective</Title>
-                  <Text size="sm" c="dimmed">{plan.phase.description}</Text>
-                </Box>
-                <Stack gap={5} align="flex-end">
-                  <Badge color="gray" variant="light">Gate · {plan.gate.title || plan.gate.statement.slice(0, 32)}</Badge>
-                  <Badge color="gray" variant="outline" size="xs">
-                    Attenuation pending
-                  </Badge>
-                </Stack>
-              </Group>
-              <ParticipantWorkspace
-                propositions={propositions}
-                plan={{ ...plan, perspectiveLimit: participant.max_read_count }}
-                availableActions={availableActions}
-                onAction={openAction}
-              />
-            </Paper>
-
-            <Card withBorder p="lg" h="fit-content">
-              <Title order={4}>Other admissible moves</Title>
-              <Text size="sm" c="dimmed" mt={4}>Attestations, instruments, reconciliation, and Commit remain here.</Text>
-              <Divider my="md" />
-              <Stack gap="xs">
-                {secondaryActions.map((name) => {
-                  const meta = actions[name] || { label: name, color: 'gray', icon: IconRoute };
-                  const Icon = meta.icon;
-                  return <Button key={name} color={meta.color} variant={name === 'proposition.commit' ? 'filled' : 'light'} justify="flex-start" leftSection={<Icon className={name === 'attestation.create' ? 'chirality-icon chirality-icon--slow' : ''} size={17} />} onClick={() => openAction(name)}>{meta.label}</Button>;
-                })}
-                {!secondaryActions.length && <Text size="sm" c="dimmed">Create and select moves are shown in the write register.</Text>}
-              </Stack>
-              <Text size="xs" c="dimmed" mt="md">Every control is generated from the live admissibility schema for this Phase.</Text>
-            </Card>
-          </SimpleGrid>
+          <ParticipantWorkspace
+            plan={{ ...plan, perspectiveLimit: participant.max_read_count }}
+            availableActions={availableActions}
+            onAction={openAction}
+          />
           <ContributionForm
             action={selectedAction?.name}
             plan={plan}
@@ -160,7 +117,7 @@ export function ParticipantPage() {
             onSubmit={submit}
           />
           <ConnectionsPanel slug={slug} participantId={participantId} opened={connectionsOpened} onClose={closeConnections} />
-        </>
+        </Box>
       )}
       <OriginCycleForm
         opened={originOpened}
