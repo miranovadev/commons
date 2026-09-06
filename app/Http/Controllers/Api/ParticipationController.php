@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\EnterCycleRequest;
 use App\Models\Participant;
 use App\Models\Substrate;
 use App\Services\ParticipationService;
@@ -25,6 +26,32 @@ class ParticipationController extends Controller
         return response()->json([
             'data' => $participation->stateFor($participant),
         ]);
+    }
+
+    public function enter(
+        EnterCycleRequest $request,
+        Substrate $substrate,
+        Participant $participant,
+        ParticipationService $participation,
+    ): JsonResponse {
+        Gate::authorize('act', $participant);
+
+        try {
+            $state = $participation->enter(
+                $participant,
+                $request->validated('origin'),
+            );
+        } catch (DomainException $exception) {
+            return response()->json([
+                'message' => $exception->getMessage(),
+                'code' => 'cycle_entry_rejected',
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        return response()->json(
+            ['data' => $state],
+            Response::HTTP_CREATED,
+        );
     }
 
     public function store(

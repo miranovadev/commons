@@ -57,6 +57,10 @@ Route::middleware('web')->group(function (): void {
                         'substrates/{substrate}/participants/{participant}/participate',
                         [ParticipationController::class, 'store'],
                     );
+                    Route::post(
+                        'substrates/{substrate}/participants/{participant}/participate/enter',
+                        [ParticipationController::class, 'enter'],
+                    );
 
                     Route::apiResource(
                         'substrates.participants.connections',

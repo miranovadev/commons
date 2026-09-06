@@ -1,0 +1,52 @@
+<?php
+
+namespace App\Http\Requests;
+
+use App\Models\Participant;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
+
+class EnterCycleRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        $participant = $this->route('participant');
+
+        return $participant instanceof Participant
+            && Gate::allows('act', $participant);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function rules(): array
+    {
+        return [
+            'origin' => ['required', 'array:statement,attestation,instrument'],
+            'origin.statement' => ['required', 'string', 'max:20000'],
+            'origin.attestation' => ['required', 'array:direction,rationale'],
+            'origin.attestation.direction' => [
+                'required',
+                'string',
+                Rule::in(['support', 'refute']),
+            ],
+            'origin.attestation.rationale' => [
+                'nullable',
+                'string',
+                'max:20000',
+            ],
+            'origin.instrument' => ['required', 'array:kind,reference'],
+            'origin.instrument.kind' => [
+                'required',
+                'string',
+                Rule::in(['citation', 'artefact', 'hyperlink']),
+            ],
+            'origin.instrument.reference' => [
+                'required',
+                'string',
+                'max:20000',
+            ],
+        ];
+    }
+}

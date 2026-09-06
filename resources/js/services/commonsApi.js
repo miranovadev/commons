@@ -97,6 +97,15 @@ export const commonsApi = createApi({
       transformResponse: data,
       invalidatesTags: ['Participation', 'Proposition'],
     }),
+    enterCycle: builder.mutation({
+      query: ({ slug, participantId, origin }) => ({
+        url: `/substrates/${slug}/participants/${participantId}/participate/enter`,
+        method: 'POST',
+        body: { origin },
+      }),
+      transformResponse: data,
+      invalidatesTags: ['Participation', 'Proposition', 'Substrate'],
+    }),
     getConnectionOptions: builder.query({ query: () => '/connection-options', transformResponse: data }),
     getConnections: builder.query({ query: ({ slug, participantId }) => `/substrates/${slug}/participants/${participantId}/connections`, transformResponse: data, providesTags: (result) => result ? [...result.map(({ id }) => ({ type: 'Connection', id })), { type: 'Connection', id: 'LIST' }] : [{ type: 'Connection', id: 'LIST' }] }),
     createConnection: builder.mutation({ query: ({ slug, participantId, ...body }) => ({ url: `/substrates/${slug}/participants/${participantId}/connections`, method: 'POST', body }), invalidatesTags: [{ type: 'Connection', id: 'LIST' }] }),
@@ -111,6 +120,7 @@ export const {
   useCreateSubstrateMutation,
   useContributeMutation,
   useDeleteConnectionMutation,
+  useEnterCycleMutation,
   useGetConnectionOptionsQuery,
   useGetConnectionsQuery,
   useGetParticipantPlanQuery,
