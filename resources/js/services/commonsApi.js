@@ -121,7 +121,7 @@ export const commonsApi = createApi({
       query: ({ slug, participantId, origin }) => ({
         url: `/substrates/${slug}/participants/${participantId}/participate/enter`,
         method: 'POST',
-        body: { origin },
+        body: origin ? { origin } : {},
       }),
       transformResponse: data,
       invalidatesTags: ['Participation', 'Proposition', 'Substrate'],
