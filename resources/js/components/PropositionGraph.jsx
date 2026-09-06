@@ -1,11 +1,14 @@
 import { Box, Button, Center, Group, Paper, SimpleGrid, Stack, Text, ThemeIcon, Title } from '@mantine/core';
 import { IconArrowUp, IconGitBranch, IconSparkles } from '@tabler/icons-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { PropositionCard } from './PropositionCard';
 
 export function PropositionGraph({ propositions, initialFocusId, perspectiveLimit, participantMode = false }) {
   const origin = useMemo(() => propositions.find((p) => p.is_origin) || propositions[0], [propositions]);
   const [focusId, setFocusId] = useState(initialFocusId || origin?.id);
+  useEffect(() => {
+    setFocusId(initialFocusId || origin?.id);
+  }, [initialFocusId, origin?.id]);
   const focus = propositions.find((p) => p.id === focusId) || origin;
   const byId = useMemo(() => new Map(propositions.map((p) => [p.id, p])), [propositions]);
   const parents = (focus?.parent_ids || []).map((id) => byId.get(id)).filter(Boolean);

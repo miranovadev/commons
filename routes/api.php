@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\ConnectionOptionController;
 use App\Http\Controllers\Api\ParticipantConnectionController;
 use App\Http\Controllers\Api\ParticipantController;
 use App\Http\Controllers\Api\ParticipantPlanController;
+use App\Http\Controllers\Api\ParticipationController;
 use App\Http\Controllers\Api\PropositionController;
 use App\Http\Controllers\Api\SessionController;
 use App\Http\Controllers\Api\SubstrateController;
@@ -47,6 +48,14 @@ Route::middleware('web')->group(function (): void {
                     Route::get(
                         'substrates/{substrate}/participants/{participant}/plan',
                         ParticipantPlanController::class,
+                    );
+                    Route::get(
+                        'substrates/{substrate}/participants/{participant}/participate',
+                        [ParticipationController::class, 'show'],
+                    );
+                    Route::post(
+                        'substrates/{substrate}/participants/{participant}/participate',
+                        [ParticipationController::class, 'store'],
                     );
 
                     Route::apiResource(
