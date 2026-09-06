@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
 import { Alert, Badge, Box, Breadcrumbs, Button, Container, Group, Loader, Stack, Text, ThemeIcon, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconAdjustmentsHorizontal, IconAlertCircle, IconArrowsJoin, IconArrowsSplit, IconFilter, IconFocus2, IconLock, IconRepeat, IconSparkles, IconUserHexagon } from '@tabler/icons-react';
+import { IconAdjustmentsHorizontal, IconAlertCircle, IconArrowsJoin, IconArrowsSplit, IconFilter, IconFocus2, IconLock, IconPlugConnected, IconRepeat, IconSparkles, IconUserHexagon } from '@tabler/icons-react';
 import { Link, useParams } from 'react-router-dom';
 import { messageFrom } from '../errors';
+import { ConnectionsPanel } from '../components/ConnectionsPanel';
 import { ContributionForm } from '../components/ContributionForm';
 import { OriginCycleForm } from '../components/OriginCycleForm';
 import { ParticipantWorkspace } from '../components/ParticipantWorkspace';
@@ -28,6 +29,7 @@ export function ParticipantPage() {
   const [enterCycle, cycleEntry] = useEnterCycleMutation();
   const [selectedAction, setSelectedAction] = useState(null);
   const [originOpened, { open: openOrigin, close: closeOrigin }] = useDisclosure(false);
+  const [connectionsOpened, { open: openConnections, close: closeConnections }] = useDisclosure(false);
   const plan = participation?.plan;
   const error = participantError || participationError;
   const availableActions = useMemo(() => plan?.schema?.oneOf?.map((entry) => entry.$ref?.split('/').pop()).filter(Boolean) || [], [plan]);
@@ -46,7 +48,7 @@ export function ParticipantPage() {
       {(participantLoading || participationLoading) && !error && <Stack align="center" py={100}><Loader color="indigo" /><Text c="dimmed">Finding your current position…</Text></Stack>}
       {error && <Alert color="red" variant="light" icon={<IconAlertCircle size={18} />} title="The Commons could not load this position">{messageFrom(error, 'This participation state could not be loaded.')}</Alert>}
       {participant && participation?.status === 'waiting' && (
-        <Box p="xl"><Stack align="flex-start" maw={680} mx="auto"><ThemeIcon color="indigo" variant="light" size="xl" radius="xl"><IconSparkles size={22} /></ThemeIcon><Box><Title order={2}>{participation.entry?.mode === 'origin' ? 'Every substrate begins somewhere' : 'The cycle is waiting'}</Title><Text c="dimmed" mt="xs">{participation.entry?.message || participation.reason?.message}</Text></Box>{participation.entry?.mode === 'origin' && participation.entry?.available && <Button color="indigo" onClick={() => { cycleEntry.reset(); openOrigin(); }}>Establish the Origin</Button>}</Stack></Box>
+        <Box p="xl"><Stack align="flex-start" maw={680} mx="auto"><ThemeIcon color="indigo" variant="light" size="xl" radius="xl"><IconSparkles size={22} /></ThemeIcon><Box><Title order={2}>{participation.entry?.mode === 'origin' ? 'Every substrate begins somewhere' : 'The cycle is waiting'}</Title><Text c="dimmed" mt="xs">{participation.entry?.message || participation.reason?.message}</Text></Box><Group>{participation.entry?.mode === 'origin' && participation.entry?.available && <Button color="indigo" onClick={() => { cycleEntry.reset(); openOrigin(); }}>Establish the Origin</Button>}<Button variant="light" leftSection={<IconPlugConnected size={16} />} onClick={openConnections}>Connections</Button></Group></Stack></Box>
       )}
       {participant && plan && (
         <Box className="participant-cycle-shell">
@@ -57,13 +59,14 @@ export function ParticipantPage() {
               <Text size="xs" c="dimmed" truncate>{slug}</Text>
             </Stack>
             <PhaseLabel kind={plan.phase.kind} />
-            <Box aria-hidden="true" />
+            <Group justify="flex-end"><Button size="xs" variant="subtle" color="gray" leftSection={<IconPlugConnected size={15} />} onClick={openConnections}>Connections</Button></Group>
           </Box>
           <ParticipantWorkspace plan={{ ...plan, perspectiveLimit: participant.max_read_count }} availableActions={availableActions} onAction={openAction} />
           <ContributionForm action={selectedAction?.name} plan={plan} opened={selectedAction !== null} loading={contribution.isLoading} error={contribution.error} initialValues={selectedAction?.initialValues} onClose={() => setSelectedAction(null)} onSubmit={submit} />
         </Box>
       )}
       <OriginCycleForm opened={originOpened} loading={cycleEntry.isLoading} error={cycleEntry.error} onClose={closeOrigin} onSubmit={establishOrigin} />
+      {participant && <ConnectionsPanel slug={slug} participantId={participantId} opened={connectionsOpened} onClose={closeConnections} />}
     </Container>
   );
 }
