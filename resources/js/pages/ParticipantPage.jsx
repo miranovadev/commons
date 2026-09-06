@@ -9,6 +9,16 @@ import { OriginCycleForm } from '../components/OriginCycleForm';
 import { ParticipantWorkspace } from '../components/ParticipantWorkspace';
 import { useContributeMutation, useEnterCycleMutation, useGetParticipantQuery, useGetParticipationQuery } from '../services/commonsApi';
 
+const phaseNumbers = {
+  distinguish: 1,
+  persist: 2,
+  constrain: 3,
+  disperse: 4,
+  mediate: 5,
+  bias: 6,
+  order: 7,
+};
+
 export function ParticipantPage() {
   const { slug, participantId } = useParams();
   const parameters = { slug, participantId };
@@ -40,10 +50,17 @@ export function ParticipantPage() {
       )}
       {participant && plan && (
         <Box className="participant-cycle-shell">
-          <Group className="cycle-context-header" align="center" wrap="nowrap">
-            <Badge color="indigo" variant="light" leftSection={<IconUserHexagon size={12} />}>PARTICIPANT</Badge>
-            <Box miw={0}><Text fw={750} truncate>{participant.callsign}</Text><Text size="xs" c="dimmed" truncate>{slug}</Text></Box>
-          </Group>
+          <Box className="cycle-context-header">
+            <Group className="cycle-context-header__participant" gap="sm" wrap="nowrap" miw={0}>
+              <Badge color="indigo" variant="light" leftSection={<IconUserHexagon size={12} />}>PARTICIPANT</Badge>
+              <Box miw={0}><Text fw={750} truncate>{participant.callsign}</Text><Text size="xs" c="dimmed" truncate>{slug}</Text></Box>
+            </Group>
+            <Box className="cycle-context-header__phase">
+              <Text size="10px" fw={700} c="dimmed">Current phase</Text>
+              <Text size="sm" fw={650}>{phaseLabel(plan.phase.kind)}</Text>
+            </Box>
+            <Box aria-hidden="true" />
+          </Box>
           <ParticipantWorkspace plan={{ ...plan, perspectiveLimit: participant.max_read_count }} availableActions={availableActions} onAction={openAction} />
           <ContributionForm action={selectedAction?.name} plan={plan} opened={selectedAction !== null} loading={contribution.isLoading} error={contribution.error} initialValues={selectedAction?.initialValues} onClose={() => setSelectedAction(null)} onSubmit={submit} />
         </Box>
@@ -51,4 +68,10 @@ export function ParticipantPage() {
       <OriginCycleForm opened={originOpened} loading={cycleEntry.isLoading} error={cycleEntry.error} onClose={closeOrigin} onSubmit={establishOrigin} />
     </Container>
   );
+}
+
+function phaseLabel(kind) {
+  const number = phaseNumbers[kind];
+  const name = kind ? kind.charAt(0).toUpperCase() + kind.slice(1) : 'Unknown';
+  return number ? `Phase ${number} · ${name}` : name;
 }
