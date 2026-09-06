@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 class ConnectionController extends Controller
 {
@@ -57,6 +58,13 @@ class ConnectionController extends Controller
     public function destroy(Connection $connection): Response
     {
         Gate::authorize('delete', $connection);
+
+        if ($connection->participantConnections()->exists()) {
+            throw new ConflictHttpException(
+                'Detach this Connection from its Participants before deleting it.',
+            );
+        }
+
         $connection->delete();
 
         return response()->noContent();
