@@ -1,13 +1,14 @@
 import { useMemo, useState } from 'react';
 import { Alert, Badge, Box, Breadcrumbs, Button, Card, Container, Divider, Group, Loader, Paper, SimpleGrid, Stack, Text, ThemeIcon, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconAlertCircle, IconBolt, IconGitBranch, IconPencil, IconPlugConnected, IconRefresh, IconRoute, IconTool, IconUserHexagon, IconWhirl } from '@tabler/icons-react';
+import { IconAlertCircle, IconBolt, IconGitBranch, IconPencil, IconPlugConnected, IconRefresh, IconRoute, IconSparkles, IconTool, IconUserHexagon, IconWhirl } from '@tabler/icons-react';
 import { Link, useParams } from 'react-router-dom';
 import { messageFrom } from '../errors';
 import { PropositionGraph } from '../components/PropositionGraph';
 import { ConnectionsPanel } from '../components/ConnectionsPanel';
 import { ContributionForm } from '../components/ContributionForm';
-import { useContributeMutation, useGetParticipantQuery, useGetParticipationQuery, useGetPropositionsQuery } from '../services/commonsApi';
+import { OriginCycleForm } from '../components/OriginCycleForm';
+import { useContributeMutation, useEnterCycleMutation, useGetParticipantQuery, useGetParticipationQuery, useGetPropositionsQuery } from '../services/commonsApi';
 
 const actions = {
   'proposition.variant': { label: 'Variant', color: 'blue', icon: IconGitBranch },
@@ -27,7 +28,9 @@ export function ParticipantPage() {
   const { data: participation, isLoading: participationLoading, error: participationError } = useGetParticipationQuery(parameters);
   const { data: propositions = [] } = useGetPropositionsQuery(slug);
   const [contribute, contribution] = useContributeMutation();
+  const [enterCycle, cycleEntry] = useEnterCycleMutation();
   const [selectedAction, setSelectedAction] = useState(null);
+  const [originOpened, { open: openOrigin, close: closeOrigin }] = useDisclosure(false);
   const plan = participation?.plan;
   const error = participantError || participationError;
   const [connectionsOpened, { open: openConnections, close: closeConnections }] = useDisclosure(false);
@@ -58,6 +61,15 @@ export function ParticipantPage() {
     }
   }
 
+  async function establishOrigin(origin) {
+    try {
+      await enterCycle({ slug, participantId, origin }).unwrap();
+      closeOrigin();
+    } catch {
+      // The mutation error remains visible inside the Origin modal.
+    }
+  }
+
   return (
     <Container size="xl">
       <Breadcrumbs mb="lg"><Text component={Link} to="/" size="sm" c="dimmed">Substrates</Text><Text component={Link} to={`/substrates/${slug}`} size="sm" c="dimmed">{slug}</Text><Text size="sm">Participant</Text></Breadcrumbs>
@@ -68,9 +80,25 @@ export function ParticipantPage() {
         </Alert>
       )}
       {participant && participation?.status === 'waiting' && (
-        <Alert color="indigo" variant="light" icon={<IconAlertCircle size={18} />} title="The cycle is waiting">
-          {participation.reason?.message}
-        </Alert>
+        <Card withBorder p={{ base: 'lg', sm: 'xl' }} maw={680} mx="auto">
+          <Stack align="flex-start">
+            <ThemeIcon color="indigo" variant="light" size="xl" radius="xl"><IconSparkles size={22} /></ThemeIcon>
+            <Box>
+              <Title order={2}>{participation.entry?.mode === 'origin' ? 'Every substrate begins somewhere' : 'The cycle is waiting'}</Title>
+              <Text c="dimmed" mt="xs">{participation.entry?.message || participation.reason?.message}</Text>
+            </Box>
+            {participation.entry?.mode === 'origin' && participation.entry?.available && (
+              <Button color="indigo" onClick={() => { cycleEntry.reset(); openOrigin(); }}>
+                Establish the Origin
+              </Button>
+            )}
+            {participation.entry?.mode === 'potential' && (
+              <Alert color="indigo" variant="light" icon={<IconAlertCircle size={18} />}>
+                The Origin already exists. Entry will open here once Potential selection is connected.
+              </Alert>
+            )}
+          </Stack>
+        </Card>
       )}
       {participant && plan && (
         <>
@@ -123,6 +151,13 @@ export function ParticipantPage() {
           <ConnectionsPanel slug={slug} participantId={participantId} opened={connectionsOpened} onClose={closeConnections} />
         </>
       )}
+      <OriginCycleForm
+        opened={originOpened}
+        loading={cycleEntry.isLoading}
+        error={cycleEntry.error}
+        onClose={closeOrigin}
+        onSubmit={establishOrigin}
+      />
     </Container>
   );
 }
