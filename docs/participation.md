@@ -55,6 +55,12 @@ transaction.
 The contribution object is validated against the JSON Schema returned in the
 current plan. The React interface uses the same schema to render its controls.
 
+Revision is bound to a specific `proposition_id`. The server only advertises
+owned, unsuperseded expressive Propositions in the current write register and
+explicitly excludes the Gate. Because a Proposition written during one Cycle
+becomes available when that register is encountered again, revision naturally
+occurs in a subsequent Cycle rather than revising the current Gate in place.
+
 Perspective includes an explicit Attenuation placeholder. It currently carries
 pending status and null value/distance fields so the eventual decay projection
 can be added without changing the participation response shape.

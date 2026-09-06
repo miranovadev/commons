@@ -30,6 +30,10 @@ final readonly class InputPlanService
             $participant->max_token_count,
         );
         $writeOptions = $this->options->writeOptionsFor($phase);
+        $revisionOptions = $this->options->revisionOptionsFor(
+            $phase,
+            $participant,
+        );
         $gateOptions = $this->options->gateOptionsFor($phase);
 
         return [
@@ -43,11 +47,13 @@ final readonly class InputPlanService
             'gate' => $this->proposition($gate),
             'lineage' => $this->propositions($lineage),
             'write_options' => $this->propositions($writeOptions),
+            'revision_options' => $this->propositions($revisionOptions),
             'gate_options' => $this->propositions($gateOptions),
             'schema' => $this->schemas->forParticipant(
                 $participant,
                 $writeOptions->pluck('id')->all(),
                 $gateOptions->pluck('id')->all(),
+                $revisionOptions->pluck('id')->all(),
             ),
         ];
     }

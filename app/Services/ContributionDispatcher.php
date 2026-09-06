@@ -35,10 +35,14 @@ final readonly class ContributionDispatcher
             'proposition.select' => Proposition::query()
                 ->findOrFail($input['proposition_id']),
             'proposition.variant',
-            'proposition.revise',
             'proposition.reclassify' => $this->proposition(
                 $phase,
                 $gate,
+                $input,
+            ),
+            'proposition.revise' => $this->revise(
+                $participant,
+                $phase,
                 $input,
             ),
             'proposition.reconcile' => $this->reconcile(
@@ -60,6 +64,34 @@ final readonly class ContributionDispatcher
                 'The selected contribution action is not supported.'
             ),
         };
+    }
+
+    /**
+     * @param  array<string, mixed>  $input
+     */
+    private function revise(
+        Participant $participant,
+        Phase $phase,
+        array $input,
+    ): Proposition {
+        $source = Proposition::query()
+            ->whereKey($input['proposition_id'])
+            ->whereKeyNot($phase->gate_proposition_id)
+            ->where('register', $phase->write_register)
+            ->whereHas(
+                'phase.cycle',
+                fn ($query) => $query->whereBelongsTo($participant),
+            )
+            ->whereDoesntHave('children')
+            ->first();
+
+        if ($source === null) {
+            throw new DomainException(
+                'Revision requires an owned active head in the current write register.'
+            );
+        }
+
+        return $this->proposition($phase, $source, $input);
     }
 
     /**

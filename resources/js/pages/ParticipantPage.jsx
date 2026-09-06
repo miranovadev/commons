@@ -4,10 +4,11 @@ import { useDisclosure } from '@mantine/hooks';
 import { IconAlertCircle, IconBolt, IconGitBranch, IconPencil, IconPlugConnected, IconRefresh, IconRoute, IconSparkles, IconTool, IconUserHexagon, IconWhirl } from '@tabler/icons-react';
 import { Link, useParams } from 'react-router-dom';
 import { messageFrom } from '../errors';
-import { PropositionGraph } from '../components/PropositionGraph';
 import { ConnectionsPanel } from '../components/ConnectionsPanel';
 import { ContributionForm } from '../components/ContributionForm';
 import { OriginCycleForm } from '../components/OriginCycleForm';
+import { ParticipantWorkspace, workspaceActionNames } from '../components/ParticipantWorkspace';
+import { metaForRegister } from '../registers';
 import { useContributeMutation, useEnterCycleMutation, useGetParticipantQuery, useGetParticipationQuery, useGetPropositionsQuery } from '../services/commonsApi';
 
 const actions = {
@@ -41,11 +42,15 @@ export function ParticipantPage() {
       .filter(Boolean) || [],
     [plan],
   );
-  const graph = useMemo(() => {
-    if (!plan) return [];
-    const relevantIds = new Set([plan.gate, ...(plan.lineage || []), ...(plan.write_options || []), ...(plan.gate_options || [])].filter(Boolean).map((item) => item.id));
-    return propositions.filter((item) => relevantIds.has(item.id));
-  }, [plan, propositions]);
+  const secondaryActions = useMemo(
+    () => availableActions.filter((name) => !workspaceActionNames.has(name)),
+    [availableActions],
+  );
+
+  function openAction(name, initialValues = {}) {
+    contribution.reset();
+    setSelectedAction({ name, initialValues });
+  }
 
   async function submit(contributionInput) {
     try {
@@ -104,7 +109,7 @@ export function ParticipantPage() {
         <>
           <Group justify="space-between" align="flex-start" mb="xl">
             <Box><Badge color="indigo" variant="light" leftSection={<IconUserHexagon size={12} />}>PARTICIPANT</Badge><Title order={1} mt="sm">{participant.callsign}</Title><Text c="dimmed">{participant.designation || 'Commons participant'} · Phase {plan.phase.kind}</Text></Box>
-            <Group><Button variant="default" leftSection={<IconPlugConnected size={17} />} onClick={openConnections}>Connections</Button><Badge size="lg" color="indigo" variant="outline">{plan.phase.write_register || 'No write register'}</Badge></Group>
+            <Group><Button variant="default" leftSection={<IconPlugConnected size={17} />} onClick={openConnections}>Connections</Button><Badge size="lg" color={metaForRegister(plan.phase.write_register).color} variant="light">{metaForRegister(plan.phase.write_register).label}</Badge></Group>
           </Group>
 
           <SimpleGrid cols={{ base: 1, lg: 4 }} spacing="lg">
@@ -121,30 +126,36 @@ export function ParticipantPage() {
                   </Badge>
                 </Stack>
               </Group>
-              <PropositionGraph propositions={graph} initialFocusId={plan.gate.id} perspectiveLimit={participant.max_read_count} participantMode />
+              <ParticipantWorkspace
+                propositions={propositions}
+                plan={{ ...plan, perspectiveLimit: participant.max_read_count }}
+                availableActions={availableActions}
+                onAction={openAction}
+              />
             </Paper>
 
             <Card withBorder p="lg" h="fit-content">
-              <Title order={4}>Admissible moves</Title>
-              <Text size="sm" c="dimmed" mt={4}>Actions permitted by the current Phase and Gate.</Text>
+              <Title order={4}>Other admissible moves</Title>
+              <Text size="sm" c="dimmed" mt={4}>Attestations, instruments, reconciliation, and Commit remain here.</Text>
               <Divider my="md" />
               <Stack gap="xs">
-                {availableActions.map((name) => {
+                {secondaryActions.map((name) => {
                   const meta = actions[name] || { label: name, color: 'gray', icon: IconRoute };
                   const Icon = meta.icon;
-                  return <Button key={name} color={meta.color} variant={name === 'proposition.commit' ? 'filled' : 'light'} justify="flex-start" leftSection={<Icon className={name === 'attestation.create' ? 'chirality-icon chirality-icon--slow' : ''} size={17} />} onClick={() => { contribution.reset(); setSelectedAction(name); }}>{meta.label}</Button>;
+                  return <Button key={name} color={meta.color} variant={name === 'proposition.commit' ? 'filled' : 'light'} justify="flex-start" leftSection={<Icon className={name === 'attestation.create' ? 'chirality-icon chirality-icon--slow' : ''} size={17} />} onClick={() => openAction(name)}>{meta.label}</Button>;
                 })}
-                {!availableActions.length && <Text size="sm" c="dimmed">No action is currently admissible.</Text>}
+                {!secondaryActions.length && <Text size="sm" c="dimmed">Create and select moves are shown in the write register.</Text>}
               </Stack>
               <Text size="xs" c="dimmed" mt="md">Every control is generated from the live admissibility schema for this Phase.</Text>
             </Card>
           </SimpleGrid>
           <ContributionForm
-            action={selectedAction}
+            action={selectedAction?.name}
             plan={plan}
             opened={selectedAction !== null}
             loading={contribution.isLoading}
             error={contribution.error}
+            initialValues={selectedAction?.initialValues}
             onClose={() => setSelectedAction(null)}
             onSubmit={submit}
           />

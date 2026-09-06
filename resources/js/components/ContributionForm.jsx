@@ -3,6 +3,8 @@ import { IconAlertCircle } from '@tabler/icons-react';
 import { useEffect, useMemo, useState } from 'react';
 import { messageFrom } from '../errors';
 
+const emptyValues = {};
+
 function option(proposition) {
   return {
     value: proposition.id,
@@ -16,6 +18,7 @@ export function ContributionForm({
   opened,
   loading,
   error,
+  initialValues = emptyValues,
   onClose,
   onSubmit,
 }) {
@@ -23,9 +26,11 @@ export function ContributionForm({
   const [values, setValues] = useState({});
   const properties = schema?.properties || {};
   const required = schema?.required || [];
-  const writeOptions = useMemo(
-    () => (plan?.write_options || []).map(option),
-    [plan],
+  const propositionOptions = useMemo(
+    () => ((action === 'proposition.revise'
+      ? plan?.revision_options
+      : plan?.write_options) || []).map(option),
+    [action, plan],
   );
   const gateOptions = useMemo(
     () => (plan?.gate_options || []).map(option),
@@ -37,8 +42,9 @@ export function ContributionForm({
     setValues({
       direction: 'support',
       instrument: { kind: 'citation', reference: '' },
+      ...initialValues,
     });
-  }, [action, opened]);
+  }, [action, initialValues, opened]);
 
   if (!schema) return null;
 
@@ -55,7 +61,7 @@ export function ContributionForm({
 
   function submit(event) {
     event.preventDefault();
-    const contribution = { action };
+    const contribution = { action: properties.action?.const || action };
 
     Object.keys(properties).forEach((name) => {
       if (name === 'action') return;
@@ -95,7 +101,7 @@ export function ContributionForm({
             <Select
               searchable
               label="Proposition"
-              data={writeOptions}
+              data={propositionOptions}
               required={required.includes('proposition_id')}
               value={values.proposition_id || null}
               onChange={(value) => set('proposition_id', value)}
