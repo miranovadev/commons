@@ -1,421 +1,195 @@
-import {
-  Badge,
-  Box,
-  Group,
-  ScrollArea,
-  Stack,
-  Text,
-  ThemeIcon,
-  Tooltip,
-  UnstyledButton,
-} from '@mantine/core';
-import {
-  IconBolt,
-  IconChevronLeft,
-  IconChevronRight,
-  IconGitBranch,
-  IconPencil,
-  IconRefresh,
-  IconRoute,
-  IconTool,
-  IconWhirl,
-} from '@tabler/icons-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { domainForRegister, metaForDomain, metaForRegister } from '../registers';
+import { Badge, Box, Button, Group, ScrollArea, Stack, Text, ThemeIcon, UnstyledButton } from '@mantine/core';
+import { IconBolt, IconGitBranch, IconPencil, IconPlus, IconRefresh, IconRoute, IconTool, IconWhirl } from '@tabler/icons-react';
+import { useMemo, useState } from 'react';
+import { domainForRegister, metaForRegister } from '../registers';
+import { LineagePanel } from './LineagePanel';
 import { PropositionCard } from './PropositionCard';
+import { PropositionInspector } from './PropositionInspector';
+
+const roles = [
+  { name: 'read', label: 'READ', description: 'Where we came from' },
+  { name: 'gate', label: 'GATE', description: 'Where we are now' },
+  { name: 'write', label: 'WRITE', description: 'Where we can go' },
+];
 
 const actionMeta = {
-  'proposition.variant': {
-    label: 'Create a variant',
-    description: 'Open a new expressive branch from the current Gate.',
-    icon: IconGitBranch,
-  },
-  'proposition.revise': {
-    label: 'Revise a proposition',
-    description: 'Replace one of your active propositions in this register.',
-    icon: IconPencil,
-  },
-  'proposition.reclassify': {
-    label: 'Reclassify the Gate',
-    description: 'Carry the Gate into this classification register.',
-    icon: IconRefresh,
-    mirrorsGate: true,
-  },
-  'proposition.reclassify_with_instrument': {
-    label: 'Reclassify the Gate',
-    description: 'Ground the Gate while carrying it into this register.',
-    icon: IconRefresh,
-    mirrorsGate: true,
-  },
-  'proposition.reconcile': {
-    label: 'Reconcile propositions',
-    description: 'Resolve the Gate with another admissible proposition.',
-    icon: IconRoute,
-  },
-  'attestation.create': {
-    label: 'Create an attestation',
-    description: 'Support or refute an expressive proposition in this register.',
-    icon: IconWhirl,
-  },
-  'instrument.execute': {
-    label: 'Use an instrument',
-    description: 'Ground an expressive proposition with a verifiable receipt.',
-    icon: IconTool,
-  },
-  'proposition.commit': {
-    label: 'Commit the Gate',
-    description: 'Write the expressive Gate into the committal structure.',
-    icon: IconBolt,
-    mirrorsGate: true,
-  },
+  'proposition.variant': { label: 'Create a variant', description: 'Open a new expressive branch from the current Gate.', icon: IconGitBranch },
+  'proposition.revise': { label: 'Revise a proposition', description: 'Replace one of your active propositions in this register.', icon: IconPencil },
+  'proposition.reclassify': { label: 'Reclassify the Gate', description: 'Carry the Gate into this classification register.', icon: IconRefresh, mirrorsGate: true },
+  'proposition.reclassify_with_instrument': { label: 'Reclassify the Gate', description: 'Ground the Gate while carrying it into this register.', icon: IconRefresh, mirrorsGate: true },
+  'proposition.reconcile': { label: 'Reconcile propositions', description: 'Resolve the Gate with another admissible proposition.', icon: IconRoute },
+  'attestation.create': { label: 'Create an attestation', description: 'Support or refute an expressive proposition in this register.', icon: IconWhirl },
+  'instrument.execute': { label: 'Use an instrument', description: 'Ground an expressive proposition with a verifiable receipt.', icon: IconTool },
+  'proposition.commit': { label: 'Commit the Gate', description: 'Write the expressive Gate into the committal structure.', icon: IconBolt, mirrorsGate: true },
 };
 
-export function ParticipantWorkspace({
-  plan,
-  availableActions,
-  onAction,
-}) {
+export function ParticipantWorkspace({ plan, availableActions, onAction }) {
   const propositions = useMemo(() => [
     plan.gate,
     plan.workspace?.provenance,
+    ...(plan.lineage || []),
     ...Object.values(plan.workspace?.registers || {}).flat(),
     ...(plan.write_options || []),
     ...(plan.revision_options || []),
     ...(plan.gate_options || []),
   ].filter(Boolean), [plan]);
-  const byId = useMemo(
-    () => new Map(propositions.map((proposition) => [proposition.id, proposition])),
-    [propositions],
-  );
-  const domainName = plan.workspace?.domain
-    || domainForRegister(plan.phase.write_register);
-  const domain = metaForDomain(domainName);
-  const DomainIcon = domain.icon;
-  const ProjectionIcon = domain.projection.icon;
-  const registers = domain.registers;
-  const initialRegister = registers.includes(plan.phase.write_register)
-    ? plan.phase.write_register
-    : registers[0];
-  const [activeRegister, setActiveRegister] = useState(initialRegister);
-  const boardViewport = useRef(null);
-  const scrollTimer = useRef(null);
-  const provenance = resolveProposition(
-    plan.workspace?.provenance
-      || plan.lineage?.find((proposition) => proposition.tier === 'committal')
-      || plan.gate,
-    byId,
-  );
-
-  const registerItems = useMemo(
-    () => Object.fromEntries(registers.map((register) => [
-      register,
-      (plan.workspace?.registers?.[register] || [])
-        .map((proposition) => resolveProposition(proposition, byId)),
-    ])),
-    [byId, plan.workspace?.registers, registers],
-  );
-  const writeOptions = useMemo(
-    () => (plan.write_options || [])
-      .map((proposition) => resolveProposition(proposition, byId)),
-    [byId, plan.write_options],
-  );
+  const byId = useMemo(() => new Map(propositions.map((item) => [item.id, item])), [propositions]);
+  const gate = resolve(plan.gate, byId);
+  const provenance = resolve(plan.workspace?.provenance || plan.lineage?.find((item) => item.tier === 'committal') || gate, byId);
+  const domainName = plan.workspace?.domain || domainForRegister(plan.phase.write_register);
+  const assignments = useMemo(() => operationalAssignment(domainName, plan.phase.write_register, gate.register), [domainName, gate.register, plan.phase.write_register]);
   const actions = availableActions.filter((action) => actionMeta[action]);
   const canSelect = availableActions.includes('proposition.select');
+  const [inspection, setInspection] = useState({ kind: 'gate', proposition: gate });
 
-  useEffect(() => {
-    setActiveRegister(initialRegister);
-    requestAnimationFrame(() => scrollToRegister(initialRegister, false));
-  }, [domainName, initialRegister]);
+  const registerItems = useMemo(() => Object.fromEntries(
+    Object.entries(plan.workspace?.registers || {}).map(([register, items]) => [register, items.map((item) => resolve(item, byId))]),
+  ), [byId, plan.workspace?.registers]);
 
-  useEffect(() => () => clearTimeout(scrollTimer.current), []);
-
-  function scrollToRegister(register, smooth = true) {
-    const viewport = boardViewport.current;
-    const column = viewport?.querySelector(`[data-register="${register}"]`);
-    if (!viewport || !column) return;
-
-    setActiveRegister(register);
-    if (viewport.scrollWidth <= viewport.clientWidth) return;
-
-    viewport.scrollTo({
-      left: column.offsetLeft,
-      behavior: smooth ? 'smooth' : 'auto',
-    });
-  }
-
-  function trackRegister() {
-    clearTimeout(scrollTimer.current);
-    scrollTimer.current = setTimeout(() => {
-      const viewport = boardViewport.current;
-      if (!viewport?.clientWidth || viewport.scrollWidth <= viewport.clientWidth) return;
-
-      const index = Math.max(
-        0,
-        Math.min(registers.length - 1, Math.round(viewport.scrollLeft / viewport.clientWidth)),
-      );
-      setActiveRegister(registers[index]);
-    }, 80);
-  }
+  const lineage = useMemo(() => (plan.lineage || []).map((item) => resolve(item, byId)), [byId, plan.lineage]);
+  const writeOptions = useMemo(() => (plan.write_options || []).map((item) => resolve(item, byId)), [byId, plan.write_options]);
+  const gateOptions = useMemo(() => (plan.gate_options || []).map((item) => resolve(item, byId)).filter((item) => item.id !== gate.id), [byId, gate.id, plan.gate_options]);
 
   return (
-    <Box className="cycle-workspace" data-domain={domainName}>
-      <Group className="cycle-workspace__domain" justify="space-between" wrap="nowrap">
-        <Group gap="sm" wrap="nowrap">
-          <ThemeIcon color="indigo" variant="light" size="xl" radius="xl">
-            <DomainIcon size={22} />
-          </ThemeIcon>
-          <Box>
-            <Group gap="xs">
-              <Text fw={750} size="lg">{domain.label}</Text>
-              <Badge variant="light" color="indigo">Phase {plan.phase.kind}</Badge>
-              <Badge
-                variant="light"
-                color={domainName === 'emergence' ? 'orange' : 'cyan'}
-                leftSection={<ProjectionIcon size={12} />}
-              >
-                {domain.projection.label}
-              </Badge>
-            </Group>
-            <Text size="sm" c="dimmed">{domain.description}</Text>
-          </Box>
-        </Group>
-        <Stack gap={2} align="flex-end" visibleFrom="sm">
-          <Text size="xs" fw={700} tt="uppercase" c="dimmed">Current operation</Text>
-          <Text size="sm" fw={600}>{plan.phase.description}</Text>
-        </Stack>
-      </Group>
-
-      <Box className="cycle-workspace__provenance">
-        <Text className="cycle-workspace__eyebrow" size="xs">HORIZON PROVENANCE</Text>
-        <Box className="cycle-workspace__provenance-card">
-          <PropositionCard proposition={provenance} compact />
-        </Box>
-      </Box>
-
-      <RegisterConnectors registers={registers} />
-
-      <Group className="register-tabs" grow gap={6} hiddenFrom="sm">
-        {registers.map((register, index) => {
-          const meta = metaForRegister(register);
-          const Icon = meta.icon;
-
-          return (
-            <Tooltip key={register} label={meta.label}>
-              <UnstyledButton
-                className="register-tab"
-                data-active={activeRegister === register || undefined}
-                style={{ '--register-color': `var(--mantine-color-${meta.color}-6)` }}
-                aria-label={`Show ${meta.label} register`}
-                onClick={() => scrollToRegister(register)}
-              >
-                {index < registers.indexOf(activeRegister)
-                  ? <IconChevronLeft size={13} />
-                  : index > registers.indexOf(activeRegister)
-                    ? <IconChevronRight size={13} />
-                    : null}
-                <Icon size={17} />
-                <Text size="xs" fw={700}>{meta.label}</Text>
-              </UnstyledButton>
-            </Tooltip>
-          );
-        })}
-      </Group>
-
-      <Box
-        ref={boardViewport}
-        className="register-board"
-        onScroll={trackRegister}
-      >
-        <Box className="register-board__columns">
-          {registers.map((register) => (
-            <RegisterColumn
-              key={register}
-              register={register}
-              propositions={registerItems[register]}
+    <Box className="operational-workspace" data-domain={domainName}>
+      <HorizonProvenance proposition={provenance} onInspect={setInspection} />
+      <Box className="operational-workspace__body">
+        <Box className="operational-board">
+          {roles.map((role) => (
+            <OperationalLane
+              key={role.name}
+              role={role}
+              register={assignments[role.name]}
+              gate={gate}
+              lineage={lineage}
+              propositions={registerItems[assignments[role.name]] || []}
+              gateOptions={gateOptions}
               writeOptions={writeOptions}
-              gate={resolveProposition(plan.gate, byId)}
-              writeRegister={plan.phase.write_register}
               actions={actions}
               canSelect={canSelect}
+              onInspect={setInspection}
               onAction={onAction}
             />
           ))}
         </Box>
+        <PropositionInspector selection={inspection} onClose={() => setInspection(null)} />
       </Box>
     </Box>
   );
 }
 
-function RegisterConnectors({ registers }) {
+function HorizonProvenance({ proposition, onInspect }) {
+  const register = metaForRegister(proposition.register);
   return (
-    <svg
-      className="register-connectors"
-      viewBox="0 0 900 56"
-      preserveAspectRatio="none"
-      aria-hidden="true"
-    >
-      {registers.map((register, index) => {
-        const meta = metaForRegister(register);
-        const target = 150 + index * 300;
-
-        return (
-          <path
-            key={register}
-            d={`M 450 0 C 450 24, ${target} 24, ${target} 56`}
-            fill="none"
-            stroke={`var(--mantine-color-${meta.color}-6)`}
-            strokeWidth="2"
-            vectorEffect="non-scaling-stroke"
-          />
-        );
-      })}
-    </svg>
-  );
-}
-
-function RegisterColumn({
-  register,
-  propositions,
-  writeOptions,
-  gate,
-  writeRegister,
-  actions,
-  canSelect,
-  onAction,
-}) {
-  const meta = metaForRegister(register);
-  const Icon = meta.icon;
-  const isGate = gate.register === register;
-  const isWrite = writeRegister === register;
-  const visiblePropositions = isGate
-    ? []
-    : isWrite
-      ? writeOptions
-      : propositions.filter((proposition) => proposition.id !== gate.id);
-  const role = isGate && isWrite ? 'GATE + WRITE' : isGate ? 'GATE' : isWrite ? 'WRITE' : 'READ';
-  const columnActions = isWrite ? actions : [];
-
-  return (
-    <Box
-      className="register-column"
-      data-register={register}
-      data-gate={isGate || undefined}
-      data-write={isWrite || undefined}
-      style={{ '--register-color': `var(--mantine-color-${meta.color}-6)` }}
-    >
-      <Group className="register-column__header" justify="space-between" wrap="nowrap">
-        <Group gap="sm" wrap="nowrap">
-          <ThemeIcon color={meta.color} variant="light" radius="md">
-            <Icon size={18} />
-          </ThemeIcon>
-          <Box>
-            <Text fw={750}>{meta.label}</Text>
-            <Text size="xs" c="dimmed">{meta.description}</Text>
-          </Box>
+    <Box className="horizon-provenance">
+      <UnstyledButton className="horizon-provenance__card" onClick={() => onInspect({ kind: 'provenance', proposition })}>
+        <Group justify="space-between" gap="md" wrap="nowrap">
+          <Group gap="sm" wrap="nowrap" miw={0}>
+            <ThemeIcon color={register.color} variant="light" radius="md">P</ThemeIcon>
+            <Box miw={0}>
+              <Group gap={6}><Text size="xs" fw={750}>Horizon Provenance</Text><Text size="xs" c="dimmed">#{shortId(proposition.id)}</Text></Group>
+              <Text size="sm" fw={650} truncate>{proposition.title || proposition.statement}</Text>
+            </Box>
+          </Group>
+          <Group gap={6} visibleFrom="md">
+            {proposition.tier && <Badge size="xs" color="indigo">{proposition.tier}</Badge>}
+            <Badge size="xs" color={register.color} variant="light">{register.label}</Badge>
+          </Group>
         </Group>
-        <Badge size="xs" color={meta.color} variant={isGate || isWrite ? 'filled' : 'light'}>
-          {role}
-        </Badge>
-      </Group>
-
-      {isGate ? (
-        <Box className="register-column__gate">
-          <Box>
-            <Text className="cycle-workspace__eyebrow" size="xs" ta="center">CURRENT GATE</Text>
-            <PropositionCard proposition={gate} selected />
-          </Box>
-          {isWrite && (
-            <ActionCards
-              actions={columnActions}
-              register={register}
-              gate={gate}
-              onAction={onAction}
-              compact
-            />
-          )}
-        </Box>
-      ) : (
-        <ScrollArea className="register-column__scroll" type="auto" offsetScrollbars>
-          <Stack gap="sm" p="md">
-            {isWrite && (
-              <ActionCards
-                actions={columnActions}
-                register={register}
-                gate={gate}
-                onAction={onAction}
-              />
-            )}
-            {visiblePropositions.map((proposition) => (
-              <PropositionCard
-                key={proposition.id}
-                proposition={proposition}
-                compact
-                onClick={isWrite && canSelect
-                  ? () => onAction('proposition.select', { proposition_id: proposition.id })
-                  : undefined}
-              />
-            ))}
-            {!visiblePropositions.length && !columnActions.length && (
-              <RegisterEmptyState isWrite={isWrite} />
-            )}
-          </Stack>
-        </ScrollArea>
-      )}
+      </UnstyledButton>
+      <svg className="horizon-provenance__connectors" viewBox="0 0 900 24" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M450 0 V8 M450 8 H150 V24 M450 8 V24 M450 8 H750 V24" />
+      </svg>
     </Box>
   );
 }
 
-function ActionCards({ actions, register, gate, onAction, compact = false }) {
-  if (!actions.length) return null;
+function OperationalLane({ role, register, gate, lineage, propositions, gateOptions, writeOptions, actions, canSelect, onInspect, onAction }) {
+  const meta = metaForRegister(register);
+  const Icon = meta.icon;
 
   return (
-    <Stack gap="sm" className={compact ? 'register-actions register-actions--compact' : 'register-actions'}>
-      {!compact && <Text className="cycle-workspace__eyebrow" size="xs">AVAILABLE MOVES</Text>}
-      {actions.map((action) => {
-        const meta = actionMeta[action];
-        const preview = meta.mirrorsGate
-          ? {
-              ...gate,
-              register,
-              tier: action === 'proposition.commit' ? 'committal' : 'expressive',
-            }
-          : {
-              register,
-              tier: 'expressive',
-              statement: meta.description,
-            };
+    <Box className="operational-lane" data-role={role.name}>
+      <Box className="operational-lane__role">
+        <Text fw={800} size="sm" lts=".08em">{role.label}</Text>
+        <Text size="xs" c="dimmed">{role.description}</Text>
+      </Box>
+      <Box className="register-shell" key={register} style={{ '--register-color': `var(--mantine-color-${meta.color}-6)` }}>
+        <Group className="register-shell__header" gap="sm" wrap="nowrap">
+          <span className="register-shell__accent" />
+          <ThemeIcon color={meta.color} variant="light" size="sm"><Icon size={14} /></ThemeIcon>
+          <Box><Text fw={750}>{meta.label}</Text><Text size="xs" c="dimmed">{meta.description}</Text></Box>
+        </Group>
+        {role.name === 'read' && <ReadContent register={register} gate={gate} propositions={propositions} lineage={lineage} onInspect={onInspect} />}
+        {role.name === 'gate' && <GateContent gate={gate} gateOptions={gateOptions} propositions={propositions} onInspect={onInspect} canSelect={canSelect} onAction={onAction} />}
+        {role.name === 'write' && <WriteContent register={register} gate={gate} writeOptions={writeOptions} actions={actions} canSelect={canSelect} onInspect={onInspect} onAction={onAction} />}
+      </Box>
+    </Box>
+  );
+}
 
-        return (
-          <PropositionCard
-            key={action}
-            proposition={preview}
-            compact
-            wireframe
-            actionLabel={meta.label}
-            actionIcon={meta.icon}
-            onClick={() => onAction(action)}
-          />
-        );
-      })}
+function ReadContent({ register, gate, propositions, lineage, onInspect }) {
+  const currentRead = propositions.find((item) => item.id !== gate.id) || lineage.find((item) => item.register === register) || lineage[0];
+  return (
+    <Stack className="lane-content" gap="sm">
+      <Text className="lane-eyebrow">CURRENT READ</Text>
+      {currentRead ? <PropositionCard proposition={currentRead} compact onClick={() => onInspect({ kind: 'read', proposition: currentRead })} /> : <EmptyState text="No readable proposition is exposed in this register." />}
+      <LineagePanel lineage={lineage} onInspect={onInspect} />
     </Stack>
   );
 }
 
-function RegisterEmptyState({ isWrite }) {
+function GateContent({ gate, gateOptions, propositions, onInspect, canSelect, onAction }) {
+  const candidates = uniqueById([...gateOptions, ...propositions.filter((item) => item.id !== gate.id)]);
   return (
-    <Stack className="register-empty" gap={4} align="center" justify="center">
-      <Text fw={650} size="sm">{isWrite ? 'No admissible move' : 'No visible propositions'}</Text>
-      <Text size="xs" c="dimmed" ta="center">
-        {isWrite
-          ? 'This Phase does not currently expose another contribution here.'
-          : 'This register has no propositions in the active Context Horizon.'}
-      </Text>
+    <ScrollArea className="lane-scroll" type="auto" offsetScrollbars>
+      <Stack className="lane-content" gap="sm">
+        <Text className="lane-eyebrow">SELECTED GATE</Text>
+        <PropositionCard proposition={gate} selected compact onClick={() => onInspect({ kind: 'gate', proposition: gate })} />
+        {candidates.length > 0 && <Text className="lane-eyebrow" mt="xs">OTHER CANDIDATES AT THIS LEVEL</Text>}
+        {candidates.map((proposition) => (
+          <PropositionCard key={proposition.id} proposition={proposition} compact muted onClick={() => onInspect({ kind: 'gate candidate', proposition })} />
+        ))}
+        {canSelect && candidates.length > 0 && <Text size="10px" c="dimmed">Inspecting a candidate does not select it. Selection remains an explicit contribution.</Text>}
+      </Stack>
+    </ScrollArea>
+  );
+}
+
+function WriteContent({ register, gate, writeOptions, actions, canSelect, onInspect, onAction }) {
+  return (
+    <Stack className="write-lane" gap={0}>
+      <ScrollArea className="lane-scroll" type="auto" offsetScrollbars>
+        <Stack className="lane-content" gap="sm">
+          <Group justify="space-between"><Text className="lane-eyebrow">AVAILABLE MOVES</Text><Text size="xs" c="dimmed">{actions.length + writeOptions.length}</Text></Group>
+          {actions.map((action) => {
+            const meta = actionMeta[action];
+            const preview = meta.mirrorsGate ? { ...gate, register, tier: action === 'proposition.commit' ? 'committal' : 'expressive' } : { register, tier: 'expressive', statement: meta.description, title: meta.label };
+            return <PropositionCard key={action} proposition={preview} compact wireframe actionLabel={meta.label} actionIcon={meta.icon} onClick={() => onInspect({ kind: 'available move', title: meta.label, proposition: preview })} />;
+          })}
+          {writeOptions.map((proposition) => <PropositionCard key={proposition.id} proposition={proposition} compact onClick={() => onInspect({ kind: 'write option', proposition })} />)}
+          {!actions.length && !writeOptions.length && <EmptyState text="No admissible move is currently exposed." />}
+        </Stack>
+      </ScrollArea>
+      <Button className="write-lane__create" leftSection={<IconPlus size={16} />} color={metaForRegister(register).color} disabled={!actions.length} onClick={() => actions[0] && onAction(actions[0])}>Create Proposition</Button>
+      {canSelect && writeOptions.length > 0 && <Text size="10px" c="dimmed" px="sm" pb="xs">Existing write options remain inspectable; selection is performed through the contribution flow.</Text>}
     </Stack>
   );
 }
 
-function resolveProposition(proposition, byId) {
-  if (!proposition) return {};
-
-  return byId.get(proposition.id) || proposition;
+function EmptyState({ text }) {
+  return <Box className="lane-empty"><Text size="xs" c="dimmed" ta="center">{text}</Text></Box>;
 }
+
+function operationalAssignment(domainName, writeRegister, gateRegister) {
+  const registers = domainName === 'settlement' ? ['signal', 'stance', 'concord'] : ['activity', 'frontier', 'canon'];
+  const writeIndex = registers.indexOf(writeRegister);
+  if (writeIndex >= 0) return { read: registers[(writeIndex + 1) % 3], gate: registers[(writeIndex + 2) % 3], write: registers[writeIndex] };
+  const gateIndex = registers.indexOf(gateRegister);
+  if (gateIndex >= 0) return { read: registers[(gateIndex + 2) % 3], gate: registers[gateIndex], write: registers[(gateIndex + 1) % 3] };
+  return { read: registers[0], gate: registers[1], write: registers[2] };
+}
+
+function resolve(proposition, byId) { return proposition ? byId.get(proposition.id) || proposition : {}; }
+function uniqueById(items) { return [...new Map(items.filter(Boolean).map((item) => [item.id, item])).values()]; }
+function shortId(id) { return id == null ? '—' : String(id).slice(-6); }

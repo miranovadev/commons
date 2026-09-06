@@ -49,11 +49,11 @@ export function SubstratePage({ user }) {
                 <Text c="dimmed" mt={6} maw={700}>{substrate.description || 'A shared cognitive substrate.'}</Text>
               </Box>
               {user ? ownedParticipant ? (
-                <Button color="indigo" leftSection={<IconUserHexagon size={18} />} rightSection={<IconArrowRight size={16} />} onClick={() => navigate(`/substrates/${slug}/participants/${ownedParticipant.id}`)}>Enter cycle</Button>
+                <Button leftSection={<IconUserHexagon size={18} />} rightSection={<IconArrowRight size={16} />} onClick={() => navigate(`/substrates/${slug}/participants/${ownedParticipant.id}`)}>Enter cycle</Button>
               ) : (
-                <Button color="blue" variant="light" leftSection={<IconUserHexagon size={18} />} onClick={open}>Join as participant</Button>
+                <Button variant="light" leftSection={<IconUserHexagon size={18} />} onClick={open}>Join as participant</Button>
               ) : (
-                <Button component={Link} to="/login" color="blue" variant="light">Sign in to participate</Button>
+                <Button component={Link} to="/login" variant="light">Sign in to participate</Button>
               )}
             </Group>
 
@@ -86,7 +86,7 @@ function JoinParticipantModal({ opened, onClose, slug, onJoined }) {
         <TextInput label="Designation" description="Optional role or area of experience" {...form.getInputProps('designation')} />
         <NumberInput label="Maximum propositions in Perspective" min={1} {...form.getInputProps('max_read_count')} />
         <NumberInput label="Maximum token count" min={1} placeholder="No token limit" {...form.getInputProps('max_token_count')} />
-        <Group justify="flex-end"><Button variant="default" onClick={onClose}>Cancel</Button><Button color="green" type="submit" loading={form.submitting}>Save Participant</Button></Group>
+        <Group justify="flex-end"><Button variant="default" onClick={onClose}>Cancel</Button><Button type="submit" loading={form.submitting}>Save Participant</Button></Group>
       </Stack></Box>
     </Modal>
   );
