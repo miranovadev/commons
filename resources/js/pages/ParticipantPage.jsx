@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Alert, Badge, Box, Breadcrumbs, Button, Container, Group, Loader, Stack, Text, ThemeIcon, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconAlertCircle, IconSparkles, IconUserHexagon } from '@tabler/icons-react';
+import { IconAdjustmentsHorizontal, IconAlertCircle, IconArrowsJoin, IconArrowsSplit, IconFilter, IconFocus2, IconLock, IconRepeat, IconSparkles, IconUserHexagon } from '@tabler/icons-react';
 import { Link, useParams } from 'react-router-dom';
 import { messageFrom } from '../errors';
 import { ContributionForm } from '../components/ContributionForm';
@@ -9,14 +9,14 @@ import { OriginCycleForm } from '../components/OriginCycleForm';
 import { ParticipantWorkspace } from '../components/ParticipantWorkspace';
 import { useContributeMutation, useEnterCycleMutation, useGetParticipantQuery, useGetParticipationQuery } from '../services/commonsApi';
 
-const phaseNumbers = {
-  distinguish: 1,
-  persist: 2,
-  constrain: 3,
-  disperse: 4,
-  mediate: 5,
-  bias: 6,
-  order: 7,
+const phaseMeta = {
+  distinguish: { number: 1, icon: IconFocus2 },
+  persist: { number: 2, icon: IconRepeat },
+  constrain: { number: 3, icon: IconFilter },
+  disperse: { number: 4, icon: IconArrowsSplit },
+  mediate: { number: 5, icon: IconArrowsJoin },
+  bias: { number: 6, icon: IconAdjustmentsHorizontal },
+  order: { number: 7, icon: IconLock },
 };
 
 export function ParticipantPage() {
@@ -51,14 +51,12 @@ export function ParticipantPage() {
       {participant && plan && (
         <Box className="participant-cycle-shell">
           <Box className="cycle-context-header">
-            <Group className="cycle-context-header__participant" gap="sm" wrap="nowrap" miw={0}>
-              <Badge color="indigo" variant="light" leftSection={<IconUserHexagon size={12} />}>PARTICIPANT</Badge>
-              <Box miw={0}><Text fw={750} truncate>{participant.callsign}</Text><Text size="xs" c="dimmed" truncate>{slug}</Text></Box>
-            </Group>
-            <Box className="cycle-context-header__phase">
-              <Text size="10px" fw={700} c="dimmed">Current phase</Text>
-              <Text size="sm" fw={650}>{phaseLabel(plan.phase.kind)}</Text>
-            </Box>
+            <Stack className="cycle-context-header__participant" gap={2} miw={0}>
+              <Badge color="indigo" variant="light" size="xs" leftSection={<IconUserHexagon size={11} />}>Participant</Badge>
+              <Text fw={750} truncate>{participant.callsign}</Text>
+              <Text size="xs" c="dimmed" truncate>{slug}</Text>
+            </Stack>
+            <PhaseLabel kind={plan.phase.kind} />
             <Box aria-hidden="true" />
           </Box>
           <ParticipantWorkspace plan={{ ...plan, perspectiveLimit: participant.max_read_count }} availableActions={availableActions} onAction={openAction} />
@@ -70,8 +68,14 @@ export function ParticipantPage() {
   );
 }
 
-function phaseLabel(kind) {
-  const number = phaseNumbers[kind];
+function PhaseLabel({ kind }) {
+  const meta = phaseMeta[kind];
+  const Icon = meta?.icon || IconFocus2;
   const name = kind ? kind.charAt(0).toUpperCase() + kind.slice(1) : 'Unknown';
-  return number ? `Phase ${number} · ${name}` : name;
+  return (
+    <Group className="cycle-context-header__phase" gap={7} justify="center" wrap="nowrap">
+      <Icon size={17} />
+      <Text size="sm" fw={650}>{meta?.number ? `Phase ${meta.number} · ${name}` : name}</Text>
+    </Group>
+  );
 }
