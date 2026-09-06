@@ -20,6 +20,7 @@ class ParticipantController extends Controller
 
         return ParticipantResource::collection(
             $substrate->participants()
+                ->with('latestCycle.currentPhase.gate')
                 ->orderBy('callsign')
                 ->get(),
         );
@@ -38,7 +39,9 @@ class ParticipantController extends Controller
             $request->validated(),
         );
 
-        return new ParticipantResource($participant);
+        return new ParticipantResource(
+            $participant->load('latestCycle.currentPhase.gate'),
+        );
     }
 
     public function show(
@@ -47,6 +50,8 @@ class ParticipantController extends Controller
     ): ParticipantResource {
         Gate::authorize('viewParticipants', $substrate);
 
-        return new ParticipantResource($participant);
+        return new ParticipantResource(
+            $participant->load('latestCycle.currentPhase.gate'),
+        );
     }
 }
