@@ -1,11 +1,11 @@
 import { useEffect } from 'react';
-import { ActionIcon, AppShell, Avatar, Burger, Button, Center, Group, Loader, MantineProvider, Menu, NavLink, Stack, Text, useMantineColorScheme } from '@mantine/core';
+import { ActionIcon, AppShell, Avatar, Box, Burger, Button, Center, Group, Loader, MantineProvider, Menu, NavLink, Stack, Text, useMantineColorScheme } from '@mantine/core';
 import { useDisclosure, useMediaQuery } from '@mantine/hooks';
-import { IconActivity, IconAdjustments, IconBinaryTree2, IconChevronDown, IconLogin2, IconLogout2, IconMoon, IconSun, IconTopologyStar3, IconUserHexagon } from '@tabler/icons-react';
-import { BrowserRouter, Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { IconAdjustments, IconBinaryTree2, IconChevronDown, IconLogin2, IconLogout2, IconMoon, IconPlugConnected, IconSun, IconTopologyStar3, IconUserHexagon } from '@tabler/icons-react';
+import { BrowserRouter, Link, Navigate, Route, Routes, matchPath, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { CommonsLogo } from './components/CommonsLogo';
-import { commonsApi, useGetSessionQuery, useLogoutMutation } from './services/commonsApi';
+import { commonsApi, useGetSessionQuery, useGetSubstrateQuery, useLogoutMutation } from './services/commonsApi';
 import { systemBootstrapped } from './systemSlice';
 import { HTTP_PRECONDITION_REQUIRED } from './http';
 import { theme } from './theme';
@@ -28,6 +28,10 @@ function CommonsApp() {
   const [logoutRequest] = useLogoutMutation();
   const location = useLocation();
   const navigate = useNavigate();
+  const substrateMatch = matchPath({ path: '/substrates/:slug/*', end: false }, location.pathname)
+    || matchPath('/substrates/:slug', location.pathname);
+  const substrateSlug = substrateMatch?.params?.slug;
+  const { data: selectedSubstrate } = useGetSubstrateQuery(substrateSlug, { skip: !substrateSlug });
 
   useEffect(close, [location.pathname]);
 
@@ -42,6 +46,7 @@ function CommonsApp() {
   if (bootstrapRequired) return <Routes><Route path="*" element={<BootstrapPage onComplete={() => { dispatch(systemBootstrapped()); navigate('/'); }} />} /></Routes>;
 
   const participantActive = location.pathname.includes('/participants/');
+  const substrateRoot = substrateSlug && location.pathname === `/substrates/${substrateSlug}`;
 
   return (
     <AppShell
@@ -70,13 +75,21 @@ function CommonsApp() {
         </Group>
       </AppShell.Header>
       <AppShell.Navbar className="commons-navbar" p="sm">
-        <Stack h="100%" gap="xs" pt="xs">
-          <NavLink component={Link} to="/" label="Substrates" leftSection={<IconTopologyStar3 size={18} />} active={location.pathname === '/'} />
-          {participantActive && <NavLink label="Participant" leftSection={<IconUserHexagon size={18} />} active />}
-          <NavLink label="Graph" leftSection={<IconBinaryTree2 size={18} />} disabled />
-          <NavLink label="Activity" leftSection={<IconActivity size={18} />} disabled />
-          <NavLink label="Participants" leftSection={<IconUserHexagon size={18} />} disabled />
-          <NavLink label="Settings" leftSection={<IconAdjustments size={18} />} disabled />
+        <Stack h="100%" gap={4} pt="xs">
+          <NavLink component={Link} to="/" label="Substrates" leftSection={<IconTopologyStar3 size={18} />} active={location.pathname === '/' || Boolean(substrateSlug)} />
+          <NavLink label="Connections" leftSection={<IconPlugConnected size={18} />} disabled />
+
+          {substrateSlug && (
+            <Box className="substrate-nav-section" mt="sm">
+              <Text className="substrate-nav-section__label" size="10px" fw={800} tt="uppercase" c="dimmed">Current substrate</Text>
+              <Text className="substrate-nav-section__title" size="sm" fw={700} lineClamp={2}>{selectedSubstrate?.title || substrateSlug}</Text>
+              <Stack gap={2} mt="xs">
+                <NavLink component={Link} to={`/substrates/${substrateSlug}`} label="Graph" leftSection={<IconBinaryTree2 size={17} />} active={Boolean(substrateRoot)} />
+                <NavLink label="Participants" leftSection={<IconUserHexagon size={17} />} active={participantActive} disabled={!participantActive} />
+                <NavLink label="Settings" leftSection={<IconAdjustments size={17} />} disabled />
+              </Stack>
+            </Box>
+          )}
         </Stack>
       </AppShell.Navbar>
       <AppShell.Main className="app-main">

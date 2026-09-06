@@ -1,5 +1,6 @@
-import { Badge, Box, Group, ScrollArea, Stack, Text, UnstyledButton } from '@mantine/core';
+import { Box, Group, ScrollArea, Stack, Text } from '@mantine/core';
 import { metaForRegister } from '../registers';
+import { PropositionCard } from './PropositionCard';
 
 export function LineagePanel({ lineage = [], onInspect }) {
   return (
@@ -23,19 +24,7 @@ function LineageItem({ proposition, onInspect }) {
   return (
     <Box className="lineage-item" style={{ '--register-color': `var(--mantine-color-${register.color}-6)` }}>
       <span className="lineage-item__orb" />
-      <UnstyledButton className="lineage-item__card" onClick={() => onInspect?.({ kind: 'lineage', proposition })}>
-        <Group gap={6} mb={4} wrap="nowrap">
-          <Text size="10px" c="dimmed">#{shortId(proposition.id)}</Text>
-          <Badge size="xs" color={register.color} variant="light">{register.label}</Badge>
-          {proposition.tier && <Text size="10px" c="dimmed">{proposition.tier}</Text>}
-        </Group>
-        <Text size="xs" fw={650} lineClamp={2}>{proposition.title || proposition.statement}</Text>
-      </UnstyledButton>
+      <PropositionCard proposition={proposition} mini onClick={() => onInspect?.({ kind: 'lineage', proposition })} />
     </Box>
   );
-}
-
-function shortId(id) {
-  if (id == null) return '—';
-  return String(id).slice(-6);
 }
