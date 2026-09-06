@@ -33,9 +33,17 @@ Phase in the Settlement `signal` register.
     }
 
 Origin entry is serialized on the Substrate. A concurrent or repeated request
-receives HTTP 409 and cannot create a second Origin. Entry to an established
-substrate remains reserved for the future Potential selector and is exposed as
-an unavailable `potential` entry rather than guessed by the client.
+receives HTTP 409 and cannot create a second Origin. For an established
+substrate, POST an empty JSON object to `/participate/enter`. Potential selects
+the admissible Committal Proposition with the highest Potential Charge as the
+new Cycle Gate; the participant does not choose a Proposition explicitly.
+
+Potential Charge is `max(0, max(|T| - |T_c|))`, where `T` is the Committal
+state's immutable Tension and `T_c` is the projected Tension of each measurable
+Expressive continuation reachable before the next Committal state. If no
+continuation reduces Tension, selection falls back to the highest current
+Charge, `1 - |T|`. Exact ties use the Proposition ID for stable ordering and do
+not give precedence to lineage depth.
 
 POST applies exactly one contribution:
 
