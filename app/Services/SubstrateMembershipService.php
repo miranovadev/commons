@@ -11,7 +11,6 @@ use App\Models\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
-use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 final class SubstrateMembershipService
 {
@@ -38,17 +37,6 @@ final class SubstrateMembershipService
                 ->lockForUpdate()
                 ->findOrFail($substrate->getKey());
 
-            $existing = Participant::query()
-                ->whereBelongsTo($lockedSubstrate)
-                ->whereBelongsTo($user)
-                ->first();
-
-            if ($existing !== null) {
-                throw new ConflictHttpException(
-                    'The user already has a Participant in this substrate.',
-                );
-            }
-
             $maximum = $lockedSubstrate->maximumParticipants();
 
             if (
@@ -74,13 +62,21 @@ final class SubstrateMembershipService
                 ->where('substrate_id', $lockedSubstrate->getKey())
                 ->where('user_id', $user->getKey())
                 ->first() ?? new SubstrateMembership;
+
             $membership->forceFill([
                 'substrate_id' => $lockedSubstrate->getKey(),
                 'user_id' => $user->getKey(),
-                'participant_id' => $participant->getKey(),
                 'status' => 'active',
-                'joined_at' => now(),
+                'joined_at' => $membership->joined_at ?? now(),
             ]);
+
+            // participant_id predates support for multiple Participants. Keep the
+            // first Participant as the membership representative for backwards
+            // compatibility; ownership itself lives on participants.user_id.
+            if ($membership->participant_id === null) {
+                $membership->participant_id = $participant->getKey();
+            }
+
             $membership->save();
 
             $role = Role::query()

@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { ActionIcon, AppShell, Avatar, Box, Burger, Button, Center, Group, Loader, MantineProvider, Menu, NavLink, Stack, Text, useMantineColorScheme } from '@mantine/core';
 import { useDisclosure, useMediaQuery } from '@mantine/hooks';
-import { IconAdjustments, IconBinaryTree2, IconChevronDown, IconChevronRight, IconLogin2, IconLogout2, IconMoon, IconPlugConnected, IconSettings, IconSun, IconTopologyStar3, IconUserHexagon } from '@tabler/icons-react';
+import { IconAdjustments, IconBinaryTree2, IconChevronDown, IconLogin2, IconLogout2, IconMoon, IconPlugConnected, IconSettings, IconSun, IconTopologyStar3, IconUserHexagon } from '@tabler/icons-react';
 import { BrowserRouter, Link, Navigate, Route, Routes, matchPath, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import '../css/ui-polish.css';
@@ -14,6 +14,7 @@ import { BootstrapPage } from './pages/BootstrapPage';
 import { ConnectionsPage } from './pages/ConnectionsPage';
 import { LoginPage } from './pages/LoginPage';
 import { ParticipantPage } from './pages/ParticipantPage';
+import { ParticipantsPage } from './pages/ParticipantsPage';
 import { SubstratePage } from './pages/SubstratePage';
 import { SubstratesPage } from './pages/SubstratesPage';
 
@@ -47,10 +48,12 @@ function CommonsApp() {
   if (isError && error?.status !== 401 && error?.status !== HTTP_PRECONDITION_REQUIRED) return <Center mih="100vh"><Text c="red">The Commons could not be reached.</Text></Center>;
   if (bootstrapRequired) return <Routes><Route path="*" element={<BootstrapPage onComplete={() => { dispatch(systemBootstrapped()); navigate('/'); }} />} /></Routes>;
 
-  const participantActive = location.pathname.includes('/participants/');
+  const participantDetailActive = location.pathname.includes('/participants/') && !location.pathname.endsWith('/participants');
+  const participantsActive = Boolean(substrateSlug) && (location.pathname === `/substrates/${substrateSlug}/participants` || participantDetailActive);
   const connectionsActive = location.pathname === '/connections';
   const substrateRoot = substrateSlug && location.pathname === `/substrates/${substrateSlug}`;
-  const flushMain = participantActive || substrateRoot;
+  const flushMain = participantDetailActive || substrateRoot;
+  const substratesListActive = location.pathname === '/';
 
   return (
     <AppShell
@@ -93,15 +96,15 @@ function CommonsApp() {
             to="/"
             label="Substrates"
             leftSection={<IconTopologyStar3 size={18} />}
-            rightSection={substrateSlug ? <IconChevronDown size={15} /> : <IconChevronRight size={15} />}
-            active={location.pathname === '/' || Boolean(substrateSlug)}
+            active={substratesListActive || Boolean(substrateSlug)}
+            className={substrateSlug && !substratesListActive ? 'substrates-nav-context' : undefined}
           />
           {substrateSlug && (
             <Box className="substrate-nav-section">
               <Text className="substrate-nav-section__title" size="xs" fw={700} lineClamp={2}>{selectedSubstrate?.title || substrateSlug}</Text>
               <Stack gap={2} mt={4}>
                 <NavLink component={Link} to={`/substrates/${substrateSlug}`} label="Graph" leftSection={<IconBinaryTree2 size={16} />} active={Boolean(substrateRoot)} />
-                <NavLink label="Participants" leftSection={<IconUserHexagon size={16} />} active={participantActive} disabled={!participantActive} />
+                <NavLink component={Link} to={`/substrates/${substrateSlug}/participants`} label="Participants" leftSection={<IconUserHexagon size={16} />} active={participantsActive} />
                 <NavLink label="Settings" leftSection={<IconAdjustments size={16} />} disabled />
               </Stack>
             </Box>
@@ -115,6 +118,7 @@ function CommonsApp() {
           <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage />} />
           <Route path="/connections" element={user ? <ConnectionsPage /> : <Navigate to="/login" replace />} />
           <Route path="/substrates/:slug" element={<SubstratePage user={user} />} />
+          <Route path="/substrates/:slug/participants" element={user ? <ParticipantsPage user={user} /> : <Navigate to="/login" replace />} />
           <Route path="/substrates/:slug/participants/:participantId" element={user ? <ParticipantPage /> : <Navigate to="/login" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

@@ -17,11 +17,10 @@ final readonly class InputPlanService
         private LineageService $lineage,
         private PropositionOptionService $options,
         private InputSchemaService $schemas,
+        private PropositionMeasurementService $measurements,
     ) {}
 
-    /**
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public function forParticipant(Participant $participant): array
     {
         $phase = $this->phases->currentFor($participant);
@@ -38,7 +37,7 @@ final readonly class InputPlanService
             $participant,
         );
         $gateOptions = $this->options->gateOptionsFor($phase);
-        $this->loadMeasurements(
+        $this->loadPropositionState(
             $gate,
             $lineage,
             $writeOptions,
@@ -55,6 +54,7 @@ final readonly class InputPlanService
         return [
             'phase' => [
                 'id' => $phase->getKey(),
+                'number' => $phase->kind->value,
                 'kind' => $plan['name'],
                 'description' => $plan['description'],
                 'write_register' => $phase->write_register,
@@ -76,11 +76,7 @@ final readonly class InputPlanService
     }
 
     /**
-     * The Participant workspace is scoped to the active Context Horizon.
-     * Provenance is returned separately because a boundary Proposition opens
-     * the Horizon without becoming part of its new measurement population.
-     *
-     * @param  Collection<int, Proposition>  $lineage
+     * @param Collection<int, Proposition> $lineage
      * @return array<string, mixed>
      */
     private function workspace(
@@ -100,11 +96,18 @@ final readonly class InputPlanService
         $propositions = $horizon === null
             ? collect()
             : $horizon->propositions()
-                ->with('measurement')
+                ->with([
+                    'measurement',
+                    'parents',
+                    'phase.cycle.participant:id,callsign',
+                ])
                 ->whereIn('register', $registers)
                 ->latest('propositions.created_at')
                 ->limit(max(1, (int) ($participant->max_read_count ?? 25)))
                 ->get();
+
+        $this->measurements->repairMissing($propositions);
+
         $provenance = $horizon?->opened_by_proposition_id === null
             ? $lineage->first(
                 fn (Proposition $item): bool => $item->tier === 'committal'
@@ -114,7 +117,12 @@ final readonly class InputPlanService
             );
 
         $provenance ??= $gate;
-        $provenance->loadMissing('measurement');
+        $provenance->loadMissing([
+            'measurement',
+            'parents',
+            'phase.cycle.participant:id,callsign',
+        ]);
+        $this->measurements->repairMissing(collect([$provenance]));
 
         return [
             'domain' => $domain->value,
@@ -149,7 +157,7 @@ final readonly class InputPlanService
         ) ? ContextDomain::Settlement : ContextDomain::Emergence;
     }
 
-    private function loadMeasurements(
+    private function loadPropositionState(
         Proposition $gate,
         Collection ...$collections,
     ): void {
@@ -159,15 +167,21 @@ final readonly class InputPlanService
             $propositions = $propositions->concat($collection);
         }
 
-        $gate->newCollection(
+        $collection = $gate->newCollection(
             $propositions->unique(
                 fn (Proposition $proposition): string => $proposition->getKey()
             )->values()->all()
-        )->loadMissing('measurement');
+        );
+        $collection->loadMissing([
+            'measurement',
+            'parents',
+            'phase.cycle.participant:id,callsign',
+        ]);
+        $this->measurements->repairMissing($collection);
     }
 
     /**
-     * @param  Collection<int, Proposition>  $propositions
+     * @param Collection<int, Proposition> $propositions
      * @return list<array<string, mixed>>
      */
     private function propositions(Collection $propositions): array
@@ -180,14 +194,20 @@ final readonly class InputPlanService
             ->all();
     }
 
-    /**
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     private function proposition(Proposition $proposition): array
     {
         $measurement = $proposition->relationLoaded('measurement')
             ? $proposition->measurement
             : null;
+        $parent = $proposition->relationLoaded('parents')
+            ? $proposition->parents->first()
+            : null;
+        $participant = $proposition->relationLoaded('phase')
+            && $proposition->phase->relationLoaded('cycle')
+            && $proposition->phase->cycle->relationLoaded('participant')
+                ? $proposition->phase->cycle->participant
+                : null;
 
         return [
             ...$proposition->only([
@@ -202,6 +222,13 @@ final readonly class InputPlanService
                 ->trim()
                 ->limit(72)
                 ->toString(),
+            'participant' => $participant?->only(['id', 'callsign']),
+            'transition' => $parent === null ? null : [
+                'type' => $parent->pivot->type,
+                'from' => $parent->register,
+                'to' => $proposition->register,
+                'source_id' => $parent->getKey(),
+            ],
             'observables' => [
                 'correspondence' => $measurement?->correspondence,
                 'chirality' => $measurement?->chirality,

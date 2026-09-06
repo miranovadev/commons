@@ -2,10 +2,12 @@
 
 namespace App\Services;
 
+use App\Models\ContextHorizonMembership;
 use App\Models\Proposition;
 use App\Models\PropositionMeasurement;
 use App\Services\Observables\ObservableService;
 use DateTimeInterface;
+use Illuminate\Support\Collection;
 use InvalidArgumentException;
 
 final class PropositionMeasurementService
@@ -27,6 +29,35 @@ final class PropositionMeasurementService
             $values->closure,
             $calculatedAt,
         );
+    }
+
+    public function recalculateIfMeasurable(
+        Proposition $proposition,
+        ?DateTimeInterface $calculatedAt = null,
+    ): ?PropositionMeasurement {
+        if (! ContextHorizonMembership::query()->whereKey($proposition->getKey())->exists()) {
+            return null;
+        }
+
+        return $this->recalculate($proposition, $calculatedAt);
+    }
+
+    /**
+     * Populate measurements that predate persisted expressive measurements.
+     * Existing projections are left untouched, and propositions outside a
+     * Context Horizon remain deliberately unmeasured.
+     *
+     * @param  Collection<int, Proposition>  $propositions
+     */
+    public function repairMissing(Collection $propositions): void
+    {
+        foreach ($propositions as $proposition) {
+            $proposition->loadMissing('measurement');
+
+            if ($proposition->measurement === null) {
+                $this->recalculateIfMeasurable($proposition);
+            }
+        }
     }
 
     public function project(
