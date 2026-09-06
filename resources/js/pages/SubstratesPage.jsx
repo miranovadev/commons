@@ -37,7 +37,7 @@ export function SubstratesPage({ user }) {
           <Title order={1}>Substrates</Title>
           <Text c="dimmed" mt={6}>Explore public structure or return to a substrate where you participate.</Text>
         </Box>
-        {user?.has_system_access && <Button color="gray" leftSection={<IconPlus size={17} />} onClick={open}>New substrate</Button>}
+        {user?.has_system_access && <Button leftSection={<IconPlus size={17} />} onClick={open}>New substrate</Button>}
       </Group>
 
       {error && <Alert color="red" mb="lg" icon={<IconAlertCircle size={18} />}>{messageFrom(error, 'Substrates could not be loaded.')}</Alert>}
@@ -53,7 +53,7 @@ export function SubstratesPage({ user }) {
           <ThemeIcon size={52} radius="xl" color="gray" variant="light" mx="auto"><IconTopologyStar3 size={26} /></ThemeIcon>
           <Title order={3} mt="md">No substrates are visible yet</Title>
           <Text c="dimmed" mt="xs">{user?.has_system_access ? 'Create the first space and give its Origin somewhere to land.' : 'Public substrates will appear here when they are created.'}</Text>
-          {user?.has_system_access && <Button color="gray" variant="light" mt="lg" leftSection={<IconPlus size={17} />} onClick={open}>Create substrate</Button>}
+          {user?.has_system_access && <Button variant="light" mt="lg" leftSection={<IconPlus size={17} />} onClick={open}>Create substrate</Button>}
         </Card>
       )}
 
@@ -154,7 +154,7 @@ function CreateSubstrateModal({ opened, onClose, onCreated }) {
           <Textarea label="Description" autosize minRows={3} {...form.getInputProps('description')} />
           <Radio.Group label="Visibility" {...form.getInputProps('visibility')}><Group mt="xs"><Radio value="public" label="Public" /><Radio value="private" label="Private" /></Group></Radio.Group>
           <NumberInput label="Maximum participants" min={1} {...form.getInputProps('maximum_participants')} />
-          <Group justify="flex-end"><Button variant="default" onClick={onClose}>Cancel</Button><Button type="submit" color="green" loading={form.submitting}>Save substrate</Button></Group>
+          <Group justify="flex-end"><Button variant="default" onClick={onClose}>Cancel</Button><Button type="submit" loading={form.submitting}>Save substrate</Button></Group>
         </Stack>
       </Box>
     </Modal>
