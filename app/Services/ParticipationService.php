@@ -2,9 +2,11 @@
 
 namespace App\Services;
 
+use App\Enums\LedgerEntryKind;
 use App\Models\Cycle;
 use App\Models\Participant;
 use App\Models\Phase;
+use App\Models\SubstrateLedgerEntry;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
@@ -14,6 +16,7 @@ final readonly class ParticipationService
         private ContributionService $contributions,
         private ContributionDispatcher $dispatcher,
         private PhaseProgressionService $progression,
+        private CycleEntryService $cycleEntry,
     ) {}
 
     /**
@@ -31,6 +34,7 @@ final readonly class ParticipationService
             return $this->waiting(
                 'cycle_not_started',
                 'The Participant is waiting for a Cycle to begin.',
+                entry: $this->entryFor($participant),
             );
         }
 
@@ -62,7 +66,19 @@ final readonly class ParticipationService
             'plan' => $this->contributions->planFor($participant),
             'perspective' => $this->perspective($participant),
             'reason' => null,
+            'entry' => null,
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $origin
+     * @return array<string, mixed>
+     */
+    public function enter(Participant $participant, array $origin): array
+    {
+        $this->cycleEntry->enter($participant, $origin);
+
+        return $this->stateFor($participant);
     }
 
     /**
@@ -127,6 +143,7 @@ final readonly class ParticipationService
         string $code,
         string $message,
         ?Cycle $cycle = null,
+        ?array $entry = null,
     ): array {
         return [
             'status' => 'waiting',
@@ -134,6 +151,33 @@ final readonly class ParticipationService
             'plan' => null,
             'perspective' => null,
             'reason' => compact('code', 'message'),
+            'entry' => $entry,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function entryFor(Participant $participant): array
+    {
+        $hasOrigin = SubstrateLedgerEntry::query()
+            ->where('substrate_id', $participant->substrate_id)
+            ->where('kind', LedgerEntryKind::Proposition->value)
+            ->exists();
+
+        if ($hasOrigin) {
+            return [
+                'mode' => 'potential',
+                'available' => false,
+                'message' => 'Potential selection for established substrates is not available yet.',
+            ];
+        }
+
+        return [
+            'mode' => 'origin',
+            'available' => true,
+            'message' => 'Establish the first Committal Proposition to enter the substrate.',
+            'requirements' => ['statement', 'attestation', 'receipt'],
         ];
     }
 

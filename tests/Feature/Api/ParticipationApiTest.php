@@ -25,7 +25,137 @@ class ParticipationApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.status', 'waiting')
             ->assertJsonPath('data.reason.code', 'cycle_not_started')
+            ->assertJsonPath('data.entry.mode', 'origin')
+            ->assertJsonPath('data.entry.available', true)
             ->assertJsonPath('data.plan', null);
+    }
+
+    public function test_a_participant_can_establish_the_origin_and_enter_the_first_live_cycle(): void
+    {
+        [$substrate, $participant] = $this->participant();
+        $payload = $this->originPayload();
+
+        $response = $this->postJson(
+            $this->endpoint($substrate, $participant).'/enter',
+            $payload,
+        )
+            ->assertCreated()
+            ->assertJsonPath('data.status', 'ready')
+            ->assertJsonPath('data.cycle.sequence', 2)
+            ->assertJsonPath('data.plan.phase.kind', 'distinguish')
+            ->assertJsonPath('data.plan.phase.write_register', 'signal')
+            ->assertJsonPath(
+                'data.plan.gate.statement',
+                $payload['origin']['statement'],
+            )
+            ->assertJsonPath('data.plan.gate.register', 'canon')
+            ->assertJsonPath('data.plan.gate.tier', 'committal');
+
+        $originId = $response->json('data.plan.gate.id');
+
+        $this->assertDatabaseCount('cycles', 2);
+        $this->assertDatabaseCount('phases', 2);
+        $this->assertDatabaseCount('propositions', 1);
+        $this->assertDatabaseCount('attestations', 1);
+        $this->assertDatabaseCount('instrument_executions', 1);
+        $this->assertDatabaseCount('receipts', 1);
+        $this->assertDatabaseCount('substrate_ledger_entries', 3);
+        $this->assertDatabaseCount('commitment_snapshots', 1);
+        $this->assertDatabaseCount('context_horizons', 2);
+        $this->assertDatabaseHas('proposition_measurements', [
+            'proposition_id' => $originId,
+            'correspondence' => -1,
+            'chirality' => -1,
+            'closure' => -1,
+        ]);
+        $this->assertDatabaseHas('commitment_snapshots', [
+            'proposition_id' => $originId,
+            'prominence' => 0,
+            'turbulence' => 1,
+            'tension' => -1,
+            'direction_before' => 'emergence',
+            'direction_after' => 'settlement',
+            'calculator_version' => 'origin-bootstrap-v1',
+        ]);
+        $this->assertDatabaseHas('context_horizons', [
+            'substrate_id' => $substrate->getKey(),
+            'sequence' => 1,
+            'domain' => 'emergence',
+            'closed_by_proposition_id' => $originId,
+        ]);
+        $this->assertDatabaseHas('context_horizons', [
+            'substrate_id' => $substrate->getKey(),
+            'sequence' => 2,
+            'domain' => 'settlement',
+            'opened_by_proposition_id' => $originId,
+        ]);
+        $this->assertDatabaseHas('instrument_executions', [
+            'proposition_id' => $originId,
+            'status' => 'completed',
+        ]);
+        $this->assertNotNull(
+            Cycle::query()->where('sequence', 1)->firstOrFail()->completed_at,
+        );
+        $this->assertNull(
+            Cycle::query()->where('sequence', 2)->firstOrFail()->completed_at,
+        );
+
+        $this->postJson(
+            $this->endpoint($substrate, $participant).'/enter',
+            $payload,
+        )
+            ->assertConflict()
+            ->assertJsonPath(
+                'message',
+                'The Participant already has an active Cycle.',
+            );
+
+        $this->assertDatabaseCount('propositions', 1);
+        $this->assertDatabaseCount('cycles', 2);
+    }
+
+    public function test_invalid_origin_entry_is_rejected_without_partial_state(): void
+    {
+        [$substrate, $participant] = $this->participant();
+
+        $this->postJson(
+            $this->endpoint($substrate, $participant).'/enter',
+            ['origin' => ['statement' => 'Missing its grounding.']],
+        )->assertUnprocessable();
+
+        $this->assertDatabaseCount('cycles', 0);
+        $this->assertDatabaseCount('phases', 0);
+        $this->assertDatabaseCount('propositions', 0);
+        $this->assertDatabaseCount('substrate_ledger_entries', 0);
+    }
+
+    public function test_entry_to_an_established_substrate_waits_for_potential(): void
+    {
+        [$substrate, $participant] = $this->participant();
+        $endpoint = $this->endpoint($substrate, $participant);
+
+        $this->postJson($endpoint.'/enter', $this->originPayload())
+            ->assertCreated();
+
+        Cycle::query()
+            ->whereBelongsTo($participant)
+            ->whereNull('completed_at')
+            ->update(['completed_at' => now()]);
+
+        $this->getJson($endpoint)
+            ->assertOk()
+            ->assertJsonPath('data.status', 'waiting')
+            ->assertJsonPath('data.entry.mode', 'potential')
+            ->assertJsonPath('data.entry.available', false);
+
+        $this->postJson($endpoint.'/enter', $this->originPayload())
+            ->assertConflict()
+            ->assertJsonPath(
+                'message',
+                'The substrate already has an Origin. Potential must select the next Cycle Gate.',
+            );
+
+        $this->assertDatabaseCount('propositions', 1);
     }
 
     public function test_ready_state_includes_the_plan_and_attenuation_seam(): void
@@ -202,5 +332,25 @@ class ParticipationApiTest extends TestCase
     ): string {
         return "/api/substrates/{$substrate->slug}"
             ."/participants/{$participant->getKey()}/participate";
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function originPayload(): array
+    {
+        return [
+            'origin' => [
+                'statement' => 'The Commons begins with a grounded commitment.',
+                'attestation' => [
+                    'direction' => 'support',
+                    'rationale' => 'This is a worthy Origin.',
+                ],
+                'instrument' => [
+                    'kind' => 'hyperlink',
+                    'reference' => 'https://example.test/origin',
+                ],
+            ],
+        ];
     }
 }
