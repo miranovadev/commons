@@ -9,6 +9,7 @@ use App\Models\ContextHorizonMembership;
 use App\Models\Proposition;
 use App\Models\Supersession;
 use DomainException;
+use Illuminate\Support\Facades\DB;
 
 final class ContextLineageComparisonService
 {
@@ -73,57 +74,59 @@ final class ContextLineageComparisonService
         ContextHorizon $horizon,
         array $gateIds,
     ): DomainLineage {
-        $propositions = Proposition::query()
-            ->whereHas(
-                'contextHorizonMembership',
-                fn ($query) => $query->where(
-                    'context_horizon_id',
-                    $horizon->getKey(),
-                ),
-            )
-            ->with(['phase.cycle', 'ledgerEntry'])
-            ->get()
-            ->keyBy(fn (Proposition $item) => (string) $item->getKey());
-        $availableIds = $propositions->keys();
-        $supersessions = Supersession::query()
-            ->whereIn('source_proposition_id', $availableIds)
-            ->whereIn('target_proposition_id', $availableIds)
-            ->get();
-        $parents = $supersessions->groupBy('target_proposition_id');
-        $selected = collect();
-        $frontier = collect($gateIds)
-            ->filter(fn (string $id) => $propositions->has($id));
-
-        while ($frontier->isNotEmpty()) {
-            $id = (string) $frontier->shift();
-
-            if ($selected->has($id)) {
-                continue;
-            }
-
-            $selected->put($id, true);
-
-            foreach ($parents->get($id, collect()) as $supersession) {
-                $frontier->push($supersession->source_proposition_id);
-            }
+        if ($gateIds === []) {
+            return new DomainLineage($horizon, collect(), collect());
         }
 
-        $lineagePropositions = $propositions
-            ->only($selected->keys()->all())
+        $placeholders = implode(
+            ', ',
+            array_fill(0, count($gateIds), '?'),
+        );
+        $rows = DB::select(
+            <<<SQL
+                WITH RECURSIVE lineage (id) AS (
+                    SELECT proposition_id
+                    FROM context_horizon_memberships
+                    WHERE context_horizon_id = ?
+                      AND proposition_id IN ({$placeholders})
+
+                    UNION
+
+                    SELECT supersessions.source_proposition_id
+                    FROM supersessions
+                    INNER JOIN lineage
+                        ON lineage.id = supersessions.target_proposition_id
+                    INNER JOIN context_horizon_memberships
+                        ON context_horizon_memberships.proposition_id
+                            = supersessions.source_proposition_id
+                    WHERE context_horizon_memberships.context_horizon_id = ?
+                )
+                SELECT id FROM lineage
+            SQL,
+            [
+                $horizon->getKey(),
+                ...$gateIds,
+                $horizon->getKey(),
+            ],
+        );
+        $lineageIds = collect($rows)->pluck('id');
+        $propositions = Proposition::query()
+            ->whereIn('id', $lineageIds)
+            ->with(['phase.cycle', 'ledgerEntry'])
+            ->get()
             ->sortBy(
                 fn (Proposition $item) => $item->ledgerEntry->sequence,
             )
             ->values();
-        $selectedIds = $lineagePropositions->pluck('id');
-        $lineageSupersessions = $supersessions
-            ->whereIn('source_proposition_id', $selectedIds)
-            ->whereIn('target_proposition_id', $selectedIds)
-            ->values();
+        $supersessions = Supersession::query()
+            ->whereIn('source_proposition_id', $lineageIds)
+            ->whereIn('target_proposition_id', $lineageIds)
+            ->get();
 
         return new DomainLineage(
             $horizon,
-            $lineagePropositions,
-            $lineageSupersessions,
+            $propositions,
+            $supersessions,
         );
     }
 }
