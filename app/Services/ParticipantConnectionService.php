@@ -13,7 +13,9 @@ final class ParticipantConnectionService
         private readonly ParticipantConnectionTriggerService $triggers,
     ) {}
 
-    /** @param array<string, mixed> $attributes */
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
     public function create(
         Participant $participant,
         Connection $connection,
@@ -35,7 +37,9 @@ final class ParticipantConnectionService
         return $participantConnection->refresh()->load('connection');
     }
 
-    /** @param array<string, mixed> $attributes */
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
     public function update(
         ParticipantConnection $participantConnection,
         array $attributes,
@@ -63,7 +67,7 @@ final class ParticipantConnectionService
     }
 
     /**
-     * @param array<string, mixed> $configuration
+     * @param  array<string, mixed>  $configuration
      * @return array<string, mixed>
      */
     private function configuration(array $configuration): array
