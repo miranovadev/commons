@@ -1,0 +1,34 @@
+name: Resolve AWS SDK lockfile
+
+on:
+  push:
+    branches:
+      - feature/potential-cycle-entry
+
+permissions:
+  contents: write
+
+jobs:
+  resolve:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/potential-cycle-entry
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          tools: composer:v2
+
+      - name: Require AWS SDK
+        run: composer require aws/aws-sdk-php --no-interaction --no-progress --no-scripts
+
+      - name: Commit resolved dependency
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add composer.json composer.lock
+          git commit -m "build: install AWS SDK for PHP"
+          git push
