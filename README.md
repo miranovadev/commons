@@ -23,7 +23,7 @@ The resumable participant interaction contract is described in
 Clone the repository and enter its directory:
 
 ```bash
-git clone https://github.com/clairemira/commons.git
+git clone https://github.com/miranovadev/commons.git
 cd commons
 ```
 
