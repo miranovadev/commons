@@ -7,6 +7,7 @@ export function PropositionCard({
   proposition,
   selected = false,
   compact = false,
+  mini = false,
   wireframe = false,
   muted = false,
   actionLabel,
@@ -15,6 +16,23 @@ export function PropositionCard({
   onClick,
 }) {
   const register = metaForRegister(proposition.register);
+  const title = actionLabel || proposition.title || proposition.statement?.split('\n')[0];
+
+  if (mini) {
+    return (
+      <Card
+        component={onClick ? 'button' : 'div'}
+        type={onClick ? 'button' : undefined}
+        withBorder
+        padding="xs"
+        className="proposition-card proposition-card--mini"
+        style={{ '--register-color': `var(--mantine-color-${register.color}-6)` }}
+        onClick={onClick}
+      >
+        <Text size="xs" fw={650} lineClamp={2}>{title}</Text>
+      </Card>
+    );
+  }
 
   return (
     <Card
@@ -29,10 +47,10 @@ export function PropositionCard({
       <Group justify="space-between" align="flex-start" wrap="nowrap">
         <Stack gap={5} miw={0}>
           <Group gap={7}>
-            {(proposition.tier || wireframe) && <Badge size="xs" color={proposition.tier === 'committal' ? 'indigo' : 'gray'} variant={proposition.tier === 'committal' ? 'filled' : 'light'}>{wireframe ? 'possible' : proposition.tier}</Badge>}
+            {(proposition.tier || wireframe) && <TierBadge tier={wireframe ? 'possible' : proposition.tier} />}
             <Badge size="xs" color={register.color} variant="light">{register.label}</Badge>
           </Group>
-          <Text fw={650} lineClamp={2}>{actionLabel || proposition.title || proposition.statement?.split('\n')[0]}</Text>
+          <Text fw={650} lineClamp={2}>{title}</Text>
         </Stack>
         {wireframe && ActionIcon && <ThemeIcon color={register.color} variant="light" size="sm"><ActionIcon size={13} /></ThemeIcon>}
         {!wireframe && proposition.tier === 'committal' && <Tooltip label="Committed structure"><ThemeIcon color="indigo" variant="light" size="sm"><IconBolt size={13} /></ThemeIcon></Tooltip>}
@@ -41,4 +59,9 @@ export function PropositionCard({
       {!wireframe && <Stack gap={5} mt="sm" onClick={(event) => event.stopPropagation()}><MeasurementRails observables={proposition.observables} projectedObservables={projectedObservables} compact /></Stack>}
     </Card>
   );
+}
+
+function TierBadge({ tier }) {
+  if (tier === 'committal') return <Badge size="xs" color="indigo" variant="filled">Committal</Badge>;
+  return <Badge size="xs" variant="light">{tier}</Badge>;
 }
