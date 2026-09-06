@@ -35,6 +35,9 @@ export function PropositionCard({
         onClick={onClick}
       >
         <Text size="xs" fw={650} lineClamp={2}>{title}</Text>
+        <Stack gap={5} mt={7} onClick={(event) => event.stopPropagation()}>
+          <MeasurementRails observables={proposition.observables} compact bare />
+        </Stack>
       </Card>
     );
   }

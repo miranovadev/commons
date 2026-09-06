@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Enums\ConnectionProvider;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,17 +14,11 @@ class ParticipantConnection extends Model
 
     protected $keyType = 'string';
 
-    protected $hidden = [
-        'credentials',
-    ];
-
     protected function casts(): array
     {
         return [
-            'provider' => ConnectionProvider::class,
             'is_enabled' => 'boolean',
             'configuration' => 'array',
-            'credentials' => 'encrypted:array',
             'next_trigger_at' => 'immutable_datetime',
             'last_triggered_at' => 'immutable_datetime',
         ];
@@ -34,5 +27,10 @@ class ParticipantConnection extends Model
     public function participant(): BelongsTo
     {
         return $this->belongsTo(Participant::class);
+    }
+
+    public function connection(): BelongsTo
+    {
+        return $this->belongsTo(Connection::class);
     }
 }

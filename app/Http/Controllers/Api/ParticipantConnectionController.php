@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreParticipantConnectionRequest;
 use App\Http\Requests\UpdateParticipantConnectionRequest;
 use App\Http\Resources\ParticipantConnectionResource;
+use App\Models\Connection;
 use App\Models\Participant;
 use App\Models\ParticipantConnection;
 use App\Models\Substrate;
@@ -23,7 +24,10 @@ class ParticipantConnectionController extends Controller
         Gate::authorize('viewConnections', $participant);
 
         return ParticipantConnectionResource::collection(
-            $participant->connections()->orderBy('name')->get(),
+            $participant->connections()
+                ->with('connection')
+                ->orderBy('created_at')
+                ->get(),
         );
     }
 
@@ -33,12 +37,15 @@ class ParticipantConnectionController extends Controller
         Participant $participant,
         ParticipantConnectionService $connections,
     ): ParticipantConnectionResource {
-        $connection = $connections->create(
-            $participant,
-            $request->validated(),
+        $attributes = $request->validated();
+        $connection = Connection::query()->findOrFail(
+            $attributes['connection_id'],
         );
+        unset($attributes['connection_id']);
 
-        return new ParticipantConnectionResource($connection);
+        return new ParticipantConnectionResource(
+            $connections->create($participant, $connection, $attributes),
+        );
     }
 
     public function show(
@@ -48,7 +55,9 @@ class ParticipantConnectionController extends Controller
     ): ParticipantConnectionResource {
         Gate::authorize('viewConnections', $participant);
 
-        return new ParticipantConnectionResource($connection);
+        return new ParticipantConnectionResource(
+            $connection->load('connection'),
+        );
     }
 
     public function update(
@@ -69,7 +78,6 @@ class ParticipantConnectionController extends Controller
         ParticipantConnection $connection,
     ): Response {
         Gate::authorize('manageConnections', $participant);
-
         $connection->delete();
 
         return response()->noContent();

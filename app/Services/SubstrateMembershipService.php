@@ -2,17 +2,23 @@
 
 namespace App\Services;
 
+use App\Models\Connection;
 use App\Models\Participant;
 use App\Models\Role;
 use App\Models\Substrate;
 use App\Models\SubstrateMembership;
 use App\Models\User;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 final class SubstrateMembershipService
 {
+    public function __construct(
+        private readonly ParticipantConnectionService $participantConnections,
+    ) {}
+
     /**
      * @param  array<string, mixed>  $attributes
      */
@@ -26,6 +32,8 @@ final class SubstrateMembershipService
             $substrate,
             $attributes,
         ): Participant {
+            $connectionAttributes = Arr::pull($attributes, 'connection');
+
             $lockedSubstrate = Substrate::query()
                 ->lockForUpdate()
                 ->findOrFail($substrate->getKey());
@@ -87,6 +95,19 @@ final class SubstrateMembershipService
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+
+            if (is_array($connectionAttributes)) {
+                $connection = Connection::query()
+                    ->whereKey($connectionAttributes['id'])
+                    ->whereBelongsTo($user)
+                    ->firstOrFail();
+
+                $this->participantConnections->create(
+                    $participant,
+                    $connection,
+                    Arr::except($connectionAttributes, 'id'),
+                );
+            }
 
             return $participant;
         });

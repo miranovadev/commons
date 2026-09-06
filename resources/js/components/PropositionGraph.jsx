@@ -5,7 +5,7 @@ import '../../css/substrate-graph.css';
 import { PropositionCard } from './PropositionCard';
 
 const NODE_WIDTH = 190;
-const NODE_HEIGHT = 58;
+const NODE_HEIGHT = 76;
 const COLUMN_GAP = 54;
 const ROW_GAP = 96;
 const CANVAS_PADDING = 90;

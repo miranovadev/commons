@@ -11,6 +11,7 @@ import { systemBootstrapped } from './systemSlice';
 import { HTTP_PRECONDITION_REQUIRED } from './http';
 import { theme } from './theme';
 import { BootstrapPage } from './pages/BootstrapPage';
+import { ConnectionsPage } from './pages/ConnectionsPage';
 import { LoginPage } from './pages/LoginPage';
 import { ParticipantPage } from './pages/ParticipantPage';
 import { SubstratePage } from './pages/SubstratePage';
@@ -47,6 +48,7 @@ function CommonsApp() {
   if (bootstrapRequired) return <Routes><Route path="*" element={<BootstrapPage onComplete={() => { dispatch(systemBootstrapped()); navigate('/'); }} />} /></Routes>;
 
   const participantActive = location.pathname.includes('/participants/');
+  const connectionsActive = location.pathname === '/connections';
   const substrateRoot = substrateSlug && location.pathname === `/substrates/${substrateSlug}`;
   const flushMain = participantActive || substrateRoot;
 
@@ -104,13 +106,14 @@ function CommonsApp() {
               </Stack>
             </Box>
           )}
-          <NavLink label="Connections" leftSection={<IconPlugConnected size={18} />} disabled />
+          {user && <NavLink component={Link} to="/connections" label="Connections" leftSection={<IconPlugConnected size={18} />} active={connectionsActive} />}
         </Stack>
       </AppShell.Navbar>
       <AppShell.Main className="app-main">
         <Routes>
           <Route path="/" element={<SubstratesPage user={user} />} />
           <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage />} />
+          <Route path="/connections" element={user ? <ConnectionsPage /> : <Navigate to="/login" replace />} />
           <Route path="/substrates/:slug" element={<SubstratePage user={user} />} />
           <Route path="/substrates/:slug/participants/:participantId" element={user ? <ParticipantPage /> : <Navigate to="/login" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
