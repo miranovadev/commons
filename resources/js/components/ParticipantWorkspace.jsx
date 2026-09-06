@@ -1,16 +1,27 @@
 import { Badge, Box, Button, Group, ScrollArea, Stack, Text, ThemeIcon, UnstyledButton } from '@mantine/core';
-import { IconBolt, IconGitBranch, IconPencil, IconPlus, IconRefresh, IconRoute, IconTool, IconWhirl } from '@tabler/icons-react';
+import { IconBolt, IconEye, IconGitBranch, IconPencil, IconPlus, IconRefresh, IconRoute, IconTool, IconWhirl } from '@tabler/icons-react';
 import { useMemo, useState } from 'react';
 import { domainForRegister, metaForRegister } from '../registers';
 import { LineagePanel } from './LineagePanel';
+import { MeasurementRails } from './MeasurementRails';
 import { PropositionCard } from './PropositionCard';
 import { PropositionInspector } from './PropositionInspector';
 
 const roles = [
-  { name: 'read', label: 'READ', description: 'Where we came from' },
-  { name: 'gate', label: 'GATE', description: 'Where we are now' },
-  { name: 'write', label: 'WRITE', description: 'Where we can go' },
+  { name: 'read', label: 'Read', description: 'Where we came from', icon: IconEye },
+  { name: 'gate', label: 'Gate', description: 'Where we are now', icon: IconRoute },
+  { name: 'write', label: 'Write', description: 'Where we can go', icon: IconPencil },
 ];
+
+const phaseNumbers = {
+  distinguish: 1,
+  persist: 2,
+  constrain: 3,
+  disperse: 4,
+  mediate: 5,
+  bias: 6,
+  order: 7,
+};
 
 const actionMeta = {
   'proposition.variant': { label: 'Create a variant', description: 'Open a new expressive branch from the current Gate.', icon: IconGitBranch },
@@ -52,7 +63,7 @@ export function ParticipantWorkspace({ plan, availableActions, onAction }) {
 
   return (
     <Box className="operational-workspace" data-domain={domainName}>
-      <HorizonProvenance proposition={provenance} onInspect={setInspection} />
+      <WorkspaceContext phase={plan.phase} provenance={provenance} onInspect={setInspection} />
       <Box className="operational-workspace__body">
         <Box className="operational-board">
           {roles.map((role) => (
@@ -78,47 +89,74 @@ export function ParticipantWorkspace({ plan, availableActions, onAction }) {
   );
 }
 
+function WorkspaceContext({ phase, provenance, onInspect }) {
+  const number = phaseNumbers[phase.kind];
+  return (
+    <Box className="workspace-context">
+      <Box className="phase-summary">
+        <Text size="10px" fw={800} tt="uppercase" c="dimmed">Current phase</Text>
+        <Group gap="xs" align="baseline">
+          <Text className="phase-summary__number" fw={750}>{number ? `Phase ${number}` : 'Phase'}</Text>
+          <Text c="dimmed">·</Text>
+          <Text fw={650}>{titleCase(phase.kind)}</Text>
+        </Group>
+        <Text size="xs" c="dimmed" lineClamp={2}>{phase.description}</Text>
+      </Box>
+      <HorizonProvenance proposition={provenance} onInspect={onInspect} />
+    </Box>
+  );
+}
+
 function HorizonProvenance({ proposition, onInspect }) {
   const register = metaForRegister(proposition.register);
   return (
-    <Box className="horizon-provenance">
-      <UnstyledButton className="horizon-provenance__card" onClick={() => onInspect({ kind: 'provenance', proposition })}>
-        <Group justify="space-between" gap="md" wrap="nowrap">
-          <Group gap="sm" wrap="nowrap" miw={0}>
-            <ThemeIcon color={register.color} variant="light" radius="md">P</ThemeIcon>
-            <Box miw={0}>
-              <Group gap={6}><Text size="xs" fw={750}>Horizon Provenance</Text><Text size="xs" c="dimmed">#{shortId(proposition.id)}</Text></Group>
-              <Text size="sm" fw={650} truncate>{proposition.title || proposition.statement}</Text>
-            </Box>
-          </Group>
-          <Group gap={6} visibleFrom="md">
-            {proposition.tier && <Badge size="xs" color="indigo">{proposition.tier}</Badge>}
-            <Badge size="xs" color={register.color} variant="light">{register.label}</Badge>
-          </Group>
+    <UnstyledButton className="horizon-provenance__card" onClick={() => onInspect({ kind: 'provenance', proposition })}>
+      <Box className="horizon-provenance__identity" miw={0}>
+        <Group gap={6} mb={4}>
+          <Badge size="xs" color="indigo" variant="filled">Committal</Badge>
+          <Badge size="xs" color={register.color} variant="light">{register.label}</Badge>
+          <Text size="10px" c="indigo.1">#{shortId(proposition.id)}</Text>
         </Group>
-      </UnstyledButton>
-      <svg className="horizon-provenance__connectors" viewBox="0 0 900 24" preserveAspectRatio="none" aria-hidden="true">
-        <path d="M450 0 V8 M450 8 H150 V24 M450 8 V24 M450 8 H750 V24" />
-      </svg>
-    </Box>
+        <Text size="xs" fw={800} c="indigo.1">Horizon Provenance</Text>
+        <Text size="sm" fw={650} c="white" lineClamp={2}>{proposition.title || proposition.statement}</Text>
+      </Box>
+      <Box className="horizon-provenance__measurements">
+        <MeasurementRails observables={proposition.observables} compact />
+      </Box>
+    </UnstyledButton>
   );
 }
 
 function OperationalLane({ role, register, gate, lineage, propositions, gateOptions, writeOptions, actions, canSelect, onInspect, onAction }) {
   const meta = metaForRegister(register);
-  const Icon = meta.icon;
+  const RegisterIcon = meta.icon;
+  const RoleIcon = role.icon;
 
   return (
     <Box className="operational-lane" data-role={role.name}>
-      <Box className="operational-lane__role">
-        <Text fw={800} size="sm" lts=".08em">{role.label}</Text>
-        <Text size="xs" c="dimmed">{role.description}</Text>
-      </Box>
-      <Box className="register-shell" key={register} style={{ '--register-color': `var(--mantine-color-${meta.color}-6)` }}>
+      <Group className="operational-lane__role" justify="center" gap={7} wrap="nowrap">
+        <RoleIcon size={17} />
+        <Box>
+          <Text fw={650} size="sm">{role.label}</Text>
+          <Text size="10px" c="dimmed">{role.description}</Text>
+        </Box>
+      </Group>
+      <Box
+        className="register-shell"
+        key={register}
+        style={{
+          '--register-color': `light-dark(var(--mantine-color-${meta.color}-7), var(--mantine-color-${meta.color}-4))`,
+          '--register-bg-light': `var(--mantine-color-${meta.color}-0)`,
+          '--register-bg-dark': `var(--mantine-color-${meta.color}-9)`,
+        }}
+      >
         <Group className="register-shell__header" gap="sm" wrap="nowrap">
           <span className="register-shell__accent" />
-          <ThemeIcon color={meta.color} variant="light" size="sm"><Icon size={14} /></ThemeIcon>
-          <Box><Text fw={750}>{meta.label}</Text><Text size="xs" c="dimmed">{meta.description}</Text></Box>
+          <ThemeIcon color={meta.color} variant="transparent" size="lg"><RegisterIcon size={24} /></ThemeIcon>
+          <Box>
+            <Text className="register-shell__title" fw={750}>{meta.label}</Text>
+            <Text size="xs" c="dimmed">{meta.description}</Text>
+          </Box>
         </Group>
         {role.name === 'read' && <ReadContent register={register} gate={gate} propositions={propositions} lineage={lineage} onInspect={onInspect} />}
         {role.name === 'gate' && <GateContent gate={gate} gateOptions={gateOptions} propositions={propositions} onInspect={onInspect} canSelect={canSelect} onAction={onAction} />}
@@ -139,7 +177,7 @@ function ReadContent({ register, gate, propositions, lineage, onInspect }) {
   );
 }
 
-function GateContent({ gate, gateOptions, propositions, onInspect, canSelect, onAction }) {
+function GateContent({ gate, gateOptions, propositions, onInspect, canSelect }) {
   const candidates = uniqueById([...gateOptions, ...propositions.filter((item) => item.id !== gate.id)]);
   return (
     <ScrollArea className="lane-scroll" type="auto" offsetScrollbars>
@@ -193,3 +231,4 @@ function operationalAssignment(domainName, writeRegister, gateRegister) {
 function resolve(proposition, byId) { return proposition ? byId.get(proposition.id) || proposition : {}; }
 function uniqueById(items) { return [...new Map(items.filter(Boolean).map((item) => [item.id, item])).values()]; }
 function shortId(id) { return id == null ? '—' : String(id).slice(-6); }
+function titleCase(value) { return value ? value.charAt(0).toUpperCase() + value.slice(1) : 'Unknown'; }
