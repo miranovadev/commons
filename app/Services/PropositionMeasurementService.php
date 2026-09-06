@@ -6,6 +6,7 @@ use App\Models\Proposition;
 use App\Models\PropositionMeasurement;
 use App\Services\Observables\ObservableService;
 use DateTimeInterface;
+use Illuminate\Support\Collection;
 use InvalidArgumentException;
 
 final class PropositionMeasurementService
@@ -27,6 +28,23 @@ final class PropositionMeasurementService
             $values->closure,
             $calculatedAt,
         );
+    }
+
+    /**
+     * Populate measurements that predate persisted expressive measurements.
+     * Existing projections are left untouched.
+     *
+     * @param  Collection<int, Proposition>  $propositions
+     */
+    public function repairMissing(Collection $propositions): void
+    {
+        foreach ($propositions as $proposition) {
+            $proposition->loadMissing('measurement');
+
+            if ($proposition->measurement === null) {
+                $this->recalculate($proposition);
+            }
+        }
     }
 
     public function project(
