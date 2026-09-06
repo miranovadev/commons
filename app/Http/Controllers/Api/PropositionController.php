@@ -27,7 +27,7 @@ class PropositionController extends Controller
                 'phase.cycle.participant:id,callsign',
                 'measurement',
                 'contextHorizonMembership.horizon',
-                'parents:id',
+                'parents:id,register',
                 'children:id',
             ])
             ->oldest('created_at')
