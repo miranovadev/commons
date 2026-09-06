@@ -166,18 +166,22 @@ class ParticipantWakeTest extends TestCase
         $schema = app(OpenAIResponseSchema::class)->fromCommons(
             app(InputSchemaService::class)->forPhase(PhaseKind::Persist),
         );
-        $actions = $schema['properties']['contribution']['anyOf'];
-        $attestation = collect($actions)->first(
-            fn (array $action): bool => data_get(
-                $action,
-                'properties.action.const',
-            ) === 'attestation.create',
-        );
+        $contribution = $schema['properties']['contribution'];
 
-        $this->assertContains('rationale', $attestation['required']);
+        $this->assertArrayNotHasKey('anyOf', $contribution);
+        $this->assertArrayNotHasKey('$defs', $schema);
+        $this->assertContains('rationale', $contribution['required']);
         $this->assertSame(
             ['string', 'null'],
-            $attestation['properties']['rationale']['type'],
+            $contribution['properties']['rationale']['type'],
+        );
+        $this->assertContains(
+            'attestation.create',
+            $contribution['properties']['action']['enum'],
+        );
+        $this->assertStringNotContainsString(
+            'pattern',
+            json_encode($schema, JSON_THROW_ON_ERROR),
         );
     }
 
