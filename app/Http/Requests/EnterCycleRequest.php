@@ -33,7 +33,7 @@ class EnterCycleRequest extends FormRequest
                 ->exists();
 
         if ($hasOrigin) {
-            return ['origin' => ['prohibited']];
+            return [];
         }
 
         return [
