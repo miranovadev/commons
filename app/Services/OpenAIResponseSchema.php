@@ -7,8 +7,12 @@ use DomainException;
 final class OpenAIResponseSchema
 {
     /**
-     * Wrap the Commons action union beneath an object root and make optional
-     * fields explicitly nullable, as required by OpenAI Structured Outputs.
+     * Convert the action union into a single strict transport object.
+     *
+     * OpenAI Structured Outputs accepts a narrower JSON Schema subset than
+     * the Commons validator. Every transport field is required; fields that
+     * do not apply to the selected action are nullable and removed from the
+     * response before the full Commons schema validates it.
      *
      * @param  array<string, mixed>  $schema
      * @return array<string, mixed>
@@ -26,68 +30,169 @@ final class OpenAIResponseSchema
         $definitions = $schema['$defs'] ?? [];
         unset($definitions['actions']);
 
+        $properties = [];
+        $occurrences = [];
+        $requiredOccurrences = [];
+
+        foreach ($actions as $action) {
+            $required = $action['required'] ?? [];
+
+            foreach ($action['properties'] ?? [] as $name => $property) {
+                $property = $this->transport(
+                    $this->resolve($property, $definitions),
+                );
+                $properties[$name] = isset($properties[$name])
+                    ? $this->merge($properties[$name], $property)
+                    : $property;
+                $occurrences[$name] = ($occurrences[$name] ?? 0) + 1;
+
+                if (in_array($name, $required, true)) {
+                    $requiredOccurrences[$name] =
+                        ($requiredOccurrences[$name] ?? 0) + 1;
+                }
+            }
+        }
+
+        $actionCount = count($actions);
+
+        foreach ($properties as $name => $property) {
+            if (($occurrences[$name] ?? 0) < $actionCount
+                || ($requiredOccurrences[$name] ?? 0) < $actionCount) {
+                $property = $this->nullable($property);
+            }
+
+            $properties[$name] = $property;
+        }
+
         return [
             'type' => 'object',
             'additionalProperties' => false,
             'required' => ['contribution'],
             'properties' => [
                 'contribution' => [
-                    'anyOf' => array_values(array_map(
-                        fn (array $action): array => $this->strict($action),
-                        $actions,
-                    )),
+                    'type' => 'object',
+                    'additionalProperties' => false,
+                    'required' => array_keys($properties),
+                    'properties' => $properties,
                 ],
             ],
-            '$defs' => array_map(
-                fn (array $definition): array => $this->strict($definition),
-                $definitions,
-            ),
         ];
     }
 
     /**
      * @param  array<string, mixed>  $schema
+     * @param  array<string, array<string, mixed>>  $definitions
      * @return array<string, mixed>
      */
-    private function strict(array $schema): array
+    private function resolve(array $schema, array $definitions): array
     {
-        if (($schema['type'] ?? null) === 'object') {
-            $properties = $schema['properties'] ?? [];
-            $originallyRequired = $schema['required'] ?? [];
+        $reference = $schema['$ref'] ?? null;
 
-            foreach ($properties as $name => $property) {
-                $property = $this->strict($property);
+        if (is_string($reference)
+            && str_starts_with($reference, '#/$defs/')) {
+            $name = substr($reference, strlen('#/$defs/'));
+            $definition = $definitions[$name] ?? null;
 
-                if (! in_array($name, $originallyRequired, true)) {
-                    $property = $this->nullable($property);
-                }
-
-                $properties[$name] = $property;
+            if (! is_array($definition)) {
+                throw new DomainException(
+                    "The Commons schema definition {$name} does not exist."
+                );
             }
 
-            $schema['properties'] = $properties;
-            $schema['required'] = array_keys($properties);
-            $schema['additionalProperties'] = false;
+            unset($schema['$ref']);
+            $schema = array_replace_recursive($definition, $schema);
+        }
+
+        if (isset($schema['properties']) && is_array($schema['properties'])) {
+            foreach ($schema['properties'] as $name => $property) {
+                $schema['properties'][$name] = $this->resolve(
+                    $property,
+                    $definitions,
+                );
+            }
         }
 
         if (isset($schema['items']) && is_array($schema['items'])) {
-            $schema['items'] = $this->strict($schema['items']);
+            $schema['items'] = $this->resolve($schema['items'], $definitions);
         }
 
         return $schema;
     }
 
+    /**
+     * Remove constraints that are redundant at the provider boundary. The
+     * complete Commons schema remains authoritative after inference.
+     *
+     * @param  array<string, mixed>  $schema
+     * @return array<string, mixed>
+     */
+    private function transport(array $schema): array
+    {
+        foreach ([
+            '$schema', '$id', 'minLength', 'maxLength', 'pattern', 'format',
+            'minimum', 'maximum', 'multipleOf', 'minItems', 'maxItems',
+        ] as $keyword) {
+            unset($schema[$keyword]);
+        }
+
+        if (array_key_exists('const', $schema)) {
+            $constant = $schema['const'];
+            $schema['type'] ??= get_debug_type($constant);
+            $schema['enum'] = [$constant];
+            unset($schema['const']);
+        }
+
+        if (($schema['type'] ?? null) === 'object') {
+            foreach ($schema['properties'] ?? [] as $name => $property) {
+                $schema['properties'][$name] = $this->transport($property);
+            }
+
+            $schema['required'] = array_keys($schema['properties'] ?? []);
+            $schema['additionalProperties'] = false;
+        }
+
+        if (isset($schema['items']) && is_array($schema['items'])) {
+            $schema['items'] = $this->transport($schema['items']);
+        }
+
+        return $schema;
+    }
+
+    /**
+     * Merge the same field as exposed by multiple admissible actions.
+     *
+     * @param  array<string, mixed>  $left
+     * @param  array<string, mixed>  $right
+     * @return array<string, mixed>
+     */
+    private function merge(array $left, array $right): array
+    {
+        if (isset($left['enum']) || isset($right['enum'])) {
+            $left['enum'] = array_values(array_unique([
+                ...($left['enum'] ?? []),
+                ...($right['enum'] ?? []),
+            ], SORT_REGULAR));
+        }
+
+        return $left;
+    }
+
     /** @param array<string, mixed> $schema */
     private function nullable(array $schema): array
     {
-        if (isset($schema['type']) && is_string($schema['type'])) {
-            $schema['type'] = [$schema['type'], 'null'];
+        $type = $schema['type'] ?? null;
 
-            return $schema;
+        if (is_string($type)) {
+            $schema['type'] = [$type, 'null'];
+        } elseif (is_array($type) && ! in_array('null', $type, true)) {
+            $schema['type'][] = 'null';
         }
 
-        return [
-            'anyOf' => [$schema, ['type' => 'null']],
-        ];
+        if (isset($schema['enum'])
+            && ! in_array(null, $schema['enum'], true)) {
+            $schema['enum'][] = null;
+        }
+
+        return $schema;
     }
 }
