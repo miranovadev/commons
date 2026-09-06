@@ -4,12 +4,10 @@ import {
   Box,
   Breadcrumbs,
   Button,
-  Container,
   Group,
   LoadingOverlay,
   Modal,
   NumberInput,
-  Paper,
   Stack,
   Text,
   TextInput,
@@ -17,7 +15,7 @@ import {
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useDisclosure } from '@mantine/hooks';
-import { IconAlertCircle, IconArrowRight, IconEye, IconTopologyStar3, IconUserHexagon, IconUsers } from '@tabler/icons-react';
+import { IconAlertCircle, IconArrowRight, IconTopologyStar3, IconUserHexagon, IconUsers } from '@tabler/icons-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { messageFrom } from '../errors';
 import { PropositionGraph } from '../components/PropositionGraph';
@@ -35,37 +33,49 @@ export function SubstratePage({ user }) {
   const ownedParticipant = participants.find((participant) => participant.owned_by_user);
 
   return (
-    <Container size="xl">
-      <Breadcrumbs mb="lg"><Text component={Link} to="/" size="sm" c="dimmed">Substrates</Text><Text size="sm">{substrate?.title || slug}</Text></Breadcrumbs>
-      {error && <Alert color="red" icon={<IconAlertCircle size={18} />}>{messageFrom(error, 'This substrate could not be opened.')}</Alert>}
-      <Box pos="relative" mih={260}>
+    <Box className="substrate-view">
+      {error && <Alert m="md" color="red" icon={<IconAlertCircle size={18} />}>{messageFrom(error, 'This substrate could not be opened.')}</Alert>}
+      <Box pos="relative" className="substrate-view__body">
         <LoadingOverlay visible={isLoading} overlayProps={{ blur: 1 }} />
         {substrate && (
           <>
-            <Group justify="space-between" align="flex-start" mb="xl">
-              <Box>
-                <Group gap="xs"><Badge color="indigo" variant="light" leftSection={<IconTopologyStar3 size={12} />}>SUBSTRATE</Badge><Badge color="gray" variant="light" leftSection={<IconUsers size={12} />}>{substrate.participants_count ?? 0}</Badge></Group>
-                <Title order={1} mt="sm">{substrate.title}</Title>
-                <Text c="dimmed" mt={6} maw={700}>{substrate.description || 'A shared cognitive substrate.'}</Text>
-              </Box>
-              {user ? ownedParticipant ? (
-                <Button leftSection={<IconUserHexagon size={18} />} rightSection={<IconArrowRight size={16} />} onClick={() => navigate(`/substrates/${slug}/participants/${ownedParticipant.id}`)}>Enter cycle</Button>
-              ) : (
-                <Button variant="light" leftSection={<IconUserHexagon size={18} />} onClick={open}>Join as participant</Button>
-              ) : (
-                <Button component={Link} to="/login" variant="light">Sign in to participate</Button>
-              )}
-            </Group>
+            <Box className="substrate-view__header">
+              <Stack gap="sm">
+                <Breadcrumbs>
+                  <Text component={Link} to="/" size="sm" c="dimmed">Substrates</Text>
+                  <Text size="sm">{substrate.title}</Text>
+                  <Text size="sm" c="dimmed">Graph</Text>
+                </Breadcrumbs>
 
-            <Paper withBorder p={{ base: 'md', sm: 'xl' }}>
-              <Group gap="xs" mb="lg"><IconEye size={18} /><Title order={3}>Proposition lineage</Title><Text size="sm" c="dimmed">Select a branch to move through the graph.</Text></Group>
+                <Group justify="space-between" align="flex-start" wrap="wrap">
+                  <Box>
+                    <Group gap="xs">
+                      <Badge color="indigo" variant="light" leftSection={<IconTopologyStar3 size={12} />}>SUBSTRATE</Badge>
+                      <Badge color="gray" variant="light" leftSection={<IconUsers size={12} />}>{substrate.participants_count ?? 0}</Badge>
+                    </Group>
+                    <Title order={2} mt="xs">{substrate.title}</Title>
+                    <Text c="dimmed" size="sm" mt={4} maw={720}>{substrate.description || 'A shared cognitive substrate.'}</Text>
+                  </Box>
+
+                  {user ? ownedParticipant ? (
+                    <Button leftSection={<IconUserHexagon size={18} />} rightSection={<IconArrowRight size={16} />} onClick={() => navigate(`/substrates/${slug}/participants/${ownedParticipant.id}`)}>Enter cycle</Button>
+                  ) : (
+                    <Button variant="light" leftSection={<IconUserHexagon size={18} />} onClick={open}>Join as participant</Button>
+                  ) : (
+                    <Button component={Link} to="/login" variant="light">Sign in to participate</Button>
+                  )}
+                </Group>
+              </Stack>
+            </Box>
+
+            <Box className="substrate-view__graph">
               <PropositionGraph propositions={propositions} />
-            </Paper>
+            </Box>
           </>
         )}
       </Box>
       <JoinParticipantModal opened={opened} onClose={close} slug={slug} onJoined={(participant) => { close(); navigate(`/substrates/${slug}/participants/${participant.id}`); }} />
-    </Container>
+    </Box>
   );
 }
 
