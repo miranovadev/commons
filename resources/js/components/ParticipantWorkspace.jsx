@@ -1,9 +1,8 @@
-import { Badge, Box, Button, Card, Group, ScrollArea, Stack, Text, ThemeIcon } from '@mantine/core';
+import { Box, Button, Group, ScrollArea, Stack, Text, ThemeIcon } from '@mantine/core';
 import { IconBolt, IconEye, IconGitBranch, IconPencil, IconPlus, IconRefresh, IconRoute, IconTool, IconWhirl } from '@tabler/icons-react';
 import { useMemo, useState } from 'react';
 import { domainForRegister, metaForRegister } from '../registers';
 import { LineagePanel } from './LineagePanel';
-import { MeasurementRails } from './MeasurementRails';
 import { PropositionCard } from './PropositionCard';
 import { PropositionInspector } from './PropositionInspector';
 
@@ -82,29 +81,16 @@ export function ParticipantWorkspace({ plan, availableActions, onAction }) {
 }
 
 function HorizonProvenance({ proposition, onInspect }) {
-  const register = metaForRegister(proposition.register);
   return (
-    <Card
-      component="button"
-      type="button"
-      withBorder
-      padding="sm"
-      className="horizon-provenance__card"
-      onClick={() => onInspect({ kind: 'provenance', proposition })}
-    >
-      <Box className="horizon-provenance__identity" miw={0}>
-        <Group gap={6} mb={4}>
-          <Badge size="xs" color="indigo" variant="filled">Committal</Badge>
-          <Badge size="xs" color={register.color} variant="light">{register.label}</Badge>
-          <Text size="10px" c="dimmed">#{shortId(proposition.id)}</Text>
-        </Group>
-        <Text size="xs" fw={800} c="indigo">Horizon Provenance</Text>
-        <Text size="sm" fw={650} lineClamp={2}>{proposition.title || proposition.statement}</Text>
-      </Box>
-      <Box className="horizon-provenance__measurements">
-        <MeasurementRails observables={proposition.observables} compact />
-      </Box>
-    </Card>
+    <Stack className="horizon-provenance" gap={5}>
+      <Text className="horizon-provenance__label" size="10px" fw={800} c="indigo">HORIZON PROVENANCE</Text>
+      <PropositionCard
+        proposition={proposition}
+        compact
+        indigoHighlight
+        onClick={() => onInspect({ kind: 'provenance', proposition })}
+      />
+    </Stack>
   );
 }
 
@@ -211,4 +197,3 @@ function operationalAssignment(domainName, writeRegister, gateRegister) {
 
 function resolve(proposition, byId) { return proposition ? byId.get(proposition.id) || proposition : {}; }
 function uniqueById(items) { return [...new Map(items.filter(Boolean).map((item) => [item.id, item])).values()]; }
-function shortId(id) { return id == null ? '—' : String(id).slice(-6); }

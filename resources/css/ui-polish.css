@@ -1,0 +1,63 @@
+.substrate-nav-section {
+  margin: .35rem .2rem .55rem .7rem;
+  padding: .55rem;
+  border-radius: var(--mantine-radius-lg);
+  background: light-dark(
+    color-mix(in srgb, var(--mantine-color-indigo-1) 72%, var(--mantine-color-gray-1)),
+    color-mix(in srgb, var(--mantine-color-indigo-9) 28%, var(--mantine-color-dark-9))
+  );
+}
+
+.substrate-nav-section__title {
+  padding: .1rem .35rem .4rem;
+  color: light-dark(var(--mantine-color-indigo-8), var(--mantine-color-indigo-2));
+  font-size: 10px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.substrate-nav-section .mantine-NavLink-root {
+  margin-bottom: 2px;
+  background: transparent;
+  color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-gray-3));
+}
+
+.substrate-nav-section .mantine-NavLink-root:not([data-disabled]):hover {
+  background: light-dark(
+    color-mix(in srgb, var(--mantine-color-indigo-2) 62%, transparent),
+    color-mix(in srgb, var(--mantine-color-indigo-8) 34%, transparent)
+  );
+  color: light-dark(var(--mantine-color-indigo-9), var(--mantine-color-indigo-1));
+}
+
+.substrate-nav-section .mantine-NavLink-root[data-active] {
+  background: light-dark(
+    var(--mantine-color-indigo-2),
+    color-mix(in srgb, var(--mantine-color-indigo-8) 58%, var(--mantine-color-dark-8))
+  );
+  color: light-dark(var(--mantine-color-indigo-9), var(--mantine-color-indigo-0));
+}
+
+.workspace-context {
+  justify-content: flex-start;
+}
+
+.horizon-provenance {
+  width: min(34rem, 100%);
+}
+
+.horizon-provenance__label {
+  padding-left: .15rem;
+  letter-spacing: .1em;
+}
+
+.proposition-card--indigo {
+  border-color: var(--mantine-color-indigo-5);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--mantine-color-indigo-5) 18%, transparent);
+}
+
+button.proposition-card--indigo:hover,
+button.proposition-card--indigo:focus-visible {
+  border-color: var(--mantine-color-indigo-4);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--mantine-color-indigo-5) 28%, transparent);
+}

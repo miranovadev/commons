@@ -4,6 +4,7 @@ import { useDisclosure, useMediaQuery } from '@mantine/hooks';
 import { IconAdjustments, IconBinaryTree2, IconChevronDown, IconChevronRight, IconLogin2, IconLogout2, IconMoon, IconPlugConnected, IconSettings, IconSun, IconTopologyStar3, IconUserHexagon } from '@tabler/icons-react';
 import { BrowserRouter, Link, Navigate, Route, Routes, matchPath, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
+import '../css/ui-polish.css';
 import { CommonsLogo } from './components/CommonsLogo';
 import { commonsApi, useGetSessionQuery, useGetSubstrateQuery, useLogoutMutation } from './services/commonsApi';
 import { systemBootstrapped } from './systemSlice';
@@ -47,12 +48,13 @@ function CommonsApp() {
 
   const participantActive = location.pathname.includes('/participants/');
   const substrateRoot = substrateSlug && location.pathname === `/substrates/${substrateSlug}`;
+  const flushMain = participantActive || substrateRoot;
 
   return (
     <AppShell
       header={{ height: 58 }}
       navbar={{ width: 214, breakpoint: 'sm', collapsed: { mobile: !opened, desktop: false } }}
-      padding={participantActive ? 0 : { base: 'md', sm: 'xl' }}
+      padding={flushMain ? 0 : { base: 'md', sm: 'xl' }}
     >
       <AppShell.Header className="app-header">
         <Group h="100%" px="md" justify="space-between">
@@ -119,6 +121,7 @@ function CommonsApp() {
 }
 
 function ColorSchemeButton() {
-  const { colorScheme, toggleColorScheme } = useMantineColorScheme();
-  return <ActionIcon variant="subtle" color="gray" size="lg" onClick={toggleColorScheme} aria-label="Toggle colour scheme">{colorScheme === 'dark' ? <IconSun size={19} /> : <IconMoon size={19} />}</ActionIcon>;
+  const { colorScheme, setColorScheme } = useMantineColorScheme();
+  const dark = colorScheme === 'dark';
+  return <ActionIcon variant="subtle" color="gray" aria-label="Toggle color scheme" onClick={() => setColorScheme(dark ? 'light' : 'dark')}>{dark ? <IconSun size={18} /> : <IconMoon size={18} />}</ActionIcon>;
 }

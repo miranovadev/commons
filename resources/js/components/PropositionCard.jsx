@@ -10,6 +10,7 @@ export function PropositionCard({
   mini = false,
   wireframe = false,
   muted = false,
+  indigoHighlight = false,
   actionLabel,
   actionIcon: ActionIcon,
   projectedObservables,
@@ -20,6 +21,7 @@ export function PropositionCard({
   const statementLines = proposition.statement?.split('\n').map((line) => line.trim()).filter(Boolean) || [];
   const description = statementLines.length > 1 ? statementLines.slice(1).join('\n') : null;
   const callsign = proposition.participant?.callsign || proposition.participant_callsign || proposition.callsign || 'Participant';
+  const structurallyHighlighted = indigoHighlight || proposition.tier === 'committal';
 
   if (mini) {
     return (
@@ -28,7 +30,7 @@ export function PropositionCard({
         type={onClick ? 'button' : undefined}
         withBorder
         padding="xs"
-        className="proposition-card proposition-card--mini"
+        className={`proposition-card proposition-card--mini ${selected ? 'proposition-card--selected' : ''} ${structurallyHighlighted ? 'proposition-card--indigo' : ''}`}
         style={{ '--register-color': `var(--mantine-color-${register.color}-6)` }}
         onClick={onClick}
       >
@@ -43,7 +45,7 @@ export function PropositionCard({
       type={onClick ? 'button' : undefined}
       withBorder
       padding={compact ? 'sm' : 'lg'}
-      className={`proposition-card ${selected ? 'proposition-card--selected' : ''} ${wireframe ? 'proposition-card--wireframe' : ''} ${muted ? 'proposition-card--muted' : ''}`}
+      className={`proposition-card ${selected ? 'proposition-card--selected' : ''} ${wireframe ? 'proposition-card--wireframe' : ''} ${muted ? 'proposition-card--muted' : ''} ${indigoHighlight ? 'proposition-card--indigo' : ''}`}
       style={{ '--register-color': `var(--mantine-color-${register.color}-6)` }}
       onClick={onClick}
     >
