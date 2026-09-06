@@ -8,6 +8,8 @@ Read the [public documentation](https://miranova.dev/commons) for the conceptual
 
 Implementation notes for the lineage-based measurement projection live in
 [docs/observables.md](docs/observables.md).
+The resumable participant interaction contract is described in
+[docs/participation.md](docs/participation.md).
 
 ## Requirements
 
