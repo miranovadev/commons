@@ -83,7 +83,7 @@ final readonly class InstrumentExecutionService
 
             $proposition = $locked->proposition()->first();
             if ($proposition !== null) {
-                $this->measurements->recalculate($proposition);
+                $this->measurements->recalculateIfMeasurable($proposition);
             }
 
             return $receipt;
