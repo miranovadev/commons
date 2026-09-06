@@ -38,6 +38,11 @@ class User extends Authenticatable
         return $this->hasMany(Participant::class);
     }
 
+    public function connections(): HasMany
+    {
+        return $this->hasMany(Connection::class);
+    }
+
     public function memberships(): HasMany
     {
         return $this->hasMany(SubstrateMembership::class);

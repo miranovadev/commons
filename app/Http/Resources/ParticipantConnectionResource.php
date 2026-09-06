@@ -12,11 +12,13 @@ class ParticipantConnectionResource extends JsonResource
         return [
             'id' => $this->getKey(),
             'participant_id' => $this->participant_id,
-            'provider' => $this->provider->value,
-            'name' => $this->name,
+            'connection_id' => $this->connection_id,
+            'connection' => $this->whenLoaded(
+                'connection',
+                fn () => new ConnectionResource($this->connection),
+            ),
             'is_enabled' => $this->is_enabled,
             'configuration' => $this->configuration,
-            'has_credentials' => $this->credentials !== null,
             'next_trigger_at' => $this->next_trigger_at,
             'last_triggered_at' => $this->last_triggered_at,
             'last_error' => $this->last_error,
