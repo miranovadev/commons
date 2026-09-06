@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { ActionIcon, AppShell, Avatar, Box, Burger, Button, Center, Group, Loader, MantineProvider, Menu, NavLink, Stack, Text, useMantineColorScheme } from '@mantine/core';
 import { useDisclosure, useMediaQuery } from '@mantine/hooks';
-import { IconAdjustments, IconBinaryTree2, IconChevronDown, IconLogin2, IconLogout2, IconMoon, IconPlugConnected, IconSun, IconTopologyStar3, IconUserHexagon } from '@tabler/icons-react';
+import { IconAdjustments, IconBinaryTree2, IconChevronDown, IconChevronRight, IconLogin2, IconLogout2, IconMoon, IconPlugConnected, IconSettings, IconSun, IconTopologyStar3, IconUserHexagon } from '@tabler/icons-react';
 import { BrowserRouter, Link, Navigate, Route, Routes, matchPath, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { CommonsLogo } from './components/CommonsLogo';
@@ -60,7 +60,10 @@ function CommonsApp() {
             <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
             <Group component={Link} to="/" gap="xs" className="brand-link">
               <CommonsLogo size={30} />
-              <Text fw={750} size="sm">The Commons</Text>
+              <Box>
+                <Text fw={750} size="sm" lh={1.1}>The Commons</Text>
+                <Text size="10px" c="dimmed" visibleFrom="sm" mt={2}>A Shared Cognitive Substrate</Text>
+              </Box>
             </Group>
           </Group>
           <Group gap="xs">
@@ -68,7 +71,12 @@ function CommonsApp() {
             {user ? (
               <Menu position="bottom-end" width={210}>
                 <Menu.Target><Button variant="subtle" color="gray" px={mobile ? 0 : 'xs'} rightSection={mobile ? undefined : <IconChevronDown size={14} />}><Group gap="xs"><Avatar size={26} color="indigo" name={user.name} />{!mobile && <Text size="sm" fw={500}>{user.name}</Text>}</Group></Button></Menu.Target>
-                <Menu.Dropdown><Menu.Label>{user.email}</Menu.Label><Menu.Item color="red" leftSection={<IconLogout2 size={16} />} onClick={logout}>Sign out</Menu.Item></Menu.Dropdown>
+                <Menu.Dropdown>
+                  <Menu.Label>{user.email}</Menu.Label>
+                  <Menu.Item leftSection={<IconSettings size={16} />}>Account Settings</Menu.Item>
+                  <Menu.Divider />
+                  <Menu.Item color="red" leftSection={<IconLogout2 size={16} />} onClick={logout}>Sign out</Menu.Item>
+                </Menu.Dropdown>
               </Menu>
             ) : <Button component={Link} to="/login" leftSection={<IconLogin2 size={16} />}>Sign in</Button>}
           </Group>
@@ -76,20 +84,25 @@ function CommonsApp() {
       </AppShell.Header>
       <AppShell.Navbar className="commons-navbar" p="sm">
         <Stack h="100%" gap={4} pt="xs">
-          <NavLink component={Link} to="/" label="Substrates" leftSection={<IconTopologyStar3 size={18} />} active={location.pathname === '/' || Boolean(substrateSlug)} />
-          <NavLink label="Connections" leftSection={<IconPlugConnected size={18} />} disabled />
-
+          <NavLink
+            component={Link}
+            to="/"
+            label="Substrates"
+            leftSection={<IconTopologyStar3 size={18} />}
+            rightSection={substrateSlug ? <IconChevronDown size={15} /> : <IconChevronRight size={15} />}
+            active={location.pathname === '/' || Boolean(substrateSlug)}
+          />
           {substrateSlug && (
-            <Box className="substrate-nav-section" mt="sm">
-              <Text className="substrate-nav-section__label" size="10px" fw={800} tt="uppercase" c="dimmed">Current substrate</Text>
-              <Text className="substrate-nav-section__title" size="sm" fw={700} lineClamp={2}>{selectedSubstrate?.title || substrateSlug}</Text>
-              <Stack gap={2} mt="xs">
-                <NavLink component={Link} to={`/substrates/${substrateSlug}`} label="Graph" leftSection={<IconBinaryTree2 size={17} />} active={Boolean(substrateRoot)} />
-                <NavLink label="Participants" leftSection={<IconUserHexagon size={17} />} active={participantActive} disabled={!participantActive} />
-                <NavLink label="Settings" leftSection={<IconAdjustments size={17} />} disabled />
+            <Box className="substrate-nav-section">
+              <Text className="substrate-nav-section__title" size="xs" fw={700} lineClamp={2}>{selectedSubstrate?.title || substrateSlug}</Text>
+              <Stack gap={2} mt={4}>
+                <NavLink component={Link} to={`/substrates/${substrateSlug}`} label="Graph" leftSection={<IconBinaryTree2 size={16} />} active={Boolean(substrateRoot)} />
+                <NavLink label="Participants" leftSection={<IconUserHexagon size={16} />} active={participantActive} disabled={!participantActive} />
+                <NavLink label="Settings" leftSection={<IconAdjustments size={16} />} disabled />
               </Stack>
             </Box>
           )}
+          <NavLink label="Connections" leftSection={<IconPlugConnected size={18} />} disabled />
         </Stack>
       </AppShell.Navbar>
       <AppShell.Main className="app-main">
