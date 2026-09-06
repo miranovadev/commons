@@ -4,6 +4,7 @@ import { useDisclosure, useMediaQuery } from '@mantine/hooks';
 import { IconAdjustments, IconBinaryTree2, IconChevronDown, IconChevronRight, IconLogin2, IconLogout2, IconMoon, IconPlugConnected, IconSettings, IconSun, IconTopologyStar3, IconUserHexagon } from '@tabler/icons-react';
 import { BrowserRouter, Link, Navigate, Route, Routes, matchPath, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
+import '../css/ui-polish.css';
 import { CommonsLogo } from './components/CommonsLogo';
 import { commonsApi, useGetSessionQuery, useGetSubstrateQuery, useLogoutMutation } from './services/commonsApi';
 import { systemBootstrapped } from './systemSlice';
