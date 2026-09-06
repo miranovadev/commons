@@ -28,7 +28,7 @@ export function PropositionCard({
         type={onClick ? 'button' : undefined}
         withBorder
         padding="xs"
-        className="proposition-card proposition-card--mini"
+        className={`proposition-card proposition-card--mini ${selected ? 'proposition-card--selected' : ''} ${proposition.tier === 'committal' ? 'proposition-card--committal' : ''}`}
         style={{ '--register-color': `var(--mantine-color-${register.color}-6)` }}
         onClick={onClick}
       >
