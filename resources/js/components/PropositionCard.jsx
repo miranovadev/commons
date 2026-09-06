@@ -1,5 +1,6 @@
 import { Badge, Card, Group, HoverCard, Stack, Text, ThemeIcon, Tooltip } from '@mantine/core';
 import { IconBolt, IconCirclesRelation, IconLock, IconWhirl } from '@tabler/icons-react';
+import { metaForRegister } from '../registers';
 
 const observableMeta = {
   correspondence: { label: 'Correspondence', description: 'Structural similarity between complementary Domains.', icon: IconCirclesRelation, color: 'blue' },
@@ -7,30 +8,41 @@ const observableMeta = {
   closure: { label: 'Closure', description: 'Persistence across participatory depth and cadence.', icon: IconLock, color: 'teal' },
 };
 
-export function PropositionCard({ proposition, selected = false, compact = false, onClick }) {
+export function PropositionCard({
+  proposition,
+  selected = false,
+  compact = false,
+  wireframe = false,
+  actionLabel,
+  actionIcon: ActionIcon,
+  onClick,
+}) {
+  const register = metaForRegister(proposition.register);
+
   return (
     <Card
       component={onClick ? 'button' : 'div'}
       type={onClick ? 'button' : undefined}
       withBorder
       padding={compact ? 'md' : 'lg'}
-      className={`proposition-card ${selected ? 'proposition-card--selected' : ''}`}
+      className={`proposition-card ${selected ? 'proposition-card--selected' : ''} ${wireframe ? 'proposition-card--wireframe' : ''}`}
       onClick={onClick}
     >
       <Group justify="space-between" align="flex-start" wrap="nowrap">
         <Stack gap={5} miw={0}>
           <Group gap={7}>
-            <Badge size="xs" color={proposition.tier === 'committal' ? 'indigo' : 'gray'} variant={proposition.tier === 'committal' ? 'filled' : 'light'}>{proposition.tier}</Badge>
-            <Text size="xs" c="dimmed" tt="capitalize">{proposition.register}</Text>
+            <Badge size="xs" color={proposition.tier === 'committal' ? 'indigo' : 'gray'} variant={proposition.tier === 'committal' ? 'filled' : 'light'}>{wireframe ? 'possible' : proposition.tier}</Badge>
+            <Badge size="xs" color={register.color} variant="light">{register.label}</Badge>
           </Group>
-          <Text fw={650} lineClamp={1}>{proposition.title}</Text>
+          <Text fw={650} lineClamp={1}>{actionLabel || proposition.title || proposition.statement?.split('\n')[0]}</Text>
         </Stack>
-        {proposition.tier === 'committal' && <Tooltip label="Committed structure"><ThemeIcon color="indigo" variant="light" size="sm"><IconBolt size={13} /></ThemeIcon></Tooltip>}
+        {wireframe && ActionIcon && <ThemeIcon color={register.color} variant="light" size="sm"><ActionIcon size={13} /></ThemeIcon>}
+        {!wireframe && proposition.tier === 'committal' && <Tooltip label="Committed structure"><ThemeIcon color="indigo" variant="light" size="sm"><IconBolt size={13} /></ThemeIcon></Tooltip>}
       </Group>
       <Text size="sm" c="dimmed" lineClamp={compact ? 2 : 3} mt="sm">{proposition.statement}</Text>
-      <Group gap={5} mt="md" onClick={(event) => event.stopPropagation()}>
+      {!wireframe && <Group gap={5} mt="md" onClick={(event) => event.stopPropagation()}>
         {Object.entries(observableMeta).map(([key, meta]) => <Observable key={key} name={key} value={proposition.observables?.[key]} {...meta} />)}
-      </Group>
+      </Group>}
     </Card>
   );
 }

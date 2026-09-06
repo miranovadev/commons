@@ -55,6 +55,35 @@ transaction.
 The contribution object is validated against the JSON Schema returned in the
 current plan. The React interface uses the same schema to render its controls.
 
+The plan also exposes a `workspace` projection for the active Cycle UI. It
+names the active Domain and Context Horizon, returns the Horizon's provenancial
+Committal Proposition separately, and groups the visible measurement population
+by Classification Register. The provenance Proposition is deliberately not
+inserted into the new Horizon's register population: it opens that Horizon from
+the preceding Closure Boundary. Register propositions are returned newest-first
+and bounded by the Participant's current read limit. Each compact Proposition
+includes its observable values, so the active workspace does not need to fetch
+the substrate's complete public graph before it can render.
+
+    {
+      "workspace": {
+        "domain": "settlement",
+        "horizon": { "id": "01...", "sequence": 2 },
+        "provenance": { "id": "01...", "register": "canon" },
+        "registers": {
+          "signal": [],
+          "stance": [],
+          "concord": []
+        }
+      }
+    }
+
+Revision is bound to a specific `proposition_id`. The server only advertises
+owned, unsuperseded expressive Propositions in the current write register and
+explicitly excludes the Gate. Because a Proposition written during one Cycle
+becomes available when that register is encountered again, revision naturally
+occurs in a subsequent Cycle rather than revising the current Gate in place.
+
 Perspective includes an explicit Attenuation placeholder. It currently carries
 pending status and null value/distance fields so the eventual decay projection
 can be added without changing the participation response shape.

@@ -49,7 +49,22 @@ class ParticipationApiTest extends TestCase
                 $payload['origin']['statement'],
             )
             ->assertJsonPath('data.plan.gate.register', 'canon')
-            ->assertJsonPath('data.plan.gate.tier', 'committal');
+            ->assertJsonPath('data.plan.gate.tier', 'committal')
+            ->assertJsonPath('data.plan.workspace.domain', 'settlement')
+            ->assertJsonPath(
+                'data.plan.workspace.provenance.statement',
+                $payload['origin']['statement'],
+            )
+            ->assertJsonStructure([
+                'data' => [
+                    'plan' => [
+                        'workspace' => [
+                            'horizon' => ['id', 'sequence', 'opened_at'],
+                            'registers' => ['signal', 'stance', 'concord'],
+                        ],
+                    ],
+                ],
+            ]);
 
         $originId = $response->json('data.plan.gate.id');
 
@@ -175,6 +190,11 @@ class ParticipationApiTest extends TestCase
             ->assertJsonPath(
                 'data.perspective.attenuation.value',
                 null,
+            )
+            ->assertJsonPath('data.plan.workspace.domain', 'emergence')
+            ->assertJsonPath(
+                'data.plan.workspace.provenance.statement',
+                'The Origin.',
             );
     }
 
@@ -197,6 +217,11 @@ class ParticipationApiTest extends TestCase
             ->assertJsonPath('data.plan.phase.kind', 'persist')
             ->assertJsonPath(
                 'data.plan.gate.statement',
+                'A first expressive distinction.',
+            )
+            ->assertJsonPath('data.plan.workspace.domain', 'emergence')
+            ->assertJsonPath(
+                'data.plan.workspace.registers.activity.0.statement',
                 'A first expressive distinction.',
             );
 

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\PhaseKind;
+use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
 use Illuminate\Database\Eloquent\Builder;
@@ -22,6 +23,34 @@ final class PropositionOptionService
 
         return $this->activeHeads($phase)
             ->where('register', $phase->write_register)
+            ->where('tier', 'expressive')
+            ->latest('created_at')
+            ->limit($this->limit())
+            ->get();
+    }
+
+    /**
+     * Revision is an ownership-preserving move within a register. It cannot
+     * target the Gate merely because the Gate belongs to the Participant.
+     *
+     * @return Collection<int, Proposition>
+     */
+    public function revisionOptionsFor(
+        Phase $phase,
+        Participant $participant,
+    ): Collection {
+        if ($phase->write_register === null) {
+            return collect();
+        }
+
+        return $this->activeHeads($phase)
+            ->where('register', $phase->write_register)
+            ->where('tier', 'expressive')
+            ->whereKeyNot($phase->gate_proposition_id)
+            ->whereHas(
+                'phase.cycle',
+                fn (Builder $query) => $query->whereBelongsTo($participant),
+            )
             ->latest('created_at')
             ->limit($this->limit())
             ->get();
@@ -64,10 +93,6 @@ final class PropositionOptionService
                     'substrate_id',
                     $phase->cycle->participant->substrate_id,
                 ),
-            )
-            ->whereHas(
-                'phase.cycle',
-                fn (Builder $query) => $query->whereNull('completed_at'),
             )
             ->whereNotExists(
                 fn ($query) => $query
