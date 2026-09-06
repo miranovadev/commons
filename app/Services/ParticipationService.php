@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\LedgerEntryKind;
+use App\Models\CommitmentSnapshot;
 use App\Models\Cycle;
 use App\Models\Participant;
 use App\Models\Phase;
@@ -71,10 +72,10 @@ final readonly class ParticipationService
     }
 
     /**
-     * @param  array<string, mixed>  $origin
+     * @param  array<string, mixed>|null  $origin
      * @return array<string, mixed>
      */
-    public function enter(Participant $participant, array $origin): array
+    public function enter(Participant $participant, ?array $origin = null): array
     {
         $this->cycleEntry->enter($participant, $origin);
 
@@ -166,10 +167,16 @@ final readonly class ParticipationService
             ->exists();
 
         if ($hasOrigin) {
+            $available = CommitmentSnapshot::query()
+                ->where('substrate_id', $participant->substrate_id)
+                ->exists();
+
             return [
                 'mode' => 'potential',
-                'available' => false,
-                'message' => 'Potential selection for established substrates is not available yet.',
+                'available' => $available,
+                'message' => $available
+                    ? 'Potential will select the Committal Gate with the greatest available reduction in Tension.'
+                    : 'Potential is waiting for a measured Committal Proposition.',
             ];
         }
 
