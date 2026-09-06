@@ -1,10 +1,9 @@
 import { useMemo, useState } from 'react';
 import { Alert, Badge, Box, Breadcrumbs, Button, Container, Group, Loader, Stack, Text, ThemeIcon, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconAlertCircle, IconPlugConnected, IconSparkles, IconUserHexagon } from '@tabler/icons-react';
+import { IconAlertCircle, IconSparkles, IconUserHexagon } from '@tabler/icons-react';
 import { Link, useParams } from 'react-router-dom';
 import { messageFrom } from '../errors';
-import { ConnectionsPanel } from '../components/ConnectionsPanel';
 import { ContributionForm } from '../components/ContributionForm';
 import { OriginCycleForm } from '../components/OriginCycleForm';
 import { ParticipantWorkspace } from '../components/ParticipantWorkspace';
@@ -19,7 +18,6 @@ export function ParticipantPage() {
   const [enterCycle, cycleEntry] = useEnterCycleMutation();
   const [selectedAction, setSelectedAction] = useState(null);
   const [originOpened, { open: openOrigin, close: closeOrigin }] = useDisclosure(false);
-  const [connectionsOpened, { open: openConnections, close: closeConnections }] = useDisclosure(false);
   const plan = participation?.plan;
   const error = participantError || participationError;
   const availableActions = useMemo(() => plan?.schema?.oneOf?.map((entry) => entry.$ref?.split('/').pop()).filter(Boolean) || [], [plan]);
@@ -42,16 +40,12 @@ export function ParticipantPage() {
       )}
       {participant && plan && (
         <Box className="participant-cycle-shell">
-          <Group className="cycle-context-header" justify="space-between" align="center" wrap="nowrap">
-            <Group gap="sm" wrap="nowrap" miw={0}>
-              <Badge color="indigo" variant="light" leftSection={<IconUserHexagon size={12} />}>PARTICIPANT</Badge>
-              <Box miw={0}><Text fw={750} truncate>{participant.callsign}</Text><Text size="xs" c="dimmed" truncate>{slug} / {plan.phase.kind}</Text></Box>
-            </Group>
-            <Button size="xs" variant="default" leftSection={<IconPlugConnected size={15} />} onClick={openConnections}>Connections</Button>
+          <Group className="cycle-context-header" align="center" wrap="nowrap">
+            <Badge color="indigo" variant="light" leftSection={<IconUserHexagon size={12} />}>PARTICIPANT</Badge>
+            <Box miw={0}><Text fw={750} truncate>{participant.callsign}</Text><Text size="xs" c="dimmed" truncate>{slug}</Text></Box>
           </Group>
           <ParticipantWorkspace plan={{ ...plan, perspectiveLimit: participant.max_read_count }} availableActions={availableActions} onAction={openAction} />
           <ContributionForm action={selectedAction?.name} plan={plan} opened={selectedAction !== null} loading={contribution.isLoading} error={contribution.error} initialValues={selectedAction?.initialValues} onClose={() => setSelectedAction(null)} onSubmit={submit} />
-          <ConnectionsPanel slug={slug} participantId={participantId} opened={connectionsOpened} onClose={closeConnections} />
         </Box>
       )}
       <OriginCycleForm opened={originOpened} loading={cycleEntry.isLoading} error={cycleEntry.error} onClose={closeOrigin} onSubmit={establishOrigin} />
