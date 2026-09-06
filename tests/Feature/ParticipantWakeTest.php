@@ -12,6 +12,7 @@ use App\Models\ParticipantConnection;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Substrate;
+use App\Services\CycleEntryService;
 use App\Services\InputSchemaService;
 use App\Services\OpenAIResponseSchema;
 use App\Services\OpenAIResponsesClient;
@@ -166,18 +167,22 @@ class ParticipantWakeTest extends TestCase
         $schema = app(OpenAIResponseSchema::class)->fromCommons(
             app(InputSchemaService::class)->forPhase(PhaseKind::Persist),
         );
-        $actions = $schema['properties']['contribution']['anyOf'];
-        $attestation = collect($actions)->first(
-            fn (array $action): bool => data_get(
-                $action,
-                'properties.action.const',
-            ) === 'attestation.create',
-        );
+        $contribution = $schema['properties']['contribution'];
 
-        $this->assertContains('rationale', $attestation['required']);
+        $this->assertArrayNotHasKey('anyOf', $contribution);
+        $this->assertArrayNotHasKey('$defs', $schema);
+        $this->assertContains('rationale', $contribution['required']);
         $this->assertSame(
             ['string', 'null'],
-            $attestation['properties']['rationale']['type'],
+            $contribution['properties']['rationale']['type'],
+        );
+        $this->assertContains(
+            'attestation.create',
+            $contribution['properties']['action']['enum'],
+        );
+        $this->assertStringNotContainsString(
+            'pattern',
+            json_encode($schema, JSON_THROW_ON_ERROR),
         );
     }
 
@@ -233,6 +238,60 @@ class ParticipantWakeTest extends TestCase
             'Participant wake skipped: cycle_not_started.',
             $participantConnection->fresh()->last_error,
         );
+    }
+
+    public function test_wake_job_enters_an_established_substrate_via_potential(): void
+    {
+        $originParticipant = $this->participant();
+        app(CycleEntryService::class)->enter($originParticipant, [
+            'statement' => 'A measured Origin.',
+            'attestation' => [
+                'direction' => 'support',
+                'rationale' => 'Grounded for the next participant.',
+            ],
+            'instrument' => [
+                'kind' => 'hyperlink',
+                'reference' => 'https://example.test/origin',
+            ],
+        ]);
+        $origin = Proposition::query()
+            ->where('statement', 'A measured Origin.')
+            ->firstOrFail();
+        $participant = new Participant;
+        $participant->forceFill([
+            'substrate_id' => $originParticipant->substrate_id,
+            'callsign' => 'potential-wake',
+            'max_read_count' => 25,
+            'max_token_count' => 10000,
+        ]);
+        $participant->save();
+        $participantConnection = $this->connectionFor($participant);
+        $inference = Mockery::mock(ParticipantInference::class);
+        $inference->shouldReceive('contribute')
+            ->once()
+            ->withArgs(fn (Connection $connection, array $state): bool =>
+                $state['status'] === 'ready'
+                && $state['plan']['gate']['id'] === $origin->getKey())
+            ->andReturn([
+                'action' => 'proposition.variant',
+                'statement' => 'The second participant is awake.',
+            ]);
+        $this->app->instance(ParticipantInference::class, $inference);
+
+        $this->app->call([
+            new WakeParticipant($participantConnection->getKey()),
+            'handle',
+        ]);
+
+        $this->assertDatabaseHas('cycles', [
+            'participant_id' => $participant->getKey(),
+            'sequence' => 1,
+        ]);
+        $this->assertDatabaseHas('propositions', [
+            'statement' => 'The second participant is awake.',
+            'tier' => 'expressive',
+        ]);
+        $this->assertNull($participantConnection->fresh()->last_error);
     }
 
     /** @return array{Participant, ParticipantConnection} */
