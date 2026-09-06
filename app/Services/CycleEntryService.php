@@ -25,15 +25,16 @@ final readonly class CycleEntryService
         private ProjectionService $projections,
         private CommitmentSnapshotService $commitments,
         private ContextHorizonProjector $horizons,
+        private PotentialChargeService $potential,
     ) {}
 
     /**
      * Establish the substrate's Origin and place the Participant at the first
      * live Settlement Cycle. Potential will govern subsequent Cycle entry.
      *
-     * @param  array<string, mixed>  $origin
+     * @param  array<string, mixed>|null  $origin
      */
-    public function enter(Participant $participant, array $origin): void
+    public function enter(Participant $participant, ?array $origin = null): void
     {
         DB::transaction(function () use ($participant, $origin): void {
             $substrate = Substrate::query()
@@ -50,8 +51,19 @@ final readonly class CycleEntryService
             }
 
             if ($this->hasPropositionHistory($substrate)) {
+                $selection = $this->potential->selectFor($substrate);
+                $this->createLiveCycle(
+                    $lockedParticipant,
+                    $substrate,
+                    $selection['proposition'],
+                );
+
+                return;
+            }
+
+            if ($origin === null) {
                 throw new ConflictHttpException(
-                    'The substrate already has an Origin. Potential must select the next Cycle Gate.'
+                    'The substrate requires an Origin before Potential can select a Gate.'
                 );
             }
 
@@ -97,19 +109,31 @@ final readonly class CycleEntryService
             $bootstrapCycle->completed_at = now();
             $bootstrapCycle->save();
 
-            $activeCycle = $this->createCycle($lockedParticipant);
-            $domain = $this->horizons->currentFor($substrate)->domain;
-            $firstRegister = $domain === ContextDomain::Emergence
-                ? 'activity'
-                : 'signal';
-
-            $this->createPhase(
-                $activeCycle,
-                PhaseKind::Distinguish,
-                $firstRegister,
+            $this->createLiveCycle(
+                $lockedParticipant,
+                $substrate,
                 $proposition,
             );
         });
+    }
+
+    private function createLiveCycle(
+        Participant $participant,
+        Substrate $substrate,
+        Proposition $gate,
+    ): void {
+        $cycle = $this->createCycle($participant);
+        $domain = $this->horizons->currentFor($substrate)->domain;
+        $firstRegister = $domain === ContextDomain::Emergence
+            ? 'activity'
+            : 'signal';
+
+        $this->createPhase(
+            $cycle,
+            PhaseKind::Distinguish,
+            $firstRegister,
+            $gate,
+        );
     }
 
     private function hasActiveCycle(Participant $participant): bool

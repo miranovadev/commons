@@ -39,7 +39,7 @@ class ParticipationController extends Controller
         try {
             $state = $participation->enter(
                 $participant,
-                $request->validated('origin'),
+                $request->validated('origin', null),
             );
         } catch (DomainException $exception) {
             return response()->json([
