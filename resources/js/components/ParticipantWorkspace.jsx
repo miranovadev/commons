@@ -91,7 +91,7 @@ function OperationalRow({ lane, gate, lineage, committalObservables, proposition
         </Group>
         {lane.role === 'read' && <ReadContent register={lane.register} gate={gate} featured={lane.featured} propositions={propositions} lineage={lineage} committalObservables={committalObservables} onInspect={onInspect} />}
         {lane.role === 'gate' && <GateContent gate={laneGate} committalObservables={committalObservables} onInspect={onInspect} />}
-        {lane.role === 'write' && <WriteContent writeOptions={writeOptions} revisionOptions={revisionOptions} gateOptions={gateOptions} actions={actions} committalObservables={committalObservables} onInspect={onInspect} onAction={onAction} />}
+        {lane.role === 'write' && <WriteContent propositions={propositions} writeOptions={writeOptions} revisionOptions={revisionOptions} gateOptions={gateOptions} actions={actions} committalObservables={committalObservables} onInspect={onInspect} onAction={onAction} />}
       </Box>
     </Box>
   );
@@ -108,15 +108,15 @@ function GateContent({ gate, committalObservables, onInspect }) {
   return <PropositionCard proposition={gate} committalObservables={committalObservables} selected compact flow="gate" onClick={() => onInspect({ kind: 'gate', proposition: gate })} />;
 }
 
-function WriteContent({ writeOptions, revisionOptions, gateOptions, actions, committalObservables, onInspect, onAction }) {
+function WriteContent({ propositions, writeOptions, revisionOptions, gateOptions, actions, committalObservables, onInspect, onAction }) {
   const revisionIds = new Set(revisionOptions.map((item) => item.id));
   const reconcileIds = new Set(gateOptions.map((item) => item.id));
-  const existing = uniqueById([...writeOptions, ...gateOptions]);
+  const existing = uniqueById([...propositions, ...writeOptions, ...gateOptions]);
   return (
     <Stack className="write-row" gap="md">
       {existing.length > 0 && (
         <Box>
-          <Text className="lane-eyebrow" mb="xs">AVAILABLE PROPOSITIONS</Text>
+          <Text className="lane-eyebrow" mb="xs">REGISTER PROPOSITIONS</Text>
           <SimpleGrid className="write-row__cards" cols={{ base: 1, md: 2, xl: 3 }} spacing="sm">
             {existing.map((proposition) => <WriteOptionCard
               key={proposition.id} proposition={proposition}
@@ -130,7 +130,7 @@ function WriteContent({ writeOptions, revisionOptions, gateOptions, actions, com
           </SimpleGrid>
         </Box>
       )}
-      {!existing.length && <EmptyState text="No existing Proposition is actionable in this Write." />}
+      {!existing.length && <EmptyState text="No Proposition is visible in this register." />}
     </Stack>
   );
 }
