@@ -48,12 +48,12 @@ export function ParticipantWorkspace({ plan, availableActions, onAction }) {
     <Box className="operational-workspace" data-domain={domainName} data-phase={phaseNumber}>
       <Box className="operational-workspace__body">
         <Stack className="operational-board" gap="md">
-          <LineagePanel lineage={lineage} onInspect={setInspection} />
+          <LineagePanel lineage={lineage} committalObservables={provenance.observables} onInspect={setInspection} />
           {lanes.map((lane) => (
             <Fragment key={`${phaseNumber}-${lane.key}`}>
               {lane.role === 'write' && supersessionActions.length > 0 && <SupersessionControl actions={supersessionActions} onAction={onAction} />}
               <OperationalRow
-                lane={lane} gate={gate} lineage={lineage}
+                lane={lane} gate={gate} lineage={lineage} committalObservables={provenance.observables}
                 propositions={lane.register ? registerItems[lane.register] || [] : []}
                 gateOptions={gateOptions} writeOptions={writeOptions} revisionOptions={revisionOptions}
                 actions={propositionActions} onInspect={setInspection} onAction={onAction}
@@ -61,13 +61,13 @@ export function ParticipantWorkspace({ plan, availableActions, onAction }) {
             </Fragment>
           ))}
         </Stack>
-        <PropositionInspector selection={inspection} onClose={() => setInspection(null)} />
+        <PropositionInspector selection={inspection} committalObservables={provenance.observables} onClose={() => setInspection(null)} />
       </Box>
     </Box>
   );
 }
 
-function OperationalRow({ lane, gate, lineage, propositions, gateOptions, writeOptions, revisionOptions, actions, onInspect, onAction }) {
+function OperationalRow({ lane, gate, lineage, committalObservables, propositions, gateOptions, writeOptions, revisionOptions, actions, onInspect, onAction }) {
   const role = roleMeta[lane.role];
   const meta = lane.meta || metaForRegister(lane.register);
   const RegisterIcon = meta.icon;
@@ -89,26 +89,26 @@ function OperationalRow({ lane, gate, lineage, propositions, gateOptions, writeO
           <Text className="register-row__title" size="xs" fw={750}>{meta.label}</Text>
           <Text size="xs" c="dimmed" visibleFrom="sm">{meta.description}</Text>
         </Group>
-        {lane.role === 'read' && <ReadContent register={lane.register} gate={gate} featured={lane.featured} propositions={propositions} lineage={lineage} onInspect={onInspect} />}
-        {lane.role === 'gate' && <GateContent gate={laneGate} onInspect={onInspect} />}
-        {lane.role === 'write' && <WriteContent writeOptions={writeOptions} revisionOptions={revisionOptions} gateOptions={gateOptions} actions={actions} onInspect={onInspect} onAction={onAction} />}
+        {lane.role === 'read' && <ReadContent register={lane.register} gate={gate} featured={lane.featured} propositions={propositions} lineage={lineage} committalObservables={committalObservables} onInspect={onInspect} />}
+        {lane.role === 'gate' && <GateContent gate={laneGate} committalObservables={committalObservables} onInspect={onInspect} />}
+        {lane.role === 'write' && <WriteContent writeOptions={writeOptions} revisionOptions={revisionOptions} gateOptions={gateOptions} actions={actions} committalObservables={committalObservables} onInspect={onInspect} onAction={onAction} />}
       </Box>
     </Box>
   );
 }
 
-function ReadContent({ register, gate, featured, propositions, lineage, onInspect }) {
+function ReadContent({ register, gate, featured, propositions, lineage, committalObservables, onInspect }) {
   const currentRead = featured || propositions.find((item) => item.id !== gate.id) || lineage.find((item) => item.register === register) || lineage[0];
   return currentRead
-    ? <PropositionCard proposition={currentRead} compact flow="read" onClick={() => onInspect({ kind: 'read', proposition: currentRead })} />
+    ? <PropositionCard proposition={currentRead} committalObservables={committalObservables} compact flow="read" onClick={() => onInspect({ kind: 'read', proposition: currentRead })} />
     : <EmptyState text="No readable proposition is exposed in this register." />;
 }
 
-function GateContent({ gate, onInspect }) {
-  return <PropositionCard proposition={gate} selected compact flow="gate" onClick={() => onInspect({ kind: 'gate', proposition: gate })} />;
+function GateContent({ gate, committalObservables, onInspect }) {
+  return <PropositionCard proposition={gate} committalObservables={committalObservables} selected compact flow="gate" onClick={() => onInspect({ kind: 'gate', proposition: gate })} />;
 }
 
-function WriteContent({ writeOptions, revisionOptions, gateOptions, actions, onInspect, onAction }) {
+function WriteContent({ writeOptions, revisionOptions, gateOptions, actions, committalObservables, onInspect, onAction }) {
   const revisionIds = new Set(revisionOptions.map((item) => item.id));
   const reconcileIds = new Set(gateOptions.map((item) => item.id));
   const existing = uniqueById([...writeOptions, ...gateOptions]);
@@ -125,7 +125,7 @@ function WriteContent({ writeOptions, revisionOptions, gateOptions, actions, onI
               canReconcile={actions.includes('proposition.reconcile') && reconcileIds.has(proposition.id)}
               canInstrument={actions.includes('instrument.execute') && writeOptions.some((item) => item.id === proposition.id)}
               canSelect={actions.includes('proposition.select') && writeOptions.some((item) => item.id === proposition.id)}
-              onInspect={onInspect} onAction={onAction}
+              committalObservables={committalObservables} onInspect={onInspect} onAction={onAction}
             />)}
           </SimpleGrid>
         </Box>
@@ -135,11 +135,11 @@ function WriteContent({ writeOptions, revisionOptions, gateOptions, actions, onI
   );
 }
 
-function WriteOptionCard({ proposition, canAttest, canRevise, canReconcile, canInstrument, canSelect, onInspect, onAction }) {
+function WriteOptionCard({ proposition, canAttest, canRevise, canReconcile, canInstrument, canSelect, committalObservables, onInspect, onAction }) {
   const hasActions = canAttest || canRevise || canReconcile || canInstrument || canSelect;
   return (
     <Box className="write-option-card" data-attested={proposition.attestation?.direction}>
-      <PropositionCard proposition={proposition} compact flow="write" onClick={() => onInspect({ kind: 'write option', proposition })} />
+      <PropositionCard proposition={proposition} committalObservables={committalObservables} compact flow="write" onClick={() => onInspect({ kind: 'write option', proposition })} />
       {(hasActions || proposition.attestation) && (
         <Group className="write-option-card__actions" gap={4} wrap="wrap">
           {canAttest && <>
