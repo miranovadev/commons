@@ -99,7 +99,7 @@ final readonly class InputPlanService
             : $horizon->propositions()
                 ->with([
                     'measurement',
-                    'parents.measurement',
+                    'parents',
                     'effectiveAttestations' => $this->attestationsFor(
                         $participant
                     ),
@@ -110,7 +110,7 @@ final readonly class InputPlanService
                 ->limit(max(1, (int) ($participant->max_read_count ?? 25)))
                 ->get();
 
-        $this->repairMeasurements($propositions);
+        $this->measurements->repairMissing($propositions);
 
         $provenance = $horizon?->opened_by_proposition_id === null
             ? $lineage->first(
@@ -123,11 +123,11 @@ final readonly class InputPlanService
         $provenance ??= $gate;
         $provenance->loadMissing([
             'measurement',
-            'parents.measurement',
+            'parents',
             'effectiveAttestations' => $this->attestationsFor($participant),
             'phase.cycle.participant:id,callsign',
         ]);
-        $this->repairMeasurements(collect([$provenance]));
+        $this->measurements->repairMissing(collect([$provenance]));
 
         return [
             'domain' => $domain->value,
@@ -179,23 +179,11 @@ final readonly class InputPlanService
         );
         $collection->loadMissing([
             'measurement',
-            'parents.measurement',
+            'parents',
             'effectiveAttestations' => $this->attestationsFor($participant),
             'phase.cycle.participant:id,callsign',
         ]);
-        $this->repairMeasurements($collection);
-    }
-
-    /** @param Collection<int, Proposition> $propositions */
-    private function repairMeasurements(Collection $propositions): void
-    {
-        $parents = $propositions
-            ->flatMap(fn (Proposition $proposition) => $proposition->parents)
-            ->unique(fn (Proposition $proposition): string => $proposition->getKey())
-            ->values();
-
-        $this->measurements->repairMissing($parents);
-        $this->measurements->repairMissing($propositions);
+        $this->measurements->repairMissing($collection);
     }
 
     private function attestationsFor(Participant $participant): \Closure
@@ -246,10 +234,6 @@ final readonly class InputPlanService
         $attestation = $proposition->relationLoaded('effectiveAttestations')
             ? $proposition->effectiveAttestations->first()
             : null;
-        $fromMeasurement = $parent?->relationLoaded('measurement')
-            ? $parent->measurement
-            : null;
-
         return [
             ...$proposition->only([
                 'id',
@@ -282,21 +266,6 @@ final readonly class InputPlanService
                 'closure' => $measurement?->closure,
                 'calculated_at' => $measurement?->calculated_at,
             ],
-            'impact' => $proposition->tier !== 'expressive'
-                || $parent === null
-                ? null
-                : [
-                    'from' => [
-                        'correspondence' => $fromMeasurement?->correspondence,
-                        'chirality' => $fromMeasurement?->chirality,
-                        'closure' => $fromMeasurement?->closure,
-                    ],
-                    'to' => [
-                        'correspondence' => $measurement?->correspondence,
-                        'chirality' => $measurement?->chirality,
-                        'closure' => $measurement?->closure,
-                    ],
-                ],
         ];
     }
 }
