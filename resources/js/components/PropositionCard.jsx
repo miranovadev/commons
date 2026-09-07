@@ -13,6 +13,7 @@ export function PropositionCard({
   actionLabel,
   actionIcon,
   projectedObservables,
+  committalObservables,
   flow,
   onClick,
 }) {
@@ -45,6 +46,7 @@ export function PropositionCard({
         actionIcon={actionIcon}
         wireframe={wireframe}
         projectedObservables={projectedObservables}
+        committalObservables={committalObservables}
       />
     </Card>
   );
