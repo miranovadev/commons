@@ -64,6 +64,9 @@ button.proposition-card:hover,button.proposition-card:focus-visible { border-col
 .proposition-card--muted:hover { opacity:1; }
 .proposition-card--mini { min-height:0; padding:.5rem .6rem; background:light-dark(var(--mantine-color-white),var(--mantine-color-dark-6)); }
 .proposition-card__participant { flex:none; max-width:72px; }
+.proposition-field { min-width:0; }
+.field-value { min-width:0; }
+.field-value:not([data-compact]) { padding:.55rem .65rem; border:1px solid light-dark(var(--mantine-color-gray-2),var(--mantine-color-dark-5)); border-radius:var(--mantine-radius-md); background:light-dark(var(--mantine-color-gray-0),var(--mantine-color-dark-7)); }
 .attestation-spinner { flex:none; color:var(--mantine-color-dimmed); animation:attestation-spin 6s linear infinite; }
 .lineage-panel { position:relative; z-index:2; width:auto; margin:0 0 0 9.25rem; overflow:visible; border:1px solid light-dark(var(--mantine-color-gray-3),var(--mantine-color-dark-6)); border-radius:var(--mantine-radius-lg); background:light-dark(var(--mantine-color-gray-0),var(--mantine-color-dark-7)); }
 .lineage-panel::after { left:1.25rem; }
@@ -88,10 +91,6 @@ button.proposition-card:hover,button.proposition-card:focus-visible { border-col
 .measurement-rail__marker--current { background:var(--mantine-color-gray-3); border:2px solid light-dark(var(--mantine-color-gray-7),var(--mantine-color-white)); }
 .measurement-rail__marker--projected { background:transparent; border:2px solid var(--mantine-color-gray-4); }
 .measurement-rail__delta { position:absolute; top:0; height:3px; background:var(--mantine-color-gray-5); opacity:.65; }
-.measurement-rail__track[data-direction='prominence'] .measurement-rail__delta { background:light-dark(var(--mantine-color-indigo-4),var(--mantine-color-indigo-3)); opacity:.9; }
-.measurement-rail__track[data-direction='turbulence'] .measurement-rail__delta { background:light-dark(var(--mantine-color-indigo-9),var(--mantine-color-indigo-7)); opacity:.9; }
-.measurement-rail__marker--projected[data-direction='prominence'] { width:0; height:0; transform:translate(-25%,-50%); border:5px solid transparent; border-left:8px solid light-dark(var(--mantine-color-indigo-4),var(--mantine-color-indigo-3)); border-radius:0; }
-.measurement-rail__marker--projected[data-direction='turbulence'] { width:0; height:0; transform:translate(-75%,-50%); border:5px solid transparent; border-right:8px solid light-dark(var(--mantine-color-indigo-9),var(--mantine-color-indigo-7)); border-radius:0; }
 .measurement-rail[data-compact] .measurement-rail__pole { flex-basis:4rem; font-size:9px; }
 @keyframes register-arrival { from { transform:translateY(18px); opacity:.72; } to { transform:translateY(0); opacity:1; } }
 @keyframes write-option-arrival { from { transform:translateY(24px); opacity:0; } to { transform:translateY(0); opacity:1; } }
