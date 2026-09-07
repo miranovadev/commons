@@ -1,5 +1,5 @@
 import { Avatar, Badge, Box, Group, Stack, Text, ThemeIcon, Tooltip } from '@mantine/core';
-import { IconArrowRight, IconBolt, IconWhirl } from '@tabler/icons-react';
+import { IconArrowRight, IconBolt } from '@tabler/icons-react';
 import { metaForRegister } from '../registers';
 import { MeasurementRails } from './MeasurementRails';
 
@@ -36,9 +36,6 @@ export function PropositionContent({
           <Group gap={7} wrap="wrap">
             {(proposition.tier || wireframe) && <TierBadge tier={wireframe ? 'possible' : proposition.tier} />}
             {proposition.register && <Badge size="xs" color={register.color} variant="light">{register.label}</Badge>}
-            {!wireframe && !detailed && (
-              <Tooltip label="Attestation activity"><IconWhirl size={15} className="attestation-spinner" /></Tooltip>
-            )}
           </Group>
           <Text fw={detailed ? 750 : 650} size={detailed ? 'lg' : undefined} lineClamp={detailed ? undefined : 2}>{title}</Text>
         </Stack>

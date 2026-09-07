@@ -62,16 +62,25 @@ transaction.
 
 The contribution object is validated against the JSON Schema returned in the
 current plan. The React interface uses the same schema to render its controls.
+ULID inputs accept both upper- and lowercase Crockford encodings; Laravel's
+persisted ULIDs are normally lowercase.
 
 The plan also exposes a `workspace` projection for the active Cycle UI. It
 names the active Domain and Context Horizon, returns the Horizon's provenancial
 Committal Proposition separately, and groups the visible measurement population
-by Classification Register. The provenance Proposition is deliberately not
-inserted into the new Horizon's register population: it opens that Horizon from
-the preceding Closure Boundary. Register propositions are returned newest-first
-and bounded by the Participant's current read limit. Each compact Proposition
-includes its observable values, so the active workspace does not need to fetch
-the substrate's complete public graph before it can render.
+by Classification Register. The human workspace presents these as operational
+Read, Gate and Write rows. Read and Gate each expose one active Proposition;
+Lineage is available on demand; and Write separates existing actionable
+Propositions from moves that create a new Proposition from the Gate. An
+existing Write card exposes Support and Refute when Attestation is admissible,
+and Revise only when that Proposition is owned and revisable.
+
+The provenance Proposition is deliberately not inserted into the new Horizon's
+register population: it opens that Horizon from the preceding Closure Boundary.
+Register propositions are returned newest-first and bounded by the
+Participant's current read limit. Each compact Proposition includes its
+observable values, so the active workspace does not need to fetch the
+substrate's complete public graph before it can render.
 
     {
       "workspace": {
