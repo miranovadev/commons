@@ -38,6 +38,7 @@ final readonly class InputPlanService
         );
         $gateOptions = $this->options->gateOptionsFor($phase);
         $this->loadPropositionState(
+            $participant,
             $gate,
             $lineage,
             $writeOptions,
@@ -99,7 +100,9 @@ final readonly class InputPlanService
                 ->with([
                     'measurement',
                     'parents.measurement',
-                    'effectiveAttestations.phase.cycle',
+                    'effectiveAttestations' => $this->attestationsFor(
+                        $participant
+                    ),
                     'phase.cycle.participant:id,callsign',
                 ])
                 ->whereIn('register', $registers)
@@ -121,7 +124,7 @@ final readonly class InputPlanService
         $provenance->loadMissing([
             'measurement',
             'parents.measurement',
-            'effectiveAttestations.phase.cycle',
+            'effectiveAttestations' => $this->attestationsFor($participant),
             'phase.cycle.participant:id,callsign',
         ]);
         $this->repairMeasurements(collect([$provenance]));
@@ -161,6 +164,7 @@ final readonly class InputPlanService
     }
 
     private function loadPropositionState(
+        Participant $participant,
         Proposition $gate,
         Collection ...$collections,
     ): void {
@@ -178,7 +182,7 @@ final readonly class InputPlanService
         $collection->loadMissing([
             'measurement',
             'parents.measurement',
-            'effectiveAttestations.phase.cycle',
+            'effectiveAttestations' => $this->attestationsFor($participant),
             'phase.cycle.participant:id,callsign',
         ]);
         $this->repairMeasurements($collection);
@@ -194,6 +198,16 @@ final readonly class InputPlanService
 
         $this->measurements->repairMissing($parents);
         $this->measurements->repairMissing($propositions);
+    }
+
+    private function attestationsFor(Participant $participant): \Closure
+    {
+        return fn ($query) => $query
+            ->whereHas(
+                'phase.cycle',
+                fn ($query) => $query->whereBelongsTo($participant),
+            )
+            ->with('phase.cycle');
     }
 
     /**
@@ -232,10 +246,7 @@ final readonly class InputPlanService
                 ? $proposition->phase->cycle->participant
                 : null;
         $attestation = $proposition->relationLoaded('effectiveAttestations')
-            ? $proposition->effectiveAttestations->first(
-                fn ($item): bool => $item->phase->cycle->participant_id
-                    === $viewer->getKey()
-            )
+            ? $proposition->effectiveAttestations->first()
             : null;
         $fromMeasurement = $parent?->relationLoaded('measurement')
             ? $parent->measurement
