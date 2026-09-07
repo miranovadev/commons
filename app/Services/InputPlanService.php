@@ -175,9 +175,7 @@ final readonly class InputPlanService
         }
 
         $collection = $gate->newCollection(
-            $propositions->unique(
-                fn (Proposition $proposition): string => $proposition->getKey()
-            )->values()->all()
+            $propositions->values()->all()
         );
         $collection->loadMissing([
             'measurement',
