@@ -86,6 +86,7 @@ class AttestationDirectionChangeTest extends TestCase
         $participant->forceFill([
             'substrate_id' => $substrate->getKey(),
             'callsign' => 'witness',
+            'max_read_count' => 25,
         ]);
         $participant->save();
 
