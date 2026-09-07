@@ -1,26 +1,12 @@
-import { Badge, Box, Drawer, ScrollArea, Stack, Text } from '@mantine/core';
-import { useMediaQuery } from '@mantine/hooks';
+import { Badge, Box, Drawer, Stack, Text } from '@mantine/core';
 import { structuralDeltaSummary } from './MeasurementRails';
 import { PropositionContent } from './PropositionContent';
 
 export function PropositionInspector({ selection, onClose }) {
-  const mobile = useMediaQuery('(max-width: 74em)');
-  const content = <InspectorContent selection={selection} />;
-
-  if (mobile) {
-    return (
-      <Drawer opened={Boolean(selection)} onClose={onClose} position="right" size="min(34rem, 100%)" title="Proposition inspector">
-        {content}
-      </Drawer>
-    );
-  }
-
   return (
-    <Box className="proposition-inspector">
-      <ScrollArea h="100%" type="auto" offsetScrollbars>
-        {content}
-      </ScrollArea>
-    </Box>
+    <Drawer opened={Boolean(selection)} onClose={onClose} position="right" size="min(34rem, 100%)" title="Proposition inspector">
+      <InspectorContent selection={selection} />
+    </Drawer>
   );
 }
 

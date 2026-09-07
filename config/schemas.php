@@ -2,7 +2,7 @@
 
 $ulid = [
     'type' => 'string',
-    'pattern' => '^[0-9A-HJKMNP-TV-Z]{26}$',
+    'pattern' => '^[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26}$',
 ];
 
 $statement = [
@@ -41,7 +41,7 @@ $proposition = static function (string $action, string $title) use ($statement):
 };
 
 return [
-    'version' => 5,
+    'version' => 6,
 
     'cache' => [
         'store' => env('COMMONS_SCHEMA_CACHE_STORE'),
