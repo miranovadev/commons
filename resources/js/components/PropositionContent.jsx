@@ -18,13 +18,14 @@ export function PropositionContent({
   const callsign = proposition.participant?.callsign || proposition.participant_callsign || proposition.callsign || 'Participant';
   const minimal = mode === 'minimal';
   const detailed = mode === 'detailed';
+  const impact = proposition.tier === 'expressive' ? proposition.impact : null;
 
   if (minimal) {
     return (
       <Stack gap={6}>
         <Text size="xs" fw={650} lineClamp={2}>{title}</Text>
         <TransitionReadout transition={proposition.transition} compact />
-        <MeasurementRails observables={proposition.observables} compact bare />
+        <MeasurementRails observables={impact?.from || proposition.observables} projectedObservables={impact?.to} compact bare impact={Boolean(impact)} />
       </Stack>
     );
   }
@@ -59,8 +60,13 @@ export function PropositionContent({
 
       {!wireframe && (
         <Box className={detailed ? 'proposition-content__measurements' : undefined}>
-          {detailed && <Text fw={700} size="sm" mb="sm">Structural state</Text>}
-          <MeasurementRails observables={proposition.observables} projectedObservables={projectedObservables} compact={!detailed} />
+          {detailed && <Text fw={700} size="sm" mb="sm">{impact ? 'Structural impact' : 'Structural state'}</Text>}
+          <MeasurementRails
+            observables={impact?.from || proposition.observables}
+            projectedObservables={impact?.to || projectedObservables}
+            compact={!detailed}
+            impact={Boolean(impact)}
+          />
         </Box>
       )}
     </Stack>

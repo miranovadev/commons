@@ -28,6 +28,16 @@ class Proposition extends Model
         return $this->hasMany(InstrumentExecution::class);
     }
 
+    public function attestations(): HasMany
+    {
+        return $this->hasMany(Attestation::class);
+    }
+
+    public function effectiveAttestations(): HasMany
+    {
+        return $this->attestations()->effective();
+    }
+
     public function measurement(): HasOne
     {
         return $this->hasOne(PropositionMeasurement::class);

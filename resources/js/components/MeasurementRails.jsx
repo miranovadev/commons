@@ -6,7 +6,7 @@ export const measurementMeta = {
   closure: { label: 'Closure', negative: 'Variability', positive: 'Persistence' },
 };
 
-export function MeasurementRails({ observables, projectedObservables, compact = false, bare = false }) {
+export function MeasurementRails({ observables, projectedObservables, compact = false, bare = false, impact = false }) {
   return (
     <Stack gap={bare ? 5 : compact ? 7 : 'sm'}>
       {Object.entries(measurementMeta).map(([key, meta]) => (
@@ -17,6 +17,7 @@ export function MeasurementRails({ observables, projectedObservables, compact = 
           projectedValue={projectedObservables?.[key]}
           compact={compact}
           bare={bare}
+          impact={impact}
           {...meta}
         />
       ))}
@@ -33,6 +34,7 @@ export function MeasurementRail({
   projectedValue,
   compact = false,
   bare = false,
+  impact = false,
 }) {
   const currentValue = measurement(value);
   const projectedMeasurement = measurement(projectedValue);
@@ -41,15 +43,20 @@ export function MeasurementRail({
   const current = hasValue ? position(currentValue) : 50;
   const projected = hasProjected ? position(projectedMeasurement) : null;
   const delta = hasValue && hasProjected ? projectedMeasurement - currentValue : null;
+  const direction = delta === null || Math.abs(delta) < 0.005 ? 'steady' : delta > 0 ? 'prominence' : 'turbulence';
+  const readout = impact && hasProjected
+    ? `From ${hasValue ? signed(currentValue) : 'unmeasured'} to ${signed(projectedMeasurement)}`
+    : `${hasValue ? signed(currentValue) : 'awaiting measurement'}${hasProjected ? ` to ${signed(projectedMeasurement)}` : ''}`;
 
   const track = (
     <Box
       className="measurement-rail__track"
       data-empty={!hasValue || undefined}
-      aria-label={`${label}: ${hasValue ? signed(currentValue) : 'awaiting measurement'}`}
+      aria-label={`${label}: ${readout}`}
+      data-direction={direction}
       style={bare ? { height: 2 } : undefined}
     >
-      {hasValue && (
+      {hasValue && !impact && (
         <span
           className="measurement-rail__value"
           style={{
@@ -79,7 +86,8 @@ export function MeasurementRail({
       {hasProjected && (
         <span
           className="measurement-rail__marker measurement-rail__marker--projected"
-          style={{ left: `${projected}%`, ...(bare ? { width: 7, height: 7 } : {}) }}
+          data-direction={direction}
+          style={{ left: `${projected}%`, ...(bare && direction === 'steady' ? { width: 7, height: 7 } : {}) }}
         />
       )}
     </Box>
@@ -96,8 +104,8 @@ export function MeasurementRail({
         <Group justify="space-between" gap="xs" mb={5} wrap="nowrap">
           <Text size="xs" fw={700}>{label}</Text>
           <Text size="xs" c="dimmed">
-            {hasValue ? signed(currentValue) : 'Awaiting measurement'}
-            {hasProjected ? ` → ${signed(projectedMeasurement)}` : ''}
+            {impact && hasProjected ? `From ${hasValue ? signed(currentValue) : '—'} → To ${signed(projectedMeasurement)}` : hasValue ? signed(currentValue) : 'Awaiting measurement'}
+            {!impact && hasProjected ? ` → ${signed(projectedMeasurement)}` : ''}
             {delta !== null ? `  Δ ${signed(delta)}` : ''}
           </Text>
         </Group>
@@ -106,7 +114,7 @@ export function MeasurementRail({
         {!bare && <Text className="measurement-rail__pole" size="10px" c="dimmed">{negative}</Text>}
         {bare ? (
           <Tooltip
-            label={`${label}: ${hasValue ? signed(currentValue) : 'Awaiting measurement'}`}
+            label={`${label}: ${readout}${impact && direction !== 'steady' ? ` · toward ${direction === 'prominence' ? 'Prominence' : 'Turbulence'}` : ''}`}
             position="right"
             withArrow
           >

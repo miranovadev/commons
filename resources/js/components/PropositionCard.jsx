@@ -13,6 +13,7 @@ export function PropositionCard({
   actionLabel,
   actionIcon,
   projectedObservables,
+  flow,
   onClick,
 }) {
   const register = metaForRegister(proposition.register);
@@ -33,6 +34,7 @@ export function PropositionCard({
       withBorder
       padding={mini ? 'xs' : compact ? 'sm' : 'lg'}
       className={classes}
+      data-flow={flow || undefined}
       style={{ '--register-color': `var(--mantine-color-${register.color}-6)` }}
       onClick={onClick}
     >

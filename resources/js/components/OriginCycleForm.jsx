@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Alert, Button, Group, Modal, Select, Stack, Text, Textarea } from '@mantine/core';
-import { IconAlertCircle, IconArrowRight, IconWhirl } from '@tabler/icons-react';
+import { IconAlertCircle, IconArrowRight } from '@tabler/icons-react';
 import { messageFrom } from '../errors';
+import { AttestationDirectionControl } from './AttestationDirectionControl';
 
 const initialValue = {
   statement: '',
@@ -58,16 +59,14 @@ export function OriginCycleForm({ opened, loading, error, onClose, onSubmit }) {
             value={value.statement}
             onChange={(event) => update('statement', event.currentTarget.value)}
           />
-          <Select
-            label="Attestation"
-            leftSection={<IconWhirl size={16} />}
-            data={[
-              { value: 'support', label: 'Support (+)' },
-              { value: 'refute', label: 'Refute (−)' },
-            ]}
-            value={value.direction}
-            onChange={(next) => update('direction', next || 'support')}
-          />
+          <Stack gap={5}>
+            <Text size="sm" fw={500}>Attestation</Text>
+            <AttestationDirectionControl
+              value={value.direction}
+              onChange={(next) => update('direction', next)}
+              showLabels={false}
+            />
+          </Stack>
           <Textarea
             label="Attestation rationale"
             description="Optional context for the initial attestation."

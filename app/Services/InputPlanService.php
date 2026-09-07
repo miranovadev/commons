@@ -61,11 +61,11 @@ final readonly class InputPlanService
                 'started_at' => $phase->started_at,
             ],
             'workspace' => $workspace,
-            'gate' => $this->proposition($gate),
-            'lineage' => $this->propositions($lineage),
-            'write_options' => $this->propositions($writeOptions),
-            'revision_options' => $this->propositions($revisionOptions),
-            'gate_options' => $this->propositions($gateOptions),
+            'gate' => $this->proposition($gate, $participant),
+            'lineage' => $this->propositions($lineage, $participant),
+            'write_options' => $this->propositions($writeOptions, $participant),
+            'revision_options' => $this->propositions($revisionOptions, $participant),
+            'gate_options' => $this->propositions($gateOptions, $participant),
             'schema' => $this->schemas->forParticipant(
                 $participant,
                 $writeOptions->pluck('id')->all(),
@@ -98,7 +98,8 @@ final readonly class InputPlanService
             : $horizon->propositions()
                 ->with([
                     'measurement',
-                    'parents',
+                    'parents.measurement',
+                    'effectiveAttestations.phase.cycle',
                     'phase.cycle.participant:id,callsign',
                 ])
                 ->whereIn('register', $registers)
@@ -106,7 +107,7 @@ final readonly class InputPlanService
                 ->limit(max(1, (int) ($participant->max_read_count ?? 25)))
                 ->get();
 
-        $this->measurements->repairMissing($propositions);
+        $this->repairMeasurements($propositions);
 
         $provenance = $horizon?->opened_by_proposition_id === null
             ? $lineage->first(
@@ -119,10 +120,11 @@ final readonly class InputPlanService
         $provenance ??= $gate;
         $provenance->loadMissing([
             'measurement',
-            'parents',
+            'parents.measurement',
+            'effectiveAttestations.phase.cycle',
             'phase.cycle.participant:id,callsign',
         ]);
-        $this->measurements->repairMissing(collect([$provenance]));
+        $this->repairMeasurements(collect([$provenance]));
 
         return [
             'domain' => $domain->value,
@@ -131,13 +133,14 @@ final readonly class InputPlanService
                 'sequence' => $horizon->sequence,
                 'opened_at' => $horizon->opened_at,
             ],
-            'provenance' => $this->proposition($provenance),
+            'provenance' => $this->proposition($provenance, $participant),
             'registers' => collect($registers)
                 ->mapWithKeys(fn (string $register): array => [
                     $register => $this->propositions(
                         $propositions
                             ->where('register', $register)
-                            ->values()
+                            ->values(),
+                        $participant,
                     ),
                 ])
                 ->all(),
@@ -174,28 +177,48 @@ final readonly class InputPlanService
         );
         $collection->loadMissing([
             'measurement',
-            'parents',
+            'parents.measurement',
+            'effectiveAttestations.phase.cycle',
             'phase.cycle.participant:id,callsign',
         ]);
-        $this->measurements->repairMissing($collection);
+        $this->repairMeasurements($collection);
+    }
+
+    /** @param Collection<int, Proposition> $propositions */
+    private function repairMeasurements(Collection $propositions): void
+    {
+        $parents = $propositions
+            ->flatMap(fn (Proposition $proposition) => $proposition->parents)
+            ->unique(fn (Proposition $proposition): string => $proposition->getKey())
+            ->values();
+
+        $this->measurements->repairMissing($parents);
+        $this->measurements->repairMissing($propositions);
     }
 
     /**
      * @param Collection<int, Proposition> $propositions
      * @return list<array<string, mixed>>
      */
-    private function propositions(Collection $propositions): array
+    private function propositions(
+        Collection $propositions,
+        Participant $participant,
+    ): array
     {
         return $propositions
             ->map(fn (Proposition $proposition): array => $this->proposition(
-                $proposition
+                $proposition,
+                $participant,
             ))
             ->values()
             ->all();
     }
 
     /** @return array<string, mixed> */
-    private function proposition(Proposition $proposition): array
+    private function proposition(
+        Proposition $proposition,
+        Participant $viewer,
+    ): array
     {
         $measurement = $proposition->relationLoaded('measurement')
             ? $proposition->measurement
@@ -203,11 +226,20 @@ final readonly class InputPlanService
         $parent = $proposition->relationLoaded('parents')
             ? $proposition->parents->first()
             : null;
-        $participant = $proposition->relationLoaded('phase')
+        $author = $proposition->relationLoaded('phase')
             && $proposition->phase->relationLoaded('cycle')
             && $proposition->phase->cycle->relationLoaded('participant')
                 ? $proposition->phase->cycle->participant
                 : null;
+        $attestation = $proposition->relationLoaded('effectiveAttestations')
+            ? $proposition->effectiveAttestations->first(
+                fn ($item): bool => $item->phase->cycle->participant_id
+                    === $viewer->getKey()
+            )
+            : null;
+        $fromMeasurement = $parent?->relationLoaded('measurement')
+            ? $parent->measurement
+            : null;
 
         return [
             ...$proposition->only([
@@ -222,7 +254,13 @@ final readonly class InputPlanService
                 ->trim()
                 ->limit(72)
                 ->toString(),
-            'participant' => $participant?->only(['id', 'callsign']),
+            'participant' => $author?->only(['id', 'callsign']),
+            'attestation' => $attestation?->only([
+                'id',
+                'direction',
+                'rationale',
+                'created_at',
+            ]),
             'transition' => $parent === null ? null : [
                 'type' => $parent->pivot->type,
                 'from' => $parent->register,
@@ -235,6 +273,21 @@ final readonly class InputPlanService
                 'closure' => $measurement?->closure,
                 'calculated_at' => $measurement?->calculated_at,
             ],
+            'impact' => $proposition->tier !== 'expressive'
+                || $parent === null
+                ? null
+                : [
+                    'from' => [
+                        'correspondence' => $fromMeasurement?->correspondence,
+                        'chirality' => $fromMeasurement?->chirality,
+                        'closure' => $fromMeasurement?->closure,
+                    ],
+                    'to' => [
+                        'correspondence' => $measurement?->correspondence,
+                        'chirality' => $measurement?->chirality,
+                        'closure' => $measurement?->closure,
+                    ],
+                ],
         ];
     }
 }

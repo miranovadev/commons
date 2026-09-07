@@ -39,6 +39,7 @@ final readonly class ChiralityCalculator
             ->pluck('id')
             ->diff($supersededIds);
         $attestations = Attestation::query()
+            ->effective()
             ->whereIn('proposition_id', $activeIds)
             ->get();
         $weights = $this->reinforcement->weights(

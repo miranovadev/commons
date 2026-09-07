@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
-import { Alert, Avatar, Badge, Box, Button, Card, Container, Group, Modal, NumberInput, Select, SimpleGrid, Stack, Text, TextInput, ThemeIcon, Title } from '@mantine/core';
+import { ActionIcon, Alert, Avatar, Badge, Box, Button, Card, Container, Group, Modal, NumberInput, Select, SimpleGrid, Stack, Switch, Text, TextInput, ThemeIcon, Title, Tooltip } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { IconAlertCircle, IconArrowRight, IconPlus, IconRoute, IconUserHexagon, IconUsers } from '@tabler/icons-react';
+import { IconAlertCircle, IconArrowRight, IconPlugConnected, IconPlus, IconRoute, IconTrash, IconUserHexagon, IconUsers } from '@tabler/icons-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { messageFrom } from '../errors';
-import { useGetConnectionsQuery, useGetParticipantsQuery, useGetSubstrateQuery, useJoinParticipantMutation } from '../services/commonsApi';
+import { ConnectionsPanel } from '../components/ConnectionsPanel';
+import { useDeleteParticipantConnectionMutation, useGetConnectionsQuery, useGetParticipantConnectionsQuery, useGetParticipantsQuery, useGetSubstrateQuery, useJoinParticipantMutation, useUpdateParticipantConnectionMutation } from '../services/commonsApi';
 
 export function ParticipantsPage({ user }) {
   const { slug } = useParams();
@@ -13,6 +14,7 @@ export function ParticipantsPage({ user }) {
   const { data: allParticipants = [], error } = useGetParticipantsQuery(slug);
   const { data: connections = [] } = useGetConnectionsQuery();
   const [opened, setOpened] = useState(false);
+  const [connectionParticipant, setConnectionParticipant] = useState(null);
   const participants = useMemo(
     () => allParticipants.filter((participant) => participant.owned_by_user),
     [allParticipants],
@@ -52,7 +54,9 @@ export function ParticipantsPage({ user }) {
             <ParticipantCard
               key={participant.id}
               participant={participant}
+              slug={slug}
               onEnter={() => navigate(`/substrates/${slug}/participants/${participant.id}`)}
+              onConnections={() => setConnectionParticipant(participant)}
             />
           ))}
         </SimpleGrid>
@@ -69,11 +73,18 @@ export function ParticipantsPage({ user }) {
           if (enter) navigate(`/substrates/${slug}/participants/${participant.id}`);
         }}
       />
+      <ConnectionsPanel
+        slug={slug}
+        participantId={connectionParticipant?.id}
+        participantName={connectionParticipant?.callsign}
+        opened={Boolean(connectionParticipant)}
+        onClose={() => setConnectionParticipant(null)}
+      />
     </Container>
   );
 }
 
-function ParticipantCard({ participant, onEnter }) {
+function ParticipantCard({ participant, slug, onEnter, onConnections }) {
   const phase = participant.position?.phase;
   const gate = participant.position?.gate;
   const started = Boolean(participant.position);
@@ -102,11 +113,76 @@ function ParticipantCard({ participant, onEnter }) {
         )}
       </Box>
 
+      <ParticipantConnectionSummary slug={slug} participant={participant} onManage={onConnections} />
+
       <Button mt="lg" fullWidth rightSection={<IconArrowRight size={15} />} onClick={onEnter}>
         {started ? 'Continue Cycle' : 'Enter Cycle'}
       </Button>
     </Card>
   );
+}
+
+function ParticipantConnectionSummary({ slug, participant, onManage }) {
+  const parameters = { slug, participantId: participant.id };
+  const { data: attachments = [], isLoading } = useGetParticipantConnectionsQuery(parameters);
+  const [updateAttachment] = useUpdateParticipantConnectionMutation();
+  const [deleteAttachment] = useDeleteParticipantConnectionMutation();
+
+  return (
+    <Stack className="participant-connections" gap="xs" mt="md">
+      {attachments.map((attachment) => {
+        const connection = attachment.connection || {};
+        const trigger = attachment.configuration?.trigger || { mode: 'manual' };
+
+        return (
+          <Group key={attachment.id} className="participant-connection" justify="space-between" gap="xs" wrap="nowrap">
+            <Group gap="xs" wrap="nowrap" miw={0}>
+              <ThemeIcon color="indigo" variant="light" size="sm"><IconPlugConnected size={14} /></ThemeIcon>
+              <Box miw={0}>
+                <Group gap={5} wrap="nowrap">
+                  <Text size="xs" fw={650} truncate>{connection.name || 'Connection'}</Text>
+                  <Badge size="xs" variant="light" color="gray">{connection.provider || 'provider'}</Badge>
+                </Group>
+                <Text size="10px" c="dimmed">{triggerLabel(trigger)}</Text>
+              </Box>
+            </Group>
+            <Group gap={2} wrap="nowrap">
+              <Tooltip label={attachment.is_enabled ? 'Disable connection' : 'Enable connection'}>
+                <Switch
+                  size="xs"
+                  checked={attachment.is_enabled}
+                  onChange={(event) => updateAttachment({ ...parameters, participantConnectionId: attachment.id, is_enabled: event.currentTarget.checked })}
+                  aria-label={`${attachment.is_enabled ? 'Disable' : 'Enable'} ${connection.name || 'connection'}`}
+                />
+              </Tooltip>
+              <Tooltip label="Detach connection">
+                <ActionIcon color="red" variant="subtle" size="sm" onClick={() => deleteAttachment({ ...parameters, participantConnectionId: attachment.id })} aria-label={`Detach ${connection.name || 'connection'}`}>
+                  <IconTrash size={14} />
+                </ActionIcon>
+              </Tooltip>
+            </Group>
+          </Group>
+        );
+      })}
+      <Button
+        size="compact-sm"
+        variant="subtle"
+        color="gray"
+        loading={isLoading}
+        leftSection={<IconPlugConnected size={14} />}
+        onClick={onManage}
+        className="participant-connection__manage"
+      >
+        {attachments.length ? 'Configure connections' : 'Add connection'}
+      </Button>
+    </Stack>
+  );
+}
+
+function triggerLabel(trigger) {
+  if (trigger.mode === 'interval') return `Every ${trigger.interval_minutes || 60} minutes`;
+  if (trigger.mode === 'scheduled') return 'Scheduled wake';
+  return 'Manual wake';
 }
 
 function CreateParticipantModal({ opened, onClose, slug, user, connections, onCreated }) {
