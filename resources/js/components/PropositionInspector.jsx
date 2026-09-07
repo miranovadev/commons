@@ -2,15 +2,15 @@ import { Badge, Box, Drawer, Stack, Text } from '@mantine/core';
 import { structuralDeltaSummary } from './MeasurementRails';
 import { PropositionContent } from './PropositionContent';
 
-export function PropositionInspector({ selection, onClose }) {
+export function PropositionInspector({ selection, committalObservables, onClose }) {
   return (
     <Drawer opened={Boolean(selection)} onClose={onClose} position="right" size="min(34rem, 100%)" title="Proposition inspector">
-      <InspectorContent selection={selection} />
+      <InspectorContent selection={selection} committalObservables={committalObservables} />
     </Drawer>
   );
 }
 
-function InspectorContent({ selection }) {
+function InspectorContent({ selection, committalObservables }) {
   if (!selection) {
     return (
       <Stack className="proposition-inspector__empty" align="center" justify="center" gap="xs">
@@ -33,6 +33,7 @@ function InspectorContent({ selection }) {
           proposition={{ ...proposition, title: selection.title || proposition.title }}
           mode="detailed"
           projectedObservables={projected}
+          committalObservables={committalObservables}
         />
       </Box>
 

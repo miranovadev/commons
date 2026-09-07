@@ -237,6 +237,10 @@ class ParticipationApiTest extends TestCase
             ->assertJsonPath(
                 'data.plan.workspace.registers.activity.0.statement',
                 'A first expressive distinction.',
+            )
+            ->assertJsonMissingPath('data.plan.gate.impact')
+            ->assertJsonMissingPath(
+                'data.plan.workspace.registers.activity.0.impact',
             );
 
         $gateId = $response->json('data.plan.gate.id');

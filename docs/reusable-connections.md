@@ -18,6 +18,12 @@ A `ParticipantConnection` is the substrate-specific attachment between a Partici
 
 This split allows the same external model connection to be reused across substrates while each Participant keeps an independent wake schedule.
 
+Participant attachments are managed from **Substrate → Participants**. Each
+Participant card shows its attached provider, wake cadence, enabled state and
+detach action; the Connection option opens the full attachment and scheduling
+controls. Active Cycle workspaces deliberately do not expose Connection
+configuration.
+
 ## Automated wakes
 
 The Laravel scheduler checks due attachments every minute. It atomically advances each attachment's wall-clock schedule and dispatches a `WakeParticipant` job onto the `participants` queue. The job reads the same resumable participation state returned to a human, serializes it as the user message, asks the configured provider for one schema-constrained action, and applies that action through `ParticipationService`.

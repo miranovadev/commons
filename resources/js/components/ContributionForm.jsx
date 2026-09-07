@@ -1,7 +1,8 @@
-import { Alert, Button, Group, Modal, SegmentedControl, Select, Stack, Text, Textarea, TextInput } from '@mantine/core';
-import { IconAlertCircle, IconWhirl } from '@tabler/icons-react';
+import { Alert, Button, Group, Modal, Select, Stack, Text, Textarea, TextInput } from '@mantine/core';
+import { IconAlertCircle } from '@tabler/icons-react';
 import { useEffect, useMemo, useState } from 'react';
 import { messageFrom } from '../errors';
+import { AttestationDirectionControl } from './AttestationDirectionControl';
 
 const emptyValues = {};
 
@@ -122,19 +123,7 @@ export function ContributionForm({
           {properties.direction && (
             <Stack gap={5}>
               <Text size="sm" fw={500}>Direction</Text>
-              <SegmentedControl
-                fullWidth
-                color={values.direction === 'support' ? 'violet' : 'teal'}
-                data={[
-                  {
-                    value: 'support',
-                    label: <DirectionLabel direction="support" />,
-                  },
-                  {
-                    value: 'refute',
-                    label: <DirectionLabel direction="refute" />,
-                  },
-                ]}
+              <AttestationDirectionControl
                 value={values.direction || 'support'}
                 onChange={(value) => set('direction', value)}
               />
@@ -196,17 +185,5 @@ export function ContributionForm({
         </Stack>
       </form>
     </Modal>
-  );
-}
-
-function DirectionLabel({ direction }) {
-  return (
-    <Group gap={6} justify="center" wrap="nowrap">
-      <IconWhirl
-        size={15}
-        className={`attestation-direction-icon attestation-direction-icon--${direction}`}
-      />
-      <span>{direction === 'support' ? 'Support' : 'Refute'}</span>
-    </Group>
   );
 }
