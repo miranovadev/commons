@@ -58,8 +58,15 @@ class AttestationDirectionChangeTest extends TestCase
         );
         $plan = app(InputPlanService::class)->forParticipant($participant);
         $this->assertSame('refute', $plan['write_options'][0]['attestation']['direction']);
-        $this->assertSame(-1.0, (float) $plan['gate']['impact']['from']['correspondence']);
-        $this->assertSame(0.8, (float) $plan['gate']['impact']['to']['correspondence']);
+        $this->assertArrayNotHasKey('impact', $plan['gate']);
+        $this->assertSame(
+            -1.0,
+            (float) $plan['workspace']['provenance']['observables']['correspondence'],
+        );
+        $this->assertSame(
+            0.8,
+            (float) $plan['gate']['observables']['correspondence'],
+        );
 
         $this->expectException(DomainException::class);
         $this->expectExceptionMessage('current Write');
