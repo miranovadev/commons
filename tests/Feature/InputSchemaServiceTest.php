@@ -126,6 +126,15 @@ class InputSchemaServiceTest extends TestCase
             'updated_at' => now(),
         ]);
 
+        Proposition::query()->findOrFail($state['gate_id'])->children()->attach(
+            Proposition::query()->where('phase_id', $state['phase_id'])
+                ->whereKeyNot($state['gate_id'])->pluck('id')->mapWithKeys(
+                    fn (string $id): array => [$id => [
+                        'id' => (string) str()->ulid(), 'phase_id' => $state['phase_id'], 'type' => 'variant',
+                    ]],
+                )->all(),
+        );
+
         $plan = app(InputPlanService::class)->forParticipant(
             $state['participant'],
         );
@@ -201,6 +210,15 @@ class InputSchemaServiceTest extends TestCase
                 'updated_at' => now()->addSeconds($sequence),
             ]);
         }
+
+        Proposition::query()->findOrFail($state['gate_id'])->children()->attach(
+            Proposition::query()->where('phase_id', $state['phase_id'])
+                ->whereKeyNot($state['gate_id'])->pluck('id')->mapWithKeys(
+                    fn (string $id): array => [$id => [
+                        'id' => (string) str()->ulid(), 'phase_id' => $state['phase_id'], 'type' => 'variant',
+                    ]],
+                )->all(),
+        );
 
         $plan = app(InputPlanService::class)->forParticipant(
             $state['participant'],

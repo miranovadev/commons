@@ -34,9 +34,12 @@ Phase in the Settlement `signal` register.
 
 Origin entry is serialized on the Substrate. A concurrent or repeated request
 receives HTTP 409 and cannot create a second Origin. For an established
-substrate, POST an empty JSON object to `/participate/enter`. Potential selects
-the admissible Committal Proposition with the highest Potential Charge as the
-new Cycle Gate; the participant does not choose a Proposition explicitly.
+substrate, POST an empty JSON object to `/participate/enter`. For a Participant without a position, Potential selects the Committal
+Proposition with the highest Potential Charge and persists it as the initial
+position. Subsequent Cycles start at `participants.current_proposition_id`;
+they never run global entry selection again. Successful contributions persist
+the resulting Gate, including the final commitment. Existing Participants are
+backfilled from their latest Phase or completed Committal write.
 
 Potential Charge is `max(0, max(|T| - |T_c|))`, where `T` is the Committal
 state's immutable Tension and `T_c` is the projected Tension of each measurable
@@ -116,6 +119,63 @@ explicitly excludes the Gate. Because a Proposition written during one Cycle
 becomes available when that register is encountered again, revision naturally
 occurs in a subsequent Cycle rather than revising the current Gate in place.
 
-Perspective includes an explicit Attenuation placeholder. It currently carries
-pending status and null value/distance fields so the eventual decay projection
-can be added without changing the participation response shape.
+## Local navigation
+
+The current Gate is the active Cycle's Read position. Existing Write targets
+must be at that position or one supersession edge away; the existing register,
+ownership and active-head rules still apply. Reclassified originals remain
+readable and eligible for local Attestation under the existing register rules.
+
+A phase whose specialized action schema is empty reports `status: waiting`,
+`reason.code: no_admissible_write`, and a `navigation` object containing
+`available`, `phase_id`, `next_proposition_id`, and the observed `potential`.
+This includes Order when the existing commitment evidence check fails.
+Creation actions such as Variant still count as admissible even when there
+are no existing Write cards. State reads never move a Participant.
+
+POST a navigation request to the existing participation endpoint:
+
+```json
+{
+  "phase_id": "01...",
+  "contribution": { "action": "participant.traverse" }
+}
+```
+
+Traversal is handled separately from expressive schema validation. Under the
+same Participant/Phase locks, the server rechecks exhaustion and selects one
+immediate neighbour; callers cannot specify a destination. It persists the
+new position and completes the exhausted Phase and Cycle. The response offers
+`entry.selection: position`; the existing `entry.mode: potential` wire value
+is retained so current clients can still start another Cycle. This does not
+perform entry reselection: the next `/enter` starts at the saved position. Stale
+phase tokens cannot move twice. Automated wakes perform this step without an
+LLM call and resume from the position on a later wake.
+
+Parents and children in the existing supersession graph are both traversable,
+regardless of supersession strength. Each immediate direction is ranked by the
+greatest positive Potential observable through it, without returning through
+the current position. Breadth-first traversal gives structural distance and
+terminates even on cycles. Disconnected propositions cannot contribute a
+signal. Only the winning immediate neighbour can become the new position.
+
+There was no implemented attenuation formula in the backend. This first
+version applies `1 / (1 + structural_distance)` to each measurable Tension
+reduction. Distance includes the route to the source and the outgoing route to
+its Expressive continuation; another Committal stops that continuation search.
+Committal sources use immutable snapshot Tension; Expressive sources use their
+persisted measurements. Initial entry retains its existing Potential/Charge
+ranking because it has no observation position yet. Navigation does not use a
+zero-Potential Charge fallback: no positive local signal leaves the Participant
+waiting in place, able to be reconsidered on a subsequent request or wake.
+Equal positive scores use Proposition ID order. No previous-direction mode or
+route history is introduced.
+
+Perspective exposes the active attenuation formula, with value 1 and distance
+0 at the current position. Measurements and the readable workspace remain
+substrate projections; attenuation changes navigation's observation of them.
+The implementation loads the substrate graph and evaluates connected routes
+in memory, as the existing Potential service does. It introduces no persisted
+navigation graph or pathfinding cache. This favours a small first version;
+large-substrate performance and possible oscillation as measurements change
+remain things to observe.
