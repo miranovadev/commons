@@ -19,6 +19,7 @@ final readonly class InputSchemaService
      * @param  list<string>  $writeOptionIds
      * @param  list<string>  $gateOptionIds
      * @param  list<string>  $revisionOptionIds
+     * @param  list<string>|null  $attestationOptionIds
      * @return array<string, mixed>
      */
     public function forParticipant(
@@ -26,6 +27,7 @@ final readonly class InputSchemaService
         array $writeOptionIds,
         array $gateOptionIds,
         array $revisionOptionIds = [],
+        ?array $attestationOptionIds = null,
     ): array {
         $occurrence = $this->phases->currentFor($participant);
         $kind = $occurrence->kind;
@@ -51,6 +53,7 @@ final readonly class InputSchemaService
             $writeOptionIds,
             $gateOptionIds,
             $revisionOptionIds,
+            $attestationOptionIds ?? $writeOptionIds,
         );
     }
 
@@ -143,6 +146,7 @@ final readonly class InputSchemaService
      * @param  list<string>  $writeOptionIds
      * @param  list<string>  $gateOptionIds
      * @param  list<string>  $revisionOptionIds
+     * @param  list<string>  $attestationOptionIds
      * @return array<string, mixed>
      */
     private function specialize(
@@ -150,6 +154,7 @@ final readonly class InputSchemaService
         array $writeOptionIds,
         array $gateOptionIds,
         array $revisionOptionIds,
+        array $attestationOptionIds,
     ): array {
         $bindings = [
             'proposition.select' => [
@@ -162,7 +167,7 @@ final readonly class InputSchemaService
             ],
             'attestation.create' => [
                 'property' => 'proposition_id',
-                'values' => $writeOptionIds,
+                'values' => $attestationOptionIds,
             ],
             'instrument.execute' => [
                 'property' => 'proposition_id',
