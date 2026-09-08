@@ -59,4 +59,3 @@ class Participant extends Model
         return $this->hasMany(ParticipantConnection::class);
     }
 }
-

@@ -398,4 +398,3 @@ class ParticipationApiTest extends TestCase
         ];
     }
 }
-

@@ -71,4 +71,3 @@ final class LineageService
         return max(1, (int) ceil(mb_strlen($statement) / 4));
     }
 }
-

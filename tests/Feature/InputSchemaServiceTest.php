@@ -431,4 +431,3 @@ class InputSchemaServiceTest extends TestCase
         );
     }
 }
-

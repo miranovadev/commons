@@ -177,4 +177,3 @@ in memory, as the existing Potential service does. It introduces no persisted
 navigation graph or pathfinding cache. This favours a small first version;
 large-substrate performance and possible oscillation as measurements change
 remain things to observe.
-

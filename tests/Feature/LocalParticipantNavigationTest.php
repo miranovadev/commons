@@ -170,6 +170,19 @@ class LocalParticipantNavigationTest extends TestCase
         $this->assertSame($leaf->id, $participant->fresh()->current_proposition_id);
     }
 
+    public function test_a_direction_cannot_borrow_a_reduction_by_returning_through_the_observer(): void
+    {
+        $ancestor = $this->node('Earlier high tension source', 0.9);
+        $position = $this->node('Current expressive position', 0.1, 'expressive');
+        $leaf = $this->node('Same tension forward', 0.1, 'expressive');
+        $this->edge($ancestor, $position);
+        $this->edge($position, $leaf);
+
+        // The earlier source only reduces Tension by coming back to the
+        // observer; that is not an available signal in the earlier direction.
+        $this->assertNull(app(PotentialChargeService::class)->nextFrom($position));
+    }
+
     public function test_participants_at_different_positions_follow_different_trajectories(): void
     {
         $left = $this->region('Left', 0.6);

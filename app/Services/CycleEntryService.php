@@ -256,4 +256,3 @@ final readonly class CycleEntryService
         );
     }
 }
-

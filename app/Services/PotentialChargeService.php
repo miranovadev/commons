@@ -133,7 +133,7 @@ final readonly class PotentialChargeService
                         $source = $propositions->get($id);
                         $tension = $this->tensionOf($source);
                         $potentials[$key] = $tension === null ? 0.0 : $this->potentialFor(
-                            $id, $tension, $propositions, $outgoing, $distance,
+                            $id, $tension, $propositions, $outgoing, $distance, $position->getKey(),
                         );
                     }
                     $signal = max($signal, $potentials[$key]);
@@ -185,9 +185,13 @@ final readonly class PotentialChargeService
         Collection $propositions,
         Collection $edges,
         ?int $observerDistance = null,
+        ?string $excludedPositionId = null,
     ): float {
         $frontier = collect([$positionId]);
         $visited = collect([$positionId => true]);
+        if ($excludedPositionId !== null) {
+            $visited->put($excludedPositionId, true);
+        }
         $potential = 0.0;
         $depth = 0;
 
@@ -244,4 +248,3 @@ final readonly class PotentialChargeService
         return round(max(0, $potential), 7);
     }
 }
-

@@ -276,4 +276,3 @@ final readonly class ParticipationService
         ];
     }
 }
-

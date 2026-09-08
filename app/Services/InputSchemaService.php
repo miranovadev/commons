@@ -217,4 +217,3 @@ final readonly class InputSchemaService
         return $schema;
     }
 }
-

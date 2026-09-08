@@ -217,4 +217,3 @@ class RevisionAdmissibilityTest extends TestCase
         return $proposition;
     }
 }
-

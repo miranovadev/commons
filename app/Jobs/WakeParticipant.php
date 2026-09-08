@@ -113,4 +113,3 @@ class WakeParticipant implements ShouldQueue
         }
     }
 }
-
