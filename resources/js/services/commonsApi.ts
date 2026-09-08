@@ -56,7 +56,7 @@ const baseQuery = async (args, api, extraOptions) => {
 
   if (
     result.error?.status === HTTP_PRECONDITION_REQUIRED
-    && result.error.data?.code === BOOTSTRAP_REQUIRED
+    && (result.error.data as { code?: string })?.code === BOOTSTRAP_REQUIRED
   ) {
     api.dispatch(systemBootstrapRequired());
   }

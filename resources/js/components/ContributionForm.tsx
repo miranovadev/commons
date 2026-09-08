@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { messageFrom } from '../errors';
 import { AttestationDirectionControl } from './AttestationDirectionControl';
 
-const emptyValues = {};
+const emptyValues: Record<string, any> = {};
 
 function option(proposition) {
   return {
@@ -22,9 +22,9 @@ export function ContributionForm({
   initialValues = emptyValues,
   onClose,
   onSubmit,
-}) {
+}: any) {
   const schema = plan?.schema?.$defs?.actions?.[action];
-  const [values, setValues] = useState({});
+  const [values, setValues] = useState<Record<string, any>>({});
   const properties = schema?.properties || {};
   const required = schema?.required || [];
   const propositionOptions = useMemo(
@@ -62,7 +62,7 @@ export function ContributionForm({
 
   function submit(event) {
     event.preventDefault();
-    const contribution = { action: properties.action?.const || action };
+    const contribution: Record<string, any> = { action: properties.action?.const || action };
 
     Object.keys(properties).forEach((name) => {
       if (name === 'action') return;

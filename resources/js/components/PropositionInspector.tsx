@@ -2,7 +2,7 @@ import { Badge, Box, Drawer, Stack, Text } from '@mantine/core';
 import { structuralDeltaSummary } from './MeasurementRails';
 import { PropositionContent } from './PropositionContent';
 
-export function PropositionInspector({ selection, committalObservables, onClose }) {
+export function PropositionInspector({ selection, committalObservables, onClose }: any) {
   return (
     <Drawer opened={Boolean(selection)} onClose={onClose} position="right" size="min(34rem, 100%)" title="Proposition inspector">
       <InspectorContent selection={selection} committalObservables={committalObservables} />
@@ -10,7 +10,7 @@ export function PropositionInspector({ selection, committalObservables, onClose 
   );
 }
 
-function InspectorContent({ selection, committalObservables }) {
+function InspectorContent({ selection, committalObservables }: any) {
   if (!selection) {
     return (
       <Stack className="proposition-inspector__empty" align="center" justify="center" gap="xs">

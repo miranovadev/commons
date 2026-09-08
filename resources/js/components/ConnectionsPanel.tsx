@@ -74,7 +74,7 @@ export function ConnectionsPanel({ slug, participantId, participantName, opened,
 
         <Divider label="Attach connection" labelPosition="center" my="sm" />
         {availableConnections.length ? (
-          <Stack component="form" onSubmit={form.onSubmit(attach)}>
+          <Stack component="form" onSubmit={form.onSubmit(attach) as any}>
             <Select label="Connection" data={connectionSelectData(availableConnections)} {...form.getInputProps('connection_id')} />
             <Select label="Wake mode" data={options.trigger_modes} {...form.getInputProps('trigger_mode')} />
             {form.values.trigger_mode === 'interval' && <NumberInput label="Interval in minutes" min={1} {...form.getInputProps('interval_minutes')} />}

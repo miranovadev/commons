@@ -26,7 +26,7 @@ import { messageFrom } from '../errors';
 import { useCreateSubstrateMutation, useGetSubstratesQuery } from '../services/commonsApi';
 
 export function SubstratesPage({ user }) {
-  const { data: substrates = [], isLoading, error } = useGetSubstratesQuery();
+  const { data: substrates = [], isLoading, error } = useGetSubstratesQuery(undefined);
   const [opened, { open, close }] = useDisclosure(false);
 
   return (

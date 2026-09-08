@@ -6,8 +6,8 @@ import { messageFrom } from '../errors';
 import { useCreateConnectionMutation, useDeleteConnectionMutation, useGetConnectionOptionsQuery, useGetConnectionsQuery, useUpdateConnectionMutation } from '../services/commonsApi';
 
 export function ConnectionsPage() {
-  const { data: connections = [], error: connectionsError } = useGetConnectionsQuery();
-  const { data: options = { providers: [] }, error: optionsError } = useGetConnectionOptionsQuery();
+  const { data: connections = [], error: connectionsError } = useGetConnectionsQuery(undefined);
+  const { data: options = { providers: [] }, error: optionsError } = useGetConnectionOptionsQuery(undefined);
   const [createConnection] = useCreateConnectionMutation();
   const [updateConnection] = useUpdateConnectionMutation();
   const [deleteConnection] = useDeleteConnectionMutation();
@@ -92,7 +92,7 @@ export function ConnectionsPage() {
       )}
 
       <Modal opened={creating} onClose={() => setCreating(false)} title="Add Connection" centered>
-        <Stack component="form" onSubmit={form.onSubmit(submit)}>
+        <Stack component="form" onSubmit={form.onSubmit(submit) as any}>
           <Select label="Provider" data={options.providers} {...form.getInputProps('provider')} />
           <TextInput label="Connection name" placeholder="Mira" {...form.getInputProps('name')} />
           <TextInput label="Model" placeholder="gpt-5" {...form.getInputProps('model')} />
@@ -127,7 +127,7 @@ function EditConnectionModal({ connection, providers, onClose, onSave }) {
 
   async function submit(values) {
     try {
-      const body = {
+      const body: Record<string, any> = {
         connectionId: connection.id,
         provider: values.provider,
         name: values.name.trim(),
@@ -143,7 +143,7 @@ function EditConnectionModal({ connection, providers, onClose, onSave }) {
 
   return (
     <Modal key={connection.id} opened onClose={onClose} title={`Edit ${connection.name}`} centered>
-      <Stack component="form" onSubmit={form.onSubmit(submit)}>
+      <Stack component="form" onSubmit={form.onSubmit(submit) as any}>
         <Select label="Provider" data={providers} key={form.key('provider')} {...form.getInputProps('provider')} />
         <TextInput label="Connection name" key={form.key('name')} {...form.getInputProps('name')} />
         <TextInput label="Model" key={form.key('model')} {...form.getInputProps('model')} />

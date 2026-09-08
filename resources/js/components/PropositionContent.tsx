@@ -1,6 +1,17 @@
 import { Avatar, Badge, Box, Group, SimpleGrid, Stack, Text, ThemeIcon, Tooltip } from '@mantine/core';
 import { IconArrowRight, IconBolt, IconHexagon, IconHexagonalPrism, IconLayersDifference } from '@tabler/icons-react';
 import { metaForRegister } from '../registers';
+import type { Observables, Proposition } from '../types';
+
+interface PropositionContentProps {
+  proposition?: Proposition;
+  mode?: 'minimal' | 'card' | 'detailed';
+  actionLabel?: string;
+  actionIcon?: React.ElementType;
+  wireframe?: boolean;
+  projectedObservables?: Observables;
+  committalObservables?: Observables;
+}
 
 export function PropositionContent({
   proposition = {},
@@ -10,7 +21,7 @@ export function PropositionContent({
   wireframe = false,
   projectedObservables,
   committalObservables,
-}) {
+}: PropositionContentProps) {
   const register = metaForRegister(proposition.register);
   const title = actionLabel || proposition.title || proposition.statement?.split('\n')[0] || 'Available move';
   const statementLines = proposition.statement?.split('\n').map((line) => line.trim()).filter(Boolean) || [];
@@ -72,7 +83,12 @@ export function PropositionContent({
   );
 }
 
-function FieldValues({ observables, committalObservables, tier, compact = false }) {
+function FieldValues({ observables, committalObservables, tier, compact = false }: {
+  observables?: Observables;
+  committalObservables?: Observables;
+  tier?: string;
+  compact?: boolean;
+}) {
   const expressive = tier === 'expressive';
   const state = fieldState(observables);
   const committed = fieldState(committalObservables);
@@ -112,7 +128,15 @@ function FieldValues({ observables, committalObservables, tier, compact = false 
     : <SimpleGrid className="proposition-field" data-tier={tier} cols={{ base: 1, xs: values.length }} spacing="xs">{items}</SimpleGrid>;
 }
 
-function FieldValue({ label, icon: Icon, value, delta, signed: signedValue = false, tier, compact }) {
+function FieldValue({ label, icon: Icon, value, delta, signed: signedValue = false, tier, compact }: {
+  label: string;
+  icon: React.ElementType;
+  value: number | null;
+  delta: number | null;
+  signed?: boolean;
+  tier?: string;
+  compact?: boolean;
+}) {
   const color = tier === 'committal' ? 'indigo' : 'gray';
   const readout = value === null ? 'Awaiting measurement' : number(value, signedValue);
   const deltaReadout = delta === null ? null : `Δ ${number(delta, true)} from Committal`;
@@ -134,7 +158,7 @@ function FieldValue({ label, icon: Icon, value, delta, signed: signedValue = fal
     : content;
 }
 
-function fieldState(observables) {
+function fieldState(observables?: Observables) {
   const values = ['correspondence', 'chirality', 'closure'].map((key) => finite(observables?.[key]));
   if (values.some((value) => value === null)) return null;
 
@@ -142,18 +166,21 @@ function fieldState(observables) {
   return { tension, charge: 1 - Math.abs(tension) };
 }
 
-function finite(value) {
+function finite(value: unknown): number | null {
   if (value === null || value === undefined || value === '') return null;
   const numeric = typeof value === 'number' ? value : Number(value);
   return Number.isFinite(numeric) ? numeric : null;
 }
 
-function number(value, signedValue = false) {
+function number(value: number | null, signedValue = false) {
   if (value === null) return '—';
   return `${signedValue && value >= 0 ? '+' : ''}${value.toFixed(2)}`;
 }
 
-export function TransitionReadout({ transition, compact = false }) {
+export function TransitionReadout({ transition, compact = false }: {
+  transition?: Proposition['transition'];
+  compact?: boolean;
+}) {
   if (!transition) return null;
 
   return (
@@ -166,12 +193,12 @@ export function TransitionReadout({ transition, compact = false }) {
   );
 }
 
-function TierBadge({ tier }) {
+function TierBadge({ tier }: { tier?: string }) {
   if (tier === 'committal') return <Badge size="xs" color="indigo" variant="filled">Committal</Badge>;
   return <Badge size="xs" variant="light">{tier}</Badge>;
 }
 
-function label(value) {
+function label(value?: string) {
   const text = String(value || '');
   return text ? text.charAt(0).toUpperCase() + text.slice(1) : 'Unknown';
 }

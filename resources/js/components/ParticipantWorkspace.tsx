@@ -20,10 +20,10 @@ const actionMeta = {
 };
 const cardActions = new Set(['attestation.create', 'instrument.execute', 'proposition.reconcile', 'proposition.revise', 'proposition.select']);
 
-export function ParticipantWorkspace({ plan, availableActions, onAction }) {
-  const propositions = useMemo(() => [
+export function ParticipantWorkspace({ plan, availableActions, onAction }: any) {
+  const propositions = useMemo<any[]>(() => [
     plan.gate, plan.workspace?.provenance, ...(plan.lineage || []),
-    ...Object.values(plan.workspace?.registers || {}).flat(), ...(plan.write_options || []),
+    ...(Object.values(plan.workspace?.registers || {}) as any[][]).flat(), ...(plan.write_options || []),
     ...(plan.revision_options || []), ...(plan.gate_options || []),
   ].filter(Boolean), [plan]);
   const byId = useMemo(() => new Map(propositions.map((item) => [item.id, item])), [propositions]);
@@ -36,7 +36,7 @@ export function ParticipantWorkspace({ plan, availableActions, onAction }) {
   const propositionActions = actions.filter((action) => !actionMeta[action]);
   const [inspection, setInspection] = useState(null);
   const registerItems = useMemo(() => Object.fromEntries(
-    Object.entries(plan.workspace?.registers || {}).map(([register, items]) => [register, items.map((item) => resolve(item, byId))]),
+    Object.entries(plan.workspace?.registers || {}).map(([register, items]) => [register, (items as any[]).map((item) => resolve(item, byId))]),
   ), [byId, plan.workspace?.registers]);
   const lineage = useMemo(() => (plan.lineage || []).map((item) => resolve(item, byId)).filter((item) => item.id !== gate.id), [byId, gate.id, plan.lineage]);
   const writeOptions = useMemo(() => (plan.write_options || []).map((item) => resolve(item, byId)), [byId, plan.write_options]);
@@ -67,7 +67,7 @@ export function ParticipantWorkspace({ plan, availableActions, onAction }) {
   );
 }
 
-function OperationalRow({ lane, gate, lineage, committalObservables, propositions, gateOptions, writeOptions, revisionOptions, actions, onInspect, onAction }) {
+function OperationalRow({ lane, gate, lineage, committalObservables, propositions, gateOptions, writeOptions, revisionOptions, actions, onInspect, onAction }: any) {
   const role = roleMeta[lane.role];
   const meta = lane.meta || metaForRegister(lane.register);
   const RegisterIcon = meta.icon;
@@ -97,18 +97,18 @@ function OperationalRow({ lane, gate, lineage, committalObservables, proposition
   );
 }
 
-function ReadContent({ register, gate, featured, propositions, lineage, committalObservables, onInspect }) {
+function ReadContent({ register, gate, featured, propositions, lineage, committalObservables, onInspect }: any) {
   const currentRead = featured || propositions.find((item) => item.id !== gate.id) || lineage.find((item) => item.register === register) || lineage[0];
   return currentRead
     ? <PropositionCard proposition={currentRead} committalObservables={committalObservables} compact flow="read" onClick={() => onInspect({ kind: 'read', proposition: currentRead })} />
     : <EmptyState text="No readable proposition is exposed in this register." />;
 }
 
-function GateContent({ gate, committalObservables, onInspect }) {
+function GateContent({ gate, committalObservables, onInspect }: any) {
   return <PropositionCard proposition={gate} committalObservables={committalObservables} selected compact flow="gate" onClick={() => onInspect({ kind: 'gate', proposition: gate })} />;
 }
 
-function WriteContent({ propositions, writeOptions, revisionOptions, gateOptions, actions, committalObservables, onInspect, onAction }) {
+function WriteContent({ propositions, writeOptions, revisionOptions, gateOptions, actions, committalObservables, onInspect, onAction }: any) {
   const visibleIds = new Set(propositions.filter((item) => item.tier === 'expressive').map((item) => item.id));
   const revisionIds = new Set(revisionOptions.map((item) => item.id));
   const reconcileIds = new Set(gateOptions.map((item) => item.id));
@@ -136,7 +136,7 @@ function WriteContent({ propositions, writeOptions, revisionOptions, gateOptions
   );
 }
 
-function WriteOptionCard({ proposition, canAttest, canRevise, canReconcile, canInstrument, canSelect, committalObservables, onInspect, onAction }) {
+function WriteOptionCard({ proposition, canAttest, canRevise, canReconcile, canInstrument, canSelect, committalObservables, onInspect, onAction }: any) {
   const hasActions = canAttest || canRevise || canReconcile || canInstrument || canSelect;
   return (
     <Box className="write-option-card" data-attested={proposition.attestation?.direction}>
@@ -158,7 +158,7 @@ function WriteOptionCard({ proposition, canAttest, canRevise, canReconcile, canI
   );
 }
 
-function SupersessionControl({ actions, onAction }) {
+function SupersessionControl({ actions, onAction }: any) {
   return (
     <Box className="operational-row operational-row--supersession" aria-label="Create a Supersession">
       <Box />
@@ -179,9 +179,9 @@ function SupersessionControl({ actions, onAction }) {
   );
 }
 
-function EmptyState({ text }) { return <Box className="lane-empty"><Text size="xs" c="dimmed" ta="center">{text}</Text></Box>; }
+function EmptyState({ text }: { text: string }) { return <Box className="lane-empty"><Text size="xs" c="dimmed" ta="center">{text}</Text></Box>; }
 
-function buildLanes({ phaseNumber, domainName, writeRegister, gate, provenance }) {
+function buildLanes({ phaseNumber, domainName, writeRegister, gate, provenance }: any) {
   if (phaseNumber === 1) return [
     { key: 'provenance-read', role: 'read', virtual: true, meta: provenanceMeta, featured: provenance },
     { key: 'provenance-gate', role: 'gate', virtual: true, meta: provenanceMeta, featured: gate },
@@ -211,4 +211,4 @@ function operationalAssignment(domainName, writeRegister, gateRegister) {
 
 function phaseNumberFor(kind) { return { distinguish: 1, persist: 2, constrain: 3, disperse: 4, mediate: 5, bias: 6, order: 7 }[kind] || 0; }
 function resolve(proposition, byId) { return proposition ? byId.get(proposition.id) || proposition : {}; }
-function uniqueById(items) { return [...new Map(items.filter(Boolean).map((item) => [item.id, item])).values()]; }
+function uniqueById(items: any[]): any[] { return [...new Map(items.filter(Boolean).map((item) => [item.id, item])).values()]; }

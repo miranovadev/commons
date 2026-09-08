@@ -4,7 +4,7 @@ import { IconChevronDown, IconGitBranch } from '@tabler/icons-react';
 import { metaForRegister } from '../registers';
 import { PropositionCard } from './PropositionCard';
 
-export function LineagePanel({ lineage = [], committalObservables, onInspect }) {
+export function LineagePanel({ lineage = [], committalObservables, onInspect }: any) {
   const [opened, { toggle }] = useDisclosure(false);
 
   return (
@@ -36,7 +36,7 @@ export function LineagePanel({ lineage = [], committalObservables, onInspect }) 
   );
 }
 
-function LineageItem({ proposition, committalObservables, onInspect }) {
+function LineageItem({ proposition, committalObservables, onInspect }: any) {
   const register = metaForRegister(proposition.register);
   return (
     <Box className="lineage-item" style={{ '--register-color': `var(--mantine-color-${register.color}-6)` }}>

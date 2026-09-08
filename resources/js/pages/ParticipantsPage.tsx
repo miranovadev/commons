@@ -12,7 +12,7 @@ export function ParticipantsPage({ user }) {
   const navigate = useNavigate();
   const { data: substrate } = useGetSubstrateQuery(slug);
   const { data: allParticipants = [], error } = useGetParticipantsQuery(slug);
-  const { data: connections = [] } = useGetConnectionsQuery();
+  const { data: connections = [] } = useGetConnectionsQuery(undefined);
   const [opened, setOpened] = useState(false);
   const [connectionParticipant, setConnectionParticipant] = useState(null);
   const participants = useMemo(
@@ -210,7 +210,7 @@ function CreateParticipantModal({ opened, onClose, slug, user, connections, onCr
 
     try {
       const values = form.getValues();
-      const payload = {
+      const payload: Record<string, any> = {
         slug,
         callsign: values.callsign.trim(),
         designation: values.designation.trim() || null,

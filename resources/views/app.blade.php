@@ -7,7 +7,7 @@
         <meta name="theme-color" content="#4c6ef5">
         <title>{{ config('app.name', 'The Commons') }}</title>
         @viteReactRefresh
-        @vite(['resources/css/app.css', 'resources/js/app.jsx'])
+        @vite(['resources/css/app.css', 'resources/js/main.tsx'])
     </head>
     <body>
         <div id="app"></div>
