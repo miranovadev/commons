@@ -51,6 +51,12 @@ final readonly class InputPlanService
             $gate,
             $lineage,
         );
+        $attestationOptionIds = collect(
+            $workspace['registers'][$phase->write_register] ?? [],
+        )
+            ->where('tier', 'expressive')
+            ->pluck('id')
+            ->all();
 
         return [
             'phase' => [
@@ -72,6 +78,7 @@ final readonly class InputPlanService
                 $writeOptions->pluck('id')->all(),
                 $gateOptions->pluck('id')->all(),
                 $revisionOptions->pluck('id')->all(),
+                $attestationOptionIds,
             ),
         ];
     }

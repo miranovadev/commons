@@ -9,6 +9,7 @@ use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Substrate;
 use App\Models\Supersession;
+use App\Services\ContributionService;
 use App\Services\InputPlanService;
 use App\Services\LedgerService;
 use App\Services\PropositionMeasurementService;
@@ -23,7 +24,7 @@ class InputPlanVisibilityTest extends TestCase
     {
         $substrate = $this->substrate();
         $author = $this->participant($substrate, 'author');
-        $authorPhase = $this->phase($author, PhaseKind::Distinguish, 'activity');
+        $authorPhase = $this->phase($author, PhaseKind::Persist, 'frontier');
 
         $origin = $this->proposition(
             $authorPhase,
@@ -34,7 +35,7 @@ class InputPlanVisibilityTest extends TestCase
         );
         $source = $this->proposition(
             $authorPhase,
-            'activity',
+            'frontier',
             'expressive',
             'An initial distinction.',
             -0.5,
@@ -43,7 +44,7 @@ class InputPlanVisibilityTest extends TestCase
 
         $reclassified = $this->proposition(
             $authorPhase,
-            'frontier',
+            'canon',
             'expressive',
             'The distinction, reclassified.',
             0.0,
@@ -58,19 +59,30 @@ class InputPlanVisibilityTest extends TestCase
         $viewer = $this->participant($substrate, 'viewer');
         $this->phase(
             $viewer,
-            PhaseKind::Distinguish,
-            'activity',
+            PhaseKind::Persist,
+            'frontier',
             $origin,
         );
 
         $plan = app(InputPlanService::class)->forParticipant($viewer);
-        $visibleActivityIds = collect(
-            $plan['workspace']['registers']['activity'],
+        $visibleFrontierIds = collect(
+            $plan['workspace']['registers']['frontier'],
         )->pluck('id');
         $writeOptionIds = collect($plan['write_options'])->pluck('id');
+        $attestationOptionIds = collect(
+            $plan['schema']['$defs']['actions']['attestation.create']
+                ['properties']['proposition_id']['enum'],
+        );
 
-        $this->assertTrue($visibleActivityIds->contains($source->getKey()));
+        $this->assertTrue($visibleFrontierIds->contains($source->getKey()));
         $this->assertFalse($writeOptionIds->contains($source->getKey()));
+        $this->assertTrue($attestationOptionIds->contains($source->getKey()));
+
+        app(ContributionService::class)->validate($viewer, [
+            'action' => 'attestation.create',
+            'proposition_id' => $source->getKey(),
+            'direction' => 'support',
+        ]);
     }
 
     private function substrate(): Substrate
