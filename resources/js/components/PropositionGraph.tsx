@@ -3,6 +3,21 @@ import { IconArrowsMove, IconSparkles } from '@tabler/icons-react';
 import { useMemo, useRef, useState } from 'react';
 import '../../css/substrate-graph.css';
 import { PropositionCard } from './PropositionCard';
+import type { Identifier, Proposition } from '../types';
+
+interface GraphProps {
+  propositions: Proposition[];
+  initialFocusId?: Identifier | null;
+  perspectiveLimit?: number;
+  participantMode?: boolean;
+}
+
+interface DragState {
+  x: number;
+  y: number;
+  offsetX: number;
+  offsetY: number;
+}
 
 const NODE_WIDTH = 190;
 const NODE_HEIGHT = 104;
@@ -10,9 +25,9 @@ const COLUMN_GAP = 54;
 const ROW_GAP = 96;
 const CANVAS_PADDING = 90;
 
-export function PropositionGraph({ propositions, initialFocusId, perspectiveLimit, participantMode = false }) {
-  const viewportRef = useRef(null);
-  const dragState = useRef(null);
+export function PropositionGraph({ propositions, initialFocusId, perspectiveLimit, participantMode = false }: GraphProps) {
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const dragState = useRef<DragState | null>(null);
   const [dragging, setDragging] = useState(false);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [selectedId, setSelectedId] = useState(initialFocusId || null);
@@ -28,8 +43,8 @@ export function PropositionGraph({ propositions, initialFocusId, perspectiveLimi
     );
   }
 
-  function beginDrag(event) {
-    if (event.button !== 0 || event.target.closest('.proposition-card')) return;
+  function beginDrag(event: React.PointerEvent<HTMLDivElement>) {
+    if (event.button !== 0 || (event.target as Element).closest('.proposition-card')) return;
     const viewport = viewportRef.current;
     if (!viewport) return;
     dragState.current = {
@@ -42,7 +57,7 @@ export function PropositionGraph({ propositions, initialFocusId, perspectiveLimi
     setDragging(true);
   }
 
-  function moveDrag(event) {
+  function moveDrag(event: React.PointerEvent<HTMLDivElement>) {
     const start = dragState.current;
     if (!start) return;
     setOffset({
@@ -51,7 +66,7 @@ export function PropositionGraph({ propositions, initialFocusId, perspectiveLimi
     });
   }
 
-  function endDrag(event) {
+  function endDrag(event: React.PointerEvent<HTMLDivElement>) {
     const viewport = viewportRef.current;
     if (viewport?.hasPointerCapture?.(event.pointerId)) viewport.releasePointerCapture(event.pointerId);
     dragState.current = null;
@@ -109,24 +124,26 @@ export function PropositionGraph({ propositions, initialFocusId, perspectiveLimi
   );
 }
 
-function buildGraphLayout(propositions) {
+function buildGraphLayout(propositions: Proposition[]) {
   const origin = propositions.find((proposition) => proposition.is_origin) || propositions[0];
   if (!origin) return { origin: null, nodes: [], edges: [], width: 0, height: 0 };
 
   const byId = new Map(propositions.map((proposition) => [proposition.id, proposition]));
-  const childrenById = new Map(propositions.map((proposition) => [proposition.id, new Set()]));
+  const childrenById = new Map<Identifier, Set<Identifier>>(
+    propositions.map((proposition) => [proposition.id, new Set<Identifier>()]),
+  );
 
   propositions.forEach((proposition) => {
     (proposition.parent_ids || []).forEach((parentId) => {
-      if (childrenById.has(parentId)) childrenById.get(parentId).add(proposition.id);
+      if (childrenById.has(parentId)) childrenById.get(parentId)!.add(proposition.id);
     });
     (proposition.children || []).forEach((child) => {
       if (byId.has(child.id)) childrenById.get(proposition.id)?.add(child.id);
     });
   });
 
-  const levels = [];
-  const visited = new Set();
+  const levels: Identifier[][] = [];
+  const visited = new Set<Identifier>();
   let frontier = [origin.id];
 
   while (frontier.length) {
@@ -144,8 +161,8 @@ function buildGraphLayout(propositions) {
   const contentWidth = maxNodesInLevel * NODE_WIDTH + Math.max(maxNodesInLevel - 1, 0) * COLUMN_GAP;
   const width = Math.max(960, contentWidth + CANVAS_PADDING * 2);
   const height = Math.max(560, levels.length * NODE_HEIGHT + Math.max(levels.length - 1, 0) * ROW_GAP + CANVAS_PADDING * 2);
-  const positionById = new Map();
-  const nodes = [];
+  const positionById = new Map<Identifier, { x: number; y: number }>();
+  const nodes: Array<{ proposition: Proposition; x: number; y: number }> = [];
 
   levels.forEach((level, levelIndex) => {
     const rowWidth = level.length * NODE_WIDTH + Math.max(level.length - 1, 0) * COLUMN_GAP;
@@ -155,11 +172,11 @@ function buildGraphLayout(propositions) {
     level.forEach((id, index) => {
       const x = startX + index * (NODE_WIDTH + COLUMN_GAP);
       positionById.set(id, { x, y });
-      nodes.push({ proposition: byId.get(id), x, y });
+      nodes.push({ proposition: byId.get(id)!, x, y });
     });
   });
 
-  const edges = [];
+  const edges: Array<{ from: Identifier; to: Identifier; path: string }> = [];
   childrenById.forEach((childIds, parentId) => {
     const parent = positionById.get(parentId);
     if (!parent) return;

@@ -4,9 +4,11 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { messageFrom } from '../errors';
 import { PropositionGraph } from '../components/PropositionGraph';
 import { useGetPropositionsQuery, useGetSubstrateQuery } from '../services/commonsApi';
+import type { User } from '../types';
 
-export function SubstratePage({ user }) {
-  const { slug } = useParams();
+export function SubstratePage({ user }: { user?: User | null }) {
+  const { slug: routeSlug } = useParams();
+  const slug = routeSlug ?? '';
   const navigate = useNavigate();
   const { data: substrate, isLoading, error: substrateError } = useGetSubstrateQuery(slug);
   const { data: propositions = [], error: propositionsError } = useGetPropositionsQuery(slug);

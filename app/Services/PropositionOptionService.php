@@ -12,6 +12,16 @@ use Illuminate\Support\Facades\DB;
 
 final class PropositionOptionService
 {
+    public function __construct(private readonly LineageService $lineage) {}
+
+    /** @return Collection<int, string> */
+    public function localIds(Phase $phase): Collection
+    {
+        $gate = $phase->gate()->firstOrFail();
+
+        return $this->lineage->neighbourIds($gate)->push($gate->getKey());
+    }
+
     /**
      * @return Collection<int, Proposition>
      */
@@ -87,6 +97,7 @@ final class PropositionOptionService
         // admissibility and predicted Tension reduction belong here once
         // their measurements are available.
         return Proposition::query()
+            ->whereKey($this->localIds($phase))
             ->whereHas(
                 'phase.cycle.participant',
                 fn (Builder $query) => $query->where(

@@ -43,6 +43,12 @@ class RevisionAdmissibilityTest extends TestCase
             'Someone else owns this Frontier head.',
         );
 
+        foreach ([$owned, $wrongRegister, $foreign] as $head) {
+            $gate->children()->attach($head->id, [
+                'id' => (string) str()->ulid(), 'phase_id' => $phase->id, 'type' => 'variant',
+            ]);
+        }
+
         $plan = app(InputPlanService::class)->forParticipant($participant);
 
         $this->assertEqualsCanonicalizing(

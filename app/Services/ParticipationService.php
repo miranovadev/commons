@@ -18,6 +18,7 @@ final readonly class ParticipationService
         private ContributionDispatcher $dispatcher,
         private PhaseProgressionService $progression,
         private CycleEntryService $cycleEntry,
+        private PotentialChargeService $potential,
     ) {}
 
     /**
@@ -61,12 +62,27 @@ final readonly class ParticipationService
             );
         }
 
+        $plan = $this->contributions->planFor($participant);
+        $exhausted = $plan['schema']['oneOf'] === [];
+        $selection = $exhausted
+            ? $this->potential->nextFrom($phase->gate()->firstOrFail())
+            : null;
+
         return [
-            'status' => 'ready',
+            'status' => $exhausted ? 'waiting' : 'ready',
             'cycle' => $this->cycle($cycle),
-            'plan' => $this->contributions->planFor($participant),
+            'plan' => $plan,
             'perspective' => $this->perspective($participant),
-            'reason' => null,
+            'reason' => $exhausted ? [
+                'code' => 'no_admissible_write',
+                'message' => 'The current position has no admissible Write action.',
+            ] : null,
+            'navigation' => $exhausted ? [
+                'available' => $selection !== null,
+                'phase_id' => $phase->getKey(),
+                'next_proposition_id' => ($selection['proposition'] ?? null)?->getKey(),
+                'potential' => $selection['potential'] ?? 0.0,
+            ] : null,
             'entry' => null,
         ];
     }
@@ -125,6 +141,10 @@ final readonly class ParticipationService
                 );
             }
 
+            if (($input['action'] ?? null) === 'participant.traverse') {
+                return $this->traverse($lockedParticipant, $phase);
+            }
+
             $this->contributions->validate($lockedParticipant, $input);
             $gate = $this->dispatcher->dispatch(
                 $lockedParticipant,
@@ -135,6 +155,34 @@ final readonly class ParticipationService
 
             return $this->stateFor($lockedParticipant);
         });
+    }
+
+    /**
+     * Navigation is a server decision, not an expressive contribution. The
+     * caller already holds the Participant and Phase locks; one request can
+     * finish only one Cycle and take exactly one structural step.
+     *
+     * @return array<string, mixed>
+     */
+    private function traverse(Participant $participant, Phase $phase): array
+    {
+        $plan = $this->contributions->planFor($participant);
+        if ($plan['schema']['oneOf'] !== []) {
+            throw new \DomainException('Traversal requires an exhausted Write.');
+        }
+        $selection = $this->potential->nextFrom($phase->gate()->firstOrFail());
+        if ($selection === null) {
+            throw new \DomainException('No positive Potential is observable through a neighbour.');
+        }
+
+        $participant->current_proposition_id = $selection['proposition']->getKey();
+        $participant->save();
+        $phase->completed_at = now();
+        $phase->save();
+        $phase->cycle->completed_at = now();
+        $phase->cycle->save();
+
+        return $this->stateFor($participant);
     }
 
     /**
@@ -161,6 +209,16 @@ final readonly class ParticipationService
      */
     private function entryFor(Participant $participant): array
     {
+        if ($participant->fresh()->current_proposition_id !== null) {
+            return [
+                // Preserve the existing client entry contract; selection is local.
+                'mode' => 'potential',
+                'selection' => 'position',
+                'available' => true,
+                'message' => 'Continue from the Participant’s current substrate position.',
+            ];
+        }
+
         $hasOrigin = SubstrateLedgerEntry::query()
             ->where('substrate_id', $participant->substrate_id)
             ->where('kind', LedgerEntryKind::Proposition->value)
@@ -212,9 +270,10 @@ final readonly class ParticipationService
             'max_read_count' => $participant->max_read_count,
             'max_token_count' => $participant->max_token_count,
             'attenuation' => [
-                'status' => 'pending',
-                'value' => null,
-                'distance' => null,
+                'status' => 'active',
+                'value' => 1.0,
+                'distance' => 0,
+                'formula' => '1 / (1 + structural_distance)',
             ],
         ];
     }

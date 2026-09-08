@@ -12,6 +12,10 @@ final class PhaseProgressionService
         Phase $phase,
         Proposition $gate,
     ): ?Phase {
+        $participant = $phase->cycle->participant;
+        $participant->current_proposition_id = $gate->getKey();
+        $participant->save();
+
         $phase->completed_at = now();
         $phase->save();
 

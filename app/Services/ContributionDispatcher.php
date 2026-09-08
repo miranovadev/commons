@@ -197,10 +197,8 @@ final readonly class ContributionDispatcher
         return $proposition;
     }
 
-    private function commit(
-        Phase $phase,
-        Proposition $gate,
-    ): Proposition {
+    public function canCommit(Proposition $gate): bool
+    {
         $hasAttestation = Attestation::query()
             ->effective()
             ->whereBelongsTo($gate)
@@ -225,7 +223,14 @@ final readonly class ContributionDispatcher
             })
             ->exists();
 
-        if (! $hasAttestation || ! $hasReceipt) {
+        return $hasAttestation && $hasReceipt;
+    }
+
+    private function commit(
+        Phase $phase,
+        Proposition $gate,
+    ): Proposition {
+        if (! $this->canCommit($gate)) {
             throw new DomainException(
                 'Commitment requires an Attestation and Receipt in the current lineage.'
             );

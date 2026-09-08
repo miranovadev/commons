@@ -4,7 +4,7 @@ return [
     1 => [
         'name' => 'distinguish',
         'description' => 'Create or select the first expressive distinction from the current committal Gate.',
-        'gate' => 'highest-potential-charge',
+        'gate' => 'participant-position',
         'actions' => [
             'proposition.variant',
             'proposition.select',

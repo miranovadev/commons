@@ -1,23 +1,31 @@
 import { Group, SegmentedControl, Text, Tooltip } from '@mantine/core';
 import { IconWhirl } from '@tabler/icons-react';
+import type { AttestationDirection } from '../types';
 
-export function AttestationDirectionControl({ value, onChange, showLabels = true, fullWidth = true }) {
+interface AttestationDirectionControlProps {
+  value: AttestationDirection;
+  onChange: (direction: AttestationDirection) => void;
+  showLabels?: boolean;
+  fullWidth?: boolean;
+}
+
+export function AttestationDirectionControl({ value, onChange, showLabels = true, fullWidth = true }: AttestationDirectionControlProps) {
   return (
     <SegmentedControl
       fullWidth={fullWidth}
       color={value === 'support' ? 'violet' : 'teal'}
-      data={['support', 'refute'].map((direction) => ({
+      data={(['support', 'refute'] as AttestationDirection[]).map((direction) => ({
         value: direction,
         label: <DirectionLabel direction={direction} showLabel={showLabels} />,
       }))}
       value={value || 'support'}
-      onChange={onChange}
+      onChange={(direction) => onChange(direction as AttestationDirection)}
       aria-label="Attestation direction"
     />
   );
 }
 
-function DirectionLabel({ direction, showLabel }) {
+function DirectionLabel({ direction, showLabel }: { direction: AttestationDirection; showLabel: boolean }) {
   const label = direction === 'support' ? 'Support' : 'Refute';
 
   return (
