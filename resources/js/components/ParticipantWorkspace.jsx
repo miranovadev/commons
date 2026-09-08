@@ -109,6 +109,7 @@ function GateContent({ gate, committalObservables, onInspect }) {
 }
 
 function WriteContent({ propositions, writeOptions, revisionOptions, gateOptions, actions, committalObservables, onInspect, onAction }) {
+  const visibleIds = new Set(propositions.filter((item) => item.tier === 'expressive').map((item) => item.id));
   const revisionIds = new Set(revisionOptions.map((item) => item.id));
   const reconcileIds = new Set(gateOptions.map((item) => item.id));
   const existing = uniqueById([...propositions, ...writeOptions, ...gateOptions]);
@@ -120,7 +121,7 @@ function WriteContent({ propositions, writeOptions, revisionOptions, gateOptions
           <SimpleGrid className="write-row__cards" cols={{ base: 1, md: 2, xl: 3 }} spacing="sm">
             {existing.map((proposition) => <WriteOptionCard
               key={proposition.id} proposition={proposition}
-              canAttest={actions.includes('attestation.create') && writeOptions.some((item) => item.id === proposition.id)}
+              canAttest={actions.includes('attestation.create') && visibleIds.has(proposition.id)}
               canRevise={actions.includes('proposition.revise') && revisionIds.has(proposition.id)}
               canReconcile={actions.includes('proposition.reconcile') && reconcileIds.has(proposition.id)}
               canInstrument={actions.includes('instrument.execute') && writeOptions.some((item) => item.id === proposition.id)}
