@@ -1,10 +1,28 @@
 import { useEffect, useState } from 'react';
+import type { FormEvent } from 'react';
 import { Alert, Button, Group, Modal, Select, Stack, Text, Textarea } from '@mantine/core';
 import { IconAlertCircle, IconArrowRight } from '@tabler/icons-react';
 import { messageFrom } from '../errors';
 import { AttestationDirectionControl } from './AttestationDirectionControl';
+import type { AttestationDirection, InstrumentInput, OriginInput } from '../types';
 
-const initialValue = {
+interface OriginFormValue {
+  statement: string;
+  direction: AttestationDirection;
+  rationale: string;
+  instrumentKind: InstrumentInput['kind'];
+  reference: string;
+}
+
+interface OriginCycleFormProps {
+  opened: boolean;
+  loading: boolean;
+  error?: unknown;
+  onClose: () => void;
+  onSubmit: (origin: OriginInput) => void;
+}
+
+const initialValue: OriginFormValue = {
   statement: '',
   direction: 'support',
   rationale: '',
@@ -12,18 +30,18 @@ const initialValue = {
   reference: '',
 };
 
-export function OriginCycleForm({ opened, loading, error, onClose, onSubmit }) {
+export function OriginCycleForm({ opened, loading, error, onClose, onSubmit }: OriginCycleFormProps) {
   const [value, setValue] = useState(initialValue);
 
   useEffect(() => {
     if (!opened) setValue(initialValue);
   }, [opened]);
 
-  function update(field, next) {
+  function update<K extends keyof OriginFormValue>(field: K, next: OriginFormValue[K]) {
     setValue((current) => ({ ...current, [field]: next }));
   }
 
-  function submit(event) {
+  function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     onSubmit({
       statement: value.statement,
@@ -45,7 +63,7 @@ export function OriginCycleForm({ opened, loading, error, onClose, onSubmit }) {
           <Text size="sm" c="dimmed">
             The Origin is the substrate’s first Committal Proposition. Its Attestation and Receipt are recorded beside it before the first live Cycle begins.
           </Text>
-          {error && (
+          {Boolean(error) && (
             <Alert color="red" icon={<IconAlertCircle size={18} />} title="The Origin could not be established">
               {messageFrom(error, 'Please check the Origin and try again.')}
             </Alert>
@@ -83,7 +101,7 @@ export function OriginCycleForm({ opened, loading, error, onClose, onSubmit }) {
               { value: 'artefact', label: 'Artefact' },
             ]}
             value={value.instrumentKind}
-            onChange={(next) => update('instrumentKind', next || 'hyperlink')}
+            onChange={(next) => update('instrumentKind', (next || 'hyperlink') as InstrumentInput['kind'])}
           />
           <Textarea
             label="Receipt reference"

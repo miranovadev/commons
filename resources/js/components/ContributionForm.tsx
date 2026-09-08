@@ -1,12 +1,27 @@
 import { Alert, Button, Group, Modal, Select, Stack, Text, Textarea, TextInput } from '@mantine/core';
 import { IconAlertCircle } from '@tabler/icons-react';
 import { useEffect, useMemo, useState } from 'react';
+import type { FormEvent } from 'react';
 import { messageFrom } from '../errors';
 import { AttestationDirectionControl } from './AttestationDirectionControl';
+import type {
+  ActionName,
+  AttestationDirection,
+  ContributionInitialValues,
+  ContributionInput,
+  InstrumentInput,
+  ParticipantPlan,
+  Proposition,
+} from '../types';
 
-const emptyValues: Record<string, any> = {};
+type FormValues = ContributionInitialValues & {
+  direction: AttestationDirection;
+  instrument: InstrumentInput;
+};
 
-function option(proposition) {
+const emptyValues: ContributionInitialValues = {};
+
+function option(proposition: Proposition) {
   return {
     value: proposition.id,
     label: proposition.title || proposition.statement.slice(0, 72),
@@ -22,9 +37,21 @@ export function ContributionForm({
   initialValues = emptyValues,
   onClose,
   onSubmit,
-}: any) {
-  const schema = plan?.schema?.$defs?.actions?.[action];
-  const [values, setValues] = useState<Record<string, any>>({});
+}: {
+  action: ActionName | null | undefined;
+  plan: ParticipantPlan;
+  opened: boolean;
+  loading: boolean;
+  error?: unknown;
+  initialValues?: ContributionInitialValues;
+  onClose: () => void;
+  onSubmit: (contribution: ContributionInput) => void;
+}) {
+  const schema = action ? plan.schema?.$defs?.actions?.[action] : undefined;
+  const [values, setValues] = useState<FormValues>({
+    direction: 'support',
+    instrument: { kind: 'citation', reference: '' },
+  });
   const properties = schema?.properties || {};
   const required = schema?.required || [];
   const propositionOptions = useMemo(
@@ -47,29 +74,30 @@ export function ContributionForm({
     });
   }, [action, initialValues, opened]);
 
-  if (!schema) return null;
+  if (!schema || !action) return null;
+  const activeAction = action;
 
-  function set(name, value) {
+  function set<K extends keyof FormValues>(name: K, value: FormValues[K]) {
     setValues((current) => ({ ...current, [name]: value }));
   }
 
-  function setInstrument(name, value) {
+  function setInstrument<K extends keyof InstrumentInput>(name: K, value: InstrumentInput[K]) {
     setValues((current) => ({
       ...current,
       instrument: { ...current.instrument, [name]: value },
     }));
   }
 
-  function submit(event) {
+  function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const contribution: Record<string, any> = { action: properties.action?.const || action };
+    const contribution: ContributionInput = { action: properties.action?.const || activeAction };
 
-    Object.keys(properties).forEach((name) => {
+    (Object.keys(properties) as Array<keyof ContributionInput>).forEach((name) => {
       if (name === 'action') return;
       if (name === 'instrument') {
         contribution.instrument = values.instrument;
       } else if (values[name] !== undefined && values[name] !== '') {
-        contribution[name] = values[name];
+        Object.assign(contribution, { [name]: values[name] });
       }
     });
 
@@ -80,7 +108,7 @@ export function ContributionForm({
     <Modal opened={opened} onClose={onClose} title={schema.title} centered>
       <form onSubmit={submit}>
         <Stack>
-          {error && (
+          {Boolean(error) && (
             <Alert color="red" icon={<IconAlertCircle size={17} />}>
               {messageFrom(error, 'The contribution could not be applied.')}
             </Alert>
@@ -105,7 +133,7 @@ export function ContributionForm({
               data={propositionOptions}
               required={required.includes('proposition_id')}
               value={values.proposition_id || null}
-              onChange={(value) => set('proposition_id', value)}
+              onChange={(value) => set('proposition_id', value ?? undefined)}
             />
           )}
 
@@ -116,7 +144,7 @@ export function ContributionForm({
               data={gateOptions}
               required
               value={values.other_proposition_id || null}
-              onChange={(value) => set('other_proposition_id', value)}
+              onChange={(value) => set('other_proposition_id', value ?? undefined)}
             />
           )}
 
@@ -151,7 +179,7 @@ export function ContributionForm({
                 ]}
                 required
                 value={values.instrument?.kind || 'citation'}
-                onChange={(value) => setInstrument('kind', value)}
+                onChange={(value) => value && setInstrument('kind', value as InstrumentInput['kind'])}
               />
               <TextInput
                 label="Reference"

@@ -35,7 +35,7 @@ function CommonsApp() {
   const substrateMatch = matchPath({ path: '/substrates/:slug/*', end: false }, location.pathname)
     || matchPath('/substrates/:slug', location.pathname);
   const substrateSlug = substrateMatch?.params?.slug;
-  const { data: selectedSubstrate } = useGetSubstrateQuery(substrateSlug, { skip: !substrateSlug });
+  const { data: selectedSubstrate } = useGetSubstrateQuery(substrateSlug ?? '', { skip: !substrateSlug });
 
   useEffect(close, [location.pathname]);
 

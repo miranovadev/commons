@@ -4,7 +4,7 @@ import { metaForRegister } from '../registers';
 import type { Observables, Proposition } from '../types';
 
 interface PropositionContentProps {
-  proposition?: Proposition;
+  proposition?: Partial<Proposition>;
   mode?: 'minimal' | 'card' | 'detailed';
   actionLabel?: string;
   actionIcon?: React.ElementType;
@@ -119,8 +119,8 @@ function FieldValues({ observables, committalObservables, tier, compact = false 
       delta: null,
     }] : []),
   ];
-  const items = values.map((field) => (
-    <FieldValue key={field.key} {...field} tier={tier} compact={compact} />
+  const items = values.map(({ key, ...field }) => (
+    <FieldValue key={key} {...field} tier={tier} compact={compact} />
   ));
 
   return compact
@@ -159,10 +159,12 @@ function FieldValue({ label, icon: Icon, value, delta, signed: signedValue = fal
 }
 
 function fieldState(observables?: Observables) {
-  const values = ['correspondence', 'chirality', 'closure'].map((key) => finite(observables?.[key]));
+  const keys: Array<keyof Observables> = ['correspondence', 'chirality', 'closure'];
+  const values = keys.map((key) => finite(observables?.[key]));
   if (values.some((value) => value === null)) return null;
 
-  const tension = values.reduce((sum, value) => sum + value, 0) / values.length;
+  const measurements = values as number[];
+  const tension = measurements.reduce((sum, value) => sum + value, 0) / measurements.length;
   return { tension, charge: 1 - Math.abs(tension) };
 }
 

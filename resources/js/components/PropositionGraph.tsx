@@ -135,7 +135,7 @@ function buildGraphLayout(propositions: Proposition[]) {
 
   propositions.forEach((proposition) => {
     (proposition.parent_ids || []).forEach((parentId) => {
-      if (childrenById.has(parentId)) childrenById.get(parentId).add(proposition.id);
+      if (childrenById.has(parentId)) childrenById.get(parentId)!.add(proposition.id);
     });
     (proposition.children || []).forEach((child) => {
       if (byId.has(child.id)) childrenById.get(proposition.id)?.add(child.id);

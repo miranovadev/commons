@@ -24,8 +24,18 @@ import { IconAlertCircle, IconArrowUpRight, IconHexagon3d, IconLock, IconPlus, I
 import { Link } from 'react-router-dom';
 import { messageFrom } from '../errors';
 import { useCreateSubstrateMutation, useGetSubstratesQuery } from '../services/commonsApi';
+import type { ChangeEvent } from 'react';
+import type { Substrate, SubstrateInput, User } from '../types';
 
-export function SubstratesPage({ user }) {
+interface SubstrateFormValues {
+  title: string;
+  slug: string;
+  description: string;
+  visibility: Substrate['visibility'];
+  maximum_participants: number;
+}
+
+export function SubstratesPage({ user }: { user: User | null | undefined }) {
   const { data: substrates = [], isLoading, error } = useGetSubstratesQuery(undefined);
   const [opened, { open, close }] = useDisclosure(false);
 
@@ -62,7 +72,7 @@ export function SubstratesPage({ user }) {
   );
 }
 
-function SubstrateCard({ substrate }) {
+function SubstrateCard({ substrate }: { substrate: Substrate }) {
   const VisibilityIcon = substrate.visibility === 'public' ? IconWorld : IconLock;
   return (
     <Card component={Link} to={`/substrates/${substrate.slug}`} withBorder padding="xl" className="substrate-card">
@@ -87,7 +97,7 @@ function SubstrateCard({ substrate }) {
   );
 }
 
-function PotentialChargeGauge({ value, tension }) {
+function PotentialChargeGauge({ value, tension }: { value?: number | null; tension?: number | null }) {
   const potential = typeof value === 'number' ? value : null;
   const globalTension = typeof tension === 'number' ? tension : null;
   const position = potential == null ? 50 : Math.max(0, Math.min(100, potential * 100));
@@ -115,29 +125,34 @@ function PotentialChargeGauge({ value, tension }) {
   );
 }
 
-function CreateSubstrateModal({ opened, onClose, onCreated }) {
+function CreateSubstrateModal({ opened, onClose, onCreated }: {
+  opened: boolean;
+  onClose: () => void;
+  onCreated: () => void;
+}) {
   const [createSubstrate] = useCreateSubstrateMutation();
-  const form = useForm({
+  const form = useForm<SubstrateFormValues>({
     initialValues: { title: '', slug: '', description: '', visibility: 'public', maximum_participants: 100 },
     validate: { title: (v) => v.trim() ? null : 'A title is required.', slug: (v) => /^[a-z0-9-]+$/.test(v) ? null : 'Use lowercase letters, numbers and hyphens.' },
   });
 
-  function setTitle(event) {
+  function setTitle(event: ChangeEvent<HTMLInputElement>) {
     const title = event.currentTarget.value;
     form.setFieldValue('title', title);
     if (!form.isDirty('slug')) form.setFieldValue('slug', title.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''));
   }
 
-  async function submit(values) {
+  async function submit(values: SubstrateFormValues) {
     form.clearErrors();
     try {
-      await createSubstrate({
+      const substrate: SubstrateInput = {
         title: values.title,
         slug: values.slug,
         description: values.description || null,
         visibility: values.visibility,
         configuration: { maximum_participants: values.maximum_participants },
-      }).unwrap();
+      };
+      await createSubstrate(substrate).unwrap();
       form.reset();
       onCreated();
     } catch (error) {

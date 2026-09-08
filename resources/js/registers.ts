@@ -10,6 +10,7 @@ import {
   IconSunWind,
   IconTiltShiftFilled,
 } from '@tabler/icons-react';
+import type { DomainName, RegisterName } from './types';
 
 export const domainMeta = {
   emergence: {
@@ -37,12 +38,12 @@ export const registerMeta = {
   concord: { label: 'Concord', description: 'Where we agree', color: 'cyan', icon: IconHeartHandshake },
 };
 
-export function metaForDomain(domain) {
-  return domainMeta[domain] || domainMeta.emergence;
+export function metaForDomain(domain?: DomainName) {
+  return domain ? domainMeta[domain] : domainMeta.emergence;
 }
 
-export function metaForRegister(register) {
-  return registerMeta[register] || {
+export function metaForRegister(register?: RegisterName) {
+  return register ? registerMeta[register] : {
     label: register || 'Unclassified',
     description: 'Awaiting classification',
     color: 'gray',
@@ -50,7 +51,7 @@ export function metaForRegister(register) {
   };
 }
 
-export function domainForRegister(register) {
+export function domainForRegister(register: RegisterName): DomainName {
   return domainMeta.settlement.registers.includes(register)
     ? 'settlement'
     : 'emergence';

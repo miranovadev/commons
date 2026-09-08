@@ -4,10 +4,11 @@ import { IconArrowRight, IconInfoCircle } from '@tabler/icons-react';
 import { CommonsLogo } from '../components/CommonsLogo';
 import { messageFrom } from '../errors';
 import { useBootstrapMutation } from '../services/commonsApi';
+import type { BootstrapInput } from '../types';
 
-export function BootstrapPage({ onComplete }) {
+export function BootstrapPage({ onComplete }: { onComplete: () => void }) {
   const [bootstrap] = useBootstrapMutation();
-  const form = useForm({
+  const form = useForm<BootstrapInput>({
     initialValues: { name: '', email: '', password: '', password_confirmation: '' },
     validate: {
       name: (value) => value.trim() ? null : 'Your name is required.',
@@ -17,7 +18,7 @@ export function BootstrapPage({ onComplete }) {
     },
   });
 
-  async function submit(values) {
+  async function submit(values: BootstrapInput) {
     form.clearErrors();
     try {
       await bootstrap(values).unwrap();

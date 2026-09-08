@@ -5,7 +5,11 @@ import { Provider } from 'react-redux';
 import { App } from './App';
 import { store } from './store';
 
-ReactDOM.createRoot(document.getElementById('app')).render(
+const root = document.getElementById('app');
+
+if (!root) throw new Error('The application root element is missing.');
+
+ReactDOM.createRoot(root).render(
   <Provider store={store}>
     <App />
   </Provider>,

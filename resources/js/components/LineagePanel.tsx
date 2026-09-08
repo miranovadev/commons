@@ -3,8 +3,15 @@ import { useDisclosure } from '@mantine/hooks';
 import { IconChevronDown, IconGitBranch } from '@tabler/icons-react';
 import { metaForRegister } from '../registers';
 import { PropositionCard } from './PropositionCard';
+import type { Observables, Proposition, PropositionSelection } from '../types';
 
-export function LineagePanel({ lineage = [], committalObservables, onInspect }: any) {
+interface LineagePanelProps {
+  lineage?: Proposition[];
+  committalObservables?: Observables;
+  onInspect?: (selection: PropositionSelection) => void;
+}
+
+export function LineagePanel({ lineage = [], committalObservables, onInspect }: LineagePanelProps) {
   const [opened, { toggle }] = useDisclosure(false);
 
   return (
@@ -36,7 +43,11 @@ export function LineagePanel({ lineage = [], committalObservables, onInspect }: 
   );
 }
 
-function LineageItem({ proposition, committalObservables, onInspect }: any) {
+function LineageItem({ proposition, committalObservables, onInspect }: {
+  proposition: Proposition;
+  committalObservables?: Observables;
+  onInspect?: (selection: PropositionSelection) => void;
+}) {
   const register = metaForRegister(proposition.register);
   return (
     <Box className="lineage-item" style={{ '--register-color': `var(--mantine-color-${register.color}-6)` }}>
