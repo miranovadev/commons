@@ -154,6 +154,22 @@ class LocalParticipantNavigationTest extends TestCase
         $this->assertEqualsWithDelta(0.2, $selection['potential'], 0.0000001);
     }
 
+    public function test_a_reducing_expressive_leaf_is_observable_through_its_own_direction(): void
+    {
+        $position = $this->node('High tension source', 0.9);
+        $leaf = $this->node('Reducing expressive leaf', 0.1, 'expressive');
+        $this->edge($position, $leaf);
+        $participant = $this->participant('forward-observer', $position);
+        $phase = $this->phase($participant, $position);
+
+        $state = $this->state($participant);
+        $this->assertSame([], $state['plan']['schema']['oneOf']);
+        $this->assertSame($leaf->id, $state['navigation']['next_proposition_id']);
+        $this->assertEqualsWithDelta(0.4, $state['navigation']['potential'], 0.0000001);
+        $this->traverse($participant, $phase);
+        $this->assertSame($leaf->id, $participant->fresh()->current_proposition_id);
+    }
+
     public function test_participants_at_different_positions_follow_different_trajectories(): void
     {
         $left = $this->region('Left', 0.6);

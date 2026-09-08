@@ -105,6 +105,7 @@ final readonly class PotentialChargeService
         }
 
         $potentials = [];
+        $currentTension = $this->tensionOf($propositions->get($position->getKey()));
         $best = null;
         $neighbours = array_keys($adjacency[$position->getKey()] ?? []);
         sort($neighbours, SORT_STRING);
@@ -115,7 +116,15 @@ final readonly class PotentialChargeService
             $visited = [$position->getKey() => true, $neighbourId => true];
             $frontier = [$neighbourId];
             $distance = 1;
-            $signal = 0.0;
+            // A reducing continuation directly through this neighbour also
+            // carries Potential, even if that continuation is itself a leaf.
+            $branchEdges = clone $outgoing;
+            $branchEdges->put($position->getKey(), $outgoing
+                ->get($position->getKey(), collect())
+                ->where('target_proposition_id', $neighbourId));
+            $signal = $currentTension === null ? 0.0 : $this->potentialFor(
+                $position->getKey(), $currentTension, $propositions, $branchEdges, 0,
+            );
             while ($frontier !== []) {
                 $next = [];
                 foreach ($frontier as $id) {
