@@ -153,6 +153,31 @@ class InputSchemaServiceTest extends TestCase
         );
     }
 
+    public function test_lowercase_database_ulids_are_valid_contribution_ids(): void
+    {
+        $persistSchema = app(InputSchemaService::class)
+            ->forPhase(PhaseKind::Persist);
+
+        $this->assertValid($persistSchema, [
+            'action' => 'attestation.create',
+            'proposition_id' => '01m1xab7yakfnhy6tf52a9qg7z',
+            'direction' => 'support',
+        ]);
+        $this->assertValid($persistSchema, [
+            'action' => 'proposition.revise',
+            'proposition_id' => '01m1xab7yakfnhy6tf52a9qg7z',
+            'statement' => 'A valid lowercase target.',
+        ]);
+        $this->assertValid(
+            app(InputSchemaService::class)->forPhase(PhaseKind::Mediate),
+            [
+                'action' => 'proposition.reconcile',
+                'other_proposition_id' => '01m1xab7yakfnhy6tf52a9qg7z',
+                'statement' => 'The failing production shape is valid.',
+            ],
+        );
+    }
+
     public function test_write_and_gate_options_are_limited_to_ten(): void
     {
         config()->set('schemas.options.limit', 10);

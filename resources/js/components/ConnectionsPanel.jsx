@@ -5,7 +5,7 @@ import { connectionSelectData, triggerFor } from '../connections';
 import { messageFrom } from '../errors';
 import { useCreateParticipantConnectionMutation, useDeleteParticipantConnectionMutation, useGetConnectionOptionsQuery, useGetConnectionsQuery, useGetParticipantConnectionsQuery, useUpdateParticipantConnectionMutation } from '../services/commonsApi';
 
-export function ConnectionsPanel({ slug, participantId, opened, onClose }) {
+export function ConnectionsPanel({ slug, participantId, participantName, opened, onClose }) {
   const parameters = { slug, participantId };
   const { data: attachments = [], error: attachmentsError } = useGetParticipantConnectionsQuery(parameters, { skip: !opened });
   const { data: connections = [], error: connectionsError } = useGetConnectionsQuery(undefined, { skip: !opened });
@@ -48,7 +48,7 @@ export function ConnectionsPanel({ slug, participantId, opened, onClose }) {
   }
 
   return (
-    <Drawer opened={opened} onClose={onClose} position="right" size="lg" title="Participant connections">
+    <Drawer opened={opened} onClose={onClose} position="right" size="lg" title={participantName ? `${participantName} · Connections` : 'Participant connections'}>
       <Stack>
         <Text size="sm" c="dimmed">Attach one of your reusable Connections to this Participant. Wake settings belong to this Participant only, so the same Connection can behave differently in another substrate.</Text>
         {error && <Alert color="red" icon={<IconAlertCircle size={17} />}>{messageFrom(error, 'Connections could not be loaded.')}</Alert>}

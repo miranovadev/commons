@@ -155,17 +155,19 @@ final readonly class ContributionDispatcher
     ): Proposition {
         $proposition = Proposition::query()
             ->findOrFail($input['proposition_id']);
-        $alreadyAttested = Attestation::query()
+        $previous = Attestation::query()
+            ->effective()
             ->whereBelongsTo($proposition)
             ->whereHas(
                 'phase.cycle',
                 fn ($query) => $query->whereBelongsTo($participant),
             )
-            ->exists();
+            ->lockForUpdate()
+            ->first();
 
-        if ($alreadyAttested) {
+        if ($previous?->phase_id === $phase->getKey()) {
             throw new DomainException(
-                'The Participant has already attested this Proposition.'
+                'The Participant has already attested this Proposition in the current Write.'
             );
         }
 
@@ -173,6 +175,7 @@ final readonly class ContributionDispatcher
         $attestation->forceFill([
             'phase_id' => $phase->getKey(),
             'proposition_id' => $proposition->getKey(),
+            'supersedes_attestation_id' => $previous?->getKey(),
             'direction' => $input['direction'],
             'rationale' => $input['rationale'] ?? null,
         ]);
@@ -199,6 +202,7 @@ final readonly class ContributionDispatcher
         Proposition $gate,
     ): Proposition {
         $hasAttestation = Attestation::query()
+            ->effective()
             ->whereBelongsTo($gate)
             ->exists();
         $attestationIds = Attestation::query()

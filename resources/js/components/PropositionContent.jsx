@@ -1,7 +1,6 @@
-import { Avatar, Badge, Box, Group, Stack, Text, ThemeIcon, Tooltip } from '@mantine/core';
-import { IconArrowRight, IconBolt, IconWhirl } from '@tabler/icons-react';
+import { Avatar, Badge, Box, Group, SimpleGrid, Stack, Text, ThemeIcon, Tooltip } from '@mantine/core';
+import { IconArrowRight, IconBolt, IconHexagon, IconHexagonalPrism, IconLayersDifference } from '@tabler/icons-react';
 import { metaForRegister } from '../registers';
-import { MeasurementRails } from './MeasurementRails';
 
 export function PropositionContent({
   proposition = {},
@@ -10,6 +9,7 @@ export function PropositionContent({
   actionIcon: ActionIcon,
   wireframe = false,
   projectedObservables,
+  committalObservables,
 }) {
   const register = metaForRegister(proposition.register);
   const title = actionLabel || proposition.title || proposition.statement?.split('\n')[0] || 'Available move';
@@ -24,7 +24,7 @@ export function PropositionContent({
       <Stack gap={6}>
         <Text size="xs" fw={650} lineClamp={2}>{title}</Text>
         <TransitionReadout transition={proposition.transition} compact />
-        <MeasurementRails observables={proposition.observables} compact bare />
+        <FieldValues observables={proposition.observables} committalObservables={committalObservables} tier={proposition.tier} compact />
       </Stack>
     );
   }
@@ -36,9 +36,6 @@ export function PropositionContent({
           <Group gap={7} wrap="wrap">
             {(proposition.tier || wireframe) && <TierBadge tier={wireframe ? 'possible' : proposition.tier} />}
             {proposition.register && <Badge size="xs" color={register.color} variant="light">{register.label}</Badge>}
-            {!wireframe && !detailed && (
-              <Tooltip label="Attestation activity"><IconWhirl size={15} className="attestation-spinner" /></Tooltip>
-            )}
           </Group>
           <Text fw={detailed ? 750 : 650} size={detailed ? 'lg' : undefined} lineClamp={detailed ? undefined : 2}>{title}</Text>
         </Stack>
@@ -62,12 +59,98 @@ export function PropositionContent({
 
       {!wireframe && (
         <Box className={detailed ? 'proposition-content__measurements' : undefined}>
-          {detailed && <Text fw={700} size="sm" mb="sm">Structural state</Text>}
-          <MeasurementRails observables={proposition.observables} projectedObservables={projectedObservables} compact={!detailed} />
+          {detailed && <Text fw={700} size="sm" mb="sm">Field state</Text>}
+          <FieldValues
+            observables={projectedObservables || proposition.observables}
+            committalObservables={committalObservables}
+            tier={proposition.tier}
+            compact={!detailed}
+          />
         </Box>
       )}
     </Stack>
   );
+}
+
+function FieldValues({ observables, committalObservables, tier, compact = false }) {
+  const expressive = tier === 'expressive';
+  const state = fieldState(observables);
+  const committed = fieldState(committalObservables);
+
+  if (!state) return <Text size="xs" c="dimmed">Field awaiting complete measurement</Text>;
+
+  const values = [
+    {
+      key: 'tension',
+      label: 'Tension',
+      icon: IconLayersDifference,
+      value: state.tension,
+      delta: expressive && committed ? state.tension - committed.tension : null,
+      signed: true,
+    },
+    {
+      key: 'charge',
+      label: expressive ? 'Expressive Charge' : 'Charge',
+      icon: IconHexagon,
+      value: state.charge,
+      delta: expressive && committed ? state.charge - committed.charge : null,
+    },
+    ...(expressive ? [{
+      key: 'potential-charge',
+      label: 'Potential Charge',
+      icon: IconHexagonalPrism,
+      value: committed ? Math.max(0, state.charge - committed.charge) : null,
+      delta: null,
+    }] : []),
+  ];
+  const items = values.map((field) => (
+    <FieldValue key={field.key} {...field} tier={tier} compact={compact} />
+  ));
+
+  return compact
+    ? <Group className="proposition-field" data-tier={tier} gap="sm" wrap="wrap">{items}</Group>
+    : <SimpleGrid className="proposition-field" data-tier={tier} cols={{ base: 1, xs: values.length }} spacing="xs">{items}</SimpleGrid>;
+}
+
+function FieldValue({ label, icon: Icon, value, delta, signed: signedValue = false, tier, compact }) {
+  const color = tier === 'committal' ? 'indigo' : 'gray';
+  const readout = value === null ? 'Awaiting measurement' : number(value, signedValue);
+  const deltaReadout = delta === null ? null : `Δ ${number(delta, true)} from Committal`;
+  const content = (
+    <Box className="field-value" data-compact={compact || undefined}>
+      <Group gap={5} wrap="nowrap">
+        <ThemeIcon color={color} variant={compact ? 'transparent' : 'light'} size={compact ? 22 : 28}>
+          <Icon size={compact ? 15 : 17} />
+        </ThemeIcon>
+        {!compact && <Text size="xs" c="dimmed" truncate>{label}</Text>}
+        <Text size="xs" fw={750} c={color} style={{ whiteSpace: 'nowrap' }}>{readout}</Text>
+      </Group>
+      {!compact && deltaReadout && <Text size="10px" c="dimmed" mt={3}>{deltaReadout}</Text>}
+    </Box>
+  );
+
+  return compact
+    ? <Tooltip label={`${label}: ${readout}${deltaReadout ? ` · ${deltaReadout}` : ''}`} withArrow>{content}</Tooltip>
+    : content;
+}
+
+function fieldState(observables) {
+  const values = ['correspondence', 'chirality', 'closure'].map((key) => finite(observables?.[key]));
+  if (values.some((value) => value === null)) return null;
+
+  const tension = values.reduce((sum, value) => sum + value, 0) / values.length;
+  return { tension, charge: 1 - Math.abs(tension) };
+}
+
+function finite(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const numeric = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+function number(value, signedValue = false) {
+  if (value === null) return '—';
+  return `${signedValue && value >= 0 ? '+' : ''}${value.toFixed(2)}`;
 }
 
 export function TransitionReadout({ transition, compact = false }) {

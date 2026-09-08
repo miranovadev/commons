@@ -62,16 +62,40 @@ transaction.
 
 The contribution object is validated against the JSON Schema returned in the
 current plan. The React interface uses the same schema to render its controls.
+ULID inputs accept both upper- and lowercase Crockford encodings; Laravel's
+persisted ULIDs are normally lowercase.
 
 The plan also exposes a `workspace` projection for the active Cycle UI. It
 names the active Domain and Context Horizon, returns the Horizon's provenancial
 Committal Proposition separately, and groups the visible measurement population
-by Classification Register. The provenance Proposition is deliberately not
-inserted into the new Horizon's register population: it opens that Horizon from
-the preceding Closure Boundary. Register propositions are returned newest-first
-and bounded by the Participant's current read limit. Each compact Proposition
-includes its observable values, so the active workspace does not need to fetch
-the substrate's complete public graph before it can render.
+by Classification Register. The human workspace presents these as operational
+Read, Gate and Write rows. Read and Gate each expose one active Proposition;
+Lineage is available on demand; and Write separates existing actionable
+Propositions from moves that create a new Proposition from the Gate. An
+existing Write card exposes Support and Refute when Attestation is admissible,
+and Revise only when that Proposition is owned and revisable. Moves which
+create a new Proposition are exposed as a compact Supersession control between
+Gate and Write rather than being presented as existing Proposition cards.
+
+Expressive Propositions include an `impact` projection containing the parent
+measurement as `from` and the expressive measurement as `to`. This makes the
+size and direction of the structural transition visible; the destination is
+not inferred from a centre point. The human rails use lighter indigo for
+movement toward Prominence and darker indigo for movement toward Turbulence.
+
+The plan also includes the viewing Participant's effective `attestation` on
+each Proposition. A later eligible Write may change that direction while the
+Proposition remains an active expressive head. The replacement links to the
+prior Attestation for auditability, derived measurements use only the effective
+leaf, and at most one Attestation can be recorded for a Proposition in a given
+Phase.
+
+The provenance Proposition is deliberately not inserted into the new Horizon's
+register population: it opens that Horizon from the preceding Closure Boundary.
+Register propositions are returned newest-first and bounded by the
+Participant's current read limit. Each compact Proposition includes its
+observable values, so the active workspace does not need to fetch the
+substrate's complete public graph before it can render.
 
     {
       "workspace": {

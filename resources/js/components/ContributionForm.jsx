@@ -1,7 +1,8 @@
-import { Alert, Button, Group, Modal, SegmentedControl, Select, Stack, Text, Textarea, TextInput } from '@mantine/core';
+import { Alert, Button, Group, Modal, Select, Stack, Text, Textarea, TextInput } from '@mantine/core';
 import { IconAlertCircle } from '@tabler/icons-react';
 import { useEffect, useMemo, useState } from 'react';
 import { messageFrom } from '../errors';
+import { AttestationDirectionControl } from './AttestationDirectionControl';
 
 const emptyValues = {};
 
@@ -122,13 +123,7 @@ export function ContributionForm({
           {properties.direction && (
             <Stack gap={5}>
               <Text size="sm" fw={500}>Direction</Text>
-              <SegmentedControl
-                fullWidth
-                color={values.direction === 'support' ? 'violet' : 'teal'}
-                data={[
-                  { value: 'support', label: 'Support (+)' },
-                  { value: 'refute', label: 'Refute (−)' },
-                ]}
+              <AttestationDirectionControl
                 value={values.direction || 'support'}
                 onChange={(value) => set('direction', value)}
               />

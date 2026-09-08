@@ -1,30 +1,16 @@
-import { Badge, Box, Drawer, ScrollArea, Stack, Text } from '@mantine/core';
-import { useMediaQuery } from '@mantine/hooks';
+import { Badge, Box, Drawer, Stack, Text } from '@mantine/core';
 import { structuralDeltaSummary } from './MeasurementRails';
 import { PropositionContent } from './PropositionContent';
 
-export function PropositionInspector({ selection, onClose }) {
-  const mobile = useMediaQuery('(max-width: 74em)');
-  const content = <InspectorContent selection={selection} />;
-
-  if (mobile) {
-    return (
-      <Drawer opened={Boolean(selection)} onClose={onClose} position="right" size="min(34rem, 100%)" title="Proposition inspector">
-        {content}
-      </Drawer>
-    );
-  }
-
+export function PropositionInspector({ selection, committalObservables, onClose }) {
   return (
-    <Box className="proposition-inspector">
-      <ScrollArea h="100%" type="auto" offsetScrollbars>
-        {content}
-      </ScrollArea>
-    </Box>
+    <Drawer opened={Boolean(selection)} onClose={onClose} position="right" size="min(34rem, 100%)" title="Proposition inspector">
+      <InspectorContent selection={selection} committalObservables={committalObservables} />
+    </Drawer>
   );
 }
 
-function InspectorContent({ selection }) {
+function InspectorContent({ selection, committalObservables }) {
   if (!selection) {
     return (
       <Stack className="proposition-inspector__empty" align="center" justify="center" gap="xs">
@@ -47,6 +33,7 @@ function InspectorContent({ selection }) {
           proposition={{ ...proposition, title: selection.title || proposition.title }}
           mode="detailed"
           projectedObservables={projected}
+          committalObservables={committalObservables}
         />
       </Box>
 
