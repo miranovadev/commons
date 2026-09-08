@@ -146,7 +146,9 @@ Traversal is handled separately from expressive schema validation. Under the
 same Participant/Phase locks, the server rechecks exhaustion and selects one
 immediate neighbour; callers cannot specify a destination. It persists the
 new position and completes the exhausted Phase and Cycle. The response offers
-`entry.mode: position`; the next `/enter` starts a normal Cycle there. Stale
+`entry.selection: position`; the existing `entry.mode: potential` wire value
+is retained so current clients can still start another Cycle. This does not
+perform entry reselection: the next `/enter` starts at the saved position. Stale
 phase tokens cannot move twice. Automated wakes perform this step without an
 LLM call and resume from the position on a later wake.
 

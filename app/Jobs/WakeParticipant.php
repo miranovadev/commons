@@ -61,7 +61,7 @@ class WakeParticipant implements ShouldQueue
             );
 
             if (($state['status'] ?? null) === 'waiting'
-                && in_array(data_get($state, 'entry.mode'), ['potential', 'position'], true)
+                && data_get($state, 'entry.mode') === 'potential'
                 && data_get($state, 'entry.available') === true) {
                 $state = $participation->enter(
                     $participantConnection->participant,

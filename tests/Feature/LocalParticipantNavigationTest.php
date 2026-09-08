@@ -112,7 +112,7 @@ class LocalParticipantNavigationTest extends TestCase
         $this->assertSame($branch->id, $participant->fresh()->current_proposition_id);
         $this->assertNotSame($region->id, $participant->fresh()->current_proposition_id);
         $this->assertNotNull($phase->fresh()->completed_at);
-        $this->assertSame('position', $after['entry']['mode']);
+        $this->assertSame('position', $after['entry']['selection']);
         $this->assertTrue($after['entry']['available']);
         $this->assertDatabaseCount('cycles', 2);
     }
@@ -336,7 +336,8 @@ class LocalParticipantNavigationTest extends TestCase
             .'/participants/'.$participant->id.'/participate';
         $this->postJson($endpoint, [
             'phase_id' => $phase->id, 'contribution' => ['action' => 'participant.traverse'],
-        ])->assertOk()->assertJsonPath('data.entry.mode', 'position');
+        ])->assertOk()->assertJsonPath('data.entry.mode', 'potential')
+            ->assertJsonPath('data.entry.selection', 'position');
         $this->assertSame($branch->id, $participant->fresh()->current_proposition_id);
         $this->postJson($endpoint.'/enter', [])->assertCreated()
             ->assertJsonPath('data.plan.gate.id', $branch->id);

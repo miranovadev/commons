@@ -211,7 +211,9 @@ final readonly class ParticipationService
     {
         if ($participant->fresh()->current_proposition_id !== null) {
             return [
-                'mode' => 'position',
+                // Preserve the existing client entry contract; selection is local.
+                'mode' => 'potential',
+                'selection' => 'position',
                 'available' => true,
                 'message' => 'Continue from the Participant’s current substrate position.',
             ];
