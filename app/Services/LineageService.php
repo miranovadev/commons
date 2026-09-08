@@ -8,6 +8,15 @@ use Illuminate\Support\Facades\DB;
 
 final class LineageService
 {
+    /** @return Collection<int, string> */
+    public function neighbourIds(Proposition $position): Collection
+    {
+        return $position->parents()->pluck('propositions.id')
+            ->merge($position->children()->pluck('propositions.id'))
+            ->reject(fn (string $id): bool => $id === $position->getKey())
+            ->unique()->values();
+    }
+
     /**
      * @return Collection<int, Proposition>
      */
@@ -62,3 +71,4 @@ final class LineageService
         return max(1, (int) ceil(mb_strlen($statement) / 4));
     }
 }
+

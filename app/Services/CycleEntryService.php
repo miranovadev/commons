@@ -30,7 +30,7 @@ final readonly class CycleEntryService
 
     /**
      * Establish the substrate's Origin and place the Participant at the first
-     * live Settlement Cycle. Potential will govern subsequent Cycle entry.
+     * live Settlement Cycle. Entry selection only establishes initial position.
      *
      * @param  array<string, mixed>|null  $origin
      */
@@ -48,6 +48,16 @@ final readonly class CycleEntryService
                 throw new ConflictHttpException(
                     'The Participant already has an active Cycle.'
                 );
+            }
+
+            if ($lockedParticipant->current_proposition_id !== null) {
+                $this->createLiveCycle(
+                    $lockedParticipant,
+                    $substrate,
+                    $lockedParticipant->position()->firstOrFail(),
+                );
+
+                return;
             }
 
             if ($this->hasPropositionHistory($substrate)) {
@@ -122,6 +132,8 @@ final readonly class CycleEntryService
         Substrate $substrate,
         Proposition $gate,
     ): void {
+        $participant->current_proposition_id = $gate->getKey();
+        $participant->save();
         $cycle = $this->createCycle($participant);
         $domain = $this->horizons->currentFor($substrate)->domain;
         $firstRegister = $domain === ContextDomain::Emergence
@@ -244,3 +256,4 @@ final readonly class CycleEntryService
         );
     }
 }
+

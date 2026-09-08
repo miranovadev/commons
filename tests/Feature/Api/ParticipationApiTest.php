@@ -67,6 +67,7 @@ class ParticipationApiTest extends TestCase
             ]);
 
         $originId = $response->json('data.plan.gate.id');
+        $this->assertSame($originId, $participant->fresh()->current_proposition_id);
 
         $this->assertDatabaseCount('cycles', 2);
         $this->assertDatabaseCount('phases', 2);
@@ -199,11 +200,11 @@ class ParticipationApiTest extends TestCase
             ->assertJsonPath('data.plan.phase.kind', 'distinguish')
             ->assertJsonPath(
                 'data.perspective.attenuation.status',
-                'pending',
+                'active',
             )
             ->assertJsonPath(
                 'data.perspective.attenuation.value',
-                null,
+                1,
             )
             ->assertJsonPath('data.plan.workspace.domain', 'emergence')
             ->assertJsonPath(
@@ -397,3 +398,4 @@ class ParticipationApiTest extends TestCase
         ];
     }
 }
+

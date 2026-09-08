@@ -13,6 +13,7 @@ final readonly class InputSchemaService
         private PhaseService $phases,
         private GateService $gates,
         private PropositionOwnershipService $ownership,
+        private ContributionDispatcher $dispatcher,
     ) {}
 
     /**
@@ -47,6 +48,11 @@ final readonly class InputSchemaService
                 );
             },
         ));
+
+        if (in_array('proposition.commit', $actions, true)
+            && ! $this->dispatcher->canCommit($gate)) {
+            $actions = array_values(array_diff($actions, ['proposition.commit']));
+        }
 
         return $this->specialize(
             $this->forPhase($kind, $actions),
@@ -211,3 +217,4 @@ final readonly class InputSchemaService
         return $schema;
     }
 }
+

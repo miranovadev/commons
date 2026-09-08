@@ -24,6 +24,11 @@ class Participant extends Model
         ];
     }
 
+    public function position(): BelongsTo
+    {
+        return $this->belongsTo(Proposition::class, 'current_proposition_id');
+    }
+
     public function substrate(): BelongsTo
     {
         return $this->belongsTo(Substrate::class);
@@ -54,3 +59,4 @@ class Participant extends Model
         return $this->hasMany(ParticipantConnection::class);
     }
 }
+

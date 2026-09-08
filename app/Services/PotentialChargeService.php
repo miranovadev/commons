@@ -52,7 +52,8 @@ final readonly class PotentialChargeService
             CommitmentSnapshot $snapshot,
         ) use ($propositions, $edges): array {
             $potential = $this->potentialFor(
-                $snapshot,
+                $snapshot->proposition_id,
+                $snapshot->tension,
                 $propositions,
                 $edges,
             );
@@ -77,6 +78,92 @@ final readonly class PotentialChargeService
     }
 
     /**
+     * Rank only immediate neighbours. A branch's signal is the greatest
+     * distance-attenuated Potential observable through that first step.
+     * The current position is excluded from each branch to avoid counting
+     * a route that immediately returns through the observer.
+     *
+     * @return array{proposition: Proposition, potential: float}|null
+     */
+    public function nextFrom(Proposition $position): ?array
+    {
+        $substrateId = $position->phase->cycle->participant->substrate_id;
+        $propositions = Proposition::query()
+            ->whereHas('phase.cycle.participant', fn ($query) => $query
+                ->where('substrate_id', $substrateId))
+            ->with(['measurement', 'commitmentSnapshot'])
+            ->get()->keyBy('id');
+        $edges = DB::table('supersessions')
+            ->whereIn('source_proposition_id', $propositions->keys())
+            ->whereIn('target_proposition_id', $propositions->keys())
+            ->get(['source_proposition_id', 'target_proposition_id']);
+        $outgoing = $edges->groupBy('source_proposition_id');
+        $adjacency = [];
+        foreach ($edges as $edge) {
+            $adjacency[$edge->source_proposition_id][$edge->target_proposition_id] = true;
+            $adjacency[$edge->target_proposition_id][$edge->source_proposition_id] = true;
+        }
+
+        $potentials = [];
+        $best = null;
+        $neighbours = array_keys($adjacency[$position->getKey()] ?? []);
+        sort($neighbours, SORT_STRING);
+        foreach ($neighbours as $neighbourId) {
+            if ($neighbourId === $position->getKey()) {
+                continue;
+            }
+            $visited = [$position->getKey() => true, $neighbourId => true];
+            $frontier = [$neighbourId];
+            $distance = 1;
+            $signal = 0.0;
+            while ($frontier !== []) {
+                $next = [];
+                foreach ($frontier as $id) {
+                    $key = $id.':'.$distance;
+                    if (! array_key_exists($key, $potentials)) {
+                        $source = $propositions->get($id);
+                        $tension = $this->tensionOf($source);
+                        $potentials[$key] = $tension === null ? 0.0 : $this->potentialFor(
+                            $id, $tension, $propositions, $outgoing, $distance,
+                        );
+                    }
+                    $signal = max($signal, $potentials[$key]);
+                    foreach (array_keys($adjacency[$id] ?? []) as $nextId) {
+                        if (! isset($visited[$nextId])) {
+                            $visited[$nextId] = true;
+                            $next[] = $nextId;
+                        }
+                    }
+                }
+                $frontier = $next;
+                $distance++;
+            }
+            if ($signal > ($best['potential'] ?? 0.0)) {
+                $best = ['proposition' => $propositions->get($neighbourId), 'potential' => $signal];
+            }
+        }
+
+        return $best;
+    }
+
+    private function tensionOf(Proposition $proposition): ?float
+    {
+        if ($proposition->commitmentSnapshot !== null) {
+            return $proposition->commitmentSnapshot->tension;
+        }
+        $measurement = $proposition->measurement;
+        if ($measurement === null || $measurement->correspondence === null
+            || $measurement->chirality === null || $measurement->closure === null) {
+            return null;
+        }
+        $projection = $this->projections->from(new ObservableValues(
+            $measurement->correspondence, $measurement->chirality, $measurement->closure,
+        ));
+
+        return round($projection['prominence'] - $projection['turbulence'], 7);
+    }
+
+    /**
      * Potential Charge = max(0, max(|T| - |T_c|)) over measurable Expressive
      * continuations reachable before another Committal state.
      *
@@ -84,16 +171,20 @@ final readonly class PotentialChargeService
      * @param  Collection<string, Collection<int, object>>  $edges
      */
     private function potentialFor(
-        CommitmentSnapshot $snapshot,
+        string $positionId,
+        float $tension,
         Collection $propositions,
         Collection $edges,
+        ?int $observerDistance = null,
     ): float {
-        $frontier = collect([$snapshot->proposition_id]);
-        $visited = collect([$snapshot->proposition_id => true]);
+        $frontier = collect([$positionId]);
+        $visited = collect([$positionId => true]);
         $potential = 0.0;
+        $depth = 0;
 
         while ($frontier->isNotEmpty()) {
             $next = collect();
+            $depth++;
 
             foreach ($frontier as $sourceId) {
                 foreach ($edges->get($sourceId, collect()) as $edge) {
@@ -129,7 +220,8 @@ final readonly class PotentialChargeService
                         );
                         $potential = max(
                             $potential,
-                            abs($snapshot->tension) - abs($continuationTension),
+                            (abs($tension) - abs($continuationTension))
+                                / ($observerDistance === null ? 1 : 1 + $observerDistance + $depth),
                         );
                     }
 
@@ -143,3 +235,4 @@ final readonly class PotentialChargeService
         return round(max(0, $potential), 7);
     }
 }
+

@@ -55,6 +55,7 @@ final readonly class InputPlanService
             $workspace['registers'][$phase->write_register] ?? [],
         )
             ->where('tier', 'expressive')
+            ->whereIn('id', $this->options->localIds($phase))
             ->pluck('id')
             ->all();
 
@@ -276,3 +277,4 @@ final readonly class InputPlanService
         ];
     }
 }
+

@@ -61,11 +61,22 @@ class WakeParticipant implements ShouldQueue
             );
 
             if (($state['status'] ?? null) === 'waiting'
-                && data_get($state, 'entry.mode') === 'potential'
+                && in_array(data_get($state, 'entry.mode'), ['potential', 'position'], true)
                 && data_get($state, 'entry.available') === true) {
                 $state = $participation->enter(
                     $participantConnection->participant,
                 );
+            }
+
+            if (data_get($state, 'navigation.available') === true) {
+                $participation->contribute(
+                    $participantConnection->participant,
+                    $state['navigation']['phase_id'],
+                    ['action' => 'participant.traverse'],
+                );
+                $triggers->recordSuccess($participantConnection);
+
+                return;
             }
 
             if (($state['status'] ?? null) !== 'ready') {
@@ -102,3 +113,4 @@ class WakeParticipant implements ShouldQueue
         }
     }
 }
+
