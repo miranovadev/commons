@@ -246,6 +246,100 @@ class LocalParticipantNavigationTest extends TestCase
         );
     }
 
+    public function test_an_ungrounded_order_reports_exhaustion_instead_of_advertising_an_invalid_commit(): void
+    {
+        [$branch, $leaf] = $this->branchedGraph();
+        $participant = $this->participant('ungrounded', $leaf);
+        $phase = $this->phase($participant, $leaf);
+        $phase->kind = PhaseKind::Order;
+        $phase->save();
+
+        $state = $this->state($participant);
+
+        $this->assertSame([], $state['plan']['schema']['oneOf']);
+        $this->assertSame('no_admissible_write', $state['reason']['code']);
+        $this->assertSame($branch->id, $state['navigation']['next_proposition_id']);
+    }
+
+    public function test_automated_wakes_traverse_without_calling_inference_and_resume_later(): void
+    {
+        [$branch, $leaf] = $this->branchedGraph();
+        $participant = $this->participant('automated', $leaf);
+        $this->phase($participant, $leaf);
+        $connection = new \App\Models\Connection;
+        $connection->forceFill([
+            'provider' => 'openai', 'name' => 'Navigation test',
+            'configuration' => ['model' => 'test'], 'credentials' => ['api_key' => 'test'],
+        ])->save();
+        $link = new \App\Models\ParticipantConnection;
+        $link->forceFill([
+            'participant_id' => $participant->id, 'connection_id' => $connection->id,
+            'is_enabled' => true, 'configuration' => [], 'last_error' => 'Earlier exhaustion',
+        ])->save();
+        $inference = \Mockery::mock(\App\Contracts\ParticipantInference::class);
+        $inference->shouldNotReceive('contribute');
+        $job = new \App\Jobs\WakeParticipant($link->id);
+        $job->handle($inference, app(ParticipationService::class),
+            app(\App\Services\ParticipantConnectionTriggerService::class));
+        $this->assertSame($branch->id, $participant->fresh()->current_proposition_id);
+        $this->assertNull($link->fresh()->last_error);
+
+        $laterInference = \Mockery::mock(\App\Contracts\ParticipantInference::class);
+        $laterInference->shouldReceive('contribute')->once()->withArgs(
+            fn ($connection, array $state): bool => $state['plan']['gate']['id'] === $branch->id,
+        )->andReturn(['action' => 'proposition.variant', 'statement' => 'Continue at C.']);
+        $job->handle($laterInference, app(ParticipationService::class),
+            app(\App\Services\ParticipantConnectionTriggerService::class));
+        $this->assertSame('persist', $this->state($participant)['plan']['phase']['kind']);
+    }
+
+    public function test_navigation_api_uses_the_phase_token_and_ignores_no_admissible_write_as_a_terminal_state(): void
+    {
+        $this->postJson('/api/bootstrap', [
+            'name' => 'System', 'email' => 'navigation@example.test',
+            'password' => 'correct horse battery staple',
+            'password_confirmation' => 'correct horse battery staple',
+        ])->assertCreated();
+        [$branch, $leaf] = $this->branchedGraph();
+        $participant = $this->participant('api', $leaf);
+        $phase = $this->phase($participant, $leaf);
+        $endpoint = '/api/substrates/'.$this->substrate->slug
+            .'/participants/'.$participant->id.'/participate';
+        $this->postJson($endpoint, [
+            'phase_id' => $phase->id, 'contribution' => ['action' => 'participant.traverse'],
+        ])->assertOk()->assertJsonPath('data.entry.mode', 'position');
+        $this->assertSame($branch->id, $participant->fresh()->current_proposition_id);
+        $this->postJson($endpoint.'/enter', [])->assertCreated()
+            ->assertJsonPath('data.plan.gate.id', $branch->id);
+    }
+
+    public function test_migration_recovers_active_gates_and_completed_commitments_without_reentry(): void
+    {
+        $gate = $this->node('Previous Gate', 0.0);
+        $active = $this->participant('existing active');
+        $this->phase($active, $gate);
+        $completed = $this->participant('existing completed');
+        $order = $this->phase($completed, $gate);
+        $order->kind = PhaseKind::Order;
+        $order->completed_at = now();
+        $order->save();
+        $order->cycle->completed_at = now();
+        $order->cycle->save();
+        $commitment = new Proposition;
+        $commitment->forceFill([
+            'phase_id' => $order->id, 'register' => 'canon', 'tier' => 'committal',
+            'statement' => 'Final commitment.',
+        ])->save();
+        $newcomer = $this->participant('unpositioned');
+        $migration = require database_path('migrations/2026_09_09_000000_persist_participant_position.php');
+        $migration->down();
+        $migration->up();
+
+        $this->assertSame($gate->id, $active->fresh()->current_proposition_id);
+        $this->assertSame($commitment->id, $completed->fresh()->current_proposition_id);
+        $this->assertNull($newcomer->fresh()->current_proposition_id);
+    }
+
     /** @return array{Proposition, Proposition, Proposition} */
     private function branchedGraph(): array
     {
