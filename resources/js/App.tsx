@@ -10,6 +10,7 @@ import { commonsApi, useGetSessionQuery, useGetSubstrateQuery, useLogoutMutation
 import { systemBootstrapped } from './systemSlice';
 import { HTTP_PRECONDITION_REQUIRED } from './http';
 import { theme } from './theme';
+import type { RootState } from './store';
 import { BootstrapPage } from './pages/BootstrapPage';
 import { ConnectionsPage } from './pages/ConnectionsPage';
 import { LoginPage } from './pages/LoginPage';
@@ -26,26 +27,26 @@ function CommonsApp() {
   const [opened, { toggle, close }] = useDisclosure(false);
   const mobile = useMediaQuery('(max-width: 47.99em)');
   const dispatch = useDispatch();
-  const bootstrapRequired = useSelector((state) => state.system.bootstrapRequired);
-  const { data: user, isLoading, isError, error } = useGetSessionQuery();
+  const bootstrapRequired = useSelector((state: RootState) => state.system.bootstrapRequired);
+  const { data: user, isLoading, isError, error } = useGetSessionQuery(undefined);
   const [logoutRequest] = useLogoutMutation();
   const location = useLocation();
   const navigate = useNavigate();
   const substrateMatch = matchPath({ path: '/substrates/:slug/*', end: false }, location.pathname)
     || matchPath('/substrates/:slug', location.pathname);
   const substrateSlug = substrateMatch?.params?.slug;
-  const { data: selectedSubstrate } = useGetSubstrateQuery(substrateSlug, { skip: !substrateSlug });
+  const { data: selectedSubstrate } = useGetSubstrateQuery(substrateSlug ?? '', { skip: !substrateSlug });
 
   useEffect(close, [location.pathname]);
 
   async function logout() {
-    await logoutRequest().unwrap();
+    await logoutRequest(undefined).unwrap();
     dispatch(commonsApi.util.resetApiState());
     navigate('/');
   }
 
   if (isLoading) return <Center mih="100vh"><Loader /></Center>;
-  if (isError && error?.status !== 401 && error?.status !== HTTP_PRECONDITION_REQUIRED) return <Center mih="100vh"><Text c="red">The Commons could not be reached.</Text></Center>;
+  if (isError && (!error || !('status' in error) || (error.status !== 401 && error.status !== HTTP_PRECONDITION_REQUIRED))) return <Center mih="100vh"><Text c="red">The Commons could not be reached.</Text></Center>;
   if (bootstrapRequired) return <Routes><Route path="*" element={<BootstrapPage onComplete={() => { dispatch(systemBootstrapped()); navigate('/'); }} />} /></Routes>;
 
   const participantDetailActive = location.pathname.includes('/participants/') && !location.pathname.endsWith('/participants');
@@ -65,13 +66,15 @@ function CommonsApp() {
         <Group h="100%" px="md" justify="space-between">
           <Group gap="sm">
             <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
-            <Group component={Link} to="/" gap="xs" className="brand-link">
-              <CommonsLogo size={30} />
-              <Box>
-                <Text fw={750} size="sm" lh={1.1}>The Commons</Text>
-                <Text size="10px" c="dimmed" visibleFrom="sm" mt={2}>A Shared Cognitive Substrate</Text>
-              </Box>
-            </Group>
+            <Link to="/" className="brand-link">
+              <Group gap="xs">
+                <CommonsLogo size={30} />
+                <Box>
+                  <Text fw={750} size="sm" lh={1.1}>The Commons</Text>
+                  <Text size="10px" c="dimmed" visibleFrom="sm" mt={2}>A Shared Cognitive Substrate</Text>
+                </Box>
+              </Group>
+            </Link>
           </Group>
           <Group gap="xs">
             <ColorSchemeButton />

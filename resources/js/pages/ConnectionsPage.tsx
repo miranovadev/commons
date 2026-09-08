@@ -4,17 +4,28 @@ import { useForm } from '@mantine/form';
 import { IconAlertCircle, IconPencil, IconPlugConnected, IconPlus, IconTrash } from '@tabler/icons-react';
 import { messageFrom } from '../errors';
 import { useCreateConnectionMutation, useDeleteConnectionMutation, useGetConnectionOptionsQuery, useGetConnectionsQuery, useUpdateConnectionMutation } from '../services/commonsApi';
+import type { Connection, ConnectionInput, ConnectionOptions, Identifier } from '../types';
+
+interface ConnectionFormValues {
+  provider: string;
+  name: string;
+  model: string;
+  instructions: string;
+  api_key: string;
+}
+
+type UpdateConnectionInput = ConnectionInput & { connectionId: Identifier };
 
 export function ConnectionsPage() {
-  const { data: connections = [], error: connectionsError } = useGetConnectionsQuery();
-  const { data: options = { providers: [] }, error: optionsError } = useGetConnectionOptionsQuery();
+  const { data: connections = [], error: connectionsError } = useGetConnectionsQuery(undefined);
+  const { data: options = { providers: [] }, error: optionsError } = useGetConnectionOptionsQuery(undefined);
   const [createConnection] = useCreateConnectionMutation();
   const [updateConnection] = useUpdateConnectionMutation();
   const [deleteConnection] = useDeleteConnectionMutation();
   const [creating, setCreating] = useState(false);
-  const [editing, setEditing] = useState(null);
+  const [editing, setEditing] = useState<Connection | null>(null);
   const error = connectionsError || optionsError;
-  const form = useForm({
+  const form = useForm<ConnectionFormValues>({
     initialValues: { provider: 'openai', name: '', model: '', instructions: '', api_key: '' },
     validate: {
       name: (value) => value.trim() ? null : 'A name is required.',
@@ -23,7 +34,7 @@ export function ConnectionsPage() {
     },
   });
 
-  async function submit(values) {
+  async function submit(values: ConnectionFormValues) {
     form.clearErrors();
     try {
       await createConnection({
@@ -39,7 +50,7 @@ export function ConnectionsPage() {
     }
   }
 
-  async function remove(connection) {
+  async function remove(connection: Connection) {
     await deleteConnection({ connectionId: connection.id }).unwrap();
   }
 
@@ -92,23 +103,30 @@ export function ConnectionsPage() {
       )}
 
       <Modal opened={creating} onClose={() => setCreating(false)} title="Add Connection" centered>
-        <Stack component="form" onSubmit={form.onSubmit(submit)}>
+        <form onSubmit={form.onSubmit(submit)}>
+          <Stack>
           <Select label="Provider" data={options.providers} {...form.getInputProps('provider')} />
           <TextInput label="Connection name" placeholder="Mira" {...form.getInputProps('name')} />
           <TextInput label="Model" placeholder="gpt-5" {...form.getInputProps('model')} />
           <Textarea label="Instructions" description="Reusable instructions for this model connection" autosize minRows={3} {...form.getInputProps('instructions')} />
           <PasswordInput label="API key" {...form.getInputProps('api_key')} />
           <Group justify="flex-end"><Button variant="default" onClick={() => setCreating(false)}>Cancel</Button><Button type="submit" loading={form.submitting} leftSection={<IconPlus size={16} />}>Save Connection</Button></Group>
-        </Stack>
+          </Stack>
+        </form>
       </Modal>
 
-      <EditConnectionModal connection={editing} providers={options.providers} onClose={() => setEditing(null)} onSave={updateConnection} />
+      <EditConnectionModal connection={editing} providers={options.providers ?? []} onClose={() => setEditing(null)} onSave={(input) => updateConnection(input).unwrap()} />
     </Container>
   );
 }
 
-function EditConnectionModal({ connection, providers, onClose, onSave }) {
-  const form = useForm({
+function EditConnectionModal({ connection, providers, onClose, onSave }: {
+  connection: Connection | null;
+  providers: NonNullable<ConnectionOptions['providers']>;
+  onClose: () => void;
+  onSave: (input: UpdateConnectionInput) => Promise<Connection>;
+}) {
+  const form = useForm<ConnectionFormValues>({
     mode: 'uncontrolled',
     initialValues: {
       provider: connection?.provider || 'openai',
@@ -124,17 +142,18 @@ function EditConnectionModal({ connection, providers, onClose, onSave }) {
   });
 
   if (!connection) return null;
+  const activeConnection = connection;
 
-  async function submit(values) {
+  async function submit(values: ConnectionFormValues) {
     try {
-      const body = {
-        connectionId: connection.id,
+      const body: UpdateConnectionInput = {
+        connectionId: activeConnection.id,
         provider: values.provider,
         name: values.name.trim(),
         configuration: { model: values.model.trim(), instructions: values.instructions.trim() || null },
       };
       if (values.api_key.trim()) body.credentials = { api_key: values.api_key };
-      await onSave(body).unwrap();
+      await onSave(body);
       onClose();
     } catch (requestError) {
       form.setFieldError('name', messageFrom(requestError, 'The connection could not be updated.'));
@@ -143,14 +162,16 @@ function EditConnectionModal({ connection, providers, onClose, onSave }) {
 
   return (
     <Modal key={connection.id} opened onClose={onClose} title={`Edit ${connection.name}`} centered>
-      <Stack component="form" onSubmit={form.onSubmit(submit)}>
+      <form onSubmit={form.onSubmit(submit)}>
+        <Stack>
         <Select label="Provider" data={providers} key={form.key('provider')} {...form.getInputProps('provider')} />
         <TextInput label="Connection name" key={form.key('name')} {...form.getInputProps('name')} />
         <TextInput label="Model" key={form.key('model')} {...form.getInputProps('model')} />
         <Textarea label="Instructions" autosize minRows={3} key={form.key('instructions')} {...form.getInputProps('instructions')} />
         <PasswordInput label="New API key" description="Leave blank to keep the existing credential" key={form.key('api_key')} {...form.getInputProps('api_key')} />
         <Group justify="flex-end"><Button variant="default" onClick={onClose}>Cancel</Button><Button type="submit" loading={form.submitting}>Save changes</Button></Group>
-      </Stack>
+        </Stack>
+      </form>
     </Modal>
   );
 }

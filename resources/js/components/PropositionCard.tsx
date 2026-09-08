@@ -1,6 +1,23 @@
 import { Card } from '@mantine/core';
 import { metaForRegister } from '../registers';
 import { PropositionContent } from './PropositionContent';
+import type { Observables, Proposition } from '../types';
+
+interface PropositionCardProps {
+  proposition: Proposition;
+  selected?: boolean;
+  compact?: boolean;
+  mini?: boolean;
+  wireframe?: boolean;
+  muted?: boolean;
+  indigoHighlight?: boolean;
+  actionLabel?: string;
+  actionIcon?: React.ElementType;
+  projectedObservables?: Observables;
+  committalObservables?: Observables;
+  flow?: string;
+  onClick?: () => void;
+}
 
 export function PropositionCard({
   proposition,
@@ -16,7 +33,7 @@ export function PropositionCard({
   committalObservables,
   flow,
   onClick,
-}) {
+}: PropositionCardProps) {
   const register = metaForRegister(proposition.register);
   const structurallyHighlighted = indigoHighlight || proposition.tier === 'committal';
   const classes = [

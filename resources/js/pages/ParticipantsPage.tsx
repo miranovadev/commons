@@ -6,15 +6,45 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { messageFrom } from '../errors';
 import { ConnectionsPanel } from '../components/ConnectionsPanel';
 import { useDeleteParticipantConnectionMutation, useGetConnectionsQuery, useGetParticipantConnectionsQuery, useGetParticipantsQuery, useGetSubstrateQuery, useJoinParticipantMutation, useUpdateParticipantConnectionMutation } from '../services/commonsApi';
+import type { Connection, ConnectionTrigger, JoinParticipantInput, Participant, User } from '../types';
 
-export function ParticipantsPage({ user }) {
-  const { slug } = useParams();
+interface ParticipantsPageProps { user?: User | null }
+interface ParticipantCardProps {
+  participant: Participant;
+  slug: string;
+  onEnter: () => void;
+  onConnections: () => void;
+}
+interface ParticipantConnectionSummaryProps {
+  slug: string;
+  participant: Participant;
+  onManage: () => void;
+}
+interface CreateParticipantValues {
+  callsign: string;
+  designation: string;
+  max_read_count: number;
+  max_token_count: number | string;
+  connection_id: string | null;
+}
+interface CreateParticipantModalProps {
+  opened: boolean;
+  onClose: () => void;
+  slug: string;
+  user?: User | null;
+  connections: Connection[];
+  onCreated: (participant: Participant, enter: boolean) => void;
+}
+
+export function ParticipantsPage({ user }: ParticipantsPageProps) {
+  const { slug: routeSlug } = useParams();
+  const slug = routeSlug ?? '';
   const navigate = useNavigate();
   const { data: substrate } = useGetSubstrateQuery(slug);
   const { data: allParticipants = [], error } = useGetParticipantsQuery(slug);
-  const { data: connections = [] } = useGetConnectionsQuery();
+  const { data: connections = [] } = useGetConnectionsQuery(undefined);
   const [opened, setOpened] = useState(false);
-  const [connectionParticipant, setConnectionParticipant] = useState(null);
+  const [connectionParticipant, setConnectionParticipant] = useState<Participant | null>(null);
   const participants = useMemo(
     () => allParticipants.filter((participant) => participant.owned_by_user),
     [allParticipants],
@@ -84,10 +114,10 @@ export function ParticipantsPage({ user }) {
   );
 }
 
-function ParticipantCard({ participant, slug, onEnter, onConnections }) {
+function ParticipantCard({ participant, slug, onEnter, onConnections }: ParticipantCardProps) {
   const phase = participant.position?.phase;
   const gate = participant.position?.gate;
-  const started = Boolean(participant.position);
+  const position = participant.position;
 
   return (
     <Card withBorder padding="lg">
@@ -103,9 +133,9 @@ function ParticipantCard({ participant, slug, onEnter, onConnections }) {
       </Group>
 
       <Box className="participant-position-preview" mt="lg">
-        {started ? (
+        {position ? (
           <Stack gap={5}>
-            <Group gap={6}><IconRoute size={14} /><Text size="xs" fw={700}>Cycle {participant.position.cycle_sequence} · {phase ? `${capitalize(phase.name)}${phase.write_register ? ` · ${capitalize(phase.write_register)}` : ''}` : 'Between cycles'}</Text></Group>
+            <Group gap={6}><IconRoute size={14} /><Text size="xs" fw={700}>Cycle {position.cycle_sequence} · {phase ? `${capitalize(phase.name)}${phase.write_register ? ` · ${capitalize(phase.write_register)}` : ''}` : 'Between cycles'}</Text></Group>
             <Text size="sm" lineClamp={2}>{gate?.title || 'Ready for the next structural move.'}</Text>
           </Stack>
         ) : (
@@ -116,13 +146,13 @@ function ParticipantCard({ participant, slug, onEnter, onConnections }) {
       <ParticipantConnectionSummary slug={slug} participant={participant} onManage={onConnections} />
 
       <Button mt="lg" fullWidth rightSection={<IconArrowRight size={15} />} onClick={onEnter}>
-        {started ? 'Continue Cycle' : 'Enter Cycle'}
+        {position ? 'Continue Cycle' : 'Enter Cycle'}
       </Button>
     </Card>
   );
 }
 
-function ParticipantConnectionSummary({ slug, participant, onManage }) {
+function ParticipantConnectionSummary({ slug, participant, onManage }: ParticipantConnectionSummaryProps) {
   const parameters = { slug, participantId: participant.id };
   const { data: attachments = [], isLoading } = useGetParticipantConnectionsQuery(parameters);
   const [updateAttachment] = useUpdateParticipantConnectionMutation();
@@ -131,8 +161,8 @@ function ParticipantConnectionSummary({ slug, participant, onManage }) {
   return (
     <Stack className="participant-connections" gap="xs" mt="md">
       {attachments.map((attachment) => {
-        const connection = attachment.connection || {};
-        const trigger = attachment.configuration?.trigger || { mode: 'manual' };
+        const connection = attachment.connection;
+        const trigger: ConnectionTrigger = attachment.configuration?.trigger || { mode: 'manual' };
 
         return (
           <Group key={attachment.id} className="participant-connection" justify="space-between" gap="xs" wrap="nowrap">
@@ -140,8 +170,8 @@ function ParticipantConnectionSummary({ slug, participant, onManage }) {
               <ThemeIcon color="indigo" variant="light" size="sm"><IconPlugConnected size={14} /></ThemeIcon>
               <Box miw={0}>
                 <Group gap={5} wrap="nowrap">
-                  <Text size="xs" fw={650} truncate>{connection.name || 'Connection'}</Text>
-                  <Badge size="xs" variant="light" color="gray">{connection.provider || 'provider'}</Badge>
+                  <Text size="xs" fw={650} truncate>{connection?.name || 'Connection'}</Text>
+                  <Badge size="xs" variant="light" color="gray">{connection?.provider || 'provider'}</Badge>
                 </Group>
                 <Text size="10px" c="dimmed">{triggerLabel(trigger)}</Text>
               </Box>
@@ -152,11 +182,11 @@ function ParticipantConnectionSummary({ slug, participant, onManage }) {
                   size="xs"
                   checked={attachment.is_enabled}
                   onChange={(event) => updateAttachment({ ...parameters, participantConnectionId: attachment.id, is_enabled: event.currentTarget.checked })}
-                  aria-label={`${attachment.is_enabled ? 'Disable' : 'Enable'} ${connection.name || 'connection'}`}
+                  aria-label={`${attachment.is_enabled ? 'Disable' : 'Enable'} ${connection?.name || 'connection'}`}
                 />
               </Tooltip>
               <Tooltip label="Detach connection">
-                <ActionIcon color="red" variant="subtle" size="sm" onClick={() => deleteAttachment({ ...parameters, participantConnectionId: attachment.id })} aria-label={`Detach ${connection.name || 'connection'}`}>
+                <ActionIcon color="red" variant="subtle" size="sm" onClick={() => deleteAttachment({ ...parameters, participantConnectionId: attachment.id })} aria-label={`Detach ${connection?.name || 'connection'}`}>
                   <IconTrash size={14} />
                 </ActionIcon>
               </Tooltip>
@@ -179,16 +209,16 @@ function ParticipantConnectionSummary({ slug, participant, onManage }) {
   );
 }
 
-function triggerLabel(trigger) {
+function triggerLabel(trigger: ConnectionTrigger) {
   if (trigger.mode === 'interval') return `Every ${trigger.interval_minutes || 60} minutes`;
   if (trigger.mode === 'scheduled') return 'Scheduled wake';
   return 'Manual wake';
 }
 
-function CreateParticipantModal({ opened, onClose, slug, user, connections, onCreated }) {
+function CreateParticipantModal({ opened, onClose, slug, user, connections, onCreated }: CreateParticipantModalProps) {
   const [joinParticipant] = useJoinParticipantMutation();
   const defaultCallsign = firstWord(user?.name);
-  const form = useForm({
+  const form = useForm<CreateParticipantValues>({
     initialValues: {
       callsign: defaultCallsign,
       designation: '',
@@ -204,18 +234,18 @@ function CreateParticipantModal({ opened, onClose, slug, user, connections, onCr
     label: `${connection.name} · ${connection.configuration?.model || connection.provider}`,
   }));
 
-  async function create(enter) {
+  async function create(enter: boolean) {
     const validation = form.validate();
     if (validation.hasErrors) return;
 
     try {
       const values = form.getValues();
-      const payload = {
+      const payload: JoinParticipantInput = {
         slug,
         callsign: values.callsign.trim(),
         designation: values.designation.trim() || null,
         max_read_count: values.max_read_count,
-        max_token_count: values.max_token_count || null,
+        max_token_count: typeof values.max_token_count === 'number' ? values.max_token_count : null,
       };
       if (values.connection_id) payload.connection = { id: values.connection_id };
       const participant = await joinParticipant(payload).unwrap();
@@ -245,11 +275,11 @@ function CreateParticipantModal({ opened, onClose, slug, user, connections, onCr
   );
 }
 
-function firstWord(name) {
+function firstWord(name?: string) {
   return String(name || '').trim().split(/\s+/)[0] || '';
 }
 
-function capitalize(value) {
+function capitalize(value?: string) {
   const text = String(value || '');
   return text ? text.charAt(0).toUpperCase() + text.slice(1) : text;
 }

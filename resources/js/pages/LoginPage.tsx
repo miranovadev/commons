@@ -4,14 +4,19 @@ import { IconAlertCircle, IconLogin2 } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { messageFrom } from '../errors';
 import { useLoginMutation } from '../services/commonsApi';
+import type { LoginInput } from '../types';
+
+interface LoginFormValues extends LoginInput {
+  remember: boolean;
+}
 
 export function LoginPage() {
   const navigate = useNavigate();
   const [login] = useLoginMutation();
-  const form = useForm({ initialValues: { email: '', password: '', remember: true } });
+  const form = useForm<LoginFormValues>({ initialValues: { email: '', password: '', remember: true } });
   const error = form.errors.form;
 
-  async function submit(values) {
+  async function submit(values: LoginFormValues) {
     form.setFieldError('form', null);
     try {
       await login(values).unwrap();

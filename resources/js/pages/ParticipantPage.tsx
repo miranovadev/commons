@@ -8,6 +8,7 @@ import { ContributionForm } from '../components/ContributionForm';
 import { OriginCycleForm } from '../components/OriginCycleForm';
 import { ParticipantWorkspace } from '../components/ParticipantWorkspace';
 import { useContributeMutation, useEnterCycleMutation, useGetParticipantQuery, useGetParticipationQuery } from '../services/commonsApi';
+import type { ActionName, ContributionInitialValues, ContributionInput, OriginInput, PhaseKind } from '../types';
 
 const phaseMeta = {
   distinguish: { number: 1, icon: IconFocus2 },
@@ -20,23 +21,31 @@ const phaseMeta = {
 };
 
 export function ParticipantPage() {
-  const { slug, participantId } = useParams();
+  const { slug: routeSlug, participantId: routeParticipantId } = useParams();
+  const slug = routeSlug ?? '';
+  const participantId = routeParticipantId ?? '';
   const parameters = { slug, participantId };
   const { data: participant, isLoading: participantLoading, error: participantError } = useGetParticipantQuery(parameters);
   const { data: participation, isLoading: participationLoading, error: participationError } = useGetParticipationQuery(parameters);
   const [contribute, contribution] = useContributeMutation();
   const [enterCycle, cycleEntry] = useEnterCycleMutation();
-  const [selectedAction, setSelectedAction] = useState(null);
+  const [selectedAction, setSelectedAction] = useState<{ name: ActionName; initialValues: ContributionInitialValues } | null>(null);
   const [originOpened, { open: openOrigin, close: closeOrigin }] = useDisclosure(false);
   const plan = participation?.plan;
   const error = participantError || participationError;
-  const availableActions = useMemo(() => plan?.schema?.oneOf?.map((entry) => entry.$ref?.split('/').pop()).filter(Boolean) || [], [plan]);
+  const availableActions = useMemo(
+    () => plan?.schema?.oneOf
+      ?.map((entry) => entry.$ref?.split('/').pop())
+      .filter((name): name is ActionName => isActionName(name)) || [],
+    [plan],
+  );
 
-  function openAction(name, initialValues = {}) { contribution.reset(); setSelectedAction({ name, initialValues }); }
-  async function submit(contributionInput) {
+  function openAction(name: ActionName, initialValues: ContributionInitialValues = {}) { contribution.reset(); setSelectedAction({ name, initialValues }); }
+  async function submit(contributionInput: ContributionInput) {
+    if (!plan) return;
     try { await contribute({ slug, participantId, phaseId: plan.phase.id, contribution: contributionInput }).unwrap(); setSelectedAction(null); } catch { /* mutation error is rendered by the form */ }
   }
-  async function establishOrigin(origin) {
+  async function establishOrigin(origin: OriginInput) {
     try { await enterCycle({ slug, participantId, origin }).unwrap(); closeOrigin(); } catch { /* mutation error is rendered by the form */ }
   }
   async function enterFromPotential() {
@@ -71,7 +80,7 @@ export function ParticipantPage() {
   );
 }
 
-function PhaseLabel({ kind }) {
+function PhaseLabel({ kind }: { kind: PhaseKind }) {
   const meta = phaseMeta[kind];
   const Icon = meta?.icon || IconFocus2;
   const name = kind ? kind.charAt(0).toUpperCase() + kind.slice(1) : 'Unknown';
@@ -81,4 +90,18 @@ function PhaseLabel({ kind }) {
       <Text size="sm" fw={650}>{meta?.number ? `Phase ${meta.number} · ${name}` : name}</Text>
     </Group>
   );
+}
+
+function isActionName(value?: string): value is ActionName {
+  return [
+    'attestation.create',
+    'instrument.execute',
+    'proposition.commit',
+    'proposition.reclassify',
+    'proposition.reclassify_with_instrument',
+    'proposition.reconcile',
+    'proposition.revise',
+    'proposition.select',
+    'proposition.variant',
+  ].includes(value as ActionName);
 }

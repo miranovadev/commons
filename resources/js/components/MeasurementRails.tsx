@@ -1,4 +1,7 @@
 import { Box, Group, Stack, Text, Tooltip } from '@mantine/core';
+import type { Observables } from '../types';
+
+type MeasurementName = keyof Observables;
 
 export const measurementMeta = {
   correspondence: { label: 'Correspondence', negative: 'Dissonance', positive: 'Consonance' },
@@ -6,10 +9,17 @@ export const measurementMeta = {
   closure: { label: 'Closure', negative: 'Variability', positive: 'Persistence' },
 };
 
-export function MeasurementRails({ observables, projectedObservables, compact = false, bare = false }) {
+interface MeasurementRailsProps {
+  observables?: Observables;
+  projectedObservables?: Observables;
+  compact?: boolean;
+  bare?: boolean;
+}
+
+export function MeasurementRails({ observables, projectedObservables, compact = false, bare = false }: MeasurementRailsProps) {
   return (
     <Stack gap={bare ? 5 : compact ? 7 : 'sm'}>
-      {Object.entries(measurementMeta).map(([key, meta]) => (
+      {(Object.entries(measurementMeta) as Array<[MeasurementName, (typeof measurementMeta)[MeasurementName]]>).map(([key, meta]) => (
         <MeasurementRail
           key={key}
           name={key}
@@ -33,6 +43,15 @@ export function MeasurementRail({
   projectedValue,
   compact = false,
   bare = false,
+}: {
+  name: MeasurementName;
+  label: string;
+  negative: string;
+  positive: string;
+  value?: number | string | null;
+  projectedValue?: number | string | null;
+  compact?: boolean;
+  bare?: boolean;
 }) {
   const currentValue = measurement(value);
   const projectedMeasurement = measurement(projectedValue);
@@ -73,7 +92,7 @@ export function MeasurementRail({
       {hasValue && hasProjected && (
         <span
           className="measurement-rail__delta"
-          style={{ left: `${Math.min(current, projected)}%`, width: `${Math.abs(projected - current)}%` }}
+          style={{ left: `${Math.min(current, projected!)}%`, width: `${Math.abs(projected! - current)}%` }}
         />
       )}
       {hasProjected && (
@@ -119,12 +138,13 @@ export function MeasurementRail({
   );
 }
 
-export function structuralDeltaSummary(observables, projectedObservables) {
+export function structuralDeltaSummary(observables?: Observables, projectedObservables?: Observables): string[] {
   if (!observables || !projectedObservables) return [];
 
   return Object.entries(measurementMeta).flatMap(([key, meta]) => {
-    const current = measurement(observables[key]);
-    const projected = measurement(projectedObservables[key]);
+    const name = key as MeasurementName;
+    const current = measurement(observables[name]);
+    const projected = measurement(projectedObservables[name]);
     if (current === null || projected === null) return [];
 
     const delta = projected - current;
@@ -134,7 +154,7 @@ export function structuralDeltaSummary(observables, projectedObservables) {
   });
 }
 
-function measurement(value) {
+function measurement(value: unknown): number | null {
   if (value === null || value === undefined || value === '') return null;
 
   const numeric = typeof value === 'number' ? value : Number(value);
@@ -143,10 +163,10 @@ function measurement(value) {
   return Math.max(-1, Math.min(1, numeric));
 }
 
-function position(value) {
+function position(value: number) {
   return ((value + 1) / 2) * 100;
 }
 
-function signed(value) {
+function signed(value: number) {
   return `${value >= 0 ? '+' : ''}${value.toFixed(2)}`;
 }
