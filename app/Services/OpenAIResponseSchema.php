@@ -64,7 +64,7 @@ final class OpenAIResponseSchema
             $properties[$name] = $property;
         }
 
-        return [
+        $transport = [
             'type' => 'object',
             'additionalProperties' => false,
             'required' => ['contribution'],
@@ -77,6 +77,40 @@ final class OpenAIResponseSchema
                 ],
             ],
         ];
+
+        // Preserve per-target Attestation directions at the inference boundary.
+        $choices = $actions['attestation.create']['anyOf'] ?? [];
+        if ($choices !== []) {
+            $base = $transport['properties']['contribution'];
+            $variants = [];
+            $otherActions = array_values(array_diff(array_keys($actions), ['attestation.create', 'proposition.traverse']));
+            if ($otherActions !== []) {
+                $other = $base;
+                $other['properties']['action']['enum'] = $otherActions;
+                $variants[] = $other;
+            }
+            if (isset($actions['proposition.traverse'])) {
+                $traverse = $base;
+                $traverse['properties']['action']['enum'] = ['proposition.traverse'];
+                $traverse['properties']['proposition_id'] = $this->transport(
+                    $actions['proposition.traverse']['properties']['proposition_id'],
+                );
+                $variants[] = $traverse;
+            }
+            foreach ($choices as $choice) {
+                $variant = $base;
+                $variant['properties']['action']['enum'] = ['attestation.create'];
+                foreach ($choice['properties'] as $name => $constraint) {
+                    $variant['properties'][$name] = array_replace(
+                        $variant['properties'][$name], $constraint, ['type' => 'string'],
+                    );
+                }
+                $variants[] = $variant;
+            }
+            $transport['properties']['contribution'] = ['anyOf' => $variants];
+        }
+
+        return $transport;
     }
 
     /**

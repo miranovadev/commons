@@ -42,7 +42,7 @@ $proposition = static function (string $action, string $title) use ($statement):
 };
 
 return [
-    'version' => 9,
+    'version' => 10,
 
     'cache' => [
         'store' => env('COMMONS_SCHEMA_CACHE_STORE'),
@@ -60,7 +60,7 @@ return [
 
     'actions' => [
         'proposition.traverse' => [
-            'title' => 'Traverse an existing local Expressive Proposition',
+            'title' => 'Traverse an attested immediate Write descendant',
             'type' => 'object',
             'additionalProperties' => false,
             'required' => ['action', 'proposition_id'],

@@ -70,7 +70,7 @@ class OperationalCommitmentTest extends TestCase
         $this->phase($helper, PhaseKind::Persist, 'stance', Proposition::findOrFail($state['plan']['gate']['id']));
         $helperState = $this->move($helper, ['action' => 'proposition.variant', 'statement' => 'Mediated Stance']);
         $stance = Proposition::findOrFail($helperState['plan']['gate']['id']);
-        $this->move($this->participant, ['action' => 'proposition.traverse', 'proposition_id' => $stance->id]);
+        $this->move($this->participant, ['action' => 'attestation.create', 'proposition_id' => $stance->id, 'direction' => 'support']);
         $helperState = $this->move($helper, [
             'action' => 'proposition.reclassify', 'statement' => 'Final Concord',
         ]);
@@ -247,7 +247,7 @@ class OperationalCommitmentTest extends TestCase
         $reader = $this->participant($this->participant->substrate, 'reader');
         $bias = $this->phase($reader, PhaseKind::Bias, 'concord', $right);
         $state = app(ParticipationService::class)->stateFor($reader);
-        $this->assertNotContains($candidate->id, array_column($state['plan']['write_options'], 'id'));
+        $this->assertContains($candidate->id, array_column($state['plan']['write_options'], 'id'));
         $this->assertContains($candidate->id, $state['plan']['schema']['$defs']['actions']['instrument.execute']['properties']['proposition_id']['enum']);
         $state = $this->move($reader, [
             'action' => 'instrument.execute', 'proposition_id' => $candidate->id,

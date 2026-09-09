@@ -42,3 +42,26 @@ test('Traverse and Bias instruments use their own authorized historical target s
   assert.deepEqual(actionPropositions(navigation, 'instrument.execute'), [grounded]);
   assert.deepEqual(actionPropositions(navigation, 'proposition.revise'), []);
 });
+
+const { attestationDirections, writePropositions } = await import('../../resources/js/participationOptions.ts');
+
+for (const effective of [null, 'support', 'refute']) {
+  test(`Write directions follow the schema for ${effective ?? 'untouched'} descendants`, () => {
+    const directions = ['refute', 'support'].filter((direction) => direction !== effective);
+    const localPlan = {
+      ...plan, write_options: [archived],
+      schema: { $defs: { actions: {
+        'attestation.create': {
+          properties: { proposition_id: { enum: [archived.id] }, direction: { enum: ['support', 'refute'] } },
+          anyOf: directions.map((direction) => ({ properties: { proposition_id: { enum: [archived.id] }, direction: { enum: [direction] } } })),
+        },
+        ...(effective ? { 'proposition.traverse': { properties: { proposition_id: { enum: [archived.id] } } } } : {}),
+      } } },
+    };
+    assert.deepEqual(attestationDirections(localPlan, archived.id), directions);
+    assert.deepEqual(attestationDirections(localPlan, unavailable.id), []);
+    assert.deepEqual(writePropositions(localPlan), [archived]);
+    assert.deepEqual(writePropositions({ ...localPlan, write_options: [], gate_options: [unavailable], instrument_options: [unavailable] }), []);
+    assert.deepEqual(writePropositions({ ...localPlan, schema: {} }), []);
+  });
+}

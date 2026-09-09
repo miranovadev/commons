@@ -155,6 +155,7 @@ export interface ActionSchema {
   title: string;
   properties: Partial<Record<keyof ContributionInput, ActionSchemaProperty>>;
   required?: Array<keyof ContributionInput>;
+  anyOf?: Array<{ properties: ActionSchema['properties'] }>;
 }
 
 export interface InputSchema {

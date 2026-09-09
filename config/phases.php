@@ -7,6 +7,7 @@ return [
         'gate' => 'participant-position',
         'actions' => [
             'proposition.variant',
+            'attestation.create',
             'proposition.traverse',
             'participant.rest',
         ],
@@ -51,6 +52,7 @@ return [
         'actions' => [
             'proposition.variant',
             'instrument.execute',
+            'attestation.create',
             'proposition.traverse',
             'participant.rest',
         ],
@@ -64,6 +66,7 @@ return [
         'gate' => 'previous-phase-position',
         'actions' => [
             'proposition.reconcile',
+            'attestation.create',
             'proposition.traverse',
             'participant.rest',
         ],
@@ -80,6 +83,7 @@ return [
         'actions' => [
             'proposition.reconcile',
             'instrument.execute',
+            'attestation.create',
             'proposition.traverse',
             'participant.rest',
         ],
@@ -96,6 +100,7 @@ return [
         'gate' => 'previous-phase-position',
         'actions' => [
             'proposition.commit',
+            'attestation.create',
             'proposition.traverse',
             'participant.rest',
         ],

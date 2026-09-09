@@ -8,6 +8,14 @@ use Illuminate\Support\Facades\DB;
 
 final class LineageService
 {
+    /** Immediate forward edges only; history/recovery still use neighbourIds. */
+    public function immediateDescendantIds(Proposition $gate): Collection
+    {
+        return $gate->children()->pluck('propositions.id')
+            ->reject(fn (string $id): bool => $id === $gate->getKey())
+            ->unique()->values();
+    }
+
     /** @return Collection<int, string> */
     public function neighbourIds(Proposition $position): Collection
     {
