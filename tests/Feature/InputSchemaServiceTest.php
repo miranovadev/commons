@@ -33,37 +33,45 @@ class InputSchemaServiceTest extends TestCase
         $expected = [
             PhaseKind::Distinguish->value => [
                 'proposition.variant',
-                'proposition.select',
+                'proposition.traverse',
+                'participant.rest',
             ],
             PhaseKind::Persist->value => [
                 'proposition.variant',
                 'proposition.revise',
                 'proposition.reclassify',
                 'attestation.create',
-                'proposition.select',
+                'proposition.traverse',
+                'participant.rest',
             ],
             PhaseKind::Constrain->value => [
                 'proposition.revise',
-                'proposition.reclassify_with_instrument',
+                'proposition.reclassify',
                 'attestation.create',
-                'proposition.select',
+                'proposition.traverse',
+                'participant.rest',
             ],
             PhaseKind::Disperse->value => [
                 'proposition.variant',
                 'instrument.execute',
-                'proposition.select',
+                'proposition.traverse',
+                'participant.rest',
             ],
             PhaseKind::Mediate->value => [
                 'proposition.reconcile',
-                'proposition.select',
+                'proposition.traverse',
+                'participant.rest',
             ],
             PhaseKind::Bias->value => [
                 'proposition.reconcile',
                 'instrument.execute',
-                'proposition.select',
+                'proposition.traverse',
+                'participant.rest',
             ],
             PhaseKind::Order->value => [
                 'proposition.commit',
+                'proposition.traverse',
+                'participant.rest',
             ],
         ];
 
@@ -84,16 +92,16 @@ class InputSchemaServiceTest extends TestCase
         }
     }
 
-    public function test_constrain_reclassification_executes_an_instrument(): void
+    public function test_constrain_reclassification_rejects_instrument_coupling(): void
     {
         $schema = app(InputSchemaService::class)
             ->forPhase(PhaseKind::Constrain);
 
-        $this->assertInvalid($schema, [
+        $this->assertValid($schema, [
             'action' => 'proposition.reclassify',
             'statement' => 'Move this into the committal register.',
         ]);
-        $this->assertValid($schema, [
+        $this->assertInvalid($schema, [
             'action' => 'proposition.reclassify',
             'statement' => 'Move this into the committal register.',
             'instrument' => [
@@ -152,7 +160,7 @@ class InputSchemaServiceTest extends TestCase
         );
         $this->assertSame(
             [$candidateId],
-            $plan['schema']['$defs']['actions']['proposition.select']
+            $plan['schema']['$defs']['actions']['proposition.traverse']
                 ['properties']['proposition_id']['enum'],
         );
         $this->assertSame(
@@ -260,7 +268,7 @@ class InputSchemaServiceTest extends TestCase
         );
 
         $this->assertSame(
-            ['proposition.variant'],
+            ['proposition.variant', 'participant.rest'],
             array_keys($schema['$defs']['actions']),
         );
     }

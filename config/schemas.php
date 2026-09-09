@@ -42,7 +42,7 @@ $proposition = static function (string $action, string $title) use ($statement):
 };
 
 return [
-    'version' => 8,
+    'version' => 9,
 
     'cache' => [
         'store' => env('COMMONS_SCHEMA_CACHE_STORE'),
@@ -59,15 +59,22 @@ return [
     ],
 
     'actions' => [
-        'proposition.select' => [
-            'title' => 'Select an existing proposition and rest this phase',
+        'proposition.traverse' => [
+            'title' => 'Traverse an existing local Expressive Proposition',
             'type' => 'object',
             'additionalProperties' => false,
             'required' => ['action', 'proposition_id'],
             'properties' => [
-                'action' => ['const' => 'proposition.select'],
+                'action' => ['const' => 'proposition.traverse'],
                 'proposition_id' => $ulid,
             ],
+        ],
+        'participant.rest' => [
+            'title' => 'Rest in a Tragic Region and end this Cycle',
+            'type' => 'object',
+            'additionalProperties' => false,
+            'required' => ['action'],
+            'properties' => ['action' => ['const' => 'participant.rest']],
         ],
         'proposition.variant' => $proposition(
             'proposition.variant',
@@ -88,20 +95,6 @@ return [
             'proposition.reclassify',
             'Reclassify the current gate',
         ),
-        'proposition.reclassify_with_instrument' => [
-            ...$proposition(
-                'proposition.reclassify',
-                'Reclassify the current gate using an instrument',
-            ),
-            'required' => ['action', 'statement', 'instrument'],
-            'properties' => [
-                ...$proposition(
-                    'proposition.reclassify',
-                    'Reclassify the current gate using an instrument',
-                )['properties'],
-                'instrument' => ['$ref' => '#/$defs/instrument'],
-            ],
-        ],
         'proposition.reconcile' => [
             'title' => 'Reconcile the current gate with another proposition',
             'type' => 'object',

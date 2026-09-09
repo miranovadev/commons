@@ -9,6 +9,7 @@ export function actionTargetIds(plan: ParticipantPlan, action: ActionName): Set<
 export function actionPropositions(plan: ParticipantPlan, action: ActionName): Proposition[] {
   const allowed = actionTargetIds(plan, action);
   const candidates = [
+    ...(plan.traversal_options ?? []), ...(plan.instrument_options ?? []),
     ...(plan.attestation_options ?? []), ...(plan.write_options ?? []),
     ...(plan.revision_options ?? []), ...(plan.gate_options ?? []),
     ...Object.values(plan.workspace?.registers ?? {}).flatMap((items) => items ?? []),

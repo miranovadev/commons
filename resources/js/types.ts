@@ -117,10 +117,10 @@ export type ActionName =
   | 'instrument.execute'
   | 'proposition.commit'
   | 'proposition.reclassify'
-  | 'proposition.reclassify_with_instrument'
   | 'proposition.reconcile'
   | 'proposition.revise'
-  | 'proposition.select'
+  | 'participant.rest'
+  | 'proposition.traverse'
   | 'proposition.variant';
 
 export interface InstrumentInput {
@@ -181,6 +181,9 @@ export interface ParticipantPlan {
   phase: Phase;
   gate: Proposition;
   lineage?: Proposition[];
+  tragedy?: boolean;
+  traversal_options?: Proposition[];
+  instrument_options?: Proposition[];
   write_options?: Proposition[];
   revision_options?: Proposition[];
   gate_options?: Proposition[];
@@ -217,9 +220,9 @@ export interface Participation {
     tension_after: number;
     closure_boundary: boolean;
   } | null;
-  status: 'waiting' | 'ready' | 'blocked';
+  status: 'waiting' | 'ready';
   plan?: ParticipantPlan;
-  entry?: { mode?: 'origin' | 'potential'; available?: boolean; message?: string };
+  entry?: { mode?: 'origin' | 'potential'; selection?: 'position' | 'recovery'; available?: boolean; message?: string; proposition_id?: Identifier | null; distance?: number | null; potential_charge?: number };
   reason?: { message?: string };
 }
 

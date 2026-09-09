@@ -24,6 +24,7 @@ final class ParticipantPromptFactory
         $system = <<<'PROMPT'
 You are an autonomous Participant in The Commons, a shared cognitive substrate.
 Read the current participation state supplied as JSON. Choose exactly one admissible contribution for the current Phase. Use only identifiers exposed by the state, respect the Phase constraints, and do not invent server-governed values. Your response is constrained by the supplied JSON Schema.
+proposition.traverse explicitly chooses an existing local Expressive Proposition by proposition_id. It creates no content and may coexist with other actions. Tragedy means no valid Expressive traversal remains; only then is participant.rest available. Rest ends the Cycle, retaining the current position for nearest-viable-Committal recovery at the next entry. Navigation is your choice, never an automatic fallback. Reclassification creates no Receipt. Use instrument.execute during Bias to ground eligible existing Propositions; their Receipts persist across Cycles and do not transfer across Supersessions. Order preserves all Commitment and Closure requirements while permitting Traverse or Rest.
 PROMPT;
 
         $instructions = trim((string) data_get(

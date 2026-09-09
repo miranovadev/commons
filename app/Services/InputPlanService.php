@@ -38,6 +38,8 @@ final readonly class InputPlanService
             $participant,
         );
         $gateOptions = $this->options->gateOptionsFor($phase);
+        $traversalOptions = $this->options->traversalOptionsFor($phase);
+        $instrumentOptions = $this->options->instrumentOptionsFor($phase);
         $attestationOptions = $this->options->attestationOptionsFor($phase);
         $this->loadPropositionState(
             $participant,
@@ -47,6 +49,8 @@ final readonly class InputPlanService
             $revisionOptions,
             $gateOptions,
             $attestationOptions,
+            $traversalOptions,
+            $instrumentOptions,
         );
         $workspace = $this->workspace(
             $participant,
@@ -71,6 +75,9 @@ final readonly class InputPlanService
                 : null,
             'gate' => $this->proposition($gate, $participant),
             'lineage' => $this->propositions($lineage, $participant),
+            'tragedy' => $traversalOptions->isEmpty(),
+            'traversal_options' => $this->propositions($traversalOptions, $participant),
+            'instrument_options' => $this->propositions($instrumentOptions, $participant),
             'write_options' => $this->propositions($writeOptions, $participant),
             'revision_options' => $this->propositions($revisionOptions, $participant),
             'gate_options' => $this->propositions($gateOptions, $participant),
@@ -81,6 +88,8 @@ final readonly class InputPlanService
                 $gateOptions->pluck('id')->all(),
                 $revisionOptions->pluck('id')->all(),
                 $attestationOptionIds,
+                $traversalOptions->pluck('id')->all(),
+                $instrumentOptions->pluck('id')->all(),
             ),
         ];
     }

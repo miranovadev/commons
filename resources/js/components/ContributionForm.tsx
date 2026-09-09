@@ -194,6 +194,8 @@ export function ContributionForm({
             </>
           )}
 
+          {action === 'participant.rest' && <Text size="sm" c="dimmed">End this Cycle without creating content. Your current position is retained for recovery when the next Cycle begins.</Text>}
+
           {action === 'proposition.commit' && (
             <Text size="sm" c="dimmed">
               This writes the current expressive Gate as an immutable

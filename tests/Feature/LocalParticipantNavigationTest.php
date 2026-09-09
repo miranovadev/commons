@@ -83,7 +83,7 @@ class LocalParticipantNavigationTest extends TestCase
         $participant = $this->participant('writer', $position);
         app(CycleEntryService::class)->enter($participant);
         $state = $this->state($participant);
-        $this->assertNull($state['navigation']);
+        $this->assertArrayHasKey('proposition.variant', $state['plan']['schema']['$defs']['actions']);
         $next = app(ParticipationService::class)->contribute(
             $participant, $state['plan']['phase']['id'],
             ['action' => 'proposition.variant', 'statement' => 'A local distinction.'],
@@ -97,209 +97,190 @@ class LocalParticipantNavigationTest extends TestCase
         ]);
     }
 
-    public function test_exhausted_leaf_moves_back_one_step_without_teleporting_to_the_best_region(): void
+    public function test_traverse_is_an_explicit_local_choice_alongside_creation(): void
     {
-        [$branch, $leaf, $region] = $this->branchedGraph();
-        $participant = $this->participant('leaf-observer', $leaf);
-        $phase = $this->phase($participant, $leaf);
-        $state = $this->state($participant);
-        $this->assertSame([], $state['plan']['schema']['oneOf']);
-        $this->assertSame($branch->id, $state['navigation']['next_proposition_id']);
-        $this->assertSame($leaf->id, $participant->fresh()->current_proposition_id, 'GET must not move.');
-
-        $after = $this->traverse($participant, $phase);
-
-        $this->assertSame($branch->id, $participant->fresh()->current_proposition_id);
-        $this->assertNotSame($region->id, $participant->fresh()->current_proposition_id);
-        $this->assertNotNull($phase->fresh()->completed_at);
-        $this->assertSame('position', $after['entry']['selection']);
-        $this->assertTrue($after['entry']['available']);
-        $this->assertDatabaseCount('cycles', 2);
-    }
-
-    public function test_a_later_cycle_can_continue_from_the_branch_and_move_into_another_branch(): void
-    {
-        [$branch, $leaf, $region] = $this->branchedGraph();
-        $participant = $this->participant('branch-observer', $leaf);
-        $this->traverse($participant, $this->phase($participant, $leaf));
+        $position = $this->node('Current', 0.8);
+        $target = $this->node('Existing distinction', 0.1, 'expressive');
+        $this->edge($position, $target);
+        $participant = $this->participant('walker', $position);
         app(CycleEntryService::class)->enter($participant);
-        $this->assertSame($branch->id, $this->state($participant)['plan']['gate']['id']);
-
-        // Exercise a later exhausted phase at the retained branch position.
-        $cycle = $participant->cycles()->latest('sequence')->first();
-        $cycle->phases()->update(['completed_at' => now()]);
-        $phase = $this->phase($participant, $branch, $cycle);
-        $this->traverse($participant, $phase);
-
-        $this->assertSame($region->id, $participant->fresh()->current_proposition_id);
-    }
-
-    public function test_attenuation_prefers_nearer_potential_over_a_larger_distant_signal(): void
-    {
-        $position = $this->node('Observer', 0.0);
-        $near = $this->region('Near', 0.6);
-        $step = $this->node('Distant route', 0.0);
-        $middle = $this->node('Further step', 0.0);
-        $far = $this->region('Far', 0.9);
-        $this->edge($position, $near);
-        $this->edge($position, $step);
-        $this->edge($step, $middle);
-        $this->edge($middle, $far);
-
-        $selection = app(PotentialChargeService::class)->nextFrom($position);
-
-        $this->assertSame($near->id, $selection['proposition']->id);
-        // Near: .6 / (1 + 1 step to source + 1 to continuation) = .2.
-        // Far: .9 / (1 + 3 steps to source + 1 to continuation) = .18.
-        $this->assertEqualsWithDelta(0.2, $selection['potential'], 0.0000001);
-    }
-
-    public function test_a_reducing_expressive_leaf_is_observable_through_its_own_direction(): void
-    {
-        $position = $this->node('High tension source', 0.9);
-        $leaf = $this->node('Reducing expressive leaf', 0.1, 'expressive');
-        $this->edge($position, $leaf);
-        $participant = $this->participant('forward-observer', $position);
-        $phase = $this->phase($participant, $position);
-
         $state = $this->state($participant);
-        $this->assertSame([], $state['plan']['schema']['oneOf']);
-        $this->assertSame($leaf->id, $state['navigation']['next_proposition_id']);
-        $this->assertEqualsWithDelta(0.4, $state['navigation']['potential'], 0.0000001);
-        $this->traverse($participant, $phase);
-        $this->assertSame($leaf->id, $participant->fresh()->current_proposition_id);
+        $actions = $state['plan']['schema']['$defs']['actions'];
+        $this->assertArrayHasKey('proposition.variant', $actions);
+        $this->assertArrayHasKey('proposition.traverse', $actions);
+        $this->assertArrayNotHasKey('participant.rest', $actions);
+        $this->assertFalse($state['plan']['tragedy']);
+        $count = Proposition::count();
+        $edges = Supersession::count();
+        $after = app(ParticipationService::class)->contribute($participant, $state['plan']['phase']['id'], [
+            'action' => 'proposition.traverse', 'proposition_id' => $target->id,
+        ]);
+        $this->assertSame($count, Proposition::count());
+        $this->assertSame($edges, Supersession::count());
+        $this->assertSame($target->id, $participant->fresh()->current_proposition_id);
+        $this->assertSame('persist', $after['plan']['phase']['kind']);
     }
 
-    public function test_a_direction_cannot_borrow_a_reduction_by_returning_through_the_observer(): void
+    public function test_invalid_traverse_targets_and_legacy_actions_are_rejected_without_movement(): void
     {
-        $ancestor = $this->node('Earlier high tension source', 0.9);
-        $position = $this->node('Current expressive position', 0.1, 'expressive');
-        $leaf = $this->node('Same tension forward', 0.1, 'expressive');
-        $this->edge($ancestor, $position);
-        $this->edge($position, $leaf);
-
-        // The earlier source only reduces Tension by coming back to the
-        // observer; that is not an available signal in the earlier direction.
-        $this->assertNull(app(PotentialChargeService::class)->nextFrom($position));
+        $position = $this->node('Current', 0.8);
+        $target = $this->node('Existing', 0.1, 'expressive');
+        $foreign = $this->node('Disconnected', 0.0, 'expressive');
+        $this->edge($position, $target);
+        $participant = $this->participant('walker', $position);
+        app(CycleEntryService::class)->enter($participant);
+        $phaseId = $this->state($participant)['plan']['phase']['id'];
+        foreach ([
+            ['action' => 'participant.select', 'proposition_id' => $target->id],
+            ['action' => 'proposition.select', 'proposition_id' => $target->id],
+            ['action' => 'participant.traverse'],
+            ['action' => 'participant.rest'],
+            ['action' => 'proposition.traverse'],
+            ['action' => 'proposition.traverse', 'proposition_id' => $foreign->id],
+            ['action' => 'proposition.traverse', 'proposition_id' => $position->id],
+            ['action' => 'proposition.traverse', 'proposition_id' => $target->id, 'statement' => 'Invented'],
+        ] as $input) {
+            try {
+                app(ParticipationService::class)->contribute($participant, $phaseId, $input);
+                $this->fail('Invalid navigation must be rejected.');
+            } catch (\InvalidArgumentException) {
+                $this->assertSame($position->id, $participant->fresh()->current_proposition_id);
+                $this->assertNull(Phase::findOrFail($phaseId)->completed_at);
+            }
+        }
     }
 
-    public function test_participants_at_different_positions_follow_different_trajectories(): void
-    {
-        $left = $this->region('Left', 0.6);
-        $right = $this->region('Right', 0.6);
-        $a = $this->node('A', 0.0);
-        $b = $this->node('B', 0.0);
-        $this->edge($left, $a);
-        $this->edge($a, $b);
-        $this->edge($b, $right);
-        $first = $this->participant('first', $a);
-        $second = $this->participant('second', $b);
-
-        $this->traverse($first, $this->phase($first, $a));
-        $this->traverse($second, $this->phase($second, $b));
-
-        $this->assertSame($left->id, $first->fresh()->current_proposition_id);
-        $this->assertSame($right->id, $second->fresh()->current_proposition_id);
-    }
-
-    public function test_disconnected_global_potential_does_not_make_local_movement_available(): void
+    public function test_tragedy_depends_on_traversal_not_creation_and_rest_preserves_position(): void
     {
         $position = $this->node('Isolated', 0.0);
-        $this->region('Elsewhere', 1.0);
-        $participant = $this->participant('isolated', $position);
-        $phase = $this->phase($participant, $position);
-        $this->assertFalse($this->state($participant)['navigation']['available']);
-
-        try {
-            $this->traverse($participant, $phase);
-            $this->fail('An isolated Participant cannot traverse.');
-        } catch (DomainException) {
-            $this->assertNull($phase->fresh()->completed_at);
-            $this->assertSame($position->id, $participant->fresh()->current_proposition_id);
-        }
-    }
-
-    public function test_traversal_is_rejected_while_a_variant_is_admissible(): void
-    {
-        [$branch, $leaf] = $this->branchedGraph();
-        $participant = $this->participant('writer', $leaf);
+        $participant = $this->participant('resting', $position);
         app(CycleEntryService::class)->enter($participant);
-        $phase = $participant->cycles()->first()->phases()->first();
-        $this->expectException(DomainException::class);
-        $this->expectExceptionMessage('Traversal requires an exhausted Write.');
-        $this->traverse($participant, $phase);
-    }
-
-    public function test_replaying_a_traversal_cannot_take_a_second_step(): void
-    {
-        [$branch, $leaf] = $this->branchedGraph();
-        $participant = $this->participant('replay', $leaf);
-        $phase = $this->phase($participant, $leaf);
-        $this->traverse($participant, $phase);
+        $state = $this->state($participant);
+        $this->assertTrue($state['plan']['tragedy']);
+        $this->assertArrayHasKey('proposition.variant', $state['plan']['schema']['$defs']['actions']);
+        $count = Proposition::count();
+        $after = app(ParticipationService::class)->contribute($participant, $state['plan']['phase']['id'], ['action' => 'participant.rest']);
+        $this->assertSame($count, Proposition::count());
+        $this->assertSame($position->id, $participant->fresh()->current_proposition_id);
+        $phase = Phase::findOrFail($state['plan']['phase']['id']);
+        $this->assertNotNull($phase->completed_at);
+        $this->assertNotNull($phase->cycle->rested_at);
+        $this->assertNotNull($phase->cycle->completed_at);
+        $this->assertSame('recovery', $after['entry']['selection']);
+        $this->assertFalse($after['entry']['available']);
+        $this->expectException(ConflictHttpException::class);
         app(CycleEntryService::class)->enter($participant);
-        try {
-            $this->traverse($participant, $phase);
-            $this->fail('A stale phase token cannot traverse again.');
-        } catch (ConflictHttpException) {
-            $this->assertSame($branch->id, $participant->fresh()->current_proposition_id);
-        }
     }
 
-    public function test_existing_write_targets_cannot_select_a_distant_proposition(): void
+    public function test_recovery_uses_nearest_viable_distance_before_attenuated_ranking(): void
     {
-        $position = $this->node('Current', 0.0);
-        $near = $this->node('Local expressive head', 0.0, 'expressive');
-        $distant = $this->node('Disconnected expressive head', 0.0, 'expressive');
+        $position = $this->node('Observer', 0.0);
+        $low = $this->region('Near low', 0.03);
+        $near = $this->region('Near winner', 0.06);
+        $bridge = $this->node('Empty bridge', 0.0);
+        $far = $this->region('Distant maximum', 1.0);
+        $this->edge($position, $low);
         $this->edge($position, $near);
-        $participant = $this->participant('selector', $position);
+        $this->edge($position, $bridge);
+        $this->edge($bridge, $far);
+        $participant = $this->participant('observer', $position);
         $phase = $this->phase($participant, $position);
-        $phase->kind = PhaseKind::Distinguish;
-        $phase->write_register = 'activity';
-        $phase->save();
-        $plan = app(InputPlanService::class)->forParticipant($participant);
-        $this->assertSame([$near->id], array_column($plan['write_options'], 'id'));
-        $this->assertNotContains($distant->id, array_column($plan['write_options'], 'id'));
+        $selection = app(PotentialChargeService::class)->recoverFrom($position);
+        $this->assertSame($near->id, $selection['proposition']->id);
+        $this->assertSame(1, $selection['distance']);
+        $this->assertEqualsWithDelta(0.02, $selection['potential_charge'], 0.0000001);
+        app(ParticipationService::class)->contribute($participant, $phase->id, ['action' => 'participant.rest']);
+        app(CycleEntryService::class)->enter($participant);
+        $this->assertSame($near->id, $this->state($participant)['plan']['gate']['id']);
     }
 
-    public function test_cyclic_edges_terminate_and_equal_scores_use_stable_id_order(): void
+    public function test_equal_distance_ranking_uses_attenuated_continuation_distance_and_id_ties(): void
     {
-        $position = $this->node('Current', 0.0);
-        $first = $this->region('First', 0.6);
-        $second = $this->region('Second', 0.6);
+        $position = $this->node('Observer', 0.0);
+        $near = $this->region('Short continuation', 0.6);
+        $long = $this->node('Long continuation', 0.7);
+        $middle = $this->node('Middle', 0.7, 'expressive');
+        $end = $this->node('End', 0.0, 'expressive');
+        $this->edge($position, $near);
+        $this->edge($position, $long);
+        $this->edge($long, $middle);
+        $this->edge($middle, $end);
+        $this->assertSame($near->id, app(PotentialChargeService::class)->recoverFrom($position)['proposition']->id);
+        $tie = $this->region('Equal short continuation', 0.6);
+        $this->edge($tie, $position);
+        $this->edge($long, $position); // A graph cycle must terminate.
+        $this->assertSame(min($near->id, $tie->id), app(PotentialChargeService::class)->recoverFrom($position)['proposition']->id);
+    }
+
+    public function test_repeated_rest_moves_outward_after_a_region_is_exhausted(): void
+    {
+        $position = $this->node('Empty region', 0.0);
+        $first = $this->region('First viable', 0.3);
+        $second = $this->region('Second viable', 0.9);
         $this->edge($position, $first);
         $this->edge($first, $second);
-        $this->edge($second, $position);
-        $this->assertSame(
-            min($first->id, $second->id),
-            app(PotentialChargeService::class)->nextFrom($position)['proposition']->id,
-        );
+        $participant = $this->participant('explorer', $position);
+        $phase = $this->phase($participant, $position);
+        app(ParticipationService::class)->contribute($participant, $phase->id, ['action' => 'participant.rest']);
+        app(CycleEntryService::class)->enter($participant);
+        $state = $this->state($participant);
+        $this->assertSame($first->id, $state['plan']['gate']['id']);
+        $target = $first->children()->where('tier', 'expressive')->firstOrFail();
+        $state = app(ParticipationService::class)->contribute($participant, $state['plan']['phase']['id'], [
+            'action' => 'proposition.traverse', 'proposition_id' => $target->id,
+        ]);
+        $this->assertTrue($state['plan']['tragedy']);
+        $state = app(ParticipationService::class)->contribute($participant, $state['plan']['phase']['id'], ['action' => 'participant.rest']);
+        $this->assertSame(2, $state['entry']['distance']);
+        app(CycleEntryService::class)->enter($participant);
+        $this->assertSame($second->id, $this->state($participant)['plan']['gate']['id']);
     }
 
-    public function test_an_ungrounded_order_is_blocked_and_cannot_traverse(): void
+    public function test_disconnected_and_zero_potential_regions_cannot_supply_recovery(): void
     {
-        [$branch, $leaf] = $this->branchedGraph();
-        $participant = $this->participant('ungrounded', $leaf);
-        $phase = $this->phase($participant, $leaf);
+        $position = $this->node('Observer', 0.0);
+        $empty = $this->node('Connected zero', 0.0);
+        $this->edge($position, $empty);
+        $this->region('Disconnected high', 1.0);
+        $this->assertNull(app(PotentialChargeService::class)->recoverFrom($position));
+    }
+
+    public function test_order_traverses_historical_expressive_nodes_then_rests_without_weakening_commit(): void
+    {
+        $parent = $this->node('Earlier', 0.0, 'expressive');
+        $gate = $this->node('Current', 0.0, 'expressive');
+        foreach ([$parent, $gate] as $node) {
+            $node->register = 'canon';
+            $node->save();
+        }
+        $this->edge($parent, $gate);
+        $participant = $this->participant('order', $gate);
+        $phase = $this->phase($participant, $gate);
         $phase->kind = PhaseKind::Order;
         $phase->save();
-
         $state = $this->state($participant);
-
-        $this->assertSame([], $state['plan']['schema']['oneOf']);
-        $this->assertSame('blocked', $state['status']);
+        $this->assertFalse($state['plan']['tragedy']);
+        $this->assertFalse($state['plan']['commitment']['admissible']);
         $this->assertSame('commitment_preconditions_unsatisfied', $state['reason']['code']);
-        $this->assertNull($state['navigation']);
-        $this->expectException(\DomainException::class);
-        app(ParticipationService::class)->contribute($participant, $phase->id, [
-            'action' => 'participant.traverse',
+        $state = app(ParticipationService::class)->contribute($participant, $phase->id, [
+            'action' => 'proposition.traverse', 'proposition_id' => $parent->id,
         ]);
+        $this->assertSame('order', $state['plan']['phase']['kind']);
+        $this->assertTrue($state['plan']['tragedy'], 'Already visited Gate cannot create an Order loop.');
+        $this->assertNull($phase->cycle->fresh()->completed_at);
+        app(ParticipationService::class)->contribute($participant, $state['plan']['phase']['id'], ['action' => 'participant.rest']);
+        $this->assertNotNull($phase->cycle->fresh()->rested_at);
+        $this->expectException(ConflictHttpException::class);
+        app(ParticipationService::class)->contribute($participant, $phase->id, ['action' => 'participant.rest']);
     }
 
-    public function test_automated_wakes_traverse_without_calling_inference_and_resume_later(): void
+    public function test_automated_wakes_ask_inference_to_choose_traversal(): void
     {
-        [$branch, $leaf] = $this->branchedGraph();
-        $participant = $this->participant('automated', $leaf);
-        $this->phase($participant, $leaf);
+        $gate = $this->node('Current', 0.8);
+        $target = $this->node('Local', 0.0, 'expressive');
+        $this->edge($gate, $target);
+        $participant = $this->participant('automated', $gate);
+        app(CycleEntryService::class)->enter($participant);
         $connection = new \App\Models\Connection;
         $connection->forceFill([
             'provider' => 'openai', 'name' => 'Navigation test',
@@ -308,44 +289,15 @@ class LocalParticipantNavigationTest extends TestCase
         $link = new \App\Models\ParticipantConnection;
         $link->forceFill([
             'participant_id' => $participant->id, 'connection_id' => $connection->id,
-            'is_enabled' => true, 'configuration' => [], 'last_error' => 'Earlier exhaustion',
+            'is_enabled' => true, 'configuration' => [],
         ])->save();
         $inference = \Mockery::mock(\App\Contracts\ParticipantInference::class);
-        $inference->shouldNotReceive('contribute');
-        $job = new \App\Jobs\WakeParticipant($link->id);
-        $job->handle($inference, app(ParticipationService::class),
+        $inference->shouldReceive('contribute')->once()->andReturn([
+            'action' => 'proposition.traverse', 'proposition_id' => $target->id,
+        ]);
+        (new \App\Jobs\WakeParticipant($link->id))->handle($inference, app(ParticipationService::class),
             app(\App\Services\ParticipantConnectionTriggerService::class));
-        $this->assertSame($branch->id, $participant->fresh()->current_proposition_id);
-        $this->assertNull($link->fresh()->last_error);
-
-        $laterInference = \Mockery::mock(\App\Contracts\ParticipantInference::class);
-        $laterInference->shouldReceive('contribute')->once()->withArgs(
-            fn ($connection, array $state): bool => $state['plan']['gate']['id'] === $branch->id,
-        )->andReturn(['action' => 'proposition.variant', 'statement' => 'Continue at C.']);
-        $job->handle($laterInference, app(ParticipationService::class),
-            app(\App\Services\ParticipantConnectionTriggerService::class));
-        $this->assertSame('persist', $this->state($participant)['plan']['phase']['kind']);
-    }
-
-    public function test_navigation_api_uses_the_phase_token_and_ignores_no_admissible_write_as_a_terminal_state(): void
-    {
-        $this->postJson('/api/bootstrap', [
-            'name' => 'System', 'email' => 'navigation@example.test',
-            'password' => 'correct horse battery staple',
-            'password_confirmation' => 'correct horse battery staple',
-        ])->assertCreated();
-        [$branch, $leaf] = $this->branchedGraph();
-        $participant = $this->participant('api', $leaf);
-        $phase = $this->phase($participant, $leaf);
-        $endpoint = '/api/substrates/'.$this->substrate->slug
-            .'/participants/'.$participant->id.'/participate';
-        $this->postJson($endpoint, [
-            'phase_id' => $phase->id, 'contribution' => ['action' => 'participant.traverse'],
-        ])->assertOk()->assertJsonPath('data.entry.mode', 'potential')
-            ->assertJsonPath('data.entry.selection', 'position');
-        $this->assertSame($branch->id, $participant->fresh()->current_proposition_id);
-        $this->postJson($endpoint.'/enter', [])->assertCreated()
-            ->assertJsonPath('data.plan.gate.id', $branch->id);
+        $this->assertSame($target->id, $participant->fresh()->current_proposition_id);
     }
 
     public function test_migration_recovers_active_gates_and_completed_commitments_without_reentry(): void
@@ -373,19 +325,6 @@ class LocalParticipantNavigationTest extends TestCase
         $this->assertSame($gate->id, $active->fresh()->current_proposition_id);
         $this->assertSame($commitment->id, $completed->fresh()->current_proposition_id);
         $this->assertNull($newcomer->fresh()->current_proposition_id);
-    }
-
-    /** @return array{Proposition, Proposition, Proposition} */
-    private function branchedGraph(): array
-    {
-        $branch = $this->node('C', 0.0);
-        $leaf = $this->node('D', 0.0);
-        $region = $this->region('B', 0.9);
-        $this->edge($branch, $leaf);
-        $this->edge($branch, $region);
-        $this->region('Disconnected global maximum', 1.0);
-
-        return [$branch, $leaf, $region];
     }
 
     private function participant(string $callsign, ?Proposition $position = null): Participant
@@ -465,10 +404,4 @@ class LocalParticipantNavigationTest extends TestCase
         return app(ParticipationService::class)->stateFor($participant);
     }
 
-    private function traverse(Participant $participant, Phase $phase): array
-    {
-        return app(ParticipationService::class)->contribute(
-            $participant, $phase->id, ['action' => 'participant.traverse'],
-        );
-    }
 }

@@ -41,11 +41,10 @@ const provenanceMeta = { label: 'Provenance', description: 'The inherited propos
 const actionMeta = {
   'proposition.variant': { label: 'Variant', description: 'Open a new expressive branch from the current Gate.', icon: IconGitBranch },
   'proposition.reclassify': { label: 'Reclassify', description: 'Carry the Gate into this classification register.', icon: IconRefresh },
-  'proposition.reclassify_with_instrument': { label: 'Reclassify', description: 'Ground the Gate while carrying it into this register.', icon: IconRefresh },
   'proposition.commit': { label: 'Commit', description: 'Write the expressive Gate into the committal structure.', icon: IconBolt },
 } as const;
 type SupersessionAction = keyof typeof actionMeta;
-const cardActions = new Set<ActionName>(['attestation.create', 'instrument.execute', 'proposition.reconcile', 'proposition.revise', 'proposition.select']);
+const cardActions = new Set<ActionName>(['attestation.create', 'instrument.execute', 'proposition.reconcile', 'proposition.revise', 'proposition.traverse']);
 
 export function ParticipantWorkspace({ plan, availableActions, onAction }: {
   plan: ParticipantPlan;
@@ -55,6 +54,7 @@ export function ParticipantWorkspace({ plan, availableActions, onAction }: {
   const propositions = useMemo<Proposition[]>(() => [
     plan.gate, plan.workspace?.provenance, ...(plan.lineage || []),
     ...Object.values(plan.workspace?.registers || {}).flatMap((items) => items || []), ...(plan.write_options || []),
+    ...(plan.traversal_options || []), ...(plan.instrument_options || []),
     ...(plan.revision_options || []), ...(plan.gate_options || []), ...(plan.attestation_options || []),
   ].filter((item): item is Proposition => Boolean(item)), [plan]);
   const byId = useMemo(() => new Map<Identifier, Proposition>(propositions.map((item) => [item.id, item])), [propositions]);
@@ -88,6 +88,8 @@ export function ParticipantWorkspace({ plan, availableActions, onAction }: {
                 propositions={lane.register ? registerItems[lane.register] || [] : []}
                 gateOptions={gateOptions} writeOptions={writeOptions} revisionOptions={revisionOptions}
                 attestationOptions={actionPropositions(plan, 'attestation.create')}
+                traversalOptions={actionPropositions(plan, 'proposition.traverse')}
+                instrumentOptions={actionPropositions(plan, 'instrument.execute')}
                 actions={propositionActions} onInspect={setInspection} onAction={onAction}
               />
             </Fragment>
@@ -109,12 +111,14 @@ interface OperationalRowProps {
   writeOptions: Proposition[];
   revisionOptions: Proposition[];
   attestationOptions: Proposition[];
+  traversalOptions: Proposition[];
+  instrumentOptions: Proposition[];
   actions: ActionName[];
   onInspect: InspectHandler;
   onAction: ActionHandler;
 }
 
-function OperationalRow({ lane, gate, lineage, committalObservables, propositions, gateOptions, writeOptions, revisionOptions, attestationOptions, actions, onInspect, onAction }: OperationalRowProps) {
+function OperationalRow({ lane, gate, lineage, committalObservables, propositions, gateOptions, writeOptions, revisionOptions, attestationOptions, traversalOptions, instrumentOptions, actions, onInspect, onAction }: OperationalRowProps) {
   const role = roleMeta[lane.role];
   const meta = lane.meta || metaForRegister(lane.register);
   const RegisterIcon = meta.icon;
@@ -138,7 +142,7 @@ function OperationalRow({ lane, gate, lineage, committalObservables, proposition
         </Group>
         {lane.role === 'read' && <ReadContent register={lane.register} gate={gate} featured={lane.featured} propositions={propositions} lineage={lineage} committalObservables={committalObservables} onInspect={onInspect} />}
         {lane.role === 'gate' && <GateContent gate={laneGate} committalObservables={committalObservables} onInspect={onInspect} />}
-        {lane.role === 'write' && <WriteContent propositions={propositions} writeOptions={writeOptions} revisionOptions={revisionOptions} gateOptions={gateOptions} attestationOptions={attestationOptions} actions={actions} committalObservables={committalObservables} onInspect={onInspect} onAction={onAction} />}
+        {lane.role === 'write' && <WriteContent propositions={propositions} writeOptions={writeOptions} revisionOptions={revisionOptions} gateOptions={gateOptions} attestationOptions={attestationOptions} traversalOptions={traversalOptions} instrumentOptions={instrumentOptions} actions={actions} committalObservables={committalObservables} onInspect={onInspect} onAction={onAction} />}
       </Box>
     </Box>
   );
@@ -167,12 +171,14 @@ function GateContent({ gate, committalObservables, onInspect }: {
   return <PropositionCard proposition={gate} committalObservables={committalObservables} selected compact flow="gate" onClick={() => onInspect({ kind: 'gate', proposition: gate })} />;
 }
 
-function WriteContent({ propositions, writeOptions, revisionOptions, gateOptions, attestationOptions, actions, committalObservables, onInspect, onAction }: {
+function WriteContent({ propositions, writeOptions, revisionOptions, gateOptions, attestationOptions, traversalOptions, instrumentOptions, actions, committalObservables, onInspect, onAction }: {
   propositions: Proposition[];
   writeOptions: Proposition[];
   revisionOptions: Proposition[];
   gateOptions: Proposition[];
   attestationOptions: Proposition[];
+  traversalOptions: Proposition[];
+  instrumentOptions: Proposition[];
   actions: ActionName[];
   committalObservables?: Observables;
   onInspect: InspectHandler;
@@ -181,7 +187,7 @@ function WriteContent({ propositions, writeOptions, revisionOptions, gateOptions
   const attestationIds = new Set(attestationOptions.map((item) => item.id));
   const revisionIds = new Set(revisionOptions.map((item) => item.id));
   const reconcileIds = new Set(gateOptions.map((item) => item.id));
-  const existing = uniqueById([...propositions, ...writeOptions, ...gateOptions, ...attestationOptions]);
+  const existing = uniqueById([...propositions, ...writeOptions, ...gateOptions, ...attestationOptions, ...traversalOptions, ...instrumentOptions]);
   return (
     <Stack className="write-row" gap="md">
       {existing.length > 0 && (
@@ -193,8 +199,8 @@ function WriteContent({ propositions, writeOptions, revisionOptions, gateOptions
               canAttest={actions.includes('attestation.create') && attestationIds.has(proposition.id)}
               canRevise={actions.includes('proposition.revise') && revisionIds.has(proposition.id)}
               canReconcile={actions.includes('proposition.reconcile') && reconcileIds.has(proposition.id)}
-              canInstrument={actions.includes('instrument.execute') && writeOptions.some((item) => item.id === proposition.id)}
-              canSelect={actions.includes('proposition.select') && writeOptions.some((item) => item.id === proposition.id)}
+              canInstrument={actions.includes('instrument.execute') && instrumentOptions.some((item) => item.id === proposition.id)}
+              canTraverse={actions.includes('proposition.traverse') && traversalOptions.some((item) => item.id === proposition.id)}
               committalObservables={committalObservables} onInspect={onInspect} onAction={onAction}
             />)}
           </SimpleGrid>
@@ -205,18 +211,18 @@ function WriteContent({ propositions, writeOptions, revisionOptions, gateOptions
   );
 }
 
-function WriteOptionCard({ proposition, canAttest, canRevise, canReconcile, canInstrument, canSelect, committalObservables, onInspect, onAction }: {
+function WriteOptionCard({ proposition, canAttest, canRevise, canReconcile, canInstrument, canTraverse, committalObservables, onInspect, onAction }: {
   proposition: Proposition;
   canAttest: boolean;
   canRevise: boolean;
   canReconcile: boolean;
   canInstrument: boolean;
-  canSelect: boolean;
+  canTraverse: boolean;
   committalObservables?: Observables;
   onInspect: InspectHandler;
   onAction: ActionHandler;
 }) {
-  const hasActions = canAttest || canRevise || canReconcile || canInstrument || canSelect;
+  const hasActions = canAttest || canRevise || canReconcile || canInstrument || canTraverse;
   return (
     <Box className="write-option-card" data-attested={proposition.attestation?.direction}>
       <PropositionCard proposition={proposition} committalObservables={committalObservables} compact flow="write" onClick={() => onInspect({ kind: 'write option', proposition })} />
@@ -230,7 +236,7 @@ function WriteOptionCard({ proposition, canAttest, canRevise, canReconcile, canI
           {canRevise && <Button size="compact-xs" variant="subtle" color="gray" leftSection={<IconPencil size={13} />} onClick={() => onAction('proposition.revise', { proposition_id: proposition.id })}>Revise</Button>}
           {canReconcile && <Button size="compact-xs" variant="subtle" color="gray" leftSection={<IconRoute size={13} />} onClick={() => onAction('proposition.reconcile', { other_proposition_id: proposition.id })}>Reconcile</Button>}
           {canInstrument && <Button size="compact-xs" variant="subtle" color="gray" leftSection={<IconTool size={13} />} onClick={() => onAction('instrument.execute', { proposition_id: proposition.id })}>Instrument</Button>}
-          {canSelect && <Button size="compact-xs" variant="subtle" color="gray" onClick={() => onAction('proposition.select', { proposition_id: proposition.id })}>Select</Button>}
+          {canTraverse && <Button size="compact-xs" variant="subtle" color="gray" onClick={() => onAction('proposition.traverse', { proposition_id: proposition.id })}>Traverse</Button>}
         </Group>
       )}
     </Box>
