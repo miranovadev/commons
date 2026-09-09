@@ -27,6 +27,14 @@ export interface Proposition {
   parent_ids?: Identifier[];
   children?: Proposition[];
   attestation?: { direction: AttestationDirection };
+  instruments?: Array<{
+    id: Identifier;
+    kind: string;
+    reference: string;
+    status: 'pending' | 'completed' | 'failed';
+    failure_reason: string | null;
+    receipt_id: Identifier | null;
+  }>;
 }
 
 export interface User {
@@ -116,7 +124,7 @@ export type ActionName =
   | 'proposition.variant';
 
 export interface InstrumentInput {
-  kind: 'citation' | 'artefact' | 'hyperlink';
+  kind: 'citation' | 'hyperlink';
   reference: string;
 }
 
@@ -155,6 +163,12 @@ export interface InputSchema {
 }
 
 export interface ParticipantPlan {
+  commitment?: {
+    admissible: boolean;
+    requirements: { attestation: boolean; receipt: boolean; closure: boolean | null };
+    closure_enforced: boolean;
+    reasons: string[];
+  } | null;
   phase: Phase;
   gate: Proposition;
   lineage?: Proposition[];
@@ -178,7 +192,7 @@ export interface PropositionSelection {
 }
 
 export interface Participation {
-  status: 'waiting' | 'active';
+  status: 'waiting' | 'ready' | 'blocked';
   plan?: ParticipantPlan;
   entry?: { mode?: 'origin' | 'potential'; available?: boolean; message?: string };
   reason?: { message?: string };

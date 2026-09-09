@@ -71,6 +71,16 @@ export function ParticipantPage() {
             <PhaseLabel kind={plan.phase.kind} />
             <Box />
           </Box>
+          {participation?.status === 'blocked' && plan.commitment && (
+            <Alert color="yellow" title="Commitment is blocked" icon={<IconLock size={18} />} m="md">
+              <Stack gap="xs">
+                <Text size="sm">{participation.reason?.message}</Text>
+                <Text size="sm">Effective Attestation: {plan.commitment.requirements.attestation ? 'available' : 'missing'}.</Text>
+                <Text size="sm">Completed Receipt: {plan.commitment.requirements.receipt ? 'available' : 'missing'}.</Text>
+                <Text size="xs">Depth/Cadence gating is not enforced yet. Another participant can supply missing grounding from an eligible write register.</Text>
+              </Stack>
+            </Alert>
+          )}
           <ParticipantWorkspace plan={{ ...plan, perspectiveLimit: participant.max_read_count }} availableActions={availableActions} onAction={openAction} />
           <ContributionForm action={selectedAction?.name} plan={plan} opened={selectedAction !== null} loading={contribution.isLoading} error={contribution.error} initialValues={selectedAction?.initialValues} onClose={() => setSelectedAction(null)} onSubmit={submit} />
         </Box>

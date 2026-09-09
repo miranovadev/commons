@@ -54,7 +54,7 @@ class EnterCycleRequest extends FormRequest
             'origin.instrument.kind' => [
                 'required',
                 'string',
-                Rule::in(['citation', 'artefact', 'hyperlink']),
+                Rule::in(['hyperlink']),
             ],
             'origin.instrument.reference' => [
                 'required',

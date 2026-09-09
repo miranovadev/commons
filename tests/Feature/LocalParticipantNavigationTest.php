@@ -275,7 +275,7 @@ class LocalParticipantNavigationTest extends TestCase
         );
     }
 
-    public function test_an_ungrounded_order_reports_exhaustion_instead_of_advertising_an_invalid_commit(): void
+    public function test_an_ungrounded_order_is_blocked_and_cannot_traverse(): void
     {
         [$branch, $leaf] = $this->branchedGraph();
         $participant = $this->participant('ungrounded', $leaf);
@@ -286,8 +286,13 @@ class LocalParticipantNavigationTest extends TestCase
         $state = $this->state($participant);
 
         $this->assertSame([], $state['plan']['schema']['oneOf']);
-        $this->assertSame('no_admissible_write', $state['reason']['code']);
-        $this->assertSame($branch->id, $state['navigation']['next_proposition_id']);
+        $this->assertSame('blocked', $state['status']);
+        $this->assertSame('commitment_preconditions_unsatisfied', $state['reason']['code']);
+        $this->assertNull($state['navigation']);
+        $this->expectException(\DomainException::class);
+        app(ParticipationService::class)->contribute($participant, $phase->id, [
+            'action' => 'participant.traverse',
+        ]);
     }
 
     public function test_automated_wakes_traverse_without_calling_inference_and_resume_later(): void

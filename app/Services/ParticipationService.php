@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\LedgerEntryKind;
+use App\Enums\PhaseKind;
 use App\Models\CommitmentSnapshot;
 use App\Models\Cycle;
 use App\Models\Participant;
@@ -63,20 +64,25 @@ final readonly class ParticipationService
         }
 
         $plan = $this->contributions->planFor($participant);
-        $exhausted = $plan['schema']['oneOf'] === [];
+        $blocked = $phase->kind === PhaseKind::Order
+            && ! $plan['commitment']['admissible'];
+        $exhausted = ! $blocked && $plan['schema']['oneOf'] === [];
         $selection = $exhausted
             ? $this->potential->nextFrom($phase->gate()->firstOrFail())
             : null;
 
         return [
-            'status' => $exhausted ? 'waiting' : 'ready',
+            'status' => $blocked ? 'blocked' : ($exhausted ? 'waiting' : 'ready'),
             'cycle' => $this->cycle($cycle),
             'plan' => $plan,
             'perspective' => $this->perspective($participant),
-            'reason' => $exhausted ? [
+            'reason' => $blocked ? [
+                'code' => 'commitment_preconditions_unsatisfied',
+                'message' => 'Commitment is waiting for grounding on the current Gate. See the missing requirements below.',
+            ] : ($exhausted ? [
                 'code' => 'no_admissible_write',
                 'message' => 'The current position has no admissible Write action.',
-            ] : null,
+            ] : null),
             'navigation' => $exhausted ? [
                 'available' => $selection !== null,
                 'phase_id' => $phase->getKey(),
@@ -166,6 +172,9 @@ final readonly class ParticipationService
      */
     private function traverse(Participant $participant, Phase $phase): array
     {
+        if ($phase->kind === PhaseKind::Order) {
+            throw new \DomainException('Blocked Commitment is not an exhausted expressive Write and cannot trigger traversal.');
+        }
         $plan = $this->contributions->planFor($participant);
         if ($plan['schema']['oneOf'] !== []) {
             throw new \DomainException('Traversal requires an exhausted Write.');

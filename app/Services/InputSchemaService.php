@@ -13,7 +13,7 @@ final readonly class InputSchemaService
         private PhaseService $phases,
         private GateService $gates,
         private PropositionOwnershipService $ownership,
-        private ContributionDispatcher $dispatcher,
+        private CommitmentAdmissibilityService $admissibility,
     ) {}
 
     /**
@@ -50,7 +50,7 @@ final readonly class InputSchemaService
         ));
 
         if (in_array('proposition.commit', $actions, true)
-            && ! $this->dispatcher->canCommit($gate)) {
+            && ! $this->admissibility->evaluate($gate)['admissible']) {
             $actions = array_values(array_diff($actions, ['proposition.commit']));
         }
 
