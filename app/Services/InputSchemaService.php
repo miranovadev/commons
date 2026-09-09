@@ -29,6 +29,8 @@ final readonly class InputSchemaService
         array $gateOptionIds,
         array $revisionOptionIds = [],
         ?array $attestationOptionIds = null,
+        ?array $traversalOptionIds = null,
+        ?array $instrumentOptionIds = null,
     ): array {
         $occurrence = $this->phases->currentFor($participant);
         $kind = $occurrence->kind;
@@ -54,12 +56,19 @@ final readonly class InputSchemaService
             $actions = array_values(array_diff($actions, ['proposition.commit']));
         }
 
+        $traversalOptionIds ??= $writeOptionIds;
+        if ($traversalOptionIds !== []) {
+            $actions = array_values(array_diff($actions, ['participant.rest']));
+        }
+
         return $this->specialize(
             $this->forPhase($kind, $actions),
             $writeOptionIds,
             $gateOptionIds,
             $revisionOptionIds,
             $attestationOptionIds ?? $writeOptionIds,
+            $traversalOptionIds,
+            $instrumentOptionIds ?? $writeOptionIds,
         );
     }
 
@@ -161,11 +170,13 @@ final readonly class InputSchemaService
         array $gateOptionIds,
         array $revisionOptionIds,
         array $attestationOptionIds,
+        array $traversalOptionIds,
+        array $instrumentOptionIds,
     ): array {
         $bindings = [
-            'proposition.select' => [
+            'proposition.traverse' => [
                 'property' => 'proposition_id',
-                'values' => $writeOptionIds,
+                'values' => $traversalOptionIds,
             ],
             'proposition.revise' => [
                 'property' => 'proposition_id',
@@ -177,7 +188,7 @@ final readonly class InputSchemaService
             ],
             'instrument.execute' => [
                 'property' => 'proposition_id',
-                'values' => $writeOptionIds,
+                'values' => $instrumentOptionIds,
             ],
             'proposition.reconcile' => [
                 'property' => 'other_proposition_id',

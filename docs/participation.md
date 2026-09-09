@@ -119,63 +119,100 @@ explicitly excludes the Gate. Because a Proposition written during one Cycle
 becomes available when that register is encountered again, revision naturally
 occurs in a subsequent Cycle rather than revising the current Gate in place.
 
-## Local navigation
+## Traverse, Tragedy and Rest
 
-The current Gate is the active Cycle's Read position. Existing Write targets
-must be at that position or one supersession edge away; the existing register,
-ownership and active-head rules still apply. Reclassified originals remain
-readable and eligible for local Attestation under the existing register rules.
-
-A phase whose specialized action schema is empty reports `status: waiting`,
-`reason.code: no_admissible_write`, and a `navigation` object containing
-`available`, `phase_id`, `next_proposition_id`, and the observed `potential`.
-This includes Order when the existing commitment evidence check fails.
-Creation actions such as Variant still count as admissible even when there
-are no existing Write cards. State reads never move a Participant.
-
-POST a navigation request to the existing participation endpoint:
+The earlier selection action (`participant.select`, implemented on main as
+`proposition.select`) is now `proposition.traverse`. There is no compatibility
+alias: no persisted action contract requires one. The old automatic
+`participant.traverse` exhaustion operation is removed too.
 
 ```json
 {
   "phase_id": "01...",
-  "contribution": { "action": "participant.traverse" }
+  "contribution": {
+    "action": "proposition.traverse",
+    "proposition_id": "01..."
+  }
 }
 ```
 
-Traversal is handled separately from expressive schema validation. Under the
-same Participant/Phase locks, the server rechecks exhaustion and selects one
-immediate neighbour; callers cannot specify a destination. It persists the
-new position and completes the exhausted Phase and Cycle. The response offers
-`entry.selection: position`; the existing `entry.mode: potential` wire value
-is retained so current clients can still start another Cycle. This does not
-perform entry reselection: the next `/enter` starts at the saved position. Stale
-phase tokens cannot move twice. Automated wakes perform this step without an
-LLM call and resume from the position on a later wake.
+Traverse explicitly chooses an existing local **Expressive Proposition** in
+the current Write register. Targets are immediate parents or children in the
+existing supersession graph, including historical superseded Propositions.
+The current Gate and positions already visited as Gates in this Cycle are
+excluded; later Cycles may revisit them. Traversal creates no Proposition,
+Supersession or evidence, never selects globally, and may coexist with
+creation, Attestation, Instruments and Commitment. It advances the Phase as
+selection did. At Order it opens another Order occurrence, preserving the
+Cycle until Commit or Rest. Each occurrence has a fresh phase concurrency token.
 
-Parents and children in the existing supersession graph are both traversable,
-regardless of supersession strength. Each immediate direction is ranked by the
-greatest positive Potential observable through it, without returning through
-the current position. Breadth-first traversal gives structural distance and
-terminates even on cycles. Disconnected propositions cannot contribute a
-signal. Only the winning immediate neighbour can become the new position.
+**Tragedy** means no valid Expressive traversal remains, independently of
+whether a new Proposition could be created or Commit could succeed. The plan
+reports `tragedy`, `traversal_options`, and `instrument_options`; its specialized
+schema is authoritative for both human controls and inference. These complete
+local target sets are not truncated by the display limit for active Write heads.
 
-There was no implemented attenuation formula in the backend. This first
-version applies `1 / (1 + structural_distance)` to each measurable Tension
-reduction. Distance includes the route to the source and the outgoing route to
-its Expressive continuation; another Committal stops that continuation search.
-Committal sources use immutable snapshot Tension; Expressive sources use their
-persisted measurements. Initial entry retains its existing Potential/Charge
-ranking because it has no observation position yet. Navigation does not use a
-zero-Potential Charge fallback: no positive local signal leaves the Participant
-waiting in place, able to be reconsidered on a subsequent request or wake.
-Equal positive scores use Proposition ID order. No previous-direction mode or
-route history is introduced.
+Only a Tragic Region exposes `participant.rest`:
 
-Perspective exposes the active attenuation formula, with value 1 and distance
-0 at the current position. Measurements and the readable workspace remain
-substrate projections; attenuation changes navigation's observation of them.
-The implementation loads the substrate graph and evaluates connected routes
-in memory, as the existing Potential service does. It introduces no persisted
-navigation graph or pathfinding cache. This favours a small first version;
-large-substrate performance and possible oscillation as measurements change
-remain things to observe.
+```json
+{
+  "phase_id": "01...",
+  "contribution": { "action": "participant.rest" }
+}
+```
+
+Rest creates no expressive contribution or evidence, completes the Phase and
+Cycle, records `cycles.rested_at`, and preserves the current position. The next
+`/participate/enter` rechecks recovery under the normal entry locks:
+
+1. Search outward over existing parent/child edges in breadth-first distance shells.
+2. Stop at the nearest positive distance containing measured Committal Propositions
+   with positive Potential Charge. Unmeasured, zero-Potential and disconnected
+   candidates cannot supply recovery.
+3. Rank only that shell by attenuated Potential Charge, then existing Charge
+   and Proposition-ID tie-breaking. A farther high-Potential region cannot win.
+4. Persist the winner as the new Cycle's Committal Gate.
+
+The retained position is excluded from a candidate's continuation search, so
+recovery does not borrow its signal by returning through the exhausted observer.
+Repeated Rest can progress outward as each region's continuation is exhausted.
+No viable candidate leaves the participant resting in place; there is no global
+or zero-Potential fallback. GET exposes `entry.selection: recovery`, availability,
+prospective destination, distance and Potential Charge, but never moves anyone.
+The existing `entry.mode: potential` transport is retained for entry clients.
+
+Attenuation preserves main's existing `1 / (1 + structural_distance)` formula.
+The distance includes the route to the Committal source and its outgoing
+Expressive continuation; another Committal stops that continuation search.
+Immutable snapshot Tension and persisted expressive measurements remain the
+inputs. Initial entry keeps its existing global Potential/Charge ranking because
+it has no observation position. Recovery is separate from initial entry.
+The public conceptual documentation's inverse-square influence model is not
+introduced by this navigation change.
+
+Order returns an actionable `ready` plan even when Commit is inadmissible.
+`plan.commitment` and `commitment_preconditions_unsatisfied` preserve diagnostics
+for missing Attestation, Receipt and Closure alignment. Traverse or Rest prevents
+Commit refusal from becoming an artificial permanent deadlock. Automated wakes
+ask inference to choose from exactly the same action schema; they never traverse
+automatically. Stale phase tokens cannot apply another move.
+
+## Bias grounding
+
+Bundled reclassification/evidence gathering (`reclassify_with_receipt`, called
+`proposition.reclassify_with_instrument` in the previous schema) is removed.
+Reclassify has no Instrument field and creates no Receipt. Phase 3 now offers
+plain owner-constrained `proposition.reclassify`.
+
+During Bias, `instrument.execute` targets existing local Expressive Propositions
+in the Write register, including reconciled historical nodes and the Gate when
+eligible. The normal Instrument lifecycle creates a Receipt attached to that
+exact Proposition. It remains attached across Cycles, so grounding in Cycle N
+can enable Commitment on a later revisit. Reconciliation does not inherit or
+copy evidence; effective Attestation, completed Receipt and the existing
+Depth/Cadence Closure gate remain mandatory.
+
+The additive migration records Rest and replaces the unique Cycle/kind index
+with a nonunique index to allow multiple deliberate Order traversals. Rolling
+back after repeated Order occurrences requires resolving those occurrences
+first; the migration does not discard participation history.

@@ -22,6 +22,35 @@ final class PropositionOptionService
         return $this->lineage->neighbourIds($gate)->push($gate->getKey());
     }
 
+    /** Local historical Expressive nodes remain traversable in their register. */
+    public function traversalOptionsFor(Phase $phase): Collection
+    {
+        return $this->localExpressive($phase)
+            ->whereKeyNot($phase->gate_proposition_id)
+            ->whereNotIn('id', $phase->cycle->phases()
+                ->whereNotNull('completed_at')->pluck('gate_proposition_id')->filter())
+            ->orderBy('id')->get();
+    }
+
+    /** Bias can ground reconciled nodes even after a later Supersession. */
+    public function instrumentOptionsFor(Phase $phase): Collection
+    {
+        if ($phase->kind !== PhaseKind::Bias) {
+            return $this->writeOptionsFor($phase);
+        }
+
+        return $this->localExpressive($phase)->orderBy('id')->get();
+    }
+
+    private function localExpressive(Phase $phase): Builder
+    {
+        return Proposition::query()->whereKey($this->localIds($phase))
+            ->where('register', $phase->write_register)->where('tier', 'expressive')
+            ->whereHas('phase.cycle.participant', fn ($query) => $query->where(
+                'substrate_id', $phase->cycle->participant->substrate_id,
+            ));
+    }
+
     /**
      * @return Collection<int, Proposition>
      */

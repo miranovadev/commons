@@ -78,14 +78,12 @@ final readonly class PotentialChargeService
     }
 
     /**
-     * Rank only immediate neighbours. A branch's signal is the greatest
-     * distance-attenuated Potential observable through that first step.
-     * The current position is excluded from each branch to avoid counting
-     * a route that immediately returns through the observer.
+     * Search complete distance shells before ranking. Recovery never uses the
+     * initial-entry Charge fallback, or a disconnected source of Potential.
      *
-     * @return array{proposition: Proposition, potential: float}|null
+     * @return array{proposition: Proposition, potential_charge: float, charge: float, distance: int}|null
      */
-    public function nextFrom(Proposition $position): ?array
+    public function recoverFrom(Proposition $position): ?array
     {
         $substrateId = $position->phase->cycle->participant->substrate_id;
         $propositions = Proposition::query()
@@ -104,72 +102,49 @@ final readonly class PotentialChargeService
             $adjacency[$edge->target_proposition_id][$edge->source_proposition_id] = true;
         }
 
-        $potentials = [];
-        $currentTension = $this->tensionOf($propositions->get($position->getKey()));
-        $best = null;
-        $neighbours = array_keys($adjacency[$position->getKey()] ?? []);
-        sort($neighbours, SORT_STRING);
-        foreach ($neighbours as $neighbourId) {
-            if ($neighbourId === $position->getKey()) {
-                continue;
-            }
-            $visited = [$position->getKey() => true, $neighbourId => true];
-            $frontier = [$neighbourId];
-            $distance = 1;
-            // A reducing continuation directly through this neighbour also
-            // carries Potential, even if that continuation is itself a leaf.
-            $branchEdges = clone $outgoing;
-            $branchEdges->put($position->getKey(), $outgoing
-                ->get($position->getKey(), collect())
-                ->where('target_proposition_id', $neighbourId));
-            $signal = $currentTension === null ? 0.0 : $this->potentialFor(
-                $position->getKey(), $currentTension, $propositions, $branchEdges, 0,
-            );
-            while ($frontier !== []) {
-                $next = [];
-                foreach ($frontier as $id) {
-                    $key = $id.':'.$distance;
-                    if (! array_key_exists($key, $potentials)) {
-                        $source = $propositions->get($id);
-                        $tension = $this->tensionOf($source);
-                        $potentials[$key] = $tension === null ? 0.0 : $this->potentialFor(
-                            $id, $tension, $propositions, $outgoing, $distance, $position->getKey(),
-                        );
-                    }
-                    $signal = max($signal, $potentials[$key]);
-                    foreach (array_keys($adjacency[$id] ?? []) as $nextId) {
-                        if (! isset($visited[$nextId])) {
-                            $visited[$nextId] = true;
-                            $next[] = $nextId;
-                        }
+        $frontier = [$position->getKey()];
+        $visited = [$position->getKey() => true];
+        $distance = 0;
+        while ($frontier !== []) {
+            $ranked = [];
+            $next = [];
+            foreach ($frontier as $id) {
+                $candidate = $propositions->get($id);
+                $snapshot = $candidate->commitmentSnapshot;
+                if ($distance > 0 && $candidate->tier === 'committal' && $snapshot !== null) {
+                    $potential = $this->potentialFor(
+                        $id, $snapshot->tension, $propositions, $outgoing,
+                        $distance, $position->getKey(),
+                    );
+                    if ($potential > 0) {
+                        $ranked[] = [
+                            'proposition' => $candidate,
+                            'potential_charge' => $potential,
+                            'charge' => round(1 - abs($snapshot->tension), 7),
+                            'distance' => $distance,
+                        ];
                     }
                 }
-                $frontier = $next;
-                $distance++;
+                foreach (array_keys($adjacency[$id] ?? []) as $neighbourId) {
+                    if (! isset($visited[$neighbourId])) {
+                        $visited[$neighbourId] = true;
+                        $next[] = $neighbourId;
+                    }
+                }
             }
-            if ($signal > ($best['potential'] ?? 0.0)) {
-                $best = ['proposition' => $propositions->get($neighbourId), 'potential' => $signal];
+            if ($ranked !== []) {
+                usort($ranked, fn (array $left, array $right): int =>
+                    ($right['potential_charge'] <=> $left['potential_charge'])
+                    ?: ($right['charge'] <=> $left['charge'])
+                    ?: strcmp($left['proposition']->getKey(), $right['proposition']->getKey()));
+
+                return $ranked[0];
             }
+            $frontier = $next;
+            $distance++;
         }
 
-        return $best;
-    }
-
-    private function tensionOf(Proposition $proposition): ?float
-    {
-        if ($proposition->commitmentSnapshot !== null) {
-            return $proposition->commitmentSnapshot->tension;
-        }
-        $measurement = $proposition->measurement;
-        if ($measurement === null || $measurement->correspondence === null
-            || $measurement->chirality === null || $measurement->closure === null) {
-            return null;
-        }
-        $projection = $this->projections->from(new ObservableValues(
-            $measurement->correspondence, $measurement->chirality, $measurement->closure,
-        ));
-
-        return round($projection['prominence'] - $projection['turbulence'], 7);
+        return null;
     }
 
     /**

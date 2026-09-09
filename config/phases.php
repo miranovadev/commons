@@ -7,7 +7,8 @@ return [
         'gate' => 'participant-position',
         'actions' => [
             'proposition.variant',
-            'proposition.select',
+            'proposition.traverse',
+            'participant.rest',
         ],
     ],
     2 => [
@@ -19,7 +20,8 @@ return [
             'proposition.revise',
             'proposition.reclassify',
             'attestation.create',
-            'proposition.select',
+            'proposition.traverse',
+            'participant.rest',
         ],
         'constraints' => [
             'proposition.reclassify' => ['gate-owner'],
@@ -27,18 +29,18 @@ return [
     ],
     3 => [
         'name' => 'constrain',
-        'description' => 'Strengthen or classify the selected Proposition, using an instrument when entering the committal register.',
+        'description' => 'Strengthen or classify the selected Proposition. Grounding is a separate Instrument action.',
         'gate' => 'previous-phase-selection',
         'actions' => [
             'proposition.revise',
-            'proposition.reclassify_with_instrument',
+            'proposition.reclassify',
             'attestation.create',
-            'proposition.select',
+            'proposition.traverse',
+            'participant.rest',
         ],
         'constraints' => [
-            'proposition.reclassify_with_instrument' => [
+            'proposition.reclassify' => [
                 'gate-owner',
-                'instrument-required',
             ],
         ],
     ],
@@ -49,7 +51,8 @@ return [
         'actions' => [
             'proposition.variant',
             'instrument.execute',
-            'proposition.select',
+            'proposition.traverse',
+            'participant.rest',
         ],
         'constraints' => [
             'instrument.execute' => ['write-register'],
@@ -61,7 +64,8 @@ return [
         'gate' => 'previous-phase-selection',
         'actions' => [
             'proposition.reconcile',
-            'proposition.select',
+            'proposition.traverse',
+            'participant.rest',
         ],
         'constraints' => [
             'proposition.reconcile' => [
@@ -76,7 +80,8 @@ return [
         'actions' => [
             'proposition.reconcile',
             'instrument.execute',
-            'proposition.select',
+            'proposition.traverse',
+            'participant.rest',
         ],
         'constraints' => [
             'proposition.reconcile' => [
@@ -91,6 +96,8 @@ return [
         'gate' => 'previous-phase-selection',
         'actions' => [
             'proposition.commit',
+            'proposition.traverse',
+            'participant.rest',
         ],
         'constraints' => [
             'proposition.commit' => [
