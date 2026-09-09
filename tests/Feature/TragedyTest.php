@@ -11,6 +11,7 @@ use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Substrate;
 use App\Models\Supersession;
+use App\Services\LedgerService;
 use App\Services\OpenAIResponseSchema;
 use App\Services\ParticipantPromptFactory;
 use App\Services\ParticipationService;
@@ -163,6 +164,7 @@ class TragedyTest extends TestCase
     {
         $proposition = new Proposition;
         $proposition->forceFill(['phase_id' => $phase->id, 'register' => $register, 'tier' => 'expressive', 'statement' => 'Local proposition'])->save();
+        app(LedgerService::class)->record($proposition);
         return $proposition;
     }
 }
