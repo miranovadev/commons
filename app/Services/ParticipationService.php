@@ -238,6 +238,7 @@ final readonly class ParticipationService
                         : 'Begin the next Cycle at the nearest viable Committal distance.',
                 ];
             }
+
             return [
                 // Preserve the existing client entry contract; selection is local.
                 'mode' => 'potential',

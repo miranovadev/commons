@@ -20,6 +20,8 @@ final readonly class InputSchemaService
      * @param  list<string>  $writeOptionIds
      * @param  list<string>  $gateOptionIds
      * @param  list<string>  $revisionOptionIds
+     * @param  list<string>|null  $traversalOptionIds
+     * @param  list<string>|null  $instrumentOptionIds
      * @param  list<string>|null  $attestationOptionIds
      * @return array<string, mixed>
      */
@@ -63,7 +65,6 @@ final readonly class InputSchemaService
 
         return $this->specialize(
             $this->forPhase($kind, $actions),
-            $writeOptionIds,
             $gateOptionIds,
             $revisionOptionIds,
             $attestationOptionIds ?? $writeOptionIds,
@@ -158,7 +159,8 @@ final readonly class InputSchemaService
 
     /**
      * @param  array<string, mixed>  $schema
-     * @param  list<string>  $writeOptionIds
+     * @param  list<string>  $traversalOptionIds
+     * @param  list<string>  $instrumentOptionIds
      * @param  list<string>  $gateOptionIds
      * @param  list<string>  $revisionOptionIds
      * @param  list<string>  $attestationOptionIds
@@ -166,7 +168,6 @@ final readonly class InputSchemaService
      */
     private function specialize(
         array $schema,
-        array $writeOptionIds,
         array $gateOptionIds,
         array $revisionOptionIds,
         array $attestationOptionIds,

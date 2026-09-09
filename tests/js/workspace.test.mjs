@@ -5,7 +5,7 @@ import { createRequire } from 'node:module';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-test('human Write cards render Support and Refute for a schema-authorized historical target', async () => {
+test('human Write cards expose only schema-authorized historical actions', async () => {
   const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
   const result = await build({
     stdin: {
@@ -20,10 +20,10 @@ test('human Write cards render Support and Refute for a schema-authorized histor
           const plan = {
             gate, phase: { number: 2, kind: 'persist', write_register: 'frontier' },
             workspace: { domain: 'emergence', registers: {} },
-            write_options: [], attestation_options: [target],
-            schema: { $defs: { actions: allowed ? { 'attestation.create': { properties: { proposition_id: { enum: ['historical'] } } } } : {} } },
+            write_options: [], attestation_options: [target], traversal_options: [target], instrument_options: [target],
+            schema: { $defs: { actions: allowed ? Object.fromEntries(['attestation.create', 'proposition.traverse', 'instrument.execute'].map(action => [action, { properties: { proposition_id: { enum: ['historical'] } } }])) : {} } },
           };
-          return renderToStaticMarkup(<MantineProvider env="test"><ParticipantWorkspace plan={plan} availableActions={allowed ? ['attestation.create'] : []} onAction={() => {}} /></MantineProvider>);
+          return renderToStaticMarkup(<MantineProvider env="test"><ParticipantWorkspace plan={plan} availableActions={allowed ? ['attestation.create', 'proposition.traverse', 'instrument.execute'] : []} onAction={() => {}} /></MantineProvider>);
         }
       `,
       resolveDir: root,
@@ -38,5 +38,8 @@ test('human Write cards render Support and Refute for a schema-authorized histor
   assert.match(markup, /Historical target/);
   assert.match(markup, /<button\b[^>]*>(?:(?!<\/button>)[\s\S])*>Support<\/span>/);
   assert.match(markup, /<button\b[^>]*>(?:(?!<\/button>)[\s\S])*>Refute<\/span>/);
-  assert.doesNotMatch(module.exports.render(false), />Support<\/span>/);
+  assert.match(markup, />Traverse<\/span>/);
+  assert.match(markup, />Instrument<\/span>/);
+  assert.doesNotMatch(markup, />Select<\/span>/);
+  assert.doesNotMatch(module.exports.render(false), />(Support|Traverse|Instrument)<\/span>/);
 });

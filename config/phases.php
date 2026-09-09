@@ -3,7 +3,7 @@
 return [
     1 => [
         'name' => 'distinguish',
-        'description' => 'Create or select the first expressive distinction from the current committal Gate.',
+        'description' => 'Create a distinction or traverse an existing local Expressive Proposition from the current Committal Gate.',
         'gate' => 'participant-position',
         'actions' => [
             'proposition.variant',
@@ -13,8 +13,8 @@ return [
     ],
     2 => [
         'name' => 'persist',
-        'description' => 'Develop the selected distinction through variation, revision, reclassification, or attestation.',
-        'gate' => 'previous-phase-selection',
+        'description' => 'Develop the current distinction through variation, revision, reclassification, or attestation.',
+        'gate' => 'previous-phase-position',
         'actions' => [
             'proposition.variant',
             'proposition.revise',
@@ -30,7 +30,7 @@ return [
     3 => [
         'name' => 'constrain',
         'description' => 'Strengthen or classify the selected Proposition. Grounding is a separate Instrument action.',
-        'gate' => 'previous-phase-selection',
+        'gate' => 'previous-phase-position',
         'actions' => [
             'proposition.revise',
             'proposition.reclassify',
@@ -46,8 +46,8 @@ return [
     ],
     4 => [
         'name' => 'disperse',
-        'description' => 'Open a new expressive branch, execute an instrument, or select an existing active head.',
-        'gate' => 'previous-phase-selection',
+        'description' => 'Open a new expressive branch, execute an instrument, or traverse an existing local Expressive Proposition.',
+        'gate' => 'previous-phase-position',
         'actions' => [
             'proposition.variant',
             'instrument.execute',
@@ -60,8 +60,8 @@ return [
     ],
     5 => [
         'name' => 'mediate',
-        'description' => 'Reconcile the current Gate with one admissible counterpart, or select an existing mediated Proposition.',
-        'gate' => 'previous-phase-selection',
+        'description' => 'Reconcile the current Gate with one admissible counterpart, or traverse an existing local Expressive Proposition.',
+        'gate' => 'previous-phase-position',
         'actions' => [
             'proposition.reconcile',
             'proposition.traverse',
@@ -75,8 +75,8 @@ return [
     ],
     6 => [
         'name' => 'bias',
-        'description' => 'Reconcile the current Gate, execute an instrument, or select an existing Proposition in the write register.',
-        'gate' => 'previous-phase-selection',
+        'description' => 'Reconcile the current Gate, execute an instrument, or traverse an existing Expressive Proposition in the Write register.',
+        'gate' => 'previous-phase-position',
         'actions' => [
             'proposition.reconcile',
             'instrument.execute',
@@ -92,8 +92,8 @@ return [
     ],
     7 => [
         'name' => 'order',
-        'description' => 'Commit the grounded expressive Proposition when Depth and Cadence have aligned hysteretic directions.',
-        'gate' => 'previous-phase-selection',
+        'description' => 'Commit when grounding and Depth/Cadence allow, traverse a local Expressive continuation, or Rest in Tragedy.',
+        'gate' => 'previous-phase-position',
         'actions' => [
             'proposition.commit',
             'proposition.traverse',
