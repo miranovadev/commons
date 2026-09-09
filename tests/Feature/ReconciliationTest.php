@@ -262,6 +262,12 @@ class ReconciliationTest extends TestCase
         }
     }
 
+    private function assertInput(array $schema, array $input, bool $valid): void
+    {
+        $result = app(Validator::class)->validate(Helper::toJSON($input), Helper::toJSON($schema));
+        $this->assertSame($valid, $result->isValid(), json_encode($input));
+    }
+
     private function plan(): array { return app(InputPlanService::class)->forParticipant($this->viewer); }
     private function sibling(string $statement, float $correspondence = -0.5): Proposition
     {
