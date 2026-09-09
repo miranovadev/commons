@@ -68,17 +68,6 @@ class WakeParticipant implements ShouldQueue
                 );
             }
 
-            if (data_get($state, 'navigation.available') === true) {
-                $participation->contribute(
-                    $participantConnection->participant,
-                    $state['navigation']['phase_id'],
-                    ['action' => 'participant.traverse'],
-                );
-                $triggers->recordSuccess($participantConnection);
-
-                return;
-            }
-
             if (($state['status'] ?? null) !== 'ready') {
                 $reason = data_get(
                     $state,

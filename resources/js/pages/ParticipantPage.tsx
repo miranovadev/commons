@@ -58,7 +58,7 @@ export function ParticipantPage() {
       {(participantLoading || participationLoading) && !error && <Stack align="center" py={100}><Loader color="indigo" /><Text c="dimmed">Finding your current position…</Text></Stack>}
       {error && <Alert color="red" variant="light" icon={<IconAlertCircle size={18} />} title="The Commons could not load this position">{messageFrom(error, 'This participation state could not be loaded.')}</Alert>}
       {participant && participation?.status === 'waiting' && (
-        <Box p="xl"><Stack align="flex-start" maw={680} mx="auto"><ThemeIcon color="indigo" variant="light" size="xl" radius="xl"><IconSparkles size={22} /></ThemeIcon><Box><Title order={2}>{participation.entry?.mode === 'origin' ? 'Every substrate begins somewhere' : 'Ready to enter the cycle'}</Title><Text c="dimmed" mt="xs">{participation.entry?.message || participation.reason?.message}</Text></Box>{cycleEntry.error && <Alert color="red" variant="light">{messageFrom(cycleEntry.error, 'The cycle could not be entered.')}</Alert>}<Group>{participation.entry?.mode === 'origin' && participation.entry?.available && <Button color="indigo" onClick={() => { cycleEntry.reset(); openOrigin(); }}>Establish the Origin</Button>}{participation.entry?.mode === 'potential' && participation.entry?.available && <Button color="indigo" loading={cycleEntry.isLoading} onClick={enterFromPotential}>Enter via Potential</Button>}</Group></Stack></Box>
+        <Box p="xl"><Stack align="flex-start" maw={680} mx="auto"><ThemeIcon color="indigo" variant="light" size="xl" radius="xl"><IconSparkles size={22} /></ThemeIcon><Box><Title order={2}>{participation.entry?.mode === 'origin' ? 'Every substrate begins somewhere' : 'Ready to enter the cycle'}</Title><Text c="dimmed" mt="xs">{participation.entry?.message || participation.reason?.message}</Text></Box>{cycleEntry.error && <Alert color="red" variant="light">{messageFrom(cycleEntry.error, 'The cycle could not be entered.')}</Alert>}<Group>{participation.entry?.mode === 'origin' && participation.entry?.available && <Button color="indigo" onClick={() => { cycleEntry.reset(); openOrigin(); }}>Establish the Origin</Button>}{participation.entry?.mode === 'potential' && participation.entry?.available && <Button color="indigo" loading={cycleEntry.isLoading} onClick={enterFromPotential}>{participation.entry?.selection === 'recovery' ? 'Begin recovery Cycle' : 'Enter Cycle'}</Button>}</Group></Stack></Box>
       )}
       {participation?.last_commitment && (
         <Alert color="indigo" title="Your latest Commitment" m="md">
@@ -81,13 +81,13 @@ export function ParticipantPage() {
             <PhaseLabel kind={plan.phase.kind} />
             <Box />
           </Box>
-          {participation?.status === 'blocked' && plan.commitment && (
+          {plan.commitment && !plan.commitment.admissible && (
             <Alert color="yellow" title="Commitment is blocked" icon={<IconLock size={18} />} m="md">
               <Stack gap="xs">
                 <Text size="sm">{participation.reason?.message}</Text>
                 <Text size="sm">Effective Attestation: {plan.commitment.requirements.attestation ? 'available' : 'missing'}.</Text>
                 <Text size="sm">Completed Receipt: {plan.commitment.requirements.receipt ? 'available' : 'missing'}.</Text>
-                <Text size="xs">Another participant can supply missing grounding from an eligible write register. Grounding alone does not override the Closure gate.</Text>
+                <Text size="xs">Grounding can be added in Bias and retained for a later Cycle. Traverse or Rest remains available; the Closure gate still applies.</Text>
               </Stack>
             </Alert>
           )}
@@ -97,6 +97,12 @@ export function ParticipantPage() {
                 {' · '}Cadence: {plan.commitment.closure.cadence} ({plan.commitment.closure.cadence_direction})</Text>
               <Text size="sm">{plan.commitment.requirements.closure ? 'Directions align.' : 'Directions diverge; Commitment is blocked.'}</Text>
               <Text size="xs">Zero retains the previous committed direction. History: {plan.commitment.closure.history_source}.</Text>
+            </Alert>
+          )}
+          {availableActions.includes('participant.rest') && (
+            <Alert color="gray" title="Tragic Region" m="md">
+              <Text size="sm">No valid Expressive traversal remains at this position. Rest ends this Cycle; recovery begins at the nearest viable Committal region.</Text>
+              <Button mt="sm" variant="light" color="gray" onClick={() => openAction('participant.rest')}>Rest</Button>
             </Alert>
           )}
           <ParticipantWorkspace plan={{ ...plan, perspectiveLimit: participant.max_read_count }} availableActions={availableActions} onAction={openAction} />
@@ -126,10 +132,10 @@ function isActionName(value?: string): value is ActionName {
     'instrument.execute',
     'proposition.commit',
     'proposition.reclassify',
-    'proposition.reclassify_with_instrument',
     'proposition.reconcile',
     'proposition.revise',
-    'proposition.select',
+    'proposition.traverse',
+    'participant.rest',
     'proposition.variant',
   ].includes(value as ActionName);
 }

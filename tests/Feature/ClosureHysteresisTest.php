@@ -98,10 +98,11 @@ class ClosureHysteresisTest extends TestCase
         $this->assertSame(0.0, $closure['depth']);
         $this->assertSame('negative', $closure['depth_direction']);
         $this->assertSame('positive', $closure['cadence_direction']);
-        $this->assertSame('blocked', $state['status']);
+        $this->assertSame('ready', $state['status']);
+        $this->assertFalse($state['plan']['commitment']['admissible']);
         $this->assertContains('depth_cadence_directions_diverge', $state['plan']['commitment']['reasons']);
-        $this->assertSame([], $state['plan']['schema']['oneOf']);
-        $this->assertNull($state['navigation']);
+        $this->assertArrayNotHasKey('proposition.commit', $state['plan']['schema']['$defs']['actions']);
+        $this->assertArrayHasKey('participant.rest', $state['plan']['schema']['$defs']['actions']);
         try {
             app(ContributionDispatcher::class)->dispatch($this->participant, $phase, ['action' => 'proposition.commit']);
             $this->fail('Direct dispatch must not bypass Closure.');

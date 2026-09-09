@@ -31,25 +31,22 @@ contribution or advancing the Phase.
 
 ## Observing and recovering blocked Order
 
-An ungrounded Order returns `status: blocked`, reason code
-`commitment_preconditions_unsatisfied`, and no navigation. `plan.commitment`
-contains `admissible`, individual requirement flags, and machine-readable
-reasons. Each fresh read reevaluates eligibility. Explicit traversal requests
-at Order are rejected too; an empty Commit schema is not expressive exhaustion.
+An inadmissible Commit retains `commitment_preconditions_unsatisfied` and
+`plan.commitment` diagnostics, but the plan stays actionable. Deliberate
+`proposition.traverse` can choose another eligible local Expressive Proposition;
+only Tragedy exposes `participant.rest`. Automated participants choose through
+the same inference contract as human participants.
 
-Missing grounding must be supplied through existing eligible phases, potentially
-by another participant. There are no new Attestation/instrument actions in
-Order and no automatic transfer of evidence across a reconciliation. In
-particular a newly reconciled Phase 6 Gate needs its own Attestation and Receipt;
-selecting or instrumenting an already-grounded local candidate is a direct path
-to Commitment. The operational regression test exercises a complete seven-phase
-cycle with other participants preparing and attesting local candidates.
+Reclassification no longer gathers evidence implicitly. During Bias, normal
+`instrument.execute` can ground an existing reconciled Proposition, including
+an eligible historical node. A Receipt stays on its exact Proposition across
+Cycles; later Attestation or Closure alignment may enable Commitment on a later
+revisit. No evidence is transferred across Supersessions. Order itself adds no
+new evidence-gathering actions.
 
-Proposition payloads in the participation plan include instrument execution
-status, failure reason, and receipt ID. The UI displays blocked requirements and
-the inspector distinguishes absent, pending, failed, and completed instruments.
-Automated participants skip inference/traversal while blocked and recheck on the
-next wake using the existing scheduling behaviour.
+See [participation](participation.md#traverse-tragedy-and-rest) for local traversal,
+Tragedy and nearest-distance Rest recovery. Instrument status, failure reason
+and Receipt ID remain exposed in the plan and inspector.
 
 ## Closure admissibility
 

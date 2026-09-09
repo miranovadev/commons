@@ -33,7 +33,7 @@ final readonly class ContributionDispatcher
         $gate = $phase->gate()->firstOrFail();
 
         return match ($input['action']) {
-            'proposition.select' => Proposition::query()
+            'proposition.traverse' => Proposition::query()
                 ->findOrFail($input['proposition_id']),
             'proposition.variant',
             'proposition.reclassify' => $this->proposition(
@@ -110,10 +110,6 @@ final readonly class ContributionDispatcher
             $target,
             str($input['action'])->after('proposition.')->toString(),
         );
-
-        if (isset($input['instrument'])) {
-            $this->instruments->execute($phase, $target, $input['instrument']);
-        }
 
         $this->ledger->record($supersession);
 

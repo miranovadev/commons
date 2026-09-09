@@ -51,10 +51,18 @@ final readonly class CycleEntryService
             }
 
             if ($lockedParticipant->current_proposition_id !== null) {
+                $gate = $lockedParticipant->position()->firstOrFail();
+                if ($this->needsRecovery($lockedParticipant)) {
+                    $selection = $this->potential->recoverFrom($gate);
+                    if ($selection === null) {
+                        throw new ConflictHttpException('No structurally reachable Committal region has positive Potential Charge.');
+                    }
+                    $gate = $selection['proposition'];
+                }
                 $this->createLiveCycle(
                     $lockedParticipant,
                     $substrate,
-                    $lockedParticipant->position()->firstOrFail(),
+                    $gate,
                 );
 
                 return;
@@ -124,6 +132,11 @@ final readonly class CycleEntryService
                 $proposition,
             );
         });
+    }
+
+    public function needsRecovery(Participant $participant): bool
+    {
+        return $participant->cycles()->latest('sequence')->first()?->rested_at !== null;
     }
 
     private function createLiveCycle(

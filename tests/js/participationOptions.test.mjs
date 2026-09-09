@@ -28,3 +28,17 @@ test('no attestation action means no permitted buttons or form targets', () => {
 test('revision and attestation selectors use separate schema permissions', () => {
   assert.deepEqual(actionPropositions(plan, 'proposition.revise'), []);
 });
+
+test('Traverse and Bias instruments use their own authorized historical target sets', () => {
+  const grounded = { ...archived, id: 'reconciled' };
+  const navigation = {
+    ...plan, traversal_options: [archived], instrument_options: [grounded],
+    schema: { $defs: { actions: {
+      'proposition.traverse': { properties: { proposition_id: { enum: [archived.id] } } },
+      'instrument.execute': { properties: { proposition_id: { enum: [grounded.id] } } },
+    } } },
+  };
+  assert.deepEqual(actionPropositions(navigation, 'proposition.traverse'), [archived]);
+  assert.deepEqual(actionPropositions(navigation, 'instrument.execute'), [grounded]);
+  assert.deepEqual(actionPropositions(navigation, 'proposition.revise'), []);
+});

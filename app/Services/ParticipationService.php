@@ -97,29 +97,19 @@ final readonly class ParticipationService
         $plan = $this->contributions->planFor($participant);
         $blocked = $phase->kind === PhaseKind::Order
             && ! $plan['commitment']['admissible'];
-        $exhausted = ! $blocked && $plan['schema']['oneOf'] === [];
-        $selection = $exhausted
-            ? $this->potential->nextFrom($phase->gate()->firstOrFail())
-            : null;
 
         return [
-            'status' => $blocked ? 'blocked' : ($exhausted ? 'waiting' : 'ready'),
+            'status' => 'ready',
             'cycle' => $this->cycle($cycle),
             'plan' => $plan,
             'perspective' => $this->perspective($participant),
             'reason' => $blocked ? [
                 'code' => 'commitment_preconditions_unsatisfied',
-                'message' => 'Commitment requires grounding and aligned Depth/Cadence directions. See the current requirements below.',
-            ] : ($exhausted ? [
-                'code' => 'no_admissible_write',
-                'message' => 'The current position has no admissible Write action.',
+                'message' => 'Commitment requires grounding and aligned Depth/Cadence directions. Traverse an existing continuation or Rest in a Tragic Region.',
+            ] : ($plan['tragedy'] ? [
+                'code' => 'tragic_region',
+                'message' => 'No valid Expressive traversal remains. Rest is available.',
             ] : null),
-            'navigation' => $exhausted ? [
-                'available' => $selection !== null,
-                'phase_id' => $phase->getKey(),
-                'next_proposition_id' => ($selection['proposition'] ?? null)?->getKey(),
-                'potential' => $selection['potential'] ?? 0.0,
-            ] : null,
             'entry' => null,
         ];
     }
@@ -178,11 +168,10 @@ final readonly class ParticipationService
                 );
             }
 
-            if (($input['action'] ?? null) === 'participant.traverse') {
-                return $this->traverse($lockedParticipant, $phase);
-            }
-
             $this->contributions->validate($lockedParticipant, $input);
+            if ($input['action'] === 'participant.rest') {
+                return $this->rest($lockedParticipant, $phase);
+            }
             $gate = $this->dispatcher->dispatch(
                 $lockedParticipant,
                 $phase,
@@ -194,34 +183,18 @@ final readonly class ParticipationService
         });
     }
 
-    /**
-     * Navigation is a server decision, not an expressive contribution. The
-     * caller already holds the Participant and Phase locks; one request can
-     * finish only one Cycle and take exactly one structural step.
-     *
-     * @return array<string, mixed>
-     */
-    private function traverse(Participant $participant, Phase $phase): array
+    /** The validated plan exposes Rest only in a Tragic Region. */
+    private function rest(Participant $participant, Phase $phase): array
     {
-        if ($phase->kind === PhaseKind::Order) {
-            throw new \DomainException('Blocked Commitment is not an exhausted expressive Write and cannot trigger traversal.');
-        }
-        $plan = $this->contributions->planFor($participant);
-        if ($plan['schema']['oneOf'] !== []) {
-            throw new \DomainException('Traversal requires an exhausted Write.');
-        }
-        $selection = $this->potential->nextFrom($phase->gate()->firstOrFail());
-        if ($selection === null) {
-            throw new \DomainException('No positive Potential is observable through a neighbour.');
-        }
-
-        $participant->current_proposition_id = $selection['proposition']->getKey();
+        $participant->current_proposition_id = $phase->gate_proposition_id;
         $participant->save();
         $phase->completed_at = now();
         $phase->save();
+        $phase->cycle->rested_at = now();
         $phase->cycle->completed_at = now();
         $phase->cycle->save();
 
+        // Keep the exhausted position until the next Cycle is explicitly entered.
         return $this->stateFor($participant);
     }
 
@@ -250,6 +223,22 @@ final readonly class ParticipationService
     private function entryFor(Participant $participant): array
     {
         if ($participant->fresh()->current_proposition_id !== null) {
+            if ($this->cycleEntry->needsRecovery($participant)) {
+                $selection = $this->potential->recoverFrom($participant->position()->firstOrFail());
+
+                return [
+                    'mode' => 'potential',
+                    'selection' => 'recovery',
+                    'available' => $selection !== null,
+                    'proposition_id' => ($selection['proposition'] ?? null)?->getKey(),
+                    'distance' => $selection['distance'] ?? null,
+                    'potential_charge' => $selection['potential_charge'] ?? 0.0,
+                    'message' => $selection === null
+                        ? 'Resting until a structurally reachable Committal region has positive Potential Charge.'
+                        : 'Begin the next Cycle at the nearest viable Committal distance.',
+                ];
+            }
+
             return [
                 // Preserve the existing client entry contract; selection is local.
                 'mode' => 'potential',
