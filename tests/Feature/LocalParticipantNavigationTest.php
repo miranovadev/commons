@@ -222,13 +222,13 @@ class LocalParticipantNavigationTest extends TestCase
         $this->edge($position, $first);
         $this->edge($first, $second);
         $participant = $this->participant('explorer', $position);
+        $target = $first->children()->where('tier', 'expressive')->firstOrFail();
+        $this->establishPath($participant, $target);
         $phase = $this->phase($participant, $position);
         app(ParticipationService::class)->contribute($participant, $phase->id, ['action' => 'participant.rest']);
         app(CycleEntryService::class)->enter($participant);
         $state = $this->state($participant);
         $this->assertSame($first->id, $state['plan']['gate']['id']);
-        $target = $first->children()->where('tier', 'expressive')->firstOrFail();
-        $this->establishPath($participant, $target);
         $state = app(ParticipationService::class)->contribute($participant, $state['plan']['phase']['id'], [
             'action' => 'proposition.traverse', 'proposition_id' => $target->id,
         ]);

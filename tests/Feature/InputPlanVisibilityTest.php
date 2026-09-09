@@ -147,6 +147,8 @@ class InputPlanVisibilityTest extends TestCase
         $gate = $this->proposition($sourcePhase, 'activity', 'expressive', 'Gate', 0);
         $child = $this->proposition($sourcePhase, 'frontier', 'expressive', 'Child', 0);
         $this->supersession($sourcePhase, $gate, $child, 'variant');
+        $untouched = $this->proposition($sourcePhase, 'frontier', 'expressive', 'Untouched neighbour', 0);
+        $this->supersession($sourcePhase, $gate, $untouched, 'variant');
         $viewer = $this->participant($substrate, 'viewer');
         $phase = $this->phase($viewer, $kind, 'frontier', $gate);
         // Another participant's evidence must never establish the viewer's path.
@@ -159,7 +161,7 @@ class InputPlanVisibilityTest extends TestCase
             $prior->forceFill(['phase_id' => $previousPhase->id, 'proposition_id' => $child->id, 'direction' => $direction])->save();
         }
         $plan = app(InputPlanService::class)->forParticipant($viewer);
-        $this->assertSame([$child->id], array_column($plan['write_options'], 'id'));
+        $this->assertEqualsCanonicalizing([$child->id, $untouched->id], array_column($plan['write_options'], 'id'));
         $this->assertSame($direction === null ? [] : [$child->id], array_column($plan['traversal_options'], 'id'));
         $transport = app(\App\Services\OpenAIResponseSchema::class)->fromCommons($plan['schema']);
         foreach (['refute', 'support'] as $choice) {
@@ -170,6 +172,17 @@ class InputPlanVisibilityTest extends TestCase
             $this->assertInput($transport, ['contribution' => array_replace($transportInput, $input)], $choice !== $direction);
         }
         $this->assertInput($plan['schema'], ['action' => 'proposition.traverse', 'proposition_id' => $child->id], $direction !== null);
+        foreach ([$child, $untouched] as $target) {
+            $input = ['action' => 'proposition.traverse', 'proposition_id' => $target->id];
+            $valid = $target->id === $child->id && $direction !== null;
+            $this->assertInput($plan['schema'], $input, $valid);
+            $this->assertInput($transport, ['contribution' => array_replace($transportInput, $input, ['direction' => null])], $valid);
+        }
+        foreach (['refute', 'support'] as $choice) {
+            $input = ['action' => 'attestation.create', 'proposition_id' => $untouched->id, 'direction' => $choice];
+            $this->assertInput($plan['schema'], $input, true);
+            $this->assertInput($transport, ['contribution' => array_replace($transportInput, $input)], true);
+        }
         if ($direction !== null) {
             $count = Proposition::count();
             $edges = Supersession::count();

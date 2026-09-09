@@ -15,6 +15,7 @@ final readonly class InputSchemaService
         private GateService $gates,
         private PropositionOwnershipService $ownership,
         private CommitmentAdmissibilityService $admissibility,
+        private PropositionOptionService $options,
     ) {}
 
     /**
@@ -59,7 +60,7 @@ final readonly class InputSchemaService
             $actions = array_values(array_diff($actions, ['proposition.commit']));
         }
 
-        $traversalOptionIds ??= $writeOptionIds;
+        $traversalOptionIds ??= $this->options->traversalOptionsFor($occurrence)->pluck('id')->all();
         if ($traversalOptionIds !== []) {
             $actions = array_values(array_diff($actions, ['participant.rest']));
         }

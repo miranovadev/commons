@@ -83,11 +83,19 @@ final class OpenAIResponseSchema
         if ($choices !== []) {
             $base = $transport['properties']['contribution'];
             $variants = [];
-            $otherActions = array_values(array_diff(array_keys($actions), ['attestation.create']));
+            $otherActions = array_values(array_diff(array_keys($actions), ['attestation.create', 'proposition.traverse']));
             if ($otherActions !== []) {
                 $other = $base;
                 $other['properties']['action']['enum'] = $otherActions;
                 $variants[] = $other;
+            }
+            if (isset($actions['proposition.traverse'])) {
+                $traverse = $base;
+                $traverse['properties']['action']['enum'] = ['proposition.traverse'];
+                $traverse['properties']['proposition_id'] = $this->transport(
+                    $actions['proposition.traverse']['properties']['proposition_id'],
+                );
+                $variants[] = $traverse;
             }
             foreach ($choices as $choice) {
                 $variant = $base;
