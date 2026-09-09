@@ -3,7 +3,7 @@ import { IconAlertCircle } from '@tabler/icons-react';
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { messageFrom } from '../errors';
-import { actionPropositions } from '../participationOptions';
+import { actionPropositions, attestationDirections } from '../participationOptions';
 import { AttestationDirectionControl } from './AttestationDirectionControl';
 import type {
   ActionName,
@@ -73,6 +73,9 @@ export function ContributionForm({
     });
   }, [action, initialValues, opened]);
 
+  const directions = attestationDirections(plan, values.proposition_id);
+  const direction = directions.includes(values.direction) ? values.direction : directions[0];
+
   if (!schema || !action) return null;
   const activeAction = action;
 
@@ -100,6 +103,7 @@ export function ContributionForm({
       }
     });
 
+    if (activeAction === 'attestation.create') contribution.direction = direction;
     onSubmit(contribution);
   }
 
@@ -151,7 +155,8 @@ export function ContributionForm({
             <Stack gap={5}>
               <Text size="sm" fw={500}>Direction</Text>
               <AttestationDirectionControl
-                value={values.direction || 'support'}
+                value={direction || 'support'}
+                directions={directions}
                 onChange={(value) => set('direction', value)}
               />
             </Stack>
@@ -209,6 +214,7 @@ export function ContributionForm({
               type="submit"
               color={action === 'proposition.commit' ? 'indigo' : 'blue'}
               loading={loading}
+              disabled={action === 'attestation.create' && !direction}
             >
               Apply contribution
             </Button>

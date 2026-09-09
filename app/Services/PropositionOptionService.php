@@ -22,21 +22,35 @@ final class PropositionOptionService
         return $this->lineage->neighbourIds($gate)->push($gate->getKey());
     }
 
-    /** Local historical Expressive nodes remain traversable in their register. */
+    /** An effective personal Attestation establishes the forward traversal path. */
     public function traversalOptionsFor(Phase $phase): Collection
     {
-        return $this->localExpressive($phase)
-            ->whereKeyNot($phase->gate_proposition_id)
+        return $this->writeDescendants($phase)
+            ->whereHas('effectiveAttestations.phase.cycle', fn ($query) => $query
+                ->whereBelongsTo($phase->cycle->participant))
+            ->orderBy('id')->get();
+    }
+
+    private function writeDescendants(Phase $phase): Builder
+    {
+        return Proposition::query()
+            ->whereKey($this->lineage->immediateDescendantIds($phase->gate()->firstOrFail()))
+            ->where('register', $phase->write_register)
+            ->where('tier', 'expressive')
             ->whereNotIn('id', $phase->cycle->phases()
                 ->whereNotNull('completed_at')->pluck('gate_proposition_id')->filter())
-            ->orderBy('id')->get();
+            ->whereHas('phase.cycle.participant', fn ($query) => $query->where(
+                'substrate_id', $phase->cycle->participant->substrate_id,
+            ));
     }
 
     /** Bias can ground reconciled nodes even after a later Supersession. */
     public function instrumentOptionsFor(Phase $phase): Collection
     {
         if ($phase->kind !== PhaseKind::Bias) {
-            return $this->writeOptionsFor($phase);
+            return $this->activeHeads($phase)
+                ->where('register', $phase->write_register)->where('tier', 'expressive')
+                ->latest('created_at')->limit($this->limit())->get();
         }
 
         return $this->localExpressive($phase)->orderBy('id')->get();
@@ -60,27 +74,13 @@ final class PropositionOptionService
             return collect();
         }
 
-        return $this->activeHeads($phase)
-            ->where('register', $phase->write_register)
-            ->where('tier', 'expressive')
-            ->latest('created_at')
-            ->limit($this->limit())
-            ->get();
+        return $this->writeDescendants($phase)->orderBy('id')->get();
     }
 
-    /** Attestations target local expressive propositions, not just active heads. */
+    /** Every valid Write descendant offers the as-yet-unattested direction(s). */
     public function attestationOptionsFor(Phase $phase): Collection
     {
-        if (! in_array($phase->kind, [PhaseKind::Persist, PhaseKind::Constrain], true)) {
-            return collect();
-        }
-
-        return Proposition::query()->whereKey($this->localIds($phase))
-            ->where('register', $phase->write_register)->where('tier', 'expressive')
-            ->whereHas('phase.cycle.participant', fn ($query) => $query->where(
-                'substrate_id', $phase->cycle->participant->substrate_id,
-            ))
-            ->orderBy('id')->get();
+        return $this->writeOptionsFor($phase);
     }
 
     /**
@@ -98,6 +98,7 @@ final class PropositionOptionService
         }
 
         return $this->activeHeads($phase)
+            ->whereKey($this->lineage->immediateDescendantIds($phase->gate()->firstOrFail()))
             ->where('register', $phase->write_register)
             ->where('tier', 'expressive')
             ->whereKeyNot($phase->gate_proposition_id)

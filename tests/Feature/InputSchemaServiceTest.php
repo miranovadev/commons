@@ -33,6 +33,7 @@ class InputSchemaServiceTest extends TestCase
         $expected = [
             PhaseKind::Distinguish->value => [
                 'proposition.variant',
+                'attestation.create',
                 'proposition.traverse',
                 'participant.rest',
             ],
@@ -54,22 +55,26 @@ class InputSchemaServiceTest extends TestCase
             PhaseKind::Disperse->value => [
                 'proposition.variant',
                 'instrument.execute',
+                'attestation.create',
                 'proposition.traverse',
                 'participant.rest',
             ],
             PhaseKind::Mediate->value => [
                 'proposition.reconcile',
+                'attestation.create',
                 'proposition.traverse',
                 'participant.rest',
             ],
             PhaseKind::Bias->value => [
                 'proposition.reconcile',
                 'instrument.execute',
+                'attestation.create',
                 'proposition.traverse',
                 'participant.rest',
             ],
             PhaseKind::Order->value => [
                 'proposition.commit',
+                'attestation.create',
                 'proposition.traverse',
                 'participant.rest',
             ],
@@ -160,7 +165,7 @@ class InputSchemaServiceTest extends TestCase
         );
         $this->assertSame(
             [$candidateId],
-            $plan['schema']['$defs']['actions']['proposition.traverse']
+            $plan['schema']['$defs']['actions']['attestation.create']
                 ['properties']['proposition_id']['enum'],
         );
         $this->assertSame(
@@ -195,7 +200,7 @@ class InputSchemaServiceTest extends TestCase
         );
     }
 
-    public function test_write_and_gate_options_are_limited_to_ten(): void
+    public function test_write_frontier_is_complete_while_gate_options_keep_their_limit(): void
     {
         config()->set('schemas.options.limit', 10);
 
@@ -232,7 +237,7 @@ class InputSchemaServiceTest extends TestCase
             $state['participant'],
         );
 
-        $this->assertCount(10, $plan['write_options']);
+        $this->assertCount(12, $plan['write_options']);
         $this->assertCount(10, $plan['gate_options']);
     }
 

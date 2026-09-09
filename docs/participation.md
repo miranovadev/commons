@@ -75,8 +75,12 @@ by Classification Register. The human workspace presents these as operational
 Read, Gate and Write rows. Read and Gate each expose one active Proposition;
 Lineage is available on demand; and Write separates existing actionable
 Propositions from moves that create a new Proposition from the Gate. An
-existing Write card exposes Support and Refute when Attestation is admissible,
-and Revise only when that Proposition is owned and revisable. Moves which
+existing Write card is an immediate valid Expressive descendant of the current
+Gate in the phase's Write register. `write_options` is the authoritative forward
+frontier, including historical descendants; `workspace.registers` remains broader
+Read/inspection context and must never be merged into Write. Parents, siblings,
+grandchildren, disconnected branches and same-register Horizon peers are not
+Write cards. Revise remains limited to owned, revisable descendants. Moves which
 create a new Proposition are exposed as a compact Supersession control between
 Gate and Write rather than being presented as existing Proposition cards.
 
@@ -88,7 +92,7 @@ movement toward Prominence and darker indigo for movement toward Turbulence.
 
 The plan also includes the viewing Participant's effective `attestation` on
 each Proposition. A later eligible Write may change that direction while the
-Proposition remains an active expressive head. The replacement links to the
+Proposition remains an immediate valid Write descendant. The replacement links to the
 prior Attestation for auditability, derived measurements use only the effective
 leaf, and at most one Attestation can be recorded for a Proposition in a given
 Phase.
@@ -137,8 +141,10 @@ alias: no persisted action contract requires one. The old automatic
 ```
 
 Traverse explicitly chooses an existing local **Expressive Proposition** in
-the current Write register. Targets are immediate parents or children in the
-existing supersession graph, including historical superseded Propositions.
+the current Write register. Targets are immediate valid descendants of the Gate in the
+existing supersession graph, including historical superseded Propositions, and
+require the viewing Participant's effective Attestation. Another Participant's
+Attestation does not establish this path.
 The current Gate and positions already visited as Gates in this Cycle are
 excluded; later Cycles may revisit them. Traversal creates no Proposition,
 Supersession or evidence, never selects globally, and may coexist with
@@ -146,11 +152,29 @@ creation, Attestation, Instruments and Commitment. It advances the Phase as
 selection did. At Order it opens another Order occurrence, preserving the
 Cycle until Commit or Rest. Each occurrence has a fresh phase concurrency token.
 
+Every immediate valid Write descendant exposes two direction slots in all phases:
+
+| Effective personal Attestation | Refute side | Support side |
+| --- | --- | --- |
+| None | Refute | Support |
+| Support | Refute | Traverse |
+| Refute | Traverse | Support |
+
+The specialized `attestation.create.anyOf` branches bind each direction to its
+permitted Proposition IDs. Same-direction re-attestation is unavailable; the
+opposite direction uses the existing Attestation supersession mechanism.
+The card footer, form and inference schema use these same choices. Traverse
+creates neither a Proposition nor a Supersession and advances through the
+existing personal path. Mediate/Bias reconciliation semantics are unchanged.
+
 **Tragedy** means no valid Expressive traversal remains, independently of
 whether a new Proposition could be created or Commit could succeed. The plan
 reports `tragedy`, `traversal_options`, and `instrument_options`; its specialized
 schema is authoritative for both human controls and inference. These complete
-local target sets are not truncated by the display limit for active Write heads.
+Write and traversal target sets are not truncated by the Horizon display limit.
+The existing Tragedy/Rest calculation continues to use the traversal set; its
+inputs now reflect the Attestation requirement. Recovery still uses bidirectional
+neighbours, with no change to its graph or ranking semantics.
 
 Only a Tragic Region exposes `participant.rest`:
 

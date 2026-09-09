@@ -103,6 +103,7 @@ class LocalParticipantNavigationTest extends TestCase
         $target = $this->node('Existing distinction', 0.1, 'expressive');
         $this->edge($position, $target);
         $participant = $this->participant('walker', $position);
+        $this->establishPath($participant, $target);
         app(CycleEntryService::class)->enter($participant);
         $state = $this->state($participant);
         $actions = $state['plan']['schema']['$defs']['actions'];
@@ -128,6 +129,7 @@ class LocalParticipantNavigationTest extends TestCase
         $foreign = $this->node('Disconnected', 0.0, 'expressive');
         $this->edge($position, $target);
         $participant = $this->participant('walker', $position);
+        $this->establishPath($participant, $target);
         app(CycleEntryService::class)->enter($participant);
         $phaseId = $this->state($participant)['plan']['phase']['id'];
         foreach ([
@@ -226,6 +228,7 @@ class LocalParticipantNavigationTest extends TestCase
         $state = $this->state($participant);
         $this->assertSame($first->id, $state['plan']['gate']['id']);
         $target = $first->children()->where('tier', 'expressive')->firstOrFail();
+        $this->establishPath($participant, $target);
         $state = app(ParticipationService::class)->contribute($participant, $state['plan']['phase']['id'], [
             'action' => 'proposition.traverse', 'proposition_id' => $target->id,
         ]);
@@ -245,16 +248,17 @@ class LocalParticipantNavigationTest extends TestCase
         $this->assertNull(app(PotentialChargeService::class)->recoverFrom($position));
     }
 
-    public function test_order_traverses_historical_expressive_nodes_then_rests_without_weakening_commit(): void
+    public function test_order_traverses_attested_descendants_then_rests_without_weakening_commit(): void
     {
-        $parent = $this->node('Earlier', 0.0, 'expressive');
+        $parent = $this->node('Forward descendant', 0.0, 'expressive');
         $gate = $this->node('Current', 0.0, 'expressive');
         foreach ([$parent, $gate] as $node) {
             $node->register = 'canon';
             $node->save();
         }
-        $this->edge($parent, $gate);
+        $this->edge($gate, $parent);
         $participant = $this->participant('order', $gate);
+        $this->establishPath($participant, $parent);
         $phase = $this->phase($participant, $gate);
         $phase->kind = PhaseKind::Order;
         $phase->save();
@@ -280,6 +284,7 @@ class LocalParticipantNavigationTest extends TestCase
         $target = $this->node('Local', 0.0, 'expressive');
         $this->edge($gate, $target);
         $participant = $this->participant('automated', $gate);
+        $this->establishPath($participant, $target);
         app(CycleEntryService::class)->enter($participant);
         $connection = new \App\Models\Connection;
         $connection->forceFill([
@@ -325,6 +330,19 @@ class LocalParticipantNavigationTest extends TestCase
         $this->assertSame($gate->id, $active->fresh()->current_proposition_id);
         $this->assertSame($commitment->id, $completed->fresh()->current_proposition_id);
         $this->assertNull($newcomer->fresh()->current_proposition_id);
+    }
+
+    private function establishPath(Participant $participant, Proposition $target): void
+    {
+        $phase = $this->phase($participant);
+        $phase->completed_at = now();
+        $phase->save();
+        $phase->cycle->completed_at = now();
+        $phase->cycle->save();
+        $attestation = new \App\Models\Attestation;
+        $attestation->forceFill([
+            'phase_id' => $phase->id, 'proposition_id' => $target->id, 'direction' => 'support',
+        ])->save();
     }
 
     private function participant(string $callsign, ?Proposition $position = null): Participant
