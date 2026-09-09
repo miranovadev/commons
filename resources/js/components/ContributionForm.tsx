@@ -3,6 +3,7 @@ import { IconAlertCircle } from '@tabler/icons-react';
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { messageFrom } from '../errors';
+import { actionPropositions } from '../participationOptions';
 import { AttestationDirectionControl } from './AttestationDirectionControl';
 import type {
   ActionName,
@@ -55,9 +56,7 @@ export function ContributionForm({
   const properties = schema?.properties || {};
   const required = schema?.required || [];
   const propositionOptions = useMemo(
-    () => ((action === 'proposition.revise'
-      ? plan?.revision_options
-      : plan?.write_options) || []).map(option),
+    () => action ? actionPropositions(plan, action).map(option) : [],
     [action, plan],
   );
   const gateOptions = useMemo(

@@ -50,7 +50,7 @@ final readonly class InputSchemaService
         ));
 
         if (in_array('proposition.commit', $actions, true)
-            && ! $this->admissibility->evaluate($gate)['admissible']) {
+            && ! $this->admissibility->evaluate($gate, $occurrence)['admissible']) {
             $actions = array_values(array_diff($actions, ['proposition.commit']));
         }
 

@@ -38,6 +38,7 @@ final readonly class InputPlanService
             $participant,
         );
         $gateOptions = $this->options->gateOptionsFor($phase);
+        $attestationOptions = $this->options->attestationOptionsFor($phase);
         $this->loadPropositionState(
             $participant,
             $gate,
@@ -45,6 +46,7 @@ final readonly class InputPlanService
             $writeOptions,
             $revisionOptions,
             $gateOptions,
+            $attestationOptions,
         );
         $workspace = $this->workspace(
             $participant,
@@ -52,13 +54,7 @@ final readonly class InputPlanService
             $gate,
             $lineage,
         );
-        $attestationOptionIds = collect(
-            $workspace['registers'][$phase->write_register] ?? [],
-        )
-            ->where('tier', 'expressive')
-            ->whereIn('id', $this->options->localIds($phase))
-            ->pluck('id')
-            ->all();
+        $attestationOptionIds = $attestationOptions->pluck('id')->all();
 
         return [
             'phase' => [
@@ -71,13 +67,14 @@ final readonly class InputPlanService
             ],
             'workspace' => $workspace,
             'commitment' => $phase->kind === \App\Enums\PhaseKind::Order
-                ? $this->admissibility->evaluate($gate)
+                ? $this->admissibility->evaluate($gate, $phase)
                 : null,
             'gate' => $this->proposition($gate, $participant),
             'lineage' => $this->propositions($lineage, $participant),
             'write_options' => $this->propositions($writeOptions, $participant),
             'revision_options' => $this->propositions($revisionOptions, $participant),
             'gate_options' => $this->propositions($gateOptions, $participant),
+            'attestation_options' => $this->propositions($attestationOptions, $participant),
             'schema' => $this->schemas->forParticipant(
                 $participant,
                 $writeOptions->pluck('id')->all(),

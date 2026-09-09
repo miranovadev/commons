@@ -3,6 +3,7 @@
 namespace App\Services\Observables;
 
 use App\Domain\Observables\DomainLineage;
+use App\Domain\Observables\ClosureValues;
 use App\Domain\Observables\LineageComparison;
 use App\Models\Proposition;
 use DomainException;
@@ -15,8 +16,13 @@ final readonly class ClosureCalculator
 
     public function calculate(LineageComparison $comparison): float
     {
+        return $this->components($comparison)->average();
+    }
+
+    public function components(LineageComparison $comparison): ClosureValues
+    {
         if ($comparison->isBootstrap()) {
-            return -1;
+            return new ClosureValues(-1, -1);
         }
 
         $depth = $this->similarity(
@@ -28,7 +34,7 @@ final readonly class ClosureCalculator
             $this->coefficientOfVariation($comparison->previous),
         );
 
-        return round(($depth + $cadence) / 2, 7);
+        return new ClosureValues(round($depth, 7), round($cadence, 7));
     }
 
     private function depth(DomainLineage $lineage): float

@@ -4,11 +4,29 @@ namespace App\Services;
 
 use App\Models\Proposition;
 use App\Models\Receipt;
+use App\Models\Phase;
 
 final readonly class CommitmentAdmissibilityService
 {
-    /** @return array{admissible: bool, requirements: array{attestation: bool, receipt: bool, closure: null}, closure_enforced: bool, reasons: list<string>} */
-    public function evaluate(Proposition $gate): array
+    public function __construct(private ClosureGateService $closure) {}
+
+    /** @return array<string, mixed> */
+    public function evaluate(Proposition $gate, Phase $phase): array
+    {
+        $grounding = $this->grounding($gate);
+        $closure = $this->closure->preview($gate, $phase);
+        return [
+            ...$grounding,
+            'admissible' => $grounding['admissible'] && $closure['admissible'],
+            'requirements' => [...$grounding['requirements'], 'closure' => $closure['admissible']],
+            'closure_enforced' => true,
+            'closure' => $closure,
+            'reasons' => [...$grounding['reasons'], ...($closure['admissible'] ? [] : ['depth_cadence_directions_diverge'])],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    public function grounding(Proposition $gate): array
     {
         $attestations = $gate->effectiveAttestations()->pluck('id');
         $hasReceipt = Receipt::query()

@@ -51,13 +51,9 @@ the inspector distinguishes absent, pending, failed, and completed instruments.
 Automated participants skip inference/traversal while blocked and recheck on the
 next wake using the existing scheduling behaviour.
 
-## Deferred: Closure admissibility
+## Closure admissibility
 
-`requirements.closure` is null and `closure_enforced` is false. Depth/Cadence
-direction alignment and their separate hysteretic state are deliberately not
-implemented in this milestone. Existing observable calculation, immutable
-Commitment snapshots, Tension-based Domain changes, and Context Horizon
-transitions still execute on a successful Commit. Observations before the next
-milestone therefore reflect an operational prototype, not the final Closure gate.
-
-No database migration or historical evidence rewrite is required.
+The subsequent [Closure Hysteresis milestone](closure-hysteresis.md) adds enforced
+Depth/Cadence direction alignment alongside these grounding requirements,
+immutable component snapshots, and Domain-transition observation. It requires
+an additive database migration; historical evidence and snapshots are not rewritten.

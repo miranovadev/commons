@@ -85,5 +85,8 @@ jobs:
       - name: Build frontend
         run: npm run build
 
+      - name: Test frontend action contracts
+        run: npm run test:ui
+
       - name: Run test suite
         run: php artisan test
