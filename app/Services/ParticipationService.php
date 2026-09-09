@@ -42,7 +42,8 @@ final readonly class ParticipationService
             'domain' => $horizon?->domain->value,
             'horizon_sequence' => $horizon?->sequence,
             'last_commitment' => $snapshot === null ? null : [
-                ...$snapshot->only(['proposition_id', 'depth', 'cadence', 'closure', 'tension_before', 'evaluated_at']),
+                ...$snapshot->only(['proposition_id', 'depth', 'cadence', 'closure', 'tension_before']),
+                'evaluated_at' => $snapshot->evaluated_at->toISOString(),
                 'depth_direction' => $snapshot->depth_direction?->value,
                 'cadence_direction' => $snapshot->cadence_direction?->value,
                 'domain_before' => $snapshot->direction_before->value,

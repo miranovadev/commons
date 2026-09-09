@@ -242,7 +242,7 @@ final readonly class ContributionDispatcher
             );
 
             return $target;
-            });
+        });
     }
 
     private function write(

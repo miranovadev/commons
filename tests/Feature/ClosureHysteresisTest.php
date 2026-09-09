@@ -137,6 +137,31 @@ class ClosureHysteresisTest extends TestCase
         $this->assertSame($sibling->id, $service->historyFor($merged)->proposition_id);
     }
 
+    public function test_actual_candidate_rejection_rolls_back_a_previously_admissible_preview(): void
+    {
+        $this->bootstrap(2);
+        [$phase, $gate] = $this->candidate([2]);
+        $preview = app(ClosureGateService::class)->preview($gate, $phase);
+        $counts = $this->counts();
+        $this->mock(ClosureGateService::class, function ($mock) use ($preview): void {
+            $mock->shouldReceive('preview')->andReturn($preview);
+            $mock->shouldReceive('forCommitment')->once()->andReturn([
+                ...$preview, 'admissible' => false,
+            ]);
+        });
+
+        try {
+            app(ContributionDispatcher::class)->dispatch($this->participant, $phase, ['action' => 'proposition.commit']);
+            $this->fail('An actual candidate rejection must roll back the write.');
+        } catch (DomainException $exception) {
+            $this->assertStringContainsString('aligned Depth/Cadence', $exception->getMessage());
+        }
+        $this->assertSame($counts, $this->counts());
+        $this->assertSame($gate->id, $this->participant->fresh()->current_proposition_id);
+        $this->assertNull($phase->fresh()->completed_at);
+        $this->assertSame('settlement', app(ParticipationService::class)->stateFor($this->participant)['domain']);
+    }
+
     public function test_legacy_missing_components_use_explicit_default_without_rewriting_history(): void
     {
         $this->bootstrap(1);

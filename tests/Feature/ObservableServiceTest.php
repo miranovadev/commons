@@ -68,7 +68,11 @@ class ObservableServiceTest extends TestCase
 
     public function test_matching_lineages_in_complementary_horizons_align(): void
     {
+        // Bootstrap at the same depth as the two-node complementary lineages,
+        // so the intermediate boundary is admissible under Closure hysteresis.
+        $seed = $this->proposition('Origin activity.', 'activity');
         $origin = $this->proposition('Origin.', 'canon', 'committal');
+        $this->supersede($seed, $origin, 'revise');
         $this->closeHorizon($origin, prominence: 0, turbulence: 1);
 
         $first = $this->proposition('Settlement activity.', 'activity');

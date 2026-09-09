@@ -51,3 +51,24 @@ target enum. This restores Support/Refute for eligible targets absent from the
 active write heads, without exposing disallowed targets or adding Attestations
 to other phases. Both support and refute remain submissions through the existing
 validated participation endpoint.
+
+## Deployment and review
+
+Run `php artisan migrate --force` and rebuild the frontend on deployment. The
+schema cache version is bumped so pre-hysteresis action schemas are not reused.
+
+For a manual review:
+
+1. In Persist or Constrain, inspect an eligible local expressive proposition in
+   the Write register. Support and Refute should open the Attestation form with
+   that target and direction selected, including when it is no longer an active
+   selection head. Submit through the normal contribution flow.
+2. At Order, inspect the prospective component values and resolved directions.
+   A grounded but divergent candidate must remain blocked without navigation.
+3. Commit an aligned, grounded candidate. Check the latest Commitment panel for
+   Domain/Tension before and after, then refresh after the cycle ends: the result
+   should remain visible. A non-boundary Commit must leave the horizon unchanged.
+
+`ClosureHysteresisTest` constructs deterministic aligned, divergent, zero-value,
+and multi-parent histories. `npm run test:ui` covers the shared schema-target
+contract and rendered human Support/Refute controls.
