@@ -168,6 +168,13 @@ The card footer, form and inference schema use these same choices. Traverse
 creates neither a Proposition nor a Supersession and advances through the
 existing personal path. Reconciliation counterparts belong to Gate, as described below.
 
+Write card footers reserve three regions: Refute (or its Traverse replacement)
+on the left, other authorized actions such as Revise and Instrument in the
+middle, and Support (or its Traverse replacement) on the right. Empty regions
+remain in place, and middle actions wrap without moving the directional slots.
+The UI renders Rest only from the authoritative schema, never from its own
+interpretation of the Tragedy flag or visible cards.
+
 **Tragedy** means the current Phase has zero admissible non-Rest actions.
 The server first applies all phase-native, ownership, target and Commitment
 constraints, then specializes the complete non-Rest action schema. Only when

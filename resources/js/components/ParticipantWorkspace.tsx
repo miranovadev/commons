@@ -233,22 +233,26 @@ function WriteOptionCard({ proposition, directions, canAttest, canRevise, canIns
   onAction: ActionHandler;
 }) {
   const hasActions = canAttest || canRevise || canInstrument || canTraverse;
+  function directionalAction(direction: 'refute' | 'support') {
+    const attest = canAttest && directions.includes(direction);
+    const traverse = canTraverse && !directions.includes(direction);
+    if (!attest && !traverse) return null;
+    return <Button size="compact-xs" variant="subtle" color={direction === 'support' ? 'violet' : 'teal'} leftSection={<IconWhirl size={14} className={`attestation-direction-icon attestation-direction-icon--${direction}`} />} onClick={() => traverse
+      ? onAction('proposition.traverse', { proposition_id: proposition.id })
+      : onAction('attestation.create', { proposition_id: proposition.id, direction })}>{traverse ? 'Traverse' : direction === 'support' ? 'Support' : 'Refute'}</Button>;
+  }
   return (
     <Box className="write-option-card" data-attested={proposition.attestation?.direction}>
       <PropositionCard proposition={proposition} committalObservables={committalObservables} compact flow="write" onClick={() => onInspect({ kind: 'write option', proposition })} />
       {(hasActions || proposition.attestation) && (
-        <Group className="write-option-card__actions" gap={4} wrap="wrap">
-          {(['refute', 'support'] as const).map((direction) => {
-            const attest = canAttest && directions.includes(direction);
-            const traverse = canTraverse && !directions.includes(direction);
-            if (!attest && !traverse) return null;
-            return <Button key={direction} size="compact-xs" variant="subtle" color={direction === 'support' ? 'violet' : 'teal'} leftSection={<IconWhirl size={14} className={`attestation-direction-icon attestation-direction-icon--${direction}`} />} onClick={() => traverse
-              ? onAction('proposition.traverse', { proposition_id: proposition.id })
-              : onAction('attestation.create', { proposition_id: proposition.id, direction })}>{traverse ? 'Traverse' : direction === 'support' ? 'Support' : 'Refute'}</Button>;
-          })}
-          {canRevise && <Button size="compact-xs" variant="subtle" color="gray" leftSection={<IconPencil size={13} />} onClick={() => onAction('proposition.revise', { proposition_id: proposition.id })}>Revise</Button>}
-          {canInstrument && <Button size="compact-xs" variant="subtle" color="gray" leftSection={<IconTool size={13} />} onClick={() => onAction('instrument.execute', { proposition_id: proposition.id })}>Instrument</Button>}
-        </Group>
+        <Box className="write-option-card__actions write-option-card__actions--directional">
+          <Box className="write-option-card__side" data-action-region="left">{directionalAction('refute')}</Box>
+          <Group className="write-option-card__middle" data-action-region="middle" gap={4} justify="center" wrap="wrap">
+            {canRevise && <Button size="compact-xs" variant="subtle" color="gray" leftSection={<IconPencil size={13} />} onClick={() => onAction('proposition.revise', { proposition_id: proposition.id })}>Revise</Button>}
+            {canInstrument && <Button size="compact-xs" variant="subtle" color="gray" leftSection={<IconTool size={13} />} onClick={() => onAction('instrument.execute', { proposition_id: proposition.id })}>Instrument</Button>}
+          </Group>
+          <Box className="write-option-card__side" data-action-region="right">{directionalAction('support')}</Box>
+        </Box>
       )}
     </Box>
   );

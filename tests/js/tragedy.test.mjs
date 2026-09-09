@@ -62,4 +62,7 @@ test('the participant page offers Rest only when the authoritative schema expose
   assert.match(exhausted, /Tragic Region/);
   assert.match(exhausted, />Rest<\/span>/);
   assert.match(exhausted, /No admissible non-Rest action remains in this Phase/);
+  // Even a stale/absent Tragedy flag cannot hide an authoritative Rest action.
+  assert.match(module.exports.render('participant.rest', false), />Rest<\/span>/);
+  assert.match(module.exports.render('participant.rest', undefined), />Rest<\/span>/);
 });

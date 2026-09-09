@@ -16,7 +16,7 @@ test('Write renders only local cards and exactly the two schema-driven direction
         import { ParticipantWorkspace } from './resources/js/components/ParticipantWorkspace';
         const gate = { id: 'gate', register: 'activity', tier: 'expressive', statement: 'Gate' };
         const target = { id: 'historical', register: 'frontier', tier: 'expressive', statement: 'Historical target' };
-        export function render(effective, allowed = true) {
+        export function render(effective, allowed = true, auxiliary = false) {
           const directions = ['refute', 'support'].filter(direction => direction !== effective);
           const actions = allowed ? {
             'attestation.create': {
@@ -24,6 +24,10 @@ test('Write renders only local cards and exactly the two schema-driven direction
               anyOf: directions.map(direction => ({ properties: { proposition_id: { enum: [target.id] }, direction: { enum: [direction] } } })),
             },
             ...(effective ? { 'proposition.traverse': { properties: { proposition_id: { enum: [target.id] } } } } : {}),
+            ...(auxiliary ? {
+              'proposition.revise': { properties: { proposition_id: { enum: [target.id] } } },
+              'instrument.execute': { properties: { proposition_id: { enum: [target.id] } } },
+            } : {}),
           } : {};
           const unrelated = { ...target, id: 'unrelated', statement: 'Unrelated horizon proposition' };
           const plan = {
@@ -31,7 +35,7 @@ test('Write renders only local cards and exactly the two schema-driven direction
             workspace: { domain: 'emergence', registers: { frontier: [unrelated] } },
             // Deliberately omit attestation metadata: schema drives the buttons.
             write_options: [target], attestation_options: [target], traversal_options: effective ? [target] : [],
-            gate_options: [unrelated], instrument_options: [unrelated],
+            gate_options: [unrelated], instrument_options: [target, unrelated], revision_options: [target],
             schema: { $defs: { actions } },
           };
           return renderToStaticMarkup(<MantineProvider env="test"><ParticipantWorkspace plan={plan} availableActions={Object.keys(actions)} onAction={() => {}} /></MantineProvider>);
@@ -45,10 +49,26 @@ test('Write renders only local cards and exactly the two schema-driven direction
   const module = { exports: {} };
   new Function('require', 'module', 'exports', result.outputFiles[0].text)(require, module, module.exports);
   for (const [effective, expected] of [[null, ['Refute', 'Support']], ['support', ['Refute', 'Traverse']], ['refute', ['Traverse', 'Support']]]) {
-    const markup = module.exports.render(effective);
-    assert.match(markup, /Historical target/);
-    assert.doesNotMatch(markup, /Unrelated horizon proposition/);
-    assert.deepEqual([...markup.matchAll(/>(Support|Refute|Traverse)<\/span>/g)].map(match => match[1]), expected);
+    for (const auxiliary of [false, true]) {
+      const markup = module.exports.render(effective, true, auxiliary);
+      assert.match(markup, /Historical target/);
+      assert.doesNotMatch(markup, /Unrelated horizon proposition/);
+      assert.deepEqual([...markup.matchAll(/>(Support|Refute|Traverse)<\/span>/g)].map(match => match[1]), expected);
+      assert.match(markup, /write-option-card__actions--directional/);
+      const left = markup.slice(markup.indexOf('data-action-region="left"'), markup.indexOf('data-action-region="middle"'));
+      const middle = markup.slice(markup.indexOf('data-action-region="middle"'), markup.indexOf('data-action-region="right"'));
+      const right = markup.slice(markup.indexOf('data-action-region="right"'));
+      assert.match(left, new RegExp('>' + expected[0] + '</span>'));
+      assert.match(right, new RegExp('>' + expected[1] + '</span>'));
+      assert.doesNotMatch(middle, />(Support|Refute|Traverse)<\/span>/);
+      assert.doesNotMatch(left + right, />(Revise|Instrument)<\/span>/);
+      if (auxiliary) {
+        assert.match(middle, />Revise<\/span>/);
+        assert.match(middle, />Instrument<\/span>/);
+      } else {
+        assert.doesNotMatch(markup, />(Revise|Instrument)<\/span>/);
+      }
+    }
   }
   assert.doesNotMatch(module.exports.render(null, false), /Historical target|>(Support|Refute|Traverse)<\/span>/);
 });
