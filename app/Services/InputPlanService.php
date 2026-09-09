@@ -59,6 +59,15 @@ final readonly class InputPlanService
             $lineage,
         );
         $attestationOptionIds = $attestationOptions->pluck('id')->all();
+        $schema = $this->schemas->forParticipant(
+            $participant,
+            $writeOptions->pluck('id')->all(),
+            $gateOptions->pluck('id')->all(),
+            $revisionOptions->pluck('id')->all(),
+            $attestationOptionIds,
+            $traversalOptions->pluck('id')->all(),
+            $instrumentOptions->pluck('id')->all(),
+        );
 
         return [
             'phase' => [
@@ -75,22 +84,14 @@ final readonly class InputPlanService
                 : null,
             'gate' => $this->proposition($gate, $participant),
             'lineage' => $this->propositions($lineage, $participant),
-            'tragedy' => $traversalOptions->isEmpty(),
+            'tragedy' => isset($schema['$defs']['actions']['participant.rest']),
             'traversal_options' => $this->propositions($traversalOptions, $participant),
             'instrument_options' => $this->propositions($instrumentOptions, $participant),
             'write_options' => $this->propositions($writeOptions, $participant),
             'revision_options' => $this->propositions($revisionOptions, $participant),
             'gate_options' => $this->propositions($gateOptions, $participant),
             'attestation_options' => $this->propositions($attestationOptions, $participant),
-            'schema' => $this->schemas->forParticipant(
-                $participant,
-                $writeOptions->pluck('id')->all(),
-                $gateOptions->pluck('id')->all(),
-                $revisionOptions->pluck('id')->all(),
-                $attestationOptionIds,
-                $traversalOptions->pluck('id')->all(),
-                $instrumentOptions->pluck('id')->all(),
-            ),
+            'schema' => $schema,
         ];
     }
 

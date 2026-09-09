@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\PhaseKind;
+use App\Models\Attestation;
 use App\Models\Cycle;
 use App\Models\Participant;
 use App\Models\Phase;
@@ -75,7 +76,7 @@ class InputPlanVisibilityTest extends TestCase
         );
 
         $this->assertTrue($visibleFrontierIds->contains($source->getKey()));
-        $this->assertFalse($writeOptionIds->contains($source->getKey()));
+        $this->assertTrue($writeOptionIds->contains($source->getKey()));
         $this->assertTrue($attestationOptionIds->contains($source->getKey()));
 
         app(ContributionService::class)->validate($viewer, [
@@ -91,6 +92,120 @@ class InputPlanVisibilityTest extends TestCase
         $limited = app(InputPlanService::class)->forParticipant($viewer);
         $this->assertContains($source->id, array_column($limited['attestation_options'], 'id'));
         $this->assertContains($source->id, $limited['schema']['$defs']['actions']['attestation.create']['properties']['proposition_id']['enum']);
+    }
+
+    public function test_write_is_only_the_immediate_forward_frontier_even_with_horizon_neighbours(): void
+    {
+        $substrate = $this->substrate();
+        $author = $this->participant($substrate, 'author');
+        $sourcePhase = $this->phase($author, PhaseKind::Persist, 'frontier');
+        $parent = $this->proposition($sourcePhase, 'frontier', 'expressive', 'Parent', 0);
+        $gate = $this->proposition($sourcePhase, 'activity', 'expressive', 'Gate', 0);
+        $child = $this->proposition($sourcePhase, 'frontier', 'expressive', 'Child', 0);
+        $sibling = $this->proposition($sourcePhase, 'frontier', 'expressive', 'Sibling branch', 0);
+        $distant = $this->proposition($sourcePhase, 'frontier', 'expressive', 'Grandchild', 0);
+        $unrelated = $this->proposition($sourcePhase, 'frontier', 'expressive', 'Unrelated', 0);
+        $wrong = $this->proposition($sourcePhase, 'canon', 'expressive', 'Wrong register', 0);
+        $committal = $this->proposition($sourcePhase, 'frontier', 'committal', 'Committal child', 0);
+        foreach ([[$parent, $gate], [$parent, $sibling], [$gate, $child], [$child, $distant], [$gate, $wrong], [$gate, $committal]] as [$from, $to]) {
+            $this->supersession($sourcePhase, $from, $to, 'variant');
+        }
+        $viewer = $this->participant($substrate, 'viewer');
+        $this->phase($viewer, PhaseKind::Persist, 'frontier', $gate);
+        $plan = app(InputPlanService::class)->forParticipant($viewer);
+        $this->assertContains($unrelated->id, array_column($plan['workspace']['registers']['frontier'], 'id'));
+        $this->assertSame([$child->id], array_column($plan['write_options'], 'id'));
+        $this->assertSame([$child->id], array_column($plan['attestation_options'], 'id'));
+        $this->assertSame([], $plan['traversal_options']);
+        $this->assertContains($parent->id, app(\App\Services\LineageService::class)->neighbourIds($gate));
+        foreach ([$parent, $sibling, $distant, $unrelated, $wrong, $committal] as $excluded) {
+            foreach (['support', 'refute'] as $direction) {
+                $this->assertInput($plan['schema'], [
+                    'action' => 'attestation.create', 'proposition_id' => $excluded->id, 'direction' => $direction,
+                ], false);
+            }
+        }
+    }
+
+    public static function writeDirections(): array
+    {
+        $cases = [];
+        foreach (PhaseKind::cases() as $kind) {
+            foreach ([null, 'support', 'refute'] as $direction) {
+                $cases[$kind->name.' '.($direction ?? 'untouched')] = [$kind, $direction];
+            }
+        }
+        return $cases;
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('writeDirections')]
+    public function test_personal_effective_attestation_controls_human_and_inference_choices(PhaseKind $kind, ?string $direction): void
+    {
+        $substrate = $this->substrate();
+        $author = $this->participant($substrate, 'author');
+        $sourcePhase = $this->phase($author, PhaseKind::Persist, 'frontier');
+        $gate = $this->proposition($sourcePhase, 'activity', 'expressive', 'Gate', 0);
+        $child = $this->proposition($sourcePhase, 'frontier', 'expressive', 'Child', 0);
+        $this->supersession($sourcePhase, $gate, $child, 'variant');
+        $untouched = $this->proposition($sourcePhase, 'frontier', 'expressive', 'Untouched neighbour', 0);
+        $this->supersession($sourcePhase, $gate, $untouched, 'variant');
+        $viewer = $this->participant($substrate, 'viewer');
+        $phase = $this->phase($viewer, $kind, 'frontier', $gate);
+        // Another participant's evidence must never establish the viewer's path.
+        $other = new Attestation;
+        $other->forceFill(['phase_id' => $sourcePhase->id, 'proposition_id' => $child->id, 'direction' => 'support'])->save();
+        if ($direction !== null) {
+            $previousPhase = $phase->replicate();
+            $previousPhase->forceFill(['gate_proposition_id' => null, 'completed_at' => now()])->save();
+            $prior = new Attestation;
+            $prior->forceFill(['phase_id' => $previousPhase->id, 'proposition_id' => $child->id, 'direction' => $direction])->save();
+        }
+        $plan = app(InputPlanService::class)->forParticipant($viewer);
+        $this->assertEqualsCanonicalizing([$child->id, $untouched->id], array_column($plan['write_options'], 'id'));
+        $this->assertSame($direction === null ? [] : [$child->id], array_column($plan['traversal_options'], 'id'));
+        $transport = app(\App\Services\OpenAIResponseSchema::class)->fromCommons($plan['schema']);
+        foreach (['refute', 'support'] as $choice) {
+            $input = ['action' => 'attestation.create', 'proposition_id' => $child->id, 'direction' => $choice];
+            $this->assertInput($plan['schema'], $input, $choice !== $direction);
+            $variant = $transport['properties']['contribution']['anyOf'][0];
+            $transportInput = array_fill_keys($variant['required'], null);
+            $this->assertInput($transport, ['contribution' => array_replace($transportInput, $input)], $choice !== $direction);
+        }
+        $this->assertInput($plan['schema'], ['action' => 'proposition.traverse', 'proposition_id' => $child->id], $direction !== null);
+        foreach ([$child, $untouched] as $target) {
+            $input = ['action' => 'proposition.traverse', 'proposition_id' => $target->id];
+            $valid = $target->id === $child->id && $direction !== null;
+            $this->assertInput($plan['schema'], $input, $valid);
+            $this->assertInput($transport, ['contribution' => array_replace($transportInput, $input, ['direction' => null])], $valid);
+        }
+        foreach (['refute', 'support'] as $choice) {
+            $input = ['action' => 'attestation.create', 'proposition_id' => $untouched->id, 'direction' => $choice];
+            $this->assertInput($plan['schema'], $input, true);
+            $this->assertInput($transport, ['contribution' => array_replace($transportInput, $input)], true);
+        }
+        if ($direction !== null) {
+            $count = Proposition::count();
+            $edges = Supersession::count();
+            app(\App\Services\ContributionDispatcher::class)->dispatch($viewer, $phase, [
+                'action' => 'attestation.create', 'proposition_id' => $child->id,
+                'direction' => $direction === 'support' ? 'refute' : 'support',
+            ]);
+            $this->assertSame($count, Proposition::count());
+            $this->assertSame($edges, Supersession::count());
+            $this->assertDatabaseHas('attestations', ['supersedes_attestation_id' => $prior->id]);
+            $updated = app(InputPlanService::class)->forParticipant($viewer);
+            $this->assertInput($updated['schema'], [
+                'action' => 'attestation.create', 'proposition_id' => $child->id, 'direction' => $direction,
+            ], true);
+        }
+    }
+
+    private function assertInput(array $schema, array $input, bool $valid): void
+    {
+        $result = app(\Opis\JsonSchema\Validator::class)->validate(
+            \Opis\JsonSchema\Helper::toJSON($input), \Opis\JsonSchema\Helper::toJSON($schema),
+        );
+        $this->assertSame($valid, $result->isValid(), json_encode($input));
     }
 
     private function substrate(): Substrate

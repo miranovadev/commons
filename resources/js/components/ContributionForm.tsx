@@ -3,7 +3,7 @@ import { IconAlertCircle } from '@tabler/icons-react';
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { messageFrom } from '../errors';
-import { actionPropositions } from '../participationOptions';
+import { actionPropositions, attestationDirections } from '../participationOptions';
 import { AttestationDirectionControl } from './AttestationDirectionControl';
 import type {
   ActionName,
@@ -60,7 +60,7 @@ export function ContributionForm({
     [action, plan],
   );
   const gateOptions = useMemo(
-    () => (plan?.gate_options || []).map(option),
+    () => actionPropositions(plan, 'proposition.reconcile').map(option),
     [plan],
   );
 
@@ -72,6 +72,9 @@ export function ContributionForm({
       ...initialValues,
     });
   }, [action, initialValues, opened]);
+
+  const directions = attestationDirections(plan, values.proposition_id);
+  const direction = directions.includes(values.direction) ? values.direction : directions[0];
 
   if (!schema || !action) return null;
   const activeAction = action;
@@ -100,6 +103,7 @@ export function ContributionForm({
       }
     });
 
+    if (activeAction === 'attestation.create') contribution.direction = direction;
     onSubmit(contribution);
   }
 
@@ -151,7 +155,8 @@ export function ContributionForm({
             <Stack gap={5}>
               <Text size="sm" fw={500}>Direction</Text>
               <AttestationDirectionControl
-                value={values.direction || 'support'}
+                value={direction || 'support'}
+                directions={directions}
                 onChange={(value) => set('direction', value)}
               />
             </Stack>
@@ -194,7 +199,9 @@ export function ContributionForm({
             </>
           )}
 
-          {action === 'participant.rest' && <Text size="sm" c="dimmed">End this Cycle without creating content. Your current position is retained for recovery when the next Cycle begins.</Text>}
+          {action === 'proposition.reconcile' && <Text size="sm" c="dimmed">The new Proposition copies the current Gate statement exactly. The selected sibling contributes a second hard parent edge.</Text>}
+
+          {action === 'participant.rest' && <Text size="sm" c="dimmed">No admissible non-Rest action remains in this Phase. End this Cycle and retain your current position for recovery when the next Cycle begins.</Text>}
 
           {action === 'proposition.commit' && (
             <Text size="sm" c="dimmed">
@@ -209,6 +216,7 @@ export function ContributionForm({
               type="submit"
               color={action === 'proposition.commit' ? 'indigo' : 'blue'}
               loading={loading}
+              disabled={action === 'attestation.create' && !direction}
             >
               Apply contribution
             </Button>

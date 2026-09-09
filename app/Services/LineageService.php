@@ -8,6 +8,36 @@ use Illuminate\Support\Facades\DB;
 
 final class LineageService
 {
+    /** Immediate forward edges only; history/recovery still use neighbourIds. */
+    public function immediateDescendantIds(Proposition $gate): Collection
+    {
+        return $gate->children()->pluck('propositions.id')
+            ->reject(fn (string $id): bool => $id === $gate->getKey())
+            ->unique()->values();
+    }
+
+    /** Forward family inside one Horizon; Committal boundaries terminate expansion. */
+    public function descendantsInHorizon(Proposition $parent, string $horizonId): Collection
+    {
+        $seen = collect([$parent->getKey()]);
+        $frontier = $seen;
+        $descendants = collect();
+        while ($frontier->isNotEmpty()) {
+            $next = Proposition::query()
+                ->whereIn('id', DB::table('supersessions')
+                    ->whereIn('source_proposition_id', $frontier)->select('target_proposition_id'))
+                ->whereHas('contextHorizonMembership', fn ($query) => $query->where('context_horizon_id', $horizonId))
+                ->whereHas('phase.cycle.participant', fn ($query) => $query->where(
+                    'substrate_id', $parent->phase->cycle->participant->substrate_id,
+                ))
+                ->whereNotIn('id', $seen)->get();
+            $descendants = $descendants->concat($next);
+            $seen = $seen->merge($next->pluck('id'));
+            $frontier = $next->where('tier', 'expressive')->pluck('id');
+        }
+        return $descendants;
+    }
+
     /** @return Collection<int, string> */
     public function neighbourIds(Proposition $position): Collection
     {

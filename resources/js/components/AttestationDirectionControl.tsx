@@ -7,14 +7,15 @@ interface AttestationDirectionControlProps {
   onChange: (direction: AttestationDirection) => void;
   showLabels?: boolean;
   fullWidth?: boolean;
+  directions?: AttestationDirection[];
 }
 
-export function AttestationDirectionControl({ value, onChange, showLabels = true, fullWidth = true }: AttestationDirectionControlProps) {
+export function AttestationDirectionControl({ value, onChange, showLabels = true, fullWidth = true, directions = ['support', 'refute'] }: AttestationDirectionControlProps) {
   return (
     <SegmentedControl
       fullWidth={fullWidth}
       color={value === 'support' ? 'violet' : 'teal'}
-      data={(['support', 'refute'] as AttestationDirection[]).map((direction) => ({
+      data={directions.map((direction) => ({
         value: direction,
         label: <DirectionLabel direction={direction} showLabel={showLabels} />,
       }))}

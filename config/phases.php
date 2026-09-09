@@ -7,8 +7,8 @@ return [
         'gate' => 'participant-position',
         'actions' => [
             'proposition.variant',
+            'attestation.create',
             'proposition.traverse',
-            'participant.rest',
         ],
     ],
     2 => [
@@ -21,7 +21,6 @@ return [
             'proposition.reclassify',
             'attestation.create',
             'proposition.traverse',
-            'participant.rest',
         ],
         'constraints' => [
             'proposition.reclassify' => ['gate-owner'],
@@ -36,7 +35,6 @@ return [
             'proposition.reclassify',
             'attestation.create',
             'proposition.traverse',
-            'participant.rest',
         ],
         'constraints' => [
             'proposition.reclassify' => [
@@ -51,8 +49,8 @@ return [
         'actions' => [
             'proposition.variant',
             'instrument.execute',
+            'attestation.create',
             'proposition.traverse',
-            'participant.rest',
         ],
         'constraints' => [
             'instrument.execute' => ['write-register'],
@@ -60,44 +58,46 @@ return [
     ],
     5 => [
         'name' => 'mediate',
-        'description' => 'Reconcile the current Gate with one admissible counterpart, or traverse an existing local Expressive Proposition.',
+        'description' => 'Reconcile the current Gate with a same-parent sibling matching its Correspondence direction, or traverse an existing local Expressive Proposition.',
         'gate' => 'previous-phase-position',
         'actions' => [
             'proposition.reconcile',
+            'attestation.create',
             'proposition.traverse',
-            'participant.rest',
         ],
         'constraints' => [
             'proposition.reconcile' => [
-                'homeostatically-admissible-counterpart',
+                'same-parent-gate-sibling',
+                'dominant-lineage-correspondence',
             ],
         ],
     ],
     6 => [
         'name' => 'bias',
-        'description' => 'Reconcile the current Gate, execute an instrument, or traverse an existing Expressive Proposition in the Write register.',
+        'description' => 'Reconcile a same-parent sibling matching the lineage’s dominant aggregate lean, execute an instrument, or traverse an existing Expressive Proposition in the Write register.',
         'gate' => 'previous-phase-position',
         'actions' => [
             'proposition.reconcile',
             'instrument.execute',
+            'attestation.create',
             'proposition.traverse',
-            'participant.rest',
         ],
         'constraints' => [
             'proposition.reconcile' => [
-                'homeostatically-admissible-counterpart',
+                'same-parent-gate-sibling',
+                'dominant-active-lineage-lean',
             ],
             'instrument.execute' => ['write-register'],
         ],
     ],
     7 => [
         'name' => 'order',
-        'description' => 'Commit when grounding and Depth/Cadence allow, traverse a local Expressive continuation, or Rest in Tragedy.',
+        'description' => 'Commit when grounding and Depth/Cadence allow, or use an admissible local Expressive continuation.',
         'gate' => 'previous-phase-position',
         'actions' => [
             'proposition.commit',
+            'attestation.create',
             'proposition.traverse',
-            'participant.rest',
         ],
         'constraints' => [
             'proposition.commit' => [

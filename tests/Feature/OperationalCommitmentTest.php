@@ -70,7 +70,7 @@ class OperationalCommitmentTest extends TestCase
         $this->phase($helper, PhaseKind::Persist, 'stance', Proposition::findOrFail($state['plan']['gate']['id']));
         $helperState = $this->move($helper, ['action' => 'proposition.variant', 'statement' => 'Mediated Stance']);
         $stance = Proposition::findOrFail($helperState['plan']['gate']['id']);
-        $this->move($this->participant, ['action' => 'proposition.traverse', 'proposition_id' => $stance->id]);
+        $this->move($this->participant, ['action' => 'attestation.create', 'proposition_id' => $stance->id, 'direction' => 'support']);
         $helperState = $this->move($helper, [
             'action' => 'proposition.reclassify', 'statement' => 'Final Concord',
         ]);
@@ -92,6 +92,8 @@ class OperationalCommitmentTest extends TestCase
         $this->assertTrue($state['plan']['commitment']['closure_enforced']);
         $this->assertTrue($state['plan']['commitment']['requirements']['closure']);
         $this->assertArrayHasKey('proposition.commit', $state['plan']['schema']['$defs']['actions']);
+        $this->assertFalse($state['plan']['tragedy']);
+        $this->assertArrayNotHasKey('participant.rest', $state['plan']['schema']['$defs']['actions']);
 
         $phaseId = $state['plan']['phase']['id'];
         $this->move($this->participant, ['action' => 'proposition.commit']);
@@ -227,13 +229,19 @@ class OperationalCommitmentTest extends TestCase
     public function test_bias_grounds_a_reconciled_historical_proposition_and_later_cycle_can_commit_it(): void
     {
         $left = $this->candidate();
-        $right = $this->candidate();
+        $right = new Proposition;
+        $right->forceFill(['phase_id' => $left->phase_id, 'register' => $left->register,
+            'tier' => 'expressive', 'statement' => 'Sibling alternative'])->save();
+        app(LedgerService::class)->record($right);
+        $this->origin->children()->attach($right->id, [
+            'id' => (string) str()->ulid(), 'phase_id' => $left->phase_id, 'type' => 'variant',
+        ]);
+        $this->attest($right);
         $builder = $this->participant($this->participant->substrate, 'reconciler');
         $reconcilePhase = $this->phase($builder, PhaseKind::Bias, 'concord', $left);
         // Use the normal dispatcher to produce the two-parent reconciliation.
         $candidate = app(ContributionDispatcher::class)->dispatch($builder, $reconcilePhase, [
             'action' => 'proposition.reconcile', 'other_proposition_id' => $right->id,
-            'statement' => 'Reconciled claim',
         ]);
         // Another lineage does not erase the original reconciled Proposition.
         $descendant = app(ContributionDispatcher::class)->dispatch($builder, $reconcilePhase, [
@@ -247,7 +255,7 @@ class OperationalCommitmentTest extends TestCase
         $reader = $this->participant($this->participant->substrate, 'reader');
         $bias = $this->phase($reader, PhaseKind::Bias, 'concord', $right);
         $state = app(ParticipationService::class)->stateFor($reader);
-        $this->assertNotContains($candidate->id, array_column($state['plan']['write_options'], 'id'));
+        $this->assertContains($candidate->id, array_column($state['plan']['write_options'], 'id'));
         $this->assertContains($candidate->id, $state['plan']['schema']['$defs']['actions']['instrument.execute']['properties']['proposition_id']['enum']);
         $state = $this->move($reader, [
             'action' => 'instrument.execute', 'proposition_id' => $candidate->id,

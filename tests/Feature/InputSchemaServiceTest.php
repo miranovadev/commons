@@ -33,8 +33,8 @@ class InputSchemaServiceTest extends TestCase
         $expected = [
             PhaseKind::Distinguish->value => [
                 'proposition.variant',
+                'attestation.create',
                 'proposition.traverse',
-                'participant.rest',
             ],
             PhaseKind::Persist->value => [
                 'proposition.variant',
@@ -42,36 +42,34 @@ class InputSchemaServiceTest extends TestCase
                 'proposition.reclassify',
                 'attestation.create',
                 'proposition.traverse',
-                'participant.rest',
             ],
             PhaseKind::Constrain->value => [
                 'proposition.revise',
                 'proposition.reclassify',
                 'attestation.create',
                 'proposition.traverse',
-                'participant.rest',
             ],
             PhaseKind::Disperse->value => [
                 'proposition.variant',
                 'instrument.execute',
+                'attestation.create',
                 'proposition.traverse',
-                'participant.rest',
             ],
             PhaseKind::Mediate->value => [
                 'proposition.reconcile',
+                'attestation.create',
                 'proposition.traverse',
-                'participant.rest',
             ],
             PhaseKind::Bias->value => [
                 'proposition.reconcile',
                 'instrument.execute',
+                'attestation.create',
                 'proposition.traverse',
-                'participant.rest',
             ],
             PhaseKind::Order->value => [
                 'proposition.commit',
+                'attestation.create',
                 'proposition.traverse',
-                'participant.rest',
             ],
         ];
 
@@ -116,7 +114,7 @@ class InputSchemaServiceTest extends TestCase
         ]);
     }
 
-    public function test_input_plan_specializes_selection_and_gate_options(): void
+    public function test_write_descendants_do_not_become_reconciliation_gate_options(): void
     {
         $state = $this->seedPhase(
             PhaseKind::Mediate,
@@ -155,19 +153,15 @@ class InputSchemaServiceTest extends TestCase
             array_column($plan['write_options'], 'id'),
         );
         $this->assertSame(
-            [$candidateId],
+            [],
             array_column($plan['gate_options'], 'id'),
         );
         $this->assertSame(
             [$candidateId],
-            $plan['schema']['$defs']['actions']['proposition.traverse']
+            $plan['schema']['$defs']['actions']['attestation.create']
                 ['properties']['proposition_id']['enum'],
         );
-        $this->assertSame(
-            [$candidateId],
-            $plan['schema']['$defs']['actions']['proposition.reconcile']
-                ['properties']['other_proposition_id']['enum'],
-        );
+        $this->assertArrayNotHasKey('proposition.reconcile', $plan['schema']['$defs']['actions']);
     }
 
     public function test_lowercase_database_ulids_are_valid_contribution_ids(): void
@@ -190,12 +184,11 @@ class InputSchemaServiceTest extends TestCase
             [
                 'action' => 'proposition.reconcile',
                 'other_proposition_id' => '01m1xab7yakfnhy6tf52a9qg7z',
-                'statement' => 'The failing production shape is valid.',
             ],
         );
     }
 
-    public function test_write_and_gate_options_are_limited_to_ten(): void
+    public function test_write_frontier_does_not_supply_gate_siblings(): void
     {
         config()->set('schemas.options.limit', 10);
 
@@ -232,8 +225,8 @@ class InputSchemaServiceTest extends TestCase
             $state['participant'],
         );
 
-        $this->assertCount(10, $plan['write_options']);
-        $this->assertCount(10, $plan['gate_options']);
+        $this->assertCount(12, $plan['write_options']);
+        $this->assertSame([], $plan['gate_options']);
     }
 
     public function test_non_owner_schema_hides_revise_and_reclassify(): void
@@ -268,7 +261,7 @@ class InputSchemaServiceTest extends TestCase
         );
 
         $this->assertSame(
-            ['proposition.variant', 'participant.rest'],
+            ['proposition.variant'],
             array_keys($schema['$defs']['actions']),
         );
     }

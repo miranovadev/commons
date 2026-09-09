@@ -1,4 +1,4 @@
-import type { ActionName, ParticipantPlan, Proposition } from './types';
+import type { ActionName, AttestationDirection, ParticipantPlan, Proposition } from './types';
 
 /** The schema is authoritative for both visible buttons and form choices. */
 export function actionTargetIds(plan: ParticipantPlan, action: ActionName): Set<string> {
@@ -16,4 +16,26 @@ export function actionPropositions(plan: ParticipantPlan, action: ActionName): P
     plan.gate,
   ];
   return [...new Map(candidates.filter((item) => allowed.has(item.id)).map((item) => [item.id, item])).values()];
+}
+
+/** Read the same per-target direction branches validated by the server. */
+export function attestationDirections(plan: ParticipantPlan, propositionId?: string): AttestationDirection[] {
+  if (!propositionId || !actionTargetIds(plan, 'attestation.create').has(propositionId)) return [];
+  const schema = plan.schema?.$defs?.actions?.['attestation.create'];
+  const choices = schema?.anyOf;
+  const directions = choices
+    ? choices.filter((choice) => choice.properties.proposition_id?.enum?.includes(propositionId))
+      .flatMap((choice) => choice.properties.direction?.enum ?? [])
+    : schema?.properties.direction?.enum ?? [];
+  return (['refute', 'support'] as AttestationDirection[]).filter((direction) => directions.includes(direction));
+}
+
+/** The backend's forward frontier is the only source of Write cards. */
+export function writePropositions(plan: ParticipantPlan): Proposition[] {
+  const actionable = new Set(([
+    'attestation.create', 'proposition.traverse', 'proposition.revise',
+    'instrument.execute',
+  ] as ActionName[]).flatMap((action) => [...actionTargetIds(plan, action)]));
+  return [...new Map((plan.write_options ?? []).filter((item) => actionable.has(item.id))
+    .map((item) => [item.id, item])).values()];
 }

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\PhaseKind;
+use App\Models\Attestation;
 use App\Models\Participant;
 use DomainException;
 use Illuminate\Support\Facades\Cache;
@@ -14,6 +15,7 @@ final readonly class InputSchemaService
         private GateService $gates,
         private PropositionOwnershipService $ownership,
         private CommitmentAdmissibilityService $admissibility,
+        private PropositionOptionService $options,
     ) {}
 
     /**
@@ -41,7 +43,7 @@ final readonly class InputSchemaService
         $ownsGate = $this->ownership->ownedBy($gate, $participant);
 
         $actions = array_values(array_filter(
-            $plan['actions'],
+            array_diff($plan['actions'], ['participant.rest']),
             static function (string $action) use ($plan, $ownsGate): bool {
                 $constraints = $plan['constraints'][$action] ?? [];
 
@@ -58,12 +60,9 @@ final readonly class InputSchemaService
             $actions = array_values(array_diff($actions, ['proposition.commit']));
         }
 
-        $traversalOptionIds ??= $writeOptionIds;
-        if ($traversalOptionIds !== []) {
-            $actions = array_values(array_diff($actions, ['participant.rest']));
-        }
+        $traversalOptionIds ??= $this->options->traversalOptionsFor($occurrence)->pluck('id')->all();
 
-        return $this->specialize(
+        $schema = $this->specialize(
             $this->forPhase($kind, $actions),
             $gateOptionIds,
             $revisionOptionIds,
@@ -71,6 +70,32 @@ final readonly class InputSchemaService
             $traversalOptionIds,
             $instrumentOptionIds ?? $writeOptionIds,
         );
+
+        if (isset($schema['$defs']['actions']['attestation.create'])) {
+            $ids = $attestationOptionIds ?? $writeOptionIds;
+            $effective = Attestation::query()->effective()
+                ->whereIn('proposition_id', $ids)
+                ->whereHas('phase.cycle', fn ($query) => $query->whereBelongsTo($participant))
+                ->pluck('direction', 'proposition_id');
+            $choices = [];
+            foreach (['refute', 'support'] as $direction) {
+                $targets = array_values(array_filter($ids, fn (string $id): bool =>
+                    $effective->get($id) !== $direction));
+                if ($targets !== []) {
+                    $choices[] = ['properties' => [
+                        'proposition_id' => ['enum' => $targets],
+                        'direction' => ['enum' => [$direction]],
+                    ]];
+                }
+            }
+            $schema['$defs']['actions']['attestation.create']['anyOf'] = $choices;
+        }
+
+        // Rest is the sole fallback after every non-Rest action is specialized.
+        // It must never compete with a phase-native or target-bound action.
+        return $schema['$defs']['actions'] === []
+            ? $this->forPhase($kind, ['participant.rest'])
+            : $schema;
     }
 
     /**
