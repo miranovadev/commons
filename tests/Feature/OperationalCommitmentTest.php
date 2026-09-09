@@ -156,6 +156,27 @@ class OperationalCommitmentTest extends TestCase
         app(InstrumentExecutionService::class)->complete($receipt->instrumentExecution, $gate);
     }
 
+    public function test_pending_and_failed_executions_are_visible_without_satisfying_grounding(): void
+    {
+        $gate = $this->candidate();
+        $this->attest($gate);
+        $committer = $this->participant($this->participant->substrate, 'waiting-committer');
+        $this->phase($committer, PhaseKind::Order, 'concord', $gate);
+        $service = app(InstrumentExecutionService::class);
+        $execution = $service->start($gate->phase, $gate, 'hyperlink', 'https://example.test/pending');
+        $state = app(ParticipationService::class)->stateFor($committer);
+        $this->assertSame('blocked', $state['status']);
+        $this->assertSame('pending', $state['plan']['gate']['instruments'][0]['status']);
+        $this->assertNull($state['plan']['gate']['instruments'][0]['receipt_id']);
+
+        $service->fail($execution, 'Instrument unavailable.');
+        $state = app(ParticipationService::class)->stateFor($committer);
+        $this->assertSame('blocked', $state['status']);
+        $this->assertSame('failed', $state['plan']['gate']['instruments'][0]['status']);
+        $this->assertSame('Instrument unavailable.', $state['plan']['gate']['instruments'][0]['failure_reason']);
+        $this->assertFalse($state['plan']['commitment']['requirements']['receipt']);
+    }
+
     public function test_invalid_and_unsupported_instruments_leave_no_partial_write(): void
     {
         $this->move($this->participant, ['action' => 'proposition.variant', 'statement' => 'Signal']);

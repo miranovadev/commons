@@ -111,7 +111,7 @@ final readonly class ContributionDispatcher
         );
 
         if (isset($input['instrument'])) {
-            $this->startInstrument($phase, $target, $input['instrument']);
+            $this->instruments->execute($phase, $target, $input['instrument']);
         }
 
         $this->ledger->record($supersession);
@@ -192,7 +192,7 @@ final readonly class ContributionDispatcher
     ): Proposition {
         $proposition = Proposition::query()
             ->findOrFail($input['proposition_id']);
-        $this->startInstrument($phase, $proposition, $input['instrument']);
+        $this->instruments->execute($phase, $proposition, $input['instrument']);
 
         return $proposition;
     }
@@ -236,15 +236,6 @@ final readonly class ContributionDispatcher
         );
 
         return $target;
-    }
-
-    /** @param array{kind: string, reference: string} $instrument */
-    private function startInstrument(
-        Phase $phase,
-        Proposition $proposition,
-        array $instrument,
-    ): void {
-        $this->instruments->execute($phase, $proposition, $instrument);
     }
 
     private function write(

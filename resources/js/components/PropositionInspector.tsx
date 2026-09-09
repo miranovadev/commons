@@ -57,7 +57,9 @@ function InspectorContent({ selection, committalObservables }: Omit<PropositionI
         <Box className="inspector-section">
           <Text fw={750} size="sm" mb="sm">Instruments & receipts</Text>
           <Stack gap={6}>
-            {!proposition.instruments?.length && <Text size="sm" c="dimmed">No instrument execution recorded on this proposition.</Text>}
+            {proposition.instruments === undefined
+              ? <Text size="sm" c="dimmed">Instrument details are not included in this view.</Text>
+              : proposition.instruments.length === 0 && <Text size="sm" c="dimmed">No instrument execution recorded on this proposition.</Text>}
             {proposition.instruments?.map((instrument) => (
               <Box key={instrument.id}>
                 <Text size="sm">{instrument.kind} · {instrument.status}{instrument.receipt_id ? ' · Receipt available' : ' · No Receipt'}</Text>
