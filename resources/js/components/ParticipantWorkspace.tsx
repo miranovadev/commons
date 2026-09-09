@@ -72,7 +72,7 @@ export function ParticipantWorkspace({ plan, availableActions, onAction }: {
   const lineage = useMemo(() => (plan.lineage || []).map((item) => resolve(item, byId)).filter((item) => item.id !== gate.id), [byId, gate.id, plan.lineage]);
   const writeOptions = useMemo(() => writePropositions(plan), [plan]);
   const revisionOptions = useMemo(() => (plan.revision_options || []).map((item) => resolve(item, byId)), [byId, plan.revision_options]);
-  const gateOptions = useMemo(() => (plan.gate_options || []).map((item) => resolve(item, byId)).filter((item) => item.id !== gate.id), [byId, gate.id, plan.gate_options]);
+  const gateOptions = useMemo(() => ['mediate', 'bias'].includes(plan.phase.kind) ? actionPropositions(plan, 'proposition.reconcile') : [], [plan]);
   const lanes = useMemo(() => buildLanes({ phaseNumber, domainName, writeRegister: plan.phase.write_register, gate, provenance }), [phaseNumber, domainName, plan.phase.write_register, gate, provenance]);
 
   return (
@@ -142,8 +142,8 @@ function OperationalRow({ plan, lane, gate, lineage, committalObservables, propo
           <Text size="xs" c="dimmed" visibleFrom="sm">{meta.description}</Text>
         </Group>
         {lane.role === 'read' && <ReadContent register={lane.register} gate={gate} featured={lane.featured} propositions={propositions} lineage={lineage} committalObservables={committalObservables} onInspect={onInspect} />}
-        {lane.role === 'gate' && <GateContent gate={laneGate} committalObservables={committalObservables} onInspect={onInspect} />}
-        {lane.role === 'write' && <WriteContent plan={plan} writeOptions={writeOptions} revisionOptions={revisionOptions} gateOptions={gateOptions} attestationOptions={attestationOptions} traversalOptions={traversalOptions} instrumentOptions={instrumentOptions} actions={actions} committalObservables={committalObservables} onInspect={onInspect} onAction={onAction} />}
+        {lane.role === 'gate' && <GateContent gate={laneGate} candidates={gateOptions} committalObservables={committalObservables} onInspect={onInspect} onAction={onAction} />}
+        {lane.role === 'write' && <WriteContent plan={plan} writeOptions={writeOptions} revisionOptions={revisionOptions} attestationOptions={attestationOptions} traversalOptions={traversalOptions} instrumentOptions={instrumentOptions} actions={actions} committalObservables={committalObservables} onInspect={onInspect} onAction={onAction} />}
       </Box>
     </Box>
   );
@@ -164,19 +164,30 @@ function ReadContent({ register, gate, featured, propositions, lineage, committa
     : <EmptyState text="No readable proposition is exposed in this register." />;
 }
 
-function GateContent({ gate, committalObservables, onInspect }: {
+function GateContent({ gate, candidates, committalObservables, onInspect, onAction }: {
   gate: Proposition;
+  candidates: Proposition[];
+  onAction: ActionHandler;
   committalObservables?: Observables;
   onInspect: InspectHandler;
 }) {
-  return <PropositionCard proposition={gate} committalObservables={committalObservables} selected compact flow="gate" onClick={() => onInspect({ kind: 'gate', proposition: gate })} />;
+  return <Stack gap="sm">
+    <PropositionCard proposition={gate} committalObservables={committalObservables} selected compact flow="gate" onClick={() => onInspect({ kind: 'gate', proposition: gate })} />
+    {candidates.length > 0 && <SimpleGrid cols={{ base: 1, md: 2, xl: 3 }} spacing="sm">
+      {candidates.map((candidate) => <Box key={candidate.id} className="write-option-card" data-reconcile-candidate={candidate.id}>
+        <PropositionCard proposition={candidate} committalObservables={committalObservables} compact flow="gate" onClick={() => onInspect({ kind: 'gate counterpart', proposition: candidate })} />
+        <Group className="write-option-card__actions" gap={4}>
+          <Button size="compact-xs" variant="subtle" color="gray" leftSection={<IconRoute size={13} />} onClick={() => onAction('proposition.reconcile', { other_proposition_id: candidate.id })}>Reconcile</Button>
+        </Group>
+      </Box>)}
+    </SimpleGrid>}
+  </Stack>;
 }
 
-function WriteContent({ plan, writeOptions, revisionOptions, gateOptions, attestationOptions, traversalOptions, instrumentOptions, actions, committalObservables, onInspect, onAction }: {
+function WriteContent({ plan, writeOptions, revisionOptions, attestationOptions, traversalOptions, instrumentOptions, actions, committalObservables, onInspect, onAction }: {
   plan: ParticipantPlan;
   writeOptions: Proposition[];
   revisionOptions: Proposition[];
-  gateOptions: Proposition[];
   attestationOptions: Proposition[];
   traversalOptions: Proposition[];
   instrumentOptions: Proposition[];
@@ -187,7 +198,6 @@ function WriteContent({ plan, writeOptions, revisionOptions, gateOptions, attest
 }) {
   const attestationIds = new Set(attestationOptions.map((item) => item.id));
   const revisionIds = new Set(revisionOptions.map((item) => item.id));
-  const reconcileIds = new Set(gateOptions.map((item) => item.id));
   const existing = writeOptions;
   return (
     <Stack className="write-row" gap="md">
@@ -199,7 +209,6 @@ function WriteContent({ plan, writeOptions, revisionOptions, gateOptions, attest
               key={proposition.id} proposition={proposition} directions={attestationDirections(plan, proposition.id)}
               canAttest={actions.includes('attestation.create') && attestationIds.has(proposition.id)}
               canRevise={actions.includes('proposition.revise') && revisionIds.has(proposition.id)}
-              canReconcile={actions.includes('proposition.reconcile') && reconcileIds.has(proposition.id)}
               canInstrument={actions.includes('instrument.execute') && instrumentOptions.some((item) => item.id === proposition.id)}
               canTraverse={actions.includes('proposition.traverse') && traversalOptions.some((item) => item.id === proposition.id)}
               committalObservables={committalObservables} onInspect={onInspect} onAction={onAction}
@@ -212,19 +221,18 @@ function WriteContent({ plan, writeOptions, revisionOptions, gateOptions, attest
   );
 }
 
-function WriteOptionCard({ proposition, directions, canAttest, canRevise, canReconcile, canInstrument, canTraverse, committalObservables, onInspect, onAction }: {
+function WriteOptionCard({ proposition, directions, canAttest, canRevise, canInstrument, canTraverse, committalObservables, onInspect, onAction }: {
   proposition: Proposition;
   directions: Array<'refute' | 'support'>;
   canAttest: boolean;
   canRevise: boolean;
-  canReconcile: boolean;
   canInstrument: boolean;
   canTraverse: boolean;
   committalObservables?: Observables;
   onInspect: InspectHandler;
   onAction: ActionHandler;
 }) {
-  const hasActions = canAttest || canRevise || canReconcile || canInstrument || canTraverse;
+  const hasActions = canAttest || canRevise || canInstrument || canTraverse;
   return (
     <Box className="write-option-card" data-attested={proposition.attestation?.direction}>
       <PropositionCard proposition={proposition} committalObservables={committalObservables} compact flow="write" onClick={() => onInspect({ kind: 'write option', proposition })} />
@@ -239,7 +247,6 @@ function WriteOptionCard({ proposition, directions, canAttest, canRevise, canRec
               : onAction('attestation.create', { proposition_id: proposition.id, direction })}>{traverse ? 'Traverse' : direction === 'support' ? 'Support' : 'Refute'}</Button>;
           })}
           {canRevise && <Button size="compact-xs" variant="subtle" color="gray" leftSection={<IconPencil size={13} />} onClick={() => onAction('proposition.revise', { proposition_id: proposition.id })}>Revise</Button>}
-          {canReconcile && <Button size="compact-xs" variant="subtle" color="gray" leftSection={<IconRoute size={13} />} onClick={() => onAction('proposition.reconcile', { other_proposition_id: proposition.id })}>Reconcile</Button>}
           {canInstrument && <Button size="compact-xs" variant="subtle" color="gray" leftSection={<IconTool size={13} />} onClick={() => onAction('instrument.execute', { proposition_id: proposition.id })}>Instrument</Button>}
         </Group>
       )}

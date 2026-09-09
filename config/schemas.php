@@ -42,7 +42,7 @@ $proposition = static function (string $action, string $title) use ($statement):
 };
 
 return [
-    'version' => 11,
+    'version' => 12,
 
     'cache' => [
         'store' => env('COMMONS_SCHEMA_CACHE_STORE'),
@@ -96,14 +96,13 @@ return [
             'Reclassify the current gate',
         ),
         'proposition.reconcile' => [
-            'title' => 'Reconcile the current gate with another proposition',
+            'title' => 'Reconcile a sibling with the current Gate statement',
             'type' => 'object',
             'additionalProperties' => false,
-            'required' => ['action', 'other_proposition_id', 'statement'],
+            'required' => ['action', 'other_proposition_id'],
             'properties' => [
                 'action' => ['const' => 'proposition.reconcile'],
                 'other_proposition_id' => $ulid,
-                'statement' => $statement,
             ],
         ],
         'attestation.create' => [

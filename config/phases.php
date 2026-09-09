@@ -58,7 +58,7 @@ return [
     ],
     5 => [
         'name' => 'mediate',
-        'description' => 'Reconcile the current Gate with one admissible counterpart, or traverse an existing local Expressive Proposition.',
+        'description' => 'Reconcile the current Gate with a same-parent sibling matching its Correspondence direction, or traverse an existing local Expressive Proposition.',
         'gate' => 'previous-phase-position',
         'actions' => [
             'proposition.reconcile',
@@ -67,13 +67,14 @@ return [
         ],
         'constraints' => [
             'proposition.reconcile' => [
-                'homeostatically-admissible-counterpart',
+                'same-parent-gate-sibling',
+                'dominant-lineage-correspondence',
             ],
         ],
     ],
     6 => [
         'name' => 'bias',
-        'description' => 'Reconcile the current Gate, execute an instrument, or traverse an existing Expressive Proposition in the Write register.',
+        'description' => 'Reconcile a same-parent sibling matching the lineage’s dominant aggregate lean, execute an instrument, or traverse an existing Expressive Proposition in the Write register.',
         'gate' => 'previous-phase-position',
         'actions' => [
             'proposition.reconcile',
@@ -83,7 +84,8 @@ return [
         ],
         'constraints' => [
             'proposition.reconcile' => [
-                'homeostatically-admissible-counterpart',
+                'same-parent-gate-sibling',
+                'dominant-active-lineage-lean',
             ],
             'instrument.execute' => ['write-register'],
         ],

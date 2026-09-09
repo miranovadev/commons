@@ -12,7 +12,10 @@ use Illuminate\Support\Facades\DB;
 
 final class PropositionOptionService
 {
-    public function __construct(private readonly LineageService $lineage) {}
+    public function __construct(
+        private readonly LineageService $lineage,
+        private readonly ReconciliationOptionService $reconciliation,
+    ) {}
 
     /** @return Collection<int, string> */
     public function localIds(Phase $phase): Collection
@@ -116,24 +119,7 @@ final class PropositionOptionService
      */
     public function gateOptionsFor(Phase $phase): Collection
     {
-        if (! in_array(
-            $phase->kind,
-            [PhaseKind::Mediate, PhaseKind::Bias],
-            true,
-        )) {
-            return collect();
-        }
-
-        return $this->activeHeads($phase)
-            ->when(
-                $phase->gate_proposition_id !== null,
-                fn (Builder $query) => $query->whereKeyNot(
-                    $phase->gate_proposition_id
-                ),
-            )
-            ->latest('created_at')
-            ->limit($this->limit())
-            ->get();
+        return $this->reconciliation->forPhase($phase);
     }
 
     private function activeHeads(Phase $phase): Builder

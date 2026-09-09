@@ -134,8 +134,18 @@ class TragedyTest extends TestCase
                 $action === 'proposition.revise' ? $history : $authorPhase,
                 $action === 'proposition.reconcile' ? 'activity' : $writeRegister,
             );
+            if ($action === 'proposition.reconcile') {
+                $parent = $this->proposition($authorPhase, 'canon');
+                foreach ([$gate, $target] as $sibling) {
+                    $parent->children()->attach($sibling->id, [
+                        'id' => (string) str()->ulid(), 'phase_id' => $authorPhase->id, 'type' => 'variant',
+                    ]);
+                }
+            }
             $edge = new Supersession;
-            $edge->forceFill(['phase_id' => $authorPhase->id, 'source_proposition_id' => $gate->id, 'target_proposition_id' => $target->id, 'type' => 'variant'])->save();
+            if ($action !== 'proposition.reconcile') {
+                $edge->forceFill(['phase_id' => $authorPhase->id, 'source_proposition_id' => $gate->id, 'target_proposition_id' => $target->id, 'type' => 'variant'])->save();
+            }
             if ($action === 'proposition.traverse') {
                 $attestation = new Attestation;
                 $attestation->forceFill(['phase_id' => $history->id, 'proposition_id' => $target->id, 'direction' => 'support'])->save();
