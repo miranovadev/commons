@@ -81,9 +81,9 @@ Gate in the phase's Write register. `write_options` is the authoritative forward
 frontier, including historical descendants; `workspace.registers` remains broader
 Read/inspection context and must never be merged into Write. Parents, siblings,
 grandchildren, disconnected branches and same-register Horizon peers are not
-Write cards. Revise remains limited to owned, revisable descendants. Moves which
-create a new Proposition are exposed as a compact Supersession control between
-Gate and Write rather than being presented as existing Proposition cards.
+Write cards. Revise remains limited to owned, revisable descendants. Variant,
+Reclassify and Commit use the compact Supersession control between Gate and Write.
+Reconcile is selected from a sibling card in Gate.
 
 Expressive Propositions include an `impact` projection containing the parent
 measurement as `from` and the expressive measurement as `to`. This makes the

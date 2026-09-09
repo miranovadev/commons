@@ -20,7 +20,8 @@ final readonly class ReconciliationOptionService
     /** Gate counterparts are sibling alternatives, never the forward Write frontier. */
     public function forPhase(Phase $phase): Collection
     {
-        if (! in_array($phase->kind, [PhaseKind::Mediate, PhaseKind::Bias], true)) {
+        if ($phase->write_register === null
+            || ! in_array($phase->kind, [PhaseKind::Mediate, PhaseKind::Bias], true)) {
             return collect();
         }
         $gate = $phase->gate()->with('contextHorizonMembership')->firstOrFail();

@@ -24,7 +24,8 @@ final class LineageService
         $descendants = collect();
         while ($frontier->isNotEmpty()) {
             $next = Proposition::query()
-                ->whereHas('parents', fn ($query) => $query->whereIn('propositions.id', $frontier))
+                ->whereIn('id', DB::table('supersessions')
+                    ->whereIn('source_proposition_id', $frontier)->select('target_proposition_id'))
                 ->whereHas('contextHorizonMembership', fn ($query) => $query->where('context_horizon_id', $horizonId))
                 ->whereHas('phase.cycle.participant', fn ($query) => $query->where(
                     'substrate_id', $parent->phase->cycle->participant->substrate_id,
