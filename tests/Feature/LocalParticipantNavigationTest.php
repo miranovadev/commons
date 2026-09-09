@@ -152,14 +152,14 @@ class LocalParticipantNavigationTest extends TestCase
         }
     }
 
-    public function test_tragedy_depends_on_traversal_not_creation_and_rest_preserves_position(): void
+    public function test_complete_exhaustion_allows_rest_and_preserves_position(): void
     {
         $position = $this->node('Isolated', 0.0);
         $participant = $this->participant('resting', $position);
-        app(CycleEntryService::class)->enter($participant);
+        $this->phase($participant, $position);
         $state = $this->state($participant);
         $this->assertTrue($state['plan']['tragedy']);
-        $this->assertArrayHasKey('proposition.variant', $state['plan']['schema']['$defs']['actions']);
+        $this->assertSame(['participant.rest'], array_keys($state['plan']['schema']['$defs']['actions']));
         $count = Proposition::count();
         $after = app(ParticipationService::class)->contribute($participant, $state['plan']['phase']['id'], ['action' => 'participant.rest']);
         $this->assertSame($count, Proposition::count());
@@ -223,12 +223,17 @@ class LocalParticipantNavigationTest extends TestCase
         $this->edge($first, $second);
         $participant = $this->participant('explorer', $position);
         $target = $first->children()->where('tier', 'expressive')->firstOrFail();
+        $target->register = 'canon';
+        $target->save();
         $this->establishPath($participant, $target);
         $phase = $this->phase($participant, $position);
         app(ParticipationService::class)->contribute($participant, $phase->id, ['action' => 'participant.rest']);
         app(CycleEntryService::class)->enter($participant);
         $state = $this->state($participant);
         $this->assertSame($first->id, $state['plan']['gate']['id']);
+        // Exercise recovery from an exhausted Order, not Persist (which has Variant).
+        $order = Phase::findOrFail($state['plan']['phase']['id']);
+        $order->forceFill(['kind' => PhaseKind::Order, 'write_register' => 'canon'])->save();
         $state = app(ParticipationService::class)->contribute($participant, $state['plan']['phase']['id'], [
             'action' => 'proposition.traverse', 'proposition_id' => $target->id,
         ]);

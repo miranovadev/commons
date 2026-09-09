@@ -9,7 +9,6 @@ return [
             'proposition.variant',
             'attestation.create',
             'proposition.traverse',
-            'participant.rest',
         ],
     ],
     2 => [
@@ -22,7 +21,6 @@ return [
             'proposition.reclassify',
             'attestation.create',
             'proposition.traverse',
-            'participant.rest',
         ],
         'constraints' => [
             'proposition.reclassify' => ['gate-owner'],
@@ -37,7 +35,6 @@ return [
             'proposition.reclassify',
             'attestation.create',
             'proposition.traverse',
-            'participant.rest',
         ],
         'constraints' => [
             'proposition.reclassify' => [
@@ -54,7 +51,6 @@ return [
             'instrument.execute',
             'attestation.create',
             'proposition.traverse',
-            'participant.rest',
         ],
         'constraints' => [
             'instrument.execute' => ['write-register'],
@@ -68,7 +64,6 @@ return [
             'proposition.reconcile',
             'attestation.create',
             'proposition.traverse',
-            'participant.rest',
         ],
         'constraints' => [
             'proposition.reconcile' => [
@@ -85,7 +80,6 @@ return [
             'instrument.execute',
             'attestation.create',
             'proposition.traverse',
-            'participant.rest',
         ],
         'constraints' => [
             'proposition.reconcile' => [
@@ -96,13 +90,12 @@ return [
     ],
     7 => [
         'name' => 'order',
-        'description' => 'Commit when grounding and Depth/Cadence allow, traverse a local Expressive continuation, or Rest in Tragedy.',
+        'description' => 'Commit when grounding and Depth/Cadence allow, or use an admissible local Expressive continuation.',
         'gate' => 'previous-phase-position',
         'actions' => [
             'proposition.commit',
             'attestation.create',
             'proposition.traverse',
-            'participant.rest',
         ],
         'constraints' => [
             'proposition.commit' => [

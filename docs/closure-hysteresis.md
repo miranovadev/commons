@@ -27,7 +27,7 @@ evaluations inherit the newly recorded component directions.
 
 `plan.commitment.closure` exposes candidate values, directions, and history.
 `requirements.closure` is an actual boolean and `closure_enforced` is true.
-Grounding remains mandatory. Divergence keeps Commit inadmissible while allowing local Traverse or Tragedy/Rest,
+Grounding remains mandatory. Divergence keeps Commit inadmissible while retaining other admissible Phase actions (Rest only on complete action exhaustion),
 even when receipts and attestations are present. Adding evidence is not a bypass
 for incompatible Closure structure. No new Order actions or phase skipping are
 introduced.
@@ -64,7 +64,7 @@ For a manual review:
    that target and direction selected, including when it is no longer an active
    selection head. Submit through the normal contribution flow.
 2. At Order, inspect the prospective component values and resolved directions.
-   A grounded but divergent candidate must remain uncommittable while local Traverse or Tragedy/Rest remains available.
+   A grounded but divergent candidate must remain uncommittable while other admissible Phase actions remain available; Rest appears only on complete action exhaustion.
 3. Commit an aligned, grounded candidate. Check the latest Commitment panel for
    Domain/Tension before and after, then refresh after the cycle ends: the result
    should remain visible. A non-boundary Commit must leave the horizon unchanged.

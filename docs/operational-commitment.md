@@ -34,7 +34,7 @@ contribution or advancing the Phase.
 An inadmissible Commit retains `commitment_preconditions_unsatisfied` and
 `plan.commitment` diagnostics, but the plan stays actionable. Deliberate
 `proposition.traverse` can choose another eligible local Expressive Proposition;
-only Tragedy exposes `participant.rest`. Automated participants choose through
+only complete exhaustion of all admissible non-Rest actions exposes `participant.rest` as the sole action. Automated participants choose through
 the same inference contract as human participants.
 
 Reclassification no longer gathers evidence implicitly. During Bias, normal

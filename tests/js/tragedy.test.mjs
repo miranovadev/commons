@@ -1,0 +1,65 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { build } from 'esbuild';
+import { createRequire } from 'node:module';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+test('the participant page offers Rest only when the authoritative schema exposes it', async () => {
+  const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
+  const result = await build({
+    stdin: {
+      contents: `
+        import React from 'react';
+        import { renderToStaticMarkup } from 'react-dom/server';
+        import { MantineProvider } from '@mantine/core';
+        import { MemoryRouter } from 'react-router-dom';
+        import { ParticipantPage } from './resources/js/pages/ParticipantPage';
+        import { setParticipation } from './resources/js/services/commonsApi';
+        export function render(action, tragedy) {
+          setParticipation({ status: 'ready', plan: {
+            gate: { id: 'gate', register: 'canon', tier: 'expressive', statement: 'Gate' },
+            phase: { id: 'phase', kind: 'order', number: 7, write_register: 'canon' },
+            tragedy, traversal_options: [],
+            schema: {
+              oneOf: [{ $ref: '#/$defs/actions/' + action }],
+              $defs: { actions: { [action]: { title: action, properties: { action: { const: action } } } } },
+            },
+          } });
+          return renderToStaticMarkup(<MantineProvider env="test"><MemoryRouter><ParticipantPage /></MemoryRouter></MantineProvider>);
+        }
+      `,
+      resolveDir: root, loader: 'tsx',
+    },
+    plugins: [{
+      name: 'participation-api-fixture',
+      setup(build) {
+        build.onLoad({ filter: /services\/commonsApi\.ts$/ }, () => ({
+          contents: `
+            let participation;
+            export function setParticipation(value) { participation = value; }
+            export const useGetParticipantQuery = () => ({ data: { id: 'viewer', callsign: 'Viewer', max_read_count: 25 } });
+            export const useGetParticipationQuery = () => ({ data: participation });
+            export const useContributeMutation = () => [() => {}, { reset() {} }];
+            export const useEnterCycleMutation = () => [() => {}, {}];
+          `,
+          loader: 'ts',
+        }));
+      },
+    }],
+    bundle: true, platform: 'node', format: 'cjs', write: false, jsx: 'automatic',
+  });
+  const require = createRequire(import.meta.url);
+  const module = { exports: {} };
+  new Function('require', 'module', 'exports', result.outputFiles[0].text)(require, module, module.exports);
+  for (const action of ['proposition.variant', 'proposition.reclassify', 'proposition.revise', 'attestation.create', 'proposition.traverse', 'proposition.reconcile', 'instrument.execute', 'proposition.commit']) {
+    const markup = module.exports.render(action, false);
+    assert.doesNotMatch(markup, /Tragic Region|>Rest<\/span>/);
+  }
+  // No independent client inference from an empty traversal set or tragedy flag.
+  assert.doesNotMatch(module.exports.render('proposition.variant', true), /Tragic Region|>Rest<\/span>/);
+  const exhausted = module.exports.render('participant.rest', true);
+  assert.match(exhausted, /Tragic Region/);
+  assert.match(exhausted, />Rest<\/span>/);
+  assert.match(exhausted, /No admissible non-Rest action remains in this Phase/);
+});

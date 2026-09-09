@@ -105,10 +105,10 @@ final readonly class ParticipationService
             'perspective' => $this->perspective($participant),
             'reason' => $blocked ? [
                 'code' => 'commitment_preconditions_unsatisfied',
-                'message' => 'Commitment requires grounding and aligned Depth/Cadence directions. Traverse an existing continuation or Rest in a Tragic Region.',
+                'message' => 'Commitment requires grounding and aligned Depth/Cadence directions. Use an action available in the current Phase.',
             ] : ($plan['tragedy'] ? [
                 'code' => 'tragic_region',
-                'message' => 'No valid Expressive traversal remains. Rest is available.',
+                'message' => 'No admissible non-Rest action remains in the current Phase. Rest is the only available action.',
             ] : null),
             'entry' => null,
         ];
