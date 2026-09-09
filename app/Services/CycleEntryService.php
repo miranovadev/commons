@@ -20,7 +20,7 @@ final readonly class CycleEntryService
 {
     public function __construct(
         private LedgerService $ledger,
-        private InstrumentExecutionService $instruments,
+        private OperationalInstrumentService $instruments,
         private PropositionMeasurementService $measurements,
         private ProjectionService $projections,
         private CommitmentSnapshotService $commitments,
@@ -98,7 +98,6 @@ final readonly class CycleEntryService
                 $order,
                 $proposition,
                 $origin['instrument'],
-                $lockedParticipant,
             );
 
             $values = $this->measurements->recalculate($proposition);
@@ -237,22 +236,7 @@ final readonly class CycleEntryService
         Phase $phase,
         Proposition $proposition,
         array $input,
-        Participant $participant,
     ): void {
-        $execution = $this->instruments->start(
-            $phase,
-            $proposition,
-            $input['kind'],
-            $input['reference'],
-            $input,
-        );
-        $this->instruments->complete(
-            $execution,
-            $proposition,
-            metadata: [
-                'source' => 'participant-origin-bootstrap',
-                'participant_id' => $participant->getKey(),
-            ],
-        );
+        $this->instruments->execute($phase, $proposition, $input);
     }
 }

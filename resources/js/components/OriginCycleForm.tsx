@@ -97,15 +97,13 @@ export function OriginCycleForm({ opened, loading, error, onClose, onSubmit }: O
             label="Receipt instrument"
             data={[
               { value: 'hyperlink', label: 'Hyperlink' },
-              { value: 'citation', label: 'Citation' },
-              { value: 'artefact', label: 'Artefact' },
             ]}
             value={value.instrumentKind}
             onChange={(next) => update('instrumentKind', (next || 'hyperlink') as InstrumentInput['kind'])}
           />
           <Textarea
             label="Receipt reference"
-            description="A URL, citation, or artefact reference that grounds the Origin."
+            description="An HTTP(S) URL reference. Its contents are not fetched or verified."
             minRows={2}
             autosize
             required

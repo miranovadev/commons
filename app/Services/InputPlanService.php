@@ -18,6 +18,7 @@ final readonly class InputPlanService
         private PropositionOptionService $options,
         private InputSchemaService $schemas,
         private PropositionMeasurementService $measurements,
+        private CommitmentAdmissibilityService $admissibility,
     ) {}
 
     /** @return array<string, mixed> */
@@ -69,6 +70,9 @@ final readonly class InputPlanService
                 'started_at' => $phase->started_at,
             ],
             'workspace' => $workspace,
+            'commitment' => $phase->kind === \App\Enums\PhaseKind::Order
+                ? $this->admissibility->evaluate($gate)
+                : null,
             'gate' => $this->proposition($gate, $participant),
             'lineage' => $this->propositions($lineage, $participant),
             'write_options' => $this->propositions($writeOptions, $participant),
@@ -108,6 +112,7 @@ final readonly class InputPlanService
                 ->with([
                     'measurement',
                     'parents',
+                    'instrumentExecutions.receipt',
                     'effectiveAttestations' => $this->attestationsFor(
                         $participant
                     ),
@@ -132,6 +137,7 @@ final readonly class InputPlanService
         $provenance->loadMissing([
             'measurement',
             'parents',
+            'instrumentExecutions.receipt',
             'effectiveAttestations' => $this->attestationsFor($participant),
             'phase.cycle.participant:id,callsign',
         ]);
@@ -188,6 +194,7 @@ final readonly class InputPlanService
         $collection->loadMissing([
             'measurement',
             'parents',
+            'instrumentExecutions.receipt',
             'effectiveAttestations' => $this->attestationsFor($participant),
             'phase.cycle.participant:id,callsign',
         ]);
@@ -262,6 +269,16 @@ final readonly class InputPlanService
                 'rationale',
                 'created_at',
             ]),
+            'instruments' => $proposition->relationLoaded('instrumentExecutions')
+                ? $proposition->instrumentExecutions->map(fn ($execution): array => [
+                    'id' => $execution->getKey(),
+                    'kind' => $execution->kind,
+                    'reference' => $execution->reference,
+                    'status' => $execution->status,
+                    'failure_reason' => $execution->failure_reason,
+                    'receipt_id' => $execution->receipt?->getKey(),
+                ])->all()
+                : [],
             'transition' => $parent === null ? null : [
                 'type' => $parent->pivot->type,
                 'from' => $parent->register,

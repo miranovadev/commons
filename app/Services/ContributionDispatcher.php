@@ -7,7 +7,6 @@ use App\Models\Attestation;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
-use App\Models\Receipt;
 use App\Models\Supersession;
 use DomainException;
 
@@ -15,7 +14,8 @@ final readonly class ContributionDispatcher
 {
     public function __construct(
         private LedgerService $ledger,
-        private InstrumentExecutionService $instruments,
+        private OperationalInstrumentService $instruments,
+        private CommitmentAdmissibilityService $admissibility,
         private PropositionMeasurementService $measurements,
         private ProjectionService $projections,
         private CommitmentSnapshotService $commitments,
@@ -197,42 +197,13 @@ final readonly class ContributionDispatcher
         return $proposition;
     }
 
-    public function canCommit(Proposition $gate): bool
-    {
-        $hasAttestation = Attestation::query()
-            ->effective()
-            ->whereBelongsTo($gate)
-            ->exists();
-        $attestationIds = Attestation::query()
-            ->whereBelongsTo($gate)
-            ->pluck('id');
-        $hasReceipt = Receipt::query()
-            ->where(function ($query) use ($gate, $attestationIds): void {
-                $query->where(function ($query) use ($gate): void {
-                    $query
-                        ->where('receiptable_type', $gate->getMorphClass())
-                        ->where('receiptable_id', $gate->getKey());
-                })->orWhere(function ($query) use ($attestationIds): void {
-                    $query
-                        ->where(
-                            'receiptable_type',
-                            (new Attestation)->getMorphClass(),
-                        )
-                        ->whereIn('receiptable_id', $attestationIds);
-                });
-            })
-            ->exists();
-
-        return $hasAttestation && $hasReceipt;
-    }
-
     private function commit(
         Phase $phase,
         Proposition $gate,
     ): Proposition {
-        if (! $this->canCommit($gate)) {
+        if (! $this->admissibility->evaluate($gate)['admissible']) {
             throw new DomainException(
-                'Commitment requires an Attestation and Receipt in the current lineage.'
+                'Commitment requires an effective Attestation on the current Gate and a completed Receipt on that Gate or one of its effective Attestations.'
             );
         }
 
@@ -273,13 +244,7 @@ final readonly class ContributionDispatcher
         Proposition $proposition,
         array $instrument,
     ): void {
-        $this->instruments->start(
-            $phase,
-            $proposition,
-            $instrument['kind'],
-            $instrument['reference'],
-            $instrument,
-        );
+        $this->instruments->execute($phase, $proposition, $instrument);
     }
 
     private function write(

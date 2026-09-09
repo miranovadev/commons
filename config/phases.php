@@ -87,14 +87,15 @@ return [
     ],
     7 => [
         'name' => 'order',
-        'description' => 'Commit the resulting expressive Proposition when the Closure gates permit it.',
+        'description' => 'Commit the resulting expressive Proposition when it has an effective Attestation and completed Receipt. Depth/Cadence gating is not yet enforced.',
         'gate' => 'previous-phase-selection',
         'actions' => [
             'proposition.commit',
         ],
         'constraints' => [
             'proposition.commit' => [
-                'depth-cadence-and-hysteresis-admissible',
+                'effective-gate-attestation',
+                'completed-gate-or-effective-attestation-receipt',
             ],
         ],
     ],

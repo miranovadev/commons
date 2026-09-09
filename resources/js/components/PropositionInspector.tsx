@@ -54,6 +54,22 @@ function InspectorContent({ selection, committalObservables }: Omit<PropositionI
       )}
 
       {!projected && (
+        <Box className="inspector-section">
+          <Text fw={750} size="sm" mb="sm">Instruments & receipts</Text>
+          <Stack gap={6}>
+            {!proposition.instruments?.length && <Text size="sm" c="dimmed">No instrument execution recorded on this proposition.</Text>}
+            {proposition.instruments?.map((instrument) => (
+              <Box key={instrument.id}>
+                <Text size="sm">{instrument.kind} · {instrument.status}{instrument.receipt_id ? ' · Receipt available' : ' · No Receipt'}</Text>
+                <Text size="xs" style={{ overflowWrap: 'anywhere' }}>{instrument.reference}</Text>
+                {instrument.failure_reason && <Text size="xs" c="red">{instrument.failure_reason}</Text>}
+              </Box>
+            ))}
+          </Stack>
+        </Box>
+      )}
+
+      {!projected && (
         <Text size="xs" c="dimmed">This is the observed structural state. A projected position appears here only when an admissible move supplies one.</Text>
       )}
     </Stack>

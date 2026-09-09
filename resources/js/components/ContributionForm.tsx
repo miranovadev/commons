@@ -174,7 +174,6 @@ export function ContributionForm({
                 label="Instrument"
                 data={[
                   { value: 'citation', label: 'Citation' },
-                  { value: 'artefact', label: 'Artefact' },
                   { value: 'hyperlink', label: 'Hyperlink' },
                 ]}
                 required
@@ -183,6 +182,9 @@ export function ContributionForm({
               />
               <TextInput
                 label="Reference"
+                description={values.instrument?.kind === 'hyperlink'
+                  ? 'HTTP(S) URL reference only; page contents are not fetched or verified.'
+                  : 'The ID of an existing Proposition or Attestation in this substrate.'}
                 required
                 value={values.instrument?.reference || ''}
                 onChange={(event) => setInstrument(
