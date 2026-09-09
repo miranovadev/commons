@@ -83,6 +83,14 @@ class InputPlanVisibilityTest extends TestCase
             'proposition_id' => $source->getKey(),
             'direction' => 'support',
         ]);
+
+        // A small display window must not remove an otherwise local target
+        // from either the schema or the explicit human Attestation options.
+        $viewer->max_read_count = 1;
+        $viewer->save();
+        $limited = app(InputPlanService::class)->forParticipant($viewer);
+        $this->assertContains($source->id, array_column($limited['attestation_options'], 'id'));
+        $this->assertContains($source->id, $limited['schema']['$defs']['actions']['attestation.create']['properties']['proposition_id']['enum']);
     }
 
     private function substrate(): Substrate

@@ -27,6 +27,14 @@ export interface Proposition {
   parent_ids?: Identifier[];
   children?: Proposition[];
   attestation?: { direction: AttestationDirection };
+  instruments?: Array<{
+    id: Identifier;
+    kind: string;
+    reference: string;
+    status: 'pending' | 'completed' | 'failed';
+    failure_reason: string | null;
+    receipt_id: Identifier | null;
+  }>;
 }
 
 export interface User {
@@ -116,7 +124,7 @@ export type ActionName =
   | 'proposition.variant';
 
 export interface InstrumentInput {
-  kind: 'citation' | 'artefact' | 'hyperlink';
+  kind: 'citation' | 'hyperlink';
   reference: string;
 }
 
@@ -155,12 +163,28 @@ export interface InputSchema {
 }
 
 export interface ParticipantPlan {
+  commitment?: {
+    admissible: boolean;
+    requirements: { attestation: boolean; receipt: boolean; closure: boolean | null };
+    closure_enforced: boolean;
+    closure?: {
+      depth: number;
+      cadence: number;
+      closure: number;
+      depth_direction: 'positive' | 'negative';
+      cadence_direction: 'positive' | 'negative';
+      history_proposition_id: Identifier | null;
+      history_source: string;
+    };
+    reasons: string[];
+  } | null;
   phase: Phase;
   gate: Proposition;
   lineage?: Proposition[];
   write_options?: Proposition[];
   revision_options?: Proposition[];
   gate_options?: Proposition[];
+  attestation_options?: Proposition[];
   workspace?: {
     domain?: DomainName;
     provenance?: Proposition;
@@ -178,7 +202,22 @@ export interface PropositionSelection {
 }
 
 export interface Participation {
-  status: 'waiting' | 'active';
+  current_proposition_id?: Identifier | null;
+  domain?: DomainName | null;
+  horizon_sequence?: number | null;
+  last_commitment?: {
+    proposition_id: Identifier;
+    depth: number | null;
+    cadence: number | null;
+    depth_direction: 'positive' | 'negative' | null;
+    cadence_direction: 'positive' | 'negative' | null;
+    domain_before: DomainName;
+    domain_after: DomainName;
+    tension_before: number | null;
+    tension_after: number;
+    closure_boundary: boolean;
+  } | null;
+  status: 'waiting' | 'ready' | 'blocked';
   plan?: ParticipantPlan;
   entry?: { mode?: 'origin' | 'potential'; available?: boolean; message?: string };
   reason?: { message?: string };

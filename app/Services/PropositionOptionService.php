@@ -39,6 +39,21 @@ final class PropositionOptionService
             ->get();
     }
 
+    /** Attestations target local expressive propositions, not just active heads. */
+    public function attestationOptionsFor(Phase $phase): Collection
+    {
+        if (! in_array($phase->kind, [PhaseKind::Persist, PhaseKind::Constrain], true)) {
+            return collect();
+        }
+
+        return Proposition::query()->whereKey($this->localIds($phase))
+            ->where('register', $phase->write_register)->where('tier', 'expressive')
+            ->whereHas('phase.cycle.participant', fn ($query) => $query->where(
+                'substrate_id', $phase->cycle->participant->substrate_id,
+            ))
+            ->orderBy('id')->get();
+    }
+
     /**
      * Revision is an ownership-preserving move within a register. It cannot
      * target the Gate merely because the Gate belongs to the Participant.

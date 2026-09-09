@@ -60,6 +60,16 @@ export function ParticipantPage() {
       {participant && participation?.status === 'waiting' && (
         <Box p="xl"><Stack align="flex-start" maw={680} mx="auto"><ThemeIcon color="indigo" variant="light" size="xl" radius="xl"><IconSparkles size={22} /></ThemeIcon><Box><Title order={2}>{participation.entry?.mode === 'origin' ? 'Every substrate begins somewhere' : 'Ready to enter the cycle'}</Title><Text c="dimmed" mt="xs">{participation.entry?.message || participation.reason?.message}</Text></Box>{cycleEntry.error && <Alert color="red" variant="light">{messageFrom(cycleEntry.error, 'The cycle could not be entered.')}</Alert>}<Group>{participation.entry?.mode === 'origin' && participation.entry?.available && <Button color="indigo" onClick={() => { cycleEntry.reset(); openOrigin(); }}>Establish the Origin</Button>}{participation.entry?.mode === 'potential' && participation.entry?.available && <Button color="indigo" loading={cycleEntry.isLoading} onClick={enterFromPotential}>Enter via Potential</Button>}</Group></Stack></Box>
       )}
+      {participation?.last_commitment && (
+        <Alert color="indigo" title="Your latest Commitment" m="md">
+          <Text size="sm">{participation.last_commitment.domain_before} → {participation.last_commitment.domain_after}
+            {' · '}{participation.last_commitment.closure_boundary ? 'Closure Boundary created' : 'No Closure Boundary'}</Text>
+          <Text size="sm">Tension: {participation.last_commitment.tension_before ?? 'unrecorded'} → {participation.last_commitment.tension_after}</Text>
+          <Text size="xs">Depth: {participation.last_commitment.depth ?? 'unrecorded'} ({participation.last_commitment.depth_direction ?? 'unknown'})
+            {' · '}Cadence: {participation.last_commitment.cadence ?? 'unrecorded'} ({participation.last_commitment.cadence_direction ?? 'unknown'})</Text>
+          <Text size="xs">Current Domain: {participation.domain} · Horizon {participation.horizon_sequence}</Text>
+        </Alert>
+      )}
       {participant && plan && (
         <Box className="participant-cycle-shell">
           <Box className="cycle-context-header">
@@ -71,6 +81,24 @@ export function ParticipantPage() {
             <PhaseLabel kind={plan.phase.kind} />
             <Box />
           </Box>
+          {participation?.status === 'blocked' && plan.commitment && (
+            <Alert color="yellow" title="Commitment is blocked" icon={<IconLock size={18} />} m="md">
+              <Stack gap="xs">
+                <Text size="sm">{participation.reason?.message}</Text>
+                <Text size="sm">Effective Attestation: {plan.commitment.requirements.attestation ? 'available' : 'missing'}.</Text>
+                <Text size="sm">Completed Receipt: {plan.commitment.requirements.receipt ? 'available' : 'missing'}.</Text>
+                <Text size="xs">Another participant can supply missing grounding from an eligible write register. Grounding alone does not override the Closure gate.</Text>
+              </Stack>
+            </Alert>
+          )}
+          {plan.commitment?.closure && (
+            <Alert color={plan.commitment.requirements.closure ? 'indigo' : 'yellow'} title="Prospective Closure gate" m="md">
+              <Text size="sm">Depth: {plan.commitment.closure.depth} ({plan.commitment.closure.depth_direction})
+                {' · '}Cadence: {plan.commitment.closure.cadence} ({plan.commitment.closure.cadence_direction})</Text>
+              <Text size="sm">{plan.commitment.requirements.closure ? 'Directions align.' : 'Directions diverge; Commitment is blocked.'}</Text>
+              <Text size="xs">Zero retains the previous committed direction. History: {plan.commitment.closure.history_source}.</Text>
+            </Alert>
+          )}
           <ParticipantWorkspace plan={{ ...plan, perspectiveLimit: participant.max_read_count }} availableActions={availableActions} onAction={openAction} />
           <ContributionForm action={selectedAction?.name} plan={plan} opened={selectedAction !== null} loading={contribution.isLoading} error={contribution.error} initialValues={selectedAction?.initialValues} onClose={() => setSelectedAction(null)} onSubmit={submit} />
         </Box>

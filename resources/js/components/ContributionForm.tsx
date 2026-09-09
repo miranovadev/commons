@@ -3,6 +3,7 @@ import { IconAlertCircle } from '@tabler/icons-react';
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { messageFrom } from '../errors';
+import { actionPropositions } from '../participationOptions';
 import { AttestationDirectionControl } from './AttestationDirectionControl';
 import type {
   ActionName,
@@ -55,9 +56,7 @@ export function ContributionForm({
   const properties = schema?.properties || {};
   const required = schema?.required || [];
   const propositionOptions = useMemo(
-    () => ((action === 'proposition.revise'
-      ? plan?.revision_options
-      : plan?.write_options) || []).map(option),
+    () => action ? actionPropositions(plan, action).map(option) : [],
     [action, plan],
   );
   const gateOptions = useMemo(
@@ -174,7 +173,6 @@ export function ContributionForm({
                 label="Instrument"
                 data={[
                   { value: 'citation', label: 'Citation' },
-                  { value: 'artefact', label: 'Artefact' },
                   { value: 'hyperlink', label: 'Hyperlink' },
                 ]}
                 required
@@ -183,6 +181,9 @@ export function ContributionForm({
               />
               <TextInput
                 label="Reference"
+                description={values.instrument?.kind === 'hyperlink'
+                  ? 'HTTP(S) URL reference only; page contents are not fetched or verified.'
+                  : 'The ID of an existing Proposition or Attestation in this substrate.'}
                 required
                 value={values.instrument?.reference || ''}
                 onChange={(event) => setInstrument(

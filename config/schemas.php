@@ -12,13 +12,14 @@ $statement = [
 ];
 
 $instrument = [
+    'description' => 'Citation: an existing Proposition or Attestation ID in this substrate. Hyperlink: an HTTP(S) URL reference only; no page fetch or content verification. Both complete synchronously with an unsigned Receipt.',
     'type' => 'object',
     'additionalProperties' => false,
     'required' => ['kind', 'reference'],
     'properties' => [
         'kind' => [
             'type' => 'string',
-            'enum' => ['citation', 'artefact', 'hyperlink'],
+            'enum' => ['citation', 'hyperlink'],
         ],
         'reference' => [
             'type' => 'string',
@@ -41,7 +42,7 @@ $proposition = static function (string $action, string $title) use ($statement):
 };
 
 return [
-    'version' => 6,
+    'version' => 8,
 
     'cache' => [
         'store' => env('COMMONS_SCHEMA_CACHE_STORE'),

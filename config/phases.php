@@ -87,13 +87,15 @@ return [
     ],
     7 => [
         'name' => 'order',
-        'description' => 'Commit the resulting expressive Proposition when the Closure gates permit it.',
+        'description' => 'Commit the grounded expressive Proposition when Depth and Cadence have aligned hysteretic directions.',
         'gate' => 'previous-phase-selection',
         'actions' => [
             'proposition.commit',
         ],
         'constraints' => [
             'proposition.commit' => [
+                'effective-gate-attestation',
+                'completed-gate-or-effective-attestation-receipt',
                 'depth-cadence-and-hysteresis-admissible',
             ],
         ],

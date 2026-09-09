@@ -16,6 +16,7 @@ final readonly class CommitmentSnapshotService
     public function __construct(
         private LedgerService $ledger,
         private ContextHorizonProjector $horizons,
+        private ClosureGateService $closureGate,
     ) {}
 
     public function record(
@@ -79,6 +80,14 @@ final readonly class CommitmentSnapshotService
             }
 
             $horizon = $this->horizons->currentFor($substrate);
+            // Re-evaluate the actual persisted candidate before allowing a snapshot.
+            $closure = $this->closureGate->forCommitment($proposition);
+            if (! $closure['admissible']) {
+                throw new DomainException('Commitment requires aligned Depth/Cadence directions.');
+            }
+            $previous = CommitmentSnapshot::query()->where('commitment_snapshots.substrate_id', $substrate->getKey())
+                ->join('substrate_ledger_entries as entry', 'entry.id', '=', 'commitment_snapshots.ledger_entry_id')
+                ->orderByDesc('entry.sequence')->select('commitment_snapshots.*')->first();
             $tension = round($prominence - $turbulence, 7);
             $directionBefore = $horizon->domain;
             $directionAfter = ContextDomain::after(
@@ -96,6 +105,12 @@ final readonly class CommitmentSnapshotService
                 'correspondence' => $measurement->correspondence,
                 'chirality' => $measurement->chirality,
                 'closure' => $measurement->closure,
+                'depth' => $closure['depth'],
+                'cadence' => $closure['cadence'],
+                'depth_direction' => $closure['depth_direction'],
+                'cadence_direction' => $closure['cadence_direction'],
+                'closure_history_proposition_id' => $closure['history_proposition_id'],
+                'tension_before' => $previous?->tension ?? 0.0,
                 'prominence' => $prominence,
                 'turbulence' => $turbulence,
                 'tension' => $tension,

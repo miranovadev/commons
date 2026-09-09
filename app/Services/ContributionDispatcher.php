@@ -7,15 +7,16 @@ use App\Models\Attestation;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
-use App\Models\Receipt;
 use App\Models\Supersession;
 use DomainException;
+use Illuminate\Support\Facades\DB;
 
 final readonly class ContributionDispatcher
 {
     public function __construct(
         private LedgerService $ledger,
-        private InstrumentExecutionService $instruments,
+        private OperationalInstrumentService $instruments,
+        private CommitmentAdmissibilityService $admissibility,
         private PropositionMeasurementService $measurements,
         private ProjectionService $projections,
         private CommitmentSnapshotService $commitments,
@@ -111,7 +112,7 @@ final readonly class ContributionDispatcher
         );
 
         if (isset($input['instrument'])) {
-            $this->startInstrument($phase, $target, $input['instrument']);
+            $this->instruments->execute($phase, $target, $input['instrument']);
         }
 
         $this->ledger->record($supersession);
@@ -192,94 +193,56 @@ final readonly class ContributionDispatcher
     ): Proposition {
         $proposition = Proposition::query()
             ->findOrFail($input['proposition_id']);
-        $this->startInstrument($phase, $proposition, $input['instrument']);
+        $this->instruments->execute($phase, $proposition, $input['instrument']);
 
         return $proposition;
-    }
-
-    public function canCommit(Proposition $gate): bool
-    {
-        $hasAttestation = Attestation::query()
-            ->effective()
-            ->whereBelongsTo($gate)
-            ->exists();
-        $attestationIds = Attestation::query()
-            ->whereBelongsTo($gate)
-            ->pluck('id');
-        $hasReceipt = Receipt::query()
-            ->where(function ($query) use ($gate, $attestationIds): void {
-                $query->where(function ($query) use ($gate): void {
-                    $query
-                        ->where('receiptable_type', $gate->getMorphClass())
-                        ->where('receiptable_id', $gate->getKey());
-                })->orWhere(function ($query) use ($attestationIds): void {
-                    $query
-                        ->where(
-                            'receiptable_type',
-                            (new Attestation)->getMorphClass(),
-                        )
-                        ->whereIn('receiptable_id', $attestationIds);
-                });
-            })
-            ->exists();
-
-        return $hasAttestation && $hasReceipt;
     }
 
     private function commit(
         Phase $phase,
         Proposition $gate,
     ): Proposition {
-        if (! $this->canCommit($gate)) {
-            throw new DomainException(
-                'Commitment requires an Attestation and Receipt in the current lineage.'
+        return DB::transaction(function () use ($phase, $gate): Proposition {
+            // Serialize evaluation and the resulting horizon transition with ledger writes.
+            \App\Models\Substrate::query()->whereKey($phase->cycle->participant->substrate_id)
+                ->lockForUpdate()->firstOrFail();
+            $eligibility = $this->admissibility->evaluate($gate, $phase);
+            if (! $eligibility['admissible']) {
+                throw new DomainException(
+                    'Commitment requires an effective Attestation, completed Receipt, and aligned Depth/Cadence directions. Missing: '.implode(', ', $eligibility['reasons'])
+                );
+            }
+
+            $target = $this->write(
+                $phase,
+                $gate->statement,
+                tier: 'committal',
             );
-        }
+            $supersession = $this->supersede(
+                $phase,
+                $gate,
+                $target,
+                'commit',
+            );
+            $this->ledger->record($supersession);
+            $values = $this->measurements->recalculate($target);
+            $projections = $this->projections->from(
+                new ObservableValues(
+                    $values->correspondence,
+                    $values->chirality,
+                    $values->closure,
+                ),
+            );
+            $this->commitments->record(
+                $target,
+                $projections['prominence'],
+                $projections['turbulence'],
+                'closure-hysteresis-v2',
+                $supersession,
+            );
 
-        $target = $this->write(
-            $phase,
-            $gate->statement,
-            tier: 'committal',
-        );
-        $supersession = $this->supersede(
-            $phase,
-            $gate,
-            $target,
-            'commit',
-        );
-        $this->ledger->record($supersession);
-        $values = $this->measurements->recalculate($target);
-        $projections = $this->projections->from(
-            new ObservableValues(
-                $values->correspondence,
-                $values->chirality,
-                $values->closure,
-            ),
-        );
-        $this->commitments->record(
-            $target,
-            $projections['prominence'],
-            $projections['turbulence'],
-            'lineage-observables-v1',
-            $supersession,
-        );
-
-        return $target;
-    }
-
-    /** @param array{kind: string, reference: string} $instrument */
-    private function startInstrument(
-        Phase $phase,
-        Proposition $proposition,
-        array $instrument,
-    ): void {
-        $this->instruments->start(
-            $phase,
-            $proposition,
-            $instrument['kind'],
-            $instrument['reference'],
-            $instrument,
-        );
+            return $target;
+        });
     }
 
     private function write(
