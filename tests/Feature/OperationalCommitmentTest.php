@@ -42,6 +42,16 @@ class OperationalCommitmentTest extends TestCase
             'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/origin'],
         ]);
         $this->origin = Proposition::findOrFail($state['plan']['gate']['id']);
+        // These tests isolate the operational receipt/phase path. Real component
+        // evaluation and refusal are covered by ClosureHysteresisTest.
+        $closure = [
+            ...(new \App\Domain\Observables\ClosureValues(1, 1))->resolve(),
+            'history_proposition_id' => null,
+            'history_source' => 'negative-default',
+        ];
+        $this->mock(\App\Services\ClosureGateService::class, function ($mock) use ($closure): void {
+            $mock->shouldReceive('preview', 'forCommitment')->andReturn($closure);
+        });
     }
 
     public function test_seven_phase_participation_completes_receipts_and_commits(): void
@@ -81,8 +91,8 @@ class OperationalCommitmentTest extends TestCase
         $this->assertSame('order', $state['plan']['phase']['kind']);
         $this->assertSame('ready', $state['status']);
         $this->assertTrue($state['plan']['commitment']['admissible']);
-        $this->assertFalse($state['plan']['commitment']['closure_enforced']);
-        $this->assertNull($state['plan']['commitment']['requirements']['closure']);
+        $this->assertTrue($state['plan']['commitment']['closure_enforced']);
+        $this->assertTrue($state['plan']['commitment']['requirements']['closure']);
         $this->assertArrayHasKey('proposition.commit', $state['plan']['schema']['$defs']['actions']);
 
         $phaseId = $state['plan']['phase']['id'];
@@ -130,14 +140,14 @@ class OperationalCommitmentTest extends TestCase
         $gate = $this->candidate();
         $first = $this->attest($gate);
         $service = app(CommitmentAdmissibilityService::class);
-        $this->assertFalse($service->evaluate($gate)['admissible']); // Origin evidence is not inherited.
+        $this->assertFalse($service->grounding($gate)['admissible']); // Origin evidence is not inherited.
         $executions = app(InstrumentExecutionService::class);
         $execution = $executions->start($gate->phase, $gate, 'hyperlink', 'https://example.test/attestation');
-        $this->assertFalse($service->evaluate($gate)['requirements']['receipt']);
+        $this->assertFalse($service->grounding($gate)['requirements']['receipt']);
         $executions->complete($execution, $first);
-        $this->assertTrue($service->evaluate($gate)['admissible']);
+        $this->assertTrue($service->grounding($gate)['admissible']);
         $this->attest($gate, $first);
-        $this->assertFalse($service->evaluate($gate)['requirements']['receipt']);
+        $this->assertFalse($service->grounding($gate)['requirements']['receipt']);
     }
 
     public function test_citation_resolves_attestations_and_hyperlinks_remain_unsigned(): void

@@ -42,7 +42,7 @@ $proposition = static function (string $action, string $title) use ($statement):
 };
 
 return [
-    'version' => 7,
+    'version' => 8,
 
     'cache' => [
         'store' => env('COMMONS_SCHEMA_CACHE_STORE'),

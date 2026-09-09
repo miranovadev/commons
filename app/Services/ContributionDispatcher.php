@@ -9,6 +9,7 @@ use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Supersession;
 use DomainException;
+use Illuminate\Support\Facades\DB;
 
 final readonly class ContributionDispatcher
 {
@@ -201,41 +202,47 @@ final readonly class ContributionDispatcher
         Phase $phase,
         Proposition $gate,
     ): Proposition {
-        if (! $this->admissibility->evaluate($gate)['admissible']) {
-            throw new DomainException(
-                'Commitment requires an effective Attestation on the current Gate and a completed Receipt on that Gate or one of its effective Attestations.'
+        return DB::transaction(function () use ($phase, $gate): Proposition {
+            // Serialize evaluation and the resulting horizon transition with ledger writes.
+            \App\Models\Substrate::query()->whereKey($phase->cycle->participant->substrate_id)
+                ->lockForUpdate()->firstOrFail();
+            $eligibility = $this->admissibility->evaluate($gate, $phase);
+            if (! $eligibility['admissible']) {
+                throw new DomainException(
+                    'Commitment requires an effective Attestation, completed Receipt, and aligned Depth/Cadence directions. Missing: '.implode(', ', $eligibility['reasons'])
+                );
+            }
+
+            $target = $this->write(
+                $phase,
+                $gate->statement,
+                tier: 'committal',
             );
-        }
+            $supersession = $this->supersede(
+                $phase,
+                $gate,
+                $target,
+                'commit',
+            );
+            $this->ledger->record($supersession);
+            $values = $this->measurements->recalculate($target);
+            $projections = $this->projections->from(
+                new ObservableValues(
+                    $values->correspondence,
+                    $values->chirality,
+                    $values->closure,
+                ),
+            );
+            $this->commitments->record(
+                $target,
+                $projections['prominence'],
+                $projections['turbulence'],
+                'closure-hysteresis-v2',
+                $supersession,
+            );
 
-        $target = $this->write(
-            $phase,
-            $gate->statement,
-            tier: 'committal',
-        );
-        $supersession = $this->supersede(
-            $phase,
-            $gate,
-            $target,
-            'commit',
-        );
-        $this->ledger->record($supersession);
-        $values = $this->measurements->recalculate($target);
-        $projections = $this->projections->from(
-            new ObservableValues(
-                $values->correspondence,
-                $values->chirality,
-                $values->closure,
-            ),
-        );
-        $this->commitments->record(
-            $target,
-            $projections['prominence'],
-            $projections['turbulence'],
-            'lineage-observables-v1',
-            $supersession,
-        );
-
-        return $target;
+            return $target;
+        });
     }
 
     private function write(

@@ -2,6 +2,7 @@ import { Box, Button, Group, Menu, SimpleGrid, Stack, Text, ThemeIcon } from '@m
 import { IconBolt, IconEye, IconGitBranch, IconPencil, IconRefresh, IconRoute, IconSeedling, IconTool, IconWhirl } from '@tabler/icons-react';
 import { Fragment, useMemo, useState } from 'react';
 import { domainForRegister, metaForRegister } from '../registers';
+import { actionPropositions } from '../participationOptions';
 import { LineagePanel } from './LineagePanel';
 import { PropositionCard } from './PropositionCard';
 import { PropositionInspector } from './PropositionInspector';
@@ -54,7 +55,7 @@ export function ParticipantWorkspace({ plan, availableActions, onAction }: {
   const propositions = useMemo<Proposition[]>(() => [
     plan.gate, plan.workspace?.provenance, ...(plan.lineage || []),
     ...Object.values(plan.workspace?.registers || {}).flatMap((items) => items || []), ...(plan.write_options || []),
-    ...(plan.revision_options || []), ...(plan.gate_options || []),
+    ...(plan.revision_options || []), ...(plan.gate_options || []), ...(plan.attestation_options || []),
   ].filter((item): item is Proposition => Boolean(item)), [plan]);
   const byId = useMemo(() => new Map<Identifier, Proposition>(propositions.map((item) => [item.id, item])), [propositions]);
   const gate = resolve(plan.gate, byId);
@@ -86,6 +87,7 @@ export function ParticipantWorkspace({ plan, availableActions, onAction }: {
                 lane={lane} gate={gate} lineage={lineage} committalObservables={provenance.observables}
                 propositions={lane.register ? registerItems[lane.register] || [] : []}
                 gateOptions={gateOptions} writeOptions={writeOptions} revisionOptions={revisionOptions}
+                attestationOptions={actionPropositions(plan, 'attestation.create')}
                 actions={propositionActions} onInspect={setInspection} onAction={onAction}
               />
             </Fragment>
@@ -106,12 +108,13 @@ interface OperationalRowProps {
   gateOptions: Proposition[];
   writeOptions: Proposition[];
   revisionOptions: Proposition[];
+  attestationOptions: Proposition[];
   actions: ActionName[];
   onInspect: InspectHandler;
   onAction: ActionHandler;
 }
 
-function OperationalRow({ lane, gate, lineage, committalObservables, propositions, gateOptions, writeOptions, revisionOptions, actions, onInspect, onAction }: OperationalRowProps) {
+function OperationalRow({ lane, gate, lineage, committalObservables, propositions, gateOptions, writeOptions, revisionOptions, attestationOptions, actions, onInspect, onAction }: OperationalRowProps) {
   const role = roleMeta[lane.role];
   const meta = lane.meta || metaForRegister(lane.register);
   const RegisterIcon = meta.icon;
@@ -135,7 +138,7 @@ function OperationalRow({ lane, gate, lineage, committalObservables, proposition
         </Group>
         {lane.role === 'read' && <ReadContent register={lane.register} gate={gate} featured={lane.featured} propositions={propositions} lineage={lineage} committalObservables={committalObservables} onInspect={onInspect} />}
         {lane.role === 'gate' && <GateContent gate={laneGate} committalObservables={committalObservables} onInspect={onInspect} />}
-        {lane.role === 'write' && <WriteContent propositions={propositions} writeOptions={writeOptions} revisionOptions={revisionOptions} gateOptions={gateOptions} actions={actions} committalObservables={committalObservables} onInspect={onInspect} onAction={onAction} />}
+        {lane.role === 'write' && <WriteContent propositions={propositions} writeOptions={writeOptions} revisionOptions={revisionOptions} gateOptions={gateOptions} attestationOptions={attestationOptions} actions={actions} committalObservables={committalObservables} onInspect={onInspect} onAction={onAction} />}
       </Box>
     </Box>
   );
@@ -164,20 +167,21 @@ function GateContent({ gate, committalObservables, onInspect }: {
   return <PropositionCard proposition={gate} committalObservables={committalObservables} selected compact flow="gate" onClick={() => onInspect({ kind: 'gate', proposition: gate })} />;
 }
 
-function WriteContent({ propositions, writeOptions, revisionOptions, gateOptions, actions, committalObservables, onInspect, onAction }: {
+function WriteContent({ propositions, writeOptions, revisionOptions, gateOptions, attestationOptions, actions, committalObservables, onInspect, onAction }: {
   propositions: Proposition[];
   writeOptions: Proposition[];
   revisionOptions: Proposition[];
   gateOptions: Proposition[];
+  attestationOptions: Proposition[];
   actions: ActionName[];
   committalObservables?: Observables;
   onInspect: InspectHandler;
   onAction: ActionHandler;
 }) {
-  const visibleIds = new Set(propositions.filter((item) => item.tier === 'expressive').map((item) => item.id));
+  const attestationIds = new Set(attestationOptions.map((item) => item.id));
   const revisionIds = new Set(revisionOptions.map((item) => item.id));
   const reconcileIds = new Set(gateOptions.map((item) => item.id));
-  const existing = uniqueById([...propositions, ...writeOptions, ...gateOptions]);
+  const existing = uniqueById([...propositions, ...writeOptions, ...gateOptions, ...attestationOptions]);
   return (
     <Stack className="write-row" gap="md">
       {existing.length > 0 && (
@@ -186,7 +190,7 @@ function WriteContent({ propositions, writeOptions, revisionOptions, gateOptions
           <SimpleGrid className="write-row__cards" cols={{ base: 1, md: 2, xl: 3 }} spacing="sm">
             {existing.map((proposition) => <WriteOptionCard
               key={proposition.id} proposition={proposition}
-              canAttest={actions.includes('attestation.create') && visibleIds.has(proposition.id)}
+              canAttest={actions.includes('attestation.create') && attestationIds.has(proposition.id)}
               canRevise={actions.includes('proposition.revise') && revisionIds.has(proposition.id)}
               canReconcile={actions.includes('proposition.reconcile') && reconcileIds.has(proposition.id)}
               canInstrument={actions.includes('instrument.execute') && writeOptions.some((item) => item.id === proposition.id)}

@@ -4,6 +4,7 @@
     "private": true,
     "type": "module",
     "scripts": {
+        "test:ui": "node --test tests/js/*.test.mjs",
         "build": "npm run typecheck && vite build",
         "dev": "vite",
         "typecheck": "tsc --noEmit"
