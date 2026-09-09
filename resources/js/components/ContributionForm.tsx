@@ -60,7 +60,7 @@ export function ContributionForm({
     [action, plan],
   );
   const gateOptions = useMemo(
-    () => (plan?.gate_options || []).map(option),
+    () => actionPropositions(plan, 'proposition.reconcile').map(option),
     [plan],
   );
 
@@ -198,6 +198,8 @@ export function ContributionForm({
               />
             </>
           )}
+
+          {action === 'proposition.reconcile' && <Text size="sm" c="dimmed">The new Proposition copies the current Gate statement exactly. The selected sibling contributes a second hard parent edge.</Text>}
 
           {action === 'participant.rest' && <Text size="sm" c="dimmed">No admissible non-Rest action remains in this Phase. End this Cycle and retain your current position for recovery when the next Cycle begins.</Text>}
 

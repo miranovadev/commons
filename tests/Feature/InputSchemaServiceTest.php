@@ -114,7 +114,7 @@ class InputSchemaServiceTest extends TestCase
         ]);
     }
 
-    public function test_input_plan_specializes_selection_and_gate_options(): void
+    public function test_write_descendants_do_not_become_reconciliation_gate_options(): void
     {
         $state = $this->seedPhase(
             PhaseKind::Mediate,
@@ -153,7 +153,7 @@ class InputSchemaServiceTest extends TestCase
             array_column($plan['write_options'], 'id'),
         );
         $this->assertSame(
-            [$candidateId],
+            [],
             array_column($plan['gate_options'], 'id'),
         );
         $this->assertSame(
@@ -161,11 +161,7 @@ class InputSchemaServiceTest extends TestCase
             $plan['schema']['$defs']['actions']['attestation.create']
                 ['properties']['proposition_id']['enum'],
         );
-        $this->assertSame(
-            [$candidateId],
-            $plan['schema']['$defs']['actions']['proposition.reconcile']
-                ['properties']['other_proposition_id']['enum'],
-        );
+        $this->assertArrayNotHasKey('proposition.reconcile', $plan['schema']['$defs']['actions']);
     }
 
     public function test_lowercase_database_ulids_are_valid_contribution_ids(): void
@@ -188,12 +184,11 @@ class InputSchemaServiceTest extends TestCase
             [
                 'action' => 'proposition.reconcile',
                 'other_proposition_id' => '01m1xab7yakfnhy6tf52a9qg7z',
-                'statement' => 'The failing production shape is valid.',
             ],
         );
     }
 
-    public function test_write_frontier_is_complete_while_gate_options_keep_their_limit(): void
+    public function test_write_frontier_does_not_supply_gate_siblings(): void
     {
         config()->set('schemas.options.limit', 10);
 
@@ -231,7 +226,7 @@ class InputSchemaServiceTest extends TestCase
         );
 
         $this->assertCount(12, $plan['write_options']);
-        $this->assertCount(10, $plan['gate_options']);
+        $this->assertSame([], $plan['gate_options']);
     }
 
     public function test_non_owner_schema_hides_revise_and_reclassify(): void

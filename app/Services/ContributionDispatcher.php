@@ -20,6 +20,7 @@ final readonly class ContributionDispatcher
         private PropositionMeasurementService $measurements,
         private ProjectionService $projections,
         private CommitmentSnapshotService $commitments,
+        private ReconciliationOptionService $reconciliation,
     ) {}
 
     /**
@@ -122,12 +123,18 @@ final readonly class ContributionDispatcher
         Proposition $gate,
         array $input,
     ): Proposition {
-        $other = Proposition::query()
-            ->findOrFail($input['other_proposition_id']);
+        if (array_key_exists('statement', $input)) {
+            throw new DomainException('Reconcile selects structure; it does not accept a statement.');
+        }
+        $other = $this->reconciliation->forPhase($phase)->firstWhere('id', $input['other_proposition_id']);
+        if ($other === null) {
+            throw new DomainException('Reconcile requires an admissible same-parent Gate sibling.');
+        }
         $target = $this->write(
             $phase,
-            $input['statement'],
+            $gate->statement,
             tier: 'expressive',
+            preserveStatement: true,
         );
 
         foreach ([$gate, $other] as $source) {
@@ -245,6 +252,7 @@ final readonly class ContributionDispatcher
         Phase $phase,
         string $statement,
         string $tier,
+        bool $preserveStatement = false,
     ): Proposition {
         if ($phase->write_register === null) {
             throw new DomainException(
@@ -257,7 +265,7 @@ final readonly class ContributionDispatcher
             'phase_id' => $phase->getKey(),
             'register' => $phase->write_register,
             'tier' => $tier,
-            'statement' => trim($statement),
+            'statement' => $preserveStatement ? $statement : trim($statement),
         ]);
         $proposition->save();
         $this->ledger->record($proposition);

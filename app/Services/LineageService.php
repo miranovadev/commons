@@ -16,6 +16,27 @@ final class LineageService
             ->unique()->values();
     }
 
+    /** Forward family inside one Horizon; Committal boundaries terminate expansion. */
+    public function descendantsInHorizon(Proposition $parent, string $horizonId): Collection
+    {
+        $seen = collect([$parent->getKey()]);
+        $frontier = $seen;
+        $descendants = collect();
+        while ($frontier->isNotEmpty()) {
+            $next = Proposition::query()
+                ->whereHas('parents', fn ($query) => $query->whereIn('propositions.id', $frontier))
+                ->whereHas('contextHorizonMembership', fn ($query) => $query->where('context_horizon_id', $horizonId))
+                ->whereHas('phase.cycle.participant', fn ($query) => $query->where(
+                    'substrate_id', $parent->phase->cycle->participant->substrate_id,
+                ))
+                ->whereNotIn('id', $seen)->get();
+            $descendants = $descendants->concat($next);
+            $seen = $seen->merge($next->pluck('id'));
+            $frontier = $next->where('tier', 'expressive')->pluck('id');
+        }
+        return $descendants;
+    }
+
     /** @return Collection<int, string> */
     public function neighbourIds(Proposition $position): Collection
     {

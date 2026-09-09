@@ -229,13 +229,19 @@ class OperationalCommitmentTest extends TestCase
     public function test_bias_grounds_a_reconciled_historical_proposition_and_later_cycle_can_commit_it(): void
     {
         $left = $this->candidate();
-        $right = $this->candidate();
+        $right = new Proposition;
+        $right->forceFill(['phase_id' => $left->phase_id, 'register' => $left->register,
+            'tier' => 'expressive', 'statement' => 'Sibling alternative'])->save();
+        app(LedgerService::class)->record($right);
+        $this->origin->children()->attach($right->id, [
+            'id' => (string) str()->ulid(), 'phase_id' => $left->phase_id, 'type' => 'variant',
+        ]);
+        $this->attest($right);
         $builder = $this->participant($this->participant->substrate, 'reconciler');
         $reconcilePhase = $this->phase($builder, PhaseKind::Bias, 'concord', $left);
         // Use the normal dispatcher to produce the two-parent reconciliation.
         $candidate = app(ContributionDispatcher::class)->dispatch($builder, $reconcilePhase, [
             'action' => 'proposition.reconcile', 'other_proposition_id' => $right->id,
-            'statement' => 'Reconciled claim',
         ]);
         // Another lineage does not erase the original reconciled Proposition.
         $descendant = app(ContributionDispatcher::class)->dispatch($builder, $reconcilePhase, [
