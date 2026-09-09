@@ -35,7 +35,6 @@ class InputSchemaServiceTest extends TestCase
                 'proposition.variant',
                 'attestation.create',
                 'proposition.traverse',
-                'participant.rest',
             ],
             PhaseKind::Persist->value => [
                 'proposition.variant',
@@ -43,40 +42,34 @@ class InputSchemaServiceTest extends TestCase
                 'proposition.reclassify',
                 'attestation.create',
                 'proposition.traverse',
-                'participant.rest',
             ],
             PhaseKind::Constrain->value => [
                 'proposition.revise',
                 'proposition.reclassify',
                 'attestation.create',
                 'proposition.traverse',
-                'participant.rest',
             ],
             PhaseKind::Disperse->value => [
                 'proposition.variant',
                 'instrument.execute',
                 'attestation.create',
                 'proposition.traverse',
-                'participant.rest',
             ],
             PhaseKind::Mediate->value => [
                 'proposition.reconcile',
                 'attestation.create',
                 'proposition.traverse',
-                'participant.rest',
             ],
             PhaseKind::Bias->value => [
                 'proposition.reconcile',
                 'instrument.execute',
                 'attestation.create',
                 'proposition.traverse',
-                'participant.rest',
             ],
             PhaseKind::Order->value => [
                 'proposition.commit',
                 'attestation.create',
                 'proposition.traverse',
-                'participant.rest',
             ],
         ];
 
@@ -273,7 +266,7 @@ class InputSchemaServiceTest extends TestCase
         );
 
         $this->assertSame(
-            ['proposition.variant', 'participant.rest'],
+            ['proposition.variant'],
             array_keys($schema['$defs']['actions']),
         );
     }

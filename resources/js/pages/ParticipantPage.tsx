@@ -87,7 +87,7 @@ export function ParticipantPage() {
                 <Text size="sm">{participation.reason?.message}</Text>
                 <Text size="sm">Effective Attestation: {plan.commitment.requirements.attestation ? 'available' : 'missing'}.</Text>
                 <Text size="sm">Completed Receipt: {plan.commitment.requirements.receipt ? 'available' : 'missing'}.</Text>
-                <Text size="xs">Grounding can be added in Bias and retained for a later Cycle. Traverse or Rest remains available; the Closure gate still applies.</Text>
+                <Text size="xs">Grounding can be added in Bias and retained for a later Cycle. Use the available Phase actions; the Closure gate still applies.</Text>
               </Stack>
             </Alert>
           )}
@@ -101,7 +101,7 @@ export function ParticipantPage() {
           )}
           {availableActions.includes('participant.rest') && (
             <Alert color="gray" title="Tragic Region" m="md">
-              <Text size="sm">No valid Expressive traversal remains at this position. Rest ends this Cycle; recovery begins at the nearest viable Committal region.</Text>
+              <Text size="sm">No admissible non-Rest action remains in this Phase. Rest ends this Cycle; recovery begins at the nearest viable Committal region.</Text>
               <Button mt="sm" variant="light" color="gray" onClick={() => openAction('participant.rest')}>Rest</Button>
             </Alert>
           )}

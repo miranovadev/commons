@@ -167,16 +167,25 @@ The card footer, form and inference schema use these same choices. Traverse
 creates neither a Proposition nor a Supersession and advances through the
 existing personal path. Mediate/Bias reconciliation semantics are unchanged.
 
-**Tragedy** means no valid Expressive traversal remains, independently of
-whether a new Proposition could be created or Commit could succeed. The plan
-reports `tragedy`, `traversal_options`, and `instrument_options`; its specialized
-schema is authoritative for both human controls and inference. These complete
-Write and traversal target sets are not truncated by the Horizon display limit.
-The existing Tragedy/Rest calculation continues to use the traversal set; its
-inputs now reflect the Attestation requirement. Recovery still uses bidirectional
-neighbours, with no change to its graph or ranking semantics.
+**Tragedy** means the current Phase has zero admissible non-Rest actions.
+The server first applies all phase-native, ownership, target and Commitment
+constraints, then specializes the complete non-Rest action schema. Only when
+that action set is empty does it set `tragedy: true` and inject `participant.rest`
+as the sole action. Otherwise `tragedy` is false and Rest is absent from both
+the schema and UI. Human controls and autonomous inference receive the same result.
 
-Only a Tragic Region exposes `participant.rest`:
+Rest is never a participant preference or a competing action. An available
+Variant, Reclassify, Revise, Attestation, Traverse, Reconcile, Instrument or Commit
+prevents Tragedy. In particular, Distinguish, Persist and Disperse cannot be
+Tragic while their unconditional Variant action remains admissible. An empty
+traversal set alone says nothing about complete action exhaustion.
+
+The plan reports `traversal_options` and `instrument_options` separately from
+`tragedy`. Complete Write and traversal target sets are not truncated by the
+Horizon display limit. Recovery still uses bidirectional neighbours and the
+same distance/ranking semantics.
+
+Only a genuinely exhausted Phase exposes `participant.rest`:
 
 ```json
 {
@@ -216,8 +225,8 @@ introduced by this navigation change.
 
 Order returns an actionable `ready` plan even when Commit is inadmissible.
 `plan.commitment` and `commitment_preconditions_unsatisfied` preserve diagnostics
-for missing Attestation, Receipt and Closure alignment. Traverse or Rest prevents
-Commit refusal from becoming an artificial permanent deadlock. Automated wakes
+for missing Attestation, Receipt and Closure alignment. Other admissible actions remain available when Commit is refused; only their
+complete exhaustion exposes Rest. Automated wakes
 ask inference to choose from exactly the same action schema; they never traverse
 automatically. Stale phase tokens cannot apply another move.
 

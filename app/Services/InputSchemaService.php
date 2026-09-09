@@ -43,7 +43,7 @@ final readonly class InputSchemaService
         $ownsGate = $this->ownership->ownedBy($gate, $participant);
 
         $actions = array_values(array_filter(
-            $plan['actions'],
+            array_diff($plan['actions'], ['participant.rest']),
             static function (string $action) use ($plan, $ownsGate): bool {
                 $constraints = $plan['constraints'][$action] ?? [];
 
@@ -61,9 +61,6 @@ final readonly class InputSchemaService
         }
 
         $traversalOptionIds ??= $this->options->traversalOptionsFor($occurrence)->pluck('id')->all();
-        if ($traversalOptionIds !== []) {
-            $actions = array_values(array_diff($actions, ['participant.rest']));
-        }
 
         $schema = $this->specialize(
             $this->forPhase($kind, $actions),
@@ -94,7 +91,11 @@ final readonly class InputSchemaService
             $schema['$defs']['actions']['attestation.create']['anyOf'] = $choices;
         }
 
-        return $schema;
+        // Rest is the sole fallback after every non-Rest action is specialized.
+        // It must never compete with a phase-native or target-bound action.
+        return $schema['$defs']['actions'] === []
+            ? $this->forPhase($kind, ['participant.rest'])
+            : $schema;
     }
 
     /**

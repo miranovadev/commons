@@ -92,6 +92,8 @@ class OperationalCommitmentTest extends TestCase
         $this->assertTrue($state['plan']['commitment']['closure_enforced']);
         $this->assertTrue($state['plan']['commitment']['requirements']['closure']);
         $this->assertArrayHasKey('proposition.commit', $state['plan']['schema']['$defs']['actions']);
+        $this->assertFalse($state['plan']['tragedy']);
+        $this->assertArrayNotHasKey('participant.rest', $state['plan']['schema']['$defs']['actions']);
 
         $phaseId = $state['plan']['phase']['id'];
         $this->move($this->participant, ['action' => 'proposition.commit']);

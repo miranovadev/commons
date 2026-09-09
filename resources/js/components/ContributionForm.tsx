@@ -199,7 +199,7 @@ export function ContributionForm({
             </>
           )}
 
-          {action === 'participant.rest' && <Text size="sm" c="dimmed">End this Cycle without creating content. Your current position is retained for recovery when the next Cycle begins.</Text>}
+          {action === 'participant.rest' && <Text size="sm" c="dimmed">No admissible non-Rest action remains in this Phase. End this Cycle and retain your current position for recovery when the next Cycle begins.</Text>}
 
           {action === 'proposition.commit' && (
             <Text size="sm" c="dimmed">
