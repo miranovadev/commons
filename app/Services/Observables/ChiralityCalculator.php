@@ -5,14 +5,16 @@ namespace App\Services\Observables;
 use App\Domain\Observables\DomainLineage;
 use App\Domain\Observables\LineageComparison;
 use App\Enums\SupersessionStrength;
-use App\Models\Attestation;
 use App\Models\Substrate;
+use App\Models\Proposition;
+use App\Services\PropositionStateService;
 use Illuminate\Support\Collection;
 
 final readonly class ChiralityCalculator
 {
     public function __construct(
         private ReinforcementService $reinforcement,
+        private PropositionStateService $state,
     ) {}
 
     public function calculate(LineageComparison $comparison): float
@@ -30,10 +32,11 @@ final readonly class ChiralityCalculator
 
     private function lean(DomainLineage $lineage): float
     {
-        return $this->leanFor(
-            $this->activeIds($lineage->propositions, $lineage->supersessions),
-            $lineage->horizon->substrate,
-        );
+        $ids = $this->activeIds($lineage->propositions, $lineage->supersessions);
+
+        return $this->attestationLean($this->state->attestations(
+            $lineage->propositions->whereIn('id', $ids),
+        ), $lineage->horizon->substrate);
     }
 
     /** Shared hard-supersession semantics for active propositions in a lineage. */
@@ -52,10 +55,13 @@ final readonly class ChiralityCalculator
     /** Receipt-weighted effective Attestation lean, before cross-domain comparison. */
     public function leanFor(Collection $activeIds, Substrate $substrate): float
     {
-        $attestations = Attestation::query()
-            ->effective()
-            ->whereIn('proposition_id', $activeIds)
-            ->get();
+        return $this->attestationLean($this->state->attestations(
+            Proposition::query()->whereIn('id', $activeIds)->get(),
+        ), $substrate);
+    }
+
+    private function attestationLean(Collection $attestations, Substrate $substrate): float
+    {
         $weights = $this->reinforcement->weights(
             $attestations,
             $substrate,

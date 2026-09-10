@@ -1,10 +1,25 @@
 # Closure hysteresis and Domain transitions
 
-Order now evaluates the proposed Commit node and edge, including its participant
-cycle for Cadence, in an in-memory lineage comparison. Reads do not create
+Order evaluates the proposed Commit node and edge with the same post-Commit
+active-head state used by actual Commitment. The head inherits its Gate's Phase
+touch history, effective Attestations and completed Receipts through the Commit
+edge. Cadence therefore does not reset to an untouched head or use a different
+pre-Commit population from Depth. Reads do not create
 temporary propositions, ledger entries, memberships, or snapshots. Dispatch
 reevaluates under the substrate lock; snapshot creation checks the actual
 candidate too. Failure rolls back the whole Commit write.
+
+Depth observes active heads' structural extension and reinforcement. Cadence
+observes their persisted Phase-touch distribution, not cycle or inter-Commit
+timing. Hard-superseded history supplies ancestry but is not an independent
+active-head observation. Both local components pass through the existing
+inverse-square lineage weighted mean once; Closure adds no attenuation.
+
+Settlement can develop positive prospective components with only the Origin
+Commitment in history: matching development and touch variability are observable
+before the proposed Commit. Changed development and concentrated touch
+distributions can develop negative components in Emergence. The original
+cross-lineage comparison, independent directions and hysteresis remain in force.
 
 Depth and Cadence are retained separately (seven-decimal precision). Each
 positive/negative value selects that direction; exactly zero retains the prior

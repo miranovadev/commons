@@ -6,12 +6,15 @@ use App\Domain\Observables\DomainLineage;
 use App\Domain\Observables\ClosureValues;
 use App\Domain\Observables\LineageComparison;
 use App\Models\Proposition;
+use App\Services\PropositionStateService;
 use DomainException;
 
 final readonly class ClosureCalculator
 {
     public function __construct(
         private ReinforcementService $reinforcement,
+        private ChiralityCalculator $chirality,
+        private PropositionStateService $state,
     ) {}
 
     public function calculate(LineageComparison $comparison): float
@@ -37,14 +40,15 @@ final readonly class ClosureCalculator
         return new ClosureValues(round($depth, 7), round($cadence, 7));
     }
 
-    private function depth(DomainLineage $lineage): float
+    /** Mean structural extension of active heads; history supplies paths, not observations. */
+    public function depth(DomainLineage $lineage): float
     {
+        $heads = $this->activeHeads($lineage);
         $weights = $this->reinforcement->weights(
-            $lineage->propositions,
+            $heads,
             $lineage->horizon->substrate,
         );
-        $children = $lineage->supersessions
-            ->groupBy('source_proposition_id');
+        $parents = $lineage->supersessions->groupBy('target_proposition_id');
         $memo = [];
         $visiting = [];
 
@@ -52,8 +56,7 @@ final readonly class ClosureCalculator
             &$visit,
             &$memo,
             &$visiting,
-            $children,
-            $weights,
+            $parents,
         ): float {
             if (isset($memo[$id])) {
                 return $memo[$id];
@@ -66,77 +69,58 @@ final readonly class ClosureCalculator
             }
 
             $visiting[$id] = true;
-            $longestChild = 0.0;
+            $longestParent = 0.0;
 
-            foreach ($children->get($id, collect()) as $edge) {
-                $longestChild = max(
-                    $longestChild,
-                    $visit($edge->target_proposition_id),
+            foreach ($parents->get($id, collect()) as $edge) {
+                $longestParent = max(
+                    $longestParent,
+                    $visit($edge->source_proposition_id),
                 );
             }
 
             unset($visiting[$id]);
 
-            return $memo[$id] = $weights->get($id, 1)
-                + $longestChild;
+            return $memo[$id] = 1 + $longestParent;
         };
 
-        return (float) $lineage->propositions
+        return (float) $heads
             ->map(
                 fn (Proposition $proposition) => $visit(
                     $proposition->getKey()
-                ),
+                ) * $weights->get($proposition->getKey(), 1),
             )
-            ->max();
+            ->average();
     }
 
-    private function coefficientOfVariation(
+    /** Population CV of persisted Phase touches; no cycle sequence or clock inputs. */
+    public function coefficientOfVariation(
         DomainLineage $lineage,
     ): float {
-        $intervals = $lineage->propositions
-            ->groupBy(
-                fn (Proposition $proposition) => (string) $proposition
-                    ->phase
-                    ->cycle
-                    ->participant_id,
-            )
-            ->flatMap(function ($propositions) {
-                $sequences = $propositions
-                    ->sortBy(
-                        fn (Proposition $proposition) => $proposition
-                            ->ledgerEntry
-                            ->sequence,
-                    )
-                    ->pluck('phase.cycle.sequence')
-                    ->values();
+        $touches = $this->activeHeads($lineage)
+            ->map(fn (Proposition $proposition) => $this->state->touchCount($proposition));
 
-                return $sequences
-                    ->slice(1)
-                    ->values()
-                    ->map(
-                        fn ($sequence, int $index) => max(
-                            1,
-                            (int) $sequence - (int) $sequences[$index],
-                        ),
-                    );
-            })
-            ->values();
-
-        if ($intervals->isEmpty()) {
+        if ($touches->isEmpty()) {
             return 0;
         }
 
-        $mean = (float) $intervals->average();
+        $mean = (float) $touches->average();
 
         if ($mean === 0.0) {
             return 0;
         }
 
-        $variance = (float) $intervals
-            ->map(fn ($interval) => ($interval - $mean) ** 2)
+        $variance = (float) $touches
+            ->map(fn ($touchCount) => ($touchCount - $mean) ** 2)
             ->average();
 
         return sqrt($variance) / $mean;
+    }
+
+    private function activeHeads(DomainLineage $lineage): \Illuminate\Support\Collection
+    {
+        return $lineage->propositions->whereIn('id', $this->chirality->activeIds(
+            $lineage->propositions, $lineage->supersessions,
+        ));
     }
 
     private function similarity(float $left, float $right): float

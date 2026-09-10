@@ -50,7 +50,8 @@ class ClosureHysteresisTest extends TestCase
         $preview = app(ClosureGateService::class)->preview($gate, $phase);
         $state = app(ParticipationService::class)->stateFor($this->participant);
         $this->assertSame($counts, $this->counts());
-        // Raw candidate/gate/provenance: Depth (1, 0, -1), Cadence (1, 1, -1).
+        // Candidate/Gate/provenance raw Depth (1, 0, -1). The unsigned
+        // grounding Receipt is inherited without adding reinforcement.
         $mass = 1 + 1 / 4 + 1 / 9;
         $this->assertSame(round((1 - 1 / 9) / $mass, 7), $preview['depth']);
         $this->assertSame(round((1 + 1 / 4 - 1 / 9) / $mass, 7), $preview['cadence']);
@@ -77,9 +78,16 @@ class ClosureHysteresisTest extends TestCase
     {
         $this->bootstrap(1);
         [$phase, $gate] = $this->candidate([2, 3, 6]);
+        for ($i = 0; $i < 8; $i++) {
+            $touch = new Phase;
+            $touch->forceFill(['cycle_id' => $phase->cycle_id, 'kind' => PhaseKind::Persist,
+                'write_register' => 'stance', 'gate_proposition_id' => $gate->id,
+                'started_at' => now(), 'completed_at' => now()])->save();
+        }
         $preview = app(ClosureGateService::class)->preview($gate, $phase);
         $this->assertLessThan(0, $preview['depth']);
-        // Raw cycle-interval Cadence at candidate, three gates, provenance.
+        // Concentrated touches (1,1,9), inherited by the candidate, compared
+        // with provenance CV=0. Earlier two-head views remain distributed.
         $this->assertSame(round((-1 - 1 / 4 + 1 / 9 + 1 / 16 - 1 / 25)
             / (1 + 1 / 4 + 1 / 9 + 1 / 16 + 1 / 25), 7), $preview['cadence']);
         $this->assertTrue($preview['admissible']);

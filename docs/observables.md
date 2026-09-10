@@ -85,10 +85,30 @@ of the Gate lineage and requires matching sibling Correspondence. See
 
 ## Local Closure
 
-Depth is the receipt-weighted length of the longest Proposition chain.
-Cadence is the population coefficient of variation of the cycle intervals
-between each Participant's consecutive Propositions. A population with no
-intervals has a CV of 0.
+Each local Closure evaluation observes the active heads in its relevant lineage
+comparison, using the same hard-supersession rule as Chirality. Soft Variant
+sources remain active; hard-superseded sources do not remain independent head
+observations. Unrelated Horizon heads are not included.
+
+Depth is the mean structural extension of these heads: each head's longest
+incoming Proposition path length (counting the head) multiplied by its Receipt
+reinforcement weight. Historical nodes establish path topology, but their own
+Receipts do not independently reinforce an active head unless inherited through
+Commit. This retains structural development while removing the historical
+population as the set of observations.
+
+Cadence is the population coefficient of variation (standard deviation / mean)
+of **Phase touches per active head**. Each persisted Phase whose Gate is a
+Proposition contributes one touch, including the open Phase. Repeated Phases
+count separately; completing or rereading a Phase adds no touch. Neither cycle
+sequence, event spacing nor wall-clock duration enters the calculation. An empty
+population, all-zero counts or a single head has CV 0. Untouched active heads
+remain in the population with count 0.
+
+For example, Gates A, B, B, C, B give counts A=1, B=3, C=1. Distributed counts
+(2,2,3,2) have CV approximately 0.19245, whereas concentrated counts (1,1,9,1)
+have CV approximately 1.15470. These observations exist before any non-Origin
+Commitment; Cadence never waits for an inter-Commit interval.
 
 Depth and Cadence are independently compared with:
 
@@ -98,6 +118,34 @@ Depth and Cadence are independently compared with:
 
 When both inputs are zero the result is persistent (1). Closure is the
 average of the resulting Depth and Cadence values.
+
+The comparison remains similarity to the complementary lineage, rather than a
+new absolute concentration threshold. Matching distributions resolve positive;
+different CVs can resolve negative. When the reference CV is zero and the current
+CV is nonzero, the existing comparison resolves -1.
+
+Both components still enter the shared measurement-layer weighted mean exactly
+once. Earlier positions have their own local active-head comparisons and remain
+present as distance-attenuated ancestry; no historical population is added as a
+second set of head observations or attenuated again in Closure.
+
+## Commit participation inheritance
+
+A prospective or persisted Committal head inherits its Gate's participation
+state through incoming **Commit edges only**. Its touch count combines its own
+Phases with the Gate's Phase history, transitively across consecutive Commits.
+There is no synthetic extra touch for the proposed Commit. Both components use
+the prospective post-Commit head set, and preview performs no writes.
+
+Effective Attestations and completed Receipts remain accessible through the same
+inheritance resolver. They retain their original IDs, authors, targets and
+supersession history; no evidence rows are copied. Completed Receipts on effective
+Attestations still ground the committed state. Proposition reinforcement retains
+its non-Citation, signed-Receipt rule, including completed inherited Proposition
+Receipts. Each head's reinforcement counts each original Receipt once, and lean
+deduplicates Attestation IDs shared by multiple Commit heads. Evidence is resolved from current
+effective state; immutable Commitment snapshots preserve the observation made
+at Commitment. Variant, Revise and Reconcile do not gain Commit inheritance.
 
 ## Reinforcement and bootstrap
 
@@ -113,10 +161,11 @@ Use LocalMeasurementService::calculate() for a raw result and
 PropositionMeasurementService::recalculate() for the accumulated disposable
 projection. The additive calculator_version migration marks old projections
 as obsolete; normal measurement repair and Potential reads refresh obsolete
-projections before use. Missing/unmeasurable Potential candidates remain
-ineligible. This is version repair, not a new continuous evidence-invalidation
-policy. No persistent raw cache is introduced.
+projections before use. A new or changed Phase Gate invalidates disposable
+projections in its substrate because touches can affect either side of a
+comparison. Completion without a Gate change does not invalidate them.
+Missing/unmeasurable Potential candidates remain ineligible. No persistent raw
+cache is introduced; prospective Closure always evaluates current Phase history.
 
 Immutable commitment snapshots continue to preserve the values observed at
-commitment time. New non-bootstrap commitments record inverse-square-lineage-v1.
-Cadence still uses cycle intervals; Phase-touch Cadence is separate future work.
+commitment time. New non-bootstrap commitments record active-head-phase-touch-v2.

@@ -3,12 +3,14 @@
 namespace App\Services;
 
 use App\Models\Proposition;
-use App\Models\Receipt;
 use App\Models\Phase;
 
 final readonly class CommitmentAdmissibilityService
 {
-    public function __construct(private ClosureGateService $closure) {}
+    public function __construct(
+        private ClosureGateService $closure,
+        private PropositionStateService $state,
+    ) {}
 
     /** @return array<string, mixed> */
     public function evaluate(Proposition $gate, Phase $phase): array
@@ -28,17 +30,8 @@ final readonly class CommitmentAdmissibilityService
     /** @return array<string, mixed> */
     public function grounding(Proposition $gate): array
     {
-        $attestations = $gate->effectiveAttestations()->pluck('id');
-        $hasReceipt = Receipt::query()
-            ->whereHas('instrumentExecution', fn ($query) => $query->where('status', 'completed'))
-            ->where(function ($query) use ($gate, $attestations): void {
-                $query->whereMorphedTo('receiptable', $gate)
-                    ->orWhere(function ($query) use ($attestations): void {
-                        $query->where('receiptable_type', (new \App\Models\Attestation)->getMorphClass())
-                            ->whereIn('receiptable_id', $attestations);
-                    });
-            })
-            ->exists();
+        $attestations = $this->state->attestations(collect([$gate]));
+        $hasReceipt = $this->state->receipts($gate)->isNotEmpty();
         $hasAttestation = $attestations->isNotEmpty();
 
         return [
