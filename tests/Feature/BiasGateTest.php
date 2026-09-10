@@ -134,6 +134,30 @@ class BiasGateTest extends TestCase
         $this->assertCount(0, $bias->forPhase($this->phase));
     }
 
+    public function test_inference_keeps_bias_gate_ids_separate_from_write_instrument_and_attestation_ids(): void
+    {
+        $this->fixture();
+        $this->attest($this->gate, 'support');
+        $concord = $this->node('Existing Write Concord', 'concord');
+        $this->edge($this->gate, $concord);
+        $schema = $this->plan()['schema'];
+        $this->assertArrayHasKey('instrument.execute', $schema['$defs']['actions']);
+        $this->assertArrayHasKey('attestation.create', $schema['$defs']['actions']);
+        $transport = app(OpenAIResponseSchema::class)->fromCommons($schema);
+        $variant = $transport['properties']['contribution']['anyOf'][0];
+        $empty = array_fill_keys($variant['required'], null);
+        foreach ([$this->gate, $concord] as $target) {
+            $input = ['action' => 'proposition.bias', 'proposition_id' => $target->id];
+            $this->assertInput($schema, $input, $target->is($this->gate));
+            $this->assertInput($transport, ['contribution' => array_replace($empty, $input)], $target->is($this->gate));
+            $input = ['action' => 'instrument.execute', 'proposition_id' => $target->id,
+                'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/concord']];
+            $this->assertInput($transport, ['contribution' => array_replace($empty, $input)], $target->is($concord));
+            $input = ['action' => 'attestation.create', 'proposition_id' => $target->id, 'direction' => 'support'];
+            $this->assertInput($transport, ['contribution' => array_replace($empty, $input)], $target->is($concord));
+        }
+    }
+
     public function test_a_single_supported_gate_needs_no_sibling_or_instrument_to_progress(): void
     {
         $this->fixture();

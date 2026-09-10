@@ -350,7 +350,9 @@ source reduces that direction's contribution to the active Stance comparison
 population. The fresh Concord must earn its own support, evidence and participation
 history before Commitment. Only Commit carries history across the boundary.
 
-Schema cache version 14 retires the prior Bias contract. The UI labels the unary
+Schema cache version 14 retires the prior Bias contract. The inference transport
+keeps Bias Gate IDs separate from Instrument/Attestation Write IDs even though
+these actions use the same `proposition_id` property. The UI labels the unary
 choice **Bias**, and shows eligible sources as choices rather than privileging
 an inadmissible current Gate. Existing Write Attestation and Instrument actions
 remain available when their own target rules allow; neither is a prerequisite
