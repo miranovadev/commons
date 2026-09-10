@@ -78,6 +78,32 @@ final class OpenAIResponseSchema
             ],
         ];
 
+        // Bias and Instruments share proposition_id but have disjoint Gate/Write
+        // targets. Keep their target sets separate at the provider boundary too.
+        if (isset($actions['proposition.bias']) && count($actions) > 1) {
+            $base = $transport['properties']['contribution'];
+            $variants = [];
+            foreach ($actions as $action) {
+                foreach ($action['anyOf'] ?? [[]] as $choice) {
+                    $variant = $base;
+                    foreach ($base['properties'] as $field => $unused) {
+                        if (! isset($action['properties'][$field])) {
+                            $variant['properties'][$field] = ['type' => 'null'];
+                            continue;
+                        }
+                        $property = $this->transport($this->resolve($action['properties'][$field], $definitions));
+                        $property = array_replace($property, $choice['properties'][$field] ?? []);
+                        $variant['properties'][$field] = in_array($field, $action['required'] ?? [], true)
+                            ? $property : $this->nullable($property);
+                    }
+                    $variants[] = $variant;
+                }
+            }
+            $transport['properties']['contribution'] = ['anyOf' => $variants];
+
+            return $transport;
+        }
+
         // Preserve per-target Attestation directions at the inference boundary.
         $choices = $actions['attestation.create']['anyOf'] ?? [];
         if ($choices !== []) {

@@ -40,12 +40,14 @@ complete exhaustion of all admissible non-Rest actions exposes `participant.rest
 the same inference contract as human participants.
 
 Reclassification no longer gathers evidence implicitly. During Bias, normal
-`instrument.execute` can ground an existing reconciled Proposition, including
+`instrument.execute` can ground an existing Concord/Canon Proposition, including
 an eligible historical node. A Receipt stays on its exact Proposition across
 Cycles; later Attestation or Closure alignment may enable Commitment on a later
 revisit. Only Commit provides inherited participation/evidence state; other
 Supersessions do not transfer it. Order itself adds no new evidence-gathering
-actions.
+actions. Bias now creates fresh Concord/Canon through unary directional
+selection; that new Proposition must earn its own evidence and support. See
+[Bias Chirality Gate](participation.md#bias-chirality-gate).
 
 See [participation](participation.md#traverse-tragedy-and-rest) for local traversal,
 Tragedy and nearest-distance Rest recovery. Instrument status, failure reason

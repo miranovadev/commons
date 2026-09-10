@@ -14,7 +14,6 @@ use App\Models\Substrate;
 use App\Models\Supersession;
 use App\Services\ContributionDispatcher;
 use App\Services\InputPlanService;
-use App\Services\InstrumentExecutionService;
 use App\Services\LedgerService;
 use App\Services\OpenAIResponseSchema;
 use App\Services\ParticipantPromptFactory;
@@ -38,30 +37,23 @@ class ReconciliationTest extends TestCase
     private Proposition $parent;
     private Proposition $gate;
 
-    private function fixture(PhaseKind $kind = PhaseKind::Mediate, float $correspondence = -0.8): void
+    private function fixture(float $correspondence = -0.8): void
     {
         $this->substrate = new Substrate;
         $this->substrate->forceFill(['slug' => 'reconcile', 'title' => 'Reconcile', 'visibility' => 'public', 'configuration' => []])->save();
         $this->history = $this->newPhase($this->participant('author'), PhaseKind::Distinguish, 'activity', true);
-        $this->parent = $this->node('Parent', 'canon', tier: $kind === PhaseKind::Mediate ? 'expressive' : 'committal');
-        if ($kind === PhaseKind::Mediate) {
-            $root = $this->node('Shared provenance', 'frontier', tier: 'committal');
-            $this->edge($root, $this->parent);
-        }
-        $register = $kind === PhaseKind::Mediate ? 'activity' : 'frontier';
-        $this->gate = $this->node("  Gate statement\nwith exact whitespace.  \n", $register, $correspondence);
+        $this->parent = $this->node('Parent', 'canon');
+        $root = $this->node('Shared provenance', 'frontier', tier: 'committal');
+        $this->edge($root, $this->parent);
+        $this->gate = $this->node("  Gate statement\nwith exact whitespace.  \n", 'activity', $correspondence);
         $this->edge($this->parent, $this->gate);
         $this->viewer = $this->participant('viewer');
         $this->viewer->current_proposition_id = $this->gate->id;
         $this->viewer->save();
-        if ($kind === PhaseKind::Mediate) {
-            $disperse = $this->newPhase($this->viewer, PhaseKind::Disperse, 'activity');
-            $disperse->gate_proposition_id = $this->parent->id;
-            $disperse->save();
-            $this->phase = app(\App\Services\PhaseProgressionService::class)->advance($disperse, $this->gate);
-        } else {
-            $this->phase = $this->newPhase($this->viewer, $kind, 'canon');
-        }
+        $disperse = $this->newPhase($this->viewer, PhaseKind::Disperse, 'activity');
+        $disperse->gate_proposition_id = $this->parent->id;
+        $disperse->save();
+        $this->phase = app(\App\Services\PhaseProgressionService::class)->advance($disperse, $this->gate);
         $this->phase->gate_proposition_id = $this->gate->id;
         $this->phase->save();
         // Phase creation invalidates derived views; install this test's controlled
@@ -139,75 +131,10 @@ class ReconciliationTest extends TestCase
         $this->assertSame([$valid->id], array_column($this->plan()['gate_options'], 'id'));
     }
 
-    public function test_bias_uses_weighted_effective_lean_not_projected_chirality_sign(): void
+    public function test_reconcile_is_structural_selection_with_exact_gate_content(): void
     {
-        $this->fixture(PhaseKind::Bias);
-        $support = $this->sibling('Supported');
-        $refute = $this->sibling('Refuted');
-        $this->attest($this->gate, 'support');
-        $this->attest($support, 'support');
-        $negative = $this->attest($refute, 'refute');
-        // Bootstrap Chirality is negative for every node; raw lean is positive.
-        $this->assertSame([$support->id], array_column($this->plan()['gate_options'], 'id'));
-        $instruments = app(InstrumentExecutionService::class);
-        foreach (range(1, 4) as $i) {
-            $execution = $instruments->start($negative->phase, $refute, 'hyperlink', 'https://example.test/'.$i);
-            $instruments->complete($execution, $negative, 'unique-'.$i);
-        }
-        $this->assertSame([$refute->id], array_column($this->plan()['gate_options'], 'id'));
-        $replacement = new Attestation;
-        $later = $this->newPhase($negative->phase->cycle->participant, PhaseKind::Persist, 'frontier', true);
-        $replacement->forceFill(['phase_id' => $later->id, 'proposition_id' => $refute->id, 'direction' => 'support', 'supersedes_attestation_id' => $negative->id])->save();
-        $this->assertEqualsCanonicalizing([$support->id, $refute->id], array_column($this->plan()['gate_options'], 'id'));
-    }
-
-    public function test_bias_neutral_ties_and_hard_superseded_votes_do_not_create_a_direction(): void
-    {
-        $this->fixture(PhaseKind::Bias);
-        $support = $this->sibling('Support');
-        $refute = $this->sibling('Refute');
-        $this->attest($support, 'support');
-        $this->attest($refute, 'refute');
-        $this->assertSame([], $this->plan()['gate_options']);
-        $continuation = $this->node('Hard replacement', 'canon');
-        $this->edge($refute, $continuation, 'reclassify');
-        $this->assertSame([$support->id], array_column($this->plan()['gate_options'], 'id'));
-        $softHead = $this->node('Soft head', 'canon');
-        $this->edge($support, $softHead);
-        $this->attest($softHead, 'refute');
-        $this->assertSame([], $this->plan()['gate_options']);
-        $this->attest($this->node('Unrelated positive', 'frontier'), 'support');
-        $this->assertSame([], $this->plan()['gate_options']);
-    }
-
-    public function test_bias_evaluates_multi_parent_contexts_separately_and_deduplicates_candidates(): void
-    {
-        $this->fixture(PhaseKind::Bias);
-        $support = $this->sibling('Positive family');
-        $this->attest($support, 'support');
-        $second = $this->node('Second parent', 'canon', tier: 'committal');
-        $this->edge($second, $this->gate);
-        $refute = $this->node('Negative family', 'frontier');
-        $this->edge($second, $refute);
-        $this->attest($refute, 'refute');
-        $this->assertEqualsCanonicalizing([$support->id, $refute->id], array_column($this->plan()['gate_options'], 'id'));
-        $this->edge($second, $support);
-        // The first parent's positive direction still supplies Support once.
-        $this->assertSame([$support->id], array_column($this->plan()['gate_options'], 'id'));
-    }
-
-    public static function reconciliationPhases(): array
-    {
-        return [[PhaseKind::Mediate], [PhaseKind::Bias]];
-    }
-
-    #[DataProvider('reconciliationPhases')]
-    public function test_reconcile_is_structural_selection_with_exact_gate_content(PhaseKind $kind): void
-    {
-        $this->fixture($kind);
-        $sibling = $kind === PhaseKind::Mediate
-            ? $this->readSibling('Different Read parent', -0.5, 1)[1]
-            : $this->sibling('Different statement from B');
+        $this->fixture();
+        $sibling = $this->readSibling('Different Read parent', -0.5, 1)[1];
         $this->attest($sibling, 'support');
         $this->attest($this->gate, 'support');
         foreach ([$this->gate, $sibling] as $source) {
@@ -244,7 +171,7 @@ class ReconciliationTest extends TestCase
         $this->assertCount(0, $history->attestations(collect([$created])));
         $this->assertCount(0, $history->receipts($created));
         $this->assertSame([$created->id], $history->sourceIds($created)->all());
-        $this->assertSame(1, $history->touchCount($created)); // New Bias/Order observation only.
+        $this->assertSame(1, $history->touchCount($created)); // New Bias observation only.
         $this->assertCount(2, $history->attestations(collect([$this->gate, $sibling])));
 
         $edges = Supersession::where('target_proposition_id', $created->id)->get();
@@ -271,19 +198,6 @@ class ReconciliationTest extends TestCase
         $this->assertSame([$this->parent->id, $read->id], array_column($plan['read_options'], 'id'));
         $this->assertEqualsCanonicalizing([$crossGate->id, $first->id, $second->id], array_column($plan['gate_options'], 'id'));
         $this->assertSame(array_column($plan['gate_options'], 'id'), $plan['schema']['$defs']['actions']['proposition.reconcile']['properties']['other_proposition_id']['enum']);
-    }
-
-    public function test_bias_does_not_borrow_votes_beyond_a_committal_boundary(): void
-    {
-        $this->fixture(PhaseKind::Bias);
-        $support = $this->sibling('Support');
-        $this->attest($support, 'support');
-        $boundary = $this->node('Boundary', 'canon', tier: 'committal');
-        $this->edge($support, $boundary); // Soft connection keeps Support active.
-        $beyond = $this->node('Beyond boundary', 'frontier');
-        $this->edge($boundary, $beyond);
-        $this->attest($beyond, 'refute');
-        $this->assertSame([$support->id], array_column($this->plan()['gate_options'], 'id'));
     }
 
     public function test_dispatcher_rejects_non_sibling_without_partial_writes(): void

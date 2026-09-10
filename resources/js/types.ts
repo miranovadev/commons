@@ -119,6 +119,7 @@ export type ActionName =
   | 'proposition.commit'
   | 'proposition.reclassify'
   | 'proposition.reconcile'
+  | 'proposition.bias'
   | 'proposition.revise'
   | 'participant.rest'
   | 'proposition.traverse'

@@ -156,6 +156,7 @@ function isActionName(value?: string): value is ActionName {
     'proposition.commit',
     'proposition.reclassify',
     'proposition.reconcile',
+    'proposition.bias',
     'proposition.revise',
     'proposition.traverse',
     'participant.rest',

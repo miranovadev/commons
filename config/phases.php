@@ -71,17 +71,17 @@ return [
     ],
     6 => [
         'name' => 'bias',
-        'description' => 'Reconcile a same-parent sibling matching the lineage’s dominant aggregate lean, execute an instrument, or attest an immediate Write descendant.',
+        'description' => 'Select one active Stance/Frontier contributing to the dominant aggregate lean and hard-supersede it into fresh Concord/Canon, execute an instrument, or attest an immediate Write descendant.',
         'gate' => 'previous-phase-position',
         'actions' => [
-            'proposition.reconcile',
+            'proposition.bias',
             'instrument.execute',
             'attestation.create',
         ],
         'constraints' => [
-            'proposition.reconcile' => [
-                'same-parent-gate-sibling',
-                'dominant-active-lineage-lean',
+            'proposition.bias' => [
+                'dominant-active-stance-lean',
+                'unary-selection-fresh-history',
             ],
             'instrument.execute' => ['write-register'],
         ],

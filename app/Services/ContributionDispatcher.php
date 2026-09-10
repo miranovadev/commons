@@ -21,6 +21,7 @@ final readonly class ContributionDispatcher
         private ProjectionService $projections,
         private CommitmentSnapshotService $commitments,
         private ReconciliationOptionService $reconciliation,
+        private BiasGateService $bias,
     ) {}
 
     /**
@@ -52,6 +53,7 @@ final readonly class ContributionDispatcher
                 $gate,
                 $input,
             ),
+            'proposition.bias' => $this->bias($phase, $input),
             'attestation.create' => $this->attest(
                 $participant,
                 $phase,
@@ -149,6 +151,27 @@ final readonly class ContributionDispatcher
         }
 
         return $this->refreshMeasurement($target);
+    }
+
+    /** Unary directional selection preserves content, never accumulated history. */
+    private function bias(Phase $phase, array $input): Proposition
+    {
+        if (array_diff(array_keys($input), ['action', 'proposition_id']) !== []) {
+            throw new DomainException('Bias selects one Proposition; it accepts no statement or second source.');
+        }
+
+        return DB::transaction(function () use ($phase, $input): Proposition {
+            \App\Models\Substrate::query()->whereKey($phase->cycle->participant->substrate_id)
+                ->lockForUpdate()->firstOrFail();
+            $source = $this->bias->forPhase($phase)->firstWhere('id', $input['proposition_id'] ?? null);
+            if ($source === null) {
+                throw new DomainException('Bias requires an active Gate contributing to the dominant Stance/Frontier lean.');
+            }
+            $target = $this->write($phase, $source->statement, tier: 'expressive', preserveStatement: true);
+            $this->ledger->record($this->supersede($phase, $source, $target, 'reclassify'));
+
+            return $this->refreshMeasurement($target);
+        });
     }
 
     /** @param array<string, mixed> $input */

@@ -67,8 +67,7 @@ class PropositionHistorySemanticsTest extends TestCase
             'Revise' => ['revise', PhaseKind::Persist, 'signal', 'stance', 'expressive'],
             'Reclassify' => ['reclassify', PhaseKind::Constrain, 'stance', 'concord', 'expressive'],
             'Mediate Reconcile' => ['reconcile', PhaseKind::Mediate, 'signal', 'stance', 'expressive'],
-            // Cover the existing Bias producer without changing its dynamics in PR #1.
-            'Bias Reconcile' => ['reconcile', PhaseKind::Bias, 'stance', 'concord', 'expressive'],
+            'Bias unary hard supersession' => ['bias', PhaseKind::Bias, 'stance', 'concord', 'expressive'],
         ];
     }
 
@@ -91,6 +90,9 @@ class PropositionHistorySemanticsTest extends TestCase
             $source = $this->node('Owned prior Write', $writeRegister);
             $this->edge($gate, $source);
             $input['proposition_id'] = $source->id;
+        }
+        if ($operation === 'bias') {
+            $input = ['action' => 'proposition.bias', 'proposition_id' => $source->id];
         }
         $sources = collect([$source]);
         if ($operation === 'reconcile') {
@@ -139,12 +141,12 @@ class PropositionHistorySemanticsTest extends TestCase
         $this->assertSame($propositions + 1, Proposition::count());
         $this->assertSame('expressive', $target->tier);
         $this->assertSame($writeRegister, $target->register);
-        $this->assertSame($operation === 'reconcile' ? $gate->statement : $input['statement'], $target->statement);
+        $this->assertSame(in_array($operation, ['reconcile', 'bias'], true) ? $gate->statement : $input['statement'], $target->statement);
         $edges = Supersession::where('target_proposition_id', $target->id)->get();
         $this->assertEqualsCanonicalizing($sources->pluck('id')->all(), $edges->pluck('source_proposition_id')->all());
         $this->assertCount($sources->count(), $edges);
         foreach ($edges as $edge) {
-            $this->assertSame($operation, $edge->type);
+            $this->assertSame($operation === 'bias' ? 'reclassify' : $operation, $edge->type);
             $this->assertSame($operation === 'variant' ? SupersessionStrength::Soft : SupersessionStrength::Hard,
                 SupersessionStrength::for($edge->type));
         }
