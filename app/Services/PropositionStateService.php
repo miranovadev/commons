@@ -8,7 +8,10 @@ use App\Models\Proposition;
 use App\Models\Receipt;
 use Illuminate\Support\Collection;
 
-/** Commit inherits participation by reference; contribution identities never change. */
+/**
+ * Only Commit inherits contribution history, by reference to the original rows.
+ * Supersession strength controls topology, never history inheritance.
+ */
 final class PropositionStateService
 {
     /** @return Collection<int, string> */
@@ -27,10 +30,11 @@ final class PropositionStateService
                 if ($proposition->tier !== 'committal') {
                     continue;
                 }
-                // Prospective Commit has the same parent as the eventual persisted edge.
+                // Preview declares the same Commit source as the persisted transition.
+                // Generic structural parents must never supply contribution history.
                 $parents = ! $proposition->exists
-                    ? $proposition->parents
-                    : $proposition->parents()->wherePivot('type', 'commit')->get();
+                    ? $proposition->commitSources
+                    : $proposition->commitSources()->get();
                 $next = $next->concat($parents->filter(fn (Proposition $parent) =>
                     $parent->phase->cycle->participant->substrate_id === $substrateId));
             }

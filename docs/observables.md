@@ -145,7 +145,19 @@ its non-Citation, signed-Receipt rule, including completed inherited Proposition
 Receipts. Each head's reinforcement counts each original Receipt once, and lean
 deduplicates Attestation IDs shared by multiple Commit heads. Evidence is resolved from current
 effective state; immutable Commitment snapshots preserve the observation made
-at Commitment. Variant, Revise and Reconcile do not gain Commit inheritance.
+at Commitment.
+
+`PropositionStateService` resolves history through the explicit `commitSources`
+relationship, including the in-memory source declared by Commit preview.
+Generic `parents` describe topology only. Variant, Revise, Reclassify, Reconcile
+and every other non-Commit hard supersession start with fresh contribution
+history, regardless of whether the statement is preserved. A later Commit cannot
+reach back across one of those resets to inherit earlier history.
+
+Fresh history does not remove structural ancestry or its attenuated influence.
+It means the new Proposition has no inherited Attestations, Receipts or Phase
+touches. Opening a new Phase on it adds a new touch normally; source Phases and
+contribution records remain attached to their original Propositions.
 
 ## Reinforcement and bootstrap
 

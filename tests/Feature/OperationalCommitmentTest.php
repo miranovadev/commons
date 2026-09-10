@@ -15,6 +15,7 @@ use App\Services\InstrumentExecutionService;
 use App\Services\LedgerService;
 use App\Services\OperationalInstrumentService;
 use App\Services\ParticipationService;
+use App\Services\PropositionStateService;
 use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -96,8 +97,20 @@ class OperationalCommitmentTest extends TestCase
         $this->assertArrayNotHasKey('participant.rest', $state['plan']['schema']['$defs']['actions']);
 
         $phaseId = $state['plan']['phase']['id'];
+        $history = app(PropositionStateService::class);
+        $earnedAttestations = $history->attestations(collect([$candidate]))->pluck('id')->all();
+        $earnedReceipts = $history->receipts($candidate)->pluck('id')->all();
+        $earnedTouches = $history->touchCount($candidate);
+        $this->assertNotEmpty($earnedAttestations);
+        $this->assertNotEmpty($earnedReceipts);
+        $this->assertGreaterThan(0, $earnedTouches);
+        $contributionCounts = [Attestation::count(), \App\Models\Receipt::count(), Phase::count()];
         $this->move($this->participant, ['action' => 'proposition.commit']);
         $committed = Proposition::findOrFail($this->participant->fresh()->current_proposition_id);
+        $this->assertSame($earnedAttestations, $history->attestations(collect([$committed]))->pluck('id')->all());
+        $this->assertSame($earnedReceipts, $history->receipts($committed)->pluck('id')->all());
+        $this->assertSame($earnedTouches, $history->touchCount($committed));
+        $this->assertSame($contributionCounts, [Attestation::count(), \App\Models\Receipt::count(), Phase::count()]);
         $this->assertSame('committal', $committed->tier);
         $this->assertSame('concord', $committed->register);
         $this->assertSame($candidate->statement, $committed->statement);

@@ -124,6 +124,32 @@ explicitly excludes the Gate. Because a Proposition written during one Cycle
 becomes available when that register is encountered again, revision naturally
 occurs in a subsequent Cycle rather than revising the current Gate in place.
 
+## Proposition history
+
+**Only Commit carries contribution history forward.** Supersession edges describe
+structural ancestry and active-node/comparison behaviour. Neither a soft edge nor
+a hard edge grants history inheritance.
+
+Variant, Revise, Reclassify and Reconcile each create a new Expressive Proposition
+with fresh Attestations, Receipts and Phase-touch history. This includes the
+current non-Commit hard supersessions in Bias. Preserving a source's statement
+does not carry its accumulated support or evidence onto the new Proposition.
+Source contributions remain recorded against their original targets; they are
+neither deleted, copied nor retargeted. Instrument executions and ledger entries
+also keep their original contribution identities.
+
+A newly written Proposition has zero inherited touches. When normal progression
+opens the next Phase with that Proposition as Gate, it earns its first **new**
+touch. Its creation Phase still observes the source Gate.
+
+Commit is the historical continuation of its expressive Gate. It resolves that
+Gate's effective Attestations, completed direct/Attestation Receipts and Phase
+touches by reference, preserving Closure/Cadence continuity without copying rows.
+The same Commit-only history rule applies in preview and execution. Inheritance
+stops at every non-Commit transition: committing a revision or reconciliation
+preserves only the history earned by that new Proposition, not its predecessors'
+history. See [observables](observables.md#commit-participation-inheritance).
+
 ## Traverse, Tragedy and Rest
 
 The earlier selection action (`participant.select`, implemented on main as
