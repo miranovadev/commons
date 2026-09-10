@@ -239,7 +239,7 @@ class LocalParticipantNavigationTest extends TestCase
         $state = $this->state($participant);
         $this->assertTrue($state['plan']['tragedy']);
         $state = app(ParticipationService::class)->contribute($participant, $state['plan']['phase']['id'], ['action' => 'participant.rest']);
-        $this->assertSame(2, $state['entry']['distance']);
+        $this->assertSame(1, $state['entry']['distance']);
         app(CycleEntryService::class)->enter($participant);
         $this->assertSame($second->id, $this->state($participant)['plan']['gate']['id']);
     }
