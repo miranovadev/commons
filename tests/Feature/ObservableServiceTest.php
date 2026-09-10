@@ -97,9 +97,23 @@ class ObservableServiceTest extends TestCase
         $measurement = app(PropositionMeasurementService::class)
             ->recalculate($target);
 
-        $this->assertSame(1.0, $measurement->correspondence);
-        $this->assertSame(1.0, $measurement->chirality);
-        $this->assertSame(1.0, $measurement->closure);
+        $local = app(\App\Services\Observables\LocalMeasurementService::class);
+        $headValues = $local->calculate($target);
+        $this->assertSame(1.0, $headValues->correspondence);
+        $this->assertSame(1.0, $headValues->chirality);
+        $this->assertSame(1.0, $headValues->closure()->average());
+        // Accumulation includes the intermediate position and boundary, not the
+        // boundary's older ancestors. Raw comparisons still align exactly.
+        $middleValues = $local->calculate($next);
+        $provenanceValues = $local->calculate($boundary);
+        $mass = 1 + 1 / 4 + 1 / 9;
+        foreach (['correspondence', 'chirality'] as $component) {
+            $this->assertSame(round(($headValues->{$component} + $middleValues->{$component} / 4
+                + $provenanceValues->{$component} / 9) / $mass, 7), $measurement->{$component});
+        }
+        $depth = round(($headValues->depth + $middleValues->depth / 4 + $provenanceValues->depth / 9) / $mass, 7);
+        $cadence = round(($headValues->cadence + $middleValues->cadence / 4 + $provenanceValues->cadence / 9) / $mass, 7);
+        $this->assertSame(round(($depth + $cadence) / 2, 7), $measurement->closure);
     }
 
     public function test_closure_matches_the_documented_cadence_example(): void

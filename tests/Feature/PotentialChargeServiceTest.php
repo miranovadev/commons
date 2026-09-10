@@ -142,6 +142,7 @@ class PotentialChargeServiceTest extends TestCase
             'chirality' => $tension,
             'closure' => $tension,
             'calculated_at' => now(),
+            'calculator_version' => \App\Services\Observables\LineageMeasurementService::VERSION,
         ]);
         $measurement->save();
         $supersession = new Supersession;

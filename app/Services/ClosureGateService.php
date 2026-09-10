@@ -2,32 +2,30 @@
 
 namespace App\Services;
 
-use App\Domain\Observables\LineageComparison;
+use App\Domain\Observables\ClosureValues;
 use App\Enums\ObservableDirection;
 use App\Models\CommitmentSnapshot;
 use App\Models\Phase;
 use App\Models\Proposition;
-use App\Services\Observables\ClosureCalculator;
-use App\Services\Observables\ContextLineageComparisonService;
+use App\Services\Observables\LineageMeasurementService;
 use Illuminate\Support\Facades\DB;
 
 class ClosureGateService
 {
     public function __construct(
-        private readonly ClosureCalculator $calculator,
-        private readonly ContextLineageComparisonService $lineages,
+        private readonly LineageMeasurementService $measurements,
     ) {}
 
     /** @return array<string, mixed> */
     public function preview(Proposition $gate, Phase $phase): array
     {
-        return $this->evaluate($this->lineages->prospectiveCommit($gate, $phase), $gate);
+        return $this->evaluate($this->measurements->prospectiveCommit($gate, $phase)->closure(), $gate);
     }
 
     /** @return array<string, mixed> */
     public function forCommitment(Proposition $target): array
     {
-        return $this->evaluate($this->lineages->for($target), $target);
+        return $this->evaluate($this->measurements->calculate($target)->closure(), $target);
     }
 
     /** Most recent evaluated ancestor, including all parents of a reconciliation. */
@@ -51,11 +49,11 @@ class ClosureGateService
     }
 
     /** @return array<string, mixed> */
-    private function evaluate(LineageComparison $comparison, Proposition $position): array
+    private function evaluate(ClosureValues $closure, Proposition $position): array
     {
         $history = $this->historyFor($position);
         return [
-            ...$this->calculator->components($comparison)->resolve(
+            ...$closure->resolve(
                 $history?->depth_direction ?? ObservableDirection::Negative,
                 $history?->cadence_direction ?? ObservableDirection::Negative,
             ),

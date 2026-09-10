@@ -6,6 +6,7 @@ use App\Models\ContextHorizonMembership;
 use App\Models\Proposition;
 use App\Models\PropositionMeasurement;
 use App\Services\Observables\ObservableService;
+use App\Services\Observables\LineageMeasurementService;
 use DateTimeInterface;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
@@ -43,8 +44,8 @@ final class PropositionMeasurementService
     }
 
     /**
-     * Populate measurements that predate persisted expressive measurements.
-     * Existing projections are left untouched, and propositions outside a
+     * Populate missing or obsolete disposable measurement projections.
+     * Current-version projections are left untouched, and propositions outside a
      * Context Horizon remain deliberately unmeasured.
      *
      * @param  Collection<int, Proposition>  $propositions
@@ -54,7 +55,8 @@ final class PropositionMeasurementService
         foreach ($propositions as $proposition) {
             $proposition->loadMissing('measurement');
 
-            if ($proposition->measurement === null) {
+            if ($proposition->measurement === null
+                || $proposition->measurement->calculator_version !== LineageMeasurementService::VERSION) {
                 $this->recalculateIfMeasurable($proposition);
             }
         }
@@ -78,6 +80,7 @@ final class PropositionMeasurementService
                 'chirality' => $chirality,
                 'closure' => $closure,
                 'calculated_at' => $calculatedAt ?? now(),
+                'calculator_version' => LineageMeasurementService::VERSION,
             ]],
             ['proposition_id'],
             [
@@ -85,6 +88,7 @@ final class PropositionMeasurementService
                 'chirality',
                 'closure',
                 'calculated_at',
+                'calculator_version',
             ],
         );
 

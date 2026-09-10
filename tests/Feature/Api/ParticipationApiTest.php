@@ -188,7 +188,7 @@ class ParticipationApiTest extends TestCase
         $this->postJson($endpoint.'/enter', [])->assertConflict();
     }
 
-    public function test_ready_state_includes_the_plan_and_attenuation_seam(): void
+    public function test_ready_state_describes_substrate_measurement_attenuation(): void
     {
         [$substrate, $participant] = $this->participant();
         $this->activePhase($participant);
@@ -198,6 +198,9 @@ class ParticipationApiTest extends TestCase
             ->assertJsonPath('data.status', 'ready')
             ->assertJsonPath('data.cycle.sequence', 1)
             ->assertJsonPath('data.plan.phase.kind', 'distinguish')
+            ->assertJsonPath('data.perspective.attenuation.formula', '1 / (1 + structural_distance)^2')
+            ->assertJsonPath('data.perspective.attenuation.scope', 'substrate')
+            ->assertJsonPath('data.perspective.attenuation.applied_at', 'measurement-lineage')
             ->assertJsonPath(
                 'data.perspective.attenuation.status',
                 'active',

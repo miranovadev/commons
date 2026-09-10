@@ -165,6 +165,7 @@ class RevisionAdmissibilityTest extends TestCase
             'statement' => 'The current Gate.',
         ]);
         $gate->save();
+        app(\App\Services\LedgerService::class)->record($gate);
         $phase->gate_proposition_id = $gate->getKey();
         $phase->save();
 
@@ -213,6 +214,7 @@ class RevisionAdmissibilityTest extends TestCase
             'statement' => $statement,
         ]);
         $proposition->save();
+        app(\App\Services\LedgerService::class)->record($proposition);
 
         return $proposition;
     }
