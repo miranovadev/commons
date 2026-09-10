@@ -154,7 +154,7 @@ class LineageAttenuationTest extends TestCase
             'direction_before' => 'emergence', 'direction_after' => 'emergence',
             'calculator_version' => 'historical-fixture', 'evaluated_at' => now(),
         ])->save();
-        $history = $snapshot->getAttributes();
+        $history = $snapshot->fresh()->getAttributes();
         $this->rawValues([$source->id => 0.8]);
         $values = app(PropositionMeasurementService::class)->recalculate($continuation);
         // (0 + .8/4) / (1 + 1/4) = .16; observer is beyond provenance.
