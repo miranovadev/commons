@@ -28,6 +28,10 @@ final class PropositionOptionService
     /** An effective personal Attestation establishes the forward traversal path. */
     public function traversalOptionsFor(Phase $phase): Collection
     {
+        if ($phase->kind->value > PhaseKind::Constrain->value) {
+            return collect();
+        }
+
         return $this->writeDescendants($phase)
             ->whereHas('effectiveAttestations.phase.cycle', fn ($query) => $query
                 ->whereBelongsTo($phase->cycle->participant))

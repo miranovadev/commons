@@ -32,9 +32,9 @@ contribution or advancing the Phase.
 ## Observing and recovering blocked Order
 
 An inadmissible Commit retains `commitment_preconditions_unsatisfied` and
-`plan.commitment` diagnostics, but the plan stays actionable. Deliberate
-`proposition.traverse` can choose another eligible local Expressive Proposition;
-only complete exhaustion of all admissible non-Rest actions exposes `participant.rest` as the sole action. Automated participants choose through
+`plan.commitment` diagnostics, but the plan stays actionable through any
+remaining Order actions. Order does not admit `proposition.traverse`; only
+complete exhaustion of all admissible non-Rest actions exposes `participant.rest` as the sole action. Automated participants choose through
 the same inference contract as human participants.
 
 Reclassification no longer gathers evidence implicitly. During Bias, normal

@@ -141,19 +141,20 @@ alias: no persisted action contract requires one. The old automatic
 }
 ```
 
-Traverse explicitly chooses an existing local **Expressive Proposition** in
+Traverse is available only during Distinguish, Persist and Constrain. It
+explicitly chooses an existing local **Expressive Proposition** in
 the current Write register. Targets are immediate valid descendants of the Gate in the
 existing supersession graph, including historical superseded Propositions, and
 require the viewing Participant's effective Attestation. Another Participant's
 Attestation does not establish this path.
 The current Gate and positions already visited as Gates in this Cycle are
 excluded; later Cycles may revisit them. Traversal creates no Proposition,
-Supersession or evidence, never selects globally, and may coexist with
-creation, Attestation, Instruments and Commitment. It advances the Phase as
-selection did. At Order it opens another Order occurrence, preserving the
-Cycle until Commit or Rest. Each occurrence has a fresh phase concurrency token.
+Supersession or evidence and never selects globally. It advances the Phase as
+selection did. Disperse, Mediate, Bias and Order do not admit Traverse: those
+phases perform dispersal, reconciliation, orientation/grounding and Closure
+resolution respectively.
 
-Every immediate valid Write descendant exposes two direction slots in all phases:
+In phases 1–3, every immediate valid Write descendant exposes two direction slots:
 
 | Effective personal Attestation | Refute side | Support side |
 | --- | --- | --- |
@@ -164,7 +165,9 @@ Every immediate valid Write descendant exposes two direction slots in all phases
 The specialized `attestation.create.anyOf` branches bind each direction to its
 permitted Proposition IDs. Same-direction re-attestation is unavailable; the
 opposite direction uses the existing Attestation supersession mechanism.
-The card footer, form and inference schema use these same choices. Traverse
+The card footer, form and inference schema use these same choices. In phases
+4–7 an effective Attestation does not create a Traverse affordance; the
+opposite Attestation direction remains available. Traverse
 creates neither a Proposition nor a Supersession and advances through the
 existing personal path. Reconciliation counterparts belong to Gate, as described below.
 
@@ -183,7 +186,7 @@ as the sole action. Otherwise `tragedy` is false and Rest is absent from both
 the schema and UI. Human controls and autonomous inference receive the same result.
 
 Rest is never a participant preference or a competing action. An available
-Variant, Reclassify, Revise, Attestation, Traverse, Reconcile, Instrument or Commit
+Variant, Reclassify, Revise, Attestation, phase-admissible Traverse, Reconcile, Instrument or Commit
 prevents Tragedy. In particular, Distinguish, Persist and Disperse cannot be
 Tragic while their unconditional Variant action remains admissible. An empty
 traversal set alone says nothing about complete action exhaustion.

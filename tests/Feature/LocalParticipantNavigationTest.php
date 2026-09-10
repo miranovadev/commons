@@ -234,12 +234,12 @@ class LocalParticipantNavigationTest extends TestCase
         // Exercise recovery from an exhausted Order, not Persist (which has Variant).
         $order = Phase::findOrFail($state['plan']['phase']['id']);
         $order->forceFill(['kind' => PhaseKind::Order, 'write_register' => 'canon'])->save();
-        $state = app(ParticipationService::class)->contribute($participant, $state['plan']['phase']['id'], [
-            'action' => 'proposition.traverse', 'proposition_id' => $target->id,
-        ]);
+        $visited = $order->replicate();
+        $visited->forceFill(['gate_proposition_id' => $target->id, 'completed_at' => now()])->save();
+        $state = $this->state($participant);
         $this->assertTrue($state['plan']['tragedy']);
         $state = app(ParticipationService::class)->contribute($participant, $state['plan']['phase']['id'], ['action' => 'participant.rest']);
-        $this->assertSame(2, $state['entry']['distance']);
+        $this->assertSame(1, $state['entry']['distance']);
         app(CycleEntryService::class)->enter($participant);
         $this->assertSame($second->id, $this->state($participant)['plan']['gate']['id']);
     }
@@ -253,7 +253,7 @@ class LocalParticipantNavigationTest extends TestCase
         $this->assertNull(app(PotentialChargeService::class)->recoverFrom($position));
     }
 
-    public function test_order_traverses_attested_descendants_then_rests_without_weakening_commit(): void
+    public function test_order_keeps_attestation_but_rejects_traverse_without_weakening_commit(): void
     {
         $parent = $this->node('Forward descendant', 0.0, 'expressive');
         $gate = $this->node('Current', 0.0, 'expressive');
@@ -271,16 +271,19 @@ class LocalParticipantNavigationTest extends TestCase
         $this->assertFalse($state['plan']['tragedy']);
         $this->assertFalse($state['plan']['commitment']['admissible']);
         $this->assertSame('commitment_preconditions_unsatisfied', $state['reason']['code']);
-        $state = app(ParticipationService::class)->contribute($participant, $phase->id, [
-            'action' => 'proposition.traverse', 'proposition_id' => $parent->id,
-        ]);
-        $this->assertSame('order', $state['plan']['phase']['kind']);
-        $this->assertTrue($state['plan']['tragedy'], 'Already visited Gate cannot create an Order loop.');
+        $actions = $state['plan']['schema']['$defs']['actions'];
+        $this->assertArrayHasKey('attestation.create', $actions);
+        $this->assertArrayNotHasKey('proposition.traverse', $actions);
+        $this->assertSame([], $state['plan']['traversal_options']);
+        try {
+            app(ParticipationService::class)->contribute($participant, $phase->id, [
+                'action' => 'proposition.traverse', 'proposition_id' => $parent->id,
+            ]);
+            $this->fail('Order must reject explicit traversal.');
+        } catch (\InvalidArgumentException) {
+            $this->assertSame($gate->id, $participant->fresh()->current_proposition_id);
+        }
         $this->assertNull($phase->cycle->fresh()->completed_at);
-        app(ParticipationService::class)->contribute($participant, $state['plan']['phase']['id'], ['action' => 'participant.rest']);
-        $this->assertNotNull($phase->cycle->fresh()->rested_at);
-        $this->expectException(ConflictHttpException::class);
-        app(ParticipationService::class)->contribute($participant, $phase->id, ['action' => 'participant.rest']);
     }
 
     public function test_automated_wakes_ask_inference_to_choose_traversal(): void
