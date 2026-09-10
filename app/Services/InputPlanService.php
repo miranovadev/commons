@@ -124,7 +124,7 @@ final readonly class InputPlanService
                     'effectiveAttestations' => $this->attestationsFor(
                         $participant
                     ),
-                    'phase.cycle.participant:id,callsign',
+                    'phase.cycle.participant:id,callsign,substrate_id',
                 ])
                 ->whereIn('register', $registers)
                 ->latest('propositions.created_at')
@@ -147,9 +147,10 @@ final readonly class InputPlanService
             'parents',
             'instrumentExecutions.receipt',
             'effectiveAttestations' => $this->attestationsFor($participant),
-            'phase.cycle.participant:id,callsign',
+            'phase.cycle.participant:id,callsign,substrate_id',
         ]);
         $this->measurements->repairMissing(collect([$provenance]));
+        $this->state->loadAttestationCounts($propositions->concat([$provenance]));
 
         return [
             'domain' => $domain->value,
