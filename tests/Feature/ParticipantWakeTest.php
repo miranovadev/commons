@@ -321,6 +321,7 @@ class ParticipantWakeTest extends TestCase
             'statement' => 'The current Gate.',
         ]);
         $gate->save();
+        app(\App\Services\LedgerService::class)->record($gate);
         $phase->forceFill(['gate_proposition_id' => $gate->getKey()])->save();
 
         return [

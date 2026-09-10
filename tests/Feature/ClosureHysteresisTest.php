@@ -50,8 +50,10 @@ class ClosureHysteresisTest extends TestCase
         $preview = app(ClosureGateService::class)->preview($gate, $phase);
         $state = app(ParticipationService::class)->stateFor($this->participant);
         $this->assertSame($counts, $this->counts());
-        $this->assertSame(1.0, $preview['depth']);
-        $this->assertSame(1.0, $preview['cadence']);
+        // Raw candidate/gate/provenance: Depth (1, 0, -1), Cadence (1, 1, -1).
+        $mass = 1 + 1 / 4 + 1 / 9;
+        $this->assertSame(round((1 - 1 / 9) / $mass, 7), $preview['depth']);
+        $this->assertSame(round((1 + 1 / 4 - 1 / 9) / $mass, 7), $preview['cadence']);
         $this->assertSame('ready', $state['status']);
         $this->assertTrue($state['plan']['commitment']['closure_enforced']);
 
@@ -77,7 +79,9 @@ class ClosureHysteresisTest extends TestCase
         [$phase, $gate] = $this->candidate([2, 3, 6]);
         $preview = app(ClosureGateService::class)->preview($gate, $phase);
         $this->assertLessThan(0, $preview['depth']);
-        $this->assertSame(-1.0, $preview['cadence']);
+        // Raw cycle-interval Cadence at candidate, three gates, provenance.
+        $this->assertSame(round((-1 - 1 / 4 + 1 / 9 + 1 / 16 - 1 / 25)
+            / (1 + 1 / 4 + 1 / 9 + 1 / 16 + 1 / 25), 7), $preview['cadence']);
         $this->assertTrue($preview['admissible']);
         $state = app(ParticipationService::class)->contribute($this->participant, $phase->id, ['action' => 'proposition.commit']);
         $this->assertFalse($state['last_commitment']['closure_boundary']);
@@ -91,6 +95,7 @@ class ClosureHysteresisTest extends TestCase
     public function test_zero_depth_retains_negative_history_and_blocks_a_positive_cadence(): void
     {
         $this->bootstrap(1);
+        $this->zeroDepthLocalValues();
         [$phase, $gate] = $this->candidate([2]);
         $counts = $this->counts();
         $state = app(ParticipationService::class)->stateFor($this->participant);
@@ -117,6 +122,7 @@ class ClosureHysteresisTest extends TestCase
     public function test_unrelated_newer_snapshot_does_not_supply_lineage_history(): void
     {
         $this->bootstrap(1);
+        $this->zeroDepthLocalValues();
         [$phase, $gate] = $this->candidate([2]);
         $sibling = $this->node($phase, 'committal', 'concord');
         $snapshot = new CommitmentSnapshot;
@@ -175,6 +181,15 @@ class ClosureHysteresisTest extends TestCase
         $this->assertSame('negative-default', $preview['history_source']);
         $this->assertNull($preview['history_proposition_id']);
         $this->assertSame($before, $snapshot->fresh()->getAttributes());
+    }
+
+    private function zeroDepthLocalValues(): void
+    {
+        // Exercise the zero-direction hysteresis rule independently of the
+        // cycle-depth fixture, whose aggregate is no longer exactly zero.
+        $this->mock(\App\Services\Observables\LocalMeasurementService::class, function ($mock): void {
+            $mock->shouldReceive('calculate')->andReturn(new \App\Domain\Observables\LocalMeasurements(0, 0, 0, 1));
+        });
     }
 
     private function bootstrap(int $depth): void
