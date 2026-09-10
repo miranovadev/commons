@@ -100,6 +100,21 @@ class ClosureHysteresisTest extends TestCase
         $this->assertSame($preview['cadence'], $snapshot->cadence);
     }
 
+    public function test_single_origin_settlement_has_positive_components_before_its_first_non_origin_commit(): void
+    {
+        $this->bootstrap(1);
+        [$phase, $gate] = $this->candidate([2]);
+        $this->assertSame(1, CommitmentSnapshot::count());
+        $this->assertSame(ContextDomain::Settlement, ContextHorizon::whereNull('closed_at')->firstOrFail()->domain);
+        $preview = app(ClosureGateService::class)->preview($gate, $phase);
+        $mass = 1 + 1 / 4 + 1 / 9;
+        // Raw Depth (0,1,-1), Cadence (1,1,-1), with exactly one attenuation pass.
+        $this->assertSame(round((1 / 4 - 1 / 9) / $mass, 7), $preview['depth']);
+        $this->assertSame(round((1 + 1 / 4 - 1 / 9) / $mass, 7), $preview['cadence']);
+        $this->assertTrue($preview['admissible']);
+        $this->assertSame(1, CommitmentSnapshot::count());
+    }
+
     public function test_emergence_can_develop_negative_prospective_components_after_a_settlement_boundary(): void
     {
         $this->bootstrap(2);
@@ -107,7 +122,7 @@ class ClosureHysteresisTest extends TestCase
         $entered = app(ParticipationService::class)->contribute($this->participant, $phase->id, ['action' => 'proposition.commit']);
         $this->assertSame('emergence', $entered['domain']);
         $this->origin = Proposition::findOrFail($entered['current_proposition_id']);
-        [$phase, $gate] = $this->candidate(range(3, 12), 'canon', 'activity');
+        [$phase, $gate] = $this->candidate(range(3, 12), 'canon', 'activity', 'refute');
         for ($i = 0; $i < 9; $i++) {
             $touch = new Phase;
             $touch->forceFill(['cycle_id' => $phase->cycle_id, 'kind' => PhaseKind::Persist,
@@ -122,6 +137,8 @@ class ClosureHysteresisTest extends TestCase
         $snapshot = CommitmentSnapshot::findOrFail($state['current_proposition_id']);
         $this->assertSame($preview['depth'], $snapshot->depth);
         $this->assertSame($preview['cadence'], $snapshot->cadence);
+        $this->assertSame('settlement', $state['domain']);
+        $this->assertTrue($state['last_commitment']['closure_boundary']);
     }
 
     public function test_zero_depth_retains_negative_history_and_blocks_a_positive_cadence(): void
@@ -244,7 +261,7 @@ class ClosureHysteresisTest extends TestCase
     }
 
     /** @param list<int> $cycles @return array{Phase, Proposition} */
-    private function candidate(array $cycles, string $writeRegister = 'concord', string $gateRegister = 'signal'): array
+    private function candidate(array $cycles, string $writeRegister = 'concord', string $gateRegister = 'signal', string $direction = 'support'): array
     {
         $previous = $this->origin;
         foreach ($cycles as $sequence) {
@@ -259,7 +276,7 @@ class ClosureHysteresisTest extends TestCase
             $previous = $gate;
         }
         $attestation = new Attestation;
-        $attestation->forceFill(['phase_id' => $phase->id, 'proposition_id' => $gate->id, 'direction' => 'support'])->save();
+        $attestation->forceFill(['phase_id' => $phase->id, 'proposition_id' => $gate->id, 'direction' => $direction])->save();
         app(LedgerService::class)->record($attestation);
         app(OperationalInstrumentService::class)->execute($phase, $gate, ['kind' => 'hyperlink', 'reference' => 'https://example.test/evidence']);
         $this->participant->current_proposition_id = $gate->id;
