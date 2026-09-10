@@ -50,7 +50,8 @@ class ClosureHysteresisTest extends TestCase
         $preview = app(ClosureGateService::class)->preview($gate, $phase);
         $state = app(ParticipationService::class)->stateFor($this->participant);
         $this->assertSame($counts, $this->counts());
-        // Raw candidate/gate/provenance: Depth (1, 0, -1), Cadence (1, 1, -1).
+        // Candidate/Gate/provenance raw Depth (1, 0, -1). The unsigned
+        // grounding Receipt is inherited without adding reinforcement.
         $mass = 1 + 1 / 4 + 1 / 9;
         $this->assertSame(round((1 - 1 / 9) / $mass, 7), $preview['depth']);
         $this->assertSame(round((1 + 1 / 4 - 1 / 9) / $mass, 7), $preview['cadence']);
@@ -77,9 +78,16 @@ class ClosureHysteresisTest extends TestCase
     {
         $this->bootstrap(1);
         [$phase, $gate] = $this->candidate([2, 3, 6]);
+        for ($i = 0; $i < 8; $i++) {
+            $touch = new Phase;
+            $touch->forceFill(['cycle_id' => $phase->cycle_id, 'kind' => PhaseKind::Persist,
+                'write_register' => 'stance', 'gate_proposition_id' => $gate->id,
+                'started_at' => now(), 'completed_at' => now()])->save();
+        }
         $preview = app(ClosureGateService::class)->preview($gate, $phase);
         $this->assertLessThan(0, $preview['depth']);
-        // Raw cycle-interval Cadence at candidate, three gates, provenance.
+        // Concentrated touches (1,1,9), inherited by the candidate, compared
+        // with provenance CV=0. Earlier two-head views remain distributed.
         $this->assertSame(round((-1 - 1 / 4 + 1 / 9 + 1 / 16 - 1 / 25)
             / (1 + 1 / 4 + 1 / 9 + 1 / 16 + 1 / 25), 7), $preview['cadence']);
         $this->assertTrue($preview['admissible']);
@@ -90,6 +98,47 @@ class ClosureHysteresisTest extends TestCase
         $snapshot = CommitmentSnapshot::findOrFail($state['current_proposition_id']);
         $this->assertSame($preview['depth'], $snapshot->depth);
         $this->assertSame($preview['cadence'], $snapshot->cadence);
+    }
+
+    public function test_single_origin_settlement_has_positive_components_before_its_first_non_origin_commit(): void
+    {
+        $this->bootstrap(1);
+        [$phase, $gate] = $this->candidate([2]);
+        $this->assertSame(1, CommitmentSnapshot::count());
+        $this->assertSame(ContextDomain::Settlement, ContextHorizon::whereNull('closed_at')->firstOrFail()->domain);
+        $preview = app(ClosureGateService::class)->preview($gate, $phase);
+        $mass = 1 + 1 / 4 + 1 / 9;
+        // Raw Depth (0,1,-1), Cadence (1,1,-1), with exactly one attenuation pass.
+        $this->assertSame(round((1 / 4 - 1 / 9) / $mass, 7), $preview['depth']);
+        $this->assertSame(round((1 + 1 / 4 - 1 / 9) / $mass, 7), $preview['cadence']);
+        $this->assertTrue($preview['admissible']);
+        $this->assertSame(1, CommitmentSnapshot::count());
+    }
+
+    public function test_emergence_can_develop_negative_prospective_components_after_a_settlement_boundary(): void
+    {
+        $this->bootstrap(2);
+        [$phase] = $this->candidate([2]);
+        $entered = app(ParticipationService::class)->contribute($this->participant, $phase->id, ['action' => 'proposition.commit']);
+        $this->assertSame('emergence', $entered['domain']);
+        $this->origin = Proposition::findOrFail($entered['current_proposition_id']);
+        [$phase, $gate] = $this->candidate(range(3, 12), 'canon', 'activity', 'refute');
+        for ($i = 0; $i < 9; $i++) {
+            $touch = new Phase;
+            $touch->forceFill(['cycle_id' => $phase->cycle_id, 'kind' => PhaseKind::Persist,
+                'write_register' => 'frontier', 'gate_proposition_id' => $gate->id,
+                'started_at' => now(), 'completed_at' => now()])->save();
+        }
+        $preview = app(ClosureGateService::class)->preview($gate, $phase);
+        $this->assertLessThan(0, $preview['depth']);
+        $this->assertLessThan(0, $preview['cadence']);
+        $this->assertTrue($preview['admissible']);
+        $state = app(ParticipationService::class)->contribute($this->participant, $phase->id, ['action' => 'proposition.commit']);
+        $snapshot = CommitmentSnapshot::findOrFail($state['current_proposition_id']);
+        $this->assertSame($preview['depth'], $snapshot->depth);
+        $this->assertSame($preview['cadence'], $snapshot->cadence);
+        $this->assertSame('settlement', $state['domain']);
+        $this->assertTrue($state['last_commitment']['closure_boundary']);
     }
 
     public function test_zero_depth_retains_negative_history_and_blocks_a_positive_cadence(): void
@@ -212,12 +261,12 @@ class ClosureHysteresisTest extends TestCase
     }
 
     /** @param list<int> $cycles @return array{Phase, Proposition} */
-    private function candidate(array $cycles): array
+    private function candidate(array $cycles, string $writeRegister = 'concord', string $gateRegister = 'signal', string $direction = 'support'): array
     {
         $previous = $this->origin;
         foreach ($cycles as $sequence) {
-            $phase = $this->phase($sequence, 'concord');
-            $gate = $this->node($phase, 'expressive', 'signal');
+            $phase = $this->phase($sequence, $writeRegister);
+            $gate = $this->node($phase, 'expressive', $gateRegister);
             $this->edge($phase, $previous, $gate, 'variant');
             $phase->gate_proposition_id = $gate->id;
             $phase->save();
@@ -227,7 +276,7 @@ class ClosureHysteresisTest extends TestCase
             $previous = $gate;
         }
         $attestation = new Attestation;
-        $attestation->forceFill(['phase_id' => $phase->id, 'proposition_id' => $gate->id, 'direction' => 'support'])->save();
+        $attestation->forceFill(['phase_id' => $phase->id, 'proposition_id' => $gate->id, 'direction' => $direction])->save();
         app(LedgerService::class)->record($attestation);
         app(OperationalInstrumentService::class)->execute($phase, $gate, ['kind' => 'hyperlink', 'reference' => 'https://example.test/evidence']);
         $this->participant->current_proposition_id = $gate->id;

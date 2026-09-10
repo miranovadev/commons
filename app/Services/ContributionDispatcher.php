@@ -220,6 +220,7 @@ final readonly class ContributionDispatcher
                 $phase,
                 $gate->statement,
                 tier: 'committal',
+                preserveStatement: true,
             );
             $supersession = $this->supersede(
                 $phase,

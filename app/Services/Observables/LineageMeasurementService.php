@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\DB;
 
 final readonly class LineageMeasurementService
 {
-    public const string VERSION = 'inverse-square-lineage-v1';
+    public const string VERSION = 'active-head-phase-touch-v2';
 
     public function __construct(
         private LocalMeasurementService $local,
