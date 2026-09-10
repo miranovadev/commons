@@ -91,7 +91,7 @@ class ReconciliationTest extends TestCase
             [$local->id, ($direction > 0 ? $positiveGate : $negativeGate)->id], array_column($plan['gate_options'], 'id'));
     }
 
-    public function test_only_same_parent_active_siblings_in_gate_context_are_candidates(): void
+    public function test_mediate_gate_options_are_active_immediate_children_of_exposed_reads(): void
     {
         $this->fixture();
         $valid = $this->sibling('Valid');

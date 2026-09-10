@@ -47,7 +47,7 @@ final readonly class MediationReadService
             ->where('substrate_id', $phase->cycle->participant->substrate_id))->pluck('propositions.id');
         $siblings = $this->inContext($phase, $anchor)
             ->where('register', $anchor->register)->whereKeyNot($anchor->id)
-            ->whereHas('parents', fn ($query) => $query->whereIn('propositions.id', $parentIds))
+            ->whereHas('parents', fn ($query) => $query->whereKey($parentIds))
             ->whereDoesntHave('children', fn ($query) => $query->where('supersessions.type', '!=', 'variant'))
             ->orderBy('id')->get();
         $this->measurements->repairMissing($siblings);
@@ -67,7 +67,7 @@ final readonly class MediationReadService
 
         return $this->inContext($phase, $gate)
             ->where('tier', 'expressive')->where('register', $gate->register)
-            ->whereHas('parents', fn ($query) => $query->whereIn('propositions.id', $reads->pluck('id')))
+            ->whereHas('parents', fn ($query) => $query->whereKey($reads->pluck('id')))
             ->whereDoesntHave('children', fn ($query) => $query->where('supersessions.type', '!=', 'variant'))
             ->orderBy('id')->get();
     }
