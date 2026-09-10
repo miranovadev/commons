@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Domain\Observables\LocalMeasurements;
 use App\Enums\PhaseKind;
 use App\Models\Cycle;
+use App\Models\CommitmentSnapshot;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
@@ -14,6 +15,7 @@ use App\Services\LedgerService;
 use App\Services\Observables\LineageMeasurementService;
 use App\Services\Observables\LocalMeasurementService;
 use App\Services\PropositionMeasurementService;
+use App\Services\PotentialChargeService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -133,6 +135,37 @@ class LineageAttenuationTest extends TestCase
         $service->repairMissing(collect([$node]));
         $this->assertSame(-1.0, $node->measurement->chirality);
         $this->assertSame(LineageMeasurementService::VERSION, $node->measurement->calculator_version);
+    }
+
+    public function test_potential_consumes_accumulated_measurements_without_a_second_distance_discount(): void
+    {
+        $source = $this->node('source', 'committal');
+        $continuation = $this->node('continuation');
+        $observer = $this->node('observer');
+        $this->edge($source, $continuation);
+        $this->edge($observer, $source);
+        $snapshot = new CommitmentSnapshot;
+        $snapshot->forceFill([
+            'proposition_id' => $source->id,
+            'substrate_id' => $this->phase->cycle->participant->substrate_id,
+            'ledger_entry_id' => $source->ledgerEntry->id,
+            'correspondence' => 0.8, 'chirality' => 0.8, 'closure' => 0.8,
+            'prominence' => 0.9, 'turbulence' => 0.1, 'tension' => 0.8,
+            'direction_before' => 'emergence', 'direction_after' => 'emergence',
+            'calculator_version' => 'historical-fixture', 'evaluated_at' => now(),
+        ])->save();
+        $history = $snapshot->getAttributes();
+        $this->rawValues([$source->id => 0.8]);
+        $values = app(PropositionMeasurementService::class)->recalculate($continuation);
+        // (0 + .8/4) / (1 + 1/4) = .16; observer is beyond provenance.
+        $this->assertSame(0.16, $values->chirality);
+        $potential = app(PotentialChargeService::class);
+        $entry = $potential->selectFor($this->phase->cycle->participant->substrate);
+        $recovery = $potential->recoverFrom($observer);
+        $this->assertSame(0.64, $entry['potential_charge']);
+        $this->assertSame(0.64, $recovery['potential_charge']);
+        $this->assertSame(1, $recovery['distance']);
+        $this->assertSame($history, $snapshot->fresh()->getAttributes());
     }
 
     private function rawValues(array $values): void
