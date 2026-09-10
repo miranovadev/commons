@@ -29,6 +29,7 @@ class LocalParticipantNavigationTest extends TestCase
     private Substrate $substrate;
     private Participant $author;
     private Phase $authorPhase;
+    private array $fixtureTensions = [];
 
     protected function setUp(): void
     {
@@ -174,7 +175,7 @@ class LocalParticipantNavigationTest extends TestCase
         app(CycleEntryService::class)->enter($participant);
     }
 
-    public function test_recovery_uses_nearest_viable_distance_before_attenuated_ranking(): void
+    public function test_recovery_uses_nearest_viable_distance_without_discounting_measurements_again(): void
     {
         $position = $this->node('Observer', 0.0);
         $low = $this->region('Near low', 0.03);
@@ -187,19 +188,20 @@ class LocalParticipantNavigationTest extends TestCase
         $this->edge($bridge, $far);
         $participant = $this->participant('observer', $position);
         $phase = $this->phase($participant, $position);
+        $this->refreshFixtureMeasurements();
         $selection = app(PotentialChargeService::class)->recoverFrom($position);
         $this->assertSame($near->id, $selection['proposition']->id);
         $this->assertSame(1, $selection['distance']);
-        $this->assertEqualsWithDelta(0.02, $selection['potential_charge'], 0.0000001);
+        $this->assertEqualsWithDelta(0.06, $selection['potential_charge'], 0.0000001);
         app(ParticipationService::class)->contribute($participant, $phase->id, ['action' => 'participant.rest']);
         app(CycleEntryService::class)->enter($participant);
         $this->assertSame($near->id, $this->state($participant)['plan']['gate']['id']);
     }
 
-    public function test_equal_distance_ranking_uses_attenuated_continuation_distance_and_id_ties(): void
+    public function test_equal_distance_ranking_uses_upstream_potential_and_id_ties(): void
     {
         $position = $this->node('Observer', 0.0);
-        $near = $this->region('Short continuation', 0.6);
+        $near = $this->region('Short continuation', 0.7);
         $long = $this->node('Long continuation', 0.7);
         $middle = $this->node('Middle', 0.7, 'expressive');
         $end = $this->node('End', 0.0, 'expressive');
@@ -208,7 +210,7 @@ class LocalParticipantNavigationTest extends TestCase
         $this->edge($long, $middle);
         $this->edge($middle, $end);
         $this->assertSame($near->id, app(PotentialChargeService::class)->recoverFrom($position)['proposition']->id);
-        $tie = $this->region('Equal short continuation', 0.6);
+        $tie = $this->region('Equal short continuation', 0.7);
         $this->edge($tie, $position);
         $this->edge($long, $position); // A graph cycle must terminate.
         $this->assertSame(min($near->id, $tie->id), app(PotentialChargeService::class)->recoverFrom($position)['proposition']->id);
@@ -227,6 +229,7 @@ class LocalParticipantNavigationTest extends TestCase
         $target->save();
         $this->establishPath($participant, $target);
         $phase = $this->phase($participant, $position);
+        $this->refreshFixtureMeasurements();
         app(ParticipationService::class)->contribute($participant, $phase->id, ['action' => 'participant.rest']);
         app(CycleEntryService::class)->enter($participant);
         $state = $this->state($participant);
@@ -236,6 +239,7 @@ class LocalParticipantNavigationTest extends TestCase
         $order->forceFill(['kind' => PhaseKind::Order, 'write_register' => 'canon'])->save();
         $visited = $order->replicate();
         $visited->forceFill(['gate_proposition_id' => $target->id, 'completed_at' => now()])->save();
+        $this->refreshFixtureMeasurements();
         $state = $this->state($participant);
         $this->assertTrue($state['plan']['tragedy']);
         $state = app(ParticipationService::class)->contribute($participant, $state['plan']['phase']['id'], ['action' => 'participant.rest']);
@@ -399,6 +403,7 @@ class LocalParticipantNavigationTest extends TestCase
             'register' => $tier === 'committal' ? 'canon' : 'activity', 'tier' => $tier,
         ])->save();
         $entry = app(LedgerService::class)->record($node);
+        $this->fixtureTensions[$node->id] = $tension;
         app(PropositionMeasurementService::class)->project($node, $tension, $tension, $tension);
         if ($tier === 'committal') {
             $snapshot = new CommitmentSnapshot;
@@ -414,6 +419,14 @@ class LocalParticipantNavigationTest extends TestCase
         }
 
         return $node;
+    }
+
+    /** Navigation rankings use controlled upstream values, refreshed after Phase observations. */
+    private function refreshFixtureMeasurements(): void
+    {
+        foreach ($this->fixtureTensions as $id => $tension) {
+            app(PropositionMeasurementService::class)->project(Proposition::findOrFail($id), $tension, $tension, $tension);
+        }
     }
 
     private function edge(Proposition $source, Proposition $target): void

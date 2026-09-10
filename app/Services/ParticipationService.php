@@ -288,8 +288,8 @@ final readonly class ParticipationService
     }
 
     /**
-     * Attenuation belongs at this boundary because it limits what the
-     * Participant can perceive, without changing the substrate itself.
+     * Read limits are participant-specific. Attenuation metadata describes the
+     * substrate's measurement geometry; this boundary applies no extra discount.
      *
      * @return array<string, mixed>
      */
@@ -302,7 +302,9 @@ final readonly class ParticipationService
                 'status' => 'active',
                 'value' => 1.0,
                 'distance' => 0,
-                'formula' => '1 / (1 + structural_distance)',
+                'formula' => '1 / (1 + structural_distance)^2',
+                'scope' => 'substrate',
+                'applied_at' => 'measurement-lineage',
             ],
         ];
     }

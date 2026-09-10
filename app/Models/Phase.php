@@ -16,6 +16,27 @@ class Phase extends Model
 
     protected $keyType = 'string';
 
+    protected static function booted(): void
+    {
+        $invalidate = function (self $phase): void {
+            // A new observation can affect either side of a lineage comparison.
+            // Invalidate disposable views in this substrate; immutable snapshots remain intact.
+            PropositionMeasurement::query()->whereHas('proposition.phase.cycle.participant',
+                fn ($query) => $query->where('substrate_id', $phase->cycle->participant->substrate_id),
+            )->update(['calculator_version' => null]);
+        };
+        static::created(function (self $phase) use ($invalidate): void {
+            if ($phase->gate_proposition_id !== null) {
+                $invalidate($phase);
+            }
+        });
+        static::updated(function (self $phase) use ($invalidate): void {
+            if ($phase->wasChanged('gate_proposition_id')) {
+                $invalidate($phase);
+            }
+        });
+    }
+
     protected function casts(): array
     {
         return [

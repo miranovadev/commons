@@ -4,11 +4,15 @@ namespace App\Services\Observables;
 
 use App\Models\Receipt;
 use App\Models\Substrate;
+use App\Models\Proposition;
+use App\Services\PropositionStateService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 
 final class ReinforcementService
 {
+    public function __construct(private readonly PropositionStateService $state) {}
+
     /**
      * @param  Collection<int, Model>  $contributions
      * @return Collection<string, float>
@@ -22,14 +26,16 @@ final class ReinforcementService
         }
 
         $first = $contributions->first();
-        $counts = Receipt::query()
+        $sources = $contributions->mapWithKeys(fn (Model $item) => [
+            $item->getKey() => $item instanceof Proposition
+                ? $this->state->sourceIds($item) : collect([$item->getKey()]),
+        ]);
+        $receipts = Receipt::query()
             ->where('receiptable_type', $first->getMorphClass())
-            ->whereIn('receiptable_id', $contributions->pluck('id'))
+            ->whereIn('receiptable_id', $sources->flatten()->unique())
             ->where('type', '!=', 'citation')
             ->whereNotNull('signature')
-            ->selectRaw('receiptable_id, count(*) as aggregate')
-            ->groupBy('receiptable_id')
-            ->pluck('aggregate', 'receiptable_id');
+            ->with('instrumentExecution')->get();
         $ratio = (float) data_get(
             $substrate->configuration,
             'observables.contribution_receipt_ratio',
@@ -40,7 +46,11 @@ final class ReinforcementService
         return $contributions->mapWithKeys(
             fn (Model $contribution) => [
                 (string) $contribution->getKey() => 1 + (
-                    (int) $counts->get($contribution->getKey(), 0) / $ratio
+                    $receipts->filter(fn (Receipt $receipt) =>
+                        $receipt->receiptable_id === $contribution->getKey()
+                        || ($sources[$contribution->getKey()]->contains($receipt->receiptable_id)
+                            && $receipt->instrumentExecution?->status === 'completed')
+                    )->count() / $ratio
                 ),
             ],
         );

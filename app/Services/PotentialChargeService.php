@@ -14,6 +14,7 @@ final readonly class PotentialChargeService
 {
     public function __construct(
         private ProjectionService $projections,
+        private PropositionMeasurementService $measurements,
     ) {}
 
     /**
@@ -43,6 +44,7 @@ final readonly class PotentialChargeService
             ->with('measurement')
             ->get()
             ->keyBy(fn (Proposition $proposition) => $proposition->getKey());
+        $this->measurements->repairMissing($propositions->filter(fn ($item) => $item->measurement !== null));
         $edges = DB::table('supersessions')
             ->whereIn('source_proposition_id', $propositions->keys())
             ->get(['source_proposition_id', 'target_proposition_id'])
@@ -91,6 +93,7 @@ final readonly class PotentialChargeService
                 ->where('substrate_id', $substrateId))
             ->with(['measurement', 'commitmentSnapshot'])
             ->get()->keyBy('id');
+        $this->measurements->repairMissing($propositions->filter(fn ($item) => $item->measurement !== null));
         $edges = DB::table('supersessions')
             ->whereIn('source_proposition_id', $propositions->keys())
             ->whereIn('target_proposition_id', $propositions->keys())
@@ -114,7 +117,7 @@ final readonly class PotentialChargeService
                 if ($distance > 0 && $candidate->tier === 'committal' && $snapshot !== null) {
                     $potential = $this->potentialFor(
                         $id, $snapshot->tension, $propositions, $outgoing,
-                        $distance, $position->getKey(),
+                        $position->getKey(),
                     );
                     if ($potential > 0) {
                         $ranked[] = [
@@ -159,7 +162,6 @@ final readonly class PotentialChargeService
         float $tension,
         Collection $propositions,
         Collection $edges,
-        ?int $observerDistance = null,
         ?string $excludedPositionId = null,
     ): float {
         $frontier = collect([$positionId]);
@@ -168,11 +170,9 @@ final readonly class PotentialChargeService
             $visited->put($excludedPositionId, true);
         }
         $potential = 0.0;
-        $depth = 0;
 
         while ($frontier->isNotEmpty()) {
             $next = collect();
-            $depth++;
 
             foreach ($frontier as $sourceId) {
                 foreach ($edges->get($sourceId, collect()) as $edge) {
@@ -208,8 +208,7 @@ final readonly class PotentialChargeService
                         );
                         $potential = max(
                             $potential,
-                            (abs($tension) - abs($continuationTension))
-                                / ($observerDistance === null ? 1 : 1 + $observerDistance + $depth),
+                            abs($tension) - abs($continuationTension),
                         );
                     }
 

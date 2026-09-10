@@ -97,9 +97,23 @@ class ObservableServiceTest extends TestCase
         $measurement = app(PropositionMeasurementService::class)
             ->recalculate($target);
 
-        $this->assertSame(1.0, $measurement->correspondence);
-        $this->assertSame(1.0, $measurement->chirality);
-        $this->assertSame(1.0, $measurement->closure);
+        $local = app(\App\Services\Observables\LocalMeasurementService::class);
+        $headValues = $local->calculate($target);
+        $this->assertSame(1.0, $headValues->correspondence);
+        $this->assertSame(1.0, $headValues->chirality);
+        $this->assertSame(1.0, $headValues->closure()->average());
+        // Accumulation includes the intermediate position and boundary, not the
+        // boundary's older ancestors. Raw comparisons still align exactly.
+        $middleValues = $local->calculate($next);
+        $provenanceValues = $local->calculate($boundary);
+        $mass = 1 + 1 / 4 + 1 / 9;
+        foreach (['correspondence', 'chirality'] as $component) {
+            $this->assertSame(round(($headValues->{$component} + $middleValues->{$component} / 4
+                + $provenanceValues->{$component} / 9) / $mass, 7), $measurement->{$component});
+        }
+        $depth = round(($headValues->depth + $middleValues->depth / 4 + $provenanceValues->depth / 9) / $mass, 7);
+        $cadence = round(($headValues->cadence + $middleValues->cadence / 4 + $provenanceValues->cadence / 9) / $mass, 7);
+        $this->assertSame(round(($depth + $cadence) / 2, 7), $measurement->closure);
     }
 
     public function test_closure_matches_the_documented_cadence_example(): void
@@ -120,6 +134,11 @@ class ObservableServiceTest extends TestCase
         );
         $leftEdges = $this->chain($left);
         $rightEdges = $this->chain($right);
+        foreach ([[$left, [2, 2, 3, 2]], [$right, [1, 1, 9, 1]]] as [$nodes, $touches]) {
+            foreach ($nodes as $index => $node) {
+                $this->touch($node, $touches[$index]);
+            }
+        }
         $horizon = $left->first()
             ->contextHorizonMembership
             ->horizon;
@@ -130,8 +149,61 @@ class ObservableServiceTest extends TestCase
 
         $closure = app(ClosureCalculator::class)->calculate($comparison);
 
-        // Equal depth (+1) averaged with the example cadence (-0.75).
-        $this->assertSame(0.125, $closure);
+        // Equal active-head Depth (+1). The touch CVs have ratio 1/6,
+        // so their existing normalized comparison is -2/3.
+        $this->assertSame(0.1666667, $closure);
+    }
+
+    public function test_closure_observes_active_heads_and_not_superseded_touch_or_receipt_populations(): void
+    {
+        $old = $this->proposition('Historical.', 'activity');
+        $left = $this->proposition('Active left.', 'activity');
+        $right = $this->proposition('Active right.', 'activity');
+        $edges = collect([$this->supersede($old, $left, 'revise'), $this->supersede($old, $right, 'variant')]);
+        $lineage = new DomainLineage($old->contextHorizonMembership->horizon, collect([$old, $left, $right]), $edges);
+        $this->touch($left, 2);
+        $this->touch($right, 2);
+        $calculator = app(ClosureCalculator::class);
+        $this->assertSame(2.0, $calculator->depth($lineage));
+        $this->assertSame(0.0, $calculator->coefficientOfVariation($lineage));
+        $this->touch($old, 20);
+        $this->receipt($old, 'artefact', 'historical-weight');
+        $this->assertSame(2.0, $calculator->depth($lineage));
+        $this->assertSame(0.0, $calculator->coefficientOfVariation($lineage));
+
+        // Active-head reinforcement still increases structural development.
+        $this->receipt($left, 'artefact', 'active-weight');
+        $this->assertEqualsWithDelta(7 / 3, $calculator->depth($lineage), 1e-10);
+        $this->touch($left, 2);
+        $this->assertEqualsWithDelta(1 / 3, $calculator->coefficientOfVariation($lineage), 1e-10);
+    }
+
+    public function test_phase_touches_are_per_proposition_and_independent_of_time_or_cycle_spacing(): void
+    {
+        $nodes = collect(['A', 'B', 'C'])->map(fn ($name) => $this->proposition($name, 'activity'));
+        foreach ([0, 1, 1, 2, 1] as $index) {
+            $this->touch($nodes[$index], 1);
+        }
+        $state = app(\App\Services\PropositionStateService::class);
+        $this->assertSame([1, 3, 1], $nodes->map(fn ($node) => $state->touchCount($node))->all());
+        $lineage = new DomainLineage($nodes[0]->contextHorizonMembership->horizon, $nodes, collect());
+        $calculator = app(ClosureCalculator::class);
+        $cv = $calculator->coefficientOfVariation($lineage);
+        $this->assertEqualsWithDelta(sqrt(8) / 5, $cv, 1e-10);
+        Phase::query()->update(['started_at' => '2000-01-01', 'completed_at' => '2050-01-01']);
+        Cycle::query()->update(['sequence' => 9000]);
+        $this->assertSame($cv, $calculator->coefficientOfVariation($lineage));
+        $this->assertSame(0, \App\Models\CommitmentSnapshot::count());
+    }
+
+    private function touch(Proposition $proposition, int $count): void
+    {
+        for ($i = 0; $i < $count; $i++) {
+            $phase = new Phase;
+            $phase->forceFill(['cycle_id' => $proposition->phase->cycle_id,
+                'kind' => PhaseKind::Persist, 'gate_proposition_id' => $proposition->id,
+                'write_register' => 'frontier', 'started_at' => now(), 'completed_at' => now()])->save();
+        }
     }
 
     public function test_only_unique_non_citation_receipts_reinforce(): void
