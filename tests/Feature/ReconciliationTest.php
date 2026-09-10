@@ -43,19 +43,31 @@ class ReconciliationTest extends TestCase
         $this->substrate = new Substrate;
         $this->substrate->forceFill(['slug' => 'reconcile', 'title' => 'Reconcile', 'visibility' => 'public', 'configuration' => []])->save();
         $this->history = $this->newPhase($this->participant('author'), PhaseKind::Distinguish, 'activity', true);
-        $this->parent = $this->node('Parent', 'canon', tier: 'committal');
+        $this->parent = $this->node('Parent', 'canon', tier: $kind === PhaseKind::Mediate ? 'expressive' : 'committal');
+        if ($kind === PhaseKind::Mediate) {
+            $root = $this->node('Shared provenance', 'frontier', tier: 'committal');
+            $this->edge($root, $this->parent);
+        }
         $register = $kind === PhaseKind::Mediate ? 'activity' : 'frontier';
         $this->gate = $this->node("  Gate statement\nwith exact whitespace.  \n", $register, $correspondence);
         $this->edge($this->parent, $this->gate);
         $this->viewer = $this->participant('viewer');
         $this->viewer->current_proposition_id = $this->gate->id;
         $this->viewer->save();
-        $this->phase = $this->newPhase($this->viewer, $kind, $kind === PhaseKind::Mediate ? 'frontier' : 'canon');
+        if ($kind === PhaseKind::Mediate) {
+            $disperse = $this->newPhase($this->viewer, PhaseKind::Disperse, 'activity');
+            $disperse->gate_proposition_id = $this->parent->id;
+            $disperse->save();
+            $this->phase = app(\App\Services\PhaseProgressionService::class)->advance($disperse, $this->gate);
+        } else {
+            $this->phase = $this->newPhase($this->viewer, $kind, 'canon');
+        }
         $this->phase->gate_proposition_id = $this->gate->id;
         $this->phase->save();
         // Phase creation invalidates derived views; install this test's controlled
         // structural comparison after recording the Gate observation.
-        app(PropositionMeasurementService::class)->project($this->gate, $correspondence, -1, -1);
+        app(PropositionMeasurementService::class)->project($this->gate, -$correspondence, -1, -1);
+        app(PropositionMeasurementService::class)->project($this->parent, $correspondence, -1, -1);
     }
 
     public static function correspondenceDirections(): array
@@ -64,14 +76,19 @@ class ReconciliationTest extends TestCase
     }
 
     #[DataProvider('correspondenceDirections')]
-    public function test_mediate_uses_the_gate_lineages_correspondence_direction(float $direction): void
+    public function test_mediate_filters_read_siblings_using_the_previous_disperse_gate(float $direction): void
     {
         $this->fixture(correspondence: $direction);
-        $positive = $this->sibling('Consonant', 0.5);
-        $negative = $this->sibling('Dissonant', -0.5);
-        $this->sibling('Neutral', 0);
+        [$positive, $positiveGate] = $this->readSibling('Consonant', 0.5, -1);
+        [$negative, $negativeGate] = $this->readSibling('Dissonant', -0.5, 1);
+        $this->readSibling('Neutral', 0, 0);
+        $local = $this->sibling('Anchor child with neutral Correspondence', 0);
         $plan = $this->plan();
-        $this->assertSame($direction === 0.0 ? [] : [($direction > 0 ? $positive : $negative)->id], array_column($plan['gate_options'], 'id'));
+        $this->assertSame($this->parent->id, $plan['read_options'][0]['id']);
+        $this->assertEqualsCanonicalizing($direction === 0.0 ? [$this->parent->id] :
+            [$this->parent->id, ($direction > 0 ? $positive : $negative)->id], array_column($plan['read_options'], 'id'));
+        $this->assertEqualsCanonicalizing($direction === 0.0 ? [$local->id] :
+            [$local->id, ($direction > 0 ? $positiveGate : $negativeGate)->id], array_column($plan['gate_options'], 'id'));
     }
 
     public function test_only_same_parent_active_siblings_in_gate_context_are_candidates(): void
@@ -188,8 +205,15 @@ class ReconciliationTest extends TestCase
     public function test_reconcile_is_structural_selection_with_exact_gate_content(PhaseKind $kind): void
     {
         $this->fixture($kind);
-        $sibling = $this->sibling('Different statement from B');
+        $sibling = $kind === PhaseKind::Mediate
+            ? $this->readSibling('Different Read parent', -0.5, 1)[1]
+            : $this->sibling('Different statement from B');
         $this->attest($sibling, 'support');
+        $this->attest($this->gate, 'support');
+        foreach ([$this->gate, $sibling] as $source) {
+            app(\App\Services\OperationalInstrumentService::class)->execute($this->phase, $source,
+                ['kind' => 'hyperlink', 'reference' => 'https://example.test/source/'.$source->id]);
+        }
         $plan = $this->plan();
         $input = ['action' => 'proposition.reconcile', 'other_proposition_id' => $sibling->id];
         $this->assertSame([$sibling->id], array_column($plan['gate_options'], 'id'));
@@ -201,6 +225,7 @@ class ReconciliationTest extends TestCase
         $state = app(ParticipationService::class)->stateFor($this->viewer);
         $prompt = app(ParticipantPromptFactory::class)->make(new Connection, $state);
         $this->assertSame($plan['schema'], $prompt['schema']);
+        $this->assertSame($plan['read_options'], json_decode($prompt['user'], true)['plan']['read_options']);
         $transport = app(OpenAIResponseSchema::class)->fromCommons($prompt['schema']);
         $properties = $transport['properties']['contribution'];
         $this->assertArrayNotHasKey('statement', $properties['properties']);
@@ -215,6 +240,13 @@ class ReconciliationTest extends TestCase
         $this->assertSame($this->gate->statement, $created->statement);
         $this->assertSame('expressive', $created->tier);
         $this->assertSame($this->phase->write_register, $created->register);
+        $history = app(\App\Services\PropositionStateService::class);
+        $this->assertCount(0, $history->attestations(collect([$created])));
+        $this->assertCount(0, $history->receipts($created));
+        $this->assertSame([$created->id], $history->sourceIds($created)->all());
+        $this->assertSame(1, $history->touchCount($created)); // New Bias/Order observation only.
+        $this->assertCount(2, $history->attestations(collect([$this->gate, $sibling])));
+
         $edges = Supersession::where('target_proposition_id', $created->id)->get();
         $this->assertCount(2, $edges);
         $this->assertEqualsCanonicalizing([$this->gate->id, $sibling->id], $edges->pluck('source_proposition_id')->all());
@@ -226,17 +258,19 @@ class ReconciliationTest extends TestCase
         $this->assertNotNull($created->measurement);
     }
 
-    public function test_gate_limit_is_applied_after_structural_filtering(): void
+    public function test_mediate_exposes_all_gate_children_even_with_small_display_limits(): void
     {
         $this->fixture(correspondence: 0.8);
-        config()->set('schemas.options.limit', 2);
-        $this->sibling('Wrong direction first', -0.9);
-        $first = $this->sibling('Matching first', 0.5);
-        $second = $this->sibling('Matching second', 0.3);
-        $this->sibling('Matching beyond limit', 0.1);
+        config()->set('schemas.options.limit', 1);
+        $this->viewer->max_read_count = 1;
+        $this->viewer->save();
+        [$read, $crossGate] = $this->readSibling('Matching Read', 0.5, -1);
+        $first = $this->sibling('Negative Gate', -0.9);
+        $second = $this->sibling('Neutral Gate', 0);
         $plan = $this->plan();
-        $this->assertSame([$first->id, $second->id], array_column($plan['gate_options'], 'id'));
-        $this->assertSame([$first->id, $second->id], $plan['schema']['$defs']['actions']['proposition.reconcile']['properties']['other_proposition_id']['enum']);
+        $this->assertSame([$this->parent->id, $read->id], array_column($plan['read_options'], 'id'));
+        $this->assertEqualsCanonicalizing([$crossGate->id, $first->id, $second->id], array_column($plan['gate_options'], 'id'));
+        $this->assertSame(array_column($plan['gate_options'], 'id'), $plan['schema']['$defs']['actions']['proposition.reconcile']['properties']['other_proposition_id']['enum']);
     }
 
     public function test_bias_does_not_borrow_votes_beyond_a_committal_boundary(): void
@@ -263,6 +297,78 @@ class ReconciliationTest extends TestCase
         } catch (DomainException) {
             $this->assertSame($count, Proposition::count());
         }
+    }
+
+    public function test_mediate_read_expansion_is_one_step_in_the_same_register_and_context(): void
+    {
+        $this->fixture();
+        [$validRead, $validGate] = $this->readSibling('Matching', -0.7, 1);
+        [$opposite, $oppositeGate] = $this->readSibling('Opposite', 0.7, -1);
+        [$wrongRegister, $wrongGate] = $this->readSibling('Wrong Read register', -0.7, -1);
+        $wrongRegister->register = 'frontier';
+        $wrongRegister->save();
+        [$hardRead, $hardGate] = $this->readSibling('Replaced Read', -0.7, -1);
+        $this->edge($hardRead, $this->node('Read replacement', 'canon'), 'reclassify');
+        [$foreignHorizon, $foreignGate] = $this->readSibling('Other Horizon Read', -0.7, -1);
+        $horizon = $foreignHorizon->contextHorizonMembership->horizon->replicate();
+        $horizon->sequence = 2;
+        $horizon->closed_at = now();
+        $horizon->save();
+        $foreignHorizon->contextHorizonMembership->forceFill(['context_horizon_id' => $horizon->id])->save();
+        $distantRead = $this->node('Read grandchild', 'canon');
+        $this->edge($validRead, $distantRead);
+        $distantGate = $this->node('Distant Gate', 'activity');
+        $this->edge($distantRead, $distantGate);
+        $unrelatedRead = $this->node('Unrelated matching Read', 'canon');
+        $unrelatedGate = $this->node('Unrelated Gate', 'activity');
+        $this->edge($unrelatedRead, $unrelatedGate);
+        $plan = $this->plan();
+        $this->assertSame([$this->parent->id, $validRead->id], array_column($plan['read_options'], 'id'));
+        $this->assertSame([$validGate->id], array_column($plan['gate_options'], 'id'));
+        foreach ([$oppositeGate, $wrongGate, $hardGate, $foreignGate, $distantGate, $unrelatedGate] as $invalid) {
+            $this->assertInput($plan['schema'], ['action' => 'proposition.reconcile', 'other_proposition_id' => $invalid->id], false);
+        }
+    }
+
+    public function test_mediate_rechecks_read_direction_before_writing_and_does_not_filter_gate_votes(): void
+    {
+        $this->fixture();
+        [$read, $candidate] = $this->readSibling('Matching Read', -0.5, 1);
+        $this->attest($this->gate, 'support');
+        $this->attest($candidate, 'refute');
+        // Restore controlled Read directions after recording new Phase observations.
+        app(PropositionMeasurementService::class)->project($this->parent, -0.8, -1, -1);
+        app(PropositionMeasurementService::class)->project($read, -0.5, -1, -1);
+        $input = ['action' => 'proposition.reconcile', 'other_proposition_id' => $candidate->id];
+        $this->assertInput($this->plan()['schema'], $input, true);
+        app(PropositionMeasurementService::class)->project($read, 0.5, -1, -1);
+        $before = Proposition::count();
+        try {
+            app(ContributionDispatcher::class)->dispatch($this->viewer, $this->phase, $input);
+            $this->fail('A stale Read direction must not authorize reconciliation.');
+        } catch (DomainException) {
+            $this->assertSame($before, Proposition::count());
+        }
+    }
+
+    public function test_mediate_requires_its_own_previous_disperse_phase_and_an_active_current_gate(): void
+    {
+        $this->fixture();
+        $this->sibling('Available counterpart');
+        $this->assertNotEmpty($this->plan()['gate_options']);
+        $this->edge($this->gate, $this->node('Hard replacement', 'frontier'), 'reclassify');
+        $this->assertSame([], $this->plan()['gate_options']);
+        $this->phase->cycle->phases()->where('kind', PhaseKind::Disperse->value)->update(['completed_at' => null]);
+        $this->assertSame([], app(\App\Services\MediationReadService::class)->readsFor($this->phase));
+    }
+
+    private function readSibling(string $statement, float $correspondence, float $gateCorrespondence): array
+    {
+        $read = $this->node($statement, $this->parent->register, $correspondence);
+        $this->edge($this->parent->parents()->firstOrFail(), $read);
+        $gate = $this->node($statement.' child', $this->gate->register, $gateCorrespondence);
+        $this->edge($read, $gate);
+        return [$read, $gate];
     }
 
     private function assertInput(array $schema, array $input, bool $valid): void

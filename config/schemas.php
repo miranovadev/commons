@@ -96,7 +96,7 @@ return [
             'Reclassify the current gate',
         ),
         'proposition.reconcile' => [
-            'title' => 'Reconcile a sibling with the current Gate statement',
+            'title' => 'Reconcile an admissible counterpart with the current Gate statement',
             'type' => 'object',
             'additionalProperties' => false,
             'required' => ['action', 'other_proposition_id'],

@@ -189,6 +189,7 @@ export interface ParticipantPlan {
   write_options?: Proposition[];
   revision_options?: Proposition[];
   gate_options?: Proposition[];
+  read_options?: Proposition[];
   attestation_options?: Proposition[];
   workspace?: {
     domain?: DomainName;

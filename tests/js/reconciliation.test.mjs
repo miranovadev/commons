@@ -5,7 +5,7 @@ import { createRequire } from 'node:module';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-test('Mediate and Bias put schema-authorized reconciliation siblings in Gate, never Write', async () => {
+test('Mediate shows authoritative Reads and schema-authorized Gate counterparts separately from Write', async () => {
   const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
   const result = await build({
     stdin: {
@@ -20,12 +20,15 @@ test('Mediate and Bias put schema-authorized reconciliation siblings in Gate, ne
           const gate = { id: 'gate', register: gateRegister, tier: 'expressive', statement: 'Privileged Gate' };
           const sibling = { ...gate, id: 'sibling', statement: 'Sibling alternative' };
           const unrelated = { ...gate, id: 'unrelated', statement: 'Unrelated alternative' };
+          const read = { ...gate, id: 'read', register: 'canon', statement: 'Disperse Read anchor' };
+          const readSibling = { ...read, id: 'read-sibling', statement: 'Matching Read sibling' };
           const child = { ...gate, id: 'child', register: writeRegister, statement: 'Forward child' };
           const actions = {
             'attestation.create': { properties: { proposition_id: { enum: ['child'] }, direction: { enum: ['support', 'refute'] } } },
             ...(authorized ? { 'proposition.reconcile': { required: ['action', 'other_proposition_id'], properties: { action: { const: 'proposition.reconcile' }, other_proposition_id: { enum: ['sibling'] } } } } : {}),
           };
           const plan = { gate, phase: { kind, number: kind === 'bias' ? 6 : 5, write_register: writeRegister },
+            read_options: kind === 'mediate' ? [read, readSibling] : [],
             gate_options: [sibling, unrelated], write_options: [child], attestation_options: [child],
             workspace: { domain: 'emergence', registers: { [gateRegister]: [unrelated] } },
             schema: { $defs: { actions } },
@@ -41,6 +44,12 @@ test('Mediate and Bias put schema-authorized reconciliation siblings in Gate, ne
   new Function('require', 'module', 'exports', result.outputFiles[0].text)(createRequire(import.meta.url), module, module.exports);
   for (const kind of ['mediate', 'bias']) {
     const markup = module.exports.render(kind);
+    if (kind === 'mediate') {
+      const read = markup.slice(markup.indexOf('data-role="read"'), markup.indexOf('data-role="gate"'));
+      assert.match(read, /Disperse Read anchor/);
+      assert.match(read, /Matching Read sibling/);
+      assert.doesNotMatch(read, /Sibling alternative|Forward child/);
+    }
     const gate = markup.slice(markup.indexOf('data-role="gate"'), markup.indexOf('data-role="write"'));
     const write = markup.slice(markup.indexOf('data-role="write"'));
     assert.match(gate, /proposition-card--selected/);

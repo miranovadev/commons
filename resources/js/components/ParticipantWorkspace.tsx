@@ -56,7 +56,7 @@ export function ParticipantWorkspace({ plan, availableActions, onAction, onSubmi
   error?: unknown;
 }) {
   const propositions = useMemo<Proposition[]>(() => [
-    plan.gate, plan.workspace?.provenance, ...(plan.lineage || []),
+    plan.gate, plan.workspace?.provenance, ...(plan.lineage || []), ...(plan.read_options || []),
     ...Object.values(plan.workspace?.registers || {}).flatMap((items) => items || []), ...(plan.write_options || []),
     ...(plan.traversal_options || []), ...(plan.instrument_options || []),
     ...(plan.revision_options || []), ...(plan.gate_options || []), ...(plan.attestation_options || []),
@@ -147,7 +147,7 @@ function OperationalRow({ plan, lane, gate, lineage, committalObservables, propo
           <Text className="register-row__title" size="xs" fw={750}>{meta.label}</Text>
           <Text size="xs" c="dimmed" visibleFrom="sm">{meta.description}</Text>
         </Group>
-        {lane.role === 'read' && <ReadContent register={lane.register} gate={gate} featured={lane.featured} propositions={propositions} lineage={lineage} committalObservables={committalObservables} onInspect={onInspect} />}
+        {lane.role === 'read' && <ReadContent options={plan.phase.kind === 'mediate' ? plan.read_options || [] : undefined} register={lane.register} gate={gate} featured={lane.featured} propositions={propositions} lineage={lineage} committalObservables={committalObservables} onInspect={onInspect} />}
         {lane.role === 'gate' && <GateContent gate={laneGate} candidates={gateOptions} committalObservables={committalObservables} onInspect={onInspect} onAction={onAction} />}
         {lane.role === 'write' && <WriteContent plan={plan} writeOptions={writeOptions} revisionOptions={revisionOptions} attestationOptions={attestationOptions} traversalOptions={traversalOptions} instrumentOptions={instrumentOptions} actions={actions} committalObservables={committalObservables} onInspect={onInspect} onAction={onAction} />}
       </Box>
@@ -155,7 +155,8 @@ function OperationalRow({ plan, lane, gate, lineage, committalObservables, propo
   );
 }
 
-function ReadContent({ register, gate, featured, propositions, lineage, committalObservables, onInspect }: {
+function ReadContent({ options, register, gate, featured, propositions, lineage, committalObservables, onInspect }: {
+  options?: Proposition[];
   register?: RegisterName;
   gate: Proposition;
   featured?: Proposition;
@@ -164,6 +165,9 @@ function ReadContent({ register, gate, featured, propositions, lineage, committa
   committalObservables?: Observables;
   onInspect: InspectHandler;
 }) {
+  if (options !== undefined) return options.length > 0
+    ? <Stack gap="sm">{options.map((proposition) => <PropositionCard key={proposition.id} proposition={proposition} committalObservables={committalObservables} compact flow="read" onClick={() => onInspect({ kind: 'read', proposition })} />)}</Stack>
+    : <EmptyState text="No Mediate Read anchor is available from the previous Disperse Phase." />;
   const currentRead = featured || propositions.find((item) => item.id !== gate.id) || lineage.find((item) => item.register === register) || lineage[0];
   return currentRead
     ? <PropositionCard proposition={currentRead} committalObservables={committalObservables} compact flow="read" onClick={() => onInspect({ kind: 'read', proposition: currentRead })} />
