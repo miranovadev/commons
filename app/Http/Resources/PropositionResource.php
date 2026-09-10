@@ -23,6 +23,7 @@ class PropositionResource extends JsonResource
 
         return [
             'id' => $this->getKey(),
+            'attestation_counts' => $this->whenLoaded('attestationCounts', fn () => $this->attestationCounts->all()),
             'title' => Str::limit($firstLine, 72),
             'statement' => $this->statement,
             'register' => $this->register,

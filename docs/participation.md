@@ -329,3 +329,18 @@ The additive migration records Rest and replaces the unique Cycle/kind index
 with a nonunique index to allow multiple deliberate Order traversals. Rolling
 back after repeated Order occurrences requires resolving those occurrences
 first; the migration does not discard participation history.
+
+## Human Attestation controls
+
+In the main Participant workspace, Support, Refute and Traverse submit directly
+through the existing participation endpoint. Pending submissions disable the
+workspace controls; errors are shown without advancing the local view.
+Other contribution actions retain their forms.
+
+Click a writable Proposition card to open its inspector and submit an Attestation
+with an optional rationale. The drawer's direction choices use the same schema
+as the card footer. Cards show separate effective Support and Refute counts from
+all participants, including Commit inheritance, beside the field values. These
+counts do not establish the current participant's traversal permissions.
+Violet Support spins clockwise and teal Refute counterclockwise; reduced-motion
+preferences disable animation.

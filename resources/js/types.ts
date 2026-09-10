@@ -27,6 +27,7 @@ export interface Proposition {
   parent_ids?: Identifier[];
   children?: Proposition[];
   attestation?: { direction: AttestationDirection };
+  attestation_counts?: { support: number; refute: number };
   instruments?: Array<{
     id: Identifier;
     kind: string;

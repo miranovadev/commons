@@ -1,6 +1,6 @@
 import { Box, Button, Group, Menu, SimpleGrid, Stack, Text, ThemeIcon } from '@mantine/core';
 import { IconBolt, IconEye, IconGitBranch, IconPencil, IconRefresh, IconRoute, IconSeedling, IconTool, IconWhirl } from '@tabler/icons-react';
-import { Fragment, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { domainForRegister, metaForRegister } from '../registers';
 import { actionPropositions, attestationDirections, writePropositions } from '../participationOptions';
 import { LineagePanel } from './LineagePanel';
@@ -9,6 +9,7 @@ import { PropositionInspector } from './PropositionInspector';
 import type {
   ActionName,
   ContributionInitialValues,
+  ContributionInput,
   DomainName,
   Identifier,
   Observables,
@@ -46,10 +47,13 @@ const actionMeta = {
 type SupersessionAction = keyof typeof actionMeta;
 const cardActions = new Set<ActionName>(['attestation.create', 'instrument.execute', 'proposition.reconcile', 'proposition.revise', 'proposition.traverse']);
 
-export function ParticipantWorkspace({ plan, availableActions, onAction }: {
+export function ParticipantWorkspace({ plan, availableActions, onAction, onSubmit, busy = false, error }: {
   plan: ParticipantPlan;
   availableActions: ActionName[];
   onAction: ActionHandler;
+  onSubmit?: (input: ContributionInput) => Promise<boolean>;
+  busy?: boolean;
+  error?: unknown;
 }) {
   const propositions = useMemo<Proposition[]>(() => [
     plan.gate, plan.workspace?.provenance, ...(plan.lineage || []),
@@ -66,6 +70,7 @@ export function ParticipantWorkspace({ plan, availableActions, onAction }: {
   const supersessionActions = actions.filter(isSupersessionAction);
   const propositionActions = actions.filter((action) => !isSupersessionAction(action));
   const [inspection, setInspection] = useState<PropositionSelection | null>(null);
+  useEffect(() => setInspection(null), [plan.phase.id]);
   const registerItems = useMemo(() => Object.fromEntries(
     Object.entries(plan.workspace?.registers || {}).map(([register, items]) => [register, (items || []).map((item) => resolve(item, byId))]),
   ) as Partial<Record<RegisterName, Proposition[]>>, [byId, plan.workspace?.registers]);
@@ -78,7 +83,7 @@ export function ParticipantWorkspace({ plan, availableActions, onAction }: {
   return (
     <Box className="operational-workspace" data-domain={domainName} data-phase={phaseNumber}>
       <Box className="operational-workspace__body">
-        <Stack className="operational-board" gap="md">
+        <Stack renderRoot={(props) => <fieldset {...props} disabled={busy} />} className="operational-board" gap="md" style={{ border: 0 }} aria-busy={busy}>
           <LineagePanel lineage={lineage} committalObservables={provenance.observables} onInspect={setInspection} />
           {lanes.map((lane) => (
             <Fragment key={`${phaseNumber}-${lane.key}`}>
@@ -95,7 +100,8 @@ export function ParticipantWorkspace({ plan, availableActions, onAction }: {
             </Fragment>
           ))}
         </Stack>
-        <PropositionInspector selection={inspection} committalObservables={provenance.observables} onClose={() => setInspection(null)} />
+        <PropositionInspector selection={inspection} committalObservables={provenance.observables} onClose={() => setInspection(null)}
+          plan={plan} onSubmit={onSubmit} loading={busy} error={error} />
       </Box>
     </Box>
   );

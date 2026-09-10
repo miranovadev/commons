@@ -14,10 +14,32 @@ use Illuminate\Support\Collection;
  */
 final class PropositionStateService
 {
+    /** Attach aggregate effective counts without replacing the viewer's own Attestation relation. */
+    public function loadAttestationCounts(Collection $propositions): void
+    {
+        $sources = $propositions->unique('id')->mapWithKeys(fn (Proposition $item) => [
+            $item->id => $item->tier === 'committal' ? $this->sourceIds($item) : collect([$item->id]),
+        ]);
+        $counts = Attestation::query()->effective()
+            ->whereIn('proposition_id', $sources->flatten()->unique())
+            ->selectRaw('proposition_id, direction, count(*) as aggregate')
+            ->groupBy('proposition_id', 'direction')->get()->groupBy('proposition_id');
+        foreach ($propositions as $proposition) {
+            $summary = ['support' => 0, 'refute' => 0];
+            foreach ($sources[$proposition->id] as $id) {
+                foreach ($counts->get($id, collect()) as $count) {
+                    $summary[$count->direction] += (int) $count->aggregate;
+                }
+            }
+            $proposition->setRelation('attestationCounts', collect($summary));
+        }
+    }
+
     /** @return Collection<int, string> */
     public function sourceIds(Proposition $position): Collection
     {
-        $substrateId = $position->phase->cycle->participant->substrate_id;
+        $substrateId = $position->phase->cycle->participant->substrate_id
+            ?? $position->phase->cycle->participant()->value('substrate_id');
         $frontier = collect([$position]);
         $seen = collect();
         while ($frontier->isNotEmpty()) {

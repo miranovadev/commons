@@ -19,6 +19,7 @@ final readonly class InputPlanService
         private InputSchemaService $schemas,
         private PropositionMeasurementService $measurements,
         private CommitmentAdmissibilityService $admissibility,
+        private PropositionStateService $state,
     ) {}
 
     /** @return array<string, mixed> */
@@ -123,7 +124,7 @@ final readonly class InputPlanService
                     'effectiveAttestations' => $this->attestationsFor(
                         $participant
                     ),
-                    'phase.cycle.participant:id,callsign',
+                    'phase.cycle.participant:id,callsign,substrate_id',
                 ])
                 ->whereIn('register', $registers)
                 ->latest('propositions.created_at')
@@ -146,9 +147,10 @@ final readonly class InputPlanService
             'parents',
             'instrumentExecutions.receipt',
             'effectiveAttestations' => $this->attestationsFor($participant),
-            'phase.cycle.participant:id,callsign',
+            'phase.cycle.participant:id,callsign,substrate_id',
         ]);
         $this->measurements->repairMissing(collect([$provenance]));
+        $this->state->loadAttestationCounts($propositions->concat([$provenance]));
 
         return [
             'domain' => $domain->value,
@@ -203,9 +205,10 @@ final readonly class InputPlanService
             'parents',
             'instrumentExecutions.receipt',
             'effectiveAttestations' => $this->attestationsFor($participant),
-            'phase.cycle.participant:id,callsign',
+            'phase.cycle.participant:id,callsign,substrate_id',
         ]);
         $this->measurements->repairMissing($collection);
+        $this->state->loadAttestationCounts($collection);
     }
 
     private function attestationsFor(Participant $participant): \Closure
@@ -270,6 +273,7 @@ final readonly class InputPlanService
                 ->limit(72)
                 ->toString(),
             'participant' => $author?->only(['id', 'callsign']),
+            'attestation_counts' => $proposition->attestationCounts->all(),
             'attestation' => $attestation?->only([
                 'id',
                 'direction',

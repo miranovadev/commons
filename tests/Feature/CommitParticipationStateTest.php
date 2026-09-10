@@ -62,6 +62,8 @@ class CommitParticipationStateTest extends TestCase
         $this->edge($gate, $actual, 'commit');
         $state = app(PropositionStateService::class);
         foreach ([$preview, $actual] as $head) {
+            $state->loadAttestationCounts(collect([$head]));
+            $this->assertSame(['support' => 1, 'refute' => 0], $head->attestationCounts->all());
             $this->assertSame(2, $state->touchCount($head));
             $this->assertSame([$attestation->id], $state->attestations(collect([$head]))->pluck('id')->all());
             $this->assertSame([$receipt->id], $state->receipts($head)->pluck('id')->all());
@@ -105,6 +107,9 @@ class CommitParticipationStateTest extends TestCase
         $variant = $this->node('expressive');
         $this->edge($gate, $variant, 'variant');
         $state = app(PropositionStateService::class);
+        $state->loadAttestationCounts(collect([$gate, $commit, $variant]));
+        $this->assertSame(['support' => 0, 'refute' => 1], $commit->attestationCounts->all());
+        $this->assertSame(['support' => 0, 'refute' => 0], $variant->attestationCounts->all());
         $this->assertSame([$effective->id], $state->attestations(collect([$commit]))->pluck('id')->all());
         $this->assertSame([$receipt->id], $state->receipts($commit)->pluck('id')->all());
         $this->assertSame(-1.0, app(ChiralityCalculator::class)->leanFor(collect([$commit->id]), $this->phase->cycle->participant->substrate));

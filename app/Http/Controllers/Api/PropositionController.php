@@ -15,6 +15,7 @@ class PropositionController extends Controller
     public function index(
         Substrate $substrate,
         PropositionMeasurementService $measurements,
+        \App\Services\PropositionStateService $state,
     ): AnonymousResourceCollection {
         Gate::authorize('view', $substrate);
 
@@ -24,7 +25,7 @@ class PropositionController extends Controller
                 fn ($query) => $query->whereBelongsTo($substrate),
             )
             ->with([
-                'phase.cycle.participant:id,callsign',
+                'phase.cycle.participant:id,callsign,substrate_id',
                 'measurement',
                 'contextHorizonMembership.horizon',
                 'parents:id,register',
@@ -35,6 +36,7 @@ class PropositionController extends Controller
             ->get();
 
         $measurements->repairMissing($propositions);
+        $state->loadAttestationCounts($propositions);
 
         return PropositionResource::collection($propositions);
     }
