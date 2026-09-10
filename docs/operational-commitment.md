@@ -1,12 +1,14 @@
 # Operational Commitment
 
 Phase 7 (Order) uses `CommitmentAdmissibilityService` in both schema generation
-and execution. It requires an effective Attestation directly on the current Gate
-and a Receipt from a completed instrument execution attached to that Gate or
-one of its effective Attestations. Ancestor evidence and Receipts on superseded
-Attestations do not satisfy these preconditions. The Commit edge retains the
-grounded expressive source as provenance; its evidence is not copied to the new
-Committal proposition.
+and execution. It requires an effective Attestation in the current Gate's
+evidentiary state and a Receipt from a completed instrument execution attached
+to that state or one of its effective Attestations. A Committal Gate inherits
+this state through Commit edges; arbitrary ancestors and Receipts on superseded
+Attestations do not satisfy these preconditions. The grounded Expressive source
+remains provenance. Original evidence records are resolved by reference, never
+copied or retargeted. The new Committal proposition also inherits the Gate's
+Phase-touch history for Cadence, identically in preview and actual Commitment.
 
 ## Instruments
 
@@ -41,8 +43,9 @@ Reclassification no longer gathers evidence implicitly. During Bias, normal
 `instrument.execute` can ground an existing reconciled Proposition, including
 an eligible historical node. A Receipt stays on its exact Proposition across
 Cycles; later Attestation or Closure alignment may enable Commitment on a later
-revisit. No evidence is transferred across Supersessions. Order itself adds no
-new evidence-gathering actions.
+revisit. Only Commit provides inherited participation/evidence state; other
+Supersessions do not transfer it. Order itself adds no new evidence-gathering
+actions.
 
 See [participation](participation.md#traverse-tragedy-and-rest) for local traversal,
 Tragedy and nearest-distance Rest recovery. Instrument status, failure reason
