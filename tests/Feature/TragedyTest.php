@@ -126,7 +126,18 @@ class TragedyTest extends TestCase
         );
         $viewer->current_proposition_id = $gate->id;
         $viewer->save();
-        $phase = $this->phase($viewer, $kind, $writeRegister);
+        if ($kind === PhaseKind::Mediate) {
+            $parent = $this->proposition($authorPhase, 'canon');
+            $parent->children()->attach($gate->id, [
+                'id' => (string) str()->ulid(), 'phase_id' => $authorPhase->id, 'type' => 'variant',
+            ]);
+            $disperse = $this->phase($viewer, PhaseKind::Disperse, 'activity');
+            $disperse->gate_proposition_id = $parent->id;
+            $disperse->save();
+            $phase = app(\App\Services\PhaseProgressionService::class)->advance($disperse, $gate);
+        } else {
+            $phase = $this->phase($viewer, $kind, $writeRegister);
+        }
         $phase->gate_proposition_id = $gate->id;
         $phase->save();
         if (in_array($action, ['proposition.revise', 'attestation.create', 'proposition.traverse', 'proposition.reconcile'], true)) {
@@ -135,8 +146,8 @@ class TragedyTest extends TestCase
                 $action === 'proposition.reconcile' ? 'activity' : $writeRegister,
             );
             if ($action === 'proposition.reconcile') {
-                $parent = $this->proposition($authorPhase, 'canon');
-                foreach ([$gate, $target] as $sibling) {
+                $parent ??= $this->proposition($authorPhase, 'canon');
+                foreach ([$target] as $sibling) {
                     $parent->children()->attach($sibling->id, [
                         'id' => (string) str()->ulid(), 'phase_id' => $authorPhase->id, 'type' => 'variant',
                     ]);

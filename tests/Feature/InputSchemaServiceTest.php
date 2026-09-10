@@ -30,6 +30,18 @@ class InputSchemaServiceTest extends TestCase
         Cache::store('array')->clear();
     }
 
+    public function test_mediate_does_not_reuse_the_previous_cached_gate_correspondence_contract(): void
+    {
+        $actions = config('phases.5.actions');
+        $key = 'commons:input-schema:v12:phase:5:'.sha1(implode('|', $actions));
+        Cache::store('array')->forever($key, ['stale_gate_correspondence_contract' => true]);
+        $schema = app(InputSchemaService::class)->forPhase(PhaseKind::Mediate);
+
+        $this->assertSame(['immediate-child-of-correspondence-read'],
+            $schema['x-commons']['constraints']['proposition.reconcile']);
+        $this->assertArrayNotHasKey('stale_gate_correspondence_contract', $schema);
+    }
+
     public function test_each_phase_exposes_its_static_single_move_contract(): void
     {
         $expected = [

@@ -104,6 +104,14 @@ class PropositionHistorySemanticsTest extends TestCase
         }
         $cycle = new Cycle;
         $cycle->forceFill(['participant_id' => $this->participant->id, 'sequence' => 2])->save();
+        if ($kind === PhaseKind::Mediate) {
+            $disperse = new Phase;
+            $disperse->forceFill([
+                'cycle_id' => $cycle->id, 'kind' => PhaseKind::Disperse,
+                'write_register' => $gateRegister, 'gate_proposition_id' => $parent->id,
+                'started_at' => now(), 'completed_at' => now(),
+            ])->save();
+        }
         $phase = new Phase;
         $phase->forceFill([
             'cycle_id' => $cycle->id, 'kind' => $kind, 'write_register' => $writeRegister,

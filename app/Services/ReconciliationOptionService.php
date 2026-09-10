@@ -15,14 +15,22 @@ final readonly class ReconciliationOptionService
         private LineageService $lineage,
         private PropositionMeasurementService $measurements,
         private ChiralityCalculator $chirality,
+        private MediationReadService $mediation,
     ) {}
 
-    /** Gate counterparts are sibling alternatives, never the forward Write frontier. */
+    /** Mediate derives Gates from Reads; Bias retains its current family lean rule. */
     public function forPhase(Phase $phase): Collection
     {
         if ($phase->write_register === null
             || ! in_array($phase->kind, [PhaseKind::Mediate, PhaseKind::Bias], true)) {
             return collect();
+        }
+        if ($phase->kind === PhaseKind::Mediate) {
+            $gates = $this->mediation->gatesFor($phase);
+
+            return $gates->contains('id', $phase->gate_proposition_id)
+                ? $gates->where('id', '!=', $phase->gate_proposition_id)->values()
+                : collect();
         }
         $gate = $phase->gate()->with('contextHorizonMembership')->firstOrFail();
         $horizonId = $gate->contextHorizonMembership?->context_horizon_id;
@@ -34,7 +42,6 @@ final readonly class ReconciliationOptionService
             ->where('substrate_id', $substrate->id))->get();
         $excluded = $gate->children()->pluck('propositions.id')->merge($parents->pluck('id'))->push($gate->id);
         $this->measurements->repairMissing(collect([$gate]));
-        $gateDirection = $this->direction($gate->measurement?->correspondence);
         $options = collect();
 
         // Evaluate each shared-parent context separately, including multi-parent Gates.
@@ -47,15 +54,9 @@ final readonly class ReconciliationOptionService
             $siblingIds = $this->lineage->immediateDescendantIds($parent);
             $candidates = $active->whereIn('id', $siblingIds)->whereNotIn('id', $excluded)
                 ->where('register', $gate->register)->values();
-            if ($phase->kind === PhaseKind::Mediate) {
-                $this->measurements->repairMissing($candidates);
-                $options = $options->concat($candidates->filter(fn (Proposition $candidate): bool =>
-                    $gateDirection !== 0 && $this->direction($candidate->measurement?->correspondence) === $gateDirection));
-            } else {
-                $dominant = $this->direction($this->chirality->leanFor($active->pluck('id'), $substrate));
-                $options = $options->concat($candidates->filter(fn (Proposition $candidate): bool =>
-                    $dominant !== 0 && $this->direction($this->chirality->leanFor(collect([$candidate->id]), $substrate)) === $dominant));
-            }
+            $dominant = $this->direction($this->chirality->leanFor($active->pluck('id'), $substrate));
+            $options = $options->concat($candidates->filter(fn (Proposition $candidate): bool =>
+                $dominant !== 0 && $this->direction($this->chirality->leanFor(collect([$candidate->id]), $substrate)) === $dominant));
         }
         return $options->unique('id')->sortBy('id')
             ->take(max(1, (int) config('schemas.options.limit', 10)))->values();

@@ -79,9 +79,11 @@ Attestation has a neutral lean of 0.
 
 Bias reconciliation reuses this raw weighted lean and hard-supersession active
 set within each shared-parent family. It does not use the sign of the final
-cross-domain Chirality product. Mediate uses the nonzero Correspondence sign
-of the Gate lineage and requires matching sibling Correspondence. See
-[participation](participation.md#mediate-and-bias-reconciliation) for the candidate boundary.
+cross-domain Chirality product. Mediate instead uses the Correspondence sign of its previous Disperse Gate
+to select immediate same-parent, same-register Read siblings. Their immediate
+Gate children require no Correspondence or lean match. The measurement retains
+its existing attenuation; the selection boundary is structural, not a whole-Horizon
+scan. See [participation](participation.md#mediate-correspondence-read).
 
 ## Local Closure
 

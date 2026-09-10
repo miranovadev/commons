@@ -57,7 +57,7 @@ return [
     ],
     5 => [
         'name' => 'mediate',
-        'description' => 'Reconcile the current Gate with a same-parent sibling matching its Correspondence direction, or attest an immediate Write descendant.',
+        'description' => 'Read the previous Disperse Gate and its Correspondence-aligned siblings; reconcile their immediate Gate children, or attest an immediate Write descendant.',
         'gate' => 'previous-phase-position',
         'actions' => [
             'proposition.reconcile',
@@ -65,8 +65,7 @@ return [
         ],
         'constraints' => [
             'proposition.reconcile' => [
-                'same-parent-gate-sibling',
-                'dominant-lineage-correspondence',
+                'immediate-child-of-correspondence-read',
             ],
         ],
     ],

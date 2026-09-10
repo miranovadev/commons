@@ -128,7 +128,7 @@ final readonly class ContributionDispatcher
         }
         $other = $this->reconciliation->forPhase($phase)->firstWhere('id', $input['other_proposition_id']);
         if ($other === null) {
-            throw new DomainException('Reconcile requires an admissible same-parent Gate sibling.');
+            throw new DomainException('Reconcile requires an admissible Gate counterpart.');
         }
         $target = $this->write(
             $phase,
