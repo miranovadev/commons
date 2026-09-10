@@ -3,11 +3,13 @@
 namespace Tests\Feature;
 
 use App\Enums\PhaseKind;
+use App\Models\Connection;
 use App\Models\Participant;
 use App\Models\Proposition;
 use App\Services\InputPlanService;
 use App\Services\InstrumentExecutionService;
 use App\Services\InputSchemaService;
+use App\Services\ParticipantPromptFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -53,23 +55,19 @@ class InputSchemaServiceTest extends TestCase
                 'proposition.variant',
                 'instrument.execute',
                 'attestation.create',
-                'proposition.traverse',
             ],
             PhaseKind::Mediate->value => [
                 'proposition.reconcile',
                 'attestation.create',
-                'proposition.traverse',
             ],
             PhaseKind::Bias->value => [
                 'proposition.reconcile',
                 'instrument.execute',
                 'attestation.create',
-                'proposition.traverse',
             ],
             PhaseKind::Order->value => [
                 'proposition.commit',
                 'attestation.create',
-                'proposition.traverse',
             ],
         ];
 
@@ -87,6 +85,45 @@ class InputSchemaServiceTest extends TestCase
             $this->assertNotEmpty(
                 $schema['x-commons']['description'],
             );
+            $expectsTraverse = $kind->value <= PhaseKind::Constrain->value;
+            $this->assertSame(
+                $expectsTraverse,
+                isset($schema['$defs']['actions']['proposition.traverse']),
+            );
+            if (! $expectsTraverse) {
+                $this->assertStringNotContainsString(
+                    'traverse',
+                    strtolower($schema['x-commons']['description']),
+                );
+            }
+        }
+    }
+
+    public function test_prompt_and_documentation_describe_the_traverse_phase_boundary(): void
+    {
+        $schema = app(InputSchemaService::class)->forPhase(PhaseKind::Distinguish);
+        $prompt = app(ParticipantPromptFactory::class)->make(
+            new Connection,
+            ['plan' => ['schema' => $schema]],
+        )['system'];
+        $documentation = file_get_contents(base_path('docs/participation.md'))
+            .file_get_contents(base_path('docs/operational-commitment.md'));
+
+        $this->assertStringContainsString(
+            'In Distinguish, Persist and Constrain only',
+            $prompt,
+        );
+        $this->assertStringContainsString(
+            'It is never admissible in Disperse, Mediate, Bias or Order.',
+            $prompt,
+        );
+        foreach ([
+            'or traverse an existing local Expressive Proposition',
+            'or use an admissible local Expressive continuation',
+            'At Order it opens another Order occurrence',
+        ] as $staleWording) {
+            $this->assertStringNotContainsString($staleWording, $documentation);
+            $this->assertStringNotContainsString($staleWording, $prompt);
         }
     }
 

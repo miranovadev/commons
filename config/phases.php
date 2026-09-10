@@ -44,13 +44,12 @@ return [
     ],
     4 => [
         'name' => 'disperse',
-        'description' => 'Open a new expressive branch, execute an instrument, or traverse an existing local Expressive Proposition.',
+        'description' => 'Open a new expressive branch, execute an instrument, or attest an immediate Write descendant.',
         'gate' => 'previous-phase-position',
         'actions' => [
             'proposition.variant',
             'instrument.execute',
             'attestation.create',
-            'proposition.traverse',
         ],
         'constraints' => [
             'instrument.execute' => ['write-register'],
@@ -58,12 +57,11 @@ return [
     ],
     5 => [
         'name' => 'mediate',
-        'description' => 'Reconcile the current Gate with a same-parent sibling matching its Correspondence direction, or traverse an existing local Expressive Proposition.',
+        'description' => 'Reconcile the current Gate with a same-parent sibling matching its Correspondence direction, or attest an immediate Write descendant.',
         'gate' => 'previous-phase-position',
         'actions' => [
             'proposition.reconcile',
             'attestation.create',
-            'proposition.traverse',
         ],
         'constraints' => [
             'proposition.reconcile' => [
@@ -74,13 +72,12 @@ return [
     ],
     6 => [
         'name' => 'bias',
-        'description' => 'Reconcile a same-parent sibling matching the lineage’s dominant aggregate lean, execute an instrument, or traverse an existing Expressive Proposition in the Write register.',
+        'description' => 'Reconcile a same-parent sibling matching the lineage’s dominant aggregate lean, execute an instrument, or attest an immediate Write descendant.',
         'gate' => 'previous-phase-position',
         'actions' => [
             'proposition.reconcile',
             'instrument.execute',
             'attestation.create',
-            'proposition.traverse',
         ],
         'constraints' => [
             'proposition.reconcile' => [
@@ -92,12 +89,11 @@ return [
     ],
     7 => [
         'name' => 'order',
-        'description' => 'Commit when grounding and Depth/Cadence allow, or use an admissible local Expressive continuation.',
+        'description' => 'Commit when grounding and Depth/Cadence allow, or attest an immediate Write descendant.',
         'gate' => 'previous-phase-position',
         'actions' => [
             'proposition.commit',
             'attestation.create',
-            'proposition.traverse',
         ],
         'constraints' => [
             'proposition.commit' => [
