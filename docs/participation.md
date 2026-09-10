@@ -356,7 +356,9 @@ these actions use the same `proposition_id` property. The UI labels the unary
 choice **Bias**, and shows eligible sources as choices rather than privileging
 an inadmissible current Gate. Existing Write Attestation and Instrument actions
 remain available when their own target rules allow; neither is a prerequisite
-for the Bias action. Late-phase rebuilding/Closure integration remains PR #4.
+for the Bias action. The [operational Closure path](operational-closure-path.md)
+shows how participants rebuild Concord through these normal operations and
+reach real Commitment without weakening Closure.
 
 ## Binary Reconcile
 
