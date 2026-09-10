@@ -26,14 +26,13 @@ final class ReinforcementService
         }
 
         $first = $contributions->first();
-        if ($first instanceof Proposition) {
-            $sources = $contributions->mapWithKeys(fn (Proposition $item) => [
-                $item->id => $this->state->sourceIds($item),
-            ]);
-        }
-        $counts = Receipt::query()
+        $sources = $contributions->mapWithKeys(fn (Model $item) => [
+            $item->getKey() => $item instanceof Proposition
+                ? $this->state->sourceIds($item) : collect([$item->getKey()]),
+        ]);
+        $receipts = Receipt::query()
             ->where('receiptable_type', $first->getMorphClass())
-            ->whereIn('receiptable_id', isset($sources) ? $sources->flatten()->unique() : $contributions->pluck('id'))
+            ->whereIn('receiptable_id', $sources->flatten()->unique())
             ->where('type', '!=', 'citation')
             ->whereNotNull('signature')
             ->with('instrumentExecution')->get();
@@ -47,9 +46,9 @@ final class ReinforcementService
         return $contributions->mapWithKeys(
             fn (Model $contribution) => [
                 (string) $contribution->getKey() => 1 + (
-                    $counts->filter(fn (Receipt $receipt) =>
+                    $receipts->filter(fn (Receipt $receipt) =>
                         $receipt->receiptable_id === $contribution->getKey()
-                        || (isset($sources) && $sources[$contribution->getKey()]->contains($receipt->receiptable_id)
+                        || ($sources[$contribution->getKey()]->contains($receipt->receiptable_id)
                             && $receipt->instrumentExecution?->status === 'completed')
                     )->count() / $ratio
                 ),

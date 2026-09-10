@@ -100,6 +100,30 @@ class ClosureHysteresisTest extends TestCase
         $this->assertSame($preview['cadence'], $snapshot->cadence);
     }
 
+    public function test_emergence_can_develop_negative_prospective_components_after_a_settlement_boundary(): void
+    {
+        $this->bootstrap(2);
+        [$phase] = $this->candidate([2]);
+        $entered = app(ParticipationService::class)->contribute($this->participant, $phase->id, ['action' => 'proposition.commit']);
+        $this->assertSame('emergence', $entered['domain']);
+        $this->origin = Proposition::findOrFail($entered['current_proposition_id']);
+        [$phase, $gate] = $this->candidate(range(3, 12), 'canon', 'activity');
+        for ($i = 0; $i < 9; $i++) {
+            $touch = new Phase;
+            $touch->forceFill(['cycle_id' => $phase->cycle_id, 'kind' => PhaseKind::Persist,
+                'write_register' => 'frontier', 'gate_proposition_id' => $gate->id,
+                'started_at' => now(), 'completed_at' => now()])->save();
+        }
+        $preview = app(ClosureGateService::class)->preview($gate, $phase);
+        $this->assertLessThan(0, $preview['depth']);
+        $this->assertLessThan(0, $preview['cadence']);
+        $this->assertTrue($preview['admissible']);
+        $state = app(ParticipationService::class)->contribute($this->participant, $phase->id, ['action' => 'proposition.commit']);
+        $snapshot = CommitmentSnapshot::findOrFail($state['current_proposition_id']);
+        $this->assertSame($preview['depth'], $snapshot->depth);
+        $this->assertSame($preview['cadence'], $snapshot->cadence);
+    }
+
     public function test_zero_depth_retains_negative_history_and_blocks_a_positive_cadence(): void
     {
         $this->bootstrap(1);
@@ -220,12 +244,12 @@ class ClosureHysteresisTest extends TestCase
     }
 
     /** @param list<int> $cycles @return array{Phase, Proposition} */
-    private function candidate(array $cycles): array
+    private function candidate(array $cycles, string $writeRegister = 'concord', string $gateRegister = 'signal'): array
     {
         $previous = $this->origin;
         foreach ($cycles as $sequence) {
-            $phase = $this->phase($sequence, 'concord');
-            $gate = $this->node($phase, 'expressive', 'signal');
+            $phase = $this->phase($sequence, $writeRegister);
+            $gate = $this->node($phase, 'expressive', $gateRegister);
             $this->edge($phase, $previous, $gate, 'variant');
             $phase->gate_proposition_id = $gate->id;
             $phase->save();

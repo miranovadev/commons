@@ -53,6 +53,9 @@ class ReconciliationTest extends TestCase
         $this->phase = $this->newPhase($this->viewer, $kind, $kind === PhaseKind::Mediate ? 'frontier' : 'canon');
         $this->phase->gate_proposition_id = $this->gate->id;
         $this->phase->save();
+        // Phase creation invalidates derived views; install this test's controlled
+        // structural comparison after recording the Gate observation.
+        app(PropositionMeasurementService::class)->project($this->gate, $correspondence, -1, -1);
     }
 
     public static function correspondenceDirections(): array
