@@ -61,7 +61,7 @@ test('main page submits a footer action once, retries failures and does not reop
   let resolve, reject;
   const actions = { 'attestation.create': { properties: { proposition_id: { enum: ['p'] }, direction: { enum: ['support', 'refute'] } } } };
   const harness = {
-    participation: { status: 'ready', plan: { phase: { id: 'phase', kind: 'persist' }, schema: {
+    participation: { status: 'ready', plan: { gate: { id: 'gate', statement: 'Gate' }, phase: { id: 'phase', kind: 'persist' }, schema: {
       oneOf: [{ $ref: '#/$defs/actions/attestation.create' }], $defs: { actions },
     } } },
     contribute(input) {
