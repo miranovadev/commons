@@ -1,18 +1,32 @@
 import { Badge, Box, Drawer, Stack, Text } from '@mantine/core';
 import { structuralDeltaSummary } from './MeasurementRails';
 import { PropositionContent } from './PropositionContent';
-import type { Observables, PropositionSelection } from '../types';
+import { AttestationPanel } from './AttestationPanel';
+import { writePropositions } from '../participationOptions';
+import type { ContributionInput, Observables, ParticipantPlan, PropositionSelection } from '../types';
 
 interface PropositionInspectorProps {
   selection: PropositionSelection | null;
   committalObservables?: Observables;
   onClose: () => void;
+  plan?: ParticipantPlan;
+  onSubmit?: (input: ContributionInput) => Promise<boolean>;
+  loading?: boolean;
+  error?: unknown;
 }
 
-export function PropositionInspector({ selection, committalObservables, onClose }: PropositionInspectorProps) {
+export function PropositionInspector({ selection, committalObservables, onClose, plan, onSubmit, loading, error }: PropositionInspectorProps) {
   return (
     <Drawer opened={Boolean(selection)} onClose={onClose} position="right" size="min(34rem, 100%)" title="Proposition inspector">
       <InspectorContent selection={selection} committalObservables={committalObservables} />
+      {selection?.kind === 'write option' && plan && onSubmit && writePropositions(plan).some((item) => item.id === selection.proposition.id) && (
+        <Box p="md"><AttestationPanel key={`${plan.phase.id}-${selection.proposition.id}`} plan={plan} proposition={selection.proposition}
+          loading={loading} error={error} onSubmit={async (input) => {
+            const applied = await onSubmit(input);
+            if (applied) onClose();
+            return applied;
+          }} /></Box>
+      )}
     </Drawer>
   );
 }

@@ -1,4 +1,14 @@
-import type { ActionName, AttestationDirection, ParticipantPlan, Proposition } from './types';
+import type { ActionName, AttestationDirection, ContributionInitialValues, ContributionInput, ParticipantPlan, Proposition } from './types';
+
+/** Only the workspace's fully specified, schema-authorized navigation actions bypass a form. */
+export function quickContribution(plan: ParticipantPlan, action: ActionName, values: ContributionInitialValues = {}): ContributionInput | null {
+  if (!values.proposition_id || !actionTargetIds(plan, action).has(values.proposition_id)) return null;
+  if (action === 'proposition.traverse') return { action, proposition_id: values.proposition_id };
+  if (action === 'attestation.create' && values.direction && attestationDirections(plan, values.proposition_id).includes(values.direction)) {
+    return { action, proposition_id: values.proposition_id, direction: values.direction };
+  }
+  return null;
+}
 
 /** The schema is authoritative for both visible buttons and form choices. */
 export function actionTargetIds(plan: ParticipantPlan, action: ActionName): Set<string> {

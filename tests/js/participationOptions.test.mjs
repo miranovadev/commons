@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { actionPropositions, actionTargetIds } from '../../resources/js/participationOptions.ts';
+import { actionPropositions, actionTargetIds, quickContribution } from '../../resources/js/participationOptions.ts';
 
 const archived = { id: 'historical', register: 'frontier', tier: 'expressive', statement: 'Still attestable' };
 const unavailable = { ...archived, id: 'unavailable' };
@@ -59,6 +59,14 @@ for (const effective of [null, 'support', 'refute']) {
       } } },
     };
     assert.deepEqual(attestationDirections(localPlan, archived.id), directions);
+    for (const direction of ['support', 'refute']) {
+      assert.deepEqual(quickContribution(localPlan, 'attestation.create', { proposition_id: archived.id, direction, rationale: 'Keep this for the drawer' }),
+        directions.includes(direction) ? { action: 'attestation.create', proposition_id: archived.id, direction } : null);
+    }
+    assert.deepEqual(quickContribution(localPlan, 'proposition.traverse', { proposition_id: archived.id }),
+      effective ? { action: 'proposition.traverse', proposition_id: archived.id } : null);
+    assert.equal(quickContribution(localPlan, 'attestation.create', { proposition_id: unavailable.id, direction: 'support' }), null);
+    assert.equal(quickContribution(localPlan, 'proposition.revise', { proposition_id: archived.id }), null);
     assert.deepEqual(attestationDirections(localPlan, unavailable.id), []);
     assert.deepEqual(writePropositions(localPlan), [archived]);
     assert.deepEqual(writePropositions({ ...localPlan, write_options: [], gate_options: [unavailable], instrument_options: [unavailable] }), []);
