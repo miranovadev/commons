@@ -26,14 +26,15 @@ a { color:inherit; text-decoration:none; }
 .graph-level--focus { padding:1.8rem 0; }
 .graph-label { font-weight:700; letter-spacing:.1em; text-align:center; margin-bottom:.75rem; }
 .graph-connected-above::before { content:''; position:absolute; top:0; left:50%; width:1px; height:1.25rem; background:light-dark(var(--mantine-color-gray-3),var(--mantine-color-dark-4)); }
-.participant-page--active { height:calc(100dvh - 58px); overflow:hidden; }
-.participant-cycle-shell { display:flex; height:100%; min-height:0; flex-direction:column; background:light-dark(var(--mantine-color-gray-1),var(--mantine-color-dark-8)); }
+.participant-page--active { display:flex; flex-direction:column; height:calc(100dvh - 58px); overflow:hidden; }
+.participant-cycle-shell { display:flex; flex:1; min-height:0; flex-direction:column; background:light-dark(var(--mantine-color-gray-1),var(--mantine-color-dark-8)); }
 .cycle-context-header { display:grid; flex:none; min-height:58px; grid-template-columns:minmax(0,1fr) auto minmax(0,1fr); align-items:center; gap:1rem; padding:.55rem 1rem; border-bottom:1px solid light-dark(var(--mantine-color-gray-3),var(--mantine-color-dark-6)); background:light-dark(var(--mantine-color-gray-0),var(--mantine-color-dark-8)); }
 .cycle-context-header__participant { justify-self:start; }
 .cycle-context-header__participant .mantine-Badge-root { align-self:flex-start; }
 .cycle-context-header__phase { justify-self:center; color:light-dark(var(--mantine-color-gray-7),var(--mantine-color-gray-3)); text-align:center; }
 .cycle-context-header__phase svg { color:var(--mantine-color-indigo-5); }
-.operational-workspace { flex:1; min-height:0; overflow-y:auto; }
+.participant-cycle-content { flex:1; min-height:0; overflow-y:auto; }
+.operational-workspace { min-width:0; }
 .operational-workspace__body { min-width:0; }
 .operational-board { position:relative; width:min(78rem,100%); min-width:0; margin:0 auto; padding:.85rem 1rem 2rem; }
 .operational-row { position:relative; display:grid; min-width:0; grid-template-columns:8.5rem minmax(0,1fr); gap:.75rem; align-items:start; }
@@ -110,3 +111,13 @@ button.proposition-card:hover,button.proposition-card:focus-visible { border-col
 .participant-connections { padding-top:.75rem; border-top:1px solid light-dark(var(--mantine-color-gray-2),var(--mantine-color-dark-5)); }
 .participant-connection { min-height:34px; padding:.35rem .45rem; border-radius:var(--mantine-radius-sm); background:light-dark(var(--mantine-color-gray-0),var(--mantine-color-dark-7)); }
 .participant-connection__manage { align-self:flex-start; }
+
+/* Keep modal headers reachable while long forms scroll within the current viewport. */
+.mantine-Modal-inner .mantine-Modal-content { display:flex; flex-direction:column; max-height:calc(100dvh - var(--modal-y-offset, 5dvh) * 2); overflow:hidden; }
+.mantine-Modal-content .mantine-Modal-header { flex-shrink:0; }
+.mantine-Modal-content .mantine-Modal-body { min-height:0; overflow-y:auto; overscroll-behavior-y:contain; }
+
+/* Prevent mobile Safari from zooming the viewport when a form field receives focus. */
+@media (max-width:48em) {
+  .mantine-Modal-body input, .mantine-Modal-body textarea, .mantine-Modal-body select { font-size: max(16px, 1rem); }
+}
