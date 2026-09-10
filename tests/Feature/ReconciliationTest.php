@@ -225,7 +225,7 @@ class ReconciliationTest extends TestCase
         $state = app(ParticipationService::class)->stateFor($this->viewer);
         $prompt = app(ParticipantPromptFactory::class)->make(new Connection, $state);
         $this->assertSame($plan['schema'], $prompt['schema']);
-        $this->assertSame($plan['read_options'], json_decode($prompt['user'], true)['plan']['read_options']);
+        $this->assertSame(json_decode(json_encode($plan['read_options']), true), json_decode($prompt['user'], true)['plan']['read_options']);
         $transport = app(OpenAIResponseSchema::class)->fromCommons($prompt['schema']);
         $properties = $transport['properties']['contribution'];
         $this->assertArrayNotHasKey('statement', $properties['properties']);
@@ -359,7 +359,7 @@ class ReconciliationTest extends TestCase
         $this->edge($this->gate, $this->node('Hard replacement', 'frontier'), 'reclassify');
         $this->assertSame([], $this->plan()['gate_options']);
         $this->phase->cycle->phases()->where('kind', PhaseKind::Disperse->value)->update(['completed_at' => null]);
-        $this->assertSame([], app(\App\Services\MediationReadService::class)->readsFor($this->phase));
+        $this->assertCount(0, app(\App\Services\MediationReadService::class)->readsFor($this->phase));
     }
 
     private function readSibling(string $statement, float $correspondence, float $gateCorrespondence): array

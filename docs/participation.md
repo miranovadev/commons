@@ -303,6 +303,7 @@ children, which can reconcile into fresh Stance even when they have different
 immediate parents. Emergence uses Canon, Activity and Frontier equivalently.
 The UI renders `read_options` directly, and inference receives the same plan.
 The schema and dispatcher both derive counterparts through `MediationReadService`.
+Schema cache version 13 retires the previous cached Gate-Correspondence contract.
 
 ## Bias reconciliation (pending the next refactor)
 
