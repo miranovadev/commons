@@ -59,3 +59,12 @@ The subsequent [Closure Hysteresis milestone](closure-hysteresis.md) adds enforc
 Depth/Cadence direction alignment alongside these grounding requirements,
 immutable component snapshots, and Domain-transition observation. It requires
 an additive database migration; historical evidence and snapshots are not rewritten.
+
+## Canonical late-phase regression
+
+[Operational Closure path](operational-closure-path.md) documents the complete
+Disperse → Mediate → Bias → fresh Concord → rebuilt history → Order → Commit
+scenario. `OperationalClosurePathTest` uses real measurements and normal
+participation throughout. The narrower `OperationalCommitmentTest` continues to
+isolate action/evidence behaviour with a Closure mock; it is not the end-to-end
+Closure proof.
