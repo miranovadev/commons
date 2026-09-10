@@ -216,6 +216,10 @@ final readonly class InputSchemaService
                 'property' => 'proposition_id',
                 'values' => $instrumentOptionIds,
             ],
+            'proposition.bias' => [
+                'property' => 'proposition_id',
+                'values' => $gateOptionIds,
+            ],
             'proposition.reconcile' => [
                 'property' => 'other_proposition_id',
                 'values' => $gateOptionIds,

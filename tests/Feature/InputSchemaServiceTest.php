@@ -42,6 +42,19 @@ class InputSchemaServiceTest extends TestCase
         $this->assertArrayNotHasKey('stale_gate_correspondence_contract', $schema);
     }
 
+    public function test_bias_retires_binary_reconciliation_schema_and_exposes_unary_selection(): void
+    {
+        $oldActions = ['proposition.reconcile', 'instrument.execute', 'attestation.create'];
+        $key = 'commons:input-schema:v13:phase:6:'.sha1(implode('|', $oldActions));
+        Cache::store('array')->forever($key, ['stale_binary_bias' => true]);
+        $schema = app(InputSchemaService::class)->forPhase(PhaseKind::Bias);
+        $this->assertArrayNotHasKey('stale_binary_bias', $schema);
+        $this->assertArrayNotHasKey('proposition.reconcile', $schema['$defs']['actions']);
+        $this->assertSame(['action', 'proposition_id'], $schema['$defs']['actions']['proposition.bias']['required']);
+        $this->assertSame(['dominant-active-stance-lean', 'unary-selection-fresh-history'],
+            $schema['x-commons']['constraints']['proposition.bias']);
+    }
+
     public function test_each_phase_exposes_its_static_single_move_contract(): void
     {
         $expected = [
@@ -73,7 +86,7 @@ class InputSchemaServiceTest extends TestCase
                 'attestation.create',
             ],
             PhaseKind::Bias->value => [
-                'proposition.reconcile',
+                'proposition.bias',
                 'instrument.execute',
                 'attestation.create',
             ],

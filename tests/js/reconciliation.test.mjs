@@ -5,7 +5,7 @@ import { createRequire } from 'node:module';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-test('Mediate shows authoritative Reads and schema-authorized Gate counterparts separately from Write', async () => {
+test('Mediate counterparts and unary Bias choices use their own schema-authorized Gate populations', async () => {
   const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
   const result = await build({
     stdin: {
@@ -23,9 +23,12 @@ test('Mediate shows authoritative Reads and schema-authorized Gate counterparts 
           const read = { ...gate, id: 'read', register: 'canon', statement: 'Disperse Read anchor' };
           const readSibling = { ...read, id: 'read-sibling', statement: 'Matching Read sibling' };
           const child = { ...gate, id: 'child', register: writeRegister, statement: 'Forward child' };
+          const gateAction = kind === 'bias' ? 'proposition.bias' : 'proposition.reconcile';
+          const target = kind === 'bias' ? 'proposition_id' : 'other_proposition_id';
+          const choices = kind === 'bias' ? ['gate', 'sibling'] : ['sibling'];
           const actions = {
             'attestation.create': { properties: { proposition_id: { enum: ['child'] }, direction: { enum: ['support', 'refute'] } } },
-            ...(authorized ? { 'proposition.reconcile': { required: ['action', 'other_proposition_id'], properties: { action: { const: 'proposition.reconcile' }, other_proposition_id: { enum: ['sibling'] } } } } : {}),
+            ...(authorized ? { [gateAction]: { required: ['action', target], properties: { action: { const: gateAction }, [target]: { enum: choices } } } } : {}),
           };
           const plan = { gate, phase: { kind, number: kind === 'bias' ? 6 : 5, write_register: writeRegister },
             read_options: kind === 'mediate' ? [read, readSibling] : [],
@@ -52,15 +55,29 @@ test('Mediate shows authoritative Reads and schema-authorized Gate counterparts 
     }
     const gate = markup.slice(markup.indexOf('data-role="gate"'), markup.indexOf('data-role="write"'));
     const write = markup.slice(markup.indexOf('data-role="write"'));
-    assert.match(gate, /proposition-card--selected/);
+    if (kind === 'mediate') assert.match(gate, /proposition-card--selected/);
+    else assert.doesNotMatch(gate, /proposition-card--selected/);
     assert.match(gate, /Privileged Gate/);
     assert.match(gate, /Sibling alternative/);
-    assert.match(gate, /data-reconcile-candidate="sibling"/);
-    assert.equal([...gate.matchAll(/>Reconcile<\/span>/g)].length, 1);
+    if (kind === 'mediate') {
+      assert.match(gate, /data-reconcile-candidate="sibling"/);
+      assert.equal([...gate.matchAll(/>Reconcile<\/span>/g)].length, 1);
+    } else {
+      assert.match(gate, /data-bias-candidate="gate"/);
+      assert.match(gate, /data-bias-candidate="sibling"/);
+      assert.equal([...gate.matchAll(/>Bias<\/span>/g)].length, 2);
+      assert.doesNotMatch(gate, /Reconcile/);
+      assert.equal([...gate.matchAll(/Privileged Gate/g)].length, 1);
+    }
     assert.match(write, /Forward child/);
-    assert.doesNotMatch(write, /Sibling alternative|>Reconcile<\/span>/);
+    assert.doesNotMatch(write, /Sibling alternative|>Reconcile<\/span>|>Bias<\/span>/);
     assert.doesNotMatch(markup, /Unrelated alternative/);
     const denied = module.exports.render(kind, false);
-    assert.doesNotMatch(denied, /Sibling alternative|>Reconcile<\/span>/);
+    assert.doesNotMatch(denied, /Sibling alternative|>Reconcile<\/span>|>Bias<\/span>/);
+    if (kind === 'bias') {
+      const deniedGate = denied.slice(denied.indexOf('data-role="gate"'), denied.indexOf('data-role="write"'));
+      assert.doesNotMatch(deniedGate, /Privileged Gate/);
+      assert.match(deniedGate, /No active Proposition/);
+    }
   }
 });

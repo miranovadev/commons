@@ -42,7 +42,7 @@ $proposition = static function (string $action, string $title) use ($statement):
 };
 
 return [
-    'version' => 13,
+    'version' => 14,
 
     'cache' => [
         'store' => env('COMMONS_SCHEMA_CACHE_STORE'),
@@ -95,6 +95,16 @@ return [
             'proposition.reclassify',
             'Reclassify the current gate',
         ),
+        'proposition.bias' => [
+            'title' => 'Select one dominant-direction Gate into fresh Concord/Canon',
+            'type' => 'object',
+            'additionalProperties' => false,
+            'required' => ['action', 'proposition_id'],
+            'properties' => [
+                'action' => ['const' => 'proposition.bias'],
+                'proposition_id' => $ulid,
+            ],
+        ],
         'proposition.reconcile' => [
             'title' => 'Reconcile an admissible counterpart with the current Gate statement',
             'type' => 'object',
