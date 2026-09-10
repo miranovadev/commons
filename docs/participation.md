@@ -213,7 +213,7 @@ Cycle, records `cycles.rested_at`, and preserves the current position. The next
 2. Stop at the nearest positive distance containing measured Committal Propositions
    with positive Potential Charge. Unmeasured, zero-Potential and disconnected
    candidates cannot supply recovery.
-3. Rank only that shell by attenuated Potential Charge, then existing Charge
+3. Rank only that shell by Potential Charge from upstream measurements, then existing Charge
    and Proposition-ID tie-breaking. A farther high-Potential region cannot win.
 4. Persist the winner as the new Cycle's Committal Gate.
 
@@ -225,14 +225,15 @@ or zero-Potential fallback. GET exposes `entry.selection: recovery`, availabilit
 prospective destination, distance and Potential Charge, but never moves anyone.
 The existing `entry.mode: potential` transport is retained for entry clients.
 
-Attenuation preserves main's existing `1 / (1 + structural_distance)` formula.
-The distance includes the route to the Committal source and its outgoing
-Expressive continuation; another Committal stops that continuation search.
-Immutable snapshot Tension and persisted expressive measurements remain the
-inputs. Initial entry keeps its existing global Potential/Charge ranking because
-it has no observation position. Recovery is separate from initial entry.
-The public conceptual documentation's inverse-square influence model is not
-introduced by this navigation change.
+Attenuation is a substrate-level measurement rule: independently evaluated local
+Proposition measurements are averaged with inverse-square weights
+`1 / (1 + structural_distance)^2` while walking from the active head to provenance.
+Every visited position contributes denominator weight. Potential uses these
+accumulated measurements without another observer-distance or continuation-length
+discount. Another Committal still stops the outgoing continuation search.
+Immutable snapshot Tension remains the historical baseline. Initial entry keeps
+its existing global Potential/Charge ranking; recovery preserves its nearest
+viable region search. See [observables](observables.md) for the full calculation.
 
 Order returns an actionable `ready` plan even when Commit is inadmissible.
 `plan.commitment` and `commitment_preconditions_unsatisfied` preserve diagnostics

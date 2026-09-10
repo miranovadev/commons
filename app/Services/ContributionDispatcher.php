@@ -240,7 +240,7 @@ final readonly class ContributionDispatcher
                 $target,
                 $projections['prominence'],
                 $projections['turbulence'],
-                'closure-hysteresis-v2',
+                \App\Services\Observables\LineageMeasurementService::VERSION,
                 $supersession,
             );
 
