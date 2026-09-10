@@ -162,7 +162,8 @@ class InputPlanVisibilityTest extends TestCase
         }
         $plan = app(InputPlanService::class)->forParticipant($viewer);
         $this->assertEqualsCanonicalizing([$child->id, $untouched->id], array_column($plan['write_options'], 'id'));
-        $this->assertSame($direction === null ? [] : [$child->id], array_column($plan['traversal_options'], 'id'));
+        $traversable = $kind->value <= PhaseKind::Constrain->value && $direction !== null;
+        $this->assertSame($traversable ? [$child->id] : [], array_column($plan['traversal_options'], 'id'));
         $transport = app(\App\Services\OpenAIResponseSchema::class)->fromCommons($plan['schema']);
         foreach (['refute', 'support'] as $choice) {
             $input = ['action' => 'attestation.create', 'proposition_id' => $child->id, 'direction' => $choice];
@@ -171,10 +172,10 @@ class InputPlanVisibilityTest extends TestCase
             $transportInput = array_fill_keys($variant['required'], null);
             $this->assertInput($transport, ['contribution' => array_replace($transportInput, $input)], $choice !== $direction);
         }
-        $this->assertInput($plan['schema'], ['action' => 'proposition.traverse', 'proposition_id' => $child->id], $direction !== null);
+        $this->assertInput($plan['schema'], ['action' => 'proposition.traverse', 'proposition_id' => $child->id], $traversable);
         foreach ([$child, $untouched] as $target) {
             $input = ['action' => 'proposition.traverse', 'proposition_id' => $target->id];
-            $valid = $target->id === $child->id && $direction !== null;
+            $valid = $target->id === $child->id && $traversable;
             $this->assertInput($plan['schema'], $input, $valid);
             $this->assertInput($transport, ['contribution' => array_replace($transportInput, $input, ['direction' => null])], $valid);
         }

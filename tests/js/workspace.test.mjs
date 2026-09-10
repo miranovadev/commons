@@ -16,14 +16,15 @@ test('Write renders only local cards and exactly the two schema-driven direction
         import { ParticipantWorkspace } from './resources/js/components/ParticipantWorkspace';
         const gate = { id: 'gate', register: 'activity', tier: 'expressive', statement: 'Gate' };
         const target = { id: 'historical', register: 'frontier', tier: 'expressive', statement: 'Historical target' };
-        export function render(effective, allowed = true, auxiliary = false) {
+        export function render(effective, allowed = true, auxiliary = false, kind = 'persist') {
           const directions = ['refute', 'support'].filter(direction => direction !== effective);
+          const traversalAllowed = ['distinguish', 'persist', 'constrain'].includes(kind);
           const actions = allowed ? {
             'attestation.create': {
               properties: { proposition_id: { enum: [target.id] }, direction: { enum: ['refute', 'support'] } },
               anyOf: directions.map(direction => ({ properties: { proposition_id: { enum: [target.id] }, direction: { enum: [direction] } } })),
             },
-            ...(effective ? { 'proposition.traverse': { properties: { proposition_id: { enum: [target.id] } } } } : {}),
+            ...(effective && traversalAllowed ? { 'proposition.traverse': { properties: { proposition_id: { enum: [target.id] } } } } : {}),
             ...(auxiliary ? {
               'proposition.revise': { properties: { proposition_id: { enum: [target.id] } } },
               'instrument.execute': { properties: { proposition_id: { enum: [target.id] } } },
@@ -31,14 +32,15 @@ test('Write renders only local cards and exactly the two schema-driven direction
           } : {};
           const unrelated = { ...target, id: 'unrelated', statement: 'Unrelated horizon proposition' };
           const plan = {
-            gate, phase: { number: 2, kind: 'persist', write_register: 'frontier' },
+            gate, phase: { number: kind === 'persist' ? 2 : 4, kind, write_register: 'frontier' },
             workspace: { domain: 'emergence', registers: { frontier: [unrelated] } },
             // Deliberately omit attestation metadata: schema drives the buttons.
             write_options: [target], attestation_options: [target], traversal_options: effective ? [target] : [],
             gate_options: [unrelated], instrument_options: [target, unrelated], revision_options: [target],
             schema: { $defs: { actions } },
           };
-          return renderToStaticMarkup(<MantineProvider env="test"><ParticipantWorkspace plan={plan} availableActions={Object.keys(actions)} onAction={() => {}} /></MantineProvider>);
+          const availableActions = [...Object.keys(actions), ...(effective && !traversalAllowed ? ['proposition.traverse'] : [])];
+          return renderToStaticMarkup(<MantineProvider env="test"><ParticipantWorkspace plan={plan} availableActions={availableActions} onAction={() => {}} /></MantineProvider>);
         }
       `,
       resolveDir: root, loader: 'tsx',
@@ -71,4 +73,10 @@ test('Write renders only local cards and exactly the two schema-driven direction
     }
   }
   assert.doesNotMatch(module.exports.render(null, false), /Historical target|>(Support|Refute|Traverse)<\/span>/);
+  for (const kind of ['disperse', 'mediate', 'bias', 'order']) {
+    // The schema is authoritative even if a stale caller lists Traverse as available.
+    const markup = module.exports.render('support', true, false, kind);
+    assert.doesNotMatch(markup, />Traverse<\/span>/);
+    assert.match(markup, />Refute<\/span>/);
+  }
 });
