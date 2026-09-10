@@ -77,11 +77,20 @@ D = \frac{Support - Refute}{Support + Refute}
 The final value is D_current × D_previous. A Domain without an active
 Attestation has a neutral lean of 0.
 
-Bias reconciliation reuses this raw weighted lean and hard-supersession active
-set within each shared-parent family. It does not use the sign of the final
-cross-domain Chirality product. Mediate uses the nonzero Correspondence sign
-of the Gate lineage and requires matching sibling Correspondence. See
-[participation](participation.md#mediate-and-bias-reconciliation) for the candidate boundary.
+Bias reuses this raw weighted lean over the active Stance (Frontier in Emergence)
+population in the current forward lineage families, deduplicated across parents
+within the Gate's Horizon. Other registers do not supply votes to this Gate.
+The single aggregate direction admits only Propositions with individual lean in
+that direction, including the current Gate when eligible. Zero lean has no
+directional choice. It does not use the sign of the final cross-domain Chirality
+product. Unary hard reclassification removes the selected source from the active
+Stance field; the fresh Concord has none of its historical votes. This removes a
+contribution in the dominant direction and tends the field toward balance,
+without promising monotonic absolute-lean reduction for every discrete choice. Mediate instead uses the Correspondence sign of its previous Disperse Gate
+to select immediate same-parent, same-register Read siblings. Their immediate
+Gate children require no Correspondence or lean match. The measurement retains
+its existing attenuation; the selection boundary is structural, not a whole-Horizon
+scan. See [participation](participation.md#mediate-correspondence-read).
 
 ## Local Closure
 
@@ -145,7 +154,19 @@ its non-Citation, signed-Receipt rule, including completed inherited Proposition
 Receipts. Each head's reinforcement counts each original Receipt once, and lean
 deduplicates Attestation IDs shared by multiple Commit heads. Evidence is resolved from current
 effective state; immutable Commitment snapshots preserve the observation made
-at Commitment. Variant, Revise and Reconcile do not gain Commit inheritance.
+at Commitment.
+
+`PropositionStateService` resolves history through the explicit `commitSources`
+relationship, including the in-memory source declared by Commit preview.
+Generic `parents` describe topology only. Variant, Revise, Reclassify, Reconcile
+and every other non-Commit hard supersession start with fresh contribution
+history, regardless of whether the statement is preserved. A later Commit cannot
+reach back across one of those resets to inherit earlier history.
+
+Fresh history does not remove structural ancestry or its attenuated influence.
+It means the new Proposition has no inherited Attestations, Receipts or Phase
+touches. Opening a new Phase on it adds a new touch normally; source Phases and
+contribution records remain attached to their original Propositions.
 
 ## Reinforcement and bootstrap
 

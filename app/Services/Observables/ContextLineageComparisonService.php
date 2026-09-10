@@ -50,6 +50,7 @@ final class ContextLineageComparisonService
         ]);
         $candidate->setRelation('phase', $phase);
         $candidate->setRelation('parents', collect([$gate]));
+        $candidate->setRelation('commitSources', collect([$gate]));
         $entry = new SubstrateLedgerEntry;
         $entry->sequence = (int) SubstrateLedgerEntry::query()
             ->where('substrate_id', $horizon->substrate_id)->max('sequence') + 1;

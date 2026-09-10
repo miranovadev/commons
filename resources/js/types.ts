@@ -27,6 +27,7 @@ export interface Proposition {
   parent_ids?: Identifier[];
   children?: Proposition[];
   attestation?: { direction: AttestationDirection };
+  attestation_counts?: { support: number; refute: number };
   instruments?: Array<{
     id: Identifier;
     kind: string;
@@ -118,6 +119,7 @@ export type ActionName =
   | 'proposition.commit'
   | 'proposition.reclassify'
   | 'proposition.reconcile'
+  | 'proposition.bias'
   | 'proposition.revise'
   | 'participant.rest'
   | 'proposition.traverse'
@@ -188,6 +190,7 @@ export interface ParticipantPlan {
   write_options?: Proposition[];
   revision_options?: Proposition[];
   gate_options?: Proposition[];
+  read_options?: Proposition[];
   attestation_options?: Proposition[];
   workspace?: {
     domain?: DomainName;

@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Alert, Badge, Box, Breadcrumbs, Button, Container, Group, Loader, Stack, Text, ThemeIcon, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { IconAdjustmentsHorizontal, IconAlertCircle, IconArrowsJoin, IconArrowsSplit, IconFilter, IconFocus2, IconLock, IconRepeat, IconSparkles, IconUserHexagon } from '@tabler/icons-react';
 import { Link, useParams } from 'react-router-dom';
 import { messageFrom } from '../errors';
+import { quickContribution } from '../participationOptions';
 import { ContributionForm } from '../components/ContributionForm';
 import { OriginCycleForm } from '../components/OriginCycleForm';
 import { ParticipantWorkspace } from '../components/ParticipantWorkspace';
@@ -28,6 +29,8 @@ export function ParticipantPage() {
   const { data: participant, isLoading: participantLoading, error: participantError } = useGetParticipantQuery(parameters);
   const { data: participation, isLoading: participationLoading, error: participationError } = useGetParticipationQuery(parameters);
   const [contribute, contribution] = useContributeMutation();
+  const submitting = useRef(false);
+  const submittedPhase = useRef<string | null>(null);
   const [enterCycle, cycleEntry] = useEnterCycleMutation();
   const [selectedAction, setSelectedAction] = useState<{ name: ActionName; initialValues: ContributionInitialValues } | null>(null);
   const [originOpened, { open: openOrigin, close: closeOrigin }] = useDisclosure(false);
@@ -41,9 +44,22 @@ export function ParticipantPage() {
   );
 
   function openAction(name: ActionName, initialValues: ContributionInitialValues = {}) { contribution.reset(); setSelectedAction({ name, initialValues }); }
+  function workspaceAction(name: ActionName, initialValues: ContributionInitialValues = {}) {
+    if (!plan || submitting.current || submittedPhase.current === plan.phase.id) return;
+    const input = quickContribution(plan, name, initialValues);
+    if (input) { contribution.reset(); void submit(input); }
+    else openAction(name, initialValues);
+  }
   async function submit(contributionInput: ContributionInput) {
-    if (!plan) return;
-    try { await contribute({ slug, participantId, phaseId: plan.phase.id, contribution: contributionInput }).unwrap(); setSelectedAction(null); } catch { /* mutation error is rendered by the form */ }
+    if (!plan || submitting.current || submittedPhase.current === plan.phase.id) return false;
+    submitting.current = true;
+    try {
+      await contribute({ slug, participantId, phaseId: plan.phase.id, contribution: contributionInput }).unwrap();
+      submittedPhase.current = plan.phase.id;
+      setSelectedAction(null);
+      return true;
+    } catch { return false; /* mutation errors appear in the workspace or form */ }
+    finally { submitting.current = false; }
   }
   async function establishOrigin(origin: OriginInput) {
     try { await enterCycle({ slug, participantId, origin }).unwrap(); closeOrigin(); } catch { /* mutation error is rendered by the form */ }
@@ -109,7 +125,9 @@ export function ParticipantPage() {
                 <Button mt="sm" variant="light" color="gray" onClick={() => openAction('participant.rest')}>Rest</Button>
               </Alert>
             )}
-            <ParticipantWorkspace plan={{ ...plan, perspectiveLimit: participant.max_read_count }} availableActions={availableActions} onAction={openAction} />
+            {contribution.error && !selectedAction && <Alert color="red" m="md" role="alert">{messageFrom(contribution.error, 'The contribution could not be applied. Please try again.')}</Alert>}
+            <ParticipantWorkspace plan={{ ...plan, perspectiveLimit: participant.max_read_count }} availableActions={availableActions} onAction={workspaceAction}
+              busy={contribution.isLoading || submittedPhase.current === plan.phase.id} onSubmit={submit} error={contribution.error} />
           </Box>
           <ContributionForm action={selectedAction?.name} plan={plan} opened={selectedAction !== null} loading={contribution.isLoading} error={contribution.error} initialValues={selectedAction?.initialValues} onClose={() => setSelectedAction(null)} onSubmit={submit} />
         </Box>
@@ -138,6 +156,7 @@ function isActionName(value?: string): value is ActionName {
     'proposition.commit',
     'proposition.reclassify',
     'proposition.reconcile',
+    'proposition.bias',
     'proposition.revise',
     'proposition.traverse',
     'participant.rest',

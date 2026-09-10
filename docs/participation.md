@@ -72,8 +72,11 @@ The plan also exposes a `workspace` projection for the active Cycle UI. It
 names the active Domain and Context Horizon, returns the Horizon's provenancial
 Committal Proposition separately, and groups the visible measurement population
 by Classification Register. The human workspace presents these as operational
-Read, Gate and Write rows. Read exposes one Proposition; Gate privileges the
-current Proposition and adds reconciliation siblings during Mediate and Bias;
+Read, Gate and Write rows. Mediate exposes the authoritative `read_options`
+population; other phases retain their single Read card. Mediate Gate privileges
+the current Proposition and adds admissible reconciliation counterparts. Bias
+Gate shows only the field-admissible unary choices, including the current
+Proposition when eligible;
 Lineage is available on demand; and Write separates existing actionable
 Propositions from moves that create a new Proposition from the Gate. An
 existing Write card is an immediate valid Expressive descendant of the current
@@ -83,7 +86,7 @@ Read/inspection context and must never be merged into Write. Parents, siblings,
 grandchildren, disconnected branches and same-register Horizon peers are not
 Write cards. Revise remains limited to owned, revisable descendants. Variant,
 Reclassify and Commit use the compact Supersession control between Gate and Write.
-Reconcile is selected from a sibling card in Gate.
+Reconcile is selected from an admissible counterpart card in Gate.
 
 Expressive Propositions include an `impact` projection containing the parent
 measurement as `from` and the expressive measurement as `to`. This makes the
@@ -123,6 +126,32 @@ owned, unsuperseded expressive Propositions in the current write register and
 explicitly excludes the Gate. Because a Proposition written during one Cycle
 becomes available when that register is encountered again, revision naturally
 occurs in a subsequent Cycle rather than revising the current Gate in place.
+
+## Proposition history
+
+**Only Commit carries contribution history forward.** Supersession edges describe
+structural ancestry and active-node/comparison behaviour. Neither a soft edge nor
+a hard edge grants history inheritance.
+
+Variant, Revise, Reclassify and Reconcile each create a new Expressive Proposition
+with fresh Attestations, Receipts and Phase-touch history. This includes the
+current non-Commit hard supersessions in Bias. Preserving a source's statement
+does not carry its accumulated support or evidence onto the new Proposition.
+Source contributions remain recorded against their original targets; they are
+neither deleted, copied nor retargeted. Instrument executions and ledger entries
+also keep their original contribution identities.
+
+A newly written Proposition has zero inherited touches. When normal progression
+opens the next Phase with that Proposition as Gate, it earns its first **new**
+touch. Its creation Phase still observes the source Gate.
+
+Commit is the historical continuation of its expressive Gate. It resolves that
+Gate's effective Attestations, completed direct/Attestation Receipts and Phase
+touches by reference, preserving Closure/Cadence continuity without copying rows.
+The same Commit-only history rule applies in preview and execution. Inheritance
+stops at every non-Commit transition: committing a revision or reconciliation
+preserves only the history earned by that new Proposition, not its predecessors'
+history. See [observables](observables.md#commit-participation-inheritance).
 
 ## Traverse, Tragedy and Rest
 
@@ -242,32 +271,96 @@ complete exhaustion exposes Rest. Automated wakes
 ask inference to choose from exactly the same action schema; they never traverse
 automatically. Stale phase tokens cannot apply another move.
 
-## Mediate and Bias reconciliation
+## Mediate: Correspondence Read
 
-`gate_options` contains admissible sibling alternatives alongside the current
-Gate. Candidates are Expressive Propositions in the Gate's register and Horizon,
-sharing an immediate parent with it. The Gate, its parents, direct Write children,
-unrelated heads and hard-superseded candidates are excluded. Soft variants retain
-active status, following the existing Chirality semantics. A parent in the previous
-Horizon may provide shared provenance, but counterpart populations stay within the
-Gate's Horizon. Unmeasured structural directions are not assumed.
+Mediate's Read anchor is the Gate recorded on the preceding completed Disperse
+Phase in the **same Cycle**. It is not Mediate's Gate, the latest Horizon card,
+or a guessed ancestor. Missing Disperse history supplies no Read/counterpart
+options; the server does not invent an anchor.
 
-- **Mediate:** the current Gate's persisted Correspondence measures its lineage
-  against its complementary provenance lineage. Its nonzero sign determines the
-  relevant consonant/dissonant direction; a candidate's Correspondence must match.
-  Missing measurable projections are repaired through the normal observable service.
-- **Bias:** for each shared parent, gather its descendants in the Gate's Horizon,
-  stopping expansion at Committal boundaries. The shared parent is provenance, not
-  an alternative vote. Remove hard-superseded nodes and use the existing
-  receipt-weighted effective Attestation lean across the remaining Expressive heads.
-  A sibling's own effective Attestation lean must share that aggregate sign.
-  This is the raw current lean, not Chirality's cross-domain product. Multiple
-  parent contexts are evaluated independently and their valid candidates deduplicated.
+`read_options` exposes that anchor first, followed by active siblings that:
 
-Zero Correspondence, a tied aggregate lean or a neutral candidate lean supplies
-no dominant direction. The normal option limit is applied after these filters.
-The schema, human Gate card footers and inference share the resulting candidate IDs.
-No reconciliation cards or buttons are inserted into Write.
+- share at least one immediate parent with the anchor;
+- occupy the anchor's Classification Register and Context Horizon;
+- belong to the same Substrate;
+- have Correspondence with the same nonzero sign as the anchor.
+
+Sibling expansion is exactly one edge down from the shared parent, never a
+recursive family walk or a whole-Horizon search. Multiple shared parents are
+unioned and results deduplicated. Zero or unmeasurable anchor Correspondence
+provides no direction for **additional** Reads; the original Read remains.
+The usual accumulated Correspondence measurement is used, including its existing
+structural attenuation. No extra distance threshold or attenuation is added.
+
+The Gate population consists of all active, immediate Expressive children of
+those exposed Reads, in the current Gate's register, Horizon and Substrate.
+**Gate Correspondence and Chirality do not filter these children.** The current
+Gate must belong to that population. `gate_options` contains the other members
+that can reconcile with it; the current Gate is already exposed as `gate`.
+Hard-superseded alternatives are excluded; soft branches remain active.
+No display/read-count or generic option limit truncates either operational set.
+
+In Settlement, this means corresponding Concord parents expose their Signal
+children, which can reconcile into fresh Stance even when they have different
+immediate parents. Emergence uses Canon, Activity and Frontier equivalently.
+The UI renders `read_options` directly, and inference receives the same plan.
+The schema and dispatcher both derive counterparts through `MediationReadService`.
+Schema cache version 13 retires the previous cached Gate-Correspondence contract.
+
+## Bias Chirality Gate
+
+Bias is directional selection. `BiasGateService` supplies the authoritative
+`gate_options` used by the UI, inference/schema and execution:
+
+1. Resolve the current Gate's forward family and the forward families of its
+   immediate parents in the same Substrate and Context Horizon. Retain the
+   existing lineage boundary: stop expansion at Committal nodes, without scanning
+   unrelated Horizon regions. Include the Gate itself; no sibling is required.
+2. Deduplicate overlapping families before computing one aggregate. Keep only
+   active Expressive Stances (Frontiers in Emergence). Outgoing hard Supersession
+   makes a source inactive; soft Variant branches leave it active. Candidates
+   may be deeper descendants, not just immediate siblings. Other registers and
+   Propositions beyond Committal/Horizon boundaries supply neither votes nor choices.
+3. Calculate the receipt-weighted effective Attestation lean using the existing
+   Chirality calculator. Its nonzero direction admits only Stances whose own
+   effective lean has that direction. This is the raw current lean, not the
+   cross-Domain Chirality product, and adds no second attenuation. Neutral fields
+   expose no Bias choice. Display/read-count limits do not truncate this field.
+4. The Participant chooses one admissible source:
+
+```json
+{
+  "action": "proposition.bias",
+  "proposition_id": "01..."
+}
+```
+
+The server copies that source's statement exactly into one fresh Expressive
+Concord (Canon in Emergence), and records one hard `reclassify` edge. The action
+is distinct from owner-authored `proposition.reclassify`: Bias selection is
+field-authorized and does not require source ownership. Reusing the existing
+edge type describes the same unary classification change without introducing
+a new persisted topology. No `other_proposition_id` or `statement` is accepted.
+The dispatcher rechecks the same eligibility under the substrate lock before writes.
+
+The source is no longer active. Its accumulated Attestations, Receipts and Phase
+touches remain its own; the target inherits none. The new Order Phase earns one
+new target touch, which is not inherited history. Removing the dominant-direction
+source reduces that direction's contribution to the active Stance comparison
+population. The fresh Concord must earn its own support, evidence and participation
+history before Commitment. Only Commit carries history across the boundary.
+
+Schema cache version 14 retires the prior Bias contract. The inference transport
+keeps Bias Gate IDs separate from Instrument/Attestation Write IDs even though
+these actions use the same `proposition_id` property. The UI labels the unary
+choice **Bias**, and shows eligible sources as choices rather than privileging
+an inadmissible current Gate. Existing Write Attestation and Instrument actions
+remain available when their own target rules allow; neither is a prerequisite
+for the Bias action. The [operational Closure path](operational-closure-path.md)
+shows how participants rebuild Concord through these normal operations and
+reach real Commitment without weakening Closure.
+
+## Binary Reconcile
 
 ```json
 {
@@ -276,13 +369,13 @@ No reconciliation cards or buttons are inserted into Write.
 }
 ```
 
-Reconcile accepts no `statement`. It creates a new Expressive Proposition in the
-Phase's Write register with the current Gate's statement copied **exactly**,
-including whitespace, and hard `reconcile` Supersession edges from both the Gate
-and the selected sibling. The sibling contributes structure, not synthesis text.
-The usual Proposition/edge ledger entries and measurement recalculation follow.
-The dispatcher rechecks candidate admissibility before writing. Existing immutable
-history and Attestation/Receipt ownership are preserved.
+Mediate alone exposes Reconcile. It accepts no `statement`. It creates one fresh Expressive Proposition in
+the Phase's Write register with the current Gate's statement copied exactly and
+two hard `reconcile` edges, one from each source. It inherits no Attestations,
+Receipts or Phase touches. Normal progression earns a new target touch.
+The dispatcher rechecks admissibility before any writes. The Proposition/edge
+ledger records, source history ownership and measurement recalculation remain
+unchanged.
 
 ## Bias grounding
 
@@ -292,10 +385,10 @@ Reclassify has no Instrument field and creates no Receipt. Phase 3 now offers
 plain owner-constrained `proposition.reclassify`.
 
 During Bias, `instrument.execute` targets existing local Expressive Propositions
-in the Write register, including reconciled historical nodes and the Gate when
+in the Write register, including existing historical Concord/Canon and the Gate when
 eligible. The normal Instrument lifecycle creates a Receipt attached to that
 exact Proposition. It remains attached across Cycles, so grounding in Cycle N
-can enable Commitment on a later revisit. Reconciliation does not inherit or
+can enable Commitment on a later revisit. Bias and Reconcile do not inherit or
 copy evidence; effective Attestation, completed Receipt and the existing
 Depth/Cadence Closure gate remain mandatory.
 
@@ -303,3 +396,18 @@ The additive migration records Rest and replaces the unique Cycle/kind index
 with a nonunique index to allow multiple deliberate Order traversals. Rolling
 back after repeated Order occurrences requires resolving those occurrences
 first; the migration does not discard participation history.
+
+## Human Attestation controls
+
+In the main Participant workspace, Support, Refute and Traverse submit directly
+through the existing participation endpoint. Pending submissions disable the
+workspace controls; errors are shown without advancing the local view.
+Other contribution actions retain their forms.
+
+Click a writable Proposition card to open its inspector and submit an Attestation
+with an optional rationale. The drawer's direction choices use the same schema
+as the card footer. Cards show separate effective Support and Refute counts from
+all participants, including Commit inheritance, beside the field values. These
+counts do not establish the current participant's traversal permissions.
+Violet Support spins clockwise and teal Refute counterclockwise; reduced-motion
+preferences disable animation.

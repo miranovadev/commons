@@ -19,6 +19,8 @@ final readonly class InputPlanService
         private InputSchemaService $schemas,
         private PropositionMeasurementService $measurements,
         private CommitmentAdmissibilityService $admissibility,
+        private PropositionStateService $state,
+        private MediationReadService $mediation,
     ) {}
 
     /** @return array<string, mixed> */
@@ -37,6 +39,7 @@ final readonly class InputPlanService
             $phase,
             $participant,
         );
+        $readOptions = $this->mediation->readsFor($phase);
         $gateOptions = $this->options->gateOptionsFor($phase);
         $traversalOptions = $this->options->traversalOptionsFor($phase);
         $instrumentOptions = $this->options->instrumentOptionsFor($phase);
@@ -45,6 +48,7 @@ final readonly class InputPlanService
             $participant,
             $gate,
             $lineage,
+            $readOptions,
             $writeOptions,
             $revisionOptions,
             $gateOptions,
@@ -84,6 +88,7 @@ final readonly class InputPlanService
                 : null,
             'gate' => $this->proposition($gate, $participant),
             'lineage' => $this->propositions($lineage, $participant),
+            'read_options' => $this->propositions($readOptions, $participant),
             'tragedy' => isset($schema['$defs']['actions']['participant.rest']),
             'traversal_options' => $this->propositions($traversalOptions, $participant),
             'instrument_options' => $this->propositions($instrumentOptions, $participant),
@@ -123,7 +128,7 @@ final readonly class InputPlanService
                     'effectiveAttestations' => $this->attestationsFor(
                         $participant
                     ),
-                    'phase.cycle.participant:id,callsign',
+                    'phase.cycle.participant:id,callsign,substrate_id',
                 ])
                 ->whereIn('register', $registers)
                 ->latest('propositions.created_at')
@@ -146,9 +151,10 @@ final readonly class InputPlanService
             'parents',
             'instrumentExecutions.receipt',
             'effectiveAttestations' => $this->attestationsFor($participant),
-            'phase.cycle.participant:id,callsign',
+            'phase.cycle.participant:id,callsign,substrate_id',
         ]);
         $this->measurements->repairMissing(collect([$provenance]));
+        $this->state->loadAttestationCounts($propositions->concat([$provenance]));
 
         return [
             'domain' => $domain->value,
@@ -203,9 +209,10 @@ final readonly class InputPlanService
             'parents',
             'instrumentExecutions.receipt',
             'effectiveAttestations' => $this->attestationsFor($participant),
-            'phase.cycle.participant:id,callsign',
+            'phase.cycle.participant:id,callsign,substrate_id',
         ]);
         $this->measurements->repairMissing($collection);
+        $this->state->loadAttestationCounts($collection);
     }
 
     private function attestationsFor(Participant $participant): \Closure
@@ -270,6 +277,7 @@ final readonly class InputPlanService
                 ->limit(72)
                 ->toString(),
             'participant' => $author?->only(['id', 'callsign']),
+            'attestation_counts' => $proposition->attestationCounts->all(),
             'attestation' => $attestation?->only([
                 'id',
                 'direction',

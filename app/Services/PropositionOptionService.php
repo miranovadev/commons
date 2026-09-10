@@ -15,6 +15,7 @@ final class PropositionOptionService
     public function __construct(
         private readonly LineageService $lineage,
         private readonly ReconciliationOptionService $reconciliation,
+        private readonly BiasGateService $bias,
     ) {}
 
     /** @return Collection<int, string> */
@@ -51,7 +52,7 @@ final class PropositionOptionService
             ));
     }
 
-    /** Bias can ground reconciled nodes even after a later Supersession. */
+    /** Bias can ground existing Concord/Canon nodes even after a later Supersession. */
     public function instrumentOptionsFor(Phase $phase): Collection
     {
         if ($phase->kind !== PhaseKind::Bias) {
@@ -123,7 +124,9 @@ final class PropositionOptionService
      */
     public function gateOptionsFor(Phase $phase): Collection
     {
-        return $this->reconciliation->forPhase($phase);
+        return $phase->kind === PhaseKind::Bias
+            ? $this->bias->forPhase($phase)
+            : $this->reconciliation->forPhase($phase);
     }
 
     private function activeHeads(Phase $phase): Builder

@@ -40,12 +40,14 @@ complete exhaustion of all admissible non-Rest actions exposes `participant.rest
 the same inference contract as human participants.
 
 Reclassification no longer gathers evidence implicitly. During Bias, normal
-`instrument.execute` can ground an existing reconciled Proposition, including
+`instrument.execute` can ground an existing Concord/Canon Proposition, including
 an eligible historical node. A Receipt stays on its exact Proposition across
 Cycles; later Attestation or Closure alignment may enable Commitment on a later
 revisit. Only Commit provides inherited participation/evidence state; other
 Supersessions do not transfer it. Order itself adds no new evidence-gathering
-actions.
+actions. Bias now creates fresh Concord/Canon through unary directional
+selection; that new Proposition must earn its own evidence and support. See
+[Bias Chirality Gate](participation.md#bias-chirality-gate).
 
 See [participation](participation.md#traverse-tragedy-and-rest) for local traversal,
 Tragedy and nearest-distance Rest recovery. Instrument status, failure reason
@@ -57,3 +59,12 @@ The subsequent [Closure Hysteresis milestone](closure-hysteresis.md) adds enforc
 Depth/Cadence direction alignment alongside these grounding requirements,
 immutable component snapshots, and Domain-transition observation. It requires
 an additive database migration; historical evidence and snapshots are not rewritten.
+
+## Canonical late-phase regression
+
+[Operational Closure path](operational-closure-path.md) documents the complete
+Disperse → Mediate → Bias → fresh Concord → rebuilt history → Order → Commit
+scenario. `OperationalClosurePathTest` uses real measurements and normal
+participation throughout. The narrower `OperationalCommitmentTest` continues to
+isolate action/evidence behaviour with a Closure mock; it is not the end-to-end
+Closure proof.

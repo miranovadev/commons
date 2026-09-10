@@ -199,7 +199,9 @@ export function ContributionForm({
             </>
           )}
 
-          {action === 'proposition.reconcile' && <Text size="sm" c="dimmed">The new Proposition copies the current Gate statement exactly. The selected sibling contributes a second hard parent edge.</Text>}
+          {action === 'proposition.reconcile' && <Text size="sm" c="dimmed">The new Proposition copies the current Gate statement exactly. The selected counterpart contributes a second hard parent edge.</Text>}
+
+          {action === 'proposition.bias' && <Text size="sm" c="dimmed">The selected Proposition becomes fresh Concord/Canon with its statement preserved. It must earn new Attestations, evidence and participation history before Commitment.</Text>}
 
           {action === 'participant.rest' && <Text size="sm" c="dimmed">No admissible non-Rest action remains in this Phase. End this Cycle and retain your current position for recovery when the next Cycle begins.</Text>}
 

@@ -20,6 +20,7 @@ use App\Services\Observables\ReinforcementService;
 use App\Services\OperationalInstrumentService;
 use App\Services\PropositionStateService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class CommitParticipationStateTest extends TestCase
@@ -61,6 +62,8 @@ class CommitParticipationStateTest extends TestCase
         $this->edge($gate, $actual, 'commit');
         $state = app(PropositionStateService::class);
         foreach ([$preview, $actual] as $head) {
+            $state->loadAttestationCounts(collect([$head]));
+            $this->assertSame(['support' => 1, 'refute' => 0], $head->attestationCounts->all());
             $this->assertSame(2, $state->touchCount($head));
             $this->assertSame([$attestation->id], $state->attestations(collect([$head]))->pluck('id')->all());
             $this->assertSame([$receipt->id], $state->receipts($head)->pluck('id')->all());
@@ -104,6 +107,9 @@ class CommitParticipationStateTest extends TestCase
         $variant = $this->node('expressive');
         $this->edge($gate, $variant, 'variant');
         $state = app(PropositionStateService::class);
+        $state->loadAttestationCounts(collect([$gate, $commit, $variant]));
+        $this->assertSame(['support' => 0, 'refute' => 1], $commit->attestationCounts->all());
+        $this->assertSame(['support' => 0, 'refute' => 0], $variant->attestationCounts->all());
         $this->assertSame([$effective->id], $state->attestations(collect([$commit]))->pluck('id')->all());
         $this->assertSame([$receipt->id], $state->receipts($commit)->pluck('id')->all());
         $this->assertSame(-1.0, app(ChiralityCalculator::class)->leanFor(collect([$commit->id]), $this->phase->cycle->participant->substrate));
@@ -125,6 +131,70 @@ class CommitParticipationStateTest extends TestCase
         $this->assertSame(\App\Services\Observables\LineageMeasurementService::VERSION,
             $measurement->fresh()->calculator_version);
         $this->assertSame(1, app(PropositionStateService::class)->touchCount($node));
+    }
+
+    public static function historyResets(): array
+    {
+        return [
+            'Variant' => ['variant'],
+            'Revise' => ['revise'],
+            'Reclassify' => ['reclassify'],
+            'Reconcile' => ['reconcile'],
+        ];
+    }
+
+    #[DataProvider('historyResets')]
+    public function test_commit_cannot_recover_history_from_before_a_non_commit_reset(string $type): void
+    {
+        $source = $this->node('expressive');
+        $this->touch($source);
+        $old = new Attestation;
+        $old->forceFill(['phase_id' => $this->phase->id, 'proposition_id' => $source->id, 'direction' => 'refute'])->save();
+        app(OperationalInstrumentService::class)->execute($this->phase, $source,
+            ['kind' => 'hyperlink', 'reference' => 'https://example.test/before-reset']);
+        $priorCommit = $this->node('committal');
+        $this->edge($source, $priorCommit, 'commit');
+        $fresh = $this->node('expressive');
+        $this->edge($priorCommit, $fresh, $type);
+        $state = app(PropositionStateService::class);
+        $this->assertSame(1, $state->touchCount($priorCommit));
+        $this->assertCount(1, $state->attestations(collect([$priorCommit])));
+        $this->assertCount(1, $state->receipts($priorCommit));
+        $this->assertSame(0, $state->touchCount($fresh));
+        $this->assertCount(0, $state->attestations(collect([$fresh])));
+        $this->assertCount(0, $state->receipts($fresh));
+
+        $touch = $this->touch($fresh);
+        $earned = new Attestation;
+        $earned->forceFill(['phase_id' => $touch->id, 'proposition_id' => $fresh->id, 'direction' => 'support'])->save();
+        $receipt = app(OperationalInstrumentService::class)->execute($touch, $fresh,
+            ['kind' => 'hyperlink', 'reference' => 'https://example.test/after-reset']);
+        $comparison = app(ContextLineageComparisonService::class)->prospectiveCommit($fresh, $this->phase);
+        $preview = $comparison->current->propositions->last();
+        $actual = $this->node('committal');
+        $this->edge($fresh, $actual, 'commit');
+        foreach ([$preview, $actual] as $head) {
+            $this->assertSame([$head->id, $fresh->id], $state->sourceIds($head)->all());
+            $this->assertSame(1, $state->touchCount($head));
+            $this->assertSame([$earned->id], $state->attestations(collect([$head]))->pluck('id')->all());
+            $this->assertSame([$receipt->id], $state->receipts($head)->pluck('id')->all());
+        }
+    }
+
+    public function test_preview_structural_parents_do_not_implicitly_grant_commit_history(): void
+    {
+        $source = $this->node('expressive');
+        $this->touch($source);
+        $comparison = app(ContextLineageComparisonService::class)->prospectiveCommit($source, $this->phase);
+        $candidate = $comparison->current->propositions->last();
+        $state = app(PropositionStateService::class);
+        $this->assertSame(1, $state->touchCount($candidate));
+
+        // Structural ancestry remains, but there is no declared Commit transition.
+        $candidate->unsetRelation('commitSources');
+        $this->assertSame([$source->id], $candidate->parents->pluck('id')->all());
+        $this->assertSame([$candidate->id], $state->sourceIds($candidate)->all());
+        $this->assertSame(0, $state->touchCount($candidate));
     }
 
     private function touch(Proposition $gate): Phase

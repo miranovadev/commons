@@ -87,3 +87,13 @@ For a manual review:
 `ClosureHysteresisTest` constructs deterministic aligned, divergent, zero-value,
 and multi-parent histories. `npm run test:ui` covers the shared schema-target
 contract and rendered human Support/Refute controls.
+
+## Real participation coverage
+
+`OperationalClosurePathTest` complements the component fixtures with a complete
+[collaborative lifecycle](operational-closure-path.md). It exercises refusal for
+missing final-Concord evidence, refusal for divergent Depth/Cadence after
+grounding, and successful Commit after real participation changes the touch
+distribution. Preview and the persisted snapshot agree, and only Commit carries
+the final earned history. No Closure calculation, threshold or hysteresis rule
+is changed to make this path succeed.

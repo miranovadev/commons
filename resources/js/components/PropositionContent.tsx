@@ -1,5 +1,5 @@
 import { Avatar, Badge, Box, Group, SimpleGrid, Stack, Text, ThemeIcon, Tooltip } from '@mantine/core';
-import { IconArrowRight, IconBolt, IconHexagon, IconHexagonalPrism, IconLayersDifference } from '@tabler/icons-react';
+import { IconArrowRight, IconBolt, IconHexagon, IconHexagonalPrism, IconLayersDifference, IconWhirl } from '@tabler/icons-react';
 import { metaForRegister } from '../registers';
 import type { Observables, Proposition } from '../types';
 
@@ -35,7 +35,7 @@ export function PropositionContent({
       <Stack gap={6}>
         <Text size="xs" fw={650} lineClamp={2}>{title}</Text>
         <TransitionReadout transition={proposition.transition} compact />
-        <FieldValues observables={proposition.observables} committalObservables={committalObservables} tier={proposition.tier} compact />
+        <Group gap="xs" justify="space-between"><FieldValues observables={proposition.observables} committalObservables={committalObservables} tier={proposition.tier} compact /><AttestationCounts counts={proposition.attestation_counts} /></Group>
       </Stack>
     );
   }
@@ -71,16 +71,33 @@ export function PropositionContent({
       {!wireframe && (
         <Box className={detailed ? 'proposition-content__measurements' : undefined}>
           {detailed && <Text fw={700} size="sm" mb="sm">Field state</Text>}
+          <Group gap="xs" justify="space-between" align="center">
           <FieldValues
             observables={projectedObservables || proposition.observables}
             committalObservables={committalObservables}
             tier={proposition.tier}
             compact={!detailed}
           />
+          <AttestationCounts counts={proposition.attestation_counts} />
+          </Group>
         </Box>
       )}
     </Stack>
   );
+}
+
+function AttestationCounts({ counts }: { counts?: Proposition['attestation_counts'] }) {
+  if (!counts) return null;
+  return <Group gap={8} wrap="nowrap" className="proposition-attestation-counts" ml="auto" aria-label="Effective Attestations">
+    {(['support', 'refute'] as const).map((direction) => <Tooltip key={direction}
+      label={`${counts[direction]} effective ${direction === 'support' ? 'Support' : 'Refute'} Attestations`} withArrow>
+      <Group gap={3} wrap="nowrap" c={direction === 'support' ? 'violet' : 'teal'}
+        aria-label={`${direction}: ${counts[direction]}`}>
+        <IconWhirl size={15} aria-hidden="true" className={counts[direction] > 0 ? `attestation-direction-icon attestation-direction-icon--${direction}` : undefined} />
+        <Text size="xs" fw={700}>{counts[direction]}</Text>
+      </Group>
+    </Tooltip>)}
+  </Group>;
 }
 
 function FieldValues({ observables, committalObservables, tier, compact = false }: {

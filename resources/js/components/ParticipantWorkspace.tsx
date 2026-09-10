@@ -1,6 +1,6 @@
 import { Box, Button, Group, Menu, SimpleGrid, Stack, Text, ThemeIcon } from '@mantine/core';
 import { IconBolt, IconEye, IconGitBranch, IconPencil, IconRefresh, IconRoute, IconSeedling, IconTool, IconWhirl } from '@tabler/icons-react';
-import { Fragment, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { domainForRegister, metaForRegister } from '../registers';
 import { actionPropositions, attestationDirections, writePropositions } from '../participationOptions';
 import { LineagePanel } from './LineagePanel';
@@ -9,6 +9,7 @@ import { PropositionInspector } from './PropositionInspector';
 import type {
   ActionName,
   ContributionInitialValues,
+  ContributionInput,
   DomainName,
   Identifier,
   Observables,
@@ -44,15 +45,18 @@ const actionMeta = {
   'proposition.commit': { label: 'Commit', description: 'Write the expressive Gate into the committal structure.', icon: IconBolt },
 } as const;
 type SupersessionAction = keyof typeof actionMeta;
-const cardActions = new Set<ActionName>(['attestation.create', 'instrument.execute', 'proposition.reconcile', 'proposition.revise', 'proposition.traverse']);
+const cardActions = new Set<ActionName>(['attestation.create', 'instrument.execute', 'proposition.reconcile', 'proposition.bias', 'proposition.revise', 'proposition.traverse']);
 
-export function ParticipantWorkspace({ plan, availableActions, onAction }: {
+export function ParticipantWorkspace({ plan, availableActions, onAction, onSubmit, busy = false, error }: {
   plan: ParticipantPlan;
   availableActions: ActionName[];
   onAction: ActionHandler;
+  onSubmit?: (input: ContributionInput) => Promise<boolean>;
+  busy?: boolean;
+  error?: unknown;
 }) {
   const propositions = useMemo<Proposition[]>(() => [
-    plan.gate, plan.workspace?.provenance, ...(plan.lineage || []),
+    plan.gate, plan.workspace?.provenance, ...(plan.lineage || []), ...(plan.read_options || []),
     ...Object.values(plan.workspace?.registers || {}).flatMap((items) => items || []), ...(plan.write_options || []),
     ...(plan.traversal_options || []), ...(plan.instrument_options || []),
     ...(plan.revision_options || []), ...(plan.gate_options || []), ...(plan.attestation_options || []),
@@ -66,19 +70,20 @@ export function ParticipantWorkspace({ plan, availableActions, onAction }: {
   const supersessionActions = actions.filter(isSupersessionAction);
   const propositionActions = actions.filter((action) => !isSupersessionAction(action));
   const [inspection, setInspection] = useState<PropositionSelection | null>(null);
+  useEffect(() => setInspection(null), [plan.phase.id]);
   const registerItems = useMemo(() => Object.fromEntries(
     Object.entries(plan.workspace?.registers || {}).map(([register, items]) => [register, (items || []).map((item) => resolve(item, byId))]),
   ) as Partial<Record<RegisterName, Proposition[]>>, [byId, plan.workspace?.registers]);
   const lineage = useMemo(() => (plan.lineage || []).map((item) => resolve(item, byId)).filter((item) => item.id !== gate.id), [byId, gate.id, plan.lineage]);
   const writeOptions = useMemo(() => writePropositions(plan), [plan]);
   const revisionOptions = useMemo(() => (plan.revision_options || []).map((item) => resolve(item, byId)), [byId, plan.revision_options]);
-  const gateOptions = useMemo(() => ['mediate', 'bias'].includes(plan.phase.kind) ? actionPropositions(plan, 'proposition.reconcile') : [], [plan]);
+  const gateOptions = useMemo(() => plan.phase.kind === 'bias' ? actionPropositions(plan, 'proposition.bias') : plan.phase.kind === 'mediate' ? actionPropositions(plan, 'proposition.reconcile') : [], [plan]);
   const lanes = useMemo(() => buildLanes({ phaseNumber, domainName, writeRegister: plan.phase.write_register, gate, provenance }), [phaseNumber, domainName, plan.phase.write_register, gate, provenance]);
 
   return (
     <Box className="operational-workspace" data-domain={domainName} data-phase={phaseNumber}>
       <Box className="operational-workspace__body">
-        <Stack className="operational-board" gap="md">
+        <Stack renderRoot={(props) => <fieldset {...props} disabled={busy} />} className="operational-board" gap="md" style={{ border: 0 }} aria-busy={busy}>
           <LineagePanel lineage={lineage} committalObservables={provenance.observables} onInspect={setInspection} />
           {lanes.map((lane) => (
             <Fragment key={`${phaseNumber}-${lane.key}`}>
@@ -95,7 +100,8 @@ export function ParticipantWorkspace({ plan, availableActions, onAction }: {
             </Fragment>
           ))}
         </Stack>
-        <PropositionInspector selection={inspection} committalObservables={provenance.observables} onClose={() => setInspection(null)} />
+        <PropositionInspector selection={inspection} committalObservables={provenance.observables} onClose={() => setInspection(null)}
+          plan={plan} onSubmit={onSubmit} loading={busy} error={error} />
       </Box>
     </Box>
   );
@@ -141,15 +147,16 @@ function OperationalRow({ plan, lane, gate, lineage, committalObservables, propo
           <Text className="register-row__title" size="xs" fw={750}>{meta.label}</Text>
           <Text size="xs" c="dimmed" visibleFrom="sm">{meta.description}</Text>
         </Group>
-        {lane.role === 'read' && <ReadContent register={lane.register} gate={gate} featured={lane.featured} propositions={propositions} lineage={lineage} committalObservables={committalObservables} onInspect={onInspect} />}
-        {lane.role === 'gate' && <GateContent gate={laneGate} candidates={gateOptions} committalObservables={committalObservables} onInspect={onInspect} onAction={onAction} />}
+        {lane.role === 'read' && <ReadContent options={plan.phase.kind === 'mediate' ? plan.read_options || [] : undefined} register={lane.register} gate={gate} featured={lane.featured} propositions={propositions} lineage={lineage} committalObservables={committalObservables} onInspect={onInspect} />}
+        {lane.role === 'gate' && <GateContent bias={plan.phase.kind === 'bias'} gate={laneGate} candidates={gateOptions} committalObservables={committalObservables} onInspect={onInspect} onAction={onAction} />}
         {lane.role === 'write' && <WriteContent plan={plan} writeOptions={writeOptions} revisionOptions={revisionOptions} attestationOptions={attestationOptions} traversalOptions={traversalOptions} instrumentOptions={instrumentOptions} actions={actions} committalObservables={committalObservables} onInspect={onInspect} onAction={onAction} />}
       </Box>
     </Box>
   );
 }
 
-function ReadContent({ register, gate, featured, propositions, lineage, committalObservables, onInspect }: {
+function ReadContent({ options, register, gate, featured, propositions, lineage, committalObservables, onInspect }: {
+  options?: Proposition[];
   register?: RegisterName;
   gate: Proposition;
   featured?: Proposition;
@@ -158,13 +165,17 @@ function ReadContent({ register, gate, featured, propositions, lineage, committa
   committalObservables?: Observables;
   onInspect: InspectHandler;
 }) {
+  if (options !== undefined) return options.length > 0
+    ? <Stack gap="sm">{options.map((proposition) => <PropositionCard key={proposition.id} proposition={proposition} committalObservables={committalObservables} compact flow="read" onClick={() => onInspect({ kind: 'read', proposition })} />)}</Stack>
+    : <EmptyState text="No Mediate Read anchor is available from the previous Disperse Phase." />;
   const currentRead = featured || propositions.find((item) => item.id !== gate.id) || lineage.find((item) => item.register === register) || lineage[0];
   return currentRead
     ? <PropositionCard proposition={currentRead} committalObservables={committalObservables} compact flow="read" onClick={() => onInspect({ kind: 'read', proposition: currentRead })} />
     : <EmptyState text="No readable proposition is exposed in this register." />;
 }
 
-function GateContent({ gate, candidates, committalObservables, onInspect, onAction }: {
+function GateContent({ bias, gate, candidates, committalObservables, onInspect, onAction }: {
+  bias: boolean;
   gate: Proposition;
   candidates: Proposition[];
   onAction: ActionHandler;
@@ -172,12 +183,13 @@ function GateContent({ gate, candidates, committalObservables, onInspect, onActi
   onInspect: InspectHandler;
 }) {
   return <Stack gap="sm">
-    <PropositionCard proposition={gate} committalObservables={committalObservables} selected compact flow="gate" onClick={() => onInspect({ kind: 'gate', proposition: gate })} />
+    {!bias && <PropositionCard proposition={gate} committalObservables={committalObservables} selected compact flow="gate" onClick={() => onInspect({ kind: 'gate', proposition: gate })} />}
+    {bias && candidates.length === 0 && <EmptyState text="No active Proposition contributes to a dominant lean here." />}
     {candidates.length > 0 && <SimpleGrid cols={{ base: 1, md: 2, xl: 3 }} spacing="sm">
-      {candidates.map((candidate) => <Box key={candidate.id} className="write-option-card" data-reconcile-candidate={candidate.id}>
-        <PropositionCard proposition={candidate} committalObservables={committalObservables} compact flow="gate" onClick={() => onInspect({ kind: 'gate counterpart', proposition: candidate })} />
+      {candidates.map((candidate) => <Box key={candidate.id} className="write-option-card" data-reconcile-candidate={bias ? undefined : candidate.id} data-bias-candidate={bias ? candidate.id : undefined}>
+        <PropositionCard proposition={candidate} committalObservables={committalObservables} compact flow="gate" onClick={() => onInspect({ kind: bias ? 'gate choice' : 'gate counterpart', proposition: candidate })} />
         <Group className="write-option-card__actions" gap={4}>
-          <Button size="compact-xs" variant="subtle" color="gray" leftSection={<IconRoute size={13} />} onClick={() => onAction('proposition.reconcile', { other_proposition_id: candidate.id })}>Reconcile</Button>
+          <Button size="compact-xs" variant="subtle" color="gray" leftSection={<IconRoute size={13} />} onClick={() => bias ? onAction('proposition.bias', { proposition_id: candidate.id }) : onAction('proposition.reconcile', { other_proposition_id: candidate.id })}>{bias ? 'Bias' : 'Reconcile'}</Button>
         </Group>
       </Box>)}
     </SimpleGrid>}

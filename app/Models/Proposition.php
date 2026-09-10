@@ -72,4 +72,10 @@ class Proposition extends Model
             'target_proposition_id',
         )->withPivot('type');
     }
+
+    /** History sources are explicit Commit edges, independent of edge strength. */
+    public function commitSources(): BelongsToMany
+    {
+        return $this->parents()->wherePivot('type', 'commit');
+    }
 }

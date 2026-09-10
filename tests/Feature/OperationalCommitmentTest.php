@@ -15,6 +15,7 @@ use App\Services\InstrumentExecutionService;
 use App\Services\LedgerService;
 use App\Services\OperationalInstrumentService;
 use App\Services\ParticipationService;
+use App\Services\PropositionStateService;
 use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -96,8 +97,20 @@ class OperationalCommitmentTest extends TestCase
         $this->assertArrayNotHasKey('participant.rest', $state['plan']['schema']['$defs']['actions']);
 
         $phaseId = $state['plan']['phase']['id'];
+        $history = app(PropositionStateService::class);
+        $earnedAttestations = $history->attestations(collect([$candidate]))->pluck('id')->all();
+        $earnedReceipts = $history->receipts($candidate)->pluck('id')->all();
+        $earnedTouches = $history->touchCount($candidate);
+        $this->assertNotEmpty($earnedAttestations);
+        $this->assertNotEmpty($earnedReceipts);
+        $this->assertGreaterThan(0, $earnedTouches);
+        $contributionCounts = [Attestation::count(), \App\Models\Receipt::count(), Phase::count()];
         $this->move($this->participant, ['action' => 'proposition.commit']);
         $committed = Proposition::findOrFail($this->participant->fresh()->current_proposition_id);
+        $this->assertSame($earnedAttestations, $history->attestations(collect([$committed]))->pluck('id')->all());
+        $this->assertSame($earnedReceipts, $history->receipts($committed)->pluck('id')->all());
+        $this->assertSame($earnedTouches, $history->touchCount($committed));
+        $this->assertSame($contributionCounts, [Attestation::count(), \App\Models\Receipt::count(), Phase::count()]);
         $this->assertSame('committal', $committed->tier);
         $this->assertSame('concord', $committed->register);
         $this->assertSame($candidate->statement, $committed->statement);
@@ -226,40 +239,34 @@ class OperationalCommitmentTest extends TestCase
         app(OperationalInstrumentService::class)->execute($this->origin->phase, $this->origin, ['kind' => 'citation', 'reference' => $foreign->id]);
     }
 
-    public function test_bias_grounds_a_reconciled_historical_proposition_and_later_cycle_can_commit_it(): void
+    public function test_bias_grounds_an_existing_concord_and_later_cycle_can_commit_it(): void
     {
         $left = $this->candidate();
-        $right = new Proposition;
-        $right->forceFill(['phase_id' => $left->phase_id, 'register' => $left->register,
-            'tier' => 'expressive', 'statement' => 'Sibling alternative'])->save();
-        app(LedgerService::class)->record($right);
-        $this->origin->children()->attach($right->id, [
-            'id' => (string) str()->ulid(), 'phase_id' => $left->phase_id, 'type' => 'variant',
+        $left->register = 'stance';
+        $left->save();
+        $this->attest($left);
+        $builder = $this->participant($this->participant->substrate, 'orienter');
+        $biasPhase = $this->phase($builder, PhaseKind::Bias, 'concord', $left);
+        $candidate = app(ContributionDispatcher::class)->dispatch($builder, $biasPhase, [
+            'action' => 'proposition.bias', 'proposition_id' => $left->id,
         ]);
-        $this->attest($right);
-        $builder = $this->participant($this->participant->substrate, 'reconciler');
-        $reconcilePhase = $this->phase($builder, PhaseKind::Bias, 'concord', $left);
-        // Use the normal dispatcher to produce the two-parent reconciliation.
-        $candidate = app(ContributionDispatcher::class)->dispatch($builder, $reconcilePhase, [
-            'action' => 'proposition.reconcile', 'other_proposition_id' => $right->id,
-        ]);
-        // Another lineage does not erase the original reconciled Proposition.
-        $descendant = app(ContributionDispatcher::class)->dispatch($builder, $reconcilePhase, [
+        // Another lineage does not erase the existing Concord.
+        $descendant = app(ContributionDispatcher::class)->dispatch($builder, $biasPhase, [
             'action' => 'proposition.variant', 'statement' => 'Another lineage',
         ]);
         $descendant->register = 'signal';
         $descendant->save();
         $candidate->children()->attach($descendant->id, [
-            'id' => (string) str()->ulid(), 'phase_id' => $reconcilePhase->id, 'type' => 'variant',
+            'id' => (string) str()->ulid(), 'phase_id' => $biasPhase->id, 'type' => 'variant',
         ]);
         $reader = $this->participant($this->participant->substrate, 'reader');
-        $bias = $this->phase($reader, PhaseKind::Bias, 'concord', $right);
+        $bias = $this->phase($reader, PhaseKind::Bias, 'concord', $left);
         $state = app(ParticipationService::class)->stateFor($reader);
         $this->assertContains($candidate->id, array_column($state['plan']['write_options'], 'id'));
         $this->assertContains($candidate->id, $state['plan']['schema']['$defs']['actions']['instrument.execute']['properties']['proposition_id']['enum']);
         $state = $this->move($reader, [
             'action' => 'instrument.execute', 'proposition_id' => $candidate->id,
-            'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/reconciled'],
+            'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/concord'],
         ]);
         $this->assertSame('order', $state['plan']['phase']['kind']);
         $this->assertTrue($state['plan']['commitment']['requirements']['receipt']);
