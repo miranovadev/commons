@@ -135,7 +135,7 @@ class OperationalCommitmentTest extends TestCase
         $this->assertArrayHasKey('participant.rest', $state['plan']['schema']['$defs']['actions']);
         $this->assertFalse($state['plan']['commitment']['requirements']['receipt']);
         try {
-            app(ContributionDispatcher::class)->dispatch($participant, $phase, ['action' => 'proposition.commit']);
+            app(ContributionDispatcher::class)->dispatch($participant, $phase, ['action' => 'proposition.commit', 'proposition_id' => $phase->gate_proposition_id]);
             $this->fail('Dispatch must enforce the same preconditions as the schema.');
         } catch (DomainException $exception) {
             $this->assertStringContainsString('effective Attestation', $exception->getMessage());
@@ -348,8 +348,12 @@ class OperationalCommitmentTest extends TestCase
     /** @param array<string, mixed> $input @return array<string, mixed> */
     private function move(Participant $participant, array $input): array
     {
+        if ($input['action'] === 'proposition.commit') {
+            $input['proposition_id'] = $participant->fresh()->current_proposition_id;
+        }
         $service = app(ParticipationService::class);
         $state = $service->stateFor($participant);
         return $service->contribute($participant, $state['plan']['phase']['id'], $input);
     }
 }
+

@@ -44,8 +44,9 @@ export function attestationDirections(plan: ParticipantPlan, propositionId?: str
 export function writePropositions(plan: ParticipantPlan): Proposition[] {
   const actionable = new Set(([
     'attestation.create', 'proposition.traverse', 'proposition.revise',
-    'instrument.execute',
+    'instrument.execute', 'proposition.commit',
   ] as ActionName[]).flatMap((action) => [...actionTargetIds(plan, action)]));
   return [...new Map((plan.write_options ?? []).filter((item) => actionable.has(item.id))
     .map((item) => [item.id, item])).values()];
 }
+

@@ -58,7 +58,7 @@ class ClosureHysteresisTest extends TestCase
         $this->assertSame('ready', $state['status']);
         $this->assertTrue($state['plan']['commitment']['closure_enforced']);
 
-        $result = app(ParticipationService::class)->contribute($this->participant, $phase->id, ['action' => 'proposition.commit']);
+        $result = app(ParticipationService::class)->contribute($this->participant, $phase->id, ['action' => 'proposition.commit', 'proposition_id' => $phase->gate_proposition_id]);
         $snapshot = CommitmentSnapshot::findOrFail($result['current_proposition_id']);
         $this->assertSame($preview['depth'], $snapshot->depth);
         $this->assertSame($preview['cadence'], $snapshot->cadence);
@@ -91,7 +91,7 @@ class ClosureHysteresisTest extends TestCase
         $this->assertSame(round((-1 - 1 / 4 + 1 / 9 + 1 / 16 - 1 / 25)
             / (1 + 1 / 4 + 1 / 9 + 1 / 16 + 1 / 25), 7), $preview['cadence']);
         $this->assertTrue($preview['admissible']);
-        $state = app(ParticipationService::class)->contribute($this->participant, $phase->id, ['action' => 'proposition.commit']);
+        $state = app(ParticipationService::class)->contribute($this->participant, $phase->id, ['action' => 'proposition.commit', 'proposition_id' => $phase->gate_proposition_id]);
         $this->assertFalse($state['last_commitment']['closure_boundary']);
         $this->assertSame('settlement', $state['domain']);
         $this->assertSame(2, $state['horizon_sequence']);
@@ -119,7 +119,7 @@ class ClosureHysteresisTest extends TestCase
     {
         $this->bootstrap(2);
         [$phase] = $this->candidate([2]);
-        $entered = app(ParticipationService::class)->contribute($this->participant, $phase->id, ['action' => 'proposition.commit']);
+        $entered = app(ParticipationService::class)->contribute($this->participant, $phase->id, ['action' => 'proposition.commit', 'proposition_id' => $phase->gate_proposition_id]);
         $this->assertSame('emergence', $entered['domain']);
         $this->origin = Proposition::findOrFail($entered['current_proposition_id']);
         [$phase, $gate] = $this->candidate(range(3, 12), 'canon', 'activity', 'refute');
@@ -133,7 +133,7 @@ class ClosureHysteresisTest extends TestCase
         $this->assertLessThan(0, $preview['depth']);
         $this->assertLessThan(0, $preview['cadence']);
         $this->assertTrue($preview['admissible']);
-        $state = app(ParticipationService::class)->contribute($this->participant, $phase->id, ['action' => 'proposition.commit']);
+        $state = app(ParticipationService::class)->contribute($this->participant, $phase->id, ['action' => 'proposition.commit', 'proposition_id' => $phase->gate_proposition_id]);
         $snapshot = CommitmentSnapshot::findOrFail($state['current_proposition_id']);
         $this->assertSame($preview['depth'], $snapshot->depth);
         $this->assertSame($preview['cadence'], $snapshot->cadence);
@@ -158,7 +158,7 @@ class ClosureHysteresisTest extends TestCase
         $this->assertArrayNotHasKey('proposition.commit', $state['plan']['schema']['$defs']['actions']);
         $this->assertArrayHasKey('participant.rest', $state['plan']['schema']['$defs']['actions']);
         try {
-            app(ContributionDispatcher::class)->dispatch($this->participant, $phase, ['action' => 'proposition.commit']);
+            app(ContributionDispatcher::class)->dispatch($this->participant, $phase, ['action' => 'proposition.commit', 'proposition_id' => $phase->gate_proposition_id]);
             $this->fail('Direct dispatch must not bypass Closure.');
         } catch (DomainException $exception) {
             $this->assertStringContainsString('depth_cadence_directions_diverge', $exception->getMessage());
@@ -207,7 +207,7 @@ class ClosureHysteresisTest extends TestCase
         });
 
         try {
-            app(ContributionDispatcher::class)->dispatch($this->participant, $phase, ['action' => 'proposition.commit']);
+            app(ContributionDispatcher::class)->dispatch($this->participant, $phase, ['action' => 'proposition.commit', 'proposition_id' => $phase->gate_proposition_id]);
             $this->fail('An actual candidate rejection must roll back the write.');
         } catch (DomainException $exception) {
             $this->assertStringContainsString('aligned Depth/Cadence', $exception->getMessage());
@@ -266,7 +266,7 @@ class ClosureHysteresisTest extends TestCase
         $previous = $this->origin;
         foreach ($cycles as $sequence) {
             $phase = $this->phase($sequence, $writeRegister);
-            $gate = $this->node($phase, 'expressive', $gateRegister);
+            $gate = $this->node($phase, 'expressive', $sequence === end($cycles) ? $writeRegister : $gateRegister);
             $this->edge($phase, $previous, $gate, 'variant');
             $phase->gate_proposition_id = $gate->id;
             $phase->save();
@@ -322,3 +322,4 @@ class ClosureHysteresisTest extends TestCase
         return [Proposition::count(), Supersession::count(), CommitmentSnapshot::count(), ContextHorizon::count(), \App\Models\SubstrateLedgerEntry::count()];
     }
 }
+

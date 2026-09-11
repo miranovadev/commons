@@ -5,6 +5,7 @@ namespace App\Services\Observables;
 use App\Domain\Observables\DomainLineage;
 use App\Domain\Observables\LineageComparison;
 use App\Enums\SupersessionStrength;
+use App\Enums\RegisterPosition;
 use App\Models\Proposition;
 
 final readonly class CorrespondenceCalculator
@@ -116,11 +117,7 @@ final readonly class CorrespondenceCalculator
 
     private function nodeLabel(string $register): string
     {
-        return match ($register) {
-            'activity', 'signal' => 'R',
-            'frontier', 'stance' => 'G',
-            'canon', 'concord' => 'B',
-        };
+        return RegisterPosition::forRegister($register)->value;
     }
 
     private function normalise(float $value): float
@@ -128,3 +125,4 @@ final readonly class CorrespondenceCalculator
         return round(max(-1, min(1, $value)), 7);
     }
 }
+

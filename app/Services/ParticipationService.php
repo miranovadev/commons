@@ -96,7 +96,7 @@ final readonly class ParticipationService
 
         $plan = $this->contributions->planFor($participant);
         $blocked = $phase->kind === PhaseKind::Order
-            && ! $plan['commitment']['admissible'];
+            && ! isset($plan['schema']['$defs']['actions']['proposition.commit']);
 
         return [
             'status' => 'ready',
@@ -309,3 +309,4 @@ final readonly class ParticipationService
         ];
     }
 }
+

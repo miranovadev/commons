@@ -5,12 +5,15 @@ namespace App\Services;
 use App\Enums\PhaseKind;
 use App\Models\Phase;
 use App\Models\Proposition;
-use Illuminate\Database\Eloquent\Builder;
+use App\Enums\RegisterPosition;
 use Illuminate\Support\Collection;
 
 final readonly class MediationReadService
 {
-    public function __construct(private PropositionMeasurementService $measurements) {}
+    public function __construct(
+        private PropositionMeasurementService $measurements,
+        private CommitRegionService $regions,
+    ) {}
 
     /** The previous Disperse Gate is the anchor, regardless of display ordering. */
     public function anchorFor(Phase $phase): ?Proposition
@@ -29,7 +32,7 @@ final readonly class MediationReadService
             ? $anchor : null;
     }
 
-    /** Anchor first, then matching immediate same-register siblings. No recursive expansion. */
+    /** Anchor first, then corresponding Reads across the Commit Region. */
     public function readsFor(Phase $phase): Collection
     {
         $anchor = $this->anchorFor($phase);
@@ -43,13 +46,7 @@ final readonly class MediationReadService
             return $reads;
         }
 
-        $parentIds = $anchor->parents()->whereHas('phase.cycle.participant', fn ($query) => $query
-            ->where('substrate_id', $phase->cycle->participant->substrate_id))->pluck('propositions.id');
-        $siblings = $this->inContext($phase, $anchor)
-            ->where('register', $anchor->register)->whereKeyNot($anchor->id)
-            ->whereHas('parents', fn ($query) => $query->whereKey($parentIds))
-            ->whereDoesntHave('children', fn ($query) => $query->where('supersessions.type', '!=', 'variant'))
-            ->orderBy('id')->get();
+        $siblings = $this->regions->forPhase($phase, $anchor)->where('id', '!=', $anchor->id);
         $this->measurements->repairMissing($siblings);
 
         return $reads->concat($siblings->filter(fn (Proposition $sibling): bool =>
@@ -65,20 +62,11 @@ final readonly class MediationReadService
         }
         $gate = $phase->gate()->firstOrFail();
 
-        return $this->inContext($phase, $gate)
-            ->where('tier', 'expressive')->where('register', $gate->register)
-            ->whereHas('parents', fn ($query) => $query->whereKey($reads->pluck('id')))
-            ->whereDoesntHave('children', fn ($query) => $query->where('supersessions.type', '!=', 'variant'))
-            ->orderBy('id')->get();
-    }
+        $pool = $this->regions->atPosition($phase, $gate, RegisterPosition::First);
 
-    private function inContext(Phase $phase, Proposition $position): Builder
-    {
-        return Proposition::query()
-            ->whereHas('phase.cycle.participant', fn ($query) => $query
-                ->where('substrate_id', $phase->cycle->participant->substrate_id))
-            ->whereHas('contextHorizonMembership', fn ($query) => $query
-                ->where('context_horizon_id', $position->contextHorizonMembership?->context_horizon_id));
+        return Proposition::query()->whereKey($pool->pluck('id'))
+            ->whereHas('parents', fn ($query) => $query->whereKey($reads->pluck('id')))
+            ->orderBy('id')->get();
     }
 
     private function direction(float|string|null $value): int
@@ -86,3 +74,4 @@ final readonly class MediationReadService
         return $value === null ? 0 : ((float) $value <=> 0.0);
     }
 }
+

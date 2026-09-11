@@ -221,7 +221,7 @@ class OperationalClosurePathTest extends TestCase
         $phase = Phase::findOrFail($state['plan']['phase']['id']);
         $counts = [Proposition::count(), Supersession::count(), CommitmentSnapshot::count(), $this->substrate->ledgerEntries()->count()];
         try {
-            app(ContributionDispatcher::class)->dispatch($participant, $phase, ['action' => 'proposition.commit']);
+            app(ContributionDispatcher::class)->dispatch($participant, $phase, ['action' => 'proposition.commit', 'proposition_id' => $phase->gate_proposition_id]);
             $this->fail('Execution must enforce the same refusal as preview/schema.');
         } catch (DomainException) {
             $this->assertNull($phase->fresh()->completed_at);
@@ -252,6 +252,9 @@ class OperationalClosurePathTest extends TestCase
 
     private function move(Participant $participant, array $input): array
     {
+        if ($input['action'] === 'proposition.commit') {
+            $input['proposition_id'] = $participant->fresh()->current_proposition_id;
+        }
         $phaseId = $this->state($participant)['plan']['phase']['id'];
         return app(ParticipationService::class)->contribute($participant, $phaseId, $input);
     }
@@ -261,3 +264,4 @@ class OperationalClosurePathTest extends TestCase
         return Proposition::findOrFail($state['plan']['gate']['id']);
     }
 }
+

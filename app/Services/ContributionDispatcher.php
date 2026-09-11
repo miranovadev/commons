@@ -22,6 +22,7 @@ final readonly class ContributionDispatcher
         private CommitmentSnapshotService $commitments,
         private ReconciliationOptionService $reconciliation,
         private BiasGateService $bias,
+        private CommitRegionService $regions,
     ) {}
 
     /**
@@ -63,7 +64,7 @@ final readonly class ContributionDispatcher
                 $phase,
                 $input,
             ),
-            'proposition.commit' => $this->commit($phase, $gate),
+            'proposition.commit' => $this->commit($phase, $input),
             default => throw new DomainException(
                 'The selected contribution action is not supported.'
             ),
@@ -226,12 +227,21 @@ final readonly class ContributionDispatcher
 
     private function commit(
         Phase $phase,
-        Proposition $gate,
+        array $input,
     ): Proposition {
-        return DB::transaction(function () use ($phase, $gate): Proposition {
+        if (array_diff(array_keys($input), ['action', 'proposition_id']) !== []) {
+            throw new DomainException('Commit selects one Proposition; it accepts no authored statement.');
+        }
+
+        return DB::transaction(function () use ($phase, $input): Proposition {
             // Serialize evaluation and the resulting horizon transition with ledger writes.
             \App\Models\Substrate::query()->whereKey($phase->cycle->participant->substrate_id)
                 ->lockForUpdate()->firstOrFail();
+            $gate = $phase->kind === \App\Enums\PhaseKind::Order
+                ? $this->regions->forPhase($phase)->firstWhere('id', $input['proposition_id'] ?? null) : null;
+            if ($gate === null) {
+                throw new DomainException('Commit requires an active Closure candidate in the current Commit Region.');
+            }
             $eligibility = $this->admissibility->evaluate($gate, $phase);
             if (! $eligibility['admissible']) {
                 throw new DomainException(
@@ -322,3 +332,4 @@ final readonly class ContributionDispatcher
         return $proposition;
     }
 }
+

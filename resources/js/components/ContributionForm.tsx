@@ -207,7 +207,7 @@ export function ContributionForm({
 
           {action === 'proposition.commit' && (
             <Text size="sm" c="dimmed">
-              This writes the current expressive Gate as an immutable
+              This writes the selected expressive Proposition as an immutable
               Committal Proposition and closes the Cycle.
             </Text>
           )}
@@ -228,3 +228,4 @@ export function ContributionForm({
     </Modal>
   );
 }
+

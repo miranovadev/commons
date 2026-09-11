@@ -80,7 +80,7 @@ final class OpenAIResponseSchema
 
         // Bias and Instruments share proposition_id but have disjoint Gate/Write
         // targets. Keep their target sets separate at the provider boundary too.
-        if (isset($actions['proposition.bias']) && count($actions) > 1) {
+        if ((isset($actions['proposition.bias']) || isset($actions['proposition.commit'])) && count($actions) > 1) {
             $base = $transport['properties']['contribution'];
             $variants = [];
             foreach ($actions as $action) {
@@ -256,3 +256,4 @@ final class OpenAIResponseSchema
         return $schema;
     }
 }
+

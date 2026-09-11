@@ -42,7 +42,7 @@ $proposition = static function (string $action, string $title) use ($statement):
 };
 
 return [
-    'version' => 14,
+    'version' => 15,
 
     'cache' => [
         'store' => env('COMMONS_SCHEMA_CACHE_STORE'),
@@ -142,13 +142,15 @@ return [
             ],
         ],
         'proposition.commit' => [
-            'title' => 'Commit the current gate',
+            'title' => 'Commit a Closure candidate',
             'type' => 'object',
             'additionalProperties' => false,
-            'required' => ['action'],
+            'required' => ['action', 'proposition_id'],
             'properties' => [
                 'action' => ['const' => 'proposition.commit'],
+                'proposition_id' => $ulid,
             ],
         ],
     ],
 ];
+

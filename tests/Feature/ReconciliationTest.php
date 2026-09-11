@@ -108,7 +108,7 @@ class ReconciliationTest extends TestCase
         }
     }
 
-    public function test_horizon_and_substrate_boundaries_cannot_supply_siblings(): void
+    public function test_horizon_membership_does_not_replace_region_scope_and_substrates_stay_isolated(): void
     {
         $this->fixture();
         $valid = $this->sibling('Valid');
@@ -128,7 +128,7 @@ class ReconciliationTest extends TestCase
         $foreignPhase = $this->newPhase($outsider, PhaseKind::Distinguish, 'activity', true);
         $foreign->phase_id = $foreignPhase->id;
         $foreign->save();
-        $this->assertSame([$valid->id], array_column($this->plan()['gate_options'], 'id'));
+        $this->assertSame([$valid->id, $wrongHorizon->id], array_column($this->plan()['gate_options'], 'id'));
     }
 
     public function test_reconcile_is_structural_selection_with_exact_gate_content(): void
@@ -213,7 +213,7 @@ class ReconciliationTest extends TestCase
         }
     }
 
-    public function test_mediate_read_expansion_is_one_step_in_the_same_register_and_context(): void
+    public function test_mediate_reads_cross_branches_and_depths_inside_the_same_region(): void
     {
         $this->fixture();
         [$validRead, $validGate] = $this->readSibling('Matching', -0.7, 1);
@@ -237,9 +237,9 @@ class ReconciliationTest extends TestCase
         $unrelatedGate = $this->node('Unrelated Gate', 'activity');
         $this->edge($unrelatedRead, $unrelatedGate);
         $plan = $this->plan();
-        $this->assertSame([$this->parent->id, $validRead->id], array_column($plan['read_options'], 'id'));
-        $this->assertSame([$validGate->id], array_column($plan['gate_options'], 'id'));
-        foreach ([$oppositeGate, $wrongGate, $hardGate, $foreignGate, $distantGate, $unrelatedGate] as $invalid) {
+        $this->assertEqualsCanonicalizing([$this->parent->id, $validRead->id, $foreignHorizon->id, $distantRead->id, $hardRead->children()->firstOrFail()->id], array_column($plan['read_options'], 'id'));
+        $this->assertEqualsCanonicalizing([$validGate->id, $foreignGate->id, $distantGate->id], array_column($plan['gate_options'], 'id'));
+        foreach ([$oppositeGate, $wrongGate, $hardGate, $unrelatedGate] as $invalid) {
             $this->assertInput($plan['schema'], ['action' => 'proposition.reconcile', 'other_proposition_id' => $invalid->id], false);
         }
     }
@@ -335,3 +335,4 @@ class ReconciliationTest extends TestCase
         return $attestation;
     }
 }
+
