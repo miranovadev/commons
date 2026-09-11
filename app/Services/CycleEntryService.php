@@ -20,6 +20,7 @@ final readonly class CycleEntryService
 {
     public function __construct(
         private LedgerService $ledger,
+        private CommitRegionPolarityService $polarity,
         private OperationalInstrumentService $instruments,
         private PropositionMeasurementService $measurements,
         private ProjectionService $projections,
@@ -96,6 +97,7 @@ final readonly class CycleEntryService
                 $origin['statement'],
             );
 
+            $this->polarity->establishOrigin($proposition, $origin['attestation']['direction']);
             $this->ledger->record($proposition);
             $this->createAttestation(
                 $order,

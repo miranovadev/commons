@@ -36,13 +36,6 @@ final class ReinforcementService
             ->where('type', '!=', 'citation')
             ->whereNotNull('signature')
             ->with('instrumentExecution')->get();
-        $ratio = (float) data_get(
-            $substrate->configuration,
-            'observables.contribution_receipt_ratio',
-            3,
-        );
-        $ratio = $ratio > 0 ? $ratio : 3;
-
         return $contributions->mapWithKeys(
             fn (Model $contribution) => [
                 (string) $contribution->getKey() => 1 + (
@@ -50,9 +43,15 @@ final class ReinforcementService
                         $receipt->receiptable_id === $contribution->getKey()
                         || ($sources[$contribution->getKey()]->contains($receipt->receiptable_id)
                             && $receipt->instrumentExecution?->status === 'completed')
-                    )->count() / $ratio
+                    )->count() * $this->receiptIncrement($substrate)
                 ),
             ],
         );
+    }
+    /** Shared receipt increment for current calculations and ledger-prefix replay. */
+    public function receiptIncrement(Substrate $substrate): float
+    {
+        $ratio = (float) data_get($substrate->configuration, 'observables.contribution_receipt_ratio', 3);
+        return 1 / ($ratio > 0 ? $ratio : 3);
     }
 }

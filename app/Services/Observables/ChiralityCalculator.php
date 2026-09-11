@@ -8,14 +8,12 @@ use App\Enums\ObservableDirection;
 use App\Enums\SupersessionStrength;
 use App\Models\Substrate;
 use App\Models\Proposition;
-use App\Services\PropositionStateService;
 use Illuminate\Support\Collection;
 
 final readonly class ChiralityCalculator
 {
     public function __construct(
-        private ReinforcementService $reinforcement,
-        private PropositionStateService $state,
+        private \App\Services\AttestationEvidenceService $evidence,
     ) {}
 
     public function calculate(LineageComparison $comparison): float
@@ -35,9 +33,7 @@ final readonly class ChiralityCalculator
     {
         $ids = $this->activeIds($lineage->propositions, $lineage->supersessions);
 
-        return $this->attestationLean($this->state->attestations(
-            $lineage->propositions->whereIn('id', $ids),
-        ), $lineage->horizon->substrate);
+        return $this->evidence->valueFor($lineage->propositions->whereIn('id', $ids), $lineage->horizon->substrate);
     }
 
     /** Shared hard-supersession semantics for active propositions in a lineage. */
@@ -56,69 +52,12 @@ final readonly class ChiralityCalculator
     /** Receipt-weighted effective Attestation lean, before cross-domain comparison. */
     public function leanFor(Collection $activeIds, Substrate $substrate): float
     {
-        return $this->attestationLean($this->state->attestations(
-            Proposition::query()->whereIn('id', $activeIds)->get(),
-        ), $substrate);
+        return $this->evidence->valueFor(Proposition::query()->whereIn('id', $activeIds)->get(), $substrate);
     }
 
-    /**
-     * Resolve the Proposition's retained attestational direction.
-     *
-     * A neutral local lean inherits the direction of its primary parent. The
-     * positive bootstrap default is reached only at the root of a lineage.
-     */
+    /** Effective Attestation direction reconstructed from evidence in its fixed region frame. */
     public function directionFor(Proposition $proposition): ObservableDirection
     {
-        $substrate = $proposition->phase->cycle->participant->substrate;
-
-        $resolved = [];
-
-        return $this->resolveDirection($proposition, $substrate, $resolved);
-    }
-
-    /** @param array<string, ObservableDirection> $resolved */
-    private function resolveDirection(
-        Proposition $proposition,
-        Substrate $substrate,
-        array &$resolved,
-    ): ObservableDirection {
-        if (isset($resolved[$proposition->getKey()])) {
-            return $resolved[$proposition->getKey()];
-        }
-
-        $parent = $proposition->parents()
-            ->orderBy('supersessions.created_at')
-            ->orderBy('supersessions.id')
-            ->first();
-        $previous = $parent === null
-            ? ObservableDirection::Positive
-            : $this->resolveDirection($parent, $substrate, $resolved);
-        $direction = ObservableDirection::after(
-            $this->leanFor(collect([$proposition->getKey()]), $substrate),
-            $previous,
-        );
-        $resolved[$proposition->getKey()] = $direction;
-
-        return $direction;
-    }
-
-    private function attestationLean(Collection $attestations, Substrate $substrate): float
-    {
-        $weights = $this->reinforcement->weights(
-            $attestations,
-            $substrate,
-        );
-        $total = 0.0;
-        $net = 0.0;
-
-        foreach ($attestations as $attestation) {
-            $weight = $weights->get($attestation->getKey(), 1);
-            $total += $weight;
-            $net += $attestation->direction === 'support'
-                ? $weight
-                : -$weight;
-        }
-
-        return $total === 0.0 ? 0 : $net / $total;
+        return $this->evidence->directionFor($proposition);
     }
 }

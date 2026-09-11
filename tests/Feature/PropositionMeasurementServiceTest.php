@@ -72,6 +72,21 @@ class PropositionMeasurementServiceTest extends TestCase
         );
     }
 
+    public function test_correspondence_retains_both_directions_through_zero_and_projection_deletion(): void
+    {
+        $position = $this->proposition();
+        $service = app(PropositionMeasurementService::class);
+        foreach ([1.0, -1.0] as $sign) {
+            $service->project($position, $sign, 0, 0);
+            foreach ([0.0, null] as $value) {
+                $service->project($position, $value, 0, 0);
+                $this->assertSame(\App\Enums\ObservableDirection::after($sign), $service->correspondenceDirectionFor($position));
+            }
+            PropositionMeasurement::query()->whereKey($position->id)->delete();
+            $this->assertSame(\App\Enums\ObservableDirection::after($sign), $service->correspondenceDirectionFor($position));
+        }
+    }
+
     private function proposition(): Proposition
     {
         $substrate = new Substrate;

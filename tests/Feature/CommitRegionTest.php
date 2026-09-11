@@ -131,6 +131,11 @@ class CommitRegionTest extends TestCase
             $service = app(MediationReadService::class);
             $this->assertSame([$anchor->id, $matching->id], $service->readsFor($phase)->pluck('id')->all());
             $this->assertEqualsCanonicalizing([$gate->id, $counterpart->id], $service->gatesFor($phase)->pluck('id')->all());
+            foreach ([$anchor, $matching, $opposite, $otherRead] as $read) {
+                app(PropositionMeasurementService::class)->project($read, 0, 0, 0);
+            }
+            $this->assertSame([$anchor->id, $matching->id], $service->readsFor($phase)->pluck('id')->all());
+            $this->assertEqualsCanonicalizing([$gate->id, $counterpart->id], $service->gatesFor($phase)->pluck('id')->all());
             $this->reject($phase, ['action' => 'proposition.reconcile', 'other_proposition_id' => $otherGate->id]);
         }
     }
@@ -152,11 +157,11 @@ class CommitRegionTest extends TestCase
         $bias = app(BiasGateService::class);
         $this->assertEqualsCanonicalizing([$gate->id, $neutral->id, $negative->id, $inheritedNegative->id], $bias->populationFor($phase)->pluck('id')->all());
         $this->assertSame(-1.0, $bias->leanFor($phase));
-        $this->assertEqualsCanonicalizing([$negative->id, $inheritedNegative->id], $bias->forPhase($phase)->pluck('id')->all());
+        $this->assertSame([$negative->id], $bias->forPhase($phase)->pluck('id')->all());
         $this->assertCount(0, $inheritedNegative->attestations);
         $this->reject($phase, ['action' => 'proposition.bias', 'proposition_id' => $outside->id]);
-        $this->attest($gate, 'support'); // Balanced aggregate retains Gate's positive direction.
-        $this->assertEqualsCanonicalizing([$gate->id, $neutral->id], $bias->forPhase($phase)->pluck('id')->all());
+        $this->attest($gate, 'support'); // Balanced aggregate retains its earlier negative direction.
+        $this->assertSame([$negative->id], $bias->forPhase($phase)->pluck('id')->all());
     }
 
     #[DataProvider('domains')]
