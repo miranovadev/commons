@@ -80,10 +80,12 @@ Attestation has a neutral lean of 0.
 Bias reuses this raw weighted lean over the active Stance (Frontier in Emergence)
 population in the current forward lineage families, deduplicated across parents
 within the Gate's Horizon. Other registers do not supply votes to this Gate.
-The single aggregate direction admits only Propositions with individual lean in
-that direction, including the current Gate when eligible. Zero lean has no
-directional choice. It does not use the sign of the final cross-domain Chirality
-product. Unary hard reclassification removes the selected source from the active
+The single aggregate direction admits only Propositions with an effective
+hysteretic direction matching it, including the current Gate when eligible.
+A zero aggregate lean retains the Gate's inherited direction, and a Proposition
+with zero local lean inherits its primary parent's direction. Neither condition
+changes the numeric Chirality value from zero. It does not use the sign of the
+final cross-domain Chirality product. Unary hard reclassification removes the selected source from the active
 Stance field; the fresh Concord has none of its historical votes. This removes a
 contribution in the dominant direction and tends the field toward balance,
 without promising monotonic absolute-lean reduction for every discrete choice. Mediate instead uses the Correspondence sign of its previous Disperse Gate
