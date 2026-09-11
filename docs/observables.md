@@ -207,7 +207,7 @@ replaceable `proposition_measurements` rows. Projection writes atomically retain
 Correspondence, Chirality and Closure directions; Attestation and Receipt ledger
 writes also retain local lean, without requiring a plan read. Numeric values,
 attenuation and the cross-Domain Chirality product remain unchanged. The upgrade
-preserves recoverable existing projection signs; historical signs already erased
+preserves recoverable existing projection signs and current effective lean; historical signs already erased
 by a zero projection cannot be recovered and use lineage/default fallback.
 
 The audit also covers Closure's component directions and Tension. Depth and

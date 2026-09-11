@@ -25,6 +25,19 @@ return new class extends Migration
                 ['correspondence', 'chirality', 'closure'],
             ))),
         );
+        // Lean has no numeric projection column. Seed it using the same effective,
+        // receipt-weighted calculation Bias uses, before new evidence can balance it.
+        $chirality = app(\App\Services\Observables\ChiralityCalculator::class);
+        $directions = app(\App\Services\MeasurementDirectionService::class);
+        \App\Models\Proposition::query()->with('phase.cycle.participant.substrate')->chunkById(200,
+            function ($positions) use ($chirality, $directions): void {
+                foreach ($positions as $position) {
+                    $directions->record($position, ['lean' => $chirality->leanFor(
+                        collect([$position->id]), $position->phase->cycle->participant->substrate,
+                    )]);
+                }
+            },
+        );
     }
 
     public function down(): void

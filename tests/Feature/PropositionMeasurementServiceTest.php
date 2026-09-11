@@ -94,12 +94,28 @@ class PropositionMeasurementServiceTest extends TestCase
         }
     }
 
+    public function test_upgrade_preserves_existing_projection_and_receipt_weighted_lean_signs(): void
+    {
+        $position = $this->proposition();
+        app(PropositionMeasurementService::class)->project($position, 1, -1, 0);
+        $attestation = new \App\Models\Attestation;
+        $attestation->forceFill(['phase_id' => $position->phase_id, 'proposition_id' => $position->id,
+            'direction' => 'refute'])->save();
+        $migration = require database_path('migrations/2026_09_11_000001_create_proposition_directions_table.php');
+        $migration->down();
+        $migration->up();
+        $this->assertDatabaseHas('proposition_directions', ['proposition_id' => $position->id,
+            'correspondence' => 'positive', 'chirality' => 'negative', 'closure' => null, 'lean' => 'negative']);
+    }
+
     public function test_unmeasured_roots_have_documented_bootstrap_directions(): void
     {
         $root = $this->proposition();
         $service = app(\App\Services\MeasurementDirectionService::class);
         foreach (\App\Enums\MeasurementAxis::cases() as $axis) {
-            $this->assertSame($axis->initialDirection(), $service->forProposition($root, $axis, fn () => null));
+            $expected = $axis === \App\Enums\MeasurementAxis::Closure
+                ? \App\Enums\ObservableDirection::Negative : \App\Enums\ObservableDirection::Positive;
+            $this->assertSame($expected, $service->forProposition($root, $axis, fn () => null));
         }
         $this->assertDatabaseCount('proposition_directions', 0);
     }

@@ -19,6 +19,21 @@ class ClosureValuesTest extends TestCase
         $this->assertSame('negative', (new ClosureValues(0, 0))->resolve()['depth_direction']);
     }
 
+    public function test_each_component_retains_either_direction_at_zero_and_flips_only_across_it(): void
+    {
+        foreach ([Direction::Positive, Direction::Negative] as $previous) {
+            $same = $previous === Direction::Positive ? 0.4 : -0.4;
+            foreach ([[0, $same], [$same, 0], [0, 0]] as [$depth, $cadence]) {
+                $result = (new ClosureValues($depth, $cadence))->resolve($previous, $previous);
+                $this->assertTrue($result['admissible']);
+                $this->assertSame($previous->value, $result['depth_direction']);
+                $this->assertSame($previous->value, $result['cadence_direction']);
+            }
+            $this->assertFalse((new ClosureValues(-$same, 0))->resolve($previous, $previous)['admissible']);
+            $this->assertFalse((new ClosureValues(0, -$same))->resolve($previous, $previous)['admissible']);
+        }
+    }
+
     public function test_invalid_component_is_rejected(): void
     {
         $this->expectException(\InvalidArgumentException::class);
