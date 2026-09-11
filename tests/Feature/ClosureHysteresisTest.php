@@ -74,6 +74,21 @@ class ClosureHysteresisTest extends TestCase
         $this->assertSame($result['last_commitment'], app(ParticipationService::class)->stateFor($this->participant)['last_commitment']);
     }
 
+    public function test_commit_freezes_source_attestation_direction_as_the_next_region_frame(): void
+    {
+        $this->bootstrap(1);
+        [$phase, $gate] = $this->candidate([2], direction: 'refute');
+        $this->assertSame(ObservableDirection::Negative, app(\App\Services\AttestationEvidenceService::class)->directionFor($gate));
+        $state = app(ParticipationService::class)->contribute($this->participant, $phase->id,
+            ['action' => 'proposition.commit', 'proposition_id' => $gate->id]);
+        $commit = Proposition::findOrFail($state['current_proposition_id']);
+        $this->assertSame(['governing' => ObservableDirection::Negative, 'support' => ObservableDirection::Negative],
+            app(\App\Services\CommitRegionPolarityService::class)->forSeed($commit));
+        $this->assertSame(['governing' => ObservableDirection::Positive, 'support' => ObservableDirection::Positive],
+            app(\App\Services\CommitRegionPolarityService::class)->forSeed($this->origin));
+        $this->assertSame($gate->statement, $commit->statement);
+    }
+
     public function test_negative_alignment_can_commit_without_changing_domain(): void
     {
         $this->bootstrap(1);

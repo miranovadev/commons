@@ -206,7 +206,7 @@ class BiasGateTest extends TestCase
         $this->assertSame('order', $state['plan']['phase']['kind']);
     }
 
-    public function test_neutral_lean_retains_the_gate_direction_for_zero_vote_candidates(): void
+    public function test_zero_aggregate_retains_population_history_for_zero_vote_candidates(): void
     {
         $this->fixture();
         $this->assertSame([$this->gate->id], $this->optionIds());

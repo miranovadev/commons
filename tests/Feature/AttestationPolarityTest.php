@@ -64,7 +64,7 @@ class AttestationPolarityTest extends TestCase
     public function test_fixed_region_polarity_and_default_do_not_follow_expressive_parent(Direction $governing, string $gateRegister, string $write): void
     {
         $this->bootstrap();
-        $seed = $this->seed($governing, $write);
+        $seed = $this->regionSeed($governing, $write);
         $a = $this->node($gateRegister, $seed);
         $evidence = app(AttestationEvidenceService::class);
         $this->assertSame($governing, $evidence->directionFor($a));
@@ -88,7 +88,7 @@ class AttestationPolarityTest extends TestCase
     public function test_bias_aggregate_retains_its_own_direction_at_zero_and_replays_hard_removal(Direction $majority, string $register, string $write): void
     {
         $this->bootstrap();
-        $seed = $this->seed($majority, $write);
+        $seed = $this->regionSeed($majority, $write);
         $left = $this->node('signal', $seed);
         $right = $this->node('activity', $seed);
         $major = $this->node($register, $left);
@@ -107,7 +107,7 @@ class AttestationPolarityTest extends TestCase
         $this->assertNotSame($majority, $evidence->directionFor($gate));
         $this->assertSame([$major->id], $bias->forPhase($phase)->pluck('id')->all());
 
-        $outsider = $this->node($register, $this->seed($majority, $write));
+        $outsider = $this->node($register, $this->regionSeed($majority, $write));
         $wrongRegister = $this->node('signal', $seed);
         foreach ([$outsider, $wrongRegister] as $excluded) {
             foreach (range(1, 3) as $_) { $this->attest($excluded, 'refute'); }
@@ -128,7 +128,7 @@ class AttestationPolarityTest extends TestCase
     public function test_evidence_zero_hysteresis_is_reconstructed_without_intermediate_reads(Direction $governing, string $register, string $write): void
     {
         $this->bootstrap();
-        $seed = $this->seed($governing, $write);
+        $seed = $this->regionSeed($governing, $write);
         $position = $this->node($register, $seed);
         $this->attest($position, 'refute');
         $this->attest($position, 'support');
@@ -155,7 +155,27 @@ class AttestationPolarityTest extends TestCase
         $this->assertSame(Direction::Positive, $polarity->forSeed($this->origin)['support']);
     }
 
-    private function seed(Direction $direction, string $register): Proposition
+    public function test_receipt_weighted_history_retains_direction_when_equal_weights_restore_zero(): void
+    {
+        $this->bootstrap();
+        $seed = $this->regionSeed(Direction::Negative, 'concord');
+        $position = $this->node('stance', $seed);
+        $support = $this->attest($position, 'support');
+        $refute = $this->attest($position, 'refute');
+        $instruments = app(\App\Services\InstrumentExecutionService::class);
+        foreach ([$refute, $support] as $index => $attestation) {
+            $execution = $instruments->start($attestation->phase, $position, 'hyperlink', 'https://example.test/weight-'.$index);
+            $instruments->complete($execution, $attestation, 'weight-'.$index);
+        }
+        $evidence = app(AttestationEvidenceService::class);
+        $this->assertSame(0.0, $evidence->valueFor(collect([$position]), $this->participant->substrate));
+        // Refute reinforced first establishes positive in a negative frame; the
+        // later Support Receipt balances its weight without erasing that history.
+        $this->assertSame(Direction::Positive, $evidence->directionFor($position));
+        $this->assertSame(Direction::Positive, $evidence->populationDirection($seed, RegisterPosition::Second));
+    }
+
+    private function regionSeed(Direction $direction, string $register): Proposition
     {
         $source = $this->node($register, $this->origin);
         $this->attest($source, $direction === Direction::Positive ? 'support' : 'refute');
