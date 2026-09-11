@@ -309,4 +309,3 @@ final readonly class ParticipationService
         ];
     }
 }
-

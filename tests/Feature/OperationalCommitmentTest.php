@@ -127,12 +127,13 @@ class OperationalCommitmentTest extends TestCase
     public function test_blocked_commitment_rechecks_grounding_and_does_not_advance(): void
     {
         $gate = $this->candidate();
+        $gate->forceFill(['register' => 'concord'])->save();
         $phase = $this->phase($this->participant($this->participant->substrate, 'committer'), PhaseKind::Order, 'concord', $gate);
         $participant = $phase->cycle->participant;
         $state = app(ParticipationService::class)->stateFor($participant);
         $this->assertSame('ready', $state['status']);
         $this->assertFalse($state['plan']['commitment']['admissible']);
-        $this->assertArrayHasKey('participant.rest', $state['plan']['schema']['$defs']['actions']);
+        $this->assertArrayHasKey('attestation.create', $state['plan']['schema']['$defs']['actions']);
         $this->assertFalse($state['plan']['commitment']['requirements']['receipt']);
         try {
             app(ContributionDispatcher::class)->dispatch($participant, $phase, ['action' => 'proposition.commit', 'proposition_id' => $phase->gate_proposition_id]);
@@ -239,7 +240,7 @@ class OperationalCommitmentTest extends TestCase
         app(OperationalInstrumentService::class)->execute($this->origin->phase, $this->origin, ['kind' => 'citation', 'reference' => $foreign->id]);
     }
 
-    public function test_bias_grounds_an_existing_concord_and_later_cycle_can_commit_it(): void
+    public function test_bias_grounds_an_existing_concord_and_order_can_attest_then_commit_it(): void
     {
         $left = $this->candidate();
         $left->register = 'stance';
@@ -272,12 +273,7 @@ class OperationalCommitmentTest extends TestCase
         $this->assertTrue($state['plan']['commitment']['requirements']['receipt']);
         $this->assertFalse($state['plan']['commitment']['requirements']['attestation']);
         $receipt = $candidate->instrumentExecutions()->with('receipt')->firstOrFail()->receipt;
-        $this->move($reader, ['action' => 'participant.rest']);
-        $this->assertNotNull($bias->cycle->fresh()->rested_at);
-        $this->attest($candidate);
-        // Place a later Cycle at its Order revisit; recovery itself has separate graph tests.
-        $later = $this->phase($reader, PhaseKind::Order, 'concord', $candidate);
-        $this->assertGreaterThan($bias->cycle->sequence, $later->cycle->sequence);
+        $this->move($reader, ['action' => 'attestation.create', 'proposition_id' => $candidate->id, 'direction' => 'support']);
         $state = app(ParticipationService::class)->stateFor($reader);
         $this->assertTrue($state['plan']['commitment']['admissible']);
         $this->move($reader, ['action' => 'proposition.commit']);
@@ -356,4 +352,3 @@ class OperationalCommitmentTest extends TestCase
         return $service->contribute($participant, $state['plan']['phase']['id'], $input);
     }
 }
-

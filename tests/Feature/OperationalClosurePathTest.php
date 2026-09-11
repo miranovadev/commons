@@ -264,4 +264,3 @@ class OperationalClosurePathTest extends TestCase
         return Proposition::findOrFail($state['plan']['gate']['id']);
     }
 }
-

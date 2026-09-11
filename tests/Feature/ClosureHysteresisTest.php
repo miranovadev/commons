@@ -322,4 +322,3 @@ class ClosureHysteresisTest extends TestCase
         return [Proposition::count(), Supersession::count(), CommitmentSnapshot::count(), ContextHorizon::count(), \App\Models\SubstrateLedgerEntry::count()];
     }
 }
-

@@ -36,7 +36,9 @@ final readonly class MediationReadService
     public function readsFor(Phase $phase): Collection
     {
         $anchor = $this->anchorFor($phase);
-        if ($anchor === null) {
+        if ($anchor === null || $anchor->tier !== 'expressive'
+            || RegisterPosition::forRegister($anchor->register) !== RegisterPosition::Third
+            || $this->regions->seedFor($anchor) === null) {
             return collect();
         }
         $reads = collect([$anchor]);
@@ -74,4 +76,3 @@ final readonly class MediationReadService
         return $value === null ? 0 : ((float) $value <=> 0.0);
     }
 }
-

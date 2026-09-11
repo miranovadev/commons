@@ -49,4 +49,3 @@ export function writePropositions(plan: ParticipantPlan): Proposition[] {
   return [...new Map((plan.write_options ?? []).filter((item) => actionable.has(item.id))
     .map((item) => [item.id, item])).values()];
 }
-

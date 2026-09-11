@@ -237,7 +237,7 @@ class ReconciliationTest extends TestCase
         $unrelatedGate = $this->node('Unrelated Gate', 'activity');
         $this->edge($unrelatedRead, $unrelatedGate);
         $plan = $this->plan();
-        $this->assertEqualsCanonicalizing([$this->parent->id, $validRead->id, $foreignHorizon->id, $distantRead->id, $hardRead->children()->firstOrFail()->id], array_column($plan['read_options'], 'id'));
+        $this->assertEqualsCanonicalizing([$this->parent->id, $validRead->id, $foreignHorizon->id, $distantRead->id, $hardRead->children()->where('register', 'canon')->firstOrFail()->id], array_column($plan['read_options'], 'id'));
         $this->assertEqualsCanonicalizing([$validGate->id, $foreignGate->id, $distantGate->id], array_column($plan['gate_options'], 'id'));
         foreach ([$oppositeGate, $wrongGate, $hardGate, $unrelatedGate] as $invalid) {
             $this->assertInput($plan['schema'], ['action' => 'proposition.reconcile', 'other_proposition_id' => $invalid->id], false);
@@ -335,4 +335,3 @@ class ReconciliationTest extends TestCase
         return $attestation;
     }
 }
-

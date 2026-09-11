@@ -83,10 +83,11 @@ class CommitRegionTest extends TestCase
         $equivalent = $this->node($second === 'stance' ? 'frontier' : 'stance', $right);
         $this->assertEqualsCanonicalizing([$middle->id, $equivalent->id], $regions->forPhase($phase)->pluck('id')->all());
         $this->assertSame(RegisterPosition::forRegister($second), RegisterPosition::forRegister($equivalent->register));
+        $unvisited = $this->node($third, $middle);
         foreach ([PhaseKind::Distinguish, PhaseKind::Persist, PhaseKind::Constrain, PhaseKind::Disperse] as $kind) {
             $early = $this->phase($kind, $middle, $third);
             $this->assertCount(0, $regions->forPhase($early));
-            $this->assertSame([$end->id], app(PropositionOptionService::class)->writeOptionsFor($early)->pluck('id')->all());
+            $this->assertSame([$unvisited->id], app(PropositionOptionService::class)->writeOptionsFor($early)->pluck('id')->all());
         }
     }
 
@@ -152,6 +153,7 @@ class CommitRegionTest extends TestCase
         $positive = $this->node($third, $right);
         $negative = $this->node($third, $right);
         $misaligned = $this->node($third, $right);
+        $ungrounded = $this->node($third, $right);
         $wrongRegister = $this->node($first, $right);
         $boundary = $this->node($third, $right, 'committal');
         $outside = $this->node($third, $boundary);
@@ -161,22 +163,44 @@ class CommitRegionTest extends TestCase
                 ['kind' => 'hyperlink', 'reference' => 'https://example.test/'.$candidate->id]);
         }
         $phase = $this->phase(PhaseKind::Order, $gate, $third);
-        $values = [$positive->id => [1, 1], $negative->id => [-1, -1]];
+        $values = [$positive->id => [1, 1], $negative->id => [-1, -1], $ungrounded->id => [-1, -1]];
         $this->mock(ClosureGateService::class, function ($mock) use (&$values): void {
-            $mock->shouldReceive('preview')->andReturnUsing(fn (Proposition $candidate) =>
-                (new ClosureValues(...($values[$candidate->id] ?? [1, -1])))->resolve());
+            $mock->shouldReceive('preview')->andReturnUsing(function (Proposition $candidate) use (&$values): array {
+                return (new ClosureValues(...($values[$candidate->id] ?? [1, -1])))->resolve();
+            });
+            $mock->shouldReceive('forCommitment')->andReturn([
+                ...(new ClosureValues(-1, -1))->resolve(),
+                'history_source' => 'negative-default', 'history_proposition_id' => null,
+            ]);
         });
         $options = app(ClosureOptionService::class);
-        $this->assertEqualsCanonicalizing([$positive->id, $negative->id], $options->forPhase($phase)->pluck('id')->all());
+        $this->assertEqualsCanonicalizing([$positive->id, $negative->id, $ungrounded->id], $options->forPhase($phase)->pluck('id')->all());
         $plan = app(InputPlanService::class)->forParticipant($this->viewer);
-        $this->assertEqualsCanonicalizing([$positive->id, $negative->id], array_column($plan['write_options'], 'id'));
+        $this->assertEqualsCanonicalizing([$positive->id, $negative->id, $ungrounded->id], array_column($plan['write_options'], 'id'));
         $this->assertEqualsCanonicalizing([$positive->id, $negative->id], $plan['schema']['$defs']['actions']['proposition.commit']['properties']['proposition_id']['enum']);
-        foreach ([$outside, $misaligned, $wrongRegister] as $invalid) {
+        foreach ([$outside, $misaligned, $wrongRegister, $ungrounded] as $invalid) {
             $this->reject($phase, ['action' => 'proposition.commit', 'proposition_id' => $invalid->id]);
+        }
+        $transport = app(\App\Services\OpenAIResponseSchema::class)->fromCommons($plan['schema']);
+        $empty = array_fill_keys($transport['properties']['contribution']['anyOf'][0]['required'], null);
+        foreach ([$negative, $ungrounded] as $candidate) {
+            $wire = ['contribution' => array_replace($empty, ['action' => 'proposition.commit', 'proposition_id' => $candidate->id])];
+            $valid = (new \Opis\JsonSchema\Validator)->validate(
+                \Opis\JsonSchema\Helper::toJSON($wire), \Opis\JsonSchema\Helper::toJSON($transport))->isValid();
+            $this->assertSame($candidate->is($negative), $valid);
         }
         $values[$positive->id] = [1, -1];
         $this->reject($phase, ['action' => 'proposition.commit', 'proposition_id' => $positive->id]);
         $this->assertSame([$negative->id], $options->committableFor($phase)->pluck('id')->all());
+        $target = app(ContributionDispatcher::class)->dispatch($this->viewer, $phase,
+            ['action' => 'proposition.commit', 'proposition_id' => $negative->id]);
+        $this->assertSame([$negative->id], $target->commitSources()->pluck('propositions.id')->all());
+        $this->assertSame($negative->statement, $target->statement);
+        $state = app(\App\Services\PropositionStateService::class);
+        $this->assertSame($state->attestations(collect([$negative]))->pluck('id')->all(),
+            $state->attestations(collect([$target]))->pluck('id')->all());
+        $this->assertSame($state->touchCount($negative), $state->touchCount($target));
+        $this->assertSame($target->id, app(CommitRegionService::class)->seedFor($target)->id);
     }
 
     private function reject(Phase $phase, array $input): void

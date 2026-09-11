@@ -125,4 +125,3 @@ final readonly class CorrespondenceCalculator
         return round(max(-1, min(1, $value)), 7);
     }
 }
-

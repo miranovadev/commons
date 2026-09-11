@@ -336,4 +336,3 @@ function operationalAssignment(domainName: DomainName, writeRegister: RegisterNa
 function phaseNumberFor(kind: PhaseKind) { return { distinguish: 1, persist: 2, constrain: 3, disperse: 4, mediate: 5, bias: 6, order: 7 }[kind]; }
 function resolve(proposition: Proposition, byId: Map<Identifier, Proposition>): Proposition { return byId.get(proposition.id) || proposition; }
 function isSupersessionAction(action: ActionName): action is SupersessionAction { return action in actionMeta; }
-

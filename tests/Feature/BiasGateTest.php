@@ -369,4 +369,3 @@ class BiasGateTest extends TestCase
         return $attestation;
     }
 }
-

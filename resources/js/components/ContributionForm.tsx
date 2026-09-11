@@ -78,6 +78,7 @@ export function ContributionForm({
 
   if (!schema || !action) return null;
   const activeAction = action;
+  const commitment = values.proposition_id ? plan.commitment_options?.[values.proposition_id] : undefined;
 
   function set<K extends keyof FormValues>(name: K, value: FormValues[K]) {
     setValues((current) => ({ ...current, [name]: value }));
@@ -205,6 +206,8 @@ export function ContributionForm({
 
           {action === 'participant.rest' && <Text size="sm" c="dimmed">No admissible non-Rest action remains in this Phase. End this Cycle and retain your current position for recovery when the next Cycle begins.</Text>}
 
+          {action === 'proposition.commit' && commitment?.closure && <Text size="sm">Selected source: Depth {commitment.closure.depth} ({commitment.closure.depth_direction}) · Cadence {commitment.closure.cadence} ({commitment.closure.cadence_direction}).</Text>}
+
           {action === 'proposition.commit' && (
             <Text size="sm" c="dimmed">
               This writes the selected expressive Proposition as an immutable
@@ -228,4 +231,3 @@ export function ContributionForm({
     </Modal>
   );
 }
-

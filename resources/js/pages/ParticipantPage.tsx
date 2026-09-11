@@ -101,7 +101,7 @@ export function ParticipantPage() {
           </Box>
           <Box className="participant-cycle-content">
             {latestCommitment}
-            {plan.commitment && !plan.commitment.admissible && (
+            {plan.commitment && !availableActions.includes('proposition.commit') && (
               <Alert color="yellow" title="Commitment is blocked" icon={<IconLock size={18} />} m="md">
                 <Stack gap="xs">
                   <Text size="sm">{participation.reason?.message}</Text>
@@ -112,10 +112,10 @@ export function ParticipantPage() {
               </Alert>
             )}
             {plan.commitment?.closure && (
-              <Alert color={plan.commitment.requirements.closure ? 'indigo' : 'yellow'} title="Prospective Closure gate" m="md">
+              <Alert color={plan.commitment.requirements.closure ? 'indigo' : 'yellow'} title="Current Gate Closure preview" m="md">
                 <Text size="sm">Depth: {plan.commitment.closure.depth} ({plan.commitment.closure.depth_direction})
                   {' · '}Cadence: {plan.commitment.closure.cadence} ({plan.commitment.closure.cadence_direction})</Text>
-                <Text size="sm">{plan.commitment.requirements.closure ? 'Directions align.' : 'Directions diverge; Commitment is blocked.'}</Text>
+                <Text size="sm">{plan.commitment.requirements.closure ? 'Directions align.' : 'Directions diverge for this source. Other eligible sources appear in Write.'}</Text>
                 <Text size="xs">Zero retains the previous committed direction. History: {plan.commitment.closure.history_source}.</Text>
               </Alert>
             )}

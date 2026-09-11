@@ -332,4 +332,3 @@ final readonly class ContributionDispatcher
         return $proposition;
     }
 }
-

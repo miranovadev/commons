@@ -256,4 +256,3 @@ final class OpenAIResponseSchema
         return $schema;
     }
 }
-

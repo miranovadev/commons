@@ -55,6 +55,16 @@ class InputSchemaServiceTest extends TestCase
             $schema['x-commons']['constraints']['proposition.bias']);
     }
 
+    public function test_order_retires_implicit_gate_commit_schema(): void
+    {
+        $actions = config('phases.7.actions');
+        $key = 'commons:input-schema:v14:phase:7:'.sha1(implode('|', $actions));
+        Cache::store('array')->forever($key, ['stale_implicit_gate' => true]);
+        $schema = app(InputSchemaService::class)->forPhase(PhaseKind::Order);
+        $this->assertArrayNotHasKey('stale_implicit_gate', $schema);
+        $this->assertSame(['action', 'proposition_id'], $schema['$defs']['actions']['proposition.commit']['required']);
+    }
+
     public function test_each_phase_exposes_its_static_single_move_contract(): void
     {
         $expected = [

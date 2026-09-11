@@ -43,4 +43,3 @@ final readonly class BiasGateService
             $this->chirality->directionFor($candidate) === $direction)->values();
     }
 }
-
