@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Services\Participation\ParticipationContext;
+
 use App\Models\Attestation;
 use App\Models\Phase;
 use App\Models\Proposition;
@@ -15,10 +17,10 @@ use Illuminate\Support\Collection;
 final class PropositionStateService
 {
     /** Attach aggregate effective counts without replacing the viewer's own Attestation relation. */
-    public function loadAttestationCounts(Collection $propositions): void
+    public function loadAttestationCounts(Collection $propositions, ?ParticipationContext $context = null): void
     {
         $sources = $propositions->unique('id')->mapWithKeys(fn (Proposition $item) => [
-            $item->id => $item->tier === 'committal' ? $this->sourceIds($item) : collect([$item->id]),
+            $item->id => $item->tier === 'committal' ? $this->sourceIds($item, $context) : collect([$item->id]),
         ]);
         $counts = Attestation::query()->effective()
             ->whereIn('proposition_id', $sources->flatten()->unique())
@@ -36,8 +38,9 @@ final class PropositionStateService
     }
 
     /** @return Collection<int, string> */
-    public function sourceIds(Proposition $position): Collection
+    public function sourceIds(Proposition $position, ?ParticipationContext $context = null): Collection
     {
+        if ($context !== null) return $context->sourceIds($position);
         $substrateId = $position->phase->cycle->participant->substrate_id
             ?? $position->phase->cycle->participant()->value('substrate_id');
         $frontier = collect([$position]);
@@ -67,8 +70,9 @@ final class PropositionStateService
     }
 
     /** Each persisted Phase is one observation, including the currently open Phase. */
-    public function touchCount(Proposition $proposition): int
+    public function touchCount(Proposition $proposition, ?ParticipationContext $context = null): int
     {
+        if ($context !== null) return (int) $context->sourceIds($proposition)->sum(fn ($id) => $context->touches->get($id, 0));
         return Phase::query()->whereIn('gate_proposition_id', $this->sourceIds($proposition))
             ->whereHas('cycle.participant', fn ($query) => $query->where(
                 'substrate_id', $proposition->phase->cycle->participant->substrate_id,
@@ -76,16 +80,23 @@ final class PropositionStateService
     }
 
     /** @param Collection<int, Proposition> $propositions */
-    public function attestations(Collection $propositions): Collection
+    public function attestations(Collection $propositions, ?ParticipationContext $context = null): Collection
     {
-        $ids = $propositions->flatMap(fn (Proposition $item) => $this->sourceIds($item))->unique();
+        $ids = $propositions->flatMap(fn (Proposition $item) => $this->sourceIds($item, $context))->unique();
 
-        return Attestation::query()->effective()->whereIn('proposition_id', $ids)->get();
+        return $context !== null ? $context->effectiveAttestations($ids) : Attestation::query()->effective()->whereIn('proposition_id', $ids)->get();
     }
 
     /** Completed direct or inherited evidence, deduplicated by its original Receipt ID. */
-    public function receipts(Proposition $proposition): Collection
+    public function receipts(Proposition $proposition, ?ParticipationContext $context = null): Collection
     {
+        if ($context !== null) {
+            $ids = $context->sourceIds($proposition);
+            $attestations = $context->effectiveAttestations($ids)->pluck('id');
+            return $context->receipts->filter(fn ($receipt) => $receipt->instrumentExecution?->status === 'completed'
+                && (($receipt->receiptable_type === (new Proposition)->getMorphClass() && $ids->contains($receipt->receiptable_id))
+                    || ($receipt->receiptable_type === (new Attestation)->getMorphClass() && $attestations->contains($receipt->receiptable_id))))->values();
+        }
         $ids = $this->sourceIds($proposition);
         $attestations = $this->attestations(collect([$proposition]))->pluck('id');
 

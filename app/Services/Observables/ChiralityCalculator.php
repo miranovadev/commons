@@ -2,6 +2,8 @@
 
 namespace App\Services\Observables;
 
+use App\Services\Participation\ParticipationContext;
+
 use App\Domain\Observables\DomainLineage;
 use App\Domain\Observables\LineageComparison;
 use App\Enums\ObservableDirection;
@@ -33,7 +35,7 @@ final readonly class ChiralityCalculator
     {
         $ids = $this->activeIds($lineage->propositions, $lineage->supersessions);
 
-        return $this->evidence->valueFor($lineage->propositions->whereIn('id', $ids), $lineage->horizon->substrate);
+        return $this->evidence->valueFor($lineage->propositions->whereIn('id', $ids), $lineage->horizon->substrate, $lineage->context);
     }
 
     /** Shared hard-supersession semantics for active propositions in a lineage. */
@@ -50,14 +52,14 @@ final readonly class ChiralityCalculator
     }
 
     /** Receipt-weighted effective Attestation lean, before cross-domain comparison. */
-    public function leanFor(Collection $activeIds, Substrate $substrate): float
+    public function leanFor(Collection $activeIds, Substrate $substrate, ?ParticipationContext $context = null): float
     {
-        return $this->evidence->valueFor(Proposition::query()->whereIn('id', $activeIds)->get(), $substrate);
+        return $this->evidence->valueFor($context !== null ? $context->nodes($activeIds) : Proposition::query()->whereIn('id', $activeIds)->get(), $substrate, $context);
     }
 
     /** Effective Attestation direction reconstructed from evidence in its fixed region frame. */
-    public function directionFor(Proposition $proposition): ObservableDirection
+    public function directionFor(Proposition $proposition, ?ParticipationContext $context = null): ObservableDirection
     {
-        return $this->evidence->directionFor($proposition);
+        return $this->evidence->directionFor($proposition, context: $context);
     }
 }

@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Services\Participation\ParticipationContext;
+
 use App\Enums\PhaseKind;
 use App\Models\Attestation;
 use App\Models\Participant;
@@ -35,8 +37,9 @@ final readonly class InputSchemaService
         ?array $attestationOptionIds = null,
         ?array $traversalOptionIds = null,
         ?array $instrumentOptionIds = null,
+        ?ParticipationContext $context = null,
     ): array {
-        $occurrence = $this->phases->currentFor($participant);
+        $occurrence = $context?->phase ?? $this->phases->currentFor($participant);
         $kind = $occurrence->kind;
         $plan = $this->phases->plan($kind);
         $gate = $this->gates->forPhase($occurrence);
@@ -56,7 +59,7 @@ final readonly class InputSchemaService
         ));
 
         $commitOptionIds = $kind === PhaseKind::Order
-            ? $this->closure->committableFor($occurrence)->pluck('id')->all() : [];
+            ? $this->closure->committableFor($occurrence, $context)->pluck('id')->all() : [];
 
         $traversalOptionIds ??= $this->options->traversalOptionsFor($occurrence)->pluck('id')->all();
 

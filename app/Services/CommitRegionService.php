@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Services\Participation\ParticipationContext;
+
 use App\Enums\PhaseKind;
 use App\Enums\RegisterPosition;
 use App\Models\Phase;
@@ -12,8 +14,9 @@ use Illuminate\Support\Facades\DB;
 final class CommitRegionService
 {
     /** Walk every parent path, stopping at its first Committal Proposition. */
-    public function seedFor(Proposition $position): ?Proposition
+    public function seedFor(Proposition $position, ?ParticipationContext $context = null): ?Proposition
     {
+        if ($context !== null) return $context->seed($position);
         $ancestors = DB::select(<<<'SQL'
             WITH RECURSIVE ancestors (id, tier) AS (
                 SELECT id, tier FROM propositions WHERE id = ?
@@ -34,12 +37,13 @@ final class CommitRegionService
     }
 
     /** Structural membership includes superseded intermediates, but never crosses a Commit. */
-    public function membersFor(Proposition $position): Collection
+    public function membersFor(Proposition $position, ?ParticipationContext $context = null): Collection
     {
-        $seed = $this->seedFor($position);
+        $seed = $this->seedFor($position, $context);
         if ($seed === null) {
             return collect();
         }
+        if ($context !== null) return $context->members($seed);
         $members = DB::select(<<<'SQL'
             WITH RECURSIVE region (id) AS (
                 SELECT id FROM propositions WHERE id = ?
@@ -71,7 +75,7 @@ final class CommitRegionService
     }
 
     /** Shared structural pool: Mediate Read, Bias Gate, or Closure Write. */
-    public function forPhase(Phase $phase, ?Proposition $position = null): Collection
+    public function forPhase(Phase $phase, ?Proposition $position = null, ?ParticipationContext $context = null): Collection
     {
         $register = match ($phase->kind) {
             PhaseKind::Mediate, PhaseKind::Order => RegisterPosition::Third,
@@ -82,14 +86,16 @@ final class CommitRegionService
             return collect();
         }
 
-        return $this->atPosition($phase, $position ?? $phase->gate()->firstOrFail(), $register);
+        return $this->atPosition($phase, $position ?? ($context?->propositions->get($phase->gate_proposition_id) ?? $phase->gate()->firstOrFail()), $register, $context);
     }
 
-    public function atPosition(Phase $phase, Proposition $position, RegisterPosition $register): Collection
+    public function atPosition(Phase $phase, Proposition $position, RegisterPosition $register, ?ParticipationContext $context = null): Collection
     {
         if ($position->phase->cycle->participant->substrate_id !== $phase->cycle->participant->substrate_id) {
             return collect();
         }
+
+        if ($context !== null) return $context->active($this->membersFor($position, $context)->whereIn('register', $register->registers()));
 
         return Proposition::query()->whereKey($this->membersFor($position)->pluck('id'))
             ->whereIn('register', $register->registers())

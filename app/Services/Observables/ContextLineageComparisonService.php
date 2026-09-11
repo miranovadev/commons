@@ -2,6 +2,8 @@
 
 namespace App\Services\Observables;
 
+use App\Services\Participation\ParticipationContext;
+
 use App\Domain\Observables\DomainLineage;
 use App\Domain\Observables\LineageComparison;
 use App\Models\ContextHorizon;
@@ -15,9 +17,9 @@ use Illuminate\Support\Facades\DB;
 
 final class ContextLineageComparisonService
 {
-    public function for(Proposition $proposition): LineageComparison
+    public function for(Proposition $proposition, ?ParticipationContext $context = null): LineageComparison
     {
-        $membership = ContextHorizonMembership::query()
+        $membership = $context !== null ? $context->memberships->get($proposition->id) : ContextHorizonMembership::query()
             ->with('horizon.substrate')
             ->find($proposition->getKey());
 
@@ -27,21 +29,21 @@ final class ContextLineageComparisonService
             );
         }
 
-        $current = $this->endingAt($membership->horizon, [
+        $current = $this->endingAt($context !== null ? $context->horizons[$membership->context_horizon_id] : $membership->horizon, [
             $proposition->getKey(),
-        ]);
+        ], $context);
 
         return $this->compare($current);
     }
 
     /** Build the same lineage as a Commit write, without persisting a candidate. */
-    public function prospectiveCommit(Proposition $gate, Phase $phase): LineageComparison
+    public function prospectiveCommit(Proposition $gate, Phase $phase, ?ParticipationContext $context = null): LineageComparison
     {
-        $horizon = ContextHorizon::query()
+        $horizon = $context !== null ? $context->horizons->whereNull('closed_at')->firstOrFail() : ContextHorizon::query()
             ->with('substrate')
             ->where('substrate_id', $phase->cycle->participant->substrate_id)
             ->whereNull('closed_at')->firstOrFail();
-        $lineage = $this->endingAt($horizon, [$gate->getKey()]);
+        $lineage = $this->endingAt($horizon, [$gate->getKey()], $context);
         $candidate = new Proposition;
         $candidate->forceFill([
             'id' => (string) str()->ulid(), 'phase_id' => $phase->getKey(),
@@ -52,7 +54,7 @@ final class ContextLineageComparisonService
         $candidate->setRelation('parents', collect([$gate]));
         $candidate->setRelation('commitSources', collect([$gate]));
         $entry = new SubstrateLedgerEntry;
-        $entry->sequence = (int) SubstrateLedgerEntry::query()
+        $entry->sequence = $context !== null ? $context->nextSequence : (int) SubstrateLedgerEntry::query()
             ->where('substrate_id', $horizon->substrate_id)->max('sequence') + 1;
         $candidate->setRelation('ledgerEntry', $entry);
         $edges = clone $lineage->supersessions;
@@ -66,14 +68,15 @@ final class ContextLineageComparisonService
         }
 
         return $this->compare(new DomainLineage(
-            $horizon, $lineage->propositions->concat([$candidate]), $edges,
+            $horizon, $lineage->propositions->concat([$candidate]), $edges, $context,
         ), [$gate->getKey()]);
     }
 
     /** @param list<string> $additionalSources */
     private function compare(DomainLineage $current, array $additionalSources = []): LineageComparison
     {
-        $previousHorizon = ContextHorizon::query()
+        $context = $current->context;
+        $previousHorizon = $context !== null ? $context->horizons->firstWhere('sequence', $current->horizon->sequence - 1) : ContextHorizon::query()
             ->where('substrate_id', $current->horizon->substrate_id)
             ->where('sequence', $current->horizon->sequence - 1)
             ->first();
@@ -82,10 +85,10 @@ final class ContextLineageComparisonService
             return new LineageComparison($current, null);
         }
 
-        $previousIds = ContextHorizonMembership::query()
+        $previousIds = $context !== null ? $context->memberships->where('context_horizon_id', $previousHorizon->id)->pluck('proposition_id') : ContextHorizonMembership::query()
             ->where('context_horizon_id', $previousHorizon->getKey())
             ->pluck('proposition_id');
-        $provenanceIds = Supersession::query()
+        $provenanceIds = $context !== null ? $context->edges->whereIn('target_proposition_id', $current->propositions->pluck('id'))->whereIn('source_proposition_id', $previousIds)->pluck('source_proposition_id')->unique()->values() : Supersession::query()
             ->whereIn(
                 'target_proposition_id',
                 $current->propositions->pluck('id'),
@@ -111,7 +114,7 @@ final class ContextLineageComparisonService
 
         return new LineageComparison(
             $current,
-            $this->endingAt($previousHorizon, $provenanceIds->all()),
+            $this->endingAt($previousHorizon, $provenanceIds->all(), $context),
         );
     }
 
@@ -121,7 +124,14 @@ final class ContextLineageComparisonService
     private function endingAt(
         ContextHorizon $horizon,
         array $gateIds,
+        ?ParticipationContext $context = null,
     ): DomainLineage {
+        if ($context !== null) {
+            $ids = $context->lineageIds($horizon->id, $gateIds);
+            return new DomainLineage($horizon,
+                $context->nodes($ids)->sortBy(fn ($node) => $node->ledgerEntry->sequence)->values(),
+                $context->edges->whereIn('source_proposition_id', $ids)->whereIn('target_proposition_id', $ids)->values(), $context);
+        }
         if ($gateIds === []) {
             return new DomainLineage($horizon, collect(), collect());
         }

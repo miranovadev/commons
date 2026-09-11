@@ -2,6 +2,8 @@
 
 namespace App\Services\Observables;
 
+use App\Services\Participation\ParticipationContext;
+
 use App\Models\Receipt;
 use App\Models\Substrate;
 use App\Models\Proposition;
@@ -20,6 +22,7 @@ final class ReinforcementService
     public function weights(
         Collection $contributions,
         Substrate $substrate,
+        ?ParticipationContext $context = null,
     ): Collection {
         if ($contributions->isEmpty()) {
             return collect();
@@ -28,9 +31,11 @@ final class ReinforcementService
         $first = $contributions->first();
         $sources = $contributions->mapWithKeys(fn (Model $item) => [
             $item->getKey() => $item instanceof Proposition
-                ? $this->state->sourceIds($item) : collect([$item->getKey()]),
+                ? $this->state->sourceIds($item, $context) : collect([$item->getKey()]),
         ]);
-        $receipts = Receipt::query()
+        $receipts = $context !== null
+            ? $context->reinforcementReceipts($first->getMorphClass(), $sources->flatten()->unique())
+            : Receipt::query()
             ->where('receiptable_type', $first->getMorphClass())
             ->whereIn('receiptable_id', $sources->flatten()->unique())
             ->where('type', '!=', 'citation')

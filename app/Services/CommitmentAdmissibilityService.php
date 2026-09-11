@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Services\Participation\ParticipationContext;
+
 use App\Models\Proposition;
 use App\Models\Phase;
 
@@ -13,10 +15,10 @@ final readonly class CommitmentAdmissibilityService
     ) {}
 
     /** @return array<string, mixed> */
-    public function evaluate(Proposition $gate, Phase $phase): array
+    public function evaluate(Proposition $gate, Phase $phase, ?ParticipationContext $context = null): array
     {
-        $grounding = $this->grounding($gate);
-        $closure = $this->closure->preview($gate, $phase);
+        $grounding = $this->grounding($gate, $context);
+        $closure = $this->closure->preview($gate, $phase, $context);
         return [
             ...$grounding,
             'admissible' => $grounding['admissible'] && $closure['admissible'],
@@ -28,10 +30,10 @@ final readonly class CommitmentAdmissibilityService
     }
 
     /** @return array<string, mixed> */
-    public function grounding(Proposition $gate): array
+    public function grounding(Proposition $gate, ?ParticipationContext $context = null): array
     {
-        $attestations = $this->state->attestations(collect([$gate]));
-        $hasReceipt = $this->state->receipts($gate)->isNotEmpty();
+        $attestations = $this->state->attestations(collect([$gate]), $context);
+        $hasReceipt = $this->state->receipts($gate, $context)->isNotEmpty();
         $hasAttestation = $attestations->isNotEmpty();
 
         return [

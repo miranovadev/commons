@@ -2,6 +2,8 @@
 
 namespace App\Services\Observables;
 
+use App\Services\Participation\ParticipationContext;
+
 use App\Domain\Observables\ObservableValues;
 use App\Models\Proposition;
 
@@ -11,8 +13,8 @@ final readonly class ObservableService
         private LineageMeasurementService $measurements,
     ) {}
 
-    public function calculate(Proposition $proposition): ObservableValues
+    public function calculate(Proposition $proposition, ?ParticipationContext $context = null): ObservableValues
     {
-        return $this->measurements->calculate($proposition)->observables();
+        return $this->measurements->calculate($proposition, context: $context)->observables();
     }
 }

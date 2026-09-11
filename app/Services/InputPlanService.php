@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Services\Participation\ParticipationContext;
+
 use App\Enums\ContextDomain;
 use App\Models\ContextHorizon;
 use App\Models\Participant;
@@ -27,6 +29,12 @@ final readonly class InputPlanService
     public function forParticipant(Participant $participant): array
     {
         $phase = $this->phases->currentFor($participant);
+        return $this->build($participant, $phase, new ParticipationContext($phase));
+    }
+
+    /** All repeated evaluation shares this calculation-local context. */
+    private function build(Participant $participant, Phase $phase, ?ParticipationContext $context): array
+    {
         $plan = $this->phases->plan($phase->kind);
         $gate = $this->gates->forPhase($phase);
         $lineage = $this->lineage->endingAt(
@@ -34,18 +42,19 @@ final readonly class InputPlanService
             $participant->max_read_count,
             $participant->max_token_count,
         );
-        $writeOptions = $this->options->writeOptionsFor($phase);
+        $writeOptions = $this->options->writeOptionsFor($phase, $context);
         $revisionOptions = $this->options->revisionOptionsFor(
             $phase,
             $participant,
         );
-        $readOptions = $this->mediation->readsFor($phase);
-        $gateOptions = $this->options->gateOptionsFor($phase);
+        $readOptions = $this->mediation->readsFor($phase, $context);
+        $gateOptions = $this->options->gateOptionsFor($phase, $context);
         $traversalOptions = $this->options->traversalOptionsFor($phase);
         $instrumentOptions = $this->options->instrumentOptionsFor($phase);
-        $attestationOptions = $this->options->attestationOptionsFor($phase);
+        $attestationOptions = $context !== null ? $writeOptions : $this->options->attestationOptionsFor($phase);
         $this->loadPropositionState(
             $participant,
+            $context,
             $gate,
             $lineage,
             $readOptions,
@@ -61,6 +70,7 @@ final readonly class InputPlanService
             $phase,
             $gate,
             $lineage,
+            $context,
         );
         $attestationOptionIds = $attestationOptions->pluck('id')->all();
         $schema = $this->schemas->forParticipant(
@@ -71,6 +81,7 @@ final readonly class InputPlanService
             $attestationOptionIds,
             $traversalOptions->pluck('id')->all(),
             $instrumentOptions->pluck('id')->all(),
+            $context,
         );
 
         return [
@@ -84,11 +95,11 @@ final readonly class InputPlanService
             ],
             'workspace' => $workspace,
             'commitment' => $phase->kind === \App\Enums\PhaseKind::Order
-                ? $this->admissibility->evaluate($gate, $phase)
+                ? $this->admissibility->evaluate($gate, $phase, $context)
                 : null,
             'commitment_options' => $phase->kind === \App\Enums\PhaseKind::Order
                 ? $writeOptions->mapWithKeys(fn (Proposition $candidate): array => [
-                    $candidate->id => $this->admissibility->evaluate($candidate, $phase),
+                    $candidate->id => $this->admissibility->evaluate($candidate, $phase, $context),
                 ])->all() : [],
             'gate' => $this->proposition($gate, $participant),
             'lineage' => $this->propositions($lineage, $participant),
@@ -113,6 +124,7 @@ final readonly class InputPlanService
         Phase $phase,
         Proposition $gate,
         Collection $lineage,
+        ?ParticipationContext $context,
     ): array {
         $horizon = ContextHorizon::query()
             ->where('substrate_id', $participant->substrate_id)
@@ -139,7 +151,7 @@ final readonly class InputPlanService
                 ->limit(max(1, (int) ($participant->max_read_count ?? 25)))
                 ->get();
 
-        $this->measurements->repairMissing($propositions);
+        $this->measurements->repairMissing($propositions, $context);
 
         $provenance = $horizon?->opened_by_proposition_id === null
             ? $lineage->first(
@@ -157,8 +169,8 @@ final readonly class InputPlanService
             'effectiveAttestations' => $this->attestationsFor($participant),
             'phase.cycle.participant:id,callsign,substrate_id',
         ]);
-        $this->measurements->repairMissing(collect([$provenance]));
-        $this->state->loadAttestationCounts($propositions->concat([$provenance]));
+        $this->measurements->repairMissing(collect([$provenance]), $context);
+        $this->state->loadAttestationCounts($propositions->concat([$provenance]), $context);
 
         return [
             'domain' => $domain->value,
@@ -196,6 +208,7 @@ final readonly class InputPlanService
 
     private function loadPropositionState(
         Participant $participant,
+        ?ParticipationContext $context,
         Proposition $gate,
         Collection ...$collections,
     ): void {
@@ -215,8 +228,8 @@ final readonly class InputPlanService
             'effectiveAttestations' => $this->attestationsFor($participant),
             'phase.cycle.participant:id,callsign,substrate_id',
         ]);
-        $this->measurements->repairMissing($collection);
-        $this->state->loadAttestationCounts($collection);
+        $this->measurements->repairMissing($collection, $context);
+        $this->state->loadAttestationCounts($collection, $context);
     }
 
     private function attestationsFor(Participant $participant): \Closure

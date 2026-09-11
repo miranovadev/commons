@@ -17,5 +17,6 @@ final readonly class DomainLineage
         public ContextHorizon $horizon,
         public Collection $propositions,
         public Collection $supersessions,
+        public ?\App\Services\Participation\ParticipationContext $context = null,
     ) {}
 }

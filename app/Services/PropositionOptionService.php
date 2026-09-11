@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Services\Participation\ParticipationContext;
+
 use App\Enums\PhaseKind;
 use App\Models\Participant;
 use App\Models\Phase;
@@ -77,14 +79,14 @@ final class PropositionOptionService
     /**
      * @return Collection<int, Proposition>
      */
-    public function writeOptionsFor(Phase $phase): Collection
+    public function writeOptionsFor(Phase $phase, ?ParticipationContext $context = null): Collection
     {
         if ($phase->write_register === null) {
             return collect();
         }
 
         return $phase->kind === PhaseKind::Order
-            ? $this->closure->forPhase($phase)
+            ? $this->closure->forPhase($phase, $context)
             : $this->writeDescendants($phase)->orderBy('id')->get();
     }
 
@@ -125,11 +127,11 @@ final class PropositionOptionService
     /**
      * @return Collection<int, Proposition>
      */
-    public function gateOptionsFor(Phase $phase): Collection
+    public function gateOptionsFor(Phase $phase, ?ParticipationContext $context = null): Collection
     {
         return $phase->kind === PhaseKind::Bias
-            ? $this->bias->forPhase($phase)
-            : $this->reconciliation->forPhase($phase);
+            ? $this->bias->forPhase($phase, $context)
+            : $this->reconciliation->forPhase($phase, $context);
     }
 
     private function activeHeads(Phase $phase): Builder

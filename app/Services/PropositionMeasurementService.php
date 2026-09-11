@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Services\Participation\ParticipationContext;
+
 use App\Models\ContextHorizonMembership;
 use App\Models\Proposition;
 use App\Models\PropositionMeasurement;
@@ -20,8 +22,9 @@ final class PropositionMeasurementService
     public function recalculate(
         Proposition $proposition,
         ?DateTimeInterface $calculatedAt = null,
+        ?ParticipationContext $context = null,
     ): PropositionMeasurement {
-        $values = $this->observables->calculate($proposition);
+        $values = $this->observables->calculate($proposition, $context);
 
         return $this->project(
             $proposition,
@@ -35,12 +38,13 @@ final class PropositionMeasurementService
     public function recalculateIfMeasurable(
         Proposition $proposition,
         ?DateTimeInterface $calculatedAt = null,
+        ?ParticipationContext $context = null,
     ): ?PropositionMeasurement {
-        if (! ContextHorizonMembership::query()->whereKey($proposition->getKey())->exists()) {
+        if ($context !== null ? ! $context->memberships->has($proposition->id) : ! ContextHorizonMembership::query()->whereKey($proposition->getKey())->exists()) {
             return null;
         }
 
-        return $this->recalculate($proposition, $calculatedAt);
+        return $this->recalculate($proposition, $calculatedAt, $context);
     }
 
     /**
@@ -50,15 +54,17 @@ final class PropositionMeasurementService
      *
      * @param  Collection<int, Proposition>  $propositions
      */
-    public function repairMissing(Collection $propositions): void
+    public function repairMissing(Collection $propositions, ?ParticipationContext $context = null): void
     {
-        foreach ($propositions as $proposition) {
+        foreach ($propositions as $original) {
+            $proposition = $context?->proposition($original) ?? $original;
             $proposition->loadMissing('measurement');
 
             if ($proposition->measurement === null
                 || $proposition->measurement->calculator_version !== LineageMeasurementService::VERSION) {
-                $this->recalculateIfMeasurable($proposition);
+                $this->recalculateIfMeasurable($proposition, context: $context);
             }
+            $original->setRelation('measurement', $proposition->measurement);
         }
     }
 
@@ -68,6 +74,7 @@ final class PropositionMeasurementService
         ?float $chirality,
         ?float $closure,
         ?DateTimeInterface $calculatedAt = null,
+        ?ParticipationContext $context = null,
     ): PropositionMeasurement {
         $this->assertMeasurement('correspondence', $correspondence);
         $this->assertMeasurement('chirality', $chirality);
@@ -110,7 +117,7 @@ final class PropositionMeasurementService
     }
 
     /** Correspondence has its own hysteresis; Attestation polarity is unrelated. */
-    public function correspondenceDirectionFor(Proposition $position): \App\Enums\ObservableDirection
+    public function correspondenceDirectionFor(Proposition $position, ?ParticipationContext $context = null): \App\Enums\ObservableDirection
     {
         $seen = [];
         $substrateId = $position->phase->cycle->participant->substrate_id;
@@ -119,17 +126,20 @@ final class PropositionMeasurementService
                 throw new \DomainException('Correspondence lineage must be acyclic and within one substrate.');
             }
             $seen[$position->id] = true;
-            $position->load('measurement');
-            $this->repairMissing(collect([$position]));
+            $position = $context?->proposition($position) ?? $position;
+            if ($context === null) $position->load('measurement');
+            $this->repairMissing(collect([$position]), $context);
             $value = $position->measurement?->correspondence;
             if ($value !== null && $value !== 0.0) {
                 return \App\Enums\ObservableDirection::after($value);
             }
-            $retained = Proposition::query()->whereKey($position->id)->value('correspondence_direction');
+            $retained = $context !== null ? $position->correspondence_direction : Proposition::query()->whereKey($position->id)->value('correspondence_direction');
             if ($retained !== null) {
                 return \App\Enums\ObservableDirection::from($retained);
             }
-            $position = $position->parents()->orderBy('supersessions.created_at')->orderBy('supersessions.id')->first();
+            $position = $context !== null
+                ? $context->nodes($context->parents->get($position->id, collect())->sortBy([['created_at', 'asc'], ['id', 'asc']])->pluck('source_proposition_id'))->first()
+                : $position->parents()->orderBy('supersessions.created_at')->orderBy('supersessions.id')->first();
         }
         return \App\Enums\ObservableDirection::Positive;
     }

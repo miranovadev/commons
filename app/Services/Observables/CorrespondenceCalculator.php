@@ -2,6 +2,8 @@
 
 namespace App\Services\Observables;
 
+use App\Services\Participation\ParticipationContext;
+
 use App\Domain\Observables\DomainLineage;
 use App\Domain\Observables\LineageComparison;
 use App\Enums\SupersessionStrength;
@@ -67,6 +69,7 @@ final readonly class CorrespondenceCalculator
         $weights = $this->reinforcement->weights(
             $lineage->propositions,
             $lineage->horizon->substrate,
+            $lineage->context,
         );
         $features = [];
 
