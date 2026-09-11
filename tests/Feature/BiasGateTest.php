@@ -256,6 +256,7 @@ class BiasGateTest extends TestCase
         $positive = $this->sibling('Shared positive');
         $this->attest($positive, 'support');
         $second = $this->node('Second parent', 'signal');
+        $this->edge($this->parent, $second);
         $this->edge($second, $this->gate);
         $this->edge($second, $positive);
         $negative = $this->node('Second family negative', 'stance');
@@ -267,7 +268,7 @@ class BiasGateTest extends TestCase
         $this->assertEqualsCanonicalizing([$positive->id, $this->gate->id], $this->optionIds());
     }
 
-    public function test_horizon_and_substrate_exclusions_apply_to_both_votes_and_choices(): void
+    public function test_region_votes_ignore_horizon_labels_but_preserve_substrate_isolation(): void
     {
         $this->fixture();
         $this->attest($this->gate, 'support');
@@ -287,7 +288,7 @@ class BiasGateTest extends TestCase
         $outsider->forceFill(['substrate_id' => $other->id])->save();
         $foreign->forceFill(['phase_id' => $this->newPhase($outsider, PhaseKind::Persist, 'stance', true)->id])->save();
         $this->assertSame([$this->gate->id], $this->optionIds());
-        $this->assertSame(1.0, app(BiasGateService::class)->leanFor($this->phase));
+        $this->assertSame(0.0, app(BiasGateService::class)->leanFor($this->phase));
     }
 
     public function test_stale_direction_hard_supersession_and_binary_inputs_are_rejected_before_writes(): void

@@ -42,7 +42,7 @@ const provenanceMeta = { label: 'Provenance', description: 'The inherited propos
 const actionMeta = {
   'proposition.variant': { label: 'Variant', description: 'Open a new expressive branch from the current Gate.', icon: IconGitBranch },
   'proposition.reclassify': { label: 'Reclassify', description: 'Carry the Gate into this classification register.', icon: IconRefresh },
-  'proposition.commit': { label: 'Commit', description: 'Write the expressive Gate into the committal structure.', icon: IconBolt },
+  'proposition.commit': { label: 'Commit', description: 'Commit an eligible Proposition from this Commit Region.', icon: IconBolt },
 } as const;
 type SupersessionAction = keyof typeof actionMeta;
 const cardActions = new Set<ActionName>(['attestation.create', 'instrument.execute', 'proposition.reconcile', 'proposition.bias', 'proposition.revise', 'proposition.traverse']);
@@ -222,6 +222,7 @@ function WriteContent({ plan, writeOptions, revisionOptions, attestationOptions,
               canAttest={actions.includes('attestation.create') && attestationIds.has(proposition.id)}
               canRevise={actions.includes('proposition.revise') && revisionIds.has(proposition.id)}
               canInstrument={actions.includes('instrument.execute') && instrumentOptions.some((item) => item.id === proposition.id)}
+              canCommit={actionPropositions(plan, 'proposition.commit').some((item) => item.id === proposition.id)}
               canTraverse={actions.includes('proposition.traverse') && traversalOptions.some((item) => item.id === proposition.id)}
               committalObservables={committalObservables} onInspect={onInspect} onAction={onAction}
             />)}
@@ -233,18 +234,19 @@ function WriteContent({ plan, writeOptions, revisionOptions, attestationOptions,
   );
 }
 
-function WriteOptionCard({ proposition, directions, canAttest, canRevise, canInstrument, canTraverse, committalObservables, onInspect, onAction }: {
+function WriteOptionCard({ proposition, directions, canAttest, canRevise, canInstrument, canTraverse, canCommit, committalObservables, onInspect, onAction }: {
   proposition: Proposition;
   directions: Array<'refute' | 'support'>;
   canAttest: boolean;
   canRevise: boolean;
   canInstrument: boolean;
   canTraverse: boolean;
+  canCommit: boolean;
   committalObservables?: Observables;
   onInspect: InspectHandler;
   onAction: ActionHandler;
 }) {
-  const hasActions = canAttest || canRevise || canInstrument || canTraverse;
+  const hasActions = canAttest || canRevise || canInstrument || canTraverse || canCommit;
   function directionalAction(direction: 'refute' | 'support') {
     const attest = canAttest && directions.includes(direction);
     const traverse = canTraverse && !directions.includes(direction);
@@ -260,6 +262,7 @@ function WriteOptionCard({ proposition, directions, canAttest, canRevise, canIns
         <Box className="write-option-card__actions write-option-card__actions--directional">
           <Box className="write-option-card__side" data-action-region="left">{directionalAction('refute')}</Box>
           <Group className="write-option-card__middle" data-action-region="middle" gap={4} justify="center" wrap="wrap">
+            {canCommit && <Button size="compact-xs" color="indigo" leftSection={<IconBolt size={13} />} onClick={() => onAction('proposition.commit', { proposition_id: proposition.id })}>Commit</Button>}
             {canRevise && <Button size="compact-xs" variant="subtle" color="gray" leftSection={<IconPencil size={13} />} onClick={() => onAction('proposition.revise', { proposition_id: proposition.id })}>Revise</Button>}
             {canInstrument && <Button size="compact-xs" variant="subtle" color="gray" leftSection={<IconTool size={13} />} onClick={() => onAction('instrument.execute', { proposition_id: proposition.id })}>Instrument</Button>}
           </Group>

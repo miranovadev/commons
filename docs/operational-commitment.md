@@ -1,13 +1,14 @@
 # Operational Commitment
 
 Phase 7 (Order) uses `CommitmentAdmissibilityService` in both schema generation
-and execution. It requires an effective Attestation in the current Gate's
+and execution. Order selects an explicit `proposition_id` from Closure-filtered
+Commit Region Write candidates. It requires an effective Attestation in the selected source's
 evidentiary state and a Receipt from a completed instrument execution attached
 to that state or one of its effective Attestations. A Committal Gate inherits
 this state through Commit edges; arbitrary ancestors and Receipts on superseded
 Attestations do not satisfy these preconditions. The grounded Expressive source
 remains provenance. Original evidence records are resolved by reference, never
-copied or retargeted. The new Committal proposition also inherits the Gate's
+copied or retargeted. The new Committal proposition also inherits the selected source's
 Phase-touch history for Cadence, identically in preview and actual Commitment.
 
 ## Instruments

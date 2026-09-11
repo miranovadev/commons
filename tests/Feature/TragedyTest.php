@@ -128,6 +128,11 @@ class TragedyTest extends TestCase
         $viewer->save();
         if ($kind === PhaseKind::Mediate) {
             $parent = $this->proposition($authorPhase, 'canon');
+            $seed = $this->proposition($authorPhase, 'canon');
+            $seed->forceFill(['tier' => 'committal'])->save();
+            $seed->children()->attach($parent->id, [
+                'id' => (string) str()->ulid(), 'phase_id' => $authorPhase->id, 'type' => 'variant',
+            ]);
             $parent->children()->attach($gate->id, [
                 'id' => (string) str()->ulid(), 'phase_id' => $authorPhase->id, 'type' => 'variant',
             ]);

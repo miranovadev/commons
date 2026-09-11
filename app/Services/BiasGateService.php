@@ -12,41 +12,14 @@ use Illuminate\Support\Collection;
 final readonly class BiasGateService
 {
     public function __construct(
-        private LineageService $lineage,
+        private CommitRegionService $regions,
         private ChiralityCalculator $chirality,
     ) {}
 
-    /** Active Stances/Frontiers in the current forward families, counted once. */
+    /** Active register-equivalent candidates in one Commit Region, counted once. */
     public function populationFor(Phase $phase): Collection
     {
-        if ($phase->kind !== PhaseKind::Bias) {
-            return collect();
-        }
-        $register = match ($phase->write_register) {
-            'concord' => 'stance',
-            'canon' => 'frontier',
-            default => null,
-        };
-        $gate = $phase->gate()->with('contextHorizonMembership')->firstOrFail();
-        $horizonId = $gate->contextHorizonMembership?->context_horizon_id;
-        $substrateId = $phase->cycle->participant->substrate_id;
-        if ($register === null || $gate->register !== $register || $gate->tier !== 'expressive'
-            || $horizonId === null || $gate->phase->cycle->participant->substrate_id !== $substrateId) {
-            return collect();
-        }
-
-        // Preserve the existing forward-family/Horizon boundary, without the
-        // old immediate-sibling restriction or separate per-parent directions.
-        $family = collect([$gate])->concat($this->lineage->descendantsInHorizon($gate, $horizonId));
-        foreach ($gate->parents()->whereHas('phase.cycle.participant', fn ($query) => $query
-            ->where('substrate_id', $substrateId))->get() as $parent) {
-            $family = $family->concat($this->lineage->descendantsInHorizon($parent, $horizonId));
-        }
-
-        return Proposition::query()->whereKey($family->pluck('id')->unique())
-            ->where('tier', 'expressive')->where('register', $register)
-            ->whereDoesntHave('children', fn ($query) => $query->where('supersessions.type', '!=', 'variant'))
-            ->orderBy('id')->get();
+        return $phase->kind === PhaseKind::Bias ? $this->regions->forPhase($phase) : collect();
     }
 
     /** One receipt-weighted effective lean; no projected sign or extra attenuation. */

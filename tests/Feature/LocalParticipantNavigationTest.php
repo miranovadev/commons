@@ -239,6 +239,11 @@ class LocalParticipantNavigationTest extends TestCase
         $order->forceFill(['kind' => PhaseKind::Order, 'write_register' => 'canon'])->save();
         $visited = $order->replicate();
         $visited->forceFill(['gate_proposition_id' => $target->id, 'completed_at' => now()])->save();
+        // A prior visit no longer exhausts a Commit Region. Divergent Closure
+        // makes its Write pool empty for this recovery-only regression.
+        $this->mock(\App\Services\ClosureGateService::class, function ($mock): void {
+            $mock->shouldReceive('preview')->andReturn((new \App\Domain\Observables\ClosureValues(1, -1))->resolve());
+        });
         $this->refreshFixtureMeasurements();
         $state = $this->state($participant);
         $this->assertTrue($state['plan']['tragedy']);
@@ -265,11 +270,13 @@ class LocalParticipantNavigationTest extends TestCase
             $node->register = 'canon';
             $node->save();
         }
+        $this->edge($this->node('Commit Region seed', 0.0), $gate);
         $this->edge($gate, $parent);
         $participant = $this->participant('order', $gate);
         $this->establishPath($participant, $parent);
         $phase = $this->phase($participant, $gate);
         $phase->kind = PhaseKind::Order;
+        $phase->write_register = 'canon';
         $phase->save();
         $state = $this->state($participant);
         $this->assertFalse($state['plan']['tragedy']);

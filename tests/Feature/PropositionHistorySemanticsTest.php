@@ -80,6 +80,11 @@ class PropositionHistorySemanticsTest extends TestCase
         string $gateTier,
     ): void {
         $parent = $this->node('Provenance', 'concord', 'committal');
+        if ($operation === 'reconcile') {
+            $read = $this->node('Expressive Read', 'concord');
+            $this->edge($parent, $read);
+            $parent = $read;
+        }
         $gate = $gateTier === 'committal' ? $parent : $this->node('Gate', $gateRegister);
         if ($gate->isNot($parent)) {
             $this->edge($parent, $gate);

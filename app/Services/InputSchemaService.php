@@ -14,7 +14,7 @@ final readonly class InputSchemaService
         private PhaseService $phases,
         private GateService $gates,
         private PropositionOwnershipService $ownership,
-        private CommitmentAdmissibilityService $admissibility,
+        private ClosureOptionService $closure,
         private PropositionOptionService $options,
     ) {}
 
@@ -55,10 +55,8 @@ final readonly class InputSchemaService
             },
         ));
 
-        if (in_array('proposition.commit', $actions, true)
-            && ! $this->admissibility->evaluate($gate, $occurrence)['admissible']) {
-            $actions = array_values(array_diff($actions, ['proposition.commit']));
-        }
+        $commitOptionIds = $kind === PhaseKind::Order
+            ? $this->closure->committableFor($occurrence)->pluck('id')->all() : [];
 
         $traversalOptionIds ??= $this->options->traversalOptionsFor($occurrence)->pluck('id')->all();
 
@@ -69,6 +67,7 @@ final readonly class InputSchemaService
             $attestationOptionIds ?? $writeOptionIds,
             $traversalOptionIds,
             $instrumentOptionIds ?? $writeOptionIds,
+            $commitOptionIds,
         );
 
         if (isset($schema['$defs']['actions']['attestation.create'])) {
@@ -198,8 +197,13 @@ final readonly class InputSchemaService
         array $attestationOptionIds,
         array $traversalOptionIds,
         array $instrumentOptionIds,
+        array $commitOptionIds,
     ): array {
         $bindings = [
+            'proposition.commit' => [
+                'property' => 'proposition_id',
+                'values' => $commitOptionIds,
+            ],
             'proposition.traverse' => [
                 'property' => 'proposition_id',
                 'values' => $traversalOptionIds,

@@ -86,6 +86,10 @@ final readonly class InputPlanService
             'commitment' => $phase->kind === \App\Enums\PhaseKind::Order
                 ? $this->admissibility->evaluate($gate, $phase)
                 : null,
+            'commitment_options' => $phase->kind === \App\Enums\PhaseKind::Order
+                ? $writeOptions->mapWithKeys(fn (Proposition $candidate): array => [
+                    $candidate->id => $this->admissibility->evaluate($candidate, $phase),
+                ])->all() : [],
             'gate' => $this->proposition($gate, $participant),
             'lineage' => $this->propositions($lineage, $participant),
             'read_options' => $this->propositions($readOptions, $participant),

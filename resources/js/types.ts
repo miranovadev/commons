@@ -166,6 +166,7 @@ export interface InputSchema {
 }
 
 export interface ParticipantPlan {
+  commitment_options?: Record<Identifier, NonNullable<ParticipantPlan['commitment']>>;
   commitment?: {
     admissible: boolean;
     requirements: { attestation: boolean; receipt: boolean; closure: boolean | null };

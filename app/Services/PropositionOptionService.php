@@ -16,6 +16,7 @@ final class PropositionOptionService
         private readonly LineageService $lineage,
         private readonly ReconciliationOptionService $reconciliation,
         private readonly BiasGateService $bias,
+        private readonly ClosureOptionService $closure,
     ) {}
 
     /** @return Collection<int, string> */
@@ -82,7 +83,9 @@ final class PropositionOptionService
             return collect();
         }
 
-        return $this->writeDescendants($phase)->orderBy('id')->get();
+        return $phase->kind === PhaseKind::Order
+            ? $this->closure->forPhase($phase)
+            : $this->writeDescendants($phase)->orderBy('id')->get();
     }
 
     /** Every valid Write descendant offers the as-yet-unattested direction(s). */
