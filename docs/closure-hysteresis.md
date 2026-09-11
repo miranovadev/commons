@@ -26,6 +26,10 @@ positive/negative value selects that direction; exactly zero retains the prior
 committed direction. Both resolved directions must match. Their average remains
 Closure, but an average alone cannot establish admissibility.
 
+This applies [Invariant 4: Zero Does Not Erase Direction](core-invariants.md#4-zero-does-not-erase-direction)
+and [Invariant 7: Reference Frames Must Remain Distinct](core-invariants.md#7-reference-frames-must-remain-distinct):
+each component retains its own direction under the documented history rules.
+
 Direction history is the latest evaluated **ancestor** snapshot by substrate
 ledger sequence, not the latest Commit on an unrelated branch. At a
 reconciliation, all parents contribute ancestry; the latest evaluated ancestor

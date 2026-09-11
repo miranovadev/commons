@@ -1,5 +1,9 @@
 # Observable calculation
 
+The [Core Invariants](core-invariants.md) govern these calculations. In
+particular, measurement independence (1), representation versus semantics (2),
+and distinct reference frames (7) constrain every projection described below.
+
 Each Proposition's **raw/local** evaluation compares the lineage ending at it with
 its provenance lineage in the immediately preceding, complementary Context
 Horizon. The three measurements share that comparison boundary but are

@@ -1,5 +1,9 @@
 # Attestation polarity within a Commit Region
 
+These rules apply the [Core Invariants](core-invariants.md), particularly
+measurement independence (1), canonical meaning (3), Committal provenance (5),
+fixed frames (6), distinct reference frames (7), and evidence preservation (8–9).
+
 Support and Refute label **Attestations**, never Propositions or Matrix
 measurement coordinates. Correspondence, Chirality and Closure remain the three
 measurements. Effective Attestation direction is evidence interpreted in a fixed
@@ -39,6 +43,9 @@ history inheritance preserves that original polarity and original Attestation ID
 it does not relabel old evidence using the destination region's new frame.
 
 ## Value and retained direction
+
+This distinction is required by
+[Invariant 4: Zero Does Not Erase Direction](core-invariants.md#4-zero-does-not-erase-direction).
 
 A positive or negative numeric value establishes its corresponding direction.
 Exactly zero retains the preceding direction. Zero is not directionless, and

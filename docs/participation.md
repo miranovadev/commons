@@ -1,5 +1,9 @@
 # Participation API
 
+The [Core Invariants](core-invariants.md) govern this shared contract for human
+and automated Participants, including participant prompts and UI behaviour.
+The operational rules below apply those normative semantic constraints.
+
 The participation endpoint is scoped to a Substrate and Participant:
 
 - GET /api/substrates/{substrate}/participants/{participant}/participate
@@ -292,6 +296,9 @@ Reconcile still copies the current Gate's statement and creates two hard edges.
 
 ## Shared Commit Region scope
 
+This scope applies [Invariant 10: structural authority](core-invariants.md#10-operations-may-only-act-within-their-structural-authority):
+measurements select within eligible populations and must not redefine them.
+
 `CommitRegionService` resolves the nearest Committal ancestry, stopping the
 backward walk at each Committal node. That seed starts a region of expressive
 descendants across all forward branches; another Committal node terminates that
@@ -312,7 +319,7 @@ Canon/Concord = Third (B). Late phases share this structural service:
 
 | Phase | Candidate position | Selection |
 | --- | --- | --- |
-| Mediate | Third / Read | Anchor Correspondence sign |
+| Mediate | Third / Read | Matches the Read anchor's retained Correspondence direction |
 | Bias | Second / Gate | Retained direction agrees with aggregate lean |
 | Order | Third / Write | Prospective Depth and Cadence directions align |
 
