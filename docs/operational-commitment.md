@@ -11,6 +11,12 @@ remains provenance. Original evidence records are resolved by reference, never
 copied or retargeted. The new Committal proposition also inherits the selected source's
 Phase-touch history for Cadence, identically in preview and actual Commitment.
 
+These inheritance rules apply
+[Invariant 8: Provenance Is Never Erased](core-invariants.md#8-provenance-is-never-erased)
+and [Invariant 9: Evidence Must Not Be Invented or Reinterpreted](core-invariants.md#9-evidence-must-not-be-invented-or-reinterpreted).
+Changing active participation must preserve original contribution history and
+meaning.
+
 ## Instruments
 
 `OperationalInstrumentService` runs the supported reference instruments
