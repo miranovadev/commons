@@ -296,7 +296,9 @@ backward walk at each Committal node. That seed starts a region of expressive
 descendants across all forward branches; another Committal node terminates that
 branch and seeds a new region. Superseded intermediates remain structural paths.
 No migration, chronology cutoff, or Domain transition is required. A rootless
-position or conflicting committal ancestry supplies no inferred region.
+position or conflicting committal ancestry supplies no inferred region. Legacy
+merges with conflicting seeds and their descendants are excluded from both
+regions, rather than connecting otherwise isolated pools.
 
 An immediate parent is one graph edge and is too narrow. A Context Horizon is
 measurement/comparison context and can contain multiple Commit Regions.

@@ -51,8 +51,21 @@ final class CommitRegionService
                 JOIN cycles c ON c.id = ph.cycle_id
                 JOIN participants participant ON participant.id = c.participant_id
                 WHERE p.tier = 'expressive' AND participant.substrate_id = ?
-            ) SELECT id FROM region WHERE id != ?
-            SQL, [$seed->getKey(), $seed->phase->cycle->participant->substrate_id, $seed->getKey()]);
+            ), ancestry (member_id, id, tier) AS (
+                SELECT r.id, p.id, p.tier FROM region r JOIN propositions p ON p.id = r.id
+                UNION
+                SELECT a.member_id, p.id, p.tier FROM ancestry a
+                JOIN supersessions s ON s.target_proposition_id = a.id
+                JOIN propositions p ON p.id = s.source_proposition_id
+                JOIN phases ph ON ph.id = p.phase_id
+                JOIN cycles c ON c.id = ph.cycle_id
+                JOIN participants participant ON participant.id = c.participant_id
+                WHERE a.tier = 'expressive' AND participant.substrate_id = ?
+            ) SELECT member_id AS id FROM ancestry
+                WHERE tier = 'committal' AND member_id != ?
+                GROUP BY member_id HAVING COUNT(DISTINCT id) = 1 AND MIN(id) = ?
+            SQL, [$seed->getKey(), $seed->phase->cycle->participant->substrate_id,
+                $seed->phase->cycle->participant->substrate_id, $seed->getKey(), $seed->getKey()]);
 
         return Proposition::query()->whereKey(collect($members)->pluck('id'))->orderBy('id')->get();
     }

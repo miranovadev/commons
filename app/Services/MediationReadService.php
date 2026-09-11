@@ -48,11 +48,11 @@ final readonly class MediationReadService
             return $reads;
         }
 
-        $siblings = $this->regions->forPhase($phase, $anchor)->where('id', '!=', $anchor->id);
-        $this->measurements->repairMissing($siblings);
+        $candidates = $this->regions->forPhase($phase, $anchor)->where('id', '!=', $anchor->id);
+        $this->measurements->repairMissing($candidates);
 
-        return $reads->concat($siblings->filter(fn (Proposition $sibling): bool =>
-            $this->direction($sibling->measurement?->correspondence) === $direction))->values();
+        return $reads->concat($candidates->filter(fn (Proposition $candidate): bool =>
+            $this->direction($candidate->measurement?->correspondence) === $direction))->values();
     }
 
     /** All active immediate Gate children of the exposed Reads; no Gate sign/lean filter. */

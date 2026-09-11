@@ -60,6 +60,21 @@ class CommitRegionTest extends TestCase
             $nextChild->contextHorizonMembership->context_horizon_id);
     }
 
+    public function test_conflicting_legacy_ancestry_does_not_join_two_regions(): void
+    {
+        $left = $this->node('stance', $this->seed);
+        $other = $this->node('canon', null, 'committal');
+        $right = $this->node('stance', $other);
+        $mixed = $this->node('concord', $left, edge: 'reconcile');
+        $this->edge($right, $mixed, 'reconcile');
+        $descendant = $this->node('concord', $mixed);
+        $regions = app(CommitRegionService::class);
+        $this->assertNull($regions->seedFor($mixed));
+        $this->assertNull($regions->seedFor($descendant));
+        $this->assertSame([$left->id], $regions->membersFor($this->seed)->pluck('id')->all());
+        $this->assertSame([$right->id], $regions->membersFor($other)->pluck('id')->all());
+    }
+
     public static function domains(): array
     {
         return [['signal', 'stance', 'concord'], ['activity', 'frontier', 'canon']];

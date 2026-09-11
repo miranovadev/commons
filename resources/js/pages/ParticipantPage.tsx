@@ -102,11 +102,11 @@ export function ParticipantPage() {
           <Box className="participant-cycle-content">
             {latestCommitment}
             {plan.commitment && !availableActions.includes('proposition.commit') && (
-              <Alert color="yellow" title="Commitment is blocked" icon={<IconLock size={18} />} m="md">
+              <Alert color="yellow" title="No committable candidate" icon={<IconLock size={18} />} m="md">
                 <Stack gap="xs">
                   <Text size="sm">{participation.reason?.message}</Text>
-                  <Text size="sm">Effective Attestation: {plan.commitment.requirements.attestation ? 'available' : 'missing'}.</Text>
-                  <Text size="sm">Completed Receipt: {plan.commitment.requirements.receipt ? 'available' : 'missing'}.</Text>
+                  <Text size="sm">Current Gate Attestation: {plan.commitment.requirements.attestation ? 'available' : 'missing'}.</Text>
+                  <Text size="sm">Current Gate Receipt: {plan.commitment.requirements.receipt ? 'available' : 'missing'}.</Text>
                   <Text size="xs">Grounding can be added in Bias and retained for a later Cycle. Use the available Phase actions; the Closure gate still applies.</Text>
                 </Stack>
               </Alert>
