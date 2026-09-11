@@ -42,17 +42,12 @@ final readonly class MediationReadService
             return collect();
         }
         $reads = collect([$anchor]);
-        $this->measurements->repairMissing($reads);
-        $direction = $this->direction($anchor->measurement?->correspondence);
-        if ($direction === 0) {
-            return $reads;
-        }
+        $direction = $this->measurements->correspondenceDirectionFor($anchor);
 
         $candidates = $this->regions->forPhase($phase, $anchor)->where('id', '!=', $anchor->id);
-        $this->measurements->repairMissing($candidates);
 
         return $reads->concat($candidates->filter(fn (Proposition $candidate): bool =>
-            $this->direction($candidate->measurement?->correspondence) === $direction))->values();
+            $this->measurements->correspondenceDirectionFor($candidate) === $direction))->values();
     }
 
     /** All active immediate Gate children of the exposed Reads; no Gate sign/lean filter. */
@@ -71,8 +66,4 @@ final readonly class MediationReadService
             ->orderBy('id')->get();
     }
 
-    private function direction(float|string|null $value): int
-    {
-        return $value === null ? 0 : ((float) $value <=> 0.0);
-    }
 }

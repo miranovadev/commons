@@ -23,6 +23,8 @@ final readonly class ContributionDispatcher
         private ReconciliationOptionService $reconciliation,
         private BiasGateService $bias,
         private CommitRegionService $regions,
+        private CommitRegionPolarityService $polarity,
+        private AttestationEvidenceService $evidence,
     ) {}
 
     /**
@@ -249,12 +251,14 @@ final readonly class ContributionDispatcher
                 );
             }
 
+            $governing = $this->evidence->directionFor($gate);
             $target = $this->write(
                 $phase,
                 $gate->statement,
                 tier: 'committal',
                 preserveStatement: true,
             );
+            $this->polarity->establishCommit($target, $governing);
             $supersession = $this->supersede(
                 $phase,
                 $gate,

@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Enums\ObservableDirection;
 use App\Enums\PhaseKind;
 use App\Models\Phase;
 use App\Models\Proposition;
@@ -14,6 +13,7 @@ final readonly class BiasGateService
     public function __construct(
         private CommitRegionService $regions,
         private ChiralityCalculator $chirality,
+        private AttestationEvidenceService $evidence,
     ) {}
 
     /** Active register-equivalent candidates in one Commit Region, counted once. */
@@ -32,12 +32,11 @@ final readonly class BiasGateService
     public function forPhase(Phase $phase): Collection
     {
         $population = $this->populationFor($phase);
-        $substrate = $phase->cycle->participant->substrate;
-        $gate = $phase->gate()->firstOrFail();
-        $direction = ObservableDirection::after(
-            $this->chirality->leanFor($population->pluck('id'), $substrate),
-            $this->chirality->directionFor($gate),
-        );
+        $seed = $this->regions->seedFor($phase->gate()->firstOrFail());
+        if ($seed === null) {
+            return collect();
+        }
+        $direction = $this->evidence->populationDirection($seed, \App\Enums\RegisterPosition::Second);
 
         return $population->filter(fn (Proposition $candidate): bool =>
             $this->chirality->directionFor($candidate) === $direction)->values();

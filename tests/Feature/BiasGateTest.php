@@ -69,8 +69,8 @@ class BiasGateTest extends TestCase
 
         $this->assertSame(ObservableDirection::Negative, $chirality->directionFor($flipped));
         $this->assertSame(0.0, $chirality->leanFor(collect([$afterFlip->id]), $this->substrate));
-        $this->assertSame(ObservableDirection::Negative, $chirality->directionFor($afterFlip));
-        $this->assertEqualsCanonicalizing([$flipped->id, $afterFlip->id], $this->optionIds());
+        $this->assertSame(ObservableDirection::Positive, $chirality->directionFor($afterFlip));
+        $this->assertSame([$flipped->id], $this->optionIds());
     }
 
     public function test_receipt_weighted_effective_lean_sets_one_direction_including_the_current_gate(): void
@@ -206,7 +206,7 @@ class BiasGateTest extends TestCase
         $this->assertSame('order', $state['plan']['phase']['kind']);
     }
 
-    public function test_neutral_lean_retains_the_gate_direction_for_zero_vote_candidates(): void
+    public function test_zero_aggregate_retains_population_history_for_zero_vote_candidates(): void
     {
         $this->fixture();
         $this->assertSame([$this->gate->id], $this->optionIds());

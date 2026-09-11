@@ -1,0 +1,95 @@
+# Attestation polarity within a Commit Region
+
+Support and Refute label **Attestations**, never Propositions or Matrix
+measurement coordinates. Correspondence, Chirality and Closure remain the three
+measurements. Effective Attestation direction is evidence interpreted in a fixed
+frame, not a fourth Lean axis.
+
+For an ordinary Commit, the selected source's retained effective Attestation
+direction at commitment becomes the new Committal's governing direction and the
+Support direction of its new Commit Region. The opposite direction is Refute.
+This frame is fixed for the region's lifetime, even if subsequent evidence,
+an Expressive parent's direction, or the broader Context Horizon changes.
+
+| Governing direction | Support | Refute | No-Attestation Expressive default |
+| --- | --- | --- | --- |
+| Positive | Positive | Negative | Positive |
+| Negative | Negative | Positive | Negative |
+
+Origin is the unique bootstrap exception. It starts with positive direction;
+the creating participant chooses the **label** for that direction, not its sign.
+
+| Origin's initial label | Initial direction | Region Support | Region Refute |
+| --- | --- | --- | --- |
+| Support | Positive | Positive | Negative |
+| Refute | Positive | Negative | Positive |
+
+In either Origin case, an unattested Expressive descendant defaults to Origin's
+positive governing direction. The numeric bootstrap Chirality/Tension calculation
+is independent and continues to produce the documented negative bootstrap values.
+Later Commits use the ordinary rule above; they do not repeat Origin's label choice.
+
+An Expressive Proposition with no Attestations defaults to the **governing
+Committal**, not its immediate Expressive parent. If that parent has diverged,
+its new child still begins in the region's governing direction. Neither this
+default nor a local flip changes the meaning of Support and Refute.
+
+An Attestation's original region determines its signed evidence. Commit-only
+history inheritance preserves that original polarity and original Attestation ID;
+it does not relabel old evidence using the destination region's new frame.
+
+## Value and retained direction
+
+A positive or negative numeric value establishes its corresponding direction.
+Exactly zero retains the preceding direction. Zero is not directionless, and
+never independently removes eligibility when a direction exists.
+
+`AttestationEvidenceService` reconstructs effective directions from ordered
+contribution ledger prefixes. Attestation supersession removes the old evidence
+only from the replacement's sequence onward; reinforcing Receipts add the same
+configured weight from their ledger sequence onward. Original IDs deduplicate
+Commit-inherited evidence. No persistent Proposition Support/Refute or Lean state
+is introduced, and opening a participant plan is not required to preserve history.
+
+`propositions.correspondence_direction` separately retains the latest established
+Correspondence direction when numeric projections are replaced or deleted.
+Unestablished Correspondence follows primary lineage (Supersession creation order,
+then ID), with a positive root default. This inheritance concerns Correspondence
+only; it does not supply Attestation polarity or effective Attestation defaults.
+
+## Mediate and Bias have different anchors
+
+Mediate is relative to the participant's trajectory: the preceding Disperse Gate
+is its Read anchor. It exposes active equivalent Reads in that Commit Region
+whose retained Correspondence directions match the anchor, including numeric
+zeros. Gate options are the active immediate Gate-register children of those
+Reads. Their own Correspondence and Attestation values do not filter them.
+
+Bias operates on the population. The traversed Gate establishes Commit Region
+and equivalent register, but does not set the selection direction. Bias uses
+the existing receipt-weighted aggregate over effective signed Attestations in
+the active Gate population and selects Gates whose effective directions match
+the population's retained direction.
+
+At aggregate zero, ledger replay retains the population's own preceding
+direction. Replay includes historical region/register members and their hard
+removal events, so evidence from a previously selected Gate is considered only
+while it belonged to the active population. With no established aggregate
+direction, the region's governing Committal direction initializes the population.
+Another region/register cannot supply that history. Replay is read-only and
+independent of the selected Gate or which participant last opened a plan.
+
+Unary Bias still copies one selected statement exactly into the next register
+and creates one hard reclassify edge. Fresh non-Commit targets reset contribution
+history. Commit Regions, register equivalence, explicit Commit selection,
+Closure/Depth/Cadence formulae, attenuation and phase topology are preserved.
+
+## Upgrade
+
+The additive migration stores immutable region frames, reconstructing old Commit
+polarity from evidence at the original Commit edge and Origin polarity from its
+initial Attestation label. It preserves recoverable Correspondence signs and
+invalidates disposable numeric projections for the corrected evidence polarity.
+Older Correspondence signs already overwritten by zero cannot be recovered;
+those positions use lineage/default fallback. Immutable measurement snapshots
+are not rewritten. No fourth measurement or per-Proposition Lean state is added.

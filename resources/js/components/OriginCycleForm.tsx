@@ -78,11 +78,12 @@ export function OriginCycleForm({ opened, loading, error, onClose, onSubmit }: O
             onChange={(event) => update('statement', event.currentTarget.value)}
           />
           <Stack gap={5}>
-            <Text size="sm" fw={500}>Attestation</Text>
+            <Text size="sm" fw={500}>Initial Attestation label</Text>
+            <Text size="xs" c="dimmed">Origin starts in the positive direction. Choose whether to label that direction Support or Refute; this fixes the label polarity for its Commit Region.</Text>
             <AttestationDirectionControl
               value={value.direction}
               onChange={(next) => update('direction', next)}
-              showLabels={false}
+              showLabels
             />
           </Stack>
           <Textarea

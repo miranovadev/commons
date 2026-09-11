@@ -73,31 +73,65 @@ final class PropositionMeasurementService
         $this->assertMeasurement('chirality', $chirality);
         $this->assertMeasurement('closure', $closure);
 
-        PropositionMeasurement::query()->upsert(
-            [[
-                'proposition_id' => $proposition->getKey(),
-                'correspondence' => $correspondence,
-                'chirality' => $chirality,
-                'closure' => $closure,
-                'calculated_at' => $calculatedAt ?? now(),
-                'calculator_version' => LineageMeasurementService::VERSION,
-            ]],
-            ['proposition_id'],
-            [
-                'correspondence',
-                'chirality',
-                'closure',
-                'calculated_at',
-                'calculator_version',
-            ],
-        );
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($proposition, $correspondence, $chirality, $closure, $calculatedAt): PropositionMeasurement {
+            // Lock the Proposition so the numeric projection and retained direction move together.
+            Proposition::query()->whereKey($proposition->id)->lockForUpdate()->firstOrFail();
+            if ($correspondence !== null && $correspondence !== 0.0) {
+                \Illuminate\Support\Facades\DB::table('propositions')->where('id', $proposition->id)->update([
+                    'correspondence_direction' => \App\Enums\ObservableDirection::after($correspondence)->value,
+                ]);
+            }
+            PropositionMeasurement::query()->upsert(
+                [[
+                    'proposition_id' => $proposition->getKey(),
+                    'correspondence' => $correspondence,
+                    'chirality' => $chirality,
+                    'closure' => $closure,
+                    'calculated_at' => $calculatedAt ?? now(),
+                    'calculator_version' => LineageMeasurementService::VERSION,
+                ]],
+                ['proposition_id'],
+                [
+                    'correspondence',
+                    'chirality',
+                    'closure',
+                    'calculated_at',
+                    'calculator_version',
+                ],
+            );
 
-        $measurement = PropositionMeasurement::query()
-            ->findOrFail($proposition->getKey());
+            $measurement = PropositionMeasurement::query()
+                ->findOrFail($proposition->getKey());
 
-        $proposition->setRelation('measurement', $measurement);
+            $proposition->setRelation('measurement', $measurement);
 
-        return $measurement;
+            return $measurement;
+        });
+    }
+
+    /** Correspondence has its own hysteresis; Attestation polarity is unrelated. */
+    public function correspondenceDirectionFor(Proposition $position): \App\Enums\ObservableDirection
+    {
+        $seen = [];
+        $substrateId = $position->phase->cycle->participant->substrate_id;
+        while ($position !== null) {
+            if (isset($seen[$position->id]) || $position->phase->cycle->participant->substrate_id !== $substrateId) {
+                throw new \DomainException('Correspondence lineage must be acyclic and within one substrate.');
+            }
+            $seen[$position->id] = true;
+            $position->load('measurement');
+            $this->repairMissing(collect([$position]));
+            $value = $position->measurement?->correspondence;
+            if ($value !== null && $value !== 0.0) {
+                return \App\Enums\ObservableDirection::after($value);
+            }
+            $retained = Proposition::query()->whereKey($position->id)->value('correspondence_direction');
+            if ($retained !== null) {
+                return \App\Enums\ObservableDirection::from($retained);
+            }
+            $position = $position->parents()->orderBy('supersessions.created_at')->orderBy('supersessions.id')->first();
+        }
+        return \App\Enums\ObservableDirection::Positive;
     }
 
     private function assertMeasurement(string $name, ?float $value): void
