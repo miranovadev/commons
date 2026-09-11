@@ -2,14 +2,16 @@
 
 namespace App\Services;
 
-use App\Services\Participation\ParticipationContext;
+use App\Enums\ObservableDirection;
 use App\Models\ContextHorizonMembership;
 use App\Models\Proposition;
 use App\Models\PropositionMeasurement;
-use App\Services\Observables\ObservableService;
 use App\Services\Observables\LineageMeasurementService;
+use App\Services\Observables\ObservableService;
+use App\Services\Participation\ParticipationContext;
 use DateTimeInterface;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 final class PropositionMeasurementService
@@ -78,12 +80,12 @@ final class PropositionMeasurementService
         $this->assertMeasurement('chirality', $chirality);
         $this->assertMeasurement('closure', $closure);
 
-        return \Illuminate\Support\Facades\DB::transaction(function () use ($proposition, $correspondence, $chirality, $closure, $calculatedAt): PropositionMeasurement {
+        return DB::transaction(function () use ($proposition, $correspondence, $chirality, $closure, $calculatedAt): PropositionMeasurement {
             // Lock the Proposition so the numeric projection and retained direction move together.
             Proposition::query()->whereKey($proposition->id)->lockForUpdate()->firstOrFail();
             if ($correspondence !== null && $correspondence !== 0.0) {
-                \Illuminate\Support\Facades\DB::table('propositions')->where('id', $proposition->id)->update([
-                    'correspondence_direction' => \App\Enums\ObservableDirection::after($correspondence)->value,
+                DB::table('propositions')->where('id', $proposition->id)->update([
+                    'correspondence_direction' => ObservableDirection::after($correspondence)->value,
                 ]);
             }
             PropositionMeasurement::query()->upsert(
@@ -115,7 +117,7 @@ final class PropositionMeasurementService
     }
 
     /** Correspondence has its own hysteresis; Attestation polarity is unrelated. */
-    public function correspondenceDirectionFor(Proposition $position, ?ParticipationContext $context = null): \App\Enums\ObservableDirection
+    public function correspondenceDirectionFor(Proposition $position, ?ParticipationContext $context = null): ObservableDirection
     {
         $seen = [];
         $substrateId = $position->phase->cycle->participant->substrate_id;
@@ -125,21 +127,24 @@ final class PropositionMeasurementService
             }
             $seen[$position->id] = true;
             $position = $context?->proposition($position) ?? $position;
-            if ($context === null) $position->load('measurement');
+            if ($context === null) {
+                $position->load('measurement');
+            }
             $this->repairMissing(collect([$position]), $context);
             $value = $position->measurement?->correspondence;
             if ($value !== null && $value !== 0.0) {
-                return \App\Enums\ObservableDirection::after($value);
+                return ObservableDirection::after($value);
             }
             $retained = $context !== null ? $position->correspondence_direction : Proposition::query()->whereKey($position->id)->value('correspondence_direction');
             if ($retained !== null) {
-                return \App\Enums\ObservableDirection::from($retained);
+                return ObservableDirection::from($retained);
             }
             $position = $context !== null
                 ? $context->nodes($context->parents->get($position->id, collect())->sortBy([['created_at', 'asc'], ['id', 'asc']])->pluck('source_proposition_id'))->first()
                 : $position->parents()->orderBy('supersessions.created_at')->orderBy('supersessions.id')->first();
         }
-        return \App\Enums\ObservableDirection::Positive;
+
+        return ObservableDirection::Positive;
     }
 
     private function assertMeasurement(string $name, ?float $value): void

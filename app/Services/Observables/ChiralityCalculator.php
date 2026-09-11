@@ -2,19 +2,20 @@
 
 namespace App\Services\Observables;
 
-use App\Services\Participation\ParticipationContext;
 use App\Domain\Observables\DomainLineage;
 use App\Domain\Observables\LineageComparison;
 use App\Enums\ObservableDirection;
 use App\Enums\SupersessionStrength;
-use App\Models\Substrate;
 use App\Models\Proposition;
+use App\Models\Substrate;
+use App\Services\AttestationEvidenceService;
+use App\Services\Participation\ParticipationContext;
 use Illuminate\Support\Collection;
 
 final readonly class ChiralityCalculator
 {
     public function __construct(
-        private \App\Services\AttestationEvidenceService $evidence,
+        private AttestationEvidenceService $evidence,
     ) {}
 
     public function calculate(LineageComparison $comparison): float
@@ -47,6 +48,7 @@ final readonly class ChiralityCalculator
             )
             ->pluck('source_proposition_id')
             ->unique();
+
         return $propositions->pluck('id')->diff($supersededIds)->values();
     }
 

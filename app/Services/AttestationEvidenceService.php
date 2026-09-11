@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Services\Participation\ParticipationContext;
 use App\Domain\Observables\AttestationTimeline;
 use App\Enums\ObservableDirection as Direction;
 use App\Enums\RegisterPosition;
@@ -12,6 +11,7 @@ use App\Models\Receipt;
 use App\Models\Substrate;
 use App\Models\Supersession;
 use App\Services\Observables\ReinforcementService;
+use App\Services\Participation\ParticipationContext;
 use Illuminate\Support\Collection;
 
 final readonly class AttestationEvidenceService
@@ -26,6 +26,7 @@ final readonly class AttestationEvidenceService
     public function valueFor(Collection $positions, Substrate $substrate, ?ParticipationContext $context = null): float
     {
         $ids = $positions->flatMap(fn ($position) => $this->state->sourceIds($position, $context))->unique()->all();
+
         return $this->timeline($ids, $substrate, $context)->value($ids);
     }
 
@@ -34,6 +35,7 @@ final readonly class AttestationEvidenceService
         $seed = $this->regions->seedFor($position, $context);
         $initial = $seed === null ? Direction::Positive : $this->polarity->forSeed($seed, $context)['governing'];
         $ids = $this->state->sourceIds($position, $context)->all();
+
         return $this->timeline($ids, $context?->substrate ?? $position->phase->cycle->participant->substrate, $context)
             ->direction($initial, fn () => $ids, through: $through ?? PHP_INT_MAX);
     }
@@ -42,18 +44,18 @@ final readonly class AttestationEvidenceService
     public function populationDirection(Proposition $seed, RegisterPosition $register, ?ParticipationContext $context = null): Direction
     {
         $members = $this->regions->membersFor($seed, $context)->whereIn('register', $register->registers());
-        if ($context === null) $members->load('ledgerEntry');
+        if ($context === null) {
+            $members->load('ledgerEntry');
+        }
         $edges = $context !== null ? $context->edges->whereIn('source_proposition_id', $members->pluck('id'))->where('type', '!=', 'variant') : Supersession::query()->whereIn('source_proposition_id', $members->pluck('id'))
             ->where('type', '!=', 'variant')->with('ledgerEntry')->get();
-        $removed = $edges->groupBy('source_proposition_id')->map(fn ($group) =>
-            $group->min(fn ($edge) => $edge->ledgerEntry?->sequence ?? 0));
+        $removed = $edges->groupBy('source_proposition_id')->map(fn ($group) => $group->min(fn ($edge) => $edge->ledgerEntry?->sequence ?? 0));
         $events = $members->map(fn ($node) => $node->ledgerEntry?->sequence ?? 0)
             ->merge($removed->values())->all();
         $timeline = $this->timeline($members->pluck('id')->all(), $context?->substrate ?? $seed->phase->cycle->participant->substrate, $context);
 
         return $timeline->direction($this->polarity->forSeed($seed, $context)['governing'],
-            fn (int $sequence) => $members->filter(fn ($node) =>
-                ($node->ledgerEntry?->sequence ?? 0) <= $sequence
+            fn (int $sequence) => $members->filter(fn ($node) => ($node->ledgerEntry?->sequence ?? 0) <= $sequence
                 && (! $removed->has($node->id) || $removed[$node->id] > $sequence))->pluck('id')->all(),
             $events);
     }
@@ -62,8 +64,10 @@ final readonly class AttestationEvidenceService
     {
         if ($context !== null) {
             sort($sourceIds);
+
             return $context->remember('timeline:'.implode(',', $sourceIds), fn () => $this->buildTimeline($sourceIds, $substrate, $context));
         }
+
         return $this->buildTimeline($sourceIds, $substrate);
     }
 
@@ -93,6 +97,7 @@ final readonly class AttestationEvidenceService
                 'receipts' => $receipts->get($attestation->id, collect())->map(fn ($receipt) => $receipt->ledgerEntry?->sequence ?? 0)->all(),
             ];
         }
+
         return new AttestationTimeline($rows, $this->reinforcement->receiptIncrement($substrate));
     }
 }

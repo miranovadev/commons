@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
-use App\Services\Participation\ParticipationContext;
-use App\Models\Proposition;
 use App\Models\Phase;
+use App\Models\Proposition;
+use App\Services\Participation\ParticipationContext;
 
 final readonly class CommitmentAdmissibilityService
 {
@@ -18,6 +18,7 @@ final readonly class CommitmentAdmissibilityService
     {
         $grounding = $this->grounding($gate, $context);
         $closure = $this->closure->preview($gate, $phase, $context);
+
         return [
             ...$grounding,
             'admissible' => $grounding['admissible'] && $closure['admissible'],

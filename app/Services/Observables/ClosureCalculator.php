@@ -2,12 +2,13 @@
 
 namespace App\Services\Observables;
 
-use App\Domain\Observables\DomainLineage;
 use App\Domain\Observables\ClosureValues;
+use App\Domain\Observables\DomainLineage;
 use App\Domain\Observables\LineageComparison;
 use App\Models\Proposition;
 use App\Services\PropositionStateService;
 use DomainException;
+use Illuminate\Support\Collection;
 
 final readonly class ClosureCalculator
 {
@@ -117,7 +118,7 @@ final readonly class ClosureCalculator
         return sqrt($variance) / $mean;
     }
 
-    private function activeHeads(DomainLineage $lineage): \Illuminate\Support\Collection
+    private function activeHeads(DomainLineage $lineage): Collection
     {
         return $lineage->propositions->whereIn('id', $this->chirality->activeIds(
             $lineage->propositions, $lineage->supersessions,

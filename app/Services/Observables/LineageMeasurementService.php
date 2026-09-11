@@ -2,11 +2,11 @@
 
 namespace App\Services\Observables;
 
-use App\Services\Participation\ParticipationContext;
 use App\Domain\Observables\LineageComparison;
 use App\Domain\Observables\LocalMeasurements;
 use App\Models\Phase;
 use App\Models\Proposition;
+use App\Services\Participation\ParticipationContext;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 

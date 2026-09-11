@@ -2,15 +2,15 @@
 
 namespace App\Services\Observables;
 
-use App\Services\Participation\ParticipationContext;
 use App\Domain\Observables\DomainLineage;
 use App\Domain\Observables\LineageComparison;
 use App\Models\ContextHorizon;
 use App\Models\ContextHorizonMembership;
-use App\Models\Proposition;
 use App\Models\Phase;
+use App\Models\Proposition;
 use App\Models\SubstrateLedgerEntry;
 use App\Models\Supersession;
+use App\Services\Participation\ParticipationContext;
 use DomainException;
 use Illuminate\Support\Facades\DB;
 
@@ -127,6 +127,7 @@ final class ContextLineageComparisonService
     ): DomainLineage {
         if ($context !== null) {
             $ids = $context->lineageIds($horizon->id, $gateIds);
+
             return new DomainLineage($horizon,
                 $context->nodes($ids)->sortBy(fn ($node) => $node->ledgerEntry->sequence)->values(),
                 $context->edges->whereIn('source_proposition_id', $ids)->whereIn('target_proposition_id', $ids)->values(), $context);

@@ -2,9 +2,9 @@
 
 namespace App\Services\Observables;
 
-use App\Services\Participation\ParticipationContext;
 use App\Domain\Observables\ObservableValues;
 use App\Models\Proposition;
+use App\Services\Participation\ParticipationContext;
 
 final readonly class ObservableService
 {

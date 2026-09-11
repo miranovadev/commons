@@ -5,6 +5,7 @@ namespace App\Domain\Observables;
 use App\Models\ContextHorizon;
 use App\Models\Proposition;
 use App\Models\Supersession;
+use App\Services\Participation\ParticipationContext;
 use Illuminate\Support\Collection;
 
 final readonly class DomainLineage
@@ -17,6 +18,6 @@ final readonly class DomainLineage
         public ContextHorizon $horizon,
         public Collection $propositions,
         public Collection $supersessions,
-        public ?\App\Services\Participation\ParticipationContext $context = null,
+        public ?ParticipationContext $context = null,
     ) {}
 }

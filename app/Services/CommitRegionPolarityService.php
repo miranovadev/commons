@@ -2,9 +2,10 @@
 
 namespace App\Services;
 
-use App\Services\Participation\ParticipationContext;
 use App\Enums\ObservableDirection as Direction;
 use App\Models\Proposition;
+use App\Models\Supersession;
+use App\Services\Participation\ParticipationContext;
 use Illuminate\Support\Facades\DB;
 
 /** Immutable Attestation frame; independent of Tension and measurement coordinates. */
@@ -26,7 +27,10 @@ final class CommitRegionPolarityService
     /** @return array{governing: Direction, support: Direction} */
     public function forSeed(Proposition $seed, ?ParticipationContext $context = null): array
     {
-        if ($context !== null) return $context->remember('polarity:'.$seed->id, fn () => $this->resolveSeed($seed, $context));
+        if ($context !== null) {
+            return $context->remember('polarity:'.$seed->id, fn () => $this->resolveSeed($seed, $context));
+        }
+
         return $this->resolveSeed($seed);
     }
 
@@ -42,13 +46,15 @@ final class CommitRegionPolarityService
         // evidence is evaluated at the original Commit edge, never at today's state.
         $source = $context !== null ? $context->parentNodes($seed, true)->first() : $seed->commitSources()->first();
         if ($source !== null) {
-            $edge = $context !== null ? $context->parents->get($seed->id)->where('type', 'commit')->first() : \App\Models\Supersession::query()->where('target_proposition_id', $seed->id)
+            $edge = $context !== null ? $context->parents->get($seed->id)->where('type', 'commit')->first() : Supersession::query()->where('target_proposition_id', $seed->id)
                 ->where('type', 'commit')->with('ledgerEntry')->firstOrFail();
             $direction = app(AttestationEvidenceService::class)->directionFor($source, $edge->ledgerEntry?->sequence, $context);
+
             return ['governing' => $direction, 'support' => $direction];
         }
 
         $first = $context !== null ? $context->attestations->where('proposition_id', $seed->id)->sortBy([['created_at', 'asc'], ['id', 'asc']])->first() : $seed->attestations()->orderBy('created_at')->orderBy('id')->first();
+
         return ['governing' => Direction::Positive,
             'support' => $first?->direction === 'refute' ? Direction::Negative : Direction::Positive];
     }

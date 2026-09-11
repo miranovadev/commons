@@ -2,11 +2,11 @@
 
 namespace App\Services;
 
-use App\Services\Participation\ParticipationContext;
 use App\Models\Attestation;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Receipt;
+use App\Services\Participation\ParticipationContext;
 use Illuminate\Support\Collection;
 
 /**
@@ -21,10 +21,12 @@ final class PropositionStateService
         $sources = $propositions->unique('id')->mapWithKeys(fn (Proposition $item) => [
             $item->id => $item->tier === 'committal' ? $this->sourceIds($item, $context) : collect([$item->id]),
         ]);
-        $counts = Attestation::query()->effective()
-            ->whereIn('proposition_id', $sources->flatten()->unique())
-            ->selectRaw('proposition_id, direction, count(*) as aggregate')
-            ->groupBy('proposition_id', 'direction')->get()->groupBy('proposition_id');
+        $counts = $context !== null
+            ? $context->effectiveAttestations($sources->flatten()->unique())->groupBy('proposition_id')->map(fn ($group) => $group->groupBy('direction')->map(fn ($items, $direction) => (object) ['direction' => $direction, 'aggregate' => $items->count()]))
+            : Attestation::query()->effective()
+                ->whereIn('proposition_id', $sources->flatten()->unique())
+                ->selectRaw('proposition_id, direction, count(*) as aggregate')
+                ->groupBy('proposition_id', 'direction')->get()->groupBy('proposition_id');
         foreach ($propositions as $proposition) {
             $summary = ['support' => 0, 'refute' => 0];
             foreach ($sources[$proposition->id] as $id) {
@@ -39,7 +41,9 @@ final class PropositionStateService
     /** @return Collection<int, string> */
     public function sourceIds(Proposition $position, ?ParticipationContext $context = null): Collection
     {
-        if ($context !== null) return $context->sourceIds($position);
+        if ($context !== null) {
+            return $context->sourceIds($position);
+        }
         $substrateId = $position->phase->cycle->participant->substrate_id
             ?? $position->phase->cycle->participant()->value('substrate_id');
         $frontier = collect([$position]);
@@ -59,8 +63,7 @@ final class PropositionStateService
                 $parents = ! $proposition->exists
                     ? $proposition->commitSources
                     : $proposition->commitSources()->get();
-                $next = $next->concat($parents->filter(fn (Proposition $parent) =>
-                    $parent->phase->cycle->participant->substrate_id === $substrateId));
+                $next = $next->concat($parents->filter(fn (Proposition $parent) => $parent->phase->cycle->participant->substrate_id === $substrateId));
             }
             $frontier = $next;
         }
@@ -71,7 +74,10 @@ final class PropositionStateService
     /** Each persisted Phase is one observation, including the currently open Phase. */
     public function touchCount(Proposition $proposition, ?ParticipationContext $context = null): int
     {
-        if ($context !== null) return (int) $context->sourceIds($proposition)->sum(fn ($id) => $context->touches->get($id, 0));
+        if ($context !== null) {
+            return (int) $context->sourceIds($proposition)->sum(fn ($id) => $context->touches->get($id, 0));
+        }
+
         return Phase::query()->whereIn('gate_proposition_id', $this->sourceIds($proposition))
             ->whereHas('cycle.participant', fn ($query) => $query->where(
                 'substrate_id', $proposition->phase->cycle->participant->substrate_id,
@@ -92,6 +98,7 @@ final class PropositionStateService
         if ($context !== null) {
             $ids = $context->sourceIds($proposition);
             $attestations = $context->effectiveAttestations($ids)->pluck('id');
+
             return $context->receipts->filter(fn ($receipt) => $receipt->instrumentExecution?->status === 'completed'
                 && (($receipt->receiptable_type === (new Proposition)->getMorphClass() && $ids->contains($receipt->receiptable_id))
                     || ($receipt->receiptable_type === (new Attestation)->getMorphClass() && $attestations->contains($receipt->receiptable_id))))->values();

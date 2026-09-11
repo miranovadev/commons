@@ -2,13 +2,15 @@
 
 namespace App\Services;
 
-use App\Services\Participation\ParticipationContext;
 use App\Enums\ContextDomain;
+use App\Enums\PhaseKind;
 use App\Models\ContextHorizon;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
+use App\Services\Participation\ParticipationContext;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 final readonly class InputPlanService
 {
@@ -27,30 +29,53 @@ final readonly class InputPlanService
     /** @return array<string, mixed> */
     public function forParticipant(Participant $participant): array
     {
-        $phase = $this->phases->currentFor($participant);
-        return $this->build($participant, $phase, new ParticipationContext($phase));
+        $calculate = function () use ($participant): array {
+            $phase = $this->phases->currentFor($participant);
+
+            return $this->build($participant, $phase, new ParticipationContext($phase));
+        };
+        // Contribution transactions own their locks/isolation and get a fresh
+        // context after each write. Standalone reads use one coherent MVCC view.
+        if (DB::transactionLevel() > 0) {
+            return $calculate();
+        }
+
+        return DB::transaction(function () use ($calculate): array {
+            if (DB::getDriverName() === 'pgsql') {
+                DB::statement('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+            }
+
+            return $calculate();
+        }, attempts: 3);
     }
 
     /** All repeated evaluation shares this calculation-local context. */
     private function build(Participant $participant, Phase $phase, ?ParticipationContext $context): array
     {
         $plan = $this->phases->plan($phase->kind);
-        $gate = $this->gates->forPhase($phase);
+        $gate = $context?->propositions->get($phase->gate_proposition_id) ?? $this->gates->forPhase($phase);
         $lineage = $this->lineage->endingAt(
             $gate,
             $participant->max_read_count,
             $participant->max_token_count,
+            $context,
         );
         $writeOptions = $this->options->writeOptionsFor($phase, $context);
         $revisionOptions = $this->options->revisionOptionsFor(
             $phase,
             $participant,
+            $context,
         );
         $readOptions = $this->mediation->readsFor($phase, $context);
         $gateOptions = $this->options->gateOptionsFor($phase, $context);
-        $traversalOptions = $this->options->traversalOptionsFor($phase);
-        $instrumentOptions = $this->options->instrumentOptionsFor($phase);
+        $traversalOptions = $this->options->traversalOptionsFor($phase, $context);
+        $instrumentOptions = $this->options->instrumentOptionsFor($phase, $context);
         $attestationOptions = $context !== null ? $writeOptions : $this->options->attestationOptionsFor($phase);
+        if ($context !== null) {
+            foreach ([$lineage, $writeOptions, $revisionOptions, $readOptions, $gateOptions, $traversalOptions, $instrumentOptions, $attestationOptions] as $collection) {
+                $collection->transform(fn (Proposition $node) => $context->proposition($node));
+            }
+        }
         $this->loadPropositionState(
             $participant,
             $context,
@@ -93,10 +118,10 @@ final readonly class InputPlanService
                 'started_at' => $phase->started_at,
             ],
             'workspace' => $workspace,
-            'commitment' => $phase->kind === \App\Enums\PhaseKind::Order
+            'commitment' => $phase->kind === PhaseKind::Order
                 ? $this->admissibility->evaluate($gate, $phase, $context)
                 : null,
-            'commitment_options' => $phase->kind === \App\Enums\PhaseKind::Order
+            'commitment_options' => $phase->kind === PhaseKind::Order
                 ? $writeOptions->mapWithKeys(fn (Proposition $candidate): array => [
                     $candidate->id => $this->admissibility->evaluate($candidate, $phase, $context),
                 ])->all() : [],
@@ -115,7 +140,7 @@ final readonly class InputPlanService
     }
 
     /**
-     * @param Collection<int, Proposition> $lineage
+     * @param  Collection<int, Proposition>  $lineage
      * @return array<string, mixed>
      */
     private function workspace(
@@ -125,7 +150,7 @@ final readonly class InputPlanService
         Collection $lineage,
         ?ParticipationContext $context,
     ): array {
-        $horizon = ContextHorizon::query()
+        $horizon = $context !== null ? $context->horizons->whereNull('closed_at')->first() : ContextHorizon::query()
             ->where('substrate_id', $participant->substrate_id)
             ->whereNull('closed_at')
             ->first();
@@ -135,6 +160,8 @@ final readonly class InputPlanService
             : ['signal', 'stance', 'concord'];
         $propositions = $horizon === null
             ? collect()
+            : ($context !== null ? $context->nodes($horizon->propositions()->whereIn('register', $registers)
+                ->latest('propositions.created_at')->limit(max(1, (int) ($participant->max_read_count ?? 25)))->pluck('propositions.id'))
             : $horizon->propositions()
                 ->with([
                     'measurement',
@@ -148,7 +175,7 @@ final readonly class InputPlanService
                 ->whereIn('register', $registers)
                 ->latest('propositions.created_at')
                 ->limit(max(1, (int) ($participant->max_read_count ?? 25)))
-                ->get();
+                ->get());
 
         $this->measurements->repairMissing($propositions, $context);
 
@@ -156,11 +183,14 @@ final readonly class InputPlanService
             ? $lineage->first(
                 fn (Proposition $item): bool => $item->tier === 'committal'
             )
-            : Proposition::query()->find(
+            : ($context !== null ? $context->propositions->get($horizon->opened_by_proposition_id) : Proposition::query()->find(
                 $horizon->opened_by_proposition_id
-            );
+            ));
 
         $provenance ??= $gate;
+        if ($context !== null) {
+            $this->loadPropositionState($participant, $context, $provenance, $propositions);
+        }
         $provenance->loadMissing([
             'measurement',
             'parents',
@@ -242,14 +272,13 @@ final readonly class InputPlanService
     }
 
     /**
-     * @param Collection<int, Proposition> $propositions
+     * @param  Collection<int, Proposition>  $propositions
      * @return list<array<string, mixed>>
      */
     private function propositions(
         Collection $propositions,
         Participant $participant,
-    ): array
-    {
+    ): array {
         return $propositions
             ->map(fn (Proposition $proposition): array => $this->proposition(
                 $proposition,
@@ -263,8 +292,7 @@ final readonly class InputPlanService
     private function proposition(
         Proposition $proposition,
         Participant $viewer,
-    ): array
-    {
+    ): array {
         $measurement = $proposition->relationLoaded('measurement')
             ? $proposition->measurement
             : null;
@@ -279,6 +307,7 @@ final readonly class InputPlanService
         $attestation = $proposition->relationLoaded('effectiveAttestations')
             ? $proposition->effectiveAttestations->first()
             : null;
+
         return [
             ...$proposition->only([
                 'id',

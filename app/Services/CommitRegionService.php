@@ -2,11 +2,11 @@
 
 namespace App\Services;
 
-use App\Services\Participation\ParticipationContext;
 use App\Enums\PhaseKind;
 use App\Enums\RegisterPosition;
 use App\Models\Phase;
 use App\Models\Proposition;
+use App\Services\Participation\ParticipationContext;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -15,7 +15,9 @@ final class CommitRegionService
     /** Walk every parent path, stopping at its first Committal Proposition. */
     public function seedFor(Proposition $position, ?ParticipationContext $context = null): ?Proposition
     {
-        if ($context !== null) return $context->seed($position);
+        if ($context !== null) {
+            return $context->seed($position);
+        }
         $ancestors = DB::select(<<<'SQL'
             WITH RECURSIVE ancestors (id, tier) AS (
                 SELECT id, tier FROM propositions WHERE id = ?
@@ -42,7 +44,9 @@ final class CommitRegionService
         if ($seed === null) {
             return collect();
         }
-        if ($context !== null) return $context->members($seed);
+        if ($context !== null) {
+            return $context->members($seed);
+        }
         $members = DB::select(<<<'SQL'
             WITH RECURSIVE region (id) AS (
                 SELECT id FROM propositions WHERE id = ?
@@ -68,7 +72,7 @@ final class CommitRegionService
                 WHERE tier = 'committal' AND member_id != ?
                 GROUP BY member_id HAVING COUNT(DISTINCT id) = 1 AND MIN(id) = ?
             SQL, [$seed->getKey(), $seed->phase->cycle->participant->substrate_id,
-                $seed->phase->cycle->participant->substrate_id, $seed->getKey(), $seed->getKey()]);
+            $seed->phase->cycle->participant->substrate_id, $seed->getKey(), $seed->getKey()]);
 
         return Proposition::query()->whereKey(collect($members)->pluck('id'))->orderBy('id')->get();
     }
@@ -94,7 +98,9 @@ final class CommitRegionService
             return collect();
         }
 
-        if ($context !== null) return $context->active($this->membersFor($position, $context)->whereIn('register', $register->registers()));
+        if ($context !== null) {
+            return $context->active($this->membersFor($position, $context)->whereIn('register', $register->registers()));
+        }
 
         return Proposition::query()->whereKey($this->membersFor($position)->pluck('id'))
             ->whereIn('register', $register->registers())

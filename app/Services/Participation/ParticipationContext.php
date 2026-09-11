@@ -2,7 +2,16 @@
 
 namespace App\Services\Participation;
 
-use App\Models\{Attestation, CommitmentSnapshot, ContextHorizon, ContextHorizonMembership, Phase, Proposition, Receipt, Substrate, SubstrateLedgerEntry, Supersession};
+use App\Models\Attestation;
+use App\Models\CommitmentSnapshot;
+use App\Models\ContextHorizon;
+use App\Models\ContextHorizonMembership;
+use App\Models\Phase;
+use App\Models\Proposition;
+use App\Models\Receipt;
+use App\Models\Substrate;
+use App\Models\SubstrateLedgerEntry;
+use App\Models\Supersession;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -14,21 +23,37 @@ use Illuminate\Support\Facades\DB;
 final class ParticipationContext
 {
     public readonly Collection $propositions;
+
     public readonly Collection $edges;
+
     public readonly Collection $parents;
+
     public readonly Collection $children;
+
     public readonly Collection $horizons;
+
     public readonly Collection $memberships;
+
     public readonly Collection $frames;
+
     public readonly Collection $attestations;
+
     public readonly Collection $receipts;
+
     public readonly Collection $touches;
+
     public readonly Collection $snapshots;
+
     public readonly Substrate $substrate;
+
     public readonly int $nextSequence;
+
     private array $memo = [];
+
     private readonly Collection $attestationsByProposition;
+
     private readonly Collection $receiptsBySubject;
+
     private readonly Collection $membershipsByHorizon;
 
     public function __construct(public readonly Phase $phase)
@@ -79,6 +104,7 @@ final class ParticipationContext
         if (! array_key_exists($key, $this->memo)) {
             $this->memo[$key] = $calculate();
         }
+
         return $this->memo[$key];
     }
 
@@ -96,6 +122,7 @@ final class ParticipationContext
                 $result->put($id, $node);
             }
         }
+
         return $result->values();
     }
 
@@ -105,6 +132,7 @@ final class ParticipationContext
             return $commitOnly ? $position->commitSources : $position->parents;
         }
         $edges = $this->parents->get($position->id, collect());
+
         return $this->nodes(($commitOnly ? $edges->where('type', 'commit') : $edges)->pluck('source_proposition_id'));
     }
 
@@ -115,12 +143,17 @@ final class ParticipationContext
             $queue = [$position];
             while ($queue !== []) {
                 $node = array_shift($queue);
-                if (isset($seen[$node->id])) continue;
+                if (isset($seen[$node->id])) {
+                    continue;
+                }
                 $seen[$node->id] = true;
                 if ($node->tier === 'committal') {
-                    foreach ($this->parentNodes($node, true) as $parent) $queue[] = $parent;
+                    foreach ($this->parentNodes($node, true) as $parent) {
+                        $queue[] = $parent;
+                    }
                 }
             }
+
             return collect(array_keys($seen));
         });
     }
@@ -133,13 +166,19 @@ final class ParticipationContext
             $queue = [$this->proposition($position)];
             while ($queue !== []) {
                 $node = array_shift($queue);
-                if (isset($seen[$node->id])) continue;
+                if (isset($seen[$node->id])) {
+                    continue;
+                }
                 $seen[$node->id] = true;
-                if ($node->tier === 'committal') $seeds[$node->id] = $node;
-                elseif ($node->tier === 'expressive') {
-                    foreach ($this->parentNodes($node) as $parent) $queue[] = $parent;
+                if ($node->tier === 'committal') {
+                    $seeds[$node->id] = $node;
+                } elseif ($node->tier === 'expressive') {
+                    foreach ($this->parentNodes($node) as $parent) {
+                        $queue[] = $parent;
+                    }
                 }
             }
+
             return count($seeds) === 1 ? reset($seeds) : null;
         });
     }
@@ -152,15 +191,22 @@ final class ParticipationContext
             $members = collect();
             while ($queue !== []) {
                 $id = array_shift($queue);
-                if (isset($seen[$id])) continue;
+                if (isset($seen[$id])) {
+                    continue;
+                }
                 $seen[$id] = true;
                 foreach ($this->children->get($id, collect()) as $edge) {
                     $child = $this->propositions->get($edge->target_proposition_id);
-                    if ($child?->tier !== 'expressive') continue;
+                    if ($child?->tier !== 'expressive') {
+                        continue;
+                    }
                     $queue[] = $child->id;
-                    if ($this->seed($child)?->id === $seed->id) $members->put($child->id, $child);
+                    if ($this->seed($child)?->id === $seed->id) {
+                        $members->put($child->id, $child);
+                    }
                 }
             }
+
             return $members->sortBy('id')->values();
         });
     }
@@ -201,15 +247,21 @@ final class ParticipationContext
     public function lineageIds(string $horizonId, array $gateIds): Collection
     {
         sort($gateIds);
+
         return $this->remember('lineage:'.$horizonId.':'.implode(',', $gateIds), function () use ($horizonId, $gateIds) {
             $seen = [];
             $queue = $gateIds;
             while ($queue !== []) {
                 $id = array_shift($queue);
-                if (isset($seen[$id]) || $this->memberships->get($id)?->context_horizon_id !== $horizonId) continue;
+                if (isset($seen[$id]) || $this->memberships->get($id)?->context_horizon_id !== $horizonId) {
+                    continue;
+                }
                 $seen[$id] = true;
-                foreach ($this->parents->get($id, collect()) as $edge) $queue[] = $edge->source_proposition_id;
+                foreach ($this->parents->get($id, collect()) as $edge) {
+                    $queue[] = $edge->source_proposition_id;
+                }
             }
+
             return collect(array_keys($seen));
         });
     }
@@ -221,10 +273,15 @@ final class ParticipationContext
             $queue = [$position->id];
             while ($queue !== []) {
                 $id = array_shift($queue);
-                if (isset($seen[$id])) continue;
+                if (isset($seen[$id])) {
+                    continue;
+                }
                 $seen[$id] = true;
-                foreach ($this->parents->get($id, collect()) as $edge) $queue[] = $edge->source_proposition_id;
+                foreach ($this->parents->get($id, collect()) as $edge) {
+                    $queue[] = $edge->source_proposition_id;
+                }
             }
+
             return $this->snapshots->whereIn('proposition_id', array_keys($seen))
                 ->whereNotNull('depth_direction')->whereNotNull('cadence_direction')
                 ->sortByDesc(fn ($snapshot) => $snapshot->ledgerEntry->sequence)->first();

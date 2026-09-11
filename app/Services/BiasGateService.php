@@ -2,11 +2,12 @@
 
 namespace App\Services;
 
-use App\Services\Participation\ParticipationContext;
 use App\Enums\PhaseKind;
+use App\Enums\RegisterPosition;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Services\Observables\ChiralityCalculator;
+use App\Services\Participation\ParticipationContext;
 use Illuminate\Support\Collection;
 
 final readonly class BiasGateService
@@ -37,9 +38,8 @@ final readonly class BiasGateService
         if ($seed === null) {
             return collect();
         }
-        $direction = $this->evidence->populationDirection($seed, \App\Enums\RegisterPosition::Second, $context);
+        $direction = $this->evidence->populationDirection($seed, RegisterPosition::Second, $context);
 
-        return $population->filter(fn (Proposition $candidate): bool =>
-            $this->chirality->directionFor($candidate, $context) === $direction)->values();
+        return $population->filter(fn (Proposition $candidate): bool => $this->chirality->directionFor($candidate, $context) === $direction)->values();
     }
 }

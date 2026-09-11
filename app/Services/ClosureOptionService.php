@@ -2,10 +2,10 @@
 
 namespace App\Services;
 
-use App\Services\Participation\ParticipationContext;
 use App\Enums\PhaseKind;
 use App\Models\Phase;
 use App\Models\Proposition;
+use App\Services\Participation\ParticipationContext;
 use Illuminate\Support\Collection;
 
 final readonly class ClosureOptionService
@@ -23,14 +23,12 @@ final readonly class ClosureOptionService
             return collect();
         }
 
-        return $this->regions->forPhase($phase, context: $context)->filter(fn (Proposition $candidate): bool =>
-            $this->closure->preview($candidate, $phase, $context)['admissible'])->values();
+        return $this->regions->forPhase($phase, context: $context)->filter(fn (Proposition $candidate): bool => $this->closure->preview($candidate, $phase, $context)['admissible'])->values();
     }
 
     /** Evidence remains a separate prerequisite for the Commit action. */
     public function committableFor(Phase $phase, ?ParticipationContext $context = null): Collection
     {
-        return $this->forPhase($phase, $context)->filter(fn (Proposition $candidate): bool =>
-            $this->admissibility->grounding($candidate, $context)['admissible'])->values();
+        return $this->forPhase($phase, $context)->filter(fn (Proposition $candidate): bool => $this->admissibility->grounding($candidate, $context)['admissible'])->values();
     }
 }

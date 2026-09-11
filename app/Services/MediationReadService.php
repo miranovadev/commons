@@ -2,11 +2,11 @@
 
 namespace App\Services;
 
-use App\Services\Participation\ParticipationContext;
 use App\Enums\PhaseKind;
+use App\Enums\RegisterPosition;
 use App\Models\Phase;
 use App\Models\Proposition;
-use App\Enums\RegisterPosition;
+use App\Services\Participation\ParticipationContext;
 use Illuminate\Support\Collection;
 
 final readonly class MediationReadService
@@ -36,6 +36,13 @@ final readonly class MediationReadService
     /** Anchor first, then corresponding Reads across the Commit Region. */
     public function readsFor(Phase $phase, ?ParticipationContext $context = null): Collection
     {
+        return $context !== null
+            ? $context->remember('mediate-reads:'.$phase->id, fn () => $this->resolveReads($phase, $context))
+            : $this->resolveReads($phase);
+    }
+
+    private function resolveReads(Phase $phase, ?ParticipationContext $context = null): Collection
+    {
         $anchor = $this->anchorFor($phase);
         if ($anchor === null || $anchor->tier !== 'expressive'
             || RegisterPosition::forRegister($anchor->register) !== RegisterPosition::Third
@@ -47,8 +54,7 @@ final readonly class MediationReadService
 
         $candidates = $this->regions->forPhase($phase, $anchor, $context)->where('id', '!=', $anchor->id);
 
-        return $reads->concat($candidates->filter(fn (Proposition $candidate): bool =>
-            $this->measurements->correspondenceDirectionFor($candidate, $context) === $direction))->values();
+        return $reads->concat($candidates->filter(fn (Proposition $candidate): bool => $this->measurements->correspondenceDirectionFor($candidate, $context) === $direction))->values();
     }
 
     /** All active immediate Gate children of the exposed Reads; no Gate sign/lean filter. */
@@ -58,7 +64,7 @@ final readonly class MediationReadService
         if ($reads->isEmpty()) {
             return collect();
         }
-        $gate = $phase->gate()->firstOrFail();
+        $gate = $context?->propositions->get($phase->gate_proposition_id) ?? $phase->gate()->firstOrFail();
 
         $pool = $this->regions->atPosition($phase, $gate, RegisterPosition::First, $context);
 
@@ -66,5 +72,4 @@ final readonly class MediationReadService
             ->whereHas('parents', fn ($query) => $query->whereKey($reads->pluck('id')))
             ->orderBy('id')->get();
     }
-
 }
