@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\ObservableDirection;
 use App\Enums\PhaseKind;
 use App\Models\Phase;
 use App\Models\Proposition;
@@ -54,14 +55,18 @@ final readonly class BiasGateService
         return $this->chirality->leanFor($this->populationFor($phase)->pluck('id'), $phase->cycle->participant->substrate);
     }
 
-    /** The field sets the direction; the Participant selects any matching source. */
+    /** The retained field direction admits every matching active source. */
     public function forPhase(Phase $phase): Collection
     {
         $population = $this->populationFor($phase);
         $substrate = $phase->cycle->participant->substrate;
-        $direction = $this->chirality->leanFor($population->pluck('id'), $substrate) <=> 0.0;
+        $gate = $phase->gate()->firstOrFail();
+        $direction = ObservableDirection::after(
+            $this->chirality->leanFor($population->pluck('id'), $substrate),
+            $this->chirality->directionFor($gate),
+        );
 
-        return $direction === 0 ? collect() : $population->filter(fn (Proposition $candidate): bool =>
-            ($this->chirality->leanFor(collect([$candidate->id]), $substrate) <=> 0.0) === $direction)->values();
+        return $population->filter(fn (Proposition $candidate): bool =>
+            $this->chirality->directionFor($candidate) === $direction)->values();
     }
 }

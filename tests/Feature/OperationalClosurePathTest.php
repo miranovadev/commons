@@ -91,9 +91,10 @@ class OperationalClosurePathTest extends TestCase
         $this->assertCount(0, $history->attestations(collect([$stance])));
         $this->assertCount(0, $history->receipts($stance));
         $this->assertSame(1, $history->touchCount($stance)); // Newly opened Bias only.
-        $this->assertArrayNotHasKey('proposition.bias', $state['plan']['schema']['$defs']['actions']);
+        $this->assertArrayHasKey('proposition.bias', $state['plan']['schema']['$defs']['actions']);
+        $this->assertSame([$stance->id], array_column($state['plan']['gate_options'], 'id'));
 
-        // Mediate participants attest their immediate Write Stance, earning its Bias direction.
+        // Mediate participants reinforce the inherited direction of their immediate Write Stance.
         foreach ([$author, $grounder] as $participant) {
             $this->move($participant, ['action' => 'attestation.create', 'proposition_id' => $stance->id, 'direction' => 'support']);
         }
