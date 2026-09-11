@@ -22,6 +22,13 @@ class ParticipationSnapshotTest extends TestCase
 {
     use DatabaseMigrations;
 
+    protected function beforeRefreshingDatabase(): void
+    {
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement("SET lock_timeout = '3s'");
+        }
+    }
+
     public function test_concurrent_evidence_does_not_split_a_plan_and_the_next_plan_sees_it(): void
     {
         if (DB::getDriverName() !== 'pgsql') {
@@ -50,9 +57,12 @@ class ParticipationSnapshotTest extends TestCase
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Bias, 'write_register' => 'concord', 'gate_proposition_id' => $candidate->id, 'started_at' => now()])->save();
         $plans = app(InputPlanService::class);
         $before = $plans->forParticipant($viewer);
+        $this->assertSame(0, DB::transactionLevel());
 
         config()->set('database.connections.performance_writer', config('database.connections.'.config('database.default')));
         $writer = DB::connection('performance_writer');
+        $writer->statement("SET lock_timeout = '3s'");
+        $writer->statement("SET statement_timeout = '5s'");
         $inserted = false;
         $armed = true;
         DB::listen(function (QueryExecuted $query) use (&$armed, &$inserted, $writer, $phase, $candidate, $substrate): void {

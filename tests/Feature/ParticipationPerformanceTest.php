@@ -45,8 +45,11 @@ class ParticipationPerformanceTest extends TestCase
         [$viewer, $nodes] = $this->fixture($kind, 8);
         $service = app(InputPlanService::class);
         DB::beginTransaction();
-        [$before, $baseline, $beforeMs] = $this->measure(fn () => (new \ReflectionMethod($service, 'build'))->invoke($service, $viewer->fresh(), app(PhaseService::class)->currentFor($viewer), null));
-        DB::rollBack();
+        try {
+            [$before, $baseline, $beforeMs] = $this->measure(fn () => (new \ReflectionMethod($service, 'build'))->invoke($service, $viewer->fresh(), app(PhaseService::class)->currentFor($viewer), null));
+        } finally {
+            DB::rollBack();
+        }
         DB::enableQueryLog();
         DB::flushQueryLog();
         $start = hrtime(true);
@@ -101,7 +104,7 @@ class ParticipationPerformanceTest extends TestCase
             $this->assertEqualsCanonicalizing($regions->membersFor($node)->pluck('id')->all(), $regions->membersFor($node, $context)->pluck('id')->all());
             $this->assertSame($measurements->correspondenceDirectionFor($node), $measurements->correspondenceDirectionFor($node, $context));
         }
-        $target = collect($nodes)->last(fn ($node) => $node->register === 'stance');
+        $target = collect($nodes)->last(fn ($node) => $node->register === 'stance' && $context->attestationsFor([$node->id])->isNotEmpty());
         $old = $target->attestations()->firstOrFail();
         $replacement = new Attestation;
         $replacement->forceFill(['phase_id' => $phase->id, 'proposition_id' => $target->id,
@@ -187,6 +190,22 @@ class ParticipationPerformanceTest extends TestCase
                 app(InstrumentExecutionService::class)->complete($execution, $a, 'fixture-'.$a->id);
             }
         }
+        // Retired population evidence and fresh Revise/Reconcile history are
+        // present alongside a negative-polarity neighbouring Commit Region.
+        $retired = $node('stance', $gates[0]);
+        $old = new Attestation;
+        $old->forceFill(['phase_id' => $history[0]->id, 'proposition_id' => $retired->id, 'direction' => 'refute'])->save();
+        app(LedgerService::class)->record($old);
+        $node('stance', $retired, 'expressive', 'revise');
+        $merged = $node('concord', $writes[2], 'expressive', 'reconcile');
+        $edge = new Supersession;
+        $edge->forceFill(['phase_id' => $merged->phase_id, 'source_proposition_id' => $writes[3]->id,
+            'target_proposition_id' => $merged->id, 'type' => 'reconcile'])->save();
+        app(LedgerService::class)->record($edge);
+        $other = $node('concord', $writes[0], 'committal', 'commit');
+        app(CommitRegionPolarityService::class)->establishCommit($other, ObservableDirection::Negative);
+        $node('stance', $other);
+
         $cycle = new Cycle;
         $cycle->forceFill(['participant_id' => $participants[0]->id, 'sequence' => 2])->save();
         $disperse = new Phase;
