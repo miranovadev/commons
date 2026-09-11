@@ -277,10 +277,12 @@ or a guessed ancestor. Missing Disperse history supplies no Read/counterpart
 options; the server does not invent an anchor.
 
 `read_options` exposes that anchor first, followed by active Read-equivalent
-members of its Commit Region with the same nonzero Correspondence sign.
+members of its Commit Region with the same retained hysteretic Correspondence direction.
 Parallel branches may have different immediate parents or expressive depths.
-Zero or unmeasurable anchor Correspondence preserves the original Read but
-provides no direction for additional Reads. Existing Correspondence calculation
+Zero or unmeasured Correspondence retains the Proposition’s established direction,
+falling back through primary parents only when none is established. At a root
+without history, Correspondence defaults positive. This applies equally to the
+anchor and candidates; zero never means directionless. Existing Correspondence calculation
 and attenuation are unchanged.
 
 Gate candidates remain active immediate Expressive children of the exposed

@@ -131,6 +131,11 @@ class CommitRegionTest extends TestCase
             $service = app(MediationReadService::class);
             $this->assertSame([$anchor->id, $matching->id], $service->readsFor($phase)->pluck('id')->all());
             $this->assertEqualsCanonicalizing([$gate->id, $counterpart->id], $service->gatesFor($phase)->pluck('id')->all());
+            foreach ([$anchor, $matching, $opposite, $otherRead] as $read) {
+                app(PropositionMeasurementService::class)->project($read, 0, 0, 0);
+            }
+            $this->assertSame([$anchor->id, $matching->id], $service->readsFor($phase)->pluck('id')->all());
+            $this->assertEqualsCanonicalizing([$gate->id, $counterpart->id], $service->gatesFor($phase)->pluck('id')->all());
             $this->reject($phase, ['action' => 'proposition.reconcile', 'other_proposition_id' => $otherGate->id]);
         }
     }

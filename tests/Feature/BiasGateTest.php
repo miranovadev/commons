@@ -73,6 +73,22 @@ class BiasGateTest extends TestCase
         $this->assertEqualsCanonicalizing([$flipped->id, $afterFlip->id], $this->optionIds());
     }
 
+    public function test_zero_lean_keeps_own_opposite_direction_without_an_intermediate_plan_read(): void
+    {
+        $this->fixture();
+        $this->attest($this->gate, 'refute');
+        // A different participant balances the local lean; the parent is positive.
+        $otherPhase = $this->newPhase($this->participant('balancer'), PhaseKind::Persist, 'stance', true);
+        $balance = new Attestation;
+        $balance->forceFill(['phase_id' => $otherPhase->id, 'proposition_id' => $this->gate->id,
+            'direction' => 'support'])->save();
+        app(LedgerService::class)->record($balance);
+        $chirality = app(ChiralityCalculator::class);
+        $this->assertSame(0.0, $chirality->leanFor(collect([$this->gate->id]), $this->substrate));
+        $this->assertSame(ObservableDirection::Negative, $chirality->directionFor($this->gate));
+        $this->assertSame([$this->gate->id], $this->optionIds());
+    }
+
     public function test_receipt_weighted_effective_lean_sets_one_direction_including_the_current_gate(): void
     {
         $this->fixture();

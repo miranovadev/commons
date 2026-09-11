@@ -72,6 +72,62 @@ class PropositionMeasurementServiceTest extends TestCase
         );
     }
 
+    public function test_all_observable_directions_survive_zero_null_and_projection_replacement(): void
+    {
+        $position = $this->proposition();
+        $measurements = app(PropositionMeasurementService::class);
+        $directions = app(\App\Services\MeasurementDirectionService::class);
+        foreach ([1.0, -1.0] as $sign) {
+            $measurements->project($position, $sign, $sign, $sign);
+            foreach ([0.0, null] as $neutral) {
+                $measurements->project($position, $neutral, $neutral, $neutral);
+                foreach ([\App\Enums\MeasurementAxis::Correspondence, \App\Enums\MeasurementAxis::Chirality, \App\Enums\MeasurementAxis::Closure] as $axis) {
+                    $this->assertSame(\App\Enums\ObservableDirection::after($sign), $directions->forProposition(
+                        $position, $axis, fn ($node) => $node->fresh()->measurement?->{$axis->value},
+                    ));
+                }
+            }
+            PropositionMeasurement::query()->whereKey($position->id)->delete();
+            $this->assertSame(\App\Enums\ObservableDirection::after($sign), $directions->forProposition(
+                $position, \App\Enums\MeasurementAxis::Correspondence, fn () => null,
+            ));
+        }
+    }
+
+    public function test_unmeasured_roots_have_documented_bootstrap_directions(): void
+    {
+        $root = $this->proposition();
+        $service = app(\App\Services\MeasurementDirectionService::class);
+        foreach (\App\Enums\MeasurementAxis::cases() as $axis) {
+            $this->assertSame($axis->initialDirection(), $service->forProposition($root, $axis, fn () => null));
+        }
+        $this->assertDatabaseCount('proposition_directions', 0);
+    }
+
+    public function test_unestablished_directions_inherit_primary_parent_but_own_history_takes_precedence(): void
+    {
+        $parent = $this->proposition();
+        $child = $parent->replicate();
+        $child->save();
+        $edge = new \App\Models\Supersession;
+        $edge->forceFill(['phase_id' => $parent->phase_id, 'source_proposition_id' => $parent->id,
+            'target_proposition_id' => $child->id, 'type' => 'variant'])->save();
+        $measurements = app(PropositionMeasurementService::class);
+        $directions = app(\App\Services\MeasurementDirectionService::class);
+        $measurements->project($parent, -1, -1, 1);
+        $measurements->project($child, 0, null, 0);
+        foreach ([\App\Enums\MeasurementAxis::Correspondence, \App\Enums\MeasurementAxis::Chirality, \App\Enums\MeasurementAxis::Closure] as $axis) {
+            $sample = fn ($node) => $node->fresh()->measurement?->{$axis->value};
+            $expected = $axis === \App\Enums\MeasurementAxis::Closure ? 1 : -1;
+            $this->assertSame(\App\Enums\ObservableDirection::after($expected), $directions->forProposition($child, $axis, $sample));
+        }
+        $measurements->project($child, 1, 1, -1);
+        $measurements->project($child, 0, 0, 0);
+        $this->assertSame(\App\Enums\ObservableDirection::Positive, $directions->forProposition(
+            $child, \App\Enums\MeasurementAxis::Correspondence, fn ($node) => $node->fresh()->measurement?->correspondence,
+        ));
+    }
+
     private function proposition(): Proposition
     {
         $substrate = new Substrate;

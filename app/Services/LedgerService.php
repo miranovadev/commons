@@ -18,6 +18,8 @@ final readonly class LedgerService
 {
     public function __construct(
         private ContextHorizonProjector $horizons,
+        private MeasurementDirectionService $directions,
+        private \App\Services\Observables\ChiralityCalculator $chirality,
     ) {}
 
     public function record(Model $ledgerable): SubstrateLedgerEntry
@@ -72,6 +74,17 @@ final readonly class LedgerService
                 && $kind === LedgerEntryKind::Proposition
             ) {
                 $this->horizons->include($entry);
+            }
+
+            // Capture lean when evidence changes, even if no participant reads a plan.
+            $attestation = $ledgerable instanceof Attestation ? $ledgerable
+                : ($ledgerable instanceof Receipt && $ledgerable->receiptable instanceof Attestation
+                    ? $ledgerable->receiptable : null);
+            if (! $wasRecorded && $attestation !== null) {
+                $position = $attestation->proposition;
+                $this->directions->record($position, [
+                    'lean' => $this->chirality->leanFor(collect([$position->id]), $locked),
+                ]);
             }
 
             return $entry;

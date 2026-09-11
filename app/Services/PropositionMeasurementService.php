@@ -15,6 +15,8 @@ final class PropositionMeasurementService
 {
     public function __construct(
         private readonly ObservableService $observables,
+        private readonly MeasurementDirectionService $directions,
+        private readonly \App\Services\Observables\ChiralityCalculator $chirality,
     ) {}
 
     public function recalculate(
@@ -73,31 +75,41 @@ final class PropositionMeasurementService
         $this->assertMeasurement('chirality', $chirality);
         $this->assertMeasurement('closure', $closure);
 
-        PropositionMeasurement::query()->upsert(
-            [[
-                'proposition_id' => $proposition->getKey(),
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($proposition, $correspondence, $chirality, $closure, $calculatedAt): PropositionMeasurement {
+            // Use the same lock order as contribution dispatch and ledger recording.
+            \App\Models\Substrate::query()->whereKey($proposition->phase->cycle->participant->substrate_id)->lockForUpdate()->firstOrFail();
+            $this->directions->record($proposition, [
                 'correspondence' => $correspondence,
                 'chirality' => $chirality,
                 'closure' => $closure,
-                'calculated_at' => $calculatedAt ?? now(),
-                'calculator_version' => LineageMeasurementService::VERSION,
-            ]],
-            ['proposition_id'],
-            [
-                'correspondence',
-                'chirality',
-                'closure',
-                'calculated_at',
-                'calculator_version',
-            ],
-        );
+                'lean' => $this->chirality->leanFor(collect([$proposition->id]), $proposition->phase->cycle->participant->substrate),
+            ]);
+            PropositionMeasurement::query()->upsert(
+                [[
+                    'proposition_id' => $proposition->getKey(),
+                    'correspondence' => $correspondence,
+                    'chirality' => $chirality,
+                    'closure' => $closure,
+                    'calculated_at' => $calculatedAt ?? now(),
+                    'calculator_version' => LineageMeasurementService::VERSION,
+                ]],
+                ['proposition_id'],
+                [
+                    'correspondence',
+                    'chirality',
+                    'closure',
+                    'calculated_at',
+                    'calculator_version',
+                ],
+            );
 
-        $measurement = PropositionMeasurement::query()
-            ->findOrFail($proposition->getKey());
+            $measurement = PropositionMeasurement::query()
+                ->findOrFail($proposition->getKey());
 
-        $proposition->setRelation('measurement', $measurement);
+            $proposition->setRelation('measurement', $measurement);
 
-        return $measurement;
+            return $measurement;
+        });
     }
 
     private function assertMeasurement(string $name, ?float $value): void

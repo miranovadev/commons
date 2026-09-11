@@ -82,12 +82,13 @@ population in the current Commit Region, deduplicated across expressive branches
 The single aggregate direction admits only Propositions with an effective
 hysteretic direction matching it, including the current Gate when eligible.
 A zero aggregate lean retains the Gate's inherited direction, and a Proposition
-with zero local lean inherits its primary parent's direction. Neither condition
+with zero local lean retains its own established direction, falling back to its
+primary parent only if none exists. Neither condition
 changes the numeric Chirality value from zero. It does not use the sign of the
 final cross-domain Chirality product. Unary hard reclassification removes the selected source from the active
 Stance field; the fresh Concord has none of its historical votes. This removes a
 contribution in the dominant direction and tends the field toward balance,
-without promising monotonic absolute-lean reduction for every discrete choice. Mediate uses the previous Disperse Gate's Correspondence sign
+without promising monotonic absolute-lean reduction for every discrete choice. Mediate uses the previous Disperse Gate's retained Correspondence direction
 against Read-equivalent members of its Commit Region. Bias uses Gate-equivalent
 members of that same structural scope; Closure uses Write-equivalent members.
 The Context Horizon remains comparison context. See
@@ -191,3 +192,29 @@ cache is introduced; prospective Closure always evaluates current Phase history.
 
 Immutable commitment snapshots continue to preserve the values observed at
 commitment time. New non-bootstrap commitments record active-head-phase-touch-v2.
+
+### Retained directions
+
+`MeasurementDirectionService` resolves the current nonzero value, then the
+Proposition's own established direction, then its primary parent's lineage.
+Zero and unmeasured values never erase an available direction. The primary parent
+uses the existing Supersession creation order, with ID as a deterministic tie
+breaker. Root defaults are positive for Correspondence, Chirality and lean, and
+negative for Closure.
+
+`proposition_directions` holds durable directional memory independently of the
+replaceable `proposition_measurements` rows. Projection writes atomically retain
+Correspondence, Chirality and Closure directions; Attestation and Receipt ledger
+writes also retain local lean, without requiring a plan read. Numeric values,
+attenuation and the cross-Domain Chirality product remain unchanged. The upgrade
+preserves recoverable existing projection signs; historical signs already erased
+by a zero projection cannot be recovered and use lineage/default fallback.
+
+The audit also covers Closure's component directions and Tension. Depth and
+Cadence already retain the latest evaluated committed ancestor's directions at
+zero (negative defaults), including reconciliation ancestry, and gate on their
+alignment rather than their numeric average. Preview remains read-only. Committed
+Tension already retains the active Horizon's Domain at zero. Prominence and
+Turbulence are nonnegative magnitude projections used numerically, with no
+zero-based candidate exclusion. Existing component, projection and Tension
+formulae and committed-history rules are unchanged.

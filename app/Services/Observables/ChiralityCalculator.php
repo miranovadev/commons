@@ -16,6 +16,7 @@ final readonly class ChiralityCalculator
     public function __construct(
         private ReinforcementService $reinforcement,
         private PropositionStateService $state,
+        private \App\Services\MeasurementDirectionService $directions,
     ) {}
 
     public function calculate(LineageComparison $comparison): float
@@ -61,45 +62,16 @@ final readonly class ChiralityCalculator
         ), $substrate);
     }
 
-    /**
-     * Resolve the Proposition's retained attestational direction.
-     *
-     * A neutral local lean inherits the direction of its primary parent. The
-     * positive bootstrap default is reached only at the root of a lineage.
-     */
+    /** Retain local lean history at zero; inherit only when none is established. */
     public function directionFor(Proposition $proposition): ObservableDirection
     {
         $substrate = $proposition->phase->cycle->participant->substrate;
 
-        $resolved = [];
-
-        return $this->resolveDirection($proposition, $substrate, $resolved);
-    }
-
-    /** @param array<string, ObservableDirection> $resolved */
-    private function resolveDirection(
-        Proposition $proposition,
-        Substrate $substrate,
-        array &$resolved,
-    ): ObservableDirection {
-        if (isset($resolved[$proposition->getKey()])) {
-            return $resolved[$proposition->getKey()];
-        }
-
-        $parent = $proposition->parents()
-            ->orderBy('supersessions.created_at')
-            ->orderBy('supersessions.id')
-            ->first();
-        $previous = $parent === null
-            ? ObservableDirection::Positive
-            : $this->resolveDirection($parent, $substrate, $resolved);
-        $direction = ObservableDirection::after(
-            $this->leanFor(collect([$proposition->getKey()]), $substrate),
-            $previous,
+        return $this->directions->forProposition(
+            $proposition,
+            \App\Enums\MeasurementAxis::Lean,
+            fn (Proposition $position): float => $this->leanFor(collect([$position->id]), $substrate),
         );
-        $resolved[$proposition->getKey()] = $direction;
-
-        return $direction;
     }
 
     private function attestationLean(Collection $attestations, Substrate $substrate): float

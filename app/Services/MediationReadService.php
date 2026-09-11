@@ -13,6 +13,7 @@ final readonly class MediationReadService
     public function __construct(
         private PropositionMeasurementService $measurements,
         private CommitRegionService $regions,
+        private MeasurementDirectionService $directions,
     ) {}
 
     /** The previous Disperse Gate is the anchor, regardless of display ordering. */
@@ -43,16 +44,13 @@ final readonly class MediationReadService
         }
         $reads = collect([$anchor]);
         $this->measurements->repairMissing($reads);
-        $direction = $this->direction($anchor->measurement?->correspondence);
-        if ($direction === 0) {
-            return $reads;
-        }
+        $direction = $this->directionFor($anchor);
 
         $candidates = $this->regions->forPhase($phase, $anchor)->where('id', '!=', $anchor->id);
         $this->measurements->repairMissing($candidates);
 
         return $reads->concat($candidates->filter(fn (Proposition $candidate): bool =>
-            $this->direction($candidate->measurement?->correspondence) === $direction))->values();
+            $this->directionFor($candidate) === $direction))->values();
     }
 
     /** All active immediate Gate children of the exposed Reads; no Gate sign/lean filter. */
@@ -71,8 +69,16 @@ final readonly class MediationReadService
             ->orderBy('id')->get();
     }
 
-    private function direction(float|string|null $value): int
+    public function directionFor(Proposition $proposition): \App\Enums\ObservableDirection
     {
-        return $value === null ? 0 : ((float) $value <=> 0.0);
+        return $this->directions->forProposition(
+            $proposition,
+            \App\Enums\MeasurementAxis::Correspondence,
+            function (Proposition $position): ?float {
+                $position->load('measurement');
+                $this->measurements->repairMissing(collect([$position]));
+                return $position->measurement?->correspondence;
+            },
+        );
     }
 }

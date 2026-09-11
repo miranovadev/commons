@@ -73,14 +73,20 @@ class ReconciliationTest extends TestCase
         $this->fixture(correspondence: $direction);
         [$positive, $positiveGate] = $this->readSibling('Consonant', 0.5, -1);
         [$negative, $negativeGate] = $this->readSibling('Dissonant', -0.5, 1);
-        $this->readSibling('Neutral', 0, 0);
+        [$neutral, $neutralGate] = $this->readSibling('Neutral', 0, 0);
         $local = $this->sibling('Anchor child with neutral Correspondence', 0);
         $plan = $this->plan();
         $this->assertSame($this->parent->id, $plan['read_options'][0]['id']);
-        $this->assertEqualsCanonicalizing($direction === 0.0 ? [$this->parent->id] :
-            [$this->parent->id, ($direction > 0 ? $positive : $negative)->id], array_column($plan['read_options'], 'id'));
-        $this->assertEqualsCanonicalizing($direction === 0.0 ? [$local->id] :
-            [$local->id, ($direction > 0 ? $positiveGate : $negativeGate)->id], array_column($plan['gate_options'], 'id'));
+        // The fixture's zero Read retains its earlier negative measurement;
+        // the neutral peer likewise retains negative, rather than disappearing.
+        $readIds = [$this->parent->id, ($direction > 0 ? $positive : $negative)->id];
+        $gateIds = [$local->id, ($direction > 0 ? $positiveGate : $negativeGate)->id];
+        if ($direction <= 0) {
+            $readIds[] = $neutral->id;
+            $gateIds[] = $neutralGate->id;
+        }
+        $this->assertEqualsCanonicalizing($readIds, array_column($plan['read_options'], 'id'));
+        $this->assertEqualsCanonicalizing($gateIds, array_column($plan['gate_options'], 'id'));
     }
 
     public function test_mediate_gate_options_are_active_immediate_children_of_exposed_reads(): void
