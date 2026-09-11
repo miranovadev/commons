@@ -175,6 +175,26 @@ class AttestationPolarityTest extends TestCase
         $this->assertSame(Direction::Positive, $evidence->populationDirection($seed, RegisterPosition::Second));
     }
 
+    public function test_upgrade_reconstructs_polarity_and_keeps_immutable_measurement_snapshots(): void
+    {
+        $this->bootstrap('refute');
+        $source = $this->node('concord', $this->origin);
+        $old = $this->attest($source, 'support'); // Negative in this Origin's frame.
+        $commit = $this->node('concord', $source, 'committal', 'commit');
+        $this->attest($source, 'refute', $old); // Positive only after the Commit.
+        app(\App\Services\PropositionMeasurementService::class)->project($source, 0.5, 0, 0);
+        $snapshot = $this->origin->commitmentSnapshot->getAttributes();
+        $migration = require database_path('migrations/2026_09_12_000001_retain_region_polarity_and_correspondence.php');
+        $migration->down();
+        $migration->up();
+        $frames = app(CommitRegionPolarityService::class);
+        $this->assertSame(['governing' => Direction::Positive, 'support' => Direction::Negative], $frames->forSeed($this->origin));
+        $this->assertSame(['governing' => Direction::Negative, 'support' => Direction::Negative], $frames->forSeed($commit));
+        $this->assertSame('positive', $source->fresh()->correspondence_direction);
+        $this->assertNull($source->fresh()->measurement->calculator_version);
+        $this->assertSame($snapshot, $this->origin->commitmentSnapshot->fresh()->getAttributes());
+    }
+
     private function regionSeed(Direction $direction, string $register): Proposition
     {
         $source = $this->node($register, $this->origin);

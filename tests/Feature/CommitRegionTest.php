@@ -149,16 +149,16 @@ class CommitRegionTest extends TestCase
         $neutral = $this->node($second, $right);
         $negative = $this->node($second, $right);
         $this->attest($negative, 'refute');
-        $inheritedNegative = $this->node($second, $negative);
+        $regionDefault = $this->node($second, $negative);
         $boundary = $this->node($third, $right, 'committal');
         $outside = $this->node($second, $boundary);
         $this->attest($outside, 'support');
         $phase = $this->phase(PhaseKind::Bias, $gate, $third);
         $bias = app(BiasGateService::class);
-        $this->assertEqualsCanonicalizing([$gate->id, $neutral->id, $negative->id, $inheritedNegative->id], $bias->populationFor($phase)->pluck('id')->all());
+        $this->assertEqualsCanonicalizing([$gate->id, $neutral->id, $negative->id, $regionDefault->id], $bias->populationFor($phase)->pluck('id')->all());
         $this->assertSame(-1.0, $bias->leanFor($phase));
         $this->assertSame([$negative->id], $bias->forPhase($phase)->pluck('id')->all());
-        $this->assertCount(0, $inheritedNegative->attestations);
+        $this->assertCount(0, $regionDefault->attestations);
         $this->reject($phase, ['action' => 'proposition.bias', 'proposition_id' => $outside->id]);
         $this->attest($gate, 'support'); // Balanced aggregate retains its earlier negative direction.
         $this->assertSame([$negative->id], $bias->forPhase($phase)->pluck('id')->all());
