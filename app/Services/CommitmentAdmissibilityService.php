@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Services\Participation\ParticipationContext;
-
 use App\Models\Proposition;
 use App\Models\Phase;
 

@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Services\Participation\ParticipationContext;
-
 use App\Enums\ObservableDirection as Direction;
 use App\Models\Proposition;
 use Illuminate\Support\Facades\DB;

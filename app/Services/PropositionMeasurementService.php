@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Services\Participation\ParticipationContext;
-
 use App\Models\ContextHorizonMembership;
 use App\Models\Proposition;
 use App\Models\PropositionMeasurement;
@@ -74,7 +73,6 @@ final class PropositionMeasurementService
         ?float $chirality,
         ?float $closure,
         ?DateTimeInterface $calculatedAt = null,
-        ?ParticipationContext $context = null,
     ): PropositionMeasurement {
         $this->assertMeasurement('correspondence', $correspondence);
         $this->assertMeasurement('chirality', $chirality);

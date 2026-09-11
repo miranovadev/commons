@@ -27,6 +27,9 @@ final class ParticipationContext
     public readonly Substrate $substrate;
     public readonly int $nextSequence;
     private array $memo = [];
+    private readonly Collection $attestationsByProposition;
+    private readonly Collection $receiptsBySubject;
+    private readonly Collection $membershipsByHorizon;
 
     public function __construct(public readonly Phase $phase)
     {
@@ -50,9 +53,11 @@ final class ParticipationContext
             $horizon->setRelation('substrate', $this->substrate);
         }
         $this->memberships = ContextHorizonMembership::whereIn('context_horizon_id', $this->horizons->keys())->get()->keyBy('proposition_id');
+        $this->membershipsByHorizon = $this->memberships->groupBy('context_horizon_id');
         $this->frames = DB::table('commit_region_polarities')->whereIn('proposition_id', $ids)->get()->keyBy('proposition_id');
         $this->attestations = Attestation::whereIn('proposition_id', $ids)
             ->with(['ledgerEntry', 'supersededBy.ledgerEntry', 'phase.cycle'])->get()->keyBy('id');
+        $this->attestationsByProposition = $this->attestations->groupBy('proposition_id');
         foreach ($this->attestations as $attestation) {
             $attestation->setRelation('proposition', $this->propositions[$attestation->proposition_id]);
         }
@@ -60,6 +65,7 @@ final class ParticipationContext
             ->where(fn ($q) => $q->where('receiptable_type', (new Proposition)->getMorphClass())->whereIn('receiptable_id', $ids))
             ->orWhere(fn ($q) => $q->where('receiptable_type', (new Attestation)->getMorphClass())->whereIn('receiptable_id', $this->attestations->keys())))
             ->with(['ledgerEntry', 'instrumentExecution'])->get();
+        $this->receiptsBySubject = $this->receipts->groupBy(fn ($receipt) => $receipt->receiptable_type.':'.$receipt->receiptable_id);
         $this->touches = Phase::query()->whereHas('cycle.participant', fn ($q) => $q->where('substrate_id', $this->substrate->id))
             ->whereNotNull('gate_proposition_id')->selectRaw('gate_proposition_id, count(*) as aggregate')
             ->groupBy('gate_proposition_id')->pluck('aggregate', 'gate_proposition_id');
@@ -166,14 +172,29 @@ final class ParticipationContext
 
     public function effectiveAttestations(iterable $sourceIds): Collection
     {
-        return $this->attestations->whereIn('proposition_id', collect($sourceIds)->all())
+        return $this->attestationsFor($sourceIds)
             ->filter(fn ($a) => $a->supersededBy === null)->values();
     }
 
     public function reinforcementReceipts(string $type, iterable $ids): Collection
     {
-        return $this->receipts->where('receiptable_type', $type)->whereIn('receiptable_id', collect($ids)->all())
+        return $this->receiptsFor($type, $ids)
             ->where('type', '!=', 'citation')->whereNotNull('signature')->values();
+    }
+
+    public function attestationsFor(iterable $ids): Collection
+    {
+        return collect($ids)->unique()->flatMap(fn ($id) => $this->attestationsByProposition->get($id, collect()))->values();
+    }
+
+    public function receiptsFor(string $type, iterable $ids): Collection
+    {
+        return collect($ids)->unique()->flatMap(fn ($id) => $this->receiptsBySubject->get($type.':'.$id, collect()))->values();
+    }
+
+    public function horizonMemberIds(string $horizonId): Collection
+    {
+        return $this->membershipsByHorizon->get($horizonId, collect())->pluck('proposition_id');
     }
 
     /** Horizon membership is a traversal boundary, not a global ancestor union. */

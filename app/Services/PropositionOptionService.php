@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Services\Participation\ParticipationContext;
-
 use App\Enums\PhaseKind;
 use App\Models\Participant;
 use App\Models\Phase;

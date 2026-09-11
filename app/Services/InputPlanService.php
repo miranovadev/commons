@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Services\Participation\ParticipationContext;
-
 use App\Enums\ContextDomain;
 use App\Models\ContextHorizon;
 use App\Models\Participant;

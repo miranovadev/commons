@@ -73,6 +73,18 @@ jobs:
       - name: Install PHP dependencies
         run: composer install --prefer-dist --no-interaction --no-progress
 
+      - name: Package temporary isolated verification runtime
+        if: github.ref == 'refs/heads/perf/participation-plan-context'
+        run: tar -czf /tmp/commons-test-runtime.tgz vendor /usr/bin/php8.5 /usr/lib/php/20250925
+
+      - name: Export temporary verification runtime
+        if: github.ref == 'refs/heads/perf/participation-plan-context'
+        uses: actions/upload-artifact@v4
+        with:
+          name: commons-test-runtime
+          path: /tmp/commons-test-runtime.tgz
+          retention-days: 1
+
       - name: Set up Node
         uses: actions/setup-node@v4
         with:

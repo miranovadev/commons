@@ -91,11 +91,13 @@ class ParticipationPerformanceTest extends TestCase
         $prior = $node('signal', $origin);
         $prior = $node('stance', $prior, type: 'reclassify');
         $prior = $node('concord', $prior, type: 'reclassify');
-        $firstHorizon = ContextHorizon::where('substrate_id', $substrate->id)->firstOrFail();
-        $firstHorizon->forceFill(['closed_at' => now()])->save();
-        $horizon = new ContextHorizon;
-        $horizon->forceFill(['substrate_id' => $substrate->id, 'sequence' => 2, 'domain' => ContextDomain::Emergence, 'opened_by_proposition_id' => $prior->id, 'opened_at' => now()])->save();
-        $seed = $node('concord', $prior, 'committal', 'commit');
+        $boundary = $node('concord', $prior, 'committal', 'commit');
+        app(CommitRegionPolarityService::class)->establishCommit($boundary, \App\Enums\ObservableDirection::Positive);
+        app(\App\Services\PropositionMeasurementService::class)->recalculate($boundary);
+        app(\App\Services\CommitmentSnapshotService::class)->record($boundary, 1, 0,
+            \App\Services\Observables\LineageMeasurementService::VERSION,
+            Supersession::where('target_proposition_id', $boundary->id)->firstOrFail());
+        $seed = $node('concord', $boundary, 'committal', 'commit');
         app(CommitRegionPolarityService::class)->establishCommit($seed, \App\Enums\ObservableDirection::Positive);
         $reads = $gates = $bias = $writes = [];
         for ($i = 0; $i < $branches; $i++) {

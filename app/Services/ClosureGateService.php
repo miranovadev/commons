@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Services\Participation\ParticipationContext;
-
 use App\Domain\Observables\ClosureValues;
 use App\Enums\ObservableDirection;
 use App\Models\CommitmentSnapshot;

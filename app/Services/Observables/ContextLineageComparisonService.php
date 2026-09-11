@@ -3,7 +3,6 @@
 namespace App\Services\Observables;
 
 use App\Services\Participation\ParticipationContext;
-
 use App\Domain\Observables\DomainLineage;
 use App\Domain\Observables\LineageComparison;
 use App\Models\ContextHorizon;
@@ -85,7 +84,7 @@ final class ContextLineageComparisonService
             return new LineageComparison($current, null);
         }
 
-        $previousIds = $context !== null ? $context->memberships->where('context_horizon_id', $previousHorizon->id)->pluck('proposition_id') : ContextHorizonMembership::query()
+        $previousIds = $context !== null ? $context->horizonMemberIds($previousHorizon->id) : ContextHorizonMembership::query()
             ->where('context_horizon_id', $previousHorizon->getKey())
             ->pluck('proposition_id');
         $provenanceIds = $context !== null ? $context->edges->whereIn('target_proposition_id', $current->propositions->pluck('id'))->whereIn('source_proposition_id', $previousIds)->pluck('source_proposition_id')->unique()->values() : Supersession::query()

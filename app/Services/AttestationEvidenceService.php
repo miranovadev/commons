@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Services\Participation\ParticipationContext;
-
 use App\Domain\Observables\AttestationTimeline;
 use App\Enums\ObservableDirection as Direction;
 use App\Enums\RegisterPosition;
@@ -70,7 +69,7 @@ final readonly class AttestationEvidenceService
 
     private function buildTimeline(array $sourceIds, Substrate $substrate, ?ParticipationContext $context = null): AttestationTimeline
     {
-        $attestations = $context !== null ? $context->attestations->whereIn('proposition_id', $sourceIds) : Attestation::query()->whereIn('proposition_id', $sourceIds)
+        $attestations = $context !== null ? $context->attestationsFor($sourceIds) : Attestation::query()->whereIn('proposition_id', $sourceIds)
             ->with(['ledgerEntry', 'supersededBy.ledgerEntry', 'proposition.phase.cycle.participant'])->get();
         $receipts = $context !== null ? $context->reinforcementReceipts((new Attestation)->getMorphClass(), $attestations->pluck('id'))->groupBy('receiptable_id') : Receipt::query()->where('receiptable_type', (new Attestation)->getMorphClass())
             ->whereIn('receiptable_id', $attestations->pluck('id'))

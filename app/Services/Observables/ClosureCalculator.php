@@ -2,8 +2,6 @@
 
 namespace App\Services\Observables;
 
-use App\Services\Participation\ParticipationContext;
-
 use App\Domain\Observables\DomainLineage;
 use App\Domain\Observables\ClosureValues;
 use App\Domain\Observables\LineageComparison;

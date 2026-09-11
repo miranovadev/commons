@@ -3,7 +3,6 @@
 namespace App\Services\Observables;
 
 use App\Services\Participation\ParticipationContext;
-
 use App\Models\Receipt;
 use App\Models\Substrate;
 use App\Models\Proposition;
