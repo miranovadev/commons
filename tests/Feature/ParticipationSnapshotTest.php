@@ -38,7 +38,7 @@ class ParticipationSnapshotTest extends TestCase
         $substrate = new Substrate;
         $substrate->forceFill(['slug' => 'snapshot', 'title' => 'Snapshot', 'configuration' => [], 'visibility' => 'public'])->save();
         $viewer = new Participant;
-        $viewer->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'reader'])->save();
+        $viewer->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'reader', 'max_read_count' => 25])->save();
         $cycle = new Cycle;
         $cycle->forceFill(['participant_id' => $viewer->id, 'sequence' => 1])->save();
         $history = new Phase;
