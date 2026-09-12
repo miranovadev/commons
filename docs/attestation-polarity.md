@@ -74,7 +74,7 @@ Reads. Their own Correspondence and Attestation values do not filter them.
 
 Bias operates on the population. The traversed Gate establishes Commit Region
 and equivalent register, but does not set the selection direction. Bias uses
-the existing receipt-weighted aggregate over effective signed Attestations in
+the existing counted-Reinforcement-weighted aggregate over effective signed Attestations in
 the active Gate population and selects Gates whose effective directions match
 the population's retained direction.
 

@@ -378,6 +378,8 @@ class ContextHorizonProjectorTest extends TestCase
         ?Proposition $source = null,
     ): array {
         $proposition = $this->proposition($statement, 'committal');
+        app(LedgerService::class)->record($proposition);
+        $this->groundFixture($proposition);
 
         app(PropositionMeasurementService::class)->project(
             $proposition,

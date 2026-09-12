@@ -17,6 +17,7 @@ final readonly class CommitmentSnapshotService
         private LedgerService $ledger,
         private ContextHorizonProjector $horizons,
         private ClosureGateService $closureGate,
+        private CommitmentAdmissibilityService $admissibility,
     ) {}
 
     public function record(
@@ -77,6 +78,14 @@ final readonly class CommitmentSnapshotService
                 throw new DomainException(
                     'A commitment requires all three Proposition measurements.'
                 );
+            }
+
+            $isOrigin = $calculatorVersion === 'origin-bootstrap-v1'
+                && $supersession === null && $entry->sequence === 1
+                && ! $proposition->parents()->exists()
+                && ! CommitmentSnapshot::where('substrate_id', $substrate->id)->exists();
+            if (! $isOrigin && ! $this->admissibility->grounding($proposition)['admissible']) {
+                throw new DomainException('Commitment requires effective Attestation, completed evidence and counted Reinforcement.');
             }
 
             $horizon = $this->horizons->currentFor($substrate);

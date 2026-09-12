@@ -141,6 +141,36 @@ Under normal Phase progression, there may be at most six consecutive Expressive
 Proposition tiers between Committal Propositions. A new Committal Proposition may
 seed fresh Phase 1 branches, including branches from multiple Participants.
 
+## 12. Receipts and Reinforcement Are Distinct
+
+Only qualifying verified evidence produces Reinforcement. Cite remains evidence
+without Reinforcement. A Participant may contribute at most one counted
+Reinforcement to a Proposition; repeated Receipts and shared signatures remain
+historical events rather than extra measurement weight.
+
+## 13. Reinforcement Forms State Before Attenuation Propagates It
+
+Reinforcement contributes to a Proposition's intrinsic measurements before
+structural attenuation is applied. Attenuation affects propagation of a measured
+state, not formation of that state. Receipts and Reinforcement are never discounted
+by distance before entering the Proposition's own calculation.
+
+## 14. Commitment Requires Subsequent Reinforcement
+
+A Proposition cannot become Committal solely from its originating state or from
+possession of a Receipt. At least one counted Reinforcement from a later
+interaction is required before operational Commitment is admissible, alongside
+all existing phase and measurement constraints. The explicit Origin initialization
+seed is a bootstrap exception, not earned Settlement; its originating evidence
+supplies no counted Reinforcement.
+
+## 15. Reinforcement Does Not Suppress Branching
+
+Competing Propositions and reconciliations may coexist and develop independently.
+Reinforcement must not globally consume source Propositions or prohibit reuse of
+organically reachable hard-superseded inputs. Multiple alternatives earn their own
+persistence within the existing phase, register and region rules.
+
 ## Relationship to More Specific Rules
 
 These invariants govern more detailed operational rules; they do not replace
@@ -156,6 +186,9 @@ constraints:
 | Bias uses the retained aggregate Attestation direction of its eligible Gate population. | 4, 7, 10 | [Bias Chirality Gate](participation.md#bias-chirality-gate) |
 | Zero-valued hysteretic observables retain direction according to their documented histories and transition conditions. | 4, 7 | [Value and retained direction](attestation-polarity.md#value-and-retained-direction); [Closure hysteresis](closure-hysteresis.md) |
 | Commit preserves original evidence and provenance when inheriting participation state. | 8, 9 | [Commit participation inheritance](observables.md#commit-participation-inheritance) |
+
+See [Reinforcement](reinforcement.md) for qualification, signature normalization,
+server-observed version stability, local Closure and Commit requirements.
 
 When ambiguity arises, prefer the interpretation that preserves these invariants
 rather than inferring semantics from current code behaviour.

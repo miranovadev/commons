@@ -23,8 +23,9 @@ cross-lineage comparison, independent directions and hysteresis remain in force.
 
 Depth and Cadence are retained separately (seven-decimal precision). Each
 positive/negative value selects that direction; exactly zero retains the prior
-committed direction. Both resolved directions must match. Their average remains
-Closure, but an average alone cannot establish admissibility.
+committed direction. Both resolved directions must match. Their normalized values combine with counted independent Reinforcement inside
+local Closure before propagation. Closure alone cannot establish admissibility;
+Depth/Cadence direction alignment remains required. See [Reinforcement](reinforcement.md).
 
 This applies [Invariant 4: Zero Does Not Erase Direction](core-invariants.md#4-zero-does-not-erase-direction)
 and [Invariant 7: Reference Frames Must Remain Distinct](core-invariants.md#7-reference-frames-must-remain-distinct):

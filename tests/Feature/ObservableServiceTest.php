@@ -94,6 +94,7 @@ class ObservableServiceTest extends TestCase
         $this->attest($next, 'refute');
         $this->attest($target, 'support');
 
+        $this->verifiedReceiptFixture($target);
         $measurement = app(PropositionMeasurementService::class)
             ->recalculate($target);
 
@@ -171,9 +172,9 @@ class ObservableServiceTest extends TestCase
         $this->assertSame(2.0, $calculator->depth($lineage));
         $this->assertSame(0.0, $calculator->coefficientOfVariation($lineage));
 
-        // Active-head reinforcement still increases structural development.
+        // Raw Depth stays structural even when a legacy Receipt has a signature.
         $this->receipt($left, 'artefact', 'active-weight');
-        $this->assertEqualsWithDelta(7 / 3, $calculator->depth($lineage), 1e-10);
+        $this->assertEqualsWithDelta(2, $calculator->depth($lineage), 1e-10);
         $this->touch($left, 2);
         $this->assertEqualsWithDelta(1 / 3, $calculator->coefficientOfVariation($lineage), 1e-10);
     }
@@ -206,7 +207,7 @@ class ObservableServiceTest extends TestCase
         }
     }
 
-    public function test_only_unique_non_citation_receipts_reinforce(): void
+    public function test_legacy_receipt_signatures_without_verification_do_not_reinforce(): void
     {
         $this->substrate->configuration = [
             'observables' => ['contribution_receipt_ratio' => 2],
@@ -223,7 +224,7 @@ class ObservableServiceTest extends TestCase
             $this->substrate->fresh(),
         );
 
-        $this->assertSame(1.5, $weights->get($proposition->getKey()));
+        $this->assertSame(1.0, $weights->get($proposition->getKey()));
     }
 
     private function phase(int $sequence): Phase
@@ -321,6 +322,7 @@ class ObservableServiceTest extends TestCase
         float $prominence,
         float $turbulence,
     ): void {
+        $this->groundFixture($proposition);
         app(PropositionMeasurementService::class)->project(
             $proposition,
             correspondence: -1,

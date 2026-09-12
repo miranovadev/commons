@@ -291,7 +291,7 @@ Phase in the **same Cycle**. It is not Mediate's Gate, the latest Horizon card,
 or a guessed ancestor. Missing Disperse history supplies no Read/counterpart
 options; the server does not invent an anchor.
 
-`read_options` exposes that anchor first, followed by active Read-equivalent
+`read_options` exposes that anchor first, followed by Read-equivalent
 members of its Commit Region with the same retained hysteretic Correspondence direction.
 Parallel branches may have different immediate parents or expressive depths.
 Zero or unmeasured Correspondence retains established direction, with primary
@@ -343,14 +343,14 @@ Gate, and Write respectively.
 ## Bias Chirality Gate
 
 `BiasGateService` uses the shared Commit Region population, deduplicated before
-computing one receipt-weighted effective Attestation lean. It reuses
+computing one counted-Reinforcement-weighted effective Attestation lean. It reuses
 `AttestationEvidenceService` to resolve each candidate's effective direction and
 the population's independently retained aggregate direction. A zero aggregate
 retains its own preceding direction from ledger history. The traversed Gate
 defines locality only. Attestation-less candidates default to the governing
 Committal direction, even if their Expressive parent has diverged. See
 [Attestation polarity](attestation-polarity.md) for Origin's label choice, fixed
-region frames and replay semantics. The Chirality product, receipt weights
+region frames and replay semantics. The Chirality product, counted Reinforcement weights
 and attenuation formulae are unchanged.
 
 The action takes `action: proposition.bias` and one `proposition_id`. The server

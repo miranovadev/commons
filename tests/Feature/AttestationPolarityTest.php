@@ -162,10 +162,8 @@ class AttestationPolarityTest extends TestCase
         $position = $this->node('stance', $seed);
         $support = $this->attest($position, 'support');
         $refute = $this->attest($position, 'refute');
-        $instruments = app(\App\Services\InstrumentExecutionService::class);
-        foreach ([$refute, $support] as $index => $attestation) {
-            $execution = $instruments->start($attestation->phase, $position, 'hyperlink', 'https://example.test/weight-'.$index);
-            $instruments->complete($execution, $attestation, 'weight-'.$index);
+        foreach ([$refute, $support] as $attestation) {
+            $this->verifiedReceiptFixture($position, $attestation);
         }
         $evidence = app(AttestationEvidenceService::class);
         $this->assertSame(0.0, $evidence->valueFor(collect([$position]), $this->participant->substrate));

@@ -6,13 +6,15 @@ use App\Models\Attestation;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Receipt;
+use App\Services\Evidence\HyperlinkIdentity;
+use App\Services\Evidence\HyperlinkVerifier;
 use DomainException;
 use Illuminate\Support\Facades\DB;
 
-/** Synchronous reference instruments; no network fetch or content verification. */
+/** Synchronous verified evidence; only the verifier can supply reinforcement identity. */
 final readonly class OperationalInstrumentService
 {
-    public function __construct(private InstrumentExecutionService $executions) {}
+    public function __construct(private InstrumentExecutionService $executions, private HyperlinkVerifier $verifier, private HyperlinkIdentity $identity) {}
 
     /** @param array{kind: string, reference: string} $input */
     public function execute(Phase $phase, Proposition $proposition, array $input): Receipt
@@ -25,7 +27,7 @@ final readonly class OperationalInstrumentService
             }
 
             $metadata = match ($input['kind']) {
-                'hyperlink' => $this->hyperlink($reference),
+                'hyperlink' => ['resource' => $this->identity->resource($reference)],
                 'citation' => $this->citation($reference, $substrateId),
                 default => throw new DomainException('This instrument is not available yet.'),
             };
@@ -33,24 +35,22 @@ final readonly class OperationalInstrumentService
                 $phase, $proposition, $input['kind'], $reference, $input,
             );
 
+            $verification = null;
+            if ($input['kind'] === 'hyperlink') {
+                try {
+                    $verification = $this->verifier->verify($reference);
+                } catch (\Throwable $exception) {
+                    // A failed verification is still an observable Instrument attempt.
+                    // Complete a non-reinforcing Receipt, without claiming verified content.
+                    $metadata = [...$metadata, 'validation' => 'verification-failed', 'content_verified' => false,
+                        'verification_error' => $exception instanceof DomainException ? $exception->getMessage() : 'Resource verification failed.'];
+                }
+            }
+
             return $this->executions->complete(
-                $execution, $proposition, metadata: $metadata,
+                $execution, $proposition, metadata: $metadata, verification: $verification,
             );
         });
-    }
-
-    /** @return array{validation: string, content_verified: bool} */
-    private function hyperlink(string $reference): array
-    {
-        $parts = parse_url($reference);
-        if (filter_var($reference, FILTER_VALIDATE_URL) === false
-            || ! is_array($parts)
-            || ! in_array(strtolower($parts['scheme'] ?? ''), ['http', 'https'], true)
-            || isset($parts['user']) || isset($parts['pass'])) {
-            throw new DomainException('A Hyperlink requires an HTTP(S) URL without credentials.');
-        }
-
-        return ['validation' => 'url-reference-only', 'content_verified' => false];
     }
 
     /** @return array{validation: string, target_type: string, target_id: string} */

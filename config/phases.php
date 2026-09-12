@@ -100,6 +100,7 @@ return [
             'proposition.commit' => [
                 'effective-gate-attestation',
                 'completed-gate-or-effective-attestation-receipt',
+                'counted-participant-reinforcement',
                 'depth-cadence-and-hysteresis-admissible',
             ],
         ],

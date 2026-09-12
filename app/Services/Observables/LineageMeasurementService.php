@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 
 final readonly class LineageMeasurementService
 {
-    public const string VERSION = 'region-attestation-polarity-v3';
+    public const string VERSION = 'participant-reinforcement-v4';
 
     public function __construct(
         private LocalMeasurementService $local,
@@ -35,7 +35,7 @@ final readonly class LineageMeasurementService
 
     public function calculate(Proposition $position, ?LineageComparison $headComparison = null, ?ParticipationContext $context = null): LocalMeasurements
     {
-        $totals = ['correspondence' => 0.0, 'chirality' => 0.0, 'depth' => 0.0, 'cadence' => 0.0];
+        $totals = ['correspondence' => 0.0, 'chirality' => 0.0, 'depth' => 0.0, 'cadence' => 0.0, 'closureValue' => 0.0];
         $mass = 0.0;
         foreach ($this->positions($position, $context) as [$proposition, $distance]) {
             $comparison = $distance === 0 ? $headComparison : null;
@@ -46,7 +46,8 @@ final readonly class LineageMeasurementService
             // Every traversed position contributes denominator mass, including neutral values.
             $mass += $weight;
             foreach ($totals as $name => $total) {
-                $totals[$name] += $local->{$name} * $weight;
+                $value = $name === 'closureValue' ? $local->closure()->average() : $local->{$name};
+                $totals[$name] += $value * $weight;
             }
         }
 

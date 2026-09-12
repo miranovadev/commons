@@ -164,7 +164,7 @@ class PropositionHistorySemanticsTest extends TestCase
         $this->assertSame($counts, [Attestation::count(), Receipt::count(), InstrumentExecution::count(), Phase::count()]);
         $this->assertSame($attestationTargets, Attestation::pluck('proposition_id', 'id')->all());
         $this->assertSame($receiptTargets, Receipt::pluck('receiptable_id', 'id')->all());
-        $this->assertSame(['missing_effective_attestation', 'missing_completed_receipt'],
+        $this->assertSame(['missing_effective_attestation', 'missing_completed_receipt', 'missing_counted_reinforcement'],
             app(CommitmentAdmissibilityService::class)->grounding($target)['reasons']);
         $this->assertEquals(1, app(ReinforcementService::class)->weights(collect([$target]), $this->participant->substrate)[$target->id]);
         $this->assertSame(0.0, app(ChiralityCalculator::class)->leanFor(collect([$target->id]), $this->participant->substrate));

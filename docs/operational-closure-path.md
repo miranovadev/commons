@@ -18,7 +18,7 @@ directly created fixtures.
 | Author and Grounder | Attest the new immediate Write Stance during Mediate | Earned support establishes an admissible Bias direction |
 | Builder | Bias selects that Stance | One fresh Concord, one hard reclassification edge; creator arrives at Order |
 | Author | Attest the new immediate Concord Write child during Bias | Concord earns its own support; author also arrives at Order |
-| Grounder | Execute an Instrument on that Concord during Bias | Concord earns its own Receipt; grounder also arrives at Order |
+| Grounder | Execute an Instrument on that Concord during Bias | Concord earns its own verified Hyperlink Receipt and counted Reinforcement; grounder also arrives at Order |
 | Observer | Enter and attest the existing early Signal | An additional real observation changes the active-head touch distribution |
 | Builder | Refresh Order; Commit when all prerequisites hold | One Committal Proposition carrying the final Concord's earned history |
 
