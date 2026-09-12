@@ -73,13 +73,15 @@ test('commit and Closure statuses independently follow actual availability, with
   assert.ok(html.indexOf('aria-label="Workspace status"') < html.indexOf('No existing Proposition'));
 });
 
-test('header provides a touch Phase info button, selectable identity, and read-only desktop Phase progress', () => {
+test('header provides a touch Phase info button, selectable identity, and desktop Phase progress', () => {
   for (const kind of ['distinguish', 'persist', 'constrain', 'disperse', 'mediate', 'bias', 'order']) {
     const html = ui.phase(kind);
     assert.equal([...html.matchAll(/aria-current="step"/g)].length, 1);
-    assert.match(html, new RegExp('data-state="current" aria-current="step"[^>]*>[\\s\\S]*?<span>' + kind[0].toUpperCase() + kind.slice(1) + '</span>'));
+    const current = [...html.matchAll(/<button\b[^>]*data-state="current"[^>]*>/g)].map(match => match[0]);
+    assert.equal(current.length, 1);
+    assert.match(current[0], /aria-current="step"/);
     assert.match(html, /aria-label="About /);
-    assert.doesNotMatch(html.slice(html.indexOf('<ol'), html.indexOf('</ol>')), /<button/);
+    assert.match(html, /mantine-Stepper-root/);
   }
   assert.match(ui.identity(), /aria-label="Switch Participant: Claire"/);
   const mobile = css.slice(css.indexOf('@media (max-width:47.99em)'));

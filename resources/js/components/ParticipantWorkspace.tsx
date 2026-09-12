@@ -3,6 +3,7 @@ import { IconArrowDown, IconArrowLeft, IconArrowRight, IconEye, IconPencil, Icon
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { domainForRegister, metaForRegister } from '../registers';
 import { actionPropositions, actionTargetIds, attestationDirections, writePropositions } from '../participationOptions';
+import { phaseRegisterPreview } from '../phasePreview';
 import { directionSlots } from '../directionalPresentation';
 import { DirectionalWhirl } from './DirectionalWhirl';
 import { OperationIcon } from './OperationIcon';
@@ -24,9 +25,9 @@ const roleMeta = {
 const provenanceMeta = { label: 'Provenance', description: 'The inherited proposition from which this cycle begins.', color: 'indigo', icon: IconSeedling };
 const generativeActions = { 'proposition.variant': 'Variant', 'proposition.bias': 'Bias' } as const;
 
-export function ParticipantWorkspace({ plan, availableActions, onAction, onSubmit, busy = false, error, status }: {
+export function ParticipantWorkspace({ plan, availableActions, onAction, onSubmit, busy = false, error, status, previewKind }: {
   plan: ParticipantPlan; availableActions: ActionName[]; onAction: ActionHandler;
-  onSubmit?: (input: ContributionInput) => Promise<boolean>; busy?: boolean; error?: unknown; status?: ReactNode;
+  onSubmit?: (input: ContributionInput) => Promise<boolean>; busy?: boolean; error?: unknown; status?: ReactNode; previewKind?: PhaseKind;
 }) {
   const propositions = useMemo<Proposition[]>(() => [
     plan.gate, plan.workspace?.provenance, ...(plan.lineage || []), ...(plan.read_options || []),
@@ -38,21 +39,25 @@ export function ParticipantWorkspace({ plan, availableActions, onAction, onSubmi
   const gate = resolve(plan.gate, byId);
   const provenance = resolve(plan.workspace?.provenance || plan.lineage?.find(item => item.tier === 'committal') || gate, byId);
   const domainName = plan.workspace?.domain || domainForRegister(plan.phase.write_register);
-  const phaseNumber = plan.phase.number || phaseNumberFor(plan.phase.kind);
+  const preview = previewKind ? phaseRegisterPreview(plan, previewKind) : null;
+  const phaseNumber = preview?.number || plan.phase.number || phaseNumberFor(plan.phase.kind);
   const [inspection, setInspection] = useState<PropositionSelection | null>(null);
-  useEffect(() => setInspection(null), [plan.phase.id]);
+  useEffect(() => setInspection(null), [plan.phase.id, previewKind]);
   const lineage = (plan.lineage || []).map(item => resolve(item, byId)).filter(item => item.id !== gate.id);
-  const lanes = buildLanes({ phaseNumber, domainName, writeRegister: plan.phase.write_register, gate, provenance });
+  const lanes: Lane[] = preview ? (['read', 'gate', 'write'] as const).map(role => {
+    const virtual = (preview.number === 1 && role !== 'write') || (preview.number === 2 && role === 'read');
+    return { key: role, role, virtual, ...(virtual ? { meta: provenanceMeta } : { register: preview[role].register }) };
+  }) : buildLanes({ phaseNumber, domainName, writeRegister: plan.phase.write_register, gate, provenance });
   const writeOptions = writePropositions(plan);
   const targets = useMemo(() => new Map(availableActions.map(action => [action, actionTargetIds(plan, action)])), [plan, availableActions]);
   const candidates = plan.phase.kind === 'bias' ? actionPropositions(plan, 'proposition.bias')
     : plan.phase.kind === 'mediate' ? actionPropositions(plan, 'proposition.reconcile') : [];
-  const allowed = (action: ActionName) => availableActions.includes(action) && Boolean(plan.schema?.$defs?.actions?.[action]);
+  const allowed = (action: ActionName) => !preview && availableActions.includes(action) && Boolean(plan.schema?.$defs?.actions?.[action]);
   function card(proposition: Proposition, kind: string) {
     return <PropositionCard key={proposition.id} proposition={proposition} committalObservables={provenance.observables}
       compact flow={kind} onClick={() => setInspection({ kind, proposition })} />;
   }
-  return <Box className="operational-workspace" data-domain={domainName} data-phase={phaseNumber}>
+  return <Box className="operational-workspace" data-domain={domainName} data-phase={phaseNumber} data-preview={Boolean(preview)}>
     <Box className="operational-workspace__body">
       <Box component="fieldset" disabled={busy} className="operational-board" aria-busy={busy}>
         <LineagePanel lineage={lineage} committalObservables={provenance.observables} onInspect={setInspection} />
@@ -76,7 +81,19 @@ export function ParticipantWorkspace({ plan, availableActions, onAction, onSubmi
                   <Text className="register-row__title" size="xs" fw={700}>{meta.label}</Text>
                   <Text size="xs" c="dimmed" visibleFrom="sm" truncate>{meta.description}</Text>
                 </Group>
+                {lane.role === 'write' && !preview && <Stack gap="xs" className="write-row__tools">
+                    {status}
+                    {Object.keys(generativeActions).some(action => allowed(action as ActionName)) && <Group className="write-generative-actions" gap={6} aria-label="Generative Write actions">
+                      <Text size="10px" c="dimmed">Generate</Text>
+                      {Object.entries(generativeActions).filter(([action]) => allowed(action as ActionName)).map(([action, label]) => <Button key={action}
+                        variant="light" color="gray" size="compact-xs" leftSection={<OperationIcon operation={action} />}
+                        onClick={() => onAction(action as ActionName)}>{label}</Button>)}
+                    </Group>}
+                </Stack>}
                 <Box className="register-row__content">
+                  {preview ? ((lane.virtual ? preview.provenance : preview[lane.role].cards).length ? <PropositionNavigator label={`${role.label} register preview`} resetKey={`${plan.phase.id}-${preview.kind}`}>
+                    {(lane.virtual ? preview.provenance : preview[lane.role].cards).map(item => card(item, 'register preview'))}
+                  </PropositionNavigator> : <EmptyState text="No cards from this register are loaded." />) : <>
                   {lane.role === 'read' && (reads.length ? <PropositionNavigator label="Read Propositions" resetKey={plan.phase.id}>{reads.map(item => card(resolve(item, byId), 'read'))}</PropositionNavigator>
                     : <EmptyState text="No readable Proposition is available here." />)}
                   {lane.role === 'gate' && (gateCards.length ? <PropositionNavigator label="Gate Propositions" resetKey={plan.phase.id}>
@@ -95,13 +112,6 @@ export function ParticipantWorkspace({ plan, availableActions, onAction, onSubmi
                     </Box>)}
                   </PropositionNavigator> : <EmptyState text="No eligible Gate Proposition is available here." />)}
                   {lane.role === 'write' && <Stack gap="xs" className="write-row">
-                    {status}
-                    {Object.keys(generativeActions).some(action => allowed(action as ActionName)) && <Group className="write-generative-actions" gap={6} aria-label="Generative Write actions">
-                      <Text size="10px" c="dimmed">Generate</Text>
-                      {Object.entries(generativeActions).filter(([action]) => allowed(action as ActionName)).map(([action, label]) => <Button key={action}
-                        variant="light" color="gray" size="compact-xs" leftSection={<OperationIcon operation={action} />}
-                        onClick={() => onAction(action as ActionName)}>{label}</Button>)}
-                    </Group>}
                     {writeOptions.length ? <PropositionNavigator label="Write Propositions" resetKey={plan.phase.id}>
                       {writeOptions.map(proposition => <WriteOptionCard key={proposition.id} proposition={proposition}
                         directions={attestationDirections(plan, proposition.id)}
@@ -113,6 +123,7 @@ export function ParticipantWorkspace({ plan, availableActions, onAction, onSubmi
                         committalObservables={provenance.observables} onInspect={setInspection} onAction={onAction} />)}
                     </PropositionNavigator> : <EmptyState text="No existing Proposition is available in Write." />}
                   </Stack>}
+                  </>}
                 </Box>
               </Box>
               {lane.role !== 'write' && <IconArrowDown className="region-transition" size={24} stroke={2.2} aria-hidden="true" />}
@@ -121,7 +132,7 @@ export function ParticipantWorkspace({ plan, availableActions, onAction, onSubmi
         </Box>
       </Box>
       <PropositionInspector selection={inspection} committalObservables={provenance.observables} onClose={() => setInspection(null)}
-        plan={plan} onSubmit={onSubmit} loading={busy} error={error} />
+        plan={preview ? undefined : plan} onSubmit={preview ? undefined : onSubmit} loading={busy} error={error} />
     </Box>
   </Box>;
 }

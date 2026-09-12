@@ -5,9 +5,10 @@ const support = params.get('support') === 'negative' ? 'negative' : 'positive';
 const active = params.get('status') === 'active';
 const closureSatisfied = params.get('status') !== 'inactive';
 const number = { distinguish: 1, persist: 2, constrain: 3, disperse: 4, mediate: 5, bias: 6, order: 7 }[kind];
-const write = (['signal', 'stance', 'concord'] as const)[(number - 1) % 3];
-const gateRegister = (['concord', 'signal', 'stance'] as const)[(number - 1) % 3];
-const readRegister = (['stance', 'concord', 'signal'] as const)[(number - 1) % 3];
+const registerIndex = number === 7 ? 2 : (number - 1) % 3;
+const write = (['signal', 'stance', 'concord'] as const)[registerIndex];
+const gateRegister = (['concord', 'signal', 'stance'] as const)[registerIndex];
+const readRegister = (['stance', 'concord', 'signal'] as const)[registerIndex];
 const participant = { id: 'claire', callsign: 'Claire', designation: 'Exploring a shared cognitive substrate', max_read_count: 25, owned_by_user: true, position: { cycle_sequence: 2, cycle_completed: false, phase: { number } } };
 const titles = ['Preserve transparency and protected dissent in shared decisions.', 'Make the reasoning behind every commitment available for review.', 'Let participants explore alternatives without erasing their history.', 'Keep space for local disagreement as the shared structure develops.'];
 function proposition(index: number, register = write): Proposition {

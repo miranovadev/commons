@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { Alert, Box, Breadcrumbs, Container, Loader, Stack, Text, ThemeIcon, Title } from '@mantine/core';
+import { Alert, Box, Breadcrumbs, Button, Container, Group, Loader, Stack, Text, ThemeIcon, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { IconAlertCircle, IconSparkles } from '@tabler/icons-react';
 import { Link, useParams } from 'react-router-dom';
@@ -9,8 +9,9 @@ import { ContributionForm } from '../components/ContributionForm';
 import { OriginCycleForm } from '../components/OriginCycleForm';
 import { ParticipantWorkspace } from '../components/ParticipantWorkspace';
 import { useContributeMutation, useEnterCycleMutation, useGetParticipantQuery, useGetParticipationQuery } from '../services/commonsApi';
-import type { ActionName, ContributionInitialValues, ContributionInput, OriginInput } from '../types';
+import type { ActionName, ContributionInitialValues, ContributionInput, OriginInput, PhaseKind } from '../types';
 
+import { canPreviewPhase } from '../phasePreview';
 import { PhaseIdentity } from '../components/PhaseIdentity';
 import { ParticipantSwitcher } from '../components/ParticipantSwitcher';
 import { CycleEntryControl } from '../components/CycleEntryControl';
@@ -37,6 +38,13 @@ function ParticipantPositionPage({ slug, participantId }: { slug: string; partic
   const [selectedAction, setSelectedAction] = useState<{ name: ActionName; initialValues: ContributionInitialValues } | null>(null);
   const [originOpened, { open: openOrigin, close: closeOrigin }] = useDisclosure(false);
   const plan = participation?.plan;
+  const [previewSelection, setPreviewSelection] = useState<{ phaseId: string; kind: PhaseKind } | null>(null);
+  const previewKind = plan && previewSelection?.phaseId === plan.phase.id && canPreviewPhase(plan.phase.kind, previewSelection.kind) ? previewSelection.kind : undefined;
+  function selectPhase(kind: PhaseKind) {
+    if (!plan || submitting.current || submittedPhase.current === plan.phase.id) return;
+    setSelectedAction(null);
+    setPreviewSelection(canPreviewPhase(plan.phase.kind, kind) ? { phaseId: plan.phase.id, kind } : null);
+  }
   const error = participantError || participationError;
   const availableActions = useMemo(
     () => plan?.schema?.oneOf
@@ -47,13 +55,13 @@ function ParticipantPositionPage({ slug, participantId }: { slug: string; partic
 
   function openAction(name: ActionName, initialValues: ContributionInitialValues = {}) { contribution.reset(); setSelectedAction({ name, initialValues }); }
   function workspaceAction(name: ActionName, initialValues: ContributionInitialValues = {}) {
-    if (!plan || submitting.current || submittedPhase.current === plan.phase.id) return;
+    if (previewKind || !plan || submitting.current || submittedPhase.current === plan.phase.id) return;
     const input = quickContribution(plan, name, initialValues);
     if (input) { contribution.reset(); void submit(input); }
     else openAction(name, initialValues);
   }
   async function submit(contributionInput: ContributionInput) {
-    if (!plan || submitting.current || submittedPhase.current === plan.phase.id) return false;
+    if (previewKind || !plan || submitting.current || submittedPhase.current === plan.phase.id) return false;
     submitting.current = true;
     try {
       await contribute({ slug, participantId, phaseId: plan.phase.id, contribution: contributionInput }).unwrap();
@@ -87,13 +95,17 @@ function ParticipantPositionPage({ slug, participantId }: { slug: string; partic
       {participant && plan && (
         <Box className="participant-cycle-shell">
           <Box className="cycle-context-header">
-            <PhaseIdentity kind={plan.phase.kind} />
+            <PhaseIdentity kind={plan.phase.kind} selectedKind={previewKind || plan.phase.kind} onSelect={selectPhase} busy={contribution.isLoading || submittedPhase.current === plan.phase.id} />
             <ParticipantIdentity participant={participant} onSelect={() => setSwitcherOpened(true)} opened={switcherOpened} />
           </Box>
+          {previewKind && <Group className="phase-preview-notice" justify="space-between" gap="xs">
+            <Text size="xs" c="dimmed" role="status">Read-only register preview · using loaded cards and lineage, not a historical snapshot.</Text>
+            <Button size="compact-xs" variant="light" color="indigo" onClick={() => setPreviewSelection(null)}>Return to current Phase</Button>
+          </Group>}
           <Box className="participant-cycle-content">
-            <ParticipantWorkspace plan={{ ...plan, perspectiveLimit: participant.max_read_count }} availableActions={availableActions} onAction={workspaceAction}
-              busy={contribution.isLoading || submittedPhase.current === plan.phase.id} onSubmit={submit} error={contribution.error}
-              status={<WorkspaceStatus notices={notices} closeDetails={selectedAction !== null || switcherOpened} />} />
+            <ParticipantWorkspace key={previewKind || 'live'} previewKind={previewKind} plan={{ ...plan, perspectiveLimit: participant.max_read_count }} availableActions={previewKind ? [] : availableActions} onAction={workspaceAction}
+              busy={contribution.isLoading || submittedPhase.current === plan.phase.id} onSubmit={previewKind ? undefined : submit} error={contribution.error}
+              status={previewKind ? undefined : <WorkspaceStatus notices={notices} closeDetails={selectedAction !== null || switcherOpened} />} />
           </Box>
           <ContributionForm action={selectedAction?.name} plan={plan} opened={selectedAction !== null} loading={contribution.isLoading} error={contribution.error} initialValues={selectedAction?.initialValues} onClose={() => setSelectedAction(null)} onSubmit={submit} />
         </Box>
