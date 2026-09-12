@@ -28,6 +28,9 @@ Route::middleware('web')->group(function (): void {
                 [PropositionController::class, 'index'],
             );
 
+            Route::get('/substrates/{substrate}/realtime', \App\Http\Controllers\Api\RealtimeController::class);
+            Route::get('/substrates/{substrate}/propositions/{proposition}', [PropositionController::class, 'show']);
+
             Route::middleware('guest')->post(
                 '/session',
                 [SessionController::class, 'store'],

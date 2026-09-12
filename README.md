@@ -97,3 +97,5 @@ php artisan commons:participants-wake-due
 ```
 
 GitHub Actions runs the frontend build and PHP test suite against PostgreSQL for every push.
+
+Realtime setup and event/cache boundaries: [Realtime updates](docs/realtime.md).

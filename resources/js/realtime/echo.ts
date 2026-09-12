@@ -1,0 +1,37 @@
+import Echo from 'laravel-echo';
+import Pusher from 'pusher-js';
+
+/** Each observing page owns its connection, channels, and cleanup. */
+export function createEcho() {
+  const key = import.meta.env.VITE_REVERB_APP_KEY;
+  if (!key) return null;
+  try {
+    return new Echo({
+      broadcaster: 'reverb',
+      Pusher,
+      key,
+      wsHost: import.meta.env.VITE_REVERB_HOST || window.location.hostname,
+      wsPort: Number(import.meta.env.VITE_REVERB_PORT || 80),
+      wssPort: Number(import.meta.env.VITE_REVERB_PORT || 443),
+      forceTLS: (import.meta.env.VITE_REVERB_SCHEME || 'https') === 'https',
+      enabledTransports: ['ws', 'wss'],
+      authorizer: (channel: { name: string }) => ({
+        authorize: async (socketId: string, callback: (error: Error | null, data: unknown) => void) => {
+          try {
+            const csrf = await fetch('/api/csrf-cookie', { credentials: 'include', headers: { Accept: 'application/json' } });
+            if (!csrf.ok) throw new Error('Could not initialise channel authorization.');
+            const token = document.cookie.split('; ').find(cookie => cookie.startsWith('XSRF-TOKEN='))?.slice(11);
+            const response = await fetch('/broadcasting/auth', {
+              method: 'POST', credentials: 'include',
+              headers: { Accept: 'application/json', 'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest', ...(token ? { 'X-XSRF-TOKEN': decodeURIComponent(token) } : {}) },
+              body: JSON.stringify({ socket_id: socketId, channel_name: channel.name }),
+            });
+            if (!response.ok) throw new Error('Channel authorization was denied.');
+            callback(null, await response.json());
+          } catch (error) { callback(error instanceof Error ? error : new Error('Channel authorization failed.'), null); }
+        },
+      }),
+    });
+  } catch { return null; }
+}

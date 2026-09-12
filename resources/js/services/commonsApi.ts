@@ -1,3 +1,4 @@
+import type { GraphSubscriptions } from '../realtime/notifications';
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { systemBootstrapRequired } from '../systemSlice';
 import { BOOTSTRAP_REQUIRED, HTTP_PRECONDITION_REQUIRED, HTTP_SESSION_EXPIRED } from '../http';
@@ -104,6 +105,7 @@ export const commonsApi = createApi({
   reducerPath: 'commonsApi',
   baseQuery,
   tagTypes: [
+    'GraphSubscriptions',
     'Session',
     'Substrate',
     'Participant',
@@ -120,6 +122,15 @@ export const commonsApi = createApi({
     getSubstrates: builder.query<Substrate[], void>({ query: () => '/substrates', transformResponse: data, providesTags: (result) => result ? [...result.map(({ id }) => ({ type: 'Substrate' as const, id })), { type: 'Substrate', id: 'LIST' }] : [{ type: 'Substrate', id: 'LIST' }] }),
     createSubstrate: builder.mutation<Substrate, SubstrateInput>({ query: (body) => ({ url: '/substrates', method: 'POST', body }), transformResponse: data, invalidatesTags: [{ type: 'Substrate', id: 'LIST' }] }),
     getSubstrate: builder.query<Substrate, string>({ query: (slug) => `/substrates/${slug}`, transformResponse: data, providesTags: (result) => result ? [{ type: 'Substrate', id: result.id }] : [] }),
+    getGraphSubscriptions: builder.query<GraphSubscriptions, string>({
+      query: slug => `/substrates/${slug}/realtime`, transformResponse: data,
+      providesTags: (_result, _error, slug) => [{ type: 'GraphSubscriptions', id: slug }],
+    }),
+    getProposition: builder.query<Proposition, { slug: string; propositionId: Identifier }>({
+      query: ({ slug, propositionId }) => `/substrates/${slug}/propositions/${propositionId}`,
+      transformResponse: data,
+      providesTags: (_result, _error, { propositionId }) => [{ type: 'Proposition', id: propositionId }],
+    }),
     getPropositions: builder.query<Proposition[], string>({ query: (slug) => `/substrates/${slug}/propositions`, transformResponse: data, providesTags: ['Proposition'] }),
     getParticipants: builder.query<Participant[], string>({ query: (slug) => `/substrates/${slug}/participants`, transformResponse: data, providesTags: (result) => result ? [...result.map(({ id }) => ({ type: 'Participant' as const, id })), { type: 'Participant', id: 'LIST' }] : [{ type: 'Participant', id: 'LIST' }] }),
     joinParticipant: builder.mutation<Participant, JoinParticipantInput>({
@@ -136,11 +147,11 @@ export const commonsApi = createApi({
       ],
     }),
     getParticipant: builder.query<Participant, ParticipantParameters>({ query: ({ slug, participantId }) => `/substrates/${slug}/participants/${participantId}`, transformResponse: data, providesTags: (_result, _error, { participantId }) => [{ type: 'Participant', id: participantId }] }),
-    getParticipantPlan: builder.query<ParticipantPlan, ParticipantParameters>({ query: ({ slug, participantId }) => `/substrates/${slug}/participants/${participantId}/plan`, transformResponse: data }),
+    getParticipantPlan: builder.query<ParticipantPlan, ParticipantParameters>({ query: ({ slug, participantId }) => `/substrates/${slug}/participants/${participantId}/plan`, transformResponse: data, providesTags: (_result, _error, { participantId }) => [{ type: 'Participation', id: participantId }] }),
     getParticipation: builder.query<Participation, ParticipantParameters>({
       query: ({ slug, participantId }) => `/substrates/${slug}/participants/${participantId}/participate`,
       transformResponse: data,
-      providesTags: ['Participation'],
+      providesTags: (_result, _error, { participantId }) => [{ type: 'Participation', id: participantId }],
     }),
     contribute: builder.mutation<Participation, ParticipantParameters & { phaseId: Identifier; contribution: ContributionInput }>({
       query: ({ slug, participantId, phaseId, contribution }) => ({
@@ -259,6 +270,8 @@ export const {
   useGetParticipationQuery,
   useGetParticipantQuery,
   useGetParticipantsQuery,
+  useGetPropositionQuery,
+  useGetGraphSubscriptionsQuery,
   useGetPropositionsQuery,
   useGetSessionQuery,
   useGetSubstrateQuery,
