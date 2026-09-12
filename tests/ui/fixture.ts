@@ -38,13 +38,15 @@ if ([2, 3].includes(number)) {
   action('proposition.reclassify', {});
   action('proposition.revise', { proposition_id: { enum: cards.map(p => p.id) }, statement: {} }, ['proposition_id', 'statement']);
 }
-if ([4, 6].includes(number)) action('instrument.execute', { proposition_id: { enum: cards.map(p => p.id) }, instrument: {} }, ['proposition_id', 'instrument']);
+if ([3, 4, 6, 7].includes(number)) action('instrument.execute', { proposition_id: { enum: cards.map(p => p.id) }, instrument: {} }, ['proposition_id', 'instrument']);
 if (number === 5) action('proposition.reconcile', { other_proposition_id: { enum: candidates.slice(1).map(p => p.id) } }, ['other_proposition_id']);
 if (number === 6) action('proposition.bias', { proposition_id: { enum: candidates.map(p => p.id) } }, ['proposition_id']);
 if (number === 7 && active && cards.length) action('proposition.commit', { proposition_id: { enum: cards.map(p => p.id) } }, ['proposition_id']);
+const ancestry = [gate, ...Array.from({ length: 9 }, (_, index) => proposition(index + 20, readRegister)), provenance];
+ancestry.forEach((node, index) => { node.parent_ids = ancestry[index + 1] ? [ancestry[index + 1].id] : []; });
 const plan: ParticipantPlan = { gate, phase: { id: 'phase-' + kind, kind, number, write_register: write },
   workspace: { domain: 'settlement', provenance, registers: { [readRegister]: [proposition(30, readRegister)] } },
-  lineage: [provenance, ...Array.from({ length: 9 }, (_, index) => proposition(index + 20, readRegister))],
+  lineage: ancestry,
   read_options: Array.from({ length: 5 }, (_, index) => proposition(index + 30, readRegister)),
   write_options: cards, attestation_options: cards, traversal_options: cards, revision_options: cards, instrument_options: cards, gate_options: candidates,
   schema: { oneOf: Object.keys(actions).map(name => ({ $ref: '#/$defs/actions/' + name })), $defs: { actions } },

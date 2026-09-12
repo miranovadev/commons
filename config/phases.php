@@ -33,6 +33,7 @@ return [
         'actions' => [
             'proposition.revise',
             'proposition.reclassify',
+            'instrument.execute',
             'attestation.create',
             'proposition.traverse',
         ],
@@ -88,10 +89,11 @@ return [
     ],
     7 => [
         'name' => 'order',
-        'description' => 'Select a Commit Region Write candidate with aligned Depth/Cadence; commit when grounded or attest an eligible candidate.',
+        'description' => 'Select a Commit Region Write candidate with aligned Depth/Cadence; commit when grounded, ground with an Instrument, or attest an eligible candidate. Any successful contribution completes the Cycle.',
         'gate' => 'previous-phase-position',
         'actions' => [
             'proposition.commit',
+            'instrument.execute',
             'attestation.create',
         ],
         'constraints' => [

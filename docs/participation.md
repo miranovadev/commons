@@ -401,7 +401,7 @@ unchanged.
 Bundled reclassification/evidence gathering (`reclassify_with_receipt`, called
 `proposition.reclassify_with_instrument` in the previous schema) is removed.
 Reclassify has no Instrument field and creates no Receipt. Phase 3 now offers
-plain owner-constrained `proposition.reclassify`.
+plain owner-constrained `proposition.reclassify` and separate `instrument.execute`.
 
 During Bias, `instrument.execute` targets existing local Expressive Propositions
 in the Write register, including existing historical Concord/Canon and the Gate when
@@ -412,9 +412,10 @@ copy evidence; effective Attestation, completed Receipt and the existing
 Depth/Cadence Closure gate remain mandatory.
 
 The additive migration records Rest and replaces the unique Cycle/kind index
-with a nonunique index to allow multiple deliberate Order traversals. Rolling
-back after repeated Order occurrences requires resolving those occurrences
-first; the migration does not discard participation history.
+with a nonunique index. Historical repeated Order occurrences remain intact;
+new successful Order contributions never create another Order occurrence.
+Rolling back that historical migration requires resolving duplicate occurrences
+first; participation history is not discarded.
 
 ## Human Attestation controls
 
@@ -430,3 +431,24 @@ all participants, including Commit inheritance, beside the field values. These
 counts do not establish the current participant's traversal permissions.
 Violet Support spins clockwise and teal Refute counterclockwise; reduced-motion
 preferences disable animation.
+
+## Terminal Order and explicit next-Cycle entry
+
+Every successful valid Phase 7 / Order contribution completes the Phase and
+Cycle, including `attestation.create`, `instrument.execute` and
+`proposition.commit`. The Participant retains the resulting Proposition position.
+No replacement Order Phase or next Cycle is created. Natural completion leaves
+`rested_at` unset; `participant.rest` remains the distinct exhausted/Tragic Region
+termination action. Invalid contributions roll back without completing either.
+
+The returned waiting state has `plan: null`, normal `entry` availability/reason,
+and a `completion` identity for the most recent naturally completed Order Cycle.
+The workspace may retain its final loaded cards as a read-only presentation of
+that completion. **Return to Participants** navigates to the Substrate collection;
+**Enter another Cycle** uses the normal entry endpoint and stays disabled when
+entry is unavailable. Potential, recovery and current-position rules are unchanged.
+
+Instrument execution is configured in Constrain, Disperse, Bias and Order.
+`instrument_options` and specialised `proposition_id` enums remain authoritative;
+this change does not expand target validation or modify Receipt ownership.
+Order grounding completes this Cycle even if Commitment is not yet admissible.

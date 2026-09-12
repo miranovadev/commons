@@ -66,8 +66,8 @@ test('Mediate counterparts and unary Bias choices use their own schema-authorize
     } else {
       assert.match(gate, /data-bias-candidate="gate"/);
       assert.match(gate, /data-bias-candidate="sibling"/);
-      assert.equal([...write.matchAll(/>Bias<\/span>/g)].length, 1);
-      assert.doesNotMatch(gate, />Bias<\/span>/);
+      assert.equal([...gate.matchAll(/>Bias<\/span>/g)].length, 2);
+      assert.doesNotMatch(write, />Bias<\/span>/);
       assert.doesNotMatch(gate, /Reconcile/);
       assert.equal([...gate.matchAll(/Privileged Gate/g)].length, 1);
     }

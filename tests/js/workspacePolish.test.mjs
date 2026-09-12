@@ -101,19 +101,20 @@ test('navigation recognizes overflow, disables boundaries and advances by a card
   assert.doesNotMatch(ui.navigator(), /aria-label="(Previous|Next) Write"/);
 });
 
-test('contextual operations stay with their Proposition and generation lives inside Write', () => {
+test('Variant stays with Gate while revision stays with Write', () => {
   const html = ui.workspace('positive');
   const read = html.slice(html.indexOf('data-role="read"'), html.indexOf('data-role="gate"'));
   const gate = html.slice(html.indexOf('data-role="gate"'), html.indexOf('data-role="write"'));
   const write = html.slice(html.indexOf('data-role="write"'));
   assert.doesNotMatch(read, />Reclassify<\/span>|>Revise<\/span>|>Variant<\/span>/);
   assert.match(gate, />Reclassify<\/span>/);
-  assert.doesNotMatch(gate, />Revise<\/span>|>Variant<\/span>/);
-  assert.match(write, /aria-label="Generative Write actions"/);
-  assert.match(write, />Variant<\/span>/);
+  assert.doesNotMatch(gate, />Revise<\/span>/);
+  assert.match(gate, />Variant<\/span>/);
+  assert.doesNotMatch(html, /Generative Write actions|>Generate</);
+  assert.doesNotMatch(write, />Variant<\/span>/);
   assert.match(write, /data-action-region="middle"[\s\S]*>Revise<\/span>/);
   assert.doesNotMatch(write, />Reclassify<\/span>|>Supersession<\/span>/);
-  assert.ok(write.indexOf('Generative Write actions') < write.indexOf('Write context'));
+
 });
 
 test('compact metadata omits register transition prose while detailed inspection preserves it', () => {

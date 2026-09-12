@@ -318,6 +318,7 @@ final readonly class InputPlanService
                 'statement',
                 'created_at',
             ]),
+            'parent_ids' => $proposition->parents->pluck('id')->all(),
             'title' => str($proposition->statement)
                 ->before("\n")
                 ->trim()

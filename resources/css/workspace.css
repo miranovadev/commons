@@ -48,7 +48,6 @@
 .register-row__content { flex:1; min-height:0; min-width:0; overflow:visible; }
 .lane-empty { padding:.7rem; border:1px dashed light-dark(var(--mantine-color-gray-3),var(--mantine-color-dark-5)); border-radius:var(--mantine-radius-md); }
 .write-row__tools { flex:none; min-width:0; padding-bottom:.4rem; }
-.write-generative-actions { padding:.15rem .35rem .35rem; border-bottom:1px solid color-mix(in srgb,var(--register-color) 16%,transparent); }
 .operation-icon[data-operation="variant"],.operation-icon[data-operation="disperse"] { transform:rotate(180deg); }
 .operation-badge.mantine-Badge-root { text-transform:none; color:var(--mantine-color-dimmed); border-color:light-dark(var(--mantine-color-gray-3),var(--mantine-color-dark-4)); }
 .operation-badge .mantine-Badge-section { display:inline-flex; align-items:center; }
@@ -160,3 +159,10 @@ button.proposition-card:focus-visible,.proposition-navigator__viewport:focus-vis
 :where(.app-main,.commons-navbar,.operational-workspace,.proposition-navigator__viewport,.workspace-status__compact,.mantine-Modal-body,.mantine-Drawer-content,.mantine-Drawer-body)::-webkit-scrollbar { width:6px; height:6px; }
 :where(.app-main,.commons-navbar,.operational-workspace,.proposition-navigator__viewport,.workspace-status__compact,.mantine-Modal-body,.mantine-Drawer-content,.mantine-Drawer-body)::-webkit-scrollbar-thumb { background:transparent; border-radius:6px; }
 :where(.app-main,.commons-navbar,.operational-workspace,.proposition-navigator__viewport,.workspace-status__compact,.mantine-Modal-body,.mantine-Drawer-content,.mantine-Drawer-body):is(:hover,:focus-within)::-webkit-scrollbar-thumb { background:var(--mantine-color-dimmed); }
+
+.write-option-card__actions--directional { display:grid; grid-template-columns:1fr auto 1fr; gap:2px; }
+.write-option-card__side[data-action-region="right"] { justify-self:end; }
+.cycle-completion { grid-column:2; padding:.5rem; }
+.lineage-endpoint { align-self:flex-start; }
+.lineage-endpoint--present { align-self:flex-end; }
+@media (max-width:47.99em) { .cycle-completion { grid-column:1; } }
