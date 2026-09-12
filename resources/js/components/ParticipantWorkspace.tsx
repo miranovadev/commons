@@ -42,7 +42,7 @@ export function ParticipantWorkspace({ plan, availableActions, onAction, onSubmi
   const phaseNumber = preview?.number || plan.phase.number || phaseNumberFor(plan.phase.kind);
   const [inspection, setInspection] = useState<PropositionSelection | null>(null);
   useEffect(() => setInspection(null), [plan.phase.id, previewKind]);
-  const lineage = (plan.lineage || []).map(item => resolve(item, byId));
+  const lineage = plan.lineage || [];
   const lanes: Lane[] = preview ? (['read', 'gate', 'write'] as const).map(role => {
     const virtual = (preview.number === 1 && role !== 'write') || (preview.number === 2 && role === 'read');
     return { key: role, role, virtual, ...(virtual ? { meta: provenanceMeta } : { register: preview[role].register }) };

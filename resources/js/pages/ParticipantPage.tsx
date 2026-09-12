@@ -9,7 +9,7 @@ import { quickContribution } from '../participationOptions';
 import { ContributionForm } from '../components/ContributionForm';
 import { OriginCycleForm } from '../components/OriginCycleForm';
 import { ParticipantWorkspace } from '../components/ParticipantWorkspace';
-import { useContributeMutation, useEnterCycleMutation, useGetParticipantQuery, useGetParticipationQuery } from '../services/commonsApi';
+import { useContributeMutation, useEnterCycleMutation, useGetParticipantQuery, useGetParticipantWorkspaceQuery } from '../services/commonsApi';
 import type { ActionName, ContributionInitialValues, ContributionInput, OriginInput, ParticipantPlan, PhaseKind } from '../types';
 
 import { CycleCompletion } from '../components/CycleCompletion';
@@ -32,7 +32,7 @@ function ParticipantPositionPage({ slug, participantId }: { slug: string; partic
   const parameters = { slug, participantId };
   const [switcherOpened, setSwitcherOpened] = useState(false);
   const { data: participant, isLoading: participantLoading, error: participantError } = useGetParticipantQuery(parameters);
-  const { data: participation, isLoading: participationLoading, error: participationError } = useGetParticipationQuery(parameters);
+  const { data: participation, isLoading: participationLoading, error: participationError } = useGetParticipantWorkspaceQuery(parameters);
   useParticipantRealtime(slug, participantId, Boolean(participation) && !participationError);
   const [contribute, contribution] = useContributeMutation();
   const submitting = useRef(false);
@@ -108,7 +108,7 @@ function ParticipantPositionPage({ slug, participantId }: { slug: string; partic
             <ParticipantIdentity participant={participant} onSelect={() => setSwitcherOpened(true)} opened={switcherOpened} />
           </Box>
           {previewKind && <Group className="phase-preview-notice" justify="space-between" gap="xs">
-            <Text size="xs" c="dimmed" role="status">Read-only register preview · using loaded cards and lineage, not a historical snapshot.</Text>
+            <Text size="xs" c="dimmed" role="status">Read-only active lineage · showing the resolved history in each register.</Text>
             <Button size="compact-xs" variant="light" color="indigo" onClick={() => setPreviewSelection(null)}>Return to current Phase</Button>
           </Group>}
           <Box className="participant-cycle-content">

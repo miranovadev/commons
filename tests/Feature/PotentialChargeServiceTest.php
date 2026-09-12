@@ -55,6 +55,32 @@ class PotentialChargeServiceTest extends TestCase
         $this->assertSame(0.75, $selection['charge']);
     }
 
+    public function test_snapshot_presence_does_not_make_an_expressive_proposition_eligible(): void
+    {
+        [$substrate, $phase] = $this->substratePhase();
+        $eligible = $this->committal($substrate, $phase, 'Eligible commitment', 0.4);
+        // Even inconsistent historical snapshot data must not widen entry eligibility.
+        $expressive = $this->committal($substrate, $phase, 'Expressive with snapshot', 0.9);
+        $expressive->forceFill(['tier' => 'expressive'])->save();
+        $this->continuation($phase, $expressive, 'Attractive continuation', 0.0);
+
+        $selection = app(PotentialChargeService::class)->selectFor($substrate);
+
+        $this->assertTrue($selection['proposition']->is($eligible));
+        $this->assertSame(0.0, $selection['potential_charge']);
+    }
+
+    public function test_it_refuses_entry_when_only_expressive_snapshots_exist(): void
+    {
+        [$substrate, $phase] = $this->substratePhase();
+        $expressive = $this->committal($substrate, $phase, 'Invalid entry', 0.0);
+        $expressive->forceFill(['tier' => 'expressive'])->save();
+
+        $this->expectException(\DomainException::class);
+        $this->expectExceptionMessage('without a Committal Proposition');
+        app(PotentialChargeService::class)->selectFor($substrate);
+    }
+
     /** @return array{Substrate, Phase} */
     private function substratePhase(): array
     {
@@ -172,3 +198,4 @@ class PotentialChargeServiceTest extends TestCase
         return $proposition;
     }
 }
+

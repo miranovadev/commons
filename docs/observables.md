@@ -43,10 +43,36 @@ can add more mass; the shared denominator still keeps every result in [-1, 1].
 Preview and actual Commitment use the same geometry and denominator, including
 the prospective head. Hysteresis resolves the accumulated Depth/Cadence signs.
 
-Tension, Charge and Potential consume these results without another structural
-discount. Recovery retains its independent nearest-viable-distance-shell search
-and existing Charge/ID tie-breaks. Within that shell, continuation length does
-not discount Potential a second time.
+Tension, raw Charge and raw Potential consume these accumulated results without
+re-discounting continuation length. This evidence accumulation is distinct from
+observing a candidate from a Participant's position; it does not already encode
+that observer-to-candidate distance.
+
+### Potential observed from a Participant position
+
+Ordinary Cycle entry ranks eligible Committal Propositions by Potential Charge
+as observed from the Participant's retained position, including substrate
+attenuation. Raw global Potential Charge alone does not determine entry.
+
+For a candidate at shortest existing parent/child edge distance `d`, effective
+Potential Charge is `raw Potential Charge × a(d)`. Charge fallback uses
+`raw Charge × a(d)` with the same inverse-square weight defined above. This
+weights the destination score once; it neither recalculates the candidate's
+measurements from the observer nor changes immutable Commitment snapshots.
+
+Distance crosses Committal boundaries and counts historical Supersession edges,
+with each position visited once at its minimum distance. Only paths within the
+same Substrate count. Disconnected candidates cannot provide entry or fallback.
+The retained position has distance zero if it is itself Committal; an Expressive
+position informs distance but never becomes a candidate. Rank all reachable
+candidates by effective Potential, then effective Charge, then shorter distance
+and stable Proposition ID. Compare scores before rounding them for presentation.
+
+A Participant without a position uses the existing initial Potential/Charge/ID
+selection; no observer distance is invented. Rest recovery remains a separate
+nearest-viable-distance-shell search with its existing positive-Potential,
+exhausted-position exclusion and Charge/ID rules. It does not apply ordinary
+entry's destination weighting or zero-Potential fallback.
 
 For each raw comparison, the boundary Proposition remains a member of the closing Horizon. It acts as
 the provenance root for the next Horizon without being duplicated into its

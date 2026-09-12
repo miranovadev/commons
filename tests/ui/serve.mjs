@@ -17,7 +17,8 @@ const bundle = await build({ absWorkingDir: root, entryPoints: ['tests/ui/worksp
       export const useGetSessionQuery = () => ({ data: { has_system_access: true } });
       export const useGetParticipantsQuery = () => { useFixture(); return { data: previewParticipants }; };
       export const useGetParticipantQuery = ({ participantId }) => { useFixture(); return { data: previewParticipants.find(p => p.id === participantId) || fixture.participant }; };
-      export const useGetParticipationQuery = ({ participantId }) => { useFixture(); const data = previewStates[participantId] || fixture.participation; return { data, currentData: data }; };
+      export const useGetParticipationQuery = (...args) => useGetParticipantWorkspaceQuery(...args);
+export const useGetParticipantWorkspaceQuery = ({ participantId }) => { useFixture(); const data = previewStates[participantId] || fixture.participation; return { data, currentData: data }; };
       export const useContributeMutation = () => [input => ({ unwrap: async () => {
         const output = document.querySelector('[data-last-action]');
         if (output) output.textContent = JSON.stringify(input.contribution);

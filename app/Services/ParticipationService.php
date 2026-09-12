@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\LedgerEntryKind;
 use App\Enums\PhaseKind;
 use App\Models\CommitmentSnapshot;
+use App\Models\ContextHorizon;
 use App\Models\Cycle;
 use App\Models\Participant;
 use App\Models\Phase;
@@ -20,6 +21,8 @@ final readonly class ParticipationService
         private PhaseProgressionService $progression,
         private CycleEntryService $cycleEntry,
         private PotentialChargeService $potential,
+        private InputPlanService $plans,
+        private ParticipantContextSerializer $contextSerializer,
     ) {}
 
     /**
@@ -27,13 +30,24 @@ final readonly class ParticipationService
      */
     public function stateFor(Participant $participant): array
     {
-        $state = $this->currentStateFor($participant);
+        return $this->state($participant, false);
+    }
+
+    /** Human-only display state, fetched separately from autonomous participation. */
+    public function workspaceFor(Participant $participant): array
+    {
+        return $this->state($participant, true);
+    }
+
+    private function state(Participant $participant, bool $workspace): array
+    {
+        $state = $this->currentStateFor($participant, $workspace);
         $snapshot = CommitmentSnapshot::query()
             ->where('commitment_snapshots.substrate_id', $participant->substrate_id)
             ->whereHas('proposition.phase.cycle', fn ($query) => $query->where('participant_id', $participant->getKey()))
             ->join('substrate_ledger_entries as entry', 'entry.id', '=', 'commitment_snapshots.ledger_entry_id')
             ->orderByDesc('entry.sequence')->select('commitment_snapshots.*')->first();
-        $horizon = \App\Models\ContextHorizon::query()
+        $horizon = ContextHorizon::query()
             ->where('substrate_id', $participant->substrate_id)->whereNull('closed_at')->first();
 
         return [
@@ -56,7 +70,7 @@ final readonly class ParticipationService
     }
 
     /** @return array<string, mixed> */
-    private function currentStateFor(Participant $participant): array
+    private function currentStateFor(Participant $participant, bool $workspace): array
     {
         $cycle = Cycle::query()
             ->whereBelongsTo($participant)
@@ -102,14 +116,14 @@ final readonly class ParticipationService
             );
         }
 
-        $plan = $this->contributions->planFor($participant);
+        $plan = $workspace ? $this->plans->forWorkspace($participant) : $this->contributions->planFor($participant);
         $blocked = $phase->kind === PhaseKind::Order
             && ! isset($plan['schema']['$defs']['actions']['proposition.commit']);
 
         return [
             'status' => 'ready',
             'cycle' => $this->cycle($cycle),
-            'plan' => $plan,
+            'plan' => $workspace ? $plan : $this->contextSerializer->plan($plan),
             'perspective' => $this->perspective($participant),
             'reason' => $blocked ? [
                 'code' => 'commitment_preconditions_unsatisfied',
@@ -230,29 +244,33 @@ final readonly class ParticipationService
      */
     private function entryFor(Participant $participant): array
     {
-        if ($participant->fresh()->current_proposition_id !== null) {
-            if ($this->cycleEntry->needsRecovery($participant)) {
-                $selection = $this->potential->recoverFrom($participant->position()->firstOrFail());
-
-                return [
-                    'mode' => 'potential',
-                    'selection' => 'recovery',
-                    'available' => $selection !== null,
-                    'proposition_id' => ($selection['proposition'] ?? null)?->getKey(),
-                    'distance' => $selection['distance'] ?? null,
-                    'potential_charge' => $selection['potential_charge'] ?? 0.0,
-                    'message' => $selection === null
-                        ? 'Resting until a structurally reachable Committal region has positive Potential Charge.'
-                        : 'Begin the next Cycle at the nearest viable Committal distance.',
-                ];
-            }
+        $participant = $participant->fresh();
+        if ($participant->current_proposition_id !== null
+            && $this->cycleEntry->needsRecovery($participant)) {
+            $selection = $this->potential->recoverFrom($participant->position()->firstOrFail());
 
             return [
-                // Preserve the existing client entry contract; selection is local.
                 'mode' => 'potential',
-                'selection' => 'position',
-                'available' => true,
-                'message' => 'Continue from the Participant’s current substrate position.',
+                'selection' => 'recovery',
+                'available' => $selection !== null,
+                'proposition_id' => ($selection['proposition'] ?? null)?->getKey(),
+                'distance' => $selection['distance'] ?? null,
+                'potential_charge' => $selection['potential_charge'] ?? 0.0,
+                'message' => $selection === null
+                    ? 'Resting until a structurally reachable Committal region has positive Potential Charge.'
+                    : 'Begin the next Cycle at the nearest viable Committal distance.',
+            ];
+        }
+
+        if ($participant->current_proposition_id !== null) {
+            $selection = $this->potential->selectFrom($participant->position()->firstOrFail());
+
+            return [
+                'mode' => 'potential',
+                'available' => $selection !== null,
+                'message' => $selection === null
+                    ? 'Waiting for a structurally reachable measured Committal Proposition.'
+                    : 'Potential will select a Committal Gate as observed from the Participant’s current position.',
             ];
         }
 
@@ -264,6 +282,7 @@ final readonly class ParticipationService
         if ($hasOrigin) {
             $available = CommitmentSnapshot::query()
                 ->where('substrate_id', $participant->substrate_id)
+                ->whereHas('proposition', fn ($query) => $query->where('tier', 'committal'))
                 ->exists();
 
             return [
