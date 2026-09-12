@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { build } from 'esbuild';
 import { createRequire } from 'node:module';
@@ -6,6 +6,7 @@ import { setTimeout as wait } from 'node:timers/promises';
 import { Window } from 'happy-dom';
 
 const window = new Window({ url: 'http://localhost' });
+after(async () => { await window.happyDOM.close(); });
 for (const key of ['window', 'document', 'navigator', 'HTMLElement', 'Element', 'Node', 'ShadowRoot', 'MutationObserver', 'ResizeObserver']) {
   Object.defineProperty(globalThis, key, { configurable: true, value: key === 'window' ? window : window[key] });
 }
@@ -89,7 +90,7 @@ async function until(condition) {
 function container() { const el = document.createElement('div'); document.body.append(el); return el; }
 
 // Each test owns a mounted page and disposes every query/subscription afterwards.
-test('Graph fetches new nodes incrementally and both original and realtime nodes open the existing drawer', async () => {
+test('Graph fetches new nodes incrementally and both original and realtime nodes open the existing drawer', { timeout: 30000 }, async () => {
   const requests = [];
   const origin = proposition('Origin');
   globalThis.fetch = async request => {
@@ -125,7 +126,7 @@ test('Graph fetches new nodes incrementally and both original and realtime nodes
   assert.equal(live(), undefined);
 });
 
-test('an empty Graph discovers its first Horizon and a reconnect catches up missed nodes', async () => {
+test('an empty Graph discovers its first Horizon and a reconnect catches up missed nodes', { timeout: 30000 }, async () => {
   let horizons = []; let nodes = [];
   globalThis.fetch = async request => {
     const path = new URL(request.url).pathname;
@@ -147,7 +148,7 @@ test('an empty Graph discovers its first Horizon and a reconnect catches up miss
   assert.equal(live(), undefined);
 });
 
-test('Participant hook refreshes its state and releases the previous channel when switching or leaving', async () => {
+test('Participant hook refreshes its state and releases the previous channel when switching or leaving', { timeout: 30000 }, async () => {
   const requests = [];
   globalThis.fetch = async request => {
     const path = new URL(request.url).pathname; requests.push(path);
