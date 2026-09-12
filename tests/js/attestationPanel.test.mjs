@@ -46,9 +46,10 @@ test('main page submits a footer action once, retries failures and does not reop
       return renderToStaticMarkup(<MantineProvider env="test"><MemoryRouter><ParticipantPage /></MemoryRouter></MantineProvider>);
     }
   `, resolveDir: process.cwd(), loader: 'tsx' }, plugins: [{ name: 'participation-fixture', setup(build) {
+    build.onResolve({ filter: /\/realtime\/useRealtime$/ }, () => ({ path: 'realtime', namespace: 'fixture' }));
     build.onResolve({ filter: /\/services\/commonsApi$/ }, () => ({ path: 'api', namespace: 'fixture' }));
     build.onResolve({ filter: /\/components\/ParticipantWorkspace$/ }, () => ({ path: 'workspace', namespace: 'fixture' }));
-    build.onLoad({ filter: /.*/, namespace: 'fixture' }, ({ path }) => ({ contents: path === 'workspace'
+    build.onLoad({ filter: /.*/, namespace: 'fixture' }, ({ path }) => ({ contents: path === 'realtime' ? 'export const useParticipantRealtime = () => {};' : path === 'workspace'
       ? 'export function ParticipantWorkspace(props) { globalThis.attestationHarness.workspace = props; return null; }'
       : `export const useGetParticipantsQuery = () => ({ data: [] });
          export const useGetSessionQuery = () => ({ data: null });

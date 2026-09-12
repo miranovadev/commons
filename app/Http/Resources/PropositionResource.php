@@ -23,6 +23,12 @@ class PropositionResource extends JsonResource
 
         return [
             'id' => $this->getKey(),
+            'attestation_summary' => $this->when($this->attestation_summary !== null, $this->attestation_summary),
+            'instruments' => $this->whenLoaded('instrumentExecutions', fn () => $this->instrumentExecutions->map(fn ($execution) => [
+                'id' => $execution->id, 'kind' => $execution->kind,
+                'reference' => $execution->reference, 'status' => $execution->status,
+                'failure_reason' => $execution->failure_reason, 'receipt_id' => $execution->receipt?->id,
+            ])),
             'attestation_counts' => $this->whenLoaded('attestationCounts', fn () => $this->attestationCounts->all()),
             'title' => Str::limit($firstLine, 72),
             'statement' => $this->statement,
@@ -64,6 +70,7 @@ class PropositionResource extends JsonResource
                 'calculated_at' => $measurement?->calculated_at,
             ],
             'context_horizon' => $horizon === null ? null : [
+                'id' => $horizon->id,
                 'sequence' => $horizon->sequence,
                 'domain' => $horizon->domain->value,
             ],

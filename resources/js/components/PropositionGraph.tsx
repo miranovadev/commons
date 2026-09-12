@@ -1,3 +1,5 @@
+import { PropositionInspector } from './PropositionInspector';
+import { useGetPropositionQuery } from '../services/commonsApi';
 import { Box, Group, Paper, Text, ThemeIcon, Title } from '@mantine/core';
 import { IconArrowsMove, IconSparkles } from '@tabler/icons-react';
 import { useMemo, useRef, useState } from 'react';
@@ -7,6 +9,7 @@ import type { Identifier, Proposition } from '../types';
 
 interface GraphProps {
   propositions: Proposition[];
+  substrateSlug?: string;
   initialFocusId?: Identifier | null;
   perspectiveLimit?: number;
   participantMode?: boolean;
@@ -25,12 +28,13 @@ const COLUMN_GAP = 54;
 const ROW_GAP = 96;
 const CANVAS_PADDING = 90;
 
-export function PropositionGraph({ propositions, initialFocusId, perspectiveLimit, participantMode = false }: GraphProps) {
+export function PropositionGraph({ propositions, substrateSlug, initialFocusId, perspectiveLimit, participantMode = false }: GraphProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const dragState = useRef<DragState | null>(null);
   const [dragging, setDragging] = useState(false);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [selectedId, setSelectedId] = useState(initialFocusId || null);
+  const [inspectedId, setInspectedId] = useState<Identifier | null>(null);
   const layout = useMemo(() => buildGraphLayout(propositions), [propositions]);
 
   if (!layout.origin) {
@@ -75,6 +79,8 @@ export function PropositionGraph({ propositions, initialFocusId, perspectiveLimi
 
   return (
     <Box className="substrate-graph-shell">
+      {inspectedId && <GraphInspector key={`${substrateSlug}/${inspectedId}`} slug={substrateSlug} propositionId={inspectedId}
+        fallback={propositions.find(item => item.id === inspectedId)} onClose={() => setInspectedId(null)} />}
       <Group className="substrate-graph-hint" gap={6} wrap="nowrap">
         <IconArrowsMove size={14} />
         <Text size="xs" c="dimmed">Drag the surface to explore</Text>
@@ -113,7 +119,7 @@ export function PropositionGraph({ propositions, initialFocusId, perspectiveLimi
                 proposition={proposition}
                 mini
                 selected={selectedId === proposition.id}
-                onClick={() => setSelectedId(proposition.id)}
+                onClick={() => { setSelectedId(proposition.id); setInspectedId(proposition.id); }}
               />
               {proposition.is_origin && <Text className="substrate-graph-origin-label" size="10px" c="indigo" fw={700}>ORIGIN</Text>}
             </Box>
@@ -193,4 +199,13 @@ function buildGraphLayout(propositions: Proposition[]) {
   });
 
   return { origin, nodes, edges, width, height };
+}
+
+/** Reuses the workspace drawer; fetched detail also lives in RTK Query. */
+function GraphInspector({ slug, propositionId, fallback, onClose }: {
+  slug?: string; propositionId: Identifier; fallback?: Proposition; onClose: () => void;
+}) {
+  const { data, error } = useGetPropositionQuery({ slug: slug || '', propositionId }, { skip: !slug, refetchOnMountOrArgChange: true });
+  const proposition = data || fallback;
+  return <PropositionInspector selection={proposition ? { kind: 'graph', proposition } : null} onClose={onClose} error={error} />;
 }

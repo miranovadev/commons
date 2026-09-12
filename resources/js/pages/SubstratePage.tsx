@@ -1,3 +1,4 @@
+import { useContextHorizonRealtime } from '../realtime/useRealtime';
 import { Alert, Badge, Box, Breadcrumbs, Button, Group, LoadingOverlay, Stack, Text, Title } from '@mantine/core';
 import { IconAlertCircle, IconArrowRight, IconTopologyStar3, IconUserHexagon, IconUsers } from '@tabler/icons-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
@@ -12,6 +13,7 @@ export function SubstratePage({ user }: { user?: User | null }) {
   const navigate = useNavigate();
   const { data: substrate, isLoading, error: substrateError } = useGetSubstrateQuery(slug);
   const { data: propositions = [], error: propositionsError } = useGetPropositionsQuery(slug);
+  useContextHorizonRealtime(slug, Boolean(substrate) && !substrateError);
   const error = substrateError || propositionsError;
 
   return (
@@ -42,7 +44,7 @@ export function SubstratePage({ user }: { user?: User | null }) {
                 </Group>
               </Stack>
             </Box>
-            <Box className="substrate-view__graph"><PropositionGraph propositions={propositions} /></Box>
+            <Box className="substrate-view__graph"><PropositionGraph propositions={propositions} substrateSlug={slug} /></Box>
           </>
         )}
       </Box>

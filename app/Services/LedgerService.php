@@ -74,6 +74,20 @@ final readonly class LedgerService
                 $this->horizons->include($entry);
             }
 
+            if (! $wasRecorded) {
+                $realtime = app(RealtimePublisher::class);
+                if ($ledgerable instanceof Proposition) {
+                    $realtime->proposition($ledgerable->getKey(), 'proposition.created');
+                } elseif ($ledgerable instanceof Attestation) {
+                    $realtime->proposition($ledgerable->proposition_id, 'attestation.created');
+                } elseif ($ledgerable instanceof Supersession) {
+                    $realtime->proposition($ledgerable->source_proposition_id);
+                    $realtime->proposition($ledgerable->target_proposition_id);
+                } elseif ($ledgerable instanceof Receipt) {
+                    $realtime->proposition($ledgerable->instrumentExecution->proposition_id);
+                }
+            }
+
             return $entry;
         });
     }
