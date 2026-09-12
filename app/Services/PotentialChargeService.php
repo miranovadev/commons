@@ -27,6 +27,7 @@ final readonly class PotentialChargeService
     {
         $snapshots = CommitmentSnapshot::query()
             ->whereBelongsTo($substrate)
+            ->whereHas('proposition', fn ($query) => $query->where('tier', 'committal'))
             ->with('proposition')
             ->get();
 
@@ -222,3 +223,4 @@ final readonly class PotentialChargeService
         return round(max(0, $potential), 7);
     }
 }
+

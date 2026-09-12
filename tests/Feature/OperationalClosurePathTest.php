@@ -211,6 +211,85 @@ class OperationalClosurePathTest extends TestCase
         }
         $this->assertSame($state['last_commitment'], $this->state($builder)['last_commitment']);
         $this->assertSame(2, CommitmentSnapshot::count());
+
+        // A real successful Commit may be followed by a fresh Cycle. Selection
+        // can choose either eligible commitment, but never the expressive head.
+        $restart = app(ParticipationService::class)->enter($builder);
+        $entry = $this->gate($restart);
+        $this->assertSame('committal', $entry->tier);
+        $this->assertContains($entry->id, [$origin->id, $committed->id]);
+        $fresh = $this->gate($this->move($builder, ['action' => 'proposition.variant', 'statement' => 'A fresh beginning.']));
+        $this->assertSame([$entry->id], $fresh->parents()->pluck('propositions.id')->all());
+        foreach (Proposition::where('tier', 'expressive')->get() as $proposition) {
+            $this->assertExpressiveDepth($proposition, 6);
+        }
+    }
+
+    public function test_another_participant_reenters_before_layer_six_is_committed(): void
+    {
+        $this->substrate = new Substrate;
+        $this->substrate->forceFill([
+            'slug' => 'concurrent-entry', 'title' => 'Concurrent Cycle entry',
+            'visibility' => 'public', 'configuration' => [],
+        ])->save();
+        $author = $this->participant('author');
+        $origin = $this->gate(app(ParticipationService::class)->enter($author, [
+            'statement' => 'A shared Origin.',
+            'attestation' => ['direction' => 'support'],
+            'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/origin'],
+        ]));
+        $signal = $this->gate($this->move($author, ['action' => 'proposition.variant', 'statement' => 'Signal']));
+        $earlyStance = $this->gate($this->move($author, ['action' => 'proposition.variant', 'statement' => 'Stance']));
+        $read = $this->gate($this->move($author, ['action' => 'proposition.reclassify', 'statement' => 'Concord Read']));
+        $left = $this->gate($this->move($author, ['action' => 'proposition.variant', 'statement' => 'Dispersed Signal']));
+        $builder = $this->participant('builder');
+        $this->reachDisperse($builder, $signal, $earlyStance, $read);
+        $this->move($builder, ['action' => 'proposition.variant', 'statement' => 'Other Signal']);
+        $stance = $this->gate($this->move($builder, ['action' => 'proposition.reconcile', 'other_proposition_id' => $left->id]));
+        $this->move($author, ['action' => 'attestation.create', 'proposition_id' => $stance->id, 'direction' => 'support']);
+        $concord = $this->gate($this->move($builder, ['action' => 'proposition.bias', 'proposition_id' => $stance->id]));
+
+        // Builder remains in Order. Author completes Order by grounding the same
+        // expressive Concord, then re-enters before Builder has committed it.
+        $this->move($author, ['action' => 'attestation.create', 'proposition_id' => $concord->id, 'direction' => 'support']);
+        $completed = $this->move($author, [
+            'action' => 'instrument.execute', 'proposition_id' => $concord->id,
+            'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/concord'],
+        ]);
+        $this->assertSame('waiting', $completed['status']);
+        $this->assertSame($concord->id, $author->fresh()->current_proposition_id);
+        $this->assertSame('order', $this->state($builder)['plan']['phase']['kind']);
+        $this->assertSame(1, CommitmentSnapshot::count());
+        $this->assertExpressiveDepth($concord, 6);
+
+        $state = app(ParticipationService::class)->enter($author);
+        $this->assertSame($origin->id, $state['plan']['gate']['id']);
+        $this->assertSame('committal', $state['plan']['gate']['tier']);
+        $this->assertSame('distinguish', $state['plan']['phase']['kind']);
+        $newSignal = $this->gate($this->move($author, ['action' => 'proposition.variant', 'statement' => 'Fresh Cycle Signal']));
+        $this->assertSame('signal', $newSignal->register);
+        $this->assertSame([$origin->id], $newSignal->parents()->pluck('propositions.id')->all());
+        $this->assertDatabaseMissing('supersessions', [
+            'source_proposition_id' => $concord->id,
+            'target_proposition_id' => $newSignal->id,
+        ]);
+        foreach (Proposition::where('tier', 'expressive')->get() as $proposition) {
+            $this->assertExpressiveDepth($proposition, 6);
+        }
+    }
+
+    /** Check every parent branch, including both Reconcile sources. */
+    private function assertExpressiveDepth(Proposition $proposition, int $remaining): void
+    {
+        if ($proposition->tier === 'committal') {
+            return;
+        }
+        $this->assertGreaterThan(0, $remaining, 'More than six consecutive expressive tiers.');
+        $parents = $proposition->parents()->get();
+        $this->assertNotEmpty($parents);
+        foreach ($parents as $parent) {
+            $this->assertExpressiveDepth($parent, $remaining - 1);
+        }
     }
 
     private function assertCommitRejected(Participant $participant, string $reason): void
@@ -264,3 +343,4 @@ class OperationalClosurePathTest extends TestCase
         return Proposition::findOrFail($state['plan']['gate']['id']);
     }
 }
+

@@ -59,23 +59,84 @@ class LocalParticipantNavigationTest extends TestCase
         $this->assertSame($best->id, $this->state($participant)['plan']['gate']['id']);
     }
 
-    public function test_new_cycles_keep_position_even_when_a_distant_region_has_higher_potential(): void
+    public function test_each_ordinary_cycle_ranks_committal_entries_even_when_a_position_is_retained(): void
     {
         $position = $this->node('Current', 0.0);
         $participant = $this->participant('returning', $position);
-        $this->region('Unconnected global maximum', 1.0);
+        $best = $this->region('Unconnected global maximum', 1.0);
 
         app(CycleEntryService::class)->enter($participant);
-        $this->assertSame($position->id, $this->state($participant)['plan']['gate']['id']);
+        $this->assertSame($best->id, $this->state($participant)['plan']['gate']['id']);
         $phase = $participant->cycles()->latest('sequence')->first()->phases()->first();
         $phase->completed_at = now();
         $phase->save();
         $phase->cycle->completed_at = now();
         $phase->cycle->save();
+        $this->refreshFixtureMeasurements();
         app(CycleEntryService::class)->enter($participant);
 
-        $this->assertSame($position->id, $this->state($participant)['plan']['gate']['id']);
+        $this->assertSame($best->id, $this->state($participant)['plan']['gate']['id']);
         $this->assertSame(2, $participant->cycles()->count());
+    }
+
+    public function test_zero_potential_ties_never_reuse_the_latest_expressive_position(): void
+    {
+        $first = $this->node('First commitment', 0.0);
+        $second = $this->node('Second commitment', 0.0);
+        $expressive = $this->node('Latest expressive position', 0.0, 'expressive');
+        $this->edge($first, $expressive);
+        $participant = $this->participant('returning', $expressive);
+        $phase = $this->phase($participant, $expressive);
+        $phase->forceFill(['kind' => PhaseKind::Order, 'completed_at' => now()])->save();
+        $phase->cycle->forceFill(['completed_at' => now()])->save();
+        $this->refreshFixtureMeasurements();
+
+        $waiting = $this->state($participant);
+        $this->assertTrue($waiting['entry']['available']);
+        $this->assertNotSame('position', $waiting['entry']['selection'] ?? null);
+        $this->assertSame($expressive->id, $participant->fresh()->current_proposition_id);
+        app(CycleEntryService::class)->enter($participant);
+
+        $gate = $this->state($participant)['plan']['gate'];
+        $this->assertSame('committal', $gate['tier']);
+        $this->assertSame(min($first->id, $second->id), $gate['id']);
+    }
+
+    public function test_a_new_commitment_can_win_reentry_and_seed_a_fresh_variant(): void
+    {
+        $origin = $this->node('Established commitment', 0.8);
+        $concord = $this->node('Expressive Concord', 0.8, 'expressive');
+        $concord->forceFill(['register' => 'canon'])->save();
+        $this->edge($origin, $concord);
+        $committed = $this->node('New commitment', 0.0);
+        $edge = new Supersession;
+        $edge->forceFill([
+            'phase_id' => $this->authorPhase->id,
+            'source_proposition_id' => $concord->id,
+            'target_proposition_id' => $committed->id,
+            'type' => 'commit',
+        ])->save();
+        $participant = $this->participant('returning', $concord);
+        $this->refreshFixtureMeasurements();
+
+        app(CycleEntryService::class)->enter($participant);
+        $state = $this->state($participant);
+        $this->assertSame($committed->id, $state['plan']['gate']['id']);
+        $next = app(ParticipationService::class)->contribute(
+            $participant, $state['plan']['phase']['id'],
+            ['action' => 'proposition.variant', 'statement' => 'A new expressive tier one.'],
+        );
+
+        $this->assertSame('expressive', $next['plan']['gate']['tier']);
+        $this->assertDatabaseHas('supersessions', [
+            'source_proposition_id' => $committed->id,
+            'target_proposition_id' => $next['plan']['gate']['id'],
+            'type' => 'variant',
+        ]);
+        $this->assertDatabaseMissing('supersessions', [
+            'source_proposition_id' => $concord->id,
+            'target_proposition_id' => $next['plan']['gate']['id'],
+        ]);
     }
 
     public function test_normal_expressive_participation_updates_persisted_position_without_traversal(): void
@@ -453,3 +514,4 @@ class LocalParticipantNavigationTest extends TestCase
     }
 
 }
+

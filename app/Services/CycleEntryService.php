@@ -13,6 +13,7 @@ use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Substrate;
 use App\Models\SubstrateLedgerEntry;
+use DomainException;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
@@ -31,7 +32,7 @@ final readonly class CycleEntryService
 
     /**
      * Establish the substrate's Origin and place the Participant at the first
-     * live Settlement Cycle. Entry selection only establishes initial position.
+     * live Settlement Cycle. Every live Cycle selects a Committal entry position.
      *
      * @param  array<string, mixed>|null  $origin
      */
@@ -51,19 +52,16 @@ final readonly class CycleEntryService
                 );
             }
 
-            if ($lockedParticipant->current_proposition_id !== null) {
-                $gate = $lockedParticipant->position()->firstOrFail();
-                if ($this->needsRecovery($lockedParticipant)) {
-                    $selection = $this->potential->recoverFrom($gate);
-                    if ($selection === null) {
-                        throw new ConflictHttpException('No structurally reachable Committal region has positive Potential Charge.');
-                    }
-                    $gate = $selection['proposition'];
+            if ($lockedParticipant->current_proposition_id !== null
+                && $this->needsRecovery($lockedParticipant)) {
+                $selection = $this->potential->recoverFrom($lockedParticipant->position()->firstOrFail());
+                if ($selection === null) {
+                    throw new ConflictHttpException('No structurally reachable Committal region has positive Potential Charge.');
                 }
                 $this->createLiveCycle(
                     $lockedParticipant,
                     $substrate,
-                    $gate,
+                    $selection['proposition'],
                 );
 
                 return;
@@ -146,6 +144,10 @@ final readonly class CycleEntryService
         Substrate $substrate,
         Proposition $gate,
     ): void {
+        if ($gate->tier !== 'committal') {
+            throw new DomainException('A Cycle must begin from a Committal Proposition.');
+        }
+
         $participant->current_proposition_id = $gate->getKey();
         $participant->save();
         $cycle = $this->createCycle($participant);
@@ -255,3 +257,4 @@ final readonly class CycleEntryService
         $this->instruments->execute($phase, $proposition, $input);
     }
 }
+

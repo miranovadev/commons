@@ -127,6 +127,17 @@ lineage, ancestry, ownership, provenance, gate semantics, and participant positi
 Measurements and derived values may select, compare, or rank candidates within
 a valid structural scope, but must not silently redefine that scope.
 
+## 11. Cycles Begin at Committal Propositions
+
+A Cycle begins from a Committal Proposition. Expressive Propositions cannot serve
+as Cycle entry points. Potential Charge ranks eligible Committal Propositions;
+any entry fallback must remain within that eligible population. A prospective
+Commitment is not eligible until the Committal Proposition exists.
+
+Under normal Phase progression, there may be at most six consecutive Expressive
+Proposition tiers between Committal Propositions. A new Committal Proposition may
+seed fresh Phase 1 branches, including branches from multiple Participants.
+
 ## Relationship to More Specific Rules
 
 These invariants govern more detailed operational rules; they do not replace
@@ -145,3 +156,4 @@ constraints:
 
 When ambiguity arises, prefer the interpretation that preserves these invariants
 rather than inferring semantics from current code behaviour.
+

@@ -38,12 +38,12 @@ Phase in the Settlement `signal` register.
 
 Origin entry is serialized on the Substrate. A concurrent or repeated request
 receives HTTP 409 and cannot create a second Origin. For an established
-substrate, POST an empty JSON object to `/participate/enter`. For a Participant without a position, Potential selects the Committal
-Proposition with the highest Potential Charge and persists it as the initial
-position. Subsequent Cycles start at `participants.current_proposition_id`;
-they never run global entry selection again. Successful contributions persist
-the resulting Gate, including the final commitment. Existing Participants are
-backfilled from their latest Phase or completed Committal write.
+substrate, POST an empty JSON object to `/participate/enter`. Initial entry and
+ordinary re-entry select the Committal Proposition with the highest Potential
+Charge and persist it as the new Cycle's position. Expressive Propositions are
+never entry candidates, even when retained as the Participant's latest position.
+Successful contributions still persist their resulting Gate within the Cycle.
+Rest recovery retains its nearest viable Committal region rules below.
 
 Potential Charge is `max(0, max(|T| - |T_c|))`, where `T` is the Committal
 state's immutable Tension and `T_c` is the projected Tension of each measurable
@@ -262,8 +262,8 @@ Proposition measurements are averaged with inverse-square weights
 Every visited position contributes denominator weight. Potential uses these
 accumulated measurements without another observer-distance or continuation-length
 discount. Another Committal still stops the outgoing continuation search.
-Immutable snapshot Tension remains the historical baseline. Initial entry keeps
-its existing global Potential/Charge ranking; recovery preserves its nearest
+Immutable snapshot Tension remains the historical baseline. Initial entry and ordinary re-entry use
+global Potential/Charge ranking; recovery preserves its nearest
 viable region search. See [observables](observables.md) for the full calculation.
 
 Order returns an actionable `ready` plan even when Commit is inadmissible.
@@ -446,9 +446,11 @@ and a `completion` identity for the most recent naturally completed Order Cycle.
 The workspace may retain its final loaded cards as a read-only presentation of
 that completion. **Return to Participants** navigates to the Substrate collection;
 **Enter another Cycle** uses the normal entry endpoint and stays disabled when
-entry is unavailable. Potential, recovery and current-position rules are unchanged.
+entry is unavailable. Every new Cycle selects a Committal entry; retaining a
+completed expressive position does not make it eligible for re-entry.
 
 Instrument execution is configured in Constrain, Disperse, Bias and Order.
 `instrument_options` and specialised `proposition_id` enums remain authoritative;
 this change does not expand target validation or modify Receipt ownership.
 Order grounding completes this Cycle even if Commitment is not yet admissible.
+
