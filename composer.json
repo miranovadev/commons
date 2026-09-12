@@ -9,6 +9,7 @@
         "php": "^8.3",
         "aws/aws-sdk-php": "^3.394",
         "laravel/framework": "^13.0",
+        "laravel/octane": "^2.19",
         "laravel/reverb": "^1.0",
         "laravel/tinker": "^3.0",
         "opis/json-schema": "^2.6"
