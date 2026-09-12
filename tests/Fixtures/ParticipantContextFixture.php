@@ -5,6 +5,7 @@ namespace Tests\Fixtures;
 use App\Enums\ObservableDirection;
 use App\Enums\PhaseKind;
 use App\Models\Attestation;
+use App\Models\ContextHorizon;
 use App\Models\Cycle;
 use App\Models\Participant;
 use App\Models\Phase;
@@ -14,6 +15,7 @@ use App\Models\Supersession;
 use App\Services\CommitRegionPolarityService;
 use App\Services\InstrumentExecutionService;
 use App\Services\LedgerService;
+use Illuminate\Support\Facades\DB;
 
 /** Persisted history, three live registers, evidence, and unrelated Horizon growth. */
 final class ParticipantContextFixture
@@ -133,8 +135,37 @@ final class ParticipantContextFixture
             $this->unrelatedSeed = $this->node($source, 'canon', 'commit', 'committal');
             app(CommitRegionPolarityService::class)->establishCommit($this->unrelatedSeed, ObservableDirection::Positive);
         }
+        // These nodes are intentionally outside the tested operation. Bulk-load
+        // complete storage history rather than replaying thousands of unrelated
+        // fixture setup queries. The real context/workspace services still run.
+        $phases = $nodes = $edges = $ledger = $memberships = [];
+        $horizonId = ContextHorizon::where('substrate_id', $this->substrate->id)->whereNull('closed_at')->value('id');
+        $sequence = (int) DB::table('substrate_ledger_entries')->where('substrate_id', $this->substrate->id)->max('sequence');
         while (count($this->unrelated) < $count) {
-            $this->unrelated[] = $this->node($this->unrelatedSeed, ['activity', 'frontier', 'canon'][count($this->unrelated) % 3])->id;
+            $phaseId = strtolower((string) str()->ulid());
+            $nodeId = strtolower((string) str()->ulid());
+            $edgeId = strtolower((string) str()->ulid());
+            $entryId = strtolower((string) str()->ulid());
+            $register = ['activity', 'frontier', 'canon'][count($this->unrelated) % 3];
+            $timestamps = ['created_at' => now(), 'updated_at' => now()];
+            $phases[] = [...$timestamps, 'id' => $phaseId, 'cycle_id' => $this->history->id, 'kind' => PhaseKind::Distinguish->value,
+                'write_register' => $register, 'gate_proposition_id' => $this->unrelatedSeed->id, 'started_at' => now(), 'completed_at' => now()];
+            $nodes[] = [...$timestamps, 'id' => $nodeId, 'phase_id' => $phaseId, 'register' => $register,
+                'tier' => 'expressive', 'statement' => $this->unrelatedSeed->statement];
+            $edges[] = [...$timestamps, 'id' => $edgeId, 'phase_id' => $phaseId, 'type' => 'variant',
+                'source_proposition_id' => $this->unrelatedSeed->id, 'target_proposition_id' => $nodeId];
+            $ledger[] = ['id' => $entryId, 'substrate_id' => $this->substrate->id, 'sequence' => ++$sequence,
+                'kind' => 'proposition', 'ledgerable_type' => (new Proposition)->getMorphClass(), 'ledgerable_id' => $nodeId, 'recorded_at' => now()];
+            $ledger[] = ['id' => strtolower((string) str()->ulid()), 'substrate_id' => $this->substrate->id, 'sequence' => ++$sequence,
+                'kind' => 'supersession', 'ledgerable_type' => (new Supersession)->getMorphClass(), 'ledgerable_id' => $edgeId, 'recorded_at' => now()];
+            $memberships[] = ['proposition_id' => $nodeId, 'context_horizon_id' => $horizonId, 'ledger_entry_id' => $entryId, 'projected_at' => now()];
+            $this->unrelated[] = $nodeId;
+        }
+        foreach (['phases' => $phases, 'propositions' => $nodes, 'supersessions' => $edges,
+            'substrate_ledger_entries' => $ledger, 'context_horizon_memberships' => $memberships] as $table => $rows) {
+            foreach (array_chunk($rows, 100) as $chunk) {
+                DB::table($table)->insert($chunk);
+            }
         }
     }
 }
