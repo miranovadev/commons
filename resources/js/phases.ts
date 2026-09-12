@@ -10,3 +10,6 @@ export const phaseMeta = {
   bias: { number: 6, icon: IconAdjustmentsHorizontal, description: 'Carry forward a Proposition aligned with the population, add evidence or attest a continuation.' },
   order: { number: 7, icon: IconLock, description: 'Commit a grounded candidate with aligned Depth and Cadence, or attest an eligible continuation.' },
 };
+
+export const phaseOrder = Object.keys(phaseMeta) as Array<keyof typeof phaseMeta>;
+export function phaseTitle(kind: keyof typeof phaseMeta) { return kind.charAt(0).toUpperCase() + kind.slice(1); }

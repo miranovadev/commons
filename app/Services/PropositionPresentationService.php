@@ -13,6 +13,7 @@ final readonly class PropositionPresentationService
         private PropositionStateService $state,
         private CommitRegionService $regions,
         private CommitRegionPolarityService $polarity,
+        private AttestationEvidenceService $evidence,
     ) {}
 
     /** Stable display source only; never changes ancestry or calculation order. */
@@ -40,13 +41,14 @@ final readonly class PropositionPresentationService
         });
     }
 
-    /** @return array{support_direction: ?string, positive: int, negative: int} */
+    /** @return array{support_direction: ?string, retained_direction: string, positive: int, negative: int} */
     public function attestations(Proposition $position, ?ParticipationContext $context = null): array
     {
         $calculate = function () use ($position, $context): array {
             $seed = $this->regions->seedFor($position, $context);
             $summary = ['support_direction' => $seed === null ? null : $this->polarity->forSeed($seed, $context)['support']->value,
-                'positive' => 0, 'negative' => 0];
+                'positive' => 0, 'negative' => 0,
+                'retained_direction' => $this->evidence->directionFor($position, context: $context)->value];
             // Counts describe unweighted effective Attestations. Receipts and
             // hysteresis still belong to the existing evidence calculators.
             foreach ($this->state->attestations(collect([$position]), $context)->groupBy('proposition_id') as $sourceId => $attestations) {

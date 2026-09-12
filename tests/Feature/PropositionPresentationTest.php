@@ -56,7 +56,7 @@ class PropositionPresentationTest extends TestCase
     {
         $this->bootstrap($label);
         $plan = app(InputPlanService::class)->forParticipant($this->participant);
-        $this->assertSame(['support_direction' => $support->value, 'positive' => 1, 'negative' => 0], $plan['gate']['attestation_summary']);
+        $this->assertSame(['support_direction' => $support->value, 'positive' => 1, 'negative' => 0, 'retained_direction' => 'positive'], $plan['gate']['attestation_summary']);
         $this->assertSame(1, $plan['gate']['attestation_counts'][$label]);
         $this->assertEquals(-1, $plan['gate']['observables']['chirality']);
     }
@@ -72,13 +72,32 @@ class PropositionPresentationTest extends TestCase
         $phase = $this->phase(PhaseKind::Distinguish, 'signal', $commit);
         $presentation = app(PropositionPresentationService::class);
         $context = new ParticipationContext($phase);
-        $expected = ['support_direction' => 'negative', 'positive' => 1, 'negative' => 1];
+        $expected = ['support_direction' => 'negative', 'positive' => 1, 'negative' => 1, 'retained_direction' => 'negative'];
         $this->assertSame($expected, $presentation->attestations($commit));
         $this->assertSame($expected, $presentation->attestations($commit, $context));
         $this->attest($source, 'support', $original);
         $fresh = new ParticipationContext($phase);
-        $this->assertSame(['support_direction' => 'negative', 'positive' => 2, 'negative' => 0], $presentation->attestations($commit, $fresh));
+        $this->assertSame(['support_direction' => 'negative', 'positive' => 2, 'negative' => 0, 'retained_direction' => 'positive'], $presentation->attestations($commit, $fresh));
         $this->assertSame($expected, $presentation->attestations($commit, $context));
+    }
+
+    public function test_zero_and_tied_counts_expose_the_existing_retained_direction_without_context_queries(): void
+    {
+        $this->bootstrap();
+        $source = $this->node('stance', $this->origin);
+        $presentation = app(PropositionPresentationService::class);
+        $this->assertSame('positive', $presentation->attestations($source)['retained_direction']);
+        $this->attest($source, 'refute');
+        $this->attest($source, 'support');
+        $expected = ['support_direction' => 'positive', 'positive' => 1, 'negative' => 1, 'retained_direction' => 'negative'];
+        $this->assertSame($expected, $presentation->attestations($source));
+        $context = new ParticipationContext($this->phase(PhaseKind::Constrain, 'concord', $source));
+        DB::enableQueryLog();
+        DB::flushQueryLog();
+        $this->assertSame($expected, $presentation->attestations($source, $context));
+        $queries = DB::getQueryLog();
+        DB::disableQueryLog();
+        $this->assertCount(0, $queries);
     }
 
     public function test_reconciliation_display_source_is_stable_when_hydration_order_changes(): void

@@ -1,6 +1,6 @@
 import { Box, Button, Group, Stack, Text, ThemeIcon } from '@mantine/core';
 import { IconArrowDown, IconArrowLeft, IconArrowRight, IconEye, IconPencil, IconRoute, IconSeedling, IconTool } from '@tabler/icons-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { domainForRegister, metaForRegister } from '../registers';
 import { actionPropositions, actionTargetIds, attestationDirections, writePropositions } from '../participationOptions';
 import { directionSlots } from '../directionalPresentation';
@@ -22,11 +22,11 @@ const roleMeta = {
   write: { label: 'Write', description: 'Where we can go', icon: IconPencil },
 };
 const provenanceMeta = { label: 'Provenance', description: 'The inherited proposition from which this cycle begins.', color: 'indigo', icon: IconSeedling };
-const generativeActions = { 'proposition.variant': 'Variant', 'proposition.reconcile': 'Reconcile', 'proposition.bias': 'Bias' } as const;
+const generativeActions = { 'proposition.variant': 'Variant', 'proposition.bias': 'Bias' } as const;
 
-export function ParticipantWorkspace({ plan, availableActions, onAction, onSubmit, busy = false, error }: {
+export function ParticipantWorkspace({ plan, availableActions, onAction, onSubmit, busy = false, error, status }: {
   plan: ParticipantPlan; availableActions: ActionName[]; onAction: ActionHandler;
-  onSubmit?: (input: ContributionInput) => Promise<boolean>; busy?: boolean; error?: unknown;
+  onSubmit?: (input: ContributionInput) => Promise<boolean>; busy?: boolean; error?: unknown; status?: ReactNode;
 }) {
   const propositions = useMemo<Proposition[]>(() => [
     plan.gate, plan.workspace?.provenance, ...(plan.lineage || []), ...(plan.read_options || []),
@@ -48,9 +48,9 @@ export function ParticipantWorkspace({ plan, availableActions, onAction, onSubmi
   const candidates = plan.phase.kind === 'bias' ? actionPropositions(plan, 'proposition.bias')
     : plan.phase.kind === 'mediate' ? actionPropositions(plan, 'proposition.reconcile') : [];
   const allowed = (action: ActionName) => availableActions.includes(action) && Boolean(plan.schema?.$defs?.actions?.[action]);
-  function card(proposition: Proposition, kind: string, selected = false) {
+  function card(proposition: Proposition, kind: string) {
     return <PropositionCard key={proposition.id} proposition={proposition} committalObservables={provenance.observables}
-      compact selected={selected} flow={kind} onClick={() => setInspection({ kind, proposition })} />;
+      compact flow={kind} onClick={() => setInspection({ kind, proposition })} />;
   }
   return <Box className="operational-workspace" data-domain={domainName} data-phase={phaseNumber}>
     <Box className="operational-workspace__body">
@@ -82,7 +82,12 @@ export function ParticipantWorkspace({ plan, availableActions, onAction, onSubmi
                   {lane.role === 'gate' && (gateCards.length ? <PropositionNavigator label="Gate Propositions" resetKey={plan.phase.id}>
                     {gateCards.map(item => <Box key={item.id} className="write-option-card" data-reconcile-candidate={plan.phase.kind === 'mediate' && item.id !== gate.id ? item.id : undefined}
                       data-bias-candidate={plan.phase.kind === 'bias' ? item.id : undefined}>
-                      {card(item, 'gate', plan.phase.kind !== 'bias' && item.id === gate.id)}
+                      {plan.phase.kind === 'mediate' && <Text size="10px" c="dimmed" className="gate-card-context">{item.id === gate.id ? 'Current Gate · statement retained' : 'Reconciling counterpart'}</Text>}
+                      {card(item, 'gate')}
+                      {item.id !== gate.id && plan.phase.kind === 'mediate' && allowed('proposition.reconcile') && targets.get('proposition.reconcile')?.has(item.id) && <Group className="write-option-card__context-actions" gap={4}>
+                        <Button size="compact-xs" variant="subtle" color="gray" className="reconcile-action" leftSection={<OperationIcon operation="reconcile" />}
+                          onClick={() => onAction('proposition.reconcile', { other_proposition_id: item.id })}>Reconcile</Button>
+                      </Group>}
                       {item.id === gate.id && allowed('proposition.reclassify') && <Group className="write-option-card__context-actions" gap={4}>
                         <Button size="compact-xs" variant="subtle" color="gray" leftSection={<OperationIcon operation="reclassify" />}
                           onClick={() => onAction('proposition.reclassify')}>Reclassify</Button>
@@ -90,6 +95,7 @@ export function ParticipantWorkspace({ plan, availableActions, onAction, onSubmi
                     </Box>)}
                   </PropositionNavigator> : <EmptyState text="No eligible Gate Proposition is available here." />)}
                   {lane.role === 'write' && <Stack gap="xs" className="write-row">
+                    {status}
                     {Object.keys(generativeActions).some(action => allowed(action as ActionName)) && <Group className="write-generative-actions" gap={6} aria-label="Generative Write actions">
                       <Text size="10px" c="dimmed">Generate</Text>
                       {Object.entries(generativeActions).filter(([action]) => allowed(action as ActionName)).map(([action, label]) => <Button key={action}
