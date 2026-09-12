@@ -75,7 +75,7 @@ test('Mediate counterparts and unary Bias choices use their own schema-authorize
     assert.doesNotMatch(write, /Sibling alternative/);
     assert.doesNotMatch(markup, /Unrelated alternative/);
     const denied = module.exports.render(kind, false);
-    assert.doesNotMatch(denied, /Sibling alternative/);
+    assert.doesNotMatch(denied, /Sibling alternative|>Reconcile<\/span>|>Bias<\/span>/);
     if (kind === 'bias') {
       const deniedGate = denied.slice(denied.indexOf('data-role="gate"'), denied.indexOf('data-role="write"'));
       assert.doesNotMatch(deniedGate, /Privileged Gate/);
