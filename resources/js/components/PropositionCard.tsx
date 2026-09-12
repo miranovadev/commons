@@ -35,7 +35,7 @@ export function PropositionCard({
   onClick,
 }: PropositionCardProps) {
   const register = metaForRegister(proposition.register);
-  const structurallyHighlighted = indigoHighlight || proposition.tier === 'committal';
+  const structurallyHighlighted = indigoHighlight;
   const classes = [
     'proposition-card',
     mini && 'proposition-card--mini',

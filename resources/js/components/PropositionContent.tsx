@@ -1,5 +1,10 @@
-import { Avatar, Badge, Box, Group, SimpleGrid, Stack, Text, ThemeIcon, Tooltip } from '@mantine/core';
-import { IconArrowRight, IconBolt, IconHexagon, IconHexagonalPrism, IconLayersDifference, IconWhirl } from '@tabler/icons-react';
+import { Badge, Box, Group, SimpleGrid, Stack, Text, ThemeIcon, Tooltip } from '@mantine/core';
+import { IconArrowRight, IconBolt, IconHexagon, IconHexagonalPrism, IconLayersDifference } from '@tabler/icons-react';
+import { ParticipantAvatar } from './ParticipantIdentity';
+import { OperationIcon } from './OperationIcon';
+import { operationHistoryLabel } from '../operationHistory';
+import { DirectionalWhirl } from './DirectionalWhirl';
+import { attestationPresentation } from '../directionalPresentation';
 import { metaForRegister } from '../registers';
 import type { Observables, Proposition } from '../types';
 
@@ -34,8 +39,8 @@ export function PropositionContent({
     return (
       <Stack gap={6}>
         <Text size="xs" fw={650} lineClamp={2}>{title}</Text>
-        <TransitionReadout transition={proposition.transition} compact />
-        <Group gap="xs" justify="space-between"><FieldValues observables={proposition.observables} committalObservables={committalObservables} tier={proposition.tier} compact /><AttestationCounts counts={proposition.attestation_counts} /></Group>
+        <PropositionMetadata proposition={proposition} />
+        <Group gap="xs" justify="space-between"><FieldValues observables={proposition.observables} committalObservables={committalObservables} tier={proposition.tier} compact /><AttestationCounts proposition={proposition} /></Group>
       </Stack>
     );
   }
@@ -44,25 +49,22 @@ export function PropositionContent({
     <Stack gap={detailed ? 'md' : 'xs'}>
       <Group justify="space-between" align="flex-start" wrap="nowrap">
         <Stack gap={5} miw={0}>
-          <Group gap={7} wrap="wrap">
-            {(proposition.tier || wireframe) && <TierBadge tier={wireframe ? 'possible' : proposition.tier} />}
-            {proposition.register && <Badge size="xs" color={register.color} variant="light">{register.label}</Badge>}
-          </Group>
+          <PropositionMetadata proposition={proposition} wireframe={wireframe} />
           <Text fw={detailed ? 750 : 650} size={detailed ? 'lg' : undefined} lineClamp={detailed ? undefined : 2}>{title}</Text>
         </Stack>
         {proposition.participant && (
           <Stack gap={3} align="center" className="proposition-card__participant">
-            <Avatar size={detailed ? 36 : 30} radius="xl" color="gray" name={callsign} />
+            <ParticipantAvatar size={detailed ? 36 : 30} callsign={callsign} />
             <Text size="10px" c="dimmed" maw={80} truncate>{callsign}</Text>
           </Stack>
         )}
       </Group>
 
-      <TransitionReadout transition={proposition.transition} />
+      {detailed && <TransitionReadout transition={proposition.transition} />}
 
       {wireframe && ActionIcon && <ThemeIcon color={register.color} variant="light" size="sm"><ActionIcon size={13} /></ThemeIcon>}
       {!wireframe && proposition.tier === 'committal' && <Tooltip label="Committed structure"><ThemeIcon color="indigo" variant="light" size="sm"><IconBolt size={13} /></ThemeIcon></Tooltip>}
-      {(description || (detailed && proposition.statement)) && (
+      {detailed && (description || proposition.statement) && (
         <Text size={detailed ? 'sm' : 'xs'} c="dimmed" lineClamp={detailed ? undefined : 3} style={{ whiteSpace: 'pre-line' }}>
           {detailed ? proposition.statement : description}
         </Text>
@@ -78,7 +80,7 @@ export function PropositionContent({
             tier={proposition.tier}
             compact={!detailed}
           />
-          <AttestationCounts counts={proposition.attestation_counts} />
+          <AttestationCounts proposition={proposition} />
           </Group>
         </Box>
       )}
@@ -86,17 +88,37 @@ export function PropositionContent({
   );
 }
 
-function AttestationCounts({ counts }: { counts?: Proposition['attestation_counts'] }) {
-  if (!counts) return null;
-  return <Group gap={8} wrap="nowrap" className="proposition-attestation-counts" ml="auto" aria-label="Effective Attestations">
-    {(['support', 'refute'] as const).map((direction) => <Tooltip key={direction}
-      label={`${counts[direction]} effective ${direction === 'support' ? 'Support' : 'Refute'} Attestations`} withArrow>
-      <Group gap={3} wrap="nowrap" c={direction === 'support' ? 'violet' : 'teal'}
-        aria-label={`${direction}: ${counts[direction]}`}>
-        <IconWhirl size={15} aria-hidden="true" className={counts[direction] > 0 ? `attestation-direction-icon attestation-direction-icon--${direction}` : undefined} />
-        <Text size="xs" fw={700}>{counts[direction]}</Text>
-      </Group>
-    </Tooltip>)}
+export function PropositionMetadata({ proposition, wireframe = false }: { proposition: Partial<Proposition>; wireframe?: boolean }) {
+  const register = metaForRegister(proposition.register);
+  return <Group gap={5} wrap="wrap" className="proposition-metadata">
+    {(proposition.tier || wireframe) && <TierBadge tier={wireframe ? 'possible' : proposition.tier} />}
+    {proposition.register && <Badge size="xs" color={register.color} variant="light">{register.label}</Badge>}
+    {proposition.transition?.type && <Badge size="xs" color="gray" variant="outline" className="operation-badge"
+      leftSection={<OperationIcon operation={proposition.transition.type} size={11} />}>{operationHistoryLabel(proposition.transition.type)}</Badge>}
+  </Group>;
+}
+
+export function AttestationCounts({ proposition }: { proposition: Partial<Proposition> }) {
+  if (!proposition.attestation_counts && !proposition.attestation_summary) return null;
+  const { slots, dominant, direction, label, animate } = attestationPresentation(proposition);
+  const mapped = Boolean(proposition.attestation_summary?.support_direction);
+  const [negative, positive] = slots;
+  const description = dominant ? `${dominant === 'positive' ? 'Positive' : 'Negative'} count majority (unweighted)`
+    : direction ? `No count majority · ${direction} direction persists${label ? ' (' + label + ')' : ''}` : 'No count majority';
+  function count(slot: typeof negative) {
+    return <Tooltip label={`${slot.count} effective ${mapped ? slot.direction + '-direction' : slot.text} Attestations${mapped ? ' · ' + slot.text + ' in this region' : ''}`} withArrow>
+      <Text component="span" className="attestation-semantic" data-label={slot.label} size="xs" fw={700}
+        aria-label={`${slot.label}: ${slot.count}`}>
+        {mapped ? slot.side === 'left' ? '−' : '+' : slot.text + ' '}{slot.count}
+      </Text>
+    </Tooltip>;
+  }
+  return <Group gap={5} wrap="nowrap" className="proposition-attestation-counts" ml="auto" aria-label="Effective Attestations">
+    {count(negative)}
+    <Tooltip label={description} withArrow>
+      <span className="attestation-semantic" data-label={label || 'neutral'} role="img" aria-label={description}><DirectionalWhirl direction={direction} animate={animate} size={16} /></span>
+    </Tooltip>
+    {count(positive)}
   </Group>;
 }
 
@@ -154,11 +176,12 @@ function FieldValue({ label, icon: Icon, value, delta, signed: signedValue = fal
   tier?: string;
   compact?: boolean;
 }) {
-  const color = tier === 'committal' ? 'indigo' : 'gray';
-  const readout = value === null ? 'Awaiting measurement' : number(value, signedValue);
+  const sign = value === null || value === 0 ? 'neutral' : value < 0 ? 'negative' : 'positive';
+  const color = 'var(--field-color)';
+  const readout = value === null ? (compact ? '—' : 'Awaiting measurement') : number(value, signedValue);
   const deltaReadout = delta === null ? null : `Δ ${number(delta, true)} from Committal`;
   const content = (
-    <Box className="field-value" data-compact={compact || undefined}>
+    <Box className="field-value" data-sign={sign} data-compact={compact || undefined}>
       <Group gap={5} wrap="nowrap">
         <ThemeIcon color={color} variant={compact ? 'transparent' : 'light'} size={compact ? 22 : 28}>
           <Icon size={compact ? 15 : 17} />
@@ -204,7 +227,7 @@ export function TransitionReadout({ transition, compact = false }: {
 
   return (
     <Group gap={5} wrap="nowrap" className="proposition-transition">
-      <Badge size="xs" variant="outline" color="gray">{transition.type}</Badge>
+      <Badge size="xs" variant="outline" color="gray" className="operation-badge">{operationHistoryLabel(transition.type)}</Badge>
       <Text size={compact ? '9px' : 'xs'} c="dimmed">{label(transition.from)}</Text>
       <IconArrowRight size={compact ? 11 : 13} />
       <Text size={compact ? '9px' : 'xs'} fw={650}>{label(transition.to)}</Text>
@@ -214,7 +237,7 @@ export function TransitionReadout({ transition, compact = false }: {
 
 function TierBadge({ tier }: { tier?: string }) {
   if (tier === 'committal') return <Badge size="xs" color="indigo" variant="filled">Committal</Badge>;
-  return <Badge size="xs" variant="light">{tier}</Badge>;
+  return <Badge size="xs" color="gray" variant="light">{tier}</Badge>;
 }
 
 function label(value?: string) {

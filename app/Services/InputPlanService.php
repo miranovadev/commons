@@ -24,6 +24,7 @@ final readonly class InputPlanService
         private CommitmentAdmissibilityService $admissibility,
         private PropositionStateService $state,
         private MediationReadService $mediation,
+        private PropositionPresentationService $presentation,
     ) {}
 
     /** @return array<string, mixed> */
@@ -125,16 +126,16 @@ final readonly class InputPlanService
                 ? $writeOptions->mapWithKeys(fn (Proposition $candidate): array => [
                     $candidate->id => $this->admissibility->evaluate($candidate, $phase, $context),
                 ])->all() : [],
-            'gate' => $this->proposition($gate, $participant),
-            'lineage' => $this->propositions($lineage, $participant),
-            'read_options' => $this->propositions($readOptions, $participant),
+            'gate' => $this->proposition($gate, $participant, $context),
+            'lineage' => $this->propositions($lineage, $participant, $context),
+            'read_options' => $this->propositions($readOptions, $participant, $context),
             'tragedy' => isset($schema['$defs']['actions']['participant.rest']),
-            'traversal_options' => $this->propositions($traversalOptions, $participant),
-            'instrument_options' => $this->propositions($instrumentOptions, $participant),
-            'write_options' => $this->propositions($writeOptions, $participant),
-            'revision_options' => $this->propositions($revisionOptions, $participant),
-            'gate_options' => $this->propositions($gateOptions, $participant),
-            'attestation_options' => $this->propositions($attestationOptions, $participant),
+            'traversal_options' => $this->propositions($traversalOptions, $participant, $context),
+            'instrument_options' => $this->propositions($instrumentOptions, $participant, $context),
+            'write_options' => $this->propositions($writeOptions, $participant, $context),
+            'revision_options' => $this->propositions($revisionOptions, $participant, $context),
+            'gate_options' => $this->propositions($gateOptions, $participant, $context),
+            'attestation_options' => $this->propositions($attestationOptions, $participant, $context),
             'schema' => $schema,
         ];
     }
@@ -208,7 +209,7 @@ final readonly class InputPlanService
                 'sequence' => $horizon->sequence,
                 'opened_at' => $horizon->opened_at,
             ],
-            'provenance' => $this->proposition($provenance, $participant),
+            'provenance' => $this->proposition($provenance, $participant, $context),
             'registers' => collect($registers)
                 ->mapWithKeys(fn (string $register): array => [
                     $register => $this->propositions(
@@ -216,6 +217,7 @@ final readonly class InputPlanService
                             ->where('register', $register)
                             ->values(),
                         $participant,
+                        $context,
                     ),
                 ])
                 ->all(),
@@ -278,11 +280,13 @@ final readonly class InputPlanService
     private function propositions(
         Collection $propositions,
         Participant $participant,
+        ?ParticipationContext $context,
     ): array {
         return $propositions
             ->map(fn (Proposition $proposition): array => $this->proposition(
                 $proposition,
                 $participant,
+                $context,
             ))
             ->values()
             ->all();
@@ -292,12 +296,10 @@ final readonly class InputPlanService
     private function proposition(
         Proposition $proposition,
         Participant $viewer,
+        ?ParticipationContext $context,
     ): array {
         $measurement = $proposition->relationLoaded('measurement')
             ? $proposition->measurement
-            : null;
-        $parent = $proposition->relationLoaded('parents')
-            ? $proposition->parents->first()
             : null;
         $author = $proposition->relationLoaded('phase')
             && $proposition->phase->relationLoaded('cycle')
@@ -323,6 +325,7 @@ final readonly class InputPlanService
                 ->toString(),
             'participant' => $author?->only(['id', 'callsign']),
             'attestation_counts' => $proposition->attestationCounts->all(),
+            'attestation_summary' => $this->presentation->attestations($proposition, $context),
             'attestation' => $attestation?->only([
                 'id',
                 'direction',
@@ -339,12 +342,7 @@ final readonly class InputPlanService
                     'receipt_id' => $execution->receipt?->getKey(),
                 ])->all()
                 : [],
-            'transition' => $parent === null ? null : [
-                'type' => $parent->pivot->type,
-                'from' => $parent->register,
-                'to' => $proposition->register,
-                'source_id' => $parent->getKey(),
-            ],
+            'transition' => $this->presentation->transition($proposition, $context),
             'observables' => [
                 'correspondence' => $measurement?->correspondence,
                 'chirality' => $measurement?->chirality,

@@ -11,7 +11,7 @@ test('cards show directional counts and the rationale panel obeys schema permiss
     import { PropositionCard } from './resources/js/components/PropositionCard';
     import { AttestationPanel } from './resources/js/components/AttestationPanel';
     const proposition = { id: 'p', tier: 'expressive', register: 'frontier', statement: 'Proposition',
-      attestation_counts: { support: 3, refute: 2 }, observables: { correspondence: 0, chirality: 0, closure: 0 } };
+      attestation_summary: { support_direction: 'positive', positive: 3, negative: 2 }, attestation_counts: { support: 3, refute: 2 }, observables: { correspondence: 0, chirality: 0, closure: 0 } };
     export function render(directions) {
       const plan = { schema: { $defs: { actions: { 'attestation.create': {
         properties: { proposition_id: { enum: ['p'] }, direction: { enum: directions } }
@@ -25,8 +25,8 @@ test('cards show directional counts and the rationale panel obeys schema permiss
   const markup = module.exports.render(['refute']);
   assert.match(markup, /aria-label="support: 3"/);
   assert.match(markup, /aria-label="refute: 2"/);
-  assert.match(markup, /attestation-direction-icon--support/);
-  assert.match(markup, /attestation-direction-icon--refute/);
+  assert.match(markup, /data-direction="positive"/);
+  assert.match(markup, /data-direction="negative"/);
   assert.match(markup, /<textarea/);
   assert.match(markup, /Rationale/);
   assert.match(markup, /Refute with Attestation/);
@@ -50,7 +50,9 @@ test('main page submits a footer action once, retries failures and does not reop
     build.onResolve({ filter: /\/components\/ParticipantWorkspace$/ }, () => ({ path: 'workspace', namespace: 'fixture' }));
     build.onLoad({ filter: /.*/, namespace: 'fixture' }, ({ path }) => ({ contents: path === 'workspace'
       ? 'export function ParticipantWorkspace(props) { globalThis.attestationHarness.workspace = props; return null; }'
-      : `export const useGetParticipantQuery = () => ({ data: { callsign: 'Viewer' } });
+      : `export const useGetParticipantsQuery = () => ({ data: [] });
+         export const useGetSessionQuery = () => ({ data: null });
+         export const useGetParticipantQuery = () => ({ data: { callsign: 'Viewer' } });
          export const useGetParticipationQuery = () => ({ data: globalThis.attestationHarness.participation });
          export const useContributeMutation = () => [globalThis.attestationHarness.contribute, { isLoading: false, reset() {} }];
          export const useEnterCycleMutation = () => [() => {}, { reset() {} }];` }));
