@@ -301,9 +301,6 @@ final readonly class InputPlanService
         $measurement = $proposition->relationLoaded('measurement')
             ? $proposition->measurement
             : null;
-        $parent = $proposition->relationLoaded('parents')
-            ? $proposition->parents->first()
-            : null;
         $author = $proposition->relationLoaded('phase')
             && $proposition->phase->relationLoaded('cycle')
             && $proposition->phase->cycle->relationLoaded('participant')
@@ -345,12 +342,7 @@ final readonly class InputPlanService
                     'receipt_id' => $execution->receipt?->getKey(),
                 ])->all()
                 : [],
-            'transition' => $parent === null ? null : [
-                'type' => $parent->pivot->type,
-                'from' => $parent->register,
-                'to' => $proposition->register,
-                'source_id' => $parent->getKey(),
-            ],
+            'transition' => $this->presentation->transition($proposition, $context),
             'observables' => [
                 'correspondence' => $measurement?->correspondence,
                 'chirality' => $measurement?->chirality,

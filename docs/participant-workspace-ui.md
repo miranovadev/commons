@@ -67,7 +67,9 @@ Instrument and Commit stay on eligible Write cards. Attest/Traverse retain the
 existing direct-submission contract and phase concurrency guard.
 
 Compact cards group tier, register and Git-style operation badges above the
-statement. Register-transition prose remains in detailed inspection. Measurement
+statement. Register-transition prose remains in detailed inspection. Reconcile display metadata
+chooses its source by Supersession creation time and ID, rather than unspecified
+database row order; this does not change any ancestry or measurement traversal. Measurement
 readouts use darker/lighter Indigo for negative/positive numbers and neutral text
 for zero or unavailable values. No formulas change.
 

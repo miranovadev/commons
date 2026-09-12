@@ -15,6 +15,31 @@ final readonly class PropositionPresentationService
         private CommitRegionPolarityService $polarity,
     ) {}
 
+    /** Stable display source only; never changes ancestry or calculation order. */
+    public function transition(Proposition $position, ?ParticipationContext $context = null): ?array
+    {
+        if ($context === null) {
+            $parent = $position->parents()->orderBy('supersessions.created_at')->orderBy('supersessions.id')->first();
+
+            return $parent === null ? null : [
+                'type' => $parent->pivot->type, 'from' => $parent->register,
+                'to' => $position->register, 'source_id' => $parent->id,
+            ];
+        }
+
+        return $context->remember('presentation-transition:'.$position->id, function () use ($position, $context): ?array {
+            $edge = $context->parents->get($position->id, collect())
+                ->sortBy([['created_at', 'asc'], ['id', 'asc']])->first();
+            $parent = $edge === null ? null : ($context->propositions->get($edge->source_proposition_id)
+                ?? ($position->relationLoaded('parents') ? $position->parents->firstWhere('id', $edge->source_proposition_id) : null));
+
+            return $parent === null ? null : [
+                'type' => $edge->type, 'from' => $parent->register,
+                'to' => $position->register, 'source_id' => $parent->id,
+            ];
+        });
+    }
+
     /** @return array{support_direction: ?string, positive: int, negative: int} */
     public function attestations(Proposition $position, ?ParticipationContext $context = null): array
     {

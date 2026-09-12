@@ -18,6 +18,7 @@ use App\Services\LedgerService;
 use App\Services\Participation\ParticipationContext;
 use App\Services\PropositionPresentationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -78,6 +79,32 @@ class PropositionPresentationTest extends TestCase
         $fresh = new ParticipationContext($phase);
         $this->assertSame(['support_direction' => 'negative', 'positive' => 2, 'negative' => 0], $presentation->attestations($commit, $fresh));
         $this->assertSame($expected, $presentation->attestations($commit, $context));
+    }
+
+    public function test_reconciliation_display_source_is_stable_when_hydration_order_changes(): void
+    {
+        $this->freezeTime();
+        $this->bootstrap();
+        $older = $this->node('concord', $this->origin);
+        $primary = $this->node('concord', $this->origin);
+        $target = $this->node('concord', $primary, 'expressive', 'reconcile');
+        $first = Supersession::where('target_proposition_id', $target->id)->firstOrFail();
+        $first->forceFill(['created_at' => now()->subMinute()])->save();
+        $second = new Supersession;
+        $second->forceFill(['phase_id' => $this->history->id, 'source_proposition_id' => $older->id,
+            'target_proposition_id' => $target->id, 'type' => 'reconcile'])->save();
+        $context = new ParticipationContext($this->phase(PhaseKind::Mediate, 'stance', $target));
+        $context->parents->put($target->id, collect([$second, $first]));
+        $target->setRelation('parents', $target->parents()->get()->reverse());
+        $presentation = app(PropositionPresentationService::class);
+        $expected = ['type' => 'reconcile', 'from' => 'concord', 'to' => 'concord', 'source_id' => $primary->id];
+        $this->assertSame($expected, $presentation->transition($target));
+        DB::enableQueryLog();
+        DB::flushQueryLog();
+        $this->assertSame($expected, $presentation->transition($target, $context));
+        $queries = DB::getQueryLog();
+        DB::disableQueryLog();
+        $this->assertCount(0, $queries);
     }
 
     private function node(string $register, Proposition $parent, string $tier = 'expressive', string $type = 'variant'): Proposition
