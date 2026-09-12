@@ -51,10 +51,7 @@ class CommitParticipationStateTest extends TestCase
         $attestation = new Attestation;
         $attestation->forceFill(['phase_id' => $this->phase->id, 'proposition_id' => $gate->id, 'direction' => 'support'])->save();
         app(LedgerService::class)->record($attestation);
-        $receipt = app(OperationalInstrumentService::class)->execute($this->phase, $gate,
-            ['kind' => 'hyperlink', 'reference' => 'https://example.test/inherited']);
-        $receipt->signature = 'inherited-reinforcement';
-        $receipt->save();
+        $receipt = $this->verifiedReceiptFixture($gate);
         $counts = [Attestation::count(), Receipt::count(), Phase::count()];
         $comparison = app(ContextLineageComparisonService::class)->prospectiveCommit($gate, $this->phase);
         $preview = $comparison->current->propositions->last();

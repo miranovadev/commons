@@ -19,13 +19,14 @@ class LocalMeasurementService
     public function calculate(Proposition $proposition, ?LineageComparison $comparison = null): LocalMeasurements
     {
         $comparison ??= $this->lineages->for($proposition);
-        $closure = $this->closure->components($comparison);
+        $closure = $this->closure->localComponents($proposition, $comparison);
 
         return new LocalMeasurements(
             $this->correspondence->calculate($comparison),
             $this->chirality->calculate($comparison),
             $closure->depth,
             $closure->cadence,
+            $closure->average(),
         );
     }
 }

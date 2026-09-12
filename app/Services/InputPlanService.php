@@ -352,6 +352,8 @@ final readonly class InputPlanService
                     'status' => $execution->status,
                     'failure_reason' => $execution->failure_reason,
                     'receipt_id' => $execution->receipt?->getKey(),
+                    'reinforcement_status' => $execution->receipt?->metadata['reinforcement_status'] ?? null,
+                    'content_verified' => $execution->receipt?->metadata['content_verified'] ?? false,
                 ])->all()
                 : [],
             'transition' => $this->presentation->transition($proposition, $context),

@@ -89,22 +89,24 @@ final class CommitRegionService
             return collect();
         }
 
-        return $this->atPosition($phase, $position ?? ($context?->propositions->get($phase->gate_proposition_id) ?? $phase->gate()->firstOrFail()), $register, $context);
+        return $this->atPosition($phase, $position ?? ($context?->propositions->get($phase->gate_proposition_id) ?? $phase->gate()->firstOrFail()), $register, $context, includeSuperseded: $phase->kind === PhaseKind::Mediate);
     }
 
-    public function atPosition(Phase $phase, Proposition $position, RegisterPosition $register, ?ParticipationContext $context = null): Collection
+    public function atPosition(Phase $phase, Proposition $position, RegisterPosition $register, ?ParticipationContext $context = null, bool $includeSuperseded = false): Collection
     {
         if ($position->phase->cycle->participant->substrate_id !== $phase->cycle->participant->substrate_id) {
             return collect();
         }
 
         if ($context !== null) {
-            return $context->active($this->membersFor($position, $context)->whereIn('register', $register->registers()));
+            $members = $this->membersFor($position, $context)->whereIn('register', $register->registers());
+
+            return $includeSuperseded ? $members->values() : $context->active($members);
         }
 
         return Proposition::query()->whereKey($this->membersFor($position)->pluck('id'))
             ->whereIn('register', $register->registers())
-            ->whereDoesntHave('children', fn ($query) => $query->where('supersessions.type', '!=', 'variant'))
+            ->when(! $includeSuperseded, fn ($query) => $query->whereDoesntHave('children', fn ($query) => $query->where('supersessions.type', '!=', 'variant')))
             ->orderBy('id')->get();
     }
 }

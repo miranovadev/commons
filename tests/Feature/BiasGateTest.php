@@ -88,8 +88,7 @@ class BiasGateTest extends TestCase
         $this->assertLessThan(0, (float) $this->gate->fresh()->measurement->chirality);
         $instruments = app(InstrumentExecutionService::class);
         foreach (range(1, 4) as $i) {
-            $execution = $instruments->start($negative->phase, $refute, 'hyperlink', 'https://example.test/'.$i);
-            $instruments->complete($execution, $negative, 'unique-'.$i);
+            $this->verifiedReceiptFixture($refute, $negative);
         }
         $this->assertLessThan(0, $service->leanFor($this->phase));
         $this->assertSame([$refute->id], $this->optionIds());

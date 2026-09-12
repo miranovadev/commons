@@ -3,7 +3,7 @@
 namespace App\Services\Observables;
 
 use App\Models\Proposition;
-use App\Models\Receipt;
+use App\Models\Reinforcement;
 use App\Models\Substrate;
 use App\Services\Participation\ParticipationContext;
 use App\Services\PropositionStateService;
@@ -14,50 +14,29 @@ final class ReinforcementService
 {
     public function __construct(private readonly PropositionStateService $state) {}
 
-    /**
-     * @param  Collection<int, Model>  $contributions
-     * @return Collection<string, float>
-     */
-    public function weights(
-        Collection $contributions,
-        Substrate $substrate,
-        ?ParticipationContext $context = null,
-    ): Collection {
-        if ($contributions->isEmpty()) {
-            return collect();
-        }
+    /** Count state formation, never Receipt volume or attenuated evidence. */
+    public function count(Proposition $proposition, ?ParticipationContext $context = null): int
+    {
+        $ids = $this->state->sourceIds($proposition, $context);
+        $rows = $context !== null ? $context->reinforcements->whereIn('proposition_id', $ids)
+            : Reinforcement::whereIn('proposition_id', $ids)->get();
 
-        $first = $contributions->first();
-        $sources = $contributions->mapWithKeys(fn (Model $item) => [
-            $item->getKey() => $item instanceof Proposition
-                ? $this->state->sourceIds($item, $context) : collect([$item->getKey()]),
-        ]);
-        $receipts = $context !== null
-            ? $context->reinforcementReceipts($first->getMorphClass(), $sources->flatten()->unique())
-            : Receipt::query()
-                ->where('receiptable_type', $first->getMorphClass())
-                ->whereIn('receiptable_id', $sources->flatten()->unique())
-                ->where('type', '!=', 'citation')
-                ->whereNotNull('signature')
-                ->with('instrumentExecution')->get();
-
-        return $contributions->mapWithKeys(
-            fn (Model $contribution) => [
-                (string) $contribution->getKey() => 1 + (
-                    $receipts->filter(fn (Receipt $receipt) => $receipt->receiptable_id === $contribution->getKey()
-                        || ($sources[$contribution->getKey()]->contains($receipt->receiptable_id)
-                            && $receipt->instrumentExecution?->status === 'completed')
-                    )->count() * $this->receiptIncrement($substrate)
-                ),
-            ],
-        );
+        return $rows->unique('participant_id')->count();
     }
 
-    /** Shared receipt increment for current calculations and ledger-prefix replay. */
+    /** Preserve existing structural feature weighting, now by counted participants. */
+    public function weights(Collection $contributions, Substrate $substrate, ?ParticipationContext $context = null): Collection
+    {
+        return $contributions->mapWithKeys(fn (Model $item) => [
+            $item->getKey() => 1 + ($item instanceof Proposition ? $this->count($item, $context) : 0) * $this->receiptIncrement($substrate),
+        ]);
+    }
+
+    /** Existing contribution/receipt ratio remains the scale of one persistence observation. */
     public function receiptIncrement(Substrate $substrate): float
     {
         $ratio = (float) data_get($substrate->configuration, 'observables.contribution_receipt_ratio', 3);
 
-        return 1 / ($ratio > 0 ? $ratio : 3);
+        return 1 / (is_finite($ratio) && $ratio > 0 ? $ratio : 3);
     }
 }

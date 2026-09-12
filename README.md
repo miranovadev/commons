@@ -22,6 +22,9 @@ The resumable participant interaction contract is described in
 The protected autonomous packet and separate human workspace are defined in
 [docs/participant-context.md](docs/participant-context.md).
 
+Receipts, verified evidence signatures, participant-unique Reinforcement and the
+stronger Commit gate are defined in [docs/reinforcement.md](docs/reinforcement.md).
+
 ## Requirements
 
 - PHP 8.3 or newer

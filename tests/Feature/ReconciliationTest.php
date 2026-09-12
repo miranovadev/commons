@@ -89,7 +89,7 @@ class ReconciliationTest extends TestCase
         $this->assertEqualsCanonicalizing($gateIds, array_column($plan['gate_options'], 'id'));
     }
 
-    public function test_mediate_gate_options_are_active_immediate_children_of_exposed_reads(): void
+    public function test_mediate_gate_options_include_reusable_superseded_immediate_children(): void
     {
         $this->fixture();
         $valid = $this->sibling('Valid');
@@ -107,9 +107,9 @@ class ReconciliationTest extends TestCase
         $soft = $this->sibling('Soft branch remains active');
         $this->edge($soft, $this->node('Soft continuation', 'frontier'));
         $plan = $this->plan();
-        $this->assertEqualsCanonicalizing([$valid->id, $soft->id], array_column($plan['gate_options'], 'id'));
+        $this->assertEqualsCanonicalizing([$valid->id, $soft->id, $hard->id], array_column($plan['gate_options'], 'id'));
         $this->assertSame([$child->id], array_column($plan['write_options'], 'id'));
-        foreach ([$this->gate, $this->parent, $unrelated, $child, $grandchild, $wrongRegister, $hard] as $invalid) {
+        foreach ([$this->gate, $this->parent, $unrelated, $child, $grandchild, $wrongRegister] as $invalid) {
             $this->assertInput($plan['schema'], ['action' => 'proposition.reconcile', 'other_proposition_id' => $invalid->id], false);
         }
     }
@@ -243,9 +243,9 @@ class ReconciliationTest extends TestCase
         $unrelatedGate = $this->node('Unrelated Gate', 'activity');
         $this->edge($unrelatedRead, $unrelatedGate);
         $plan = $this->plan();
-        $this->assertEqualsCanonicalizing([$this->parent->id, $validRead->id, $foreignHorizon->id, $distantRead->id, $hardRead->children()->where('register', 'canon')->firstOrFail()->id], array_column($plan['read_options'], 'id'));
-        $this->assertEqualsCanonicalizing([$validGate->id, $foreignGate->id, $distantGate->id], array_column($plan['gate_options'], 'id'));
-        foreach ([$oppositeGate, $wrongGate, $hardGate, $unrelatedGate] as $invalid) {
+        $this->assertEqualsCanonicalizing([$this->parent->id, $validRead->id, $foreignHorizon->id, $distantRead->id, $hardRead->id, $hardRead->children()->where('register', 'canon')->firstOrFail()->id], array_column($plan['read_options'], 'id'));
+        $this->assertEqualsCanonicalizing([$validGate->id, $foreignGate->id, $distantGate->id, $hardGate->id], array_column($plan['gate_options'], 'id'));
+        foreach ([$oppositeGate, $wrongGate, $unrelatedGate] as $invalid) {
             $this->assertInput($plan['schema'], ['action' => 'proposition.reconcile', 'other_proposition_id' => $invalid->id], false);
         }
     }
@@ -271,13 +271,13 @@ class ReconciliationTest extends TestCase
         }
     }
 
-    public function test_mediate_requires_its_own_previous_disperse_phase_and_an_active_current_gate(): void
+    public function test_mediate_requires_its_own_disperse_anchor_but_does_not_consume_current_gate(): void
     {
         $this->fixture();
         $this->sibling('Available counterpart');
         $this->assertNotEmpty($this->plan()['gate_options']);
         $this->edge($this->gate, $this->node('Hard replacement', 'frontier'), 'reclassify');
-        $this->assertSame([], $this->plan()['gate_options']);
+        $this->assertNotEmpty($this->plan()['gate_options']);
         $this->phase->cycle->phases()->where('kind', PhaseKind::Disperse->value)->update(['completed_at' => null]);
         $this->assertCount(0, app(\App\Services\MediationReadService::class)->readsFor($this->phase));
     }
@@ -289,6 +289,35 @@ class ReconciliationTest extends TestCase
         $gate = $this->node($statement.' child', $this->gate->register, $gateCorrespondence);
         $this->edge($read, $gate);
         return [$read, $gate];
+    }
+
+    public function test_different_participants_can_reconcile_the_same_inputs_and_only_results_earn_reinforcement(): void
+    {
+        $this->fixture();
+        $b = $this->sibling('B');
+        $c = $this->sibling('C');
+        $results = [];
+        foreach ([$b, $b, $c] as $index => $counterpart) {
+            $viewer = $index === 0 ? $this->viewer : $this->participant('competitor-'.$index);
+            if ($index === 0) {
+                $phase = $this->phase;
+            } else {
+                $viewer->forceFill(['current_proposition_id' => $this->gate->id])->save();
+                $disperse = $this->newPhase($viewer, PhaseKind::Disperse, 'activity');
+                $disperse->forceFill(['gate_proposition_id' => $this->parent->id])->save();
+                $phase = app(\App\Services\PhaseProgressionService::class)->advance($disperse, $this->gate);
+            }
+            app(ParticipationService::class)->contribute($viewer, $phase->id,
+                ['action' => 'proposition.reconcile', 'other_proposition_id' => $counterpart->id]);
+            $result = Proposition::findOrFail($viewer->fresh()->current_proposition_id);
+            $results[] = $result;
+            $this->assertEqualsCanonicalizing([$this->gate->id, $counterpart->id], $result->parents->pluck('id')->all());
+            $this->assertSame(0, app(\App\Services\Observables\ReinforcementService::class)->count($result));
+        }
+        $this->assertCount(3, collect($results)->unique('id'));
+        $this->verifiedReceiptFixture($results[0]);
+        $this->assertSame([1, 0, 0], array_map(fn ($node) => app(\App\Services\Observables\ReinforcementService::class)->count($node), $results));
+        $this->assertSame(3, $this->gate->children()->where('supersessions.type', 'reconcile')->count());
     }
 
     private function assertInput(array $schema, array $input, bool $valid): void

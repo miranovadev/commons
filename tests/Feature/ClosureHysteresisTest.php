@@ -50,8 +50,8 @@ class ClosureHysteresisTest extends TestCase
         $preview = app(ClosureGateService::class)->preview($gate, $phase);
         $state = app(ParticipationService::class)->stateFor($this->participant);
         $this->assertSame($counts, $this->counts());
-        // Candidate/Gate/provenance raw Depth (1, 0, -1). The unsigned
-        // grounding Receipt is inherited without adding reinforcement.
+        // Candidate/Gate/provenance raw Depth (1, 0, -1). Reinforcement
+        // contributes to Closure independently of structural Depth and Cadence.
         $mass = 1 + 1 / 4 + 1 / 9;
         $this->assertSame(round((1 - 1 / 9) / $mass, 7), $preview['depth']);
         $this->assertSame(round((1 + 1 / 4 - 1 / 9) / $mass, 7), $preview['cadence']);
@@ -270,7 +270,16 @@ class ClosureHysteresisTest extends TestCase
         }
         $this->origin = $previous;
         app(PropositionMeasurementService::class)->recalculate($this->origin);
-        $snapshot = app(CommitmentSnapshotService::class)->record($this->origin, 0, 1, 'fixture-bootstrap');
+        // Pre-upgrade immutable history is intentionally not retroactively reinforced.
+        $snapshot = new CommitmentSnapshot;
+        $horizon = $this->origin->contextHorizonMembership->horizon;
+        $snapshot->forceFill(['proposition_id' => $this->origin->id, 'substrate_id' => $this->participant->substrate_id,
+            'ledger_entry_id' => $this->origin->ledgerEntry->id, 'correspondence' => -1, 'chirality' => -1, 'closure' => -1,
+            'depth' => -1, 'cadence' => -1, 'depth_direction' => 'negative', 'cadence_direction' => 'negative',
+            'prominence' => 0, 'turbulence' => 1, 'tension' => -1, 'tension_before' => 0,
+            'direction_before' => 'emergence', 'direction_after' => 'settlement',
+            'calculator_version' => 'fixture-bootstrap', 'evaluated_at' => now()])->save();
+        app(\App\Services\ContextHorizonProjector::class)->apply($snapshot);
         $this->assertSame(ObservableDirection::Negative, $snapshot->depth_direction);
         $this->assertSame(ObservableDirection::Negative, $snapshot->cadence_direction);
         $this->finish($phase);
@@ -294,7 +303,7 @@ class ClosureHysteresisTest extends TestCase
         $attestation = new Attestation;
         $attestation->forceFill(['phase_id' => $phase->id, 'proposition_id' => $gate->id, 'direction' => $direction])->save();
         app(LedgerService::class)->record($attestation);
-        app(OperationalInstrumentService::class)->execute($phase, $gate, ['kind' => 'hyperlink', 'reference' => 'https://example.test/evidence']);
+        $this->verifiedReceiptFixture($gate);
         $this->participant->current_proposition_id = $gate->id;
         $this->participant->save();
         return [$phase, $gate];

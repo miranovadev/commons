@@ -165,12 +165,14 @@ class OperationalCommitmentTest extends TestCase
         $execution = $executions->start($gate->phase, $gate, 'hyperlink', 'https://example.test/attestation');
         $this->assertFalse($service->grounding($gate)['requirements']['receipt']);
         $executions->complete($execution, $first);
+        $this->assertFalse($service->grounding($gate)['admissible']);
+        $this->verifiedReceiptFixture($gate, $first);
         $this->assertTrue($service->grounding($gate)['admissible']);
         $this->attest($gate, $first);
         $this->assertFalse($service->grounding($gate)['requirements']['receipt']);
     }
 
-    public function test_citation_resolves_attestations_and_hyperlinks_remain_unsigned(): void
+    public function test_citation_resolves_attestations_and_verified_hyperlinks_have_signatures(): void
     {
         $gate = $this->candidate();
         $attestation = $this->attest($gate);
@@ -179,8 +181,8 @@ class OperationalCommitmentTest extends TestCase
         $this->assertSame($attestation->id, $receipt->metadata['target_id']);
         $receipt = $service->execute($gate->phase, $gate, ['kind' => 'hyperlink', 'reference' => ' https://example.test/evidence ']);
         $this->assertSame('https://example.test/evidence', $receipt->reference);
-        $this->assertFalse($receipt->metadata['content_verified']);
-        $this->assertNull($receipt->signature);
+        $this->assertTrue($receipt->metadata['content_verified']);
+        $this->assertNotNull($receipt->signature);
         $this->assertNotNull($gate->fresh()->measurement);
         $this->expectException(DomainException::class);
         app(InstrumentExecutionService::class)->complete($receipt->instrumentExecution, $gate);

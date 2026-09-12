@@ -3,7 +3,7 @@
 Phase 7 (Order) uses `CommitmentAdmissibilityService` in both schema generation
 and execution. Order selects an explicit `proposition_id` from Closure-filtered
 Commit Region Write candidates. It requires an effective Attestation in the selected source's
-evidentiary state and a Receipt from a completed instrument execution attached
+evidentiary state, at least one counted Reinforcement, and a Receipt from a completed instrument execution attached
 to that state or one of its effective Attestations. A Committal Gate inherits
 this state through Commit edges; arbitrary ancestors and Receipts on superseded
 Attestations do not satisfy these preconditions. The grounded Expressive source
@@ -19,24 +19,13 @@ meaning.
 
 ## Instruments
 
-`OperationalInstrumentService` runs the supported reference instruments
-synchronously and atomically through `InstrumentExecutionService::start/complete`:
-
-- `citation`: the bare ID of an existing Proposition or Attestation in the same
-  substrate. Records the resolved target identity, not a claim that it is true.
-- `hyperlink`: a trimmed HTTP(S) URL without embedded credentials. Records URL
-  syntax validation only. It does **not** fetch the URL, verify reachability, or
-  verify page contents. This avoids server-side URL fetching and SSRF exposure.
-
-Both issue unsigned Receipts, satisfying grounding without additional signed
-Reinforcement. Artefacts remain unsupported until their storage/verification
-path is implemented. Origin uses the same execution service and exposes only
-Hyperlink in the API/UI because no prior Commons citation target exists.
-
-Low-level pending/complete/fail remains available for future asynchronous
-instruments. Existing pending executions are not retroactively completed by this
-change. Invalid operational input is rejected without persisting a partial
-contribution or advancing the Phase.
+`OperationalInstrumentService` records Cite evidence without reinforcement and
+verifies Hyperlink resources through the bounded public-HTTP verifier. Qualifying
+later verification resolves a canonical resource/version signature and counts at
+most once per Participant/Proposition. Originating evidence and a Receipt alone do
+not unlock Commit. Failed retrieval and versions awaiting stability remain
+non-reinforcing Receipt history. See [Reinforcement](reinforcement.md) for exact URL,
+version/freshness, count, measurement ordering and bootstrap rules.
 
 ## Observing and recovering blocked Order
 

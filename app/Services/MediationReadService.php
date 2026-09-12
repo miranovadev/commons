@@ -57,7 +57,7 @@ final readonly class MediationReadService
         return $reads->concat($candidates->filter(fn (Proposition $candidate): bool => $this->measurements->correspondenceDirectionFor($candidate, $context) === $direction))->values();
     }
 
-    /** All active immediate Gate children of the exposed Reads; no Gate sign/lean filter. */
+    /** Immediate Gate children remain reusable by competing reconciliations. */
     public function gatesFor(Phase $phase, ?ParticipationContext $context = null): Collection
     {
         $reads = $this->readsFor($phase, $context);
@@ -66,7 +66,7 @@ final readonly class MediationReadService
         }
         $gate = $context?->propositions->get($phase->gate_proposition_id) ?? $phase->gate()->firstOrFail();
 
-        $pool = $this->regions->atPosition($phase, $gate, RegisterPosition::First, $context);
+        $pool = $this->regions->atPosition($phase, $gate, RegisterPosition::First, $context, includeSuperseded: true);
 
         return Proposition::query()->whereKey($pool->pluck('id'))
             ->whereHas('parents', fn ($query) => $query->whereKey($reads->pluck('id')))

@@ -6,6 +6,7 @@ use App\Models\Concerns\HasLedgerEntry;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class Receipt extends Model
@@ -31,5 +32,10 @@ class Receipt extends Model
     public function receiptable(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    public function reinforcement(): HasOne
+    {
+        return $this->hasOne(Reinforcement::class);
     }
 }
