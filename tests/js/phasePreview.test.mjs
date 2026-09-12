@@ -38,7 +38,7 @@ function region(html, role) {
   const end = html.indexOf('data-role="', start + 10);
   return html.slice(start, end < 0 ? undefined : end);
 }
-for (const domain of ['emergence', 'settlement']) test(`register preview reorganizes only loaded ${domain} cards without changing the plan`, () => {
+for (const domain of ['emergence', 'settlement']) test(`register preview uses only active lineage for ${domain} cards without changing the plan`, () => {
   const plan = fixture(domain);
   const original = structuredClone(plan);
   const registers = domain === 'settlement' ? ['signal', 'stance', 'concord'] : ['activity', 'frontier', 'canon'];
@@ -48,7 +48,9 @@ for (const domain of ['emergence', 'settlement']) test(`register preview reorgan
   assert.equal(mediate.read.register, registers[2]);
   assert.equal(mediate.write.cards.length, 1, 'duplicate loaded copies appear only once');
   const html = ui.render(plan, 'mediate');
-  for (const role of ['read', 'gate', 'write']) assert.match(region(html, role), new RegExp('CARD ' + mediate[role].register));
+  for (const role of ['gate', 'write']) assert.match(region(html, role), new RegExp('CARD ' + mediate[role].register));
+  assert.equal(mediate.read.cards.length, 0, 'current Write options are not history');
+  assert.doesNotMatch(html, new RegExp('CARD ' + registers[2]));
   assert.doesNotMatch(html, /LIVE STATUS|Generative Write actions|write-option-card__actions|>Reconcile<\/span>/);
   assert.match(html, /data-preview="true"/);
   assert.deepEqual(plan, original);
@@ -87,4 +89,18 @@ test('Write tools are outside card content and scroll thumbs hide without changi
   assert.match(css, /scrollbar-color:transparent transparent/);
   assert.match(css, /:is\(:hover,:focus-within\)[^}]*scrollbar-color:var/);
   assert.match(css, /cycle-context-header__phase \{ grid-column:2; text-align:center/);
+});
+
+test('Horizon, provenance and every current action population are excluded from historical preview', () => {
+  const plan = fixture();
+  const historical = { id: 'historical', tier: 'expressive', register: 'stance', statement: 'TRUE HISTORY' };
+  const unrelated = { id: 'unrelated', tier: 'expressive', register: 'stance', statement: 'UNRELATED CURRENT' };
+  plan.lineage = [historical];
+  plan.workspace = { domain: 'settlement', provenance: unrelated, registers: { stance: [unrelated] } };
+  for (const key of ['read_options', 'gate_options', 'write_options', 'revision_options', 'traversal_options', 'instrument_options', 'attestation_options']) plan[key] = [unrelated];
+  plan.gate = unrelated;
+  const preview = ui.phaseRegisterPreview(plan, 'mediate');
+  assert.deepEqual(preview.write.cards.map(node => node.id), ['historical']);
+  assert.deepEqual(preview.provenance, []);
+  assert.doesNotMatch(ui.render(plan, 'mediate'), /UNRELATED CURRENT/);
 });

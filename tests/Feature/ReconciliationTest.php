@@ -158,7 +158,7 @@ class ReconciliationTest extends TestCase
         $state = app(ParticipationService::class)->stateFor($this->viewer);
         $prompt = app(ParticipantPromptFactory::class)->make(new Connection, $state);
         $this->assertSame($plan['schema'], $prompt['schema']);
-        $this->assertSame(json_decode(json_encode($plan['read_options']), true), json_decode($prompt['user'], true)['plan']['read_options']);
+        $this->assertSame(json_decode(json_encode($state['plan']['read_options']), true), json_decode($prompt['user'], true)['plan']['read_options']);
         $transport = app(OpenAIResponseSchema::class)->fromCommons($prompt['schema']);
         $properties = $transport['properties']['contribution'];
         $this->assertArrayNotHasKey('statement', $properties['properties']);

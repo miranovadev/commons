@@ -166,10 +166,11 @@ Enter another Cycle use the existing routing and entry semantics. Unavailable
 entry remains disabled with its server-supplied reason. Reloading may return to
 the normal waiting view; no historical action schema is treated as live.
 
-Expanded Lineage follows loaded parent relationships from its displayed head,
-stopping at ancestral Committal boundaries. Parents render before descendants;
-the displayed structural Present (including the Gate) is last. This bounded view
-never substitutes the globally newest Proposition or sorts by timestamps.
+The page fetches the separate `/workspace` endpoint. Expanded Lineage preserves
+the server-resolved provenance-to-historical-head order; current options, including
+the Gate, belong outside history. Hard inputs are collapsed on the server. The
+historical stepper uses only this clean Lineage, never Horizon browsing or current
+action populations. See [participant context](participant-context.md).
 It opens immediately at the bottom. Compact Provenance/Present controls appear
 only on overflow, disable at their endpoints and scroll smoothly on explicit
 interaction. Manual scroll position is preserved while the view stays open.

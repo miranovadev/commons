@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\LedgerEntryKind;
 use App\Enums\PhaseKind;
 use App\Models\CommitmentSnapshot;
+use App\Models\ContextHorizon;
 use App\Models\Cycle;
 use App\Models\Participant;
 use App\Models\Phase;
@@ -20,6 +21,8 @@ final readonly class ParticipationService
         private PhaseProgressionService $progression,
         private CycleEntryService $cycleEntry,
         private PotentialChargeService $potential,
+        private InputPlanService $plans,
+        private ParticipantContextSerializer $contextSerializer,
     ) {}
 
     /**
@@ -27,13 +30,24 @@ final readonly class ParticipationService
      */
     public function stateFor(Participant $participant): array
     {
-        $state = $this->currentStateFor($participant);
+        return $this->state($participant, false);
+    }
+
+    /** Human-only display state, fetched separately from autonomous participation. */
+    public function workspaceFor(Participant $participant): array
+    {
+        return $this->state($participant, true);
+    }
+
+    private function state(Participant $participant, bool $workspace): array
+    {
+        $state = $this->currentStateFor($participant, $workspace);
         $snapshot = CommitmentSnapshot::query()
             ->where('commitment_snapshots.substrate_id', $participant->substrate_id)
             ->whereHas('proposition.phase.cycle', fn ($query) => $query->where('participant_id', $participant->getKey()))
             ->join('substrate_ledger_entries as entry', 'entry.id', '=', 'commitment_snapshots.ledger_entry_id')
             ->orderByDesc('entry.sequence')->select('commitment_snapshots.*')->first();
-        $horizon = \App\Models\ContextHorizon::query()
+        $horizon = ContextHorizon::query()
             ->where('substrate_id', $participant->substrate_id)->whereNull('closed_at')->first();
 
         return [
@@ -56,7 +70,7 @@ final readonly class ParticipationService
     }
 
     /** @return array<string, mixed> */
-    private function currentStateFor(Participant $participant): array
+    private function currentStateFor(Participant $participant, bool $workspace): array
     {
         $cycle = Cycle::query()
             ->whereBelongsTo($participant)
@@ -102,14 +116,14 @@ final readonly class ParticipationService
             );
         }
 
-        $plan = $this->contributions->planFor($participant);
+        $plan = $workspace ? $this->plans->forWorkspace($participant) : $this->contributions->planFor($participant);
         $blocked = $phase->kind === PhaseKind::Order
             && ! isset($plan['schema']['$defs']['actions']['proposition.commit']);
 
         return [
             'status' => 'ready',
             'cycle' => $this->cycle($cycle),
-            'plan' => $plan,
+            'plan' => $workspace ? $plan : $this->contextSerializer->plan($plan),
             'perspective' => $this->perspective($participant),
             'reason' => $blocked ? [
                 'code' => 'commitment_preconditions_unsatisfied',
@@ -322,4 +336,3 @@ final readonly class ParticipationService
         ];
     }
 }
-

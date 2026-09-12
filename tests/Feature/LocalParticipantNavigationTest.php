@@ -2,22 +2,28 @@
 
 namespace Tests\Feature;
 
+use App\Contracts\ParticipantInference;
+use App\Domain\Observables\ClosureValues;
 use App\Enums\ContextDomain;
 use App\Enums\PhaseKind;
+use App\Jobs\WakeParticipant;
+use App\Models\Attestation;
 use App\Models\CommitmentSnapshot;
+use App\Models\Connection;
 use App\Models\Cycle;
 use App\Models\Participant;
+use App\Models\ParticipantConnection;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Substrate;
 use App\Models\Supersession;
+use App\Services\ClosureGateService;
 use App\Services\CycleEntryService;
-use App\Services\InputPlanService;
 use App\Services\LedgerService;
+use App\Services\ParticipantConnectionTriggerService;
 use App\Services\ParticipationService;
 use App\Services\PotentialChargeService;
 use App\Services\PropositionMeasurementService;
-use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Tests\TestCase;
@@ -27,8 +33,11 @@ class LocalParticipantNavigationTest extends TestCase
     use RefreshDatabase;
 
     private Substrate $substrate;
+
     private Participant $author;
+
     private Phase $authorPhase;
+
     private array $fixtureTensions = [];
 
     protected function setUp(): void
@@ -56,7 +65,7 @@ class LocalParticipantNavigationTest extends TestCase
         app(CycleEntryService::class)->enter($participant);
 
         $this->assertSame($best->id, $participant->fresh()->current_proposition_id);
-        $this->assertSame($best->id, $this->state($participant)['plan']['gate']['id']);
+        $this->assertSame($best->id, $this->state($participant)['plan']['gate_id']);
     }
 
     public function test_ordinary_reentry_never_selects_a_disconnected_global_maximum(): void
@@ -66,7 +75,7 @@ class LocalParticipantNavigationTest extends TestCase
         $this->region('Unconnected global maximum', 1.0);
 
         app(CycleEntryService::class)->enter($participant);
-        $this->assertSame($position->id, $this->state($participant)['plan']['gate']['id']);
+        $this->assertSame($position->id, $this->state($participant)['plan']['gate_id']);
         $phase = $participant->cycles()->latest('sequence')->first()->phases()->first();
         $phase->completed_at = now();
         $phase->save();
@@ -75,7 +84,7 @@ class LocalParticipantNavigationTest extends TestCase
         $this->refreshFixtureMeasurements();
         app(CycleEntryService::class)->enter($participant);
 
-        $this->assertSame($position->id, $this->state($participant)['plan']['gate']['id']);
+        $this->assertSame($position->id, $this->state($participant)['plan']['gate_id']);
         $this->assertSame(2, $participant->cycles()->count());
     }
 
@@ -105,11 +114,11 @@ class LocalParticipantNavigationTest extends TestCase
 
         app(CycleEntryService::class)->enter($left);
         $this->assertSame($near->id, $left->fresh()->current_proposition_id);
-        $this->assertSame('committal', $this->state($left)['plan']['gate']['tier']);
+        $this->assertSame('committal', $this->state($left)['plan']['gate_options'][0]['tier']);
         $this->refreshFixtureMeasurements();
         app(CycleEntryService::class)->enter($right);
         $this->assertSame($far->id, $right->fresh()->current_proposition_id);
-        $this->assertSame('committal', $this->state($right)['plan']['gate']['tier']);
+        $this->assertSame('committal', $this->state($right)['plan']['gate_options'][0]['tier']);
     }
 
     public function test_ordinary_entry_can_select_beyond_the_nearest_viable_shell(): void
@@ -194,7 +203,7 @@ class LocalParticipantNavigationTest extends TestCase
         $this->assertSame($expressive->id, $participant->fresh()->current_proposition_id);
         app(CycleEntryService::class)->enter($participant);
 
-        $gate = $this->state($participant)['plan']['gate'];
+        $gate = $this->state($participant)['plan']['gate_options'][0];
         $this->assertSame('committal', $gate['tier']);
         $this->assertSame(min($first->id, $second->id), $gate['id']);
     }
@@ -218,21 +227,21 @@ class LocalParticipantNavigationTest extends TestCase
 
         app(CycleEntryService::class)->enter($participant);
         $state = $this->state($participant);
-        $this->assertSame($committed->id, $state['plan']['gate']['id']);
+        $this->assertSame($committed->id, $state['plan']['gate_id']);
         $next = app(ParticipationService::class)->contribute(
             $participant, $state['plan']['phase']['id'],
             ['action' => 'proposition.variant', 'statement' => 'A new expressive tier one.'],
         );
 
-        $this->assertSame('expressive', $next['plan']['gate']['tier']);
+        $this->assertSame('expressive', $next['plan']['gate_options'][0]['tier']);
         $this->assertDatabaseHas('supersessions', [
             'source_proposition_id' => $committed->id,
-            'target_proposition_id' => $next['plan']['gate']['id'],
+            'target_proposition_id' => $next['plan']['gate_id'],
             'type' => 'variant',
         ]);
         $this->assertDatabaseMissing('supersessions', [
             'source_proposition_id' => $concord->id,
-            'target_proposition_id' => $next['plan']['gate']['id'],
+            'target_proposition_id' => $next['plan']['gate_id'],
         ]);
     }
 
@@ -249,10 +258,10 @@ class LocalParticipantNavigationTest extends TestCase
         );
 
         $this->assertSame('persist', $next['plan']['phase']['kind']);
-        $this->assertSame($next['plan']['gate']['id'], $participant->fresh()->current_proposition_id);
+        $this->assertSame($next['plan']['gate_id'], $participant->fresh()->current_proposition_id);
         $this->assertDatabaseHas('supersessions', [
             'source_proposition_id' => $position->id,
-            'target_proposition_id' => $next['plan']['gate']['id'],
+            'target_proposition_id' => $next['plan']['gate_id'],
         ]);
     }
 
@@ -353,7 +362,7 @@ class LocalParticipantNavigationTest extends TestCase
         $this->assertEqualsWithDelta(0.06, $selection['potential_charge'], 0.0000001);
         app(ParticipationService::class)->contribute($participant, $phase->id, ['action' => 'participant.rest']);
         app(CycleEntryService::class)->enter($participant);
-        $this->assertSame($near->id, $this->state($participant)['plan']['gate']['id']);
+        $this->assertSame($near->id, $this->state($participant)['plan']['gate_id']);
     }
 
     public function test_equal_distance_ranking_uses_upstream_potential_and_id_ties(): void
@@ -391,7 +400,7 @@ class LocalParticipantNavigationTest extends TestCase
         app(ParticipationService::class)->contribute($participant, $phase->id, ['action' => 'participant.rest']);
         app(CycleEntryService::class)->enter($participant);
         $state = $this->state($participant);
-        $this->assertSame($first->id, $state['plan']['gate']['id']);
+        $this->assertSame($first->id, $state['plan']['gate_id']);
         // Exercise recovery from an exhausted Order, not Persist (which has Variant).
         $order = Phase::findOrFail($state['plan']['phase']['id']);
         $order->forceFill(['kind' => PhaseKind::Order, 'write_register' => 'canon'])->save();
@@ -401,8 +410,8 @@ class LocalParticipantNavigationTest extends TestCase
         $this->edge($target, $second);
         // A prior visit no longer exhausts a Commit Region. Divergent Closure
         // makes its Write pool empty for this recovery-only regression.
-        $this->mock(\App\Services\ClosureGateService::class, function ($mock): void {
-            $mock->shouldReceive('preview')->andReturn((new \App\Domain\Observables\ClosureValues(1, -1))->resolve());
+        $this->mock(ClosureGateService::class, function ($mock): void {
+            $mock->shouldReceive('preview')->andReturn((new ClosureValues(1, -1))->resolve());
         });
         $this->refreshFixtureMeasurements();
         $state = $this->state($participant);
@@ -410,7 +419,7 @@ class LocalParticipantNavigationTest extends TestCase
         $state = app(ParticipationService::class)->contribute($participant, $state['plan']['phase']['id'], ['action' => 'participant.rest']);
         $this->assertSame(1, $state['entry']['distance']);
         app(CycleEntryService::class)->enter($participant);
-        $this->assertSame($second->id, $this->state($participant)['plan']['gate']['id']);
+        $this->assertSame($second->id, $this->state($participant)['plan']['gate_id']);
     }
 
     public function test_disconnected_and_zero_potential_regions_cannot_supply_recovery(): void
@@ -445,7 +454,7 @@ class LocalParticipantNavigationTest extends TestCase
         $actions = $state['plan']['schema']['$defs']['actions'];
         $this->assertArrayHasKey('attestation.create', $actions);
         $this->assertArrayNotHasKey('proposition.traverse', $actions);
-        $this->assertSame([], $state['plan']['traversal_options']);
+        $this->assertSame([], $state['plan']['schema']['$defs']['actions']['proposition.traverse']['properties']['proposition_id']['enum'] ?? []);
         try {
             app(ParticipationService::class)->contribute($participant, $phase->id, [
                 'action' => 'proposition.traverse', 'proposition_id' => $parent->id,
@@ -465,22 +474,22 @@ class LocalParticipantNavigationTest extends TestCase
         $participant = $this->participant('automated', $gate);
         $this->establishPath($participant, $target);
         app(CycleEntryService::class)->enter($participant);
-        $connection = new \App\Models\Connection;
+        $connection = new Connection;
         $connection->forceFill([
             'provider' => 'openai', 'name' => 'Navigation test',
             'configuration' => ['model' => 'test'], 'credentials' => ['api_key' => 'test'],
         ])->save();
-        $link = new \App\Models\ParticipantConnection;
+        $link = new ParticipantConnection;
         $link->forceFill([
             'participant_id' => $participant->id, 'connection_id' => $connection->id,
             'is_enabled' => true, 'configuration' => [],
         ])->save();
-        $inference = \Mockery::mock(\App\Contracts\ParticipantInference::class);
+        $inference = \Mockery::mock(ParticipantInference::class);
         $inference->shouldReceive('contribute')->once()->andReturn([
             'action' => 'proposition.traverse', 'proposition_id' => $target->id,
         ]);
-        (new \App\Jobs\WakeParticipant($link->id))->handle($inference, app(ParticipationService::class),
-            app(\App\Services\ParticipantConnectionTriggerService::class));
+        (new WakeParticipant($link->id))->handle($inference, app(ParticipationService::class),
+            app(ParticipantConnectionTriggerService::class));
         $this->assertSame($target->id, $participant->fresh()->current_proposition_id);
     }
 
@@ -518,7 +527,7 @@ class LocalParticipantNavigationTest extends TestCase
         $phase->save();
         $phase->cycle->completed_at = now();
         $phase->cycle->save();
-        $attestation = new \App\Models\Attestation;
+        $attestation = new Attestation;
         $attestation->forceFill([
             'phase_id' => $phase->id, 'proposition_id' => $target->id, 'direction' => 'support',
         ])->save();
@@ -609,6 +618,4 @@ class LocalParticipantNavigationTest extends TestCase
     {
         return app(ParticipationService::class)->stateFor($participant);
     }
-
 }
-

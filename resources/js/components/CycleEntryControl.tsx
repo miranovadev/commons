@@ -3,7 +3,7 @@ import { cycleEntryPresentation } from '../cycleEntry';
 import type { Participation } from '../types';
 
 export function CycleEntryControl({ participation, loading, onEnter, onOrigin }: {
-  participation: Participation; loading?: boolean; onEnter: () => void; onOrigin: () => void;
+  participation: Pick<Participation, 'status' | 'entry' | 'reason'>; loading?: boolean; onEnter: () => void; onOrigin: () => void;
 }) {
   const entry = cycleEntryPresentation(participation);
   return <Stack gap="xs" align="flex-start">

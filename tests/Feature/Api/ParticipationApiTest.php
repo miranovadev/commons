@@ -45,28 +45,19 @@ class ParticipationApiTest extends TestCase
             ->assertJsonPath('data.plan.phase.kind', 'distinguish')
             ->assertJsonPath('data.plan.phase.write_register', 'signal')
             ->assertJsonPath(
-                'data.plan.gate.statement',
+                'data.plan.gate_options.0.statement',
                 $payload['origin']['statement'],
             )
-            ->assertJsonPath('data.plan.gate.register', 'canon')
-            ->assertJsonPath('data.plan.gate.tier', 'committal')
-            ->assertJsonPath('data.plan.workspace.domain', 'settlement')
-            ->assertJsonPath(
-                'data.plan.workspace.provenance.statement',
-                $payload['origin']['statement'],
-            )
-            ->assertJsonStructure([
-                'data' => [
-                    'plan' => [
-                        'workspace' => [
-                            'horizon' => ['id', 'sequence', 'opened_at'],
-                            'registers' => ['signal', 'stance', 'concord'],
-                        ],
-                    ],
-                ],
-            ]);
+            ->assertJsonPath('data.plan.gate_options.0.register', 'canon')
+            ->assertJsonPath('data.plan.gate_options.0.tier', 'committal')
+            ->assertJsonMissingPath('data.plan.workspace');
 
-        $originId = $response->json('data.plan.gate.id');
+        $this->getJson(str_replace('/participate', '/workspace', $this->endpoint($substrate, $participant)))
+            ->assertOk()->assertJsonPath('data.plan.workspace.domain', 'settlement')
+            ->assertJsonPath('data.plan.workspace.provenance.statement', $payload['origin']['statement'])
+            ->assertJsonStructure(['data' => ['plan' => ['workspace' => ['horizon' => ['id', 'sequence', 'opened_at'], 'registers' => ['signal', 'stance', 'concord']]]]]);
+
+        $originId = $response->json('data.plan.gate_id');
         $this->assertSame($originId, $participant->fresh()->current_proposition_id);
 
         $this->assertDatabaseCount('cycles', 2);
@@ -154,7 +145,7 @@ class ParticipationApiTest extends TestCase
             $this->originPayload(),
         )
             ->assertCreated();
-        $originId = $originResponse->json('data.plan.gate.id');
+        $originId = $originResponse->json('data.plan.gate_id');
 
         $participant = new Participant;
         $participant->forceFill([
@@ -176,7 +167,7 @@ class ParticipationApiTest extends TestCase
             ->assertJsonPath('data.cycle.sequence', 1)
             ->assertJsonPath('data.plan.phase.kind', 'distinguish')
             ->assertJsonPath('data.plan.phase.write_register', 'signal')
-            ->assertJsonPath('data.plan.gate.id', $originId);
+            ->assertJsonPath('data.plan.gate_id', $originId);
 
         $this->assertDatabaseCount('propositions', 1);
         $this->assertDatabaseCount('cycles', 3);
@@ -209,11 +200,8 @@ class ParticipationApiTest extends TestCase
                 'data.perspective.attenuation.value',
                 1,
             )
-            ->assertJsonPath('data.plan.workspace.domain', 'emergence')
-            ->assertJsonPath(
-                'data.plan.workspace.provenance.statement',
-                'The Origin.',
-            );
+            ->assertJsonMissingPath('data.plan.workspace')
+            ->assertJsonPath('data.plan.gate_options.0.statement', 'The Origin.');
     }
 
     public function test_a_contribution_atomically_advances_the_phase(): void
@@ -234,20 +222,18 @@ class ParticipationApiTest extends TestCase
             ->assertJsonPath('data.status', 'ready')
             ->assertJsonPath('data.plan.phase.kind', 'persist')
             ->assertJsonPath(
-                'data.plan.gate.statement',
+                'data.plan.gate_options.0.statement',
                 'A first expressive distinction.',
             )
-            ->assertJsonPath('data.plan.workspace.domain', 'emergence')
-            ->assertJsonPath(
-                'data.plan.workspace.registers.activity.0.statement',
-                'A first expressive distinction.',
-            )
-            ->assertJsonMissingPath('data.plan.gate.impact')
-            ->assertJsonMissingPath(
-                'data.plan.workspace.registers.activity.0.impact',
-            );
+            ->assertJsonMissingPath('data.plan.workspace')
+            ->assertJsonMissingPath('data.plan.gate_options.0.impact');
 
-        $gateId = $response->json('data.plan.gate.id');
+        $this->getJson(str_replace('/participate', '/workspace', $endpoint))
+            ->assertOk()->assertJsonPath('data.plan.workspace.domain', 'emergence')
+            ->assertJsonPath('data.plan.workspace.registers.activity.0.statement', 'A first expressive distinction.')
+            ->assertJsonMissingPath('data.plan.workspace.registers.activity.0.impact');
+
+        $gateId = $response->json('data.plan.gate_id');
 
         $this->assertDatabaseHas('propositions', [
             'id' => $gateId,

@@ -141,7 +141,7 @@ class InputSchemaServiceTest extends TestCase
         $schema = app(InputSchemaService::class)->forPhase(PhaseKind::Distinguish);
         $prompt = app(ParticipantPromptFactory::class)->make(
             new Connection,
-            ['plan' => ['schema' => $schema]],
+            ['status' => 'ready', 'plan' => ['phase' => ['kind' => 'distinguish'], 'schema' => $schema]],
         )['system'];
         $documentation = file_get_contents(base_path('docs/participation.md'))
             .file_get_contents(base_path('docs/operational-commitment.md'));

@@ -1,3 +1,4 @@
+import type { AutonomousParticipation, ParticipantContext } from '../types';
 import type { GraphSubscriptions } from '../realtime/notifications';
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { systemBootstrapRequired } from '../systemSlice';
@@ -17,7 +18,6 @@ import type {
   Participant,
   ParticipantConnection,
   ParticipantParameters,
-  ParticipantPlan,
   Participation,
   Proposition,
   Substrate,
@@ -147,13 +147,18 @@ export const commonsApi = createApi({
       ],
     }),
     getParticipant: builder.query<Participant, ParticipantParameters>({ query: ({ slug, participantId }) => `/substrates/${slug}/participants/${participantId}`, transformResponse: data, providesTags: (_result, _error, { participantId }) => [{ type: 'Participant', id: participantId }] }),
-    getParticipantPlan: builder.query<ParticipantPlan, ParticipantParameters>({ query: ({ slug, participantId }) => `/substrates/${slug}/participants/${participantId}/plan`, transformResponse: data, providesTags: (_result, _error, { participantId }) => [{ type: 'Participation', id: participantId }] }),
-    getParticipation: builder.query<Participation, ParticipantParameters>({
+    getParticipantPlan: builder.query<ParticipantContext, ParticipantParameters>({ query: ({ slug, participantId }) => `/substrates/${slug}/participants/${participantId}/plan`, transformResponse: data, providesTags: (_result, _error, { participantId }) => [{ type: 'Participation', id: participantId }] }),
+    getParticipantWorkspace: builder.query<Participation, ParticipantParameters>({
+      query: ({ slug, participantId }) => `/substrates/${slug}/participants/${participantId}/workspace`,
+      transformResponse: data,
+      providesTags: (_result, _error, { participantId }) => [{ type: 'Participation', id: participantId }],
+    }),
+    getParticipation: builder.query<AutonomousParticipation, ParticipantParameters>({
       query: ({ slug, participantId }) => `/substrates/${slug}/participants/${participantId}/participate`,
       transformResponse: data,
       providesTags: (_result, _error, { participantId }) => [{ type: 'Participation', id: participantId }],
     }),
-    contribute: builder.mutation<Participation, ParticipantParameters & { phaseId: Identifier; contribution: ContributionInput }>({
+    contribute: builder.mutation<AutonomousParticipation, ParticipantParameters & { phaseId: Identifier; contribution: ContributionInput }>({
       query: ({ slug, participantId, phaseId, contribution }) => ({
         url: `/substrates/${slug}/participants/${participantId}/participate`,
         method: 'POST',
@@ -162,7 +167,7 @@ export const commonsApi = createApi({
       transformResponse: data,
       invalidatesTags: ['Participation', 'Proposition', 'Participant'],
     }),
-    enterCycle: builder.mutation<Participation, ParticipantParameters & { origin?: OriginInput }>({
+    enterCycle: builder.mutation<AutonomousParticipation, ParticipantParameters & { origin?: OriginInput }>({
       query: ({ slug, participantId, origin }) => ({
         url: `/substrates/${slug}/participants/${participantId}/participate/enter`,
         method: 'POST',
@@ -268,6 +273,7 @@ export const {
   useGetParticipantConnectionsQuery,
   useGetParticipantPlanQuery,
   useGetParticipationQuery,
+  useGetParticipantWorkspaceQuery,
   useGetParticipantQuery,
   useGetParticipantsQuery,
   useGetPropositionQuery,

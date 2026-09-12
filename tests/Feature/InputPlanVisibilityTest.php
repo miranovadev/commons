@@ -10,11 +10,17 @@ use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Substrate;
 use App\Models\Supersession;
+use App\Services\ContributionDispatcher;
 use App\Services\ContributionService;
 use App\Services\InputPlanService;
 use App\Services\LedgerService;
+use App\Services\LineageService;
+use App\Services\OpenAIResponseSchema;
 use App\Services\PropositionMeasurementService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Opis\JsonSchema\Helper;
+use Opis\JsonSchema\Validator;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class InputPlanVisibilityTest extends TestCase
@@ -65,14 +71,13 @@ class InputPlanVisibilityTest extends TestCase
             $origin,
         );
 
-        $plan = app(InputPlanService::class)->forParticipant($viewer);
+        $plan = app(InputPlanService::class)->forWorkspace($viewer);
         $visibleFrontierIds = collect(
             $plan['workspace']['registers']['frontier'],
         )->pluck('id');
         $writeOptionIds = collect($plan['write_options'])->pluck('id');
         $attestationOptionIds = collect(
-            $plan['schema']['$defs']['actions']['attestation.create']
-                ['properties']['proposition_id']['enum'],
+            $plan['schema']['$defs']['actions']['attestation.create']['properties']['proposition_id']['enum'],
         );
 
         $this->assertTrue($visibleFrontierIds->contains($source->getKey()));
@@ -89,7 +94,7 @@ class InputPlanVisibilityTest extends TestCase
         // from either the schema or the explicit human Attestation options.
         $viewer->max_read_count = 1;
         $viewer->save();
-        $limited = app(InputPlanService::class)->forParticipant($viewer);
+        $limited = app(InputPlanService::class)->forWorkspace($viewer);
         $this->assertContains($source->id, array_column($limited['attestation_options'], 'id'));
         $this->assertContains($source->id, $limited['schema']['$defs']['actions']['attestation.create']['properties']['proposition_id']['enum']);
     }
@@ -112,12 +117,12 @@ class InputPlanVisibilityTest extends TestCase
         }
         $viewer = $this->participant($substrate, 'viewer');
         $this->phase($viewer, PhaseKind::Persist, 'frontier', $gate);
-        $plan = app(InputPlanService::class)->forParticipant($viewer);
+        $plan = app(InputPlanService::class)->forWorkspace($viewer);
         $this->assertContains($unrelated->id, array_column($plan['workspace']['registers']['frontier'], 'id'));
         $this->assertSame([$child->id], array_column($plan['write_options'], 'id'));
         $this->assertSame([$child->id], array_column($plan['attestation_options'], 'id'));
         $this->assertSame([], $plan['traversal_options']);
-        $this->assertContains($parent->id, app(\App\Services\LineageService::class)->neighbourIds($gate));
+        $this->assertContains($parent->id, app(LineageService::class)->neighbourIds($gate));
         foreach ([$parent, $sibling, $distant, $unrelated, $wrong, $committal] as $excluded) {
             foreach (['support', 'refute'] as $direction) {
                 $this->assertInput($plan['schema'], [
@@ -135,10 +140,11 @@ class InputPlanVisibilityTest extends TestCase
                 $cases[$kind->name.' '.($direction ?? 'untouched')] = [$kind, $direction];
             }
         }
+
         return $cases;
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('writeDirections')]
+    #[DataProvider('writeDirections')]
     public function test_personal_effective_attestation_controls_human_and_inference_choices(PhaseKind $kind, ?string $direction): void
     {
         $substrate = $this->substrate();
@@ -175,7 +181,7 @@ class InputPlanVisibilityTest extends TestCase
         $card = collect($plan['write_options'])->firstWhere('id', $child->id);
         $this->assertSame(['support' => 1 + (int) ($direction === 'support'), 'refute' => (int) ($direction === 'refute')], $card['attestation_counts']);
         $this->assertSame($traversable ? [$child->id] : [], array_column($plan['traversal_options'], 'id'));
-        $transport = app(\App\Services\OpenAIResponseSchema::class)->fromCommons($plan['schema']);
+        $transport = app(OpenAIResponseSchema::class)->fromCommons($plan['schema']);
         foreach (['refute', 'support'] as $choice) {
             $input = ['action' => 'attestation.create', 'proposition_id' => $child->id, 'direction' => $choice];
             $this->assertInput($plan['schema'], $input, $choice !== $direction);
@@ -198,7 +204,7 @@ class InputPlanVisibilityTest extends TestCase
         if ($direction !== null) {
             $count = Proposition::count();
             $edges = Supersession::count();
-            app(\App\Services\ContributionDispatcher::class)->dispatch($viewer, $phase, [
+            app(ContributionDispatcher::class)->dispatch($viewer, $phase, [
                 'action' => 'attestation.create', 'proposition_id' => $child->id,
                 'direction' => $direction === 'support' ? 'refute' : 'support',
             ]);
@@ -214,8 +220,8 @@ class InputPlanVisibilityTest extends TestCase
 
     private function assertInput(array $schema, array $input, bool $valid): void
     {
-        $result = app(\Opis\JsonSchema\Validator::class)->validate(
-            \Opis\JsonSchema\Helper::toJSON($input), \Opis\JsonSchema\Helper::toJSON($schema),
+        $result = app(Validator::class)->validate(
+            Helper::toJSON($input), Helper::toJSON($schema),
         );
         $this->assertSame($valid, $result->isValid(), json_encode($input));
     }

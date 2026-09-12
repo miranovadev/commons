@@ -33,14 +33,14 @@ new Function('require', 'module', 'exports', result.outputFiles[0].text)(createR
 const ui = module.exports;
 const node = (id, parents = [], tier = 'expressive') => ({ id, parent_ids: parents, tier, register: 'concord', statement: id });
 
-test('lineage orders structural parents before descendants, stops at its Committal and ignores global timestamps', () => {
-  const root = node('provenance', ['earlier'], 'committal');
-  const lineage = [node('present', ['merge']), node('merge', ['left', 'right']), node('right', ['provenance']), node('left', ['provenance']), root, node('earlier', [], 'committal'), node('unrelated')];
-  const ordered = ui.chronologicalLineage(lineage.map((n, index) => ({ ...n, created_at: String(100 - index) })));
-  assert.deepEqual(ordered.map(n => n.id), ['provenance', 'left', 'right', 'merge', 'present']);
-  assert.deepEqual(ui.chronologicalLineage([root]).map(n => n.id), ['provenance']);
+test('lineage preserves the resolved server path across collapsed parents and misleading timestamps', () => {
+  const provenance = { ...node('seed', [], 'committal'), created_at: '2030-01-01' };
+  const result = { ...node('result', ['hard-input-a', 'hard-input-b']), created_at: '2020-01-01' };
+  const head = node('head', ['result']);
+  const chain = [provenance, result, head];
+  assert.deepEqual(ui.chronologicalLineage(chain).map(item => item.id), ['seed', 'result', 'head']);
+  assert.deepEqual(chain, [provenance, result, head]);
   assert.deepEqual(ui.chronologicalLineage([]), []);
-  assert.deepEqual(ui.chronologicalLineage([node('head', ['not-loaded'])]).map(n => n.id), ['head']);
 });
 
 test('completion navigates to the Substrate Participants and respects waiting, recovery and unavailable entry', () => {

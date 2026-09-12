@@ -281,3 +281,17 @@ export interface ParticipantParameters {
 export interface ApiEnvelope<T> {
   data: T;
 }
+
+/** Protected autonomous context; human display uses ParticipantPlan via /workspace. */
+export interface ParticipantContext {
+  phase: Pick<Phase, 'id' | 'number' | 'kind' | 'write_register'>;
+  provenance_id: Identifier | null;
+  gate_id: Identifier;
+  lineage: Proposition[];
+  read_options: Proposition[];
+  gate_options: Proposition[];
+  write_options: Proposition[];
+  schema: InputSchema;
+}
+
+export type AutonomousParticipation = Omit<Participation, 'plan'> & { plan?: ParticipantContext | null };

@@ -14,6 +14,7 @@ use App\Models\Proposition;
 use App\Models\Substrate;
 use App\Services\CycleEntryService;
 use App\Services\InputSchemaService;
+use App\Services\LedgerService;
 use App\Services\OpenAIResponseSchema;
 use App\Services\OpenAIResponsesClient;
 use Carbon\CarbonImmutable;
@@ -78,7 +79,7 @@ class ParticipantWakeTest extends TestCase
         Queue::assertPushed(WakeParticipant::class, 1);
     }
 
-    public function test_openai_receives_the_human_state_as_json_and_a_strict_response_schema(): void
+    public function test_openai_receives_only_the_autonomous_context_as_json_and_a_strict_response_schema(): void
     {
         config()->set('services.openai.base_url', 'https://api.openai.test/v1');
         Http::fake([
@@ -132,7 +133,7 @@ class ParticipantWakeTest extends TestCase
             $payload = $request->data();
 
             $this->assertSame(
-                $state,
+                ['status' => $state['status'], 'plan' => $state['plan']],
                 json_decode(
                     $payload['input'][1]['content'],
                     true,
@@ -269,9 +270,8 @@ class ParticipantWakeTest extends TestCase
         $inference = Mockery::mock(ParticipantInference::class);
         $inference->shouldReceive('contribute')
             ->once()
-            ->withArgs(fn (Connection $connection, array $state): bool =>
-                $state['status'] === 'ready'
-                && $state['plan']['gate']['id'] === $origin->getKey())
+            ->withArgs(fn (Connection $connection, array $state): bool => $state['status'] === 'ready'
+                && $state['plan']['gate_id'] === $origin->getKey())
             ->andReturn([
                 'action' => 'proposition.variant',
                 'statement' => 'The second participant is awake.',
@@ -321,7 +321,7 @@ class ParticipantWakeTest extends TestCase
             'statement' => 'The current Gate.',
         ]);
         $gate->save();
-        app(\App\Services\LedgerService::class)->record($gate);
+        app(LedgerService::class)->record($gate);
         $phase->forceFill(['gate_proposition_id' => $gate->getKey()])->save();
 
         return [
