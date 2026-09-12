@@ -6,11 +6,11 @@ use App\Enums\ObservableDirection;
 
 final readonly class ClosureValues
 {
-    public function __construct(public float $depth, public float $cadence) {}
+    public function __construct(public float $depth, public float $cadence, public ?float $measuredClosure = null) {}
 
     public function average(): float
     {
-        return round(($this->depth + $this->cadence) / 2, 7);
+        return $this->measuredClosure ?? round(($this->depth + $this->cadence) / 2, 7);
     }
 
     /** @return array{depth: float, cadence: float, closure: float, depth_direction: string, cadence_direction: string, admissible: bool} */

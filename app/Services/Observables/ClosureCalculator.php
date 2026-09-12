@@ -18,6 +18,17 @@ final readonly class ClosureCalculator
         private PropositionStateService $state,
     ) {}
 
+    /** Form the Proposition's intrinsic Closure before any propagation distance exists. */
+    public function localComponents(Proposition $proposition, LineageComparison $comparison): ClosureValues
+    {
+        $structural = $this->components($comparison);
+        $mass = $this->reinforcement->count($proposition, $comparison->current->context)
+            * $this->reinforcement->receiptIncrement($comparison->current->horizon->substrate);
+
+        return new ClosureValues($structural->depth, $structural->cadence,
+            round(($structural->depth + $structural->cadence + $mass) / (2 + $mass), 7));
+    }
+
     public function calculate(LineageComparison $comparison): float
     {
         return $this->components($comparison)->average();
@@ -45,11 +56,6 @@ final readonly class ClosureCalculator
     public function depth(DomainLineage $lineage): float
     {
         $heads = $this->activeHeads($lineage);
-        $weights = $this->reinforcement->weights(
-            $heads,
-            $lineage->horizon->substrate,
-            $lineage->context,
-        );
         $parents = $lineage->supersessions->groupBy('target_proposition_id');
         $memo = [];
         $visiting = [];
@@ -89,7 +95,7 @@ final readonly class ClosureCalculator
             ->map(
                 fn (Proposition $proposition) => $visit(
                     $proposition->getKey()
-                ) * $weights->get($proposition->getKey(), 1),
+                ),
             )
             ->average();
     }

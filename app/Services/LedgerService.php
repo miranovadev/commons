@@ -174,7 +174,7 @@ final readonly class LedgerService
                     $receiptable->phase,
                 ),
                 default => throw new DomainException(
-                    'A Receipt must reinforce a Proposition or Attestation.'
+                    'A Receipt must reference a Proposition or Attestation.'
                 ),
             };
             $this->assertSameSubstrate(

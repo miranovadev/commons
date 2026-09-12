@@ -190,6 +190,7 @@ class ParticipationPerformanceTest extends TestCase
         $prior = $node('concord', $prior, type: 'reclassify');
         $boundary = $node('concord', $prior, 'committal', 'commit');
         app(CommitRegionPolarityService::class)->establishCommit($boundary, ObservableDirection::Positive);
+        $this->groundFixture($boundary);
         app(PropositionMeasurementService::class)->recalculate($boundary);
         app(CommitmentSnapshotService::class)->record($boundary, 0, 1,
             LineageMeasurementService::VERSION,

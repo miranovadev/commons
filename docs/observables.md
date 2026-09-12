@@ -22,7 +22,7 @@ Shared ancestors count once, at their shortest structural distance. Unrelated
 branches and other substrates are excluded. Participant display/read limits do
 not change this geometry.
 
-For Correspondence, Chirality, Depth and Cadence independently:
+For Correspondence, Chirality, locally formed Closure, Depth and Cadence independently:
 
 \[
 a(d)=\frac{1}{(1+d)^2},\qquad
@@ -34,9 +34,9 @@ values. Distances 0, 1, 2, 3 and 4 have weights 1, 1/4, 1/9, 1/16 and 1/25.
 There is no recursive attenuation of a running aggregate and no final clamp.
 For a two-position lineage, local values (head, parent) of (0, 1) yield 0.2;
 (1, 0) yield 0.8; (1, 1) yield 1. Thus unanimous lineages retain full magnitude,
-while distant signals amongst neutral positions are diminished. Closure remains
-the mean of accumulated Depth and Cadence. Results are rounded to seven decimal
-places after accumulation.
+while distant signals amongst neutral positions are diminished. Closure propagates its already-formed local value; it is not recomputed from
+attenuated evidence counts or merely averaged from accumulated Depth/Cadence.
+Results are rounded to seven decimal places after accumulation.
 
 The inverse-square historical mass converges along a single chain. Branching
 can add more mass; the shared denominator still keeps every result in [-1, 1].
@@ -80,7 +80,7 @@ measurement population.
 
 ## Local Correspondence
 
-Correspondence is a receipt-weighted, two-iteration Weisfeiler-Leman graph
+Correspondence is a reinforcement-weighted, two-iteration Weisfeiler-Leman graph
 kernel:
 
 - Activity and Signal are labelled R.
@@ -97,7 +97,7 @@ shared structural features.
 ## Local Chirality
 
 Chirality first removes Propositions that have been hard superseded inside
-each lineage. It then calculates each Domain's receipt-weighted attestational
+each lineage. It then calculates each Domain's reinforcement-weighted attestational
 lean:
 
 \[
@@ -105,7 +105,7 @@ D = \frac{\sum_i w_i d_i}{\sum_i w_i}
 \]
 
 Here d_i is the signed direction of each effective Attestation under its fixed
-Commit Region polarity, and w_i is its existing Receipt weight. Support can map
+Commit Region polarity, and w_i is its counted Reinforcement weight. Support can map
 to either sign. The final value is D_current × D_previous. A Domain without an active
 Attestation has a neutral lean of 0.
 
@@ -134,11 +134,9 @@ sources remain active; hard-superseded sources do not remain independent head
 observations. Unrelated Horizon heads are not included.
 
 Depth is the mean structural extension of these heads: each head's longest
-incoming Proposition path length (counting the head) multiplied by its Receipt
-reinforcement weight. Historical nodes establish path topology, but their own
-Receipts do not independently reinforce an active head unless inherited through
-Commit. This retains structural development while removing the historical
-population as the set of observations.
+incoming Proposition path length (counting the head). Reinforcement does not
+change that structural length. Historical nodes establish path topology rather
+than extra active-head observations.
 
 Cadence is the population coefficient of variation (standard deviation / mean)
 of **Phase touches per active head**. Each persisted Phase whose Gate is a
@@ -159,8 +157,11 @@ Depth and Cadence are independently compared with:
 1 - 2\left(\frac{|A-B|}{\max(A,B)}\right)
 \]
 
-When both inputs are zero the result is persistent (1). Closure is the
-average of the resulting Depth and Cadence values.
+When both inputs are zero the result is persistent (1). With local component
+values D and C, counted participants N and contribution/receipt ratio q (default 3),
+local Closure is `(D + C + N/q) / (2 + N/q)`. This bounded persistence-weighted
+mean preserves the old two-component mean at N=0. See [Reinforcement](reinforcement.md)
+for qualification and why local Closure must form before attenuation.
 
 The comparison remains similarity to the complementary lineage, rather than a
 new absolute concentration threshold. Matching distributions resolve positive;
@@ -183,10 +184,9 @@ the prospective post-Commit head set, and preview performs no writes.
 Effective Attestations and completed Receipts remain accessible through the same
 inheritance resolver. They retain their original IDs, authors, targets and
 supersession history; no evidence rows are copied. Completed Receipts on effective
-Attestations still ground the committed state. Proposition reinforcement retains
-its non-Citation, signed-Receipt rule, including completed inherited Proposition
-Receipts. Each head's reinforcement counts each original Receipt once, and lean
-deduplicates Attestation IDs shared by multiple Commit heads. Evidence is resolved from current
+Attestations still ground the committed state. Counted Reinforcement follows Commit-only source references and deduplicates
+Participants, never raw Receipt events. Lean uses allocated Reinforcement receipts
+and deduplicates Attestation IDs shared by multiple Commit heads. Evidence is resolved from current
 effective state; immutable Commitment snapshots preserve the observation made
 at Commitment.
 
@@ -204,13 +204,16 @@ contribution records remain attached to their original Propositions.
 
 ## Reinforcement and bootstrap
 
-Only uniquely identified, non-Citation Receipts provide calculation weight.
+Only qualifying verified Hyperlink evidence can allocate counted Reinforcement.
+Legacy signatures, originating evidence, Cite and unsupported types do not count.
 The default contribution-to-Receipt ratio is 3:1. A Substrate can override it
 through the observables.contribution_receipt_ratio configuration value.
 
 The first Context Horizon has no complementary Domain to compare. Its
 documented bootstrap result is maximum Turbulence, represented by -1 for
-Correspondence, Chirality, and Closure.
+Correspondence, Chirality, and the initial Depth/Cadence values. The Origin has
+no counted Reinforcement, so its initial Closure is also -1. Later qualifying
+reinforcement can change local Closure even without a complementary Domain.
 
 Use LocalMeasurementService::calculate() for a raw result and
 PropositionMeasurementService::recalculate() for the accumulated disposable
@@ -223,7 +226,7 @@ Missing/unmeasurable Potential candidates remain ineligible. No persistent raw
 cache is introduced; prospective Closure always evaluates current Phase history.
 
 Immutable commitment snapshots continue to preserve the values observed at
-commitment time. New non-bootstrap commitments record region-attestation-polarity-v3.
+commitment time. New non-bootstrap commitments record participant-reinforcement-v4.
 
 See [Attestation polarity and direction history](attestation-polarity.md) for the
 normative distinction between measurement values, retained directions and labels.

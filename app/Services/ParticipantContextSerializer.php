@@ -68,7 +68,7 @@ final class ParticipantContextSerializer
         }
         if (! empty($node['instruments'])) {
             $result['instruments'] = array_map(fn ($item) => Arr::only($item,
-                ['kind', 'reference', 'status', 'failure_reason', 'receipt_id']), $node['instruments']);
+                ['kind', 'reference', 'status', 'failure_reason', 'receipt_id', 'reinforcement_status', 'content_verified']), $node['instruments']);
         }
 
         return $result;

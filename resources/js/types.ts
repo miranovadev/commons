@@ -36,6 +36,8 @@ export interface Proposition {
     status: 'pending' | 'completed' | 'failed';
     failure_reason: string | null;
     receipt_id: Identifier | null;
+    reinforcement_status?: string | null;
+    content_verified?: boolean;
   }>;
 }
 
@@ -171,7 +173,8 @@ export interface ParticipantPlan {
   commitment_options?: Record<Identifier, NonNullable<ParticipantPlan['commitment']>>;
   commitment?: {
     admissible: boolean;
-    requirements: { attestation: boolean; receipt: boolean; closure: boolean | null };
+    requirements: { attestation: boolean; receipt: boolean; reinforcement: boolean; closure: boolean | null };
+    reinforcement_count: number;
     closure_enforced: boolean;
     closure?: {
       depth: number;

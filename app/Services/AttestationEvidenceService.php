@@ -77,7 +77,8 @@ final readonly class AttestationEvidenceService
             ->with(['ledgerEntry', 'supersededBy.ledgerEntry', 'proposition.phase.cycle.participant'])->get();
         $receipts = $context !== null ? $context->reinforcementReceipts((new Attestation)->getMorphClass(), $attestations->pluck('id'))->groupBy('receiptable_id') : Receipt::query()->where('receiptable_type', (new Attestation)->getMorphClass())
             ->whereIn('receiptable_id', $attestations->pluck('id'))
-            ->where('type', '!=', 'citation')->whereNotNull('signature')->with('ledgerEntry')->get()->groupBy('receiptable_id');
+            ->whereHas('reinforcement')->whereHas('instrumentExecution', fn ($q) => $q->where('status', 'completed'))
+            ->with('ledgerEntry')->get()->groupBy('receiptable_id');
         $frames = [];
         $rows = [];
         foreach ($attestations as $attestation) {

@@ -179,6 +179,7 @@ class CommitRegionTest extends TestCase
         $outside = $this->node($third, $boundary);
         foreach ([$positive, $negative, $misaligned, $outside] as $candidate) {
             $this->attest($candidate, 'support');
+            $this->verifiedReceiptFixture($candidate);
             app(OperationalInstrumentService::class)->execute($this->history, $candidate,
                 ['kind' => 'hyperlink', 'reference' => 'https://example.test/'.$candidate->id]);
         }
