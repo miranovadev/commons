@@ -224,6 +224,22 @@ class ReinforcementTest extends TestCase
         $this->assertGreaterThan($before, app(LocalMeasurementService::class)->calculate($this->node)->closure()->average());
     }
 
+    public function test_rollback_refuses_to_destroy_shared_signature_history(): void
+    {
+        $first = $this->receipt();
+        $second = $this->receipt();
+        $migration = require database_path('migrations/2026_09_13_000000_add_counted_reinforcement.php');
+        try {
+            $migration->down();
+            $this->fail('Shared Receipt history must survive a rollback attempt.');
+        } catch (\RuntimeException $error) {
+            $this->assertSame('Cannot restore unique Receipt signatures without destroying shared evidence history.', $error->getMessage());
+        }
+        $this->assertSame($first->signature, $second->fresh()->signature);
+        $this->assertSame(2, Receipt::count());
+        $this->assertSame(1, $this->reinforcementCount());
+    }
+
     private function reinforcementCount(): int
     {
         return app(ReinforcementService::class)->count($this->node);

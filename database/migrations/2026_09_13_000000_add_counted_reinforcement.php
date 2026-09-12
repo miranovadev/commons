@@ -39,7 +39,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        if (DB::table('receipts')->whereNotNull('signature')->groupBy('signature')->havingRaw('count(*) > 1')->exists()) {
+        if (DB::table('receipts')->select('signature')->whereNotNull('signature')->groupBy('signature')->havingRaw('count(*) > 1')->exists()) {
             throw new RuntimeException('Cannot restore unique Receipt signatures without destroying shared evidence history.');
         }
         Schema::dropIfExists('reinforcements');
