@@ -5,11 +5,19 @@ import { createRequire } from 'node:module';
 import { setTimeout as wait } from 'node:timers/promises';
 import { Window } from 'happy-dom';
 
+// Browser-scheduled MessagePorts belong to the test realm, too. Node's native
+// ports otherwise keep the worker alive after the mounted page is gone.
+const messageChannels = [];
+const NativeMessageChannel = globalThis.MessageChannel;
+globalThis.MessageChannel = class extends NativeMessageChannel {
+  constructor() { super(); messageChannels.push(this); }
+};
 const window = new Window({ url: 'http://localhost' });
 after(async () => {
   await window.happyDOM.abort();
   await window.happyDOM.close();
   stop();
+  for (const channel of messageChannels) { channel.port1.close(); channel.port2.close(); }
   console.log('DOM test resources after cleanup:', process.getActiveResourcesInfo());
 }, { timeout: 5000 });
 for (const key of ['window', 'document', 'navigator', 'HTMLElement', 'Element', 'Node', 'ShadowRoot', 'MutationObserver', 'ResizeObserver']) {
