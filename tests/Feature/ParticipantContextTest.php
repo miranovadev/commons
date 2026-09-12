@@ -131,6 +131,9 @@ class ParticipantContextTest extends TestCase
     {
         $this->freezeTime();
         $fixture = new ParticipantContextFixture;
+        // The human workspace shows the newest 25 cards. Give the unrelated
+        // population a distinct timestamp so SQL tie ordering cannot hide it.
+        $this->travel(1)->seconds();
         $fixture->growUnrelatedTo(10);
         $service = app(ParticipationService::class);
         $before = $service->stateFor($fixture->viewer)['plan'];
