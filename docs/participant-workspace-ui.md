@@ -6,13 +6,15 @@ organized around three stable regions: Read, Gate and Write.
 ## Layout and navigation
 
 - At desktop widths, the operational board fills the available viewport height.
-  Each region has its own vertical overflow for short windows or enlarged text.
+  Regions grow with their content; the workspace owns vertical overflow for short
+  windows or enlarged text. Card navigators scroll horizontally only.
   Proposition collections occupy one horizontal row, with scroll snapping,
   keyboard arrows and previous/next controls that move approximately one visible
   group. Controls appear only when the collection overflows, and hide at ends.
   The snap viewport has no horizontal padding, so the first snap point is zero;
   a layout effect resets the scroll position before paint when the Phase changes.
-- Notices sit inside Write, above generation and the card navigator, at every
+- Notices and generation controls sit inside Write, outside and above the card
+  navigator, at every
   viewport size. Compact full-title chips scroll horizontally and open their
   content in the existing viewport-constrained Mantine Modal. No status shell
   column or extra shell row is reserved. Commitment and Closure chips independently
@@ -24,9 +26,9 @@ organized around three stable regions: Read, Gate and Write.
 - Lineage opens separately so expanding history cannot resize the operational
   regions. Inspecting a lineage card closes that Modal before opening the Drawer.
 
-The short-window design deliberately allows vertical scrolling **inside** a
-region instead of making text and action targets arbitrarily small. At tablet
-widths the Phase progress list is hidden to leave enough room for identity and captions.
+Scrollbars have transparent thumbs until hover or keyboard focus enters their
+container. Their width remains constant to avoid layout movement. At tablet
+widths the Phase stepper is hidden to leave enough room for identity and captions.
 
 ## Directions and evidence display
 
@@ -89,11 +91,17 @@ readouts use darker/lighter Indigo for negative/positive numbers and neutral tex
 for zero or unavailable values. No formulas change.
 
 Participant initials use a shared deterministic callsign hash into the Mantine
-palette, also applied to the participant list. Phase identity sits left and
-Participant identity right in one row. Below 48em, designation is hidden and the
+palette, also applied to the participant list. Phase identity is centred on desktop and
+Participant identity sits right in one row. Below 48em, designation is hidden and the
 Phase caption is available through a tap/click Info Popover. The Participant
 Drawer shows full designation and identity details. At 75em and wider, a compact,
-non-interactive seven-Phase progress list highlights the current Phase in Indigo.
+seven-Phase Mantine Stepper highlights the current Phase in Indigo. Earlier steps
+open a read-only register preview; future steps remain disabled. The preview
+regroups already-loaded cards and lineage using the selected Phase register
+positions. Missing registers stay empty. It does not fetch or reconstruct a
+historical snapshot, and makes no backend changes. Contribution controls are
+hidden in both the board and inspector. Returning to the current step restores
+the live plan; a new active Phase automatically clears the preview.
 Metadata/icons are shared from `resources/js/phases.ts`.
 
 The Participant Drawer lists owned Participants (or all for an existing system
@@ -127,6 +135,8 @@ entry point, excluded from the production application bundle.
 Automated coverage checks both polarity mappings, portal arrow ordering, signed
 counts/ties, colour association, deterministic avatars, navigation boundaries and
 step sizing, contextual versus generative actions, metadata and status structure.
+Preview tests cover both domains, missing data, input immutability, disabled future
+steps, busy selection guards and removal of contribution controls.
 Backend tests cover Origin's label exception, inherited evidence across opposite
 frames, replacement freshness, retained direction at zero/ties and plan serialization. The existing 43-Proposition
 performance fixture keeps its optimized counts: 210 Mediate, 196 Bias, 194 Order;
