@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Proposition;
+use App\Services\Participation\ParticipationContext;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -35,6 +36,7 @@ final class LineageService
             $seen = $seen->merge($next->pluck('id'));
             $frontier = $next->where('tier', 'expressive')->pluck('id');
         }
+
         return $descendants;
     }
 
@@ -54,6 +56,7 @@ final class LineageService
         Proposition $gate,
         int $maxReadCount,
         ?int $maxTokenCount = null,
+        ?ParticipationContext $context = null,
     ): Collection {
         $lineage = collect();
         $frontier = collect([$gate]);
@@ -81,13 +84,13 @@ final class LineageService
                 }
 
                 $nextIds->push(
-                    ...DB::table('supersessions')
+                    ...($context !== null ? $context->parents->get($proposition->id, collect())->pluck('source_proposition_id') : DB::table('supersessions')
                         ->where('target_proposition_id', $proposition->getKey())
-                        ->pluck('source_proposition_id')
+                        ->pluck('source_proposition_id'))
                 );
             }
 
-            $frontier = Proposition::query()
+            $frontier = $context !== null ? $context->nodes($nextIds->unique())->sortByDesc('created_at')->values() : Proposition::query()
                 ->whereIn('id', $nextIds->unique())
                 ->latest('created_at')
                 ->get();

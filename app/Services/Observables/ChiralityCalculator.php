@@ -6,14 +6,16 @@ use App\Domain\Observables\DomainLineage;
 use App\Domain\Observables\LineageComparison;
 use App\Enums\ObservableDirection;
 use App\Enums\SupersessionStrength;
-use App\Models\Substrate;
 use App\Models\Proposition;
+use App\Models\Substrate;
+use App\Services\AttestationEvidenceService;
+use App\Services\Participation\ParticipationContext;
 use Illuminate\Support\Collection;
 
 final readonly class ChiralityCalculator
 {
     public function __construct(
-        private \App\Services\AttestationEvidenceService $evidence,
+        private AttestationEvidenceService $evidence,
     ) {}
 
     public function calculate(LineageComparison $comparison): float
@@ -33,7 +35,7 @@ final readonly class ChiralityCalculator
     {
         $ids = $this->activeIds($lineage->propositions, $lineage->supersessions);
 
-        return $this->evidence->valueFor($lineage->propositions->whereIn('id', $ids), $lineage->horizon->substrate);
+        return $this->evidence->valueFor($lineage->propositions->whereIn('id', $ids), $lineage->horizon->substrate, $lineage->context);
     }
 
     /** Shared hard-supersession semantics for active propositions in a lineage. */
@@ -46,18 +48,19 @@ final readonly class ChiralityCalculator
             )
             ->pluck('source_proposition_id')
             ->unique();
+
         return $propositions->pluck('id')->diff($supersededIds)->values();
     }
 
     /** Receipt-weighted effective Attestation lean, before cross-domain comparison. */
-    public function leanFor(Collection $activeIds, Substrate $substrate): float
+    public function leanFor(Collection $activeIds, Substrate $substrate, ?ParticipationContext $context = null): float
     {
-        return $this->evidence->valueFor(Proposition::query()->whereIn('id', $activeIds)->get(), $substrate);
+        return $this->evidence->valueFor($context !== null ? $context->nodes($activeIds) : Proposition::query()->whereIn('id', $activeIds)->get(), $substrate, $context);
     }
 
     /** Effective Attestation direction reconstructed from evidence in its fixed region frame. */
-    public function directionFor(Proposition $proposition): ObservableDirection
+    public function directionFor(Proposition $proposition, ?ParticipationContext $context = null): ObservableDirection
     {
-        return $this->evidence->directionFor($proposition);
+        return $this->evidence->directionFor($proposition, context: $context);
     }
 }

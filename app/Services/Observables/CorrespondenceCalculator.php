@@ -4,8 +4,8 @@ namespace App\Services\Observables;
 
 use App\Domain\Observables\DomainLineage;
 use App\Domain\Observables\LineageComparison;
-use App\Enums\SupersessionStrength;
 use App\Enums\RegisterPosition;
+use App\Enums\SupersessionStrength;
 use App\Models\Proposition;
 
 final readonly class CorrespondenceCalculator
@@ -67,6 +67,7 @@ final readonly class CorrespondenceCalculator
         $weights = $this->reinforcement->weights(
             $lineage->propositions,
             $lineage->horizon->substrate,
+            $lineage->context,
         );
         $features = [];
 

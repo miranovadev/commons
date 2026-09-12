@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\PhaseKind;
 use App\Models\Phase;
 use App\Models\Proposition;
+use App\Services\Participation\ParticipationContext;
 use Illuminate\Support\Collection;
 
 final readonly class ClosureOptionService
@@ -16,20 +17,18 @@ final readonly class ClosureOptionService
     ) {}
 
     /** Measurement comparison stays in ClosureGateService; scope stays in CommitRegionService. */
-    public function forPhase(Phase $phase): Collection
+    public function forPhase(Phase $phase, ?ParticipationContext $context = null): Collection
     {
         if ($phase->kind !== PhaseKind::Order) {
             return collect();
         }
 
-        return $this->regions->forPhase($phase)->filter(fn (Proposition $candidate): bool =>
-            $this->closure->preview($candidate, $phase)['admissible'])->values();
+        return $this->regions->forPhase($phase, context: $context)->filter(fn (Proposition $candidate): bool => $this->closure->preview($candidate, $phase, $context)['admissible'])->values();
     }
 
     /** Evidence remains a separate prerequisite for the Commit action. */
-    public function committableFor(Phase $phase): Collection
+    public function committableFor(Phase $phase, ?ParticipationContext $context = null): Collection
     {
-        return $this->forPhase($phase)->filter(fn (Proposition $candidate): bool =>
-            $this->admissibility->grounding($candidate)['admissible'])->values();
+        return $this->forPhase($phase, $context)->filter(fn (Proposition $candidate): bool => $this->admissibility->grounding($candidate, $context)['admissible'])->values();
     }
 }
