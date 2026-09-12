@@ -1,5 +1,6 @@
+import { ParticipantAvatar } from '../components/ParticipantIdentity';
 import { useMemo, useState } from 'react';
-import { ActionIcon, Alert, Avatar, Badge, Box, Button, Card, Container, Group, Modal, NumberInput, Select, SimpleGrid, Stack, Switch, Text, TextInput, ThemeIcon, Title, Tooltip } from '@mantine/core';
+import { ActionIcon, Alert, Badge, Box, Button, Card, Container, Group, Modal, NumberInput, Select, SimpleGrid, Stack, Switch, Text, TextInput, ThemeIcon, Title, Tooltip } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconAlertCircle, IconArrowRight, IconPlugConnected, IconPlus, IconRoute, IconTrash, IconUserHexagon, IconUsers } from '@tabler/icons-react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -123,7 +124,7 @@ function ParticipantCard({ participant, slug, onEnter, onConnections }: Particip
     <Card withBorder padding="lg">
       <Group justify="space-between" align="flex-start" wrap="nowrap">
         <Group gap="sm" wrap="nowrap">
-          <Avatar size={42} radius="xl" color="indigo" name={participant.callsign} />
+          <ParticipantAvatar size={42} callsign={participant.callsign} />
           <Box miw={0}>
             <Text fw={750} truncate>{participant.callsign}</Text>
             <Text size="xs" c="dimmed" truncate>{participant.designation || 'Participant'}</Text>

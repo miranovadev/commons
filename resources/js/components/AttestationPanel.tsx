@@ -27,7 +27,7 @@ export function AttestationPanel({ plan, proposition, loading = false, error, on
     <Stack gap="sm">
       <Text fw={750} size="sm">Attest this Proposition</Text>
       {Boolean(error) && <Alert color="red" role="alert">{messageFrom(error, 'The Attestation could not be applied.')}</Alert>}
-      <AttestationDirectionControl value={direction} directions={directions} onChange={setSelected} />
+      <AttestationDirectionControl supportDirection={proposition.attestation_summary?.support_direction} value={direction} directions={directions} onChange={setSelected} />
       <Textarea label="Rationale" description="Optional context for your Attestation." minRows={4} maxLength={20000}
         value={rationale} onChange={(event) => setRationale(event.currentTarget.value)} disabled={loading} />
       <Button type="submit" color={direction === 'support' ? 'violet' : 'teal'} loading={loading}>

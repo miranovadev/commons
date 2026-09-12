@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
-import { Alert, Badge, Box, Breadcrumbs, Button, Container, Group, Loader, Stack, Text, ThemeIcon, Title } from '@mantine/core';
+import { Alert, Box, Breadcrumbs, Button, Container, Group, Loader, Stack, Text, ThemeIcon, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconAdjustmentsHorizontal, IconAlertCircle, IconArrowsJoin, IconArrowsSplit, IconFilter, IconFocus2, IconLock, IconRepeat, IconSparkles, IconUserHexagon } from '@tabler/icons-react';
+import { IconAlertCircle, IconFocus2, IconSparkles } from '@tabler/icons-react';
 import { Link, useParams } from 'react-router-dom';
 import { messageFrom } from '../errors';
 import { quickContribution } from '../participationOptions';
@@ -11,15 +11,10 @@ import { ParticipantWorkspace } from '../components/ParticipantWorkspace';
 import { useContributeMutation, useEnterCycleMutation, useGetParticipantQuery, useGetParticipationQuery } from '../services/commonsApi';
 import type { ActionName, ContributionInitialValues, ContributionInput, OriginInput, PhaseKind } from '../types';
 
-const phaseMeta = {
-  distinguish: { number: 1, icon: IconFocus2 },
-  persist: { number: 2, icon: IconRepeat },
-  constrain: { number: 3, icon: IconFilter },
-  disperse: { number: 4, icon: IconArrowsSplit },
-  mediate: { number: 5, icon: IconArrowsJoin },
-  bias: { number: 6, icon: IconAdjustmentsHorizontal },
-  order: { number: 7, icon: IconLock },
-};
+import { phaseMeta } from '../phases';
+import { ParticipantIdentity } from '../components/ParticipantIdentity';
+import { WorkspaceStatus } from '../components/WorkspaceStatus';
+import { participationNotices } from '../components/ParticipationNotices';
 
 export function ParticipantPage() {
   const { slug: routeSlug, participantId: routeParticipantId } = useParams();
@@ -68,16 +63,9 @@ export function ParticipantPage() {
     try { await enterCycle({ slug, participantId }).unwrap(); } catch { /* mutation error is rendered below */ }
   }
 
-  const latestCommitment = participation?.last_commitment && (
-    <Alert color="indigo" title="Your latest Commitment" m="md">
-      <Text size="sm">{participation.last_commitment.domain_before} → {participation.last_commitment.domain_after}
-        {' · '}{participation.last_commitment.closure_boundary ? 'Closure Boundary created' : 'No Closure Boundary'}</Text>
-      <Text size="sm">Tension: {participation.last_commitment.tension_before ?? 'unrecorded'} → {participation.last_commitment.tension_after}</Text>
-      <Text size="xs">Depth: {participation.last_commitment.depth ?? 'unrecorded'} ({participation.last_commitment.depth_direction ?? 'unknown'})
-        {' · '}Cadence: {participation.last_commitment.cadence ?? 'unrecorded'} ({participation.last_commitment.cadence_direction ?? 'unknown'})</Text>
-      <Text size="xs">Current Domain: {participation.domain} · Horizon {participation.horizon_sequence}</Text>
-    </Alert>
-  );
+  const notices = participation ? participationNotices({ participation, plan, canCommit: availableActions.includes('proposition.commit'),
+    canRest: availableActions.includes('participant.rest'), error: !selectedAction ? contribution.error : undefined,
+    onRest: () => openAction('participant.rest') }) : [];
 
   return (
     <Container fluid className={plan ? 'participant-page participant-page--active' : 'participant-page'} p={plan ? 0 : undefined}>
@@ -87,47 +75,18 @@ export function ParticipantPage() {
       {participant && participation?.status === 'waiting' && (
         <Box p="xl"><Stack align="flex-start" maw={680} mx="auto"><ThemeIcon color="indigo" variant="light" size="xl" radius="xl"><IconSparkles size={22} /></ThemeIcon><Box><Title order={2}>{participation.entry?.mode === 'origin' ? 'Every substrate begins somewhere' : 'Ready to enter the cycle'}</Title><Text c="dimmed" mt="xs">{participation.entry?.message || participation.reason?.message}</Text></Box>{cycleEntry.error && <Alert color="red" variant="light">{messageFrom(cycleEntry.error, 'The cycle could not be entered.')}</Alert>}<Group>{participation.entry?.mode === 'origin' && participation.entry?.available && <Button color="indigo" onClick={() => { cycleEntry.reset(); openOrigin(); }}>Establish the Origin</Button>}{participation.entry?.mode === 'potential' && participation.entry?.available && <Button color="indigo" loading={cycleEntry.isLoading} onClick={enterFromPotential}>{participation.entry?.selection === 'recovery' ? 'Begin recovery Cycle' : 'Enter Cycle'}</Button>}</Group></Stack></Box>
       )}
-      {!plan && latestCommitment}
+      {!plan && notices.map(notice => <Alert key={notice.id} color={notice.color} title={notice.title} m="md">{notice.content}</Alert>)}
       {participant && plan && (
         <Box className="participant-cycle-shell">
           <Box className="cycle-context-header">
-            <Stack className="cycle-context-header__participant" gap={2} miw={0}>
-              <Badge color="indigo" variant="light" size="xs" leftSection={<IconUserHexagon size={11} />}>Participant</Badge>
-              <Text fw={750} truncate>{participant.callsign}</Text>
-              <Text size="xs" c="dimmed" truncate>{slug}</Text>
-            </Stack>
+            <ParticipantIdentity participant={participant} />
             <PhaseLabel kind={plan.phase.kind} />
             <Box />
           </Box>
           <Box className="participant-cycle-content">
-            {latestCommitment}
-            {plan.commitment && !availableActions.includes('proposition.commit') && (
-              <Alert color="yellow" title="No committable candidate" icon={<IconLock size={18} />} m="md">
-                <Stack gap="xs">
-                  <Text size="sm">{participation.reason?.message}</Text>
-                  <Text size="sm">Current Gate Attestation: {plan.commitment.requirements.attestation ? 'available' : 'missing'}.</Text>
-                  <Text size="sm">Current Gate Receipt: {plan.commitment.requirements.receipt ? 'available' : 'missing'}.</Text>
-                  <Text size="xs">Grounding can be added in Bias and retained for a later Cycle. Use the available Phase actions; the Closure gate still applies.</Text>
-                </Stack>
-              </Alert>
-            )}
-            {plan.commitment?.closure && (
-              <Alert color={plan.commitment.requirements.closure ? 'indigo' : 'yellow'} title="Current Gate Closure preview" m="md">
-                <Text size="sm">Depth: {plan.commitment.closure.depth} ({plan.commitment.closure.depth_direction})
-                  {' · '}Cadence: {plan.commitment.closure.cadence} ({plan.commitment.closure.cadence_direction})</Text>
-                <Text size="sm">{plan.commitment.requirements.closure ? 'Directions align.' : 'Directions diverge for this source. Other eligible sources appear in Write.'}</Text>
-                <Text size="xs">Zero retains the previous committed direction. History: {plan.commitment.closure.history_source}.</Text>
-              </Alert>
-            )}
-            {availableActions.includes('participant.rest') && (
-              <Alert color="gray" title="Tragic Region" m="md">
-                <Text size="sm">No admissible non-Rest action remains in this Phase. Rest ends this Cycle; recovery begins at the nearest viable Committal region.</Text>
-                <Button mt="sm" variant="light" color="gray" onClick={() => openAction('participant.rest')}>Rest</Button>
-              </Alert>
-            )}
-            {contribution.error && !selectedAction && <Alert color="red" m="md" role="alert">{messageFrom(contribution.error, 'The contribution could not be applied. Please try again.')}</Alert>}
             <ParticipantWorkspace plan={{ ...plan, perspectiveLimit: participant.max_read_count }} availableActions={availableActions} onAction={workspaceAction}
               busy={contribution.isLoading || submittedPhase.current === plan.phase.id} onSubmit={submit} error={contribution.error} />
+            <WorkspaceStatus notices={notices} closeDetails={selectedAction !== null} />
           </Box>
           <ContributionForm action={selectedAction?.name} plan={plan} opened={selectedAction !== null} loading={contribution.isLoading} error={contribution.error} initialValues={selectedAction?.initialValues} onClose={() => setSelectedAction(null)} onSubmit={submit} />
         </Box>
@@ -137,15 +96,15 @@ export function ParticipantPage() {
   );
 }
 
-function PhaseLabel({ kind }: { kind: PhaseKind }) {
+export function PhaseLabel({ kind }: { kind: PhaseKind }) {
   const meta = phaseMeta[kind];
   const Icon = meta?.icon || IconFocus2;
   const name = kind ? kind.charAt(0).toUpperCase() + kind.slice(1) : 'Unknown';
   return (
-    <Group className="cycle-context-header__phase" gap={7} justify="center" wrap="nowrap">
-      <Icon size={17} />
-      <Text size="sm" fw={650}>{meta?.number ? `Phase ${meta.number} · ${name}` : name}</Text>
-    </Group>
+    <Stack className="cycle-context-header__phase" gap={3}>
+      <Group gap={7} justify="center" wrap="nowrap"><Icon size={17} /><Text size="sm" fw={650}>{meta?.number ? `Phase ${meta.number} · ${name}` : name}</Text></Group>
+      <Text size="xs" c="dimmed" maw={540}>{meta?.description}</Text>
+    </Stack>
   );
 }
 

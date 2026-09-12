@@ -5,6 +5,7 @@
     "type": "module",
     "scripts": {
         "test:ui": "node --test tests/js/*.test.mjs",
+        "preview:workspace": "node tests/ui/serve.mjs",
         "build": "npm run typecheck && vite build",
         "dev": "vite",
         "typecheck": "tsc --noEmit"

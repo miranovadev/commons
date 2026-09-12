@@ -81,6 +81,7 @@ export function OriginCycleForm({ opened, loading, error, onClose, onSubmit }: O
             <Text size="sm" fw={500}>Initial Attestation label</Text>
             <Text size="xs" c="dimmed">Origin starts in the positive direction. Choose whether to label that direction Support or Refute; this fixes the label polarity for its Commit Region.</Text>
             <AttestationDirectionControl
+              initialLabelChoice
               value={value.direction}
               onChange={(next) => update('direction', next)}
               showLabels

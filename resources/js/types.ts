@@ -28,6 +28,7 @@ export interface Proposition {
   children?: Proposition[];
   attestation?: { direction: AttestationDirection };
   attestation_counts?: { support: number; refute: number };
+  attestation_summary?: { support_direction: 'positive' | 'negative' | null; positive: number; negative: number };
   instruments?: Array<{
     id: Identifier;
     kind: string;

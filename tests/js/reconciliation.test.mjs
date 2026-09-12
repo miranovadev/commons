@@ -61,23 +61,25 @@ test('Mediate counterparts and unary Bias choices use their own schema-authorize
     assert.match(gate, /Sibling alternative/);
     if (kind === 'mediate') {
       assert.match(gate, /data-reconcile-candidate="sibling"/);
-      assert.equal([...gate.matchAll(/>Reconcile<\/span>/g)].length, 1);
+      assert.equal([...write.matchAll(/>Reconcile<\/span>/g)].length, 1);
+      assert.doesNotMatch(gate, />Reconcile<\/span>/);
     } else {
       assert.match(gate, /data-bias-candidate="gate"/);
       assert.match(gate, /data-bias-candidate="sibling"/);
-      assert.equal([...gate.matchAll(/>Bias<\/span>/g)].length, 2);
+      assert.equal([...write.matchAll(/>Bias<\/span>/g)].length, 1);
+      assert.doesNotMatch(gate, />Bias<\/span>/);
       assert.doesNotMatch(gate, /Reconcile/);
       assert.equal([...gate.matchAll(/Privileged Gate/g)].length, 1);
     }
     assert.match(write, /Forward child/);
-    assert.doesNotMatch(write, /Sibling alternative|>Reconcile<\/span>|>Bias<\/span>/);
+    assert.doesNotMatch(write, /Sibling alternative/);
     assert.doesNotMatch(markup, /Unrelated alternative/);
     const denied = module.exports.render(kind, false);
-    assert.doesNotMatch(denied, /Sibling alternative|>Reconcile<\/span>|>Bias<\/span>/);
+    assert.doesNotMatch(denied, /Sibling alternative/);
     if (kind === 'bias') {
       const deniedGate = denied.slice(denied.indexOf('data-role="gate"'), denied.indexOf('data-role="write"'));
       assert.doesNotMatch(deniedGate, /Privileged Gate/);
-      assert.match(deniedGate, /No active Proposition/);
+      assert.match(deniedGate, /No eligible Gate Proposition/);
     }
   }
 });

@@ -156,6 +156,7 @@ export function ContributionForm({
             <Stack gap={5}>
               <Text size="sm" fw={500}>Direction</Text>
               <AttestationDirectionControl
+                supportDirection={actionPropositions(plan, 'attestation.create').find(item => item.id === values.proposition_id)?.attestation_summary?.support_direction}
                 value={direction || 'support'}
                 directions={directions}
                 onChange={(value) => set('direction', value)}

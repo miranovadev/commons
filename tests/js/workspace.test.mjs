@@ -57,9 +57,10 @@ test('Write renders only local cards and exactly the two schema-driven direction
       assert.doesNotMatch(markup, /Unrelated horizon proposition/);
       assert.deepEqual([...markup.matchAll(/>(Support|Refute|Traverse)<\/span>/g)].map(match => match[1]), expected);
       assert.match(markup, /write-option-card__actions--directional/);
-      const left = markup.slice(markup.indexOf('data-action-region="left"'), markup.indexOf('data-action-region="middle"'));
-      const middle = markup.slice(markup.indexOf('data-action-region="middle"'), markup.indexOf('data-action-region="right"'));
-      const right = markup.slice(markup.indexOf('data-action-region="right"'));
+      const footer = markup.slice(markup.indexOf('write-option-card__actions--directional'));
+      const left = footer.slice(footer.indexOf('data-action-region="left"'), footer.indexOf('data-action-region="right"'));
+      const right = footer.slice(footer.indexOf('data-action-region="right"'));
+      const middle = markup.slice(markup.indexOf('data-action-region="middle"'), markup.indexOf('write-option-card__actions--directional'));
       assert.match(left, new RegExp('>' + expected[0] + '</span>'));
       assert.match(right, new RegExp('>' + expected[1] + '</span>'));
       assert.doesNotMatch(middle, />(Support|Refute|Traverse)<\/span>/);

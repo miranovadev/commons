@@ -1,6 +1,7 @@
-import { Group, SegmentedControl, Text, Tooltip } from '@mantine/core';
-import { IconWhirl } from '@tabler/icons-react';
+import { Group, SegmentedControl, Text } from '@mantine/core';
+import { attestationColors, directionSlots, type RotationDirection } from '../directionalPresentation';
 import type { AttestationDirection } from '../types';
+import { DirectionalWhirl } from './DirectionalWhirl';
 
 interface AttestationDirectionControlProps {
   value: AttestationDirection;
@@ -8,36 +9,16 @@ interface AttestationDirectionControlProps {
   showLabels?: boolean;
   fullWidth?: boolean;
   directions?: AttestationDirection[];
+  supportDirection?: RotationDirection | null;
+  initialLabelChoice?: boolean;
 }
 
-export function AttestationDirectionControl({ value, onChange, showLabels = true, fullWidth = true, directions = ['support', 'refute'] }: AttestationDirectionControlProps) {
-  return (
-    <SegmentedControl
-      fullWidth={fullWidth}
-      color={value === 'support' ? 'violet' : 'teal'}
-      data={directions.map((direction) => ({
-        value: direction,
-        label: <DirectionLabel direction={direction} showLabel={showLabels} />,
-      }))}
-      value={value || 'support'}
-      onChange={(direction) => onChange(direction as AttestationDirection)}
-      aria-label="Attestation direction"
-    />
-  );
-}
-
-function DirectionLabel({ direction, showLabel }: { direction: AttestationDirection; showLabel: boolean }) {
-  const label = direction === 'support' ? 'Support' : 'Refute';
-
-  return (
-    <Tooltip label={label} disabled={showLabel} withArrow>
-      <Group gap={6} justify="center" wrap="nowrap" aria-label={label}>
-        <IconWhirl
-          size={15}
-          className={`attestation-direction-icon attestation-direction-icon--${direction}`}
-        />
-        {showLabel && <Text component="span" size="sm">{label}</Text>}
-      </Group>
-    </Tooltip>
-  );
+export function AttestationDirectionControl({ value, onChange, showLabels = true, fullWidth = true,
+  directions = ['support', 'refute'], supportDirection, initialLabelChoice = false }: AttestationDirectionControlProps) {
+  const slots = directionSlots(supportDirection).filter(slot => directions.includes(slot.label));
+  return <SegmentedControl fullWidth={fullWidth} color={attestationColors[value]}
+    data={slots.map(slot => ({ value: slot.label, label: <Group gap={6} justify="center" wrap="nowrap" aria-label={slot.text}>
+      <DirectionalWhirl direction={initialLabelChoice ? 'positive' : slot.direction} size={15} />
+      {showLabels && <Text component="span" size="sm">{slot.text}</Text>}
+    </Group> }))} value={value} onChange={direction => onChange(direction as AttestationDirection)} aria-label="Attestation direction" />;
 }
