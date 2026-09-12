@@ -137,7 +137,7 @@ class LineageAttenuationTest extends TestCase
         $this->assertSame(LineageMeasurementService::VERSION, $node->measurement->calculator_version);
     }
 
-    public function test_potential_consumes_accumulated_measurements_without_a_second_distance_discount(): void
+    public function test_entry_observer_attenuation_is_separate_from_measurement_accumulation_and_recovery(): void
     {
         $source = $this->node('source', 'committal');
         $continuation = $this->node('continuation');
@@ -161,8 +161,14 @@ class LineageAttenuationTest extends TestCase
         $this->assertSame(0.16, $values->chirality);
         $potential = app(PotentialChargeService::class);
         $entry = $potential->selectFor($this->phase->cycle->participant->substrate);
+        $reentry = $potential->selectFrom($observer);
         $recovery = $potential->recoverFrom($observer);
         $this->assertSame(0.64, $entry['potential_charge']);
+        $this->assertSame(0.64, $reentry['raw_potential_charge']);
+        $this->assertSame(0.16, $reentry['potential_charge']); // .64 observed one edge away.
+        $this->assertSame(0.05, $reentry['charge']);
+        $this->assertSame(0.16, $values->fresh()->chirality); // No projection re-attenuation.
+        $this->assertSame(0.64, $potential->selectFrom($source)['potential_charge']); // Distance zero.
         $this->assertSame(0.64, $recovery['potential_charge']);
         $this->assertSame(1, $recovery['distance']);
         $this->assertSame($history, $snapshot->fresh()->getAttributes());

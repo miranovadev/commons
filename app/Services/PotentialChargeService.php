@@ -6,6 +6,7 @@ use App\Domain\Observables\ObservableValues;
 use App\Models\CommitmentSnapshot;
 use App\Models\Proposition;
 use App\Models\Substrate;
+use App\Services\Observables\LineageMeasurementService;
 use DomainException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -18,22 +19,39 @@ final readonly class PotentialChargeService
     ) {}
 
     /**
-     * Select the admissible Committal Proposition with the greatest Potential
-     * Charge. Charge is the fallback when no continuation reduces Tension.
+     * Initial entry has no observer position. Rank eligible Committal states by
+     * Potential, then Charge and stable ID, without an invented distance.
      *
-     * @return array{proposition: Proposition, potential_charge: float, charge: float}
+     * @return array{proposition: Proposition, potential_charge: float, charge: float, raw_potential_charge: float, raw_charge: float, distance: int|null}
      */
     public function selectFor(Substrate $substrate): array
     {
+        return $this->select($substrate) ?? throw new DomainException(
+            'Potential cannot select a Gate without a Committal Proposition.'
+        );
+    }
+
+    /**
+     * Ordinary re-entry observes all reachable Committal candidates from the
+     * retained position, which can itself be expressive. Rest is a separate search.
+     *
+     * @return array{proposition: Proposition, potential_charge: float, charge: float, raw_potential_charge: float, raw_charge: float, distance: int}|null
+     */
+    public function selectFrom(Proposition $position): ?array
+    {
+        return $this->select($position->phase->cycle->participant->substrate, $position);
+    }
+
+    private function select(Substrate $substrate, ?Proposition $position = null): ?array
+    {
         $snapshots = CommitmentSnapshot::query()
             ->whereBelongsTo($substrate)
+            ->whereHas('proposition', fn ($query) => $query->where('tier', 'committal'))
             ->with('proposition')
             ->get();
 
         if ($snapshots->isEmpty()) {
-            throw new DomainException(
-                'Potential cannot select a Gate without a Committal Proposition.'
-            );
+            return null;
         }
 
         $propositions = Proposition::query()
@@ -47,36 +65,88 @@ final readonly class PotentialChargeService
         $this->measurements->repairMissing($propositions->filter(fn ($item) => $item->measurement !== null));
         $edges = DB::table('supersessions')
             ->whereIn('source_proposition_id', $propositions->keys())
-            ->get(['source_proposition_id', 'target_proposition_id'])
-            ->groupBy('source_proposition_id');
+            ->whereIn('target_proposition_id', $propositions->keys())
+            ->get(['source_proposition_id', 'target_proposition_id']);
+        $outgoing = $edges->groupBy('source_proposition_id');
+        $distances = $position === null ? null : $this->distancesFrom($position, $edges);
 
-        $ranked = $snapshots->map(function (
-            CommitmentSnapshot $snapshot,
-        ) use ($propositions, $edges): array {
-            $potential = $this->potentialFor(
-                $snapshot->proposition_id,
-                $snapshot->tension,
-                $propositions,
-                $edges,
-            );
+        $ranked = $snapshots
+            ->filter(fn (CommitmentSnapshot $snapshot): bool => $propositions->has($snapshot->proposition_id)
+                && ($distances === null || isset($distances[$snapshot->proposition_id])))
+            ->map(function (CommitmentSnapshot $snapshot) use ($propositions, $outgoing, $distances): array {
+                $potential = $this->potentialFor(
+                    $snapshot->proposition_id,
+                    $snapshot->tension,
+                    $propositions,
+                    $outgoing,
+                );
+                $charge = round(1 - abs($snapshot->tension), 7);
+                $distance = $distances[$snapshot->proposition_id] ?? null;
+                // Reuse substrate geometry once for observer-to-candidate distance.
+                // The candidate's accumulated measurements and snapshot stay intact.
+                $weight = $distance === null ? 1.0 : LineageMeasurementService::attenuation($distance);
 
-            return [
-                'proposition' => $snapshot->proposition,
-                'potential_charge' => $potential,
-                'charge' => round(1 - abs($snapshot->tension), 7),
-            ];
-        })->all();
+                return [
+                    'proposition' => $snapshot->proposition,
+                    'potential_charge' => $potential * $weight,
+                    'charge' => $charge * $weight,
+                    'raw_potential_charge' => $potential,
+                    'raw_charge' => $charge,
+                    'distance' => $distance,
+                ];
+            })->all();
 
         usort($ranked, function (array $left, array $right): int {
             return ($right['potential_charge'] <=> $left['potential_charge'])
                 ?: ($right['charge'] <=> $left['charge'])
+                ?: ($left['distance'] <=> $right['distance'])
                 ?: strcmp(
                     $left['proposition']->getKey(),
                     $right['proposition']->getKey(),
                 );
         });
 
-        return $ranked[0];
+        if ($ranked === []) {
+            return null;
+        }
+
+        $selected = $ranked[0];
+        $selected['potential_charge'] = round($selected['potential_charge'], 7);
+        $selected['charge'] = round($selected['charge'], 7);
+
+        return $selected;
+    }
+
+    /**
+     * Minimum parent/child edge distance across the substrate, including historical
+     * edges and Committal boundaries. Disconnected nodes have no finite distance.
+     *
+     * @param  Collection<int, object>  $edges
+     * @return array<string, int>
+     */
+    private function distancesFrom(Proposition $position, Collection $edges): array
+    {
+        $adjacency = [];
+        foreach ($edges as $edge) {
+            $adjacency[$edge->source_proposition_id][$edge->target_proposition_id] = true;
+            $adjacency[$edge->target_proposition_id][$edge->source_proposition_id] = true;
+        }
+        $frontier = [$position->getKey()];
+        $distances = [$position->getKey() => 0];
+        while ($frontier !== []) {
+            $next = [];
+            foreach ($frontier as $id) {
+                foreach (array_keys($adjacency[$id] ?? []) as $neighbourId) {
+                    if (! isset($distances[$neighbourId])) {
+                        $distances[$neighbourId] = $distances[$id] + 1;
+                        $next[] = $neighbourId;
+                    }
+                }
+            }
+            $frontier = $next;
+        }
+
+        return $distances;
     }
 
     /**
@@ -222,3 +292,4 @@ final readonly class PotentialChargeService
         return round(max(0, $potential), 7);
     }
 }
+

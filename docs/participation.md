@@ -38,19 +38,25 @@ Phase in the Settlement `signal` register.
 
 Origin entry is serialized on the Substrate. A concurrent or repeated request
 receives HTTP 409 and cannot create a second Origin. For an established
-substrate, POST an empty JSON object to `/participate/enter`. For a Participant without a position, Potential selects the Committal
-Proposition with the highest Potential Charge and persists it as the initial
-position. Subsequent Cycles start at `participants.current_proposition_id`;
-they never run global entry selection again. Successful contributions persist
-the resulting Gate, including the final commitment. Existing Participants are
-backfilled from their latest Phase or completed Committal write.
+substrate, POST an empty JSON object to `/participate/enter`. Initial entry has
+no observer position and ranks eligible Committal Propositions by Potential
+Charge. Ordinary re-entry ranks reachable Committal candidates by Potential
+Charge observed from the Participant's retained position, including substrate
+attenuation. Expressive positions inform distance but are never entry candidates.
+Successful entry persists the selected Committal Gate; contributions still
+persist their resulting Gate within the Cycle. Rest recovery retains its nearest
+viable Committal region rules below.
 
 Potential Charge is `max(0, max(|T| - |T_c|))`, where `T` is the Committal
 state's immutable Tension and `T_c` is the projected Tension of each measurable
 Expressive continuation reachable before the next Committal state. If no
 continuation reduces Tension, selection falls back to the highest current
-Charge, `1 - |T|`. Exact ties use the Proposition ID for stable ordering and do
-not give precedence to lineage depth.
+Charge, `1 - |T|`. Ordinary re-entry attenuates both Potential and Charge by
+`1 / (1 + d)^2`, where `d` is the shortest existing parent/child distance from
+the retained position. Effective-score ties prefer shorter distance and then
+stable Proposition ID; initial entry retains its Charge/ID tie-breaks.
+Disconnected candidates cannot supply ordinary entry, including fallback.
+See [observer-relative Potential](observables.md#potential-observed-from-a-participant-position).
 
 POST applies exactly one contribution:
 
@@ -259,12 +265,14 @@ The existing `entry.mode: potential` transport is retained for entry clients.
 Attenuation is a substrate-level measurement rule: independently evaluated local
 Proposition measurements are averaged with inverse-square weights
 `1 / (1 + structural_distance)^2` while walking from the active head to provenance.
-Every visited position contributes denominator weight. Potential uses these
-accumulated measurements without another observer-distance or continuation-length
-discount. Another Committal still stops the outgoing continuation search.
-Immutable snapshot Tension remains the historical baseline. Initial entry keeps
-its existing global Potential/Charge ranking; recovery preserves its nearest
-viable region search. See [observables](observables.md) for the full calculation.
+Every visited position contributes denominator weight. Raw Potential uses these
+accumulated measurements without re-discounting continuation length. Another
+Committal still stops the outgoing continuation search. Immutable snapshot
+Tension remains the historical baseline. Ordinary re-entry additionally observes
+candidate Potential and Charge from the retained Participant position using the
+same inverse-square geometry. Initial entry has no positional attenuation;
+recovery preserves its nearest viable region search. See
+[observables](observables.md) for the full calculation.
 
 Order returns an actionable `ready` plan even when Commit is inadmissible.
 `plan.commitment` and `commitment_preconditions_unsatisfied` preserve diagnostics
@@ -446,9 +454,11 @@ and a `completion` identity for the most recent naturally completed Order Cycle.
 The workspace may retain its final loaded cards as a read-only presentation of
 that completion. **Return to Participants** navigates to the Substrate collection;
 **Enter another Cycle** uses the normal entry endpoint and stays disabled when
-entry is unavailable. Potential, recovery and current-position rules are unchanged.
+entry is unavailable. Every new Cycle selects a Committal entry; retaining a
+completed expressive position does not make it eligible for re-entry.
 
 Instrument execution is configured in Constrain, Disperse, Bias and Order.
 `instrument_options` and specialised `proposition_id` enums remain authoritative;
 this change does not expand target validation or modify Receipt ownership.
 Order grounding completes this Cycle even if Commitment is not yet admissible.
+

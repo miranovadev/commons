@@ -230,29 +230,33 @@ final readonly class ParticipationService
      */
     private function entryFor(Participant $participant): array
     {
-        if ($participant->fresh()->current_proposition_id !== null) {
-            if ($this->cycleEntry->needsRecovery($participant)) {
-                $selection = $this->potential->recoverFrom($participant->position()->firstOrFail());
-
-                return [
-                    'mode' => 'potential',
-                    'selection' => 'recovery',
-                    'available' => $selection !== null,
-                    'proposition_id' => ($selection['proposition'] ?? null)?->getKey(),
-                    'distance' => $selection['distance'] ?? null,
-                    'potential_charge' => $selection['potential_charge'] ?? 0.0,
-                    'message' => $selection === null
-                        ? 'Resting until a structurally reachable Committal region has positive Potential Charge.'
-                        : 'Begin the next Cycle at the nearest viable Committal distance.',
-                ];
-            }
+        $participant = $participant->fresh();
+        if ($participant->current_proposition_id !== null
+            && $this->cycleEntry->needsRecovery($participant)) {
+            $selection = $this->potential->recoverFrom($participant->position()->firstOrFail());
 
             return [
-                // Preserve the existing client entry contract; selection is local.
                 'mode' => 'potential',
-                'selection' => 'position',
-                'available' => true,
-                'message' => 'Continue from the Participant’s current substrate position.',
+                'selection' => 'recovery',
+                'available' => $selection !== null,
+                'proposition_id' => ($selection['proposition'] ?? null)?->getKey(),
+                'distance' => $selection['distance'] ?? null,
+                'potential_charge' => $selection['potential_charge'] ?? 0.0,
+                'message' => $selection === null
+                    ? 'Resting until a structurally reachable Committal region has positive Potential Charge.'
+                    : 'Begin the next Cycle at the nearest viable Committal distance.',
+            ];
+        }
+
+        if ($participant->current_proposition_id !== null) {
+            $selection = $this->potential->selectFrom($participant->position()->firstOrFail());
+
+            return [
+                'mode' => 'potential',
+                'available' => $selection !== null,
+                'message' => $selection === null
+                    ? 'Waiting for a structurally reachable measured Committal Proposition.'
+                    : 'Potential will select a Committal Gate as observed from the Participant’s current position.',
             ];
         }
 
@@ -264,6 +268,7 @@ final readonly class ParticipationService
         if ($hasOrigin) {
             $available = CommitmentSnapshot::query()
                 ->where('substrate_id', $participant->substrate_id)
+                ->whereHas('proposition', fn ($query) => $query->where('tier', 'committal'))
                 ->exists();
 
             return [
@@ -317,3 +322,4 @@ final readonly class ParticipationService
         ];
     }
 }
+
