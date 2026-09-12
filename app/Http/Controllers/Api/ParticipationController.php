@@ -28,6 +28,16 @@ class ParticipationController extends Controller
         ]);
     }
 
+    public function workspace(
+        Substrate $substrate,
+        Participant $participant,
+        ParticipationService $participation,
+    ): JsonResponse {
+        Gate::authorize('act', $participant);
+
+        return response()->json(['data' => $participation->workspaceFor($participant)]);
+    }
+
     public function enter(
         EnterCycleRequest $request,
         Substrate $substrate,

@@ -1,7 +1,7 @@
 import type { Participation } from './types';
 
 /** Entry availability and recovery choice are entirely server-owned. */
-export function cycleEntryPresentation(participation?: Participation) {
+export function cycleEntryPresentation(participation?: Pick<Participation, 'status' | 'entry' | 'reason'>) {
   const entry = participation?.entry;
   const mode = participation?.status === 'waiting' && entry?.available ? entry.mode : undefined;
   return {

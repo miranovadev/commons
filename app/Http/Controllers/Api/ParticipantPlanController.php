@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Participant;
 use App\Models\Substrate;
 use App\Services\ContributionService;
+use App\Services\ParticipantContextSerializer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Gate;
 
@@ -15,11 +16,12 @@ class ParticipantPlanController extends Controller
         Substrate $substrate,
         Participant $participant,
         ContributionService $contributions,
+        ParticipantContextSerializer $serializer,
     ): JsonResponse {
         Gate::authorize('act', $participant);
 
         return response()->json([
-            'data' => $contributions->planFor($participant),
+            'data' => $serializer->plan($contributions->planFor($participant)),
         ]);
     }
 }

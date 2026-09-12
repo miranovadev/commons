@@ -56,7 +56,7 @@ class AttestationDirectionChangeTest extends TestCase
             0.6,
             0.4,
         );
-        $plan = app(InputPlanService::class)->forParticipant($participant);
+        $plan = app(InputPlanService::class)->forWorkspace($participant);
         $this->assertSame('refute', $plan['gate']['attestation']['direction']);
         $this->assertArrayNotHasKey('impact', $plan['gate']);
         $this->assertSame(

@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\ParticipantController;
 use App\Http\Controllers\Api\ParticipantPlanController;
 use App\Http\Controllers\Api\ParticipationController;
 use App\Http\Controllers\Api\PropositionController;
+use App\Http\Controllers\Api\RealtimeController;
 use App\Http\Controllers\Api\SessionController;
 use App\Http\Controllers\Api\SubstrateController;
 use App\Http\Middleware\EnsureSystemIsBootstrapped;
@@ -28,7 +29,7 @@ Route::middleware('web')->group(function (): void {
                 [PropositionController::class, 'index'],
             );
 
-            Route::get('/substrates/{substrate}/realtime', \App\Http\Controllers\Api\RealtimeController::class);
+            Route::get('/substrates/{substrate}/realtime', RealtimeController::class);
             Route::get('/substrates/{substrate}/propositions/{proposition}', [PropositionController::class, 'show']);
 
             Route::middleware('guest')->post(
@@ -55,6 +56,10 @@ Route::middleware('web')->group(function (): void {
                     Route::get(
                         'substrates/{substrate}/participants/{participant}/plan',
                         ParticipantPlanController::class,
+                    );
+                    Route::get(
+                        'substrates/{substrate}/participants/{participant}/workspace',
+                        [ParticipationController::class, 'workspace'],
                     );
                     Route::get(
                         'substrates/{substrate}/participants/{participant}/participate',

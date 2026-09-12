@@ -64,10 +64,10 @@ class TragedyTest extends TestCase
             $this->assertStringNotContainsString('participant.rest', json_encode($schema));
         }
         if ($action !== 'proposition.traverse') {
-            $this->assertSame([], $plan['traversal_options']);
+            $this->assertSame([], $plan['schema']['$defs']['actions']['proposition.traverse']['properties']['proposition_id']['enum'] ?? []);
         }
 
-        // Autonomous inference receives this exact human plan and action set.
+        // Autonomous inference receives the same action set through the autonomous context.
         $prompt = app(ParticipantPromptFactory::class)->make(new Connection, $state);
         $this->assertSame($schema, $prompt['schema']);
         $this->assertSame($plan['tragedy'], json_decode($prompt['user'], true)['plan']['tragedy']);

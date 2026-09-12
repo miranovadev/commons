@@ -2,13 +2,17 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Observables\ClosureValues;
 use App\Enums\PhaseKind;
 use App\Models\Attestation;
 use App\Models\Cycle;
+use App\Models\InstrumentExecution;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
+use App\Models\Receipt;
 use App\Models\Substrate;
+use App\Services\ClosureGateService;
 use App\Services\CommitmentAdmissibilityService;
 use App\Services\ContributionDispatcher;
 use App\Services\InstrumentExecutionService;
@@ -25,6 +29,7 @@ class OperationalCommitmentTest extends TestCase
     use RefreshDatabase;
 
     private Participant $participant;
+
     private Proposition $origin;
 
     protected function setUp(): void
@@ -42,15 +47,15 @@ class OperationalCommitmentTest extends TestCase
             'attestation' => ['direction' => 'support'],
             'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/origin'],
         ]);
-        $this->origin = Proposition::findOrFail($state['plan']['gate']['id']);
+        $this->origin = Proposition::findOrFail($state['plan']['gate_id']);
         // These tests isolate the operational receipt/phase path. Real component
         // evaluation and refusal are covered by ClosureHysteresisTest.
         $closure = [
-            ...(new \App\Domain\Observables\ClosureValues(1, 1))->resolve(),
+            ...(new ClosureValues(1, 1))->resolve(),
             'history_proposition_id' => null,
             'history_source' => 'negative-default',
         ];
-        $this->mock(\App\Services\ClosureGateService::class, function ($mock) use ($closure): void {
+        $this->mock(ClosureGateService::class, function ($mock) use ($closure): void {
             $mock->shouldReceive('preview', 'forCommitment')->andReturn($closure);
         });
     }
@@ -62,20 +67,20 @@ class OperationalCommitmentTest extends TestCase
         $state = $this->move($this->participant, [
             'action' => 'proposition.reclassify', 'statement' => 'Concord candidate',
         ]);
-        $this->assertSame([], $state['plan']['gate']['instruments']);
+        $this->assertSame([], $state['plan']['gate_options'][0]['instruments'] ?? []);
         $this->assertDatabaseCount('instrument_executions', 1);
         $state = $this->move($this->participant, ['action' => 'proposition.variant', 'statement' => 'New Signal']);
 
         // Other participants prepare local write-register heads through real contributions.
         $helper = $this->participant($this->participant->substrate, 'helper');
-        $this->phase($helper, PhaseKind::Persist, 'stance', Proposition::findOrFail($state['plan']['gate']['id']));
+        $this->phase($helper, PhaseKind::Persist, 'stance', Proposition::findOrFail($state['plan']['gate_id']));
         $helperState = $this->move($helper, ['action' => 'proposition.variant', 'statement' => 'Mediated Stance']);
-        $stance = Proposition::findOrFail($helperState['plan']['gate']['id']);
+        $stance = Proposition::findOrFail($helperState['plan']['gate_id']);
         $this->move($this->participant, ['action' => 'attestation.create', 'proposition_id' => $stance->id, 'direction' => 'support']);
         $helperState = $this->move($helper, [
             'action' => 'proposition.reclassify', 'statement' => 'Final Concord',
         ]);
-        $candidate = Proposition::findOrFail($helperState['plan']['gate']['id']);
+        $candidate = Proposition::findOrFail($helperState['plan']['gate_id']);
         $reviewer = $this->participant($this->participant->substrate, 'reviewer');
         $this->phase($reviewer, PhaseKind::Constrain, 'concord', $stance);
         $this->move($reviewer, [
@@ -104,13 +109,13 @@ class OperationalCommitmentTest extends TestCase
         $this->assertNotEmpty($earnedAttestations);
         $this->assertNotEmpty($earnedReceipts);
         $this->assertGreaterThan(0, $earnedTouches);
-        $contributionCounts = [Attestation::count(), \App\Models\Receipt::count(), Phase::count()];
+        $contributionCounts = [Attestation::count(), Receipt::count(), Phase::count()];
         $this->move($this->participant, ['action' => 'proposition.commit']);
         $committed = Proposition::findOrFail($this->participant->fresh()->current_proposition_id);
         $this->assertSame($earnedAttestations, $history->attestations(collect([$committed]))->pluck('id')->all());
         $this->assertSame($earnedReceipts, $history->receipts($committed)->pluck('id')->all());
         $this->assertSame($earnedTouches, $history->touchCount($committed));
-        $this->assertSame($contributionCounts, [Attestation::count(), \App\Models\Receipt::count(), Phase::count()]);
+        $this->assertSame($contributionCounts, [Attestation::count(), Receipt::count(), Phase::count()]);
         $this->assertSame('committal', $committed->tier);
         $this->assertSame('concord', $committed->register);
         $this->assertSame($candidate->statement, $committed->statement);
@@ -192,15 +197,15 @@ class OperationalCommitmentTest extends TestCase
         $state = app(ParticipationService::class)->stateFor($committer);
         $this->assertSame('ready', $state['status']);
         $this->assertFalse($state['plan']['commitment']['admissible']);
-        $this->assertSame('pending', $state['plan']['gate']['instruments'][0]['status']);
-        $this->assertNull($state['plan']['gate']['instruments'][0]['receipt_id']);
+        $this->assertSame('pending', $state['plan']['gate_options'][0]['instruments'][0]['status']);
+        $this->assertNull($state['plan']['gate_options'][0]['instruments'][0]['receipt_id']);
 
         $service->fail($execution, 'Instrument unavailable.');
         $state = app(ParticipationService::class)->stateFor($committer);
         $this->assertSame('ready', $state['status']);
         $this->assertFalse($state['plan']['commitment']['admissible']);
-        $this->assertSame('failed', $state['plan']['gate']['instruments'][0]['status']);
-        $this->assertSame('Instrument unavailable.', $state['plan']['gate']['instruments'][0]['failure_reason']);
+        $this->assertSame('failed', $state['plan']['gate_options'][0]['instruments'][0]['status']);
+        $this->assertSame('Instrument unavailable.', $state['plan']['gate_options'][0]['instruments'][0]['failure_reason']);
         $this->assertFalse($state['plan']['commitment']['requirements']['receipt']);
     }
 
@@ -352,7 +357,7 @@ class OperationalCommitmentTest extends TestCase
     public function test_invalid_order_actions_leave_phase_cycle_position_and_evidence_unchanged(): void
     {
         [$reader, $phase, $candidate] = $this->instrumentFixture(PhaseKind::Order);
-        $before = [Phase::count(), Attestation::count(), \App\Models\Receipt::count(), \App\Models\InstrumentExecution::count()];
+        $before = [Phase::count(), Attestation::count(), Receipt::count(), InstrumentExecution::count()];
         foreach ([
             ['action' => 'attestation.create', 'proposition_id' => $this->origin->id, 'direction' => 'support'],
             ['action' => 'instrument.execute', 'proposition_id' => $this->origin->id, 'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test']],
@@ -366,7 +371,7 @@ class OperationalCommitmentTest extends TestCase
                 $this->assertNull($phase->fresh()->completed_at);
                 $this->assertNull($phase->cycle->fresh()->completed_at);
                 $this->assertSame($phase->gate_proposition_id, $reader->fresh()->current_proposition_id);
-                $this->assertSame($before, [Phase::count(), Attestation::count(), \App\Models\Receipt::count(), \App\Models\InstrumentExecution::count()]);
+                $this->assertSame($before, [Phase::count(), Attestation::count(), Receipt::count(), InstrumentExecution::count()]);
             }
         }
     }
@@ -383,13 +388,15 @@ class OperationalCommitmentTest extends TestCase
         $reader = $this->participant($this->participant->substrate, 'reader-'.str()->ulid());
         $reader->current_proposition_id = $stance->id;
         $reader->save();
+
         return [$reader, $this->phase($reader, $kind, 'concord', $stance), $candidate];
     }
 
     private function candidate(): Proposition
     {
         $state = $this->move($this->participant, ['action' => 'proposition.variant', 'statement' => 'Candidate']);
-        return Proposition::findOrFail($state['plan']['gate']['id']);
+
+        return Proposition::findOrFail($state['plan']['gate_id']);
     }
 
     private function attest(Proposition $gate, ?Attestation $previous = null): Attestation
@@ -405,6 +412,7 @@ class OperationalCommitmentTest extends TestCase
             'supersedes_attestation_id' => $previous?->id,
         ])->save();
         app(LedgerService::class)->record($attestation);
+
         return $attestation;
     }
 
@@ -412,6 +420,7 @@ class OperationalCommitmentTest extends TestCase
     {
         $participant = new Participant;
         $participant->forceFill(['substrate_id' => $substrate->id, 'callsign' => $callsign, 'max_read_count' => 25])->save();
+
         return $participant;
     }
 
@@ -427,6 +436,7 @@ class OperationalCommitmentTest extends TestCase
             'cycle_id' => $cycle->id, 'kind' => $kind, 'write_register' => $register,
             'gate_proposition_id' => $gate->id, 'started_at' => now(),
         ])->save();
+
         return $phase;
     }
 
@@ -438,6 +448,7 @@ class OperationalCommitmentTest extends TestCase
         }
         $service = app(ParticipationService::class);
         $state = $service->stateFor($participant);
+
         return $service->contribute($participant, $state['plan']['phase']['id'], $input);
     }
 }

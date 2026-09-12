@@ -9,6 +9,7 @@ The participation endpoint is scoped to a Substrate and Participant:
 - GET /api/substrates/{substrate}/participants/{participant}/participate
 - POST /api/substrates/{substrate}/participants/{participant}/participate
 - POST /api/substrates/{substrate}/participants/{participant}/participate/enter
+- GET /api/substrates/{substrate}/participants/{participant}/workspace (human display)
 
 GET returns a resumable state. A ready state contains the active Cycle, the
 current input plan and the Participant's Perspective bounds. Expected
@@ -78,9 +79,11 @@ current plan. The React interface uses the same schema to render its controls.
 ULID inputs accept both upper- and lowercase Crockford encodings; Laravel's
 persisted ULIDs are normally lowercase.
 
-The plan also exposes a `workspace` projection for the active Cycle UI. It
-names the active Domain and Context Horizon, returns the Horizon's provenancial
-Committal Proposition separately, and groups the visible measurement population
+The separate `/workspace` endpoint exposes a human presentation plan with a
+`workspace` projection for the active Cycle UI. `/participate` and `/plan` use the
+[compact autonomous contract](participant-context.md), with no Horizon populations.
+The human projection names the active Domain and Context Horizon, returns the
+current Commit Region's governing Committal Proposition, and groups the visible measurement population
 by Classification Register. The human workspace presents these as operational
 Read, Gate and Write rows. Mediate exposes the authoritative `read_options`
 population; other phases retain their single Read card. Mediate Gate privileges
@@ -109,8 +112,8 @@ prior Attestation for auditability, derived measurements use only the effective
 leaf, and at most one Attestation can be recorded for a Proposition in a given
 Phase.
 
-The provenance Proposition is deliberately not inserted into the new Horizon's
-register population: it opens that Horizon from the preceding Closure Boundary.
+The governing provenance is displayed separately from register browsing. It may
+be a later same-Horizon Commit, not the Horizon-opening Closure Boundary.
 Register propositions are returned newest-first and bounded by the
 Participant's current read limit. Each compact Proposition includes its
 observable values, so the active workspace does not need to fetch the

@@ -19,6 +19,8 @@ Implementation notes for the lineage-based measurement projection live in
 [docs/observables.md](docs/observables.md).
 The resumable participant interaction contract is described in
 [docs/participation.md](docs/participation.md).
+The protected autonomous packet and separate human workspace are defined in
+[docs/participant-context.md](docs/participant-context.md).
 
 ## Requirements
 

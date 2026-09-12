@@ -263,8 +263,8 @@ class OperationalClosurePathTest extends TestCase
         $this->assertExpressiveDepth($concord, 6);
 
         $state = app(ParticipationService::class)->enter($author);
-        $this->assertSame($origin->id, $state['plan']['gate']['id']);
-        $this->assertSame('committal', $state['plan']['gate']['tier']);
+        $this->assertSame($origin->id, $state['plan']['gate_id']);
+        $this->assertSame('committal', $state['plan']['gate_options'][0]['tier']);
         $this->assertSame('distinguish', $state['plan']['phase']['kind']);
         $newSignal = $this->gate($this->move($author, ['action' => 'proposition.variant', 'statement' => 'Fresh Cycle Signal']));
         $this->assertSame('signal', $newSignal->register);
@@ -321,6 +321,7 @@ class OperationalClosurePathTest extends TestCase
     {
         $participant = new Participant;
         $participant->forceFill(['substrate_id' => $this->substrate->id, 'callsign' => $callsign, 'max_read_count' => 25])->save();
+
         return $participant;
     }
 
@@ -335,12 +336,12 @@ class OperationalClosurePathTest extends TestCase
             $input['proposition_id'] = $participant->fresh()->current_proposition_id;
         }
         $phaseId = $this->state($participant)['plan']['phase']['id'];
+
         return app(ParticipationService::class)->contribute($participant, $phaseId, $input);
     }
 
     private function gate(array $state): Proposition
     {
-        return Proposition::findOrFail($state['plan']['gate']['id']);
+        return Proposition::findOrFail($state['plan']['gate_id']);
     }
 }
-

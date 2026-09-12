@@ -17,7 +17,7 @@ final readonly class InputPlanService
     public function __construct(
         private PhaseService $phases,
         private GateService $gates,
-        private LineageService $lineage,
+        private ActiveParticipantLineage $lineage,
         private PropositionOptionService $options,
         private InputSchemaService $schemas,
         private PropositionMeasurementService $measurements,
@@ -30,10 +30,20 @@ final readonly class InputPlanService
     /** @return array<string, mixed> */
     public function forParticipant(Participant $participant): array
     {
-        $calculate = function () use ($participant): array {
+        return $this->calculate($participant, false);
+    }
+
+    public function forWorkspace(Participant $participant): array
+    {
+        return $this->calculate($participant, true);
+    }
+
+    private function calculate(Participant $participant, bool $workspace): array
+    {
+        $calculate = function () use ($participant, $workspace): array {
             $phase = $this->phases->currentFor($participant);
 
-            return $this->build($participant, $phase, new ParticipationContext($phase));
+            return $this->build($participant, $phase, new ParticipationContext($phase), $workspace);
         };
         // Contribution transactions own their locks/isolation and get a fresh
         // context after each write. Standalone reads use one coherent MVCC view.
@@ -51,14 +61,12 @@ final readonly class InputPlanService
     }
 
     /** All repeated evaluation shares this calculation-local context. */
-    private function build(Participant $participant, Phase $phase, ?ParticipationContext $context): array
+    private function build(Participant $participant, Phase $phase, ?ParticipationContext $context, bool $includeWorkspace = false): array
     {
         $plan = $this->phases->plan($phase->kind);
         $gate = $context?->propositions->get($phase->gate_proposition_id) ?? $this->gates->forPhase($phase);
         $lineage = $this->lineage->endingAt(
             $gate,
-            $participant->max_read_count,
-            $participant->max_token_count,
             $context,
         );
         $writeOptions = $this->options->writeOptionsFor($phase, $context);
@@ -90,13 +98,13 @@ final readonly class InputPlanService
             $traversalOptions,
             $instrumentOptions,
         );
-        $workspace = $this->workspace(
+        $workspace = $includeWorkspace ? $this->workspace(
             $participant,
             $phase,
             $gate,
             $lineage,
             $context,
-        );
+        ) : null;
         $attestationOptionIds = $attestationOptions->pluck('id')->all();
         $schema = $this->schemas->forParticipant(
             $participant,
@@ -109,6 +117,14 @@ final readonly class InputPlanService
             $context,
         );
 
+        $targetIds = collect($schema['$defs']['actions'] ?? [])->flatMap(fn ($action) => array_merge(
+            $action['properties']['proposition_id']['enum'] ?? [],
+            $action['properties']['other_proposition_id']['enum'] ?? [],
+        ));
+        $operationalIds = $readOptions->concat($gateOptions)->concat([$gate])->pluck('id')
+            ->merge($targetIds);
+        $historical = $lineage->whereNotIn('id', $operationalIds)->values();
+
         return [
             'phase' => [
                 'id' => $phase->getKey(),
@@ -118,7 +134,7 @@ final readonly class InputPlanService
                 'write_register' => $phase->write_register,
                 'started_at' => $phase->started_at,
             ],
-            'workspace' => $workspace,
+            ...($includeWorkspace ? ['workspace' => $workspace] : []),
             'commitment' => $phase->kind === PhaseKind::Order
                 ? $this->admissibility->evaluate($gate, $phase, $context)
                 : null,
@@ -127,7 +143,8 @@ final readonly class InputPlanService
                     $candidate->id => $this->admissibility->evaluate($candidate, $phase, $context),
                 ])->all() : [],
             'gate' => $this->proposition($gate, $participant, $context),
-            'lineage' => $this->propositions($lineage, $participant, $context),
+            'provenance_id' => $lineage->firstWhere('tier', 'committal')?->id,
+            'lineage' => $this->propositions($historical, $participant, $context),
             'read_options' => $this->propositions($readOptions, $participant, $context),
             'tragedy' => isset($schema['$defs']['actions']['participant.rest']),
             'traversal_options' => $this->propositions($traversalOptions, $participant, $context),
@@ -180,13 +197,7 @@ final readonly class InputPlanService
 
         $this->measurements->repairMissing($propositions, $context);
 
-        $provenance = $horizon?->opened_by_proposition_id === null
-            ? $lineage->first(
-                fn (Proposition $item): bool => $item->tier === 'committal'
-            )
-            : ($context !== null ? $context->propositions->get($horizon->opened_by_proposition_id) : Proposition::query()->find(
-                $horizon->opened_by_proposition_id
-            ));
+        $provenance = $lineage->firstWhere('tier', 'committal');
 
         $provenance ??= $gate;
         if ($context !== null) {
