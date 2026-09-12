@@ -18,7 +18,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - run: composer update laravel/reverb --with-dependencies --no-install --no-scripts --no-interaction
+      - run: composer update laravel/reverb --with-dependencies --minimal-changes --no-install --no-scripts --no-interaction
       - run: npm install --package-lock-only --ignore-scripts
       - name: Export dependency files
         run: |
