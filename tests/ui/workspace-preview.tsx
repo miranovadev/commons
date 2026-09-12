@@ -13,7 +13,7 @@ const mode = new URLSearchParams(location.search).get('theme') === 'light' ? 'li
 createRoot(document.getElementById('root')!).render(<MantineProvider theme={theme} forceColorScheme={mode}>
   <MemoryRouter initialEntries={['/substrates/testing/participants/claire']}>
     <AppShell header={{ height: 58 }} navbar={{ width: 214, breakpoint: 'sm', collapsed: { mobile: true } }} padding={0}>
-      <AppShell.Header className="app-header"><Group h="100%" px="md" gap="xs"><CommonsLogo size={30} /><Text size="sm" fw={700}>The Commons</Text><Text size="xs" c="dimmed" ml="auto" data-last-action>Local synthetic preview</Text></Group></AppShell.Header>
+      <AppShell.Header className="app-header"><Group h="100%" px="md" gap="xs"><CommonsLogo size={30} /><Text size="sm" fw={700}>The Commons</Text><Text size="xs" c="dimmed" ml="auto" maw="45%" truncate data-last-action>Local synthetic preview</Text></Group></AppShell.Header>
       <AppShell.Navbar className="commons-navbar" p="sm"><NavLink label="Substrates" leftSection={<IconTopologyStar3 size={18} />} /><Box className="substrate-nav-section"><Text size="xs" p="xs">TESTING</Text><NavLink active label="Participants" leftSection={<IconUserHexagon size={18} />} /></Box></AppShell.Navbar>
       <AppShell.Main className="app-main"><Routes><Route path="/substrates/:slug/participants/:participantId" element={<ParticipantPage />} /></Routes></AppShell.Main>
     </AppShell>
