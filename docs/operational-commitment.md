@@ -1,14 +1,21 @@
 # Operational Commitment
 
 Phase 7 (Order) uses `CommitmentAdmissibilityService` in both schema generation
-and execution. It requires an effective Attestation in the current Gate's
+and execution. Order selects an explicit `proposition_id` from Closure-filtered
+Commit Region Write candidates. It requires an effective Attestation in the selected source's
 evidentiary state and a Receipt from a completed instrument execution attached
 to that state or one of its effective Attestations. A Committal Gate inherits
 this state through Commit edges; arbitrary ancestors and Receipts on superseded
 Attestations do not satisfy these preconditions. The grounded Expressive source
 remains provenance. Original evidence records are resolved by reference, never
-copied or retargeted. The new Committal proposition also inherits the Gate's
+copied or retargeted. The new Committal proposition also inherits the selected source's
 Phase-touch history for Cadence, identically in preview and actual Commitment.
+
+These inheritance rules apply
+[Invariant 8: Provenance Is Never Erased](core-invariants.md#8-provenance-is-never-erased)
+and [Invariant 9: Evidence Must Not Be Invented or Reinterpreted](core-invariants.md#9-evidence-must-not-be-invented-or-reinterpreted).
+Changing active participation must preserve original contribution history and
+meaning.
 
 ## Instruments
 
@@ -44,8 +51,9 @@ Reclassification no longer gathers evidence implicitly. During Bias, normal
 an eligible historical node. A Receipt stays on its exact Proposition across
 Cycles; later Attestation or Closure alignment may enable Commitment on a later
 revisit. Only Commit provides inherited participation/evidence state; other
-Supersessions do not transfer it. Order itself adds no new evidence-gathering
-actions. Bias now creates fresh Concord/Canon through unary directional
+Supersessions do not transfer it. Constrain and Order also expose the separate Instrument action. Every valid
+Order contribution completes its Cycle, whether Attestation, Instrument or Commit;
+further work requires explicit next-Cycle entry. Bias now creates fresh Concord/Canon through unary directional
 selection; that new Proposition must earn its own evidence and support. See
 [Bias Chirality Gate](participation.md#bias-chirality-gate).
 

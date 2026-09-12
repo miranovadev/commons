@@ -5,6 +5,7 @@ import { IconAdjustments, IconBinaryTree2, IconChevronDown, IconLogin2, IconLogo
 import { BrowserRouter, Link, Navigate, Route, Routes, matchPath, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import '../css/ui-polish.css';
+import '../css/workspace.css';
 import { CommonsLogo } from './components/CommonsLogo';
 import { commonsApi, useGetSessionQuery, useGetSubstrateQuery, useLogoutMutation } from './services/commonsApi';
 import { systemBootstrapped } from './systemSlice';

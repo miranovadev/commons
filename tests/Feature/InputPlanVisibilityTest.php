@@ -151,6 +151,15 @@ class InputPlanVisibilityTest extends TestCase
         $this->supersession($sourcePhase, $gate, $untouched, 'variant');
         $viewer = $this->participant($substrate, 'viewer');
         $phase = $this->phase($viewer, $kind, 'frontier', $gate);
+        if ($kind === PhaseKind::Order) {
+            // Closure selects Third-position expressive members of a seeded region.
+            $gate->forceFill(['tier' => 'committal', 'register' => 'canon'])->save();
+            foreach ([$child, $untouched] as $candidate) {
+                $candidate->forceFill(['register' => 'canon'])->save();
+            }
+            $phase->forceFill(['write_register' => 'canon'])->save();
+        }
+
         // Another participant's evidence must never establish the viewer's path.
         $other = new Attestation;
         $other->forceFill(['phase_id' => $sourcePhase->id, 'proposition_id' => $child->id, 'direction' => 'support'])->save();

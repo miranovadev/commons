@@ -73,14 +73,20 @@ class ReconciliationTest extends TestCase
         $this->fixture(correspondence: $direction);
         [$positive, $positiveGate] = $this->readSibling('Consonant', 0.5, -1);
         [$negative, $negativeGate] = $this->readSibling('Dissonant', -0.5, 1);
-        $this->readSibling('Neutral', 0, 0);
+        [$neutral, $neutralGate] = $this->readSibling('Neutral', 0, 0);
         $local = $this->sibling('Anchor child with neutral Correspondence', 0);
         $plan = $this->plan();
         $this->assertSame($this->parent->id, $plan['read_options'][0]['id']);
-        $this->assertEqualsCanonicalizing($direction === 0.0 ? [$this->parent->id] :
-            [$this->parent->id, ($direction > 0 ? $positive : $negative)->id], array_column($plan['read_options'], 'id'));
-        $this->assertEqualsCanonicalizing($direction === 0.0 ? [$local->id] :
-            [$local->id, ($direction > 0 ? $positiveGate : $negativeGate)->id], array_column($plan['gate_options'], 'id'));
+        // The zero anchor retains its earlier negative value; the unestablished
+        // zero peer inherits negative Correspondence from its lineage.
+        $readIds = [$this->parent->id, ($direction > 0 ? $positive : $negative)->id];
+        $gateIds = [$local->id, ($direction > 0 ? $positiveGate : $negativeGate)->id];
+        if ($direction <= 0) {
+            $readIds[] = $neutral->id;
+            $gateIds[] = $neutralGate->id;
+        }
+        $this->assertEqualsCanonicalizing($readIds, array_column($plan['read_options'], 'id'));
+        $this->assertEqualsCanonicalizing($gateIds, array_column($plan['gate_options'], 'id'));
     }
 
     public function test_mediate_gate_options_are_active_immediate_children_of_exposed_reads(): void
@@ -108,7 +114,7 @@ class ReconciliationTest extends TestCase
         }
     }
 
-    public function test_horizon_and_substrate_boundaries_cannot_supply_siblings(): void
+    public function test_horizon_membership_does_not_replace_region_scope_and_substrates_stay_isolated(): void
     {
         $this->fixture();
         $valid = $this->sibling('Valid');
@@ -128,7 +134,7 @@ class ReconciliationTest extends TestCase
         $foreignPhase = $this->newPhase($outsider, PhaseKind::Distinguish, 'activity', true);
         $foreign->phase_id = $foreignPhase->id;
         $foreign->save();
-        $this->assertSame([$valid->id], array_column($this->plan()['gate_options'], 'id'));
+        $this->assertSame([$valid->id, $wrongHorizon->id], array_column($this->plan()['gate_options'], 'id'));
     }
 
     public function test_reconcile_is_structural_selection_with_exact_gate_content(): void
@@ -213,7 +219,7 @@ class ReconciliationTest extends TestCase
         }
     }
 
-    public function test_mediate_read_expansion_is_one_step_in_the_same_register_and_context(): void
+    public function test_mediate_reads_cross_branches_and_depths_inside_the_same_region(): void
     {
         $this->fixture();
         [$validRead, $validGate] = $this->readSibling('Matching', -0.7, 1);
@@ -237,9 +243,9 @@ class ReconciliationTest extends TestCase
         $unrelatedGate = $this->node('Unrelated Gate', 'activity');
         $this->edge($unrelatedRead, $unrelatedGate);
         $plan = $this->plan();
-        $this->assertSame([$this->parent->id, $validRead->id], array_column($plan['read_options'], 'id'));
-        $this->assertSame([$validGate->id], array_column($plan['gate_options'], 'id'));
-        foreach ([$oppositeGate, $wrongGate, $hardGate, $foreignGate, $distantGate, $unrelatedGate] as $invalid) {
+        $this->assertEqualsCanonicalizing([$this->parent->id, $validRead->id, $foreignHorizon->id, $distantRead->id, $hardRead->children()->where('register', 'canon')->firstOrFail()->id], array_column($plan['read_options'], 'id'));
+        $this->assertEqualsCanonicalizing([$validGate->id, $foreignGate->id, $distantGate->id], array_column($plan['gate_options'], 'id'));
+        foreach ([$oppositeGate, $wrongGate, $hardGate, $unrelatedGate] as $invalid) {
             $this->assertInput($plan['schema'], ['action' => 'proposition.reconcile', 'other_proposition_id' => $invalid->id], false);
         }
     }

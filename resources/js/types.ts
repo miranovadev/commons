@@ -28,6 +28,7 @@ export interface Proposition {
   children?: Proposition[];
   attestation?: { direction: AttestationDirection };
   attestation_counts?: { support: number; refute: number };
+  attestation_summary?: { support_direction: 'positive' | 'negative' | null; retained_direction?: 'positive' | 'negative'; positive: number; negative: number };
   instruments?: Array<{
     id: Identifier;
     kind: string;
@@ -55,6 +56,7 @@ export interface Phase {
 
 export interface ParticipantPosition {
   cycle_sequence: number;
+  cycle_completed?: boolean;
   phase?: Phase;
   gate?: Proposition;
 }
@@ -166,6 +168,7 @@ export interface InputSchema {
 }
 
 export interface ParticipantPlan {
+  commitment_options?: Record<Identifier, NonNullable<ParticipantPlan['commitment']>>;
   commitment?: {
     admissible: boolean;
     requirements: { attestation: boolean; receipt: boolean; closure: boolean | null };
@@ -209,6 +212,7 @@ export interface PropositionSelection {
 }
 
 export interface Participation {
+  completion?: { cycle_id: Identifier; phase_id: Identifier; completed_at: string; proposition_id: Identifier } | null;
   current_proposition_id?: Identifier | null;
   domain?: DomainName | null;
   horizon_sequence?: number | null;

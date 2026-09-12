@@ -65,11 +65,19 @@ final readonly class ParticipationService
             ->first();
 
         if ($cycle === null) {
-            return $this->waiting(
+            $completed = $participant->cycles()->whereNotNull('completed_at')->latest('sequence')->first();
+            $finalPhase = $completed?->phases()->whereNotNull('completed_at')->latest('id')->first();
+
+            return [...$this->waiting(
                 'cycle_not_started',
                 'The Participant is waiting for a Cycle to begin.',
                 entry: $this->entryFor($participant),
-            );
+            ), 'completion' => $completed !== null && $completed->rested_at === null && $finalPhase?->kind === PhaseKind::Order ? [
+                'cycle_id' => $completed->id,
+                'phase_id' => $finalPhase->id,
+                'completed_at' => $completed->completed_at->toISOString(),
+                'proposition_id' => $participant->fresh()->current_proposition_id,
+            ] : null];
         }
 
         $phase = Phase::query()
@@ -96,7 +104,7 @@ final readonly class ParticipationService
 
         $plan = $this->contributions->planFor($participant);
         $blocked = $phase->kind === PhaseKind::Order
-            && ! $plan['commitment']['admissible'];
+            && ! isset($plan['schema']['$defs']['actions']['proposition.commit']);
 
         return [
             'status' => 'ready',

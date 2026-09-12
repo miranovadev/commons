@@ -1,5 +1,9 @@
 # Observable calculation
 
+The [Core Invariants](core-invariants.md) govern these calculations. In
+particular, measurement independence (1), representation versus semantics (2),
+and distinct reference frames (7) constrain every projection described below.
+
 Each Proposition's **raw/local** evaluation compares the lineage ending at it with
 its provenance lineage in the immediately preceding, complementary Context
 Horizon. The three measurements share that comparison boundary but are
@@ -71,26 +75,30 @@ each lineage. It then calculates each Domain's receipt-weighted attestational
 lean:
 
 \[
-D = \frac{Support - Refute}{Support + Refute}
+D = \frac{\sum_i w_i d_i}{\sum_i w_i}
 \]
 
-The final value is D_current × D_previous. A Domain without an active
+Here d_i is the signed direction of each effective Attestation under its fixed
+Commit Region polarity, and w_i is its existing Receipt weight. Support can map
+to either sign. The final value is D_current × D_previous. A Domain without an active
 Attestation has a neutral lean of 0.
 
 Bias reuses this raw weighted lean over the active Stance (Frontier in Emergence)
-population in the current forward lineage families, deduplicated across parents
-within the Gate's Horizon. Other registers do not supply votes to this Gate.
-The single aggregate direction admits only Propositions with individual lean in
-that direction, including the current Gate when eligible. Zero lean has no
-directional choice. It does not use the sign of the final cross-domain Chirality
-product. Unary hard reclassification removes the selected source from the active
+population in the current Commit Region, deduplicated across expressive branches. Other registers do not supply votes to this Gate.
+The single aggregate direction admits only Propositions with an effective
+hysteretic direction matching it, including the current Gate when eligible.
+A zero aggregate retains the population's own preceding direction from ledger
+history. An individual Proposition also retains its preceding effective direction
+at zero; absent evidence, it defaults to its governing Committal direction. Neither condition
+changes the numeric Chirality value from zero. It does not use the sign of the
+final cross-domain Chirality product. Unary hard reclassification removes the selected source from the active
 Stance field; the fresh Concord has none of its historical votes. This removes a
 contribution in the dominant direction and tends the field toward balance,
-without promising monotonic absolute-lean reduction for every discrete choice. Mediate instead uses the Correspondence sign of its previous Disperse Gate
-to select immediate same-parent, same-register Read siblings. Their immediate
-Gate children require no Correspondence or lean match. The measurement retains
-its existing attenuation; the selection boundary is structural, not a whole-Horizon
-scan. See [participation](participation.md#mediate-correspondence-read).
+without promising monotonic absolute-lean reduction for every discrete choice. Mediate uses the previous Disperse Gate's retained Correspondence direction
+against Read-equivalent members of its Commit Region. Bias uses Gate-equivalent
+members of that same structural scope; Closure uses Write-equivalent members.
+The Context Horizon remains comparison context. See
+[participation](participation.md#shared-commit-region-scope).
 
 ## Local Closure
 
@@ -189,4 +197,7 @@ Missing/unmeasurable Potential candidates remain ineligible. No persistent raw
 cache is introduced; prospective Closure always evaluates current Phase history.
 
 Immutable commitment snapshots continue to preserve the values observed at
-commitment time. New non-bootstrap commitments record active-head-phase-touch-v2.
+commitment time. New non-bootstrap commitments record region-attestation-polarity-v3.
+
+See [Attestation polarity and direction history](attestation-polarity.md) for the
+normative distinction between measurement values, retained directions and labels.

@@ -5,6 +5,7 @@
     "type": "module",
     "scripts": {
         "test:ui": "node --test tests/js/*.test.mjs",
+        "preview:workspace": "node tests/ui/serve.mjs",
         "build": "npm run typecheck && vite build",
         "dev": "vite",
         "typecheck": "tsc --noEmit"
@@ -18,7 +19,9 @@
         "react": "^19.1.1",
         "react-dom": "^19.1.1",
         "react-redux": "^9.2.0",
-        "react-router-dom": "^7.8.2"
+        "react-router-dom": "^7.8.2",
+        "laravel-echo": "^2.0.0",
+        "pusher-js": "^8.4.0"
     },
     "devDependencies": {
         "@types/react": "^19.2.18",
@@ -27,6 +30,7 @@
         "concurrently": "^9.0.1",
         "laravel-vite-plugin": "^2.0.0",
         "typescript": "^5.9.3",
-        "vite": "^7.1.4"
+        "vite": "^7.1.4",
+        "happy-dom": "^20.0.0"
     }
 }

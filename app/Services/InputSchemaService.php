@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\PhaseKind;
 use App\Models\Attestation;
 use App\Models\Participant;
+use App\Services\Participation\ParticipationContext;
 use DomainException;
 use Illuminate\Support\Facades\Cache;
 
@@ -14,7 +15,7 @@ final readonly class InputSchemaService
         private PhaseService $phases,
         private GateService $gates,
         private PropositionOwnershipService $ownership,
-        private CommitmentAdmissibilityService $admissibility,
+        private ClosureOptionService $closure,
         private PropositionOptionService $options,
     ) {}
 
@@ -35,11 +36,12 @@ final readonly class InputSchemaService
         ?array $attestationOptionIds = null,
         ?array $traversalOptionIds = null,
         ?array $instrumentOptionIds = null,
+        ?ParticipationContext $context = null,
     ): array {
-        $occurrence = $this->phases->currentFor($participant);
+        $occurrence = $context?->phase ?? $this->phases->currentFor($participant);
         $kind = $occurrence->kind;
         $plan = $this->phases->plan($kind);
-        $gate = $this->gates->forPhase($occurrence);
+        $gate = $context?->propositions->get($occurrence->gate_proposition_id) ?? $this->gates->forPhase($occurrence);
         $ownsGate = $this->ownership->ownedBy($gate, $participant);
 
         $actions = array_values(array_filter(
@@ -55,12 +57,10 @@ final readonly class InputSchemaService
             },
         ));
 
-        if (in_array('proposition.commit', $actions, true)
-            && ! $this->admissibility->evaluate($gate, $occurrence)['admissible']) {
-            $actions = array_values(array_diff($actions, ['proposition.commit']));
-        }
+        $commitOptionIds = $kind === PhaseKind::Order
+            ? $this->closure->committableFor($occurrence, $context)->pluck('id')->all() : [];
 
-        $traversalOptionIds ??= $this->options->traversalOptionsFor($occurrence)->pluck('id')->all();
+        $traversalOptionIds ??= $this->options->traversalOptionsFor($occurrence, $context)->pluck('id')->all();
 
         $schema = $this->specialize(
             $this->forPhase($kind, $actions),
@@ -69,6 +69,7 @@ final readonly class InputSchemaService
             $attestationOptionIds ?? $writeOptionIds,
             $traversalOptionIds,
             $instrumentOptionIds ?? $writeOptionIds,
+            $commitOptionIds,
         );
 
         if (isset($schema['$defs']['actions']['attestation.create'])) {
@@ -79,8 +80,7 @@ final readonly class InputSchemaService
                 ->pluck('direction', 'proposition_id');
             $choices = [];
             foreach (['refute', 'support'] as $direction) {
-                $targets = array_values(array_filter($ids, fn (string $id): bool =>
-                    $effective->get($id) !== $direction));
+                $targets = array_values(array_filter($ids, fn (string $id): bool => $effective->get($id) !== $direction));
                 if ($targets !== []) {
                     $choices[] = ['properties' => [
                         'proposition_id' => ['enum' => $targets],
@@ -198,8 +198,13 @@ final readonly class InputSchemaService
         array $attestationOptionIds,
         array $traversalOptionIds,
         array $instrumentOptionIds,
+        array $commitOptionIds,
     ): array {
         $bindings = [
+            'proposition.commit' => [
+                'property' => 'proposition_id',
+                'values' => $commitOptionIds,
+            ],
             'proposition.traverse' => [
                 'property' => 'proposition_id',
                 'values' => $traversalOptionIds,
@@ -237,8 +242,7 @@ final readonly class InputSchemaService
                 continue;
             }
 
-            $schema['$defs']['actions'][$action]['properties'][$binding['property']]
-                ['enum'] = $binding['values'];
+            $schema['$defs']['actions'][$action]['properties'][$binding['property']]['enum'] = $binding['values'];
         }
 
         $actions = $schema['$defs']['actions'];

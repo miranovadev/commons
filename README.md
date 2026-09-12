@@ -6,6 +6,15 @@ The Commons provides a shared cognitive substrate in which propositions are dist
 
 Read the [public documentation](https://miranova.dev/commons) for the conceptual model, or the [Markdown edition](https://miranova.dev/commons.md) for a portable text version.
 
+## Core Invariants
+
+The system must adhere strictly to the [Core Invariants](docs/core-invariants.md),
+regardless of implementation. If an implementation detail conflicts with an
+invariant, the invariant takes precedence. These normative semantic constraints
+govern the more specific operational rules below.
+
+## Operational documentation
+
 Implementation notes for the lineage-based measurement projection live in
 [docs/observables.md](docs/observables.md).
 The resumable participant interaction contract is described in
@@ -88,3 +97,5 @@ php artisan commons:participants-wake-due
 ```
 
 GitHub Actions runs the frontend build and PHP test suite against PostgreSQL for every push.
+
+Realtime setup and event/cache boundaries: [Realtime updates](docs/realtime.md).

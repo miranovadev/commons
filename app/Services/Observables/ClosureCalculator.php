@@ -2,12 +2,13 @@
 
 namespace App\Services\Observables;
 
-use App\Domain\Observables\DomainLineage;
 use App\Domain\Observables\ClosureValues;
+use App\Domain\Observables\DomainLineage;
 use App\Domain\Observables\LineageComparison;
 use App\Models\Proposition;
 use App\Services\PropositionStateService;
 use DomainException;
+use Illuminate\Support\Collection;
 
 final readonly class ClosureCalculator
 {
@@ -47,6 +48,7 @@ final readonly class ClosureCalculator
         $weights = $this->reinforcement->weights(
             $heads,
             $lineage->horizon->substrate,
+            $lineage->context,
         );
         $parents = $lineage->supersessions->groupBy('target_proposition_id');
         $memo = [];
@@ -97,7 +99,7 @@ final readonly class ClosureCalculator
         DomainLineage $lineage,
     ): float {
         $touches = $this->activeHeads($lineage)
-            ->map(fn (Proposition $proposition) => $this->state->touchCount($proposition));
+            ->map(fn (Proposition $proposition) => $this->state->touchCount($proposition, $lineage->context));
 
         if ($touches->isEmpty()) {
             return 0;
@@ -116,7 +118,7 @@ final readonly class ClosureCalculator
         return sqrt($variance) / $mean;
     }
 
-    private function activeHeads(DomainLineage $lineage): \Illuminate\Support\Collection
+    private function activeHeads(DomainLineage $lineage): Collection
     {
         return $lineage->propositions->whereIn('id', $this->chirality->activeIds(
             $lineage->propositions, $lineage->supersessions,

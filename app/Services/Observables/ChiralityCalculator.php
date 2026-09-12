@@ -4,17 +4,18 @@ namespace App\Services\Observables;
 
 use App\Domain\Observables\DomainLineage;
 use App\Domain\Observables\LineageComparison;
+use App\Enums\ObservableDirection;
 use App\Enums\SupersessionStrength;
-use App\Models\Substrate;
 use App\Models\Proposition;
-use App\Services\PropositionStateService;
+use App\Models\Substrate;
+use App\Services\AttestationEvidenceService;
+use App\Services\Participation\ParticipationContext;
 use Illuminate\Support\Collection;
 
 final readonly class ChiralityCalculator
 {
     public function __construct(
-        private ReinforcementService $reinforcement,
-        private PropositionStateService $state,
+        private AttestationEvidenceService $evidence,
     ) {}
 
     public function calculate(LineageComparison $comparison): float
@@ -34,9 +35,7 @@ final readonly class ChiralityCalculator
     {
         $ids = $this->activeIds($lineage->propositions, $lineage->supersessions);
 
-        return $this->attestationLean($this->state->attestations(
-            $lineage->propositions->whereIn('id', $ids),
-        ), $lineage->horizon->substrate);
+        return $this->evidence->valueFor($lineage->propositions->whereIn('id', $ids), $lineage->horizon->substrate, $lineage->context);
     }
 
     /** Shared hard-supersession semantics for active propositions in a lineage. */
@@ -49,34 +48,19 @@ final readonly class ChiralityCalculator
             )
             ->pluck('source_proposition_id')
             ->unique();
+
         return $propositions->pluck('id')->diff($supersededIds)->values();
     }
 
     /** Receipt-weighted effective Attestation lean, before cross-domain comparison. */
-    public function leanFor(Collection $activeIds, Substrate $substrate): float
+    public function leanFor(Collection $activeIds, Substrate $substrate, ?ParticipationContext $context = null): float
     {
-        return $this->attestationLean($this->state->attestations(
-            Proposition::query()->whereIn('id', $activeIds)->get(),
-        ), $substrate);
+        return $this->evidence->valueFor($context !== null ? $context->nodes($activeIds) : Proposition::query()->whereIn('id', $activeIds)->get(), $substrate, $context);
     }
 
-    private function attestationLean(Collection $attestations, Substrate $substrate): float
+    /** Effective Attestation direction reconstructed from evidence in its fixed region frame. */
+    public function directionFor(Proposition $proposition, ?ParticipationContext $context = null): ObservableDirection
     {
-        $weights = $this->reinforcement->weights(
-            $attestations,
-            $substrate,
-        );
-        $total = 0.0;
-        $net = 0.0;
-
-        foreach ($attestations as $attestation) {
-            $weight = $weights->get($attestation->getKey(), 1);
-            $total += $weight;
-            $net += $attestation->direction === 'support'
-                ? $weight
-                : -$weight;
-        }
-
-        return $total === 0.0 ? 0 : $net / $total;
+        return $this->evidence->directionFor($proposition, context: $context);
     }
 }

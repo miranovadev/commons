@@ -91,9 +91,10 @@ class OperationalClosurePathTest extends TestCase
         $this->assertCount(0, $history->attestations(collect([$stance])));
         $this->assertCount(0, $history->receipts($stance));
         $this->assertSame(1, $history->touchCount($stance)); // Newly opened Bias only.
-        $this->assertArrayNotHasKey('proposition.bias', $state['plan']['schema']['$defs']['actions']);
+        $this->assertArrayHasKey('proposition.bias', $state['plan']['schema']['$defs']['actions']);
+        $this->assertSame([$stance->id], array_column($state['plan']['gate_options'], 'id'));
 
-        // Mediate participants attest their immediate Write Stance, earning its Bias direction.
+        // Mediate participants reinforce the inherited direction of their immediate Write Stance.
         foreach ([$author, $grounder] as $participant) {
             $this->move($participant, ['action' => 'attestation.create', 'proposition_id' => $stance->id, 'direction' => 'support']);
         }
@@ -220,7 +221,7 @@ class OperationalClosurePathTest extends TestCase
         $phase = Phase::findOrFail($state['plan']['phase']['id']);
         $counts = [Proposition::count(), Supersession::count(), CommitmentSnapshot::count(), $this->substrate->ledgerEntries()->count()];
         try {
-            app(ContributionDispatcher::class)->dispatch($participant, $phase, ['action' => 'proposition.commit']);
+            app(ContributionDispatcher::class)->dispatch($participant, $phase, ['action' => 'proposition.commit', 'proposition_id' => $phase->gate_proposition_id]);
             $this->fail('Execution must enforce the same refusal as preview/schema.');
         } catch (DomainException) {
             $this->assertNull($phase->fresh()->completed_at);
@@ -251,6 +252,9 @@ class OperationalClosurePathTest extends TestCase
 
     private function move(Participant $participant, array $input): array
     {
+        if ($input['action'] === 'proposition.commit') {
+            $input['proposition_id'] = $participant->fresh()->current_proposition_id;
+        }
         $phaseId = $this->state($participant)['plan']['phase']['id'];
         return app(ParticipationService::class)->contribute($participant, $phaseId, $input);
     }

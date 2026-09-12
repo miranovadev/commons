@@ -2,13 +2,16 @@
 
 namespace App\Services;
 
+use App\Enums\ObservableDirection;
 use App\Models\ContextHorizonMembership;
 use App\Models\Proposition;
 use App\Models\PropositionMeasurement;
-use App\Services\Observables\ObservableService;
 use App\Services\Observables\LineageMeasurementService;
+use App\Services\Observables\ObservableService;
+use App\Services\Participation\ParticipationContext;
 use DateTimeInterface;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 final class PropositionMeasurementService
@@ -20,8 +23,9 @@ final class PropositionMeasurementService
     public function recalculate(
         Proposition $proposition,
         ?DateTimeInterface $calculatedAt = null,
+        ?ParticipationContext $context = null,
     ): PropositionMeasurement {
-        $values = $this->observables->calculate($proposition);
+        $values = $this->observables->calculate($proposition, $context);
 
         return $this->project(
             $proposition,
@@ -35,12 +39,13 @@ final class PropositionMeasurementService
     public function recalculateIfMeasurable(
         Proposition $proposition,
         ?DateTimeInterface $calculatedAt = null,
+        ?ParticipationContext $context = null,
     ): ?PropositionMeasurement {
-        if (! ContextHorizonMembership::query()->whereKey($proposition->getKey())->exists()) {
+        if ($context !== null ? ! $context->memberships->has($proposition->id) : ! ContextHorizonMembership::query()->whereKey($proposition->getKey())->exists()) {
             return null;
         }
 
-        return $this->recalculate($proposition, $calculatedAt);
+        return $this->recalculate($proposition, $calculatedAt, $context);
     }
 
     /**
@@ -50,15 +55,17 @@ final class PropositionMeasurementService
      *
      * @param  Collection<int, Proposition>  $propositions
      */
-    public function repairMissing(Collection $propositions): void
+    public function repairMissing(Collection $propositions, ?ParticipationContext $context = null): void
     {
-        foreach ($propositions as $proposition) {
+        foreach ($propositions as $original) {
+            $proposition = $context?->proposition($original) ?? $original;
             $proposition->loadMissing('measurement');
 
             if ($proposition->measurement === null
                 || $proposition->measurement->calculator_version !== LineageMeasurementService::VERSION) {
-                $this->recalculateIfMeasurable($proposition);
+                $this->recalculateIfMeasurable($proposition, context: $context);
             }
+            $original->setRelation('measurement', $proposition->measurement);
         }
     }
 
@@ -73,31 +80,71 @@ final class PropositionMeasurementService
         $this->assertMeasurement('chirality', $chirality);
         $this->assertMeasurement('closure', $closure);
 
-        PropositionMeasurement::query()->upsert(
-            [[
-                'proposition_id' => $proposition->getKey(),
-                'correspondence' => $correspondence,
-                'chirality' => $chirality,
-                'closure' => $closure,
-                'calculated_at' => $calculatedAt ?? now(),
-                'calculator_version' => LineageMeasurementService::VERSION,
-            ]],
-            ['proposition_id'],
-            [
-                'correspondence',
-                'chirality',
-                'closure',
-                'calculated_at',
-                'calculator_version',
-            ],
-        );
+        return DB::transaction(function () use ($proposition, $correspondence, $chirality, $closure, $calculatedAt): PropositionMeasurement {
+            // Lock the Proposition so the numeric projection and retained direction move together.
+            Proposition::query()->whereKey($proposition->id)->lockForUpdate()->firstOrFail();
+            if ($correspondence !== null && $correspondence !== 0.0) {
+                DB::table('propositions')->where('id', $proposition->id)->update([
+                    'correspondence_direction' => ObservableDirection::after($correspondence)->value,
+                ]);
+            }
+            PropositionMeasurement::query()->upsert(
+                [[
+                    'proposition_id' => $proposition->getKey(),
+                    'correspondence' => $correspondence,
+                    'chirality' => $chirality,
+                    'closure' => $closure,
+                    'calculated_at' => $calculatedAt ?? now(),
+                    'calculator_version' => LineageMeasurementService::VERSION,
+                ]],
+                ['proposition_id'],
+                [
+                    'correspondence',
+                    'chirality',
+                    'closure',
+                    'calculated_at',
+                    'calculator_version',
+                ],
+            );
 
-        $measurement = PropositionMeasurement::query()
-            ->findOrFail($proposition->getKey());
+            $measurement = PropositionMeasurement::query()
+                ->findOrFail($proposition->getKey());
 
-        $proposition->setRelation('measurement', $measurement);
+            $proposition->setRelation('measurement', $measurement);
 
-        return $measurement;
+            return $measurement;
+        });
+    }
+
+    /** Correspondence has its own hysteresis; Attestation polarity is unrelated. */
+    public function correspondenceDirectionFor(Proposition $position, ?ParticipationContext $context = null): ObservableDirection
+    {
+        $seen = [];
+        $substrateId = $position->phase->cycle->participant->substrate_id;
+        while ($position !== null) {
+            if (isset($seen[$position->id]) || $position->phase->cycle->participant->substrate_id !== $substrateId) {
+                throw new \DomainException('Correspondence lineage must be acyclic and within one substrate.');
+            }
+            $seen[$position->id] = true;
+            $position = $context?->proposition($position) ?? $position;
+            if ($context === null) {
+                $position->load('measurement');
+            }
+            $this->repairMissing(collect([$position]), $context);
+            $value = $position->measurement?->correspondence;
+            if ($value !== null && $value !== 0.0) {
+                return ObservableDirection::after($value);
+            }
+            $retained = $context !== null ? $position->correspondence_direction : Proposition::query()->whereKey($position->id)->value('correspondence_direction');
+            if ($retained !== null) {
+                return ObservableDirection::from($retained);
+            }
+            $position = $context !== null
+                ? $context->nodes($context->parents->get($position->id, collect())->sortBy([['created_at', 'asc'], ['id', 'asc']])->pluck('source_proposition_id'))->first()
+                : $position->parents()->orderBy('supersessions.created_at')->orderBy('supersessions.id')->first();
+        }
+
+        return ObservableDirection::Positive;
     }
 
     private function assertMeasurement(string $name, ?float $value): void

@@ -33,6 +33,7 @@ return [
         'actions' => [
             'proposition.revise',
             'proposition.reclassify',
+            'instrument.execute',
             'attestation.create',
             'proposition.traverse',
         ],
@@ -57,7 +58,7 @@ return [
     ],
     5 => [
         'name' => 'mediate',
-        'description' => 'Read the previous Disperse Gate and its Correspondence-aligned siblings; reconcile their immediate Gate children, or attest an immediate Write descendant.',
+        'description' => 'Read Correspondence-aligned Propositions across the Commit Region; reconcile their immediate Gate children, or attest an immediate Write descendant.',
         'gate' => 'previous-phase-position',
         'actions' => [
             'proposition.reconcile',
@@ -71,7 +72,7 @@ return [
     ],
     6 => [
         'name' => 'bias',
-        'description' => 'Select one active Stance/Frontier contributing to the dominant aggregate lean and hard-supersede it into fresh Concord/Canon, execute an instrument, or attest an immediate Write descendant.',
+        'description' => 'Select one active Commit Region Stance/Frontier whose retained direction agrees with the aggregate lean and hard-supersede it into fresh Concord/Canon, execute an instrument, or attest an immediate Write descendant.',
         'gate' => 'previous-phase-position',
         'actions' => [
             'proposition.bias',
@@ -88,10 +89,11 @@ return [
     ],
     7 => [
         'name' => 'order',
-        'description' => 'Commit when grounding and Depth/Cadence allow, or attest an immediate Write descendant.',
+        'description' => 'Select a Commit Region Write candidate with aligned Depth/Cadence; commit when grounded, ground with an Instrument, or attest an eligible candidate. Any successful contribution completes the Cycle.',
         'gate' => 'previous-phase-position',
         'actions' => [
             'proposition.commit',
+            'instrument.execute',
             'attestation.create',
         ],
         'constraints' => [
