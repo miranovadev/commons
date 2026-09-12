@@ -186,6 +186,23 @@ class ParticipantContextTest extends TestCase
         }
     }
 
+    public function test_reconcile_uses_the_recorded_branch_instead_of_fanning_out_into_both_histories(): void
+    {
+        $fixture = new ParticipantContextFixture(2, 0);
+        $leftHistory = $fixture->node($fixture->seed, 'canon');
+        $left = $fixture->node($leftHistory, 'activity');
+        $rightHistory = $fixture->node($fixture->seed, 'canon');
+        $right = $fixture->node($rightHistory, 'activity');
+        $result = $fixture->node($left, 'frontier', 'reconcile');
+        $fixture->edge($right, $result, 'reconcile');
+        $gate = $fixture->node($result, 'canon');
+        $fixture->phase->forceFill(['kind' => PhaseKind::Persist, 'write_register' => 'frontier', 'gate_proposition_id' => $gate->id])->save();
+        $plan = app(ParticipationService::class)->stateFor($fixture->viewer)['plan'];
+        $this->assertSame([$fixture->seed->id, $leftHistory->id, $result->id], array_column($plan['lineage'], 'id'));
+        $this->assertDatabaseHas('propositions', ['id' => $rightHistory->id]);
+        $this->assertResolvedChain($plan['lineage']);
+    }
+
     public function test_off_path_hard_replacement_does_not_appear_or_leave_its_retired_input_in_history(): void
     {
         $fixture = new ParticipantContextFixture(2, 0);

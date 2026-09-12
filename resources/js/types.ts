@@ -284,6 +284,9 @@ export interface ApiEnvelope<T> {
 
 /** Protected autonomous context; human display uses ParticipantPlan via /workspace. */
 export interface ParticipantContext {
+  tragedy: boolean;
+  commitment?: ParticipantPlan['commitment'];
+  commitment_options?: ParticipantPlan['commitment_options'];
   phase: Pick<Phase, 'id' | 'number' | 'kind' | 'write_register'>;
   provenance_id: Identifier | null;
   gate_id: Identifier;

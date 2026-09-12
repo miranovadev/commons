@@ -118,7 +118,7 @@ measurements or action schemas.
 
 `ParticipantContextFixture` builds a 25-position active path before role removal,
 a hard Reconcile, six additional Read/Gate branches, three actionable Writes,
-realistic 327-character statements, effective Attestations with rationales and
+realistic 300-character statements, effective Attestations with rationales and
 completed Instruments/Receipts. Growth adds 10 then 500 propositions in a separate
 Commit Region within the same Horizon. Current Read/Gate/Write and lineage remain
 identical. Additional dense Constrain, Bias and Order cases exercise Instrument
