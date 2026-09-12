@@ -34,7 +34,8 @@ test('the participant page offers Rest only when the authoritative schema expose
     plugins: [{
       name: 'participation-api-fixture',
       setup(build) {
-        build.onLoad({ filter: /services\/commonsApi\.ts$/ }, () => ({
+        build.onLoad({ filter: /realtime\/useRealtime\.ts$/ }, () => ({ contents: 'export const useParticipantRealtime = () => {};', loader: 'js' }));
+    build.onLoad({ filter: /services\/commonsApi\.ts$/ }, () => ({
           contents: `
             let participation;
             export function setParticipation(value) { participation = value; }

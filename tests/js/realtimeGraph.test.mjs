@@ -1,12 +1,17 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { build } from 'esbuild';
+import { build, stop } from 'esbuild';
 import { createRequire } from 'node:module';
 import { setTimeout as wait } from 'node:timers/promises';
 import { Window } from 'happy-dom';
 
 const window = new Window({ url: 'http://localhost' });
-after(async () => { await window.happyDOM.close(); });
+after(async () => {
+  await window.happyDOM.abort();
+  await window.happyDOM.close();
+  stop();
+  console.log('DOM test resources after cleanup:', process.getActiveResourcesInfo());
+}, { timeout: 5000 });
 for (const key of ['window', 'document', 'navigator', 'HTMLElement', 'Element', 'Node', 'ShadowRoot', 'MutationObserver', 'ResizeObserver']) {
   Object.defineProperty(globalThis, key, { configurable: true, value: key === 'window' ? window : window[key] });
 }

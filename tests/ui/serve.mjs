@@ -8,6 +8,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const bundle = await build({ absWorkingDir: root, entryPoints: ['tests/ui/workspace-preview.tsx'], bundle: true, write: false,
   outdir: 'preview', jsx: 'automatic', sourcemap: 'inline', define: { 'process.env.NODE_ENV': '"development"' },
   plugins: [{ name: 'synthetic-api', setup(build) {
+    build.onLoad({ filter: /realtime\/useRealtime\.ts$/ }, () => ({ contents: 'export const useParticipantRealtime = () => {};', loader: 'js' }));
     build.onLoad({ filter: /services\/commonsApi\.ts$/ }, () => ({ contents: `
       import { useState, useSyncExternalStore } from 'react';
       import { fixture, previewParticipants, previewStates } from '${root}/tests/ui/fixture';
