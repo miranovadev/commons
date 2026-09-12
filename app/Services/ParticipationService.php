@@ -230,7 +230,8 @@ final readonly class ParticipationService
      */
     private function entryFor(Participant $participant): array
     {
-        if ($participant->fresh()->current_proposition_id !== null
+        $participant = $participant->fresh();
+        if ($participant->current_proposition_id !== null
             && $this->cycleEntry->needsRecovery($participant)) {
             $selection = $this->potential->recoverFrom($participant->position()->firstOrFail());
 
@@ -244,6 +245,18 @@ final readonly class ParticipationService
                 'message' => $selection === null
                     ? 'Resting until a structurally reachable Committal region has positive Potential Charge.'
                     : 'Begin the next Cycle at the nearest viable Committal distance.',
+            ];
+        }
+
+        if ($participant->current_proposition_id !== null) {
+            $selection = $this->potential->selectFrom($participant->position()->firstOrFail());
+
+            return [
+                'mode' => 'potential',
+                'available' => $selection !== null,
+                'message' => $selection === null
+                    ? 'Waiting for a structurally reachable measured Committal Proposition.'
+                    : 'Potential will select a Committal Gate as observed from the Participant’s current position.',
             ];
         }
 

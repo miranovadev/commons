@@ -130,9 +130,12 @@ a valid structural scope, but must not silently redefine that scope.
 ## 11. Cycles Begin at Committal Propositions
 
 A Cycle begins from a Committal Proposition. Expressive Propositions cannot serve
-as Cycle entry points. Potential Charge ranks eligible Committal Propositions;
-any entry fallback must remain within that eligible population. A prospective
-Commitment is not eligible until the Committal Proposition exists.
+as Cycle entry points. Cycle entry ranks eligible Committal Propositions using
+Potential Charge as observed from the Participant's current position, including
+substrate attenuation. Raw global Potential Charge alone does not determine
+entry when a current position exists. Any entry fallback remains Committal and
+respects that observational position. A prospective Commitment is not eligible
+until the Committal Proposition exists.
 
 Under normal Phase progression, there may be at most six consecutive Expressive
 Proposition tiers between Committal Propositions. A new Committal Proposition may

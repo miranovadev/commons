@@ -38,19 +38,25 @@ Phase in the Settlement `signal` register.
 
 Origin entry is serialized on the Substrate. A concurrent or repeated request
 receives HTTP 409 and cannot create a second Origin. For an established
-substrate, POST an empty JSON object to `/participate/enter`. Initial entry and
-ordinary re-entry select the Committal Proposition with the highest Potential
-Charge and persist it as the new Cycle's position. Expressive Propositions are
-never entry candidates, even when retained as the Participant's latest position.
-Successful contributions still persist their resulting Gate within the Cycle.
-Rest recovery retains its nearest viable Committal region rules below.
+substrate, POST an empty JSON object to `/participate/enter`. Initial entry has
+no observer position and ranks eligible Committal Propositions by Potential
+Charge. Ordinary re-entry ranks reachable Committal candidates by Potential
+Charge observed from the Participant's retained position, including substrate
+attenuation. Expressive positions inform distance but are never entry candidates.
+Successful entry persists the selected Committal Gate; contributions still
+persist their resulting Gate within the Cycle. Rest recovery retains its nearest
+viable Committal region rules below.
 
 Potential Charge is `max(0, max(|T| - |T_c|))`, where `T` is the Committal
 state's immutable Tension and `T_c` is the projected Tension of each measurable
 Expressive continuation reachable before the next Committal state. If no
 continuation reduces Tension, selection falls back to the highest current
-Charge, `1 - |T|`. Exact ties use the Proposition ID for stable ordering and do
-not give precedence to lineage depth.
+Charge, `1 - |T|`. Ordinary re-entry attenuates both Potential and Charge by
+`1 / (1 + d)^2`, where `d` is the shortest existing parent/child distance from
+the retained position. Effective-score ties prefer shorter distance and then
+stable Proposition ID; initial entry retains its Charge/ID tie-breaks.
+Disconnected candidates cannot supply ordinary entry, including fallback.
+See [observer-relative Potential](observables.md#potential-observed-from-a-participant-position).
 
 POST applies exactly one contribution:
 
@@ -259,12 +265,14 @@ The existing `entry.mode: potential` transport is retained for entry clients.
 Attenuation is a substrate-level measurement rule: independently evaluated local
 Proposition measurements are averaged with inverse-square weights
 `1 / (1 + structural_distance)^2` while walking from the active head to provenance.
-Every visited position contributes denominator weight. Potential uses these
-accumulated measurements without another observer-distance or continuation-length
-discount. Another Committal still stops the outgoing continuation search.
-Immutable snapshot Tension remains the historical baseline. Initial entry and ordinary re-entry use
-global Potential/Charge ranking; recovery preserves its nearest
-viable region search. See [observables](observables.md) for the full calculation.
+Every visited position contributes denominator weight. Raw Potential uses these
+accumulated measurements without re-discounting continuation length. Another
+Committal still stops the outgoing continuation search. Immutable snapshot
+Tension remains the historical baseline. Ordinary re-entry additionally observes
+candidate Potential and Charge from the retained Participant position using the
+same inverse-square geometry. Initial entry has no positional attenuation;
+recovery preserves its nearest viable region search. See
+[observables](observables.md) for the full calculation.
 
 Order returns an actionable `ready` plan even when Commit is inadmissible.
 `plan.commitment` and `commitment_preconditions_unsatisfied` preserve diagnostics

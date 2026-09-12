@@ -68,7 +68,12 @@ final readonly class CycleEntryService
             }
 
             if ($this->hasPropositionHistory($substrate)) {
-                $selection = $this->potential->selectFor($substrate);
+                $selection = $lockedParticipant->current_proposition_id === null
+                    ? $this->potential->selectFor($substrate)
+                    : $this->potential->selectFrom($lockedParticipant->position()->firstOrFail());
+                if ($selection === null) {
+                    throw new ConflictHttpException('No structurally reachable measured Committal Proposition is available for Cycle entry.');
+                }
                 $this->createLiveCycle(
                     $lockedParticipant,
                     $substrate,
