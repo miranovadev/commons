@@ -10,6 +10,7 @@ use App\Models\Cycle;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
+use App\Models\PropositionMeasurement;
 use App\Models\Substrate;
 use App\Models\Supersession;
 use App\Services\CommitRegionPolarityService;
@@ -167,5 +168,10 @@ final class ParticipantContextFixture
                 DB::table($table)->insert($chunk);
             }
         }
+        // Preserve Phase::created's invalidation once for the completed batch,
+        // so the large-context assertion also exercises fresh measurements.
+        PropositionMeasurement::whereHas('proposition.phase.cycle.participant',
+            fn ($query) => $query->where('substrate_id', $this->substrate->id))
+            ->update(['calculator_version' => null]);
     }
 }

@@ -135,6 +135,7 @@ class ParticipantContextTest extends TestCase
         $service = app(ParticipationService::class);
         $before = $service->stateFor($fixture->viewer)['plan'];
         $fixture->growUnrelatedTo(500);
+        $this->assertDatabaseHas('proposition_measurements', ['proposition_id' => $fixture->gate->id, 'calculator_version' => null]);
         $after = $service->stateFor($fixture->viewer)['plan'];
         $this->assertSame($before, $after);
         $this->assertSame(strlen(json_encode($before)), strlen(json_encode($after)));
