@@ -18,7 +18,6 @@ after(async () => {
   await window.happyDOM.close();
   stop();
   for (const channel of messageChannels) { channel.port1.close(); channel.port2.close(); }
-  console.log('DOM test resources after cleanup:', process.getActiveResourcesInfo());
 }, { timeout: 5000 });
 for (const key of ['window', 'document', 'navigator', 'HTMLElement', 'Element', 'Node', 'ShadowRoot', 'MutationObserver', 'ResizeObserver']) {
   Object.defineProperty(globalThis, key, { configurable: true, value: key === 'window' ? window : window[key] });

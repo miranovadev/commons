@@ -97,6 +97,8 @@ class RealtimeTest extends TestCase
         $outsider = User::factory()->create();
         config(['broadcasting.default' => 'reverb', 'broadcasting.connections.reverb.key' => 'test-key',
             'broadcasting.connections.reverb.secret' => 'test-secret', 'broadcasting.connections.reverb.app_id' => 'test']);
+        // The test changes drivers after application boot; register the production callbacks on that driver.
+        require base_path('routes/channels.php');
         $auth = fn ($name) => $this->postJson('/broadcasting/auth', ['socket_id' => '123.456', 'channel_name' => 'private-'.$name]);
         $auth('participant.'.$participant->id)->assertUnauthorized();
         $this->actingAs($outsider);
@@ -152,7 +154,7 @@ class RealtimeTest extends TestCase
         $substrate->forceFill(['slug' => $slug, 'title' => 'Realtime', 'visibility' => 'public', 'configuration' => []]);
         $substrate->save();
         $participant = new Participant;
-        $participant->forceFill(['substrate_id' => $substrate->id, 'user_id' => $user->id, 'callsign' => 'observer']);
+        $participant->forceFill(['substrate_id' => $substrate->id, 'user_id' => $user->id, 'callsign' => 'observer', 'max_read_count' => 25]);
         $participant->save();
 
         return [$substrate, $participant, $user];

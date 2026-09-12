@@ -31,6 +31,7 @@ class ReverbTransportTest extends TestCase
 
         try {
             $server->start();
+            $this->assertTrue($server->waitUntil(fn () => str_contains($server->getOutput(), 'Starting server')), $server->getErrorOutput());
             $client->start();
             $subscribed = $client->waitUntil(fn () => str_contains($client->getOutput(), 'SUBSCRIBED'));
             $this->assertTrue($subscribed, $server->getOutput().$server->getErrorOutput().$client->getErrorOutput());

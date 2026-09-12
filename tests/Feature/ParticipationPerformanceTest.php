@@ -38,6 +38,26 @@ class ParticipationPerformanceTest extends TestCase
         return [[PhaseKind::Mediate], [PhaseKind::Bias], [PhaseKind::Order]];
     }
 
+    /** Parent IDs describe a set; PostgreSQL does not promise relationship order. */
+    private function comparablePlan(array $plan): string
+    {
+        $normalize = function (array &$values) use (&$normalize): void {
+            foreach ($values as $key => &$value) {
+                if (! is_array($value)) {
+                    continue;
+                }
+                if ($key === 'parent_ids') {
+                    sort($value);
+                } else {
+                    $normalize($value);
+                }
+            }
+        };
+        $normalize($plan);
+
+        return json_encode($plan, JSON_THROW_ON_ERROR);
+    }
+
     #[DataProvider('phases')]
     public function test_participation_query_budget(PhaseKind $kind): void
     {
@@ -59,7 +79,7 @@ class ParticipationPerformanceTest extends TestCase
         DB::disableQueryLog();
         fwrite(STDERR, sprintf("\nPROFILE %s: %d propositions, %d queries, %.2f SQL ms, %.2f wall ms\n", $kind->name, count($nodes), count($log), array_sum(array_column($log, 'time')), $elapsed));
         fwrite(STDERR, sprintf("BASELINE %s: %d queries, %.2f SQL ms, %.2f wall ms\n", $kind->name, count($baseline), array_sum(array_column($baseline, 'time')), $beforeMs));
-        $this->assertSame(json_encode($before), json_encode($plan), 'Complete plan, measurements and action schema must match the unbatched calculation.');
+        $this->assertSame($this->comparablePlan($before), $this->comparablePlan($plan), 'Complete plan, measurements and action schema must match the unbatched calculation.');
         $this->assertNotEmpty($plan['gate']);
         $this->assertLessThan(500, count($log));
     }
