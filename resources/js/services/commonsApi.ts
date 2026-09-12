@@ -135,7 +135,7 @@ export const commonsApi = createApi({
         { type: 'Connection', id: 'LIST' },
       ],
     }),
-    getParticipant: builder.query<Participant, ParticipantParameters>({ query: ({ slug, participantId }) => `/substrates/${slug}/participants/${participantId}`, transformResponse: data }),
+    getParticipant: builder.query<Participant, ParticipantParameters>({ query: ({ slug, participantId }) => `/substrates/${slug}/participants/${participantId}`, transformResponse: data, providesTags: (_result, _error, { participantId }) => [{ type: 'Participant', id: participantId }] }),
     getParticipantPlan: builder.query<ParticipantPlan, ParticipantParameters>({ query: ({ slug, participantId }) => `/substrates/${slug}/participants/${participantId}/plan`, transformResponse: data }),
     getParticipation: builder.query<Participation, ParticipantParameters>({
       query: ({ slug, participantId }) => `/substrates/${slug}/participants/${participantId}/participate`,
@@ -149,7 +149,7 @@ export const commonsApi = createApi({
         body: { phase_id: phaseId, contribution },
       }),
       transformResponse: data,
-      invalidatesTags: ['Participation', 'Proposition'],
+      invalidatesTags: ['Participation', 'Proposition', 'Participant'],
     }),
     enterCycle: builder.mutation<Participation, ParticipantParameters & { origin?: OriginInput }>({
       query: ({ slug, participantId, origin }) => ({
@@ -158,7 +158,7 @@ export const commonsApi = createApi({
         body: origin ? { origin } : {},
       }),
       transformResponse: data,
-      invalidatesTags: ['Participation', 'Proposition', 'Substrate'],
+      invalidatesTags: ['Participation', 'Proposition', 'Substrate', 'Participant'],
     }),
     getConnectionOptions: builder.query<ConnectionOptions, void>({ query: () => '/connection-options', transformResponse: data }),
     getConnections: builder.query<Connection[], void>({

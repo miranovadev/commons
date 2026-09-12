@@ -23,5 +23,7 @@ export function attestationPresentation(proposition: Partial<Proposition>) {
   }));
   const dominant = !summary || summary.positive === summary.negative ? null
     : summary.positive > summary.negative ? 'positive' as const : 'negative' as const;
-  return { slots, dominant, dominantLabel: slots.find(slot => dominant && slot.direction === dominant)?.label };
+  const direction = dominant ?? summary?.retained_direction ?? null;
+  const label = direction && summary?.support_direction ? (direction === summary.support_direction ? 'support' : 'refute') : undefined;
+  return { slots, dominant, direction, label, animate: dominant !== null };
 }

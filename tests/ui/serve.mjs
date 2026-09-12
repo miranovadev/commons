@@ -9,15 +9,33 @@ const bundle = await build({ absWorkingDir: root, entryPoints: ['tests/ui/worksp
   outdir: 'preview', jsx: 'automatic', sourcemap: 'inline', define: { 'process.env.NODE_ENV': '"development"' },
   plugins: [{ name: 'synthetic-api', setup(build) {
     build.onLoad({ filter: /services\/commonsApi\.ts$/ }, () => ({ contents: `
-      import { fixture } from '${root}/tests/ui/fixture';
-      export const useGetParticipantQuery = () => ({ data: fixture.participant });
-      export const useGetParticipationQuery = () => ({ data: fixture.participation });
+      import { useState, useSyncExternalStore } from 'react';
+      import { fixture, previewParticipants, previewStates } from '${root}/tests/ui/fixture';
+      const listeners = new Set(); let version = 0;
+      function useFixture() { useSyncExternalStore(callback => { listeners.add(callback); return () => listeners.delete(callback); }, () => version); }
+      export const useGetSessionQuery = () => ({ data: { has_system_access: true } });
+      export const useGetParticipantsQuery = () => { useFixture(); return { data: previewParticipants }; };
+      export const useGetParticipantQuery = ({ participantId }) => { useFixture(); return { data: previewParticipants.find(p => p.id === participantId) || fixture.participant }; };
+      export const useGetParticipationQuery = ({ participantId }) => { useFixture(); const data = previewStates[participantId] || fixture.participation; return { data, currentData: data }; };
       export const useContributeMutation = () => [input => ({ unwrap: async () => {
         const output = document.querySelector('[data-last-action]');
         if (output) output.textContent = JSON.stringify(input.contribution);
         throw new Error('Preview only: contribution recorded, no data changed.');
       }}), { isLoading: false, reset() {} }];
-      export const useEnterCycleMutation = () => [() => {}, { reset() {} }];
+      export const useEnterCycleMutation = () => {
+        const [error, setError] = useState(null);
+        return [input => ({ unwrap: async () => {
+          const state = previewStates[input.participantId];
+          if (state?.status !== 'waiting' || !state?.entry?.available) { const error = new Error('Entry unavailable in this preview state.'); setError(error); throw error; }
+          previewStates[input.participantId] = fixture.participation;
+          const participant = previewParticipants.find(p => p.id === input.participantId);
+          participant.position = { cycle_sequence: 2, cycle_completed: false, phase: fixture.participation.plan.phase };
+          const output = document.querySelector('[data-last-action]');
+          if (output) output.textContent = 'Preview Cycle entered: ' + participant.callsign;
+          version++; listeners.forEach(notify => notify());
+          return fixture.participation;
+        }}), { error, isLoading: false, reset() { setError(null); } }];
+      };
     `, loader: 'tsx' }));
   }}] });
 const assets = Object.fromEntries(bundle.outputFiles.map(file => [file.path.endsWith('.css') ? '/preview.css' : '/preview.js', file.text]));

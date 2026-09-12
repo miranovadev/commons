@@ -38,7 +38,9 @@ test('the participant page offers Rest only when the authoritative schema expose
           contents: `
             let participation;
             export function setParticipation(value) { participation = value; }
-            export const useGetParticipantQuery = () => ({ data: { id: 'viewer', callsign: 'Viewer', max_read_count: 25 } });
+            export const useGetParticipantsQuery = () => ({ data: [] });
+         export const useGetSessionQuery = () => ({ data: null });
+         export const useGetParticipantQuery = () => ({ data: { id: 'viewer', callsign: 'Viewer', max_read_count: 25 } });
             export const useGetParticipationQuery = () => ({ data: participation });
             export const useContributeMutation = () => [() => {}, { reset() {} }];
             export const useEnterCycleMutation = () => [() => {}, {}];
@@ -60,9 +62,8 @@ test('the participant page offers Rest only when the authoritative schema expose
   assert.doesNotMatch(module.exports.render('proposition.variant', true), /Tragic Region|>Rest<\/span>/);
   const exhausted = module.exports.render('participant.rest', true);
   assert.match(exhausted, /Tragic Region/);
-  assert.match(exhausted, />Rest<\/span>/);
-  assert.match(exhausted, /No admissible non-Rest action remains in this Phase/);
+  assert.match(exhausted, /aria-label="Open Tragic Region · Rest"/);
   // Even a stale/absent Tragedy flag cannot hide an authoritative Rest action.
-  assert.match(module.exports.render('participant.rest', false), />Rest<\/span>/);
-  assert.match(module.exports.render('participant.rest', undefined), />Rest<\/span>/);
+  assert.match(module.exports.render('participant.rest', false), /aria-label="Open Tragic Region · Rest"/);
+  assert.match(module.exports.render('participant.rest', undefined), /aria-label="Open Tragic Region · Rest"/);
 });

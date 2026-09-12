@@ -76,7 +76,7 @@ for (const support of ['positive', 'negative']) {
   });
 }
 
-test('a tie or absent frame invents no dominant sign; geometry is keyed only by signed direction', () => {
+test('legacy tied-count payloads without retained direction stay neutral; geometry follows only signed direction', () => {
   for (const count of [0, 3]) assert.match(ui.summary('negative', count, count), /data-direction="neutral" data-animated="false"/);
   assert.equal(ui.attestationPresentation({ attestation_counts: { support: 9, refute: 0 } }).dominant, null);
   assert.match(css, /\[data-direction="negative"\] \.directional-whirl__geometry\s*\{ transform:scaleX\(-1\)/);
@@ -123,14 +123,12 @@ test('compact metadata omits register transition prose while detailed inspection
   assert.match(ui.metadata('detailed'), /proposition-transition/);
 });
 
-test('status markup and responsive CSS keep full notices out of the narrow workspace flow', () => {
+test('status chips preserve full titles and open details outside the workflow', () => {
   const html = ui.status();
   assert.match(html, /<aside[^>]*workspace-status/);
-  assert.match(html, /<details[^>]* open=""/);
+  assert.doesNotMatch(html, /<details/);
   assert.match(html, /aria-label="Open Closure preview"/);
   assert.doesNotMatch(html, /role="dialog"/);
-  const narrow = css.slice(css.indexOf('@media (max-width:74.99em)'), css.indexOf('@media (max-width:47.99em)'));
-  assert.match(narrow, /grid-template-rows:2\.8rem minmax\(0,1fr\)/);
-  assert.match(narrow, /\.workspace-status__header,\.workspace-status__cards \{ display:none/);
-  assert.match(narrow, /workspace-status__compact[^}]*overflow-x:auto/);
+  assert.match(css, /workspace-status__compact[^}]*overflow-x:auto/);
+  assert.doesNotMatch(css, /participant-cycle-content:has\(\.workspace-status/);
 });

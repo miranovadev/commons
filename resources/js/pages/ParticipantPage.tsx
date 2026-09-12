@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
-import { Alert, Box, Breadcrumbs, Button, Container, Group, Loader, Stack, Text, ThemeIcon, Title } from '@mantine/core';
+import { Alert, Box, Breadcrumbs, Container, Loader, Stack, Text, ThemeIcon, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconAlertCircle, IconFocus2, IconSparkles } from '@tabler/icons-react';
+import { IconAlertCircle, IconSparkles } from '@tabler/icons-react';
 import { Link, useParams } from 'react-router-dom';
 import { messageFrom } from '../errors';
 import { quickContribution } from '../participationOptions';
@@ -9,9 +9,11 @@ import { ContributionForm } from '../components/ContributionForm';
 import { OriginCycleForm } from '../components/OriginCycleForm';
 import { ParticipantWorkspace } from '../components/ParticipantWorkspace';
 import { useContributeMutation, useEnterCycleMutation, useGetParticipantQuery, useGetParticipationQuery } from '../services/commonsApi';
-import type { ActionName, ContributionInitialValues, ContributionInput, OriginInput, PhaseKind } from '../types';
+import type { ActionName, ContributionInitialValues, ContributionInput, OriginInput } from '../types';
 
-import { phaseMeta } from '../phases';
+import { PhaseIdentity } from '../components/PhaseIdentity';
+import { ParticipantSwitcher } from '../components/ParticipantSwitcher';
+import { CycleEntryControl } from '../components/CycleEntryControl';
 import { ParticipantIdentity } from '../components/ParticipantIdentity';
 import { WorkspaceStatus } from '../components/WorkspaceStatus';
 import { participationNotices } from '../components/ParticipationNotices';
@@ -20,7 +22,12 @@ export function ParticipantPage() {
   const { slug: routeSlug, participantId: routeParticipantId } = useParams();
   const slug = routeSlug ?? '';
   const participantId = routeParticipantId ?? '';
+  return <ParticipantPositionPage key={`${slug}/${participantId}`} slug={slug} participantId={participantId} />;
+}
+
+function ParticipantPositionPage({ slug, participantId }: { slug: string; participantId: string }) {
   const parameters = { slug, participantId };
+  const [switcherOpened, setSwitcherOpened] = useState(false);
   const { data: participant, isLoading: participantLoading, error: participantError } = useGetParticipantQuery(parameters);
   const { data: participation, isLoading: participationLoading, error: participationError } = useGetParticipationQuery(parameters);
   const [contribute, contribution] = useContributeMutation();
@@ -72,39 +79,28 @@ export function ParticipantPage() {
       {!plan && <Breadcrumbs mb="lg"><Text component={Link} to="/" size="sm" c="dimmed">Substrates</Text><Text component={Link} to={`/substrates/${slug}`} size="sm" c="dimmed">{slug}</Text><Text size="sm">Participant</Text></Breadcrumbs>}
       {(participantLoading || participationLoading) && !error && <Stack align="center" py={100}><Loader color="indigo" /><Text c="dimmed">Finding your current position…</Text></Stack>}
       {error && <Alert color="red" variant="light" icon={<IconAlertCircle size={18} />} title="The Commons could not load this position">{messageFrom(error, 'This participation state could not be loaded.')}</Alert>}
+      {participant && !plan && <ParticipantIdentity participant={participant} onSelect={() => setSwitcherOpened(true)} opened={switcherOpened} />}
       {participant && participation?.status === 'waiting' && (
-        <Box p="xl"><Stack align="flex-start" maw={680} mx="auto"><ThemeIcon color="indigo" variant="light" size="xl" radius="xl"><IconSparkles size={22} /></ThemeIcon><Box><Title order={2}>{participation.entry?.mode === 'origin' ? 'Every substrate begins somewhere' : 'Ready to enter the cycle'}</Title><Text c="dimmed" mt="xs">{participation.entry?.message || participation.reason?.message}</Text></Box>{cycleEntry.error && <Alert color="red" variant="light">{messageFrom(cycleEntry.error, 'The cycle could not be entered.')}</Alert>}<Group>{participation.entry?.mode === 'origin' && participation.entry?.available && <Button color="indigo" onClick={() => { cycleEntry.reset(); openOrigin(); }}>Establish the Origin</Button>}{participation.entry?.mode === 'potential' && participation.entry?.available && <Button color="indigo" loading={cycleEntry.isLoading} onClick={enterFromPotential}>{participation.entry?.selection === 'recovery' ? 'Begin recovery Cycle' : 'Enter Cycle'}</Button>}</Group></Stack></Box>
+        <Box p="xl"><Stack align="flex-start" maw={680} mx="auto"><ThemeIcon color="indigo" variant="light" size="xl" radius="xl"><IconSparkles size={22} /></ThemeIcon><Box><Title order={2}>{participation.entry?.mode === 'origin' ? 'Every substrate begins somewhere' : 'Ready to enter the cycle'}</Title></Box>{cycleEntry.error && <Alert color="red" variant="light">{messageFrom(cycleEntry.error, 'The cycle could not be entered.')}</Alert>}<CycleEntryControl participation={participation} loading={cycleEntry.isLoading} onEnter={enterFromPotential} onOrigin={() => { cycleEntry.reset(); openOrigin(); }} /></Stack></Box>
       )}
       {!plan && notices.map(notice => <Alert key={notice.id} color={notice.color} title={notice.title} m="md">{notice.content}</Alert>)}
       {participant && plan && (
         <Box className="participant-cycle-shell">
           <Box className="cycle-context-header">
-            <ParticipantIdentity participant={participant} />
-            <PhaseLabel kind={plan.phase.kind} />
-            <Box />
+            <PhaseIdentity kind={plan.phase.kind} />
+            <ParticipantIdentity participant={participant} onSelect={() => setSwitcherOpened(true)} opened={switcherOpened} />
           </Box>
           <Box className="participant-cycle-content">
             <ParticipantWorkspace plan={{ ...plan, perspectiveLimit: participant.max_read_count }} availableActions={availableActions} onAction={workspaceAction}
-              busy={contribution.isLoading || submittedPhase.current === plan.phase.id} onSubmit={submit} error={contribution.error} />
-            <WorkspaceStatus notices={notices} closeDetails={selectedAction !== null} />
+              busy={contribution.isLoading || submittedPhase.current === plan.phase.id} onSubmit={submit} error={contribution.error}
+              status={<WorkspaceStatus notices={notices} closeDetails={selectedAction !== null || switcherOpened} />} />
           </Box>
           <ContributionForm action={selectedAction?.name} plan={plan} opened={selectedAction !== null} loading={contribution.isLoading} error={contribution.error} initialValues={selectedAction?.initialValues} onClose={() => setSelectedAction(null)} onSubmit={submit} />
         </Box>
       )}
+      {participant && <ParticipantSwitcher slug={slug} participant={participant} opened={switcherOpened} onClose={() => setSwitcherOpened(false)} />}
       <OriginCycleForm opened={originOpened} loading={cycleEntry.isLoading} error={cycleEntry.error} onClose={closeOrigin} onSubmit={establishOrigin} />
     </Container>
-  );
-}
-
-export function PhaseLabel({ kind }: { kind: PhaseKind }) {
-  const meta = phaseMeta[kind];
-  const Icon = meta?.icon || IconFocus2;
-  const name = kind ? kind.charAt(0).toUpperCase() + kind.slice(1) : 'Unknown';
-  return (
-    <Stack className="cycle-context-header__phase" gap={3}>
-      <Group gap={7} justify="center" wrap="nowrap"><Icon size={17} /><Text size="sm" fw={650}>{meta?.number ? `Phase ${meta.number} · ${name}` : name}</Text></Group>
-      <Text size="xs" c="dimmed" maw={540}>{meta?.description}</Text>
-    </Stack>
   );
 }
 

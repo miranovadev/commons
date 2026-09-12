@@ -2,6 +2,7 @@ import { Badge, Box, Group, SimpleGrid, Stack, Text, ThemeIcon, Tooltip } from '
 import { IconArrowRight, IconBolt, IconHexagon, IconHexagonalPrism, IconLayersDifference } from '@tabler/icons-react';
 import { ParticipantAvatar } from './ParticipantIdentity';
 import { OperationIcon } from './OperationIcon';
+import { operationHistoryLabel } from '../operationHistory';
 import { DirectionalWhirl } from './DirectionalWhirl';
 import { attestationPresentation } from '../directionalPresentation';
 import { metaForRegister } from '../registers';
@@ -93,15 +94,17 @@ export function PropositionMetadata({ proposition, wireframe = false }: { propos
     {(proposition.tier || wireframe) && <TierBadge tier={wireframe ? 'possible' : proposition.tier} />}
     {proposition.register && <Badge size="xs" color={register.color} variant="light">{register.label}</Badge>}
     {proposition.transition?.type && <Badge size="xs" color="gray" variant="outline" className="operation-badge"
-      leftSection={<OperationIcon operation={proposition.transition.type} size={11} />}>{proposition.transition.type}</Badge>}
+      leftSection={<OperationIcon operation={proposition.transition.type} size={11} />}>{operationHistoryLabel(proposition.transition.type)}</Badge>}
   </Group>;
 }
 
 export function AttestationCounts({ proposition }: { proposition: Partial<Proposition> }) {
   if (!proposition.attestation_counts && !proposition.attestation_summary) return null;
-  const { slots, dominant, dominantLabel } = attestationPresentation(proposition);
+  const { slots, dominant, direction, label, animate } = attestationPresentation(proposition);
   const mapped = Boolean(proposition.attestation_summary?.support_direction);
   const [negative, positive] = slots;
+  const description = dominant ? `${dominant === 'positive' ? 'Positive' : 'Negative'} count majority (unweighted)`
+    : direction ? `No count majority · ${direction} direction persists${label ? ' (' + label + ')' : ''}` : 'No count majority';
   function count(slot: typeof negative) {
     return <Tooltip label={`${slot.count} effective ${mapped ? slot.direction + '-direction' : slot.text} Attestations${mapped ? ' · ' + slot.text + ' in this region' : ''}`} withArrow>
       <Text component="span" className="attestation-semantic" data-label={slot.label} size="xs" fw={700}
@@ -112,8 +115,8 @@ export function AttestationCounts({ proposition }: { proposition: Partial<Propos
   }
   return <Group gap={5} wrap="nowrap" className="proposition-attestation-counts" ml="auto" aria-label="Effective Attestations">
     {count(negative)}
-    <Tooltip label={dominant ? `${dominant === 'positive' ? 'Positive' : 'Negative'} count majority (unweighted)` : 'No count majority'} withArrow>
-      <span className="attestation-semantic" data-label={dominantLabel || 'neutral'}><DirectionalWhirl direction={dominant} size={16} /></span>
+    <Tooltip label={description} withArrow>
+      <span className="attestation-semantic" data-label={label || 'neutral'} role="img" aria-label={description}><DirectionalWhirl direction={direction} animate={animate} size={16} /></span>
     </Tooltip>
     {count(positive)}
   </Group>;
@@ -224,7 +227,7 @@ export function TransitionReadout({ transition, compact = false }: {
 
   return (
     <Group gap={5} wrap="nowrap" className="proposition-transition">
-      <Badge size="xs" variant="outline" color="gray">{transition.type}</Badge>
+      <Badge size="xs" variant="outline" color="gray" className="operation-badge">{operationHistoryLabel(transition.type)}</Badge>
       <Text size={compact ? '9px' : 'xs'} c="dimmed">{label(transition.from)}</Text>
       <IconArrowRight size={compact ? 11 : 13} />
       <Text size={compact ? '9px' : 'xs'} fw={650}>{label(transition.to)}</Text>

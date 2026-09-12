@@ -28,7 +28,7 @@ export interface Proposition {
   children?: Proposition[];
   attestation?: { direction: AttestationDirection };
   attestation_counts?: { support: number; refute: number };
-  attestation_summary?: { support_direction: 'positive' | 'negative' | null; positive: number; negative: number };
+  attestation_summary?: { support_direction: 'positive' | 'negative' | null; retained_direction?: 'positive' | 'negative'; positive: number; negative: number };
   instruments?: Array<{
     id: Identifier;
     kind: string;
@@ -56,6 +56,7 @@ export interface Phase {
 
 export interface ParticipantPosition {
   cycle_sequence: number;
+  cycle_completed?: boolean;
   phase?: Phase;
   gate?: Proposition;
 }

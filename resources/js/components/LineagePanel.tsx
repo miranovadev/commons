@@ -30,6 +30,7 @@ export function LineagePanel({ lineage = [], committalObservables, onInspect }: 
           </Group>
         </Group>
       </UnstyledButton>
+      <IconArrowDown className="region-transition lineage-transition" size={24} stroke={2.2} aria-hidden="true" />
       <Modal opened={opened} onClose={close} title="Inherited lineage" size="lg" centered>
           <Stack gap={0} className="lineage-timeline">
             {lineage.map((proposition) => <LineageItem key={proposition.id} proposition={proposition} committalObservables={committalObservables} onInspect={(selection) => { close(); onInspect?.(selection); }} />)}
