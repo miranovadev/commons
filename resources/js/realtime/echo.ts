@@ -6,7 +6,7 @@ export function createEcho() {
   const key = import.meta.env.VITE_REVERB_APP_KEY;
   if (!key) return null;
   try {
-    return new Echo({
+    return new Echo<'reverb'>({
       broadcaster: 'reverb',
       Pusher,
       key,
@@ -15,8 +15,8 @@ export function createEcho() {
       wssPort: Number(import.meta.env.VITE_REVERB_PORT || 443),
       forceTLS: (import.meta.env.VITE_REVERB_SCHEME || 'https') === 'https',
       enabledTransports: ['ws', 'wss'],
-      authorizer: (channel: { name: string }) => ({
-        authorize: async (socketId: string, callback: (error: Error | null, data: unknown) => void) => {
+      authorizer: (channel) => ({
+        authorize: async (socketId, callback) => {
           try {
             const csrf = await fetch('/api/csrf-cookie', { credentials: 'include', headers: { Accept: 'application/json' } });
             if (!csrf.ok) throw new Error('Could not initialise channel authorization.');

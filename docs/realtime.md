@@ -84,7 +84,7 @@ Set environment values before the existing production asset build, refresh Larav
 
 ## Validation
 
-`php artisan test --filter=RealtimeTest` exercises real commits/rollbacks, contribution events, public/private payload scoping, authorization and detail lookup isolation. `npm run test:ui` includes RTK Query integration and notification queue tests; `npm run build` includes TypeScript checking. The dependency-free queue checks can also run alone with Node 24:
+`php artisan test --filter='RealtimeTest|ReverbTransportTest'` exercises real commits/rollbacks, contribution events, public/private payload scoping, authorization and detail lookup isolation. It also starts a temporary Reverb process and verifies delivery to a real WebSocket client when npm dependencies are installed. `npm run test:ui` includes rendered Graph drawer tests for original and realtime nodes, subscription/reconnection/cleanup tests, RTK Query integration and notification queue tests; `npm run build` includes TypeScript checking. The dependency-free queue checks can also run alone with Node 24:
 
 ```sh
 node --test tests/js/realtimeQueue.test.mjs
