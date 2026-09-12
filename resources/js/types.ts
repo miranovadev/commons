@@ -212,6 +212,7 @@ export interface PropositionSelection {
 }
 
 export interface Participation {
+  completion?: { cycle_id: Identifier; phase_id: Identifier; completed_at: string; proposition_id: Identifier } | null;
   current_proposition_id?: Identifier | null;
   domain?: DomainName | null;
   horizon_sequence?: number | null;

@@ -58,7 +58,8 @@ test('Write renders only local cards and exactly the two schema-driven direction
       assert.deepEqual([...markup.matchAll(/>(Support|Refute|Traverse)<\/span>/g)].map(match => match[1]), expected);
       assert.match(markup, /write-option-card__actions--directional/);
       const footer = markup.slice(markup.indexOf('write-option-card__actions--directional'));
-      const left = footer.slice(footer.indexOf('data-action-region="left"'), footer.indexOf('data-action-region="right"'));
+      const left = footer.slice(footer.indexOf('data-action-region="left"'), footer.indexOf('data-action-region="instrument"'));
+      const instrument = footer.slice(footer.indexOf('data-action-region="instrument"'), footer.indexOf('data-action-region="right"'));
       const right = footer.slice(footer.indexOf('data-action-region="right"'));
       const middle = markup.slice(markup.indexOf('data-action-region="middle"'), markup.indexOf('write-option-card__actions--directional'));
       assert.match(left, new RegExp('>' + expected[0] + '</span>'));
@@ -67,7 +68,7 @@ test('Write renders only local cards and exactly the two schema-driven direction
       assert.doesNotMatch(left + right, />(Revise|Instrument)<\/span>/);
       if (auxiliary) {
         assert.match(middle, />Revise<\/span>/);
-        assert.match(middle, />Instrument<\/span>/);
+        assert.match(instrument, />Instrument<\/span>/);
       } else {
         assert.doesNotMatch(markup, />(Revise|Instrument)<\/span>/);
       }

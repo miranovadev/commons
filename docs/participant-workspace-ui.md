@@ -71,7 +71,7 @@ sit inward from the corner whirls and point outward into them.
 
 ## Actions, metadata and identity
 
-Variant and Bias appear in a generative Write subsection. Reconcile appears on
+Variant and Bias appear beside their schema-authorized Gate targets. Reconcile appears on
 each schema-authorized Mediate Gate counterpart, opening the existing form with
 `other_proposition_id` selected. The current Gate is explicitly labelled as the
 retained statement. Hover or keyboard focus on a counterpart's Reconcile control
@@ -149,3 +149,27 @@ The SSR, pure-function and stylesheet checks are not substitutes for that review
 Use the dense fixture to check scroll boundaries, card/button clipping, both
 whirl rotations, light/dark contrast, keyboard navigation, focus return, and
 Modal/Drawer close controls at the listed sizes, including a short laptop window.
+
+## Terminal Cycle and contextual actions
+
+Variant and schema-bound Bias selections live beside their Gate cards, alongside
+Reconcile's existing counterpart treatment. There is no empty Generate region.
+Instrument targets are drawn from the backend schema and `instrument_options`,
+including eligible targets outside the other Write action pools. The existing
+Instrument form opens from the compact central footer button, between the two
+outer Attestation/Traverse slots; Commit and Revise keep their contextual row.
+
+After successful Order contribution, the normal waiting response's `completion`
+identity permits retaining the just-completed workspace as presentation only.
+All contribution controls are removed. Beneath Write, Return to Participants and
+Enter another Cycle use the existing routing and entry semantics. Unavailable
+entry remains disabled with its server-supplied reason. Reloading may return to
+the normal waiting view; no historical action schema is treated as live.
+
+Expanded Lineage follows loaded parent relationships from its displayed head,
+stopping at ancestral Committal boundaries. Parents render before descendants;
+the displayed structural Present (including the Gate) is last. This bounded view
+never substitutes the globally newest Proposition or sorts by timestamps.
+It opens immediately at the bottom. Compact Provenance/Present controls appear
+only on overflow, disable at their endpoints and scroll smoothly on explicit
+interaction. Manual scroll position is preserved while the view stays open.

@@ -83,6 +83,7 @@ class InputSchemaServiceTest extends TestCase
             PhaseKind::Constrain->value => [
                 'proposition.revise',
                 'proposition.reclassify',
+                'instrument.execute',
                 'attestation.create',
                 'proposition.traverse',
             ],
@@ -102,6 +103,7 @@ class InputSchemaServiceTest extends TestCase
             ],
             PhaseKind::Order->value => [
                 'proposition.commit',
+                'instrument.execute',
                 'attestation.create',
             ],
         ];

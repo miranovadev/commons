@@ -19,15 +19,14 @@ type InspectHandler = (selection: PropositionSelection) => void;
 interface Lane { key: string; role: LaneRole; register?: RegisterName; virtual?: boolean; meta?: typeof provenanceMeta; featured?: Proposition; }
 const roleMeta = {
   read: { label: 'Read', description: 'Where we came from', icon: IconEye },
-  gate: { label: 'Gate', description: 'What this move supersedes', icon: IconRoute },
+  gate: { label: 'Gate', description: 'What we can do here', icon: IconRoute },
   write: { label: 'Write', description: 'Where we can go', icon: IconPencil },
 };
 const provenanceMeta = { label: 'Provenance', description: 'The inherited proposition from which this cycle begins.', color: 'indigo', icon: IconSeedling };
-const generativeActions = { 'proposition.variant': 'Variant', 'proposition.bias': 'Bias' } as const;
 
-export function ParticipantWorkspace({ plan, availableActions, onAction, onSubmit, busy = false, error, status, previewKind }: {
+export function ParticipantWorkspace({ plan, availableActions, onAction, onSubmit, busy = false, error, status, completion, previewKind }: {
   plan: ParticipantPlan; availableActions: ActionName[]; onAction: ActionHandler;
-  onSubmit?: (input: ContributionInput) => Promise<boolean>; busy?: boolean; error?: unknown; status?: ReactNode; previewKind?: PhaseKind;
+  onSubmit?: (input: ContributionInput) => Promise<boolean>; busy?: boolean; error?: unknown; status?: ReactNode; completion?: ReactNode; previewKind?: PhaseKind;
 }) {
   const propositions = useMemo<Proposition[]>(() => [
     plan.gate, plan.workspace?.provenance, ...(plan.lineage || []), ...(plan.read_options || []),
@@ -43,7 +42,7 @@ export function ParticipantWorkspace({ plan, availableActions, onAction, onSubmi
   const phaseNumber = preview?.number || plan.phase.number || phaseNumberFor(plan.phase.kind);
   const [inspection, setInspection] = useState<PropositionSelection | null>(null);
   useEffect(() => setInspection(null), [plan.phase.id, previewKind]);
-  const lineage = (plan.lineage || []).map(item => resolve(item, byId)).filter(item => item.id !== gate.id);
+  const lineage = (plan.lineage || []).map(item => resolve(item, byId));
   const lanes: Lane[] = preview ? (['read', 'gate', 'write'] as const).map(role => {
     const virtual = (preview.number === 1 && role !== 'write') || (preview.number === 2 && role === 'read');
     return { key: role, role, virtual, ...(virtual ? { meta: provenanceMeta } : { register: preview[role].register }) };
@@ -68,7 +67,7 @@ export function ParticipantWorkspace({ plan, availableActions, onAction, onSubmi
             const registerItems = lane.register ? plan.workspace?.registers?.[lane.register] || [] : [];
             const singleRead = lane.featured || registerItems.find(item => item.id !== gate.id) || lineage.find(item => item.register === lane.register) || lineage[0];
             const reads = plan.phase.kind === 'mediate' ? plan.read_options || [] : singleRead ? [singleRead] : [];
-            const gateCards = plan.phase.kind === 'bias' ? candidates : [lane.featured || gate, ...candidates.filter(item => item.id !== gate.id)];
+            const gateCards = plan.phase.kind === 'bias' ? candidates : [lane.featured || gate, ...candidates];
             return <Box component="section" className="operational-row" data-role={lane.role} data-lane={lane.key} key={`${phaseNumber}-${lane.key}`}
               aria-label={role.label} style={{ '--register-color': `light-dark(var(--mantine-color-${meta.color}-7), var(--mantine-color-${meta.color}-4))`,
                 '--register-bg-light': `var(--mantine-color-${meta.color}-0)`, '--register-bg-dark': `var(--mantine-color-${meta.color}-light)` }}>
@@ -81,15 +80,7 @@ export function ParticipantWorkspace({ plan, availableActions, onAction, onSubmi
                   <Text className="register-row__title" size="xs" fw={700}>{meta.label}</Text>
                   <Text size="xs" c="dimmed" visibleFrom="sm" truncate>{meta.description}</Text>
                 </Group>
-                {lane.role === 'write' && !preview && <Stack gap="xs" className="write-row__tools">
-                    {status}
-                    {Object.keys(generativeActions).some(action => allowed(action as ActionName)) && <Group className="write-generative-actions" gap={6} aria-label="Generative Write actions">
-                      <Text size="10px" c="dimmed">Generate</Text>
-                      {Object.entries(generativeActions).filter(([action]) => allowed(action as ActionName)).map(([action, label]) => <Button key={action}
-                        variant="light" color="gray" size="compact-xs" leftSection={<OperationIcon operation={action} />}
-                        onClick={() => onAction(action as ActionName)}>{label}</Button>)}
-                    </Group>}
-                </Stack>}
+                {lane.role === 'write' && !preview && status && <Stack gap="xs" className="write-row__tools">{status}</Stack>}
                 <Box className="register-row__content">
                   {preview ? ((lane.virtual ? preview.provenance : preview[lane.role].cards).length ? <PropositionNavigator label={`${role.label} register preview`} resetKey={`${plan.phase.id}-${preview.kind}`}>
                     {(lane.virtual ? preview.provenance : preview[lane.role].cards).map(item => card(item, 'register preview'))}
@@ -104,6 +95,14 @@ export function ParticipantWorkspace({ plan, availableActions, onAction, onSubmi
                       {item.id !== gate.id && plan.phase.kind === 'mediate' && allowed('proposition.reconcile') && targets.get('proposition.reconcile')?.has(item.id) && <Group className="write-option-card__context-actions" gap={4}>
                         <Button size="compact-xs" variant="subtle" color="gray" className="reconcile-action" leftSection={<OperationIcon operation="reconcile" />}
                           onClick={() => onAction('proposition.reconcile', { other_proposition_id: item.id })}>Reconcile</Button>
+                      </Group>}
+                      {item.id === gate.id && allowed('proposition.variant') && <Group className="write-option-card__context-actions" gap={4}>
+                        <Button size="compact-xs" variant="subtle" color="gray" leftSection={<OperationIcon operation="variant" />}
+                          onClick={() => onAction('proposition.variant')}>Variant</Button>
+                      </Group>}
+                      {allowed('proposition.bias') && targets.get('proposition.bias')?.has(item.id) && <Group className="write-option-card__context-actions" gap={4}>
+                        <Button size="compact-xs" variant="subtle" color="gray" leftSection={<OperationIcon operation="bias" />}
+                          onClick={() => onAction('proposition.bias', { proposition_id: item.id })}>Bias</Button>
                       </Group>}
                       {item.id === gate.id && allowed('proposition.reclassify') && <Group className="write-option-card__context-actions" gap={4}>
                         <Button size="compact-xs" variant="subtle" color="gray" leftSection={<OperationIcon operation="reclassify" />}
@@ -126,6 +125,7 @@ export function ParticipantWorkspace({ plan, availableActions, onAction, onSubmi
                   </>}
                 </Box>
               </Box>
+              {lane.role === 'write' && completion}
               {lane.role !== 'write' && <IconArrowDown className="region-transition" size={24} stroke={2.2} aria-hidden="true" />}
             </Box>;
           })}
@@ -160,13 +160,14 @@ function WriteOptionCard({ proposition, directions, canAttest, canRevise, canIns
   return <Box className="write-option-card" data-attested={proposition.attestation?.direction}>
     <PropositionCard proposition={proposition} committalObservables={committalObservables} compact flow="write" onClick={() => onInspect({ kind: 'write option', proposition })} />
     {hasActions && <>
-      {(canCommit || canRevise || canInstrument) && <Group className="write-option-card__context-actions" data-action-region="middle" gap={4} justify="center">
+      {(canCommit || canRevise) && <Group className="write-option-card__context-actions" data-action-region="middle" gap={4} justify="center">
         {canCommit && <Button size="compact-xs" color="indigo" leftSection={<OperationIcon operation="commit" />} onClick={() => onAction('proposition.commit', { proposition_id: proposition.id })}>Commit</Button>}
         {canRevise && <Button size="compact-xs" variant="subtle" color="gray" leftSection={<OperationIcon operation="revise" />} onClick={() => onAction('proposition.revise', { proposition_id: proposition.id })}>Revise</Button>}
-        {canInstrument && <Button size="compact-xs" variant="subtle" color="gray" leftSection={<IconTool size={13} />} onClick={() => onAction('instrument.execute', { proposition_id: proposition.id })}>Instrument</Button>}
       </Group>}
-      {(canAttest || canTraverse) && <Box className="write-option-card__actions write-option-card__actions--directional" role="group" aria-label={`Attestation and traversal for ${proposition.title || proposition.statement.split('\n')[0]}`}>
-        {slots.map(slot => <Box key={slot.side} className="write-option-card__side" data-action-region={slot.side}>{directionalAction(slot)}</Box>)}
+      {(canAttest || canTraverse || canInstrument) && <Box className="write-option-card__actions write-option-card__actions--directional" role="group" aria-label={`Attestation and traversal for ${proposition.title || proposition.statement.split('\n')[0]}`}>
+        <Box className="write-option-card__side" data-action-region="left">{directionalAction(slots[0])}</Box>
+        <Box data-action-region="instrument">{canInstrument && <Button size="compact-xs" variant="subtle" color="gray" leftSection={<IconTool size={13} />} onClick={() => onAction('instrument.execute', { proposition_id: proposition.id })}>Instrument</Button>}</Box>
+        <Box className="write-option-card__side" data-action-region="right">{directionalAction(slots[1])}</Box>
       </Box>}
     </>}
   </Box>;

@@ -19,16 +19,14 @@ final class PhaseProgressionService
         $phase->completed_at = now();
         $phase->save();
 
-        if ($phase->kind === PhaseKind::Order && $gate->tier === 'committal') {
+        if ($phase->kind === PhaseKind::Order) {
             $phase->cycle->completed_at = now();
             $phase->cycle->save();
 
             return null;
         }
 
-        $kind = $phase->kind === PhaseKind::Order
-            ? PhaseKind::Order
-            : PhaseKind::from($phase->kind->value + 1);
+        $kind = PhaseKind::from($phase->kind->value + 1);
         $next = new Phase;
         $next->forceFill([
             'cycle_id' => $phase->cycle_id,

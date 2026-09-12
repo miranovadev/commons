@@ -20,6 +20,13 @@ const bundle = await build({ absWorkingDir: root, entryPoints: ['tests/ui/worksp
       export const useContributeMutation = () => [input => ({ unwrap: async () => {
         const output = document.querySelector('[data-last-action]');
         if (output) output.textContent = JSON.stringify(input.contribution);
+        const state = previewStates[input.participantId];
+        if (state?.plan?.phase?.kind === 'order') {
+          const next = { status: 'waiting', plan: null, completion: { phase_id: state.plan.phase.id, cycle_id: 'completed-cycle', proposition_id: input.contribution.proposition_id, completed_at: new Date().toISOString() }, entry: { mode: 'potential', selection: 'position', available: new URLSearchParams(location.search).get('status') !== 'inactive', message: 'Continue from the Participant’s current substrate position.' } };
+          previewStates[input.participantId] = next;
+          version++; listeners.forEach(notify => notify());
+          return next;
+        }
         throw new Error('Preview only: contribution recorded, no data changed.');
       }}), { isLoading: false, reset() {} }];
       export const useEnterCycleMutation = () => {
