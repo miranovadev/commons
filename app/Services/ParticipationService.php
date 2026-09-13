@@ -48,14 +48,17 @@ final readonly class ParticipationService
             ->whereHas('proposition.phase.cycle', fn ($query) => $query->where('participant_id', $participant->getKey()))
             ->join('substrate_ledger_entries as entry', 'entry.id', '=', 'commitment_snapshots.ledger_entry_id')
             ->orderByDesc('entry.sequence')->select('commitment_snapshots.*')->first();
-        $horizon = ContextHorizon::query()
-            ->where('substrate_id', $participant->substrate_id)->whereNull('closed_at')->first();
+        $horizonId = $state['cycle']['context_horizon_id'] ?? null;
+        $horizon = $horizonId === null
+            ? $participant->cycles()->latest('sequence')->first()?->contextHorizon
+            : ContextHorizon::findOrFail($horizonId);
 
         return [
             ...$state,
             'current_proposition_id' => $participant->fresh()->current_proposition_id,
             'domain' => $horizon?->domain->value,
             'horizon_sequence' => $horizon?->sequence,
+            'context_horizon_id' => $horizon?->id,
             'last_commitment' => $snapshot === null ? null : [
                 ...$snapshot->only(['proposition_id', 'depth', 'cadence', 'closure', 'tension_before']),
                 'evaluated_at' => $snapshot->evaluated_at->toISOString(),
@@ -314,6 +317,7 @@ final readonly class ParticipationService
         return [
             'id' => $cycle->getKey(),
             'sequence' => $cycle->sequence,
+            'context_horizon_id' => $cycle->context_horizon_id,
             'created_at' => $cycle->created_at,
         ];
     }

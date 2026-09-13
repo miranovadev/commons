@@ -9,6 +9,22 @@ enum ContextDomain: string
     case Emergence = 'emergence';
     case Settlement = 'settlement';
 
+    public function opposite(): self
+    {
+        return $this === self::Emergence ? self::Settlement : self::Emergence;
+    }
+
+    public function registerFor(PhaseKind $kind): string
+    {
+        $emergence = $this === self::Emergence;
+
+        return match ($kind) {
+            PhaseKind::Distinguish, PhaseKind::Disperse => $emergence ? 'activity' : 'signal',
+            PhaseKind::Persist, PhaseKind::Mediate => $emergence ? 'frontier' : 'stance',
+            PhaseKind::Constrain, PhaseKind::Bias, PhaseKind::Order => $emergence ? 'canon' : 'concord',
+        };
+    }
+
     public static function after(
         float $tension,
         self $hystereticDirection,

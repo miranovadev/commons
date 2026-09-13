@@ -219,6 +219,7 @@ export interface Participation {
   current_proposition_id?: Identifier | null;
   domain?: DomainName | null;
   horizon_sequence?: number | null;
+  context_horizon_id?: Identifier | null;
   last_commitment?: {
     proposition_id: Identifier;
     depth: number | null;

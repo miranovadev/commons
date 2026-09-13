@@ -4,6 +4,7 @@ namespace App\Services\Observables;
 
 use App\Domain\Observables\DomainLineage;
 use App\Domain\Observables\LineageComparison;
+use App\Enums\ContextDomain;
 use App\Models\ContextHorizon;
 use App\Models\ContextHorizonMembership;
 use App\Models\Phase;
@@ -38,10 +39,10 @@ final class ContextLineageComparisonService
     /** Build the same lineage as a Commit write, without persisting a candidate. */
     public function prospectiveCommit(Proposition $gate, Phase $phase, ?ParticipationContext $context = null): LineageComparison
     {
-        $horizon = $context !== null ? $context->horizons->whereNull('closed_at')->firstOrFail() : ContextHorizon::query()
-            ->with('substrate')
-            ->where('substrate_id', $phase->cycle->participant->substrate_id)
-            ->whereNull('closed_at')->firstOrFail();
+        $horizon = $context !== null ? $context->horizons->get($phase->cycle->context_horizon_id) : $phase->cycle->contextHorizon;
+        if ($horizon === null) {
+            throw new DomainException('A prospective Commit requires its Cycle Context Horizon.');
+        }
         $lineage = $this->endingAt($horizon, [$gate->getKey()], $context);
         $candidate = new Proposition;
         $candidate->forceFill([
@@ -75,13 +76,19 @@ final class ContextLineageComparisonService
     private function compare(DomainLineage $current, array $additionalSources = []): LineageComparison
     {
         $context = $current->context;
-        $previousHorizon = $context !== null ? $context->horizons->firstWhere('sequence', $current->horizon->sequence - 1) : ContextHorizon::query()
-            ->where('substrate_id', $current->horizon->substrate_id)
-            ->where('sequence', $current->horizon->sequence - 1)
-            ->first();
+        $parentId = $current->horizon->parent_context_horizon_id;
+        if ($parentId === null) {
+            if ($current->horizon->sequence !== 1 || $current->horizon->opened_by_proposition_id !== null
+                || $current->horizon->domain !== ContextDomain::Emergence) {
+                throw new DomainException('Only the Origin Horizon may use bootstrap comparison assumptions.');
+            }
 
-        if ($previousHorizon === null) {
             return new LineageComparison($current, null);
+        }
+        $previousHorizon = $context !== null ? $context->horizons->get($parentId) : $current->horizon->parent;
+        if ($previousHorizon === null || $previousHorizon->substrate_id !== $current->horizon->substrate_id
+            || $current->horizon->domain !== $previousHorizon->domain->opposite()) {
+            throw new DomainException('A comparison requires the immediate causal parent Horizon.');
         }
 
         $previousIds = $context !== null ? $context->horizonMemberIds($previousHorizon->id) : ContextHorizonMembership::query()
@@ -109,6 +116,10 @@ final class ContextLineageComparisonService
             $provenanceIds->push(
                 $current->horizon->opened_by_proposition_id
             );
+        }
+
+        if ($provenanceIds->isEmpty()) {
+            throw new DomainException('A non-root Horizon requires provenance in its immediate parent.');
         }
 
         return new LineageComparison(

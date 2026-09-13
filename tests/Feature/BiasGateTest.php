@@ -273,10 +273,7 @@ class BiasGateTest extends TestCase
         $this->attest($this->gate, 'support');
         $wrongHorizon = $this->sibling('Wrong Horizon');
         $this->attest($wrongHorizon, 'refute');
-        $horizon = $wrongHorizon->contextHorizonMembership->horizon->replicate();
-        $horizon->sequence = 2;
-        $horizon->closed_at = now();
-        $horizon->save();
+        $horizon = $this->laterHorizonFixture($wrongHorizon->contextHorizonMembership->horizon);
         $wrongHorizon->contextHorizonMembership->forceFill(['context_horizon_id' => $horizon->id])->save();
         $foreign = $this->sibling('Foreign');
         $this->attest($foreign, 'refute');

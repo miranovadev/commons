@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Enums\ContextDomain;
 use App\Enums\PhaseKind;
-use App\Models\ContextHorizon;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
@@ -172,11 +171,8 @@ final readonly class InputPlanService
         Collection $lineage,
         ?ParticipationContext $context,
     ): array {
-        $horizon = $context !== null ? $context->horizons->whereNull('closed_at')->first() : ContextHorizon::query()
-            ->where('substrate_id', $participant->substrate_id)
-            ->whereNull('closed_at')
-            ->first();
-        $domain = $horizon?->domain ?? $this->domainFor($phase, $gate);
+        $horizon = $context !== null ? $context->horizons->get($phase->cycle->context_horizon_id) : $phase->cycle->contextHorizon;
+        $domain = $horizon->domain;
         $registers = $domain === ContextDomain::Emergence
             ? ['activity', 'frontier', 'canon']
             : ['signal', 'stance', 'concord'];
@@ -222,6 +218,8 @@ final readonly class InputPlanService
             'horizon' => $horizon === null ? null : [
                 'id' => $horizon->getKey(),
                 'sequence' => $horizon->sequence,
+                'parent_context_horizon_id' => $horizon->parent_context_horizon_id,
+                'opened_by_proposition_id' => $horizon->opened_by_proposition_id,
                 'opened_at' => $horizon->opened_at,
             ],
             'provenance' => $this->proposition($provenance, $participant, $context),
@@ -237,19 +235,6 @@ final readonly class InputPlanService
                 ])
                 ->all(),
         ];
-    }
-
-    private function domainFor(
-        Phase $phase,
-        Proposition $gate,
-    ): ContextDomain {
-        $register = $phase->write_register ?? $gate->register;
-
-        return in_array(
-            $register,
-            ['signal', 'stance', 'concord'],
-            true,
-        ) ? ContextDomain::Settlement : ContextDomain::Emergence;
     }
 
     private function loadPropositionState(

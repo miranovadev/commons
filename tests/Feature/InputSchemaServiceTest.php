@@ -6,9 +6,11 @@ use App\Enums\PhaseKind;
 use App\Models\Connection;
 use App\Models\Participant;
 use App\Models\Proposition;
+use App\Models\Substrate;
+use App\Services\ContextHorizonProjector;
 use App\Services\InputPlanService;
-use App\Services\InstrumentExecutionService;
 use App\Services\InputSchemaService;
+use App\Services\InstrumentExecutionService;
 use App\Services\ParticipantPromptFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
@@ -232,8 +234,7 @@ class InputSchemaServiceTest extends TestCase
         );
         $this->assertSame(
             [$candidateId],
-            $plan['schema']['$defs']['actions']['attestation.create']
-                ['properties']['proposition_id']['enum'],
+            $plan['schema']['$defs']['actions']['attestation.create']['properties']['proposition_id']['enum'],
         );
         $this->assertArrayNotHasKey('proposition.reconcile', $plan['schema']['$defs']['actions']);
     }
@@ -417,8 +418,7 @@ class InputSchemaServiceTest extends TestCase
         string $cycleId = '01ARZ3NDEKTSV4RRFFQ69G5FAB',
         string $phaseId = '01ARZ3NDEKTSV4RRFFQ69G5FAC',
         string $gateId = '01ARZ3NDEKTSV4RRFFQ69G5FAD',
-    ): array
-    {
+    ): array {
         $now = now();
 
         DB::table('substrates')->insertOrIgnore([
@@ -438,8 +438,10 @@ class InputSchemaServiceTest extends TestCase
             'created_at' => $now,
             'updated_at' => $now,
         ]);
+        $horizon = app(ContextHorizonProjector::class)->currentFor(Substrate::findOrFail('01ARZ3NDEKTSV4RRFFQ69G5000'));
         DB::table('cycles')->insert([
             'id' => $cycleId,
+            'context_horizon_id' => $horizon->id,
             'participant_id' => $participantId,
             'sequence' => 1,
             'created_at' => $now,

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Observables\LocalMeasurements;
 use App\Enums\ContextDomain;
 use App\Enums\ObservableDirection;
 use App\Enums\PhaseKind;
@@ -13,12 +14,15 @@ use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Substrate;
+use App\Models\SubstrateLedgerEntry;
 use App\Models\Supersession;
+use App\Services\AttestationEvidenceService;
 use App\Services\ClosureGateService;
-use App\Services\CommitmentSnapshotService;
+use App\Services\CommitRegionPolarityService;
+use App\Services\ContextHorizonProjector;
 use App\Services\ContributionDispatcher;
 use App\Services\LedgerService;
-use App\Services\OperationalInstrumentService;
+use App\Services\Observables\LocalMeasurementService;
 use App\Services\ParticipationService;
 use App\Services\PropositionMeasurementService;
 use DomainException;
@@ -30,6 +34,7 @@ class ClosureHysteresisTest extends TestCase
     use RefreshDatabase;
 
     private Participant $participant;
+
     private Proposition $origin;
 
     protected function setUp(): void
@@ -68,7 +73,7 @@ class ClosureHysteresisTest extends TestCase
         $this->assertSame('emergence', $result['last_commitment']['domain_after']);
         $this->assertSame(-1.0, $result['last_commitment']['tension_before']);
         $this->assertTrue($result['last_commitment']['closure_boundary']);
-        $this->assertSame(3, $result['horizon_sequence']);
+        $this->assertSame(2, $result['horizon_sequence']); // The completed Cycle still belongs to H2.
         $this->assertSame($snapshot->proposition_id, $this->participant->fresh()->current_proposition_id);
         $this->assertNotNull($phase->fresh()->completed_at);
         $this->assertSame($result['last_commitment'], app(ParticipationService::class)->stateFor($this->participant)['last_commitment']);
@@ -78,14 +83,14 @@ class ClosureHysteresisTest extends TestCase
     {
         $this->bootstrap(1);
         [$phase, $gate] = $this->candidate([2], direction: 'refute');
-        $this->assertSame(ObservableDirection::Negative, app(\App\Services\AttestationEvidenceService::class)->directionFor($gate));
+        $this->assertSame(ObservableDirection::Negative, app(AttestationEvidenceService::class)->directionFor($gate));
         $state = app(ParticipationService::class)->contribute($this->participant, $phase->id,
             ['action' => 'proposition.commit', 'proposition_id' => $gate->id]);
         $commit = Proposition::findOrFail($state['current_proposition_id']);
         $this->assertSame(['governing' => ObservableDirection::Negative, 'support' => ObservableDirection::Negative],
-            app(\App\Services\CommitRegionPolarityService::class)->forSeed($commit));
+            app(CommitRegionPolarityService::class)->forSeed($commit));
         $this->assertSame(['governing' => ObservableDirection::Positive, 'support' => ObservableDirection::Positive],
-            app(\App\Services\CommitRegionPolarityService::class)->forSeed($this->origin));
+            app(CommitRegionPolarityService::class)->forSeed($this->origin));
         $this->assertSame($gate->statement, $commit->statement);
     }
 
@@ -135,7 +140,8 @@ class ClosureHysteresisTest extends TestCase
         $this->bootstrap(2);
         [$phase] = $this->candidate([2]);
         $entered = app(ParticipationService::class)->contribute($this->participant, $phase->id, ['action' => 'proposition.commit', 'proposition_id' => $phase->gate_proposition_id]);
-        $this->assertSame('emergence', $entered['domain']);
+        $this->assertSame('settlement', $entered['domain']);
+        $this->assertSame('emergence', $entered['last_commitment']['domain_after']);
         $this->origin = Proposition::findOrFail($entered['current_proposition_id']);
         [$phase, $gate] = $this->candidate(range(3, 12), 'canon', 'activity', 'refute');
         for ($i = 0; $i < 9; $i++) {
@@ -152,7 +158,8 @@ class ClosureHysteresisTest extends TestCase
         $snapshot = CommitmentSnapshot::findOrFail($state['current_proposition_id']);
         $this->assertSame($preview['depth'], $snapshot->depth);
         $this->assertSame($preview['cadence'], $snapshot->cadence);
-        $this->assertSame('settlement', $state['domain']);
+        $this->assertSame('emergence', $state['domain']);
+        $this->assertSame('settlement', $state['last_commitment']['domain_after']);
         $this->assertTrue($state['last_commitment']['closure_boundary']);
     }
 
@@ -243,8 +250,8 @@ class ClosureHysteresisTest extends TestCase
         $before = $snapshot->fresh()->getAttributes();
         [$phase, $gate] = $this->candidate([2]);
         $preview = app(ClosureGateService::class)->preview($gate, $phase);
-        $this->assertSame('negative-default', $preview['history_source']);
-        $this->assertNull($preview['history_proposition_id']);
+        $this->assertSame('committed-ancestor', $preview['history_source']);
+        $this->assertSame($this->origin->id, $preview['history_proposition_id']); // Nullable legacy components retain explicit defaults on this boundary.
         $this->assertSame($before, $snapshot->fresh()->getAttributes());
     }
 
@@ -252,8 +259,8 @@ class ClosureHysteresisTest extends TestCase
     {
         // Exercise the zero-direction hysteresis rule independently of the
         // cycle-depth fixture, whose aggregate is no longer exactly zero.
-        $this->mock(\App\Services\Observables\LocalMeasurementService::class, function ($mock): void {
-            $mock->shouldReceive('calculate')->andReturn(new \App\Domain\Observables\LocalMeasurements(0, 0, 0, 1));
+        $this->mock(LocalMeasurementService::class, function ($mock): void {
+            $mock->shouldReceive('calculate')->andReturn(new LocalMeasurements(0, 0, 0, 1));
         });
     }
 
@@ -279,7 +286,7 @@ class ClosureHysteresisTest extends TestCase
             'prominence' => 0, 'turbulence' => 1, 'tension' => -1, 'tension_before' => 0,
             'direction_before' => 'emergence', 'direction_after' => 'settlement',
             'calculator_version' => 'fixture-bootstrap', 'evaluated_at' => now()])->save();
-        app(\App\Services\ContextHorizonProjector::class)->apply($snapshot);
+        app(ContextHorizonProjector::class)->apply($snapshot);
         $this->assertSame(ObservableDirection::Negative, $snapshot->depth_direction);
         $this->assertSame(ObservableDirection::Negative, $snapshot->cadence_direction);
         $this->finish($phase);
@@ -306,6 +313,7 @@ class ClosureHysteresisTest extends TestCase
         $this->verifiedReceiptFixture($gate);
         $this->participant->current_proposition_id = $gate->id;
         $this->participant->save();
+
         return [$phase, $gate];
     }
 
@@ -315,6 +323,7 @@ class ClosureHysteresisTest extends TestCase
         $cycle->forceFill(['participant_id' => $this->participant->id, 'sequence' => $sequence])->save();
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Order, 'write_register' => $register, 'started_at' => now()])->save();
+
         return $phase;
     }
 
@@ -323,6 +332,7 @@ class ClosureHysteresisTest extends TestCase
         $node = new Proposition;
         $node->forceFill(['phase_id' => $phase->id, 'tier' => $tier, 'register' => $register, 'statement' => 'Fixture proposition.'])->save();
         app(LedgerService::class)->record($node);
+
         return $node;
     }
 
@@ -344,6 +354,6 @@ class ClosureHysteresisTest extends TestCase
     /** @return list<int> */
     private function counts(): array
     {
-        return [Proposition::count(), Supersession::count(), CommitmentSnapshot::count(), ContextHorizon::count(), \App\Models\SubstrateLedgerEntry::count()];
+        return [Proposition::count(), Supersession::count(), CommitmentSnapshot::count(), ContextHorizon::count(), SubstrateLedgerEntry::count()];
     }
 }

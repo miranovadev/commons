@@ -80,6 +80,13 @@ final class ParticipationContext
         foreach ($this->horizons as $horizon) {
             $horizon->setRelation('substrate', $this->substrate);
         }
+        foreach ($this->horizons as $horizon) {
+            $horizon->setRelation('parent', $this->horizons->get($horizon->parent_context_horizon_id));
+        }
+        $phase->cycle->setRelation('contextHorizon', $this->horizons->get($phase->cycle->context_horizon_id));
+        foreach ($this->propositions as $proposition) {
+            $proposition->phase->cycle->setRelation('contextHorizon', $this->horizons->get($proposition->phase->cycle->context_horizon_id));
+        }
         $this->memberships = ContextHorizonMembership::whereIn('context_horizon_id', $this->horizons->keys())->get()->keyBy('proposition_id');
         $this->membershipsByHorizon = $this->memberships->groupBy('context_horizon_id');
         $this->frames = DB::table('commit_region_polarities')->whereIn('proposition_id', $ids)->get()->keyBy('proposition_id');
@@ -270,9 +277,9 @@ final class ParticipationContext
         });
     }
 
-    public function history(Proposition $position): ?CommitmentSnapshot
+    public function history(Proposition $position, ContextHorizon $horizon): ?CommitmentSnapshot
     {
-        return $this->remember('history:'.$position->id, function () use ($position) {
+        return $this->remember('history:'.$horizon->id.':'.$position->id, function () use ($position, $horizon) {
             $seen = [];
             $queue = [$position->id];
             while ($queue !== []) {
@@ -286,9 +293,19 @@ final class ParticipationContext
                 }
             }
 
-            return $this->snapshots->whereIn('proposition_id', array_keys($seen))
+            $local = $this->snapshots->whereIn('proposition_id', array_keys($seen))
+                ->whereIn('proposition_id', $this->horizonMemberIds($horizon->id))
                 ->whereNotNull('depth_direction')->whereNotNull('cadence_direction')
                 ->sortByDesc(fn ($snapshot) => $snapshot->ledgerEntry->sequence)->first();
+            if ($local !== null || $horizon->parent_context_horizon_id === null) {
+                return $local;
+            }
+            $boundary = $this->snapshots->firstWhere('proposition_id', $horizon->opened_by_proposition_id);
+            if ($boundary === null || $this->memberships->get($boundary->proposition_id)?->context_horizon_id !== $horizon->parent_context_horizon_id) {
+                throw new \DomainException('A Horizon requires its own parent boundary commitment.');
+            }
+
+            return $boundary;
         });
     }
 }
