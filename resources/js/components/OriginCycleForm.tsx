@@ -105,7 +105,7 @@ export function OriginCycleForm({ opened, loading, error, onClose, onSubmit }: O
           />
           <Textarea
             label="Receipt reference"
-            description="An HTTP(S) URL reference. Its contents are not fetched or verified."
+            description="A public HTTP(S) URL. The server fetches content and verifies retrieval, not the truth of its claims."
             minRows={2}
             autosize
             required

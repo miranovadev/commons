@@ -143,10 +143,10 @@ seed fresh Phase 1 branches, including branches from multiple Participants.
 
 ## 12. Receipts and Reinforcement Are Distinct
 
-Only qualifying verified evidence produces Reinforcement. Cite remains evidence
-without Reinforcement. A Participant may contribute at most one counted
-Reinforcement to a Proposition; repeated Receipts and shared signatures remain
-historical events rather than extra measurement weight.
+Only qualifying verified evidence produces Reinforcement. Creating a Cite Receipt
+records evidence; it does not itself grant Reinforcement. A Participant may
+contribute at most one counted Reinforcement to a Proposition; repeated Receipts
+and shared signatures remain historical events rather than extra measurement weight.
 
 ## 13. Reinforcement Forms State Before Attenuation Propagates It
 

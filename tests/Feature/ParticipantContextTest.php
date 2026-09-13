@@ -9,7 +9,9 @@ use App\Models\Supersession;
 use App\Models\User;
 use App\Services\ActiveParticipantLineage;
 use App\Services\InputPlanService;
+use App\Services\OpenAIResponseSchema;
 use App\Services\OpenAIResponsesClient;
+use App\Services\OperationalInstrumentService;
 use App\Services\ParticipantContextSerializer;
 use App\Services\ParticipantPromptFactory;
 use App\Services\ParticipationService;
@@ -96,6 +98,46 @@ class ParticipantContextTest extends TestCase
     public static function evidencePhases(): array
     {
         return [[PhaseKind::Constrain], [PhaseKind::Bias], [PhaseKind::Order]];
+    }
+
+    public function test_cite_receipt_guidance_does_not_promise_reinforcement_in_the_generated_packet(): void
+    {
+        $fixture = new ParticipantContextFixture(2, 0);
+        $gate = Proposition::findOrFail($fixture->writes[0]);
+        $candidate = $fixture->node($gate, 'canon');
+        $fixture->phase->forceFill([
+            'kind' => PhaseKind::Constrain,
+            'gate_proposition_id' => $gate->id,
+            'write_register' => 'canon',
+        ])->save();
+        $receipt = app(OperationalInstrumentService::class)->execute($fixture->phase, $candidate, [
+            'kind' => 'citation', 'reference' => $fixture->seed->id,
+        ]);
+
+        $state = app(ParticipationService::class)->stateFor($fixture->viewer);
+        $connection = new Connection;
+        $connection->configuration = [];
+        $prompt = app(ParticipantPromptFactory::class)->make($connection, $state);
+        $packet = json_decode($prompt['user'], true, flags: JSON_THROW_ON_ERROR);
+        $schema = $packet['plan']['schema'];
+        $this->assertArrayHasKey('instrument.execute', $schema['$defs']['actions']);
+        $this->assertSame($schema, $prompt['schema']);
+
+        $guidance = 'Creating a Cite Receipt does not itself grant Reinforcement.';
+        $this->assertStringContainsString($guidance, $prompt['system']);
+        $this->assertStringContainsString($guidance, $schema['$defs']['instrument']['description']);
+        $transport = app(OpenAIResponseSchema::class)->fromCommons($prompt['schema']);
+        $this->assertStringContainsString($guidance, json_encode($transport, JSON_THROW_ON_ERROR));
+        $this->assertStringNotContainsString('Cite records evidence but never reinforces.', $prompt['system']);
+        $this->assertStringNotContainsString('no page fetch or content verification', $prompt['user']);
+        $this->assertStringNotContainsString('an unsigned Receipt', $prompt['user']);
+
+        $write = collect($packet['plan']['write_options'])->firstWhere('id', $candidate->id);
+        $this->assertNotNull($write);
+        $instrument = collect($write['instruments'])->firstWhere('receipt_id', $receipt->id);
+        $this->assertNotNull($instrument);
+        $this->assertSame('citation', $instrument['kind']);
+        $this->assertSame('non-reinforcing', $instrument['reinforcement_status']);
     }
 
     #[DataProvider('evidencePhases')]

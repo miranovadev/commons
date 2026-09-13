@@ -189,8 +189,8 @@ export function ContributionForm({
               <TextInput
                 label="Reference"
                 description={values.instrument?.kind === 'hyperlink'
-                  ? 'HTTP(S) URL reference only; page contents are not fetched or verified.'
-                  : 'The ID of an existing Proposition or Attestation in this substrate.'}
+                  ? 'A public HTTP(S) URL. The server fetches content and verifies retrieval, not the truth of its claims.'
+                  : 'The ID of an existing Proposition or Attestation in this substrate. Creating a Cite Receipt does not itself grant Reinforcement.'}
                 required
                 value={values.instrument?.reference || ''}
                 onChange={(event) => setInstrument(
