@@ -12,7 +12,7 @@ $statement = [
 ];
 
 $instrument = [
-    'description' => 'Cite (citation): an existing Proposition or Attestation ID in this substrate. Creating a Cite Receipt does not itself grant Reinforcement. Hyperlink: the server fetches a public HTTP(S) resource and verifies retrieval, not the truth of its claims. Successful verification may qualify under separate Reinforcement rules.',
+    'description' => 'Cite (citation): an existing Proposition or Attestation ID in this substrate. Creating a Cite Receipt does not itself grant Reinforcement. Hyperlink: the server fetches a public HTTP(S) resource and verifies retrieval, not the truth of its claims. Verification produces evidence, not active Reinforcement. Use receipt.read when offered to load qualifying evidence into persistent Participant context.',
     'type' => 'object',
     'additionalProperties' => false,
     'required' => ['kind', 'reference'],
@@ -42,7 +42,7 @@ $proposition = static function (string $action, string $title) use ($statement):
 };
 
 return [
-    'version' => 16,
+    'version' => 17,
 
     'cache' => [
         'store' => env('COMMONS_SCHEMA_CACHE_STORE'),
@@ -59,6 +59,13 @@ return [
     ],
 
     'actions' => [
+        'receipt.read' => [
+            'title' => 'Load encountered Receipt evidence into persistent context',
+            'description' => 'Load one qualifying Receipt. This leaves the Phase and Gate unchanged. Loaded Receipts persist across Cycles; repeated or equivalent evidence does not multiply Reinforcement.',
+            'type' => 'object', 'additionalProperties' => false,
+            'required' => ['action', 'receipt_id'],
+            'properties' => ['action' => ['const' => 'receipt.read'], 'receipt_id' => $ulid],
+        ],
         'proposition.traverse' => [
             'title' => 'Traverse an attested immediate Write descendant',
             'type' => 'object',

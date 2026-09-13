@@ -132,7 +132,7 @@ class InputSchemaServiceTest extends TestCase
             $schema = app(InputSchemaService::class)->forPhase($kind);
 
             $this->assertSame(
-                $expected[$kind->value],
+                ['receipt.read', ...$expected[$kind->value]],
                 array_keys($schema['$defs']['actions']),
             );
             $this->assertSame(

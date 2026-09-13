@@ -45,7 +45,7 @@ class WriteOnceTest extends TestCase
         [$participant, $gate] = $this->fixture();
         $phase = $this->phase($participant, $kind, $register, $gate);
         if ($kind === PhaseKind::Constrain) {
-            $this->verifiedReceiptFixture($gate);
+            $this->loadedReceiptFixture($gate);
         }
         $input = ['action' => $action, 'statement' => 'First Write'];
         app(ContributionService::class)->validate($participant, $input);
@@ -73,7 +73,7 @@ class WriteOnceTest extends TestCase
         $newGate = $this->node($gate->phase, $gate->register, 'Another Gate');
         $this->phase($participant, $kind, $register, $newGate);
         if ($kind === PhaseKind::Constrain) {
-            $this->verifiedReceiptFixture($newGate);
+            $this->loadedReceiptFixture($newGate);
         }
         app(ContributionService::class)->validate($participant, $input);
     }

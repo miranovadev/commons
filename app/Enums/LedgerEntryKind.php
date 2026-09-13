@@ -8,4 +8,5 @@ enum LedgerEntryKind: string
     case Supersession = 'supersession';
     case Attestation = 'attestation';
     case Receipt = 'receipt';
+    case ReceiptContext = 'receipt_context';
 }

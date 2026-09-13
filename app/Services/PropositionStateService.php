@@ -75,7 +75,7 @@ final class PropositionStateService
     }
 
     /** Batch history traversal by depth, rather than issuing queries per graph node. */
-    private function loadCommitSources(Collection $propositions): void
+    public function loadCommitSources(Collection $propositions): void
     {
         $nodes = $propositions->keyBy('id');
         $frontier = $propositions;

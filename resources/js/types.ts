@@ -27,6 +27,7 @@ export interface Proposition {
   parent_ids?: Identifier[];
   children?: Proposition[];
   attestation?: { direction: AttestationDirection };
+  reinforcement_count?: number;
   attestation_counts?: { support: number; refute: number };
   attestation_summary?: { support_direction: 'positive' | 'negative' | null; retained_direction?: 'positive' | 'negative'; positive: number; negative: number };
   instruments?: Array<{
@@ -120,6 +121,7 @@ export interface ConnectionOptions {
 export type ActionName =
   | 'attestation.create'
   | 'instrument.execute'
+  | 'receipt.read'
   | 'proposition.commit'
   | 'proposition.reclassify'
   | 'proposition.reconcile'
@@ -138,6 +140,7 @@ export interface ContributionInput {
   action: ActionName;
   proposition_id?: Identifier;
   other_proposition_id?: Identifier;
+  receipt_id?: Identifier;
   statement?: string;
   direction?: AttestationDirection;
   rationale?: string;
@@ -179,7 +182,19 @@ export interface WorkspaceHorizon {
   opened_at: string;
 }
 
+export interface ReceiptContext {
+  id: Identifier;
+  proposition_id: Identifier;
+  type: string;
+  reference: string;
+  signature: string | null;
+  status: 'available' | 'loaded' | 'already-in-context' | 'unqualified';
+  loaded_at: string | null;
+  evidence?: { proposition_id?: Identifier; statement?: string; direction?: string; rationale?: string | null; resource?: string; fingerprint?: string; observed_at?: string; content_excerpt?: string | null; excerpt_truncated?: boolean };
+}
+
 export interface ParticipantPlan {
+  receipts?: ReceiptContext[];
   commitment_options?: Record<Identifier, NonNullable<ParticipantPlan['commitment']>>;
   commitment?: {
     admissible: boolean;

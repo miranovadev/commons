@@ -2,6 +2,7 @@ import type { ActionName, AttestationDirection, ContributionInitialValues, Contr
 
 /** Only the workspace's fully specified, schema-authorized navigation actions bypass a form. */
 export function quickContribution(plan: ParticipantPlan, action: ActionName, values: ContributionInitialValues = {}): ContributionInput | null {
+  if (action === 'receipt.read') return values.receipt_id && actionTargetIds(plan, action).has(values.receipt_id) ? { action, receipt_id: values.receipt_id } : null;
   if (!values.proposition_id || !actionTargetIds(plan, action).has(values.proposition_id)) return null;
   if (action === 'proposition.traverse') return { action, proposition_id: values.proposition_id };
   if (action === 'attestation.create' && values.direction && attestationDirections(plan, values.proposition_id).includes(values.direction)) {
@@ -12,7 +13,7 @@ export function quickContribution(plan: ParticipantPlan, action: ActionName, val
 
 /** The schema is authoritative for both visible buttons and form choices. */
 export function actionTargetIds(plan: ParticipantPlan, action: ActionName): Set<string> {
-  const property = action === 'proposition.reconcile' ? 'other_proposition_id' : 'proposition_id';
+  const property = action === 'receipt.read' ? 'receipt_id' : action === 'proposition.reconcile' ? 'other_proposition_id' : 'proposition_id';
   return new Set(plan.schema?.$defs?.actions?.[action]?.properties[property]?.enum ?? []);
 }
 

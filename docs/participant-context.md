@@ -158,3 +158,14 @@ inference credits are consumed by these tests.
 These changes bound serialized context by relevance. The calculation-local
 `ParticipationContext` still hydrates broader data needed by existing measurements;
 this change does not claim database-memory independence from Substrate size.
+
+## Persistent Receipt context
+
+The plan now includes `receipts`, a deduplicated list of encountered Receipt IDs,
+subjects, qualification/load status and loaded evidence. `receipt.read` is bound
+to the available IDs by the same schema used by the backend and human UI. Loaded
+Receipts expose their Cite content or verified retrieval metadata/excerpt and have
+no Read button. Read leaves the Phase open. Loads persist across Cycles and Horizon
+boundaries; the packet does not include unrelated stored memory. No recursive
+citation expansion creates extra graph options. See [Reinforcement](reinforcement.md)
+for identity, clearing, history and migration behavior.

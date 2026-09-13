@@ -20,6 +20,7 @@ use App\Services\Evidence\PublicResourceAddress;
 use App\Services\InstrumentExecutionService;
 use App\Services\LedgerService;
 use App\Services\PropositionStateService;
+use App\Services\ReceiptContextService;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 
@@ -43,23 +44,28 @@ abstract class TestCase extends BaseTestCase
         });
     }
 
-    /** Qualifying later verification for fixtures that exercise other semantic services. */
-    protected function verifiedReceiptFixture(Proposition $node, ?Attestation $subject = null): Receipt
+    /** Verified, explicitly loaded evidence for fixtures that exercise other semantic services. */
+    protected function loadedReceiptFixture(Proposition $node, ?Attestation $subject = null): Receipt
     {
         $participant = new Participant;
         $participant->forceFill(['substrate_id' => $node->phase->cycle->participant->substrate_id,
             'callsign' => 'verifier-'.str()->ulid()])->save();
         $cycle = new Cycle;
-        $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => 1, 'completed_at' => now()])->save();
+        $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => 1])->save();
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Order,
-            'write_register' => $node->register, 'started_at' => now(), 'completed_at' => now()])->save();
+            'gate_proposition_id' => $node->id, 'write_register' => $node->register, 'started_at' => now()])->save();
         $reference = 'https://example.test/verified/'.$node->id;
         $instruments = app(InstrumentExecutionService::class);
         $execution = $instruments->start($phase, $node, 'hyperlink', $reference);
 
-        return $instruments->complete($execution, $subject ?? $node,
+        $receipt = $instruments->complete($execution, $subject ?? $node,
             verification: app(HyperlinkVerifier::class)->verify($reference));
+        app(ReceiptContextService::class)->read($participant, $phase, $receipt->id);
+        $phase->forceFill(['completed_at' => now()])->save();
+        $cycle->forceFill(['completed_at' => now()])->save();
+
+        return $receipt;
     }
 
     /** A structurally valid later region for tests that isolate option scope from projection labels. */
@@ -108,6 +114,6 @@ abstract class TestCase extends BaseTestCase
             $attestation->forceFill(['phase_id' => $node->phase_id, 'proposition_id' => $node->id, 'direction' => 'support'])->save();
             app(LedgerService::class)->record($attestation);
         }
-        $this->verifiedReceiptFixture($node);
+        $this->loadedReceiptFixture($node);
     }
 }

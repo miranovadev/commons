@@ -82,13 +82,17 @@ class ParticipantActionContractTest extends TestCase
                     $this->assertValid($schema, $decoded);
                     app(ContributionService::class)->validate($participant, $decoded);
                     app(ParticipationService::class)->contribute($participant, $phase->id, $decoded);
-                    $this->assertNotNull($phase->fresh()->completed_at, $action);
+                    if ($action === 'receipt.read') {
+                        $this->assertNull($phase->fresh()->completed_at);
+                    } else {
+                        $this->assertNotNull($phase->fresh()->completed_at, $action);
+                    }
                     if ($action === 'attestation.create') {
                         $attestation = Attestation::where('phase_id', $phase->id)->sole();
                         $this->assertSame($decoded['direction'], $attestation->direction);
                         $this->assertSame($decoded['rationale'] ?? null, $attestation->rationale);
                     }
-                    if ($kind === PhaseKind::Order) {
+                    if ($kind === PhaseKind::Order && $action !== 'receipt.read') {
                         $this->assertNotNull($phase->cycle->fresh()->completed_at);
                     }
                 } finally {
@@ -258,8 +262,8 @@ class ParticipantActionContractTest extends TestCase
                 });
             }
         }
-        if ($kind === PhaseKind::Constrain && ! $empty) {
-            $this->verifiedReceiptFixture($gate);
+        if (! $empty) {
+            $this->loadedReceiptFixture($gate);
         }
         $cycle = new Cycle;
         $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => 2])->save();

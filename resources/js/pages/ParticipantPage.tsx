@@ -37,17 +37,21 @@ function ParticipantPositionPage({ slug, participantId }: { slug: string; partic
   const [contribute, contribution] = useContributeMutation();
   const submitting = useRef(false);
   const submittedPhase = useRef<string | null>(null);
+  const submittedReceipt = useRef<{ phaseId: string; receiptId: string } | null>(null);
   const [enterCycle, cycleEntry] = useEnterCycleMutation();
   const [selectedAction, setSelectedAction] = useState<{ name: ActionName; initialValues: ContributionInitialValues } | null>(null);
   const [originOpened, { open: openOrigin, close: closeOrigin }] = useDisclosure(false);
   const plan = participation?.plan;
+  const awaitingReceipt = submittedReceipt.current?.phaseId === plan?.phase.id
+    && Boolean(submittedReceipt.current)
+    && !plan?.receipts?.some(receipt => receipt.id === submittedReceipt.current?.receiptId && receipt.status === 'loaded');
   const [completedWorkspace, setCompletedWorkspace] = useState<{ plan: ParticipantPlan; phaseId: string } | null>(null);
   const completed = participation?.status === 'waiting' && participation.completion?.phase_id === completedWorkspace?.phaseId ? completedWorkspace : null;
   const displayPlan = completed?.plan || plan;
   const [previewSelection, setPreviewSelection] = useState<{ phaseId: string; kind: PhaseKind } | null>(null);
   const previewKind = plan && previewSelection?.phaseId === plan.phase.id && canPreviewPhase(plan.phase.kind, previewSelection.kind) ? previewSelection.kind : undefined;
   function selectPhase(kind: PhaseKind) {
-    if (!plan || submitting.current || submittedPhase.current === plan.phase.id) return;
+    if (!plan || submitting.current || awaitingReceipt || submittedPhase.current === plan.phase.id) return;
     setSelectedAction(null);
     setPreviewSelection(canPreviewPhase(plan.phase.kind, kind) ? { phaseId: plan.phase.id, kind } : null);
   }
@@ -61,20 +65,22 @@ function ParticipantPositionPage({ slug, participantId }: { slug: string; partic
 
   function openAction(name: ActionName, initialValues: ContributionInitialValues = {}) { contribution.reset(); setSelectedAction({ name, initialValues }); }
   function workspaceAction(name: ActionName, initialValues: ContributionInitialValues = {}) {
-    if (previewKind || !plan || submitting.current || submittedPhase.current === plan.phase.id) return;
+    if (previewKind || !plan || submitting.current || awaitingReceipt || submittedPhase.current === plan.phase.id) return;
     const input = quickContribution(plan, name, initialValues);
     if (input) { contribution.reset(); void submit(input); }
     else openAction(name, initialValues);
   }
   async function submit(contributionInput: ContributionInput) {
-    if (previewKind || !plan || submitting.current || submittedPhase.current === plan.phase.id) return false;
+    if (previewKind || !plan || submitting.current || awaitingReceipt || submittedPhase.current === plan.phase.id) return false;
     submitting.current = true;
     try {
       const result = await contribute({ slug, participantId, phaseId: plan.phase.id, contribution: contributionInput }).unwrap();
       if (result.status === 'waiting' && !result.plan && result.completion?.phase_id === plan.phase.id) {
         setCompletedWorkspace({ plan, phaseId: plan.phase.id });
       }
-      submittedPhase.current = plan.phase.id;
+      submittedPhase.current = result.plan?.phase.id === plan.phase.id ? null : plan.phase.id;
+      submittedReceipt.current = contributionInput.action === 'receipt.read' && contributionInput.receipt_id
+        ? { phaseId: plan.phase.id, receiptId: contributionInput.receipt_id } : null;
       setSelectedAction(null);
       return true;
     } catch { return false; /* mutation errors appear in the workspace or form */ }
@@ -104,7 +110,7 @@ function ParticipantPositionPage({ slug, participantId }: { slug: string; partic
       {participant && displayPlan && (
         <Box className="participant-cycle-shell">
           <Box className="cycle-context-header">
-            <PhaseIdentity kind={displayPlan.phase.kind} selectedKind={previewKind || displayPlan.phase.kind} onSelect={completed ? undefined : selectPhase} busy={contribution.isLoading || (!completed && submittedPhase.current === displayPlan.phase.id)} />
+            <PhaseIdentity kind={displayPlan.phase.kind} selectedKind={previewKind || displayPlan.phase.kind} onSelect={completed ? undefined : selectPhase} busy={contribution.isLoading || awaitingReceipt || (!completed && submittedPhase.current === displayPlan.phase.id)} />
             <ParticipantIdentity participant={participant} onSelect={() => setSwitcherOpened(true)} opened={switcherOpened} />
           </Box>
           {previewKind && <Group className="phase-preview-notice" justify="space-between" gap="xs">
@@ -113,7 +119,7 @@ function ParticipantPositionPage({ slug, participantId }: { slug: string; partic
           </Group>}
           <Box className="participant-cycle-content">
             <ParticipantWorkspace key={previewKind || 'live'} previewKind={previewKind} plan={{ ...displayPlan, perspectiveLimit: participant.max_read_count }} availableActions={previewKind || completed ? [] : availableActions} onAction={workspaceAction}
-              busy={contribution.isLoading || (!completed && submittedPhase.current === displayPlan.phase.id)} onSubmit={previewKind || completed ? undefined : submit} error={contribution.error}
+              busy={contribution.isLoading || awaitingReceipt || (!completed && submittedPhase.current === displayPlan.phase.id)} onSubmit={previewKind || completed ? undefined : submit} error={contribution.error}
               completion={completed && participation ? <CycleCompletion slug={slug} participation={participation} loading={cycleEntry.isLoading} error={cycleEntry.error} onEnter={enterFromPotential} onOrigin={openOrigin} /> : undefined}
               status={previewKind || completed ? undefined : <WorkspaceStatus notices={notices} closeDetails={selectedAction !== null || switcherOpened} />} />
           </Box>
@@ -130,6 +136,7 @@ function isActionName(value?: string): value is ActionName {
   return [
     'attestation.create',
     'instrument.execute',
+    'receipt.read',
     'proposition.commit',
     'proposition.reclassify',
     'proposition.reconcile',

@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-/** One counted participant contribution; its Receipt remains the ledger event. */
+/** Historical verification allocation. Active Reinforcement is derived from ParticipantReceiptContext. */
 class Reinforcement extends Model
 {
     use HasUlids;

@@ -209,7 +209,9 @@ final readonly class ParticipationService
                 $phase,
                 $input,
             );
-            $this->progression->advance($phase, $gate);
+            if ($input['action'] !== 'receipt.read') {
+                $this->progression->advance($phase, $gate);
+            }
 
             return $this->stateFor($lockedParticipant);
         });

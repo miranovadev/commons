@@ -113,6 +113,7 @@ class ParticipantWakeTest extends TestCase
             'cycle' => ['id' => 'cycle-id', 'sequence' => 1],
             'plan' => [
                 'phase' => ['id' => 'phase-id', 'kind' => 'distinguish'],
+                'receipts' => [],
                 'schema' => app(InputSchemaService::class)
                     ->forPhase(PhaseKind::Distinguish),
             ],
