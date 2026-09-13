@@ -166,3 +166,15 @@ button.proposition-card:focus-visible,.proposition-navigator__viewport:focus-vis
 .lineage-endpoint { align-self:flex-start; }
 .lineage-endpoint--present { align-self:flex-end; }
 @media (max-width:47.99em) { .cycle-completion { grid-column:1; } }
+
+.horizon-context { display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,1fr); gap:.65rem; margin-left:7.2rem; }
+.horizon-context__boundary,.horizon-context__provenance { min-width:0; padding:.55rem .7rem; border-radius:var(--mantine-radius-md); border:1px solid light-dark(var(--mantine-color-gray-3),var(--mantine-color-dark-5)); }
+.horizon-context__boundary { display:flex; gap:1rem; align-items:center; }
+.horizon-context__boundary[data-domain="emergence"] { color:var(--mantine-color-indigo-9); background:var(--mantine-color-indigo-0); border-color:var(--mantine-color-indigo-2); }
+.horizon-context__boundary[data-domain="settlement"] { color:var(--mantine-color-gray-1); background:var(--mantine-color-indigo-9); border-color:var(--mantine-color-indigo-7); }
+.horizon-context__opening { min-width:0; flex:1; }
+.horizon-context__reference { display:block; max-width:100%; min-width:0; text-align:left; color:inherit; border-radius:4px; }
+.horizon-context__reference:hover { text-decoration:underline; }
+.horizon-context__reference:focus-visible { outline:2px solid currentColor; outline-offset:2px; }
+@media (max-width:74.99em) { .horizon-context { margin-left:5.6rem; } }
+@media (max-width:47.99em) { .horizon-context { margin-left:0; grid-template-columns:1fr; } }

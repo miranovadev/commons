@@ -48,14 +48,17 @@ final readonly class ParticipationService
             ->whereHas('proposition.phase.cycle', fn ($query) => $query->where('participant_id', $participant->getKey()))
             ->join('substrate_ledger_entries as entry', 'entry.id', '=', 'commitment_snapshots.ledger_entry_id')
             ->orderByDesc('entry.sequence')->select('commitment_snapshots.*')->first();
-        $horizon = ContextHorizon::query()
-            ->where('substrate_id', $participant->substrate_id)->whereNull('closed_at')->first();
+        $horizonId = $state['cycle']['context_horizon_id'] ?? null;
+        $horizon = $horizonId === null
+            ? $participant->cycles()->latest('sequence')->first()?->contextHorizon
+            : ContextHorizon::findOrFail($horizonId);
 
         return [
             ...$state,
             'current_proposition_id' => $participant->fresh()->current_proposition_id,
             'domain' => $horizon?->domain->value,
             'horizon_sequence' => $horizon?->sequence,
+            'context_horizon_id' => $horizon?->id,
             'last_commitment' => $snapshot === null ? null : [
                 ...$snapshot->only(['proposition_id', 'depth', 'cadence', 'closure', 'tension_before']),
                 'evaluated_at' => $snapshot->evaluated_at->toISOString(),
@@ -249,8 +252,16 @@ final readonly class ParticipationService
     private function entryFor(Participant $participant): array
     {
         $participant = $participant->fresh();
-        if ($participant->current_proposition_id !== null
-            && $this->cycleEntry->needsRecovery($participant)) {
+        if ($participant->current_proposition_id !== null) {
+            $continuation = $this->cycleEntry->continuationFor($participant);
+            if ($continuation !== null) {
+                return [
+                    'mode' => 'continuity',
+                    'available' => true,
+                    'proposition_id' => $continuation->id,
+                    'message' => 'Continue the next Cycle from the local Committal Proposition.',
+                ];
+            }
             $selection = $this->potential->recoverFrom($participant->position()->firstOrFail());
 
             return [
@@ -263,18 +274,6 @@ final readonly class ParticipationService
                 'message' => $selection === null
                     ? 'Resting until a structurally reachable Committal region has positive Potential Charge.'
                     : 'Begin the next Cycle at the nearest viable Committal distance.',
-            ];
-        }
-
-        if ($participant->current_proposition_id !== null) {
-            $selection = $this->potential->selectFrom($participant->position()->firstOrFail());
-
-            return [
-                'mode' => 'potential',
-                'available' => $selection !== null,
-                'message' => $selection === null
-                    ? 'Waiting for a structurally reachable measured Committal Proposition.'
-                    : 'Potential will select a Committal Gate as observed from the Participant’s current position.',
             ];
         }
 
@@ -314,6 +313,7 @@ final readonly class ParticipationService
         return [
             'id' => $cycle->getKey(),
             'sequence' => $cycle->sequence,
+            'context_horizon_id' => $cycle->context_horizon_id,
             'created_at' => $cycle->created_at,
         ];
     }

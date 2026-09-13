@@ -32,8 +32,8 @@ final readonly class PotentialChargeService
     }
 
     /**
-     * Ordinary re-entry observes all reachable Committal candidates from the
-     * retained position, which can itself be expressive. Rest is a separate search.
+     * Relative ranking utility for reachable Committal candidates. This ranking
+     * does not decide whether a Participant should leave a local continuation.
      *
      * @return array{proposition: Proposition, potential_charge: float, charge: float, raw_potential_charge: float, raw_charge: float, distance: int}|null
      */

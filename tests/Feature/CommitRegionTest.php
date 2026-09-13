@@ -17,7 +17,7 @@ class CommitRegionTest extends TestCase
 
     private Phase $history;
     private Participant $viewer;
-    private Proposition $seed;
+    private Proposition $regionSeed;
 
     protected function setUp(): void
     {
@@ -31,14 +31,14 @@ class CommitRegionTest extends TestCase
         $this->history = new Phase;
         $this->history->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Distinguish,
             'write_register' => 'signal', 'started_at' => now(), 'completed_at' => now()])->save();
-        $this->seed = $this->node('canon', null, 'committal');
+        $this->regionSeed = $this->node('canon', null, 'committal');
         config()->set('schemas.options.limit', 1);
     }
 
     public function test_region_traverses_all_expressive_branches_but_stops_at_every_commit_in_the_same_horizon(): void
     {
-        $left = $this->node('signal', $this->seed);
-        $right = $this->node('signal', $this->seed);
+        $left = $this->node('signal', $this->regionSeed);
+        $right = $this->node('signal', $this->regionSeed);
         $a = $this->node('stance', $left, edge: 'reclassify');
         $b = $this->node('stance', $right);
         $merged = $this->node('concord', $a, edge: 'reconcile');
@@ -48,21 +48,21 @@ class CommitRegionTest extends TestCase
         $unrelated = $this->node('canon', null, 'committal');
         $outsider = $this->node('stance', $unrelated);
         $regions = app(CommitRegionService::class);
-        foreach ([$this->seed, $left, $right, $a, $b, $merged] as $member) {
-            $this->assertSame($this->seed->id, $regions->seedFor($member)->id);
+        foreach ([$this->regionSeed, $left, $right, $a, $b, $merged] as $member) {
+            $this->assertSame($this->regionSeed->id, $regions->seedFor($member)->id);
             $this->assertEqualsCanonicalizing([$left->id, $right->id, $a->id, $b->id, $merged->id],
                 $regions->membersFor($member)->pluck('id')->all());
         }
         $this->assertSame($next->id, $regions->seedFor($next)->id);
         $this->assertSame([$nextChild->id], $regions->membersFor($next)->pluck('id')->all());
         $this->assertSame($unrelated->id, $regions->seedFor($outsider)->id);
-        $this->assertSame($this->seed->contextHorizonMembership->context_horizon_id,
+        $this->assertSame($this->regionSeed->contextHorizonMembership->context_horizon_id,
             $nextChild->contextHorizonMembership->context_horizon_id);
     }
 
     public function test_conflicting_legacy_ancestry_does_not_join_two_regions(): void
     {
-        $left = $this->node('stance', $this->seed);
+        $left = $this->node('stance', $this->regionSeed);
         $other = $this->node('canon', null, 'committal');
         $right = $this->node('stance', $other);
         $mixed = $this->node('concord', $left, edge: 'reconcile');
@@ -71,7 +71,7 @@ class CommitRegionTest extends TestCase
         $regions = app(CommitRegionService::class);
         $this->assertNull($regions->seedFor($mixed));
         $this->assertNull($regions->seedFor($descendant));
-        $this->assertSame([$left->id], $regions->membersFor($this->seed)->pluck('id')->all());
+        $this->assertSame([$left->id], $regions->membersFor($this->regionSeed)->pluck('id')->all());
         $this->assertSame([$right->id], $regions->membersFor($other)->pluck('id')->all());
     }
 
@@ -81,10 +81,10 @@ class CommitRegionTest extends TestCase
     }
 
     #[DataProvider('domains')]
-    public function test_phase_positions_use_domain_equivalence_and_early_phases_stay_local(string $first, string $second, string $third): void
+    public function test_phase_positions_require_exact_registers_and_early_phases_stay_local(string $first, string $second, string $third): void
     {
-        $left = $this->node($first, $this->seed);
-        $right = $this->node($first, $this->seed);
+        $left = $this->node($first, $this->regionSeed);
+        $right = $this->node($first, $this->regionSeed);
         $middle = $this->node($second, $left);
         $end = $this->node($third, $middle);
         $parallel = $this->node($third, $right);
@@ -96,7 +96,7 @@ class CommitRegionTest extends TestCase
         $phase = $this->phase(PhaseKind::Bias, $middle, $third);
         $this->assertSame([$middle->id], $regions->forPhase($phase)->pluck('id')->all());
         $equivalent = $this->node($second === 'stance' ? 'frontier' : 'stance', $right);
-        $this->assertEqualsCanonicalizing([$middle->id, $equivalent->id], $regions->forPhase($phase)->pluck('id')->all());
+        $this->assertSame([$middle->id], $regions->forPhase($phase)->pluck('id')->all());
         $this->assertSame(RegisterPosition::forRegister($second), RegisterPosition::forRegister($equivalent->register));
         $unvisited = $this->node($third, $middle);
         foreach ([PhaseKind::Distinguish, PhaseKind::Persist, PhaseKind::Constrain, PhaseKind::Disperse] as $kind) {
@@ -109,8 +109,8 @@ class CommitRegionTest extends TestCase
     #[DataProvider('domains')]
     public function test_mediate_reads_cross_parent_branches_before_filtering_correspondence(string $first, string $second, string $third): void
     {
-        $left = $this->node($second, $this->seed);
-        $right = $this->node($second, $this->seed);
+        $left = $this->node($second, $this->regionSeed);
+        $right = $this->node($second, $this->regionSeed);
         $anchor = $this->node($third, $left);
         $matching = $this->node($third, $right);
         $opposite = $this->node($third, $right);
@@ -143,8 +143,8 @@ class CommitRegionTest extends TestCase
     #[DataProvider('domains')]
     public function test_bias_filters_cross_branch_retained_directions_including_zero_attestations(string $first, string $second, string $third): void
     {
-        $left = $this->node($first, $this->seed);
-        $right = $this->node($first, $this->seed);
+        $left = $this->node($first, $this->regionSeed);
+        $right = $this->node($first, $this->regionSeed);
         $gate = $this->node($second, $left);
         $neutral = $this->node($second, $right);
         $negative = $this->node($second, $right);
@@ -167,8 +167,8 @@ class CommitRegionTest extends TestCase
     #[DataProvider('domains')]
     public function test_closure_filters_each_cross_branch_write_and_revalidates_the_selected_source(string $first, string $second, string $third): void
     {
-        $left = $this->node($second, $this->seed);
-        $right = $this->node($second, $this->seed);
+        $left = $this->node($second, $this->regionSeed);
+        $right = $this->node($second, $this->regionSeed);
         $gate = $this->node($third, $left);
         $positive = $this->node($third, $right);
         $negative = $this->node($third, $right);
@@ -254,9 +254,17 @@ class CommitRegionTest extends TestCase
 
     private function phase(PhaseKind $kind, Proposition $gate, string $register): Phase
     {
-        $this->history->cycle->phases()->whereNull('completed_at')->update(['completed_at' => now()]);
+        $cycle = $this->viewer->cycles()->latest('sequence')->firstOrFail();
+        $cycle->phases()->whereNull('completed_at')->update(['completed_at' => now()]);
+        if ($cycle->contextHorizon->domain->registerAt(RegisterPosition::forRegister($register)) !== $register) {
+            $cycle->forceFill(['completed_at' => now()])->save();
+            $horizon = $this->horizonForRegisterFixture($this->viewer, $register);
+            $cycle = new Cycle;
+            $cycle->forceFill(['participant_id' => $this->viewer->id, 'sequence' => $this->viewer->cycles()->max('sequence') + 1,
+                'context_horizon_id' => $horizon->id])->save();
+        }
         $phase = new Phase;
-        $phase->forceFill(['cycle_id' => $this->history->cycle_id, 'kind' => $kind, 'gate_proposition_id' => $gate->id,
+        $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => $kind, 'gate_proposition_id' => $gate->id,
             'write_register' => $register, 'started_at' => now()])->save();
         $this->viewer->forceFill(['current_proposition_id' => $gate->id])->save();
         return $phase;

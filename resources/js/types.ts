@@ -169,6 +169,16 @@ export interface InputSchema {
   $defs?: { actions?: Partial<Record<ActionName, ActionSchema>> };
 }
 
+export interface WorkspaceHorizon {
+  id: Identifier;
+  sequence: number;
+  domain: DomainName;
+  parent_context_horizon_id: Identifier | null;
+  opened_by_proposition_id: Identifier | null;
+  opening_proposition: Proposition | null;
+  opened_at: string;
+}
+
 export interface ParticipantPlan {
   commitment_options?: Record<Identifier, NonNullable<ParticipantPlan['commitment']>>;
   commitment?: {
@@ -200,6 +210,7 @@ export interface ParticipantPlan {
   attestation_options?: Proposition[];
   workspace?: {
     domain?: DomainName;
+    horizon?: WorkspaceHorizon | null;
     provenance?: Proposition;
     registers?: Partial<Record<RegisterName, Proposition[]>>;
   };
@@ -219,6 +230,7 @@ export interface Participation {
   current_proposition_id?: Identifier | null;
   domain?: DomainName | null;
   horizon_sequence?: number | null;
+  context_horizon_id?: Identifier | null;
   last_commitment?: {
     proposition_id: Identifier;
     depth: number | null;
@@ -233,7 +245,7 @@ export interface Participation {
   } | null;
   status: 'waiting' | 'ready';
   plan?: ParticipantPlan;
-  entry?: { mode?: 'origin' | 'potential'; selection?: 'position' | 'recovery'; available?: boolean; message?: string; proposition_id?: Identifier | null; distance?: number | null; potential_charge?: number };
+  entry?: { mode?: 'origin' | 'continuity' | 'potential'; selection?: 'position' | 'recovery'; available?: boolean; message?: string; proposition_id?: Identifier | null; distance?: number | null; potential_charge?: number };
   reason?: { message?: string };
 }
 

@@ -119,10 +119,7 @@ class ReconciliationTest extends TestCase
         $this->fixture();
         $valid = $this->sibling('Valid');
         $wrongHorizon = $this->sibling('Other Horizon');
-        $horizon = $wrongHorizon->contextHorizonMembership->horizon->replicate();
-        $horizon->sequence = 2;
-        $horizon->closed_at = now();
-        $horizon->save();
+        $horizon = $this->laterHorizonFixture($wrongHorizon->contextHorizonMembership->horizon);
         $wrongHorizon->contextHorizonMembership->forceFill(['context_horizon_id' => $horizon->id])->save();
         $foreign = $this->sibling('Foreign substrate');
         $other = $this->substrate->replicate();
@@ -230,10 +227,7 @@ class ReconciliationTest extends TestCase
         [$hardRead, $hardGate] = $this->readSibling('Replaced Read', -0.7, -1);
         $this->edge($hardRead, $this->node('Read replacement', 'canon'), 'reclassify');
         [$foreignHorizon, $foreignGate] = $this->readSibling('Other Horizon Read', -0.7, -1);
-        $horizon = $foreignHorizon->contextHorizonMembership->horizon->replicate();
-        $horizon->sequence = 2;
-        $horizon->closed_at = now();
-        $horizon->save();
+        $horizon = $this->laterHorizonFixture($foreignHorizon->contextHorizonMembership->horizon);
         $foreignHorizon->contextHorizonMembership->forceFill(['context_horizon_id' => $horizon->id])->save();
         $distantRead = $this->node('Read grandchild', 'canon');
         $this->edge($validRead, $distantRead);

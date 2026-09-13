@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Enums\ContextDomain;
 use App\Enums\PhaseKind;
-use App\Models\ContextHorizon;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
@@ -172,11 +171,8 @@ final readonly class InputPlanService
         Collection $lineage,
         ?ParticipationContext $context,
     ): array {
-        $horizon = $context !== null ? $context->horizons->whereNull('closed_at')->first() : ContextHorizon::query()
-            ->where('substrate_id', $participant->substrate_id)
-            ->whereNull('closed_at')
-            ->first();
-        $domain = $horizon?->domain ?? $this->domainFor($phase, $gate);
+        $horizon = $context !== null ? $context->horizons->get($phase->cycle->context_horizon_id) : $phase->cycle->contextHorizon;
+        $domain = $horizon->domain;
         $registers = $domain === ContextDomain::Emergence
             ? ['activity', 'frontier', 'canon']
             : ['signal', 'stance', 'concord'];
@@ -217,11 +213,23 @@ final readonly class InputPlanService
         $this->measurements->repairMissing(collect([$provenance]), $context);
         $this->state->loadAttestationCounts($propositions->concat([$provenance]), $context);
 
+        // A causal boundary is context, not an invented ancestor of this Gate.
+        $opening = $horizon->opened_by_proposition_id === null ? null
+            : ($context !== null ? $context->propositions->get($horizon->opened_by_proposition_id)
+                : Proposition::findOrFail($horizon->opened_by_proposition_id));
+        if ($opening !== null) {
+            $this->loadPropositionState($participant, $context, $opening);
+        }
+
         return [
             'domain' => $domain->value,
             'horizon' => $horizon === null ? null : [
                 'id' => $horizon->getKey(),
                 'sequence' => $horizon->sequence,
+                'domain' => $domain->value,
+                'parent_context_horizon_id' => $horizon->parent_context_horizon_id,
+                'opened_by_proposition_id' => $horizon->opened_by_proposition_id,
+                'opening_proposition' => $opening === null ? null : $this->proposition($opening, $participant, $context),
                 'opened_at' => $horizon->opened_at,
             ],
             'provenance' => $this->proposition($provenance, $participant, $context),
@@ -237,19 +245,6 @@ final readonly class InputPlanService
                 ])
                 ->all(),
         ];
-    }
-
-    private function domainFor(
-        Phase $phase,
-        Proposition $gate,
-    ): ContextDomain {
-        $register = $phase->write_register ?? $gate->register;
-
-        return in_array(
-            $register,
-            ['signal', 'stance', 'concord'],
-            true,
-        ) ? ContextDomain::Settlement : ContextDomain::Emergence;
     }
 
     private function loadPropositionState(

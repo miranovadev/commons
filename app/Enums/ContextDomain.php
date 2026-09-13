@@ -9,6 +9,32 @@ enum ContextDomain: string
     case Emergence = 'emergence';
     case Settlement = 'settlement';
 
+    public function opposite(): self
+    {
+        return $this === self::Emergence ? self::Settlement : self::Emergence;
+    }
+
+    public function registerFor(PhaseKind $kind): string
+    {
+        $emergence = $this === self::Emergence;
+
+        return match ($kind) {
+            PhaseKind::Distinguish, PhaseKind::Disperse => $emergence ? 'activity' : 'signal',
+            PhaseKind::Persist, PhaseKind::Mediate => $emergence ? 'frontier' : 'stance',
+            PhaseKind::Constrain, PhaseKind::Bias, PhaseKind::Order => $emergence ? 'canon' : 'concord',
+        };
+    }
+
+    /** Resolve a structural role to its exact operational register. */
+    public function registerAt(RegisterPosition $position): string
+    {
+        return match ($position) {
+            RegisterPosition::First => $this === self::Emergence ? 'activity' : 'signal',
+            RegisterPosition::Second => $this === self::Emergence ? 'frontier' : 'stance',
+            RegisterPosition::Third => $this === self::Emergence ? 'canon' : 'concord',
+        };
+    }
+
     public static function after(
         float $tension,
         self $hystereticDirection,

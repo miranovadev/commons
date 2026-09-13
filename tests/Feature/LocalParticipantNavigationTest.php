@@ -25,6 +25,7 @@ use App\Services\ParticipationService;
 use App\Services\PotentialChargeService;
 use App\Services\PropositionMeasurementService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Tests\TestCase;
 
@@ -121,7 +122,7 @@ class LocalParticipantNavigationTest extends TestCase
         $this->assertSame('committal', $this->state($right)['plan']['gate_options'][0]['tier']);
     }
 
-    public function test_ordinary_entry_can_select_beyond_the_nearest_viable_shell(): void
+    public function test_relative_potential_ranking_can_select_beyond_the_recovery_shell(): void
     {
         $near = $this->region('Near small Potential', 0.05);
         $far = $this->region('Far large Potential', 0.9);
@@ -184,7 +185,7 @@ class LocalParticipantNavigationTest extends TestCase
         }
     }
 
-    public function test_zero_potential_ties_never_reuse_the_latest_expressive_position(): void
+    public function test_non_tragic_expressive_completion_resumes_its_own_committal_seed(): void
     {
         $first = $this->node('First commitment', 0.0);
         $second = $this->node('Second commitment', 0.0);
@@ -199,18 +200,18 @@ class LocalParticipantNavigationTest extends TestCase
 
         $waiting = $this->state($participant);
         $this->assertTrue($waiting['entry']['available']);
-        $this->assertNotSame('position', $waiting['entry']['selection'] ?? null);
+        $this->assertSame('continuity', $waiting['entry']['mode']);
         $this->assertSame($expressive->id, $participant->fresh()->current_proposition_id);
         app(CycleEntryService::class)->enter($participant);
 
         $gate = $this->state($participant)['plan']['gate_options'][0];
         $this->assertSame('committal', $gate['tier']);
-        $this->assertSame(min($first->id, $second->id), $gate['id']);
+        $this->assertSame($first->id, $gate['id']);
     }
 
-    public function test_a_new_commitment_can_win_reentry_and_seed_a_fresh_variant(): void
+    public function test_a_zero_potential_commitment_keeps_continuity_even_when_origin_wins_potential(): void
     {
-        $origin = $this->node('Established commitment', 0.8);
+        $origin = $this->region('Established commitment', 0.8);
         $concord = $this->node('Expressive Concord', 0.8, 'expressive');
         $concord->forceFill(['register' => 'canon'])->save();
         $this->edge($origin, $concord);
@@ -222,9 +223,14 @@ class LocalParticipantNavigationTest extends TestCase
             'target_proposition_id' => $committed->id,
             'type' => 'commit',
         ])->save();
-        $participant = $this->participant('returning', $concord);
+        $participant = $this->participant('returning', $committed);
         $this->refreshFixtureMeasurements();
 
+        $this->assertSame($origin->id, app(PotentialChargeService::class)->selectFrom($committed)['proposition']->id);
+        $waiting = $this->state($participant);
+        $this->assertSame('continuity', $waiting['entry']['mode']);
+        $this->assertSame($committed->id, $waiting['entry']['proposition_id']);
+        $this->assertSame($committed->id, $participant->fresh()->current_proposition_id);
         app(CycleEntryService::class)->enter($participant);
         $state = $this->state($participant);
         $this->assertSame($committed->id, $state['plan']['gate_id']);
@@ -473,7 +479,7 @@ class LocalParticipantNavigationTest extends TestCase
         $this->edge($gate, $target);
         $participant = $this->participant('automated', $gate);
         $this->establishPath($participant, $target);
-        app(CycleEntryService::class)->enter($participant);
+        $this->assertSame('continuity', $this->state($participant)['entry']['mode']);
         $connection = new Connection;
         $connection->forceFill([
             'provider' => 'openai', 'name' => 'Navigation test',
@@ -495,6 +501,9 @@ class LocalParticipantNavigationTest extends TestCase
 
     public function test_migration_recovers_active_gates_and_completed_commitments_without_reentry(): void
     {
+        if (DB::getDriverName() === 'sqlite') {
+            $this->markTestSkipped('Reversing an old table rebuild with newer restrictive foreign keys requires PostgreSQL.');
+        }
         $gate = $this->node('Previous Gate', 0.0);
         $active = $this->participant('existing active');
         $this->phase($active, $gate);

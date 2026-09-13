@@ -153,7 +153,7 @@ class ContextHorizonProjectorTest extends TestCase
 
         $this->assertDatabaseCount('substrate_ledger_entries', 0);
         $this->assertDatabaseCount('commitment_snapshots', 0);
-        $this->assertDatabaseCount('context_horizons', 0);
+        $this->assertDatabaseCount('context_horizons', 1); // The Cycle already owns the root.
     }
 
     public function test_cross_substrate_edges_cannot_enter_the_ledger(): void
@@ -321,7 +321,7 @@ class ContextHorizonProjectorTest extends TestCase
         );
 
         ContextHorizonMembership::query()->delete();
-        ContextHorizon::query()->delete();
+        $horizonIds = ContextHorizon::query()->orderBy('sequence')->pluck('id')->all();
 
         $projector = app(ContextHorizonProjector::class);
         $current = $projector->currentFor($this->substrate);
@@ -330,11 +330,12 @@ class ContextHorizonProjectorTest extends TestCase
         $this->assertSame(2, ContextHorizon::query()->count());
 
         ContextHorizonMembership::query()->delete();
-        ContextHorizon::query()->delete();
+        $horizonIds = ContextHorizon::query()->orderBy('sequence')->pluck('id')->all();
 
         $count = $projector->rebuild($this->substrate);
 
         $this->assertSame(2, $count);
+        $this->assertSame($horizonIds, ContextHorizon::query()->orderBy('sequence')->pluck('id')->all());
         $this->assertSame(1, $this->horizonFor($origin)->sequence);
         $this->assertSame(2, $this->horizonFor($next)->sequence);
         $this->assertSame(
@@ -359,7 +360,7 @@ class ContextHorizonProjectorTest extends TestCase
         $proposition = new Proposition;
         $proposition->forceFill([
             'phase_id' => $this->phase->getKey(),
-            'register' => $tier === 'committal' ? 'canon' : 'activity',
+            'register' => $this->phase->cycle->contextHorizon->domain->registerFor($tier === 'committal' ? PhaseKind::Order : PhaseKind::Distinguish),
             'tier' => $tier,
             'statement' => $statement,
         ]);
@@ -377,6 +378,16 @@ class ContextHorizonProjectorTest extends TestCase
         float $turbulence,
         ?Proposition $source = null,
     ): array {
+        // Each later commitment is a new Cycle; a Cycle never changes Domain.
+        if ($source !== null) {
+            $participant = $this->phase->cycle->participant;
+            $cycle = new Cycle;
+            $cycle->forceFill(['participant_id' => $participant->id,
+                'sequence' => $participant->cycles()->max('sequence') + 1])->save();
+            $this->phase = new Phase;
+            $this->phase->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Order,
+                'write_register' => $cycle->contextHorizon->domain->registerFor(PhaseKind::Order), 'started_at' => now()])->save();
+        }
         $proposition = $this->proposition($statement, 'committal');
         app(LedgerService::class)->record($proposition);
         $this->groundFixture($proposition);

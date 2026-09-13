@@ -45,7 +45,7 @@ final readonly class MediationReadService
     {
         $anchor = $this->anchorFor($phase);
         if ($anchor === null || $anchor->tier !== 'expressive'
-            || RegisterPosition::forRegister($anchor->register) !== RegisterPosition::Third
+            || $anchor->register !== $phase->cycle->contextHorizon->domain->registerAt(RegisterPosition::Third)
             || $this->regions->seedFor($anchor, $context) === null) {
             return collect();
         }

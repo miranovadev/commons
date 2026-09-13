@@ -3,10 +3,10 @@
 namespace App\Services;
 
 use App\Domain\Observables\ObservableValues;
-use App\Enums\ContextDomain;
 use App\Enums\LedgerEntryKind;
 use App\Enums\PhaseKind;
 use App\Models\Attestation;
+use App\Models\ContextHorizon;
 use App\Models\Cycle;
 use App\Models\Participant;
 use App\Models\Phase;
@@ -28,11 +28,13 @@ final readonly class CycleEntryService
         private CommitmentSnapshotService $commitments,
         private ContextHorizonProjector $horizons,
         private PotentialChargeService $potential,
+        private CommitRegionService $regions,
     ) {}
 
     /**
      * Establish the substrate's Origin and place the Participant at the first
-     * live Settlement Cycle. Every live Cycle selects a Committal entry position.
+     * live Settlement Cycle. Retain local Committal continuity; use Potential
+     * for initial entry or relocation after local continuation is exhausted.
      *
      * @param  array<string, mixed>|null  $origin
      */
@@ -52,25 +54,23 @@ final readonly class CycleEntryService
                 );
             }
 
-            if ($lockedParticipant->current_proposition_id !== null
-                && $this->needsRecovery($lockedParticipant)) {
-                $selection = $this->potential->recoverFrom($lockedParticipant->position()->firstOrFail());
-                if ($selection === null) {
+            if ($lockedParticipant->current_proposition_id !== null) {
+                $gate = $this->continuationFor($lockedParticipant)
+                    ?? ($this->potential->recoverFrom($lockedParticipant->position()->firstOrFail())['proposition'] ?? null);
+                if ($gate === null) {
                     throw new ConflictHttpException('No structurally reachable Committal region has positive Potential Charge.');
                 }
                 $this->createLiveCycle(
                     $lockedParticipant,
                     $substrate,
-                    $selection['proposition'],
+                    $gate,
                 );
 
                 return;
             }
 
             if ($this->hasPropositionHistory($substrate)) {
-                $selection = $lockedParticipant->current_proposition_id === null
-                    ? $this->potential->selectFor($substrate)
-                    : $this->potential->selectFrom($lockedParticipant->position()->firstOrFail());
+                $selection = $this->potential->selectFor($substrate);
                 if ($selection === null) {
                     throw new ConflictHttpException('No structurally reachable measured Committal Proposition is available for Cycle entry.');
                 }
@@ -89,7 +89,7 @@ final readonly class CycleEntryService
                 );
             }
 
-            $bootstrapCycle = $this->createCycle($lockedParticipant);
+            $bootstrapCycle = $this->createCycle($lockedParticipant, $this->horizons->currentFor($substrate));
             $order = $this->createPhase(
                 $bootstrapCycle,
                 PhaseKind::Order,
@@ -139,9 +139,24 @@ final readonly class CycleEntryService
         });
     }
 
-    public function needsRecovery(Participant $participant): bool
+    /**
+     * A Commit is already a continuation, regardless of its current Potential.
+     * Non-tragic expressive completion resumes its own Committal region. Rest
+     * explicitly exhausts that local path, so recovery must select elsewhere.
+     */
+    public function continuationFor(Participant $participant): ?Proposition
     {
-        return $participant->cycles()->latest('sequence')->first()?->rested_at !== null;
+        if ($participant->current_proposition_id === null
+            || $participant->cycles()->latest('sequence')->first()?->rested_at !== null) {
+            return null;
+        }
+        $position = $participant->position()->firstOrFail();
+        if ($position->phase->cycle->participant->substrate_id !== $participant->substrate_id) {
+            throw new DomainException('A Participant cannot continue in another substrate.');
+        }
+        $seed = $this->regions->seedFor($position);
+
+        return $seed?->commitmentSnapshot !== null ? $seed : null;
     }
 
     private function createLiveCycle(
@@ -155,11 +170,9 @@ final readonly class CycleEntryService
 
         $participant->current_proposition_id = $gate->getKey();
         $participant->save();
-        $cycle = $this->createCycle($participant);
-        $domain = $this->horizons->currentFor($substrate)->domain;
-        $firstRegister = $domain === ContextDomain::Emergence
-            ? 'activity'
-            : 'signal';
+        $horizon = $this->horizons->forEntry($gate);
+        $cycle = $this->createCycle($participant, $horizon);
+        $firstRegister = $cycle->contextHorizon->domain->registerFor(PhaseKind::Distinguish);
 
         $this->createPhase(
             $cycle,
@@ -185,11 +198,12 @@ final readonly class CycleEntryService
             ->exists();
     }
 
-    private function createCycle(Participant $participant): Cycle
+    private function createCycle(Participant $participant, ContextHorizon $horizon): Cycle
     {
         $cycle = new Cycle;
         $cycle->forceFill([
             'participant_id' => $participant->getKey(),
+            'context_horizon_id' => $horizon->id,
             'sequence' => (int) Cycle::query()
                 ->whereBelongsTo($participant)
                 ->max('sequence') + 1,
@@ -262,4 +276,3 @@ final readonly class CycleEntryService
         $this->instruments->execute($phase, $proposition, $input);
     }
 }
-

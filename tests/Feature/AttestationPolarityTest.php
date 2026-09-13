@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Enums\ObservableDirection as Direction;
 use App\Enums\PhaseKind;
-use App\Enums\RegisterPosition;
 use App\Models\{Attestation, Cycle, Participant, Phase, Proposition, Substrate, Supersession};
 use App\Services\{AttestationEvidenceService, BiasGateService, CommitRegionPolarityService, ContributionDispatcher, CycleEntryService, LedgerService};
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -103,7 +102,7 @@ class AttestationPolarityTest extends TestCase
         $this->assertSame([$major->id], $bias->forPhase($phase)->pluck('id')->all());
         $this->attest($gate, 'refute');
         $this->assertSame(0.0, $bias->leanFor($phase));
-        $this->assertSame($majority, $evidence->populationDirection($seed, RegisterPosition::Second));
+        $this->assertSame($majority, $evidence->populationDirection($seed, $register));
         $this->assertNotSame($majority, $evidence->directionFor($gate));
         $this->assertSame([$major->id], $bias->forPhase($phase)->pluck('id')->all());
 
@@ -114,7 +113,7 @@ class AttestationPolarityTest extends TestCase
         }
         $this->assertSame([$major->id], $bias->forPhase($phase)->pluck('id')->all());
         $counts = [Proposition::count(), $this->participant->substrate->ledgerEntries()->count()];
-        $evidence->populationDirection($seed, RegisterPosition::Second);
+        $evidence->populationDirection($seed, $register);
         $this->assertSame($counts, [Proposition::count(), $this->participant->substrate->ledgerEntries()->count()]);
         $target = app(ContributionDispatcher::class)->dispatch($this->participant, $phase,
             ['action' => 'proposition.bias', 'proposition_id' => $major->id]);
@@ -135,7 +134,7 @@ class AttestationPolarityTest extends TestCase
         $evidence = app(AttestationEvidenceService::class);
         $this->assertSame(0.0, $evidence->valueFor(collect([$position]), $this->participant->substrate));
         $this->assertNotSame($governing, $evidence->directionFor($position));
-        $this->assertNotSame($governing, $evidence->populationDirection($seed, RegisterPosition::Second));
+        $this->assertNotSame($governing, $evidence->populationDirection($seed, $register));
     }
 
     public function test_commit_polarity_backfill_uses_historical_source_direction_and_does_not_relabel_inherited_evidence(): void
@@ -170,7 +169,7 @@ class AttestationPolarityTest extends TestCase
         // Refute reinforced first establishes positive in a negative frame; the
         // later Support Receipt balances its weight without erasing that history.
         $this->assertSame(Direction::Positive, $evidence->directionFor($position));
-        $this->assertSame(Direction::Positive, $evidence->populationDirection($seed, RegisterPosition::Second));
+        $this->assertSame(Direction::Positive, $evidence->populationDirection($seed, 'stance'));
     }
 
     public function test_upgrade_reconstructs_polarity_and_keeps_immutable_measurement_snapshots(): void
@@ -218,6 +217,9 @@ class AttestationPolarityTest extends TestCase
     {
         $participant ??= $this->participant;
         $cycle = new Cycle;
+        if ($kind === PhaseKind::Bias) {
+            $cycle->context_horizon_id = $this->horizonForRegisterFixture($participant, $register)->id;
+        }
         $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => (int) $participant->cycles()->max('sequence') + 1])->save();
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => $kind, 'write_register' => $register,

@@ -32,32 +32,11 @@ final class PhaseProgressionService
             'cycle_id' => $phase->cycle_id,
             'gate_proposition_id' => $gate->getKey(),
             'kind' => $kind,
-            'write_register' => $this->registerFor($kind, $gate),
+            'write_register' => $phase->cycle->contextHorizon->domain->registerFor($kind),
             'started_at' => now(),
         ]);
         $next->save();
 
         return $next;
-    }
-
-    private function registerFor(
-        PhaseKind $kind,
-        Proposition $gate,
-    ): string {
-        $emergence = in_array(
-            $gate->register,
-            ['activity', 'frontier', 'canon'],
-            true,
-        );
-
-        return match ($kind) {
-            PhaseKind::Distinguish,
-            PhaseKind::Disperse => $emergence ? 'activity' : 'signal',
-            PhaseKind::Persist,
-            PhaseKind::Mediate => $emergence ? 'frontier' : 'stance',
-            PhaseKind::Constrain,
-            PhaseKind::Bias,
-            PhaseKind::Order => $emergence ? 'canon' : 'concord',
-        };
     }
 }

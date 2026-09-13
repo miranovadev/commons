@@ -11,7 +11,7 @@ class ContextHorizonsRebuild extends Command
     protected $signature = 'commons:horizons-rebuild
         {substrate? : Optional substrate slug}';
 
-    protected $description = 'Rebuild Context Horizons from the substrate ledger.';
+    protected $description = 'Rebuild Horizon memberships from Cycle ownership, preserving causal Horizon identities.';
 
     public function handle(ContextHorizonProjector $projector): int
     {

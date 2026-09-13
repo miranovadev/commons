@@ -273,10 +273,7 @@ class BiasGateTest extends TestCase
         $this->attest($this->gate, 'support');
         $wrongHorizon = $this->sibling('Wrong Horizon');
         $this->attest($wrongHorizon, 'refute');
-        $horizon = $wrongHorizon->contextHorizonMembership->horizon->replicate();
-        $horizon->sequence = 2;
-        $horizon->closed_at = now();
-        $horizon->save();
+        $horizon = $this->laterHorizonFixture($this->phase->cycle->contextHorizon);
         $wrongHorizon->contextHorizonMembership->forceFill(['context_horizon_id' => $horizon->id])->save();
         $foreign = $this->sibling('Foreign');
         $this->attest($foreign, 'refute');
@@ -354,6 +351,9 @@ class BiasGateTest extends TestCase
     private function newPhase(Participant $participant, PhaseKind $kind, string $register, bool $completed = false): Phase
     {
         $cycle = new Cycle;
+        if ($kind === PhaseKind::Bias) {
+            $cycle->context_horizon_id = $this->horizonForRegisterFixture($participant, $register)->id;
+        }
         $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => (int) $participant->cycles()->max('sequence') + 1, 'completed_at' => $completed ? now() : null])->save();
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => $kind, 'write_register' => $register, 'started_at' => now(), 'completed_at' => $completed ? now() : null])->save();

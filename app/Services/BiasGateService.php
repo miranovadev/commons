@@ -18,7 +18,7 @@ final readonly class BiasGateService
         private AttestationEvidenceService $evidence,
     ) {}
 
-    /** Active register-equivalent candidates in one Commit Region, counted once. */
+    /** Active candidates in the Cycle's exact Gate register, counted once. */
     public function populationFor(Phase $phase, ?ParticipationContext $context = null): Collection
     {
         return $phase->kind === PhaseKind::Bias ? $this->regions->forPhase($phase, context: $context) : collect();
@@ -38,7 +38,8 @@ final readonly class BiasGateService
         if ($seed === null) {
             return collect();
         }
-        $direction = $this->evidence->populationDirection($seed, RegisterPosition::Second, $context);
+        $direction = $this->evidence->populationDirection($seed,
+            $phase->cycle->contextHorizon->domain->registerAt(RegisterPosition::Second), $context);
 
         return $population->filter(fn (Proposition $candidate): bool => $this->chirality->directionFor($candidate, $context) === $direction)->values();
     }

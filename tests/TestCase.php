@@ -4,12 +4,16 @@ namespace Tests;
 
 use App\Domain\Evidence\VerifiedHyperlink;
 use App\Enums\PhaseKind;
+use App\Enums\RegisterPosition;
 use App\Models\Attestation;
+use App\Models\CommitmentSnapshot;
+use App\Models\ContextHorizon;
 use App\Models\Cycle;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Receipt;
+use App\Services\ContextHorizonProjector;
 use App\Services\Evidence\HyperlinkIdentity;
 use App\Services\Evidence\HyperlinkVerifier;
 use App\Services\Evidence\PublicResourceAddress;
@@ -56,6 +60,45 @@ abstract class TestCase extends BaseTestCase
 
         return $instruments->complete($execution, $subject ?? $node,
             verification: app(HyperlinkVerifier::class)->verify($reference));
+    }
+
+    /** A structurally valid later region for tests that isolate option scope from projection labels. */
+    protected function laterHorizonFixture(ContextHorizon $horizon, int $steps = 2): ContextHorizon
+    {
+        // By default, two causal boundaries return to the original vocabulary.
+        foreach (range(1, $steps) as $step) {
+            $participant = new Participant;
+            $participant->forceFill(['substrate_id' => $horizon->substrate_id, 'callsign' => 'boundary-'.str()->ulid()])->save();
+            $cycle = new Cycle;
+            $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => 1,
+                'context_horizon_id' => $horizon->id, 'completed_at' => now()])->save();
+            $phase = new Phase;
+            $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Order,
+                'write_register' => $horizon->domain->registerFor(PhaseKind::Order), 'completed_at' => now()])->save();
+            $node = new Proposition;
+            $node->forceFill(['phase_id' => $phase->id, 'register' => $phase->write_register,
+                'tier' => 'committal', 'statement' => 'Boundary fixture'])->save();
+            $entry = app(LedgerService::class)->record($node);
+            $snapshot = new CommitmentSnapshot;
+            $snapshot->forceFill(['proposition_id' => $node->id, 'substrate_id' => $horizon->substrate_id,
+                'ledger_entry_id' => $entry->id, 'correspondence' => 0, 'chirality' => 0, 'closure' => 0,
+                'prominence' => .5, 'turbulence' => .5, 'tension' => 0,
+                'direction_before' => $horizon->domain, 'direction_after' => $horizon->domain->opposite(),
+                'calculator_version' => 'scope-fixture', 'evaluated_at' => now()])->save();
+            $horizon = app(ContextHorizonProjector::class)->apply($snapshot);
+        }
+
+        return $horizon;
+    }
+
+    /** Operational fixtures must own a Horizon matching their register vocabulary. */
+    protected function horizonForRegisterFixture(Participant $participant, string $register): ContextHorizon
+    {
+        $horizon = app(ContextHorizonProjector::class)->currentFor($participant->substrate);
+        $position = RegisterPosition::forRegister($register);
+
+        return $horizon->domain->registerAt($position) === $register
+            ? $horizon : $this->laterHorizonFixture($horizon, 1);
     }
 
     protected function groundFixture(Proposition $node): void
