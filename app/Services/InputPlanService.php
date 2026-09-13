@@ -8,6 +8,7 @@ use App\Models\ContextHorizon;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
+use App\Models\Substrate;
 use App\Services\Participation\ParticipationContext;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -46,15 +47,18 @@ final readonly class InputPlanService
             return $this->build($participant, $phase, new ParticipationContext($phase), $workspace);
         };
         // Contribution transactions own their locks/isolation and get a fresh
-        // context after each write. Standalone reads use one coherent MVCC view.
+        // context after each write. Plans may repair projections, so standalone
+        // plans must own the root before reading calculation state as well.
         if (DB::transactionLevel() > 0) {
             return $calculate();
         }
 
-        return DB::transaction(function () use ($calculate): array {
+        return DB::transaction(function () use ($calculate, $participant): array {
             if (DB::getDriverName() === 'pgsql') {
-                DB::statement('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+                DB::statement('SET TRANSACTION ISOLATION LEVEL READ COMMITTED');
             }
+
+            Substrate::query()->lockForUpdate()->findOrFail($participant->substrate_id);
 
             return $calculate();
         }, attempts: 3);

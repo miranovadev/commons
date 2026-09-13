@@ -18,6 +18,9 @@ final class PropositionStateService
     /** Attach aggregate effective counts without replacing the viewer's own Attestation relation. */
     public function loadAttestationCounts(Collection $propositions, ?ParticipationContext $context = null): void
     {
+        if ($context === null) {
+            $this->loadCommitSources($propositions);
+        }
         $sources = $propositions->unique('id')->mapWithKeys(fn (Proposition $item) => [
             $item->id => $item->tier === 'committal' ? $this->sourceIds($item, $context) : collect([$item->id]),
         ]);
@@ -62,13 +65,33 @@ final class PropositionStateService
                 // Generic structural parents must never supply contribution history.
                 $parents = ! $proposition->exists
                     ? $proposition->commitSources
-                    : $proposition->commitSources()->get();
+                    : ($proposition->relationLoaded('commitSources') ? $proposition->commitSources : $proposition->commitSources()->get());
                 $next = $next->concat($parents->filter(fn (Proposition $parent) => $parent->phase->cycle->participant->substrate_id === $substrateId));
             }
             $frontier = $next;
         }
 
         return $seen->unique()->values();
+    }
+
+    /** Batch history traversal by depth, rather than issuing queries per graph node. */
+    private function loadCommitSources(Collection $propositions): void
+    {
+        $frontier = $propositions;
+        $seen = [];
+        while ($frontier->isNotEmpty()) {
+            $commits = $frontier->filter(fn (Proposition $node) => $node->exists
+                && $node->tier === 'committal' && ! isset($seen[$node->id]));
+            if ($commits->isEmpty()) {
+                break;
+            }
+            (new \Illuminate\Database\Eloquent\Collection($commits->all()))
+                ->loadMissing('commitSources.phase.cycle.participant');
+            foreach ($commits as $node) {
+                $seen[$node->id] = true;
+            }
+            $frontier = $commits->flatMap(fn (Proposition $node) => $node->commitSources);
+        }
     }
 
     /** Each persisted Phase is one observation, including the currently open Phase. */
