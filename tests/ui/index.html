@@ -2,9 +2,10 @@
 <style>body{margin:0;background:#eceef3;font:14px system-ui}header{padding:8px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;position:sticky;top:0;background:#fff;z-index:2}label{display:flex;gap:4px}iframe{display:block;border:0;margin:12px;box-shadow:0 2px 12px #0002}</style></head><body>
 <header><label>Viewport<select id="viewport"><option value="1920,1080">Large desktop</option><option value="1366,768" selected>Laptop</option><option value="1024,768">Tablet</option><option value="390,844">Mobile</option><option value="320,568">Small phone</option></select></label>
 <label>Theme<select id="theme"><option>dark</option><option>light</option></select></label>
+<label>Domain<select id="domain"><option>settlement</option><option>emergence</option></select></label>
 <label>Phase<select id="phase"><option>order</option><option>persist</option><option>mediate</option><option>bias</option><option>disperse</option><option>distinguish</option><option>constrain</option></select></label>
 <label>Support<select id="support"><option>positive</option><option>negative</option></select></label>
 <label>Cards<select id="cards"><option>12</option><option>1</option><option>0</option></select></label>
 <label>Order status<select id="status"><option>mixed</option><option>active</option><option>inactive</option></select></label></header>
 <iframe title="Workspace preview" id="preview"></iframe>
-<script>const controls=['viewport','theme','phase','support','cards','status'].map(id=>document.getElementById(id));function update(){const [w,h]=controls[0].value.split(',');preview.width=w;preview.height=h;preview.src='/frame?'+new URLSearchParams(Object.fromEntries(controls.slice(1).map(el=>[el.id,el.value])))}controls.forEach(el=>el.onchange=update);update();</script></body></html>
+<script>const controls=['viewport','theme','domain','phase','support','cards','status'].map(id=>document.getElementById(id));function update(){const [w,h]=controls[0].value.split(',');preview.width=w;preview.height=h;preview.src='/frame?'+new URLSearchParams(Object.fromEntries(controls.slice(1).map(el=>[el.id,el.value])))}controls.forEach(el=>el.onchange=update);update();</script></body></html>

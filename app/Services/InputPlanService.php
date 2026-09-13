@@ -213,13 +213,23 @@ final readonly class InputPlanService
         $this->measurements->repairMissing(collect([$provenance]), $context);
         $this->state->loadAttestationCounts($propositions->concat([$provenance]), $context);
 
+        // A causal boundary is context, not an invented ancestor of this Gate.
+        $opening = $horizon->opened_by_proposition_id === null ? null
+            : ($context !== null ? $context->propositions->get($horizon->opened_by_proposition_id)
+                : Proposition::findOrFail($horizon->opened_by_proposition_id));
+        if ($opening !== null) {
+            $this->loadPropositionState($participant, $context, $opening);
+        }
+
         return [
             'domain' => $domain->value,
             'horizon' => $horizon === null ? null : [
                 'id' => $horizon->getKey(),
                 'sequence' => $horizon->sequence,
+                'domain' => $domain->value,
                 'parent_context_horizon_id' => $horizon->parent_context_horizon_id,
                 'opened_by_proposition_id' => $horizon->opened_by_proposition_id,
+                'opening_proposition' => $opening === null ? null : $this->proposition($opening, $participant, $context),
                 'opened_at' => $horizon->opened_at,
             ],
             'provenance' => $this->proposition($provenance, $participant, $context),

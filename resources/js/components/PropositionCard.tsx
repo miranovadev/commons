@@ -53,6 +53,8 @@ export function PropositionCard({
       padding={mini ? 'xs' : compact ? 'sm' : 'lg'}
       className={classes}
       data-flow={flow || undefined}
+      data-register={proposition.register}
+      data-proposition-id={proposition.id}
       style={{ '--register-color': `var(--mantine-color-${register.color}-6)` }}
       onClick={onClick}
     >

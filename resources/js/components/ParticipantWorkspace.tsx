@@ -1,9 +1,11 @@
 import { Box, Button, Group, Stack, Text, ThemeIcon } from '@mantine/core';
-import { IconArrowDown, IconArrowLeft, IconArrowRight, IconEye, IconPencil, IconRoute, IconSeedling, IconTool } from '@tabler/icons-react';
+import { IconArrowDown, IconArrowLeft, IconArrowRight, IconEye, IconPencil, IconRoute, IconTool } from '@tabler/icons-react';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { domainForRegister, metaForRegister } from '../registers';
-import { actionPropositions, actionTargetIds, attestationDirections, writePropositions } from '../participationOptions';
+import { metaForRegister } from '../registers';
+import { actionTargetIds, attestationDirections } from '../participationOptions';
 import { phaseRegisterPreview } from '../phasePreview';
+import { workspaceDomain, workspaceLanes, workspaceProvenance } from '../workspaceLanes';
+import { HorizonContext } from './HorizonContext';
 import { directionSlots } from '../directionalPresentation';
 import { DirectionalWhirl } from './DirectionalWhirl';
 import { OperationIcon } from './OperationIcon';
@@ -11,46 +13,30 @@ import { PropositionNavigator } from './PropositionNavigator';
 import { LineagePanel } from './LineagePanel';
 import { PropositionCard } from './PropositionCard';
 import { PropositionInspector } from './PropositionInspector';
-import type { ActionName, ContributionInitialValues, ContributionInput, DomainName, Identifier, Observables, ParticipantPlan, PhaseKind, Proposition, PropositionSelection, RegisterName } from '../types';
+import type { ActionName, ContributionInitialValues, ContributionInput, Observables, ParticipantPlan, PhaseKind, Proposition, PropositionSelection } from '../types';
 
-type LaneRole = 'read' | 'gate' | 'write';
 type ActionHandler = (action: ActionName, initialValues?: ContributionInitialValues) => void;
 type InspectHandler = (selection: PropositionSelection) => void;
-interface Lane { key: string; role: LaneRole; register?: RegisterName; virtual?: boolean; meta?: typeof provenanceMeta; featured?: Proposition; }
 const roleMeta = {
   read: { label: 'Read', description: 'Where we came from', icon: IconEye },
   gate: { label: 'Gate', description: 'What we can do here', icon: IconRoute },
   write: { label: 'Write', description: 'Where we can go', icon: IconPencil },
 };
-const provenanceMeta = { label: 'Provenance', description: 'The inherited proposition from which this cycle begins.', color: 'indigo', icon: IconSeedling };
 
 export function ParticipantWorkspace({ plan, availableActions, onAction, onSubmit, busy = false, error, status, completion, previewKind }: {
   plan: ParticipantPlan; availableActions: ActionName[]; onAction: ActionHandler;
   onSubmit?: (input: ContributionInput) => Promise<boolean>; busy?: boolean; error?: unknown; status?: ReactNode; completion?: ReactNode; previewKind?: PhaseKind;
 }) {
-  const propositions = useMemo<Proposition[]>(() => [
-    plan.gate, plan.workspace?.provenance, ...(plan.lineage || []), ...(plan.read_options || []),
-    ...Object.values(plan.workspace?.registers || {}).flatMap(items => items || []), ...(plan.write_options || []),
-    ...(plan.traversal_options || []), ...(plan.instrument_options || []), ...(plan.revision_options || []),
-    ...(plan.gate_options || []), ...(plan.attestation_options || []),
-  ].filter((item): item is Proposition => Boolean(item)), [plan]);
-  const byId = useMemo(() => new Map<Identifier, Proposition>(propositions.map(item => [item.id, item])), [propositions]);
-  const gate = resolve(plan.gate, byId);
-  const provenance = resolve(plan.workspace?.provenance || plan.lineage?.find(item => item.tier === 'committal') || gate, byId);
-  const domainName = plan.workspace?.domain || domainForRegister(plan.phase.write_register);
+  const gate = plan.gate;
+  const provenance = workspaceProvenance(plan);
+  const domainName = workspaceDomain(plan);
   const preview = previewKind ? phaseRegisterPreview(plan, previewKind) : null;
   const phaseNumber = preview?.number || plan.phase.number || phaseNumberFor(plan.phase.kind);
   const [inspection, setInspection] = useState<PropositionSelection | null>(null);
   useEffect(() => setInspection(null), [plan.phase.id, previewKind]);
   const lineage = plan.lineage || [];
-  const lanes: Lane[] = preview ? (['read', 'gate', 'write'] as const).map(role => {
-    const virtual = (preview.number === 1 && role !== 'write') || (preview.number === 2 && role === 'read');
-    return { key: role, role, virtual, ...(virtual ? { meta: provenanceMeta } : { register: preview[role].register }) };
-  }) : buildLanes({ phaseNumber, domainName, writeRegister: plan.phase.write_register, gate, provenance });
-  const writeOptions = writePropositions(plan);
+  const lanes = workspaceLanes(plan, previewKind);
   const targets = useMemo(() => new Map(availableActions.map(action => [action, actionTargetIds(plan, action)])), [plan, availableActions]);
-  const candidates = plan.phase.kind === 'bias' ? actionPropositions(plan, 'proposition.bias')
-    : plan.phase.kind === 'mediate' ? actionPropositions(plan, 'proposition.reconcile') : [];
   const allowed = (action: ActionName) => !preview && availableActions.includes(action) && Boolean(plan.schema?.$defs?.actions?.[action]);
   function card(proposition: Proposition, kind: string) {
     return <PropositionCard key={proposition.id} proposition={proposition} committalObservables={provenance.observables}
@@ -59,33 +45,33 @@ export function ParticipantWorkspace({ plan, availableActions, onAction, onSubmi
   return <Box className="operational-workspace" data-domain={domainName} data-phase={phaseNumber} data-preview={Boolean(preview)}>
     <Box className="operational-workspace__body">
       <Box component="fieldset" disabled={busy} className="operational-board" aria-busy={busy}>
+        {!preview && <HorizonContext horizon={plan.workspace?.horizon} domain={domainName} provenance={provenance} onInspect={setInspection} />}
         <LineagePanel lineage={lineage} committalObservables={provenance.observables} onInspect={setInspection} />
         <Box className="operational-regions">
-          {lanes.map(lane => {
-            const meta = lane.meta || metaForRegister(lane.register);
+          {lanes.map((lane, index) => {
+            const meta = metaForRegister(lane.register);
             const role = roleMeta[lane.role]; const RoleIcon = role.icon; const RegisterIcon = meta.icon;
-            const registerItems = lane.register ? plan.workspace?.registers?.[lane.register] || [] : [];
-            const singleRead = lane.featured || registerItems.find(item => item.id !== gate.id) || lineage.find(item => item.register === lane.register) || lineage[0];
-            const reads = plan.phase.kind === 'mediate' ? plan.read_options || [] : singleRead ? [singleRead] : [];
-            const gateCards = plan.phase.kind === 'bias' ? candidates : [lane.featured || gate, ...candidates];
+            const reads = lane.cards;
+            const gateCards = lane.cards;
+            const writeOptions = lane.cards;
             return <Box component="section" className="operational-row" data-role={lane.role} data-lane={lane.key} key={`${phaseNumber}-${lane.key}`}
               aria-label={role.label} style={{ '--register-color': `light-dark(var(--mantine-color-${meta.color}-7), var(--mantine-color-${meta.color}-4))`,
                 '--register-bg-light': `var(--mantine-color-${meta.color}-0)`, '--register-bg-dark': `var(--mantine-color-${meta.color}-light)` }}>
               <Group className="operational-row__role" gap={7} wrap="nowrap">
                 <RoleIcon size={17} /><Box><Text fw={600} size="xs">{role.label}</Text><Text size="10px" c="dimmed">{role.description}</Text></Box>
               </Group>
-              <Box className="register-row" data-virtual={lane.virtual || undefined}>
+              <Box className="register-row" data-register={lane.register}>
                 <Group className="register-row__header" gap="xs" wrap="nowrap">
                   <ThemeIcon color={meta.color} variant="light" size="sm"><RegisterIcon size={15} /></ThemeIcon>
                   <Text className="register-row__title" size="xs" fw={700}>{meta.label}</Text>
                   <Text size="xs" c="dimmed" visibleFrom="sm" truncate>{meta.description}</Text>
                 </Group>
-                {lane.role === 'write' && !preview && status && <Stack gap="xs" className="write-row__tools">{status}</Stack>}
+                {lane.role === 'write' && lanes.findIndex(item => item.role === 'write') === index && !preview && status && <Stack gap="xs" className="write-row__tools">{status}</Stack>}
                 <Box className="register-row__content">
-                  {preview ? ((lane.virtual ? preview.provenance : preview[lane.role].cards).length ? <PropositionNavigator label={`${role.label} register preview`} resetKey={`${plan.phase.id}-${preview.kind}`}>
-                    {(lane.virtual ? preview.provenance : preview[lane.role].cards).map(item => card(item, 'register preview'))}
+                  {preview ? (lane.cards.length ? <PropositionNavigator label={`${role.label} register preview`} resetKey={`${plan.phase.id}-${preview.kind}`}>
+                    {lane.cards.map(item => card(item, 'register preview'))}
                   </PropositionNavigator> : <EmptyState text="No cards from this register are loaded." />) : <>
-                  {lane.role === 'read' && (reads.length ? <PropositionNavigator label="Read Propositions" resetKey={plan.phase.id}>{reads.map(item => card(resolve(item, byId), 'read'))}</PropositionNavigator>
+                  {lane.role === 'read' && (reads.length ? <PropositionNavigator label="Read Propositions" resetKey={plan.phase.id}>{reads.map(item => card(item, 'read'))}</PropositionNavigator>
                     : <EmptyState text="No readable Proposition is available here." />)}
                   {lane.role === 'gate' && (gateCards.length ? <PropositionNavigator label="Gate Propositions" resetKey={plan.phase.id}>
                     {gateCards.map(item => <Box key={item.id} className="write-option-card" data-reconcile-candidate={plan.phase.kind === 'mediate' && item.id !== gate.id ? item.id : undefined}
@@ -125,7 +111,7 @@ export function ParticipantWorkspace({ plan, availableActions, onAction, onSubmi
                   </>}
                 </Box>
               </Box>
-              {lane.role === 'write' && completion}
+              {lane.role === 'write' && index === lanes.length - 1 && completion}
               {lane.role !== 'write' && <IconArrowDown className="region-transition" size={24} stroke={2.2} aria-hidden="true" />}
             </Box>;
           })}
@@ -174,39 +160,4 @@ function WriteOptionCard({ proposition, directions, canAttest, canRevise, canIns
 }
 function EmptyState({ text }: { text: string }) { return <Box className="lane-empty"><Text size="xs" c="dimmed">{text}</Text></Box>; }
 
-function buildLanes({ phaseNumber, domainName, writeRegister, gate, provenance }: {
-  phaseNumber: number;
-  domainName: DomainName;
-  writeRegister: RegisterName;
-  gate: Proposition;
-  provenance: Proposition;
-}): Lane[] {
-  if (phaseNumber === 1) return [
-    { key: 'provenance-read', role: 'read', virtual: true, meta: provenanceMeta, featured: provenance },
-    { key: 'provenance-gate', role: 'gate', virtual: true, meta: provenanceMeta, featured: gate },
-    { key: writeRegister, role: 'write', register: writeRegister },
-  ];
-  if (phaseNumber === 2) return [
-    { key: 'provenance', role: 'read', virtual: true, meta: provenanceMeta, featured: provenance },
-    { key: `gate-${gate.register}`, role: 'gate', register: gate.register, featured: gate },
-    { key: writeRegister, role: 'write', register: writeRegister },
-  ];
-  const assignments = operationalAssignment(domainName, writeRegister, gate.register);
-  return [
-    { key: assignments.read, role: 'read', register: assignments.read },
-    { key: assignments.gate, role: 'gate', register: assignments.gate, featured: gate },
-    { key: assignments.write, role: 'write', register: assignments.write },
-  ];
-}
-
-function operationalAssignment(domainName: DomainName, writeRegister: RegisterName, gateRegister: RegisterName) {
-  const registers: RegisterName[] = domainName === 'settlement' ? ['signal', 'stance', 'concord'] : ['activity', 'frontier', 'canon'];
-  const writeIndex = registers.indexOf(writeRegister);
-  if (writeIndex >= 0) return { read: registers[(writeIndex + 1) % 3], gate: registers[(writeIndex + 2) % 3], write: registers[writeIndex] };
-  const gateIndex = registers.indexOf(gateRegister);
-  if (gateIndex >= 0) return { read: registers[(gateIndex + 2) % 3], gate: registers[gateIndex], write: registers[(gateIndex + 1) % 3] };
-  return { read: registers[0], gate: registers[1], write: registers[2] };
-}
-
 function phaseNumberFor(kind: PhaseKind) { return { distinguish: 1, persist: 2, constrain: 3, disperse: 4, mediate: 5, bias: 6, order: 7 }[kind]; }
-function resolve(proposition: Proposition, byId: Map<Identifier, Proposition>): Proposition { return byId.get(proposition.id) || proposition; }
