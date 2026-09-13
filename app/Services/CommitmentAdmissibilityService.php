@@ -4,8 +4,8 @@ namespace App\Services;
 
 use App\Models\Phase;
 use App\Models\Proposition;
-use App\Services\Participation\ParticipationContext;
 use App\Services\Observables\ReinforcementService;
+use App\Services\Participation\ParticipationContext;
 
 final readonly class CommitmentAdmissibilityService
 {
@@ -13,6 +13,7 @@ final readonly class CommitmentAdmissibilityService
         private ClosureGateService $closure,
         private PropositionStateService $state,
         private ReinforcementService $reinforcement,
+        private PhaseGenerationService $generation,
     ) {}
 
     /** @return array<string, mixed> */
@@ -20,14 +21,16 @@ final readonly class CommitmentAdmissibilityService
     {
         $grounding = $this->grounding($gate, $context);
         $closure = $this->closure->preview($gate, $phase, $context);
+        $opportunity = $this->generation->available($phase, 'proposition.commit', $context, $gate);
 
         return [
             ...$grounding,
-            'admissible' => $grounding['admissible'] && $closure['admissible'],
-            'requirements' => [...$grounding['requirements'], 'closure' => $closure['admissible']],
+            'admissible' => $grounding['admissible'] && $closure['admissible'] && $opportunity,
+            'requirements' => [...$grounding['requirements'], 'closure' => $closure['admissible'], 'write_opportunity' => $opportunity],
             'closure_enforced' => true,
             'closure' => $closure,
-            'reasons' => [...$grounding['reasons'], ...($closure['admissible'] ? [] : ['depth_cadence_directions_diverge'])],
+            'reasons' => [...$grounding['reasons'], ...($closure['admissible'] ? [] : ['depth_cadence_directions_diverge']),
+                ...($opportunity ? [] : ['already_authored_commit_in_row'])],
         ];
     }
 

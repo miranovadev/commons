@@ -91,10 +91,12 @@ the current Proposition and adds admissible reconciliation counterparts. Bias
 Gate shows only the field-admissible unary choices, including the current
 Proposition when eligible;
 Lineage is available on demand; and Write separates existing actionable
-Propositions from moves that create a new Proposition from the Gate. In phases 1–6,
-an existing Write card is an immediate valid Expressive descendant of the current
-Gate in the phase's Write register. Order uses Closure-filtered Commit Region
-candidates instead. `write_options` is authoritative; `workspace.registers` remains
+Propositions from moves that create a new Proposition from the Gate. In phases 1–5,
+an existing Write card is a valid Expressive descendant of the current Gate in the
+phase's Write register, including same-register revisions. Bias also discovers
+existing Writes across its Commit Region. Order uses Closure-filtered expressive
+candidates and existing committed results in that row. Instruments may ground
+existing Written sources before Closure aligns. `write_options` is authoritative; `workspace.registers` remains
 broader inspection context and must never be merged into selectable Write cards.
 Revise remains limited to owned, revisable descendants. Commit cards and the
 Commit form select an explicit authorized `proposition_id`.
@@ -107,7 +109,7 @@ movement toward Prominence and darker indigo for movement toward Turbulence.
 
 The plan also includes the viewing Participant's effective `attestation` on
 each Proposition. A later eligible Write may change that direction while the
-Proposition remains an immediate valid Write descendant. The replacement links to the
+Proposition remains a valid Write descendant. The replacement links to the
 prior Attestation for auditability, derived measurements use only the effective
 leaf, and at most one Attestation can be recorded for a Proposition in a given
 Phase.
@@ -163,6 +165,51 @@ The same Commit-only history rule applies in preview and execution. Inheritance
 stops at every non-Commit transition: committing a revision or reconciliation
 preserves only the history earned by that new Proposition, not its predecessors'
 history. See [observables](observables.md#commit-participation-inheritance).
+
+## Write once, then support
+
+Generative opportunities persist across Cycles. They are structural, not lifetime,
+substrate-wide or Context Horizon quotas:
+
+| Phase | Generation identity |
+| --- | --- |
+| Distinguish | Participant + Gate + phase kind + Write register |
+| Persist | Same identity; Variant and Reclassify share the opportunity |
+| Constrain | Same identity; Reclassify additionally requires a completed Receipt |
+| Disperse | Same identity; one Variant, with owned active Writes eligible for Revise |
+| Mediate | Directed pair of dominant Gate and counterpart, unique across Participants |
+| Bias | Participant + Commit Region + phase kind + Write register |
+| Order | Participant + Commit Region + committal Write row/register |
+
+The recorded generating Phase and Supersession history enforce these identities.
+Revising a Written result never restores the generation opportunity. Existing
+legacy duplicates remain historical nodes; their existence exhausts the same
+opportunity without destructive backfills. A new early-phase Gate or a new
+Committal seed creates a new opportunity. Other Participants retain their own
+opportunities, subject to the existing ownership, direction, evidence and Closure
+rules. Mediate's inverse is distinct: `A reconciles B` and `B reconciles A` retain
+different dominant statements. Only the repeated directed relationship is blocked;
+there is no global already-superseded restriction.
+
+Support actions target actual Writes: Attest, phase-admissible Traverse,
+Instrument and owned active-head Revise. Visibility in Gate or workspace history
+does not grant support eligibility. Same-register revision chains remain reachable
+from the original Write row. Order retains the Bias Write register and also exposes
+Committals already authored in this row for Attestation and Instruments.
+
+Constrain requires Receipt existence, independently of Reinforcement. Order keeps
+its counted-Reinforcement, effective-Attestation and Depth/Cadence prerequisites.
+No Receipt loading or Reinforcement lifecycle changes are made by this rule.
+With the current action set, a fresh Constrain Gate without a Receipt or an
+existing Written continuation has no admissible move except Rest. Persist does
+not expose an Instrument to produce that initial Receipt; this change does not
+add a new early evidence-production action.
+
+Both the schema and direct contribution dispatcher enforce eligibility. Dispatch
+rechecks under the existing substrate lock before any Proposition, Supersession,
+or evidence write, including directed reconciliation checks. Concurrent stale
+packets cannot create a duplicate opportunity. The same checks apply to existing
+history immediately; no migration is required.
 
 ## Traverse, Tragedy and Rest
 
@@ -228,7 +275,8 @@ the schema and UI. Human controls and autonomous inference receive the same resu
 Rest is never a participant preference or a competing action. An available
 Variant, Reclassify, Revise, Attestation, phase-admissible Traverse, Reconcile, Instrument or Commit
 prevents Tragedy. In particular, Distinguish, Persist and Disperse cannot be
-Tragic while their unconditional Variant action remains admissible. An empty
+Tragic while their first Variant opportunity remains admissible. After generation,
+existing Write support determines whether the region is Tragic. An empty
 traversal set alone says nothing about complete action exhaustion.
 
 The plan reports `traversal_options` and `instrument_options` separately from
@@ -335,9 +383,10 @@ Canon/Concord = Third (B). Late phases share this structural service:
 | Order | Third / Write | Prospective Depth and Cadence directions align |
 
 Active candidates exclude outgoing hard supersessions; soft Variant branches
-remain active. Display/read and generic option limits never truncate the pool.
-Phases 1–4 retain their path-local behavior. Mediate and Bias retain their
-existing immediate Write actions; the phase-specific widening occurs at Read,
+remain active. In Order, an existing Commit edge also leaves its expressive source
+eligible for another Participant, subject to evidence and Closure. Display/read and generic option limits never truncate the pool.
+Phases 1–4 retain their path-local behavior. Mediate retains its path-local Write actions; Bias also exposes
+existing Writes across the region; the phase-specific widening occurs at Read,
 Gate, and Write respectively.
 
 ## Bias Chirality Gate

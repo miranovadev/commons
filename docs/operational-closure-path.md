@@ -11,7 +11,7 @@ directly created fixtures.
 
 | Participant | Normal contributions | Result |
 | --- | --- | --- |
-| Author | Enter with Origin; Variant Signal; Variant Stance; Reclassify Concord; Disperse with Variant | First Signal branch under the Concord Read |
+| Author | Enter with Origin; Variant Signal; Variant Stance with an existing Cite Receipt fixture; Reclassify Concord; Disperse with Variant | First Signal branch under the Concord Read |
 | Builder | Enter; attest the existing Signal, Stance and Concord; Disperse with Variant | Second Signal branch under the same Read |
 | Grounder | Enter; attest the same early structure; execute an Instrument on the first Signal during Disperse | Source evidence, and another participant at Mediate |
 | Builder | Mediate reads the actual Disperse Gate, then reconciles the two Signal children | One fresh Stance, two hard edges |
@@ -84,3 +84,8 @@ membership, active Horizon sequence and opening/closing records when a Boundary
 occurs. Aligned Closure permits Commitment; the existing Tension projection
 separately determines whether that Commitment changes Domain. A successful Commit
 does not itself guarantee a new Context Horizon.
+
+Constrain now requires a Receipt before Reclassify. The initial Stance in these
+Closure scenarios is supplied a non-reinforcing Cite Receipt as evidence setup.
+The later real participation/Closure assertions continue to exercise their original
+path; Receipt setup is not itself a Participant action in Persist.

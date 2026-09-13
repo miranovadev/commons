@@ -130,8 +130,11 @@ final readonly class ParticipationService
             'plan' => $workspace ? $plan : $this->contextSerializer->plan($plan),
             'perspective' => $this->perspective($participant),
             'reason' => $blocked ? [
-                'code' => 'commitment_preconditions_unsatisfied',
-                'message' => 'Commitment requires grounding and aligned Depth/Cadence directions. Use an action available in the current Phase.',
+                'code' => in_array('already_authored_commit_in_row', $plan['commitment']['reasons'], true)
+                    ? 'commit_already_authored' : 'commitment_preconditions_unsatisfied',
+                'message' => in_array('already_authored_commit_in_row', $plan['commitment']['reasons'], true)
+                    ? 'You have already authored a Commit in this row. Support an existing Write.'
+                    : 'Commitment requires grounding and aligned Depth/Cadence directions. Use an action available in the current Phase.',
             ] : ($plan['tragedy'] ? [
                 'code' => 'tragic_region',
                 'message' => 'No admissible non-Rest action remains in the current Phase. Rest is the only available action.',

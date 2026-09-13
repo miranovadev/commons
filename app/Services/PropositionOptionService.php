@@ -6,10 +6,10 @@ use App\Enums\PhaseKind;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
+use App\Models\Supersession;
 use App\Services\Participation\ParticipationContext;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 
 final class PropositionOptionService
 {
@@ -18,6 +18,8 @@ final class PropositionOptionService
         private readonly ReconciliationOptionService $reconciliation,
         private readonly BiasGateService $bias,
         private readonly ClosureOptionService $closure,
+        private readonly CommitRegionService $regions,
+        private readonly PhaseGenerationService $generation,
     ) {}
 
     /** @return Collection<int, string> */
@@ -56,25 +58,18 @@ final class PropositionOptionService
             ));
     }
 
-    /** Bias can ground existing Concord/Canon nodes even after a later Supersession. */
+    /** Instruments support Written propositions, never incidental Gate neighbours. */
     public function instrumentOptionsFor(Phase $phase, ?ParticipationContext $context = null): Collection
     {
-        if ($phase->kind !== PhaseKind::Bias) {
-            return $this->activeHeads($phase, $context)
-                ->where('register', $phase->write_register)->where('tier', 'expressive')
-                ->latest('created_at')->limit($this->limit())->get();
+        if ($phase->kind === PhaseKind::Order) {
+            // Grounding may repair evidence before Closure becomes admissible.
+            $candidates = $this->regions->forPhase($phase, context: $context);
+
+            return Proposition::query()->whereKey($candidates->pluck('id'))->whereDoesntHave('children')->orderBy('id')->get()
+                ->concat($this->generation->committedWrites($phase, $context))->unique('id')->values();
         }
 
-        return $this->localExpressive($phase, $context)->orderBy('id')->get();
-    }
-
-    private function localExpressive(Phase $phase, ?ParticipationContext $context = null): Builder
-    {
-        return Proposition::query()->whereKey($this->localIds($phase, $context))
-            ->where('register', $phase->write_register)->where('tier', 'expressive')
-            ->whereHas('phase.cycle.participant', fn ($query) => $query->where(
-                'substrate_id', $phase->cycle->participant->substrate_id,
-            ));
+        return $this->writeOptionsFor($phase, $context);
     }
 
     /**
@@ -86,9 +81,22 @@ final class PropositionOptionService
             return collect();
         }
 
-        return $phase->kind === PhaseKind::Order
-            ? $this->closure->forPhase($phase, $context)
-            : $this->writeDescendants($phase, $context)->orderBy('id')->get();
+        if ($phase->kind === PhaseKind::Order) {
+            // Order retains Bias's Write register. Existing Committals in this
+            // row remain supportable after the personal Commit opportunity ends.
+            return $this->closure->forPhase($phase, $context)
+                ->concat($this->generation->committedWrites($phase, $context))->unique('id')->values();
+        }
+        if ($phase->kind === PhaseKind::Bias) {
+            // A Bias source can be any Gate in the region; its Write must stay
+            // discoverable when the next Cycle arrives through another source.
+            $gate = $context?->propositions->get($phase->gate_proposition_id) ?? $phase->gate;
+
+            return $this->regions->membersFor($gate, $context)->where('register', $phase->write_register)
+                ->concat($this->writeDescendants($phase, $context)->orderBy('id')->get())->unique('id')->values();
+        }
+
+        return $this->writeDescendants($phase, $context)->orderBy('id')->get();
     }
 
     /** Every valid Write descendant offers the as-yet-unattested direction(s). */
@@ -112,7 +120,7 @@ final class PropositionOptionService
             return collect();
         }
 
-        return $this->activeHeads($phase, $context)
+        return Proposition::query()->whereDoesntHave('children')
             ->whereKey($this->descendantIds($phase, $context))
             ->where('register', $phase->write_register)
             ->where('tier', 'expressive')
@@ -136,37 +144,35 @@ final class PropositionOptionService
             : $this->reconciliation->forPhase($phase, $context);
     }
 
-    private function activeHeads(Phase $phase, ?ParticipationContext $context = null): Builder
-    {
-        // Context Horizon membership, participant visibility, homeostatic
-        // admissibility and predicted Tension reduction belong here once
-        // their measurements are available.
-        return Proposition::query()
-            ->whereKey($this->localIds($phase, $context))
-            ->whereHas(
-                'phase.cycle.participant',
-                fn (Builder $query) => $query->where(
-                    'substrate_id',
-                    $phase->cycle->participant->substrate_id,
-                ),
-            )
-            ->whereNotExists(
-                fn ($query) => $query
-                    ->select(DB::raw(1))
-                    ->from('supersessions')
-                    ->whereColumn(
-                        'supersessions.source_proposition_id',
-                        'propositions.id',
-                    ),
-            );
-    }
-
+    /** Follow revisions within Write without crossing into another phase's register. */
     private function descendantIds(Phase $phase, ?ParticipationContext $context): Collection
     {
-        return $context !== null
+        $ids = $context !== null
             ? $context->children->get($phase->gate_proposition_id, collect())->pluck('target_proposition_id')
                 ->reject(fn ($id) => $id === $phase->gate_proposition_id)->unique()->values()
             : $this->lineage->immediateDescendantIds($phase->gate()->firstOrFail());
+        $ids = $this->inWriteRegister($ids, $phase, $context);
+        $frontier = $ids;
+        while ($frontier->isNotEmpty()) {
+            $next = $context !== null
+                ? $frontier->flatMap(fn ($id) => $context->children->get($id, collect())->where('type', 'revise')->pluck('target_proposition_id'))
+                : Supersession::query()->whereIn('source_proposition_id', $frontier)
+                    ->where('type', 'revise')->whereHas('target', fn ($query) => $query->where('register', $phase->write_register))
+                    ->pluck('target_proposition_id');
+            $frontier = $this->inWriteRegister($next, $phase, $context)->diff($ids)->unique()->values();
+            $ids = $ids->merge($frontier)->unique()->values();
+        }
+
+        return $ids;
+    }
+
+    private function inWriteRegister(Collection $ids, Phase $phase, ?ParticipationContext $context): Collection
+    {
+        return $context !== null
+            ? $context->nodes($ids)->where('register', $phase->write_register)->where('tier', 'expressive')->pluck('id')
+            : Proposition::query()->whereKey($ids)->where('register', $phase->write_register)->where('tier', 'expressive')
+                ->whereHas('phase.cycle.participant', fn ($query) => $query->where('substrate_id', $phase->cycle->participant->substrate_id))
+                ->pluck('id');
     }
 
     private function limit(): int

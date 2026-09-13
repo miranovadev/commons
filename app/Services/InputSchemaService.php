@@ -17,6 +17,7 @@ final readonly class InputSchemaService
         private PropositionOwnershipService $ownership,
         private ClosureOptionService $closure,
         private PropositionOptionService $options,
+        private PhaseGenerationService $generation,
     ) {}
 
     /**
@@ -46,14 +47,14 @@ final readonly class InputSchemaService
 
         $actions = array_values(array_filter(
             array_diff($plan['actions'], ['participant.rest']),
-            static function (string $action) use ($plan, $ownsGate): bool {
+            function (string $action) use ($plan, $ownsGate, $occurrence, $context): bool {
                 $constraints = $plan['constraints'][$action] ?? [];
 
-                return $ownsGate || ! in_array(
+                return $this->generation->available($occurrence, $action, $context) && ($ownsGate || ! in_array(
                     'gate-owner',
                     $constraints,
                     true,
-                );
+                ));
             },
         ));
 

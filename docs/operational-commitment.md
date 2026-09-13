@@ -35,7 +35,9 @@ remaining Order actions. Order does not admit `proposition.traverse`; only
 complete exhaustion of all admissible non-Rest actions exposes `participant.rest` as the sole action. Automated participants choose through
 the same inference contract as human participants.
 
-Reclassification no longer gathers evidence implicitly. During Bias, normal
+Reclassification does not gather evidence implicitly. Constrain requires an existing
+completed Receipt on its Gate or an effective Attestation, without requiring
+counted Reinforcement. During Bias, normal
 `instrument.execute` can ground an existing Concord/Canon Proposition, including
 an eligible historical node. A Receipt stays on its exact Proposition across
 Cycles; later Attestation or Closure alignment may enable Commitment on a later
@@ -65,3 +67,9 @@ scenario. `OperationalClosurePathTest` uses real measurements and normal
 participation throughout. The narrower `OperationalCommitmentTest` continues to
 isolate action/evidence behaviour with a Closure mock; it is not the end-to-end
 Closure proof.
+
+Each Participant may author one Commit in the same structural Commit Region row
+and register. This persists across Cycles and is independent of Horizon IDs.
+Other Participants can still Commit an otherwise eligible source in that row; a
+Commit edge alone does not remove their opportunity. Existing committed results
+remain available for support. See [write-once semantics](participation.md#write-once-then-support).
