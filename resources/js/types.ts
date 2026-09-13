@@ -7,7 +7,6 @@ export type AttestationDirection = 'support' | 'refute';
 export type TriggerMode = 'manual' | 'interval' | 'scheduled';
 
 export interface Observables {
-  status?: 'missing' | 'stale' | 'current';
   correspondence?: number | string | null;
   chirality?: number | string | null;
   closure?: number | string | null;
@@ -23,7 +22,7 @@ export interface Proposition {
   participant?: Pick<Participant, 'id' | 'callsign'>;
   participant_callsign?: string;
   callsign?: string;
-  observables?: Observables;
+  observables?: Observables & { status?: 'missing' | 'stale' | 'current' };
   transition?: { type?: string; from?: RegisterName; to?: RegisterName };
   parent_ids?: Identifier[];
   children?: Proposition[];
