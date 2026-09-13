@@ -4,6 +4,7 @@ namespace Tests;
 
 use App\Domain\Evidence\VerifiedHyperlink;
 use App\Enums\PhaseKind;
+use App\Enums\RegisterPosition;
 use App\Models\Attestation;
 use App\Models\CommitmentSnapshot;
 use App\Models\ContextHorizon;
@@ -62,10 +63,10 @@ abstract class TestCase extends BaseTestCase
     }
 
     /** A structurally valid later region for tests that isolate option scope from projection labels. */
-    protected function laterHorizonFixture(ContextHorizon $horizon): ContextHorizon
+    protected function laterHorizonFixture(ContextHorizon $horizon, int $steps = 2): ContextHorizon
     {
-        // Two causal boundaries return to the original register vocabulary.
-        foreach (range(1, 2) as $step) {
+        // By default, two causal boundaries return to the original vocabulary.
+        foreach (range(1, $steps) as $step) {
             $participant = new Participant;
             $participant->forceFill(['substrate_id' => $horizon->substrate_id, 'callsign' => 'boundary-'.str()->ulid()])->save();
             $cycle = new Cycle;
@@ -88,6 +89,16 @@ abstract class TestCase extends BaseTestCase
         }
 
         return $horizon;
+    }
+
+    /** Operational fixtures must own a Horizon matching their register vocabulary. */
+    protected function horizonForRegisterFixture(Participant $participant, string $register): ContextHorizon
+    {
+        $horizon = app(ContextHorizonProjector::class)->currentFor($participant->substrate);
+        $position = RegisterPosition::forRegister($register);
+
+        return $horizon->domain->registerAt($position) === $register
+            ? $horizon : $this->laterHorizonFixture($horizon, 1);
     }
 
     protected function groundFixture(Proposition $node): void
