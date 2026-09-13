@@ -93,6 +93,30 @@ class PropositionReadTest extends TestCase
         $this->assertDatabaseCount('proposition_measurements', 0);
     }
 
+    public function test_overlapping_commit_histories_are_batched_and_counts_stop_at_expressive_nodes(): void
+    {
+        [$substrate, $origin] = $this->fixture();
+        $attestation = new \App\Models\Attestation;
+        $attestation->forceFill(['phase_id' => $origin->phase_id, 'proposition_id' => $origin->id, 'direction' => 'support'])->save();
+        $parent = $origin;
+        for ($i = 0; $i < 30; $i++) {
+            $child = $this->node($origin->phase, 'committal', false);
+            $edge = new \App\Models\Supersession;
+            $edge->forceFill(['phase_id' => $origin->phase_id, 'source_proposition_id' => $parent->id,
+                'target_proposition_id' => $child->id, 'type' => 'commit'])->save();
+            $parent = $child;
+        }
+        $expressive = $this->node($origin->phase, 'expressive', false);
+        $edge = new \App\Models\Supersession;
+        $edge->forceFill(['phase_id' => $origin->phase_id, 'source_proposition_id' => $parent->id,
+            'target_proposition_id' => $expressive->id, 'type' => 'variant'])->save();
+        $queries = $this->graphQueries($substrate, 32);
+        $this->assertLessThanOrEqual(20, count($queries));
+        $data = collect($this->getJson("/api/substrates/{$substrate->slug}/propositions")->assertOk()->json('data'))->keyBy('id');
+        $this->assertSame(1, $data[$parent->id]['attestation_counts']['support']);
+        $this->assertSame(0, $data[$expressive->id]['attestation_counts']['support']);
+    }
+
     private function graphQueries(Substrate $substrate, int $count): array
     {
         DB::enableQueryLog();

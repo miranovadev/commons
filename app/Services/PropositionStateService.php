@@ -77,6 +77,7 @@ final class PropositionStateService
     /** Batch history traversal by depth, rather than issuing queries per graph node. */
     private function loadCommitSources(Collection $propositions): void
     {
+        $nodes = $propositions->keyBy('id');
         $frontier = $propositions;
         $seen = [];
         while ($frontier->isNotEmpty()) {
@@ -89,6 +90,15 @@ final class PropositionStateService
                 ->loadMissing('commitSources.phase.cycle.participant');
             foreach ($commits as $node) {
                 $seen[$node->id] = true;
+                // Eager loading creates separate parent instances. Reuse one
+                // object per ID so overlapping Commit chains share loaded edges.
+                $node->setRelation('commitSources', $node->commitSources->map(function (Proposition $parent) use ($nodes): Proposition {
+                    if (! $nodes->has($parent->id)) {
+                        $nodes->put($parent->id, $parent);
+                    }
+
+                    return $nodes->get($parent->id);
+                }));
             }
             $frontier = $commits->flatMap(fn (Proposition $node) => $node->commitSources);
         }
