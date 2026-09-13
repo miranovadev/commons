@@ -9,6 +9,7 @@ use App\Models\ContextHorizon;
 use App\Models\Cycle;
 use App\Models\Participant;
 use App\Models\Phase;
+use App\Models\Substrate;
 use App\Models\SubstrateLedgerEntry;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
@@ -161,6 +162,9 @@ final readonly class ParticipationService
             $phaseId,
             $input,
         ): array {
+            // Acquire the shared root before any participant/phase or contribution lock.
+            // Cycle entry, ledger writes, and horizon projection use the same order.
+            Substrate::query()->lockForUpdate()->findOrFail($participant->substrate_id);
             $lockedParticipant = Participant::query()
                 ->lockForUpdate()
                 ->findOrFail($participant->getKey());
