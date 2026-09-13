@@ -12,6 +12,8 @@ final readonly class VerifiedHyperlink
         public string $fingerprint,
         public CarbonImmutable $observedAt,
         public ?CarbonImmutable $lastModified = null,
+        public ?string $contentExcerpt = null,
+        public bool $excerptTruncated = false,
     ) {}
 
     public function metadata(): array
@@ -22,6 +24,7 @@ final readonly class VerifiedHyperlink
             'observed_at' => $this->observedAt->toIso8601String(),
             'last_modified' => $this->lastModified?->toIso8601String(),
             'version_clock' => 'server-observed',
+            'content_excerpt' => $this->contentExcerpt, 'excerpt_truncated' => $this->excerptTruncated,
         ];
     }
 }

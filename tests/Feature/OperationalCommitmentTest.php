@@ -63,12 +63,14 @@ class OperationalCommitmentTest extends TestCase
     public function test_seven_phase_participation_completes_receipts_and_commits(): void
     {
         $this->move($this->participant, ['action' => 'proposition.variant', 'statement' => 'Signal']);
-        $this->move($this->participant, ['action' => 'proposition.variant', 'statement' => 'Stance']);
+        $early = $this->move($this->participant, ['action' => 'proposition.variant', 'statement' => 'Stance']);
+        $earlyGate = Proposition::findOrFail($early['plan']['gate_id']);
+        app(OperationalInstrumentService::class)->execute($earlyGate->phase, $earlyGate, ['kind' => 'citation', 'reference' => $this->origin->id]);
         $state = $this->move($this->participant, [
             'action' => 'proposition.reclassify', 'statement' => 'Concord candidate',
         ]);
         $this->assertSame([], $state['plan']['gate_options'][0]['instruments'] ?? []);
-        $this->assertDatabaseCount('instrument_executions', 1);
+        $this->assertDatabaseCount('instrument_executions', 2);
         $state = $this->move($this->participant, ['action' => 'proposition.variant', 'statement' => 'New Signal']);
 
         // Other participants prepare local write-register heads through real contributions.
@@ -77,6 +79,7 @@ class OperationalCommitmentTest extends TestCase
         $helperState = $this->move($helper, ['action' => 'proposition.variant', 'statement' => 'Mediated Stance']);
         $stance = Proposition::findOrFail($helperState['plan']['gate_id']);
         $this->move($this->participant, ['action' => 'attestation.create', 'proposition_id' => $stance->id, 'direction' => 'support']);
+        app(OperationalInstrumentService::class)->execute($stance->phase, $stance, ['kind' => 'citation', 'reference' => $this->origin->id]);
         $helperState = $this->move($helper, [
             'action' => 'proposition.reclassify', 'statement' => 'Final Concord',
         ]);
@@ -93,6 +96,11 @@ class OperationalCommitmentTest extends TestCase
             'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/final'],
         ]);
         $this->assertSame('order', $state['plan']['phase']['kind']);
+        $this->assertFalse($state['plan']['commitment']['requirements']['reinforcement']);
+        $receiptId = $candidate->instrumentExecutions()->with('receipt')->latest('id')->firstOrFail()->receipt->id;
+        $phaseIdBeforeRead = $state['plan']['phase']['id'];
+        $state = $this->move($this->participant, ['action' => 'receipt.read', 'receipt_id' => $receiptId]);
+        $this->assertSame($phaseIdBeforeRead, $state['plan']['phase']['id']);
         $this->assertSame('ready', $state['status']);
         $this->assertTrue($state['plan']['commitment']['admissible']);
         $this->assertTrue($state['plan']['commitment']['closure_enforced']);
@@ -166,7 +174,7 @@ class OperationalCommitmentTest extends TestCase
         $this->assertFalse($service->grounding($gate)['requirements']['receipt']);
         $executions->complete($execution, $first);
         $this->assertFalse($service->grounding($gate)['admissible']);
-        $this->verifiedReceiptFixture($gate, $first);
+        $this->loadedReceiptFixture($gate, $first);
         $this->assertTrue($service->grounding($gate)['admissible']);
         $this->attest($gate, $first);
         $this->assertFalse($service->grounding($gate)['requirements']['receipt']);
@@ -259,14 +267,12 @@ class OperationalCommitmentTest extends TestCase
             'action' => 'proposition.bias', 'proposition_id' => $left->id,
         ]);
         // Another lineage does not erase the existing Concord.
-        $descendant = app(ContributionDispatcher::class)->dispatch($builder, $biasPhase, [
+        $dispersePhase = $this->phase($builder, PhaseKind::Disperse, 'signal', $candidate);
+        $descendant = app(ContributionDispatcher::class)->dispatch($builder, $dispersePhase, [
             'action' => 'proposition.variant', 'statement' => 'Another lineage',
         ]);
         $descendant->register = 'signal';
         $descendant->save();
-        $candidate->children()->attach($descendant->id, [
-            'id' => (string) str()->ulid(), 'phase_id' => $biasPhase->id, 'type' => 'variant',
-        ]);
         $reader = $this->participant($this->participant->substrate, 'reader');
         $bias = $this->phase($reader, PhaseKind::Bias, 'concord', $left);
         $state = app(ParticipationService::class)->stateFor($reader);
@@ -286,6 +292,7 @@ class OperationalCommitmentTest extends TestCase
         $this->assertNotNull($state['completion']);
         // A later explicit Cycle may revisit this candidate; Order never repeats.
         $this->phase($reader, PhaseKind::Order, 'concord', $candidate);
+        $this->move($reader, ['action' => 'receipt.read', 'receipt_id' => $receipt->id]);
         $this->move($reader, ['action' => 'proposition.commit']);
         $committed = Proposition::findOrFail($reader->fresh()->current_proposition_id);
         $this->assertSame('committal', $committed->tier);
@@ -296,7 +303,9 @@ class OperationalCommitmentTest extends TestCase
     public function test_removed_reclassification_contracts_reject_payloads(): void
     {
         $this->move($this->participant, ['action' => 'proposition.variant', 'statement' => 'Signal']);
-        $this->move($this->participant, ['action' => 'proposition.variant', 'statement' => 'Stance']);
+        $early = $this->move($this->participant, ['action' => 'proposition.variant', 'statement' => 'Stance']);
+        $earlyGate = Proposition::findOrFail($early['plan']['gate_id']);
+        app(OperationalInstrumentService::class)->execute($earlyGate->phase, $earlyGate, ['kind' => 'citation', 'reference' => $this->origin->id]);
         foreach (['reclassify_with_receipt', 'proposition.reclassify_with_receipt', 'proposition.reclassify_with_instrument'] as $action) {
             try {
                 $this->move($this->participant, ['action' => $action, 'statement' => 'Rejected']);
@@ -326,7 +335,8 @@ class OperationalCommitmentTest extends TestCase
             [$reader, $phase, $candidate] = $this->instrumentFixture(PhaseKind::Order);
             $service = app(ParticipationService::class);
             $before = $service->stateFor($reader);
-            $this->assertSame([$candidate->id], $before['plan']['schema']['$defs']['actions']['instrument.execute']['properties']['proposition_id']['enum']);
+            $this->assertContains($candidate->id, $before['plan']['schema']['$defs']['actions']['instrument.execute']['properties']['proposition_id']['enum']);
+            // Earlier eligible Writes in the same region remain supportable too.
             $phaseCount = Phase::count();
             $input = ['action' => $action, 'proposition_id' => $candidate->id];
             $input += $action === 'attestation.create' ? ['direction' => 'support']

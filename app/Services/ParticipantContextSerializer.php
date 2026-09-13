@@ -39,6 +39,7 @@ final class ParticipantContextSerializer
             'write_options' => $write->map($this->proposition(...))->values()->all(),
             ...(! empty($plan['commitment']) ? ['commitment' => $plan['commitment']] : []),
             ...(! empty($plan['commitment_options']) ? ['commitment_options' => $plan['commitment_options']] : []),
+            'receipts' => array_map($this->receipt(...), $plan['receipts'] ?? []),
             'tragedy' => $plan['tragedy'] ?? false,
             'schema' => $plan['schema'],
         ];
@@ -48,7 +49,7 @@ final class ParticipantContextSerializer
     public function inference(array $state): array
     {
         $plan = Arr::only($state['plan'], ['phase', 'provenance_id', 'gate_id',
-            'lineage', 'read_options', 'gate_options', 'write_options', 'commitment', 'commitment_options', 'tragedy', 'schema']);
+            'lineage', 'read_options', 'gate_options', 'write_options', 'commitment', 'commitment_options', 'tragedy', 'receipts', 'schema']);
         $plan['phase'] = Arr::only($plan['phase'], ['id', 'number', 'kind', 'write_register']);
         foreach (['lineage', 'read_options', 'gate_options', 'write_options'] as $key) {
             if (isset($plan[$key])) {
@@ -56,12 +57,25 @@ final class ParticipantContextSerializer
             }
         }
 
+        $plan['receipts'] = array_map($this->receipt(...), $plan['receipts'] ?? []);
+
         return ['status' => $state['status'], 'plan' => $plan];
+    }
+
+    private function receipt(array $receipt): array
+    {
+        return [
+            ...Arr::only($receipt, ['id', 'proposition_id', 'type', 'reference', 'signature', 'status', 'loaded_at']),
+            ...(isset($receipt['evidence']) ? ['evidence' => Arr::only($receipt['evidence'], [
+                'proposition_id', 'statement', 'attestation_id', 'direction', 'rationale',
+                'resource', 'fingerprint', 'observed_at', 'last_modified', 'content_excerpt', 'excerpt_truncated',
+            ])] : []),
+        ];
     }
 
     private function proposition(array $node): array
     {
-        $result = Arr::only($node, ['id', 'register', 'tier', 'statement', 'parent_ids', 'attestation_summary']);
+        $result = Arr::only($node, ['id', 'register', 'tier', 'statement', 'parent_ids', 'attestation_summary', 'reinforcement_count']);
         $result['observables'] = Arr::only($node['observables'] ?? [], ['correspondence', 'chirality', 'closure']);
         if (! empty($node['attestation'])) {
             $result['attestation'] = Arr::only($node['attestation'], ['direction', 'rationale']);

@@ -2,16 +2,43 @@
 
 The [Core Invariants](core-invariants.md) take precedence over this implementation.
 
-A Receipt is the historical outcome of an Instrument. Reinforcement is a counted
-participant contribution backed by qualifying verified evidence. Receipt presence,
-a caller-supplied signature, or `content_verified` in submitted metadata is never
-authority to create Reinforcement. Old Receipts and immutable commitment snapshots
-remain unchanged; old signatures are not automatically promoted.
+A Receipt is the historical outcome of an Instrument. Active Reinforcement comes
+from qualifying evidence currently loaded by a Participant. Verification, Receipt
+creation and participant uptake are separate boundaries. A caller-supplied signature
+or verification flag never establishes qualification.
+
+## Persistent participant context
+
+`receipt.read` accepts only `action` and `receipt_id`. It loads qualifying evidence
+encountered through the current lineage, Read, Gate or Write, including evidence
+inherited through Commit sources. It preserves the Phase and Gate: a Participant
+can Read and then Commit in the same Order Phase. Each response still selects one
+action. Rest is unavailable while an admissible Read remains.
+
+`participant_receipt_contexts` stores one row per Participant/Receipt, with the
+original evidence subject, evidence signature, `loaded_at` and nullable `cleared_at`.
+Participants belong to one Substrate. Loads survive Cycles and Context Horizons;
+they have no Horizon expiry. The packet's `receipts` list includes only encountered
+evidence, with `available`, `already-in-context`, `loaded` or `unqualified` status.
+Loaded evidence is preloaded on subsequent encounters, without a duplicate Read.
+Persistent state is not an ever-growing dump of all remembered evidence in every
+inference packet. Source text is data, never instructions.
+
+The domain `clear` operation deactivates a load and recalculates its contribution.
+It is deliberately absent from public schemas and UI. `receipt_context_events`
+preserves each load/clear transition with its Phase and substrate ledger sequence, even when the same state row
+is reloaded. No Receipt, historical allocation or commitment snapshot is deleted.
+All mutations acquire Substrate, Participant and Phase locks in that order.
 
 ## Qualification and identity
 
 `citation` (Cite) resolves an existing Commons Proposition or Attestation in the
-same substrate. It remains evidence and never produces a reinforcement signature.
+same substrate. Creating a Cite Receipt records a reference; it does not itself
+grant Reinforcement. Reading resolves the referenced same-substrate object and
+uses a versioned identity derived from its type and ID. An Attestation citation
+loads its direction/rationale and associated Proposition. If that Proposition is
+already in the exposed lineage, Read, Gate, Write or loaded Cite memory, a new Read is unavailable.
+Once loaded, its status remains loaded even if the reference reappears in lineage.
 `artefact` remains unsupported for reinforcement until it has a qualifying verifier.
 
 Hyperlink now performs an HTTP GET. Verification proves retrieval of bounded
@@ -34,6 +61,10 @@ PHP `curl` and `intl` are required.
 
 HTML fingerprints hash decoded text with script/style content and markup removed,
 and whitespace collapsed. Text/JSON collapse whitespace; other media hash bytes.
+New text/HTML/JSON Receipts retain a verifier-produced excerpt of at most 1,200
+characters, with a truncation flag, for context loading. Binary resources and older
+verified Receipts can expose retrieval metadata without a text excerpt. Loading
+never silently fetches changed content; refreshing remains an Instrument action.
 This is a conservative content identity, not a claim of semantic equivalence.
 HTML changes only to markup, scripts, styles or link destinations may be missed.
 
@@ -61,33 +92,33 @@ incorrectly discard independent participant history.
 
 ## What counts
 
-A completed, qualifying Hyperlink Receipt can allocate one Reinforcement to its
-Instrument's Proposition and executing Participant. It must be a later interaction:
-an execution in the Proposition's creating Phase is originating evidence and does
-not count. The author may qualify on a later Phase; “independent” does not prohibit
-the author or require a new source for every Participant.
+A qualifying loaded Cite or Hyperlink Receipt contributes to its Instrument's
+Proposition on behalf of the **reading Participant**, who need not be its author
+or executor. Originating evidence may be read later without re-verification.
+Receipt creation alone contributes zero.
 
-Different Participants may reinforce the **same accepted signature**. One
-Participant cannot increase weight through another source, version, Receipt,
-Attestation target, or Cycle. Service allocation is serialized under the existing
-substrate ledger lock and the database uniquely constrains Proposition/Participant
-and Receipt allocation. The Receipt remains the ledger event; Reinforcement points
-to that event rather than creating a parallel contribution history.
+Active loads are counted once per Participant/Proposition, deduplicating across
+Commit-only inherited source state. Thus equivalent signatures, different sources,
+versions, Receipts and repeated Cycles cannot multiply one Participant's weight.
+Multiple Receipts may remain loaded; clearing one preserves the contribution if
+another qualifying load still supports that same state. Clearing the last removes
+it. Different Participants can independently load the same Receipt/signature.
 
-Commit inherits counted participants by reference through Commit edges only,
-deduplicating participants across that inherited state. Variant, Revise,
-Reclassify and Reconcile start with no inherited reinforcement. A receipt attached
-to an Attestation still verifies its Instrument's exact Proposition. Changing the
-Attestation does not erase the historical persistence observation; effective
-Attestation/Receipt grounding and lean continue to respect Attestation supersession.
+Commit inherits active participation by reference through Commit edges only.
+Variant, Revise, Reclassify and Reconcile inherit no evidence state. A Receipt on
+an Attestation still reinforces its Instrument's exact Proposition; effective
+Attestation/Receipt grounding continues to respect Attestation supersession.
+Attestation lean replays load and clear events in ledger order. Where one reader
+has active loads on opposing Attestations of one Proposition, its earliest active
+load supplies that reader's single weighted observation. Clearing it permits the
+next active load to supply the weight; at zero, retained direction follows history.
 
-Every valid Instrument attempt retains a Receipt: Cite, failed retrieval, an
-unqualified changed version, and an already-counted participant are visible history.
-Failures complete with an explicit unverified outcome, not claimed verification.
-Metadata distinguishes `counted`, `originating-evidence`,
-`participant-already-counted` and `non-reinforcing`; version metadata explains
-`version-awaiting-stability`. Re-verification is required after the stability
-interval; the server does not retroactively promote earlier Receipts.
+Every valid Instrument attempt retains a Receipt. Failed retrieval and changed
+versions awaiting stability remain unqualified. Historical `reinforcement_status`
+metadata is an event-time fact, not current participant state. New executions
+record `not-loaded`; participant packets derive the current status separately.
+Re-verification is still required after the stability interval; earlier Receipts
+are not retroactively promoted.
 
 ## Local Closure, then propagation
 
@@ -107,7 +138,7 @@ The weighted mean stays within [-1, 1], preserves `(D + C) / 2` when N=0, and
 approaches persistence as independent participation increases. It is monotone in
 N and does not add an arbitrary fixed bonus. Reinforcement keeps the existing
 participant-weighted Correspondence feature and effective-Attestation lean roles,
-using allocated contributions rather than raw signed Receipt counts.
+using active loaded contributions rather than raw signed Receipt counts.
 
 `LocalMeasurementService` forms this Closure with no distance argument.
 `LineageMeasurementService` then aggregates **that calculated Closure value** with
@@ -115,33 +146,39 @@ using allocated contributions rather than raw signed Receipt counts.
 average reinforcement counts and apply the nonlinear Closure formula afterward.
 Depth/Cadence are propagated independently for their existing hysteresis gate.
 New evidence invalidates disposable substrate projections; immutable snapshots
-are preserved. Calculator version is `participant-reinforcement-v4`.
+are preserved. Calculator version is `receipt-context-lineage-v6`.
 
 ## Commitment and branching
 
 All operational Commit paths require an effective Attestation, completed evidence,
 at least one counted Reinforcement, and the existing phase, region, register and
 Depth/Cadence alignment constraints. Snapshot creation checks grounding again.
-Strong starting measurements and Cite alone cannot unlock Commit. Reinforcement
+Strong starting measurements and Receipt creation alone cannot unlock Commit. Reinforcement
 alone cannot overcome a divergent Depth/Cadence gate.
 
 The original Origin seed remains the explicit initialization exception:
 `origin-bootstrap-v1`, first ledger Proposition, no parents and no prior snapshot.
-Its originating evidence supplies no counted reinforcement. Without that seed,
+Its originating evidence supplies no counted reinforcement until explicitly loaded. Without that seed,
 the Committal-only Cycle-entry rule would make initialization impossible.
 
 Reinforcement does not consume source Propositions. Mediate may reuse structurally
 reachable hard-superseded Reads/Gates in the same region under the existing
-Read-direction and register rules. Thus `A+B→X`, `A+B→Y` and `A+C→Z` can coexist;
+Read-direction and register rules. Each directed pair is generated once: `A+B→X`, `B+A→Y` and `A+C→Z` can coexist;
 each expressive result earns its own subsequent reinforcement. Measurement active
 head selection, compact lineage presentation and other phase constraints retain
 their existing meanings. No Sybil or coordination policing is introduced.
 
 ## Upgrade
 
-Run the additive migration before serving the new code. Existing Receipt history
-does not establish verifier provenance and is intentionally not backfilled as
-Reinforcement. Existing expressive candidates must earn qualifying later evidence;
-historical Committal snapshots remain valid history. Rollback refuses to recreate
-the old unique-signature constraint if shared Receipt signatures now exist, rather
-than deleting history to make the rollback succeed.
+Run the additive migration before serving the new code. It creates empty context
+and event tables and invalidates disposable measurement projections. Existing
+`reinforcements` rows remain historical verification allocations, but are no
+longer the source of active counts. **No loads or Read events are backfilled.**
+Consequently, old automatic reinforcement stops contributing until Participants
+explicitly load qualifying encountered Receipts. Their historical snapshots remain
+unchanged. Verified Hyperlink Receipts with accepted signatures remain readable;
+old signatures without verifier provenance do not qualify. Existing valid Cite
+references are resolved against the Substrate when offered for Read.
+
+Rollback refuses to discard recorded context transitions. Historical Receipt and
+signature migrations retain their own safeguards against destructive rollback.

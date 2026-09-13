@@ -3,12 +3,14 @@
 namespace App\Services;
 
 use App\Domain\Observables\ObservableValues;
+use App\Enums\PhaseKind;
 use App\Models\Attestation;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Substrate;
 use App\Models\Supersession;
+use App\Services\Observables\LineageMeasurementService;
 use DomainException;
 use Illuminate\Support\Facades\DB;
 
@@ -26,6 +28,10 @@ final readonly class ContributionDispatcher
         private CommitRegionService $regions,
         private CommitRegionPolarityService $polarity,
         private AttestationEvidenceService $evidence,
+        private PhaseGenerationService $generation,
+        private PropositionOptionService $options,
+        private PropositionOwnershipService $ownership,
+        private ReceiptContextService $receipts,
     ) {}
 
     /**
@@ -43,6 +49,39 @@ final readonly class ContributionDispatcher
                 throw new DomainException('A contribution cannot cross substrate boundaries.');
             }
             $gate = $phase->gate()->firstOrFail();
+            $action = $input['action'];
+            if (! in_array($action, config("phases.{$phase->kind->value}.actions", []), true)
+                || $phase->cycle->participant_id !== $participant->id) {
+                throw new DomainException('The contribution must belong to this Participant and Phase.');
+            }
+            if (! $this->generation->available($phase, $action)) {
+                throw new DomainException('This generation opportunity is unavailable. Support an existing Write; Constrain reclassification also requires a completed Receipt.');
+            }
+            if (in_array('gate-owner', (config("phases.{$phase->kind->value}.constraints", [])[$action] ?? []), true)
+                && ! $this->ownership->ownedBy($gate, $participant)) {
+                throw new DomainException('Reclassification requires ownership of the Gate.');
+            }
+            $targets = match ($action) {
+                'attestation.create' => $this->options->attestationOptionsFor($phase),
+                'instrument.execute' => $this->options->instrumentOptionsFor($phase),
+                'proposition.traverse' => $this->options->traversalOptionsFor($phase),
+                'proposition.revise' => $this->options->revisionOptionsFor($phase, $participant),
+                default => null,
+            };
+            if ($targets !== null && ! $targets->contains('id', $input['proposition_id'] ?? null)) {
+                throw new DomainException($action === 'proposition.revise'
+                    ? 'Revision requires an owned active head in the current write register.'
+                    : 'Support requires an admissible Proposition in the current Write.');
+            }
+
+            if ($action === 'receipt.read') {
+                if (array_diff(array_keys($input), ['action', 'receipt_id']) !== []) {
+                    throw new DomainException('Read takes only action and receipt_id.');
+                }
+                $this->receipts->read($participant, $phase, $input['receipt_id']);
+
+                return $gate;
+            }
 
             return match ($input['action']) {
                 'proposition.traverse' => Proposition::query()
@@ -172,7 +211,7 @@ final readonly class ContributionDispatcher
         }
 
         return DB::transaction(function () use ($phase, $input): Proposition {
-            \App\Models\Substrate::query()->whereKey($phase->cycle->participant->substrate_id)
+            Substrate::query()->whereKey($phase->cycle->participant->substrate_id)
                 ->lockForUpdate()->firstOrFail();
             $source = $this->bias->forPhase($phase)->firstWhere('id', $input['proposition_id'] ?? null);
             if ($source === null) {
@@ -245,9 +284,9 @@ final readonly class ContributionDispatcher
 
         return DB::transaction(function () use ($phase, $input): Proposition {
             // Serialize evaluation and the resulting horizon transition with ledger writes.
-            \App\Models\Substrate::query()->whereKey($phase->cycle->participant->substrate_id)
+            Substrate::query()->whereKey($phase->cycle->participant->substrate_id)
                 ->lockForUpdate()->firstOrFail();
-            $gate = $phase->kind === \App\Enums\PhaseKind::Order
+            $gate = $phase->kind === PhaseKind::Order
                 ? $this->regions->forPhase($phase)->firstWhere('id', $input['proposition_id'] ?? null) : null;
             if ($gate === null) {
                 throw new DomainException('Commit requires an active Closure candidate in the current Commit Region.');
@@ -286,7 +325,7 @@ final readonly class ContributionDispatcher
                 $target,
                 $projections['prominence'],
                 $projections['turbulence'],
-                \App\Services\Observables\LineageMeasurementService::VERSION,
+                LineageMeasurementService::VERSION,
                 $supersession,
             );
 

@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 
 final readonly class LineageMeasurementService
 {
-    public const string VERSION = 'causal-horizon-lineage-v5';
+    public const string VERSION = 'receipt-context-lineage-v6';
 
     public function __construct(
         private LocalMeasurementService $local,

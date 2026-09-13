@@ -15,6 +15,7 @@ use App\Services\LedgerService;
 use App\Services\OpenAIResponseSchema;
 use App\Services\ParticipantPromptFactory;
 use App\Services\ParticipationService;
+use App\Services\PhaseProgressionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use InvalidArgumentException;
 use Opis\JsonSchema\Helper;
@@ -31,7 +32,7 @@ class TragedyTest extends TestCase
         return [
             'Distinguish Variant without traversal' => [PhaseKind::Distinguish, 'proposition.variant'],
             'Persist Variant without traversal' => [PhaseKind::Persist, 'proposition.variant'],
-            'Disperse unconditional Variant' => [PhaseKind::Disperse, 'proposition.variant'],
+            'Disperse first Variant' => [PhaseKind::Disperse, 'proposition.variant'],
             'Constrain owned Gate Reclassify' => [PhaseKind::Constrain, 'proposition.reclassify'],
             'Constrain owned descendant Revise' => [PhaseKind::Constrain, 'proposition.revise'],
             'Constrain untouched descendant Attestation' => [PhaseKind::Constrain, 'attestation.create'],
@@ -139,12 +140,21 @@ class TragedyTest extends TestCase
             $disperse = $this->phase($viewer, PhaseKind::Disperse, 'activity');
             $disperse->gate_proposition_id = $parent->id;
             $disperse->save();
-            $phase = app(\App\Services\PhaseProgressionService::class)->advance($disperse, $gate);
+            $phase = app(PhaseProgressionService::class)->advance($disperse, $gate);
         } else {
             $phase = $this->phase($viewer, $kind, $writeRegister);
         }
         $phase->gate_proposition_id = $gate->id;
         $phase->save();
+        if ($action === 'proposition.reclassify') {
+            $this->loadedReceiptFixture($gate);
+        }
+        if ($action === 'instrument.execute') {
+            $written = $this->proposition($authorPhase, $writeRegister);
+            $gate->children()->attach($written->id, [
+                'id' => (string) str()->ulid(), 'phase_id' => $authorPhase->id, 'type' => 'variant',
+            ]);
+        }
         if (in_array($action, ['proposition.revise', 'attestation.create', 'proposition.traverse', 'proposition.reconcile'], true)) {
             $target = $this->proposition(
                 $action === 'proposition.revise' ? $history : $authorPhase,
@@ -167,6 +177,7 @@ class TragedyTest extends TestCase
                 $attestation->forceFill(['phase_id' => $history->id, 'proposition_id' => $target->id, 'direction' => 'support'])->save();
             }
         }
+
         return [$viewer, $phase];
     }
 
@@ -174,6 +185,7 @@ class TragedyTest extends TestCase
     {
         $participant = new Participant;
         $participant->forceFill(['substrate_id' => $substrate->id, 'callsign' => $callsign, 'max_read_count' => 25])->save();
+
         return $participant;
     }
 
@@ -183,6 +195,7 @@ class TragedyTest extends TestCase
         $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => (int) $participant->cycles()->max('sequence') + 1, 'completed_at' => $completed ? now() : null])->save();
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => $kind, 'write_register' => $register, 'started_at' => now(), 'completed_at' => $completed ? now() : null])->save();
+
         return $phase;
     }
 
@@ -191,6 +204,7 @@ class TragedyTest extends TestCase
         $proposition = new Proposition;
         $proposition->forceFill(['phase_id' => $phase->id, 'register' => $register, 'tier' => 'expressive', 'statement' => 'Local proposition'])->save();
         app(LedgerService::class)->record($proposition);
+
         return $proposition;
     }
 }

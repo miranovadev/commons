@@ -67,6 +67,23 @@ class InputSchemaServiceTest extends TestCase
         $this->assertSame(['action', 'proposition_id'], $schema['$defs']['actions']['proposition.commit']['required']);
     }
 
+    public function test_instrument_guidance_retires_the_previous_cached_receipt_description(): void
+    {
+        foreach ([PhaseKind::Constrain, PhaseKind::Disperse, PhaseKind::Bias, PhaseKind::Order] as $kind) {
+            $actions = config("phases.{$kind->value}.actions");
+            $key = "commons:input-schema:v15:phase:{$kind->value}:".sha1(implode('|', $actions));
+            Cache::store('array')->forever($key, ['$defs' => ['instrument' => [
+                'description' => 'Hyperlink: an HTTP(S) URL reference only; no page fetch or content verification. Both complete synchronously with an unsigned Receipt.',
+            ]]]);
+
+            $schema = app(InputSchemaService::class)->forPhase($kind);
+            $description = $schema['$defs']['instrument']['description'];
+            $this->assertStringContainsString('Creating a Cite Receipt does not itself grant Reinforcement.', $description);
+            $this->assertStringContainsString('verifies retrieval, not the truth of its claims', $description);
+            $this->assertStringNotContainsString('no page fetch or content verification', $description);
+        }
+    }
+
     public function test_each_phase_exposes_its_static_single_move_contract(): void
     {
         $expected = [
@@ -91,6 +108,7 @@ class InputSchemaServiceTest extends TestCase
             ],
             PhaseKind::Disperse->value => [
                 'proposition.variant',
+                'proposition.revise',
                 'instrument.execute',
                 'attestation.create',
             ],
@@ -114,7 +132,7 @@ class InputSchemaServiceTest extends TestCase
             $schema = app(InputSchemaService::class)->forPhase($kind);
 
             $this->assertSame(
-                $expected[$kind->value],
+                ['receipt.read', ...$expected[$kind->value]],
                 array_keys($schema['$defs']['actions']),
             );
             $this->assertSame(

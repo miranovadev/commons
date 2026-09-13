@@ -162,7 +162,7 @@ class AttestationPolarityTest extends TestCase
         $support = $this->attest($position, 'support');
         $refute = $this->attest($position, 'refute');
         foreach ([$refute, $support] as $attestation) {
-            $this->verifiedReceiptFixture($position, $attestation);
+            $this->loadedReceiptFixture($position, $attestation);
         }
         $evidence = app(AttestationEvidenceService::class);
         $this->assertSame(0.0, $evidence->valueFor(collect([$position]), $this->participant->substrate));

@@ -6,6 +6,7 @@ return [
         'description' => 'Create a distinction or traverse an existing local Expressive Proposition from the current Committal Gate.',
         'gate' => 'participant-position',
         'actions' => [
+            'receipt.read',
             'proposition.variant',
             'attestation.create',
             'proposition.traverse',
@@ -16,6 +17,7 @@ return [
         'description' => 'Develop the current distinction through variation, revision, reclassification, or attestation.',
         'gate' => 'previous-phase-position',
         'actions' => [
+            'receipt.read',
             'proposition.variant',
             'proposition.revise',
             'proposition.reclassify',
@@ -31,6 +33,7 @@ return [
         'description' => 'Strengthen or classify the selected Proposition. Grounding is a separate Instrument action.',
         'gate' => 'previous-phase-position',
         'actions' => [
+            'receipt.read',
             'proposition.revise',
             'proposition.reclassify',
             'instrument.execute',
@@ -40,15 +43,18 @@ return [
         'constraints' => [
             'proposition.reclassify' => [
                 'gate-owner',
+                'completed-gate-or-effective-attestation-receipt',
             ],
         ],
     ],
     4 => [
         'name' => 'disperse',
-        'description' => 'Open a new expressive branch, execute an instrument, or attest an immediate Write descendant.',
+        'description' => 'Open one expressive branch per Participant at this Gate, revise an owned Write, execute an instrument, or attest a Write descendant.',
         'gate' => 'previous-phase-position',
         'actions' => [
+            'receipt.read',
             'proposition.variant',
+            'proposition.revise',
             'instrument.execute',
             'attestation.create',
         ],
@@ -61,6 +67,7 @@ return [
         'description' => 'Read Correspondence-aligned Propositions across the Commit Region; reconcile their immediate Gate children, or attest an immediate Write descendant.',
         'gate' => 'previous-phase-position',
         'actions' => [
+            'receipt.read',
             'proposition.reconcile',
             'attestation.create',
         ],
@@ -75,6 +82,7 @@ return [
         'description' => 'Select one active Commit Region Stance/Frontier whose retained direction agrees with the aggregate lean and hard-supersede it into fresh Concord/Canon, execute an instrument, or attest an immediate Write descendant.',
         'gate' => 'previous-phase-position',
         'actions' => [
+            'receipt.read',
             'proposition.bias',
             'instrument.execute',
             'attestation.create',
@@ -89,9 +97,10 @@ return [
     ],
     7 => [
         'name' => 'order',
-        'description' => 'Select a Commit Region Write candidate with aligned Depth/Cadence; commit when grounded, ground with an Instrument, or attest an eligible candidate. Any successful contribution completes the Cycle.',
+        'description' => 'Select a Commit Region Write candidate with aligned Depth/Cadence; commit when grounded, ground with an Instrument, or attest an eligible candidate. Reading loads context without ending the Phase; other successful contributions complete the Cycle.',
         'gate' => 'previous-phase-position',
         'actions' => [
+            'receipt.read',
             'proposition.commit',
             'instrument.execute',
             'attestation.create',

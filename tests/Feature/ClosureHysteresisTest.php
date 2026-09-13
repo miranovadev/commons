@@ -310,7 +310,7 @@ class ClosureHysteresisTest extends TestCase
         $attestation = new Attestation;
         $attestation->forceFill(['phase_id' => $phase->id, 'proposition_id' => $gate->id, 'direction' => $direction])->save();
         app(LedgerService::class)->record($attestation);
-        $this->verifiedReceiptFixture($gate);
+        $this->loadedReceiptFixture($gate);
         $this->participant->current_proposition_id = $gate->id;
         $this->participant->save();
 

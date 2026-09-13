@@ -82,13 +82,17 @@ class ParticipantActionContractTest extends TestCase
                     $this->assertValid($schema, $decoded);
                     app(ContributionService::class)->validate($participant, $decoded);
                     app(ParticipationService::class)->contribute($participant, $phase->id, $decoded);
-                    $this->assertNotNull($phase->fresh()->completed_at, $action);
+                    if ($action === 'receipt.read') {
+                        $this->assertNull($phase->fresh()->completed_at);
+                    } else {
+                        $this->assertNotNull($phase->fresh()->completed_at, $action);
+                    }
                     if ($action === 'attestation.create') {
                         $attestation = Attestation::where('phase_id', $phase->id)->sole();
                         $this->assertSame($decoded['direction'], $attestation->direction);
                         $this->assertSame($decoded['rationale'] ?? null, $attestation->rationale);
                     }
-                    if ($kind === PhaseKind::Order) {
+                    if ($kind === PhaseKind::Order && $action !== 'receipt.read') {
                         $this->assertNotNull($phase->cycle->fresh()->completed_at);
                     }
                 } finally {
@@ -217,7 +221,7 @@ class ParticipantActionContractTest extends TestCase
         $history = new Cycle;
         $history->forceFill(['participant_id' => $participant->id, 'sequence' => 1, 'completed_at' => now()])->save();
         $past = new Phase;
-        $past->forceFill(['cycle_id' => $history->id, 'kind' => PhaseKind::Distinguish, 'write_register' => 'activity', 'started_at' => now(), 'completed_at' => now()])->save();
+        $past->forceFill(['cycle_id' => $history->id, 'kind' => PhaseKind::Order, 'write_register' => 'activity', 'started_at' => now(), 'completed_at' => now()])->save();
         $node = function (string $register, ?Proposition $parent = null) use ($past): Proposition {
             $node = new Proposition;
             $node->forceFill(['phase_id' => $past->id, 'register' => $register, 'tier' => $parent ? 'expressive' : 'committal', 'statement' => 'Contract fixture'])->save();
@@ -257,6 +261,9 @@ class ParticipantActionContractTest extends TestCase
                     $mock->shouldReceive('forCommitment')->andReturn($values);
                 });
             }
+        }
+        if (! $empty) {
+            $this->loadedReceiptFixture($gate);
         }
         $cycle = new Cycle;
         $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => 2])->save();

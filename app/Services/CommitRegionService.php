@@ -99,15 +99,19 @@ final class CommitRegionService
         }
         $exactRegister = $phase->cycle->contextHorizon->domain->registerAt($register);
 
+        // A Commit consumes the author's opportunity, not another Participant's.
+        // Other hard replacements still remove the expressive source from this pool.
+        $nonConsuming = $phase->kind === PhaseKind::Order ? ['variant', 'commit'] : ['variant'];
         if ($context !== null) {
             $members = $this->membersFor($position, $context)->where('register', $exactRegister);
 
-            return $includeSuperseded ? $members->values() : $context->active($members);
+            return $includeSuperseded ? $members->values()
+                : $members->filter(fn ($node) => $context->children->get($node->id, collect())->whereNotIn('type', $nonConsuming)->isEmpty())->values();
         }
 
         return Proposition::query()->whereKey($this->membersFor($position)->pluck('id'))
             ->where('register', $exactRegister)
-            ->when(! $includeSuperseded, fn ($query) => $query->whereDoesntHave('children', fn ($query) => $query->where('supersessions.type', '!=', 'variant')))
+            ->when(! $includeSuperseded, fn ($query) => $query->whereDoesntHave('children', fn ($query) => $query->whereNotIn('supersessions.type', $nonConsuming)))
             ->orderBy('id')->get();
     }
 }

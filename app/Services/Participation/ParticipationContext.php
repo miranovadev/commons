@@ -6,10 +6,11 @@ use App\Models\Attestation;
 use App\Models\CommitmentSnapshot;
 use App\Models\ContextHorizon;
 use App\Models\ContextHorizonMembership;
+use App\Models\ParticipantReceiptContext;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Receipt;
-use App\Models\Reinforcement;
+use App\Models\ReceiptContextEvent;
 use App\Models\Substrate;
 use App\Models\SubstrateLedgerEntry;
 use App\Models\Supersession;
@@ -42,6 +43,10 @@ final class ParticipationContext
     public readonly Collection $receipts;
 
     public readonly Collection $reinforcements;
+
+    public readonly Collection $receiptContexts;
+
+    public readonly Collection $receiptContextEvents;
 
     public readonly Collection $touches;
 
@@ -99,8 +104,10 @@ final class ParticipationContext
         $this->receipts = Receipt::query()->where(fn ($q) => $q
             ->where(fn ($q) => $q->where('receiptable_type', (new Proposition)->getMorphClass())->whereIn('receiptable_id', $ids))
             ->orWhere(fn ($q) => $q->where('receiptable_type', (new Attestation)->getMorphClass())->whereIn('receiptable_id', $this->attestations->keys())))
-            ->with(['ledgerEntry', 'instrumentExecution', 'reinforcement'])->get();
-        $this->reinforcements = Reinforcement::whereIn('proposition_id', $ids)->get();
+            ->with(['ledgerEntry', 'instrumentExecution'])->get();
+        $this->receiptContexts = ParticipantReceiptContext::whereIn('proposition_id', $ids)->get();
+        $this->reinforcements = $this->receiptContexts->whereNull('cleared_at');
+        $this->receiptContextEvents = ReceiptContextEvent::whereIn('participant_receipt_context_id', $this->receiptContexts->pluck('id'))->with('ledgerEntry')->get();
         $this->receiptsBySubject = $this->receipts->groupBy(fn ($receipt) => $receipt->receiptable_type.':'.$receipt->receiptable_id);
         $this->touches = Phase::query()->whereHas('cycle.participant', fn ($q) => $q->where('substrate_id', $this->substrate->id))
             ->whereNotNull('gate_proposition_id')->selectRaw('gate_proposition_id, count(*) as aggregate')
@@ -231,12 +238,6 @@ final class ParticipationContext
     {
         return $this->attestationsFor($sourceIds)
             ->filter(fn ($a) => $a->supersededBy === null)->values();
-    }
-
-    public function reinforcementReceipts(string $type, iterable $ids): Collection
-    {
-        return $this->receiptsFor($type, $ids)
-            ->filter(fn ($receipt) => $receipt->reinforcement !== null && $receipt->instrumentExecution?->status === 'completed')->values();
     }
 
     public function attestationsFor(iterable $ids): Collection

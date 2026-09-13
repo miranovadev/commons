@@ -17,6 +17,8 @@ final readonly class InputSchemaService
         private PropositionOwnershipService $ownership,
         private ClosureOptionService $closure,
         private PropositionOptionService $options,
+        private PhaseGenerationService $generation,
+        private ReceiptContextService $receipts,
     ) {}
 
     /**
@@ -46,14 +48,14 @@ final readonly class InputSchemaService
 
         $actions = array_values(array_filter(
             array_diff($plan['actions'], ['participant.rest']),
-            static function (string $action) use ($plan, $ownsGate): bool {
+            function (string $action) use ($plan, $ownsGate, $occurrence, $context): bool {
                 $constraints = $plan['constraints'][$action] ?? [];
 
-                return $ownsGate || ! in_array(
+                return $this->generation->available($occurrence, $action, $context) && ($ownsGate || ! in_array(
                     'gate-owner',
                     $constraints,
                     true,
-                );
+                ));
             },
         ));
 
@@ -70,6 +72,7 @@ final readonly class InputSchemaService
             $traversalOptionIds,
             $instrumentOptionIds ?? $writeOptionIds,
             $commitOptionIds,
+            $this->receipts->forPhase($occurrence, $context)->where('status', 'available')->pluck('id')->all(),
         );
 
         if (isset($schema['$defs']['actions']['attestation.create'])) {
@@ -152,7 +155,7 @@ final readonly class InputSchemaService
             '$schema' => 'https://json-schema.org/draft/2020-12/schema',
             '$id' => "https://miranova.dev/commons/schemas/phases/{$plan['name']}.json",
             'title' => ucfirst($plan['name']).' phase response',
-            'description' => 'Exactly one action available during this phase.',
+            'description' => 'Choose exactly one action per response. Receipt Reads update context without advancing the Phase.',
             'oneOf' => array_map(
                 static fn (string $name): array => [
                     '$ref' => "#/\$defs/actions/{$name}",
@@ -199,8 +202,10 @@ final readonly class InputSchemaService
         array $traversalOptionIds,
         array $instrumentOptionIds,
         array $commitOptionIds,
+        array $receiptOptionIds,
     ): array {
         $bindings = [
+            'receipt.read' => ['property' => 'receipt_id', 'values' => $receiptOptionIds],
             'proposition.commit' => [
                 'property' => 'proposition_id',
                 'values' => $commitOptionIds,

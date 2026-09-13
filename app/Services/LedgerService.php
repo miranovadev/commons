@@ -7,6 +7,7 @@ use App\Models\Attestation;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Receipt;
+use App\Models\ReceiptContextEvent;
 use App\Models\Substrate;
 use App\Models\SubstrateLedgerEntry;
 use App\Models\Supersession;
@@ -160,6 +161,13 @@ final readonly class LedgerService
             );
 
             return [LedgerEntryKind::Attestation, $substrate];
+        }
+
+        if ($ledgerable instanceof ReceiptContextEvent) {
+            $substrate = $this->substrateForPhase($ledgerable->phase);
+            $this->assertSameSubstrate($substrate, $this->substrateForPhase($ledgerable->context->receipt->instrumentExecution->phase));
+
+            return [LedgerEntryKind::ReceiptContext, $substrate];
         }
 
         if ($ledgerable instanceof Receipt) {

@@ -8,6 +8,7 @@ use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Substrate;
+use App\Services\Observables\ReinforcementService;
 use App\Services\Participation\ParticipationContext;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -25,6 +26,8 @@ final readonly class InputPlanService
         private PropositionStateService $state,
         private MediationReadService $mediation,
         private PropositionPresentationService $presentation,
+        private ReceiptContextService $receipts,
+        private ReinforcementService $reinforcement,
     ) {}
 
     /** @return array<string, mixed> */
@@ -149,6 +152,7 @@ final readonly class InputPlanService
             'provenance_id' => $lineage->firstWhere('tier', 'committal')?->id,
             'lineage' => $this->propositions($historical, $participant, $context),
             'read_options' => $this->propositions($readOptions, $participant, $context),
+            'receipts' => $this->receipts->forPhase($phase, $context)->all(),
             'tragedy' => isset($schema['$defs']['actions']['participant.rest']),
             'traversal_options' => $this->propositions($traversalOptions, $participant, $context),
             'instrument_options' => $this->propositions($instrumentOptions, $participant, $context),
@@ -335,6 +339,7 @@ final readonly class InputPlanService
                 ->limit(72)
                 ->toString(),
             'participant' => $author?->only(['id', 'callsign']),
+            'reinforcement_count' => $this->reinforcement->count($proposition, $context),
             'attestation_counts' => $proposition->attestationCounts->all(),
             'attestation_summary' => $this->presentation->attestations($proposition, $context),
             'attestation' => $attestation?->only([
@@ -351,7 +356,7 @@ final readonly class InputPlanService
                     'status' => $execution->status,
                     'failure_reason' => $execution->failure_reason,
                     'receipt_id' => $execution->receipt?->getKey(),
-                    'reinforcement_status' => $execution->receipt?->metadata['reinforcement_status'] ?? null,
+                    'reinforcement_status' => $execution->receipt === null ? null : ($this->receipts->forPhase($context?->phase ?? $this->phases->currentFor($viewer), $context)->firstWhere('id', $execution->receipt->id)['status'] ?? 'not-loaded'),
                     'content_verified' => $execution->receipt?->metadata['content_verified'] ?? false,
                 ])->all()
                 : [],
