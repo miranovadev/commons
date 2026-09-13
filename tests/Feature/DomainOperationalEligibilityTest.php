@@ -77,7 +77,9 @@ class DomainOperationalEligibilityTest extends TestCase
         // Reusing the same valid inputs still permits competing reconciliations.
         $dispatcher = app(ContributionDispatcher::class);
         $x = $dispatcher->dispatch($cycle->participant, $mediate, ['action' => 'proposition.reconcile', 'other_proposition_id' => $counterpart->id]);
-        $y = $dispatcher->dispatch($cycle->participant, $mediate, ['action' => 'proposition.reconcile', 'other_proposition_id' => $counterpart->id]);
+        $this->reject($mediate, ['action' => 'proposition.reconcile', 'other_proposition_id' => $counterpart->id]);
+        $inverse = $this->phase($cycle, PhaseKind::Mediate, $counterpart);
+        $y = $dispatcher->dispatch($cycle->participant, $inverse, ['action' => 'proposition.reconcile', 'other_proposition_id' => $gate->id]);
         $this->assertNotSame($x->id, $y->id);
         foreach ([$x, $y] as $result) {
             $this->assertSame($second, $result->register);

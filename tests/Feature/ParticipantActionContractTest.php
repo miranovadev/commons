@@ -217,7 +217,7 @@ class ParticipantActionContractTest extends TestCase
         $history = new Cycle;
         $history->forceFill(['participant_id' => $participant->id, 'sequence' => 1, 'completed_at' => now()])->save();
         $past = new Phase;
-        $past->forceFill(['cycle_id' => $history->id, 'kind' => PhaseKind::Distinguish, 'write_register' => 'activity', 'started_at' => now(), 'completed_at' => now()])->save();
+        $past->forceFill(['cycle_id' => $history->id, 'kind' => PhaseKind::Order, 'write_register' => 'activity', 'started_at' => now(), 'completed_at' => now()])->save();
         $node = function (string $register, ?Proposition $parent = null) use ($past): Proposition {
             $node = new Proposition;
             $node->forceFill(['phase_id' => $past->id, 'register' => $register, 'tier' => $parent ? 'expressive' : 'committal', 'statement' => 'Contract fixture'])->save();
@@ -257,6 +257,9 @@ class ParticipantActionContractTest extends TestCase
                     $mock->shouldReceive('forCommitment')->andReturn($values);
                 });
             }
+        }
+        if ($kind === PhaseKind::Constrain && ! $empty) {
+            $this->verifiedReceiptFixture($gate);
         }
         $cycle = new Cycle;
         $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => 2])->save();

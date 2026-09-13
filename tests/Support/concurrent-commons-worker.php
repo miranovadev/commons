@@ -3,7 +3,9 @@
 // A separate PHP process gives the regression tests a real, independent backend.
 use App\Models\InstrumentExecution;
 use App\Models\Participant;
+use App\Models\Phase;
 use App\Models\Proposition;
+use App\Services\ContributionDispatcher;
 use App\Services\InputPlanService;
 use App\Services\InstrumentExecutionService;
 use App\Services\ParticipationService;
@@ -26,6 +28,21 @@ flush();
 
 try {
     match ($input['operation']) {
+        'dispatch-rejected' => (function () use ($input): void {
+            try {
+                app(ContributionDispatcher::class)->dispatch(
+                    Participant::findOrFail($input['participant_id']),
+                    Phase::findOrFail($input['phase_id']),
+                    $input['contribution'],
+                );
+            } catch (DomainException $exception) {
+                if (str_contains($exception->getMessage(), $input['expected_message'])) {
+                    return;
+                }
+                throw $exception;
+            }
+            throw new RuntimeException('Concurrent duplicate generation was accepted.');
+        })(),
         'read' => (function () use ($app, $input): void {
             $kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
             $request = Request::create($input['url'], 'GET', server: ['HTTP_ACCEPT' => 'application/json']);

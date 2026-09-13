@@ -35,7 +35,7 @@ class AttestationDirectionChangeTest extends TestCase
 
         $phase->completed_at = now();
         $phase->save();
-        $next = $this->phase($cycle, PhaseKind::Persist, $proposition);
+        $next = $this->phase($cycle, PhaseKind::Persist, $proposition->parents()->firstOrFail());
 
         $dispatcher->dispatch($participant, $next, [
             'action' => 'attestation.create',
@@ -57,7 +57,8 @@ class AttestationDirectionChangeTest extends TestCase
             0.4,
         );
         $plan = app(InputPlanService::class)->forWorkspace($participant);
-        $this->assertSame('refute', $plan['gate']['attestation']['direction']);
+        $write = collect($plan['write_options'])->firstWhere('id', $proposition->id);
+        $this->assertSame('refute', $write['attestation']['direction']);
         $this->assertArrayNotHasKey('impact', $plan['gate']);
         $this->assertSame(
             -1.0,
@@ -65,7 +66,7 @@ class AttestationDirectionChangeTest extends TestCase
         );
         $this->assertSame(
             0.8,
-            (float) $plan['gate']['observables']['correspondence'],
+            (float) $write['observables']['correspondence'],
         );
 
         $this->expectException(DomainException::class);
@@ -132,7 +133,7 @@ class AttestationDirectionChangeTest extends TestCase
         $supersession->save();
         app(LedgerService::class)->record($supersession);
 
-        $phase->gate_proposition_id = $proposition->getKey();
+        $phase->gate_proposition_id = $origin->getKey();
         $phase->save();
         app(PropositionMeasurementService::class)->project($origin, -1, -1, -1);
         app(PropositionMeasurementService::class)->project($proposition, 0.8, 0.6, 0.4);

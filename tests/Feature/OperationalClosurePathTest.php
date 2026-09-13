@@ -19,6 +19,7 @@ use App\Services\ContributionDispatcher;
 use App\Services\Observables\ClosureCalculator;
 use App\Services\Observables\ContextLineageComparisonService;
 use App\Services\Observables\LineageMeasurementService;
+use App\Services\OperationalInstrumentService;
 use App\Services\ParticipationService;
 use App\Services\PropositionStateService;
 use DomainException;
@@ -54,6 +55,7 @@ class OperationalClosurePathTest extends TestCase
         // The author creates the first branch through all four early phases.
         $signal = $this->gate($this->move($author, ['action' => 'proposition.variant', 'statement' => 'Initial Signal']));
         $earlyStance = $this->gate($this->move($author, ['action' => 'proposition.variant', 'statement' => 'Initial Stance']));
+        app(OperationalInstrumentService::class)->execute($earlyStance->phase, $earlyStance, ['kind' => 'citation', 'reference' => $signal->id]);
         $read = $this->gate($this->move($author, ['action' => 'proposition.reclassify', 'statement' => 'Shared Concord Read']));
         $left = $this->gate($this->move($author, ['action' => 'proposition.variant', 'statement' => 'First dispersed Signal']));
         $this->assertSame(PhaseKind::Disperse, $left->phase->kind);
@@ -240,6 +242,7 @@ class OperationalClosurePathTest extends TestCase
         ]));
         $signal = $this->gate($this->move($author, ['action' => 'proposition.variant', 'statement' => 'Signal']));
         $earlyStance = $this->gate($this->move($author, ['action' => 'proposition.variant', 'statement' => 'Stance']));
+        app(OperationalInstrumentService::class)->execute($earlyStance->phase, $earlyStance, ['kind' => 'citation', 'reference' => $signal->id]);
         $read = $this->gate($this->move($author, ['action' => 'proposition.reclassify', 'statement' => 'Concord Read']));
         $left = $this->gate($this->move($author, ['action' => 'proposition.variant', 'statement' => 'Dispersed Signal']));
         $builder = $this->participant('builder');
@@ -266,12 +269,17 @@ class OperationalClosurePathTest extends TestCase
         $this->assertSame($origin->id, $state['plan']['gate_id']);
         $this->assertSame('committal', $state['plan']['gate_options'][0]['tier']);
         $this->assertSame('distinguish', $state['plan']['phase']['kind']);
-        $newSignal = $this->gate($this->move($author, ['action' => 'proposition.variant', 'statement' => 'Fresh Cycle Signal']));
-        $this->assertSame('signal', $newSignal->register);
-        $this->assertSame([$origin->id], $newSignal->parents()->pluck('propositions.id')->all());
+        $this->assertArrayNotHasKey('proposition.variant', $state['plan']['schema']['$defs']['actions']);
+        $before = Proposition::count();
+        $continued = $this->gate($this->move($author, [
+            'action' => 'attestation.create', 'proposition_id' => $signal->id, 'direction' => 'support',
+        ]));
+        $this->assertSame($signal->id, $continued->id);
+        $this->assertSame($before, Proposition::count());
+        $this->assertSame([$origin->id], $continued->parents()->pluck('propositions.id')->all());
         $this->assertDatabaseMissing('supersessions', [
             'source_proposition_id' => $concord->id,
-            'target_proposition_id' => $newSignal->id,
+            'target_proposition_id' => $continued->id,
         ]);
         foreach (Proposition::where('tier', 'expressive')->get() as $proposition) {
             $this->assertExpressiveDepth($proposition, 6);

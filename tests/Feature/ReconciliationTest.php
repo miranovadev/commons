@@ -15,10 +15,15 @@ use App\Models\Supersession;
 use App\Services\ContributionDispatcher;
 use App\Services\InputPlanService;
 use App\Services\LedgerService;
+use App\Services\MediationReadService;
+use App\Services\Observables\ReinforcementService;
 use App\Services\OpenAIResponseSchema;
+use App\Services\OperationalInstrumentService;
 use App\Services\ParticipantPromptFactory;
 use App\Services\ParticipationService;
+use App\Services\PhaseProgressionService;
 use App\Services\PropositionMeasurementService;
+use App\Services\PropositionStateService;
 use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Opis\JsonSchema\Helper;
@@ -31,10 +36,15 @@ class ReconciliationTest extends TestCase
     use RefreshDatabase;
 
     private Substrate $substrate;
+
     private Phase $history;
+
     private Participant $viewer;
+
     private Phase $phase;
+
     private Proposition $parent;
+
     private Proposition $gate;
 
     private function fixture(float $correspondence = -0.8): void
@@ -53,7 +63,7 @@ class ReconciliationTest extends TestCase
         $disperse = $this->newPhase($this->viewer, PhaseKind::Disperse, 'activity');
         $disperse->gate_proposition_id = $this->parent->id;
         $disperse->save();
-        $this->phase = app(\App\Services\PhaseProgressionService::class)->advance($disperse, $this->gate);
+        $this->phase = app(PhaseProgressionService::class)->advance($disperse, $this->gate);
         $this->phase->gate_proposition_id = $this->gate->id;
         $this->phase->save();
         // Phase creation invalidates derived views; install this test's controlled
@@ -141,7 +151,7 @@ class ReconciliationTest extends TestCase
         $this->attest($sibling, 'support');
         $this->attest($this->gate, 'support');
         foreach ([$this->gate, $sibling] as $source) {
-            app(\App\Services\OperationalInstrumentService::class)->execute($this->phase, $source,
+            app(OperationalInstrumentService::class)->execute($this->phase, $source,
                 ['kind' => 'hyperlink', 'reference' => 'https://example.test/source/'.$source->id]);
         }
         $plan = $this->plan();
@@ -170,7 +180,7 @@ class ReconciliationTest extends TestCase
         $this->assertSame($this->gate->statement, $created->statement);
         $this->assertSame('expressive', $created->tier);
         $this->assertSame($this->phase->write_register, $created->register);
-        $history = app(\App\Services\PropositionStateService::class);
+        $history = app(PropositionStateService::class);
         $this->assertCount(0, $history->attestations(collect([$created])));
         $this->assertCount(0, $history->receipts($created));
         $this->assertSame([$created->id], $history->sourceIds($created)->all());
@@ -273,7 +283,7 @@ class ReconciliationTest extends TestCase
         $this->edge($this->gate, $this->node('Hard replacement', 'frontier'), 'reclassify');
         $this->assertNotEmpty($this->plan()['gate_options']);
         $this->phase->cycle->phases()->where('kind', PhaseKind::Disperse->value)->update(['completed_at' => null]);
-        $this->assertCount(0, app(\App\Services\MediationReadService::class)->readsFor($this->phase));
+        $this->assertCount(0, app(MediationReadService::class)->readsFor($this->phase));
     }
 
     private function readSibling(string $statement, float $correspondence, float $gateCorrespondence): array
@@ -282,36 +292,57 @@ class ReconciliationTest extends TestCase
         $this->edge($this->parent->parents()->firstOrFail(), $read);
         $gate = $this->node($statement.' child', $this->gate->register, $gateCorrespondence);
         $this->edge($read, $gate);
+
         return [$read, $gate];
     }
 
-    public function test_different_participants_can_reconcile_the_same_inputs_and_only_results_earn_reinforcement(): void
+    public function test_directed_reconciliation_is_unique_across_participants_but_inverse_and_distinct_pairs_remain_valid(): void
     {
         $this->fixture();
         $b = $this->sibling('B');
         $c = $this->sibling('C');
-        $results = [];
-        foreach ([$b, $b, $c] as $index => $counterpart) {
-            $viewer = $index === 0 ? $this->viewer : $this->participant('competitor-'.$index);
-            if ($index === 0) {
-                $phase = $this->phase;
-            } else {
-                $viewer->forceFill(['current_proposition_id' => $this->gate->id])->save();
-                $disperse = $this->newPhase($viewer, PhaseKind::Disperse, 'activity');
-                $disperse->forceFill(['gate_proposition_id' => $this->parent->id])->save();
-                $phase = app(\App\Services\PhaseProgressionService::class)->advance($disperse, $this->gate);
-            }
-            app(ParticipationService::class)->contribute($viewer, $phase->id,
-                ['action' => 'proposition.reconcile', 'other_proposition_id' => $counterpart->id]);
-            $result = Proposition::findOrFail($viewer->fresh()->current_proposition_id);
-            $results[] = $result;
-            $this->assertEqualsCanonicalizing([$this->gate->id, $counterpart->id], $result->parents->pluck('id')->all());
-            $this->assertSame(0, app(\App\Services\Observables\ReinforcementService::class)->count($result));
+        $input = ['action' => 'proposition.reconcile', 'other_proposition_id' => $b->id];
+        app(ParticipationService::class)->contribute($this->viewer, $this->phase->id, $input);
+        $x = Proposition::findOrFail($this->viewer->fresh()->current_proposition_id);
+        $this->assertSame(0, app(ReinforcementService::class)->count($x));
+
+        $competitor = $this->participant('competitor');
+        $disperse = $this->newPhase($competitor, PhaseKind::Disperse, 'activity');
+        $disperse->forceFill(['gate_proposition_id' => $this->parent->id])->save();
+        $phase = app(PhaseProgressionService::class)->advance($disperse, $this->gate);
+        $plan = app(InputPlanService::class)->forParticipant($competitor);
+        $this->assertInput($plan['schema'], $input, false);
+        $this->assertSame([$c->id], array_column($plan['gate_options'], 'id'));
+        $this->assertContains($x->id, array_column($plan['write_options'], 'id'));
+        $this->assertInput($plan['schema'], ['action' => 'attestation.create', 'proposition_id' => $x->id, 'direction' => 'support'], true);
+        $count = Proposition::count();
+        try {
+            app(ContributionDispatcher::class)->dispatch($competitor, $phase, $input);
+            $this->fail('The same directed pair cannot be regenerated.');
+        } catch (DomainException) {
+            $this->assertSame($count, Proposition::count());
         }
-        $this->assertCount(3, collect($results)->unique('id'));
-        $this->verifiedReceiptFixture($results[0]);
-        $this->assertSame([1, 0, 0], array_map(fn ($node) => app(\App\Services\Observables\ReinforcementService::class)->count($node), $results));
-        $this->assertSame(3, $this->gate->children()->where('supersessions.type', 'reconcile')->count());
+        // A + C is distinct even though A has already reconciled B.
+        $z = app(ContributionDispatcher::class)->dispatch($competitor, $phase,
+            ['action' => 'proposition.reconcile', 'other_proposition_id' => $c->id]);
+        $this->assertSame($this->gate->statement, $z->statement);
+
+        // Reverse dominance is a distinct directed relationship, including for
+        // a Participant who has already authored the forward relationship.
+        $this->phase->forceFill(['completed_at' => now()])->save();
+        $this->phase->cycle->forceFill(['completed_at' => now()])->save();
+        $disperse = $this->newPhase($this->viewer, PhaseKind::Disperse, 'activity');
+        $disperse->forceFill(['gate_proposition_id' => $this->parent->id])->save();
+        $inverse = app(PhaseProgressionService::class)->advance($disperse, $b);
+        $reverse = ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gate->id];
+        $this->assertInput($this->plan()['schema'], $reverse, true);
+        $y = app(ContributionDispatcher::class)->dispatch($this->viewer, $inverse, $reverse);
+        $this->assertSame($b->statement, $y->statement);
+        $this->assertNotSame($x->id, $y->id);
+        $this->assertEqualsCanonicalizing($x->parents->pluck('id')->all(), $y->parents->pluck('id')->all());
+        $this->assertInput($this->plan()['schema'], $reverse, false);
+        $this->verifiedReceiptFixture($x);
+        $this->assertSame([1, 0, 0], array_map(fn ($node) => app(ReinforcementService::class)->count($node), [$x, $y, $z]));
     }
 
     private function assertInput(array $schema, array $input, bool $valid): void
@@ -320,47 +351,61 @@ class ReconciliationTest extends TestCase
         $this->assertSame($valid, $result->isValid(), json_encode($input));
     }
 
-    private function plan(): array { return app(InputPlanService::class)->forParticipant($this->viewer); }
+    private function plan(): array
+    {
+        return app(InputPlanService::class)->forParticipant($this->viewer);
+    }
+
     private function sibling(string $statement, float $correspondence = -0.5): Proposition
     {
         $node = $this->node($statement, $this->gate->register, $correspondence);
         $this->edge($this->parent, $node);
+
         return $node;
     }
+
     private function node(string $statement, string $register, float $correspondence = -0.5, string $tier = 'expressive'): Proposition
     {
         $node = new Proposition;
         $node->forceFill(['phase_id' => $this->history->id, 'register' => $register, 'tier' => $tier, 'statement' => $statement])->save();
         app(LedgerService::class)->record($node);
         app(PropositionMeasurementService::class)->project($node, $correspondence, -1, -1);
+
         return $node;
     }
+
     private function edge(Proposition $source, Proposition $target, string $type = 'variant'): void
     {
         $edge = new Supersession;
         $edge->forceFill(['phase_id' => $this->history->id, 'source_proposition_id' => $source->id, 'target_proposition_id' => $target->id, 'type' => $type])->save();
         app(LedgerService::class)->record($edge);
     }
+
     private function participant(string $callsign): Participant
     {
         $participant = new Participant;
         $participant->forceFill(['substrate_id' => $this->substrate->id, 'callsign' => $callsign, 'max_read_count' => 25])->save();
+
         return $participant;
     }
+
     private function newPhase(Participant $participant, PhaseKind $kind, string $register, bool $completed = false): Phase
     {
         $cycle = new Cycle;
         $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => (int) $participant->cycles()->max('sequence') + 1, 'completed_at' => $completed ? now() : null])->save();
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => $kind, 'write_register' => $register, 'started_at' => now(), 'completed_at' => $completed ? now() : null])->save();
+
         return $phase;
     }
+
     private function attest(Proposition $node, string $direction): Attestation
     {
         $phase = $this->newPhase($this->participant('witness-'.Attestation::count()), PhaseKind::Persist, $node->register, true);
         $attestation = new Attestation;
         $attestation->forceFill(['phase_id' => $phase->id, 'proposition_id' => $node->id, 'direction' => $direction])->save();
         app(LedgerService::class)->record($attestation);
+
         return $attestation;
     }
 }

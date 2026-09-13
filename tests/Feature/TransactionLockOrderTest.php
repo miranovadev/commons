@@ -8,10 +8,14 @@ use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Substrate;
+use App\Models\Supersession;
 use App\Models\User;
+use App\Services\ContributionDispatcher;
 use App\Services\CycleEntryService;
 use App\Services\InstrumentExecutionService;
+use App\Services\LedgerService;
 use App\Services\ParticipationService;
+use App\Services\PhaseProgressionService;
 use App\Services\PropositionMeasurementService;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Facades\DB;
@@ -141,6 +145,61 @@ class TransactionLockOrderTest extends TestCase
     }
 
     /** Hold the root, observe a real lock wait, exercise the competing operation, release. */
+    public function test_waiting_generation_rechecks_personal_history_after_the_first_writer_commits(): void
+    {
+        [$substrate, $participant, $phase] = $this->fixture();
+        $input = ['action' => 'proposition.variant', 'statement' => 'One distinction'];
+        $this->whileWorkerWaits($substrate, [
+            'operation' => 'dispatch-rejected', 'participant_id' => $participant->id, 'phase_id' => $phase->id,
+            'contribution' => $input, 'expected_message' => 'generation opportunity is unavailable',
+        ], function () use ($participant, $phase, $input): void {
+            app(ContributionDispatcher::class)->dispatch($participant, $phase, $input);
+        });
+        $this->assertSame(1, Proposition::where('tier', 'expressive')->count());
+    }
+
+    public function test_waiting_reconciliation_rechecks_the_directed_pair_across_participants(): void
+    {
+        [$substrate, $first, $phase] = $this->fixture();
+        $seed = $phase->gate;
+        $node = function (string $register, Proposition $parent) use ($phase): Proposition {
+            $node = new Proposition;
+            $node->forceFill(['phase_id' => $phase->id, 'register' => $register, 'tier' => 'expressive', 'statement' => 'Shared structure'])->save();
+            app(LedgerService::class)->record($node);
+            $edge = new Supersession;
+            $edge->forceFill(['phase_id' => $phase->id, 'source_proposition_id' => $parent->id,
+                'target_proposition_id' => $node->id, 'type' => 'variant'])->save();
+            app(LedgerService::class)->record($edge);
+
+            return $node;
+        };
+        $read = $node('concord', $seed);
+        $a = $node('signal', $read);
+        $b = $node('signal', $read);
+        $second = new Participant;
+        $second->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'second'])->save();
+        $phases = [];
+        foreach ([$first, $second] as $participant) {
+            $cycle = new Cycle;
+            $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => (int) $participant->cycles()->max('sequence') + 1,
+                'context_horizon_id' => $phase->cycle->context_horizon_id])->save();
+            $disperse = new Phase;
+            $disperse->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Disperse, 'write_register' => 'signal',
+                'gate_proposition_id' => $read->id, 'started_at' => now()])->save();
+            $phases[] = app(PhaseProgressionService::class)->advance($disperse, $a);
+        }
+        $input = ['action' => 'proposition.reconcile', 'other_proposition_id' => $b->id];
+        $before = Proposition::count();
+        $this->whileWorkerWaits($substrate, [
+            'operation' => 'dispatch-rejected', 'participant_id' => $second->id, 'phase_id' => $phases[1]->id,
+            'contribution' => $input, 'expected_message' => 'admissible Gate counterpart',
+        ], function () use ($first, $phases, $input): void {
+            app(ContributionDispatcher::class)->dispatch($first, $phases[0], $input);
+        });
+        $this->assertSame($before + 1, Proposition::count());
+        $this->assertSame(1, $a->children()->wherePivot('type', 'reconcile')->count());
+    }
+
     private function whileWorkerWaits(Substrate $substrate, array $input, callable $competing): void
     {
         $process = new Process([PHP_BINARY, base_path('tests/Support/concurrent-commons-worker.php')], base_path(), null,

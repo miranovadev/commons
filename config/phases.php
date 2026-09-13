@@ -40,15 +40,17 @@ return [
         'constraints' => [
             'proposition.reclassify' => [
                 'gate-owner',
+                'completed-gate-or-effective-attestation-receipt',
             ],
         ],
     ],
     4 => [
         'name' => 'disperse',
-        'description' => 'Open a new expressive branch, execute an instrument, or attest an immediate Write descendant.',
+        'description' => 'Open one expressive branch per Participant at this Gate, revise an owned Write, execute an instrument, or attest a Write descendant.',
         'gate' => 'previous-phase-position',
         'actions' => [
             'proposition.variant',
+            'proposition.revise',
             'instrument.execute',
             'attestation.create',
         ],
