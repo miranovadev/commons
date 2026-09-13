@@ -48,8 +48,9 @@ still repaired and persisted; their locks, direction updates and upserts are
 preserved. Those necessary cold-projection writes explain most of the remaining
 cold/warm query difference.
 
-Standalone PostgreSQL plan reads use a repeatable-read transaction so graph,
-evidence and rendering see one MVCC snapshot. Serialization/deadlock conflicts
+Standalone PostgreSQL plans can repair projections, so they acquire the Substrate
+lock before loading graph, evidence and rendering state under READ COMMITTED.
+Cooperating mutations cannot interleave with that context. Serialization/deadlock conflicts
 are retried up to three times by Laravel. An existing contribution transaction
 retains its own isolation and locks, and every new plan calculation inside it
 receives a fresh context after writes.

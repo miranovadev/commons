@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Services\Observables\LineageMeasurementService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Str;
@@ -28,8 +29,8 @@ class PropositionResource extends JsonResource
                 'id' => $execution->id, 'kind' => $execution->kind,
                 'reference' => $execution->reference, 'status' => $execution->status,
                 'failure_reason' => $execution->failure_reason, 'receipt_id' => $execution->receipt?->id,
-                    'reinforcement_status' => $execution->receipt?->metadata['reinforcement_status'] ?? null,
-                    'content_verified' => $execution->receipt?->metadata['content_verified'] ?? false,
+                'reinforcement_status' => $execution->receipt?->metadata['reinforcement_status'] ?? null,
+                'content_verified' => $execution->receipt?->metadata['content_verified'] ?? false,
             ])),
             'attestation_counts' => $this->whenLoaded('attestationCounts', fn () => $this->attestationCounts->all()),
             'title' => Str::limit($firstLine, 72),
@@ -65,7 +66,10 @@ class PropositionResource extends JsonResource
                 fn () => $this->tier === 'committal'
                     && $this->parents->isEmpty(),
             ),
+            // Last persisted values remain visible; observation never repairs them.
             'observables' => [
+                'status' => $measurement === null ? 'missing'
+                    : ($measurement->calculator_version === LineageMeasurementService::VERSION ? 'current' : 'stale'),
                 'correspondence' => $measurement?->correspondence,
                 'chirality' => $measurement?->chirality,
                 'closure' => $measurement?->closure,

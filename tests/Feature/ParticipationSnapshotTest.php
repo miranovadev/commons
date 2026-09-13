@@ -14,6 +14,7 @@ use App\Services\CommitRegionPolarityService;
 use App\Services\InputPlanService;
 use App\Services\LedgerService;
 use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -63,14 +64,9 @@ class ParticipationSnapshotTest extends TestCase
         $writer = DB::connection('performance_writer');
         $writer->statement("SET lock_timeout = '3s'");
         $writer->statement("SET statement_timeout = '5s'");
-        $inserted = false;
-        $armed = true;
-        DB::listen(function (QueryExecuted $query) use (&$armed, &$inserted, $writer, $phase, $candidate, $substrate): void {
-            if (! $armed || $query->connectionName === 'performance_writer' || ! str_contains($query->sql, 'from "supersessions"')) {
-                return;
-            }
-            $armed = false;
+        $write = function () use ($writer, $phase, $candidate, $substrate): void {
             $writer->transaction(function () use ($writer, $phase, $candidate, $substrate): void {
+                $writer->table('substrates')->where('id', $substrate->id)->lockForUpdate()->first();
                 $id = (string) str()->ulid();
                 $writer->table('attestations')->insert(['id' => $id, 'phase_id' => $phase->id, 'proposition_id' => $candidate->id,
                     'direction' => 'refute', 'created_at' => now(), 'updated_at' => now()]);
@@ -79,12 +75,26 @@ class ParticipationSnapshotTest extends TestCase
                     'kind' => 'attestation', 'ledgerable_type' => (new Attestation)->getMorphClass(), 'ledgerable_id' => $id, 'recorded_at' => now()]);
                 $writer->table('proposition_measurements')->where('proposition_id', $candidate->id)->update(['calculator_version' => null]);
             });
-            $inserted = true;
+        };
+        $blocked = false;
+        $armed = true;
+        DB::listen(function (QueryExecuted $query) use (&$armed, &$blocked, $writer, $substrate): void {
+            if (! $armed || $query->connectionName === 'performance_writer' || ! str_contains($query->sql, 'from "supersessions"')) {
+                return;
+            }
+            $armed = false;
+            try {
+                $writer->transaction(fn () => $writer->table('substrates')->where('id', $substrate->id)->lock('for update nowait')->first());
+            } catch (QueryException $exception) {
+                $this->assertSame('55P03', $exception->errorInfo[0]);
+                $blocked = true;
+            }
         });
         try {
             $during = $plans->forParticipant($viewer);
-            $this->assertTrue($inserted);
+            $this->assertTrue($blocked);
             $this->assertSame(json_encode($before), json_encode($during));
+            $write();
             $after = $plans->forParticipant($viewer);
             $this->assertSame(0, $before['gate']['attestation_counts']['refute']);
             $this->assertSame(1, $after['gate']['attestation_counts']['refute']);

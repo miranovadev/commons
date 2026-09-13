@@ -8,9 +8,11 @@ use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Substrate;
+use App\Models\User;
 use App\Services\CycleEntryService;
 use App\Services\InstrumentExecutionService;
 use App\Services\ParticipationService;
+use App\Services\PropositionMeasurementService;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
@@ -94,6 +96,47 @@ class TransactionLockOrderTest extends TestCase
             'operation' => 'project', 'proposition_id' => $phase->gate_proposition_id,
         ], function () use ($phase): void {
             $this->assertNotNull(Proposition::query()->lockForUpdate()->find($phase->gate_proposition_id));
+        });
+    }
+
+    public function test_graph_and_detail_finish_while_measurement_update_holds_shared_write_locks(): void
+    {
+        [$substrate, , $phase] = $this->fixture();
+        User::factory()->create();
+        $node = $phase->gate;
+        $node->measurement()->delete();
+        DB::beginTransaction();
+        try {
+            app(PropositionMeasurementService::class)->project($node, -0.75, 0.25, 0.5);
+            foreach (["/api/substrates/{$substrate->slug}/propositions", "/api/substrates/{$substrate->slug}/propositions/{$node->id}"] as $url) {
+                $process = new Process([PHP_BINARY, base_path('tests/Support/concurrent-commons-worker.php')], base_path(), null,
+                    json_encode(['operation' => 'read', 'url' => $url,
+                        'database' => config('database.connections.'.DB::getDefaultConnection())], JSON_THROW_ON_ERROR), 5);
+                // Writer remains uncommitted throughout the independent HTTP request.
+                // The old GET repair would wait on our root/node locks and time out.
+                $process->run();
+                $this->assertSame(0, $process->getExitCode(), $process->getErrorOutput());
+                $this->assertStringContainsString('"status":"missing"', $process->getOutput());
+                $this->assertStringContainsString('completed', $process->getOutput());
+            }
+            DB::commit();
+            $this->assertSame(-0.75, $node->fresh()->measurement->correspondence);
+            $this->assertSame('negative', $node->fresh()->correspondence_direction);
+        } finally {
+            if (DB::transactionLevel() > 0) {
+                DB::rollBack();
+            }
+        }
+    }
+
+    public function test_standalone_plan_loads_state_after_waiting_for_a_measurement_writer(): void
+    {
+        [$substrate, $participant, $phase] = $this->fixture();
+        $phase->gate->measurement()->update(['calculator_version' => null]);
+        $this->whileWorkerWaits($substrate, [
+            'operation' => 'plan', 'participant_id' => $participant->id,
+        ], function () use ($phase): void {
+            app(PropositionMeasurementService::class)->project($phase->gate, -0.75, 0.25, 0.5);
         });
     }
 
