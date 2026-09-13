@@ -58,6 +58,16 @@ class ParticipantContinuityTest extends TestCase
         $this->assertSame($register, $next['plan']['phase']['write_register']);
         $owner = $value > 0 ? ContextHorizon::where('opened_by_proposition_id', $commit->id)->sole() : $cycle->contextHorizon;
         $this->assertSame($owner->id, $next['cycle']['context_horizon_id']);
+        $workspace = $service->workspaceFor($participant)['plan'];
+        $this->assertSame($commit->id, $workspace['workspace']['provenance']['id']);
+        $this->assertSame($commit->id, $workspace['gate']['id']);
+        $this->assertSame($domain, $workspace['workspace']['horizon']['domain']);
+        // A real boundary continuation makes these references coincide naturally.
+        if ($value > 0) {
+            $this->assertSame($commit->id, $workspace['workspace']['horizon']['opening_proposition']['id']);
+            $this->assertSame('concord', $workspace['workspace']['horizon']['opening_proposition']['register']);
+        }
+
         $this->assertSame($otherPosition, $other->fresh()->current_proposition_id);
         $this->assertNull($otherCycle->fresh()->completed_at);
         $this->assertSame($cycle->context_horizon_id, $otherCycle->fresh()->context_horizon_id);

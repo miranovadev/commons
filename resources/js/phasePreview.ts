@@ -9,7 +9,7 @@ export function canPreviewPhase(current: PhaseKind, selected: PhaseKind) {
 /** Inspect only the server-resolved active history, never current options or Horizon cards. */
 export function phaseRegisterPreview(plan: ParticipantPlan, selected: PhaseKind) {
   if (!canPreviewPhase(plan.phase.kind, selected)) return null;
-  const domain = plan.workspace?.domain || domainForRegister(plan.phase.write_register);
+  const domain = plan.workspace?.horizon?.domain || plan.workspace?.domain || domainForRegister(plan.phase.write_register);
   const registers: RegisterName[] = domain === 'settlement' ? ['signal', 'stance', 'concord'] : ['activity', 'frontier', 'canon'];
   // Order retains the Bias Write register, as in PhaseProgressionService.
   const position = { distinguish: 0, persist: 1, constrain: 2, disperse: 0, mediate: 1, bias: 2, order: 2 }[selected];
