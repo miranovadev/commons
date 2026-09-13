@@ -133,6 +133,10 @@ class OperationalClosurePathTest extends TestCase
             'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/final-concord'],
         ]);
 
+        $receiptId = $concord->instrumentExecutions()->with('receipt')->latest('id')->firstOrFail()->receipt->id;
+        $this->assertFalse($this->state($builder)['plan']['commitment']['requirements']['reinforcement']);
+        $this->move($builder, ['action' => 'receipt.read', 'receipt_id' => $receiptId]);
+
         // These three participants have each observed Signal, Read and final Concord once.
         // Equal active-head touches have zero CV, matching the Origin; depth has grown.
         $order = Phase::findOrFail($this->state($builder)['plan']['phase']['id']);

@@ -51,7 +51,7 @@ class CommitParticipationStateTest extends TestCase
         $attestation = new Attestation;
         $attestation->forceFill(['phase_id' => $this->phase->id, 'proposition_id' => $gate->id, 'direction' => 'support'])->save();
         app(LedgerService::class)->record($attestation);
-        $receipt = $this->verifiedReceiptFixture($gate);
+        $receipt = $this->loadedReceiptFixture($gate);
         $counts = [Attestation::count(), Receipt::count(), Phase::count()];
         $comparison = app(ContextLineageComparisonService::class)->prospectiveCommit($gate, $this->phase);
         $preview = $comparison->current->propositions->last();
@@ -61,7 +61,7 @@ class CommitParticipationStateTest extends TestCase
         foreach ([$preview, $actual] as $head) {
             $state->loadAttestationCounts(collect([$head]));
             $this->assertSame(['support' => 1, 'refute' => 0], $head->attestationCounts->all());
-            $this->assertSame(2, $state->touchCount($head));
+            $this->assertSame(3, $state->touchCount($head)); // Includes the loading fixture’s Gate Phase.
             $this->assertSame([$attestation->id], $state->attestations(collect([$head]))->pluck('id')->all());
             $this->assertSame([$receipt->id], $state->receipts($head)->pluck('id')->all());
             $this->assertTrue(app(CommitmentAdmissibilityService::class)->grounding($head)['admissible']);
@@ -77,7 +77,7 @@ class CommitParticipationStateTest extends TestCase
         $this->touch($actual);
         $next = $this->node('committal');
         $this->edge($actual, $next, 'commit');
-        $this->assertSame(3, $state->touchCount($next));
+        $this->assertSame(4, $state->touchCount($next));
         $this->assertCount(1, $state->receipts($next));
         $this->assertCount(1, $state->attestations(collect([$actual, $next])));
     }

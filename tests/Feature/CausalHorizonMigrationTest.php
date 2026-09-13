@@ -21,7 +21,7 @@ class CausalHorizonMigrationTest extends TestCase
 
     protected function afterRefreshingDatabase(): void
     {
-        $this->artisan('migrate:rollback', ['--step' => 1])->assertSuccessful();
+        $this->artisan('migrate:rollback', ['--path' => 'database/'.self::MIGRATION])->assertSuccessful();
     }
 
     public function test_legacy_cycles_are_backfilled_and_late_memberships_are_repaired_without_changing_snapshots(): void

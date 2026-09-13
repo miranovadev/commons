@@ -96,6 +96,11 @@ class OperationalCommitmentTest extends TestCase
             'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/final'],
         ]);
         $this->assertSame('order', $state['plan']['phase']['kind']);
+        $this->assertFalse($state['plan']['commitment']['requirements']['reinforcement']);
+        $receiptId = $candidate->instrumentExecutions()->with('receipt')->latest('id')->firstOrFail()->receipt->id;
+        $phaseIdBeforeRead = $state['plan']['phase']['id'];
+        $state = $this->move($this->participant, ['action' => 'receipt.read', 'receipt_id' => $receiptId]);
+        $this->assertSame($phaseIdBeforeRead, $state['plan']['phase']['id']);
         $this->assertSame('ready', $state['status']);
         $this->assertTrue($state['plan']['commitment']['admissible']);
         $this->assertTrue($state['plan']['commitment']['closure_enforced']);
@@ -169,7 +174,7 @@ class OperationalCommitmentTest extends TestCase
         $this->assertFalse($service->grounding($gate)['requirements']['receipt']);
         $executions->complete($execution, $first);
         $this->assertFalse($service->grounding($gate)['admissible']);
-        $this->verifiedReceiptFixture($gate, $first);
+        $this->loadedReceiptFixture($gate, $first);
         $this->assertTrue($service->grounding($gate)['admissible']);
         $this->attest($gate, $first);
         $this->assertFalse($service->grounding($gate)['requirements']['receipt']);
@@ -287,6 +292,7 @@ class OperationalCommitmentTest extends TestCase
         $this->assertNotNull($state['completion']);
         // A later explicit Cycle may revisit this candidate; Order never repeats.
         $this->phase($reader, PhaseKind::Order, 'concord', $candidate);
+        $this->move($reader, ['action' => 'receipt.read', 'receipt_id' => $receipt->id]);
         $this->move($reader, ['action' => 'proposition.commit']);
         $committed = Proposition::findOrFail($reader->fresh()->current_proposition_id);
         $this->assertSame('committal', $committed->tier);

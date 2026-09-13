@@ -143,10 +143,12 @@ seed fresh Phase 1 branches, including branches from multiple Participants.
 
 ## 12. Receipts and Reinforcement Are Distinct
 
-Only qualifying verified evidence produces Reinforcement. Creating a Cite Receipt
-records evidence; it does not itself grant Reinforcement. A Participant may
+Only qualifying evidence currently loaded by a Participant produces active
+Reinforcement. Creating a Cite Receipt records evidence; it does not itself grant Reinforcement. A Participant may
 contribute at most one counted Reinforcement to a Proposition; repeated Receipts
 and shared signatures remain historical events rather than extra measurement weight.
+Loaded state persists across Cycles and Context Horizons until cleared. Clearing
+removes active Reinforcement without deleting the Receipt or its history.
 
 ## 13. Reinforcement Forms State Before Attenuation Propagates It
 
@@ -155,14 +157,14 @@ structural attenuation is applied. Attenuation affects propagation of a measured
 state, not formation of that state. Receipts and Reinforcement are never discounted
 by distance before entering the Proposition's own calculation.
 
-## 14. Commitment Requires Subsequent Reinforcement
+## 14. Commitment Requires Active Reinforcement
 
 A Proposition cannot become Committal solely from its originating state or from
-possession of a Receipt. At least one counted Reinforcement from a later
-interaction is required before operational Commitment is admissible, alongside
+possession of a Receipt. At least one active Reinforcement from explicit Receipt
+loading is required before operational Commitment is admissible, alongside
 all existing phase and measurement constraints. The explicit Origin initialization
 seed is a bootstrap exception, not earned Settlement; its originating evidence
-supplies no counted Reinforcement.
+supplies no counted Reinforcement until explicitly loaded.
 
 ## 15. Reinforcement Does Not Suppress Branching
 

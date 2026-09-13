@@ -6,7 +6,7 @@ use App\Domain\Observables\AttestationTimeline;
 use App\Enums\ObservableDirection as Direction;
 use App\Models\Attestation;
 use App\Models\Proposition;
-use App\Models\Receipt;
+use App\Models\ReceiptContextEvent;
 use App\Models\Substrate;
 use App\Models\Supersession;
 use App\Services\Observables\ReinforcementService;
@@ -74,10 +74,21 @@ final readonly class AttestationEvidenceService
     {
         $attestations = $context !== null ? $context->attestationsFor($sourceIds) : Attestation::query()->whereIn('proposition_id', $sourceIds)
             ->with(['ledgerEntry', 'supersededBy.ledgerEntry', 'proposition.phase.cycle.participant'])->get();
-        $receipts = $context !== null ? $context->reinforcementReceipts((new Attestation)->getMorphClass(), $attestations->pluck('id'))->groupBy('receiptable_id') : Receipt::query()->where('receiptable_type', (new Attestation)->getMorphClass())
-            ->whereIn('receiptable_id', $attestations->pluck('id'))
-            ->whereHas('reinforcement')->whereHas('instrumentExecution', fn ($q) => $q->where('status', 'completed'))
-            ->with('ledgerEntry')->get()->groupBy('receiptable_id');
+        $events = $context !== null ? $context->receiptContextEvents : ReceiptContextEvent::whereHas('context', fn ($q) => $q->whereIn('proposition_id', $sourceIds))
+            ->with(['ledgerEntry', 'context.receipt'])->get();
+        $loads = [];
+        $contexts = $context?->receiptContexts->keyBy('id');
+        $receipts = $context?->receipts->keyBy('id');
+        foreach ($events as $event) {
+            $load = $context !== null ? $contexts->get($event->participant_receipt_context_id) : $event->context;
+            $receipt = $context !== null ? $receipts->get($load->receipt_id) : $load->receipt;
+            if ($receipt?->receiptable_type === (new Attestation)->getMorphClass()) {
+                $loads[$receipt->receiptable_id][] = [
+                    'id' => $load->id, 'participant_id' => $load->participant_id,
+                    'sequence' => $event->ledgerEntry?->sequence ?? 0, 'action' => $event->action,
+                ];
+            }
+        }
         $frames = [];
         $rows = [];
         foreach ($attestations as $attestation) {
@@ -94,7 +105,7 @@ final readonly class AttestationEvidenceService
                 'sequence' => $attestation->ledgerEntry?->sequence ?? 0,
                 'replaced_at' => $attestation->supersededBy === null ? null : ($attestation->supersededBy->ledgerEntry?->sequence ?? 0),
                 'sign' => $attestation->direction === 'support' ? $support : -$support,
-                'receipts' => $receipts->get($attestation->id, collect())->map(fn ($receipt) => $receipt->ledgerEntry?->sequence ?? 0)->all(),
+                'loads' => $loads[$attestation->id] ?? [],
             ];
         }
 

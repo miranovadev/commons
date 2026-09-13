@@ -77,7 +77,9 @@ class HyperlinkVerifier
                 // Missing or malformed source timestamps cannot invent version precision.
             }
 
-            return new VerifiedHyperlink($this->identity->resource($url), hash('sha256', $body), $observed, $modified);
+            return new VerifiedHyperlink($this->identity->resource($url), hash('sha256', $body), $observed, $modified,
+                str_starts_with($type, 'text/') || $type === 'application/json' ? mb_substr(mb_convert_encoding($body, 'UTF-8', 'UTF-8'), 0, 1200) : null,
+                mb_strlen($body) > 1200);
         }
 
         throw new DomainException('Hyperlink verification exceeded the redirect limit.');

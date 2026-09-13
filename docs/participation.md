@@ -199,7 +199,7 @@ Committals already authored in this row for Attestation and Instruments.
 
 Constrain requires Receipt existence, independently of Reinforcement. Order keeps
 its counted-Reinforcement, effective-Attestation and Depth/Cadence prerequisites.
-No Receipt loading or Reinforcement lifecycle changes are made by this rule.
+Receipt loading is a separate context action; it does not reset generation opportunities.
 With the current action set, a fresh Constrain Gate without a Receipt or an
 existing Written continuation has no admissible move except Rest. Persist does
 not expose an Instrument to produce that initial Receipt; this change does not
@@ -514,3 +514,14 @@ Instrument execution is configured in Constrain, Disperse, Bias and Order.
 this change does not expand target validation or modify Receipt ownership.
 Order grounding completes this Cycle even if Commitment is not yet admissible.
 
+
+### Receipt Reads
+
+`receipt.read` selects one qualifying encountered Receipt by `receipt_id`. It is
+available in every Phase when evidence can add to context. It does not advance the
+Phase or move the Gate. Loaded state persists for the Participant across Cycles
+and Horizons; later encounters preload the evidence. Cite references already
+present in lineage/Read/Gate/Write cannot be newly loaded. A loaded Receipt is
+never offered as another Read. Only active loads contribute Reinforcement; an
+Instrument execution alone does not. The Receipt context panel follows these
+same schema permissions. See [Reinforcement](reinforcement.md).

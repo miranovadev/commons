@@ -167,7 +167,9 @@ class ReconciliationTest extends TestCase
         $this->assertSame($plan['schema'], $prompt['schema']);
         $this->assertSame(json_decode(json_encode($state['plan']['read_options']), true), json_decode($prompt['user'], true)['plan']['read_options']);
         $transport = app(OpenAIResponseSchema::class)->fromCommons($prompt['schema']);
-        $properties = $transport['properties']['contribution'];
+        $union = $transport['properties']['contribution'];
+        $properties = isset($union['anyOf'])
+            ? collect($union['anyOf'])->first(fn ($variant) => $variant['properties']['action']['enum'] === ['proposition.reconcile']) : $union;
         $this->assertArrayNotHasKey('statement', $properties['properties']);
         $wire = array_replace(array_fill_keys($properties['required'], null), $input);
         $this->assertInput($transport, ['contribution' => $wire], true);
@@ -341,7 +343,7 @@ class ReconciliationTest extends TestCase
         $this->assertNotSame($x->id, $y->id);
         $this->assertEqualsCanonicalizing($x->parents->pluck('id')->all(), $y->parents->pluck('id')->all());
         $this->assertInput($this->plan()['schema'], $reverse, false);
-        $this->verifiedReceiptFixture($x);
+        $this->loadedReceiptFixture($x);
         $this->assertSame([1, 0, 0], array_map(fn ($node) => app(ReinforcementService::class)->count($node), [$x, $y, $z]));
     }
 

@@ -137,7 +137,7 @@ class ParticipantContextTest extends TestCase
         $instrument = collect($write['instruments'])->firstWhere('receipt_id', $receipt->id);
         $this->assertNotNull($instrument);
         $this->assertSame('citation', $instrument['kind']);
-        $this->assertSame('non-reinforcing', $instrument['reinforcement_status']);
+        $this->assertSame('already-in-context', $instrument['reinforcement_status']);
     }
 
     #[DataProvider('evidencePhases')]

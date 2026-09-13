@@ -88,7 +88,7 @@ class BiasGateTest extends TestCase
         $this->assertLessThan(0, (float) $this->gate->fresh()->measurement->chirality);
         $instruments = app(InstrumentExecutionService::class);
         foreach (range(1, 4) as $i) {
-            $this->verifiedReceiptFixture($refute, $negative);
+            $this->loadedReceiptFixture($refute, $negative);
         }
         $this->assertLessThan(0, $service->leanFor($this->phase));
         $this->assertSame([$refute->id], $this->optionIds());
@@ -133,7 +133,9 @@ class BiasGateTest extends TestCase
         $this->assertSame($plan['schema'], $prompt['schema']);
         $this->assertSame($this->optionIds(), array_column(json_decode($prompt['user'], true)['plan']['gate_options'], 'id'));
         $transport = app(OpenAIResponseSchema::class)->fromCommons($prompt['schema']);
-        $properties = $transport['properties']['contribution'];
+        $union = $transport['properties']['contribution'];
+        $properties = isset($union['anyOf'])
+            ? collect($union['anyOf'])->first(fn ($variant) => $variant['properties']['action']['enum'] === ['proposition.bias']) : $union;
         $this->assertArrayNotHasKey('other_proposition_id', $properties['properties']);
         $this->assertArrayNotHasKey('statement', $properties['properties']);
         $wire = array_replace(array_fill_keys($properties['required'], null), $input);

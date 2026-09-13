@@ -100,7 +100,7 @@ class ObservableServiceTest extends TestCase
         $this->attest($next, 'refute');
         $this->attest($target, 'support');
 
-        $this->verifiedReceiptFixture($target);
+        $this->loadedReceiptFixture($target);
         $measurement = app(PropositionMeasurementService::class)
             ->recalculate($target);
 

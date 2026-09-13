@@ -2,8 +2,8 @@
 
 namespace App\Services\Observables;
 
+use App\Models\ParticipantReceiptContext;
 use App\Models\Proposition;
-use App\Models\Reinforcement;
 use App\Models\Substrate;
 use App\Services\Participation\ParticipationContext;
 use App\Services\PropositionStateService;
@@ -19,7 +19,7 @@ final class ReinforcementService
     {
         $ids = $this->state->sourceIds($proposition, $context);
         $rows = $context !== null ? $context->reinforcements->whereIn('proposition_id', $ids)
-            : Reinforcement::whereIn('proposition_id', $ids)->get();
+            : ParticipantReceiptContext::active()->whereIn('proposition_id', $ids)->get();
 
         return $rows->unique('participant_id')->count();
     }

@@ -185,7 +185,7 @@ Effective Attestations and completed Receipts remain accessible through the same
 inheritance resolver. They retain their original IDs, authors, targets and
 supersession history; no evidence rows are copied. Completed Receipts on effective
 Attestations still ground the committed state. Counted Reinforcement follows Commit-only source references and deduplicates
-Participants, never raw Receipt events. Lean uses allocated Reinforcement receipts
+Participants, never raw Receipt events. Lean uses active loaded Receipt contributions
 and deduplicates Attestation IDs shared by multiple Commit heads. Evidence is resolved from current
 effective state; immutable Commitment snapshots preserve the observation made
 at Commitment.
@@ -204,8 +204,8 @@ contribution records remain attached to their original Propositions.
 
 ## Reinforcement and bootstrap
 
-Only qualifying verified Hyperlink evidence can allocate counted Reinforcement.
-Legacy signatures, originating evidence, Cite and unsupported types do not count.
+Only qualifying Cite or verified Hyperlink evidence currently loaded by a Participant contributes active Reinforcement.
+Unloaded evidence, legacy signatures without verification provenance and unsupported types do not count.
 The default contribution-to-Receipt ratio is 3:1. A Substrate can override it
 through the observables.contribution_receipt_ratio configuration value.
 
@@ -226,7 +226,7 @@ Missing/unmeasurable Potential candidates remain ineligible. No persistent raw
 cache is introduced; prospective Closure always evaluates current Phase history.
 
 Immutable commitment snapshots continue to preserve the values observed at
-commitment time. New non-bootstrap commitments record participant-reinforcement-v4.
+commitment time. New non-bootstrap commitments record receipt-context-lineage-v6.
 
 See [Attestation polarity and direction history](attestation-polarity.md) for the
 normative distinction between measurement values, retained directions and labels.

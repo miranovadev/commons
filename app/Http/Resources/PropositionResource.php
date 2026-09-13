@@ -29,7 +29,7 @@ class PropositionResource extends JsonResource
                 'id' => $execution->id, 'kind' => $execution->kind,
                 'reference' => $execution->reference, 'status' => $execution->status,
                 'failure_reason' => $execution->failure_reason, 'receipt_id' => $execution->receipt?->id,
-                'reinforcement_status' => $execution->receipt?->metadata['reinforcement_status'] ?? null,
+                'reinforcement_status' => null, // Loaded state is viewer-relative; supplied by Participant plans.
                 'content_verified' => $execution->receipt?->metadata['content_verified'] ?? false,
             ])),
             'attestation_counts' => $this->whenLoaded('attestationCounts', fn () => $this->attestationCounts->all()),

@@ -10,7 +10,6 @@ use App\Models\Proposition;
 use App\Models\PropositionMeasurement;
 use App\Models\Receipt;
 use App\Models\Substrate;
-use App\Services\Evidence\ReinforcementRecorder;
 use App\Services\Evidence\ReinforcementSignatureService;
 use DomainException;
 use Illuminate\Database\Eloquent\Model;
@@ -22,7 +21,6 @@ final readonly class InstrumentExecutionService
         private LedgerService $ledger,
         private PropositionMeasurementService $measurements,
         private ReinforcementSignatureService $signatures,
-        private ReinforcementRecorder $reinforcement,
     ) {}
 
     /** @param array<string, mixed> $input */
@@ -114,7 +112,7 @@ final readonly class InstrumentExecutionService
             $locked->save();
 
             $receipt->setRelation('instrumentExecution', $locked);
-            $metadata['reinforcement_status'] = $this->reinforcement->record($receipt);
+            $metadata['reinforcement_status'] = 'not-loaded';
             $receipt->metadata = $metadata;
             $receipt->save();
             $locked->metadata = $metadata;

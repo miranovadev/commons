@@ -25,6 +25,7 @@ final readonly class InputPlanService
         private PropositionStateService $state,
         private MediationReadService $mediation,
         private PropositionPresentationService $presentation,
+        private ReceiptContextService $receipts,
     ) {}
 
     /** @return array<string, mixed> */
@@ -149,6 +150,7 @@ final readonly class InputPlanService
             'provenance_id' => $lineage->firstWhere('tier', 'committal')?->id,
             'lineage' => $this->propositions($historical, $participant, $context),
             'read_options' => $this->propositions($readOptions, $participant, $context),
+            'receipts' => $this->receipts->forPhase($phase, $context)->all(),
             'tragedy' => isset($schema['$defs']['actions']['participant.rest']),
             'traversal_options' => $this->propositions($traversalOptions, $participant, $context),
             'instrument_options' => $this->propositions($instrumentOptions, $participant, $context),
@@ -351,7 +353,7 @@ final readonly class InputPlanService
                     'status' => $execution->status,
                     'failure_reason' => $execution->failure_reason,
                     'receipt_id' => $execution->receipt?->getKey(),
-                    'reinforcement_status' => $execution->receipt?->metadata['reinforcement_status'] ?? null,
+                    'reinforcement_status' => $execution->receipt === null ? null : ($this->receipts->forPhase($context?->phase ?? $this->phases->currentFor($viewer), $context)->firstWhere('id', $execution->receipt->id)['status'] ?? 'not-loaded'),
                     'content_verified' => $execution->receipt?->metadata['content_verified'] ?? false,
                 ])->all()
                 : [],

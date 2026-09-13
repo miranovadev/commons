@@ -19,13 +19,14 @@ meaning.
 
 ## Instruments
 
-`OperationalInstrumentService` records Cite evidence without reinforcement and
-verifies Hyperlink resources through the bounded public-HTTP verifier. Qualifying
-later verification resolves a canonical resource/version signature and counts at
-most once per Participant/Proposition. Originating evidence and a Receipt alone do
-not unlock Commit. Failed retrieval and versions awaiting stability remain
-non-reinforcing Receipt history. See [Reinforcement](reinforcement.md) for exact URL,
-version/freshness, count, measurement ordering and bootstrap rules.
+`OperationalInstrumentService` produces Cite references and verified Hyperlink
+Receipts without automatically loading either. Hyperlink verification resolves the
+existing canonical resource/version signature. `receipt.read` explicitly activates
+qualifying evidence for the reading Participant, at most once per Proposition.
+Read preserves the current Phase, including Order, so active Reinforcement can
+satisfy Commit's evidence requirement before the Participant commits. Failed
+retrieval and versions awaiting stability remain non-reinforcing history. See
+[Reinforcement](reinforcement.md) for identity, persistence, clearing and migration.
 
 ## Observing and recovering blocked Order
 

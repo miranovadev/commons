@@ -147,7 +147,7 @@ class TragedyTest extends TestCase
         $phase->gate_proposition_id = $gate->id;
         $phase->save();
         if ($action === 'proposition.reclassify') {
-            $this->verifiedReceiptFixture($gate);
+            $this->loadedReceiptFixture($gate);
         }
         if ($action === 'instrument.execute') {
             $written = $this->proposition($authorPhase, $writeRegister);
