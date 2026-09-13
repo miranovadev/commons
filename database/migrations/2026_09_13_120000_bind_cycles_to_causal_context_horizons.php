@@ -25,7 +25,7 @@ return new class extends Migration
         // Protect ownership from bulk updates as well as Eloquent saves.
         if (DB::getDriverName() === 'pgsql') {
             DB::unprepared(<<<'SQL'
-                CREATE FUNCTION commons_cycle_horizon_immutable() RETURNS trigger LANGUAGE plpgsql AS $$
+                CREATE OR REPLACE FUNCTION commons_cycle_horizon_immutable() RETURNS trigger LANGUAGE plpgsql AS $$
                 BEGIN
                     IF NEW.context_horizon_id IS DISTINCT FROM OLD.context_horizon_id THEN
                         RAISE EXCEPTION 'A Cycle cannot change its Context Horizon';

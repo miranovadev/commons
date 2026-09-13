@@ -6,6 +6,7 @@ use App\Models\ContextHorizonMembership;
 use App\Models\Proposition;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class CausalHorizonMigrationTest extends TestCase
@@ -20,7 +21,7 @@ class CausalHorizonMigrationTest extends TestCase
 
     protected function afterRefreshingDatabase(): void
     {
-        (require database_path(self::MIGRATION))->down();
+        $this->artisan('migrate:rollback', ['--step' => 1])->assertSuccessful();
     }
 
     public function test_legacy_cycles_are_backfilled_and_late_memberships_are_repaired_without_changing_snapshots(): void
@@ -54,12 +55,19 @@ class CausalHorizonMigrationTest extends TestCase
 
     private function migrateOwnership(): void
     {
-        $migration = require database_path(self::MIGRATION);
-        // Match Laravel's schema transaction support on the configured driver.
-        if (DB::getSchemaGrammar()->supportsSchemaTransactions()) {
-            DB::transaction(fn () => $migration->up());
-        } else {
-            $migration->up();
+        try {
+            // Exercise the real migrator, including PostgreSQL's DDL transaction
+            // and the migration record used by DatabaseMigrations at teardown.
+            app('migrator')->run([database_path(self::MIGRATION)]);
+        } catch (\Throwable $exception) {
+            // SQLite does not wrap Laravel migrations in schema transactions.
+            // Remove its partial schema before the remaining legacy rollback.
+            if (! DB::getSchemaGrammar()->supportsSchemaTransactions()
+                && Schema::hasColumn('cycles', 'context_horizon_id')) {
+                (require database_path(self::MIGRATION))->down();
+            }
+
+            throw $exception;
         }
     }
 
