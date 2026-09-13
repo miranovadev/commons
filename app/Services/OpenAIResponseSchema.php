@@ -30,113 +30,54 @@ final class OpenAIResponseSchema
         $definitions = $schema['$defs'] ?? [];
         unset($definitions['actions']);
 
-        $properties = [];
-        $occurrences = [];
-        $requiredOccurrences = [];
-
+        // Keep the existing transport keys stable, but bind every field to its
+        // action. Inapplicable fields are null-only, never borrowed from a
+        // neighbouring action. Only optional fields may be nullable.
+        $fields = [];
         foreach ($actions as $action) {
-            $required = $action['required'] ?? [];
+            $fields = array_values(array_unique([
+                ...$fields, ...array_keys($action['properties']),
+            ]));
+        }
 
-            foreach ($action['properties'] ?? [] as $name => $property) {
-                $property = $this->transport(
-                    $this->resolve($property, $definitions),
-                );
-                $properties[$name] = isset($properties[$name])
-                    ? $this->merge($properties[$name], $property)
-                    : $property;
-                $occurrences[$name] = ($occurrences[$name] ?? 0) + 1;
+        $variants = [];
+        foreach ($actions as $action) {
+            foreach ($action['anyOf'] ?? [[]] as $choice) {
+                $properties = [];
+                foreach ($fields as $field) {
+                    if (! isset($action['properties'][$field])) {
+                        $properties[$field] = ['type' => 'null'];
 
-                if (in_array($name, $required, true)) {
-                    $requiredOccurrences[$name] =
-                        ($requiredOccurrences[$name] ?? 0) + 1;
+                        continue;
+                    }
+
+                    $property = array_replace(
+                        $this->resolve($action['properties'][$field], $definitions),
+                        $choice['properties'][$field] ?? [],
+                    );
+                    $property = $this->transport($property);
+                    $properties[$field] = in_array($field, $action['required'] ?? [], true)
+                        ? $property : $this->nullable($property);
                 }
+
+                $variants[] = [
+                    'type' => 'object',
+                    'additionalProperties' => false,
+                    'required' => $fields,
+                    'properties' => $properties,
+                ];
             }
         }
 
-        $actionCount = count($actions);
-
-        foreach ($properties as $name => $property) {
-            if (($occurrences[$name] ?? 0) < $actionCount
-                || ($requiredOccurrences[$name] ?? 0) < $actionCount) {
-                $property = $this->nullable($property);
-            }
-
-            $properties[$name] = $property;
-        }
-
-        $transport = [
+        return [
             'type' => 'object',
             'additionalProperties' => false,
             'required' => ['contribution'],
             'properties' => [
-                'contribution' => [
-                    'type' => 'object',
-                    'additionalProperties' => false,
-                    'required' => array_keys($properties),
-                    'properties' => $properties,
-                ],
+                'contribution' => count($variants) === 1
+                    ? $variants[0] : ['anyOf' => $variants],
             ],
         ];
-
-        // Bias and Instruments share proposition_id but have disjoint Gate/Write
-        // targets. Keep their target sets separate at the provider boundary too.
-        if ((isset($actions['proposition.bias']) || isset($actions['proposition.commit'])) && count($actions) > 1) {
-            $base = $transport['properties']['contribution'];
-            $variants = [];
-            foreach ($actions as $action) {
-                foreach ($action['anyOf'] ?? [[]] as $choice) {
-                    $variant = $base;
-                    foreach ($base['properties'] as $field => $unused) {
-                        if (! isset($action['properties'][$field])) {
-                            $variant['properties'][$field] = ['type' => 'null'];
-                            continue;
-                        }
-                        $property = $this->transport($this->resolve($action['properties'][$field], $definitions));
-                        $property = array_replace($property, $choice['properties'][$field] ?? []);
-                        $variant['properties'][$field] = in_array($field, $action['required'] ?? [], true)
-                            ? $property : $this->nullable($property);
-                    }
-                    $variants[] = $variant;
-                }
-            }
-            $transport['properties']['contribution'] = ['anyOf' => $variants];
-
-            return $transport;
-        }
-
-        // Preserve per-target Attestation directions at the inference boundary.
-        $choices = $actions['attestation.create']['anyOf'] ?? [];
-        if ($choices !== []) {
-            $base = $transport['properties']['contribution'];
-            $variants = [];
-            $otherActions = array_values(array_diff(array_keys($actions), ['attestation.create', 'proposition.traverse']));
-            if ($otherActions !== []) {
-                $other = $base;
-                $other['properties']['action']['enum'] = $otherActions;
-                $variants[] = $other;
-            }
-            if (isset($actions['proposition.traverse'])) {
-                $traverse = $base;
-                $traverse['properties']['action']['enum'] = ['proposition.traverse'];
-                $traverse['properties']['proposition_id'] = $this->transport(
-                    $actions['proposition.traverse']['properties']['proposition_id'],
-                );
-                $variants[] = $traverse;
-            }
-            foreach ($choices as $choice) {
-                $variant = $base;
-                $variant['properties']['action']['enum'] = ['attestation.create'];
-                foreach ($choice['properties'] as $name => $constraint) {
-                    $variant['properties'][$name] = array_replace(
-                        $variant['properties'][$name], $constraint, ['type' => 'string'],
-                    );
-                }
-                $variants[] = $variant;
-            }
-            $transport['properties']['contribution'] = ['anyOf' => $variants];
-        }
-
-        return $transport;
     }
 
     /**
@@ -216,25 +157,6 @@ final class OpenAIResponseSchema
         }
 
         return $schema;
-    }
-
-    /**
-     * Merge the same field as exposed by multiple admissible actions.
-     *
-     * @param  array<string, mixed>  $left
-     * @param  array<string, mixed>  $right
-     * @return array<string, mixed>
-     */
-    private function merge(array $left, array $right): array
-    {
-        if (isset($left['enum']) || isset($right['enum'])) {
-            $left['enum'] = array_values(array_unique([
-                ...($left['enum'] ?? []),
-                ...($right['enum'] ?? []),
-            ], SORT_REGULAR));
-        }
-
-        return $left;
     }
 
     /** @param array<string, mixed> $schema */
