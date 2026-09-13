@@ -33,19 +33,27 @@ final readonly class InstrumentExecutionService
         string $reference,
         array $input = [],
     ): InstrumentExecution {
-        $execution = new InstrumentExecution;
-        $execution->forceFill([
-            'phase_id' => $phase->getKey(),
-            'proposition_id' => $proposition->getKey(),
-            'kind' => $kind,
-            'reference' => $reference,
-            'status' => 'pending',
-            'input' => $input,
-            'started_at' => now(),
-        ]);
-        $execution->save();
+        return DB::transaction(function () use ($phase, $proposition, $kind, $reference, $input): InstrumentExecution {
+            // Inserts also acquire foreign-key locks: take the root before saving.
+            $substrateId = $phase->cycle->participant->substrate_id;
+            if ($proposition->phase->cycle->participant->substrate_id !== $substrateId) {
+                throw new DomainException('An instrument cannot cross substrate boundaries.');
+            }
+            Substrate::query()->lockForUpdate()->findOrFail($substrateId);
+            $execution = new InstrumentExecution;
+            $execution->forceFill([
+                'phase_id' => $phase->getKey(),
+                'proposition_id' => $proposition->getKey(),
+                'kind' => $kind,
+                'reference' => $reference,
+                'status' => 'pending',
+                'input' => $input,
+                'started_at' => now(),
+            ]);
+            $execution->save();
 
-        return $execution;
+            return $execution;
+        });
     }
 
     /** @param array<string, mixed> $metadata */
@@ -63,6 +71,9 @@ final readonly class InstrumentExecutionService
             $metadata,
             $verification,
         ): Receipt {
+            // Resolve ownership with a read; never lock the execution before its root.
+            $substrateId = InstrumentExecution::query()->findOrFail($execution->getKey())->phase->cycle->participant->substrate_id;
+            Substrate::query()->lockForUpdate()->findOrFail($substrateId);
             $locked = InstrumentExecution::query()
                 ->lockForUpdate()
                 ->findOrFail($execution->getKey());
@@ -78,7 +89,6 @@ final readonly class InstrumentExecutionService
             if ($targetId !== $locked->proposition_id) {
                 throw new DomainException('The Receipt subject must belong to the verified Proposition.');
             }
-            Substrate::whereKey($locked->phase->cycle->participant->substrate_id)->lockForUpdate()->firstOrFail();
             // Caller-supplied strings/metadata are evidence history, never verification authority.
             $resolution = $locked->kind === 'hyperlink' && $verification !== null
                 ? $this->signatures->resolve($verification)
@@ -128,6 +138,9 @@ final readonly class InstrumentExecutionService
         string $reason,
     ): void {
         DB::transaction(function () use ($execution, $reason): void {
+            Substrate::query()->lockForUpdate()->findOrFail(
+                InstrumentExecution::query()->findOrFail($execution->getKey())->phase->cycle->participant->substrate_id,
+            );
             $locked = InstrumentExecution::query()
                 ->lockForUpdate()
                 ->findOrFail($execution->getKey());
