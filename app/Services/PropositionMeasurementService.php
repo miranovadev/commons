@@ -6,6 +6,7 @@ use App\Enums\ObservableDirection;
 use App\Models\ContextHorizonMembership;
 use App\Models\Proposition;
 use App\Models\PropositionMeasurement;
+use App\Models\Substrate;
 use App\Services\Observables\LineageMeasurementService;
 use App\Services\Observables\ObservableService;
 use App\Services\Participation\ParticipationContext;
@@ -81,6 +82,9 @@ final class PropositionMeasurementService
         $this->assertMeasurement('closure', $closure);
 
         return DB::transaction(function () use ($proposition, $correspondence, $chirality, $closure, $calculatedAt): PropositionMeasurement {
+            // Standalone plan repair can update many shared nodes in one transaction.
+            // Serialize at the same root as contributions before taking any node lock.
+            Substrate::query()->lockForUpdate()->findOrFail($proposition->phase->cycle->participant->substrate_id);
             // Lock the Proposition so the numeric projection and retained direction move together.
             Proposition::query()->whereKey($proposition->id)->lockForUpdate()->firstOrFail();
             if ($correspondence !== null && $correspondence !== 0.0) {

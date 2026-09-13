@@ -7,6 +7,7 @@ use App\Models\Attestation;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
+use App\Models\Substrate;
 use App\Models\Supersession;
 use DomainException;
 use Illuminate\Support\Facades\DB;
@@ -35,42 +36,49 @@ final readonly class ContributionDispatcher
         Phase $phase,
         array $input,
     ): Proposition {
-        $gate = $phase->gate()->firstOrFail();
+        return DB::transaction(function () use ($participant, $phase, $input): Proposition {
+            // Also protect direct service callers before attestations or FK inserts.
+            Substrate::query()->lockForUpdate()->findOrFail($participant->substrate_id);
+            if ($phase->cycle->participant->substrate_id !== $participant->substrate_id) {
+                throw new DomainException('A contribution cannot cross substrate boundaries.');
+            }
+            $gate = $phase->gate()->firstOrFail();
 
-        return match ($input['action']) {
-            'proposition.traverse' => Proposition::query()
-                ->findOrFail($input['proposition_id']),
-            'proposition.variant',
-            'proposition.reclassify' => $this->proposition(
-                $phase,
-                $gate,
-                $input,
-            ),
-            'proposition.revise' => $this->revise(
-                $participant,
-                $phase,
-                $input,
-            ),
-            'proposition.reconcile' => $this->reconcile(
-                $phase,
-                $gate,
-                $input,
-            ),
-            'proposition.bias' => $this->bias($phase, $input),
-            'attestation.create' => $this->attest(
-                $participant,
-                $phase,
-                $input,
-            ),
-            'instrument.execute' => $this->executeInstrument(
-                $phase,
-                $input,
-            ),
-            'proposition.commit' => $this->commit($phase, $input),
-            default => throw new DomainException(
-                'The selected contribution action is not supported.'
-            ),
-        };
+            return match ($input['action']) {
+                'proposition.traverse' => Proposition::query()
+                    ->findOrFail($input['proposition_id']),
+                'proposition.variant',
+                'proposition.reclassify' => $this->proposition(
+                    $phase,
+                    $gate,
+                    $input,
+                ),
+                'proposition.revise' => $this->revise(
+                    $participant,
+                    $phase,
+                    $input,
+                ),
+                'proposition.reconcile' => $this->reconcile(
+                    $phase,
+                    $gate,
+                    $input,
+                ),
+                'proposition.bias' => $this->bias($phase, $input),
+                'attestation.create' => $this->attest(
+                    $participant,
+                    $phase,
+                    $input,
+                ),
+                'instrument.execute' => $this->executeInstrument(
+                    $phase,
+                    $input,
+                ),
+                'proposition.commit' => $this->commit($phase, $input),
+                default => throw new DomainException(
+                    'The selected contribution action is not supported.'
+                ),
+            };
+        });
     }
 
     /** @param array<string, mixed> $input */

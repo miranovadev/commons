@@ -6,6 +6,7 @@ use App\Models\Attestation;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Receipt;
+use App\Models\Substrate;
 use App\Services\Evidence\HyperlinkIdentity;
 use App\Services\Evidence\HyperlinkVerifier;
 use DomainException;
@@ -25,6 +26,7 @@ final readonly class OperationalInstrumentService
             if ($proposition->phase->cycle->participant->substrate_id !== $substrateId) {
                 throw new DomainException('An instrument cannot cross substrate boundaries.');
             }
+            Substrate::query()->lockForUpdate()->findOrFail($substrateId);
 
             $metadata = match ($input['kind']) {
                 'hyperlink' => ['resource' => $this->identity->resource($reference)],
