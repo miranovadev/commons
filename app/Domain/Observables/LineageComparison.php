@@ -11,7 +11,7 @@ final readonly class LineageComparison
 
     public function isBootstrap(): bool
     {
-        return $this->previous === null
-            || $this->previous->propositions->isEmpty();
+        return $this->current->horizon->parent_context_horizon_id === null
+            && $this->previous === null;
     }
 }

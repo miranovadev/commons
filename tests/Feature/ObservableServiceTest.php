@@ -6,6 +6,7 @@ use App\Domain\Observables\DomainLineage;
 use App\Domain\Observables\LineageComparison;
 use App\Enums\PhaseKind;
 use App\Models\Attestation;
+use App\Models\CommitmentSnapshot;
 use App\Models\Cycle;
 use App\Models\InstrumentExecution;
 use App\Models\Participant;
@@ -17,9 +18,12 @@ use App\Models\Supersession;
 use App\Services\CommitmentSnapshotService;
 use App\Services\LedgerService;
 use App\Services\Observables\ClosureCalculator;
+use App\Services\Observables\LocalMeasurementService;
 use App\Services\Observables\ReinforcementService;
 use App\Services\PropositionMeasurementService;
+use App\Services\PropositionStateService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Collection;
 use Tests\TestCase;
 
 class ObservableServiceTest extends TestCase
@@ -75,11 +79,12 @@ class ObservableServiceTest extends TestCase
         $this->supersede($seed, $origin, 'revise');
         $this->closeHorizon($origin, prominence: 0, turbulence: 1);
 
-        $first = $this->proposition('Settlement activity.', 'activity');
+        $this->phase = $this->phase(2);
+        $first = $this->proposition('Settlement activity.', 'signal');
         $this->supersede($origin, $first, 'variant');
         $boundary = $this->proposition(
             'Settlement canon.',
-            'canon',
+            'concord',
             'committal',
         );
         $this->supersede($first, $boundary, 'revise');
@@ -87,6 +92,7 @@ class ObservableServiceTest extends TestCase
         $this->attest($boundary, 'support');
         $this->closeHorizon($boundary, prominence: 1, turbulence: 0);
 
+        $this->phase = $this->phase(3);
         $next = $this->proposition('Emergence activity.', 'activity');
         $this->supersede($boundary, $next, 'variant');
         $target = $this->proposition('Emergence canon.', 'canon');
@@ -98,7 +104,7 @@ class ObservableServiceTest extends TestCase
         $measurement = app(PropositionMeasurementService::class)
             ->recalculate($target);
 
-        $local = app(\App\Services\Observables\LocalMeasurementService::class);
+        $local = app(LocalMeasurementService::class);
         $headValues = $local->calculate($target);
         $this->assertSame(1.0, $headValues->correspondence);
         $this->assertSame(1.0, $headValues->chirality);
@@ -185,7 +191,7 @@ class ObservableServiceTest extends TestCase
         foreach ([0, 1, 1, 2, 1] as $index) {
             $this->touch($nodes[$index], 1);
         }
-        $state = app(\App\Services\PropositionStateService::class);
+        $state = app(PropositionStateService::class);
         $this->assertSame([1, 3, 1], $nodes->map(fn ($node) => $state->touchCount($node))->all());
         $lineage = new DomainLineage($nodes[0]->contextHorizonMembership->horizon, $nodes, collect());
         $calculator = app(ClosureCalculator::class);
@@ -194,7 +200,7 @@ class ObservableServiceTest extends TestCase
         Phase::query()->update(['started_at' => '2000-01-01', 'completed_at' => '2050-01-01']);
         Cycle::query()->update(['sequence' => 9000]);
         $this->assertSame($cv, $calculator->coefficientOfVariation($lineage));
-        $this->assertSame(0, \App\Models\CommitmentSnapshot::count());
+        $this->assertSame(0, CommitmentSnapshot::count());
     }
 
     private function touch(Proposition $proposition, int $count): void
@@ -256,7 +262,7 @@ class ObservableServiceTest extends TestCase
         $phase->forceFill([
             'cycle_id' => $cycle->getKey(),
             'kind' => PhaseKind::Distinguish,
-            'write_register' => 'activity',
+            'write_register' => $cycle->contextHorizon->domain->registerFor(PhaseKind::Distinguish),
             'started_at' => now(),
         ]);
         $phase->save();
@@ -338,8 +344,8 @@ class ObservableServiceTest extends TestCase
     }
 
     /**
-     * @param  \Illuminate\Support\Collection<int, Proposition>  $nodes
-     * @return \Illuminate\Support\Collection<int, Supersession>
+     * @param  Collection<int, Proposition>  $nodes
+     * @return Collection<int, Supersession>
      */
     private function chain($nodes)
     {

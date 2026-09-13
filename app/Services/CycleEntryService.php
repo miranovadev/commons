@@ -3,10 +3,10 @@
 namespace App\Services;
 
 use App\Domain\Observables\ObservableValues;
-use App\Enums\ContextDomain;
 use App\Enums\LedgerEntryKind;
 use App\Enums\PhaseKind;
 use App\Models\Attestation;
+use App\Models\ContextHorizon;
 use App\Models\Cycle;
 use App\Models\Participant;
 use App\Models\Phase;
@@ -89,7 +89,7 @@ final readonly class CycleEntryService
                 );
             }
 
-            $bootstrapCycle = $this->createCycle($lockedParticipant);
+            $bootstrapCycle = $this->createCycle($lockedParticipant, $this->horizons->currentFor($substrate));
             $order = $this->createPhase(
                 $bootstrapCycle,
                 PhaseKind::Order,
@@ -155,11 +155,9 @@ final readonly class CycleEntryService
 
         $participant->current_proposition_id = $gate->getKey();
         $participant->save();
-        $cycle = $this->createCycle($participant);
-        $domain = $this->horizons->currentFor($substrate)->domain;
-        $firstRegister = $domain === ContextDomain::Emergence
-            ? 'activity'
-            : 'signal';
+        $horizon = $this->horizons->forEntry($gate);
+        $cycle = $this->createCycle($participant, $horizon);
+        $firstRegister = $cycle->contextHorizon->domain->registerFor(PhaseKind::Distinguish);
 
         $this->createPhase(
             $cycle,
@@ -185,11 +183,12 @@ final readonly class CycleEntryService
             ->exists();
     }
 
-    private function createCycle(Participant $participant): Cycle
+    private function createCycle(Participant $participant, ContextHorizon $horizon): Cycle
     {
         $cycle = new Cycle;
         $cycle->forceFill([
             'participant_id' => $participant->getKey(),
+            'context_horizon_id' => $horizon->id,
             'sequence' => (int) Cycle::query()
                 ->whereBelongsTo($participant)
                 ->max('sequence') + 1,
@@ -262,4 +261,3 @@ final readonly class CycleEntryService
         $this->instruments->execute($phase, $proposition, $input);
     }
 }
-

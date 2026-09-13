@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\ContextHorizonProjector;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,6 +16,32 @@ class Cycle extends Model
     public $incrementing = false;
 
     protected $keyType = 'string';
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $cycle): void {
+            // Resolve the default once, at creation. Operational entry supplies its
+            // selected lineage explicitly; an existing Cycle never consults this default.
+            $horizon = $cycle->context_horizon_id === null
+                ? app(ContextHorizonProjector::class)->currentFor($cycle->participant->substrate)
+                : $cycle->contextHorizon()->firstOrFail();
+            if ($horizon->substrate_id !== $cycle->participant->substrate_id || $horizon->closed_at !== null) {
+                throw new \DomainException('A new Cycle requires an open Context Horizon in its own substrate.');
+            }
+            $cycle->context_horizon_id = $horizon->id;
+            $cycle->setRelation('contextHorizon', $horizon);
+        });
+        static::updating(function (self $cycle): void {
+            if ($cycle->isDirty('context_horizon_id')) {
+                throw new \DomainException('A Cycle cannot change its Context Horizon.');
+            }
+        });
+    }
+
+    public function contextHorizon(): BelongsTo
+    {
+        return $this->belongsTo(ContextHorizon::class);
+    }
 
     protected function casts(): array
     {

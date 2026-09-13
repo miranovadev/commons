@@ -88,15 +88,13 @@ final readonly class CommitmentSnapshotService
                 throw new DomainException('Commitment requires effective Attestation, completed evidence and counted Reinforcement.');
             }
 
-            $horizon = $this->horizons->currentFor($substrate);
+            $horizon = $proposition->phase->cycle->contextHorizon;
             // Re-evaluate the actual persisted candidate before allowing a snapshot.
             $closure = $this->closureGate->forCommitment($proposition);
             if (! $closure['admissible']) {
                 throw new DomainException('Commitment requires aligned Depth/Cadence directions.');
             }
-            $previous = CommitmentSnapshot::query()->where('commitment_snapshots.substrate_id', $substrate->getKey())
-                ->join('substrate_ledger_entries as entry', 'entry.id', '=', 'commitment_snapshots.ledger_entry_id')
-                ->orderByDesc('entry.sequence')->select('commitment_snapshots.*')->first();
+            $previous = $horizon->predecessorCommitment();
             $tension = round($prominence - $turbulence, 7);
             $directionBefore = $horizon->domain;
             $directionAfter = ContextDomain::after(

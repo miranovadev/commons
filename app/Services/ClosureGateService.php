@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Domain\Observables\ClosureValues;
 use App\Enums\ObservableDirection;
 use App\Models\CommitmentSnapshot;
+use App\Models\ContextHorizon;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Services\Observables\LineageMeasurementService;
@@ -21,10 +22,10 @@ class ClosureGateService
     public function preview(Proposition $gate, Phase $phase, ?ParticipationContext $context = null): array
     {
         if ($context !== null) {
-            return $context->remember('closure:'.$phase->id.':'.$gate->id, fn () => $this->evaluate($this->measurements->prospectiveCommit($gate, $phase, $context)->closure(), $gate, $context));
+            return $context->remember('closure:'.$phase->id.':'.$gate->id, fn () => $this->evaluate($this->measurements->prospectiveCommit($gate, $phase, $context)->closure(), $gate, $context, $phase->cycle->contextHorizon));
         }
 
-        return $this->evaluate($this->measurements->prospectiveCommit($gate, $phase)->closure(), $gate);
+        return $this->evaluate($this->measurements->prospectiveCommit($gate, $phase)->closure(), $gate, horizon: $phase->cycle->contextHorizon);
     }
 
     /** @return array<string, mixed> */
@@ -34,10 +35,11 @@ class ClosureGateService
     }
 
     /** Most recent evaluated ancestor, including all parents of a reconciliation. */
-    public function historyFor(Proposition $position, ?ParticipationContext $context = null): ?CommitmentSnapshot
+    public function historyFor(Proposition $position, ?ParticipationContext $context = null, ?ContextHorizon $horizon = null): ?CommitmentSnapshot
     {
+        $horizon ??= $position->phase->cycle->contextHorizon;
         if ($context !== null) {
-            return $context->history($position);
+            return $context->history($position, $horizon);
         }
         $ancestors = DB::select(<<<'SQL'
             WITH RECURSIVE ancestors (id) AS (
@@ -48,18 +50,21 @@ class ClosureGateService
             ) SELECT id FROM ancestors
             SQL, [$position->getKey()]);
 
-        return CommitmentSnapshot::query()
+        $local = CommitmentSnapshot::query()
             ->where('commitment_snapshots.substrate_id', $position->phase->cycle->participant->substrate_id)
+            ->whereHas('proposition.phase.cycle', fn ($q) => $q->where('context_horizon_id', $horizon->id))
             ->whereIn('proposition_id', collect($ancestors)->pluck('id'))
             ->whereNotNull('depth_direction')->whereNotNull('cadence_direction')
             ->join('substrate_ledger_entries as entry', 'entry.id', '=', 'commitment_snapshots.ledger_entry_id')
             ->orderByDesc('entry.sequence')->select('commitment_snapshots.*')->first();
+
+        return $local ?? $horizon->predecessorCommitment();
     }
 
     /** @return array<string, mixed> */
-    private function evaluate(ClosureValues $closure, Proposition $position, ?ParticipationContext $context = null): array
+    private function evaluate(ClosureValues $closure, Proposition $position, ?ParticipationContext $context = null, ?ContextHorizon $horizon = null): array
     {
-        $history = $this->historyFor($position, $context);
+        $history = $this->historyFor($position, $context, $horizon);
 
         return [
             ...$closure->resolve(

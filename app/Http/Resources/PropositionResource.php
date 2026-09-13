@@ -78,6 +78,8 @@ class PropositionResource extends JsonResource
             'context_horizon' => $horizon === null ? null : [
                 'id' => $horizon->id,
                 'sequence' => $horizon->sequence,
+                'parent_context_horizon_id' => $horizon->parent_context_horizon_id,
+                'opened_by_proposition_id' => $horizon->opened_by_proposition_id,
                 'domain' => $horizon->domain->value,
             ],
             'created_at' => $this->created_at,

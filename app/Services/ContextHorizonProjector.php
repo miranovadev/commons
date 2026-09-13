@@ -8,6 +8,7 @@ use App\Models\CommitmentSnapshot;
 use App\Models\ContextHorizon;
 use App\Models\ContextHorizonMembership;
 use App\Models\Proposition;
+use App\Models\PropositionMeasurement;
 use App\Models\Substrate;
 use App\Models\SubstrateLedgerEntry;
 use DomainException;
@@ -15,195 +16,184 @@ use Illuminate\Support\Facades\DB;
 
 final class ContextHorizonProjector
 {
+    /** Default for initial/unpositioned entry only; never a Cycle's current Domain. */
     public function currentFor(Substrate $substrate): ContextHorizon
     {
         return DB::transaction(function () use ($substrate): ContextHorizon {
             $locked = $this->lockSubstrate($substrate);
+            $horizon = ContextHorizon::whereBelongsTo($locked)->whereNull('closed_at')->latest('sequence')->first();
+            if ($horizon !== null) {
+                return $horizon;
+            }
+            if (ContextHorizon::whereBelongsTo($locked)->exists()) {
+                throw new DomainException('The substrate has no open Context Horizon for entry.');
+            }
 
-            return $this->currentLocked($locked);
+            return $this->createInitial($locked);
         });
     }
 
-    public function include(
-        SubstrateLedgerEntry $entry,
-    ): ContextHorizonMembership {
+    /** Keep the existing Gate selection; resolve entry only within that causal branch. */
+    public function forEntry(Proposition $gate): ContextHorizon
+    {
+        return DB::transaction(function () use ($gate): ContextHorizon {
+            $owner = $gate->phase->cycle->contextHorizon;
+            $this->lockSubstrate($owner->substrate);
+            $horizons = ContextHorizon::where('substrate_id', $owner->substrate_id)->get()->keyBy('id');
+            $start = $horizons->firstWhere('opened_by_proposition_id', $gate->id) ?? $horizons->get($owner->id);
+            $children = $horizons->groupBy('parent_context_horizon_id');
+            $queue = [$start];
+            $seen = $open = [];
+            while ($queue !== []) {
+                $horizon = array_shift($queue);
+                if (isset($seen[$horizon->id])) {
+                    throw new DomainException('Context Horizon lineage must be acyclic.');
+                }
+                $seen[$horizon->id] = true;
+                if ($horizon->closed_at === null) {
+                    $open[] = $horizon;
+                }
+                foreach ($children->get($horizon->id, collect()) as $child) {
+                    $queue[] = $child;
+                }
+            }
+
+            return collect($open)->sortByDesc('sequence')->first()
+                ?? throw new DomainException('The selected Gate has no open descendant Context Horizon.');
+        });
+    }
+
+    public function include(SubstrateLedgerEntry $entry): ContextHorizonMembership
+    {
         if ($entry->kind !== LedgerEntryKind::Proposition) {
-            throw new DomainException(
-                'Only proposition ledger entries belong to a Context Horizon.'
-            );
+            throw new DomainException('Only proposition ledger entries belong to a Context Horizon.');
         }
 
-        return DB::transaction(function () use (
-            $entry,
-        ): ContextHorizonMembership {
-            $substrate = $this->lockSubstrate($entry->substrate);
-            $horizon = $this->currentLocked($substrate);
+        return DB::transaction(function () use ($entry): ContextHorizonMembership {
+            $this->lockSubstrate($entry->substrate);
 
-            return $this->includeLocked($entry, $horizon);
+            return $this->includeLocked($entry);
         });
     }
 
     public function apply(CommitmentSnapshot $snapshot): ContextHorizon
     {
         return DB::transaction(function () use ($snapshot): ContextHorizon {
-            $substrate = $this->lockSubstrate($snapshot->substrate);
-            $horizon = $this->currentLocked($substrate);
+            $this->lockSubstrate($snapshot->substrate);
+            $ownerId = $snapshot->proposition->phase->cycle->context_horizon_id;
+            $horizon = ContextHorizon::query()->lockForUpdate()->findOrFail($ownerId);
+            if ($horizon->substrate_id !== $snapshot->substrate_id) {
+                throw new DomainException('A commitment cannot cross Context Horizon substrates.');
+            }
 
             return $this->transitionLocked($snapshot, $horizon);
         });
     }
 
+    /** Membership is disposable; Horizon IDs and Cycle ownership are durable. */
     public function rebuild(Substrate $substrate): int
     {
         return DB::transaction(function () use ($substrate): int {
             $locked = $this->lockSubstrate($substrate);
+            ContextHorizonMembership::whereIn('context_horizon_id', ContextHorizon::whereBelongsTo($locked)->select('id'))->delete();
+            $snapshots = CommitmentSnapshot::whereBelongsTo($locked)->get()->keyBy('proposition_id');
+            foreach (SubstrateLedgerEntry::whereBelongsTo($locked)->where('kind', LedgerEntryKind::Proposition->value)->oldest('sequence')->get() as $entry) {
+                $this->includeLocked($entry);
+                if ($snapshot = $snapshots->get($entry->ledgerable_id)) {
+                    $this->apply($snapshot);
+                }
+            }
+            if (! ContextHorizon::whereBelongsTo($locked)->exists()) {
+                $this->createInitial($locked);
+            }
 
-            $this->rebuildLocked($locked);
+            PropositionMeasurement::whereHas('proposition.phase.cycle.contextHorizon', fn ($q) => $q->where('substrate_id', $locked->id))
+                ->update(['calculator_version' => null]);
 
-            return ContextHorizon::query()
-                ->whereBelongsTo($locked)
-                ->count();
+            return ContextHorizon::whereBelongsTo($locked)->count();
         });
     }
 
-    private function rebuildLocked(Substrate $substrate): ContextHorizon
+    private function includeLocked(SubstrateLedgerEntry $entry): ContextHorizonMembership
     {
-        ContextHorizon::query()
-            ->whereBelongsTo($substrate)
-            ->delete();
-
-        $horizon = $this->createInitial($substrate);
-        $snapshots = CommitmentSnapshot::query()
-            ->whereBelongsTo($substrate)
-            ->get()
-            ->keyBy('proposition_id');
-
-        $entries = SubstrateLedgerEntry::query()
-            ->whereBelongsTo($substrate)
-            ->where('kind', LedgerEntryKind::Proposition->value)
-            ->oldest('sequence')
-            ->get();
-
-        foreach ($entries as $entry) {
-            $this->includeLocked($entry, $horizon);
-
-            $snapshot = $snapshots->get($entry->ledgerable_id);
-
-            if ($snapshot !== null) {
-                $horizon = $this->transitionLocked(
-                    $snapshot,
-                    $horizon,
-                );
-            }
+        $proposition = Proposition::with('phase.cycle.contextHorizon')->findOrFail($entry->ledgerable_id);
+        $horizon = $proposition->phase->cycle->contextHorizon;
+        if ($horizon === null || $horizon->substrate_id !== $entry->substrate_id) {
+            throw new DomainException('A proposition must belong to its creating Cycle Context Horizon.');
         }
-
-        return $horizon;
-    }
-
-    private function includeLocked(
-        SubstrateLedgerEntry $entry,
-        ContextHorizon $horizon,
-    ): ContextHorizonMembership {
-        $proposition = Proposition::query()
-            ->findOrFail($entry->ledgerable_id);
-        $membership = ContextHorizonMembership::query()
-            ->find($proposition->getKey());
-
+        $membership = ContextHorizonMembership::find($proposition->id);
         if ($membership !== null) {
-            if (
-                $membership->context_horizon_id !== $horizon->getKey()
-                || $membership->ledger_entry_id !== $entry->getKey()
-            ) {
-                throw new DomainException(
-                    'The proposition already belongs to another Context Horizon.'
-                );
+            if ($membership->context_horizon_id !== $horizon->id || $membership->ledger_entry_id !== $entry->id) {
+                throw new DomainException('The proposition already belongs to another Context Horizon.');
             }
 
             return $membership;
         }
-
         $membership = new ContextHorizonMembership;
         $membership->forceFill([
-            'proposition_id' => $proposition->getKey(),
-            'context_horizon_id' => $horizon->getKey(),
-            'ledger_entry_id' => $entry->getKey(),
+            'proposition_id' => $proposition->id,
+            'context_horizon_id' => $horizon->id,
+            'ledger_entry_id' => $entry->id,
             'projected_at' => now(),
-        ]);
-        $membership->save();
+        ])->save();
 
         return $membership;
     }
 
-    private function transitionLocked(
-        CommitmentSnapshot $snapshot,
-        ContextHorizon $horizon,
-    ): ContextHorizon {
+    private function transitionLocked(CommitmentSnapshot $snapshot, ContextHorizon $horizon): ContextHorizon
+    {
         if ($snapshot->direction_before !== $horizon->domain) {
-            throw new DomainException(
-                'The commitment direction does not match the active Context Horizon.'
-            );
+            throw new DomainException('The commitment direction does not match its Cycle Context Horizon.');
         }
-
         if (! $snapshot->isClosureBoundary()) {
             return $horizon;
         }
+        if ($snapshot->direction_after !== $horizon->domain->opposite()) {
+            throw new DomainException('A boundary must alternate Domain relative to its parent Horizon.');
+        }
+        $existing = ContextHorizon::where('opened_by_proposition_id', $snapshot->proposition_id)->first();
+        if ($existing !== null) {
+            if ($existing->parent_context_horizon_id !== $horizon->id) {
+                throw new DomainException('The boundary already opens a different Horizon lineage.');
+            }
 
-        $horizon->closed_by_proposition_id = $snapshot->proposition_id;
-        $horizon->closed_at = $snapshot->evaluated_at;
-        $horizon->save();
-
+            return $existing;
+        }
+        // Closure stops new entry only. Retain the first closing Commit; all later
+        // boundaries are represented by independently opened child Horizons.
+        if ($horizon->closed_at === null) {
+            $horizon->closed_by_proposition_id = $snapshot->proposition_id;
+            $horizon->closed_at = $snapshot->evaluated_at;
+            $horizon->save();
+        }
         $next = new ContextHorizon;
         $next->forceFill([
             'substrate_id' => $horizon->substrate_id,
-            'sequence' => $horizon->sequence + 1,
-            'domain' => $snapshot->direction_after,
+            'parent_context_horizon_id' => $horizon->id,
+            // Sequence is a display/order identifier, never an ancestry relation.
+            'sequence' => (int) ContextHorizon::where('substrate_id', $horizon->substrate_id)->max('sequence') + 1,
+            'domain' => $horizon->domain->opposite(),
             'opened_by_proposition_id' => $snapshot->proposition_id,
             'opened_at' => $snapshot->evaluated_at,
-        ]);
-        $next->save();
+        ])->save();
 
         return $next;
-    }
-
-    private function currentLocked(Substrate $substrate): ContextHorizon
-    {
-        $horizon = ContextHorizon::query()
-            ->whereBelongsTo($substrate)
-            ->whereNull('closed_at')
-            ->lockForUpdate()
-            ->first();
-
-        if ($horizon !== null) {
-            return $horizon;
-        }
-
-        $hasLedgerHistory = SubstrateLedgerEntry::query()
-            ->whereBelongsTo($substrate)
-            ->exists();
-
-        return $hasLedgerHistory
-            ? $this->rebuildLocked($substrate)
-            : $this->createInitial($substrate);
     }
 
     private function createInitial(Substrate $substrate): ContextHorizon
     {
         $horizon = new ContextHorizon;
         $horizon->forceFill([
-            'substrate_id' => $substrate->getKey(),
-            'sequence' => 1,
+            'substrate_id' => $substrate->id, 'sequence' => 1,
             'domain' => ContextDomain::Emergence,
             'opened_at' => $substrate->created_at ?? now(),
-        ]);
-        $horizon->save();
+        ])->save();
 
         return $horizon;
     }
 
     private function lockSubstrate(Substrate $substrate): Substrate
     {
-        return Substrate::query()
-            ->lockForUpdate()
-            ->findOrFail($substrate->getKey());
+        return Substrate::query()->lockForUpdate()->findOrFail($substrate->id);
     }
 }
