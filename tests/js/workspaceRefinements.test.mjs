@@ -124,6 +124,7 @@ test('Participant switching and entry controls preserve active, blocked, Origin 
   assert.deepEqual(blocked.calls, []);
   assert.match(blocked.html, /No Potential is available/);
   assert.deepEqual(ui.entryInteraction({ status: 'waiting', entry: { available: true, mode: 'origin' } }).calls, ['origin']);
+  assert.deepEqual(ui.entryInteraction({ status: 'waiting', entry: { available: true, mode: 'continuity' } }).calls, ['potential']);
   const recovery = ui.entryInteraction({ status: 'waiting', entry: { available: true, mode: 'potential', selection: 'recovery' } });
   assert.deepEqual(recovery.calls, ['potential']);
   assert.match(recovery.html, /Begin recovery Cycle/);

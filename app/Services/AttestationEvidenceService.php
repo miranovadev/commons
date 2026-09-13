@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Domain\Observables\AttestationTimeline;
 use App\Enums\ObservableDirection as Direction;
-use App\Enums\RegisterPosition;
 use App\Models\Attestation;
 use App\Models\Proposition;
 use App\Models\Receipt;
@@ -41,9 +40,9 @@ final readonly class AttestationEvidenceService
     }
 
     /** Replay the same region/register's historical active population, not today's heads alone. */
-    public function populationDirection(Proposition $seed, RegisterPosition $register, ?ParticipationContext $context = null): Direction
+    public function populationDirection(Proposition $seed, string $register, ?ParticipationContext $context = null): Direction
     {
-        $members = $this->regions->membersFor($seed, $context)->whereIn('register', $register->registers());
+        $members = $this->regions->membersFor($seed, $context)->where('register', $register);
         if ($context === null) {
             $members->load('ledgerEntry');
         }

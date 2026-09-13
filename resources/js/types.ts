@@ -234,7 +234,7 @@ export interface Participation {
   } | null;
   status: 'waiting' | 'ready';
   plan?: ParticipantPlan;
-  entry?: { mode?: 'origin' | 'potential'; selection?: 'position' | 'recovery'; available?: boolean; message?: string; proposition_id?: Identifier | null; distance?: number | null; potential_charge?: number };
+  entry?: { mode?: 'origin' | 'continuity' | 'potential'; selection?: 'position' | 'recovery'; available?: boolean; message?: string; proposition_id?: Identifier | null; distance?: number | null; potential_charge?: number };
   reason?: { message?: string };
 }
 

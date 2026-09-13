@@ -77,7 +77,7 @@ final class CommitRegionService
         return Proposition::query()->whereKey(collect($members)->pluck('id'))->orderBy('id')->get();
     }
 
-    /** Shared structural pool: Mediate Read, Bias Gate, or Closure Write. */
+    /** Operational pool in the Cycle's Domain: Mediate Read, Bias Gate, or Closure Write. */
     public function forPhase(Phase $phase, ?Proposition $position = null, ?ParticipationContext $context = null): Collection
     {
         $register = match ($phase->kind) {
@@ -97,15 +97,16 @@ final class CommitRegionService
         if ($position->phase->cycle->participant->substrate_id !== $phase->cycle->participant->substrate_id) {
             return collect();
         }
+        $exactRegister = $phase->cycle->contextHorizon->domain->registerAt($register);
 
         if ($context !== null) {
-            $members = $this->membersFor($position, $context)->whereIn('register', $register->registers());
+            $members = $this->membersFor($position, $context)->where('register', $exactRegister);
 
             return $includeSuperseded ? $members->values() : $context->active($members);
         }
 
         return Proposition::query()->whereKey($this->membersFor($position)->pluck('id'))
-            ->whereIn('register', $register->registers())
+            ->where('register', $exactRegister)
             ->when(! $includeSuperseded, fn ($query) => $query->whereDoesntHave('children', fn ($query) => $query->where('supersessions.type', '!=', 'variant')))
             ->orderBy('id')->get();
     }

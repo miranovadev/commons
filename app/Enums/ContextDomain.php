@@ -25,6 +25,16 @@ enum ContextDomain: string
         };
     }
 
+    /** Resolve a structural role to its exact operational register. */
+    public function registerAt(RegisterPosition $position): string
+    {
+        return match ($position) {
+            RegisterPosition::First => $this === self::Emergence ? 'activity' : 'signal',
+            RegisterPosition::Second => $this === self::Emergence ? 'frontier' : 'stance',
+            RegisterPosition::Third => $this === self::Emergence ? 'canon' : 'concord',
+        };
+    }
+
     public static function after(
         float $tension,
         self $hystereticDirection,
