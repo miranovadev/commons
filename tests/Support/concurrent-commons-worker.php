@@ -4,10 +4,12 @@
 use App\Models\InstrumentExecution;
 use App\Models\Participant;
 use App\Models\Proposition;
+use App\Services\InputPlanService;
 use App\Services\InstrumentExecutionService;
 use App\Services\ParticipationService;
 use App\Services\PropositionMeasurementService;
 use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 require dirname(__DIR__, 2).'/vendor/autoload.php';
@@ -24,6 +26,17 @@ flush();
 
 try {
     match ($input['operation']) {
+        'read' => (function () use ($app, $input): void {
+            $kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
+            $request = Request::create($input['url'], 'GET', server: ['HTTP_ACCEPT' => 'application/json']);
+            $response = $kernel->handle($request);
+            if ($response->getStatusCode() !== 200) {
+                throw new RuntimeException($response->getContent());
+            }
+            echo $response->getContent()."\n";
+            $kernel->terminate($request, $response);
+        })(),
+        'plan' => app(InputPlanService::class)->forParticipant(Participant::findOrFail($input['participant_id'])),
         'contribute' => app(ParticipationService::class)->contribute(
             Participant::findOrFail($input['participant_id']),
             $input['phase_id'],

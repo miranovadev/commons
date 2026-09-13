@@ -22,7 +22,7 @@ export interface Proposition {
   participant?: Pick<Participant, 'id' | 'callsign'>;
   participant_callsign?: string;
   callsign?: string;
-  observables?: Observables;
+  observables?: Observables & { status?: 'missing' | 'stale' | 'current' };
   transition?: { type?: string; from?: RegisterName; to?: RegisterName };
   parent_ids?: Identifier[];
   children?: Proposition[];

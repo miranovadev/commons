@@ -50,7 +50,9 @@ final class PropositionMeasurementService
     }
 
     /**
-     * Populate missing or obsolete disposable measurement projections.
+     * Mutation/maintenance only: populate missing or obsolete projections.
+     * Callers must hold the Substrate lock before loading calculation state.
+     * Never call this from ordinary graph/detail serialization.
      * Current-version projections are left untouched, and propositions outside a
      * Context Horizon remain deliberately unmeasured.
      *
