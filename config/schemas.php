@@ -12,7 +12,7 @@ $statement = [
 ];
 
 $instrument = [
-    'description' => 'Citation: an existing Proposition or Attestation ID in this substrate. Hyperlink: an HTTP(S) URL reference only; no page fetch or content verification. Both complete synchronously with an unsigned Receipt.',
+    'description' => 'Cite (citation): an existing Proposition or Attestation ID in this substrate. Creating a Cite Receipt does not itself grant Reinforcement. Hyperlink: the server fetches a public HTTP(S) resource and verifies retrieval, not the truth of its claims. Successful verification may qualify under separate Reinforcement rules.',
     'type' => 'object',
     'additionalProperties' => false,
     'required' => ['kind', 'reference'],
@@ -42,7 +42,7 @@ $proposition = static function (string $action, string $title) use ($statement):
 };
 
 return [
-    'version' => 15,
+    'version' => 16,
 
     'cache' => [
         'store' => env('COMMONS_SCHEMA_CACHE_STORE'),

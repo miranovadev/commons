@@ -11,7 +11,8 @@ remain unchanged; old signatures are not automatically promoted.
 ## Qualification and identity
 
 `citation` (Cite) resolves an existing Commons Proposition or Attestation in the
-same substrate. It remains evidence and never produces a reinforcement signature.
+same substrate. Creating a Cite Receipt records a reference; it does not itself
+grant Reinforcement. The current Cite verifier produces no reinforcement signature.
 `artefact` remains unsupported for reinforcement until it has a qualifying verifier.
 
 Hyperlink now performs an HTTP GET. Verification proves retrieval of bounded
