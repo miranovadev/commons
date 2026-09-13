@@ -61,6 +61,7 @@ class ReceiptContextTest extends TestCase
         $this->assertSame('already-in-context', collect($before['receipts'])->firstWhere('id', $receipt->id)['status']);
         $this->assertArrayNotHasKey('receipt.read', $before['schema']['$defs']['actions']);
         $this->assertSame(0, app(ReinforcementService::class)->count($subject));
+        $this->assertPublicCount($fixture, $subject, 0);
         $this->assertSame(0, ParticipantReceiptContext::count());
         $phase = $this->move($fixture, $subject);
         $plan = $service->stateFor($fixture->viewer)['plan'];
@@ -68,6 +69,8 @@ class ReceiptContextTest extends TestCase
         $state = $service->contribute($fixture->viewer, $phase->id, ['action' => 'receipt.read', 'receipt_id' => $receipt->id]);
         $this->assertSame($phase->id, $state['plan']['phase']['id']);
         $this->assertSame($subject->id, $state['plan']['gate_id']);
+        $this->assertSame(1, collect($state['plan']['gate_options'])->firstWhere('id', $subject->id)['reinforcement_count']);
+        $this->assertPublicCount($fixture, $subject, 1);
         $this->assertNull($phase->fresh()->completed_at);
         $loaded = collect($state['plan']['receipts'])->firstWhere('id', $receipt->id);
         $this->assertSame('loaded', $loaded['status']);
@@ -95,9 +98,25 @@ class ReceiptContextTest extends TestCase
         $otherPhase = $this->newPhase($other, $subject->id);
         $service->contribute($other, $otherPhase->id, ['action' => 'receipt.read', 'receipt_id' => $receipt->id]);
         $this->assertSame(2, app(ReinforcementService::class)->count($subject));
+        $this->assertPublicCount($fixture, $subject, 2);
+        $commit = $fixture->node($subject, 'canon', 'commit', 'committal');
+        $this->assertPublicCount($fixture, $commit, 2);
+        $variant = $fixture->node($subject, 'frontier', 'variant');
+        $this->assertPublicCount($fixture, $variant, 0);
         $this->assertSame(2, ParticipantReceiptContext::count());
         $this->assertSame(2, DB::table('receipt_context_events')->count());
         $this->assertSame($receipt->id, $receipt->fresh()->id);
+    }
+
+    private function assertPublicCount($fixture, $subject, int $expected): void
+    {
+        if (! \App\Models\User::exists()) {
+            \App\Models\User::factory()->create();
+        }
+        $url = "/api/substrates/{$fixture->substrate->slug}/propositions";
+        $this->getJson($url.'/'.$subject->id)->assertOk()->assertJsonPath('data.reinforcement_count', $expected);
+        $nodes = collect($this->getJson($url)->assertOk()->json('data'));
+        $this->assertSame($expected, $nodes->firstWhere('id', $subject->id)['reinforcement_count']);
     }
 
     public function test_backend_rejects_lineage_redundancy_hidden_receipts_and_foreign_participant(): void
@@ -137,6 +156,7 @@ class ReceiptContextTest extends TestCase
         $this->assertGreaterThan($before, $local->calculate($subject)->closure()->average());
         $service->clear($fixture->viewer, $phase, $receipt->id);
         $this->assertSame(0, app(ReinforcementService::class)->count($subject));
+        $this->assertPublicCount($fixture, $subject, 0);
         $this->assertEquals($before, $local->calculate($subject)->closure()->average());
         $this->assertNotNull($load->fresh()->cleared_at);
         $this->assertSame($receipt->id, $receipt->fresh()->id);

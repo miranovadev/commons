@@ -75,7 +75,7 @@ final class ParticipantContextSerializer
 
     private function proposition(array $node): array
     {
-        $result = Arr::only($node, ['id', 'register', 'tier', 'statement', 'parent_ids', 'attestation_summary']);
+        $result = Arr::only($node, ['id', 'register', 'tier', 'statement', 'parent_ids', 'attestation_summary', 'reinforcement_count']);
         $result['observables'] = Arr::only($node['observables'] ?? [], ['correspondence', 'chirality', 'closure']);
         if (! empty($node['attestation'])) {
             $result['attestation'] = Arr::only($node['attestation'], ['direction', 'rationale']);

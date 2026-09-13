@@ -8,6 +8,7 @@ use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Substrate;
+use App\Services\Observables\ReinforcementService;
 use App\Services\Participation\ParticipationContext;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -26,6 +27,7 @@ final readonly class InputPlanService
         private MediationReadService $mediation,
         private PropositionPresentationService $presentation,
         private ReceiptContextService $receipts,
+        private ReinforcementService $reinforcement,
     ) {}
 
     /** @return array<string, mixed> */
@@ -337,6 +339,7 @@ final readonly class InputPlanService
                 ->limit(72)
                 ->toString(),
             'participant' => $author?->only(['id', 'callsign']),
+            'reinforcement_count' => $this->reinforcement->count($proposition, $context),
             'attestation_counts' => $proposition->attestationCounts->all(),
             'attestation_summary' => $this->presentation->attestations($proposition, $context),
             'attestation' => $attestation?->only([

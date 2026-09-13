@@ -24,6 +24,22 @@ final class ReinforcementService
         return $rows->unique('participant_id')->count();
     }
 
+    /** Batch public counts using the same Commit inheritance and participant cap. */
+    public function loadCounts(Collection $propositions): void
+    {
+        $this->state->loadCommitSources($propositions);
+        $sources = $propositions->mapWithKeys(fn (Proposition $node) => [
+            $node->id => $this->state->sourceIds($node),
+        ]);
+        $rows = ParticipantReceiptContext::active()
+            ->whereIn('proposition_id', $sources->flatten()->unique())
+            ->get(['proposition_id', 'participant_id']);
+        foreach ($propositions as $node) {
+            $node->setAttribute('reinforcement_count', $rows->whereIn('proposition_id', $sources[$node->id])
+                ->unique('participant_id')->count());
+        }
+    }
+
     /** Preserve existing structural feature weighting, now by counted participants. */
     public function weights(Collection $contributions, Substrate $substrate, ?ParticipationContext $context = null): Collection
     {

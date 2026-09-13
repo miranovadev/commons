@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Services\Observables\LineageMeasurementService;
+use App\Services\Observables\ReinforcementService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Str;
@@ -24,6 +25,7 @@ class PropositionResource extends JsonResource
 
         return [
             'id' => $this->getKey(),
+            'reinforcement_count' => $this->reinforcement_count ?? app(ReinforcementService::class)->count($this->resource),
             'attestation_summary' => $this->when($this->attestation_summary !== null, $this->attestation_summary),
             'instruments' => $this->whenLoaded('instrumentExecutions', fn () => $this->instrumentExecutions->map(fn ($execution) => [
                 'id' => $execution->id, 'kind' => $execution->kind,
