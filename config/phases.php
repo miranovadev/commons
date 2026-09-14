@@ -14,18 +14,20 @@ return [
     ],
     2 => [
         'name' => 'persist',
-        'description' => 'Develop the current distinction through variation, revision, reclassification, or attestation.',
+        'description' => 'Develop the current distinction through variation, revision, reclassification, attestation, or grounding an existing Write with an Instrument.',
         'gate' => 'previous-phase-position',
         'actions' => [
             'receipt.read',
             'proposition.variant',
             'proposition.revise',
             'proposition.reclassify',
+            'instrument.execute',
             'attestation.create',
             'proposition.traverse',
         ],
         'constraints' => [
             'proposition.reclassify' => ['gate-owner'],
+            'instrument.execute' => ['write-register'],
         ],
     ],
     3 => [
