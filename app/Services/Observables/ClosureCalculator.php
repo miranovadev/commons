@@ -23,10 +23,10 @@ final readonly class ClosureCalculator
     {
         $structural = $this->components($comparison);
 
-        // Bootstrap is an initialization invariant, not an ordinary live lineage.
-        // Keep the Origin fixed at (-1, -1, -1) even if a participant later
-        // loads evidence attached to that already-committed seed.
-        if ($comparison->isBootstrap()) {
+        // The bootstrap Committal is an initialization invariant, not an
+        // ordinary live lineage. Evidence can be loaded against the already-
+        // committed Origin later, but it must not rewrite its seed Closure.
+        if ($comparison->isBootstrap() && $proposition->tier === 'committal') {
             return $structural;
         }
 
