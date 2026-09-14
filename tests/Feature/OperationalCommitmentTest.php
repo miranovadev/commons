@@ -96,7 +96,7 @@ class OperationalCommitmentTest extends TestCase
             'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/final'],
         ]);
         $this->assertSame('order', $state['plan']['phase']['kind']);
-        $this->assertFalse($state['plan']['commitment']['requirements']['reinforcement']);
+        $this->assertSame(0, $state['plan']['commitment']['reinforcement_count']);
         $receiptId = $candidate->instrumentExecutions()->with('receipt')->latest('id')->firstOrFail()->receipt->id;
         $phaseIdBeforeRead = $state['plan']['phase']['id'];
         $state = $this->move($this->participant, ['action' => 'receipt.read', 'receipt_id' => $receiptId]);
@@ -173,7 +173,7 @@ class OperationalCommitmentTest extends TestCase
         $execution = $executions->start($gate->phase, $gate, 'hyperlink', 'https://example.test/attestation');
         $this->assertFalse($service->grounding($gate)['requirements']['receipt']);
         $executions->complete($execution, $first);
-        $this->assertFalse($service->grounding($gate)['admissible']);
+        $this->assertTrue($service->grounding($gate)['admissible']);
         $this->loadedReceiptFixture($gate, $first);
         $this->assertTrue($service->grounding($gate)['admissible']);
         $this->attest($gate, $first);
@@ -396,6 +396,7 @@ class OperationalCommitmentTest extends TestCase
         $builder = $this->participant($this->participant->substrate, 'builder-'.str()->ulid());
         $phase = $this->phase($builder, PhaseKind::Persist, 'stance', $this->origin);
         $stance = app(ContributionDispatcher::class)->dispatch($builder, $phase, ['action' => 'proposition.variant', 'statement' => 'Stance']);
+        $this->classificationEvidenceFixture($stance);
         $phase->write_register = 'concord';
         $phase->gate_proposition_id = $stance->id;
         $phase->save();

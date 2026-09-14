@@ -335,6 +335,7 @@ final readonly class ContributionDispatcher
                 tier: 'committal',
                 preserveStatement: true,
             );
+            DB::table('commit_results')->insert(['source_proposition_id' => $gate->id, 'target_proposition_id' => $target->id]);
             $this->polarity->establishCommit($target, $governing);
             $supersession = $this->supersede(
                 $phase,

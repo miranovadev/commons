@@ -21,6 +21,7 @@ final class PropositionOptionService
         private readonly CommitRegionService $regions,
         private readonly PhaseGenerationService $generation,
         private readonly EvidenceEligibilityService $evidence,
+        private readonly PropositionAvailabilityService $availability,
     ) {}
 
     /** @return Collection<int, string> */
@@ -66,8 +67,7 @@ final class PropositionOptionService
             // Grounding may repair evidence before Closure becomes admissible.
             $candidates = $this->regions->forPhase($phase, context: $context);
 
-            return Proposition::query()->whereKey($candidates->pluck('id'))->orderBy('id')->get()
-                ->concat($this->generation->committedWrites($phase, $context))->unique('id')->values();
+            return $candidates->filter(fn (Proposition $node): bool => $this->availability->mutable($node, $context))->values();
         }
 
         return $this->writeOptionsFor($phase, $context);
@@ -77,6 +77,11 @@ final class PropositionOptionService
      * @return Collection<int, Proposition>
      */
     public function writeOptionsFor(Phase $phase, ?ParticipationContext $context = null): Collection
+    {
+        return $this->resolveWrites($phase, $context)->filter(fn (Proposition $node): bool => ($phase->kind === PhaseKind::Order && $node->tier === 'committal') || $this->availability->mutable($node, $context))->values();
+    }
+
+    private function resolveWrites(Phase $phase, ?ParticipationContext $context = null): Collection
     {
         if ($phase->write_register === null) {
             return collect();
@@ -103,7 +108,7 @@ final class PropositionOptionService
     /** Every valid Write descendant offers the as-yet-unattested direction(s). */
     public function attestationOptionsFor(Phase $phase, ?ParticipationContext $context = null): Collection
     {
-        return $this->writeOptionsFor($phase, $context)->filter(fn (Proposition $node): bool => $this->evidence->canAttest($node, $context))->values();
+        return $this->writeOptionsFor($phase, $context)->filter(fn (Proposition $node): bool => $this->availability->mutable($node, $context) && $this->evidence->canAttest($node, $context))->values();
     }
 
     /**

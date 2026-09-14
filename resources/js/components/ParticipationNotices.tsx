@@ -15,7 +15,7 @@ export function participationNotices({ participation, plan, canCommit, canRest, 
     <Text size="xs">Depth: {last.depth ?? 'unrecorded'} ({last.depth_direction ?? 'unknown'}) · Cadence: {last.cadence ?? 'unrecorded'} ({last.cadence_direction ?? 'unknown'})</Text>
     <Text size="xs" c="dimmed">Current Domain: {participation.domain} · Horizon {participation.horizon_sequence}</Text>
   </Stack> });
-  if (plan?.commitment) notices.push({ id: 'commitment', title: plan.commitment.requirements.write_opportunity === false ? 'Commit already authored' : canCommit ? 'Committable candidate' : 'No committable candidate',
+  if (plan?.commitment) notices.push({ id: 'commitment', title: plan.commitment.requirements.write_opportunity === false ? 'Source already committed' : canCommit ? 'Committable candidate' : 'No committable candidate',
     color: canCommit ? 'indigo' : 'gray', icon: canCommit ? IconLock : IconLockOpen, satisfied: canCommit, content: <Stack gap="xs">
     {canCommit && <Text size="sm">An eligible source is available to Commit in Write.</Text>}
     {!canCommit && <Text size="sm">{participation.reason?.message}</Text>}

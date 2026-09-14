@@ -168,6 +168,9 @@ class WriteOnceTest extends TestCase
     public function test_generation_is_personal_and_survives_cycles_but_not_a_different_gate(PhaseKind $kind, string $register, string $action): void
     {
         [$participant, $gate] = $this->fixture($kind === PhaseKind::Persist && $action === 'proposition.variant');
+        if ($action === 'proposition.reclassify') {
+            $gate = $this->node($gate->phase, $kind === PhaseKind::Persist ? 'activity' : 'frontier', 'Expressive Gate', parent: $gate);
+        }
         $phase = $this->phase($participant, $kind, $register, $gate);
         if ($kind === PhaseKind::Constrain) {
             $this->loadedReceiptFixture($gate);
@@ -247,6 +250,7 @@ class WriteOnceTest extends TestCase
     public function test_constrain_requires_receipt_but_not_reinforcement(): void
     {
         [$participant, $gate] = $this->fixture();
+        $gate = $this->node($gate->phase, 'frontier', 'Expressive Gate', parent: $gate);
         $phase = $this->phase($participant, PhaseKind::Constrain, 'canon', $gate);
         $input = ['action' => 'proposition.reclassify'];
         $this->assertUnavailable($participant, $phase, $input);
@@ -281,7 +285,7 @@ class WriteOnceTest extends TestCase
         app(ContributionService::class)->validate($other, ['action' => 'proposition.bias', 'proposition_id' => $b->id]);
     }
 
-    public function test_order_quota_is_the_commit_row_not_source_horizon_or_lifetime(): void
+    public function test_order_consumes_each_direct_source_globally_and_preserves_other_sources(): void
     {
         [$participant, $seed] = $this->fixture();
         $this->mock(ClosureGateService::class, function ($mock): void {
@@ -300,21 +304,15 @@ class WriteOnceTest extends TestCase
         app(ParticipationService::class)->contribute($participant, $phase->id, $input);
         $commit = Proposition::findOrFail($participant->fresh()->current_proposition_id);
         $return = $this->phase($participant, PhaseKind::Order, 'canon', $b);
-        $this->assertUnavailable($participant, $return, ['action' => 'proposition.commit', 'proposition_id' => $b->id]);
+        // A distinct source remains committable, regardless of who committed its sibling.
+        app(ContributionService::class)->validate($participant, ['action' => 'proposition.commit', 'proposition_id' => $b->id]);
         $plan = $this->plan($participant);
-        $this->assertFalse($plan['commitment']['admissible']);
-        $this->assertFalse($plan['commitment']['requirements']['write_opportunity']);
-        $this->assertSame('commit_already_authored', app(ParticipationService::class)->stateFor($participant)['reason']['code']);
-        $this->assertContains($commit->id, $this->targets($plan, 'attestation.create'));
-        $this->assertContains($commit->id, $this->targets($plan, 'instrument.execute'));
-        app(ContributionService::class)->validate($participant,
-            ['action' => 'attestation.create', 'proposition_id' => $commit->id, 'direction' => 'support']);
-
+        $this->assertTrue($plan['commitment']['admissible']);
+        $this->assertNotContains($commit->id, $this->targets($plan, 'attestation.create'));
+        $this->assertNotContains($commit->id, $this->targets($plan, 'instrument.execute'));
         $other = $this->participant($participant->substrate, 'other');
         $otherPhase = $this->phase($other, PhaseKind::Order, 'canon', $a);
-        app(ContributionService::class)->validate($other, $input);
-        $otherCommit = app(ContributionDispatcher::class)->dispatch($other, $otherPhase, $input);
-        $this->assertNotSame($commit->id, $otherCommit->id);
+        $this->assertUnavailable($other, $otherPhase, $input);
 
         // A new Committal seed creates a new row even within the same Horizon.
         $next = $this->node($seed->phase, 'canon', 'Next region', parent: $commit);

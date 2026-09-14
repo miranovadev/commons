@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Contracts\WebSearchProvider;
 use App\Domain\Evidence\SearchObservation;
 use App\Models\Attestation;
+use App\Models\CommitmentSnapshot;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Receipt;
@@ -17,12 +18,12 @@ use Illuminate\Support\Facades\DB;
 /** Synchronous verified evidence; only the verifier can supply reinforcement identity. */
 final readonly class OperationalInstrumentService
 {
-    public function __construct(private InstrumentExecutionService $executions, private HyperlinkVerifier $verifier, private HyperlinkIdentity $identity, private WebSearchProvider $search) {}
+    public function __construct(private InstrumentExecutionService $executions, private HyperlinkVerifier $verifier, private HyperlinkIdentity $identity, private WebSearchProvider $search, private PropositionAvailabilityService $availability) {}
 
     /** @param array{kind: string, reference?: string, query?: string} $input */
-    public function execute(Phase $phase, Proposition $proposition, array $input, ?Receipt $replayedFrom = null): Receipt
+    public function execute(Phase $phase, Proposition $proposition, array $input, ?Receipt $replayedFrom = null, bool $bootstrap = false): Receipt
     {
-        return DB::transaction(function () use ($phase, $proposition, $input, $replayedFrom): Receipt {
+        return DB::transaction(function () use ($phase, $proposition, $input, $replayedFrom, $bootstrap): Receipt {
             $kind = $input['kind'] ?? null;
             $keys = $kind === 'web_search' ? ['kind', 'query'] : ['kind', 'reference'];
             if (array_diff(array_keys($input), $keys) !== [] || array_diff($keys, array_keys($input)) !== []) {
@@ -35,6 +36,12 @@ final readonly class OperationalInstrumentService
                 throw new DomainException('An instrument cannot cross substrate boundaries.');
             }
             Substrate::query()->lockForUpdate()->findOrFail($substrateId);
+            $origin = $bootstrap && $proposition->tier === 'committal'
+                && $proposition->ledgerEntry?->sequence === 1 && ! $proposition->parents()->exists()
+                && ! CommitmentSnapshot::where('substrate_id', $substrateId)->exists();
+            if (! $origin && ! $this->availability->mutable($proposition)) {
+                throw new DomainException('Committed sources and Committal results cannot receive instruments. Develop a Variant from the Committal instead.');
+            }
 
             $metadata = match ($input['kind']) {
                 'hyperlink' => ['resource' => $this->identity->resource($reference)],

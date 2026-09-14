@@ -39,3 +39,9 @@ Reclassify requires both a completed Receipt and an effective Attestation on the
 ## Bias lineage comparison
 
 Each active Stance/Frontier candidate is compared with its own causal ancestors, excluding the candidate's votes and loads. Both reconciliation parent paths contribute; shared nodes and Attestations are counted once. Traversal stops at the governing Committal boundary, whose retained direction seeds an empty/tied lineage. Unrelated siblings and other regions cannot set the comparison. Zero retains the most recent nonzero direction through ledger replay. Superseded ancestors still provide historical judgments; this does not reactivate their reinforcement in Closure calculations. Receipt and effective-Attestation requirements independently filter the resulting Gate options.
+
+## Commitment boundary
+
+Commit requires a completed Receipt, an effective Attestation on the selected classification, and aligned Depth/Cadence with hysteresis. Loaded Reinforcement remains a displayed weight, never a minimum gate. Each direct expressive source can be committed once globally, enforced inside the Substrate transaction and a unique source record. Earlier Commit edges also consume their direct sources; no historical records are rewritten. Alternative branches and contextual ancestors remain navigable. Consumed sources leave all contribution registers.
+
+Committal results receive no Attestations, Instruments, Replay or revisions. Subsequent development is a Variant from the Committal. Recorded measurements are restored from the immutable snapshot on recalculation, so later evidence loads cannot rewrite the commitment evaluation. Origin bootstrap alone records its initial evidence before freezing.
