@@ -32,6 +32,7 @@ class TragedyTest extends TestCase
         return [
             'Distinguish Variant without traversal' => [PhaseKind::Distinguish, 'proposition.variant'],
             'Persist Variant without traversal' => [PhaseKind::Persist, 'proposition.variant'],
+            'Persist Instrument without traversal' => [PhaseKind::Persist, 'instrument.execute'],
             'Disperse first Variant' => [PhaseKind::Disperse, 'proposition.variant'],
             'Constrain owned Gate Reclassify' => [PhaseKind::Constrain, 'proposition.reclassify'],
             'Constrain owned descendant Revise' => [PhaseKind::Constrain, 'proposition.revise'],

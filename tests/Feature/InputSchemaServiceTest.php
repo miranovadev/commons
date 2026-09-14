@@ -96,6 +96,7 @@ class InputSchemaServiceTest extends TestCase
                 'proposition.variant',
                 'proposition.revise',
                 'proposition.reclassify',
+                'instrument.execute',
                 'attestation.create',
                 'proposition.traverse',
             ],
