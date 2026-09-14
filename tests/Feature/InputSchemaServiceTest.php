@@ -97,6 +97,7 @@ class InputSchemaServiceTest extends TestCase
                 'proposition.revise',
                 'proposition.reclassify',
                 'instrument.execute',
+                'receipt.replay',
                 'attestation.create',
                 'proposition.traverse',
             ],
@@ -104,6 +105,7 @@ class InputSchemaServiceTest extends TestCase
                 'proposition.revise',
                 'proposition.reclassify',
                 'instrument.execute',
+                'receipt.replay',
                 'attestation.create',
                 'proposition.traverse',
             ],
@@ -111,6 +113,7 @@ class InputSchemaServiceTest extends TestCase
                 'proposition.variant',
                 'proposition.revise',
                 'instrument.execute',
+                'receipt.replay',
                 'attestation.create',
             ],
             PhaseKind::Mediate->value => [
@@ -120,11 +123,13 @@ class InputSchemaServiceTest extends TestCase
             PhaseKind::Bias->value => [
                 'proposition.bias',
                 'instrument.execute',
+                'receipt.replay',
                 'attestation.create',
             ],
             PhaseKind::Order->value => [
                 'proposition.commit',
                 'instrument.execute',
+                'receipt.replay',
                 'attestation.create',
             ],
         ];

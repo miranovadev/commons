@@ -113,6 +113,12 @@ final class OpenAIResponseSchema
             }
         }
 
+        foreach (['anyOf', 'oneOf'] as $union) {
+            if (isset($schema[$union])) {
+                $schema[$union] = array_map(fn ($variant) => $this->resolve($variant, $definitions), $schema[$union]);
+            }
+        }
+
         if (isset($schema['items']) && is_array($schema['items'])) {
             $schema['items'] = $this->resolve($schema['items'], $definitions);
         }
@@ -150,6 +156,10 @@ final class OpenAIResponseSchema
 
             $schema['required'] = array_keys($schema['properties'] ?? []);
             $schema['additionalProperties'] = false;
+        }
+
+        if (isset($schema['anyOf'])) {
+            $schema['anyOf'] = array_map($this->transport(...), $schema['anyOf']);
         }
 
         if (isset($schema['items']) && is_array($schema['items'])) {

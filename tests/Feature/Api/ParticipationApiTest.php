@@ -7,10 +7,12 @@ use App\Models\Cycle;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
+use App\Models\Receipt;
 use App\Models\Substrate;
 use App\Models\User;
 use App\Services\LedgerService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class ParticipationApiTest extends TestCase
@@ -28,6 +30,26 @@ class ParticipationApiTest extends TestCase
             ->assertJsonPath('data.entry.mode', 'origin')
             ->assertJsonPath('data.entry.available', true)
             ->assertJsonPath('data.plan', null);
+    }
+
+    public function test_web_search_origin_accepts_only_the_query_invocation(): void
+    {
+        [$substrate, $participant] = $this->participant();
+        $payload = $this->originPayload();
+        $payload['origin']['instrument'] = ['kind' => 'web_search', 'query' => 'Origin evidence'];
+        config(['services.tavily.api_key' => 'test-key']);
+        Http::preventStrayRequests();
+        Http::fake(['api.tavily.com/search' => Http::response(['results' => []])]);
+        $invalid = $payload;
+        $invalid['origin']['instrument']['reference'] = 'unexpected';
+        $this->postJson($this->endpoint($substrate, $participant).'/enter', $invalid)->assertUnprocessable();
+        $invalid['origin']['instrument'] = ['kind' => 'web_search', 'query' => '   '];
+        $this->postJson($this->endpoint($substrate, $participant).'/enter', $invalid)->assertUnprocessable();
+        Http::assertNothingSent();
+        $response = $this->postJson($this->endpoint($substrate, $participant).'/enter', $payload)->assertCreated();
+        $this->assertSame('web_search', Receipt::sole()->type);
+        $this->assertDatabaseCount('participant_receipt_contexts', 0);
+        $this->assertSame('available', $response->json('data.plan.receipts.0.status'));
     }
 
     public function test_a_participant_can_establish_the_origin_and_enter_the_first_live_cycle(): void

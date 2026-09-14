@@ -122,6 +122,7 @@ export type ActionName =
   | 'attestation.create'
   | 'instrument.execute'
   | 'receipt.read'
+  | 'receipt.replay'
   | 'proposition.commit'
   | 'proposition.reclassify'
   | 'proposition.reconcile'
@@ -131,10 +132,9 @@ export type ActionName =
   | 'proposition.traverse'
   | 'proposition.variant';
 
-export interface InstrumentInput {
-  kind: 'citation' | 'hyperlink';
-  reference: string;
-}
+export type InstrumentInput =
+  | { kind: 'citation' | 'hyperlink'; reference: string }
+  | { kind: 'web_search'; query: string };
 
 export interface ContributionInput {
   action: ActionName;
@@ -190,7 +190,11 @@ export interface ReceiptContext {
   signature: string | null;
   status: 'available' | 'loaded' | 'already-in-context' | 'unqualified';
   loaded_at: string | null;
-  evidence?: { proposition_id?: Identifier; statement?: string; direction?: string; rationale?: string | null; resource?: string; fingerprint?: string; observed_at?: string; content_excerpt?: string | null; excerpt_truncated?: boolean };
+  capabilities: { readable: boolean; replayable: boolean };
+  can_replay: boolean;
+  replayed_from_receipt_id: Identifier | null;
+  observation_error?: string | null;
+  evidence?: { query?: string; executed_at?: string; results?: Array<{ title: string; url: string; excerpt: string; excerpt_truncated: boolean; source: string; rank: number; relevance: number | null; published_at: string | null }>; proposition_id?: Identifier; statement?: string; direction?: string; rationale?: string | null; resource?: string; fingerprint?: string; observed_at?: string; content_excerpt?: string | null; excerpt_truncated?: boolean };
 }
 
 export interface ParticipantPlan {

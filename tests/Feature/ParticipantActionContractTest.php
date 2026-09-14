@@ -20,6 +20,7 @@ use App\Services\InputSchemaService;
 use App\Services\LedgerService;
 use App\Services\OpenAIResponseSchema;
 use App\Services\OpenAIResponsesClient;
+use App\Services\OperationalInstrumentService;
 use App\Services\ParticipationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -184,6 +185,9 @@ class ParticipantActionContractTest extends TestCase
         if (isset($schema['$ref'])) {
             $schema = array_replace($definitions[basename($schema['$ref'])], $schema);
         }
+        if (isset($schema['anyOf'])) {
+            return $this->sample($schema['anyOf'][0], $definitions, $reference);
+        }
         if (array_key_exists('const', $schema)) {
             return $schema['const'];
         }
@@ -279,6 +283,9 @@ class ParticipantActionContractTest extends TestCase
                 $attestation = new Attestation;
                 $attestation->forceFill(['phase_id' => $past->id, 'proposition_id' => $traverse->id, 'direction' => 'support'])->save();
                 app(LedgerService::class)->record($attestation);
+            }
+            if (in_array('instrument.execute', config('phases.'.$kind->value.'.actions'), true)) {
+                app(OperationalInstrumentService::class)->execute($past, $write, ['kind' => 'hyperlink', 'reference' => 'https://example.test/replay']);
             }
             if ($kind === PhaseKind::Order) {
                 $this->groundFixture($write);

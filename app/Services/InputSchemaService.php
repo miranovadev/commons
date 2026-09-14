@@ -72,7 +72,8 @@ final readonly class InputSchemaService
             $traversalOptionIds,
             $instrumentOptionIds ?? $writeOptionIds,
             $commitOptionIds,
-            $this->receipts->forPhase($occurrence, $context)->where('status', 'available')->pluck('id')->all(),
+            $this->receipts->forPhase($occurrence, $context)->where('capabilities.readable', true)->where('status', 'available')->pluck('id')->all(),
+            $this->receipts->forPhase($occurrence, $context)->where('can_replay', true)->pluck('id')->all(),
         );
 
         if (isset($schema['$defs']['actions']['attestation.create'])) {
@@ -203,9 +204,11 @@ final readonly class InputSchemaService
         array $instrumentOptionIds,
         array $commitOptionIds,
         array $receiptOptionIds,
+        array $replayOptionIds,
     ): array {
         $bindings = [
             'receipt.read' => ['property' => 'receipt_id', 'values' => $receiptOptionIds],
+            'receipt.replay' => ['property' => 'receipt_id', 'values' => $replayOptionIds],
             'proposition.commit' => [
                 'property' => 'proposition_id',
                 'values' => $commitOptionIds,

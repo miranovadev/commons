@@ -25,6 +25,9 @@ The protected autonomous packet and separate human workspace are defined in
 Receipts, verified evidence signatures, participant-unique Reinforcement and the
 stronger Commit gate are defined in [docs/reinforcement.md](docs/reinforcement.md).
 
+Web Search setup, Receipt capabilities and replay history are documented in
+[Instruments and immutable observations](docs/instruments.md).
+
 ## Requirements
 
 - PHP 8.3 or newer

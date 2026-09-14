@@ -1,9 +1,10 @@
-import { Alert, Button, Group, Modal, Select, Stack, Text, Textarea, TextInput } from '@mantine/core';
+import { Alert, Button, Group, Modal, Select, Stack, Text, Textarea } from '@mantine/core';
 import { IconAlertCircle } from '@tabler/icons-react';
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { messageFrom } from '../errors';
 import { actionPropositions, attestationDirections } from '../participationOptions';
+import { InstrumentFields } from './InstrumentFields';
 import { AttestationDirectionControl } from './AttestationDirectionControl';
 import type {
   ActionName,
@@ -84,12 +85,6 @@ export function ContributionForm({
     setValues((current) => ({ ...current, [name]: value }));
   }
 
-  function setInstrument<K extends keyof InstrumentInput>(name: K, value: InstrumentInput[K]) {
-    setValues((current) => ({
-      ...current,
-      instrument: { ...current.instrument, [name]: value },
-    }));
-  }
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -174,32 +169,7 @@ export function ContributionForm({
             />
           )}
 
-          {properties.instrument && (
-            <>
-              <Select
-                label="Instrument"
-                data={[
-                  { value: 'citation', label: 'Citation' },
-                  { value: 'hyperlink', label: 'Hyperlink' },
-                ]}
-                required
-                value={values.instrument?.kind || 'citation'}
-                onChange={(value) => value && setInstrument('kind', value as InstrumentInput['kind'])}
-              />
-              <TextInput
-                label="Reference"
-                description={values.instrument?.kind === 'hyperlink'
-                  ? 'A public HTTP(S) URL. The server fetches content and verifies retrieval, not the truth of its claims.'
-                  : 'The ID of an existing Proposition or Attestation in this substrate. Creating a Cite Receipt does not itself grant Reinforcement.'}
-                required
-                value={values.instrument?.reference || ''}
-                onChange={(event) => setInstrument(
-                  'reference',
-                  event.currentTarget.value,
-                )}
-              />
-            </>
-          )}
+          {properties.instrument && <InstrumentFields value={values.instrument} onChange={(instrument) => set('instrument', instrument)} />}
 
           {action === 'proposition.reconcile' && <Text size="sm" c="dimmed">The new Proposition copies the current Gate statement exactly. The selected counterpart contributes a second hard parent edge.</Text>}
 
