@@ -18,7 +18,8 @@ export function createEcho() {
       wsPort: Number(import.meta.env.VITE_REVERB_PORT || 80),
       wssPort: Number(import.meta.env.VITE_REVERB_PORT || 443),
       forceTLS,
-      enabledTransports: forceTLS ? ['wss'] : ['ws'],
+      // Pusher's ws transport handles both schemes; forceTLS selects wss.
+      enabledTransports: ['ws'],
       authorizer: (channel) => ({
         authorize: async (socketId, callback) => {
           try {
