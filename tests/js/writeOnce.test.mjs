@@ -10,7 +10,7 @@ const result = await build({ stdin: { contents: `
   import { ParticipantWorkspace } from './resources/js/components/ParticipantWorkspace';
   import { participationNotices } from './resources/js/components/ParticipationNotices';
   const render = element => renderToStaticMarkup(<MantineProvider env="test">{element}</MantineProvider>);
-  export function workspace(canRevise = true) {
+  export function workspace(canRevise = true, persist = false) {
     const gate = { id: 'gate', register: 'canon', tier: 'expressive', statement: 'Variant source' };
     const write = { id: 'write', register: 'activity', tier: 'expressive', statement: 'My existing Variant' };
     const actions = {
@@ -18,7 +18,12 @@ const result = await build({ stdin: { contents: `
       'instrument.execute': { properties: { proposition_id: { enum: ['write'] } } },
       'attestation.create': { properties: { proposition_id: { enum: ['write'] }, direction: { enum: ['support', 'refute'] } } },
     };
-    const plan = { gate, phase: { id: 'return-cycle', number: 4, kind: 'disperse', write_register: 'activity' },
+    if (persist) {
+      gate.register = 'activity';
+      write.register = 'frontier';
+      actions['proposition.traverse'] = { properties: { proposition_id: { enum: ['write'] } } };
+    }
+    const plan = { gate, phase: { id: 'return-cycle', number: persist ? 2 : 4, kind: persist ? 'persist' : 'disperse', write_register: write.register },
       write_options: [write], revision_options: [write], schema: { $defs: { actions } } };
     // Stale client action labels must never override the new authoritative schema.
     return render(<ParticipantWorkspace plan={plan} availableActions={['proposition.variant', ...Object.keys(actions)]} onAction={() => {}} />);
@@ -56,4 +61,12 @@ test('an owned Write without authorized Revise retains support controls but hide
   assert.doesNotMatch(html, />Revise<\/span>/);
   assert.match(html, />Support<\/span>/);
   assert.match(html, />Refute<\/span>/);
+});
+
+test('Persist hides unavailable Variant and Revise while retaining schema-authorized support', () => {
+  const html = module.exports.workspace(false, true);
+  assert.doesNotMatch(html, />Variant<\/span>|>Revise<\/span>|>Rest<\/span>/);
+  assert.match(html, />Support<\/span>/);
+  assert.match(html, />Refute<\/span>/);
+  assert.match(html, />Instrument<\/span>/);
 });

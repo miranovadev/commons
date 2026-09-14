@@ -160,7 +160,7 @@ class PersistInstrumentTest extends TestCase
         $signal = Proposition::findOrFail($state['plan']['gate_id']);
         $this->assertArrayNotHasKey('instrument.execute', $state['plan']['schema']['$defs']['actions']);
         $state = app(ParticipationService::class)->contribute($author, $state['plan']['phase']['id'], [
-            'action' => 'proposition.variant', 'statement' => 'Stance awaiting grounding',
+            'action' => 'proposition.reclassify', 'statement' => 'Stance awaiting grounding',
         ]);
         $write = Proposition::findOrFail($state['plan']['gate_id']);
         $grounder = new Participant;

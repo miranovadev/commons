@@ -39,14 +39,24 @@ class ParticipantActionContractTest extends TestCase
         return array_map(fn (PhaseKind $kind): array => [$kind], PhaseKind::cases());
     }
 
-    #[DataProvider('phases')]
-    public function test_every_advertised_action_round_trips_through_inference_validation_and_execution(PhaseKind $kind): void
+    public static function executionPhases(): array
     {
-        [$participant, $phase, $seed] = $this->fixture($kind);
+        return [...self::phases(), 'Persist foreign Gate' => [PhaseKind::Persist, true]];
+    }
+
+    #[DataProvider('executionPhases')]
+    public function test_every_advertised_action_round_trips_through_inference_validation_and_execution(PhaseKind $kind, bool $foreignGate = false): void
+    {
+        [$participant, $phase, $seed] = $this->fixture($kind, foreignGate: $foreignGate);
         $state = app(ParticipationService::class)->stateFor($participant);
         $schema = $state['plan']['schema'];
         // Coverage must not silently shrink when an action disappears from a fixture.
-        $this->assertEqualsCanonicalizing(config('phases.'.$kind->value.'.actions'), array_keys($schema['$defs']['actions']));
+        $expected = config('phases.'.$kind->value.'.actions');
+        if ($kind === PhaseKind::Persist) {
+            // Both ownership cases run: Variant and Reclassify are now mutually exclusive.
+            $expected = array_values(array_diff($expected, [$foreignGate ? 'proposition.reclassify' : 'proposition.variant']));
+        }
+        $this->assertEqualsCanonicalizing($expected, array_keys($schema['$defs']['actions']));
         $transport = app(OpenAIResponseSchema::class)->fromCommons($schema);
         $variants = $transport['properties']['contribution']['anyOf'] ?? [$transport['properties']['contribution']];
         $responses = Http::sequence();
@@ -211,7 +221,7 @@ class ParticipantActionContractTest extends TestCase
         }
     }
 
-    private function fixture(PhaseKind $kind, bool $empty = false): array
+    private function fixture(PhaseKind $kind, bool $empty = false, bool $foreignGate = false): array
     {
         config()->set('schemas.cache.store', 'array');
         $substrate = new Substrate;
@@ -240,6 +250,17 @@ class ParticipantActionContractTest extends TestCase
         $writes = ['activity', 'frontier', 'canon', 'activity', 'frontier', 'canon', 'canon'];
         $anchor = $kind === PhaseKind::Mediate ? $node('canon', $seed) : $seed;
         $gate = $kind === PhaseKind::Distinguish ? $seed : $node($registers[$kind->value - 1], $anchor);
+        if ($foreignGate) {
+            $owner = new Participant;
+            $owner->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'gate-owner'])->save();
+            $ownerCycle = $history->replicate();
+            $ownerCycle->participant_id = $owner->id;
+            $ownerCycle->save();
+            $ownerPhase = $past->replicate();
+            $ownerPhase->cycle_id = $ownerCycle->id;
+            $ownerPhase->save();
+            $gate->forceFill(['phase_id' => $ownerPhase->id])->save();
+        }
         if (! $empty) {
             if ($kind === PhaseKind::Mediate) {
                 $node('activity', $anchor);

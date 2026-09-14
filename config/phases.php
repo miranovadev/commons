@@ -14,7 +14,7 @@ return [
     ],
     2 => [
         'name' => 'persist',
-        'description' => 'Develop the current distinction through variation, revision, reclassification, attestation, or grounding an existing Write with an Instrument.',
+        'description' => 'Variant another Participant’s Gate once, reclassify an owned Gate, or interact with eligible existing Writes.',
         'gate' => 'previous-phase-position',
         'actions' => [
             'receipt.read',
@@ -26,6 +26,7 @@ return [
             'proposition.traverse',
         ],
         'constraints' => [
+            'proposition.variant' => ['gate-non-owner'],
             'proposition.reclassify' => ['gate-owner'],
             'instrument.execute' => ['write-register'],
         ],
