@@ -242,7 +242,7 @@ class WebSearchReceiptTest extends TestCase
                 $this->assertSame(2, Receipt::where('type', 'web_search')->count());
             }
         }
-        $fixture->phase->forceFill(['kind' => PhaseKind::Mediate])->save();
+        $fixture->phase->forceFill(['kind' => PhaseKind::Disperse, 'write_register' => 'activity'])->save();
         $plan = app(ParticipationService::class)->stateFor($fixture->viewer)['plan'];
         $this->assertArrayNotHasKey('receipt.replay', $plan['schema']['$defs']['actions']);
         $this->expectException(DomainException::class);

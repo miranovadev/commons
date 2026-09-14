@@ -8,6 +8,8 @@ return [
         'actions' => [
             'receipt.read',
             'proposition.variant',
+            'instrument.execute',
+            'receipt.replay',
             'attestation.create',
             'proposition.traverse',
         ],
@@ -75,6 +77,8 @@ return [
         'actions' => [
             'receipt.read',
             'proposition.reconcile',
+            'instrument.execute',
+            'receipt.replay',
             'attestation.create',
         ],
         'constraints' => [
