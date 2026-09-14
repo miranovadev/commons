@@ -92,6 +92,9 @@ class PropositionHistorySemanticsTest extends TestCase
         }
         $source = $gate;
         $input = ['action' => 'proposition.'.$operation, 'statement' => 'A fresh contribution'];
+        if ($operation === 'reclassify') {
+            unset($input['statement']);
+        }
         if ($operation === 'revise') {
             $source = $this->node('Owned prior Write', $writeRegister);
             $this->edge($gate, $source);
@@ -147,7 +150,7 @@ class PropositionHistorySemanticsTest extends TestCase
         $this->assertSame($propositions + 1, Proposition::count());
         $this->assertSame('expressive', $target->tier);
         $this->assertSame($writeRegister, $target->register);
-        $this->assertSame(in_array($operation, ['reconcile', 'bias'], true) ? $gate->statement : $input['statement'], $target->statement);
+        $this->assertSame(in_array($operation, ['reconcile', 'bias', 'reclassify'], true) ? $gate->statement : $input['statement'], $target->statement);
         $edges = Supersession::where('target_proposition_id', $target->id)->get();
         $this->assertEqualsCanonicalizing($sources->pluck('id')->all(), $edges->pluck('source_proposition_id')->all());
         $this->assertCount($sources->count(), $edges);
@@ -160,12 +163,12 @@ class PropositionHistorySemanticsTest extends TestCase
         $this->assertSame([$target->id], $state->sourceIds($target)->all());
         $this->assertSame(0, $state->touchCount($target));
         $this->assertCount(0, $state->attestations(collect([$target])));
-        $this->assertCount(0, $state->receipts($target));
+        $this->assertCount(in_array($operation, ['reclassify', 'bias'], true) ? 1 : 0, $state->receipts($target));
         $this->assertSame(0, $target->instrumentExecutions()->count());
         $this->assertSame($counts, [Attestation::count(), Receipt::count(), InstrumentExecution::count(), Phase::count()]);
         $this->assertSame($attestationTargets, Attestation::pluck('proposition_id', 'id')->all());
         $this->assertSame($receiptTargets, Receipt::pluck('receiptable_id', 'id')->all());
-        $this->assertSame(['missing_effective_attestation', 'missing_completed_receipt', 'missing_counted_reinforcement'],
+        $this->assertSame(['missing_effective_attestation', ...(in_array($operation, ['reclassify', 'bias'], true) ? [] : ['missing_completed_receipt']), 'missing_counted_reinforcement'],
             app(CommitmentAdmissibilityService::class)->grounding($target)['reasons']);
         $this->assertEquals(1, app(ReinforcementService::class)->weights(collect([$target]), $this->participant->substrate)[$target->id]);
         $this->assertSame(0.0, app(ChiralityCalculator::class)->leanFor(collect([$target->id]), $this->participant->substrate));

@@ -63,11 +63,11 @@ class OperationalCommitmentTest extends TestCase
     public function test_seven_phase_participation_completes_receipts_and_commits(): void
     {
         $this->move($this->participant, ['action' => 'proposition.variant', 'statement' => 'Signal']);
-        $early = $this->move($this->participant, ['action' => 'proposition.reclassify', 'statement' => 'Stance']);
+        $early = $this->move($this->participant, ['action' => 'proposition.reclassify']);
         $earlyGate = Proposition::findOrFail($early['plan']['gate_id']);
         app(OperationalInstrumentService::class)->execute($earlyGate->phase, $earlyGate, ['kind' => 'citation', 'reference' => $this->origin->id]);
         $state = $this->move($this->participant, [
-            'action' => 'proposition.reclassify', 'statement' => 'Concord candidate',
+            'action' => 'proposition.reclassify',
         ]);
         $this->assertSame([], $state['plan']['gate_options'][0]['instruments'] ?? []);
         $this->assertDatabaseCount('instrument_executions', 2);
@@ -81,7 +81,7 @@ class OperationalCommitmentTest extends TestCase
         $this->move($this->participant, ['action' => 'attestation.create', 'proposition_id' => $stance->id, 'direction' => 'support']);
         app(OperationalInstrumentService::class)->execute($stance->phase, $stance, ['kind' => 'citation', 'reference' => $this->origin->id]);
         $helperState = $this->move($helper, [
-            'action' => 'proposition.reclassify', 'statement' => 'Final Concord',
+            'action' => 'proposition.reclassify',
         ]);
         $candidate = Proposition::findOrFail($helperState['plan']['gate_id']);
         $reviewer = $this->participant($this->participant->substrate, 'reviewer');
@@ -222,14 +222,14 @@ class OperationalCommitmentTest extends TestCase
     public function test_invalid_and_unsupported_instruments_leave_no_partial_write(): void
     {
         $this->move($this->participant, ['action' => 'proposition.variant', 'statement' => 'Signal']);
-        $state = $this->move($this->participant, ['action' => 'proposition.reclassify', 'statement' => 'Stance']);
+        $state = $this->move($this->participant, ['action' => 'proposition.reclassify']);
         foreach ([
             ['kind' => 'hyperlink', 'reference' => 'file:///etc/passwd'],
             ['kind' => 'hyperlink', 'reference' => 'https://user:password@example.test'],
             ['kind' => 'citation', 'reference' => 'missing'],
         ] as $instrument) {
             try {
-                $this->move($this->participant, ['action' => 'proposition.reclassify', 'statement' => 'Rejected', 'instrument' => $instrument]);
+                $this->move($this->participant, ['action' => 'proposition.reclassify', 'instrument' => $instrument]);
                 $this->fail('Invalid instrument should fail.');
             } catch (\InvalidArgumentException) {
                 $this->assertDatabaseMissing('propositions', ['statement' => 'Rejected']);
@@ -303,7 +303,7 @@ class OperationalCommitmentTest extends TestCase
     public function test_removed_reclassification_contracts_reject_payloads(): void
     {
         $this->move($this->participant, ['action' => 'proposition.variant', 'statement' => 'Signal']);
-        $early = $this->move($this->participant, ['action' => 'proposition.reclassify', 'statement' => 'Stance']);
+        $early = $this->move($this->participant, ['action' => 'proposition.reclassify']);
         $earlyGate = Proposition::findOrFail($early['plan']['gate_id']);
         app(OperationalInstrumentService::class)->execute($earlyGate->phase, $earlyGate, ['kind' => 'citation', 'reference' => $this->origin->id]);
         foreach (['reclassify_with_receipt', 'proposition.reclassify_with_receipt', 'proposition.reclassify_with_instrument'] as $action) {
@@ -396,7 +396,7 @@ class OperationalCommitmentTest extends TestCase
         $phase->write_register = 'concord';
         $phase->gate_proposition_id = $stance->id;
         $phase->save();
-        $candidate = app(ContributionDispatcher::class)->dispatch($builder, $phase, ['action' => 'proposition.reclassify', 'statement' => 'Groundable Concord']);
+        $candidate = app(ContributionDispatcher::class)->dispatch($builder, $phase, ['action' => 'proposition.reclassify']);
         $reader = $this->participant($this->participant->substrate, 'reader-'.str()->ulid());
         $reader->current_proposition_id = $stance->id;
         $reader->save();

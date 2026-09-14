@@ -36,7 +36,7 @@ class PersistInstrumentTest extends TestCase
         $this->assertCount(0, app(PropositionStateService::class)->receipts($write));
         try {
             app(ContributionDispatcher::class)->dispatch($author, Phase::findOrFail($before['plan']['phase']['id']), [
-                'action' => 'proposition.reclassify', 'statement' => 'Must still require evidence',
+                'action' => 'proposition.reclassify',
             ]);
             $this->fail('Constrain must reject reclassification without a Receipt.');
         } catch (DomainException) {
@@ -78,7 +78,7 @@ class PersistInstrumentTest extends TestCase
         $ownerState = $service->stateFor($author);
         $this->assertArrayHasKey('proposition.reclassify', $ownerState['plan']['schema']['$defs']['actions']);
         $after = app(ParticipationService::class)->contribute($author, $ownerState['plan']['phase']['id'], [
-            'action' => 'proposition.reclassify', 'statement' => 'Evidence-grounded Concord',
+            'action' => 'proposition.reclassify',
         ]);
         $this->assertSame('disperse', $after['plan']['phase']['kind']);
         $this->assertSame($write->id, $receipt->fresh()->receiptable_id);
@@ -160,7 +160,7 @@ class PersistInstrumentTest extends TestCase
         $signal = Proposition::findOrFail($state['plan']['gate_id']);
         $this->assertArrayNotHasKey('instrument.execute', $state['plan']['schema']['$defs']['actions']);
         $state = app(ParticipationService::class)->contribute($author, $state['plan']['phase']['id'], [
-            'action' => 'proposition.reclassify', 'statement' => 'Stance awaiting grounding',
+            'action' => 'proposition.reclassify',
         ]);
         $write = Proposition::findOrFail($state['plan']['gate_id']);
         $grounder = new Participant;

@@ -12,16 +12,16 @@ use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Substrate;
 use App\Models\Supersession;
-use App\Services\ClosureGateService;
 use App\Services\ActiveParticipantLineage;
+use App\Services\ClosureGateService;
 use App\Services\ContributionDispatcher;
 use App\Services\ContributionService;
 use App\Services\InputPlanService;
 use App\Services\LedgerService;
 use App\Services\Observables\ReinforcementService;
 use App\Services\OperationalInstrumentService;
-use App\Services\ParticipationService;
 use App\Services\ParticipantPromptFactory;
+use App\Services\ParticipationService;
 use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use InvalidArgumentException;
@@ -105,7 +105,7 @@ class WriteOnceTest extends TestCase
         $this->assertUnavailable($participant, $phase, ['action' => 'proposition.variant', 'statement' => 'Self Variant']);
         // Reclassify retains its existing owner-only opportunity.
         $write = app(ContributionDispatcher::class)->dispatch($participant, $phase, [
-            'action' => 'proposition.reclassify', 'statement' => 'My classified Write',
+            'action' => 'proposition.reclassify',
         ]);
         $return = $this->phase($participant, PhaseKind::Persist, 'frontier', $gate);
         $plan = $this->plan($participant);
@@ -168,7 +168,7 @@ class WriteOnceTest extends TestCase
         if ($kind === PhaseKind::Constrain) {
             $this->loadedReceiptFixture($gate);
         }
-        $input = ['action' => $action, 'statement' => 'First Write'];
+        $input = $action === 'proposition.reclassify' ? ['action' => $action] : ['action' => $action, 'statement' => 'First Write'];
         app(ContributionService::class)->validate($participant, $input);
         app(ParticipationService::class)->contribute($participant, $phase->id, $input);
         $written = Proposition::findOrFail($participant->fresh()->current_proposition_id);
@@ -234,7 +234,7 @@ class WriteOnceTest extends TestCase
     {
         [$participant, $gate] = $this->fixture();
         $phase = $this->phase($participant, PhaseKind::Constrain, 'canon', $gate);
-        $input = ['action' => 'proposition.reclassify', 'statement' => 'Classified'];
+        $input = ['action' => 'proposition.reclassify'];
         $this->assertUnavailable($participant, $phase, $input);
         app(OperationalInstrumentService::class)->execute($phase, $gate, ['kind' => 'citation', 'reference' => $gate->id]);
         $this->assertSame(0, app(ReinforcementService::class)->count($gate));

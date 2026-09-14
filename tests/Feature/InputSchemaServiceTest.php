@@ -197,11 +197,9 @@ class InputSchemaServiceTest extends TestCase
 
         $this->assertValid($schema, [
             'action' => 'proposition.reclassify',
-            'statement' => 'Move this into the committal register.',
         ]);
         $this->assertInvalid($schema, [
             'action' => 'proposition.reclassify',
-            'statement' => 'Move this into the committal register.',
             'instrument' => [
                 'kind' => 'citation',
                 'reference' => 'https://example.test/evidence',

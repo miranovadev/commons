@@ -5,12 +5,31 @@ namespace Tests\Feature;
 use App\Enums\ObservableDirection;
 use App\Enums\PhaseKind;
 use App\Enums\SupersessionStrength;
-use App\Models\{Attestation, Connection, Cycle, Participant, Phase, Proposition, Substrate, Supersession};
-use App\Services\{BiasGateService, ContributionDispatcher, InputPlanService, InstrumentExecutionService, LedgerService, OpenAIResponseSchema, OperationalInstrumentService, ParticipantPromptFactory, ParticipationService, PropositionMeasurementService, PropositionStateService, ReconciliationOptionService};
+use App\Models\Attestation;
+use App\Models\Connection;
+use App\Models\Cycle;
+use App\Models\Participant;
+use App\Models\Phase;
+use App\Models\Proposition;
+use App\Models\Substrate;
+use App\Models\Supersession;
+use App\Services\BiasGateService;
+use App\Services\ContributionDispatcher;
+use App\Services\InputPlanService;
+use App\Services\InstrumentExecutionService;
+use App\Services\LedgerService;
 use App\Services\Observables\ChiralityCalculator;
+use App\Services\OpenAIResponseSchema;
+use App\Services\OperationalInstrumentService;
+use App\Services\ParticipantPromptFactory;
+use App\Services\ParticipationService;
+use App\Services\PropositionMeasurementService;
+use App\Services\PropositionStateService;
+use App\Services\ReconciliationOptionService;
 use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Opis\JsonSchema\{Helper, Validator};
+use Opis\JsonSchema\Helper;
+use Opis\JsonSchema\Validator;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -19,10 +38,15 @@ class BiasGateTest extends TestCase
     use RefreshDatabase;
 
     private Substrate $substrate;
+
     private Phase $history;
+
     private Participant $viewer;
+
     private Phase $phase;
+
     private Proposition $parent;
+
     private Proposition $gate;
 
     private function fixture(string $register = 'stance', string $write = 'concord'): void
@@ -100,7 +124,10 @@ class BiasGateTest extends TestCase
         $this->assertEqualsCanonicalizing([$this->gate->id, $support->id, $refute->id], $this->optionIds());
     }
 
-    public static function domains(): array { return [['stance', 'concord'], ['frontier', 'canon']]; }
+    public static function domains(): array
+    {
+        return [['stance', 'concord'], ['frontier', 'canon']];
+    }
 
     #[DataProvider('domains')]
     public function test_participant_selects_one_gate_creating_one_fresh_target_and_reducing_the_lean(string $register, string $write): void
@@ -159,12 +186,12 @@ class BiasGateTest extends TestCase
         $history = app(PropositionStateService::class);
         $this->assertSame([$target->id], $history->sourceIds($target)->all());
         $this->assertCount(0, $history->attestations(collect([$target])));
-        $this->assertCount(0, $history->receipts($target));
+        $this->assertSame($history->receipts($selected)->pluck('id')->all(), $history->receipts($target)->pluck('id')->all());
         $this->assertSame(1, $history->touchCount($target)); // Only the newly opened Order Phase.
         $this->assertSame(3, $history->touchCount($selected));
         $this->assertCount(1, $history->receipts($selected));
         $this->assertFalse($state['plan']['commitment']['requirements']['attestation']);
-        $this->assertFalse($state['plan']['commitment']['requirements']['receipt']);
+        $this->assertTrue($state['plan']['commitment']['requirements']['receipt']);
         $bias = app(BiasGateService::class);
         $this->assertEqualsCanonicalizing([$this->gate->id, $opposite->id], $bias->populationFor($this->phase)->pluck('id')->all());
         $this->assertSame(0.0, $bias->leanFor($this->phase));
@@ -319,37 +346,53 @@ class BiasGateTest extends TestCase
         }
     }
 
-    private function plan(): array { return app(InputPlanService::class)->forParticipant($this->viewer); }
-    private function optionIds(): array { return array_column($this->plan()['gate_options'], 'id'); }
+    private function plan(): array
+    {
+        return app(InputPlanService::class)->forParticipant($this->viewer);
+    }
+
+    private function optionIds(): array
+    {
+        return array_column($this->plan()['gate_options'], 'id');
+    }
+
     private function assertInput(array $schema, array $input, bool $valid): void
     {
         $this->assertSame($valid, (new Validator)->validate(Helper::toJSON($input), Helper::toJSON($schema))->isValid());
     }
+
     private function sibling(string $statement): Proposition
     {
         $node = $this->node($statement, $this->gate->register);
         $this->edge($this->parent, $node);
+
         return $node;
     }
+
     private function node(string $statement, string $register, string $tier = 'expressive'): Proposition
     {
         $node = new Proposition;
         $node->forceFill(['phase_id' => $this->history->id, 'register' => $register, 'tier' => $tier, 'statement' => $statement])->save();
         app(LedgerService::class)->record($node);
+
         return $node;
     }
+
     private function edge(Proposition $source, Proposition $target, string $type = 'variant'): void
     {
         $edge = new Supersession;
         $edge->forceFill(['phase_id' => $this->history->id, 'source_proposition_id' => $source->id, 'target_proposition_id' => $target->id, 'type' => $type])->save();
         app(LedgerService::class)->record($edge);
     }
+
     private function participant(string $callsign): Participant
     {
         $participant = new Participant;
         $participant->forceFill(['substrate_id' => $this->substrate->id, 'callsign' => $callsign, 'max_read_count' => 25])->save();
+
         return $participant;
     }
+
     private function newPhase(Participant $participant, PhaseKind $kind, string $register, bool $completed = false): Phase
     {
         $cycle = new Cycle;
@@ -359,14 +402,17 @@ class BiasGateTest extends TestCase
         $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => (int) $participant->cycles()->max('sequence') + 1, 'completed_at' => $completed ? now() : null])->save();
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => $kind, 'write_register' => $register, 'started_at' => now(), 'completed_at' => $completed ? now() : null])->save();
+
         return $phase;
     }
+
     private function attest(Proposition $node, string $direction): Attestation
     {
         $phase = $this->newPhase($this->participant('witness-'.Attestation::count()), PhaseKind::Persist, $node->register, true);
         $attestation = new Attestation;
         $attestation->forceFill(['phase_id' => $phase->id, 'proposition_id' => $node->id, 'direction' => $direction])->save();
         app(LedgerService::class)->record($attestation);
+
         return $attestation;
     }
 }
