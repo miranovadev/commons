@@ -168,7 +168,7 @@ class WriteOnceTest extends TestCase
         if ($kind === PhaseKind::Constrain) {
             $this->loadedReceiptFixture($gate);
         }
-        $input = ['action' => $action, 'statement' => 'First Write'];
+        $input = $action === 'proposition.reclassify' ? ['action' => $action] : ['action' => $action, 'statement' => 'First Write'];
         app(ContributionService::class)->validate($participant, $input);
         app(ParticipationService::class)->contribute($participant, $phase->id, $input);
         $written = Proposition::findOrFail($participant->fresh()->current_proposition_id);
