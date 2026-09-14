@@ -29,8 +29,10 @@ class AttestationDirectionMigrationTest extends TestCase
         $origin = Proposition::findOrFail($participant->fresh()->current_proposition_id);
         $first = $origin->attestations()->firstOrFail();
         $second = new Attestation;
-        $second->forceFill(['phase_id' => $first->phase_id, 'proposition_id' => $origin->id,
+        $laterPhase = $participant->cycles()->latest('sequence')->firstOrFail()->phases()->firstOrFail();
+        $second->forceFill(['phase_id' => $laterPhase->id, 'proposition_id' => $origin->id,
             'direction' => 'positive', 'supersedes_attestation_id' => $first->id])->save();
+        app(\App\Services\LedgerService::class)->record($second);
         $rows = DB::table('attestations')->orderBy('id')->get()->toArray();
         $frames = DB::table('commit_region_polarities')->get()->toArray();
         $ledger = DB::table('substrate_ledger_entries')->orderBy('id')->get()->toArray();

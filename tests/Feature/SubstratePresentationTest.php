@@ -93,7 +93,7 @@ class SubstratePresentationTest extends TestCase
             ]);
             $schema = app(InputPlanService::class)->forParticipant($participant)['schema'];
             $this->assertSame(['positive' => $label, 'negative' => 'Refute'], $schema['x-commons']['attestation_labels']);
-            $this->assertSame(['positive', 'negative'], config('schemas.actions.attestation.create.properties.direction.enum'));
+            $this->assertSame(['positive', 'negative'], config('schemas.actions')['attestation.create']['properties']['direction']['enum']);
         }
     }
 }
