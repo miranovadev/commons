@@ -45,6 +45,21 @@ test('Traverse and Bias instruments use their own authorized historical target s
 
 const { attestationDirections, writePropositions } = await import('../../resources/js/participationOptions.ts');
 
+test('Persist instruments expose only schema-authorized Writes, never nearby Gate options', () => {
+  const persist = {
+    ...plan, write_options: [archived], instrument_options: [archived],
+    gate_options: [plan.gate, unavailable],
+    schema: { $defs: { actions: {
+      'instrument.execute': { properties: { proposition_id: { enum: [archived.id] } } },
+    } } },
+  };
+  assert.deepEqual(actionPropositions(persist, 'instrument.execute'), [archived]);
+  assert.deepEqual(writePropositions(persist), [archived]);
+  assert.equal(actionTargetIds(persist, 'instrument.execute').has(plan.gate.id), false);
+  assert.equal(actionTargetIds(persist, 'instrument.execute').has(unavailable.id), false);
+  assert.deepEqual(actionPropositions({ ...persist, schema: {} }, 'instrument.execute'), []);
+});
+
 for (const effective of [null, 'support', 'refute']) {
   test(`Write directions follow the schema for ${effective ?? 'untouched'} descendants`, () => {
     const directions = ['refute', 'support'].filter((direction) => direction !== effective);
