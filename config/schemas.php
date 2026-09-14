@@ -66,14 +66,14 @@ return [
     'actions' => [
         'receipt.replay' => [
             'title' => 'Replay an encountered Receipt’s Instrument',
-            'description' => 'Execute the stored invocation again on its original eligible Write, creating a new immutable Receipt linked to the previous one. Uses Instrument Phase progression. Neither Receipt is automatically loaded.',
+            'description' => 'Replay the original eligible Write invocation into a linked immutable Receipt. Advances the Phase; no automatic load.',
             'type' => 'object', 'additionalProperties' => false,
             'required' => ['action', 'receipt_id'],
             'properties' => ['action' => ['const' => 'receipt.replay'], 'receipt_id' => $ulid],
         ],
         'receipt.read' => [
             'title' => 'Load encountered Receipt evidence into persistent context',
-            'description' => 'Load one qualifying Receipt. This leaves the Phase and Gate unchanged. Loaded Receipts persist across Cycles; repeated or equivalent evidence does not multiply Reinforcement.',
+            'description' => 'Load qualifying evidence across Cycles without advancing. Equivalent evidence adds no extra Reinforcement.',
             'type' => 'object', 'additionalProperties' => false,
             'required' => ['action', 'receipt_id'],
             'properties' => ['action' => ['const' => 'receipt.read'], 'receipt_id' => $ulid],
