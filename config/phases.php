@@ -16,7 +16,7 @@ return [
     ],
     2 => [
         'name' => 'persist',
-        'description' => 'Variant another Participant’s Gate once, reclassify an owned Gate, or interact with eligible existing Writes.',
+        'description' => 'Variant another Participant’s Gate once, reclassify a receipted and attested Gate, or interact with eligible existing Writes.',
         'gate' => 'previous-phase-position',
         'actions' => [
             'receipt.read',
@@ -30,7 +30,7 @@ return [
         ],
         'constraints' => [
             'proposition.variant' => ['gate-non-owner'],
-            'proposition.reclassify' => ['gate-owner'],
+            'proposition.reclassify' => ['completed-receipt-and-effective-attestation'],
             'instrument.execute' => ['write-register'],
         ],
     ],
@@ -49,8 +49,7 @@ return [
         ],
         'constraints' => [
             'proposition.reclassify' => [
-                'gate-owner',
-                'completed-gate-or-effective-attestation-receipt',
+                'completed-receipt-and-effective-attestation',
             ],
         ],
     ],
@@ -103,6 +102,7 @@ return [
             'proposition.bias' => [
                 'dominant-active-stance-lean',
                 'unary-selection-fresh-history',
+                'completed-receipt-and-effective-attestation',
             ],
             'instrument.execute' => ['write-register'],
         ],

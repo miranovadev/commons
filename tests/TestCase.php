@@ -108,6 +108,17 @@ abstract class TestCase extends BaseTestCase
     }
 
     /** Evidence-only setup for tests of navigation/judgment, without a vote or load. */
+    /** Explicit eligibility setup; no loaded reinforcement or copied judgments. */
+    protected function classificationEvidenceFixture(Proposition $node): void
+    {
+        $this->receiptFixture($node);
+        if ($node->effectiveAttestations()->doesntExist()) {
+            $attestation = new Attestation;
+            $attestation->forceFill(['phase_id' => $node->phase_id, 'proposition_id' => $node->id, 'direction' => 'support'])->save();
+            app(LedgerService::class)->record($attestation);
+        }
+    }
+
     protected function receiptFixture(Proposition $node): void
     {
         if (app(PropositionStateService::class)->receipts($node)->isNotEmpty()) {

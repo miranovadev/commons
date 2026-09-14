@@ -148,6 +148,7 @@ class TragedyTest extends TestCase
         $phase->gate_proposition_id = $gate->id;
         $phase->save();
         if ($action === 'proposition.reclassify') {
+            $this->classificationEvidenceFixture($gate);
             $this->loadedReceiptFixture($gate);
         }
         if ($action === 'instrument.execute') {

@@ -55,7 +55,9 @@ class ParticipantActionContractTest extends TestCase
         $expected = config('phases.'.$kind->value.'.actions');
         if ($kind === PhaseKind::Persist) {
             // Both ownership cases run: Variant and Reclassify are now mutually exclusive.
-            $expected = array_values(array_diff($expected, [$foreignGate ? 'proposition.reclassify' : 'proposition.variant']));
+            if (! $foreignGate) {
+                $expected = array_values(array_diff($expected, ['proposition.variant']));
+            }
         }
         $this->assertEqualsCanonicalizing($expected, array_keys($schema['$defs']['actions']));
         $transport = app(OpenAIResponseSchema::class)->fromCommons($schema);
@@ -268,6 +270,7 @@ class ParticipantActionContractTest extends TestCase
             $gate->forceFill(['phase_id' => $ownerPhase->id])->save();
         }
         if (! $empty) {
+            $this->classificationEvidenceFixture($gate);
             if ($kind === PhaseKind::Mediate) {
                 $node('activity', $anchor);
             }

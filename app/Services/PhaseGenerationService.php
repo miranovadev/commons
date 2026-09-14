@@ -7,6 +7,7 @@ use App\Models\Phase;
 use App\Models\Proposition;
 use App\Services\Participation\ParticipationContext;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /** Generative opportunities survive Cycle completion and revision of their results. */
 final readonly class PhaseGenerationService
@@ -25,7 +26,7 @@ final readonly class PhaseGenerationService
         }
         // Standalone evidence previews may supply a candidate before a Phase
         // has a Gate. Operational plans always use the Phase's recorded Gate.
-        $gate = $context?->propositions->get($phase->gate_proposition_id) ?? $phase->gate ?? $position;
+        $gate = $position ?? $context?->propositions->get($phase->gate_proposition_id) ?? $phase->gate;
         if ($gate === null) {
             return false;
         }
@@ -33,9 +34,14 @@ final readonly class PhaseGenerationService
             && $this->ownership->ownedBy($gate, $phase->cycle->participant)) {
             return false;
         }
-        if ($phase->kind === PhaseKind::Constrain && $action === 'proposition.reclassify'
-            && $this->state->receipts($gate, $context)->isEmpty()) {
-            return false;
+        if ($action === 'proposition.reclassify' || ($action === 'proposition.bias' && $position !== null)) {
+            $existing = $context !== null
+                ? $context->classifications->where('source_proposition_id', $gate->id)->where('register', $phase->write_register)->isNotEmpty()
+                : DB::table('reclassification_results')->where('source_proposition_id', $gate->id)->where('register', $phase->write_register)->exists();
+            if ($existing || $this->state->receipts($gate, $context)->isEmpty()
+                || $this->state->attestations(collect([$gate]), $context)->isEmpty()) {
+                return false;
+            }
         }
 
         $sources = in_array($phase->kind, [PhaseKind::Bias, PhaseKind::Order], true)

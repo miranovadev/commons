@@ -148,7 +148,7 @@ final class PropositionOptionService
     public function gateOptionsFor(Phase $phase, ?ParticipationContext $context = null): Collection
     {
         return $phase->kind === PhaseKind::Bias
-            ? $this->bias->forPhase($phase, $context)
+            ? $this->bias->forPhase($phase, $context)->filter(fn (Proposition $node): bool => $this->generation->available($phase, 'proposition.bias', $context, $node))->values()
             : $this->reconciliation->forPhase($phase, $context);
     }
 
