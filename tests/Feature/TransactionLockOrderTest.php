@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Observables\ClosureValues;
 use App\Enums\PhaseKind;
 use App\Models\Cycle;
 use App\Models\Participant;
@@ -10,6 +11,7 @@ use App\Models\Proposition;
 use App\Models\Substrate;
 use App\Models\Supersession;
 use App\Models\User;
+use App\Services\ClosureGateService;
 use App\Services\ContributionDispatcher;
 use App\Services\CycleEntryService;
 use App\Services\InstrumentExecutionService;
@@ -19,6 +21,7 @@ use App\Services\PhaseProgressionService;
 use App\Services\PropositionMeasurementService;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\Process\Process;
 use Tests\TestCase;
@@ -103,11 +106,23 @@ class TransactionLockOrderTest extends TestCase
         });
     }
 
-    public function test_graph_and_detail_finish_while_measurement_update_holds_shared_write_locks(): void
+    public static function projectionKinds(): array
     {
-        [$substrate, , $phase] = $this->fixture();
+        return ['mutable expressive' => [true], 'frozen committal' => [false]];
+    }
+
+    #[DataProvider('projectionKinds')]
+    public function test_graph_and_detail_finish_while_measurement_update_holds_shared_write_locks(bool $expressive): void
+    {
+        [$substrate, $participant, $phase] = $this->fixture();
         User::factory()->create();
         $node = $phase->gate;
+        if ($expressive) {
+            app(ParticipationService::class)->contribute($participant, $phase->id,
+                ['action' => 'proposition.variant', 'statement' => 'Mutable projection subject']);
+            $node = $participant->fresh()->position;
+        }
+        $expected = $expressive ? -0.75 : $node->commitmentSnapshot->correspondence;
         $node->measurement()->delete();
         DB::beginTransaction();
         try {
@@ -124,7 +139,7 @@ class TransactionLockOrderTest extends TestCase
                 $this->assertStringContainsString('completed', $process->getOutput());
             }
             DB::commit();
-            $this->assertSame(-0.75, $node->fresh()->measurement->correspondence);
+            $this->assertSame($expected, $node->fresh()->measurement->correspondence);
             $this->assertSame('negative', $node->fresh()->correspondence_direction);
         } finally {
             if (DB::transactionLevel() > 0) {
@@ -198,6 +213,65 @@ class TransactionLockOrderTest extends TestCase
         });
         $this->assertSame($before + 1, Proposition::count());
         $this->assertSame(1, $a->children()->wherePivot('type', 'reconcile')->count());
+    }
+
+    public function test_waiting_reclassification_reuses_the_first_participants_result(): void
+    {
+        [$substrate, $first, $initial] = $this->fixture();
+        app(ParticipationService::class)->contribute($first, $initial->id, ['action' => 'proposition.variant', 'statement' => 'Shared classification source']);
+        $source = $first->fresh()->position;
+        $this->classificationEvidenceFixture($source);
+        $firstPhase = $first->cycles()->whereNull('completed_at')->sole()->currentPhase;
+        $second = new Participant;
+        $second->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'second-classifier'])->save();
+        $cycle = new Cycle;
+        $cycle->forceFill(['participant_id' => $second->id, 'sequence' => 1])->save();
+        $phase = $firstPhase->replicate();
+        $phase->cycle_id = $cycle->id;
+        $phase->save();
+        $input = ['action' => 'proposition.reclassify'];
+        $before = Proposition::count();
+        $this->whileWorkerWaits($substrate, [
+            'operation' => 'dispatch-rejected', 'participant_id' => $second->id, 'phase_id' => $phase->id,
+            'contribution' => $input, 'expected_message' => 'generation opportunity is unavailable',
+        ], function () use ($first, $firstPhase, $input): void {
+            app(ContributionDispatcher::class)->dispatch($first, $firstPhase, $input);
+        });
+        $this->assertSame($before + 1, Proposition::count());
+        $this->assertSame(1, DB::table('reclassification_results')->where('source_proposition_id', $source->id)->count());
+    }
+
+    public function test_waiting_commit_rechecks_global_source_consumption(): void
+    {
+        [$substrate, $first, $initial] = $this->fixture();
+        $source = new Proposition;
+        $source->forceFill(['phase_id' => $initial->id, 'register' => 'concord', 'tier' => 'expressive', 'statement' => 'Shared commitment source'])->save();
+        app(LedgerService::class)->record($source);
+        $edge = new Supersession;
+        $edge->forceFill(['phase_id' => $initial->id, 'source_proposition_id' => $initial->gate_proposition_id,
+            'target_proposition_id' => $source->id, 'type' => 'variant'])->save();
+        app(LedgerService::class)->record($edge);
+        $this->classificationEvidenceFixture($source);
+        $closure = [...(new ClosureValues(1, 1))->resolve(), 'history_proposition_id' => null, 'history_source' => 'negative-default'];
+        $this->mock(ClosureGateService::class, fn ($mock) => $mock->shouldReceive('preview', 'forCommitment')->andReturn($closure));
+        $initial->forceFill(['kind' => PhaseKind::Order, 'write_register' => 'concord', 'gate_proposition_id' => $source->id])->save();
+        $second = new Participant;
+        $second->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'second-committer'])->save();
+        $cycle = new Cycle;
+        $cycle->forceFill(['participant_id' => $second->id, 'sequence' => 1])->save();
+        $phase = $initial->replicate();
+        $phase->cycle_id = $cycle->id;
+        $phase->save();
+        $input = ['action' => 'proposition.commit', 'proposition_id' => $source->id];
+        $before = Proposition::count();
+        $this->whileWorkerWaits($substrate, [
+            'operation' => 'dispatch-rejected', 'participant_id' => $second->id, 'phase_id' => $phase->id,
+            'contribution' => $input, 'expected_message' => 'active Closure candidate',
+        ], function () use ($first, $initial, $input): void {
+            app(ContributionDispatcher::class)->dispatch($first, $initial->fresh(), $input);
+        });
+        $this->assertSame($before + 1, Proposition::count());
+        $this->assertSame(1, DB::table('commit_results')->where('source_proposition_id', $source->id)->count());
     }
 
     private function whileWorkerWaits(Substrate $substrate, array $input, callable $competing): void

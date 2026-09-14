@@ -77,8 +77,9 @@ class CausalHorizonLineageTest extends TestCase
         $this->assertNotNull($cycleB->fresh()->completed_at);
         $this->assertNull($cycleA->fresh()->completed_at);
 
+        $this->classificationEvidenceFixture($a->fresh()->position);
         $this->travel(10)->seconds();
-        $stateA = $service->contribute($a, $stateA['plan']['phase']['id'], ['action' => 'proposition.reclassify', 'statement' => 'Later Stance still belongs to H2']);
+        $stateA = $service->contribute($a, $stateA['plan']['phase']['id'], ['action' => 'proposition.reclassify']);
         $stance = $a->fresh()->position;
         $this->assertGreaterThan($h3->opened_at, $stance->created_at);
         $this->assertSame('stance', $stance->register);

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\PhaseKind;
 use App\Models\Connection;
+use App\Models\Cycle;
 use App\Models\InstrumentExecution;
 use App\Models\Participant;
 use App\Models\Phase;
@@ -36,7 +37,7 @@ class PersistInstrumentTest extends TestCase
         $this->assertCount(0, app(PropositionStateService::class)->receipts($write));
         try {
             app(ContributionDispatcher::class)->dispatch($author, Phase::findOrFail($before['plan']['phase']['id']), [
-                'action' => 'proposition.reclassify', 'statement' => 'Must still require evidence',
+                'action' => 'proposition.reclassify',
             ]);
             $this->fail('Constrain must reject reclassification without a Receipt.');
         } catch (DomainException) {
@@ -76,9 +77,13 @@ class PersistInstrumentTest extends TestCase
         // Grounding does not confer ownership or require loading Reinforcement.
         $this->assertArrayNotHasKey('proposition.reclassify', $next['plan']['schema']['$defs']['actions']);
         $ownerState = $service->stateFor($author);
+        $this->assertArrayNotHasKey('proposition.reclassify', $ownerState['plan']['schema']['$defs']['actions']);
+        $this->classificationEvidenceFixture($write);
+        $ownerState = $service->stateFor($author);
+        $this->assertArrayHasKey('proposition.reclassify', $service->stateFor($grounder)['plan']['schema']['$defs']['actions']);
         $this->assertArrayHasKey('proposition.reclassify', $ownerState['plan']['schema']['$defs']['actions']);
         $after = app(ParticipationService::class)->contribute($author, $ownerState['plan']['phase']['id'], [
-            'action' => 'proposition.reclassify', 'statement' => 'Evidence-grounded Concord',
+            'action' => 'proposition.reclassify',
         ]);
         $this->assertSame('disperse', $after['plan']['phase']['kind']);
         $this->assertSame($write->id, $receipt->fresh()->receiptable_id);
@@ -159,10 +164,20 @@ class PersistInstrumentTest extends TestCase
         ]);
         $signal = Proposition::findOrFail($state['plan']['gate_id']);
         $this->assertArrayNotHasKey('instrument.execute', $state['plan']['schema']['$defs']['actions']);
-        $state = app(ParticipationService::class)->contribute($author, $state['plan']['phase']['id'], [
-            'action' => 'proposition.reclassify', 'statement' => 'Stance awaiting grounding',
+        // A foreign Signal permits a new Stance Variant, intentionally without inherited evidence.
+        $signalOwner = new Participant;
+        $signalOwner->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'signal-owner', 'max_read_count' => 25])->save();
+        $ownerCycle = new Cycle;
+        $ownerCycle->forceFill(['participant_id' => $signalOwner->id, 'sequence' => 1])->save();
+        $ownerPhase = $signal->phase->replicate();
+        $ownerPhase->cycle_id = $ownerCycle->id;
+        $ownerPhase->save();
+        $signal->forceFill(['phase_id' => $ownerPhase->id])->save();
+        $state = $service->contribute($author, $state['plan']['phase']['id'], [
+            'action' => 'proposition.variant', 'statement' => 'Stance awaiting evidence',
         ]);
         $write = Proposition::findOrFail($state['plan']['gate_id']);
+        $this->receiptFixture($signal);
         $grounder = new Participant;
         $grounder->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'grounder', 'max_read_count' => 25])->save();
         $state = $service->enter($grounder);

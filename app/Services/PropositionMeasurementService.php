@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\ObservableDirection;
+use App\Models\CommitmentSnapshot;
 use App\Models\ContextHorizonMembership;
 use App\Models\Proposition;
 use App\Models\PropositionMeasurement;
@@ -26,6 +27,11 @@ final class PropositionMeasurementService
         ?DateTimeInterface $calculatedAt = null,
         ?ParticipationContext $context = null,
     ): PropositionMeasurement {
+        $snapshot = $proposition->tier === 'committal'
+            ? ($context !== null ? $context->snapshots->firstWhere('proposition_id', $proposition->id) : CommitmentSnapshot::find($proposition->id)) : null;
+        if ($snapshot !== null) {
+            return $this->project($proposition, $snapshot->correspondence, $snapshot->chirality, $snapshot->closure, $calculatedAt);
+        }
         $values = $this->observables->calculate($proposition, $context);
 
         return $this->project(
@@ -89,6 +95,11 @@ final class PropositionMeasurementService
             Substrate::query()->lockForUpdate()->findOrFail($proposition->phase->cycle->participant->substrate_id);
             // Lock the Proposition so the numeric projection and retained direction move together.
             Proposition::query()->whereKey($proposition->id)->lockForUpdate()->firstOrFail();
+            $snapshot = $proposition->tier === 'committal' ? CommitmentSnapshot::find($proposition->id) : null;
+            if ($snapshot !== null) {
+                [$correspondence, $chirality, $closure] = [$snapshot->correspondence, $snapshot->chirality, $snapshot->closure];
+            }
+
             if ($correspondence !== null && $correspondence !== 0.0) {
                 DB::table('propositions')->where('id', $proposition->id)->update([
                     'correspondence_direction' => ObservableDirection::after($correspondence)->value,

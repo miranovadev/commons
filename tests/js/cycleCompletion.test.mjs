@@ -58,8 +58,8 @@ test('completion navigates to the Substrate Participants and respects waiting, r
   }
 });
 
-test('Instrument-only schema targets render centrally in Constrain and Order and disappear without authorization', () => {
-  for (const [kind, number] of [['constrain', 3], ['order', 7]]) {
+test('Instrument-only schema targets render centrally in Constrain and Bias and disappear without authorization', () => {
+  for (const [kind, number] of [['constrain', 3], ['bias', 6]]) {
     const target = node('instrument-only');
     const plan = { phase: { id: 'phase', kind, number, write_register: 'concord' }, gate: node('gate'), write_options: [], instrument_options: [target, node('forbidden')],
       schema: { $defs: { actions: { 'instrument.execute': { properties: { proposition_id: { enum: [target.id] } } } } } } };

@@ -53,7 +53,7 @@ class BootstrapOriginReinforcementTest extends TestCase
         $receipt = app(OperationalInstrumentService::class)->execute(
             $originPhase,
             $origin,
-            ['kind' => 'hyperlink', 'reference' => 'https://example.test/page'],
+            ['kind' => 'hyperlink', 'reference' => 'https://example.test/page'], bootstrap: true,
         );
         $this->assertNotNull($receipt->signature);
 

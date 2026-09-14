@@ -62,6 +62,7 @@ final readonly class InputSchemaService
         $commitOptionIds = $kind === PhaseKind::Order
             ? $this->closure->committableFor($occurrence, $context)->pluck('id')->all() : [];
 
+        $attestationOptionIds ??= $this->options->attestationOptionsFor($occurrence, $context)->pluck('id')->all();
         $traversalOptionIds ??= $this->options->traversalOptionsFor($occurrence, $context)->pluck('id')->all();
 
         $schema = $this->specialize(

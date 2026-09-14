@@ -48,7 +48,7 @@ class AttestationDirectionChangeTest extends TestCase
         $this->assertCount(2, $attestations);
         $this->assertSame($attestations[0]->getKey(), $attestations[1]->supersedes_attestation_id);
         $this->assertSame('refute', Attestation::query()->effective()->sole()->direction);
-        $this->assertDatabaseCount('substrate_ledger_entries', 5);
+        $this->assertDatabaseCount('substrate_ledger_entries', 6);
 
         app(PropositionMeasurementService::class)->project(
             $proposition,
@@ -137,6 +137,8 @@ class AttestationDirectionChangeTest extends TestCase
         $phase->save();
         app(PropositionMeasurementService::class)->project($origin, -1, -1, -1);
         app(PropositionMeasurementService::class)->project($proposition, 0.8, 0.6, 0.4);
+
+        $this->receiptFixture($proposition);
 
         return [$participant, $cycle, $phase, $proposition];
     }

@@ -8,6 +8,7 @@ use App\Models\Proposition;
 use App\Models\Receipt;
 use App\Services\Participation\ParticipationContext;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Only Commit inherits contribution history, by reference to the original rows.
@@ -130,24 +131,38 @@ final class PropositionStateService
     {
         if ($context !== null) {
             $ids = $context->sourceIds($proposition);
+            $linked = $context->receiptLinks->whereIn('proposition_id', $ids)->pluck('receipt_id');
             $attestations = $context->effectiveAttestations($ids)->pluck('id');
 
             return $context->receipts->filter(fn ($receipt) => $receipt->instrumentExecution?->status === 'completed'
-                && (($receipt->receiptable_type === (new Proposition)->getMorphClass() && $ids->contains($receipt->receiptable_id))
+                && ($linked->contains($receipt->id) || ($receipt->receiptable_type === (new Proposition)->getMorphClass() && $ids->contains($receipt->receiptable_id))
                     || ($receipt->receiptable_type === (new Attestation)->getMorphClass() && $attestations->contains($receipt->receiptable_id))))->values();
         }
         $ids = $this->sourceIds($proposition);
         $attestations = $this->attestations(collect([$proposition]))->pluck('id');
+        $linked = DB::table('proposition_receipt_links')->whereIn('proposition_id', $ids)->pluck('receipt_id');
 
         return Receipt::query()
             ->whereHas('instrumentExecution', fn ($query) => $query->where('status', 'completed'))
-            ->where(function ($query) use ($ids, $attestations): void {
-                $query->where(fn ($query) => $query
-                    ->where('receiptable_type', (new Proposition)->getMorphClass())
-                    ->whereIn('receiptable_id', $ids))
-                    ->orWhere(fn ($query) => $query
-                        ->where('receiptable_type', (new Attestation)->getMorphClass())
-                        ->whereIn('receiptable_id', $attestations));
+            ->where(function ($query) use ($ids, $attestations, $linked): void {
+                $query->whereIn('id', $linked)->orWhere(function ($query) use ($ids, $attestations): void {
+                    $query->where(fn ($query) => $query
+                        ->where('receiptable_type', (new Proposition)->getMorphClass())
+                        ->whereIn('receiptable_id', $ids))
+                        ->orWhere(fn ($query) => $query
+                            ->where('receiptable_type', (new Attestation)->getMorphClass())
+                            ->whereIn('receiptable_id', $attestations));
+                });
             })->get();
+    }
+
+    /** Snapshot evidence references only; never copy observations or old votes. */
+    public function preserveReclassificationEvidence(Proposition $source, Proposition $target): void
+    {
+        foreach ($this->receipts($source)->where('receiptable_type', (new Proposition)->getMorphClass()) as $receipt) {
+            DB::table('proposition_receipt_links')->insertOrIgnore([
+                'proposition_id' => $target->id, 'receipt_id' => $receipt->id, 'created_at' => now(),
+            ]);
+        }
     }
 }

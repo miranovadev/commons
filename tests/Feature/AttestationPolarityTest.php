@@ -4,8 +4,20 @@ namespace Tests\Feature;
 
 use App\Enums\ObservableDirection as Direction;
 use App\Enums\PhaseKind;
-use App\Models\{Attestation, Cycle, Participant, Phase, Proposition, Substrate, Supersession};
-use App\Services\{AttestationEvidenceService, BiasGateService, CommitRegionPolarityService, ContributionDispatcher, CycleEntryService, LedgerService};
+use App\Models\Attestation;
+use App\Models\Cycle;
+use App\Models\Participant;
+use App\Models\Phase;
+use App\Models\Proposition;
+use App\Models\Substrate;
+use App\Models\Supersession;
+use App\Services\AttestationEvidenceService;
+use App\Services\BiasGateService;
+use App\Services\CommitRegionPolarityService;
+use App\Services\ContributionDispatcher;
+use App\Services\CycleEntryService;
+use App\Services\LedgerService;
+use App\Services\PropositionMeasurementService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -15,7 +27,9 @@ class AttestationPolarityTest extends TestCase
     use RefreshDatabase;
 
     private Participant $participant;
+
     private Phase $history;
+
     private Proposition $origin;
 
     private function bootstrap(string $label = 'support'): void
@@ -32,7 +46,10 @@ class AttestationPolarityTest extends TestCase
         $this->history = $this->origin->phase;
     }
 
-    public static function labels(): array { return [['support', Direction::Positive], ['refute', Direction::Negative]]; }
+    public static function labels(): array
+    {
+        return [['support', Direction::Positive], ['refute', Direction::Negative]];
+    }
 
     #[DataProvider('labels')]
     public function test_origin_participant_labels_the_fixed_positive_initial_direction(string $label, Direction $support): void
@@ -109,17 +126,20 @@ class AttestationPolarityTest extends TestCase
         $outsider = $this->node($register, $this->regionSeed($majority, $write));
         $wrongRegister = $this->node('signal', $seed);
         foreach ([$outsider, $wrongRegister] as $excluded) {
-            foreach (range(1, 3) as $_) { $this->attest($excluded, 'refute'); }
+            foreach (range(1, 3) as $_) {
+                $this->attest($excluded, 'refute');
+            }
         }
         $this->assertSame([$major->id], $bias->forPhase($phase)->pluck('id')->all());
         $counts = [Proposition::count(), $this->participant->substrate->ledgerEntries()->count()];
         $evidence->populationDirection($seed, $register);
         $this->assertSame($counts, [Proposition::count(), $this->participant->substrate->ledgerEntries()->count()]);
+        $this->receiptFixture($major);
         $target = app(ContributionDispatcher::class)->dispatch($this->participant, $phase,
             ['action' => 'proposition.bias', 'proposition_id' => $major->id]);
         $this->assertSame($major->statement, $target->statement);
         $this->assertSame([$gate->id], $bias->populationFor($phase)->pluck('id')->all());
-        $this->assertSame([$gate->id], $bias->forPhase($phase)->pluck('id')->all());
+        $this->assertSame([], $bias->forPhase($phase)->pluck('id')->all()); // Removing a sibling does not change this head's lineage.
         $this->assertCount(0, $target->attestations);
     }
 
@@ -179,7 +199,7 @@ class AttestationPolarityTest extends TestCase
         $old = $this->attest($source, 'support'); // Negative in this Origin's frame.
         $commit = $this->node('concord', $source, 'committal', 'commit');
         $this->attest($source, 'refute', $old); // Positive only after the Commit.
-        app(\App\Services\PropositionMeasurementService::class)->project($source, 0.5, 0, 0);
+        app(PropositionMeasurementService::class)->project($source, 0.5, 0, 0);
         $snapshot = $this->origin->commitmentSnapshot->getAttributes();
         $migration = require database_path('migrations/2026_09_12_000001_retain_region_polarity_and_correspondence.php');
         $migration->down();
@@ -198,6 +218,7 @@ class AttestationPolarityTest extends TestCase
         $this->attest($source, $direction === Direction::Positive ? 'support' : 'refute');
         $seed = $this->node($register, $source, 'committal', 'commit');
         app(CommitRegionPolarityService::class)->establishCommit($seed, $direction);
+
         return $seed;
     }
 
@@ -210,6 +231,7 @@ class AttestationPolarityTest extends TestCase
         $edge->forceFill(['phase_id' => $this->history->id, 'source_proposition_id' => $parent->id,
             'target_proposition_id' => $node->id, 'type' => $type])->save();
         app(LedgerService::class)->record($edge);
+
         return $node;
     }
 
@@ -224,6 +246,7 @@ class AttestationPolarityTest extends TestCase
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => $kind, 'write_register' => $register,
             'gate_proposition_id' => $gate?->id, 'started_at' => now()])->save();
+
         return $phase;
     }
 
@@ -239,6 +262,7 @@ class AttestationPolarityTest extends TestCase
             'proposition_id' => $position->id, 'direction' => $label,
             'supersedes_attestation_id' => $supersedes?->id])->save();
         app(LedgerService::class)->record($attestation);
+
         return $attestation;
     }
 }

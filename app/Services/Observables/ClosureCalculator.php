@@ -30,7 +30,7 @@ final readonly class ClosureCalculator
             return $structural;
         }
 
-        $mass = $this->reinforcement->count($proposition, $comparison->current->context)
+        $mass = $this->reinforcement->measurementCount($proposition, $comparison->current->context)
             * $this->reinforcement->receiptIncrement($comparison->current->horizon->substrate);
 
         return new ClosureValues($structural->depth, $structural->cadence,

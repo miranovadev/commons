@@ -107,6 +107,28 @@ abstract class TestCase extends BaseTestCase
             ? $horizon : $this->laterHorizonFixture($horizon, 1);
     }
 
+    /** Evidence-only setup for tests of navigation/judgment, without a vote or load. */
+    /** Explicit eligibility setup; no loaded reinforcement or copied judgments. */
+    protected function classificationEvidenceFixture(Proposition $node): void
+    {
+        $this->receiptFixture($node);
+        if ($node->effectiveAttestations()->doesntExist()) {
+            $attestation = new Attestation;
+            $attestation->forceFill(['phase_id' => $node->phase_id, 'proposition_id' => $node->id, 'direction' => 'support'])->save();
+            app(LedgerService::class)->record($attestation);
+        }
+    }
+
+    protected function receiptFixture(Proposition $node): void
+    {
+        if (app(PropositionStateService::class)->receipts($node)->isNotEmpty()) {
+            return;
+        }
+        $executions = app(InstrumentExecutionService::class);
+        $execution = $executions->start($node->phase, $node, 'citation', $node->id, ['kind' => 'citation', 'reference' => $node->id]);
+        $executions->complete($execution, $node);
+    }
+
     protected function groundFixture(Proposition $node): void
     {
         if (app(PropositionStateService::class)->attestations(collect([$node]))->isEmpty()) {

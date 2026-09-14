@@ -7,6 +7,7 @@ use App\Models\Phase;
 use App\Models\Proposition;
 use App\Services\Participation\ParticipationContext;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /** Generative opportunities survive Cycle completion and revision of their results. */
 final readonly class PhaseGenerationService
@@ -15,27 +16,42 @@ final readonly class PhaseGenerationService
         private CommitRegionService $regions,
         private PropositionStateService $state,
         private PropositionOwnershipService $ownership,
+        private PropositionAvailabilityService $availability,
     ) {}
 
     public function available(Phase $phase, string $action, ?ParticipationContext $context = null, ?Proposition $position = null): bool
     {
+        if ($action === 'proposition.commit') {
+            // A preview with no selected source must not suppress other eligible Gates.
+            return $position === null || $this->availability->mutable($position, $context);
+        }
         if (! in_array($action, ['proposition.variant', 'proposition.reclassify', 'proposition.bias', 'proposition.commit'], true)) {
             // Mediate owns a directed relationship, rather than a personal quota.
             return true;
         }
         // Standalone evidence previews may supply a candidate before a Phase
         // has a Gate. Operational plans always use the Phase's recorded Gate.
-        $gate = $context?->propositions->get($phase->gate_proposition_id) ?? $phase->gate ?? $position;
+        $gate = $position ?? $context?->propositions->get($phase->gate_proposition_id) ?? $phase->gate()->first();
         if ($gate === null) {
+            return false;
+        }
+        if (($action !== 'proposition.bias' || $position !== null)
+            && ($this->availability->committed($gate, $context)
+                || ($action !== 'proposition.variant' && $gate->tier !== 'expressive'))) {
             return false;
         }
         if ($phase->kind === PhaseKind::Persist && $action === 'proposition.variant'
             && $this->ownership->ownedBy($gate, $phase->cycle->participant)) {
             return false;
         }
-        if ($phase->kind === PhaseKind::Constrain && $action === 'proposition.reclassify'
-            && $this->state->receipts($gate, $context)->isEmpty()) {
-            return false;
+        if ($action === 'proposition.reclassify' || ($action === 'proposition.bias' && $position !== null)) {
+            $existing = $context !== null
+                ? $context->classifications->where('source_proposition_id', $gate->id)->where('register', $phase->write_register)->isNotEmpty()
+                : DB::table('reclassification_results')->where('source_proposition_id', $gate->id)->where('register', $phase->write_register)->exists();
+            if ($existing || $this->state->receipts($gate, $context)->isEmpty()
+                || $this->state->attestations(collect([$gate]), $context)->isEmpty()) {
+                return false;
+            }
         }
 
         $sources = in_array($phase->kind, [PhaseKind::Bias, PhaseKind::Order], true)
@@ -60,7 +76,7 @@ final readonly class PhaseGenerationService
     {
         $sources = $this->regions->membersFor($context?->propositions->get($phase->gate_proposition_id) ?? $phase->gate, $context)->pluck('id');
 
-        return Proposition::query()->where('tier', 'committal')->where('register', $phase->write_register)
+        return Proposition::query()->where('tier', 'committal')->where('register', $phase->write_register)->whereHas('commitmentSnapshot')
             ->whereHas('phase', fn ($query) => $query->where('kind', PhaseKind::Order->value)
                 ->whereHas('cycle.participant', fn ($query) => $query->where('substrate_id', $phase->cycle->participant->substrate_id)))
             ->whereHas('parents', fn ($query) => $query->whereKey($sources)->where('supersessions.type', 'commit'))

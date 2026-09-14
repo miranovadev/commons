@@ -32,7 +32,7 @@ class OperationalClosurePathTest extends TestCase
 
     private Substrate $substrate;
 
-    /** No fabricated graph, Phase, evidence, measurement, snapshot or Closure mock. */
+    /** Real contributions and Closure calculations, with explicit early grounding fixtures. */
     public function test_real_late_phase_path_rebuilds_concord_history_and_commits_only_when_closure_allows(): void
     {
         $this->substrate = new Substrate;
@@ -54,9 +54,9 @@ class OperationalClosurePathTest extends TestCase
 
         // The author creates the first branch through all four early phases.
         $signal = $this->gate($this->move($author, ['action' => 'proposition.variant', 'statement' => 'Initial Signal']));
-        $earlyStance = $this->gate($this->move($author, ['action' => 'proposition.reclassify', 'statement' => 'Initial Stance']));
+        $earlyStance = $this->gate($this->move($author, ['action' => 'proposition.reclassify']));
         app(OperationalInstrumentService::class)->execute($earlyStance->phase, $earlyStance, ['kind' => 'citation', 'reference' => $signal->id]);
-        $read = $this->gate($this->move($author, ['action' => 'proposition.reclassify', 'statement' => 'Shared Concord Read']));
+        $read = $this->gate($this->move($author, ['action' => 'proposition.reclassify']));
         $left = $this->gate($this->move($author, ['action' => 'proposition.variant', 'statement' => 'First dispersed Signal']));
         $this->assertSame(PhaseKind::Disperse, $left->phase->kind);
 
@@ -93,10 +93,11 @@ class OperationalClosurePathTest extends TestCase
         $this->assertCount(0, $history->attestations(collect([$stance])));
         $this->assertCount(0, $history->receipts($stance));
         $this->assertSame(1, $history->touchCount($stance)); // Newly opened Bias only.
-        $this->assertArrayHasKey('proposition.bias', $state['plan']['schema']['$defs']['actions']);
-        $this->assertSame([$stance->id], array_column($state['plan']['gate_options'], 'id'));
+        $this->assertArrayNotHasKey('proposition.bias', $state['plan']['schema']['$defs']['actions']);
+        $this->assertSame([$stance->id], array_column($state['plan']['gate_options'], 'id')); // Position remains contextual, without a Bias action.
 
         // Mediate participants reinforce the inherited direction of their immediate Write Stance.
+        $this->receiptFixture($stance);
         foreach ([$author, $grounder] as $participant) {
             $this->move($participant, ['action' => 'attestation.create', 'proposition_id' => $stance->id, 'direction' => 'support']);
         }
@@ -115,27 +116,25 @@ class OperationalClosurePathTest extends TestCase
         $this->assertCount(0, app(BiasGateService::class)->populationFor($bias));
         $this->assertSame([$concord->id], $history->sourceIds($concord)->all());
         $this->assertCount(0, $history->attestations(collect([$concord])));
-        $this->assertCount(0, $history->receipts($concord));
+        $this->assertCount(1, $history->receipts($concord));
         $this->assertSame(1, $history->touchCount($concord)); // New Order, no Stance history.
         $this->assertSame(3, $history->touchCount($stance));
         $this->assertFalse($state['plan']['commitment']['requirements']['attestation']);
-        $this->assertFalse($state['plan']['commitment']['requirements']['receipt']);
+        $this->assertTrue($state['plan']['commitment']['requirements']['receipt']);
         $this->assertCommitRejected($builder, 'missing_effective_attestation');
 
         // Bias exposes this new Concord as an existing Write child to the other participants.
         $this->move($author, ['action' => 'attestation.create', 'proposition_id' => $concord->id, 'direction' => 'support']);
         $state = $this->state($builder);
         $this->assertTrue($state['plan']['commitment']['requirements']['attestation']);
-        $this->assertFalse($state['plan']['commitment']['requirements']['receipt']);
-        $this->assertCommitRejected($builder, 'missing_completed_receipt');
+        $this->assertTrue($state['plan']['commitment']['requirements']['receipt']);
         $this->move($grounder, [
             'action' => 'instrument.execute', 'proposition_id' => $concord->id,
             'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/final-concord'],
         ]);
 
         $receiptId = $concord->instrumentExecutions()->with('receipt')->latest('id')->firstOrFail()->receipt->id;
-        $this->assertFalse($this->state($builder)['plan']['commitment']['requirements']['reinforcement']);
-        $this->move($builder, ['action' => 'receipt.read', 'receipt_id' => $receiptId]);
+        $this->assertSame(0, $this->state($builder)['plan']['commitment']['reinforcement_count']);
 
         // These three participants have each observed Signal, Read and final Concord once.
         // Equal active-head touches have zero CV, matching the Origin; depth has grown.
@@ -170,7 +169,7 @@ class OperationalClosurePathTest extends TestCase
         $earnedReceipts = $history->receipts($concord)->pluck('id')->all();
         $earnedTouches = $history->touchCount($concord);
         $this->assertCount(1, $earnedAttestations);
-        $this->assertCount(1, $earnedReceipts);
+        $this->assertCount(2, $earnedReceipts);
         $this->assertSame(3, $earnedTouches);
         $synthetic = $comparison->current->propositions->last();
         $this->assertSame($earnedTouches, $history->touchCount($synthetic));
@@ -187,7 +186,7 @@ class OperationalClosurePathTest extends TestCase
         $this->assertSame($earnedReceipts, $history->receipts($committed)->pluck('id')->all());
         $this->assertSame($counts, [Attestation::count(), Receipt::count(), Phase::count()]);
         $this->assertSame($concord->id, Attestation::findOrFail($earnedAttestations[0])->proposition_id);
-        $this->assertSame($concord->id, Receipt::findOrFail($earnedReceipts[0])->receiptable_id);
+        $this->assertEqualsCanonicalizing([$stance->id, $concord->id], Receipt::whereKey($earnedReceipts)->pluck('receiptable_id')->all());
         $this->assertSame('commit', $committed->parents()->sole()->pivot->type);
         $this->assertNotNull($order->fresh()->completed_at);
         $this->assertNotNull($order->cycle->fresh()->completed_at);
@@ -218,12 +217,11 @@ class OperationalClosurePathTest extends TestCase
         $this->assertSame($state['last_commitment'], $this->state($builder)['last_commitment']);
         $this->assertSame(2, CommitmentSnapshot::count());
 
-        // A real successful Commit may be followed by a fresh Cycle. Selection
-        // can choose either eligible commitment, but never the expressive head.
+        // A successful Commit continues at that exact Committal in a fresh Cycle.
         $restart = app(ParticipationService::class)->enter($builder);
         $entry = $this->gate($restart);
         $this->assertSame('committal', $entry->tier);
-        $this->assertContains($entry->id, [$origin->id, $committed->id]);
+        $this->assertSame($committed->id, $entry->id);
         $fresh = $this->gate($this->move($builder, ['action' => 'proposition.variant', 'statement' => 'A fresh beginning.']));
         $this->assertSame([$entry->id], $fresh->parents()->pluck('propositions.id')->all());
         foreach (Proposition::where('tier', 'expressive')->get() as $proposition) {
@@ -245,24 +243,23 @@ class OperationalClosurePathTest extends TestCase
             'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/origin'],
         ]));
         $signal = $this->gate($this->move($author, ['action' => 'proposition.variant', 'statement' => 'Signal']));
-        $earlyStance = $this->gate($this->move($author, ['action' => 'proposition.reclassify', 'statement' => 'Stance']));
+        $earlyStance = $this->gate($this->move($author, ['action' => 'proposition.reclassify']));
         app(OperationalInstrumentService::class)->execute($earlyStance->phase, $earlyStance, ['kind' => 'citation', 'reference' => $signal->id]);
-        $read = $this->gate($this->move($author, ['action' => 'proposition.reclassify', 'statement' => 'Concord Read']));
+        $read = $this->gate($this->move($author, ['action' => 'proposition.reclassify']));
         $left = $this->gate($this->move($author, ['action' => 'proposition.variant', 'statement' => 'Dispersed Signal']));
         $builder = $this->participant('builder');
         $this->reachDisperse($builder, $signal, $earlyStance, $read);
         $this->move($builder, ['action' => 'proposition.variant', 'statement' => 'Other Signal']);
         $stance = $this->gate($this->move($builder, ['action' => 'proposition.reconcile', 'other_proposition_id' => $left->id]));
+        $this->receiptFixture($stance);
         $this->move($author, ['action' => 'attestation.create', 'proposition_id' => $stance->id, 'direction' => 'support']);
         $concord = $this->gate($this->move($builder, ['action' => 'proposition.bias', 'proposition_id' => $stance->id]));
 
-        // Builder remains in Order. Author completes Order by grounding the same
-        // expressive Concord, then re-enters before Builder has committed it.
+        // Both reach Order after Bias. Divergent Closure leaves no terminal
+        // action, so Author explicitly Rests before re-entering the region.
         $this->move($author, ['action' => 'attestation.create', 'proposition_id' => $concord->id, 'direction' => 'support']);
-        $completed = $this->move($author, [
-            'action' => 'instrument.execute', 'proposition_id' => $concord->id,
-            'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/concord'],
-        ]);
+        $this->assertSame(['participant.rest'], array_keys($this->state($author)['plan']['schema']['$defs']['actions']));
+        $completed = $this->move($author, ['action' => 'participant.rest']);
         $this->assertSame('waiting', $completed['status']);
         $this->assertSame($concord->id, $author->fresh()->current_proposition_id);
         $this->assertSame('order', $this->state($builder)['plan']['phase']['kind']);
@@ -276,7 +273,7 @@ class OperationalClosurePathTest extends TestCase
         $this->assertArrayNotHasKey('proposition.variant', $state['plan']['schema']['$defs']['actions']);
         $before = Proposition::count();
         $continued = $this->gate($this->move($author, [
-            'action' => 'attestation.create', 'proposition_id' => $signal->id, 'direction' => 'support',
+            'action' => 'proposition.traverse', 'proposition_id' => $signal->id,
         ]));
         $this->assertSame($signal->id, $continued->id);
         $this->assertSame($before, Proposition::count());
@@ -324,6 +321,7 @@ class OperationalClosurePathTest extends TestCase
     {
         app(ParticipationService::class)->enter($participant);
         foreach ([$signal, $stance, $read] as $proposition) {
+            $this->receiptFixture($proposition);
             $this->move($participant, ['action' => 'attestation.create', 'proposition_id' => $proposition->id, 'direction' => 'support']);
         }
         $this->assertSame('disperse', $this->state($participant)['plan']['phase']['kind']);
@@ -344,6 +342,9 @@ class OperationalClosurePathTest extends TestCase
 
     private function move(Participant $participant, array $input): array
     {
+        if ($input['action'] === 'proposition.reclassify') {
+            $this->classificationEvidenceFixture($participant->fresh()->position);
+        }
         if ($input['action'] === 'proposition.commit') {
             $input['proposition_id'] = $participant->fresh()->current_proposition_id;
         }

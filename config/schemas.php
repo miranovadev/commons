@@ -47,7 +47,7 @@ $proposition = static function (string $action, string $title) use ($statement):
 };
 
 return [
-    'version' => 18,
+    'version' => 19,
 
     'cache' => [
         'store' => env('COMMONS_SCHEMA_CACHE_STORE'),
@@ -66,20 +66,20 @@ return [
     'actions' => [
         'receipt.replay' => [
             'title' => 'Replay an encountered Receipt’s Instrument',
-            'description' => 'Execute the stored invocation again on its original eligible Write, creating a new immutable Receipt linked to the previous one. Uses Instrument Phase progression. Neither Receipt is automatically loaded.',
+            'description' => 'Replay the original eligible Write invocation into a linked immutable Receipt. Advances the Phase; no automatic load.',
             'type' => 'object', 'additionalProperties' => false,
             'required' => ['action', 'receipt_id'],
             'properties' => ['action' => ['const' => 'receipt.replay'], 'receipt_id' => $ulid],
         ],
         'receipt.read' => [
             'title' => 'Load encountered Receipt evidence into persistent context',
-            'description' => 'Load one qualifying Receipt. This leaves the Phase and Gate unchanged. Loaded Receipts persist across Cycles; repeated or equivalent evidence does not multiply Reinforcement.',
+            'description' => 'Load qualifying evidence across Cycles without advancing. Equivalent evidence adds no extra Reinforcement.',
             'type' => 'object', 'additionalProperties' => false,
             'required' => ['action', 'receipt_id'],
             'properties' => ['action' => ['const' => 'receipt.read'], 'receipt_id' => $ulid],
         ],
         'proposition.traverse' => [
-            'title' => 'Traverse an attested immediate Write descendant',
+            'title' => 'Continue through an admissible Write',
             'type' => 'object',
             'additionalProperties' => false,
             'required' => ['action', 'proposition_id'],
@@ -110,12 +110,15 @@ return [
                 'statement' => $statement,
             ],
         ],
-        'proposition.reclassify' => $proposition(
-            'proposition.reclassify',
-            'Reclassify the current gate',
-        ),
+        'proposition.reclassify' => [
+            'type' => 'object',
+            'title' => 'Reclassify the Gate without changing its statement',
+            'additionalProperties' => false,
+            'required' => ['action'],
+            'properties' => ['action' => ['const' => 'proposition.reclassify']],
+        ],
         'proposition.bias' => [
-            'title' => 'Select one dominant-direction Gate into fresh Concord/Canon',
+            'title' => 'Classify one Gate aligned with its own lineage',
             'type' => 'object',
             'additionalProperties' => false,
             'required' => ['action', 'proposition_id'],

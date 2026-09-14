@@ -3,11 +3,33 @@
 namespace Tests\Feature;
 
 use App\Domain\Observables\ClosureValues;
-use App\Enums\{PhaseKind, RegisterPosition};
-use App\Models\{Attestation, Cycle, Participant, Phase, Proposition, Substrate, Supersession};
-use App\Services\{BiasGateService, ClosureGateService, ClosureOptionService, CommitRegionService, ContributionDispatcher, InputPlanService, LedgerService, MediationReadService, OperationalInstrumentService, PhaseProgressionService, PropositionMeasurementService, PropositionOptionService};
+use App\Enums\PhaseKind;
+use App\Enums\RegisterPosition;
+use App\Models\Attestation;
+use App\Models\Cycle;
+use App\Models\Participant;
+use App\Models\Phase;
+use App\Models\Proposition;
+use App\Models\Substrate;
+use App\Models\Supersession;
+use App\Services\BiasGateService;
+use App\Services\ClosureGateService;
+use App\Services\ClosureOptionService;
+use App\Services\CommitRegionService;
+use App\Services\ContributionDispatcher;
+use App\Services\InputPlanService;
+use App\Services\LedgerService;
+use App\Services\MediationReadService;
+use App\Services\OpenAIResponseSchema;
+use App\Services\OperationalInstrumentService;
+use App\Services\PhaseProgressionService;
+use App\Services\PropositionMeasurementService;
+use App\Services\PropositionOptionService;
+use App\Services\PropositionStateService;
 use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Opis\JsonSchema\Helper;
+use Opis\JsonSchema\Validator;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -16,7 +38,9 @@ class CommitRegionTest extends TestCase
     use RefreshDatabase;
 
     private Phase $history;
+
     private Participant $viewer;
+
     private Proposition $regionSeed;
 
     protected function setUp(): void
@@ -157,11 +181,11 @@ class CommitRegionTest extends TestCase
         $bias = app(BiasGateService::class);
         $this->assertEqualsCanonicalizing([$gate->id, $neutral->id, $negative->id, $regionDefault->id], $bias->populationFor($phase)->pluck('id')->all());
         $this->assertSame(-1.0, $bias->leanFor($phase));
-        $this->assertSame([$negative->id], $bias->forPhase($phase)->pluck('id')->all());
+        $this->assertEqualsCanonicalizing([$gate->id, $neutral->id], $bias->forPhase($phase)->pluck('id')->all());
         $this->assertCount(0, $regionDefault->attestations);
         $this->reject($phase, ['action' => 'proposition.bias', 'proposition_id' => $outside->id]);
-        $this->attest($gate, 'support'); // Balanced aggregate retains its earlier negative direction.
-        $this->assertSame([$negative->id], $bias->forPhase($phase)->pluck('id')->all());
+        $this->attest($gate, 'support'); // The regional aggregate does not change the head-specific comparison.
+        $this->assertEqualsCanonicalizing([$gate->id, $neutral->id], $bias->forPhase($phase)->pluck('id')->all());
     }
 
     #[DataProvider('domains')]
@@ -197,17 +221,18 @@ class CommitRegionTest extends TestCase
         $options = app(ClosureOptionService::class);
         $this->assertEqualsCanonicalizing([$positive->id, $negative->id, $ungrounded->id], $options->forPhase($phase)->pluck('id')->all());
         $plan = app(InputPlanService::class)->forParticipant($this->viewer);
-        $this->assertEqualsCanonicalizing([$positive->id, $negative->id, $ungrounded->id], array_column($plan['write_options'], 'id'));
+        $this->assertSame([], $plan['write_options']);
+        $this->assertEqualsCanonicalizing([$positive->id, $negative->id], array_column($plan['gate_options'], 'id'));
         $this->assertEqualsCanonicalizing([$positive->id, $negative->id], $plan['schema']['$defs']['actions']['proposition.commit']['properties']['proposition_id']['enum']);
         foreach ([$outside, $misaligned, $wrongRegister, $ungrounded] as $invalid) {
             $this->reject($phase, ['action' => 'proposition.commit', 'proposition_id' => $invalid->id]);
         }
-        $transport = app(\App\Services\OpenAIResponseSchema::class)->fromCommons($plan['schema']);
-        $empty = array_fill_keys($transport['properties']['contribution']['anyOf'][0]['required'], null);
+        $transport = app(OpenAIResponseSchema::class)->fromCommons($plan['schema']);
+        $empty = array_fill_keys(($transport['properties']['contribution']['anyOf'][0] ?? $transport['properties']['contribution'])['required'], null);
         foreach ([$negative, $ungrounded] as $candidate) {
             $wire = ['contribution' => array_replace($empty, ['action' => 'proposition.commit', 'proposition_id' => $candidate->id])];
-            $valid = (new \Opis\JsonSchema\Validator)->validate(
-                \Opis\JsonSchema\Helper::toJSON($wire), \Opis\JsonSchema\Helper::toJSON($transport))->isValid();
+            $valid = (new Validator)->validate(
+                Helper::toJSON($wire), Helper::toJSON($transport))->isValid();
             $this->assertSame($candidate->is($negative), $valid);
         }
         $values[$positive->id] = [1, -1];
@@ -217,7 +242,7 @@ class CommitRegionTest extends TestCase
             ['action' => 'proposition.commit', 'proposition_id' => $negative->id]);
         $this->assertSame([$negative->id], $target->commitSources()->pluck('propositions.id')->all());
         $this->assertSame($negative->statement, $target->statement);
-        $state = app(\App\Services\PropositionStateService::class);
+        $state = app(PropositionStateService::class);
         $this->assertSame($state->attestations(collect([$negative]))->pluck('id')->all(),
             $state->attestations(collect([$target]))->pluck('id')->all());
         $this->assertSame($state->touchCount($negative), $state->touchCount($target));
@@ -240,7 +265,10 @@ class CommitRegionTest extends TestCase
         $node = new Proposition;
         $node->forceFill(['phase_id' => $this->history->id, 'register' => $register, 'tier' => $tier, 'statement' => 'Region '.$register])->save();
         app(LedgerService::class)->record($node);
-        if ($parent) $this->edge($parent, $node, $edge);
+        if ($parent) {
+            $this->edge($parent, $node, $edge);
+        }
+
         return $node;
     }
 
@@ -267,6 +295,7 @@ class CommitRegionTest extends TestCase
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => $kind, 'gate_proposition_id' => $gate->id,
             'write_register' => $register, 'started_at' => now()])->save();
         $this->viewer->forceFill(['current_proposition_id' => $gate->id])->save();
+
         return $phase;
     }
 

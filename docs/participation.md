@@ -86,7 +86,8 @@ The human projection names the active Domain and Context Horizon, returns the
 current Commit Region's governing Committal Proposition, and groups the visible measurement population
 by Classification Register. The human workspace presents these as operational
 Read, Gate and Write rows. Mediate exposes the authoritative `read_options`
-population; other phases retain their single Read card. Mediate Gate privileges
+population. Order shows the nearest Second-register ancestors along the current
+Gate paths; other phases retain their single Read card. Mediate Gate privileges
 the current Proposition and adds admissible reconciliation counterparts. Bias
 Gate shows only the field-admissible unary choices, including the current
 Proposition when eligible;
@@ -94,9 +95,7 @@ Lineage is available on demand; and Write separates existing actionable
 Propositions from moves that create a new Proposition from the Gate. In phases 1–5,
 an existing Write card is a valid Expressive descendant of the current Gate in the
 phase's Write register, including same-register revisions. Bias also discovers
-existing Writes across its Commit Region. Order uses Closure-filtered expressive
-candidates and existing committed results in that row. Instruments may ground
-existing Written sources before Closure aligns. `write_options` is authoritative; `workspace.registers` remains
+existing Writes across its Commit Region. Order separates admissible expressive Commit candidates in Gate from Committal Traverse results in Write. All Instruments are offered before Order. `write_options` is authoritative; `workspace.registers` remains
 broader inspection context and must never be merged into selectable Write cards.
 Revise remains limited to owned, revisable descendants. Commit cards and the
 Commit form select an explicit authorized `proposition_id`.
@@ -142,74 +141,25 @@ occurs in a subsequent Cycle rather than revising the current Gate in place.
 
 ## Proposition history
 
-**Only Commit carries contribution history forward.** Supersession edges describe
-structural ancestry and active-node/comparison behaviour. Neither a soft edge nor
-a hard edge grants history inheritance.
+Reclassify in Persist, Constrain and Bias preserves the source statement exactly. It accepts no authored content. The new classification references completed proposition-level Receipts without copying or retargeting observations; Attestations and Phase touches start fresh. Attestation-level evidence does not follow a reset judgment. Previously loaded evidence can count on the active classification, with the superseded source retaining its historical count without another active reinforcement application. Legacy content-changing edges are not backfilled.
 
-Variant, Revise, Reclassify and Reconcile each create a new Expressive Proposition
-with fresh Attestations, Receipts and Phase-touch history. This includes the
-current non-Commit hard supersessions in Bias. Preserving a source's statement
-does not carry its accumulated support or evidence onto the new Proposition.
-Source contributions remain recorded against their original targets; they are
-neither deleted, copied nor retargeted. Instrument executions and ledger entries
-also keep their original contribution identities.
-
-A newly written Proposition has zero inherited touches. When normal progression
-opens the next Phase with that Proposition as Gate, it earns its first **new**
-touch. Its creation Phase still observes the source Gate.
-
-Commit is the historical continuation of its expressive Gate. It resolves that
-Gate's effective Attestations, completed direct/Attestation Receipts and Phase
-touches by reference, preserving Closure/Cadence continuity without copying rows.
-The same Commit-only history rule applies in preview and execution. Inheritance
-stops at every non-Commit transition: committing a revision or reconciliation
-preserves only the history earned by that new Proposition, not its predecessors'
-history. See [observables](observables.md#commit-participation-inheritance).
+Variant, Revise and Reconcile create new content/structure with fresh evidence, votes and touches. Commit alone retains the selected expressive source's participation history by reference. A committed source is consumed globally; the result's recorded evaluation remains frozen.
 
 ## Write once, then support
 
-Generative opportunities persist across Cycles. They are structural, not lifetime,
-substrate-wide or Context Horizon quotas:
-
-| Phase | Generation identity |
+| Operation | Generation identity and prerequisites |
 | --- | --- |
-| Distinguish | Participant + Gate + phase kind + Write register |
-| Persist | Same identity; Variant and Reclassify share the opportunity |
-| Constrain | Same identity; Reclassify additionally requires a completed Receipt |
-| Disperse | Same identity; one Variant, with owned active Writes eligible for Revise |
-| Mediate | Directed pair of dominant Gate and counterpart, unique across Participants |
-| Bias | Participant + Commit Region + phase kind + Write register |
-| Order | Participant + Commit Region + committal Write row/register |
+| Distinguish Variant | Participant + Gate + phase + Write register |
+| Persist Variant | Foreign Gate, once per Participant/Gate across Cycles |
+| Persist/Constrain Reclassify | Receipt and effective Attestation; any Participant; unique source/destination register globally |
+| Disperse Variant | Once per Participant/Gate/Write register; owned Writes can later be revised |
+| Mediate Reconcile | Directed pair of dominant Gate and counterpart, unique globally; inverse remains distinct |
+| Bias Reclassify | Receipt, Attestation and lineage agreement; shared source/destination result plus existing personal region-row limit |
+| Order Commit | Receipt, fresh effective Attestation and aligned Depth/Cadence; unique direct source globally |
 
-The recorded generating Phase and Supersession history enforce these identities.
-Revising a Written result never restores the generation opportunity. Existing
-legacy duplicates remain historical nodes; their existence exhausts the same
-opportunity without destructive backfills. A new early-phase Gate or a new
-Committal seed creates a new opportunity. Other Participants retain their own
-opportunities, subject to the existing ownership, direction, evidence and Closure
-rules. Mediate's inverse is distinct: `A reconciles B` and `B reconciles A` retain
-different dominant statements. Only the repeated directed relationship is blocked;
-there is no global already-superseded restriction.
+Persist Variant and Reclassify retain their shared personal generation opportunity. Revising a result does not reset quotas. Another Participant may reuse a classification by attesting/traversing its existing Write. A successful Commit consumes only its direct source for all contribution actions; alternative branches and historical ancestry remain visible in their proper roles.
 
-Support actions target actual Writes: Attest, phase-admissible Traverse,
-Instrument and owned active-head Revise. Visibility in Gate or workspace history
-does not grant support eligibility. Same-register revision chains remain reachable
-from the original Write row. Order retains the Bias Write register and also exposes
-Committals already authored in this row for Attestation and Instruments.
-
-Constrain requires Receipt existence, independently of Reinforcement. Order keeps
-its counted-Reinforcement, effective-Attestation and Depth/Cadence prerequisites.
-Receipt loading is a separate context action; it does not reset generation opportunities.
-With the current action set, a fresh Constrain Gate without a Receipt or an
-existing Written continuation has no admissible move except Rest. Persist does
-not expose an Instrument to produce that initial Receipt; this change does not
-add a new early evidence-production action.
-
-Both the schema and direct contribution dispatcher enforce eligibility. Dispatch
-rechecks under the existing substrate lock before any Proposition, Supersession,
-or evidence write, including directed reconciliation checks. Concurrent stale
-packets cannot create a duplicate opportunity. The same checks apply to existing
-history immediately; no migration is required.
+Instruments and Replay target mutable expressive Writes in phases 1–6. Variant children alone do not disqualify a target. A completed Receipt is required before Attestation; reading is optional. Receipt and Attestation are both required before reclassification. A newly instrumented but unattested Gate may require Rest until another participant attests it or another action becomes available. Database uniqueness and transaction-locked execution recheck the same rules advertised in the schema.
 
 ## Traverse, Tragedy and Rest
 
@@ -228,7 +178,7 @@ alias: no persisted action contract requires one. The old automatic
 }
 ```
 
-Traverse is available only during Distinguish, Persist and Constrain. It
+Expressive Traverse is available during Distinguish, Persist, Constrain and Bias after receipt existence and personal effective Attestation. It
 explicitly chooses an existing local **Expressive Proposition** in
 the current Write register. Targets are immediate valid descendants of the Gate in the
 existing supersession graph, including historical superseded Propositions, and
@@ -237,11 +187,9 @@ Attestation does not establish this path.
 The current Gate and positions already visited as Gates in this Cycle are
 excluded; later Cycles may revisit them. Traversal creates no Proposition,
 Supersession or evidence and never selects globally. It advances the Phase as
-selection did. Disperse, Mediate, Bias and Order do not admit Traverse: those
-phases perform dispersal, reconciliation, orientation/grounding and Closure
-resolution respectively.
+selection did. Disperse and Mediate do not admit expressive Traverse. Order instead traverses an established Committal Write and ends the Cycle there.
 
-In phases 1–3, every immediate valid Write descendant exposes two direction slots:
+In phases 1–3 and Bias, a receipted Write exposes the following direction slots:
 
 | Effective personal Attestation | Refute side | Support side |
 | --- | --- | --- |
@@ -252,9 +200,7 @@ In phases 1–3, every immediate valid Write descendant exposes two direction sl
 The specialized `attestation.create.anyOf` branches bind each direction to its
 permitted Proposition IDs. Same-direction re-attestation is unavailable; the
 opposite direction uses the existing Attestation supersession mechanism.
-The card footer, form and inference schema use these same choices. In phases
-4–7 an effective Attestation does not create a Traverse affordance; the
-opposite Attestation direction remains available. Traverse
+The card footer, form and inference schema use these same choices. In Disperse and Mediate an effective Attestation does not create a Traverse affordance; the opposite direction remains available. Order uses one Committal Traverse action without Attestation controls. Traverse
 creates neither a Proposition nor a Supersession and advances through the
 existing personal path. Reconciliation counterparts belong to Gate, as described below.
 
@@ -327,8 +273,8 @@ recovery preserves its nearest viable region search. See
 
 Order returns an actionable `ready` plan even when Commit is inadmissible.
 `plan.commitment` and `commitment_preconditions_unsatisfied` preserve diagnostics
-for missing Attestation, Receipt and Closure alignment. Other admissible actions remain available when Commit is refused; only their
-complete exhaustion exposes Rest. Automated wakes
+for missing Attestation, Receipt and Closure alignment. An existing Committal Write can still offer Traverse when Commit is refused.
+If neither terminal action exists, the schema offers exclusive Rest. Automated wakes
 ask inference to choose from exactly the same action schema; they never traverse
 automatically. Stale phase tokens cannot apply another move.
 
@@ -379,65 +325,23 @@ Canon/Concord = Third (B). Late phases share this structural service:
 | Phase | Candidate position | Selection |
 | --- | --- | --- |
 | Mediate | Third / Read | Matches the Read anchor's retained Correspondence direction |
-| Bias | Second / Gate | Retained direction agrees with aggregate lean |
-| Order | Third / Write | Prospective Depth and Cadence directions align |
+| Bias | Second / Gate | Retained direction agrees with causal ancestry excluding itself; receipt and attestation exist |
+| Order | Third / Gate | Grounded, attested sources with aligned Depth/Cadence |
 
 Active candidates exclude outgoing hard supersessions; soft Variant branches
-remain active. In Order, an existing Commit edge also leaves its expressive source
-eligible for another Participant, subject to evidence and Closure. Display/read and generic option limits never truncate the pool.
-Phases 1–4 retain their path-local behavior. Mediate retains its path-local Write actions; Bias also exposes
-existing Writes across the region; the phase-specific widening occurs at Read,
-Gate, and Write respectively.
+remain active. A direct Commit edge consumes its source globally; other branches remain available.
 
 ## Bias Chirality Gate
 
-`BiasGateService` uses the shared Commit Region population, deduplicated before
-computing one counted-Reinforcement-weighted effective Attestation lean. It reuses
-`AttestationEvidenceService` to resolve each candidate's effective direction and
-the population's independently retained aggregate direction. A zero aggregate
-retains its own preceding direction from ledger history. The traversed Gate
-defines locality only. Attestation-less candidates default to the governing
-Committal direction, even if their Expressive parent has diverged. See
-[Attestation polarity](attestation-polarity.md) for Origin's label choice, fixed
-region frames and replay semantics. The Chirality product, counted Reinforcement weights
-and attenuation formulae are unchanged.
+`BiasGateService` compares each active head's retained direction to its own causal ancestry, excluding the head's votes and loads. Shared ancestors and Attestations are counted once across both reconciliation parents. Traversal stops at the governing Committal boundary; unrelated branches do not set the comparison. Ledger replay retains the preceding nonzero direction at zero, starting from the governing Committal direction. Superseded ancestors supply historical judgments without becoming additional active reinforcement copies.
 
-The action takes `action: proposition.bias` and one `proposition_id`. The server
-copies that source's statement into fresh Concord/Canon with one hard reclassify
-edge, preserving the existing source-history reset. No statement, second source,
-or owner requirement is introduced. Dispatch rechecks eligibility under the
-substrate lock.
+Bias additionally requires a completed Receipt and an effective source Attestation. The action takes `action: proposition.bias` and `proposition_id`. It preserves exact content and proposition evidence, resets votes/touches, and creates one shared source/register classification. Existing Writes offer Instrument, Attest and—after personal Attestation—Traverse to Order.
 
-## Order: Closure Write
+## Order: Commit Gate and Committal Write
 
-`ClosureOptionService` applies the existing prospective `ClosureGateService`
-evaluation to every active Third-position member of the same Commit Region.
-Only aligned Depth/Cadence candidates become Write options. Grounding remains
-separate: an effective Attestation and completed Receipt are still necessary
-before a candidate is included in the Commit action's ID enum.
+Read contains nearest Stance/Frontier ancestry. Gate contains uncommitted Concord/Canon sources satisfying receipt, effective Attestation and prospective Depth/Cadence checks. Write contains established Committal Concord/Canon results. Commit selects an authorized Gate `proposition_id`; Traverse selects a Committal Write `proposition_id`. Consumed sources are not duplicate contribution cards.
 
-```json
-{"action": "proposition.commit", "proposition_id": "01..."}
-```
-
-Commit now selects an explicit source, which may differ from the current Gate.
-The server rechecks region, register, activity, evidence and Closure under the
-substrate lock. The selected source supplies the exact statement and Commit-only
-Attestation/Receipt/Phase-touch history to preview and execution. It does not
-inherit the current Gate's history. The new Committal state seeds the next region;
-Tension still determines whether the Context Horizon changes.
-
-`plan.commitment` retains diagnostics for the current Gate; `commitment_options`
-keys each Write source to its own grounding and Closure preview. Commit availability
-and Tragedy use the complete candidate set. Schema version 15 retires the old
-implicit-Gate Commit contract. UI cards/forms and inference use the same target
-IDs, including separate Commit and Attestation target sets in provider schemas.
-
-`CommitRegionTest` covers membership across parent branches, hard intermediates,
-multiple Commits in one Horizon, equivalent positions in both Domains, late
-phase filters, zero-Attestation directions and stale/out-of-region dispatch.
-The real operational Closure regression continues to cover preview/snapshot
-agreement and preservation of the selected source's history.
+Commit copies the selected source's exact statement and participation history by reference, creates an immutable snapshot, and consumes the direct source globally. Later evidence reads cannot rewrite that snapshot. Reinforcement is optional weight; Depth/Cadence remain the admissibility gate. `plan.commitment` describes the current position and `commitment_options` describes each eligible Gate source. The same rules govern schema, UI and execution.
 
 ## Binary Reconcile
 
@@ -458,24 +362,9 @@ unchanged.
 
 ## Bias grounding
 
-Bundled reclassification/evidence gathering (`reclassify_with_receipt`, called
-`proposition.reclassify_with_instrument` in the previous schema) is removed.
-Reclassify has no Instrument field and creates no Receipt. Phase 3 now offers
-plain owner-constrained `proposition.reclassify` and separate `instrument.execute`.
+Reclassification is separate from Instrument execution. All phases before Order expose Instruments on eligible expressive Writes, including Distinguish and Mediate. Receipt existence permits Attestation; both Receipt and effective Attestation permit reclassification. Reclassify preserves proposition evidence but resets judgments. Variant, Revise and Reconcile need new evidence for their new Writes.
 
-During Bias, `instrument.execute` targets existing local Expressive Propositions
-in the Write register, including existing historical Concord/Canon and the Gate when
-eligible. The normal Instrument lifecycle creates a Receipt attached to that
-exact Proposition. It remains attached across Cycles, so grounding in Cycle N
-can enable Commitment on a later revisit. Bias and Reconcile do not inherit or
-copy evidence; effective Attestation, completed Receipt and the existing
-Depth/Cadence Closure gate remain mandatory.
-
-The additive migration records Rest and replaces the unique Cycle/kind index
-with a nonunique index. Historical repeated Order occurrences remain intact;
-new successful Order contributions never create another Order occurrence.
-Rolling back that historical migration requires resolving duplicate occurrences
-first; participation history is not discarded.
+A fresh Bias classification may reach Order before anyone attests it. If neither a qualifying Commit Gate nor an established Committal Write exists, Rest is valid. Another Participant can later attest the classification through Bias or an earlier eligible Write encounter. Receipt loading remains optional before Order and never advances a Phase.
 
 ## Human Attestation controls
 
@@ -494,37 +383,13 @@ preferences disable animation.
 
 ## Terminal Order and explicit next-Cycle entry
 
-Every successful valid Phase 7 / Order contribution completes the Phase and
-Cycle, including `attestation.create`, `instrument.execute` and
-`proposition.commit`. The Participant retains the resulting Proposition position.
-No replacement Order Phase or next Cycle is created. Natural completion leaves
-`rested_at` unset; `participant.rest` remains the distinct exhausted/Tragic Region
-termination action. Invalid contributions roll back without completing either.
+Order admits only `proposition.commit` and `proposition.traverse`, or exclusive Rest when neither remains. Commit and Committal Traverse both complete the Cycle at the exact Committal result. Natural completion leaves `rested_at` unset. The next explicit entry begins Phase 1 at that same Proposition, respecting its applicable Context Horizon; no normal completion relocates the Participant.
 
-The returned waiting state has `plan: null`, normal `entry` availability/reason,
-and a `completion` identity for the most recent naturally completed Order Cycle.
-The workspace may retain its final loaded cards as a read-only presentation of
-that completion. **Return to Participants** navigates to the Substrate collection;
-**Enter another Cycle** uses the normal entry endpoint and stays disabled when
-entry is unavailable. Every new Cycle selects a Committal entry; retaining a
-completed expressive position does not make it eligible for re-entry.
-
-Instrument execution is configured in Constrain, Disperse, Bias and Order.
-`instrument_options` and specialised `proposition_id` enums remain authoritative;
-this change does not expand target validation or modify Receipt ownership.
-Order grounding completes this Cycle even if Commitment is not yet admissible.
-
+The waiting state has `plan: null`, entry availability and the completed Cycle identity. The workspace can retain completed cards as read-only context. Return to Participants opens the Substrate collection; Enter another Cycle uses the normal entry endpoint. Rest is the separate exhausted-region path and can trigger nearest-viable-Committal recovery.
 
 ### Receipt Reads
 
-`receipt.read` selects one qualifying encountered Receipt by `receipt_id`. It is
-available in every Phase when evidence can add to context. It does not advance the
-Phase or move the Gate. Loaded state persists for the Participant across Cycles
-and Horizons; later encounters preload the evidence. Cite references already
-present in lineage/Read/Gate/Write cannot be newly loaded. A loaded Receipt is
-never offered as another Read. Only active loads contribute Reinforcement; an
-Instrument execution alone does not. The Receipt context panel follows these
-same schema permissions. See [Reinforcement](reinforcement.md).
+`receipt.read` is available in phases 1–6 when qualifying encountered evidence can add to context. It does not advance the Phase or Gate. Loaded state persists across Cycles and Horizons. Existing Cite references in context cannot be newly loaded; equivalent receipts do not multiply reinforcement. Order has no Read or Replay action, while historical observations remain inspectable.
 
 ## Receipt capabilities and discovery
 
@@ -533,3 +398,4 @@ contract. `receipt.read` loads existing evidence without advancing the Phase.
 `receipt.replay` uses the stored invocation, original eligible Instrument Write and
 normal Instrument progression to create a new immutable observation. Neither
 initial execution nor replay automatically loads a Receipt.
+

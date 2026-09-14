@@ -33,6 +33,7 @@ final readonly class ContributionDispatcher
         private PropositionOwnershipService $ownership,
         private ReceiptContextService $receipts,
         private ReceiptReplayService $replays,
+        private PropositionStateService $state,
     ) {}
 
     /**
@@ -56,7 +57,7 @@ final readonly class ContributionDispatcher
                 throw new DomainException('The contribution must belong to this Participant and Phase.');
             }
             if (! $this->generation->available($phase, $action)) {
-                throw new DomainException('This generation opportunity is unavailable. Support an existing Write; Constrain reclassification also requires a completed Receipt.');
+                throw new DomainException('This generation opportunity is unavailable. Use the existing Write; reclassification requires a Receipt, an effective Attestation and an unused source/register classification.');
             }
             if (in_array('gate-owner', (config("phases.{$phase->kind->value}.constraints", [])[$action] ?? []), true)
                 && ! $this->ownership->ownedBy($gate, $participant)) {
@@ -95,8 +96,8 @@ final readonly class ContributionDispatcher
             return match ($input['action']) {
                 'proposition.traverse' => Proposition::query()
                     ->findOrFail($input['proposition_id']),
-                'proposition.variant',
-                'proposition.reclassify' => $this->proposition(
+                'proposition.reclassify' => $this->reclassify($phase, $gate, $input),
+                'proposition.variant' => $this->proposition(
                     $phase,
                     $gate,
                     $input,
@@ -178,6 +179,28 @@ final readonly class ContributionDispatcher
         return $this->refreshMeasurement($target);
     }
 
+    /** Classification has no authored content and no inherited judgments. */
+    private function reclassify(Phase $phase, Proposition $source, array $input): Proposition
+    {
+        if (array_diff(array_keys($input), ['action']) !== []) {
+            throw new DomainException('Reclassify accepts only action; the Gate statement is preserved exactly.');
+        }
+
+        return $this->classified($phase, $source);
+    }
+
+    private function classified(Phase $phase, Proposition $source): Proposition
+    {
+        $target = $this->write($phase, $source->statement, tier: 'expressive', preserveStatement: true);
+        DB::table('reclassification_results')->insert([
+            'source_proposition_id' => $source->id, 'register' => $phase->write_register, 'target_proposition_id' => $target->id,
+        ]);
+        $this->ledger->record($this->supersede($phase, $source, $target, 'reclassify'));
+        $this->state->preserveReclassificationEvidence($source, $target);
+
+        return $this->refreshMeasurement($target);
+    }
+
     /** @param array<string, mixed> $input */
     private function reconcile(
         Phase $phase,
@@ -223,13 +246,11 @@ final readonly class ContributionDispatcher
             Substrate::query()->whereKey($phase->cycle->participant->substrate_id)
                 ->lockForUpdate()->firstOrFail();
             $source = $this->bias->forPhase($phase)->firstWhere('id', $input['proposition_id'] ?? null);
-            if ($source === null) {
-                throw new DomainException('Bias requires an active Gate contributing to the dominant Stance/Frontier lean.');
+            if ($source === null || ! $this->generation->available($phase, 'proposition.bias', position: $source)) {
+                throw new DomainException('Bias requires an active Gate aligned with its own causal lineage.');
             }
-            $target = $this->write($phase, $source->statement, tier: 'expressive', preserveStatement: true);
-            $this->ledger->record($this->supersede($phase, $source, $target, 'reclassify'));
 
-            return $this->refreshMeasurement($target);
+            return $this->classified($phase, $source);
         });
     }
 
@@ -314,6 +335,7 @@ final readonly class ContributionDispatcher
                 tier: 'committal',
                 preserveStatement: true,
             );
+            DB::table('commit_results')->insert(['source_proposition_id' => $gate->id, 'target_proposition_id' => $target->id]);
             $this->polarity->establishCommit($target, $governing);
             $supersession = $this->supersede(
                 $phase,

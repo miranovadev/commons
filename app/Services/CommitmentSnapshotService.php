@@ -85,7 +85,7 @@ final readonly class CommitmentSnapshotService
                 && ! $proposition->parents()->exists()
                 && ! CommitmentSnapshot::where('substrate_id', $substrate->id)->exists();
             if (! $isOrigin && ! $this->admissibility->grounding($proposition)['admissible']) {
-                throw new DomainException('Commitment requires effective Attestation, completed evidence and counted Reinforcement.');
+                throw new DomainException('Commitment requires effective Attestation and completed evidence.');
             }
 
             $horizon = $proposition->phase->cycle->contextHorizon;

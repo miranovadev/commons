@@ -39,6 +39,41 @@ final readonly class AttestationEvidenceService
             ->direction($initial, fn () => $ids, through: $through ?? PHP_INT_MAX);
     }
 
+    /** Causal ancestors only: both reconciliation parents, one copy of each judgment. */
+    public function lineageDirectionFor(Proposition $candidate, ?ParticipationContext $context = null): Direction
+    {
+        $seed = $this->regions->seedFor($candidate, $context);
+        $initial = $seed === null ? Direction::Positive : $this->polarity->forSeed($seed, $context)['governing'];
+        $ids = $this->lineageSourceIds($candidate, $context)->all();
+
+        return $this->timeline($ids, $context?->substrate ?? $candidate->phase->cycle->participant->substrate, $context)
+            ->direction($initial, fn () => $ids);
+    }
+
+    /** Superseded ancestors supply historical context, not another active reinforcement copy. */
+    public function lineageSourceIds(Proposition $candidate, ?ParticipationContext $context = null): Collection
+    {
+        $seen = [$candidate->id => true];
+        $ids = [];
+        $frontier = collect([$candidate]);
+        $substrateId = $candidate->phase->cycle->participant->substrate_id;
+        while ($frontier->isNotEmpty()) {
+            $parents = $context !== null
+                ? $frontier->flatMap(fn ($node) => $context->parentNodes($node))->unique('id')
+                : Proposition::query()->whereKey(Supersession::whereIn('target_proposition_id', $frontier->pluck('id'))->pluck('source_proposition_id'))
+                    ->whereHas('phase.cycle.participant', fn ($q) => $q->where('substrate_id', $substrateId))->get();
+            $frontier = $parents->reject(fn ($node) => isset($seen[$node->id]) || $node->tier !== 'expressive')->values();
+            foreach ($parents as $node) {
+                $seen[$node->id] = true;
+            }
+            foreach ($frontier as $node) {
+                $ids[] = $node->id;
+            }
+        }
+
+        return collect($ids);
+    }
+
     /** Replay the same region/register's historical active population, not today's heads alone. */
     public function populationDirection(Proposition $seed, string $register, ?ParticipationContext $context = null): Direction
     {

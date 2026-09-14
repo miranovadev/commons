@@ -414,6 +414,7 @@ class LocalParticipantNavigationTest extends TestCase
         $visited->forceFill(['gate_proposition_id' => $target->id, 'completed_at' => now()])->save();
         // Grounding remains available in Order unless the local target is no longer an active head.
         $this->edge($target, $second);
+        $target->children()->updateExistingPivot($second->id, ['type' => 'reclassify']);
         // A prior visit no longer exhausts a Commit Region. Divergent Closure
         // makes its Write pool empty for this recovery-only regression.
         $this->mock(ClosureGateService::class, function ($mock): void {
@@ -437,7 +438,7 @@ class LocalParticipantNavigationTest extends TestCase
         $this->assertNull(app(PotentialChargeService::class)->recoverFrom($position));
     }
 
-    public function test_order_keeps_attestation_but_rejects_traverse_without_weakening_commit(): void
+    public function test_order_rejects_attestation_and_expressive_traverse_without_weakening_commit(): void
     {
         $parent = $this->node('Forward descendant', 0.0, 'expressive');
         $gate = $this->node('Current', 0.0, 'expressive');
@@ -456,9 +457,9 @@ class LocalParticipantNavigationTest extends TestCase
         $state = $this->state($participant);
         $this->assertFalse($state['plan']['tragedy']);
         $this->assertFalse($state['plan']['commitment']['admissible']);
-        $this->assertSame('commitment_preconditions_unsatisfied', $state['reason']['code']);
+        $this->assertArrayNotHasKey('reinforcement', $state['plan']['commitment']['requirements']);
         $actions = $state['plan']['schema']['$defs']['actions'];
-        $this->assertArrayHasKey('attestation.create', $actions);
+        $this->assertArrayNotHasKey('attestation.create', $actions);
         $this->assertArrayNotHasKey('proposition.traverse', $actions);
         $this->assertSame([], $state['plan']['schema']['$defs']['actions']['proposition.traverse']['properties']['proposition_id']['enum'] ?? []);
         try {
@@ -531,6 +532,7 @@ class LocalParticipantNavigationTest extends TestCase
 
     private function establishPath(Participant $participant, Proposition $target): void
     {
+        $this->receiptFixture($target);
         $phase = $this->phase($participant);
         $phase->completed_at = now();
         $phase->save();

@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Enums\PhaseKind;
-use App\Enums\RegisterPosition;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Services\Observables\ChiralityCalculator;
@@ -30,7 +29,7 @@ final readonly class BiasGateService
         return $this->chirality->leanFor($this->populationFor($phase)->pluck('id'), $phase->cycle->participant->substrate);
     }
 
-    /** The retained field direction admits every matching active source. */
+    /** Compare each active head with its own ancestry, excluding the head's evidence. */
     public function forPhase(Phase $phase, ?ParticipationContext $context = null): Collection
     {
         $population = $this->populationFor($phase, $context);
@@ -38,9 +37,8 @@ final readonly class BiasGateService
         if ($seed === null) {
             return collect();
         }
-        $direction = $this->evidence->populationDirection($seed,
-            $phase->cycle->contextHorizon->domain->registerAt(RegisterPosition::Second), $context);
 
-        return $population->filter(fn (Proposition $candidate): bool => $this->chirality->directionFor($candidate, $context) === $direction)->values();
+        return $population->filter(fn (Proposition $candidate): bool => $this->chirality->directionFor($candidate, $context)
+            === $this->evidence->lineageDirectionFor($candidate, $context))->values();
     }
 }

@@ -10,7 +10,7 @@ use Illuminate\Support\Collection;
 
 final readonly class ReconciliationOptionService
 {
-    public function __construct(private MediationReadService $mediation) {}
+    public function __construct(private MediationReadService $mediation, private PropositionAvailabilityService $availability) {}
 
     /** Only Mediate performs binary reconciliation. */
     public function forPhase(Phase $phase, ?ParticipationContext $context = null): Collection
@@ -18,7 +18,7 @@ final readonly class ReconciliationOptionService
         if ($phase->write_register === null || $phase->kind !== PhaseKind::Mediate) {
             return collect();
         }
-        $gates = $this->mediation->gatesFor($phase, $context);
+        $gates = $this->mediation->gatesFor($phase, $context)->filter(fn ($node) => $this->availability->mutable($node, $context));
 
         // The Phase Gate records dominance; parent ordering is not direction.
         $used = Supersession::query()->where('type', 'reconcile')

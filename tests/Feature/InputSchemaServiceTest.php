@@ -53,7 +53,7 @@ class InputSchemaServiceTest extends TestCase
         $this->assertArrayNotHasKey('stale_binary_bias', $schema);
         $this->assertArrayNotHasKey('proposition.reconcile', $schema['$defs']['actions']);
         $this->assertSame(['action', 'proposition_id'], $schema['$defs']['actions']['proposition.bias']['required']);
-        $this->assertSame(['dominant-active-stance-lean', 'unary-selection-fresh-history'],
+        $this->assertSame(['lineage-direction-agreement', 'unary-selection-fresh-history', 'completed-receipt-and-effective-attestation'],
             $schema['x-commons']['constraints']['proposition.bias']);
     }
 
@@ -89,6 +89,8 @@ class InputSchemaServiceTest extends TestCase
         $expected = [
             PhaseKind::Distinguish->value => [
                 'proposition.variant',
+                'instrument.execute',
+                'receipt.replay',
                 'attestation.create',
                 'proposition.traverse',
             ],
@@ -118,6 +120,8 @@ class InputSchemaServiceTest extends TestCase
             ],
             PhaseKind::Mediate->value => [
                 'proposition.reconcile',
+                'instrument.execute',
+                'receipt.replay',
                 'attestation.create',
             ],
             PhaseKind::Bias->value => [
@@ -125,12 +129,11 @@ class InputSchemaServiceTest extends TestCase
                 'instrument.execute',
                 'receipt.replay',
                 'attestation.create',
+                'proposition.traverse',
             ],
             PhaseKind::Order->value => [
                 'proposition.commit',
-                'instrument.execute',
-                'receipt.replay',
-                'attestation.create',
+                'proposition.traverse',
             ],
         ];
 
@@ -138,7 +141,7 @@ class InputSchemaServiceTest extends TestCase
             $schema = app(InputSchemaService::class)->forPhase($kind);
 
             $this->assertSame(
-                ['receipt.read', ...$expected[$kind->value]],
+                $kind === PhaseKind::Order ? $expected[$kind->value] : ['receipt.read', ...$expected[$kind->value]],
                 array_keys($schema['$defs']['actions']),
             );
             $this->assertSame(
@@ -148,7 +151,7 @@ class InputSchemaServiceTest extends TestCase
             $this->assertNotEmpty(
                 $schema['x-commons']['description'],
             );
-            $expectsTraverse = $kind->value <= PhaseKind::Constrain->value;
+            $expectsTraverse = in_array($kind, [PhaseKind::Distinguish, PhaseKind::Persist, PhaseKind::Constrain, PhaseKind::Bias, PhaseKind::Order], true);
             $this->assertSame(
                 $expectsTraverse,
                 isset($schema['$defs']['actions']['proposition.traverse']),
@@ -173,11 +176,11 @@ class InputSchemaServiceTest extends TestCase
             .file_get_contents(base_path('docs/operational-commitment.md'));
 
         $this->assertStringContainsString(
-            'In Distinguish, Persist and Constrain only',
+            'In Distinguish, Persist, Constrain and Bias,',
             $prompt,
         );
         $this->assertStringContainsString(
-            'It is never admissible in Disperse, Mediate, Bias or Order.',
+            'Expressive Traverse is never admissible in Disperse, Mediate or Order.',
             $prompt,
         );
         foreach ([
@@ -197,11 +200,9 @@ class InputSchemaServiceTest extends TestCase
 
         $this->assertValid($schema, [
             'action' => 'proposition.reclassify',
-            'statement' => 'Move this into the committal register.',
         ]);
         $this->assertInvalid($schema, [
             'action' => 'proposition.reclassify',
-            'statement' => 'Move this into the committal register.',
             'instrument' => [
                 'kind' => 'citation',
                 'reference' => 'https://example.test/evidence',
@@ -241,6 +242,7 @@ class InputSchemaServiceTest extends TestCase
                 )->all(),
         );
 
+        $this->receiptFixture(Proposition::findOrFail($candidateId));
         $plan = app(InputPlanService::class)->forParticipant(
             $state['participant'],
         );

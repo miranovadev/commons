@@ -27,9 +27,9 @@ in effect. See [Reinforcement](reinforcement.md).
 `receipt.replay` also takes only `action` and `receipt_id`. It is an Instrument
 execution: the Receipt must be encountered and its original Proposition must be
 an eligible Instrument Write in the current Phase. Replay uses the same Phase
-progression as `instrument.execute`, including Cycle completion in Order. It is
-available in Persist, Constrain, Disperse, Bias and Order when these target rules
-permit it. Visibility of a historical Receipt alone grants no execution authority.
+progression as `instrument.execute`, advancing to the next Phase. It is
+available in phases 1–6, including Distinguish and Mediate, when these target
+rules permit it. Order admits neither execution, Read nor Replay. Visibility of a historical Receipt alone grants no execution authority.
 
 Read and Replay can both be offered; loading does not disable Replay. A loaded
 Receipt remains loaded when replayed. A failed/unqualified observation can still
@@ -48,7 +48,8 @@ updates reject changes to saved Receipts and originating invocation fields.
 Execution and Replay never load a Receipt or create active Reinforcement.
 Explicit Read is required. Even if multiple equivalent or changed observations
 are loaded, each Participant still contributes at most one counted Reinforcement
-per Proposition under existing Commit inheritance rules.
+per active classification under the evidence inheritance rules. Reclassification
+preserves qualifying proposition evidence; committed results remain frozen.
 
 ## Web Search: the first discovery Instrument
 
@@ -122,3 +123,4 @@ Run the additive migration before serving this version. It widens the Instrument
 and Receipt kind constraints and adds nullable capability/provenance columns,
 without rewriting observations or backfilling any loads. Rollback refuses to
 remove recorded Search or replay history.
+
