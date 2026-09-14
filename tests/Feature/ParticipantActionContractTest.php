@@ -245,6 +245,14 @@ class ParticipantActionContractTest extends TestCase
                 $node('activity', $anchor);
             }
             $write = $node($writes[$kind->value - 1], $gate);
+            if (in_array('proposition.revise', config('phases.'.$kind->value.'.actions'), true)) {
+                // Keep the untouched Write for attestation coverage, and qualify
+                // a separate revision target with an earlier effective self-Refute.
+                $revision = $node($writes[$kind->value - 1], $gate);
+                $refute = new Attestation;
+                $refute->forceFill(['phase_id' => $past->id, 'proposition_id' => $revision->id, 'direction' => 'refute'])->save();
+                app(LedgerService::class)->record($refute);
+            }
             if ($kind->value <= 3) {
                 $traverse = $node($writes[$kind->value - 1], $gate);
                 $attestation = new Attestation;
