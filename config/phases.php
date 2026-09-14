@@ -88,7 +88,7 @@ return [
     ],
     6 => [
         'name' => 'bias',
-        'description' => 'Select one active Commit Region Stance/Frontier whose retained direction agrees with the aggregate lean and hard-supersede it into fresh Concord/Canon, execute an instrument, or attest an immediate Write descendant.',
+        'description' => 'Select one active Commit Region Stance/Frontier whose retained direction agrees with its causal ancestry excluding itself and hard-supersede it into fresh Concord/Canon, execute an instrument, or attest an immediate Write descendant.',
         'gate' => 'previous-phase-position',
         'actions' => [
             'receipt.read',
@@ -100,7 +100,7 @@ return [
         ],
         'constraints' => [
             'proposition.bias' => [
-                'dominant-active-stance-lean',
+                'lineage-direction-agreement',
                 'unary-selection-fresh-history',
                 'completed-receipt-and-effective-attestation',
             ],

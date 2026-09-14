@@ -35,3 +35,7 @@ Personal effective Attestation unlocks Traverse in Distinguish, Persist, Constra
 ## Shared classification
 
 Reclassify requires both a completed Receipt and an effective Attestation on the source classification, from any Participant and in either direction. Ownership is not a prerequisite. Bias applies the same gate. Existing generation limits still apply. One source/destination classification is recorded globally under the Substrate lock and a database unique key. Existing results are offered as Writes, never another generation action; personal Attestation is required before expressive Traverse. Different sources with identical statements remain distinct.
+
+## Bias lineage comparison
+
+Each active Stance/Frontier candidate is compared with its own causal ancestors, excluding the candidate's votes and loads. Both reconciliation parent paths contribute; shared nodes and Attestations are counted once. Traversal stops at the governing Committal boundary, whose retained direction seeds an empty/tied lineage. Unrelated siblings and other regions cannot set the comparison. Zero retains the most recent nonzero direction through ledger replay. Superseded ancestors still provide historical judgments; this does not reactivate their reinforcement in Closure calculations. Receipt and effective-Attestation requirements independently filter the resulting Gate options.

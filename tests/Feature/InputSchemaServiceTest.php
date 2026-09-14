@@ -53,7 +53,7 @@ class InputSchemaServiceTest extends TestCase
         $this->assertArrayNotHasKey('stale_binary_bias', $schema);
         $this->assertArrayNotHasKey('proposition.reconcile', $schema['$defs']['actions']);
         $this->assertSame(['action', 'proposition_id'], $schema['$defs']['actions']['proposition.bias']['required']);
-        $this->assertSame(['dominant-active-stance-lean', 'unary-selection-fresh-history', 'completed-receipt-and-effective-attestation'],
+        $this->assertSame(['lineage-direction-agreement', 'unary-selection-fresh-history', 'completed-receipt-and-effective-attestation'],
             $schema['x-commons']['constraints']['proposition.bias']);
     }
 
