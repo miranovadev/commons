@@ -21,6 +21,7 @@ use App\Services\PhaseProgressionService;
 use App\Services\PropositionMeasurementService;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\Process\Process;
 use Tests\TestCase;
@@ -105,11 +106,23 @@ class TransactionLockOrderTest extends TestCase
         });
     }
 
-    public function test_graph_and_detail_finish_while_measurement_update_holds_shared_write_locks(): void
+    public static function projectionKinds(): array
     {
-        [$substrate, , $phase] = $this->fixture();
+        return ['mutable expressive' => [true], 'frozen committal' => [false]];
+    }
+
+    #[DataProvider('projectionKinds')]
+    public function test_graph_and_detail_finish_while_measurement_update_holds_shared_write_locks(bool $expressive): void
+    {
+        [$substrate, $participant, $phase] = $this->fixture();
         User::factory()->create();
         $node = $phase->gate;
+        if ($expressive) {
+            app(ParticipationService::class)->contribute($participant, $phase->id,
+                ['action' => 'proposition.variant', 'statement' => 'Mutable projection subject']);
+            $node = $participant->fresh()->position;
+        }
+        $expected = $expressive ? -0.75 : $node->commitmentSnapshot->correspondence;
         $node->measurement()->delete();
         DB::beginTransaction();
         try {
@@ -126,7 +139,7 @@ class TransactionLockOrderTest extends TestCase
                 $this->assertStringContainsString('completed', $process->getOutput());
             }
             DB::commit();
-            $this->assertSame(-0.75, $node->fresh()->measurement->correspondence);
+            $this->assertSame($expected, $node->fresh()->measurement->correspondence);
             $this->assertSame('negative', $node->fresh()->correspondence_direction);
         } finally {
             if (DB::transactionLevel() > 0) {
