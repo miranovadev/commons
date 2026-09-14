@@ -31,3 +31,7 @@ Distinguish and Mediate now expose Instruments and Replay on their eligible exis
 An existing Write requires a completed Receipt before Attest or expressive Traverse. Receipt existence suffices: no participant read or truth check is required. Both Attestation directions remain available as judgments, and further Instruments remain available after evidence exists. The rule is per target and does not suppress unrelated eligible actions or generation.
 
 Personal effective Attestation unlocks Traverse in Distinguish, Persist, Constrain and Bias. Bias Traverse advances to Order. Reading never advances a Phase. Rest remains the fallback after all actions are specialized.
+
+## Shared classification
+
+Reclassify requires both a completed Receipt and an effective Attestation on the source classification, from any Participant and in either direction. Ownership is not a prerequisite. Bias applies the same gate. Existing generation limits still apply. One source/destination classification is recorded globally under the Substrate lock and a database unique key. Existing results are offered as Writes, never another generation action; personal Attestation is required before expressive Traverse. Different sources with identical statements remain distinct.

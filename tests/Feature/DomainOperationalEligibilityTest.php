@@ -103,6 +103,7 @@ class DomainOperationalEligibilityTest extends TestCase
             $this->assertEqualsCanonicalizing([$x->id, $y->id], $bias->forPhase($biasPhase, $context)->pluck('id')->all());
         }
         $this->reject($biasPhase, ['action' => 'proposition.bias', 'proposition_id' => $foreignMiddle->id]);
+        $this->classificationEvidenceFixture($x);
         $biased = $dispatcher->dispatch($cycle->participant, $biasPhase, ['action' => 'proposition.bias', 'proposition_id' => $x->id]);
         $this->assertSame($third, $biased->register);
 

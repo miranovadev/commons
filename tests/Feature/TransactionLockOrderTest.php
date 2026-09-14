@@ -200,6 +200,32 @@ class TransactionLockOrderTest extends TestCase
         $this->assertSame(1, $a->children()->wherePivot('type', 'reconcile')->count());
     }
 
+    public function test_waiting_reclassification_reuses_the_first_participants_result(): void
+    {
+        [$substrate, $first, $initial] = $this->fixture();
+        app(ParticipationService::class)->contribute($first, $initial->id, ['action' => 'proposition.variant', 'statement' => 'Shared classification source']);
+        $source = $first->fresh()->position;
+        $this->classificationEvidenceFixture($source);
+        $firstPhase = $first->cycles()->whereNull('completed_at')->sole()->currentPhase;
+        $second = new Participant;
+        $second->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'second-classifier'])->save();
+        $cycle = new Cycle;
+        $cycle->forceFill(['participant_id' => $second->id, 'sequence' => 1])->save();
+        $phase = $firstPhase->replicate();
+        $phase->cycle_id = $cycle->id;
+        $phase->save();
+        $input = ['action' => 'proposition.reclassify'];
+        $before = Proposition::count();
+        $this->whileWorkerWaits($substrate, [
+            'operation' => 'dispatch-rejected', 'participant_id' => $second->id, 'phase_id' => $phase->id,
+            'contribution' => $input, 'expected_message' => 'generation opportunity is unavailable',
+        ], function () use ($first, $firstPhase, $input): void {
+            app(ContributionDispatcher::class)->dispatch($first, $firstPhase, $input);
+        });
+        $this->assertSame($before + 1, Proposition::count());
+        $this->assertSame(1, DB::table('reclassification_results')->where('source_proposition_id', $source->id)->count());
+    }
+
     private function whileWorkerWaits(Substrate $substrate, array $input, callable $competing): void
     {
         $process = new Process([PHP_BINARY, base_path('tests/Support/concurrent-commons-worker.php')], base_path(), null,

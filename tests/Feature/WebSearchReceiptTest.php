@@ -82,7 +82,7 @@ class WebSearchReceiptTest extends TestCase
             'instrument' => ['kind' => 'web_search', 'query' => "  evidence\n discovery  "]];
         app(ContributionService::class)->validate($fixture->viewer, $input);
         $transport = app(OpenAIResponseSchema::class)->fromCommons($state['plan']['schema']);
-        $branches = $transport['properties']['contribution']['anyOf'];
+        $branches = ($transport['properties']['contribution']['anyOf'] ?? [$transport['properties']['contribution']]);
         $branch = collect($branches)->first(fn ($b) => $b['properties']['action']['enum'] === ['instrument.execute']);
         $wire = array_replace(array_fill_keys($branch['required'], null), $input);
         $validator = new Validator;

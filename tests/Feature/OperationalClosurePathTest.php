@@ -93,8 +93,8 @@ class OperationalClosurePathTest extends TestCase
         $this->assertCount(0, $history->attestations(collect([$stance])));
         $this->assertCount(0, $history->receipts($stance));
         $this->assertSame(1, $history->touchCount($stance)); // Newly opened Bias only.
-        $this->assertArrayHasKey('proposition.bias', $state['plan']['schema']['$defs']['actions']);
-        $this->assertSame([$stance->id], array_column($state['plan']['gate_options'], 'id'));
+        $this->assertArrayNotHasKey('proposition.bias', $state['plan']['schema']['$defs']['actions']);
+        $this->assertSame([$stance->id], array_column($state['plan']['gate_options'], 'id')); // Position remains contextual, without a Bias action.
 
         // Mediate participants reinforce the inherited direction of their immediate Write Stance.
         $this->receiptFixture($stance);
@@ -277,7 +277,7 @@ class OperationalClosurePathTest extends TestCase
         $this->assertArrayNotHasKey('proposition.variant', $state['plan']['schema']['$defs']['actions']);
         $before = Proposition::count();
         $continued = $this->gate($this->move($author, [
-            'action' => 'attestation.create', 'proposition_id' => $signal->id, 'direction' => 'support',
+            'action' => 'proposition.traverse', 'proposition_id' => $signal->id,
         ]));
         $this->assertSame($signal->id, $continued->id);
         $this->assertSame($before, Proposition::count());
@@ -346,6 +346,9 @@ class OperationalClosurePathTest extends TestCase
 
     private function move(Participant $participant, array $input): array
     {
+        if ($input['action'] === 'proposition.reclassify') {
+            $this->classificationEvidenceFixture($participant->fresh()->position);
+        }
         if ($input['action'] === 'proposition.commit') {
             $input['proposition_id'] = $participant->fresh()->current_proposition_id;
         }

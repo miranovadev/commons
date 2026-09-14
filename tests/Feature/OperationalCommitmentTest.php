@@ -70,7 +70,7 @@ class OperationalCommitmentTest extends TestCase
             'action' => 'proposition.reclassify',
         ]);
         $this->assertSame([], $state['plan']['gate_options'][0]['instruments'] ?? []);
-        $this->assertDatabaseCount('instrument_executions', 2);
+        $this->assertDatabaseCount('instrument_executions', 3);
         $state = $this->move($this->participant, ['action' => 'proposition.variant', 'statement' => 'New Signal']);
 
         // Other participants prepare local write-register heads through real contributions.
@@ -234,7 +234,7 @@ class OperationalCommitmentTest extends TestCase
             } catch (\InvalidArgumentException) {
                 $this->assertDatabaseMissing('propositions', ['statement' => 'Rejected']);
                 $this->assertNull(Phase::findOrFail($state['plan']['phase']['id'])->completed_at);
-                $this->assertDatabaseCount('instrument_executions', 1);
+                $this->assertDatabaseCount('instrument_executions', 2);
             }
         }
         $this->expectException(DomainException::class);
@@ -260,7 +260,7 @@ class OperationalCommitmentTest extends TestCase
         $left = $this->candidate();
         $left->register = 'stance';
         $left->save();
-        $this->attest($left);
+        $this->classificationEvidenceFixture($left);
         $builder = $this->participant($this->participant->substrate, 'orienter');
         $biasPhase = $this->phase($builder, PhaseKind::Bias, 'concord', $left);
         $candidate = app(ContributionDispatcher::class)->dispatch($builder, $biasPhase, [
@@ -458,6 +458,9 @@ class OperationalCommitmentTest extends TestCase
     /** @param array<string, mixed> $input @return array<string, mixed> */
     private function move(Participant $participant, array $input): array
     {
+        if ($input['action'] === 'proposition.reclassify') {
+            $this->classificationEvidenceFixture($participant->fresh()->position);
+        }
         if ($input['action'] === 'proposition.commit') {
             $input['proposition_id'] = $participant->fresh()->current_proposition_id;
         }

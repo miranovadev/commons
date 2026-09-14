@@ -77,6 +77,7 @@ class CausalHorizonLineageTest extends TestCase
         $this->assertNotNull($cycleB->fresh()->completed_at);
         $this->assertNull($cycleA->fresh()->completed_at);
 
+        $this->classificationEvidenceFixture($a->fresh()->position);
         $this->travel(10)->seconds();
         $stateA = $service->contribute($a, $stateA['plan']['phase']['id'], ['action' => 'proposition.reclassify']);
         $stance = $a->fresh()->position;

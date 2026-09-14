@@ -44,6 +44,8 @@ final class ParticipationContext
 
     public readonly Collection $receiptLinks;
 
+    public readonly Collection $classifications;
+
     public readonly Collection $reinforcements;
 
     public readonly Collection $receiptContexts;
@@ -103,6 +105,7 @@ final class ParticipationContext
         foreach ($this->attestations as $attestation) {
             $attestation->setRelation('proposition', $this->propositions[$attestation->proposition_id]);
         }
+        $this->classifications = DB::table('reclassification_results')->whereIn('source_proposition_id', $ids)->get();
         $this->receiptLinks = DB::table('proposition_receipt_links')->whereIn('proposition_id', $ids)->get();
         $this->receipts = Receipt::query()->where(fn ($q) => $q
             ->where(fn ($q) => $q->where('receiptable_type', (new Proposition)->getMorphClass())->whereIn('receiptable_id', $ids))

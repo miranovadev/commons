@@ -76,6 +76,7 @@ class ParticipantContinuityTest extends TestCase
         $first = $service->contribute($participant, $next['plan']['phase']['id'],
             ['action' => 'proposition.variant', 'statement' => 'Continue locally']);
         $this->assertSame($value > 0 ? 'frontier' : 'stance', $first['plan']['phase']['write_register']);
+        $this->classificationEvidenceFixture(Proposition::findOrFail($first['plan']['gate_id']));
         $second = $service->contribute($participant, $first['plan']['phase']['id'],
             ['action' => 'proposition.reclassify']);
         $this->assertSame($value > 0 ? 'canon' : 'concord', $second['plan']['phase']['write_register']);

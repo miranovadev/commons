@@ -103,7 +103,8 @@ class WriteOnceTest extends TestCase
         $gate = $this->node($seed->phase, 'activity', 'My distinction', parent: $seed);
         $phase = $this->phase($participant, PhaseKind::Persist, 'frontier', $gate);
         $this->assertUnavailable($participant, $phase, ['action' => 'proposition.variant', 'statement' => 'Self Variant']);
-        // Reclassify retains its existing owner-only opportunity.
+        // A grounded and attested source can be classified by any Participant.
+        $this->classificationEvidenceFixture($gate);
         $write = app(ContributionDispatcher::class)->dispatch($participant, $phase, [
             'action' => 'proposition.reclassify',
         ]);
@@ -171,6 +172,9 @@ class WriteOnceTest extends TestCase
         if ($kind === PhaseKind::Constrain) {
             $this->loadedReceiptFixture($gate);
         }
+        if ($action === 'proposition.reclassify') {
+            $this->classificationEvidenceFixture($gate);
+        }
         $input = $action === 'proposition.reclassify' ? ['action' => $action] : ['action' => $action, 'statement' => 'First Write'];
         app(ContributionService::class)->validate($participant, $input);
         app(ParticipationService::class)->contribute($participant, $phase->id, $input);
@@ -200,6 +204,9 @@ class WriteOnceTest extends TestCase
         $this->phase($participant, $kind, $register, $newGate);
         if ($kind === PhaseKind::Constrain) {
             $this->loadedReceiptFixture($newGate);
+        }
+        if ($action === 'proposition.reclassify') {
+            $this->classificationEvidenceFixture($newGate);
         }
         app(ContributionService::class)->validate($participant, $input);
     }
@@ -245,6 +252,8 @@ class WriteOnceTest extends TestCase
         $this->assertUnavailable($participant, $phase, $input);
         app(OperationalInstrumentService::class)->execute($phase, $gate, ['kind' => 'citation', 'reference' => $gate->id]);
         $this->assertSame(0, app(ReinforcementService::class)->count($gate));
+        $this->assertUnavailable($participant, $phase, $input);
+        $this->classificationEvidenceFixture($gate);
         app(ContributionService::class)->validate($participant, $input);
         $written = app(ContributionDispatcher::class)->dispatch($participant, $phase, $input);
         $this->assertSame('canon', $written->register);
@@ -255,6 +264,8 @@ class WriteOnceTest extends TestCase
         [$participant, $seed] = $this->fixture();
         $a = $this->node($seed->phase, 'frontier', 'A', parent: $seed);
         $b = $this->node($seed->phase, 'frontier', 'B', parent: $seed);
+        $this->classificationEvidenceFixture($a);
+        $this->classificationEvidenceFixture($b);
         $phase = $this->phase($participant, PhaseKind::Bias, 'canon', $a);
         $input = ['action' => 'proposition.bias', 'proposition_id' => $a->id];
         app(ContributionService::class)->validate($participant, $input);

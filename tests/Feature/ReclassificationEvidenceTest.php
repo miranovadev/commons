@@ -54,6 +54,7 @@ class ReclassificationEvidenceTest extends TestCase
     {
         $f = new ParticipantContextFixture(1, 0);
         $f->phase->forceFill(['kind' => PhaseKind::Persist, 'gate_proposition_id' => $f->gate->id])->save();
+        $f->evidence($f->gate);
         $this->expectException(\DomainException::class);
         $this->expectExceptionMessage('Reclassify accepts only action');
         app(ContributionDispatcher::class)->dispatch($f->viewer, $f->phase->fresh(), ['action' => 'proposition.reclassify', 'statement' => 'Changed']);

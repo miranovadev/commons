@@ -57,7 +57,7 @@ final readonly class ContributionDispatcher
                 throw new DomainException('The contribution must belong to this Participant and Phase.');
             }
             if (! $this->generation->available($phase, $action)) {
-                throw new DomainException('This generation opportunity is unavailable. Support an existing Write; Constrain reclassification also requires a completed Receipt.');
+                throw new DomainException('This generation opportunity is unavailable. Use the existing Write; reclassification requires a Receipt, an effective Attestation and an unused source/register classification.');
             }
             if (in_array('gate-owner', (config("phases.{$phase->kind->value}.constraints", [])[$action] ?? []), true)
                 && ! $this->ownership->ownedBy($gate, $participant)) {
@@ -192,6 +192,9 @@ final readonly class ContributionDispatcher
     private function classified(Phase $phase, Proposition $source): Proposition
     {
         $target = $this->write($phase, $source->statement, tier: 'expressive', preserveStatement: true);
+        DB::table('reclassification_results')->insert([
+            'source_proposition_id' => $source->id, 'register' => $phase->write_register, 'target_proposition_id' => $target->id,
+        ]);
         $this->ledger->record($this->supersede($phase, $source, $target, 'reclassify'));
         $this->state->preserveReclassificationEvidence($source, $target);
 
@@ -243,7 +246,7 @@ final readonly class ContributionDispatcher
             Substrate::query()->whereKey($phase->cycle->participant->substrate_id)
                 ->lockForUpdate()->firstOrFail();
             $source = $this->bias->forPhase($phase)->firstWhere('id', $input['proposition_id'] ?? null);
-            if ($source === null) {
+            if ($source === null || ! $this->generation->available($phase, 'proposition.bias', position: $source)) {
                 throw new DomainException('Bias requires an active Gate contributing to the dominant Stance/Frontier lean.');
             }
 

@@ -75,15 +75,15 @@ class BiasGateTest extends TestCase
         $this->assertSame(0.0, $chirality->leanFor(collect([$this->gate->id]), $this->substrate));
         $this->assertSame(ObservableDirection::Positive, $chirality->directionFor($this->gate));
         $plan = $this->plan();
-        $this->assertFalse($plan['tragedy']);
-        $this->assertArrayHasKey('proposition.bias', $plan['schema']['$defs']['actions']);
-        $this->assertSame([$this->gate->id], array_column($plan['gate_options'], 'id'));
+        $this->assertTrue($plan['tragedy']);
+        $this->assertArrayNotHasKey('proposition.bias', $plan['schema']['$defs']['actions']);
+        $this->assertSame([], array_column($plan['gate_options'], 'id'));
 
         $descendant = $this->node('Neutral descendant', $this->gate->register);
         $this->edge($this->gate, $descendant);
         $this->assertSame(0.0, $chirality->leanFor(collect([$descendant->id]), $this->substrate));
         $this->assertSame(ObservableDirection::Positive, $chirality->directionFor($descendant));
-        $this->assertEqualsCanonicalizing([$this->gate->id, $descendant->id], $this->optionIds());
+        $this->assertSame([], $this->optionIds());
 
         $flipped = $this->node('Legitimate opposite direction', $this->gate->register);
         $this->edge($descendant, $flipped);
@@ -189,7 +189,7 @@ class BiasGateTest extends TestCase
         $this->assertSame($history->receipts($selected)->pluck('id')->all(), $history->receipts($target)->pluck('id')->all());
         $this->assertSame(1, $history->touchCount($target)); // Only the newly opened Order Phase.
         $this->assertSame(3, $history->touchCount($selected));
-        $this->assertCount(1, $history->receipts($selected));
+        $this->assertCount(2, $history->receipts($selected));
         $this->assertFalse($state['plan']['commitment']['requirements']['attestation']);
         $this->assertTrue($state['plan']['commitment']['requirements']['receipt']);
         $bias = app(BiasGateService::class);
@@ -238,14 +238,14 @@ class BiasGateTest extends TestCase
     public function test_zero_aggregate_retains_population_history_for_zero_vote_candidates(): void
     {
         $this->fixture();
-        $this->assertSame([$this->gate->id], $this->optionIds());
+        $this->assertSame([], $this->optionIds());
         $positive = $this->sibling('Positive');
         $negative = $this->sibling('Negative');
         $this->attest($positive, 'support');
         $this->attest($negative, 'refute');
-        $this->assertEqualsCanonicalizing([$this->gate->id, $positive->id], $this->optionIds());
+        $this->assertSame([$positive->id], $this->optionIds());
         $this->edge($negative, $this->node('Fresh Concord', 'concord'), 'reclassify');
-        $this->assertEqualsCanonicalizing([$this->gate->id, $positive->id], $this->optionIds());
+        $this->assertSame([$positive->id], $this->optionIds());
     }
 
     public function test_population_has_deeper_stances_but_excludes_other_registers_and_stops_at_boundaries(): void
@@ -272,7 +272,7 @@ class BiasGateTest extends TestCase
         $this->viewer->forceFill(['max_read_count' => 1])->save();
         $other = $this->sibling('Another supported Stance');
         $this->attest($other, 'support');
-        $this->assertEqualsCanonicalizing([$this->gate->id, $deep->id, $other->id], $this->optionIds());
+        $this->assertEqualsCanonicalizing([$deep->id, $other->id], $this->optionIds());
         $this->assertSame(1.0, app(BiasGateService::class)->leanFor($this->phase));
         $target = app(ContributionDispatcher::class)->dispatch($this->viewer, $this->phase,
             ['action' => 'proposition.bias', 'proposition_id' => $deep->id]);
@@ -292,7 +292,7 @@ class BiasGateTest extends TestCase
         $this->edge($second, $negative);
         $this->attest($negative, 'refute');
         $this->assertSame(0.0, app(BiasGateService::class)->leanFor($this->phase));
-        $this->assertEqualsCanonicalizing([$this->gate->id, $positive->id], $this->optionIds());
+        $this->assertSame([$positive->id], $this->optionIds());
         $this->attest($this->gate, 'support');
         $this->assertEqualsCanonicalizing([$positive->id, $this->gate->id], $this->optionIds());
     }
@@ -409,6 +409,7 @@ class BiasGateTest extends TestCase
 
     private function attest(Proposition $node, string $direction): Attestation
     {
+        $this->receiptFixture($node);
         $phase = $this->newPhase($this->participant('witness-'.Attestation::count()), PhaseKind::Persist, $node->register, true);
         $attestation = new Attestation;
         $attestation->forceFill(['phase_id' => $phase->id, 'proposition_id' => $node->id, 'direction' => $direction])->save();
