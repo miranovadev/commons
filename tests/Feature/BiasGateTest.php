@@ -204,6 +204,7 @@ class BiasGateTest extends TestCase
         $this->attest($this->gate, 'support');
         $concord = $this->node('Existing Write Concord', 'concord');
         $this->edge($this->gate, $concord);
+        $this->receiptFixture($concord);
         $schema = $this->plan()['schema'];
         $this->assertArrayHasKey('instrument.execute', $schema['$defs']['actions']);
         $this->assertArrayHasKey('attestation.create', $schema['$defs']['actions']);

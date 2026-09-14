@@ -177,7 +177,7 @@ class InputPlanVisibilityTest extends TestCase
         }
         $plan = app(InputPlanService::class)->forParticipant($viewer);
         $this->assertEqualsCanonicalizing([$child->id, $untouched->id], array_column($plan['write_options'], 'id'));
-        $traversable = $kind->value <= PhaseKind::Constrain->value && $direction !== null;
+        $traversable = ($kind->value <= PhaseKind::Constrain->value || $kind === PhaseKind::Bias) && $direction !== null;
         $card = collect($plan['write_options'])->firstWhere('id', $child->id);
         $this->assertSame(['support' => 1 + (int) ($direction === 'support'), 'refute' => (int) ($direction === 'refute')], $card['attestation_counts']);
         $this->assertSame($traversable ? [$child->id] : [], array_column($plan['traversal_options'], 'id'));
@@ -304,6 +304,8 @@ class InputPlanVisibilityTest extends TestCase
             $measurement,
             $measurement,
         );
+
+        $this->receiptFixture($proposition);
 
         return $proposition;
     }

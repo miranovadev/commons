@@ -97,6 +97,7 @@ return [
             'instrument.execute',
             'receipt.replay',
             'attestation.create',
+            'proposition.traverse',
         ],
         'constraints' => [
             'proposition.bias' => [

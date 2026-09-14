@@ -129,6 +129,7 @@ class InputSchemaServiceTest extends TestCase
                 'instrument.execute',
                 'receipt.replay',
                 'attestation.create',
+                'proposition.traverse',
             ],
             PhaseKind::Order->value => [
                 'proposition.commit',
@@ -152,7 +153,7 @@ class InputSchemaServiceTest extends TestCase
             $this->assertNotEmpty(
                 $schema['x-commons']['description'],
             );
-            $expectsTraverse = $kind->value <= PhaseKind::Constrain->value;
+            $expectsTraverse = in_array($kind, [PhaseKind::Distinguish, PhaseKind::Persist, PhaseKind::Constrain, PhaseKind::Bias], true);
             $this->assertSame(
                 $expectsTraverse,
                 isset($schema['$defs']['actions']['proposition.traverse']),
@@ -177,11 +178,11 @@ class InputSchemaServiceTest extends TestCase
             .file_get_contents(base_path('docs/operational-commitment.md'));
 
         $this->assertStringContainsString(
-            'In Distinguish, Persist and Constrain only',
+            'In Distinguish, Persist, Constrain and Bias,',
             $prompt,
         );
         $this->assertStringContainsString(
-            'It is never admissible in Disperse, Mediate, Bias or Order.',
+            'Expressive Traverse is never admissible in Disperse, Mediate or Order.',
             $prompt,
         );
         foreach ([
@@ -243,6 +244,7 @@ class InputSchemaServiceTest extends TestCase
                 )->all(),
         );
 
+        $this->receiptFixture(Proposition::findOrFail($candidateId));
         $plan = app(InputPlanService::class)->forParticipant(
             $state['participant'],
         );

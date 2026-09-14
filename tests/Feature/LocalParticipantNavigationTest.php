@@ -532,6 +532,7 @@ class LocalParticipantNavigationTest extends TestCase
 
     private function establishPath(Participant $participant, Proposition $target): void
     {
+        $this->receiptFixture($target);
         $phase = $this->phase($participant);
         $phase->completed_at = now();
         $phase->save();

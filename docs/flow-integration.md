@@ -25,3 +25,9 @@ Loaded evidence contributes at most once per Participant to a classification, re
 ## Grounding paths
 
 Distinguish and Mediate now expose Instruments and Replay on their eligible existing Writes. All phases before Order can therefore ground fresh expressive propositions on subsequent encounters. Executing/replaying advances the Phase; receipt.read leaves it open. Gate neighbours and unrelated propositions remain ineligible. Variant children do not by themselves block instrument eligibility. Reused evidence never silently changes a Replay target.
+
+## Evidence-first interaction
+
+An existing Write requires a completed Receipt before Attest or expressive Traverse. Receipt existence suffices: no participant read or truth check is required. Both Attestation directions remain available as judgments, and further Instruments remain available after evidence exists. The rule is per target and does not suppress unrelated eligible actions or generation.
+
+Personal effective Attestation unlocks Traverse in Distinguish, Persist, Constrain and Bias. Bias Traverse advances to Order. Reading never advances a Phase. Rest remains the fallback after all actions are specialized.
