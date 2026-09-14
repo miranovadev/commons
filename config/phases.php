@@ -109,21 +109,12 @@ return [
     ],
     7 => [
         'name' => 'order',
-        'description' => 'Commit a grounded Write with aligned Depth/Cadence, instrument or attest. Read keeps Order open; productive moves complete the Cycle.',
+        'description' => 'Commit an admissible expressive Gate, or Traverse an existing Committal Write. Either completes the Cycle at that Committal; the next Cycle continues there.',
         'gate' => 'previous-phase-position',
-        'actions' => [
-            'receipt.read',
-            'proposition.commit',
-            'instrument.execute',
-            'receipt.replay',
-            'attestation.create',
-        ],
+        'actions' => ['proposition.commit', 'proposition.traverse'],
         'constraints' => [
-            'proposition.commit' => [
-                'effective-gate-attestation',
-                'completed-gate-or-effective-attestation-receipt',
-                'depth-cadence-and-hysteresis-admissible',
-            ],
+            'proposition.commit' => ['effective-gate-attestation', 'completed-gate-or-effective-attestation-receipt', 'depth-cadence-and-hysteresis-admissible'],
+            'proposition.traverse' => ['committal-write-in-current-region'],
         ],
     ],
 ];

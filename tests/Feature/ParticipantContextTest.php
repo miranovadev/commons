@@ -157,7 +157,11 @@ class ParticipantContextTest extends TestCase
         }
         $fixture->phase->forceFill(['kind' => $kind, 'gate_proposition_id' => $gate->id, 'write_register' => 'canon'])->save();
         $plan = app(ParticipationService::class)->stateFor($fixture->viewer)['plan'];
-        $this->assertArrayHasKey('instrument.execute', $plan['schema']['$defs']['actions']);
+        if ($kind !== PhaseKind::Order) {
+            $this->assertArrayHasKey('instrument.execute', $plan['schema']['$defs']['actions']);
+        } else {
+            $this->assertArrayNotHasKey('instrument.execute', $plan['schema']['$defs']['actions']);
+        }
         if ($kind === PhaseKind::Order) {
             $this->assertArrayHasKey('commitment', $plan);
             $this->assertArrayHasKey('closure', $plan['commitment']);

@@ -12,7 +12,7 @@ This integration branch contains seven ordered review units. Main is the release
 
 Receipt existence does not imply reading, truth or reinforcement. Old content-changing Reclassify edges are not backfilled. Original evidence observations remain immutable. Reclassification does not copy votes or phase touches. Historical counts remain visible without multiplying active reinforcement.
 
-All seven PRs target this integration branch. Later heads contain prior changes; review the individually linked commit while predecessors are open, and merge in numerical order. The diff narrows as earlier PRs merge. A final release PR to main remains draft until the complete stack is assembled and validated.
+All seven PRs target this integration branch. Later heads contain prior changes; review the individually linked commit while predecessors are open, and merge in numerical order using **Create a merge commit**. Squash/rebase merges require restacking descendants before review. The diff narrows as earlier PRs merge. A final release PR to main remains draft until the complete stack is assembled and validated.
 
 Validation must cover a legitimate Rest and return, negative Attestations, evidence reuse, lineage branching/reconciliation, duplicate generation attempts and continuity across Order. Commitment is permitted, never guaranteed on every cycle.
 
@@ -45,3 +45,7 @@ Each active Stance/Frontier candidate is compared with its own causal ancestors,
 Commit requires a completed Receipt, an effective Attestation on the selected classification, and aligned Depth/Cadence with hysteresis. Loaded Reinforcement remains a displayed weight, never a minimum gate. Each direct expressive source can be committed once globally, enforced inside the Substrate transaction and a unique source record. Earlier Commit edges also consume their direct sources; no historical records are rewritten. Alternative branches and contextual ancestors remain navigable. Consumed sources leave all contribution registers.
 
 Committal results receive no Attestations, Instruments, Replay or revisions. Subsequent development is a Variant from the Committal. Recorded measurements are restored from the immutable snapshot on recalculation, so later evidence loads cannot rewrite the commitment evaluation. Origin bootstrap alone records its initial evidence before freezing.
+
+## Terminal Order and continuity
+
+Order Read shows the nearest Stance/Frontier ancestors on each causal path. Gate contains admissible uncommitted Concord/Canon sources with Commit. Write contains established Committal Concord/Canon results with Traverse; a consumed source is not a duplicate contribution card. Existing Committals need no new personal vote. Order has no Instrument, Replay, receipt.read or Attestation action. Commit and Traverse both finish the Cycle at the exact Committal result. The next Cycle starts Phase 1 at that same Proposition using its applicable Context Horizon. Only exhausted phases offer Rest and subsequent recovery. No completion teleports the participant to another region.

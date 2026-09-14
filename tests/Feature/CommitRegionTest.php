@@ -221,13 +221,14 @@ class CommitRegionTest extends TestCase
         $options = app(ClosureOptionService::class);
         $this->assertEqualsCanonicalizing([$positive->id, $negative->id, $ungrounded->id], $options->forPhase($phase)->pluck('id')->all());
         $plan = app(InputPlanService::class)->forParticipant($this->viewer);
-        $this->assertEqualsCanonicalizing([$positive->id, $negative->id, $ungrounded->id], array_column($plan['write_options'], 'id'));
+        $this->assertSame([], $plan['write_options']);
+        $this->assertEqualsCanonicalizing([$positive->id, $negative->id], array_column($plan['gate_options'], 'id'));
         $this->assertEqualsCanonicalizing([$positive->id, $negative->id], $plan['schema']['$defs']['actions']['proposition.commit']['properties']['proposition_id']['enum']);
         foreach ([$outside, $misaligned, $wrongRegister, $ungrounded] as $invalid) {
             $this->reject($phase, ['action' => 'proposition.commit', 'proposition_id' => $invalid->id]);
         }
         $transport = app(OpenAIResponseSchema::class)->fromCommons($plan['schema']);
-        $empty = array_fill_keys($transport['properties']['contribution']['anyOf'][0]['required'], null);
+        $empty = array_fill_keys(($transport['properties']['contribution']['anyOf'][0] ?? $transport['properties']['contribution'])['required'], null);
         foreach ([$negative, $ungrounded] as $candidate) {
             $wire = ['contribution' => array_replace($empty, ['action' => 'proposition.commit', 'proposition_id' => $candidate->id])];
             $valid = (new Validator)->validate(

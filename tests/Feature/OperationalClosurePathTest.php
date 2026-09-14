@@ -32,7 +32,7 @@ class OperationalClosurePathTest extends TestCase
 
     private Substrate $substrate;
 
-    /** No fabricated graph, Phase, evidence, measurement, snapshot or Closure mock. */
+    /** Real contributions and Closure calculations, with explicit early grounding fixtures. */
     public function test_real_late_phase_path_rebuilds_concord_history_and_commits_only_when_closure_allows(): void
     {
         $this->substrate = new Substrate;
@@ -135,7 +135,6 @@ class OperationalClosurePathTest extends TestCase
 
         $receiptId = $concord->instrumentExecutions()->with('receipt')->latest('id')->firstOrFail()->receipt->id;
         $this->assertSame(0, $this->state($builder)['plan']['commitment']['reinforcement_count']);
-        $this->move($builder, ['action' => 'receipt.read', 'receipt_id' => $receiptId]);
 
         // These three participants have each observed Signal, Read and final Concord once.
         // Equal active-head touches have zero CV, matching the Origin; depth has grown.
@@ -218,12 +217,11 @@ class OperationalClosurePathTest extends TestCase
         $this->assertSame($state['last_commitment'], $this->state($builder)['last_commitment']);
         $this->assertSame(2, CommitmentSnapshot::count());
 
-        // A real successful Commit may be followed by a fresh Cycle. Selection
-        // can choose either eligible commitment, but never the expressive head.
+        // A successful Commit continues at that exact Committal in a fresh Cycle.
         $restart = app(ParticipationService::class)->enter($builder);
         $entry = $this->gate($restart);
         $this->assertSame('committal', $entry->tier);
-        $this->assertContains($entry->id, [$origin->id, $committed->id]);
+        $this->assertSame($committed->id, $entry->id);
         $fresh = $this->gate($this->move($builder, ['action' => 'proposition.variant', 'statement' => 'A fresh beginning.']));
         $this->assertSame([$entry->id], $fresh->parents()->pluck('propositions.id')->all());
         foreach (Proposition::where('tier', 'expressive')->get() as $proposition) {
@@ -257,13 +255,11 @@ class OperationalClosurePathTest extends TestCase
         $this->move($author, ['action' => 'attestation.create', 'proposition_id' => $stance->id, 'direction' => 'support']);
         $concord = $this->gate($this->move($builder, ['action' => 'proposition.bias', 'proposition_id' => $stance->id]));
 
-        // Builder remains in Order. Author completes Order by grounding the same
-        // expressive Concord, then re-enters before Builder has committed it.
+        // Both reach Order after Bias. Divergent Closure leaves no terminal
+        // action, so Author explicitly Rests before re-entering the region.
         $this->move($author, ['action' => 'attestation.create', 'proposition_id' => $concord->id, 'direction' => 'support']);
-        $completed = $this->move($author, [
-            'action' => 'instrument.execute', 'proposition_id' => $concord->id,
-            'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/concord'],
-        ]);
+        $this->assertSame(['participant.rest'], array_keys($this->state($author)['plan']['schema']['$defs']['actions']));
+        $completed = $this->move($author, ['action' => 'participant.rest']);
         $this->assertSame('waiting', $completed['status']);
         $this->assertSame($concord->id, $author->fresh()->current_proposition_id);
         $this->assertSame('order', $this->state($builder)['plan']['phase']['kind']);

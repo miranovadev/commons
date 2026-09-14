@@ -14,6 +14,7 @@ use App\Models\Substrate;
 use App\Models\Supersession;
 use App\Services\ClosureGateService;
 use App\Services\CommitRegionPolarityService;
+use App\Services\ContributionDispatcher;
 use App\Services\ContributionService;
 use App\Services\InputPlanService;
 use App\Services\InputSchemaService;
@@ -59,7 +60,7 @@ class ParticipantActionContractTest extends TestCase
                 $expected = array_values(array_diff($expected, ['proposition.variant']));
             }
         }
-        $this->assertEqualsCanonicalizing($expected, array_keys($schema['$defs']['actions']));
+        $this->assertEqualsCanonicalizing($expected, array_keys($schema['$defs']['actions']), json_encode($state['plan']));
         $transport = app(OpenAIResponseSchema::class)->fromCommons($schema);
         $variants = $transport['properties']['contribution']['anyOf'] ?? [$transport['properties']['contribution']];
         $responses = Http::sequence();
@@ -161,6 +162,12 @@ class ParticipantActionContractTest extends TestCase
         $transport = app(OpenAIResponseSchema::class)->fromCommons($schema);
         $variants = $transport['properties']['contribution']['anyOf'] ?? [$transport['properties']['contribution']];
         $variant = collect($variants)->first(fn ($branch) => in_array('attestation.create', $branch['properties']['action']['enum'], true));
+        if ($kind === PhaseKind::Order) {
+            $this->assertNull($variant);
+            $this->assertValid($transport, ['contribution' => ['action' => 'attestation.create', 'proposition_id' => (string) str()->ulid(), 'direction' => 'support']], false);
+
+            return;
+        }
         $wire = array_replace(array_fill_keys($variant['required'], null),
             $this->sample($schema['$defs']['actions']['attestation.create'], $schema['$defs'], (string) str()->ulid()));
         $this->assertValid($transport, ['contribution' => $wire]);
@@ -301,19 +308,25 @@ class ParticipantActionContractTest extends TestCase
                     $mock->shouldReceive('preview')->andReturn($values);
                     $mock->shouldReceive('forCommitment')->andReturn($values);
                 });
+                $committedSource = $node('canon', $seed);
+                $this->groundFixture($committedSource);
+                $past->forceFill(['write_register' => 'canon', 'gate_proposition_id' => $committedSource->id])->save();
             }
         }
         if (! $empty) {
             $this->loadedReceiptFixture($gate);
         }
         $cycle = new Cycle;
-        $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => 2])->save();
+        $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => 2, 'context_horizon_id' => $history->context_horizon_id])->save();
         if ($kind === PhaseKind::Mediate) {
             $disperse = new Phase;
             $disperse->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Disperse, 'write_register' => 'activity', 'gate_proposition_id' => $anchor->id, 'started_at' => now(), 'completed_at' => now()])->save();
         }
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => $kind, 'write_register' => $writes[$kind->value - 1], 'gate_proposition_id' => $gate->id, 'started_at' => now()])->save();
+        if ($kind === PhaseKind::Order && ! $empty) {
+            app(ContributionDispatcher::class)->dispatch($participant, $past, ['action' => 'proposition.commit', 'proposition_id' => $committedSource->id]);
+        }
         $participant->forceFill(['current_proposition_id' => $gate->id])->save();
 
         return [$participant, $phase, $seed];

@@ -43,6 +43,7 @@ export function attestationDirections(plan: ParticipantPlan, propositionId?: str
 
 /** The backend's forward frontier is the only source of Write cards. */
 export function writePropositions(plan: ParticipantPlan): Proposition[] {
+  if (plan.phase.kind === 'order') return actionPropositions(plan, 'proposition.traverse').filter(node => node.tier === 'committal');
   const actionable = new Set(([
     'attestation.create', 'proposition.traverse', 'proposition.revise',
     'instrument.execute', 'proposition.commit',

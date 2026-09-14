@@ -9,6 +9,7 @@ use App\Models\Participant;
 use App\Models\Proposition;
 use App\Models\Substrate;
 use App\Models\Supersession;
+use App\Services\ContributionService;
 use App\Services\CycleEntryService;
 use App\Services\LedgerService;
 use App\Services\Observables\LocalMeasurementService;
@@ -80,6 +81,28 @@ class ParticipantContinuityTest extends TestCase
         $second = $service->contribute($participant, $first['plan']['phase']['id'],
             ['action' => 'proposition.reclassify']);
         $this->assertSame($value > 0 ? 'canon' : 'concord', $second['plan']['phase']['write_register']);
+
+        // A participant still in the previous Horizon can choose the Committal
+        // result, end Order there, and continue under its applicable entry rules.
+        $otherPhase = $otherCycle->currentPhase;
+        $otherPhase->forceFill(['kind' => PhaseKind::Order, 'write_register' => 'concord', 'gate_proposition_id' => $candidate->id])->save();
+        $other->forceFill(['current_proposition_id' => $candidate->id])->save();
+        $order = $service->stateFor($other)['plan'];
+        $this->assertNotContains($candidate->id, array_column($order['gate_options'], 'id'));
+        $this->assertSame([$commit->id], array_column($order['write_options'], 'id'));
+        $this->assertSame(['proposition.traverse'], array_keys($order['schema']['$defs']['actions']), json_encode($order));
+        $this->assertSame($order['schema'], app(ContributionService::class)->planFor($other->fresh())['schema']);
+        $traversed = $service->contribute($other, $otherPhase->id,
+            ['action' => 'proposition.traverse', 'proposition_id' => $commit->id]);
+        $this->assertSame($commit->id, $traversed['current_proposition_id']);
+        $this->assertNotNull($otherCycle->fresh()->completed_at);
+        $this->assertNull($otherCycle->fresh()->rested_at);
+        $continued = $service->enter($other);
+        $this->assertSame($commit->id, $continued['plan']['gate_id']);
+        $this->assertSame($owner->id, $continued['cycle']['context_horizon_id']);
+        $this->assertSame($domain, $continued['domain']);
+        $this->assertSame($register, $continued['plan']['phase']['write_register']);
+
     }
 
     public function test_tragedy_can_relocate_back_to_origin_without_reopening_a_historical_horizon(): void

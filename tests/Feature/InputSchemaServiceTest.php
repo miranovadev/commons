@@ -133,9 +133,7 @@ class InputSchemaServiceTest extends TestCase
             ],
             PhaseKind::Order->value => [
                 'proposition.commit',
-                'instrument.execute',
-                'receipt.replay',
-                'attestation.create',
+                'proposition.traverse',
             ],
         ];
 
@@ -143,7 +141,7 @@ class InputSchemaServiceTest extends TestCase
             $schema = app(InputSchemaService::class)->forPhase($kind);
 
             $this->assertSame(
-                ['receipt.read', ...$expected[$kind->value]],
+                $kind === PhaseKind::Order ? $expected[$kind->value] : ['receipt.read', ...$expected[$kind->value]],
                 array_keys($schema['$defs']['actions']),
             );
             $this->assertSame(
@@ -153,7 +151,7 @@ class InputSchemaServiceTest extends TestCase
             $this->assertNotEmpty(
                 $schema['x-commons']['description'],
             );
-            $expectsTraverse = in_array($kind, [PhaseKind::Distinguish, PhaseKind::Persist, PhaseKind::Constrain, PhaseKind::Bias], true);
+            $expectsTraverse = in_array($kind, [PhaseKind::Distinguish, PhaseKind::Persist, PhaseKind::Constrain, PhaseKind::Bias, PhaseKind::Order], true);
             $this->assertSame(
                 $expectsTraverse,
                 isset($schema['$defs']['actions']['proposition.traverse']),

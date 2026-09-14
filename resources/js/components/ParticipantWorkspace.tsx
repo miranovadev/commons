@@ -92,6 +92,10 @@ export function ParticipantWorkspace({ plan, availableActions, onAction, onSubmi
                         <Button size="compact-xs" variant="subtle" color="gray" leftSection={<OperationIcon operation="bias" />}
                           onClick={() => onAction('proposition.bias', { proposition_id: item.id })}>Bias</Button>
                       </Group>}
+                      {allowed('proposition.commit') && targets.get('proposition.commit')?.has(item.id) && <Group className="write-option-card__context-actions" gap={4}>
+                        <Button size="compact-xs" color="indigo" leftSection={<OperationIcon operation="commit" />}
+                          onClick={() => onAction('proposition.commit', { proposition_id: item.id })}>Commit</Button>
+                      </Group>}
                       {item.id === gate.id && allowed('proposition.reclassify') && <Group className="write-option-card__context-actions" gap={4}>
                         <Button size="compact-xs" variant="subtle" color="gray" leftSection={<OperationIcon operation="reclassify" />}
                           onClick={() => onAction('proposition.reclassify')}>Reclassify</Button>
@@ -133,7 +137,7 @@ function WriteOptionCard({ proposition, directions, canAttest, canRevise, canIns
   const slots = directionSlots(proposition.attestation_summary?.support_direction);
   function directionalAction(slot: typeof slots[number]) {
     const attest = canAttest && directions.includes(slot.label);
-    const traverse = canTraverse && !directions.includes(slot.label);
+    const traverse = proposition.tier === 'expressive' && canTraverse && !directions.includes(slot.label);
     if (!attest && !traverse) return null;
     const whirl = <DirectionalWhirl direction={slot.direction} size={17} />;
     const portal = <Group gap={2} wrap="nowrap">{slot.side === 'left' ? <>{whirl}<IconArrowLeft size={14} aria-hidden="true" /></>
@@ -148,11 +152,15 @@ function WriteOptionCard({ proposition, directions, canAttest, canRevise, canIns
   return <Box className="write-option-card" data-attested={proposition.attestation?.direction}>
     <PropositionCard proposition={proposition} committalObservables={committalObservables} compact flow="write" onClick={() => onInspect({ kind: 'write option', proposition })} />
     {hasActions && <>
+      {proposition.tier === 'committal' && canTraverse && <Group className="write-option-card__context-actions" gap={4} justify="center">
+        <Button size="compact-xs" variant="subtle" color="indigo" leftSection={<IconArrowRight size={14} />}
+          onClick={() => onAction('proposition.traverse', { proposition_id: proposition.id })}>Traverse</Button>
+      </Group>}
       {(canCommit || canRevise) && <Group className="write-option-card__context-actions" data-action-region="middle" gap={4} justify="center">
         {canCommit && <Button size="compact-xs" color="indigo" leftSection={<OperationIcon operation="commit" />} onClick={() => onAction('proposition.commit', { proposition_id: proposition.id })}>Commit</Button>}
         {canRevise && <Button size="compact-xs" variant="subtle" color="gray" leftSection={<OperationIcon operation="revise" />} onClick={() => onAction('proposition.revise', { proposition_id: proposition.id })}>Revise</Button>}
       </Group>}
-      {(canAttest || canTraverse || canInstrument) && <Box className="write-option-card__actions write-option-card__actions--directional" role="group" aria-label={`Attestation and traversal for ${proposition.title || proposition.statement.split('\n')[0]}`}>
+      {proposition.tier === 'expressive' && (canAttest || canTraverse || canInstrument) && <Box className="write-option-card__actions write-option-card__actions--directional" role="group" aria-label={`Attestation and traversal for ${proposition.title || proposition.statement.split('\n')[0]}`}>
         <Box className="write-option-card__side" data-action-region="left">{directionalAction(slots[0])}</Box>
         <Box data-action-region="instrument">{canInstrument && <Button size="compact-xs" variant="subtle" color="gray" leftSection={<IconTool size={13} />} onClick={() => onAction('instrument.execute', { proposition_id: proposition.id })}>Instrument</Button>}</Box>
         <Box className="write-option-card__side" data-action-region="right">{directionalAction(slots[1])}</Box>

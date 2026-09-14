@@ -76,7 +76,7 @@ final readonly class PhaseGenerationService
     {
         $sources = $this->regions->membersFor($context?->propositions->get($phase->gate_proposition_id) ?? $phase->gate, $context)->pluck('id');
 
-        return Proposition::query()->where('tier', 'committal')->where('register', $phase->write_register)
+        return Proposition::query()->where('tier', 'committal')->where('register', $phase->write_register)->whereHas('commitmentSnapshot')
             ->whereHas('phase', fn ($query) => $query->where('kind', PhaseKind::Order->value)
                 ->whereHas('cycle.participant', fn ($query) => $query->where('substrate_id', $phase->cycle->participant->substrate_id)))
             ->whereHas('parents', fn ($query) => $query->whereKey($sources)->where('supersessions.type', 'commit'))

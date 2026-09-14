@@ -97,10 +97,6 @@ class OperationalCommitmentTest extends TestCase
         ]);
         $this->assertSame('order', $state['plan']['phase']['kind']);
         $this->assertSame(0, $state['plan']['commitment']['reinforcement_count']);
-        $receiptId = $candidate->instrumentExecutions()->with('receipt')->latest('id')->firstOrFail()->receipt->id;
-        $phaseIdBeforeRead = $state['plan']['phase']['id'];
-        $state = $this->move($this->participant, ['action' => 'receipt.read', 'receipt_id' => $receiptId]);
-        $this->assertSame($phaseIdBeforeRead, $state['plan']['phase']['id']);
         $this->assertSame('ready', $state['status']);
         $this->assertTrue($state['plan']['commitment']['admissible']);
         $this->assertTrue($state['plan']['commitment']['closure_enforced']);
@@ -207,15 +203,15 @@ class OperationalCommitmentTest extends TestCase
         $state = app(ParticipationService::class)->stateFor($committer);
         $this->assertSame('ready', $state['status']);
         $this->assertFalse($state['plan']['commitment']['admissible']);
-        $this->assertSame('pending', $state['plan']['gate_options'][0]['instruments'][0]['status']);
-        $this->assertNull($state['plan']['gate_options'][0]['instruments'][0]['receipt_id']);
+        $this->assertSame('pending', $this->workspaceCard($committer, $gate)['instruments'][0]['status']);
+        $this->assertNull($this->workspaceCard($committer, $gate)['instruments'][0]['receipt_id']);
 
         $service->fail($execution, 'Instrument unavailable.');
         $state = app(ParticipationService::class)->stateFor($committer);
         $this->assertSame('ready', $state['status']);
         $this->assertFalse($state['plan']['commitment']['admissible']);
-        $this->assertSame('failed', $state['plan']['gate_options'][0]['instruments'][0]['status']);
-        $this->assertSame('Instrument unavailable.', $state['plan']['gate_options'][0]['instruments'][0]['failure_reason']);
+        $this->assertSame('failed', $this->workspaceCard($committer, $gate)['instruments'][0]['status']);
+        $this->assertSame('Instrument unavailable.', $this->workspaceCard($committer, $gate)['instruments'][0]['failure_reason']);
         $this->assertFalse($state['plan']['commitment']['requirements']['receipt']);
     }
 
@@ -255,7 +251,7 @@ class OperationalCommitmentTest extends TestCase
         app(OperationalInstrumentService::class)->execute($this->origin->phase, $this->origin, ['kind' => 'citation', 'reference' => $foreign->id]);
     }
 
-    public function test_bias_grounds_an_existing_concord_and_order_attestation_finishes_before_later_commit(): void
+    public function test_bias_grounding_waits_for_another_participants_attestation_before_commit(): void
     {
         $left = $this->candidate();
         $left->register = 'stance';
@@ -286,13 +282,11 @@ class OperationalCommitmentTest extends TestCase
         $this->assertTrue($state['plan']['commitment']['requirements']['receipt']);
         $this->assertFalse($state['plan']['commitment']['requirements']['attestation']);
         $receipt = $candidate->instrumentExecutions()->with('receipt')->firstOrFail()->receipt;
-        $this->move($reader, ['action' => 'attestation.create', 'proposition_id' => $candidate->id, 'direction' => 'support']);
-        $state = app(ParticipationService::class)->stateFor($reader);
-        $this->assertNull($state['plan']);
-        $this->assertNotNull($state['completion']);
-        // A later explicit Cycle may revisit this candidate; Order never repeats.
-        $this->phase($reader, PhaseKind::Order, 'concord', $candidate);
-        $this->move($reader, ['action' => 'receipt.read', 'receipt_id' => $receipt->id]);
+        $this->assertSame(['participant.rest'], array_keys($state['plan']['schema']['$defs']['actions']));
+        $attestor = $this->participant($this->participant->substrate, 'attestor');
+        $this->phase($attestor, PhaseKind::Bias, 'concord', $left);
+        $this->move($attestor, ['action' => 'attestation.create', 'proposition_id' => $candidate->id, 'direction' => 'support']);
+        $this->assertTrue(app(ParticipationService::class)->stateFor($reader)['plan']['commitment']['admissible']);
         $this->move($reader, ['action' => 'proposition.commit']);
         $committed = Proposition::findOrFail($reader->fresh()->current_proposition_id);
         $this->assertSame('committal', $committed->tier);
@@ -329,42 +323,26 @@ class OperationalCommitmentTest extends TestCase
         $this->assertSame($candidate->id, $candidate->instrumentExecutions()->with('receipt')->firstOrFail()->receipt->receiptable_id);
     }
 
-    public function test_order_attestation_and_instrument_complete_without_rest_or_replacement(): void
+    public function test_order_rejects_pre_terminal_actions_even_on_a_receipted_write(): void
     {
-        foreach (['attestation.create', 'instrument.execute'] as $action) {
-            [$reader, $phase, $candidate] = $this->instrumentFixture(PhaseKind::Order);
-            $service = app(ParticipationService::class);
-            $before = $service->stateFor($reader);
-            $this->assertContains($candidate->id, $before['plan']['schema']['$defs']['actions']['instrument.execute']['properties']['proposition_id']['enum']);
-            // Earlier eligible Writes in the same region remain supportable too.
-            $phaseCount = Phase::count();
-            $input = ['action' => $action, 'proposition_id' => $candidate->id];
-            $input += $action === 'attestation.create' ? ['direction' => 'support']
-                : ['instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/order']];
-            if ($action === 'attestation.create') {
-                $this->receiptFixture($candidate);
-            }
-            $state = $this->move($reader, $input);
-            $this->assertNotNull($phase->fresh()->completed_at);
-            $this->assertNotNull($phase->cycle->fresh()->completed_at);
-            $this->assertNull($phase->cycle->fresh()->rested_at);
-            $this->assertSame($phaseCount, Phase::count());
-            $this->assertSame($candidate->id, $reader->fresh()->current_proposition_id);
-            $this->assertSame('waiting', $state['status']);
-            $this->assertNull($state['plan']);
-            $this->assertSame($phase->id, $state['completion']['phase_id']);
-            $this->assertSame($phase->cycle_id, $state['completion']['cycle_id']);
-            $this->assertArrayHasKey('available', $state['entry']);
-            $this->assertSame($state['completion'], $service->stateFor($reader)['completion']);
-            if ($action === 'instrument.execute') {
-                $execution = $candidate->instrumentExecutions()->with('receipt')->firstOrFail();
-                $this->assertSame('completed', $execution->status);
-                $this->assertSame($candidate->id, $execution->receipt->receiptable_id);
-            }
-            if ($state['entry']['available']) {
-                $entered = $service->enter($reader);
-                $this->assertNotSame($phase->cycle_id, $entered['cycle']['id']);
-                $this->assertNull($entered['completion'] ?? null);
+        [$reader, $phase, $candidate] = $this->instrumentFixture(PhaseKind::Order);
+        $this->receiptFixture($candidate);
+        $receipt = app(PropositionStateService::class)->receipts($candidate)->firstOrFail();
+        $before = [Phase::count(), Attestation::count(), Receipt::count(), InstrumentExecution::count()];
+        foreach ([
+            ['action' => 'attestation.create', 'proposition_id' => $candidate->id, 'direction' => 'support'],
+            ['action' => 'instrument.execute', 'proposition_id' => $candidate->id, 'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/order']],
+            ['action' => 'receipt.read', 'receipt_id' => $receipt->id],
+            ['action' => 'receipt.replay', 'receipt_id' => $receipt->id],
+        ] as $input) {
+            try {
+                app(ParticipationService::class)->contribute($reader, $phase->id, $input);
+                $this->fail('Order must reject pre-terminal actions.');
+            } catch (\InvalidArgumentException|DomainException) {
+                $this->assertNull($phase->fresh()->completed_at);
+                $this->assertNull($phase->cycle->fresh()->completed_at);
+                $this->assertSame($phase->gate_proposition_id, $reader->fresh()->current_proposition_id);
+                $this->assertSame($before, [Phase::count(), Attestation::count(), Receipt::count(), InstrumentExecution::count()]);
             }
         }
     }
@@ -389,6 +367,13 @@ class OperationalCommitmentTest extends TestCase
                 $this->assertSame($before, [Phase::count(), Attestation::count(), Receipt::count(), InstrumentExecution::count()]);
             }
         }
+    }
+
+    private function workspaceCard(Participant $participant, Proposition $node): array
+    {
+        $plan = app(ParticipationService::class)->workspaceFor($participant)['plan'];
+
+        return collect($plan['workspace']['registers'])->flatten(1)->firstWhere('id', $node->id);
     }
 
     private function instrumentFixture(PhaseKind $kind): array

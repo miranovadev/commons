@@ -130,7 +130,7 @@ a valid structural scope, but must not silently redefine that scope.
 ## 11. Cycles Begin at Committal Propositions
 
 A Cycle begins from a Committal Proposition. Expressive Propositions cannot serve
-as Cycle entry points. Cycle entry ranks eligible Committal Propositions using
+as Cycle entry points. After ordinary completion, the next Cycle continues at the exact selected Committal. First entry and recovery after Rest rank eligible Committal Propositions using
 Potential Charge as observed from the Participant's current position, including
 substrate attenuation. Raw global Potential Charge alone does not determine
 entry when a current position exists. Any entry fallback remains Committal and
@@ -157,14 +157,9 @@ structural attenuation is applied. Attenuation affects propagation of a measured
 state, not formation of that state. Receipts and Reinforcement are never discounted
 by distance before entering the Proposition's own calculation.
 
-## 14. Commitment Requires Active Reinforcement
+## 14. Commitment Requires Grounding, Attestation and Closure
 
-A Proposition cannot become Committal solely from its originating state or from
-possession of a Receipt. At least one active Reinforcement from explicit Receipt
-loading is required before operational Commitment is admissible, alongside
-all existing phase and measurement constraints. The explicit Origin initialization
-seed is a bootstrap exception, not earned Settlement; its originating evidence
-supplies no counted Reinforcement until explicitly loaded.
+Commit requires a completed Receipt, an effective Attestation on the selected classification, and aligned Depth/Cadence with hysteresis. Loaded Reinforcement adds weight but is not an admissibility minimum. Origin initialization records its explicit evidence before freezing. Each direct expressive source is committed once globally; its Committal result is immutable and subsequent development takes place through Variants.
 
 ## 15. Reinforcement Does Not Suppress Branching
 
@@ -185,7 +180,7 @@ constraints:
 | Support/Refute label Attestations rather than Propositions or measurement axes. | 1, 3, 7, 9 | [Attestation polarity](attestation-polarity.md) |
 | Attestation-less Expressive Propositions default from the governing Committal Proposition; local divergence does not change the region's fixed polarity. | 5, 6, 7 | [Committal defaults and Origin's label choice](attestation-polarity.md) |
 | Mediate uses the traversed-to Read's retained Correspondence direction, within its eligible Commit Region and register position. | 4, 7, 10 | [Mediate: Correspondence Read](participation.md#mediate-correspondence-read) |
-| Bias uses the retained aggregate Attestation direction of its eligible Gate population. | 4, 7, 10 | [Bias Chirality Gate](participation.md#bias-chirality-gate) |
+| Bias compares each head with its own causal lineage aggregate, excluding the head. | 4, 7, 10 | [Bias Chirality Gate](participation.md#bias-chirality-gate) |
 | Zero-valued hysteretic observables retain direction according to their documented histories and transition conditions. | 4, 7 | [Value and retained direction](attestation-polarity.md#value-and-retained-direction); [Closure hysteresis](closure-hysteresis.md) |
 | Commit preserves original evidence and provenance when inheriting participation state. | 8, 9 | [Commit participation inheritance](observables.md#commit-participation-inheritance) |
 
@@ -194,4 +189,5 @@ server-observed version stability, local Closure and Commit requirements.
 
 When ambiguity arises, prefer the interpretation that preserves these invariants
 rather than inferring semantics from current code behaviour.
+
 

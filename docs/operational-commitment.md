@@ -1,76 +1,13 @@
 # Operational Commitment
 
-Phase 7 (Order) uses `CommitmentAdmissibilityService` in both schema generation
-and execution. Order selects an explicit `proposition_id` from Closure-filtered
-Commit Region Write candidates. It requires an effective Attestation in the selected source's
-evidentiary state, at least one counted Reinforcement, and a Receipt from a completed instrument execution attached
-to that state or one of its effective Attestations. A Committal Gate inherits
-this state through Commit edges; arbitrary ancestors and Receipts on superseded
-Attestations do not satisfy these preconditions. The grounded Expressive source
-remains provenance. Original evidence records are resolved by reference, never
-copied or retargeted. The new Committal proposition also inherits the selected source's
-Phase-touch history for Cadence, identically in preview and actual Commitment.
+Order is terminal selection: Commit an admissible expressive Concord/Canon Gate or Traverse an established Committal Concord/Canon Write. Read contains Stance/Frontier ancestry. Neither Instrument, Receipt Read, Replay nor Attestation is an Order action. Both productive actions finish the Cycle at the exact Committal; the next Cycle continues there under its applicable Context Horizon.
 
-These inheritance rules apply
-[Invariant 8: Provenance Is Never Erased](core-invariants.md#8-provenance-is-never-erased)
-and [Invariant 9: Evidence Must Not Be Invented or Reinterpreted](core-invariants.md#9-evidence-must-not-be-invented-or-reinterpreted).
-Changing active participation must preserve original contribution history and
-meaning.
+`CommitmentAdmissibilityService` requires a completed Receipt, an effective Attestation on the selected classification, and aligned Depth/Cadence with hysteresis. Reinforcement is an optional weight, never a hard minimum. Receipt existence does not assert that evidence is correct or that a Participant has read it.
 
-## Instruments
+Commit preserves the selected source's exact statement, effective judgments, referenced receipts and phase-touch history. It consumes that direct expressive source globally and records an immutable evaluation. Alternative branches remain available. Committal results accept no new Attestations, Instruments or revisions; further development uses Variants. Reading historical evidence cannot rewrite the commitment snapshot.
 
-`OperationalInstrumentService` produces Cite references and verified Hyperlink
-Receipts without automatically loading either. Hyperlink verification resolves the
-existing canonical resource/version signature. `receipt.read` explicitly activates
-qualifying evidence for the reading Participant, at most once per Proposition.
-Read preserves the current Phase, including Order, so active Reinforcement can
-satisfy Commit's evidence requirement before the Participant commits. Failed
-retrieval and versions awaiting stability remain non-reinforcing history. See
-[Reinforcement](reinforcement.md) for identity, persistence, clearing and migration.
+All grounding and judgment opportunities exist before Order. Distinguish and Mediate support Instruments on fresh Writes. Persist, Constrain and Bias reclassification require Receipt plus Attestation, preserve proposition evidence and reset votes. Existing classifications are shared, avoiding duplicate source/register results. Bias compares a head with its own causal ancestors excluding itself, not the region's other Stances.
 
-## Observing and recovering blocked Order
+A fresh classification can legitimately require Rest before Commit becomes available. `FullEvidenceFlowTest` exercises three participants through all seven phases with real contributions, receipt-first gating, evidence-preserving reclassification, reconciliation, Bias, Rest, zero-loaded-reinforcement Commit and Committal Traverse. Closure admissibility is isolated in that routing test; the measurement and hysteresis suites verify the numeric rules independently. PostgreSQL competing-writer tests cover duplicate classifications and commitments.
 
-An inadmissible Commit retains `commitment_preconditions_unsatisfied` and
-`plan.commitment` diagnostics, but the plan stays actionable through any
-remaining Order actions. Order does not admit `proposition.traverse`; only
-complete exhaustion of all admissible non-Rest actions exposes `participant.rest` as the sole action. Automated participants choose through
-the same inference contract as human participants.
-
-Reclassification does not gather evidence implicitly. Constrain requires an existing
-completed Receipt on its Gate or an effective Attestation, without requiring
-counted Reinforcement. During Bias, normal
-`instrument.execute` can ground an existing Concord/Canon Proposition, including
-an eligible historical node. A Receipt stays on its exact Proposition across
-Cycles; later Attestation or Closure alignment may enable Commitment on a later
-revisit. Only Commit provides inherited participation/evidence state; other
-Supersessions do not transfer it. Constrain and Order also expose the separate Instrument action. Every valid
-Order contribution completes its Cycle, whether Attestation, Instrument or Commit;
-further work requires explicit next-Cycle entry. Bias now creates fresh Concord/Canon through unary directional
-selection; that new Proposition must earn its own evidence and support. See
-[Bias Chirality Gate](participation.md#bias-chirality-gate).
-
-See [participation](participation.md#traverse-tragedy-and-rest) for local traversal,
-Tragedy and nearest-distance Rest recovery. Instrument status, failure reason
-and Receipt ID remain exposed in the plan and inspector.
-
-## Closure admissibility
-
-The subsequent [Closure Hysteresis milestone](closure-hysteresis.md) adds enforced
-Depth/Cadence direction alignment alongside these grounding requirements,
-immutable component snapshots, and Domain-transition observation. It requires
-an additive database migration; historical evidence and snapshots are not rewritten.
-
-## Canonical late-phase regression
-
-[Operational Closure path](operational-closure-path.md) documents the complete
-Disperse → Mediate → Bias → fresh Concord → rebuilt history → Order → Commit
-scenario. `OperationalClosurePathTest` uses real measurements and normal
-participation throughout. The narrower `OperationalCommitmentTest` continues to
-isolate action/evidence behaviour with a Closure mock; it is not the end-to-end
-Closure proof.
-
-Each Participant may author one Commit in the same structural Commit Region row
-and register. This persists across Cycles and is independent of Horizon IDs.
-Other Participants can still Commit an otherwise eligible source in that row; a
-Commit edge alone does not remove their opportunity. Existing committed results
-remain available for support. See [write-once semantics](participation.md#write-once-then-support).
+See [the complete integrated rules](flow-integration.md), [participation](participation.md) and [Closure hysteresis](closure-hysteresis.md).

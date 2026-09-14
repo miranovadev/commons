@@ -16,9 +16,10 @@ nor Replay automatically loads evidence.
 
 `receipt.read` accepts only `action` and `receipt_id`. It loads qualifying evidence
 encountered through the current lineage, Read, Gate or Write, including evidence
-inherited through Commit sources. It preserves the Phase and Gate: a Participant
-can Read and then Commit in the same Order Phase. Each response still selects one
-action. Rest is unavailable while an admissible Read remains.
+preserved through Reclassify and Commit sources. Read is available in phases
+1–6 and preserves the Phase and Gate. Each response selects one action. Order
+has no receipt actions; qualifying loads acquired earlier remain additional weight.
+Rest is unavailable while an admissible Read remains in an earlier Phase.
 
 `participant_receipt_contexts` stores one row per Participant/Receipt, with the
 original evidence subject, evidence signature, `loaded_at` and nullable `cleared_at`.
@@ -103,14 +104,18 @@ or executor. Originating evidence may be read later without re-verification.
 Receipt creation alone contributes zero.
 
 Active loads are counted once per Participant/Proposition, deduplicating across
-Commit-only inherited source state. Thus equivalent signatures, different sources,
+Commit-inherited source state and preserved reclassification receipts. Thus equivalent signatures, different sources,
 versions, Receipts and repeated Cycles cannot multiply one Participant's weight.
 Multiple Receipts may remain loaded; clearing one preserves the contribution if
 another qualifying load still supports that same state. Clearing the last removes
 it. Different Participants can independently load the same Receipt/signature.
 
-Commit inherits active participation by reference through Commit edges only.
-Variant, Revise, Reclassify and Reconcile inherit no evidence state. A Receipt on
+Commit inherits participation by reference and freezes its recorded measurements.
+Reclassify preserves completed proposition-level Receipts and their loaded
+contributions, but starts new Attestations and touches. A superseded classification
+retains its historical reinforcement count; only the active classification
+contributes that application to measurements. Variant, Revise and Reconcile
+start fresh evidence state. A Receipt on
 an Attestation still reinforces its Instrument's exact Proposition; effective
 Attestation/Receipt grounding continues to respect Attestation supersession.
 Attestation lean replays load and clear events in ledger order. Where one reader
@@ -151,15 +156,15 @@ using active loaded contributions rather than raw signed Receipt counts.
 average reinforcement counts and apply the nonlinear Closure formula afterward.
 Depth/Cadence are propagated independently for their existing hysteresis gate.
 New evidence invalidates disposable substrate projections; immutable snapshots
-are preserved. Calculator version is `receipt-context-lineage-v6`.
+are preserved. Calculator version is `evidence-commitment-v8`.
 
 ## Commitment and branching
 
-All operational Commit paths require an effective Attestation, completed evidence,
-at least one counted Reinforcement, and the existing phase, region, register and
+All operational Commit paths require an effective Attestation, a completed
+Receipt, an uncommitted direct source, and the phase, region, register and
 Depth/Cadence alignment constraints. Snapshot creation checks grounding again.
-Strong starting measurements and Receipt creation alone cannot unlock Commit. Reinforcement
-alone cannot overcome a divergent Depth/Cadence gate.
+Loaded Reinforcement contributes additional weight but has no required minimum.
+Neither evidence existence nor reinforcement overrides divergent Depth/Cadence.
 
 The original Origin seed remains the explicit initialization exception:
 `origin-bootstrap-v1`, first ledger Proposition, no parents and no prior snapshot.
@@ -187,3 +192,4 @@ references are resolved against the Substrate when offered for Read.
 
 Rollback refuses to discard recorded context transitions. Historical Receipt and
 signature migrations retain their own safeguards against destructive rollback.
+

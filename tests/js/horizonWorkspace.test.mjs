@@ -31,14 +31,17 @@ function fixture(domain, phase = 7, continuity = false) {
   const provenance = continuity ? opening : node('structural-origin', 'canon', 'committal');
   const gate = phase === 1 ? provenance : node('gate-' + domain, registers[phase === 7 ? 2 : (position + 2) % 3]);
   const history = registers.map(register => node('history-' + register, register));
-  const write = node('write-' + domain, registers[position]);
+  const write = node('write-' + domain, registers[position], phase === 7 ? 'committal' : 'expressive');
   return {
     phase: { id: domain + phase, number: phase, kind: ['distinguish', 'persist', 'constrain', 'disperse', 'mediate', 'bias', 'order'][phase - 1], write_register: registers[position] },
-    gate, lineage: [provenance, ...history], read_options: [history[(position + 1) % 3]], write_options: [write], gate_options: [gate],
+    gate, lineage: [provenance, ...history], read_options: [history[phase === 7 ? 1 : (position + 1) % 3]], write_options: [write], gate_options: [gate],
     workspace: { domain, horizon: { id: domain, domain, sequence: domain === 'emergence' ? 3 : 2, parent_context_horizon_id: 'parent', opened_by_proposition_id: opening.id, opening_proposition: opening },
       provenance, registers: Object.fromEntries(history.map(card => [card.register, [card]])) },
     schema: { $defs: { actions: {
-      'attestation.create': { properties: { proposition_id: { enum: [write.id] }, direction: { enum: ['support', 'refute'] } } },
+      ...(phase === 7 ? {
+        'proposition.commit': { properties: { proposition_id: { enum: [gate.id] } } },
+        'proposition.traverse': { properties: { proposition_id: { enum: [write.id] } } },
+      } : { 'attestation.create': { properties: { proposition_id: { enum: [write.id] }, direction: { enum: ['support', 'refute'] } } } }),
       ...(phase === 6 ? { 'proposition.bias': { properties: { proposition_id: { enum: [gate.id] } } } } : {}),
     } } },
   };
@@ -64,7 +67,7 @@ for (const domain of Object.keys(domains)) {
       assert.equal(group.dataset.register, domains[domain][2]);
       assert.equal(group.querySelector('.proposition-card').dataset.register, domains[domain][2]);
     }
-    assert.equal(document.querySelector('[data-role="read"] .register-row').dataset.register, domains[domain][0]);
+    assert.equal(document.querySelector('[data-role="read"] .register-row').dataset.register, domains[domain][1]);
     assertRegisterGroups(document);
   });
   test(`all ${domain} lane headings preserve card identity across the seven Phases`, () => {
@@ -76,6 +79,21 @@ for (const domain of Object.keys(domains)) {
     }
   });
 }
+test('Order offers Commit only on Gate and one Traverse on each Committal Write', () => {
+  const plan = fixture('settlement');
+  const consumed = node('consumed-source', 'concord');
+  plan.workspace.registers.concord.push(consumed);
+  plan.write_options.push(consumed); // Stale display data cannot invent an action.
+  const document = documentFor(plan);
+  const gate = document.querySelector('[data-role="gate"]');
+  const write = document.querySelector('[data-role="write"]');
+  const buttons = role => [...role.querySelectorAll('button')].map(button => button.textContent.trim());
+  assert.equal(buttons(gate).filter(label => label === 'Commit').length, 1);
+  assert.equal(buttons(write).filter(label => label === 'Traverse').length, 1);
+  assert.ok(!buttons(gate).includes('Traverse'));
+  assert.ok(!buttons(write).includes('Commit'));
+  assert.doesNotMatch(gate.textContent + write.textContent, /Support|Refute|Instrument|consumed-source/);
+});
 test('different Horizon boundary and provenance stay separate without entering structural lineage', () => {
   const plan = fixture('emergence');
   const document = documentFor(plan);
@@ -100,11 +118,11 @@ test('post-Commit continuation naturally shares the boundary, provenance, and Ga
 });
 test('Read does not borrow a historical analogous register, while supplied mixed cards keep separate headings', () => {
   const plan = fixture('emergence');
-  plan.lineage = [node('historical-stance', 'stance')]; plan.workspace.registers = {};
+  plan.lineage = [node('historical-stance', 'stance')]; plan.workspace.registers = {}; plan.read_options = [];
   assert.equal(ui.workspaceLanes(plan).find(lane => lane.role === 'read').cards.length, 0);
-  const historical = node('historical-concord', 'concord');
+  const historical = node('historical-concord', 'concord', 'committal');
   plan.write_options.push(historical);
-  plan.schema.$defs.actions['attestation.create'].properties.proposition_id.enum.push(historical.id);
+  plan.schema.$defs.actions['proposition.traverse'].properties.proposition_id.enum.push(historical.id);
   const document = documentFor(plan);
   assert.equal(document.querySelectorAll('[data-role="write"]').length, 2);
   assertRegisterGroups(document);
