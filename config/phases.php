@@ -108,7 +108,7 @@ return [
     ],
     7 => [
         'name' => 'order',
-        'description' => 'Select a Commit Region Write candidate with aligned Depth/Cadence; commit when grounded, ground with an Instrument, or attest an eligible candidate. Reading loads context without ending the Phase; other successful contributions complete the Cycle.',
+        'description' => 'Commit a grounded Write with aligned Depth/Cadence, instrument or attest. Read keeps Order open; productive moves complete the Cycle.',
         'gate' => 'previous-phase-position',
         'actions' => [
             'receipt.read',
