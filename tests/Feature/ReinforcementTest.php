@@ -73,8 +73,9 @@ class ReinforcementTest extends TestCase
         $gate = app(CommitmentAdmissibilityService::class)->evaluate($this->node, $this->later);
         $this->assertTrue($gate['requirements']['receipt']);
         $this->assertTrue($gate['requirements']['closure']);
-        $this->assertFalse($gate['admissible']);
-        $this->assertContains('missing_counted_reinforcement', $gate['reasons']);
+        $this->assertTrue($gate['admissible']);
+        $this->assertSame(0, $gate['reinforcement_count']);
+        $this->assertSame([], $gate['reasons']);
     }
 
     public function test_signatures_are_shared_but_only_one_reinforcement_per_participant_counts(): void
@@ -191,15 +192,15 @@ class ReinforcementTest extends TestCase
         $this->assertSame(1, ParticipantReceiptContext::active()->count());
     }
 
-    public function test_snapshot_boundary_cannot_bypass_reinforcement_with_strong_measurements(): void
+    public function test_snapshot_can_record_grounded_attested_content_without_loaded_reinforcement(): void
     {
+        $this->loadedReceipt('citation', $this->node->id);
         $this->node->tier = 'committal';
         $this->node->save();
-        $this->loadedReceipt('citation', $this->node->id);
         app(PropositionMeasurementService::class)->project($this->node, 1, 1, 1);
-        $this->expectException(DomainException::class);
-        $this->expectExceptionMessage('counted Reinforcement');
-        app(CommitmentSnapshotService::class)->record($this->node, 1, 0, LineageMeasurementService::VERSION);
+        $snapshot = app(CommitmentSnapshotService::class)->record($this->node, 1, 0, LineageMeasurementService::VERSION);
+        $this->assertTrue($snapshot->exists);
+        $this->assertSame(0, $this->reinforcementCount());
     }
 
     public function test_database_prevents_duplicate_participant_receipt_context(): void

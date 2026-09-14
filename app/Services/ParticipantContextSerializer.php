@@ -21,7 +21,8 @@ final class ParticipantContextSerializer
             ->concat($plan['attestation_options'] ?? [])
             ->whereIn('id', $targetIds)->unique('id');
         // Current Gate is context even when it has no selectable Gate action.
-        $gate = collect([$plan['gate']])->concat($plan['gate_options'] ?? [])->unique('id');
+        $gate = ($plan['phase']['kind'] === 'order' ? collect() : collect([$plan['gate']]))
+            ->concat($plan['gate_options'] ?? [])->unique('id');
         $read = collect($plan['read_options'] ?? [])->unique('id');
         // Operational roles own their objects; any additional role uses schema IDs.
         $gate = $gate->whereNotIn('id', $read->pluck('id'));
@@ -82,8 +83,10 @@ final class ParticipantContextSerializer
             $result['attestation'] = Arr::only($node['attestation'], ['direction', 'rationale']);
         }
         if (! empty($node['instruments'])) {
-            $result['instruments'] = array_map(fn ($item) => Arr::only($item,
-                ['kind', 'reference', 'status', 'failure_reason', 'receipt_id', 'reinforcement_status', 'content_verified']), $node['instruments']);
+            $result['instruments'] = array_map(fn ($item) => [
+                ...Arr::only($item, ['kind', 'reference', 'status', 'receipt_id', 'reinforcement_status', 'content_verified']),
+                ...(isset($item['failure_reason']) ? ['failure_reason' => $item['failure_reason']] : []),
+            ], $node['instruments']);
         }
 
         return $result;

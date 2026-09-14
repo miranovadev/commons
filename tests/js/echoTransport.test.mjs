@@ -29,6 +29,7 @@ async function connectionAttempt(env, protocol) {
     },
   });
   context.window = context;
+  context.self = context;
   vm.runInContext(pusherSource, context);
   // Keep the real browser Pusher strategy; replace only Echo's thin wrapper.
   context.Echo = class {

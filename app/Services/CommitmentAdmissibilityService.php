@@ -30,7 +30,7 @@ final readonly class CommitmentAdmissibilityService
             'closure_enforced' => true,
             'closure' => $closure,
             'reasons' => [...$grounding['reasons'], ...($closure['admissible'] ? [] : ['depth_cadence_directions_diverge']),
-                ...($opportunity ? [] : ['already_authored_commit_in_row'])],
+                ...($opportunity ? [] : ['source_already_committed'])],
         ];
     }
 
@@ -43,19 +43,17 @@ final readonly class CommitmentAdmissibilityService
         $hasAttestation = $attestations->isNotEmpty();
 
         return [
-            'admissible' => $hasAttestation && $hasReceipt && $count > 0,
+            'admissible' => $hasAttestation && $hasReceipt,
             'reinforcement_count' => $count,
             'requirements' => [
                 'attestation' => $hasAttestation,
                 'receipt' => $hasReceipt,
-                'reinforcement' => $count > 0,
                 'closure' => null,
             ],
             'closure_enforced' => false,
             'reasons' => array_values(array_filter([
                 $hasAttestation ? null : 'missing_effective_attestation',
                 $hasReceipt ? null : 'missing_completed_receipt',
-                $count > 0 ? null : 'missing_counted_reinforcement',
             ])),
         ];
     }

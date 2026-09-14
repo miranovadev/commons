@@ -8,13 +8,15 @@ return [
         'actions' => [
             'receipt.read',
             'proposition.variant',
+            'instrument.execute',
+            'receipt.replay',
             'attestation.create',
             'proposition.traverse',
         ],
     ],
     2 => [
         'name' => 'persist',
-        'description' => 'Variant another Participant’s Gate once, reclassify an owned Gate, or interact with eligible existing Writes.',
+        'description' => 'Variant another Participant’s Gate once, reclassify a receipted and attested Gate, or interact with eligible existing Writes.',
         'gate' => 'previous-phase-position',
         'actions' => [
             'receipt.read',
@@ -28,7 +30,7 @@ return [
         ],
         'constraints' => [
             'proposition.variant' => ['gate-non-owner'],
-            'proposition.reclassify' => ['gate-owner'],
+            'proposition.reclassify' => ['completed-receipt-and-effective-attestation'],
             'instrument.execute' => ['write-register'],
         ],
     ],
@@ -47,8 +49,7 @@ return [
         ],
         'constraints' => [
             'proposition.reclassify' => [
-                'gate-owner',
-                'completed-gate-or-effective-attestation-receipt',
+                'completed-receipt-and-effective-attestation',
             ],
         ],
     ],
@@ -75,6 +76,8 @@ return [
         'actions' => [
             'receipt.read',
             'proposition.reconcile',
+            'instrument.execute',
+            'receipt.replay',
             'attestation.create',
         ],
         'constraints' => [
@@ -85,7 +88,7 @@ return [
     ],
     6 => [
         'name' => 'bias',
-        'description' => 'Select one active Commit Region Stance/Frontier whose retained direction agrees with the aggregate lean and hard-supersede it into fresh Concord/Canon, execute an instrument, or attest an immediate Write descendant.',
+        'description' => 'Select one active Commit Region Stance/Frontier whose retained direction agrees with its causal ancestry excluding itself and hard-supersede it into fresh Concord/Canon, execute an instrument, or attest an immediate Write descendant.',
         'gate' => 'previous-phase-position',
         'actions' => [
             'receipt.read',
@@ -93,33 +96,25 @@ return [
             'instrument.execute',
             'receipt.replay',
             'attestation.create',
+            'proposition.traverse',
         ],
         'constraints' => [
             'proposition.bias' => [
-                'dominant-active-stance-lean',
+                'lineage-direction-agreement',
                 'unary-selection-fresh-history',
+                'completed-receipt-and-effective-attestation',
             ],
             'instrument.execute' => ['write-register'],
         ],
     ],
     7 => [
         'name' => 'order',
-        'description' => 'Select a Commit Region Write candidate with aligned Depth/Cadence; commit when grounded, ground with an Instrument, or attest an eligible candidate. Reading loads context without ending the Phase; other successful contributions complete the Cycle.',
+        'description' => 'Commit an admissible expressive Gate, or Traverse an existing Committal Write. Either completes the Cycle at that Committal; the next Cycle continues there.',
         'gate' => 'previous-phase-position',
-        'actions' => [
-            'receipt.read',
-            'proposition.commit',
-            'instrument.execute',
-            'receipt.replay',
-            'attestation.create',
-        ],
+        'actions' => ['proposition.commit', 'proposition.traverse'],
         'constraints' => [
-            'proposition.commit' => [
-                'effective-gate-attestation',
-                'completed-gate-or-effective-attestation-receipt',
-                'counted-participant-reinforcement',
-                'depth-cadence-and-hysteresis-admissible',
-            ],
+            'proposition.commit' => ['effective-gate-attestation', 'completed-gate-or-effective-attestation-receipt', 'depth-cadence-and-hysteresis-admissible'],
+            'proposition.traverse' => ['committal-write-in-current-region'],
         ],
     ],
 ];

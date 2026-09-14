@@ -306,6 +306,7 @@ class ReconciliationTest extends TestCase
         $input = ['action' => 'proposition.reconcile', 'other_proposition_id' => $b->id];
         app(ParticipationService::class)->contribute($this->viewer, $this->phase->id, $input);
         $x = Proposition::findOrFail($this->viewer->fresh()->current_proposition_id);
+        $this->receiptFixture($x);
         $this->assertSame(0, app(ReinforcementService::class)->count($x));
 
         $competitor = $this->participant('competitor');

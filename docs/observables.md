@@ -109,18 +109,16 @@ Commit Region polarity, and w_i is its counted Reinforcement weight. Support can
 to either sign. The final value is D_current × D_previous. A Domain without an active
 Attestation has a neutral lean of 0.
 
-Bias reuses this raw weighted lean over the active Stance (Frontier in Emergence)
-population in the current Commit Region, deduplicated across expressive branches. Other registers do not supply votes to this Gate.
-The single aggregate direction admits only Propositions with an effective
-hysteretic direction matching it, including the current Gate when eligible.
-A zero aggregate retains the population's own preceding direction from ledger
-history. An individual Proposition also retains its preceding effective direction
-at zero; absent evidence, it defaults to its governing Committal direction. Neither condition
-changes the numeric Chirality value from zero. It does not use the sign of the
-final cross-domain Chirality product. Unary hard reclassification removes the selected source from the active
-Stance field; the fresh Concord has none of its historical votes. This removes a
-contribution in the dominant direction and tends the field toward balance,
-without promising monotonic absolute-lean reduction for every discrete choice. Mediate uses the previous Disperse Gate's retained Correspondence direction
+Bias compares each active Stance/Frontier head's retained direction with the
+weighted aggregate of its own causal ancestry. It excludes the candidate's own
+contribution, deduplicates both reconciliation paths, and stops at the governing
+Committal. At zero, each direction retains its own preceding nonzero history,
+initialized from that Committal. Historical ancestors remain comparison context
+without duplicating active reinforcement. This is independent of the sign of
+the final cross-domain Chirality product. Bias requires a Receipt and effective
+Attestation, then preserves content and proposition evidence while resetting the
+new classification's votes and touches. It promises no population-wide lean target.
+Mediate uses the previous Disperse Gate's retained Correspondence direction
 against Read-equivalent members of its Commit Region. Bias uses Gate-equivalent
 members of that same structural scope; Closure uses Write-equivalent members.
 The Context Horizon remains comparison context. See
@@ -184,22 +182,24 @@ the prospective post-Commit head set, and preview performs no writes.
 Effective Attestations and completed Receipts remain accessible through the same
 inheritance resolver. They retain their original IDs, authors, targets and
 supersession history; no evidence rows are copied. Completed Receipts on effective
-Attestations still ground the committed state. Counted Reinforcement follows Commit-only source references and deduplicates
-Participants, never raw Receipt events. Lean uses active loaded Receipt contributions
+Attestations still ground the committed state. Counted Reinforcement follows Commit sources and reclassification receipt links,
+deduplicating Participants rather than raw Receipt events. Superseded classifications
+retain historical counts without duplicating active measurement contributions. Lean uses active loaded Receipt contributions
 and deduplicates Attestation IDs shared by multiple Commit heads. Evidence is resolved from current
 effective state; immutable Commitment snapshots preserve the observation made
 at Commitment.
 
 `PropositionStateService` resolves history through the explicit `commitSources`
 relationship, including the in-memory source declared by Commit preview.
-Generic `parents` describe topology only. Variant, Revise, Reclassify, Reconcile
-and every other non-Commit hard supersession start with fresh contribution
-history, regardless of whether the statement is preserved. A later Commit cannot
-reach back across one of those resets to inherit earlier history.
+Generic `parents` describe topology. Variant, Revise and Reconcile start with
+fresh contribution history. Reclassify resets Attestations and Phase touches,
+but explicitly links completed proposition-level Receipts because content is
+unchanged. A later Commit resolves those links without recovering reset votes
+or attestation-level evidence.
 
 Fresh history does not remove structural ancestry or its attenuated influence.
-It means the new Proposition has no inherited Attestations, Receipts or Phase
-touches. Opening a new Phase on it adds a new touch normally; source Phases and
+Variant, Revise and Reconcile have no inherited Attestations, Receipts or Phase
+touches; Reclassify has only the explicit proposition-evidence exception. Opening a new Phase on it adds a new touch normally; source Phases and
 contribution records remain attached to their original Propositions.
 
 ## Reinforcement and bootstrap
@@ -230,3 +230,4 @@ commitment time. New non-bootstrap commitments record receipt-context-lineage-v6
 
 See [Attestation polarity and direction history](attestation-polarity.md) for the
 normative distinction between measurement values, retained directions and labels.
+

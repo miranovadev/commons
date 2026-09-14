@@ -29,15 +29,15 @@ export function workspaceLanes(plan: ParticipantPlan, previewKind?: PhaseKind): 
   const phase = plan.phase.number;
   const provenance = workspaceProvenance(plan);
   const write = plan.phase.write_register;
-  // Order keeps the Bias Read and Write registers; its Gate is now the Bias
-  // output. Do not rotate that actual third-register Gate into the second.
-  const read = phase === 7 ? registers[0] : registers[(registers.indexOf(write) + 1) % 3];
+  // Order reads Stance/Frontier, commits expressive Gates and traverses Committal Writes.
+  const read = phase === 7 ? registers[1] : registers[(registers.indexOf(write) + 1) % 3];
   const inheritedRead = phase <= 2;
   const readCard = inheritedRead ? provenance
     : plan.workspace?.registers?.[read]?.find(node => node.register === read && node.id !== plan.gate.id)
       || plan.lineage?.find(node => node.register === read);
-  const reads = plan.phase.kind === 'mediate' ? plan.read_options || [] : readCard ? [readCard] : [];
-  const gates = plan.phase.kind === 'bias' ? actionPropositions(plan, 'proposition.bias')
+  const reads = ['mediate', 'order'].includes(plan.phase.kind) ? plan.read_options || [] : readCard ? [readCard] : [];
+  const gates = plan.phase.kind === 'order' ? actionPropositions(plan, 'proposition.commit')
+    : plan.phase.kind === 'bias' ? actionPropositions(plan, 'proposition.bias')
     : [plan.gate, ...(plan.phase.kind === 'mediate' ? actionPropositions(plan, 'proposition.reconcile') : [])];
   return [
     ...groupLane('read', reads, inheritedRead ? provenance.register : read),

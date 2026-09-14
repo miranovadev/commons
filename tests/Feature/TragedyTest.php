@@ -148,6 +148,7 @@ class TragedyTest extends TestCase
         $phase->gate_proposition_id = $gate->id;
         $phase->save();
         if ($action === 'proposition.reclassify') {
+            $this->classificationEvidenceFixture($gate);
             $this->loadedReceiptFixture($gate);
         }
         if ($action === 'instrument.execute') {
@@ -205,6 +206,8 @@ class TragedyTest extends TestCase
         $proposition = new Proposition;
         $proposition->forceFill(['phase_id' => $phase->id, 'register' => $register, 'tier' => 'expressive', 'statement' => 'Local proposition'])->save();
         app(LedgerService::class)->record($proposition);
+
+        $this->receiptFixture($proposition);
 
         return $proposition;
     }

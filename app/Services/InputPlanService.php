@@ -81,11 +81,11 @@ final readonly class InputPlanService
             $participant,
             $context,
         );
-        $readOptions = $this->mediation->readsFor($phase, $context);
+        $readOptions = $phase->kind === PhaseKind::Order ? $this->options->orderReadsFor($phase, $context) : $this->mediation->readsFor($phase, $context);
         $gateOptions = $this->options->gateOptionsFor($phase, $context);
         $traversalOptions = $this->options->traversalOptionsFor($phase, $context);
         $instrumentOptions = $this->options->instrumentOptionsFor($phase, $context);
-        $attestationOptions = $context !== null ? $writeOptions : $this->options->attestationOptionsFor($phase);
+        $attestationOptions = $this->options->attestationOptionsFor($phase, $context);
         if ($context !== null) {
             foreach ([$lineage, $writeOptions, $revisionOptions, $readOptions, $gateOptions, $traversalOptions, $instrumentOptions, $attestationOptions] as $collection) {
                 $collection->transform(fn (Proposition $node) => $context->proposition($node));
@@ -145,7 +145,7 @@ final readonly class InputPlanService
                 ? $this->admissibility->evaluate($gate, $phase, $context)
                 : null,
             'commitment_options' => $phase->kind === PhaseKind::Order
-                ? $writeOptions->mapWithKeys(fn (Proposition $candidate): array => [
+                ? $gateOptions->mapWithKeys(fn (Proposition $candidate): array => [
                     $candidate->id => $this->admissibility->evaluate($candidate, $phase, $context),
                 ])->all() : [],
             'gate' => $this->proposition($gate, $participant, $context),

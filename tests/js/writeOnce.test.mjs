@@ -30,7 +30,7 @@ const result = await build({ stdin: { contents: `
   }
   export function exhaustedCommitNotice() {
     const plan = { commitment: { requirements: { attestation: true, receipt: true, reinforcement: true, closure: true, write_opportunity: false } } };
-    const notices = participationNotices({ plan, participation: { reason: { message: 'You have already authored a Commit in this row. Support an existing Write.' } }, canCommit: false, canRest: false, onRest: () => {} });
+    const notices = participationNotices({ plan, participation: { reason: { message: 'This source has already been committed. Continue through its Committal result.' } }, canCommit: false, canRest: false, onRest: () => {} });
     return { title: notices[0].title, content: render(notices[0].content) };
   }
 `, loader: 'tsx', resolveDir: process.cwd() }, bundle: true, platform: 'node', format: 'cjs', write: false, jsx: 'automatic' });
@@ -51,8 +51,8 @@ test('returning Disperse exposes authorized revision and support without another
 
 test('an exhausted Commit opportunity is explained without suggesting more grounding will restore it', () => {
   const notice = module.exports.exhaustedCommitNotice();
-  assert.equal(notice.title, 'Commit already authored');
-  assert.match(notice.content, /Support an existing Write/);
+  assert.equal(notice.title, 'Source already committed');
+  assert.match(notice.content, /Continue through its Committal result/);
   assert.doesNotMatch(notice.content, /Grounding can be added/);
 });
 

@@ -179,6 +179,7 @@ class RevisionAdmissibilityTest extends TestCase
         $this->assertRevisionUnavailable($participant, $phase, $revised);
         $phase = $this->nextEncounter($phase);
         $this->assertRevisionUnavailable($participant, $phase, $revised);
+        $this->receiptFixture($revised);
         $support = ['action' => 'attestation.create', 'proposition_id' => $revised->id, 'direction' => 'support'];
         app(ContributionService::class)->validate($participant, $support);
         $dispatch->dispatch($participant, $phase, $support);
@@ -250,6 +251,8 @@ class RevisionAdmissibilityTest extends TestCase
         [$participant, $phase, $gate] = $this->currentPhase();
         $head = $this->priorHead($participant, 'frontier', 'Owned Write');
         $gate->children()->attach($head->id, ['id' => (string) str()->ulid(), 'phase_id' => $phase->id, 'type' => 'variant']);
+
+        $this->receiptFixture($head);
 
         return [$participant, $phase, $gate, $head];
     }
