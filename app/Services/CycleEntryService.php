@@ -273,6 +273,6 @@ final readonly class CycleEntryService
         Proposition $proposition,
         array $input,
     ): void {
-        $this->instruments->execute($phase, $proposition, $input);
+        $this->instruments->execute($phase, $proposition, $input, bootstrap: true);
     }
 }

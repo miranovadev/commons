@@ -99,9 +99,8 @@ final class CommitRegionService
         }
         $exactRegister = $phase->cycle->contextHorizon->domain->registerAt($register);
 
-        // A Commit consumes the author's opportunity, not another Participant's.
-        // Other hard replacements still remove the expressive source from this pool.
-        $nonConsuming = $phase->kind === PhaseKind::Order ? ['variant', 'commit'] : ['variant'];
+        // A direct Commit consumes the source for everyone; Variants preserve alternatives.
+        $nonConsuming = ['variant'];
         if ($context !== null) {
             $members = $this->membersFor($position, $context)->where('register', $exactRegister);
 

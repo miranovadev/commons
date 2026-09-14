@@ -134,7 +134,7 @@ class OperationalClosurePathTest extends TestCase
         ]);
 
         $receiptId = $concord->instrumentExecutions()->with('receipt')->latest('id')->firstOrFail()->receipt->id;
-        $this->assertFalse($this->state($builder)['plan']['commitment']['requirements']['reinforcement']);
+        $this->assertSame(0, $this->state($builder)['plan']['commitment']['reinforcement_count']);
         $this->move($builder, ['action' => 'receipt.read', 'receipt_id' => $receiptId]);
 
         // These three participants have each observed Signal, Read and final Concord once.

@@ -457,7 +457,7 @@ class LocalParticipantNavigationTest extends TestCase
         $state = $this->state($participant);
         $this->assertFalse($state['plan']['tragedy']);
         $this->assertFalse($state['plan']['commitment']['admissible']);
-        $this->assertSame('commitment_preconditions_unsatisfied', $state['reason']['code']);
+        $this->assertArrayNotHasKey('reinforcement', $state['plan']['commitment']['requirements']);
         $actions = $state['plan']['schema']['$defs']['actions'];
         $this->assertArrayHasKey('attestation.create', $actions);
         $this->assertArrayNotHasKey('proposition.traverse', $actions);

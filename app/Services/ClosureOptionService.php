@@ -29,6 +29,6 @@ final readonly class ClosureOptionService
     /** Evidence remains a separate prerequisite for the Commit action. */
     public function committableFor(Phase $phase, ?ParticipationContext $context = null): Collection
     {
-        return $this->forPhase($phase, $context)->filter(fn (Proposition $candidate): bool => $this->admissibility->grounding($candidate, $context)['admissible'])->values();
+        return $this->forPhase($phase, $context)->filter(fn (Proposition $candidate): bool => $this->admissibility->evaluate($candidate, $phase, $context)['admissible'])->values();
     }
 }

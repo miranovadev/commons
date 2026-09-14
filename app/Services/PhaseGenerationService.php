@@ -16,18 +16,28 @@ final readonly class PhaseGenerationService
         private CommitRegionService $regions,
         private PropositionStateService $state,
         private PropositionOwnershipService $ownership,
+        private PropositionAvailabilityService $availability,
     ) {}
 
     public function available(Phase $phase, string $action, ?ParticipationContext $context = null, ?Proposition $position = null): bool
     {
+        if ($action === 'proposition.commit') {
+            // A preview with no selected source must not suppress other eligible Gates.
+            return $position === null || $this->availability->mutable($position, $context);
+        }
         if (! in_array($action, ['proposition.variant', 'proposition.reclassify', 'proposition.bias', 'proposition.commit'], true)) {
             // Mediate owns a directed relationship, rather than a personal quota.
             return true;
         }
         // Standalone evidence previews may supply a candidate before a Phase
         // has a Gate. Operational plans always use the Phase's recorded Gate.
-        $gate = $position ?? $context?->propositions->get($phase->gate_proposition_id) ?? $phase->gate;
+        $gate = $position ?? $context?->propositions->get($phase->gate_proposition_id) ?? $phase->gate()->first();
         if ($gate === null) {
+            return false;
+        }
+        if (($action !== 'proposition.bias' || $position !== null)
+            && ($this->availability->committed($gate, $context)
+                || ($action !== 'proposition.variant' && $gate->tier !== 'expressive'))) {
             return false;
         }
         if ($phase->kind === PhaseKind::Persist && $action === 'proposition.variant'
