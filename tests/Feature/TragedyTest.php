@@ -64,7 +64,7 @@ class TragedyTest extends TestCase
             $this->assertNotContains('participant.rest', $actions);
             $this->assertStringNotContainsString('participant.rest', json_encode($schema));
         }
-        if ($action !== 'proposition.traverse') {
+        if (! in_array($action, ['proposition.traverse', 'proposition.revise'], true)) {
             $this->assertSame([], $plan['schema']['$defs']['actions']['proposition.traverse']['properties']['proposition_id']['enum'] ?? []);
         }
 
@@ -172,9 +172,9 @@ class TragedyTest extends TestCase
             if ($action !== 'proposition.reconcile') {
                 $edge->forceFill(['phase_id' => $authorPhase->id, 'source_proposition_id' => $gate->id, 'target_proposition_id' => $target->id, 'type' => 'variant'])->save();
             }
-            if ($action === 'proposition.traverse') {
+            if (in_array($action, ['proposition.traverse', 'proposition.revise'], true)) {
                 $attestation = new Attestation;
-                $attestation->forceFill(['phase_id' => $history->id, 'proposition_id' => $target->id, 'direction' => 'support'])->save();
+                $attestation->forceFill(['phase_id' => $history->id, 'proposition_id' => $target->id, 'direction' => $action === 'proposition.revise' ? 'refute' : 'support'])->save();
             }
         }
 

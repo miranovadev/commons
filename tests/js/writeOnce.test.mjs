@@ -10,11 +10,11 @@ const result = await build({ stdin: { contents: `
   import { ParticipantWorkspace } from './resources/js/components/ParticipantWorkspace';
   import { participationNotices } from './resources/js/components/ParticipationNotices';
   const render = element => renderToStaticMarkup(<MantineProvider env="test">{element}</MantineProvider>);
-  export function workspace() {
+  export function workspace(canRevise = true) {
     const gate = { id: 'gate', register: 'canon', tier: 'expressive', statement: 'Variant source' };
     const write = { id: 'write', register: 'activity', tier: 'expressive', statement: 'My existing Variant' };
     const actions = {
-      'proposition.revise': { properties: { proposition_id: { enum: ['write'] } } },
+      ...(canRevise ? { 'proposition.revise': { properties: { proposition_id: { enum: ['write'] } } } } : {}),
       'instrument.execute': { properties: { proposition_id: { enum: ['write'] } } },
       'attestation.create': { properties: { proposition_id: { enum: ['write'] }, direction: { enum: ['support', 'refute'] } } },
     };
@@ -32,7 +32,7 @@ const result = await build({ stdin: { contents: `
 const module = { exports: {} };
 new Function('require', 'module', 'exports', result.outputFiles[0].text)(createRequire(import.meta.url), module, module.exports);
 
-test('returning Disperse exposes owned Write revision and support without another Variant', () => {
+test('returning Disperse exposes authorized revision and support without another Variant', () => {
   const html = module.exports.workspace();
   const gate = html.slice(html.indexOf('data-role="gate"'), html.indexOf('data-role="write"'));
   const write = html.slice(html.indexOf('data-role="write"'));
@@ -49,4 +49,11 @@ test('an exhausted Commit opportunity is explained without suggesting more groun
   assert.equal(notice.title, 'Commit already authored');
   assert.match(notice.content, /Support an existing Write/);
   assert.doesNotMatch(notice.content, /Grounding can be added/);
+});
+
+test('an owned Write without authorized Revise retains support controls but hides revision', () => {
+  const html = module.exports.workspace(false);
+  assert.doesNotMatch(html, />Revise<\/span>/);
+  assert.match(html, />Support<\/span>/);
+  assert.match(html, />Refute<\/span>/);
 });

@@ -85,6 +85,12 @@ class WriteOnceTest extends TestCase
         $input = ['action' => 'proposition.variant', 'statement' => 'First Variant'];
         $first = app(ContributionDispatcher::class)->dispatch($participant, $phase, $input);
         foreach (['Second draft', 'Third draft'] as $statement) {
+            $refutePhase = $this->phase($participant, PhaseKind::Disperse, 'activity', $gate);
+            $this->assertSame([], $this->targets($this->plan($participant), 'proposition.revise'));
+            app(ContributionDispatcher::class)->dispatch($participant, $refutePhase, [
+                'action' => 'attestation.create', 'proposition_id' => $first->id, 'direction' => 'refute',
+            ]);
+            $this->assertSame([], $this->targets($this->plan($participant), 'proposition.revise'));
             $return = $this->phase($participant, PhaseKind::Disperse, 'activity', $gate);
             $plan = $this->plan($participant);
             $this->assertSame([$first->id], $this->targets($plan, 'proposition.revise'));
