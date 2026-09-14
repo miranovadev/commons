@@ -55,7 +55,7 @@ class PersistInstrumentTest extends TestCase
         $this->assertSame($state['plan']['schema'], $packet['schema']);
 
         $receiptCount = Receipt::count();
-        $next = $service->contribute($grounder, $phase->id, $this->instrument($write, $signal));
+        $next = app(ParticipationService::class)->contribute($grounder, $phase->id, $this->instrument($write, $signal));
         $execution = InstrumentExecution::where('phase_id', $phase->id)->sole();
         $receipt = $execution->receipt;
         $this->assertSame($receiptCount + 1, Receipt::count());
@@ -77,7 +77,7 @@ class PersistInstrumentTest extends TestCase
         $this->assertArrayNotHasKey('proposition.reclassify', $next['plan']['schema']['$defs']['actions']);
         $ownerState = $service->stateFor($author);
         $this->assertArrayHasKey('proposition.reclassify', $ownerState['plan']['schema']['$defs']['actions']);
-        $after = $service->contribute($author, $ownerState['plan']['phase']['id'], [
+        $after = app(ParticipationService::class)->contribute($author, $ownerState['plan']['phase']['id'], [
             'action' => 'proposition.reclassify', 'statement' => 'Evidence-grounded Concord',
         ]);
         $this->assertSame('disperse', $after['plan']['phase']['kind']);
@@ -114,7 +114,7 @@ class PersistInstrumentTest extends TestCase
         $this->assertNotContains($target->id, $state['plan']['schema']['$defs']['actions']['instrument.execute']['properties']['proposition_id']['enum']);
         $counts = [InstrumentExecution::count(), Receipt::count()];
         try {
-            $service->contribute($grounder, $phase->id, $this->instrument($target, $signal));
+            app(ParticipationService::class)->contribute($grounder, $phase->id, $this->instrument($target, $signal));
             $this->fail('The input schema must reject invalid Instrument targets.');
         } catch (InvalidArgumentException) {
             $this->assertNull($phase->fresh()->completed_at);
@@ -149,24 +149,27 @@ class PersistInstrumentTest extends TestCase
             'visibility' => 'public', 'configuration' => []])->save();
         $author = new Participant;
         $author->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'author', 'max_read_count' => 25])->save();
-        $grounder = new Participant;
-        $grounder->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'grounder', 'max_read_count' => 25])->save();
         $service = app(ParticipationService::class);
         $state = $service->enter($author, [
             'statement' => 'Origin', 'attestation' => ['direction' => 'support'],
             'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/origin'],
         ]);
-        $state = $service->contribute($author, $state['plan']['phase']['id'], [
+        $state = app(ParticipationService::class)->contribute($author, $state['plan']['phase']['id'], [
             'action' => 'proposition.variant', 'statement' => 'Signal',
         ]);
         $signal = Proposition::findOrFail($state['plan']['gate_id']);
         $this->assertArrayNotHasKey('instrument.execute', $state['plan']['schema']['$defs']['actions']);
-        $state = $service->contribute($author, $state['plan']['phase']['id'], [
+        $state = app(ParticipationService::class)->contribute($author, $state['plan']['phase']['id'], [
             'action' => 'proposition.variant', 'statement' => 'Stance awaiting grounding',
         ]);
         $write = Proposition::findOrFail($state['plan']['gate_id']);
+        $grounder = new Participant;
+        $grounder->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'grounder', 'max_read_count' => 25])->save();
         $state = $service->enter($grounder);
-        $service->contribute($grounder, $state['plan']['phase']['id'], [
+        $this->assertSame($signal->parents()->sole()->id, $state['plan']['gate_id']);
+        $this->assertSame($signal->register, $state['plan']['phase']['write_register']);
+        $this->assertArrayHasKey('attestation.create', $state['plan']['schema']['$defs']['actions'], json_encode($state['plan']));
+        app(ParticipationService::class)->contribute($grounder, $state['plan']['phase']['id'], [
             'action' => 'attestation.create', 'proposition_id' => $signal->id, 'direction' => 'support',
         ]);
 
