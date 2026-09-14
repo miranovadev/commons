@@ -414,6 +414,7 @@ class LocalParticipantNavigationTest extends TestCase
         $visited->forceFill(['gate_proposition_id' => $target->id, 'completed_at' => now()])->save();
         // Grounding remains available in Order unless the local target is no longer an active head.
         $this->edge($target, $second);
+        $target->children()->updateExistingPivot($second->id, ['type' => 'reclassify']);
         // A prior visit no longer exhausts a Commit Region. Divergent Closure
         // makes its Write pool empty for this recovery-only regression.
         $this->mock(ClosureGateService::class, function ($mock): void {

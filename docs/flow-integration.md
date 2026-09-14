@@ -21,3 +21,7 @@ Validation must cover a legitimate Rest and return, negative Attestations, evide
 Reclassify takes no authored statement. Persist, Constrain and Bias copy the exact source text. New classifications snapshot references to completed proposition Receipts; evidence attached to old Attestations is not inherited. Later receipts added to the old source do not retroactively appear on the classification. No legacy edge is backfilled. Commit retains its separate participation-history inheritance.
 
 Loaded evidence contributes at most once per Participant to a classification, regardless of repeated links or receipts. The replaced source retains its public count, but its reinforcement does not also contribute as an active copy after reclassification. No Receipt or receipt-context load is duplicated. Replay always retains its original target eligibility.
+
+## Grounding paths
+
+Distinguish and Mediate now expose Instruments and Replay on their eligible existing Writes. All phases before Order can therefore ground fresh expressive propositions on subsequent encounters. Executing/replaying advances the Phase; receipt.read leaves it open. Gate neighbours and unrelated propositions remain ineligible. Variant children do not by themselves block instrument eligibility. Reused evidence never silently changes a Replay target.

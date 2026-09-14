@@ -65,7 +65,7 @@ final class PropositionOptionService
             // Grounding may repair evidence before Closure becomes admissible.
             $candidates = $this->regions->forPhase($phase, context: $context);
 
-            return Proposition::query()->whereKey($candidates->pluck('id'))->whereDoesntHave('children')->orderBy('id')->get()
+            return Proposition::query()->whereKey($candidates->pluck('id'))->orderBy('id')->get()
                 ->concat($this->generation->committedWrites($phase, $context))->unique('id')->values();
         }
 
