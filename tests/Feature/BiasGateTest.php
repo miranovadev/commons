@@ -64,7 +64,7 @@ class BiasGateTest extends TestCase
         $this->viewer->forceFill(['current_proposition_id' => $this->gate->id])->save();
     }
 
-    public function test_zero_attestation_descendants_retain_direction_and_remain_available_to_bias(): void
+    public function test_zero_attestation_descendants_retain_direction_without_becoming_classification_options(): void
     {
         $this->fixture();
         $chirality = app(ChiralityCalculator::class);
@@ -94,10 +94,10 @@ class BiasGateTest extends TestCase
         $this->assertSame(ObservableDirection::Negative, $chirality->directionFor($flipped));
         $this->assertSame(0.0, $chirality->leanFor(collect([$afterFlip->id]), $this->substrate));
         $this->assertSame(ObservableDirection::Positive, $chirality->directionFor($afterFlip));
-        $this->assertSame([$flipped->id], $this->optionIds());
+        $this->assertSame([], $this->optionIds());
     }
 
-    public function test_receipt_weighted_effective_lean_sets_one_direction_including_the_current_gate(): void
+    public function test_unrelated_receipt_weighted_lean_does_not_override_each_heads_lineage(): void
     {
         $this->fixture();
         $support = $this->sibling('Supported B');
@@ -115,7 +115,7 @@ class BiasGateTest extends TestCase
             $this->loadedReceiptFixture($refute, $negative);
         }
         $this->assertLessThan(0, $service->leanFor($this->phase));
-        $this->assertSame([$refute->id], $this->optionIds());
+        $this->assertEqualsCanonicalizing([$this->gate->id, $support->id], $this->optionIds()); // Unrelated loads do not set this lineage.
         $replacement = new Attestation;
         $later = $this->newPhase($negative->phase->cycle->participant, PhaseKind::Persist, 'stance', true);
         $replacement->forceFill(['phase_id' => $later->id, 'proposition_id' => $refute->id,
@@ -327,7 +327,9 @@ class BiasGateTest extends TestCase
         $this->attest($negative, 'refute');
         $secondNegative = $this->sibling('Second negative');
         $this->attest($secondNegative, 'refute');
-        $this->rejectDispatch($input); // Former preview no longer authorizes execution.
+        $this->attest($this->gate, 'refute');
+        $this->attest($this->gate, 'refute');
+        $this->rejectDispatch($input); // The candidate itself changed direction after preview.
         $this->attest($this->gate, 'support');
         $this->rejectDispatch([...$input, 'other_proposition_id' => $negative->id]);
         $this->rejectDispatch([...$input, 'statement' => 'Overwritten']);

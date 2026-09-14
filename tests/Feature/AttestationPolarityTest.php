@@ -139,7 +139,7 @@ class AttestationPolarityTest extends TestCase
             ['action' => 'proposition.bias', 'proposition_id' => $major->id]);
         $this->assertSame($major->statement, $target->statement);
         $this->assertSame([$gate->id], $bias->populationFor($phase)->pluck('id')->all());
-        $this->assertSame([$gate->id], $bias->forPhase($phase)->pluck('id')->all());
+        $this->assertSame([], $bias->forPhase($phase)->pluck('id')->all()); // Removing a sibling does not change this head's lineage.
         $this->assertCount(0, $target->attestations);
     }
 

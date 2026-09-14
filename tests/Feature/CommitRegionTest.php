@@ -157,11 +157,11 @@ class CommitRegionTest extends TestCase
         $bias = app(BiasGateService::class);
         $this->assertEqualsCanonicalizing([$gate->id, $neutral->id, $negative->id, $regionDefault->id], $bias->populationFor($phase)->pluck('id')->all());
         $this->assertSame(-1.0, $bias->leanFor($phase));
-        $this->assertSame([$negative->id], $bias->forPhase($phase)->pluck('id')->all());
+        $this->assertEqualsCanonicalizing([$gate->id, $neutral->id], $bias->forPhase($phase)->pluck('id')->all());
         $this->assertCount(0, $regionDefault->attestations);
         $this->reject($phase, ['action' => 'proposition.bias', 'proposition_id' => $outside->id]);
-        $this->attest($gate, 'support'); // Balanced aggregate retains its earlier negative direction.
-        $this->assertSame([$negative->id], $bias->forPhase($phase)->pluck('id')->all());
+        $this->attest($gate, 'support'); // The regional aggregate does not change the head-specific comparison.
+        $this->assertEqualsCanonicalizing([$gate->id, $neutral->id], $bias->forPhase($phase)->pluck('id')->all());
     }
 
     #[DataProvider('domains')]

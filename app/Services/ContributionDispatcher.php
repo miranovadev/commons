@@ -247,7 +247,7 @@ final readonly class ContributionDispatcher
                 ->lockForUpdate()->firstOrFail();
             $source = $this->bias->forPhase($phase)->firstWhere('id', $input['proposition_id'] ?? null);
             if ($source === null || ! $this->generation->available($phase, 'proposition.bias', position: $source)) {
-                throw new DomainException('Bias requires an active Gate contributing to the dominant Stance/Frontier lean.');
+                throw new DomainException('Bias requires an active Gate aligned with its own causal lineage.');
             }
 
             return $this->classified($phase, $source);
