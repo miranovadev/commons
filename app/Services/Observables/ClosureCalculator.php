@@ -22,6 +22,14 @@ final readonly class ClosureCalculator
     public function localComponents(Proposition $proposition, LineageComparison $comparison): ClosureValues
     {
         $structural = $this->components($comparison);
+
+        // Bootstrap is an initialization invariant, not an ordinary live lineage.
+        // Keep the Origin fixed at (-1, -1, -1) even if a participant later
+        // loads evidence attached to that already-committed seed.
+        if ($comparison->isBootstrap()) {
+            return $structural;
+        }
+
         $mass = $this->reinforcement->count($proposition, $comparison->current->context)
             * $this->reinforcement->receiptIncrement($comparison->current->horizon->substrate);
 
