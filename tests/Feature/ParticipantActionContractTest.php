@@ -54,7 +54,7 @@ class ParticipantActionContractTest extends TestCase
         $expected = config('phases.'.$kind->value.'.actions');
         if ($kind === PhaseKind::Persist) {
             // Both ownership cases run: Variant and Reclassify are now mutually exclusive.
-            $expected = array_diff($expected, [$foreignGate ? 'proposition.reclassify' : 'proposition.variant']);
+            $expected = array_values(array_diff($expected, [$foreignGate ? 'proposition.reclassify' : 'proposition.variant']));
         }
         $this->assertEqualsCanonicalizing($expected, array_keys($schema['$defs']['actions']));
         $transport = app(OpenAIResponseSchema::class)->fromCommons($schema);
