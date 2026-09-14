@@ -122,7 +122,9 @@ final readonly class ParticipationService
 
         $plan = $workspace ? $this->plans->forWorkspace($participant) : $this->contributions->planFor($participant);
         $blocked = $phase->kind === PhaseKind::Order
-            && ! isset($plan['schema']['$defs']['actions']['proposition.commit']);
+            && ! isset($plan['schema']['$defs']['actions']['proposition.commit'])
+            && ! isset($plan['schema']['$defs']['actions']['proposition.traverse'])
+            && ! $plan['tragedy'];
 
         return [
             'status' => 'ready',

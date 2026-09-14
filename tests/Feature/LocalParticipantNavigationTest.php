@@ -438,7 +438,7 @@ class LocalParticipantNavigationTest extends TestCase
         $this->assertNull(app(PotentialChargeService::class)->recoverFrom($position));
     }
 
-    public function test_order_keeps_attestation_but_rejects_traverse_without_weakening_commit(): void
+    public function test_order_rejects_attestation_and_expressive_traverse_without_weakening_commit(): void
     {
         $parent = $this->node('Forward descendant', 0.0, 'expressive');
         $gate = $this->node('Current', 0.0, 'expressive');
@@ -459,7 +459,7 @@ class LocalParticipantNavigationTest extends TestCase
         $this->assertFalse($state['plan']['commitment']['admissible']);
         $this->assertArrayNotHasKey('reinforcement', $state['plan']['commitment']['requirements']);
         $actions = $state['plan']['schema']['$defs']['actions'];
-        $this->assertArrayHasKey('attestation.create', $actions);
+        $this->assertArrayNotHasKey('attestation.create', $actions);
         $this->assertArrayNotHasKey('proposition.traverse', $actions);
         $this->assertSame([], $state['plan']['schema']['$defs']['actions']['proposition.traverse']['properties']['proposition_id']['enum'] ?? []);
         try {

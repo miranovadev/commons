@@ -18,7 +18,7 @@ test('Write renders only local cards and exactly the two schema-driven direction
         const target = { id: 'historical', register: 'frontier', tier: 'expressive', statement: 'Historical target' };
         export function render(effective, allowed = true, auxiliary = false, kind = 'persist') {
           const directions = ['refute', 'support'].filter(direction => direction !== effective);
-          const traversalAllowed = ['distinguish', 'persist', 'constrain'].includes(kind);
+          const traversalAllowed = ['distinguish', 'persist', 'constrain', 'bias'].includes(kind);
           const actions = allowed ? {
             'attestation.create': {
               properties: { proposition_id: { enum: [target.id] }, direction: { enum: ['refute', 'support'] } },
@@ -75,7 +75,7 @@ test('Write renders only local cards and exactly the two schema-driven direction
     }
   }
   assert.doesNotMatch(module.exports.render(null, false), /Historical target|>(Support|Refute|Traverse)<\/span>/);
-  for (const kind of ['disperse', 'mediate', 'bias', 'order']) {
+  for (const kind of ['disperse', 'mediate']) {
     // The schema is authoritative even if a stale caller lists Traverse as available.
     const markup = module.exports.render('support', true, false, kind);
     assert.doesNotMatch(markup, />Traverse<\/span>/);

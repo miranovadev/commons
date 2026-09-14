@@ -17,7 +17,7 @@ export function participationNotices({ participation, plan, canCommit, canRest, 
   </Stack> });
   if (plan?.commitment) notices.push({ id: 'commitment', title: plan.commitment.requirements.write_opportunity === false ? 'Source already committed' : canCommit ? 'Committable candidate' : 'No committable candidate',
     color: canCommit ? 'indigo' : 'gray', icon: canCommit ? IconLock : IconLockOpen, satisfied: canCommit, content: <Stack gap="xs">
-    {canCommit && <Text size="sm">An eligible source is available to Commit in Write.</Text>}
+    {canCommit && <Text size="sm">An eligible source is available to Commit in Gate.</Text>}
     {!canCommit && <Text size="sm">{participation.reason?.message}</Text>}
     <Text size="xs">Current Gate Attestation: {plan.commitment.requirements.attestation ? 'available' : 'missing'}.</Text>
     <Text size="xs">Current Gate Receipt: {plan.commitment.requirements.receipt ? 'available' : 'missing'}.</Text>
@@ -27,7 +27,7 @@ export function participationNotices({ participation, plan, canCommit, canRest, 
     notices.push({ id: 'closure-preview', title: 'Gate Closure preview', color: plan.commitment.requirements.closure === true ? 'indigo' : 'gray', satisfied: plan.commitment.requirements.closure === true, icon: IconRoute, content: <Stack gap="xs">
       <Text size="sm">Depth: {closure.depth} ({closure.depth_direction})</Text>
       <Text size="sm">Cadence: {closure.cadence} ({closure.cadence_direction})</Text>
-      <Text size="xs">{plan.commitment.requirements.closure ? 'Directions align.' : 'Directions diverge for this source. Other eligible sources appear in Write.'}</Text>
+      <Text size="xs">{plan.commitment.requirements.closure ? 'Directions align.' : 'Directions diverge for this source. Other eligible sources appear in Gate.'}</Text>
       <Text size="xs" c="dimmed">Zero retains the previous committed direction. History: {closure.history_source}.</Text>
     </Stack> });
   }

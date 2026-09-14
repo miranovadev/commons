@@ -17,8 +17,8 @@ export function phaseRegisterPreview(plan: ParticipantPlan, selected: PhaseKind)
   const provenance = unique.find(node => node.tier === 'committal');
   return {
     kind: selected, number: phaseMeta[selected].number,
-    read: { register: registers[(position + 1) % 3], cards: unique.filter(node => node.register === registers[(position + 1) % 3]) },
-    gate: { register: registers[(position + 2) % 3], cards: unique.filter(node => node.register === registers[(position + 2) % 3]) },
+    read: { register: registers[selected === 'order' ? 1 : (position + 1) % 3], cards: unique.filter(node => node.register === registers[selected === 'order' ? 1 : (position + 1) % 3]) },
+    gate: { register: registers[selected === 'order' ? 2 : (position + 2) % 3], cards: unique.filter(node => node.register === registers[selected === 'order' ? 2 : (position + 2) % 3]) },
     write: { register: registers[position], cards: unique.filter(node => node.register === registers[position]) },
     provenance: provenance ? [provenance] : [],
   };

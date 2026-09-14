@@ -21,7 +21,8 @@ final class ParticipantContextSerializer
             ->concat($plan['attestation_options'] ?? [])
             ->whereIn('id', $targetIds)->unique('id');
         // Current Gate is context even when it has no selectable Gate action.
-        $gate = collect([$plan['gate']])->concat($plan['gate_options'] ?? [])->unique('id');
+        $gate = ($plan['phase']['kind'] === 'order' ? collect() : collect([$plan['gate']]))
+            ->concat($plan['gate_options'] ?? [])->unique('id');
         $read = collect($plan['read_options'] ?? [])->unique('id');
         // Operational roles own their objects; any additional role uses schema IDs.
         $gate = $gate->whereNotIn('id', $read->pluck('id'));

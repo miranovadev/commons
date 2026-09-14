@@ -47,7 +47,7 @@ $proposition = static function (string $action, string $title) use ($statement):
 };
 
 return [
-    'version' => 18,
+    'version' => 19,
 
     'cache' => [
         'store' => env('COMMONS_SCHEMA_CACHE_STORE'),
@@ -79,7 +79,7 @@ return [
             'properties' => ['action' => ['const' => 'receipt.read'], 'receipt_id' => $ulid],
         ],
         'proposition.traverse' => [
-            'title' => 'Traverse an attested immediate Write descendant',
+            'title' => 'Continue through an admissible Write',
             'type' => 'object',
             'additionalProperties' => false,
             'required' => ['action', 'proposition_id'],
@@ -118,7 +118,7 @@ return [
             'properties' => ['action' => ['const' => 'proposition.reclassify']],
         ],
         'proposition.bias' => [
-            'title' => 'Select one dominant-direction Gate into fresh Concord/Canon',
+            'title' => 'Classify one Gate aligned with its own lineage',
             'type' => 'object',
             'additionalProperties' => false,
             'required' => ['action', 'proposition_id'],

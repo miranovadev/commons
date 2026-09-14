@@ -34,6 +34,9 @@ final readonly class ContributionService
     public function validate(Participant $participant, array $input): void
     {
         $plan = $this->planFor($participant);
+        // Phase schema IDs are stable, but their authorized targets change per
+        // participant and move. Never reuse a compiled earlier specialization.
+        $this->validator->loader()->clearCache();
         $result = $this->validator->validate(
             Helper::toJSON($input),
             Helper::toJSON($plan['schema']),

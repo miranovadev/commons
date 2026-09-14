@@ -176,6 +176,15 @@ class InputPlanVisibilityTest extends TestCase
             $prior->forceFill(['phase_id' => $previousPhase->id, 'proposition_id' => $child->id, 'direction' => $direction])->save();
         }
         $plan = app(InputPlanService::class)->forParticipant($viewer);
+        if ($kind === PhaseKind::Order) {
+            $this->assertSame([], $plan['write_options']);
+            foreach ([$child, $untouched] as $target) {
+                $this->assertInput($plan['schema'], ['action' => 'attestation.create', 'proposition_id' => $target->id, 'direction' => 'support'], false);
+                $this->assertInput($plan['schema'], ['action' => 'proposition.traverse', 'proposition_id' => $target->id], false);
+            }
+
+            return;
+        }
         $this->assertEqualsCanonicalizing([$child->id, $untouched->id], array_column($plan['write_options'], 'id'));
         $traversable = ($kind->value <= PhaseKind::Constrain->value || $kind === PhaseKind::Bias) && $direction !== null;
         $card = collect($plan['write_options'])->firstWhere('id', $child->id);

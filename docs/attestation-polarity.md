@@ -72,24 +72,22 @@ whose retained Correspondence directions match the anchor, including numeric
 zeros. Gate options are the active immediate Gate-register children of those
 Reads. Their own Correspondence and Attestation values do not filter them.
 
-Bias operates on the population. The traversed Gate establishes Commit Region
-and equivalent register, but does not set the selection direction. Bias uses
-the existing counted-Reinforcement-weighted aggregate over effective signed Attestations in
-the active Gate population and selects Gates whose effective directions match
-the population's retained direction.
+Bias compares each active head with its own causal ancestry. The candidate's
+own votes and loaded contributions are excluded from the ancestry aggregate.
+Both reconciliation paths participate, shared ancestors and Attestations are
+deduplicated, and traversal stops at the governing Committal boundary. Other
+branches and the wider Stance population cannot set this direction.
 
-At aggregate zero, ledger replay retains the population's own preceding
-direction. Replay includes historical region/register members and their hard
-removal events, so evidence from a previously selected Gate is considered only
-while it belonged to the active population. With no established aggregate
-direction, the region's governing Committal direction initializes the population.
-Another region/register cannot supply that history. Replay is read-only and
-independent of the selected Gate or which participant last opened a plan.
+At aggregate zero, ledger replay retains the lineage's preceding nonzero
+direction, initialized from the governing Committal direction. Historical
+ancestor judgments remain context; they do not become additional active
+reinforcement copies. An eligible candidate must agree with that direction and
+have both a completed Receipt and an effective Attestation.
 
-Unary Bias still copies one selected statement exactly into the next register
-and creates one hard reclassify edge. Fresh non-Commit targets reset contribution
-history. Commit Regions, register equivalence, explicit Commit selection,
-Closure/Depth/Cadence formulae, attenuation and phase topology are preserved.
+Unary Bias copies one selected statement exactly into the next register and
+creates one shared hard reclassification result. It preserves proposition-level
+Receipts by reference and resets Attestations and Phase touches. Another
+Participant uses that existing Write rather than creating a duplicate.
 
 ## Upgrade
 
@@ -100,3 +98,4 @@ invalidates disposable numeric projections for the corrected evidence polarity.
 Older Correspondence signs already overwritten by zero cannot be recovered;
 those positions use lineage/default fallback. Immutable measurement snapshots
 are not rewritten. No fourth measurement or per-Proposition Lean state is added.
+

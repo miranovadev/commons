@@ -37,12 +37,12 @@ class PreOrderInstrumentPathTest extends TestCase
         $this->assertSame('completed', $write->instrumentExecutions()->sole()->status);
     }
 
-    public function test_variant_children_do_not_prevent_order_grounding(): void
+    public function test_variant_children_do_not_prevent_pre_order_grounding(): void
     {
         $f = new ParticipantContextFixture(1, 0);
         $write = $f->node($f->gate, 'canon');
         $f->node($write, 'activity', 'variant');
-        $f->phase->forceFill(['kind' => PhaseKind::Order, 'gate_proposition_id' => $write->id, 'write_register' => 'canon'])->save();
+        $f->phase->forceFill(['kind' => PhaseKind::Bias, 'gate_proposition_id' => $f->gate->id, 'write_register' => 'canon'])->save();
         $this->assertContains($write->id, app(PropositionOptionService::class)->instrumentOptionsFor($f->phase->fresh())->pluck('id')->all());
     }
 }

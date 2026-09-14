@@ -90,16 +90,16 @@ for (const effective of [null, 'support', 'refute']) {
 }
 
 
-test('Closure Write cards and form select authorized cross-branch sources independently of the current Gate', () => {
+test('Closure Gate cards and form select authorized cross-branch sources independently of the current Gate', () => {
   const candidate = { ...archived, id: 'other-branch', register: 'canon' };
   const closure = {
     ...plan, phase: { kind: 'order', write_register: 'canon' },
-    write_options: [candidate, unavailable],
+    gate_options: [candidate, unavailable], write_options: [],
     schema: { $defs: { actions: {
       'proposition.commit': { properties: { proposition_id: { enum: [candidate.id] } } },
     } } },
   };
-  assert.deepEqual(writePropositions(closure), [candidate]);
+  assert.deepEqual(writePropositions(closure), []);
   assert.deepEqual(actionPropositions(closure, 'proposition.commit'), [candidate]);
   assert.equal(actionTargetIds(closure, 'proposition.commit').has(plan.gate.id), false);
   assert.equal(quickContribution(closure, 'proposition.commit', { proposition_id: candidate.id }), null);

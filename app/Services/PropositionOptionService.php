@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\PhaseKind;
+use App\Enums\RegisterPosition;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
@@ -37,6 +38,10 @@ final class PropositionOptionService
     /** An effective personal Attestation establishes the forward traversal path. */
     public function traversalOptionsFor(Phase $phase, ?ParticipationContext $context = null): Collection
     {
+        if ($phase->kind === PhaseKind::Order) {
+            return $this->generation->committedWrites($phase, $context);
+        }
+
         if (! in_array($phase->kind, [PhaseKind::Distinguish, PhaseKind::Persist, PhaseKind::Constrain, PhaseKind::Bias], true)) {
             return collect();
         }
@@ -64,10 +69,7 @@ final class PropositionOptionService
     public function instrumentOptionsFor(Phase $phase, ?ParticipationContext $context = null): Collection
     {
         if ($phase->kind === PhaseKind::Order) {
-            // Grounding may repair evidence before Closure becomes admissible.
-            $candidates = $this->regions->forPhase($phase, context: $context);
-
-            return $candidates->filter(fn (Proposition $node): bool => $this->availability->mutable($node, $context))->values();
+            return collect();
         }
 
         return $this->writeOptionsFor($phase, $context);
@@ -88,10 +90,7 @@ final class PropositionOptionService
         }
 
         if ($phase->kind === PhaseKind::Order) {
-            // Order retains Bias's Write register. Existing Committals in this
-            // row remain supportable after the personal Commit opportunity ends.
-            return $this->closure->forPhase($phase, $context)
-                ->concat($this->generation->committedWrites($phase, $context))->unique('id')->values();
+            return $this->generation->committedWrites($phase, $context);
         }
         if ($phase->kind === PhaseKind::Bias) {
             // A Bias source can be any Gate in the region; its Write must stay
@@ -108,6 +107,10 @@ final class PropositionOptionService
     /** Every valid Write descendant offers the as-yet-unattested direction(s). */
     public function attestationOptionsFor(Phase $phase, ?ParticipationContext $context = null): Collection
     {
+        if ($phase->kind === PhaseKind::Order) {
+            return collect();
+        }
+
         return $this->writeOptionsFor($phase, $context)->filter(fn (Proposition $node): bool => $this->availability->mutable($node, $context) && $this->evidence->canAttest($node, $context))->values();
     }
 
@@ -152,9 +155,43 @@ final class PropositionOptionService
      */
     public function gateOptionsFor(Phase $phase, ?ParticipationContext $context = null): Collection
     {
+        if ($phase->kind === PhaseKind::Order) {
+            return $this->closure->committableFor($phase, $context);
+        }
+
         return $phase->kind === PhaseKind::Bias
             ? $this->bias->forPhase($phase, $context)->filter(fn (Proposition $node): bool => $this->generation->available($phase, 'proposition.bias', $context, $node))->values()
             : $this->reconciliation->forPhase($phase, $context);
+    }
+
+    public function orderReadsFor(Phase $phase, ?ParticipationContext $context = null): Collection
+    {
+        if ($phase->kind !== PhaseKind::Order) {
+            return collect();
+        }
+        $register = $phase->cycle->contextHorizon->domain->registerAt(RegisterPosition::Second);
+        $frontier = collect([$context?->propositions->get($phase->gate_proposition_id) ?? $phase->gate()->firstOrFail()]);
+        $seen = [];
+        $reads = collect();
+        while ($frontier->isNotEmpty()) {
+            $next = collect();
+            foreach ($frontier as $node) {
+                if (isset($seen[$node->id]) || $node->tier === 'committal') {
+                    continue;
+                }
+                $seen[$node->id] = true;
+                if ($node->register === $register) {
+                    $reads->push($node);
+
+                    continue;
+                }
+                $parents = $context !== null ? $context->parentNodes($node) : $node->parents()->get();
+                $next = $next->concat($parents->filter(fn ($parent) => $parent->phase->cycle->participant->substrate_id === $phase->cycle->participant->substrate_id));
+            }
+            $frontier = $next->unique('id');
+        }
+
+        return $reads->unique('id')->sortBy('id')->values();
     }
 
     /** Follow revisions within Write without crossing into another phase's register. */
