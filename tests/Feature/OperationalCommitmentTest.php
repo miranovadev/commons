@@ -78,8 +78,8 @@ class OperationalCommitmentTest extends TestCase
         $this->phase($helper, PhaseKind::Persist, 'stance', Proposition::findOrFail($state['plan']['gate_id']));
         $helperState = $this->move($helper, ['action' => 'proposition.variant', 'statement' => 'Mediated Stance']);
         $stance = Proposition::findOrFail($helperState['plan']['gate_id']);
-        $this->move($this->participant, ['action' => 'attestation.create', 'proposition_id' => $stance->id, 'direction' => 'support']);
         app(OperationalInstrumentService::class)->execute($stance->phase, $stance, ['kind' => 'citation', 'reference' => $this->origin->id]);
+        $this->move($this->participant, ['action' => 'attestation.create', 'proposition_id' => $stance->id, 'direction' => 'support']);
         $helperState = $this->move($helper, [
             'action' => 'proposition.reclassify',
         ]);
@@ -146,7 +146,7 @@ class OperationalCommitmentTest extends TestCase
         $state = app(ParticipationService::class)->stateFor($participant);
         $this->assertSame('ready', $state['status']);
         $this->assertFalse($state['plan']['commitment']['admissible']);
-        $this->assertArrayHasKey('attestation.create', $state['plan']['schema']['$defs']['actions']);
+        $this->assertArrayNotHasKey('attestation.create', $state['plan']['schema']['$defs']['actions']);
         $this->assertFalse($state['plan']['commitment']['requirements']['receipt']);
         try {
             app(ContributionDispatcher::class)->dispatch($participant, $phase, ['action' => 'proposition.commit', 'proposition_id' => $phase->gate_proposition_id]);
@@ -341,6 +341,9 @@ class OperationalCommitmentTest extends TestCase
             $input = ['action' => $action, 'proposition_id' => $candidate->id];
             $input += $action === 'attestation.create' ? ['direction' => 'support']
                 : ['instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/order']];
+            if ($action === 'attestation.create') {
+                $this->receiptFixture($candidate);
+            }
             $state = $this->move($reader, $input);
             $this->assertNotNull($phase->fresh()->completed_at);
             $this->assertNotNull($phase->cycle->fresh()->completed_at);

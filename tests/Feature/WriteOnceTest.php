@@ -107,6 +107,7 @@ class WriteOnceTest extends TestCase
         $write = app(ContributionDispatcher::class)->dispatch($participant, $phase, [
             'action' => 'proposition.reclassify',
         ]);
+        $this->receiptFixture($write);
         $return = $this->phase($participant, PhaseKind::Persist, 'frontier', $gate);
         $plan = $this->plan($participant);
         $this->assertArrayNotHasKey('proposition.variant', $plan['schema']['$defs']['actions']);
@@ -133,6 +134,7 @@ class WriteOnceTest extends TestCase
         $phase = $this->phase($participant, PhaseKind::Persist, 'frontier', $gate);
         $input = ['action' => 'proposition.variant', 'statement' => 'First Variant'];
         $write = app(ContributionDispatcher::class)->dispatch($participant, $phase, $input);
+        $this->receiptFixture($write);
         app(ContributionDispatcher::class)->dispatch($participant, $phase, [
             'action' => 'attestation.create', 'proposition_id' => $write->id, 'direction' => 'refute',
         ]);
@@ -140,6 +142,7 @@ class WriteOnceTest extends TestCase
         $revised = app(ContributionDispatcher::class)->dispatch($participant, $later, [
             'action' => 'proposition.revise', 'proposition_id' => $write->id, 'statement' => 'Corrected Variant',
         ]);
+        $this->receiptFixture($revised);
         $return = $this->phase($participant, PhaseKind::Persist, 'frontier', $gate);
         $this->assertUnavailable($participant, $return, $input);
         $plan = $this->plan($participant);
@@ -172,6 +175,7 @@ class WriteOnceTest extends TestCase
         app(ContributionService::class)->validate($participant, $input);
         app(ParticipationService::class)->contribute($participant, $phase->id, $input);
         $written = Proposition::findOrFail($participant->fresh()->current_proposition_id);
+        $this->receiptFixture($written);
         $return = $this->phase($participant, $kind, $register, $gate);
         $this->assertUnavailable($participant, $return, $input);
         $plan = $this->plan($participant);
@@ -187,6 +191,7 @@ class WriteOnceTest extends TestCase
             $otherInput = ['action' => 'proposition.variant', 'statement' => 'Another Participant'];
             app(ContributionService::class)->validate($other, $otherInput);
             $otherWrite = app(ContributionDispatcher::class)->dispatch($other, $otherPhase, $otherInput);
+            $this->receiptFixture($otherWrite);
             $this->phase($participant, $kind, $register, $gate);
             $this->assertContains($otherWrite->id, $this->targets($this->plan($participant), 'attestation.create'));
         }
@@ -206,6 +211,7 @@ class WriteOnceTest extends TestCase
         $input = ['action' => 'proposition.variant', 'statement' => 'First Variant'];
         $first = app(ContributionDispatcher::class)->dispatch($participant, $phase, $input);
         foreach (['Second draft', 'Third draft'] as $statement) {
+            $this->receiptFixture($first);
             $refutePhase = $this->phase($participant, PhaseKind::Disperse, 'activity', $gate);
             $this->assertSame([], $this->targets($this->plan($participant), 'proposition.revise'));
             app(ContributionDispatcher::class)->dispatch($participant, $refutePhase, [
@@ -224,6 +230,7 @@ class WriteOnceTest extends TestCase
                 'action' => 'proposition.revise', 'proposition_id' => $first->id, 'statement' => $statement,
             ]);
         }
+        $this->receiptFixture($first);
         $this->phase($participant, PhaseKind::Disperse, 'activity', $gate);
         $plan = $this->plan($participant);
         $this->assertContains($first->id, $this->targets($plan, 'attestation.create'));
@@ -252,6 +259,7 @@ class WriteOnceTest extends TestCase
         $input = ['action' => 'proposition.bias', 'proposition_id' => $a->id];
         app(ContributionService::class)->validate($participant, $input);
         $written = app(ContributionDispatcher::class)->dispatch($participant, $phase, $input);
+        $this->receiptFixture($written);
         $return = $this->phase($participant, PhaseKind::Bias, 'canon', $b);
         $this->assertUnavailable($participant, $return, ['action' => 'proposition.bias', 'proposition_id' => $b->id]);
         $plan = $this->plan($participant);

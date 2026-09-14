@@ -20,6 +20,7 @@ final class PropositionOptionService
         private readonly ClosureOptionService $closure,
         private readonly CommitRegionService $regions,
         private readonly PhaseGenerationService $generation,
+        private readonly EvidenceEligibilityService $evidence,
     ) {}
 
     /** @return Collection<int, string> */
@@ -35,11 +36,11 @@ final class PropositionOptionService
     /** An effective personal Attestation establishes the forward traversal path. */
     public function traversalOptionsFor(Phase $phase, ?ParticipationContext $context = null): Collection
     {
-        if ($phase->kind->value > PhaseKind::Constrain->value) {
+        if (! in_array($phase->kind, [PhaseKind::Distinguish, PhaseKind::Persist, PhaseKind::Constrain, PhaseKind::Bias], true)) {
             return collect();
         }
 
-        return $this->writeDescendants($phase, $context)
+        return Proposition::query()->whereKey($this->attestationOptionsFor($phase, $context)->pluck('id'))
             ->whereHas('effectiveAttestations.phase.cycle', fn ($query) => $query
                 ->whereBelongsTo($phase->cycle->participant))
             ->orderBy('id')->get();
@@ -102,7 +103,7 @@ final class PropositionOptionService
     /** Every valid Write descendant offers the as-yet-unattested direction(s). */
     public function attestationOptionsFor(Phase $phase, ?ParticipationContext $context = null): Collection
     {
-        return $this->writeOptionsFor($phase, $context);
+        return $this->writeOptionsFor($phase, $context)->filter(fn (Proposition $node): bool => $this->evidence->canAttest($node, $context))->values();
     }
 
     /**

@@ -163,6 +163,7 @@ class PersistInstrumentTest extends TestCase
             'action' => 'proposition.reclassify',
         ]);
         $write = Proposition::findOrFail($state['plan']['gate_id']);
+        $this->receiptFixture($signal);
         $grounder = new Participant;
         $grounder->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'grounder', 'max_read_count' => 25])->save();
         $state = $service->enter($grounder);

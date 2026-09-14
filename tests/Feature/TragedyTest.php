@@ -206,6 +206,8 @@ class TragedyTest extends TestCase
         $proposition->forceFill(['phase_id' => $phase->id, 'register' => $register, 'tier' => 'expressive', 'statement' => 'Local proposition'])->save();
         app(LedgerService::class)->record($proposition);
 
+        $this->receiptFixture($proposition);
+
         return $proposition;
     }
 }
