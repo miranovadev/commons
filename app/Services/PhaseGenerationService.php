@@ -14,6 +14,7 @@ final readonly class PhaseGenerationService
     public function __construct(
         private CommitRegionService $regions,
         private PropositionStateService $state,
+        private PropositionOwnershipService $ownership,
     ) {}
 
     public function available(Phase $phase, string $action, ?ParticipationContext $context = null, ?Proposition $position = null): bool
@@ -28,6 +29,10 @@ final readonly class PhaseGenerationService
         if ($gate === null) {
             return false;
         }
+        if ($phase->kind === PhaseKind::Persist && $action === 'proposition.variant'
+            && $this->ownership->ownedBy($gate, $phase->cycle->participant)) {
+            return false;
+        }
         if ($phase->kind === PhaseKind::Constrain && $action === 'proposition.reclassify'
             && $this->state->receipts($gate, $context)->isEmpty()) {
             return false;
@@ -38,7 +43,10 @@ final readonly class PhaseGenerationService
             : collect([$gate->id]);
 
         return ! Proposition::query()
-            ->where('register', $phase->write_register)
+            // Persist Variant belongs to the Participant/Gate, even if a later
+            // Context Horizon presents that Gate with different register labels.
+            ->when($phase->kind !== PhaseKind::Persist || $action !== 'proposition.variant',
+                fn ($query) => $query->where('register', $phase->write_register))
             ->where('tier', $phase->kind === PhaseKind::Order ? 'committal' : 'expressive')
             ->whereHas('phase', fn ($query) => $query->where('kind', $phase->kind->value)
                 ->whereHas('cycle', fn ($query) => $query->where('participant_id', $phase->cycle->participant_id)))

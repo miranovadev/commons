@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Domain\Observables\ClosureValues;
 use App\Enums\PhaseKind;
+use App\Enums\SupersessionStrength;
+use App\Models\Connection;
 use App\Models\Cycle;
 use App\Models\Participant;
 use App\Models\Phase;
@@ -11,6 +13,7 @@ use App\Models\Proposition;
 use App\Models\Substrate;
 use App\Models\Supersession;
 use App\Services\ClosureGateService;
+use App\Services\ActiveParticipantLineage;
 use App\Services\ContributionDispatcher;
 use App\Services\ContributionService;
 use App\Services\InputPlanService;
@@ -18,6 +21,7 @@ use App\Services\LedgerService;
 use App\Services\Observables\ReinforcementService;
 use App\Services\OperationalInstrumentService;
 use App\Services\ParticipationService;
+use App\Services\ParticipantPromptFactory;
 use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use InvalidArgumentException;
@@ -39,10 +43,127 @@ class WriteOnceTest extends TestCase
         ];
     }
 
+    public static function persistOwnership(): array
+    {
+        return [
+            'own Gate, unused' => [false, false, false],
+            'own Gate, historical Variant' => [false, true, false],
+            'another owner, unused' => [true, false, true],
+            'another owner, historical Variant' => [true, true, false],
+        ];
+    }
+
+    #[DataProvider('persistOwnership')]
+    public function test_persist_variant_ownership_and_history_match_schema_and_backend(bool $foreign, bool $used, bool $available): void
+    {
+        [$participant, $seed] = $this->fixture($foreign);
+        $gate = $this->node($seed->phase, 'activity', 'Phase 1 Gate', parent: $seed);
+        if ($used) {
+            // Include legacy own-Gate Variants written before the ownership rule.
+            $history = $this->phase($participant, PhaseKind::Persist, 'frontier', $gate);
+            $this->node($history, 'frontier', 'Prior Variant', parent: $gate);
+        }
+        $phase = $this->phase($participant, PhaseKind::Persist, 'frontier', $gate);
+        $input = ['action' => 'proposition.variant', 'statement' => 'Divergent Frontier'];
+        $state = app(ParticipationService::class)->stateFor($participant);
+        $this->assertSame($available, isset($state['plan']['schema']['$defs']['actions']['proposition.variant']));
+        $packet = app(ParticipantPromptFactory::class)->make(new Connection, $state);
+        $this->assertSame($state['plan']['schema'], $packet['schema']);
+        if (! $available) {
+            $this->assertUnavailable($participant, $phase, $input);
+
+            return;
+        }
+        $next = app(ParticipationService::class)->contribute($participant, $phase->id, $input);
+        $written = Proposition::findOrFail($next['plan']['gate_id']);
+        $this->assertSame('constrain', $next['plan']['phase']['kind']);
+        $this->assertSame('variant', $written->parents()->sole()->pivot->type);
+        $this->assertSame(SupersessionStrength::Soft, SupersessionStrength::for($written->parents()->sole()->pivot->type));
+        $this->assertContains($gate->id, app(ActiveParticipantLineage::class)->endingAt($written)->pluck('id')->all());
+        // Direct replay is rejected even before a new Cycle is opened.
+        $counts = [Proposition::count(), Supersession::count()];
+        try {
+            app(ContributionDispatcher::class)->dispatch($participant, $phase, $input);
+            $this->fail('The Variant opportunity must be consumed immediately.');
+        } catch (DomainException) {
+            $this->assertSame($counts, [Proposition::count(), Supersession::count()]);
+        }
+        $return = $this->phase($participant, PhaseKind::Persist, 'frontier', $gate);
+        $this->assertUnavailable($participant, $return, $input);
+        $other = $this->participant($participant->substrate, 'independent');
+        $otherPhase = $this->phase($other, PhaseKind::Persist, 'frontier', $gate);
+        app(ContributionService::class)->validate($other, $input);
+        $otherWrite = app(ContributionDispatcher::class)->dispatch($other, $otherPhase, $input);
+        $this->assertNotSame($written->id, $otherWrite->id);
+    }
+
+    public function test_owned_persist_gate_retains_support_without_variant_or_unearned_revision(): void
+    {
+        [$participant, $seed] = $this->fixture();
+        $gate = $this->node($seed->phase, 'activity', 'My distinction', parent: $seed);
+        $phase = $this->phase($participant, PhaseKind::Persist, 'frontier', $gate);
+        $this->assertUnavailable($participant, $phase, ['action' => 'proposition.variant', 'statement' => 'Self Variant']);
+        // Reclassify retains its existing owner-only opportunity.
+        $write = app(ContributionDispatcher::class)->dispatch($participant, $phase, [
+            'action' => 'proposition.reclassify', 'statement' => 'My classified Write',
+        ]);
+        $return = $this->phase($participant, PhaseKind::Persist, 'frontier', $gate);
+        $plan = $this->plan($participant);
+        $this->assertArrayNotHasKey('proposition.variant', $plan['schema']['$defs']['actions']);
+        $this->assertSame([], $this->targets($plan, 'proposition.revise'));
+        $this->assertContains($write->id, $this->targets($plan, 'attestation.create'));
+        $this->assertContains($write->id, $this->targets($plan, 'instrument.execute'));
+        $this->assertFalse($plan['tragedy']);
+        $this->assertArrayNotHasKey('participant.rest', $plan['schema']['$defs']['actions']);
+        app(ContributionDispatcher::class)->dispatch($participant, $return, [
+            'action' => 'attestation.create', 'proposition_id' => $write->id, 'direction' => 'refute',
+        ]);
+        $plan = $this->plan($participant);
+        $this->assertContains($write->id, $this->targets($plan, 'proposition.traverse'));
+        $this->assertSame([], $this->targets($plan, 'proposition.revise'));
+        $later = $this->phase($participant, PhaseKind::Persist, 'frontier', $gate);
+        $this->assertContains($write->id, $this->targets($this->plan($participant), 'proposition.revise'));
+        $this->assertUnavailable($participant, $later, ['action' => 'proposition.variant', 'statement' => 'Still cannot self Variant']);
+    }
+
+    public function test_persist_revision_does_not_restore_the_foreign_gate_variant_opportunity(): void
+    {
+        [$participant, $seed] = $this->fixture(true);
+        $gate = $this->node($seed->phase, 'activity', 'Another Participant’s distinction', parent: $seed);
+        $phase = $this->phase($participant, PhaseKind::Persist, 'frontier', $gate);
+        $input = ['action' => 'proposition.variant', 'statement' => 'First Variant'];
+        $write = app(ContributionDispatcher::class)->dispatch($participant, $phase, $input);
+        app(ContributionDispatcher::class)->dispatch($participant, $phase, [
+            'action' => 'attestation.create', 'proposition_id' => $write->id, 'direction' => 'refute',
+        ]);
+        $later = $this->phase($participant, PhaseKind::Persist, 'frontier', $gate);
+        $revised = app(ContributionDispatcher::class)->dispatch($participant, $later, [
+            'action' => 'proposition.revise', 'proposition_id' => $write->id, 'statement' => 'Corrected Variant',
+        ]);
+        $return = $this->phase($participant, PhaseKind::Persist, 'frontier', $gate);
+        $this->assertUnavailable($participant, $return, $input);
+        $plan = $this->plan($participant);
+        $this->assertContains($revised->id, $this->targets($plan, 'attestation.create'));
+        $this->assertContains($revised->id, $this->targets($plan, 'instrument.execute'));
+        $this->assertSame([], $this->targets($plan, 'proposition.revise'));
+        $this->assertFalse($plan['tragedy']);
+    }
+
+    public function test_persist_variant_quota_survives_a_change_in_horizon_register_vocabulary(): void
+    {
+        [$participant, $seed] = $this->fixture(true);
+        $gate = $this->node($seed->phase, 'activity', 'Another Participant’s Gate', parent: $seed);
+        $phase = $this->phase($participant, PhaseKind::Persist, 'frontier', $gate);
+        $input = ['action' => 'proposition.variant', 'statement' => 'First Variant'];
+        app(ContributionDispatcher::class)->dispatch($participant, $phase, $input);
+        $later = $this->phase($participant, PhaseKind::Persist, 'stance', $gate);
+        $this->assertUnavailable($participant, $later, $input);
+    }
+
     #[DataProvider('localPhases')]
     public function test_generation_is_personal_and_survives_cycles_but_not_a_different_gate(PhaseKind $kind, string $register, string $action): void
     {
-        [$participant, $gate] = $this->fixture();
+        [$participant, $gate] = $this->fixture($kind === PhaseKind::Persist && $action === 'proposition.variant');
         $phase = $this->phase($participant, $kind, $register, $gate);
         if ($kind === PhaseKind::Constrain) {
             $this->loadedReceiptFixture($gate);
@@ -218,12 +339,13 @@ class WriteOnceTest extends TestCase
         $this->assertSame($counts, [Proposition::count(), Supersession::count(), $participant->substrate->ledgerEntries()->count()]);
     }
 
-    private function fixture(): array
+    private function fixture(bool $foreignGate = false): array
     {
         $substrate = new Substrate;
         $substrate->forceFill(['slug' => 'write-once', 'title' => 'Write Once', 'visibility' => 'public', 'configuration' => []])->save();
         $participant = $this->participant($substrate, 'author');
-        $history = $this->phase($participant, PhaseKind::Distinguish, 'activity');
+        $owner = $foreignGate ? $this->participant($substrate, 'gate-owner') : $participant;
+        $history = $this->phase($owner, PhaseKind::Distinguish, 'activity');
         $history->forceFill(['completed_at' => now()])->save();
         $history->cycle->forceFill(['completed_at' => now()])->save();
 

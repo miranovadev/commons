@@ -54,7 +54,7 @@ class OperationalClosurePathTest extends TestCase
 
         // The author creates the first branch through all four early phases.
         $signal = $this->gate($this->move($author, ['action' => 'proposition.variant', 'statement' => 'Initial Signal']));
-        $earlyStance = $this->gate($this->move($author, ['action' => 'proposition.variant', 'statement' => 'Initial Stance']));
+        $earlyStance = $this->gate($this->move($author, ['action' => 'proposition.reclassify', 'statement' => 'Initial Stance']));
         app(OperationalInstrumentService::class)->execute($earlyStance->phase, $earlyStance, ['kind' => 'citation', 'reference' => $signal->id]);
         $read = $this->gate($this->move($author, ['action' => 'proposition.reclassify', 'statement' => 'Shared Concord Read']));
         $left = $this->gate($this->move($author, ['action' => 'proposition.variant', 'statement' => 'First dispersed Signal']));
@@ -245,7 +245,7 @@ class OperationalClosurePathTest extends TestCase
             'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/origin'],
         ]));
         $signal = $this->gate($this->move($author, ['action' => 'proposition.variant', 'statement' => 'Signal']));
-        $earlyStance = $this->gate($this->move($author, ['action' => 'proposition.variant', 'statement' => 'Stance']));
+        $earlyStance = $this->gate($this->move($author, ['action' => 'proposition.reclassify', 'statement' => 'Stance']));
         app(OperationalInstrumentService::class)->execute($earlyStance->phase, $earlyStance, ['kind' => 'citation', 'reference' => $signal->id]);
         $read = $this->gate($this->move($author, ['action' => 'proposition.reclassify', 'statement' => 'Concord Read']));
         $left = $this->gate($this->move($author, ['action' => 'proposition.variant', 'statement' => 'Dispersed Signal']));

@@ -63,7 +63,7 @@ class OperationalCommitmentTest extends TestCase
     public function test_seven_phase_participation_completes_receipts_and_commits(): void
     {
         $this->move($this->participant, ['action' => 'proposition.variant', 'statement' => 'Signal']);
-        $early = $this->move($this->participant, ['action' => 'proposition.variant', 'statement' => 'Stance']);
+        $early = $this->move($this->participant, ['action' => 'proposition.reclassify', 'statement' => 'Stance']);
         $earlyGate = Proposition::findOrFail($early['plan']['gate_id']);
         app(OperationalInstrumentService::class)->execute($earlyGate->phase, $earlyGate, ['kind' => 'citation', 'reference' => $this->origin->id]);
         $state = $this->move($this->participant, [
@@ -222,7 +222,7 @@ class OperationalCommitmentTest extends TestCase
     public function test_invalid_and_unsupported_instruments_leave_no_partial_write(): void
     {
         $this->move($this->participant, ['action' => 'proposition.variant', 'statement' => 'Signal']);
-        $state = $this->move($this->participant, ['action' => 'proposition.variant', 'statement' => 'Stance']);
+        $state = $this->move($this->participant, ['action' => 'proposition.reclassify', 'statement' => 'Stance']);
         foreach ([
             ['kind' => 'hyperlink', 'reference' => 'file:///etc/passwd'],
             ['kind' => 'hyperlink', 'reference' => 'https://user:password@example.test'],
@@ -303,7 +303,7 @@ class OperationalCommitmentTest extends TestCase
     public function test_removed_reclassification_contracts_reject_payloads(): void
     {
         $this->move($this->participant, ['action' => 'proposition.variant', 'statement' => 'Signal']);
-        $early = $this->move($this->participant, ['action' => 'proposition.variant', 'statement' => 'Stance']);
+        $early = $this->move($this->participant, ['action' => 'proposition.reclassify', 'statement' => 'Stance']);
         $earlyGate = Proposition::findOrFail($early['plan']['gate_id']);
         app(OperationalInstrumentService::class)->execute($earlyGate->phase, $earlyGate, ['kind' => 'citation', 'reference' => $this->origin->id]);
         foreach (['reclassify_with_receipt', 'proposition.reclassify_with_receipt', 'proposition.reclassify_with_instrument'] as $action) {
@@ -396,7 +396,7 @@ class OperationalCommitmentTest extends TestCase
         $phase->write_register = 'concord';
         $phase->gate_proposition_id = $stance->id;
         $phase->save();
-        $candidate = app(ContributionDispatcher::class)->dispatch($builder, $phase, ['action' => 'proposition.variant', 'statement' => 'Groundable Concord']);
+        $candidate = app(ContributionDispatcher::class)->dispatch($builder, $phase, ['action' => 'proposition.reclassify', 'statement' => 'Groundable Concord']);
         $reader = $this->participant($this->participant->substrate, 'reader-'.str()->ulid());
         $reader->current_proposition_id = $stance->id;
         $reader->save();
