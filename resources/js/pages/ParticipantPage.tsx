@@ -137,6 +137,7 @@ function isActionName(value?: string): value is ActionName {
     'attestation.create',
     'instrument.execute',
     'receipt.read',
+    'receipt.replay',
     'proposition.commit',
     'proposition.reclassify',
     'proposition.reconcile',

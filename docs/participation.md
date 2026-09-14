@@ -525,3 +525,11 @@ present in lineage/Read/Gate/Write cannot be newly loaded. A loaded Receipt is
 never offered as another Read. Only active loads contribute Reinforcement; an
 Instrument execution alone does not. The Receipt context panel follows these
 same schema permissions. See [Reinforcement](reinforcement.md).
+
+## Receipt capabilities and discovery
+
+[Web Search and Receipt Replay](instruments.md) extend the existing Instrument
+contract. `receipt.read` loads existing evidence without advancing the Phase.
+`receipt.replay` uses the stored invocation, original eligible Instrument Write and
+normal Instrument progression to create a new immutable observation. Neither
+initial execution nor replay automatically loads a Receipt.

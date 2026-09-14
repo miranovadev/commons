@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\ReceiptCapability;
 use App\Models\Participant;
 use App\Models\ParticipantReceiptContext;
 use App\Models\Phase;
@@ -54,7 +55,10 @@ final readonly class ReceiptContextService
                 }
             }
 
-            return $receipts->map(function ($receipt) use ($context, $loads, $present): array {
+            $replayTargets = in_array('instrument.execute', config("phases.{$phase->kind->value}.actions", []), true)
+                ? $this->options->instrumentOptionsFor($phase, $context)->pluck('id') : collect();
+
+            return $receipts->map(function ($receipt) use ($context, $loads, $present, $replayTargets): array {
                 $verified = $this->evidence->describe($receipt, $context);
                 $load = $loads->get($receipt->id);
                 $loaded = $load !== null && $load->cleared_at === null;
@@ -64,9 +68,17 @@ final readonly class ReceiptContextService
                 return [
                     'id' => $receipt->id, 'proposition_id' => $receipt->instrumentExecution->proposition_id,
                     'type' => $receipt->type, 'reference' => $receipt->reference,
+                    'capabilities' => [
+                        'readable' => $receipt->supports(ReceiptCapability::Readable),
+                        'replayable' => $receipt->supports(ReceiptCapability::Replayable),
+                    ],
+                    'can_replay' => $receipt->supports(ReceiptCapability::Replayable)
+                        && $replayTargets->contains($receipt->instrumentExecution->proposition_id),
+                    'replayed_from_receipt_id' => $receipt->instrumentExecution->replayed_from_receipt_id,
+                    'observation_error' => $receipt->metadata['observation_error'] ?? null,
                     'signature' => $verified['signature'] ?? null,
                     'status' => $status, 'loaded_at' => $loaded ? $load->loaded_at->toISOString() : null,
-                    ...($loaded ? ['evidence' => $verified['evidence']] : []),
+                    ...($loaded && $verified !== null ? ['evidence' => $verified['evidence']] : []),
                 ];
             })->sortBy('id')->values();
         });
@@ -79,7 +91,7 @@ final readonly class ReceiptContextService
             $phase = $this->lock($participant, $phase);
             $context = new ParticipationContext($phase->fresh());
             $option = $this->forPhase($phase, $context)->firstWhere('id', $receiptId);
-            if ($option === null || ! in_array($option['status'], ['available', 'loaded'], true)) {
+            if ($option === null || ! $option['capabilities']['readable'] || ! in_array($option['status'], ['available', 'loaded'], true)) {
                 throw new DomainException('Read requires qualifying encountered evidence outside the current context.');
             }
             $load = ParticipantReceiptContext::where('participant_id', $participant->id)->where('receipt_id', $receiptId)->first();

@@ -12,18 +12,23 @@ $statement = [
 ];
 
 $instrument = [
-    'description' => 'Cite (citation): an existing Proposition or Attestation ID in this substrate. Creating a Cite Receipt does not itself grant Reinforcement. Hyperlink: the server fetches a public HTTP(S) resource and verifies retrieval, not the truth of its claims. Verification produces evidence, not active Reinforcement. Use receipt.read when offered to load qualifying evidence into persistent Participant context.',
-    'type' => 'object',
-    'additionalProperties' => false,
-    'required' => ['kind', 'reference'],
-    'properties' => [
-        'kind' => [
-            'type' => 'string',
-            'enum' => ['citation', 'hyperlink'],
+    'description' => 'Cite references a known substrate object. Creating a Cite Receipt does not itself grant Reinforcement. Hyperlink fetches a known public URL and verifies retrieval, not the truth of its claims. Web Search discovers resources from a query. Instrument execution records an immutable Receipt; it never loads context or grants Reinforcement automatically.',
+    'anyOf' => [
+        [
+            'type' => 'object', 'additionalProperties' => false,
+            'required' => ['kind', 'reference'],
+            'properties' => [
+                'kind' => ['type' => 'string', 'enum' => ['citation', 'hyperlink']],
+                'reference' => ['type' => 'string', 'minLength' => 1],
+            ],
         ],
-        'reference' => [
-            'type' => 'string',
-            'minLength' => 1,
+        [
+            'type' => 'object', 'additionalProperties' => false,
+            'required' => ['kind', 'query'],
+            'properties' => [
+                'kind' => ['const' => 'web_search'],
+                'query' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 1000, 'pattern' => '^[^\\x00]*[^\\s\\x00][^\\x00]*$'],
+            ],
         ],
     ],
 ];
@@ -42,7 +47,7 @@ $proposition = static function (string $action, string $title) use ($statement):
 };
 
 return [
-    'version' => 17,
+    'version' => 18,
 
     'cache' => [
         'store' => env('COMMONS_SCHEMA_CACHE_STORE'),
@@ -59,6 +64,13 @@ return [
     ],
 
     'actions' => [
+        'receipt.replay' => [
+            'title' => 'Replay an encountered Receipt’s Instrument',
+            'description' => 'Execute the stored invocation again on its original eligible Write, creating a new immutable Receipt linked to the previous one. Uses Instrument Phase progression. Neither Receipt is automatically loaded.',
+            'type' => 'object', 'additionalProperties' => false,
+            'required' => ['action', 'receipt_id'],
+            'properties' => ['action' => ['const' => 'receipt.replay'], 'receipt_id' => $ulid],
+        ],
         'receipt.read' => [
             'title' => 'Load encountered Receipt evidence into persistent context',
             'description' => 'Load one qualifying Receipt. This leaves the Phase and Gate unchanged. Loaded Receipts persist across Cycles; repeated or equivalent evidence does not multiply Reinforcement.',

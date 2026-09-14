@@ -50,16 +50,21 @@ class EnterCycleRequest extends FormRequest
                 'string',
                 'max:20000',
             ],
-            'origin.instrument' => ['required', 'array:kind,reference'],
+            'origin.instrument' => ['required', 'array:kind,reference,query'],
             'origin.instrument.kind' => [
                 'required',
                 'string',
-                Rule::in(['hyperlink']),
+                Rule::in(['hyperlink', 'web_search']),
             ],
             'origin.instrument.reference' => [
-                'required',
-                'string',
-                'max:20000',
+                'required_if:origin.instrument.kind,hyperlink',
+                'prohibited_unless:origin.instrument.kind,hyperlink',
+                'string', 'max:20000',
+            ],
+            'origin.instrument.query' => [
+                'required_if:origin.instrument.kind,web_search',
+                'prohibited_unless:origin.instrument.kind,web_search',
+                'string', 'max:1000', 'regex:/^[^\\x00]*[^\\s\\x00][^\\x00]*$/u',
             ],
         ];
     }

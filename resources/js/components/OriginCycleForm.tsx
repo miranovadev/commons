@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Alert, Button, Group, Modal, Select, Stack, Text, Textarea } from '@mantine/core';
+import { Alert, Button, Group, Modal, Stack, Text, Textarea } from '@mantine/core';
 import { IconAlertCircle, IconArrowRight } from '@tabler/icons-react';
 import { messageFrom } from '../errors';
+import { InstrumentFields } from './InstrumentFields';
 import { AttestationDirectionControl } from './AttestationDirectionControl';
 import type { AttestationDirection, InstrumentInput, OriginInput } from '../types';
 
@@ -10,8 +11,7 @@ interface OriginFormValue {
   statement: string;
   direction: AttestationDirection;
   rationale: string;
-  instrumentKind: InstrumentInput['kind'];
-  reference: string;
+  instrument: InstrumentInput;
 }
 
 interface OriginCycleFormProps {
@@ -26,8 +26,7 @@ const initialValue: OriginFormValue = {
   statement: '',
   direction: 'support',
   rationale: '',
-  instrumentKind: 'hyperlink',
-  reference: '',
+  instrument: { kind: 'hyperlink', reference: '' },
 };
 
 export function OriginCycleForm({ opened, loading, error, onClose, onSubmit }: OriginCycleFormProps) {
@@ -49,10 +48,7 @@ export function OriginCycleForm({ opened, loading, error, onClose, onSubmit }: O
         direction: value.direction,
         ...(value.rationale ? { rationale: value.rationale } : {}),
       },
-      instrument: {
-        kind: value.instrumentKind,
-        reference: value.reference,
-      },
+      instrument: value.instrument,
     });
   }
 
@@ -95,23 +91,7 @@ export function OriginCycleForm({ opened, loading, error, onClose, onSubmit }: O
             value={value.rationale}
             onChange={(event) => update('rationale', event.currentTarget.value)}
           />
-          <Select
-            label="Receipt instrument"
-            data={[
-              { value: 'hyperlink', label: 'Hyperlink' },
-            ]}
-            value={value.instrumentKind}
-            onChange={(next) => update('instrumentKind', (next || 'hyperlink') as InstrumentInput['kind'])}
-          />
-          <Textarea
-            label="Receipt reference"
-            description="A public HTTP(S) URL. The server fetches content and verifies retrieval, not the truth of its claims."
-            minRows={2}
-            autosize
-            required
-            value={value.reference}
-            onChange={(event) => update('reference', event.currentTarget.value)}
-          />
+          <InstrumentFields value={value.instrument} onChange={(instrument) => update('instrument', instrument)} includeCitation={false} />
           <Group justify="flex-end">
             <Button variant="default" onClick={onClose} disabled={loading}>Cancel</Button>
             <Button type="submit" color="indigo" loading={loading} rightSection={<IconArrowRight size={16} />}>

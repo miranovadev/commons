@@ -2,6 +2,7 @@
 
 namespace App\Services\Evidence;
 
+use App\Enums\ReceiptCapability;
 use App\Models\Receipt;
 use App\Services\Participation\ParticipationContext;
 
@@ -11,7 +12,7 @@ final class ReceiptEvidenceService
     public function describe(Receipt $receipt, ParticipationContext $context): ?array
     {
         $execution = $receipt->instrumentExecution;
-        if ($execution?->status !== 'completed' || ! $context->propositions->has($execution->proposition_id)) {
+        if (! $receipt->supports(ReceiptCapability::Readable) || $execution?->status !== 'completed' || ! $context->propositions->has($execution->proposition_id)) {
             return null;
         }
         if ($receipt->type === 'hyperlink' && $receipt->signature !== null
@@ -23,6 +24,12 @@ final class ReceiptEvidenceService
                     'resource', 'fingerprint', 'observed_at', 'last_modified', 'content_excerpt', 'excerpt_truncated',
                 ])),
             ];
+        }
+        if ($receipt->type === 'web_search' && $receipt->signature !== null
+            && ($receipt->metadata['content_verified'] ?? false) === true
+            && ($receipt->metadata['reinforcement_version'] ?? null) === 'observed-search'
+            && is_array($receipt->metadata['observation'] ?? null)) {
+            return ['signature' => $receipt->signature, 'evidence' => $receipt->metadata['observation']];
         }
         if ($receipt->type !== 'citation') {
             return null;

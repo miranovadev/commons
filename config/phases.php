@@ -22,6 +22,7 @@ return [
             'proposition.revise',
             'proposition.reclassify',
             'instrument.execute',
+            'receipt.replay',
             'attestation.create',
             'proposition.traverse',
         ],
@@ -40,6 +41,7 @@ return [
             'proposition.revise',
             'proposition.reclassify',
             'instrument.execute',
+            'receipt.replay',
             'attestation.create',
             'proposition.traverse',
         ],
@@ -59,6 +61,7 @@ return [
             'proposition.variant',
             'proposition.revise',
             'instrument.execute',
+            'receipt.replay',
             'attestation.create',
         ],
         'constraints' => [
@@ -88,6 +91,7 @@ return [
             'receipt.read',
             'proposition.bias',
             'instrument.execute',
+            'receipt.replay',
             'attestation.create',
         ],
         'constraints' => [
@@ -106,6 +110,7 @@ return [
             'receipt.read',
             'proposition.commit',
             'instrument.execute',
+            'receipt.replay',
             'attestation.create',
         ],
         'constraints' => [

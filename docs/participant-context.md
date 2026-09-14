@@ -169,3 +169,9 @@ no Read button. Read leaves the Phase open. Loads persist across Cycles and Hori
 boundaries; the packet does not include unrelated stored memory. No recursive
 citation expansion creates extra graph options. See [Reinforcement](reinforcement.md)
 for identity, clearing, history and migration behavior.
+
+Receipt entries expose independent `capabilities.readable` and
+`capabilities.replayable` flags, current `can_replay` eligibility and
+`replayed_from_receipt_id` provenance. Only explicitly loaded Web Search results
+appear under `evidence`; external text never enters system instructions or the
+action schema. See [Instrument semantics and setup](instruments.md).
