@@ -3,6 +3,13 @@
 namespace App\Providers;
 
 use App\Contracts\ParticipantInference;
+use App\Contracts\WebSearchProvider;
+use App\Models\ContextHorizon;
+use App\Models\Cycle;
+use App\Models\Participant;
+use App\Models\Phase;
+use App\Observers\RealtimeObserver;
+use App\Services\Evidence\TavilyWebSearchProvider;
 use App\Services\ParticipantInferenceManager;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
@@ -14,6 +21,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->bind(WebSearchProvider::class, TavilyWebSearchProvider::class);
         $this->app->bind(
             ParticipantInference::class,
             ParticipantInferenceManager::class,
@@ -25,9 +33,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        foreach ([\App\Models\Phase::class, \App\Models\Cycle::class,
-            \App\Models\Participant::class, \App\Models\ContextHorizon::class] as $model) {
-            $model::observe(\App\Observers\RealtimeObserver::class);
+        foreach ([Phase::class, Cycle::class,
+            Participant::class, ContextHorizon::class] as $model) {
+            $model::observe(RealtimeObserver::class);
         }
 
         if (config('app.log_queries')) {

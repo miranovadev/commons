@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'web_search' => ['provider' => env('COMMONS_WEB_SEARCH_PROVIDER', 'tavily')],
+    'tavily' => ['api_key' => env('TAVILY_API_KEY')],
 
     /*
     |--------------------------------------------------------------------------

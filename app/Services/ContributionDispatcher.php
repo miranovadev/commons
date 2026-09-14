@@ -32,6 +32,7 @@ final readonly class ContributionDispatcher
         private PropositionOptionService $options,
         private PropositionOwnershipService $ownership,
         private ReceiptContextService $receipts,
+        private ReceiptReplayService $replays,
     ) {}
 
     /**
@@ -72,6 +73,14 @@ final readonly class ContributionDispatcher
                 throw new DomainException($action === 'proposition.revise'
                     ? 'Revision requires an owned active head in the current write register with an effective self-Refute from an earlier Cycle.'
                     : 'Support requires an admissible Proposition in the current Write.');
+            }
+
+            if ($action === 'receipt.replay') {
+                if (array_diff(array_keys($input), ['action', 'receipt_id']) !== []) {
+                    throw new DomainException('Replay takes only action and receipt_id.');
+                }
+
+                return $this->replays->replay($participant, $phase, $input['receipt_id'])->instrumentExecution->proposition;
             }
 
             if ($action === 'receipt.read') {

@@ -7,6 +7,11 @@ from qualifying evidence currently loaded by a Participant. Verification, Receip
 creation and participant uptake are separate boundaries. A caller-supplied signature
 or verification flag never establishes qualification.
 
+Receipt capabilities (`readable`, `replayable`), Web Search, configuration and
+immutable replay provenance are defined in [Instruments](instruments.md). Replay
+is a new execution; Read loads the existing observation. Neither initial execution
+nor Replay automatically loads evidence.
+
 ## Persistent participant context
 
 `receipt.read` accepts only `action` and `receipt_id`. It loads qualifying evidence
@@ -64,7 +69,7 @@ and whitespace collapsed. Text/JSON collapse whitespace; other media hash bytes.
 New text/HTML/JSON Receipts retain a verifier-produced excerpt of at most 1,200
 characters, with a truncation flag, for context loading. Binary resources and older
 verified Receipts can expose retrieval metadata without a text excerpt. Loading
-never silently fetches changed content; refreshing remains an Instrument action.
+never silently fetches changed content; refreshing is an Instrument execution or an admissible `receipt.replay` action.
 This is a conservative content identity, not a claim of semantic equivalence.
 HTML changes only to markup, scripts, styles or link destinations may be missed.
 
@@ -92,7 +97,7 @@ incorrectly discard independent participant history.
 
 ## What counts
 
-A qualifying loaded Cite or Hyperlink Receipt contributes to its Instrument's
+A qualifying loaded Cite, Hyperlink or Web Search Receipt contributes to its Instrument's
 Proposition on behalf of the **reading Participant**, who need not be its author
 or executor. Originating evidence may be read later without re-verification.
 Receipt creation alone contributes zero.

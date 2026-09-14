@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Domain\Evidence\SearchObservation;
 use App\Domain\Evidence\VerifiedHyperlink;
+use App\Enums\ReceiptCapability;
 use App\Models\Attestation;
 use App\Models\InstrumentExecution;
 use App\Models\Phase;
@@ -30,14 +32,20 @@ final readonly class InstrumentExecutionService
         string $kind,
         string $reference,
         array $input = [],
+        ?Receipt $replayedFrom = null,
     ): InstrumentExecution {
-        return DB::transaction(function () use ($phase, $proposition, $kind, $reference, $input): InstrumentExecution {
+        return DB::transaction(function () use ($phase, $proposition, $kind, $reference, $input, $replayedFrom): InstrumentExecution {
             // Inserts also acquire foreign-key locks: take the root before saving.
             $substrateId = $phase->cycle->participant->substrate_id;
             if ($proposition->phase->cycle->participant->substrate_id !== $substrateId) {
                 throw new DomainException('An instrument cannot cross substrate boundaries.');
             }
             Substrate::query()->lockForUpdate()->findOrFail($substrateId);
+            if ($replayedFrom !== null && ($replayedFrom->instrumentExecution->proposition_id !== $proposition->id
+                || ! $replayedFrom->supports(ReceiptCapability::Replayable)
+                || $replayedFrom->replayInvocation() !== $input)) {
+                throw new DomainException('Replay must preserve its originating invocation and Proposition.');
+            }
             $execution = new InstrumentExecution;
             $execution->forceFill([
                 'phase_id' => $phase->getKey(),
@@ -46,6 +54,7 @@ final readonly class InstrumentExecutionService
                 'reference' => $reference,
                 'status' => 'pending',
                 'input' => $input,
+                'replayed_from_receipt_id' => $replayedFrom?->id,
                 'started_at' => now(),
             ]);
             $execution->save();
@@ -61,6 +70,7 @@ final readonly class InstrumentExecutionService
         ?string $signature = null,
         array $metadata = [],
         ?VerifiedHyperlink $verification = null,
+        ?SearchObservation $observation = null,
     ): Receipt {
         return DB::transaction(function () use (
             $execution,
@@ -68,6 +78,7 @@ final readonly class InstrumentExecutionService
             $signature,
             $metadata,
             $verification,
+            $observation,
         ): Receipt {
             // Resolve ownership with a read; never lock the execution before its root.
             $substrateId = InstrumentExecution::query()->findOrFail($execution->getKey())->phase->cycle->participant->substrate_id;
@@ -93,10 +104,20 @@ final readonly class InstrumentExecutionService
                 : ['signature' => null, 'status' => 'non-reinforcing'];
             $metadata = [...$metadata, ...($signature !== null ? ['supplied_signature' => $signature] : []), ...($verification?->metadata() ?? ['content_verified' => false]),
                 'reinforcement_version' => $resolution['status']];
+            if ($locked->kind === 'web_search' && $observation !== null) {
+                if ($observation->query !== ($locked->input['query'] ?? null)) {
+                    throw new DomainException('The Search observation must match its stored invocation.');
+                }
+                $resolution = ['signature' => $observation->signature(), 'status' => 'observed-search'];
+                $metadata = [...$metadata, 'observation' => $observation->evidence(),
+                    'content_verified' => true, 'reinforcement_version' => $resolution['status']];
+            }
+            $metadata['reinforcement_status'] = 'not-loaded';
             $receipt = new Receipt;
             $receipt->forceFill([
                 'instrument_execution_id' => $locked->getKey(),
                 'type' => $locked->kind,
+                'capabilities' => ReceiptCapability::forInstrument($locked->kind),
                 'reference' => $locked->reference,
                 'signature' => $resolution['signature'],
                 'metadata' => $metadata,
@@ -112,11 +133,6 @@ final readonly class InstrumentExecutionService
             $locked->save();
 
             $receipt->setRelation('instrumentExecution', $locked);
-            $metadata['reinforcement_status'] = 'not-loaded';
-            $receipt->metadata = $metadata;
-            $receipt->save();
-            $locked->metadata = $metadata;
-            $locked->save();
 
             $proposition = $locked->proposition()->first();
             if ($proposition !== null) {
