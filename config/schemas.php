@@ -110,10 +110,13 @@ return [
                 'statement' => $statement,
             ],
         ],
-        'proposition.reclassify' => $proposition(
-            'proposition.reclassify',
-            'Reclassify the current gate',
-        ),
+        'proposition.reclassify' => [
+            'type' => 'object',
+            'title' => 'Reclassify the Gate without changing its statement',
+            'additionalProperties' => false,
+            'required' => ['action'],
+            'properties' => ['action' => ['const' => 'proposition.reclassify']],
+        ],
         'proposition.bias' => [
             'title' => 'Select one dominant-direction Gate into fresh Concord/Canon',
             'type' => 'object',

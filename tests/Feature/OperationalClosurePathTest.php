@@ -54,9 +54,9 @@ class OperationalClosurePathTest extends TestCase
 
         // The author creates the first branch through all four early phases.
         $signal = $this->gate($this->move($author, ['action' => 'proposition.variant', 'statement' => 'Initial Signal']));
-        $earlyStance = $this->gate($this->move($author, ['action' => 'proposition.reclassify', 'statement' => 'Initial Stance']));
+        $earlyStance = $this->gate($this->move($author, ['action' => 'proposition.reclassify']));
         app(OperationalInstrumentService::class)->execute($earlyStance->phase, $earlyStance, ['kind' => 'citation', 'reference' => $signal->id]);
-        $read = $this->gate($this->move($author, ['action' => 'proposition.reclassify', 'statement' => 'Shared Concord Read']));
+        $read = $this->gate($this->move($author, ['action' => 'proposition.reclassify']));
         $left = $this->gate($this->move($author, ['action' => 'proposition.variant', 'statement' => 'First dispersed Signal']));
         $this->assertSame(PhaseKind::Disperse, $left->phase->kind);
 
@@ -245,9 +245,9 @@ class OperationalClosurePathTest extends TestCase
             'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/origin'],
         ]));
         $signal = $this->gate($this->move($author, ['action' => 'proposition.variant', 'statement' => 'Signal']));
-        $earlyStance = $this->gate($this->move($author, ['action' => 'proposition.reclassify', 'statement' => 'Stance']));
+        $earlyStance = $this->gate($this->move($author, ['action' => 'proposition.reclassify']));
         app(OperationalInstrumentService::class)->execute($earlyStance->phase, $earlyStance, ['kind' => 'citation', 'reference' => $signal->id]);
-        $read = $this->gate($this->move($author, ['action' => 'proposition.reclassify', 'statement' => 'Concord Read']));
+        $read = $this->gate($this->move($author, ['action' => 'proposition.reclassify']));
         $left = $this->gate($this->move($author, ['action' => 'proposition.variant', 'statement' => 'Dispersed Signal']));
         $builder = $this->participant('builder');
         $this->reachDisperse($builder, $signal, $earlyStance, $read);

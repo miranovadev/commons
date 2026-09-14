@@ -33,6 +33,7 @@ final readonly class ContributionDispatcher
         private PropositionOwnershipService $ownership,
         private ReceiptContextService $receipts,
         private ReceiptReplayService $replays,
+        private PropositionStateService $state,
     ) {}
 
     /**
@@ -95,8 +96,8 @@ final readonly class ContributionDispatcher
             return match ($input['action']) {
                 'proposition.traverse' => Proposition::query()
                     ->findOrFail($input['proposition_id']),
-                'proposition.variant',
-                'proposition.reclassify' => $this->proposition(
+                'proposition.reclassify' => $this->reclassify($phase, $gate, $input),
+                'proposition.variant' => $this->proposition(
                     $phase,
                     $gate,
                     $input,
@@ -178,6 +179,25 @@ final readonly class ContributionDispatcher
         return $this->refreshMeasurement($target);
     }
 
+    /** Classification has no authored content and no inherited judgments. */
+    private function reclassify(Phase $phase, Proposition $source, array $input): Proposition
+    {
+        if (array_diff(array_keys($input), ['action']) !== []) {
+            throw new DomainException('Reclassify accepts only action; the Gate statement is preserved exactly.');
+        }
+
+        return $this->classified($phase, $source);
+    }
+
+    private function classified(Phase $phase, Proposition $source): Proposition
+    {
+        $target = $this->write($phase, $source->statement, tier: 'expressive', preserveStatement: true);
+        $this->ledger->record($this->supersede($phase, $source, $target, 'reclassify'));
+        $this->state->preserveReclassificationEvidence($source, $target);
+
+        return $this->refreshMeasurement($target);
+    }
+
     /** @param array<string, mixed> $input */
     private function reconcile(
         Phase $phase,
@@ -226,10 +246,8 @@ final readonly class ContributionDispatcher
             if ($source === null) {
                 throw new DomainException('Bias requires an active Gate contributing to the dominant Stance/Frontier lean.');
             }
-            $target = $this->write($phase, $source->statement, tier: 'expressive', preserveStatement: true);
-            $this->ledger->record($this->supersede($phase, $source, $target, 'reclassify'));
 
-            return $this->refreshMeasurement($target);
+            return $this->classified($phase, $source);
         });
     }
 

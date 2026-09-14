@@ -77,7 +77,7 @@ class ParticipantContinuityTest extends TestCase
             ['action' => 'proposition.variant', 'statement' => 'Continue locally']);
         $this->assertSame($value > 0 ? 'frontier' : 'stance', $first['plan']['phase']['write_register']);
         $second = $service->contribute($participant, $first['plan']['phase']['id'],
-            ['action' => 'proposition.reclassify', 'statement' => 'Develop the continuation']);
+            ['action' => 'proposition.reclassify']);
         $this->assertSame($value > 0 ? 'canon' : 'concord', $second['plan']['phase']['write_register']);
     }
 

@@ -171,9 +171,10 @@ export function ContributionForm({
 
           {properties.instrument && <InstrumentFields value={values.instrument} onChange={(instrument) => set('instrument', instrument)} />}
 
+          {action === 'proposition.reclassify' && <Text size="sm" c="dimmed">The Gate statement and existing proposition evidence are preserved. The new classification begins without Attestations.</Text>}
           {action === 'proposition.reconcile' && <Text size="sm" c="dimmed">The new Proposition copies the current Gate statement exactly. The selected counterpart contributes a second hard parent edge.</Text>}
 
-          {action === 'proposition.bias' && <Text size="sm" c="dimmed">The selected Proposition becomes fresh Concord/Canon with its statement preserved. It must earn new Attestations, evidence and participation history before Commitment.</Text>}
+          {action === 'proposition.bias' && <Text size="sm" c="dimmed">The selected Proposition becomes fresh Concord/Canon with its statement preserved. Existing proposition evidence remains available; Attestations and phase history begin afresh.</Text>}
 
           {action === 'participant.rest' && <Text size="sm" c="dimmed">No admissible non-Rest action remains in this Phase. End this Cycle and retain your current position for recovery when the next Cycle begins.</Text>}
 
