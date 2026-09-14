@@ -151,11 +151,11 @@ class OperationalClosurePathTest extends TestCase
         $this->assertSame('positive', $eligibility['closure']['cadence_direction']);
         $this->assertCommitRejected($builder, 'depth_cadence_directions_diverge');
 
-        // A new observer participates in the existing early Signal, creating real
-        // touch variability. No counts, graph shapes or Closure values are patched.
+        // The early Signal/Stance were hard-reclassified. A new observer reaches
+        // the still-active Read to create real touch variability on active history.
+        // No counts, graph shapes or Closure values are patched.
         $observer = $this->participant('observer');
-        app(ParticipationService::class)->enter($observer);
-        $this->move($observer, ['action' => 'attestation.create', 'proposition_id' => $signal->id, 'direction' => 'support']);
+        $this->reachDisperse($observer, $signal, $earlyStance, $read);
         $comparison = app(ContextLineageComparisonService::class)->prospectiveCommit($concord, $order);
         $this->assertGreaterThan(0, app(ClosureCalculator::class)->coefficientOfVariation($comparison->current));
         $state = $this->state($builder);
