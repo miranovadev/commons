@@ -89,6 +89,8 @@ class InputSchemaServiceTest extends TestCase
         $expected = [
             PhaseKind::Distinguish->value => [
                 'proposition.variant',
+                'instrument.execute',
+                'receipt.replay',
                 'attestation.create',
                 'proposition.traverse',
             ],
@@ -118,6 +120,8 @@ class InputSchemaServiceTest extends TestCase
             ],
             PhaseKind::Mediate->value => [
                 'proposition.reconcile',
+                'instrument.execute',
+                'receipt.replay',
                 'attestation.create',
             ],
             PhaseKind::Bias->value => [
