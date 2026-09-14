@@ -43,7 +43,7 @@ class OperationalClosurePathTest extends TestCase
         $author = $this->participant('author');
         $state = app(ParticipationService::class)->enter($author, [
             'statement' => 'Origin for a shared investigation.',
-            'attestation' => ['direction' => 'support'],
+            'attestation' => ['direction' => 'positive'],
             'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/origin'],
         ]);
         $origin = $this->gate($state);
@@ -98,7 +98,7 @@ class OperationalClosurePathTest extends TestCase
 
         // Mediate participants reinforce the inherited direction of their immediate Write Stance.
         foreach ([$author, $grounder] as $participant) {
-            $this->move($participant, ['action' => 'attestation.create', 'proposition_id' => $stance->id, 'direction' => 'support']);
+            $this->move($participant, ['action' => 'attestation.create', 'proposition_id' => $stance->id, 'direction' => 'positive']);
         }
         $bias = Phase::findOrFail($this->state($builder)['plan']['phase']['id']);
         $this->assertSame(1.0, app(BiasGateService::class)->leanFor($bias));
@@ -123,7 +123,7 @@ class OperationalClosurePathTest extends TestCase
         $this->assertCommitRejected($builder, 'missing_effective_attestation');
 
         // Bias exposes this new Concord as an existing Write child to the other participants.
-        $this->move($author, ['action' => 'attestation.create', 'proposition_id' => $concord->id, 'direction' => 'support']);
+        $this->move($author, ['action' => 'attestation.create', 'proposition_id' => $concord->id, 'direction' => 'positive']);
         $state = $this->state($builder);
         $this->assertTrue($state['plan']['commitment']['requirements']['attestation']);
         $this->assertFalse($state['plan']['commitment']['requirements']['receipt']);
@@ -241,7 +241,7 @@ class OperationalClosurePathTest extends TestCase
         $author = $this->participant('author');
         $origin = $this->gate(app(ParticipationService::class)->enter($author, [
             'statement' => 'A shared Origin.',
-            'attestation' => ['direction' => 'support'],
+            'attestation' => ['direction' => 'positive'],
             'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/origin'],
         ]));
         $signal = $this->gate($this->move($author, ['action' => 'proposition.variant', 'statement' => 'Signal']));
@@ -253,12 +253,12 @@ class OperationalClosurePathTest extends TestCase
         $this->reachDisperse($builder, $signal, $earlyStance, $read);
         $this->move($builder, ['action' => 'proposition.variant', 'statement' => 'Other Signal']);
         $stance = $this->gate($this->move($builder, ['action' => 'proposition.reconcile', 'other_proposition_id' => $left->id]));
-        $this->move($author, ['action' => 'attestation.create', 'proposition_id' => $stance->id, 'direction' => 'support']);
+        $this->move($author, ['action' => 'attestation.create', 'proposition_id' => $stance->id, 'direction' => 'positive']);
         $concord = $this->gate($this->move($builder, ['action' => 'proposition.bias', 'proposition_id' => $stance->id]));
 
         // Builder remains in Order. Author completes Order by grounding the same
         // expressive Concord, then re-enters before Builder has committed it.
-        $this->move($author, ['action' => 'attestation.create', 'proposition_id' => $concord->id, 'direction' => 'support']);
+        $this->move($author, ['action' => 'attestation.create', 'proposition_id' => $concord->id, 'direction' => 'positive']);
         $completed = $this->move($author, [
             'action' => 'instrument.execute', 'proposition_id' => $concord->id,
             'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/concord'],
@@ -276,7 +276,7 @@ class OperationalClosurePathTest extends TestCase
         $this->assertArrayNotHasKey('proposition.variant', $state['plan']['schema']['$defs']['actions']);
         $before = Proposition::count();
         $continued = $this->gate($this->move($author, [
-            'action' => 'attestation.create', 'proposition_id' => $signal->id, 'direction' => 'support',
+            'action' => 'attestation.create', 'proposition_id' => $signal->id, 'direction' => 'positive',
         ]));
         $this->assertSame($signal->id, $continued->id);
         $this->assertSame($before, Proposition::count());
@@ -324,7 +324,7 @@ class OperationalClosurePathTest extends TestCase
     {
         app(ParticipationService::class)->enter($participant);
         foreach ([$signal, $stance, $read] as $proposition) {
-            $this->move($participant, ['action' => 'attestation.create', 'proposition_id' => $proposition->id, 'direction' => 'support']);
+            $this->move($participant, ['action' => 'attestation.create', 'proposition_id' => $proposition->id, 'direction' => 'positive']);
         }
         $this->assertSame('disperse', $this->state($participant)['plan']['phase']['kind']);
     }

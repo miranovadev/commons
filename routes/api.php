@@ -46,6 +46,7 @@ Route::middleware('web')->group(function (): void {
                     ->except(['create', 'edit']);
 
                 Route::post('/substrates', [SubstrateController::class, 'store']);
+                Route::patch('/substrates/{substrate}', [SubstrateController::class, 'update']);
 
                 Route::scopeBindings()->group(function (): void {
                     Route::apiResource(

@@ -27,7 +27,7 @@ test('Mediate counterparts and unary Bias choices use their own schema-authorize
           const target = kind === 'bias' ? 'proposition_id' : 'other_proposition_id';
           const choices = kind === 'bias' ? ['gate', 'sibling'] : ['sibling'];
           const actions = {
-            'attestation.create': { properties: { proposition_id: { enum: ['child'] }, direction: { enum: ['support', 'refute'] } } },
+            'attestation.create': { properties: { proposition_id: { enum: ['child'] }, direction: { enum: ['positive', 'negative'] } } },
             ...(authorized ? { [gateAction]: { required: ['action', target], properties: { action: { const: gateAction }, [target]: { enum: choices } } } } : {}),
           };
           const plan = { gate, phase: { kind, number: kind === 'bias' ? 6 : 5, write_register: writeRegister },

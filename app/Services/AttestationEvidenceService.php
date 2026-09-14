@@ -97,14 +97,14 @@ final readonly class AttestationEvidenceService
                 // Isolated legacy measurement fixtures have no region. They do not
                 // become selectable; their numeric evidence keeps the bootstrap frame.
                 $frames[$attestation->proposition_id] = $seed === null ? Direction::Positive
-                    : $this->polarity->forSeed($seed, $context)['support'];
+                    : $this->polarity->forSeed($seed, $context)['positive'];
             }
             $support = $frames[$attestation->proposition_id] === Direction::Positive ? 1 : -1;
             $rows[] = [
                 'id' => $attestation->id, 'proposition_id' => $attestation->proposition_id,
                 'sequence' => $attestation->ledgerEntry?->sequence ?? 0,
                 'replaced_at' => $attestation->supersededBy === null ? null : ($attestation->supersededBy->ledgerEntry?->sequence ?? 0),
-                'sign' => $attestation->direction === 'support' ? $support : -$support,
+                'sign' => in_array($attestation->direction, ['positive', 'support'], true) ? $support : -$support,
                 'loads' => $loads[$attestation->id] ?? [],
             ];
         }

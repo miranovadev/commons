@@ -97,7 +97,7 @@ class PropositionReadTest extends TestCase
     {
         [$substrate, $origin] = $this->fixture();
         $attestation = new \App\Models\Attestation;
-        $attestation->forceFill(['phase_id' => $origin->phase_id, 'proposition_id' => $origin->id, 'direction' => 'support'])->save();
+        $attestation->forceFill(['phase_id' => $origin->phase_id, 'proposition_id' => $origin->id, 'direction' => 'positive'])->save();
         $parent = $origin;
         for ($i = 0; $i < 30; $i++) {
             $child = $this->node($origin->phase, 'committal', false);
@@ -113,8 +113,8 @@ class PropositionReadTest extends TestCase
         $queries = $this->graphQueries($substrate, 32);
         $this->assertLessThanOrEqual(20, count($queries));
         $data = collect($this->getJson("/api/substrates/{$substrate->slug}/propositions")->assertOk()->json('data'))->keyBy('id');
-        $this->assertSame(1, $data[$parent->id]['attestation_counts']['support']);
-        $this->assertSame(0, $data[$expressive->id]['attestation_counts']['support']);
+        $this->assertSame(1, $data[$parent->id]['attestation_counts']['positive']);
+        $this->assertSame(0, $data[$expressive->id]['attestation_counts']['positive']);
     }
 
     private function graphQueries(Substrate $substrate, int $count): array

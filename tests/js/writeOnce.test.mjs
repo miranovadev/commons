@@ -16,7 +16,7 @@ const result = await build({ stdin: { contents: `
     const actions = {
       ...(canRevise ? { 'proposition.revise': { properties: { proposition_id: { enum: ['write'] } } } } : {}),
       'instrument.execute': { properties: { proposition_id: { enum: ['write'] } } },
-      'attestation.create': { properties: { proposition_id: { enum: ['write'] }, direction: { enum: ['support', 'refute'] } } },
+      'attestation.create': { properties: { proposition_id: { enum: ['write'] }, direction: { enum: ['positive', 'negative'] } } },
     };
     if (persist) {
       gate.register = 'activity';

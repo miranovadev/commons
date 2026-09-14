@@ -175,7 +175,7 @@ class TragedyTest extends TestCase
             }
             if (in_array($action, ['proposition.traverse', 'proposition.revise'], true)) {
                 $attestation = new Attestation;
-                $attestation->forceFill(['phase_id' => $history->id, 'proposition_id' => $target->id, 'direction' => $action === 'proposition.revise' ? 'refute' : 'support'])->save();
+                $attestation->forceFill(['phase_id' => $history->id, 'proposition_id' => $target->id, 'direction' => $action === 'proposition.revise' ? 'negative' : 'positive'])->save();
             }
         }
 

@@ -38,7 +38,7 @@ function fixture(domain, phase = 7, continuity = false) {
     workspace: { domain, horizon: { id: domain, domain, sequence: domain === 'emergence' ? 3 : 2, parent_context_horizon_id: 'parent', opened_by_proposition_id: opening.id, opening_proposition: opening },
       provenance, registers: Object.fromEntries(history.map(card => [card.register, [card]])) },
     schema: { $defs: { actions: {
-      'attestation.create': { properties: { proposition_id: { enum: [write.id] }, direction: { enum: ['support', 'refute'] } } },
+      'attestation.create': { properties: { proposition_id: { enum: [write.id] }, direction: { enum: ['positive', 'negative'] } } },
       ...(phase === 6 ? { 'proposition.bias': { properties: { proposition_id: { enum: [gate.id] } } } } : {}),
     } } },
   };

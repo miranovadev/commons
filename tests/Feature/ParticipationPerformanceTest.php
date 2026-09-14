@@ -128,7 +128,7 @@ class ParticipationPerformanceTest extends TestCase
         $old = $target->attestations()->firstOrFail();
         $replacement = new Attestation;
         $replacement->forceFill(['phase_id' => $phase->id, 'proposition_id' => $target->id,
-            'supersedes_attestation_id' => $old->id, 'direction' => $old->direction === 'support' ? 'refute' : 'support'])->save();
+            'supersedes_attestation_id' => $old->id, 'direction' => $old->direction === 'positive' ? 'negative' : 'positive'])->save();
         app(LedgerService::class)->record($replacement);
         $fresh = new ParticipationContext($phase->fresh());
         $this->assertSame($evidence->directionFor($target), $evidence->directionFor($target, context: $fresh));
@@ -184,7 +184,7 @@ class ParticipationPerformanceTest extends TestCase
             return $p;
         };
         $origin = $node('canon', tier: 'committal');
-        app(CommitRegionPolarityService::class)->establishOrigin($origin, 'support');
+        app(CommitRegionPolarityService::class)->establishOrigin($origin, 'positive');
         $prior = $node('signal', $origin);
         $prior = $node('stance', $prior, type: 'reclassify');
         $prior = $node('concord', $prior, type: 'reclassify');
@@ -205,7 +205,7 @@ class ParticipationPerformanceTest extends TestCase
             $write = $writes[] = $node('concord', $b);
             foreach ([$read, $b, $write] as $target) {
                 $a = new Attestation;
-                $a->forceFill(['phase_id' => $history[$i % 3]->id, 'proposition_id' => $target->id, 'direction' => $i % 3 === 0 ? 'refute' : 'support'])->save();
+                $a->forceFill(['phase_id' => $history[$i % 3]->id, 'proposition_id' => $target->id, 'direction' => $i % 3 === 0 ? 'negative' : 'positive'])->save();
                 app(LedgerService::class)->record($a);
                 $execution = app(InstrumentExecutionService::class)->start($a->phase, $target, 'hyperlink', 'https://example.test/'.$a->id);
                 app(InstrumentExecutionService::class)->complete($execution, $a, 'fixture-'.$a->id);
@@ -215,7 +215,7 @@ class ParticipationPerformanceTest extends TestCase
         // present alongside a negative-polarity neighbouring Commit Region.
         $retired = $node('stance', $gates[0]);
         $old = new Attestation;
-        $old->forceFill(['phase_id' => $history[0]->id, 'proposition_id' => $retired->id, 'direction' => 'refute'])->save();
+        $old->forceFill(['phase_id' => $history[0]->id, 'proposition_id' => $retired->id, 'direction' => 'negative'])->save();
         app(LedgerService::class)->record($old);
         $node('stance', $retired, 'expressive', 'revise');
         $merged = $node('concord', $writes[2], 'expressive', 'reconcile');

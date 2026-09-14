@@ -122,7 +122,7 @@ class ParticipantContinuityTest extends TestCase
         $participant = new Participant;
         $participant->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'committer'])->save();
         $entry = app(CycleEntryService::class);
-        $entry->enter($participant, ['statement' => 'Origin', 'attestation' => ['direction' => 'support'],
+        $entry->enter($participant, ['statement' => 'Origin', 'attestation' => ['direction' => 'positive'],
             'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/origin']]);
         $origin = $participant->fresh()->position;
         $other = new Participant;

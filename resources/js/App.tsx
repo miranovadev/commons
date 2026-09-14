@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { ActionIcon, AppShell, Avatar, Box, Burger, Button, Center, Group, Loader, MantineProvider, Menu, NavLink, Stack, Text, useMantineColorScheme } from '@mantine/core';
+import { ActionIcon, AppShell, Avatar, Box, Burger, Button, Center, Group, Loader, Menu, NavLink, Stack, Text, useMantineColorScheme } from '@mantine/core';
 import { useDisclosure, useMediaQuery } from '@mantine/hooks';
 import { IconAdjustments, IconBinaryTree2, IconChevronDown, IconLogin2, IconLogout2, IconMoon, IconPlugConnected, IconSettings, IconSun, IconTopologyStar3, IconUserHexagon } from '@tabler/icons-react';
 import { BrowserRouter, Link, Navigate, Route, Routes, matchPath, useLocation, useNavigate } from 'react-router-dom';
@@ -10,7 +10,9 @@ import { CommonsLogo } from './components/CommonsLogo';
 import { commonsApi, useGetSessionQuery, useGetSubstrateQuery, useLogoutMutation } from './services/commonsApi';
 import { systemBootstrapped } from './systemSlice';
 import { HTTP_PRECONDITION_REQUIRED } from './http';
-import { theme } from './theme';
+import { SubstrateTheme } from './SubstrateTheme';
+import { presentationFor } from './substratePresentation';
+import { SubstrateSettingsPage } from './pages/SubstrateSettingsPage';
 import type { RootState } from './store';
 import { BootstrapPage } from './pages/BootstrapPage';
 import { ConnectionsPage } from './pages/ConnectionsPage';
@@ -21,7 +23,15 @@ import { SubstratePage } from './pages/SubstratePage';
 import { SubstratesPage } from './pages/SubstratesPage';
 
 export function App() {
-  return <MantineProvider theme={theme} defaultColorScheme="auto"><BrowserRouter><CommonsApp /></BrowserRouter></MantineProvider>;
+  return <BrowserRouter><ThemedApp /></BrowserRouter>;
+}
+
+function ThemedApp() {
+  const location = useLocation();
+  const slug = matchPath('/substrates/:slug/*', location.pathname)?.params.slug;
+  // currentData avoids briefly applying the previous Substrate's theme on navigation.
+  const { currentData } = useGetSubstrateQuery(slug ?? '', { skip: !slug });
+  return <SubstrateTheme presentation={presentationFor(slug ? currentData : undefined)}><CommonsApp /></SubstrateTheme>;
 }
 
 function CommonsApp() {
@@ -81,7 +91,7 @@ function CommonsApp() {
             <ColorSchemeButton />
             {user ? (
               <Menu position="bottom-end" width={210}>
-                <Menu.Target><Button variant="subtle" color="gray" px={mobile ? 0 : 'xs'} rightSection={mobile ? undefined : <IconChevronDown size={14} />}><Group gap="xs"><Avatar size={26} color="indigo" name={user.name} />{!mobile && <Text size="sm" fw={500}>{user.name}</Text>}</Group></Button></Menu.Target>
+                <Menu.Target><Button variant="subtle" color="gray" px={mobile ? 0 : 'xs'} rightSection={mobile ? undefined : <IconChevronDown size={14} />}><Group gap="xs"><Avatar size={26} color="primary" name={user.name} />{!mobile && <Text size="sm" fw={500}>{user.name}</Text>}</Group></Button></Menu.Target>
                 <Menu.Dropdown>
                   <Menu.Label>{user.email}</Menu.Label>
                   <Menu.Item leftSection={<IconSettings size={16} />}>Account Settings</Menu.Item>
@@ -109,7 +119,7 @@ function CommonsApp() {
               <Stack gap={2} mt={4}>
                 <NavLink component={Link} to={`/substrates/${substrateSlug}`} label="Graph" leftSection={<IconBinaryTree2 size={16} />} active={Boolean(substrateRoot)} />
                 <NavLink component={Link} to={`/substrates/${substrateSlug}/participants`} label="Participants" leftSection={<IconUserHexagon size={16} />} active={participantsActive} />
-                <NavLink label="Settings" leftSection={<IconAdjustments size={16} />} disabled />
+                <NavLink component={Link} to={`/substrates/${substrateSlug}/settings`} label="Settings" leftSection={<IconAdjustments size={16} />} active={location.pathname.endsWith('/settings')} disabled={!selectedSubstrate?.can_update} />
               </Stack>
             </Box>
           )}
@@ -122,6 +132,7 @@ function CommonsApp() {
           <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage />} />
           <Route path="/connections" element={user ? <ConnectionsPage /> : <Navigate to="/login" replace />} />
           <Route path="/substrates/:slug" element={<SubstratePage user={user} />} />
+          <Route path="/substrates/:slug/settings" element={user ? <SubstrateSettingsPage /> : <Navigate to="/login" replace />} />
           <Route path="/substrates/:slug/participants" element={user ? <ParticipantsPage user={user} /> : <Navigate to="/login" replace />} />
           <Route path="/substrates/:slug/participants/:participantId" element={user ? <ParticipantPage /> : <Navigate to="/login" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />

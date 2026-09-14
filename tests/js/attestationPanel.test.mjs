@@ -11,7 +11,7 @@ test('cards show directional counts and the rationale panel obeys schema permiss
     import { PropositionCard } from './resources/js/components/PropositionCard';
     import { AttestationPanel } from './resources/js/components/AttestationPanel';
     const proposition = { id: 'p', tier: 'expressive', register: 'frontier', statement: 'Proposition',
-      attestation_summary: { support_direction: 'positive', positive: 3, negative: 2 }, attestation_counts: { support: 3, refute: 2 }, observables: { correspondence: 0, chirality: 0, closure: 0 } };
+      attestation_summary: { positive_direction: 'positive', positive: 3, negative: 2 }, attestation_counts: { positive: 3, negative: 2 }, observables: { correspondence: 0, chirality: 0, closure: 0 } };
     export function render(directions) {
       const plan = { schema: { $defs: { actions: { 'attestation.create': {
         properties: { proposition_id: { enum: ['p'] }, direction: { enum: directions } }
@@ -22,9 +22,9 @@ test('cards show directional counts and the rationale panel obeys schema permiss
   `, resolveDir: process.cwd(), loader: 'tsx' }, bundle: true, platform: 'node', format: 'cjs', write: false, jsx: 'automatic' });
   const module = { exports: {} };
   new Function('require', 'module', 'exports', result.outputFiles[0].text)(createRequire(import.meta.url), module, module.exports);
-  const markup = module.exports.render(['refute']);
-  assert.match(markup, /aria-label="support: 3"/);
-  assert.match(markup, /aria-label="refute: 2"/);
+  const markup = module.exports.render(['negative']);
+  assert.match(markup, /aria-label="Support: 3"/);
+  assert.match(markup, /aria-label="Refute: 2"/);
   assert.match(markup, /data-direction="positive"/);
   assert.match(markup, /data-direction="negative"/);
   assert.match(markup, /<textarea/);
@@ -63,7 +63,7 @@ export const useGetParticipantWorkspaceQuery = () => ({ data: globalThis.attesta
   new Function('require', 'module', 'exports', result.outputFiles[0].text)(createRequire(import.meta.url), module, module.exports);
   const calls = [];
   let resolve, reject;
-  const actions = { 'attestation.create': { properties: { proposition_id: { enum: ['p'] }, direction: { enum: ['support', 'refute'] } } } };
+  const actions = { 'attestation.create': { properties: { proposition_id: { enum: ['p'] }, direction: { enum: ['positive', 'negative'] } } } };
   const harness = {
     participation: { status: 'ready', plan: { gate: { id: 'gate', statement: 'Gate' }, phase: { id: 'phase', kind: 'persist' }, schema: {
       oneOf: [{ $ref: '#/$defs/actions/attestation.create' }], $defs: { actions },
@@ -74,10 +74,10 @@ export const useGetParticipantWorkspaceQuery = () => ({ data: globalThis.attesta
     },
   };
   module.exports.render(harness);
-  const click = () => harness.workspace.onAction('attestation.create', { proposition_id: 'p', direction: 'support' });
+  const click = () => harness.workspace.onAction('attestation.create', { proposition_id: 'p', direction: 'positive' });
   click(); click();
   assert.equal(calls.length, 1);
-  assert.deepEqual(calls[0].contribution, { action: 'attestation.create', proposition_id: 'p', direction: 'support' });
+  assert.deepEqual(calls[0].contribution, { action: 'attestation.create', proposition_id: 'p', direction: 'positive' });
   reject(new Error('Try again'));
   await new Promise(setImmediate);
   click();

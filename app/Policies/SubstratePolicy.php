@@ -31,6 +31,11 @@ class SubstratePolicy
         return $user->hasPermission('substrates.create');
     }
 
+    public function update(User $user, Substrate $substrate): bool
+    {
+        return $user->hasSystemAccess();
+    }
+
     public function viewParticipants(
         User $user,
         Substrate $substrate,

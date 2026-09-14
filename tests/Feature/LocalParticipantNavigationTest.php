@@ -538,7 +538,7 @@ class LocalParticipantNavigationTest extends TestCase
         $phase->cycle->save();
         $attestation = new Attestation;
         $attestation->forceFill([
-            'phase_id' => $phase->id, 'proposition_id' => $target->id, 'direction' => 'support',
+            'phase_id' => $phase->id, 'proposition_id' => $target->id, 'direction' => 'positive',
         ])->save();
     }
 

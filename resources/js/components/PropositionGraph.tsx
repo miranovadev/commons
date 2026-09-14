@@ -40,7 +40,7 @@ export function PropositionGraph({ propositions, substrateSlug, initialFocusId, 
   if (!layout.origin) {
     return (
       <Paper withBorder p={50} ta="center">
-        <ThemeIcon color="indigo" variant="light" size={50} radius="xl" mx="auto"><IconSparkles size={24} /></ThemeIcon>
+        <ThemeIcon color="primary" variant="light" size={50} radius="xl" mx="auto"><IconSparkles size={24} /></ThemeIcon>
         <Title order={3} mt="md">The Origin has not been written</Title>
         <Text c="dimmed" mt="xs">This substrate is balanced, empty, and carrying its full available Charge.</Text>
       </Paper>
@@ -84,7 +84,7 @@ export function PropositionGraph({ propositions, substrateSlug, initialFocusId, 
       <Group className="substrate-graph-hint" gap={6} wrap="nowrap">
         <IconArrowsMove size={14} />
         <Text size="xs" c="dimmed">Drag the surface to explore</Text>
-        {participantMode && <Text size="xs" c="indigo" fw={650}>· {propositions.length} / {perspectiveLimit || propositions.length} visible</Text>}
+        {participantMode && <Text size="xs" c="primary" fw={650}>· {propositions.length} / {perspectiveLimit || propositions.length} visible</Text>}
       </Group>
 
       <Box
@@ -121,7 +121,7 @@ export function PropositionGraph({ propositions, substrateSlug, initialFocusId, 
                 selected={selectedId === proposition.id}
                 onClick={() => { setSelectedId(proposition.id); setInspectedId(proposition.id); }}
               />
-              {proposition.is_origin && <Text className="substrate-graph-origin-label" size="10px" c="indigo" fw={700}>ORIGIN</Text>}
+              {proposition.is_origin && <Text className="substrate-graph-origin-label" size="10px" c="primary" fw={700}>ORIGIN</Text>}
             </Box>
           ))}
         </Box>

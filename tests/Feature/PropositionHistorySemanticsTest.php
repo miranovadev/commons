@@ -108,7 +108,7 @@ class PropositionHistorySemanticsTest extends TestCase
             $input = ['action' => 'proposition.reconcile', 'other_proposition_id' => $other->id];
         }
         foreach ($sources as $item) {
-            $this->giveHistory($item, $operation === 'revise' ? 'refute' : 'support');
+            $this->giveHistory($item, $operation === 'revise' ? 'negative' : 'positive');
         }
         $cycle = new Cycle;
         $cycle->forceFill(['participant_id' => $this->participant->id, 'sequence' => 2])->save();
@@ -181,7 +181,7 @@ class PropositionHistorySemanticsTest extends TestCase
         }
     }
 
-    private function giveHistory(Proposition $proposition, string $direction = 'support'): void
+    private function giveHistory(Proposition $proposition, string $direction = 'positive'): void
     {
         $phases = [];
         foreach (range(1, 2) as $i) {

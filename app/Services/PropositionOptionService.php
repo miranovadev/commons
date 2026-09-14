@@ -108,7 +108,7 @@ final class PropositionOptionService
     /**
      * Revision is an ownership-preserving move within a register. It cannot
      * target the Gate merely because the Gate belongs to the Participant.
-     * The exact Write must have an effective self-Refute from an earlier Cycle;
+     * The exact Write must have an effective self-negative Attestation from an earlier Cycle;
      * a revision's ancestry never supplies its personal revision eligibility.
      *
      * @return Collection<int, Proposition>
@@ -132,7 +132,7 @@ final class PropositionOptionService
                 fn (Builder $query) => $query->whereBelongsTo($participant),
             )
             ->whereHas('effectiveAttestations', fn (Builder $query) => $query
-                ->where('direction', 'refute')
+                ->where('direction', 'negative')
                 ->whereHas('phase.cycle', fn (Builder $query) => $query
                     ->whereBelongsTo($participant)
                     ->where('sequence', '<', $phase->cycle->sequence)))

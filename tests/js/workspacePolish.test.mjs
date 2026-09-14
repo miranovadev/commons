@@ -16,16 +16,16 @@ const result = await build({ stdin: { contents: `
   export { participantColor } from './resources/js/participantColor';
   export { navigationState, navigationTarget } from './resources/js/navigation';
   const render = element => renderToStaticMarkup(<MantineProvider env="test">{element}</MantineProvider>);
-  export function summary(support, negative, positive) { return render(<AttestationCounts proposition={{ attestation_summary: { support_direction: support, negative, positive } }} />); }
+  export function summary(support, negative, positive) { return render(<AttestationCounts proposition={{ attestation_summary: { positive_direction: support, negative, positive } }} />); }
   export function workspace(support, effective = null) {
     const gate = { id: 'gate', register: 'signal', tier: 'expressive', statement: 'Gate context' };
-    const child = { id: 'child', register: 'stance', tier: 'expressive', statement: 'Write context', attestation_summary: { support_direction: support, negative: 2, positive: 3 } };
+    const child = { id: 'child', register: 'stance', tier: 'expressive', statement: 'Write context', attestation_summary: { positive_direction: support, negative: 2, positive: 3 } };
     const actions = {
       'proposition.variant': { properties: { statement: {} } },
       'proposition.reclassify': { properties: {} },
       'proposition.revise': { properties: { proposition_id: { enum: ['child'] } } },
       'proposition.traverse': { properties: { proposition_id: { enum: effective ? ['child'] : [] } } },
-      'attestation.create': { properties: { proposition_id: { enum: ['child'] }, direction: { enum: ['support', 'refute'].filter(label => label !== effective) } } },
+      'attestation.create': { properties: { proposition_id: { enum: ['child'] }, direction: { enum: ['positive', 'negative'].filter(label => label !== effective) } } },
     };
     const plan = { gate, phase: { id: 'phase', number: 2, kind: 'persist', write_register: 'stance' },
       write_options: [child], revision_options: [child], attestation_options: [child], traversal_options: [child], schema: { $defs: { actions } } };
@@ -44,8 +44,8 @@ for (const support of ['positive', 'negative']) {
   test(`directional card controls and signed counts share the ${support} Support frame`, () => {
     const slots = ui.directionSlots(support);
     assert.deepEqual(slots.map(s => s.direction), ['negative', 'positive']);
-    assert.deepEqual(slots.map(s => s.label), support === 'positive' ? ['refute', 'support'] : ['support', 'refute']);
-    for (const slot of slots) assert.equal(slot.color, slot.label === 'support' ? 'violet' : 'teal');
+    assert.deepEqual(slots.map(s => s.label), support === 'positive' ? ['negative', 'positive'] : ['positive', 'negative']);
+    for (const slot of slots) assert.equal(slot.color, slot.label === 'positive' ? 'violet' : 'blue');
     const markup = ui.workspace(support);
     const footer = markup.slice(markup.indexOf('write-option-card__actions--directional'));
     const buttons = [...footer.matchAll(/<button\b[\s\S]*?<\/button>/g)].map(match => match[0]);
@@ -61,10 +61,10 @@ for (const support of ['positive', 'negative']) {
     assert.match(summary, /data-direction="negative" data-animated="true"/);
     assert.ok(summary.indexOf('−5') < summary.indexOf('directional-whirl'));
     assert.ok(summary.indexOf('+2') > summary.indexOf('directional-whirl'));
-    for (const slot of slots) assert.ok(summary.includes(`aria-label="${slot.label}: ${slot.side === 'left' ? 5 : 2}"`));
+    for (const slot of slots) assert.ok(summary.includes(`aria-label="${slot.text}: ${slot.side === 'left' ? 5 : 2}"`));
   });
   test(`Traverse arrows point into the outer whirl for ${support} Support`, () => {
-    for (const label of ['support', 'refute']) {
+    for (const label of ['positive', 'negative']) {
       const markup = ui.workspace(support, label);
       const footer = markup.slice(markup.indexOf('write-option-card__actions--directional'));
       const traverse = [...footer.matchAll(/<button\b[\s\S]*?<\/button>/g)].map(match => match[0]).find(button => button.includes('>Traverse</span>'));
@@ -78,12 +78,12 @@ for (const support of ['positive', 'negative']) {
 
 test('legacy tied-count payloads without retained direction stay neutral; geometry follows only signed direction', () => {
   for (const count of [0, 3]) assert.match(ui.summary('negative', count, count), /data-direction="neutral" data-animated="false"/);
-  assert.equal(ui.attestationPresentation({ attestation_counts: { support: 9, refute: 0 } }).dominant, null);
+  assert.equal(ui.attestationPresentation({ attestation_counts: { positive: 9, negative: 0 } }).dominant, null);
   assert.match(css, /\[data-direction="negative"\] \.directional-whirl__geometry\s*\{ transform:scaleX\(-1\)/);
   assert.match(css, /\[data-direction="negative"\]\s*\{ animation-direction:reverse/);
-  assert.doesNotMatch(css, /data-label="refute"[^}]*scaleX/);
-  assert.match(css, /data-label="support"[^}]*mantine-color-violet-7[^}]*mantine-color-violet-4/);
-  assert.match(css, /data-label="refute"[^}]*mantine-color-teal-8[^}]*mantine-color-teal-4/);
+  assert.doesNotMatch(css, /data-label="negative"[^}]*scaleX/);
+  assert.match(css, /data-label="positive"[^}]*mantine-color-attestationPositive-7[^}]*mantine-color-attestationPositive-4/);
+  assert.match(css, /data-label="negative"[^}]*mantine-color-attestationNegative-8[^}]*mantine-color-attestationNegative-4/);
 });
 
 test('participant palette selection is deterministic and distinguishes the active callsigns', () => {

@@ -17,11 +17,11 @@ test('Write renders only local cards and exactly the two schema-driven direction
         const gate = { id: 'gate', register: 'activity', tier: 'expressive', statement: 'Gate' };
         const target = { id: 'historical', register: 'frontier', tier: 'expressive', statement: 'Historical target' };
         export function render(effective, allowed = true, auxiliary = false, kind = 'persist') {
-          const directions = ['refute', 'support'].filter(direction => direction !== effective);
+          const directions = ['negative', 'positive'].filter(direction => direction !== effective);
           const traversalAllowed = ['distinguish', 'persist', 'constrain'].includes(kind);
           const actions = allowed ? {
             'attestation.create': {
-              properties: { proposition_id: { enum: [target.id] }, direction: { enum: ['refute', 'support'] } },
+              properties: { proposition_id: { enum: [target.id] }, direction: { enum: ['negative', 'positive'] } },
               anyOf: directions.map(direction => ({ properties: { proposition_id: { enum: [target.id] }, direction: { enum: [direction] } } })),
             },
             ...(effective && traversalAllowed ? { 'proposition.traverse': { properties: { proposition_id: { enum: [target.id] } } } } : {}),
@@ -50,7 +50,7 @@ test('Write renders only local cards and exactly the two schema-driven direction
   const require = createRequire(import.meta.url);
   const module = { exports: {} };
   new Function('require', 'module', 'exports', result.outputFiles[0].text)(require, module, module.exports);
-  for (const [effective, expected] of [[null, ['Refute', 'Support']], ['support', ['Refute', 'Traverse']], ['refute', ['Traverse', 'Support']]]) {
+  for (const [effective, expected] of [[null, ['Refute', 'Support']], ['positive', ['Refute', 'Traverse']], ['negative', ['Traverse', 'Support']]]) {
     for (const auxiliary of [false, true]) {
       const markup = module.exports.render(effective, true, auxiliary);
       assert.match(markup, /Historical target/);
@@ -77,7 +77,7 @@ test('Write renders only local cards and exactly the two schema-driven direction
   assert.doesNotMatch(module.exports.render(null, false), /Historical target|>(Support|Refute|Traverse)<\/span>/);
   for (const kind of ['disperse', 'mediate', 'bias', 'order']) {
     // The schema is authoritative even if a stale caller lists Traverse as available.
-    const markup = module.exports.render('support', true, false, kind);
+    const markup = module.exports.render('positive', true, false, kind);
     assert.doesNotMatch(markup, />Traverse<\/span>/);
     assert.match(markup, />Refute<\/span>/);
   }

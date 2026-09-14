@@ -32,7 +32,7 @@ export function SubstratePage({ user }: { user?: User | null }) {
                 </Breadcrumbs>
                 <Group justify="space-between" align="flex-start" wrap="wrap">
                   <Box>
-                    <Group gap="xs"><Badge color="indigo" variant="light" leftSection={<IconTopologyStar3 size={12} />}>SUBSTRATE</Badge><Badge color="gray" variant="light" leftSection={<IconUsers size={12} />}>{substrate.participants_count ?? 0}</Badge></Group>
+                    <Group gap="xs"><Badge color="primary" variant="light" leftSection={<IconTopologyStar3 size={12} />}>SUBSTRATE</Badge><Badge color="gray" variant="light" leftSection={<IconUsers size={12} />}>{substrate.participants_count ?? 0}</Badge></Group>
                     <Title order={2} mt="xs">{substrate.title}</Title>
                     <Text c="dimmed" size="sm" mt={4} maw={720}>{substrate.description || 'A shared cognitive substrate.'}</Text>
                   </Box>

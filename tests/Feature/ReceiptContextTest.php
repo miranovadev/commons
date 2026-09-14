@@ -47,7 +47,7 @@ class ReceiptContextTest extends TestCase
     private function move($fixture, $subject): Phase
     {
         app(ParticipationService::class)->contribute($fixture->viewer, $fixture->phase->id, [
-            'action' => 'attestation.create', 'proposition_id' => $subject->id, 'direction' => 'support',
+            'action' => 'attestation.create', 'proposition_id' => $subject->id, 'direction' => 'positive',
         ]);
 
         return $fixture->viewer->cycles()->latest('sequence')->first()->phases()->whereNull('completed_at')->firstOrFail();
@@ -219,7 +219,7 @@ class ReceiptContextTest extends TestCase
         [$fixture, , $subject] = $this->scenario();
         $phase = $this->move($fixture, $subject);
         $negative = new Attestation;
-        $negative->forceFill(['phase_id' => $subject->phase_id, 'proposition_id' => $subject->id, 'direction' => 'refute'])->save();
+        $negative->forceFill(['phase_id' => $subject->phase_id, 'proposition_id' => $subject->id, 'direction' => 'negative'])->save();
         app(LedgerService::class)->record($negative);
         $evidence = app(AttestationEvidenceService::class);
         $this->assertSame(0.0, $evidence->valueFor(collect([$subject]), $fixture->substrate));

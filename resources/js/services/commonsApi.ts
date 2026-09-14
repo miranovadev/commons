@@ -1,3 +1,4 @@
+import type { PresentationInput } from '../substratePresentation';
 import type { AutonomousParticipation, ParticipantContext } from '../types';
 import type { GraphSubscriptions } from '../realtime/notifications';
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
@@ -121,6 +122,11 @@ export const commonsApi = createApi({
     bootstrap: builder.mutation<User, BootstrapInput>({ query: (body) => ({ url: '/bootstrap', method: 'POST', body }), transformResponse: data, invalidatesTags: ['Session', 'Substrate'] }),
     getSubstrates: builder.query<Substrate[], void>({ query: () => '/substrates', transformResponse: data, providesTags: (result) => result ? [...result.map(({ id }) => ({ type: 'Substrate' as const, id })), { type: 'Substrate', id: 'LIST' }] : [{ type: 'Substrate', id: 'LIST' }] }),
     createSubstrate: builder.mutation<Substrate, SubstrateInput>({ query: (body) => ({ url: '/substrates', method: 'POST', body }), transformResponse: data, invalidatesTags: [{ type: 'Substrate', id: 'LIST' }] }),
+    updateSubstrate: builder.mutation<Substrate, { slug: string; configuration: { presentation: PresentationInput } }>({
+      query: ({ slug, ...body }) => ({ url: `/substrates/${slug}`, method: 'PATCH', body }),
+      transformResponse: data,
+      invalidatesTags: (result) => result ? [{ type: 'Substrate', id: result.id }, { type: 'Substrate', id: 'LIST' }] : [],
+    }),
     getSubstrate: builder.query<Substrate, string>({ query: (slug) => `/substrates/${slug}`, transformResponse: data, providesTags: (result) => result ? [{ type: 'Substrate', id: result.id }] : [] }),
     getGraphSubscriptions: builder.query<GraphSubscriptions, string>({
       query: slug => `/substrates/${slug}/realtime`, transformResponse: data,
@@ -264,6 +270,7 @@ export const {
   useCreateConnectionMutation,
   useCreateParticipantConnectionMutation,
   useCreateSubstrateMutation,
+  useUpdateSubstrateMutation,
   useContributeMutation,
   useDeleteConnectionMutation,
   useDeleteParticipantConnectionMutation,

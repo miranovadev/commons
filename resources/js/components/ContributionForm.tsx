@@ -51,7 +51,7 @@ export function ContributionForm({
 }) {
   const schema = action ? plan.schema?.$defs?.actions?.[action] : undefined;
   const [values, setValues] = useState<FormValues>({
-    direction: 'support',
+    direction: 'positive',
     instrument: { kind: 'citation', reference: '' },
   });
   const properties = schema?.properties || {};
@@ -68,7 +68,7 @@ export function ContributionForm({
   useEffect(() => {
     if (!opened) return;
     setValues({
-      direction: 'support',
+      direction: 'positive',
       instrument: { kind: 'citation', reference: '' },
       ...initialValues,
     });
@@ -151,8 +151,8 @@ export function ContributionForm({
             <Stack gap={5}>
               <Text size="sm" fw={500}>Direction</Text>
               <AttestationDirectionControl
-                supportDirection={actionPropositions(plan, 'attestation.create').find(item => item.id === values.proposition_id)?.attestation_summary?.support_direction}
-                value={direction || 'support'}
+                positiveDirection={actionPropositions(plan, 'attestation.create').find(item => item.id === values.proposition_id)?.attestation_summary?.positive_direction}
+                value={direction || 'positive'}
                 directions={directions}
                 onChange={(value) => set('direction', value)}
               />
@@ -190,7 +190,7 @@ export function ContributionForm({
             <Button variant="default" onClick={onClose}>Cancel</Button>
             <Button
               type="submit"
-              color={action === 'proposition.commit' ? 'indigo' : 'blue'}
+              color={action === 'proposition.commit' ? 'primary' : 'blue'}
               loading={loading}
               disabled={action === 'attestation.create' && !direction}
             >

@@ -63,12 +63,12 @@ export function ParticipantSwitchRow({ participant, current, checking, busy = fa
   const waiting = participantIsWaiting(participant);
   return <Box className="participant-switcher__row" data-current={current}>
     <Group wrap="nowrap" align="flex-start"><ParticipantAvatar callsign={participant.callsign} /><Box miw={0} flex={1}>
-      <Group gap="xs"><Text size="sm" fw={650}>{participant.callsign}</Text>{current && <Badge size="xs" color="indigo" variant="light">Current</Badge>}</Group>
+      <Group gap="xs"><Text size="sm" fw={650}>{participant.callsign}</Text>{current && <Badge size="xs" color="primary" variant="light">Current</Badge>}</Group>
       <Text size="xs" c="dimmed">{participant.designation || 'Participant'}</Text>
       <Text size="xs" c="dimmed" mt={3}>{waiting ? 'Waiting to enter a Cycle' : `Cycle ${participant.position?.cycle_sequence} · Phase ${participant.position?.phase?.number ?? 'in progress'}`}</Text>
     </Box></Group>
     <Group gap="xs" mt="xs">
-      <Button size="compact-xs" variant="light" color={current ? 'gray' : 'indigo'} onClick={onSelect} disabled={busy} aria-label={`Switch to ${participant.callsign}`}>{current ? 'Return to Participant' : 'Switch Participant'}</Button>
+      <Button size="compact-xs" variant="light" color={current ? 'gray' : 'primary'} onClick={onSelect} disabled={busy} aria-label={`Switch to ${participant.callsign}`}>{current ? 'Return to Participant' : 'Switch Participant'}</Button>
       {waiting && <Button size="compact-xs" variant="subtle" color="gray" onClick={onCheckEntry} disabled={busy} aria-expanded={checking} aria-label={`Check Cycle entry for ${participant.callsign}`}>Check Cycle entry</Button>}
     </Group>
   </Box>;

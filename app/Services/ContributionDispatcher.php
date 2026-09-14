@@ -71,7 +71,7 @@ final readonly class ContributionDispatcher
             };
             if ($targets !== null && ! $targets->contains('id', $input['proposition_id'] ?? null)) {
                 throw new DomainException($action === 'proposition.revise'
-                    ? 'Revision requires an owned active head in the current write register with an effective self-Refute from an earlier Cycle.'
+                    ? 'Revision requires an owned active head in the current write register with an effective self-negative Attestation from an earlier Cycle.'
                     : 'Support requires an admissible Proposition in the current Write.');
             }
 

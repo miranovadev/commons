@@ -27,7 +27,8 @@ class StoreSubstrateRequest extends FormRequest
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'visibility' => ['required', Rule::in(['public', 'private'])],
-            'configuration' => ['sometimes', 'array'],
+            'configuration' => ['sometimes', 'array:maximum_participants,presentation'],
+            ...\App\Support\SubstratePresentation::rules(),
             'configuration.maximum_participants' => [
                 'sometimes',
                 'nullable',

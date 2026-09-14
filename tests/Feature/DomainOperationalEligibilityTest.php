@@ -93,7 +93,7 @@ class DomainOperationalEligibilityTest extends TestCase
 
         $foreignMiddle = $this->node($foreign, $domain->opposite()->registerAt(RegisterPosition::Second), $gate);
         $attestation = new Attestation;
-        $attestation->forceFill(['phase_id' => $foreignMiddle->phase_id, 'proposition_id' => $foreignMiddle->id, 'direction' => 'refute'])->save();
+        $attestation->forceFill(['phase_id' => $foreignMiddle->phase_id, 'proposition_id' => $foreignMiddle->id, 'direction' => 'negative'])->save();
         app(LedgerService::class)->record($attestation);
         $biasPhase = $this->phase($cycle, PhaseKind::Bias, $x);
         foreach ([null, new ParticipationContext($biasPhase)] as $context) {
@@ -123,7 +123,7 @@ class DomainOperationalEligibilityTest extends TestCase
         $substrate->forceFill(['slug' => 'eligibility', 'title' => 'Eligibility', 'visibility' => 'public', 'configuration' => []])->save();
         $emergence = $this->cycle($substrate, 'emergence');
         $seed = $this->node($emergence, 'canon', tier: 'committal');
-        app(CommitRegionPolarityService::class)->establishOrigin($seed, 'support');
+        app(CommitRegionPolarityService::class)->establishOrigin($seed, 'positive');
         $snapshot = new CommitmentSnapshot;
         $snapshot->forceFill(['proposition_id' => $seed->id, 'substrate_id' => $substrate->id, 'ledger_entry_id' => $seed->ledgerEntry->id,
             'correspondence' => -.5, 'chirality' => -.5, 'closure' => -.5, 'prominence' => .25, 'turbulence' => .75, 'tension' => -.5,

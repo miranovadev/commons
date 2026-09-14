@@ -58,7 +58,7 @@ export function ConnectionsPage() {
     <Container size="lg">
       <Group justify="space-between" align="flex-start" mb="xl">
         <Box>
-          <Group gap="xs"><ThemeIcon color="indigo" variant="light"><IconPlugConnected size={18} /></ThemeIcon><Title order={2}>Connections</Title></Group>
+          <Group gap="xs"><ThemeIcon color="primary" variant="light"><IconPlugConnected size={18} /></ThemeIcon><Title order={2}>Connections</Title></Group>
           <Text c="dimmed" size="sm" mt="xs" maw={700}>Reusable model connections belong to your account. Attach the same connection to Participants in different substrates, then configure each Participant's wake schedule independently.</Text>
         </Box>
         <Button leftSection={<IconPlus size={16} />} onClick={() => setCreating(true)}>Add Connection</Button>
@@ -69,7 +69,7 @@ export function ConnectionsPage() {
       {connections.length === 0 ? (
         <Card withBorder padding="xl">
           <Stack align="center" gap="sm" py="xl">
-            <ThemeIcon color="indigo" variant="light" size={52} radius="xl"><IconPlugConnected size={25} /></ThemeIcon>
+            <ThemeIcon color="primary" variant="light" size={52} radius="xl"><IconPlugConnected size={25} /></ThemeIcon>
             <Box ta="center">
               <Text fw={750}>No reusable Connections yet</Text>
               <Text size="sm" c="dimmed" mt={4}>Add a model connection once, then attach it to any number of Participants.</Text>

@@ -3,7 +3,7 @@ const params = new URLSearchParams(location.search);
 const domain = params.get('domain') === 'emergence' ? 'emergence' : 'settlement';
 const registers: RegisterName[] = domain === 'emergence' ? ['activity', 'frontier', 'canon'] : ['signal', 'stance', 'concord'];
 const kind = (params.get('phase') || 'order') as PhaseKind;
-const support = params.get('support') === 'negative' ? 'negative' : 'positive';
+const support = params.get('positive') === 'negative' ? 'negative' : 'positive';
 const active = params.get('status') === 'active';
 const closureSatisfied = params.get('status') !== 'inactive';
 const number = { distinguish: 1, persist: 2, constrain: 3, disperse: 4, mediate: 5, bias: 6, order: 7 }[kind];
@@ -19,8 +19,8 @@ function proposition(index: number, register = write): Proposition {
     title: titles[index % titles.length], participant: { id: 'author-' + index % 3, callsign: ['Vela', 'Luna', 'Claire'][index % 3] },
     transition: { type: ['variant', 'reclassify', 'revise'][index % 3], from: gateRegister, to: register },
     observables: { correspondence: index % 2 ? -.25 : .4, chirality: 0, closure: -.3 },
-    attestation_counts: { support: support === 'positive' ? positive : negative, refute: support === 'positive' ? negative : positive },
-    attestation_summary: { support_direction: support, retained_direction: index % 2 ? 'positive' : 'negative', positive, negative }, instruments: [] };
+    attestation_counts: { positive: support === 'positive' ? positive : negative, negative: support === 'positive' ? negative : positive },
+    attestation_summary: { positive_direction: support, retained_direction: index % 2 ? 'positive' : 'negative', positive, negative }, instruments: [] };
 }
 let gate = { ...proposition(98, gateRegister), id: 'gate' };
 let provenance = { ...proposition(97, 'canon'), id: 'origin', tier: 'committal' as const, title: 'A shared cognitive system should preserve transparency, protected dissent and common ground.', observables: { correspondence: -1, chirality: -1, closure: -1 } };
@@ -33,9 +33,9 @@ const actions: Partial<Record<ActionName, ActionSchema>> = {};
 function action(name: ActionName, properties: ActionSchema['properties'], required: string[] = []) {
   actions[name] = { title: name.replace('proposition.', ''), properties: { action: { const: name }, ...properties }, required: ['action', ...required] as ActionSchema['required'] };
 }
-action('attestation.create', { proposition_id: { enum: cards.map(p => p.id) }, direction: { enum: ['support', 'refute'] }, rationale: {} }, ['proposition_id', 'direction']);
+action('attestation.create', { proposition_id: { enum: cards.map(p => p.id) }, direction: { enum: ['positive', 'negative'] }, rationale: {} }, ['proposition_id', 'direction']);
 if (number <= 3) {
-  actions['attestation.create']!.anyOf = cards.map((p, index) => ({ properties: { proposition_id: { enum: [p.id] }, direction: { enum: index % 2 ? ['support'] : ['refute'] } } }));
+  actions['attestation.create']!.anyOf = cards.map((p, index) => ({ properties: { proposition_id: { enum: [p.id] }, direction: { enum: index % 2 ? ['positive'] : ['negative'] } } }));
   action('proposition.traverse', { proposition_id: { enum: cards.map(p => p.id) } }, ['proposition_id']);
 }
 if ([1, 2, 4].includes(number)) action('proposition.variant', { statement: {} }, ['statement']);

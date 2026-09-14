@@ -1,3 +1,4 @@
+import { useSubstratePresentation } from '../SubstrateTheme';
 import { Badge, Box, Group, SimpleGrid, Stack, Text, ThemeIcon, Tooltip } from '@mantine/core';
 import { IconArrowRight, IconBolt, IconHexagon, IconHexagonalPrism, IconLayersDifference } from '@tabler/icons-react';
 import { ParticipantAvatar } from './ParticipantIdentity';
@@ -63,7 +64,7 @@ export function PropositionContent({
       {detailed && <TransitionReadout transition={proposition.transition} />}
 
       {wireframe && ActionIcon && <ThemeIcon color={register.color} variant="light" size="sm"><ActionIcon size={13} /></ThemeIcon>}
-      {!wireframe && proposition.tier === 'committal' && <Tooltip label="Committed structure"><ThemeIcon color="indigo" variant="light" size="sm"><IconBolt size={13} /></ThemeIcon></Tooltip>}
+      {!wireframe && proposition.tier === 'committal' && <Tooltip label="Committed structure"><ThemeIcon color="primary" variant="light" size="sm"><IconBolt size={13} /></ThemeIcon></Tooltip>}
       {detailed && (description || proposition.statement) && (
         <Text size={detailed ? 'sm' : 'xs'} c="dimmed" lineClamp={detailed ? undefined : 3} style={{ whiteSpace: 'pre-line' }}>
           {detailed ? proposition.statement : description}
@@ -99,16 +100,17 @@ export function PropositionMetadata({ proposition, wireframe = false }: { propos
 }
 
 export function AttestationCounts({ proposition }: { proposition: Partial<Proposition> }) {
+  const presentation = useSubstratePresentation();
   if (!proposition.attestation_counts && !proposition.attestation_summary) return null;
-  const { slots, dominant, direction, label, animate } = attestationPresentation(proposition);
-  const mapped = Boolean(proposition.attestation_summary?.support_direction);
+  const { slots, dominant, direction, label, animate } = attestationPresentation(proposition, presentation);
+  const mapped = Boolean(proposition.attestation_summary?.positive_direction);
   const [negative, positive] = slots;
   const description = dominant ? `${dominant === 'positive' ? 'Positive' : 'Negative'} count majority (unweighted)`
-    : direction ? `No count majority · ${direction} direction persists${label ? ' (' + label + ')' : ''}` : 'No count majority';
+    : direction ? `No count majority · ${direction} direction persists${label ? ' (' + presentation[label].label + ')' : ''}` : 'No count majority';
   function count(slot: typeof negative) {
     return <Tooltip label={`${slot.count} effective ${mapped ? slot.direction + '-direction' : slot.text} Attestations${mapped ? ' · ' + slot.text + ' in this region' : ''}`} withArrow>
       <Text component="span" className="attestation-semantic" data-label={slot.label} size="xs" fw={700}
-        aria-label={`${slot.label}: ${slot.count}`}>
+        aria-label={`${slot.text}: ${slot.count}`}>
         {mapped ? slot.side === 'left' ? '−' : '+' : slot.text + ' '}{slot.count}
       </Text>
     </Tooltip>;
@@ -236,7 +238,7 @@ export function TransitionReadout({ transition, compact = false }: {
 }
 
 function TierBadge({ tier }: { tier?: string }) {
-  if (tier === 'committal') return <Badge size="xs" color="indigo" variant="filled">Committal</Badge>;
+  if (tier === 'committal') return <Badge size="xs" color="primary" variant="filled">Committal</Badge>;
   return <Badge size="xs" color="gray" variant="light">{tier}</Badge>;
 }
 

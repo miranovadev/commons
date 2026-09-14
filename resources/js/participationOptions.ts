@@ -38,7 +38,7 @@ export function attestationDirections(plan: ParticipantPlan, propositionId?: str
     ? choices.filter((choice) => choice.properties.proposition_id?.enum?.includes(propositionId))
       .flatMap((choice) => choice.properties.direction?.enum ?? [])
     : schema?.properties.direction?.enum ?? [];
-  return (['refute', 'support'] as AttestationDirection[]).filter((direction) => directions.includes(direction));
+  return (['negative', 'positive'] as AttestationDirection[]).filter((direction) => directions.includes(direction));
 }
 
 /** The backend's forward frontier is the only source of Write cards. */

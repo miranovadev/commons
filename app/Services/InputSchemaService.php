@@ -76,6 +76,12 @@ final readonly class InputSchemaService
             $this->receipts->forPhase($occurrence, $context)->where('can_replay', true)->pluck('id')->all(),
         );
 
+        $presentation = \App\Support\SubstratePresentation::resolve(($context?->substrate ?? $participant->substrate)->configuration);
+        $schema['x-commons']['attestation_labels'] = [
+            'positive' => $presentation['positive']['label'],
+            'negative' => $presentation['negative']['label'],
+        ];
+
         if (isset($schema['$defs']['actions']['attestation.create'])) {
             $ids = $attestationOptionIds ?? $writeOptionIds;
             $effective = Attestation::query()->effective()
@@ -83,7 +89,7 @@ final readonly class InputSchemaService
                 ->whereHas('phase.cycle', fn ($query) => $query->whereBelongsTo($participant))
                 ->pluck('direction', 'proposition_id');
             $choices = [];
-            foreach (['refute', 'support'] as $direction) {
+            foreach (['negative', 'positive'] as $direction) {
                 $targets = array_values(array_filter($ids, fn (string $id): bool => $effective->get($id) !== $direction));
                 if ($targets !== []) {
                     $choices[] = ['properties' => [
@@ -97,9 +103,14 @@ final readonly class InputSchemaService
 
         // Rest is the sole fallback after every non-Rest action is specialized.
         // It must never compete with a phase-native or target-bound action.
-        return $schema['$defs']['actions'] === []
-            ? $this->forPhase($kind, ['participant.rest'])
-            : $schema;
+        if ($schema['$defs']['actions'] === []) {
+            $rest = $this->forPhase($kind, ['participant.rest']);
+            $rest['x-commons']['attestation_labels'] = $schema['x-commons']['attestation_labels'];
+
+            return $rest;
+        }
+
+        return $schema;
     }
 
     /**

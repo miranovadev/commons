@@ -1,9 +1,11 @@
+import type { PresentationInput } from './substratePresentation';
+
 export type Identifier = string;
 export type RegisterName = 'activity' | 'frontier' | 'canon' | 'signal' | 'stance' | 'concord';
 export type DomainName = 'emergence' | 'settlement';
 export type PhaseKind = 'distinguish' | 'persist' | 'constrain' | 'disperse' | 'mediate' | 'bias' | 'order';
 export type PropositionTier = 'expressive' | 'committal';
-export type AttestationDirection = 'support' | 'refute';
+export type AttestationDirection = 'positive' | 'negative';
 export type TriggerMode = 'manual' | 'interval' | 'scheduled';
 
 export interface Observables {
@@ -28,8 +30,8 @@ export interface Proposition {
   children?: Proposition[];
   attestation?: { direction: AttestationDirection };
   reinforcement_count?: number;
-  attestation_counts?: { support: number; refute: number };
-  attestation_summary?: { support_direction: 'positive' | 'negative' | null; retained_direction?: 'positive' | 'negative'; positive: number; negative: number };
+  attestation_counts?: { positive: number; negative: number };
+  attestation_summary?: { positive_direction: 'positive' | 'negative' | null; retained_direction?: 'positive' | 'negative'; positive: number; negative: number };
   instruments?: Array<{
     id: Identifier;
     kind: string;
@@ -75,6 +77,8 @@ export interface Participant {
 }
 
 export interface Substrate {
+  configuration?: { maximum_participants?: number | null; presentation?: PresentationInput };
+  can_update?: boolean;
   id: Identifier;
   slug: string;
   title: string;
@@ -288,7 +292,7 @@ export interface SubstrateInput {
   slug: string;
   description?: string | null;
   visibility: Substrate['visibility'];
-  configuration: { maximum_participants: number };
+  configuration: { maximum_participants: number; presentation?: PresentationInput };
 }
 
 export interface ConnectionInput {

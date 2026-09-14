@@ -246,7 +246,7 @@ class TransactionLockOrderTest extends TestCase
         $participant = new Participant;
         $participant->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'first'])->save();
         app(CycleEntryService::class)->enter($participant, [
-            'statement' => 'A grounded origin', 'attestation' => ['direction' => 'support'],
+            'statement' => 'A grounded origin', 'attestation' => ['direction' => 'positive'],
             'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/lock-order'],
         ]);
 

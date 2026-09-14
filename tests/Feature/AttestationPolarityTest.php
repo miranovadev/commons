@@ -18,7 +18,7 @@ class AttestationPolarityTest extends TestCase
     private Phase $history;
     private Proposition $origin;
 
-    private function bootstrap(string $label = 'support'): void
+    private function bootstrap(string $label = 'positive'): void
     {
         $substrate = new Substrate;
         $substrate->forceFill(['slug' => 'polarity', 'title' => 'Polarity', 'visibility' => 'private', 'configuration' => []])->save();
@@ -32,7 +32,7 @@ class AttestationPolarityTest extends TestCase
         $this->history = $this->origin->phase;
     }
 
-    public static function labels(): array { return [['support', Direction::Positive], ['refute', Direction::Negative]]; }
+    public static function labels(): array { return [['positive', Direction::Positive], ['negative', Direction::Negative]]; }
 
     #[DataProvider('labels')]
     public function test_origin_participant_labels_the_fixed_positive_initial_direction(string $label, Direction $support): void
@@ -40,7 +40,7 @@ class AttestationPolarityTest extends TestCase
         $this->bootstrap($label);
         $evidence = app(AttestationEvidenceService::class);
         $polarity = app(CommitRegionPolarityService::class);
-        $this->assertSame(['governing' => Direction::Positive, 'support' => $support], $polarity->forSeed($this->origin));
+        $this->assertSame(['governing' => Direction::Positive, 'positive' => $support], $polarity->forSeed($this->origin));
         $this->assertSame(Direction::Positive, $evidence->directionFor($this->origin));
         $this->assertSame(1.0, $evidence->valueFor(collect([$this->origin]), $this->participant->substrate));
         $this->assertSame($label, $this->origin->attestations()->firstOrFail()->direction);
@@ -49,7 +49,7 @@ class AttestationPolarityTest extends TestCase
         $this->assertSame(-1.0, $this->origin->commitmentSnapshot->tension);
         $child = $this->node('stance', $this->origin);
         $this->assertSame(Direction::Positive, $evidence->directionFor($child));
-        $this->attest($child, 'support');
+        $this->attest($child, 'positive');
         $this->assertSame($support, $evidence->directionFor($child));
     }
 
@@ -67,19 +67,19 @@ class AttestationPolarityTest extends TestCase
         $a = $this->node($gateRegister, $seed);
         $evidence = app(AttestationEvidenceService::class);
         $this->assertSame($governing, $evidence->directionFor($a));
-        $this->attest($a, 'refute');
+        $this->attest($a, 'negative');
         $opposite = $governing === Direction::Positive ? Direction::Negative : Direction::Positive;
         $this->assertSame($opposite, $evidence->directionFor($a));
         $child = $this->node($gateRegister, $a);
         $this->assertSame($governing, $evidence->directionFor($child));
         $this->assertCount(0, $child->attestations);
-        $this->attest($child, 'support');
+        $this->attest($child, 'positive');
         $this->assertSame($governing, $evidence->directionFor($child));
-        $this->attest($a, 'support');
+        $this->attest($a, 'positive');
         $this->assertSame(0.0, $evidence->valueFor(collect([$a]), $this->participant->substrate));
         $this->assertSame($opposite, $evidence->directionFor($a));
-        $this->assertSame($governing, app(CommitRegionPolarityService::class)->forSeed($seed)['support']);
-        $this->attest($a, 'support');
+        $this->assertSame($governing, app(CommitRegionPolarityService::class)->forSeed($seed)['positive']);
+        $this->attest($a, 'positive');
         $this->assertSame($governing, $evidence->directionFor($a));
     }
 
@@ -93,14 +93,14 @@ class AttestationPolarityTest extends TestCase
         $major = $this->node($register, $left);
         $gate = $this->node($register, $right);
         // The traversed Gate opposes the majority. No plan is read while history evolves.
-        $this->attest($major, 'support');
-        $this->attest($major, 'support');
-        $this->attest($gate, 'refute');
+        $this->attest($major, 'positive');
+        $this->attest($major, 'positive');
+        $this->attest($gate, 'negative');
         $phase = $this->phase(PhaseKind::Bias, $write, $gate);
         $bias = app(BiasGateService::class);
         $evidence = app(AttestationEvidenceService::class);
         $this->assertSame([$major->id], $bias->forPhase($phase)->pluck('id')->all());
-        $this->attest($gate, 'refute');
+        $this->attest($gate, 'negative');
         $this->assertSame(0.0, $bias->leanFor($phase));
         $this->assertSame($majority, $evidence->populationDirection($seed, $register));
         $this->assertNotSame($majority, $evidence->directionFor($gate));
@@ -109,7 +109,7 @@ class AttestationPolarityTest extends TestCase
         $outsider = $this->node($register, $this->regionSeed($majority, $write));
         $wrongRegister = $this->node('signal', $seed);
         foreach ([$outsider, $wrongRegister] as $excluded) {
-            foreach (range(1, 3) as $_) { $this->attest($excluded, 'refute'); }
+            foreach (range(1, 3) as $_) { $this->attest($excluded, 'negative'); }
         }
         $this->assertSame([$major->id], $bias->forPhase($phase)->pluck('id')->all());
         $counts = [Proposition::count(), $this->participant->substrate->ledgerEntries()->count()];
@@ -129,8 +129,8 @@ class AttestationPolarityTest extends TestCase
         $this->bootstrap();
         $seed = $this->regionSeed($governing, $write);
         $position = $this->node($register, $seed);
-        $this->attest($position, 'refute');
-        $this->attest($position, 'support');
+        $this->attest($position, 'negative');
+        $this->attest($position, 'positive');
         $evidence = app(AttestationEvidenceService::class);
         $this->assertSame(0.0, $evidence->valueFor(collect([$position]), $this->participant->substrate));
         $this->assertNotSame($governing, $evidence->directionFor($position));
@@ -141,17 +141,17 @@ class AttestationPolarityTest extends TestCase
     {
         $this->bootstrap();
         $source = $this->node('concord', $this->origin);
-        $original = $this->attest($source, 'refute');
+        $original = $this->attest($source, 'negative');
         $commit = $this->node('concord', $source, 'committal', 'commit');
         // Historical Commit had negative direction. Later evidence cannot change its frame.
-        $this->attest($source, 'support', $original);
+        $this->attest($source, 'positive', $original);
         $polarity = app(CommitRegionPolarityService::class);
         $polarity->backfill($commit);
-        $this->assertSame(Direction::Negative, $polarity->forSeed($commit)['support']);
+        $this->assertSame(Direction::Negative, $polarity->forSeed($commit)['positive']);
         $this->assertSame(1.0, app(AttestationEvidenceService::class)->valueFor(collect([$commit]), $this->participant->substrate));
         $child = $this->node('stance', $commit);
         $this->assertSame(Direction::Negative, app(AttestationEvidenceService::class)->directionFor($child));
-        $this->assertSame(Direction::Positive, $polarity->forSeed($this->origin)['support']);
+        $this->assertSame(Direction::Positive, $polarity->forSeed($this->origin)['positive']);
     }
 
     public function test_receipt_weighted_history_retains_direction_when_equal_weights_restore_zero(): void
@@ -159,8 +159,8 @@ class AttestationPolarityTest extends TestCase
         $this->bootstrap();
         $seed = $this->regionSeed(Direction::Negative, 'concord');
         $position = $this->node('stance', $seed);
-        $support = $this->attest($position, 'support');
-        $refute = $this->attest($position, 'refute');
+        $support = $this->attest($position, 'positive');
+        $refute = $this->attest($position, 'negative');
         foreach ([$refute, $support] as $attestation) {
             $this->loadedReceiptFixture($position, $attestation);
         }
@@ -174,19 +174,19 @@ class AttestationPolarityTest extends TestCase
 
     public function test_upgrade_reconstructs_polarity_and_keeps_immutable_measurement_snapshots(): void
     {
-        $this->bootstrap('refute');
+        $this->bootstrap('negative');
         $source = $this->node('concord', $this->origin);
-        $old = $this->attest($source, 'support'); // Negative in this Origin's frame.
+        $old = $this->attest($source, 'positive'); // Negative in this Origin's frame.
         $commit = $this->node('concord', $source, 'committal', 'commit');
-        $this->attest($source, 'refute', $old); // Positive only after the Commit.
+        $this->attest($source, 'negative', $old); // Positive only after the Commit.
         app(\App\Services\PropositionMeasurementService::class)->project($source, 0.5, 0, 0);
         $snapshot = $this->origin->commitmentSnapshot->getAttributes();
         $migration = require database_path('migrations/2026_09_12_000001_retain_region_polarity_and_correspondence.php');
         $migration->down();
         $migration->up();
         $frames = app(CommitRegionPolarityService::class);
-        $this->assertSame(['governing' => Direction::Positive, 'support' => Direction::Negative], $frames->forSeed($this->origin));
-        $this->assertSame(['governing' => Direction::Negative, 'support' => Direction::Negative], $frames->forSeed($commit));
+        $this->assertSame(['governing' => Direction::Positive, 'positive' => Direction::Negative], $frames->forSeed($this->origin));
+        $this->assertSame(['governing' => Direction::Negative, 'positive' => Direction::Negative], $frames->forSeed($commit));
         $this->assertSame('positive', $source->fresh()->correspondence_direction);
         $this->assertNull($source->fresh()->measurement->calculator_version);
         $this->assertSame($snapshot, $this->origin->commitmentSnapshot->fresh()->getAttributes());
@@ -195,7 +195,7 @@ class AttestationPolarityTest extends TestCase
     private function regionSeed(Direction $direction, string $register): Proposition
     {
         $source = $this->node($register, $this->origin);
-        $this->attest($source, $direction === Direction::Positive ? 'support' : 'refute');
+        $this->attest($source, $direction === Direction::Positive ? 'positive' : 'negative');
         $seed = $this->node($register, $source, 'committal', 'commit');
         app(CommitRegionPolarityService::class)->establishCommit($seed, $direction);
         return $seed;

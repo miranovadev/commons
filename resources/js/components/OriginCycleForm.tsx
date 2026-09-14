@@ -1,3 +1,4 @@
+import { useSubstratePresentation } from '../SubstrateTheme';
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Alert, Button, Group, Modal, Stack, Text, Textarea } from '@mantine/core';
@@ -24,12 +25,13 @@ interface OriginCycleFormProps {
 
 const initialValue: OriginFormValue = {
   statement: '',
-  direction: 'support',
+  direction: 'positive',
   rationale: '',
   instrument: { kind: 'hyperlink', reference: '' },
 };
 
 export function OriginCycleForm({ opened, loading, error, onClose, onSubmit }: OriginCycleFormProps) {
+  const presentation = useSubstratePresentation();
   const [value, setValue] = useState(initialValue);
 
   useEffect(() => {
@@ -75,7 +77,7 @@ export function OriginCycleForm({ opened, loading, error, onClose, onSubmit }: O
           />
           <Stack gap={5}>
             <Text size="sm" fw={500}>Initial Attestation label</Text>
-            <Text size="xs" c="dimmed">Origin starts in the positive direction. Choose whether to label that direction Support or Refute; this fixes the label polarity for its Commit Region.</Text>
+            <Text size="xs" c="dimmed">Origin starts in the positive direction. Choose whether to label that direction {presentation.positive.label} or {presentation.negative.label}; this fixes the label polarity for its Commit Region.</Text>
             <AttestationDirectionControl
               initialLabelChoice
               value={value.direction}
@@ -94,7 +96,7 @@ export function OriginCycleForm({ opened, loading, error, onClose, onSubmit }: O
           <InstrumentFields value={value.instrument} onChange={(instrument) => update('instrument', instrument)} includeCitation={false} />
           <Group justify="flex-end">
             <Button variant="default" onClick={onClose} disabled={loading}>Cancel</Button>
-            <Button type="submit" color="indigo" loading={loading} rightSection={<IconArrowRight size={16} />}>
+            <Button type="submit" color="primary" loading={loading} rightSection={<IconArrowRight size={16} />}>
               Establish and enter
             </Button>
           </Group>

@@ -14,7 +14,7 @@ export function CycleCompletion({ slug, participation, loading, error, onEnter, 
     {Boolean(error) && <Alert color="red">{messageFrom(error, 'The Cycle could not be entered.')}</Alert>}
     <Group gap="xs">
       <Button component={Link} to={`/substrates/${slug}/participants`} variant="subtle" color="gray" size="compact-sm">Return to Participants</Button>
-      <Button color="indigo" size="compact-sm" disabled={!entry.available} loading={loading} onClick={entry.mode === 'origin' ? onOrigin : onEnter}>Enter another Cycle</Button>
+      <Button color="primary" size="compact-sm" disabled={!entry.available} loading={loading} onClick={entry.mode === 'origin' ? onOrigin : onEnter}>Enter another Cycle</Button>
     </Group>
   </Stack></Box>;
 }

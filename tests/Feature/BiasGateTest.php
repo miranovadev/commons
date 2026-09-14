@@ -31,7 +31,7 @@ class BiasGateTest extends TestCase
         $this->substrate->forceFill(['slug' => 'bias', 'title' => 'Bias', 'visibility' => 'public', 'configuration' => []])->save();
         $this->history = $this->newPhase($this->participant('author'), PhaseKind::Distinguish, 'signal', true);
         $this->parent = $this->node('Local provenance', $write, 'committal');
-        $this->attest($this->parent, 'support');
+        $this->attest($this->parent, 'positive');
         $this->gate = $this->node('Current Gate', $register);
         $this->edge($this->parent, $this->gate);
         $this->viewer = $this->participant('viewer');
@@ -63,7 +63,7 @@ class BiasGateTest extends TestCase
 
         $flipped = $this->node('Legitimate opposite direction', $this->gate->register);
         $this->edge($descendant, $flipped);
-        $this->attest($flipped, 'refute');
+        $this->attest($flipped, 'negative');
         $afterFlip = $this->node('Neutral after the flip', $this->gate->register);
         $this->edge($flipped, $afterFlip);
 
@@ -78,9 +78,9 @@ class BiasGateTest extends TestCase
         $this->fixture();
         $support = $this->sibling('Supported B');
         $refute = $this->sibling('Refuted C');
-        $this->attest($this->gate, 'support');
-        $this->attest($support, 'support');
-        $negative = $this->attest($refute, 'refute');
+        $this->attest($this->gate, 'positive');
+        $this->attest($support, 'positive');
+        $negative = $this->attest($refute, 'negative');
         $service = app(BiasGateService::class);
         $this->assertEqualsWithDelta(1 / 3, $service->leanFor($this->phase), 0.00001);
         $this->assertEqualsCanonicalizing([$this->gate->id, $support->id], $this->optionIds());
@@ -95,7 +95,7 @@ class BiasGateTest extends TestCase
         $replacement = new Attestation;
         $later = $this->newPhase($negative->phase->cycle->participant, PhaseKind::Persist, 'stance', true);
         $replacement->forceFill(['phase_id' => $later->id, 'proposition_id' => $refute->id,
-            'direction' => 'support', 'supersedes_attestation_id' => $negative->id])->save();
+            'direction' => 'positive', 'supersedes_attestation_id' => $negative->id])->save();
         app(LedgerService::class)->record($replacement);
         $this->assertEqualsCanonicalizing([$this->gate->id, $support->id, $refute->id], $this->optionIds());
     }
@@ -109,9 +109,9 @@ class BiasGateTest extends TestCase
         $selected = $this->sibling("  Selected statement\nexactly as written.  \n");
         $opposite = $this->sibling('Opposite');
         foreach ([$this->gate, $selected] as $source) {
-            $this->attest($source, 'support');
+            $this->attest($source, 'positive');
         }
-        $this->attest($opposite, 'refute');
+        $this->attest($opposite, 'negative');
         app(OperationalInstrumentService::class)->execute($this->history, $selected,
             ['kind' => 'hyperlink', 'reference' => 'https://example.test/selected']);
         foreach (range(1, 3) as $i) {
@@ -174,7 +174,7 @@ class BiasGateTest extends TestCase
     public function test_inference_keeps_bias_gate_ids_separate_from_write_instrument_and_attestation_ids(): void
     {
         $this->fixture();
-        $this->attest($this->gate, 'support');
+        $this->attest($this->gate, 'positive');
         $concord = $this->node('Existing Write Concord', 'concord');
         $this->edge($this->gate, $concord);
         $schema = $this->plan()['schema'];
@@ -190,7 +190,7 @@ class BiasGateTest extends TestCase
             $input = ['action' => 'instrument.execute', 'proposition_id' => $target->id,
                 'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/concord']];
             $this->assertInput($transport, ['contribution' => array_replace($empty, $input)], $target->is($concord));
-            $input = ['action' => 'attestation.create', 'proposition_id' => $target->id, 'direction' => 'support'];
+            $input = ['action' => 'attestation.create', 'proposition_id' => $target->id, 'direction' => 'positive'];
             $this->assertInput($transport, ['contribution' => array_replace($empty, $input)], $target->is($concord));
         }
     }
@@ -198,7 +198,7 @@ class BiasGateTest extends TestCase
     public function test_a_single_supported_gate_needs_no_sibling_or_instrument_to_progress(): void
     {
         $this->fixture();
-        $this->attest($this->gate, 'support');
+        $this->attest($this->gate, 'positive');
         $plan = $this->plan();
         $this->assertSame([$this->gate->id], $this->optionIds());
         $this->assertSame(['proposition.bias'], array_keys($plan['schema']['$defs']['actions']));
@@ -213,8 +213,8 @@ class BiasGateTest extends TestCase
         $this->assertSame([$this->gate->id], $this->optionIds());
         $positive = $this->sibling('Positive');
         $negative = $this->sibling('Negative');
-        $this->attest($positive, 'support');
-        $this->attest($negative, 'refute');
+        $this->attest($positive, 'positive');
+        $this->attest($negative, 'negative');
         $this->assertEqualsCanonicalizing([$this->gate->id, $positive->id], $this->optionIds());
         $this->edge($negative, $this->node('Fresh Concord', 'concord'), 'reclassify');
         $this->assertEqualsCanonicalizing([$this->gate->id, $positive->id], $this->optionIds());
@@ -227,23 +227,23 @@ class BiasGateTest extends TestCase
         $this->edge($this->parent, $bridge);
         $deep = $this->node('Non-sibling Stance', 'stance');
         $this->edge($bridge, $deep);
-        $this->attest($deep, 'support');
+        $this->attest($deep, 'positive');
         $wrongRegister = $this->node('Supported Concord must not enter the Stance field', 'concord');
         $this->edge($this->parent, $wrongRegister);
-        $this->attest($wrongRegister, 'refute');
+        $this->attest($wrongRegister, 'negative');
         $hard = $this->sibling('Hard superseded');
-        $this->attest($hard, 'refute');
+        $this->attest($hard, 'negative');
         $this->edge($hard, $this->node('Hard successor', 'concord'), 'reclassify');
         $boundary = $this->node('Committal boundary', 'concord', 'committal');
         $this->edge($deep, $boundary); // Soft edge leaves deep active.
         $beyond = $this->node('Beyond boundary', 'stance');
         $this->edge($boundary, $beyond);
-        $this->attest($beyond, 'refute');
-        $this->attest($this->node('Unrelated Stance', 'stance'), 'refute');
+        $this->attest($beyond, 'negative');
+        $this->attest($this->node('Unrelated Stance', 'stance'), 'negative');
         config()->set('schemas.options.limit', 1);
         $this->viewer->forceFill(['max_read_count' => 1])->save();
         $other = $this->sibling('Another supported Stance');
-        $this->attest($other, 'support');
+        $this->attest($other, 'positive');
         $this->assertEqualsCanonicalizing([$this->gate->id, $deep->id, $other->id], $this->optionIds());
         $this->assertSame(1.0, app(BiasGateService::class)->leanFor($this->phase));
         $target = app(ContributionDispatcher::class)->dispatch($this->viewer, $this->phase,
@@ -255,30 +255,30 @@ class BiasGateTest extends TestCase
     {
         $this->fixture();
         $positive = $this->sibling('Shared positive');
-        $this->attest($positive, 'support');
+        $this->attest($positive, 'positive');
         $second = $this->node('Second parent', 'signal');
         $this->edge($this->parent, $second);
         $this->edge($second, $this->gate);
         $this->edge($second, $positive);
         $negative = $this->node('Second family negative', 'stance');
         $this->edge($second, $negative);
-        $this->attest($negative, 'refute');
+        $this->attest($negative, 'negative');
         $this->assertSame(0.0, app(BiasGateService::class)->leanFor($this->phase));
         $this->assertEqualsCanonicalizing([$this->gate->id, $positive->id], $this->optionIds());
-        $this->attest($this->gate, 'support');
+        $this->attest($this->gate, 'positive');
         $this->assertEqualsCanonicalizing([$positive->id, $this->gate->id], $this->optionIds());
     }
 
     public function test_region_votes_ignore_horizon_labels_but_preserve_substrate_isolation(): void
     {
         $this->fixture();
-        $this->attest($this->gate, 'support');
+        $this->attest($this->gate, 'positive');
         $wrongHorizon = $this->sibling('Wrong Horizon');
-        $this->attest($wrongHorizon, 'refute');
+        $this->attest($wrongHorizon, 'negative');
         $horizon = $this->laterHorizonFixture($this->phase->cycle->contextHorizon);
         $wrongHorizon->contextHorizonMembership->forceFill(['context_horizon_id' => $horizon->id])->save();
         $foreign = $this->sibling('Foreign');
-        $this->attest($foreign, 'refute');
+        $this->attest($foreign, 'negative');
         $other = $this->substrate->replicate();
         $other->slug = 'other';
         $other->save();
@@ -292,15 +292,15 @@ class BiasGateTest extends TestCase
     public function test_stale_direction_hard_supersession_and_binary_inputs_are_rejected_before_writes(): void
     {
         $this->fixture();
-        $this->attest($this->gate, 'support');
+        $this->attest($this->gate, 'positive');
         $input = ['action' => 'proposition.bias', 'proposition_id' => $this->gate->id];
         $this->assertInput($this->plan()['schema'], $input, true);
         $negative = $this->sibling('Negative');
-        $this->attest($negative, 'refute');
+        $this->attest($negative, 'negative');
         $secondNegative = $this->sibling('Second negative');
-        $this->attest($secondNegative, 'refute');
+        $this->attest($secondNegative, 'negative');
         $this->rejectDispatch($input); // Former preview no longer authorizes execution.
-        $this->attest($this->gate, 'support');
+        $this->attest($this->gate, 'positive');
         $this->rejectDispatch([...$input, 'other_proposition_id' => $negative->id]);
         $this->rejectDispatch([...$input, 'statement' => 'Overwritten']);
         $this->rejectDispatch(['action' => 'proposition.reconcile', 'other_proposition_id' => $negative->id]);

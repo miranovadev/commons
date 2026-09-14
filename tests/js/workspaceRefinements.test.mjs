@@ -34,7 +34,7 @@ const result = await build({ stdin: { contents: `
   export function phase(kind) { return render(<PhaseIdentity kind={kind} />); }
   export function identity() { return render(<ParticipantIdentity participant={participant} onSelect={() => {}} />); }
   export function card(tier, selected = false) { return render(<PropositionCard proposition={{ ...gate, tier }} selected={selected} />); }
-  export function summary(frame, retained, count) { return render(<AttestationCounts proposition={{ attestation_summary: { support_direction: frame, retained_direction: retained, positive: count, negative: count } }} />); }
+  export function summary(frame, retained, count) { return render(<AttestationCounts proposition={{ attestation_summary: { positive_direction: frame, retained_direction: retained, positive: count, negative: count } }} />); }
   function buttons(element) {
     if (!React.isValidElement(element)) return [];
     return [ ...(element.type === Button ? [element] : []), ...React.Children.toArray(element.props.children).flatMap(buttons) ];
@@ -61,8 +61,8 @@ const css = readFileSync('resources/css/workspace.css', 'utf8');
 test('commit and Closure statuses independently follow actual availability, with open/closed locks', () => {
   for (const commit of [false, true]) for (const closure of [false, true, null]) {
     const notices = ui.notices(commit, closure);
-    assert.equal(notices.find(n => n.id === 'commitment').color, commit ? 'indigo' : 'gray');
-    assert.equal(notices.find(n => n.id === 'closure-preview').color, closure === true ? 'indigo' : 'gray');
+    assert.equal(notices.find(n => n.id === 'commitment').color, commit ? 'primary' : 'gray');
+    assert.equal(notices.find(n => n.id === 'closure-preview').color, closure === true ? 'primary' : 'gray');
     const html = ui.status(commit, closure);
     assert.match(html, commit ? /tabler-icon-lock / : /tabler-icon-lock-open/);
     assert.match(html, commit ? /Open Committable candidate/ : /Open No committable candidate/);
@@ -100,11 +100,11 @@ test('neutral cards and completed-history operation wording do not masquerade as
 
 test('tied counts retain the server direction and its regional label without spinning', () => {
   for (const frame of ['positive', 'negative']) for (const direction of ['positive', 'negative']) for (const count of [0, 3]) {
-    const presentation = ui.attestationPresentation({ attestation_summary: { support_direction: frame, retained_direction: direction, positive: count, negative: count } });
+    const presentation = ui.attestationPresentation({ attestation_summary: { positive_direction: frame, retained_direction: direction, positive: count, negative: count } });
     assert.equal(presentation.dominant, null);
     assert.equal(presentation.direction, direction);
     assert.equal(presentation.animate, false);
-    assert.equal(presentation.label, frame === direction ? 'support' : 'refute');
+    assert.equal(presentation.label, frame === direction ? 'positive' : 'negative');
     const html = ui.summary(frame, direction, count);
     assert.match(html, new RegExp('data-direction="' + direction + '" data-animated="false"'));
     assert.match(html, new RegExp('No count majority · ' + direction + ' direction persists'));

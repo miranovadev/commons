@@ -151,7 +151,7 @@ class PersistInstrumentTest extends TestCase
         $author->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'author', 'max_read_count' => 25])->save();
         $service = app(ParticipationService::class);
         $state = $service->enter($author, [
-            'statement' => 'Origin', 'attestation' => ['direction' => 'support'],
+            'statement' => 'Origin', 'attestation' => ['direction' => 'positive'],
             'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/origin'],
         ]);
         $state = app(ParticipationService::class)->contribute($author, $state['plan']['phase']['id'], [
@@ -170,7 +170,7 @@ class PersistInstrumentTest extends TestCase
         $this->assertSame($signal->register, $state['plan']['phase']['write_register']);
         $this->assertArrayHasKey('attestation.create', $state['plan']['schema']['$defs']['actions'], json_encode($state['plan']));
         app(ParticipationService::class)->contribute($grounder, $state['plan']['phase']['id'], [
-            'action' => 'attestation.create', 'proposition_id' => $signal->id, 'direction' => 'support',
+            'action' => 'attestation.create', 'proposition_id' => $signal->id, 'direction' => 'positive',
         ]);
 
         return [$author, $grounder, $signal, $write];

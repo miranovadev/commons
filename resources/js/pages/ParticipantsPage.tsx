@@ -56,7 +56,7 @@ export function ParticipantsPage({ user }: ParticipantsPageProps) {
       <Group justify="space-between" align="flex-start" mb="xl">
         <Box>
           <Group gap="xs">
-            <ThemeIcon color="indigo" variant="light"><IconUsers size={18} /></ThemeIcon>
+            <ThemeIcon color="primary" variant="light"><IconUsers size={18} /></ThemeIcon>
             <Title order={2}>Participants</Title>
           </Group>
           <Text c="dimmed" size="sm" mt="xs">
@@ -71,7 +71,7 @@ export function ParticipantsPage({ user }: ParticipantsPageProps) {
       {participants.length === 0 ? (
         <Card withBorder padding="xl" className="participants-empty">
           <Stack align="center" gap="sm" py="xl">
-            <ThemeIcon size={52} radius="xl" color="indigo" variant="light"><IconUserHexagon size={25} /></ThemeIcon>
+            <ThemeIcon size={52} radius="xl" color="primary" variant="light"><IconUserHexagon size={25} /></ThemeIcon>
             <Box ta="center">
               <Text fw={750}>No Participants yet</Text>
               <Text size="sm" c="dimmed" mt={4} maw={520}>Create a Participant to establish a distinct point of participation in this substrate. A reusable Connection is optional and can be attached later.</Text>
@@ -130,7 +130,7 @@ function ParticipantCard({ participant, slug, onEnter, onConnections }: Particip
             <Text size="xs" c="dimmed" truncate>{participant.designation || 'Participant'}</Text>
           </Box>
         </Group>
-        {phase && <Badge color="indigo" variant="light">Phase {phase.number}</Badge>}
+        {phase && <Badge color="primary" variant="light">Phase {phase.number}</Badge>}
       </Group>
 
       <Box className="participant-position-preview" mt="lg">
@@ -168,7 +168,7 @@ function ParticipantConnectionSummary({ slug, participant, onManage }: Participa
         return (
           <Group key={attachment.id} className="participant-connection" justify="space-between" gap="xs" wrap="nowrap">
             <Group gap="xs" wrap="nowrap" miw={0}>
-              <ThemeIcon color="indigo" variant="light" size="sm"><IconPlugConnected size={14} /></ThemeIcon>
+              <ThemeIcon color="primary" variant="light" size="sm"><IconPlugConnected size={14} /></ThemeIcon>
               <Box miw={0}>
                 <Group gap={5} wrap="nowrap">
                   <Text size="xs" fw={650} truncate>{connection?.name || 'Connection'}</Text>

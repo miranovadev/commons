@@ -49,7 +49,7 @@ class CommitParticipationStateTest extends TestCase
         $this->phase->save();
         $this->touch($gate);
         $attestation = new Attestation;
-        $attestation->forceFill(['phase_id' => $this->phase->id, 'proposition_id' => $gate->id, 'direction' => 'support'])->save();
+        $attestation->forceFill(['phase_id' => $this->phase->id, 'proposition_id' => $gate->id, 'direction' => 'positive'])->save();
         app(LedgerService::class)->record($attestation);
         $receipt = $this->loadedReceiptFixture($gate);
         $counts = [Attestation::count(), Receipt::count(), Phase::count()];
@@ -60,7 +60,7 @@ class CommitParticipationStateTest extends TestCase
         $state = app(PropositionStateService::class);
         foreach ([$preview, $actual] as $head) {
             $state->loadAttestationCounts(collect([$head]));
-            $this->assertSame(['support' => 1, 'refute' => 0], $head->attestationCounts->all());
+            $this->assertSame(['positive' => 1, 'negative' => 0], $head->attestationCounts->all());
             $this->assertSame(3, $state->touchCount($head)); // Includes the loading fixture’s Gate Phase.
             $this->assertSame([$attestation->id], $state->attestations(collect([$head]))->pluck('id')->all());
             $this->assertSame([$receipt->id], $state->receipts($head)->pluck('id')->all());
@@ -87,11 +87,11 @@ class CommitParticipationStateTest extends TestCase
         $gate = $this->node('expressive');
         $this->touch($gate);
         $old = new Attestation;
-        $old->forceFill(['phase_id' => $this->phase->id, 'proposition_id' => $gate->id, 'direction' => 'support'])->save();
+        $old->forceFill(['phase_id' => $this->phase->id, 'proposition_id' => $gate->id, 'direction' => 'positive'])->save();
         $touch = $this->touch($gate);
         $effective = new Attestation;
         $effective->forceFill(['phase_id' => $touch->id, 'proposition_id' => $gate->id,
-            'supersedes_attestation_id' => $old->id, 'direction' => 'refute'])->save();
+            'supersedes_attestation_id' => $old->id, 'direction' => 'negative'])->save();
         $executions = app(InstrumentExecutionService::class);
         $execution = $executions->start($this->phase, $gate, 'hyperlink', 'https://example.test/attestation');
         $receipt = $executions->complete($execution, $effective);
@@ -105,8 +105,8 @@ class CommitParticipationStateTest extends TestCase
         $this->edge($gate, $variant, 'variant');
         $state = app(PropositionStateService::class);
         $state->loadAttestationCounts(collect([$gate, $commit, $variant]));
-        $this->assertSame(['support' => 0, 'refute' => 1], $commit->attestationCounts->all());
-        $this->assertSame(['support' => 0, 'refute' => 0], $variant->attestationCounts->all());
+        $this->assertSame(['positive' => 0, 'negative' => 1], $commit->attestationCounts->all());
+        $this->assertSame(['positive' => 0, 'negative' => 0], $variant->attestationCounts->all());
         $this->assertSame([$effective->id], $state->attestations(collect([$commit]))->pluck('id')->all());
         $this->assertSame([$receipt->id], $state->receipts($commit)->pluck('id')->all());
         $this->assertSame(-1.0, app(ChiralityCalculator::class)->leanFor(collect([$commit->id]), $this->phase->cycle->participant->substrate));
@@ -146,7 +146,7 @@ class CommitParticipationStateTest extends TestCase
         $source = $this->node('expressive');
         $this->touch($source);
         $old = new Attestation;
-        $old->forceFill(['phase_id' => $this->phase->id, 'proposition_id' => $source->id, 'direction' => 'refute'])->save();
+        $old->forceFill(['phase_id' => $this->phase->id, 'proposition_id' => $source->id, 'direction' => 'negative'])->save();
         app(OperationalInstrumentService::class)->execute($this->phase, $source,
             ['kind' => 'hyperlink', 'reference' => 'https://example.test/before-reset']);
         $priorCommit = $this->node('committal');
@@ -163,7 +163,7 @@ class CommitParticipationStateTest extends TestCase
 
         $touch = $this->touch($fresh);
         $earned = new Attestation;
-        $earned->forceFill(['phase_id' => $touch->id, 'proposition_id' => $fresh->id, 'direction' => 'support'])->save();
+        $earned->forceFill(['phase_id' => $touch->id, 'proposition_id' => $fresh->id, 'direction' => 'positive'])->save();
         $receipt = app(OperationalInstrumentService::class)->execute($touch, $fresh,
             ['kind' => 'hyperlink', 'reference' => 'https://example.test/after-reset']);
         $comparison = app(ContextLineageComparisonService::class)->prospectiveCommit($fresh, $this->phase);

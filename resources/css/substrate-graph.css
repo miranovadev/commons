@@ -98,17 +98,17 @@
 }
 
 .substrate-graph-node .proposition-card--mini.proposition-card--indigo {
-  border-color: color-mix(in srgb, var(--mantine-color-indigo-5) 68%, transparent);
+  border-color: color-mix(in srgb, var(--mantine-color-primary-5) 68%, transparent);
   background: light-dark(
-    color-mix(in srgb, var(--mantine-color-indigo-0) 82%, var(--mantine-color-white)),
-    color-mix(in srgb, var(--mantine-color-indigo-9) 24%, var(--mantine-color-dark-6))
+    color-mix(in srgb, var(--mantine-color-primary-0) 82%, var(--mantine-color-white)),
+    color-mix(in srgb, var(--mantine-color-primary-9) 24%, var(--mantine-color-dark-6))
   );
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--mantine-color-indigo-6) 16%, transparent), 0 8px 24px color-mix(in srgb, var(--mantine-color-indigo-9) 16%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--mantine-color-primary-6) 16%, transparent), 0 8px 24px color-mix(in srgb, var(--mantine-color-primary-9) 16%, transparent);
 }
 
 .substrate-graph-node .proposition-card--mini.proposition-card--selected {
-  border-color: var(--mantine-color-indigo-5);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--mantine-color-indigo-5) 25%, transparent), 0 8px 24px color-mix(in srgb, var(--mantine-color-dark-9) 16%, transparent);
+  border-color: var(--mantine-color-primary-5);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--mantine-color-primary-5) 25%, transparent), 0 8px 24px color-mix(in srgb, var(--mantine-color-dark-9) 16%, transparent);
 }
 
 .substrate-graph-origin-label {

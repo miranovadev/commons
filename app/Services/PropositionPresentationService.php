@@ -41,12 +41,12 @@ final readonly class PropositionPresentationService
         });
     }
 
-    /** @return array{support_direction: ?string, retained_direction: string, positive: int, negative: int} */
+    /** @return array{positive_direction: ?string, retained_direction: string, positive: int, negative: int} */
     public function attestations(Proposition $position, ?ParticipationContext $context = null): array
     {
         $calculate = function () use ($position, $context): array {
             $seed = $this->regions->seedFor($position, $context);
-            $summary = ['support_direction' => $seed === null ? null : $this->polarity->forSeed($seed, $context)['support']->value,
+            $summary = ['positive_direction' => $seed === null ? null : $this->polarity->forSeed($seed, $context)['positive']->value,
                 'positive' => 0, 'negative' => 0,
                 'retained_direction' => $this->evidence->directionFor($position, context: $context)->value];
             // Counts describe unweighted effective Attestations. Receipts and
@@ -54,9 +54,9 @@ final readonly class PropositionPresentationService
             foreach ($this->state->attestations(collect([$position]), $context)->groupBy('proposition_id') as $sourceId => $attestations) {
                 $source = $context !== null ? $context->propositions->get($sourceId) : $attestations->first()->proposition;
                 $originalSeed = $this->regions->seedFor($source, $context);
-                $support = $originalSeed === null ? Direction::Positive : $this->polarity->forSeed($originalSeed, $context)['support'];
+                $support = $originalSeed === null ? Direction::Positive : $this->polarity->forSeed($originalSeed, $context)['positive'];
                 foreach ($attestations as $attestation) {
-                    $positive = ($attestation->direction === 'support') === ($support === Direction::Positive);
+                    $positive = ($attestation->direction === 'positive') === ($support === Direction::Positive);
                     $summary[$positive ? 'positive' : 'negative']++;
                 }
             }

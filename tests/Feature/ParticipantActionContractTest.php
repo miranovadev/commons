@@ -249,7 +249,7 @@ class ParticipantActionContractTest extends TestCase
             return $node;
         };
         $seed = $node('canon');
-        app(CommitRegionPolarityService::class)->establishOrigin($seed, 'support');
+        app(CommitRegionPolarityService::class)->establishOrigin($seed, 'positive');
         $registers = ['canon', 'activity', 'frontier', 'canon', 'activity', 'frontier', 'canon'];
         $writes = ['activity', 'frontier', 'canon', 'activity', 'frontier', 'canon', 'canon'];
         $anchor = $kind === PhaseKind::Mediate ? $node('canon', $seed) : $seed;
@@ -275,13 +275,13 @@ class ParticipantActionContractTest extends TestCase
                 // a separate revision target with an earlier effective self-Refute.
                 $revision = $node($writes[$kind->value - 1], $gate);
                 $refute = new Attestation;
-                $refute->forceFill(['phase_id' => $past->id, 'proposition_id' => $revision->id, 'direction' => 'refute'])->save();
+                $refute->forceFill(['phase_id' => $past->id, 'proposition_id' => $revision->id, 'direction' => 'negative'])->save();
                 app(LedgerService::class)->record($refute);
             }
             if ($kind->value <= 3) {
                 $traverse = $node($writes[$kind->value - 1], $gate);
                 $attestation = new Attestation;
-                $attestation->forceFill(['phase_id' => $past->id, 'proposition_id' => $traverse->id, 'direction' => 'support'])->save();
+                $attestation->forceFill(['phase_id' => $past->id, 'proposition_id' => $traverse->id, 'direction' => 'positive'])->save();
                 app(LedgerService::class)->record($attestation);
             }
             if (in_array('instrument.execute', config('phases.'.$kind->value.'.actions'), true)) {

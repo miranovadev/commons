@@ -249,7 +249,7 @@ class ParticipantWakeTest extends TestCase
         app(CycleEntryService::class)->enter($originParticipant, [
             'statement' => 'A measured Origin.',
             'attestation' => [
-                'direction' => 'support',
+                'direction' => 'positive',
                 'rationale' => 'Grounded for the next participant.',
             ],
             'instrument' => [

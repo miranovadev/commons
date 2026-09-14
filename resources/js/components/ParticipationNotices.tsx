@@ -9,14 +9,14 @@ export function participationNotices({ participation, plan, canCommit, canRest, 
 }): WorkspaceNotice[] {
   const notices: WorkspaceNotice[] = [];
   const last = participation.last_commitment;
-  if (last) notices.push({ id: 'last-commitment', title: 'Latest Commitment', color: 'indigo', icon: IconGitCommit, content: <Stack gap="xs">
+  if (last) notices.push({ id: 'last-commitment', title: 'Latest Commitment', color: 'primary', icon: IconGitCommit, content: <Stack gap="xs">
     <Text size="sm">{last.domain_before} → {last.domain_after} · {last.closure_boundary ? 'Closure Boundary created' : 'No Closure Boundary'}</Text>
     <Text size="xs">Tension: {last.tension_before ?? 'unrecorded'} → {last.tension_after}</Text>
     <Text size="xs">Depth: {last.depth ?? 'unrecorded'} ({last.depth_direction ?? 'unknown'}) · Cadence: {last.cadence ?? 'unrecorded'} ({last.cadence_direction ?? 'unknown'})</Text>
     <Text size="xs" c="dimmed">Current Domain: {participation.domain} · Horizon {participation.horizon_sequence}</Text>
   </Stack> });
   if (plan?.commitment) notices.push({ id: 'commitment', title: plan.commitment.requirements.write_opportunity === false ? 'Commit already authored' : canCommit ? 'Committable candidate' : 'No committable candidate',
-    color: canCommit ? 'indigo' : 'gray', icon: canCommit ? IconLock : IconLockOpen, satisfied: canCommit, content: <Stack gap="xs">
+    color: canCommit ? 'primary' : 'gray', icon: canCommit ? IconLock : IconLockOpen, satisfied: canCommit, content: <Stack gap="xs">
     {canCommit && <Text size="sm">An eligible source is available to Commit in Write.</Text>}
     {!canCommit && <Text size="sm">{participation.reason?.message}</Text>}
     <Text size="xs">Current Gate Attestation: {plan.commitment.requirements.attestation ? 'available' : 'missing'}.</Text>
@@ -24,7 +24,7 @@ export function participationNotices({ participation, plan, canCommit, canRest, 
     {!canCommit && plan.commitment.requirements.write_opportunity !== false && <Text size="xs" c="dimmed">Grounding can be added in Bias and retained for a later Cycle. Use an available Phase action; the Closure conditions still apply.</Text>}
   </Stack> });
   if (plan?.commitment?.closure) { const closure = plan.commitment.closure;
-    notices.push({ id: 'closure-preview', title: 'Gate Closure preview', color: plan.commitment.requirements.closure === true ? 'indigo' : 'gray', satisfied: plan.commitment.requirements.closure === true, icon: IconRoute, content: <Stack gap="xs">
+    notices.push({ id: 'closure-preview', title: 'Gate Closure preview', color: plan.commitment.requirements.closure === true ? 'primary' : 'gray', satisfied: plan.commitment.requirements.closure === true, icon: IconRoute, content: <Stack gap="xs">
       <Text size="sm">Depth: {closure.depth} ({closure.depth_direction})</Text>
       <Text size="sm">Cadence: {closure.cadence} ({closure.cadence_direction})</Text>
       <Text size="xs">{plan.commitment.requirements.closure ? 'Directions align.' : 'Directions diverge for this source. Other eligible sources appear in Write.'}</Text>

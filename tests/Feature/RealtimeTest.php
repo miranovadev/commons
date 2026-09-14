@@ -162,7 +162,7 @@ class RealtimeTest extends TestCase
 
     private function origin(): array
     {
-        return ['statement' => 'A grounded Origin.', 'attestation' => ['direction' => 'support'],
+        return ['statement' => 'A grounded Origin.', 'attestation' => ['direction' => 'positive'],
             'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/origin']];
     }
 }

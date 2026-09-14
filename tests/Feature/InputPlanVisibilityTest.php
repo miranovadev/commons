@@ -87,7 +87,7 @@ class InputPlanVisibilityTest extends TestCase
         app(ContributionService::class)->validate($viewer, [
             'action' => 'attestation.create',
             'proposition_id' => $source->getKey(),
-            'direction' => 'support',
+            'direction' => 'positive',
         ]);
 
         // A small display window must not remove an otherwise local target
@@ -124,7 +124,7 @@ class InputPlanVisibilityTest extends TestCase
         $this->assertSame([], $plan['traversal_options']);
         $this->assertContains($parent->id, app(LineageService::class)->neighbourIds($gate));
         foreach ([$parent, $sibling, $distant, $unrelated, $wrong, $committal] as $excluded) {
-            foreach (['support', 'refute'] as $direction) {
+            foreach (['positive', 'negative'] as $direction) {
                 $this->assertInput($plan['schema'], [
                     'action' => 'attestation.create', 'proposition_id' => $excluded->id, 'direction' => $direction,
                 ], false);
@@ -136,7 +136,7 @@ class InputPlanVisibilityTest extends TestCase
     {
         $cases = [];
         foreach (PhaseKind::cases() as $kind) {
-            foreach ([null, 'support', 'refute'] as $direction) {
+            foreach ([null, 'positive', 'negative'] as $direction) {
                 $cases[$kind->name.' '.($direction ?? 'untouched')] = [$kind, $direction];
             }
         }
@@ -168,7 +168,7 @@ class InputPlanVisibilityTest extends TestCase
 
         // Another participant's evidence must never establish the viewer's path.
         $other = new Attestation;
-        $other->forceFill(['phase_id' => $sourcePhase->id, 'proposition_id' => $child->id, 'direction' => 'support'])->save();
+        $other->forceFill(['phase_id' => $sourcePhase->id, 'proposition_id' => $child->id, 'direction' => 'positive'])->save();
         if ($direction !== null) {
             $previousPhase = $phase->replicate();
             $previousPhase->forceFill(['gate_proposition_id' => null, 'completed_at' => now()])->save();
@@ -179,10 +179,10 @@ class InputPlanVisibilityTest extends TestCase
         $this->assertEqualsCanonicalizing([$child->id, $untouched->id], array_column($plan['write_options'], 'id'));
         $traversable = $kind->value <= PhaseKind::Constrain->value && $direction !== null;
         $card = collect($plan['write_options'])->firstWhere('id', $child->id);
-        $this->assertSame(['support' => 1 + (int) ($direction === 'support'), 'refute' => (int) ($direction === 'refute')], $card['attestation_counts']);
+        $this->assertSame(['positive' => 1 + (int) ($direction === 'positive'), 'negative' => (int) ($direction === 'negative')], $card['attestation_counts']);
         $this->assertSame($traversable ? [$child->id] : [], array_column($plan['traversal_options'], 'id'));
         $transport = app(OpenAIResponseSchema::class)->fromCommons($plan['schema']);
-        foreach (['refute', 'support'] as $choice) {
+        foreach (['negative', 'positive'] as $choice) {
             $input = ['action' => 'attestation.create', 'proposition_id' => $child->id, 'direction' => $choice];
             $this->assertInput($plan['schema'], $input, $choice !== $direction);
             $variant = $transport['properties']['contribution']['anyOf'][0];
@@ -196,7 +196,7 @@ class InputPlanVisibilityTest extends TestCase
             $this->assertInput($plan['schema'], $input, $valid);
             $this->assertInput($transport, ['contribution' => array_replace($transportInput, $input, ['direction' => null])], $valid);
         }
-        foreach (['refute', 'support'] as $choice) {
+        foreach (['negative', 'positive'] as $choice) {
             $input = ['action' => 'attestation.create', 'proposition_id' => $untouched->id, 'direction' => $choice];
             $this->assertInput($plan['schema'], $input, true);
             $this->assertInput($transport, ['contribution' => array_replace($transportInput, $input)], true);
@@ -206,7 +206,7 @@ class InputPlanVisibilityTest extends TestCase
             $edges = Supersession::count();
             app(ContributionDispatcher::class)->dispatch($viewer, $phase, [
                 'action' => 'attestation.create', 'proposition_id' => $child->id,
-                'direction' => $direction === 'support' ? 'refute' : 'support',
+                'direction' => $direction === 'positive' ? 'negative' : 'positive',
             ]);
             $this->assertSame($count, Proposition::count());
             $this->assertSame($edges, Supersession::count());

@@ -32,7 +32,7 @@ class PropositionPresentationTest extends TestCase
 
     private Proposition $origin;
 
-    private function bootstrap(string $label = 'support'): void
+    private function bootstrap(string $label = 'positive'): void
     {
         $substrate = new Substrate;
         $substrate->forceFill(['slug' => 'polarity', 'title' => 'Polarity', 'visibility' => 'private', 'configuration' => []])->save();
@@ -48,7 +48,7 @@ class PropositionPresentationTest extends TestCase
 
     public static function labels(): array
     {
-        return [['support', Direction::Positive], ['refute', Direction::Negative]];
+        return [['positive', Direction::Positive], ['negative', Direction::Negative]];
     }
 
     #[DataProvider('labels')]
@@ -56,7 +56,7 @@ class PropositionPresentationTest extends TestCase
     {
         $this->bootstrap($label);
         $plan = app(InputPlanService::class)->forParticipant($this->participant);
-        $this->assertSame(['support_direction' => $support->value, 'positive' => 1, 'negative' => 0, 'retained_direction' => 'positive'], $plan['gate']['attestation_summary']);
+        $this->assertSame(['positive_direction' => $support->value, 'positive' => 1, 'negative' => 0, 'retained_direction' => 'positive'], $plan['gate']['attestation_summary']);
         $this->assertSame(1, $plan['gate']['attestation_counts'][$label]);
         $this->assertEquals(-1, $plan['gate']['observables']['chirality']);
     }
@@ -65,19 +65,19 @@ class PropositionPresentationTest extends TestCase
     {
         $this->bootstrap();
         $source = $this->node('concord', $this->origin);
-        $original = $this->attest($source, 'refute'); // Negative in the original positive-support region.
+        $original = $this->attest($source, 'negative'); // Negative in the original positive-support region.
         $commit = $this->node('concord', $source, 'committal', 'commit');
         app(CommitRegionPolarityService::class)->establishCommit($commit, Direction::Negative);
-        $this->attest($commit, 'refute'); // Positive in the new negative-support region.
+        $this->attest($commit, 'negative'); // Positive in the new negative-support region.
         $phase = $this->phase(PhaseKind::Distinguish, 'signal', $commit);
         $presentation = app(PropositionPresentationService::class);
         $context = new ParticipationContext($phase);
-        $expected = ['support_direction' => 'negative', 'positive' => 1, 'negative' => 1, 'retained_direction' => 'negative'];
+        $expected = ['positive_direction' => 'negative', 'positive' => 1, 'negative' => 1, 'retained_direction' => 'negative'];
         $this->assertSame($expected, $presentation->attestations($commit));
         $this->assertSame($expected, $presentation->attestations($commit, $context));
-        $this->attest($source, 'support', $original);
+        $this->attest($source, 'positive', $original);
         $fresh = new ParticipationContext($phase);
-        $this->assertSame(['support_direction' => 'negative', 'positive' => 2, 'negative' => 0, 'retained_direction' => 'positive'], $presentation->attestations($commit, $fresh));
+        $this->assertSame(['positive_direction' => 'negative', 'positive' => 2, 'negative' => 0, 'retained_direction' => 'positive'], $presentation->attestations($commit, $fresh));
         $this->assertSame($expected, $presentation->attestations($commit, $context));
     }
 
@@ -87,9 +87,9 @@ class PropositionPresentationTest extends TestCase
         $source = $this->node('stance', $this->origin);
         $presentation = app(PropositionPresentationService::class);
         $this->assertSame('positive', $presentation->attestations($source)['retained_direction']);
-        $this->attest($source, 'refute');
-        $this->attest($source, 'support');
-        $expected = ['support_direction' => 'positive', 'positive' => 1, 'negative' => 1, 'retained_direction' => 'negative'];
+        $this->attest($source, 'negative');
+        $this->attest($source, 'positive');
+        $expected = ['positive_direction' => 'positive', 'positive' => 1, 'negative' => 1, 'retained_direction' => 'negative'];
         $this->assertSame($expected, $presentation->attestations($source));
         $context = new ParticipationContext($this->phase(PhaseKind::Constrain, 'concord', $source));
         DB::enableQueryLog();

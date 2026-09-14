@@ -148,8 +148,8 @@ class ReconciliationTest extends TestCase
     {
         $this->fixture();
         $sibling = $this->readSibling('Different Read parent', -0.5, 1)[1];
-        $this->attest($sibling, 'support');
-        $this->attest($this->gate, 'support');
+        $this->attest($sibling, 'positive');
+        $this->attest($this->gate, 'positive');
         foreach ([$this->gate, $sibling] as $source) {
             app(OperationalInstrumentService::class)->execute($this->phase, $source,
                 ['kind' => 'hyperlink', 'reference' => 'https://example.test/source/'.$source->id]);
@@ -260,8 +260,8 @@ class ReconciliationTest extends TestCase
     {
         $this->fixture();
         [$read, $candidate] = $this->readSibling('Matching Read', -0.5, 1);
-        $this->attest($this->gate, 'support');
-        $this->attest($candidate, 'refute');
+        $this->attest($this->gate, 'positive');
+        $this->attest($candidate, 'negative');
         // Restore controlled Read directions after recording new Phase observations.
         app(PropositionMeasurementService::class)->project($this->parent, -0.8, -1, -1);
         app(PropositionMeasurementService::class)->project($read, -0.5, -1, -1);
@@ -316,7 +316,7 @@ class ReconciliationTest extends TestCase
         $this->assertInput($plan['schema'], $input, false);
         $this->assertSame([$c->id], array_column($plan['gate_options'], 'id'));
         $this->assertContains($x->id, array_column($plan['write_options'], 'id'));
-        $this->assertInput($plan['schema'], ['action' => 'attestation.create', 'proposition_id' => $x->id, 'direction' => 'support'], true);
+        $this->assertInput($plan['schema'], ['action' => 'attestation.create', 'proposition_id' => $x->id, 'direction' => 'positive'], true);
         $count = Proposition::count();
         try {
             app(ContributionDispatcher::class)->dispatch($competitor, $phase, $input);

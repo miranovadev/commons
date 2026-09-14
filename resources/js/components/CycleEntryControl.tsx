@@ -8,6 +8,6 @@ export function CycleEntryControl({ participation, loading, onEnter, onOrigin }:
   const entry = cycleEntryPresentation(participation);
   return <Stack gap="xs" align="flex-start">
     <Text size="sm" c="dimmed">{entry.message}</Text>
-    {entry.available && <Button color="indigo" loading={loading} onClick={entry.mode === 'origin' ? onOrigin : onEnter}>{entry.label}</Button>}
+    {entry.available && <Button color="primary" loading={loading} onClick={entry.mode === 'origin' ? onOrigin : onEnter}>{entry.label}</Button>}
   </Stack>;
 }

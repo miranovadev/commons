@@ -57,6 +57,23 @@ class SubstrateController extends Controller
         );
     }
 
+    public function update(\App\Http\Requests\UpdateSubstrateRequest $request, Substrate $substrate): SubstrateResource
+    {
+        // Merge under the same Substrate lock used by domain writes so concurrent
+        // settings updates cannot overwrite one another or unrelated configuration.
+        $substrate = \Illuminate\Support\Facades\DB::transaction(function () use ($request, $substrate): Substrate {
+            $locked = Substrate::query()->lockForUpdate()->findOrFail($substrate->id);
+            $locked->configuration = array_replace_recursive(
+                $locked->configuration ?? [], $request->validated('configuration'),
+            );
+            $locked->save();
+
+            return $locked;
+        });
+
+        return new SubstrateResource($substrate->loadCount('participants'));
+    }
+
     public function show(Substrate $substrate): SubstrateResource
     {
         Gate::authorize('view', $substrate);

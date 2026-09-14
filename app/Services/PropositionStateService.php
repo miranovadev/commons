@@ -31,7 +31,7 @@ final class PropositionStateService
                 ->selectRaw('proposition_id, direction, count(*) as aggregate')
                 ->groupBy('proposition_id', 'direction')->get()->groupBy('proposition_id');
         foreach ($propositions as $proposition) {
-            $summary = ['support' => 0, 'refute' => 0];
+            $summary = ['positive' => 0, 'negative' => 0];
             foreach ($sources[$proposition->id] as $id) {
                 foreach ($counts->get($id, collect()) as $count) {
                     $summary[$count->direction] += (int) $count->aggregate;

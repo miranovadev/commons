@@ -59,7 +59,7 @@ class RevisionAdmissibilityTest extends TestCase
             ]);
         }
 
-        $this->attest($owned->phase, $owned, 'refute');
+        $this->attest($owned->phase, $owned, 'negative');
         $plan = app(InputPlanService::class)->forParticipant($participant);
 
         $this->assertEqualsCanonicalizing(
@@ -113,7 +113,7 @@ class RevisionAdmissibilityTest extends TestCase
 
         $this->expectException(DomainException::class);
         $this->expectExceptionMessage(
-            'Revision requires an owned active head in the current write register with an effective self-Refute from an earlier Cycle.'
+            'Revision requires an owned active head in the current write register with an effective self-negative Attestation from an earlier Cycle.'
         );
 
         app(ContributionDispatcher::class)->dispatch(
@@ -131,9 +131,9 @@ class RevisionAdmissibilityTest extends TestCase
     {
         return [
             'no personal attestation' => [null, false, false],
-            'effective Support' => ['support', false, false],
-            'same opportunity Refute' => ['refute', true, false],
-            'Refute superseded by Support' => ['refute', false, true],
+            'effective Support' => ['positive', false, false],
+            'same opportunity Refute' => ['negative', true, false],
+            'Refute superseded by Support' => ['negative', false, true],
         ];
     }
 
@@ -144,7 +144,7 @@ class RevisionAdmissibilityTest extends TestCase
         if ($direction !== null) {
             $previous = $this->attest($samePhase ? $phase : $head->phase, $head, $direction);
             if ($supportAgain) {
-                $this->attest($phase, $head, 'support', $previous);
+                $this->attest($phase, $head, 'positive', $previous);
             }
         }
         $this->assertRevisionUnavailable($participant, $phase, $head);
@@ -155,12 +155,12 @@ class RevisionAdmissibilityTest extends TestCase
         [$participant, $phase, $gate, $head] = $this->revisionFixture();
         $dispatch = app(ContributionDispatcher::class);
         $dispatch->dispatch($participant, $phase, [
-            'action' => 'attestation.create', 'proposition_id' => $head->id, 'direction' => 'support',
+            'action' => 'attestation.create', 'proposition_id' => $head->id, 'direction' => 'positive',
         ]);
         $phase = $this->nextEncounter($phase);
         $this->assertRevisionUnavailable($participant, $phase, $head);
         $dispatch->dispatch($participant, $phase, [
-            'action' => 'attestation.create', 'proposition_id' => $head->id, 'direction' => 'refute',
+            'action' => 'attestation.create', 'proposition_id' => $head->id, 'direction' => 'negative',
         ]);
         $this->assertRevisionUnavailable($participant, $phase, $head);
         $phase = $this->nextEncounter($phase);
@@ -179,19 +179,19 @@ class RevisionAdmissibilityTest extends TestCase
         $this->assertRevisionUnavailable($participant, $phase, $revised);
         $phase = $this->nextEncounter($phase);
         $this->assertRevisionUnavailable($participant, $phase, $revised);
-        $support = ['action' => 'attestation.create', 'proposition_id' => $revised->id, 'direction' => 'support'];
+        $support = ['action' => 'attestation.create', 'proposition_id' => $revised->id, 'direction' => 'positive'];
         app(ContributionService::class)->validate($participant, $support);
         $dispatch->dispatch($participant, $phase, $support);
-        $this->assertSame('support', $revised->effectiveAttestations()->sole()->direction);
+        $this->assertSame('positive', $revised->effectiveAttestations()->sole()->direction);
     }
 
     public function test_switching_back_to_support_invalidates_a_previously_valid_revision_packet(): void
     {
         [$participant, $phase, $gate, $head] = $this->revisionFixture();
-        $this->attest($head->phase, $head, 'refute');
+        $this->attest($head->phase, $head, 'negative');
         $this->assertNotEmpty(app(InputPlanService::class)->forParticipant($participant)['revision_options']);
         app(ContributionDispatcher::class)->dispatch($participant, $phase, [
-            'action' => 'attestation.create', 'proposition_id' => $head->id, 'direction' => 'support',
+            'action' => 'attestation.create', 'proposition_id' => $head->id, 'direction' => 'positive',
         ]);
         $this->assertRevisionUnavailable($participant, $phase, $head);
         $this->assertRevisionUnavailable($participant, $this->nextEncounter($phase), $head);
@@ -205,7 +205,7 @@ class RevisionAdmissibilityTest extends TestCase
         $head = $this->priorHead($other, 'frontier', 'Foreign Write');
         $personalHistory = $this->priorHead($participant, 'activity', 'Personal history')->phase;
         $gate->children()->attach($head->id, ['id' => (string) str()->ulid(), 'phase_id' => $phase->id, 'type' => 'variant']);
-        $this->attest($personalHistory, $head, 'refute');
+        $this->attest($personalHistory, $head, 'negative');
         $this->assertRevisionUnavailable($participant, $phase, $head);
     }
 
@@ -215,7 +215,7 @@ class RevisionAdmissibilityTest extends TestCase
         $earlier = new Phase;
         $earlier->forceFill(['cycle_id' => $phase->cycle_id, 'kind' => PhaseKind::Distinguish,
             'write_register' => 'frontier', 'started_at' => now(), 'completed_at' => now()])->save();
-        $this->attest($earlier, $head, 'refute');
+        $this->attest($earlier, $head, 'negative');
         $this->assertRevisionUnavailable($participant, $phase, $head);
     }
 
@@ -240,7 +240,7 @@ class RevisionAdmissibilityTest extends TestCase
             app(ContributionDispatcher::class)->dispatch($participant, $phase, $input);
             $this->fail('Direct dispatch must reject revision.');
         } catch (DomainException $exception) {
-            $this->assertStringContainsString('effective self-Refute from an earlier Cycle', $exception->getMessage());
+            $this->assertStringContainsString('effective self-negative Attestation from an earlier Cycle', $exception->getMessage());
         }
         $this->assertSame($counts, [Proposition::count(), Supersession::count(), $participant->substrate->ledgerEntries()->count()]);
     }

@@ -30,7 +30,7 @@ class AttestationDirectionChangeTest extends TestCase
         $dispatcher->dispatch($participant, $phase, [
             'action' => 'attestation.create',
             'proposition_id' => $proposition->getKey(),
-            'direction' => 'support',
+            'direction' => 'positive',
         ]);
 
         $phase->completed_at = now();
@@ -40,14 +40,14 @@ class AttestationDirectionChangeTest extends TestCase
         $dispatcher->dispatch($participant, $next, [
             'action' => 'attestation.create',
             'proposition_id' => $proposition->getKey(),
-            'direction' => 'refute',
+            'direction' => 'negative',
             'rationale' => 'The later Write changes my effective direction.',
         ]);
 
         $attestations = Attestation::query()->oldest()->get();
         $this->assertCount(2, $attestations);
         $this->assertSame($attestations[0]->getKey(), $attestations[1]->supersedes_attestation_id);
-        $this->assertSame('refute', Attestation::query()->effective()->sole()->direction);
+        $this->assertSame('negative', Attestation::query()->effective()->sole()->direction);
         $this->assertDatabaseCount('substrate_ledger_entries', 5);
 
         app(PropositionMeasurementService::class)->project(
@@ -58,7 +58,7 @@ class AttestationDirectionChangeTest extends TestCase
         );
         $plan = app(InputPlanService::class)->forWorkspace($participant);
         $write = collect($plan['write_options'])->firstWhere('id', $proposition->id);
-        $this->assertSame('refute', $write['attestation']['direction']);
+        $this->assertSame('negative', $write['attestation']['direction']);
         $this->assertArrayNotHasKey('impact', $plan['gate']);
         $this->assertSame(
             -1.0,
@@ -74,7 +74,7 @@ class AttestationDirectionChangeTest extends TestCase
         $dispatcher->dispatch($participant, $next, [
             'action' => 'attestation.create',
             'proposition_id' => $proposition->getKey(),
-            'direction' => 'support',
+            'direction' => 'positive',
         ]);
     }
 

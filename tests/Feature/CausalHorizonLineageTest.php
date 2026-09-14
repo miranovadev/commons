@@ -48,7 +48,7 @@ class CausalHorizonLineageTest extends TestCase
     {
         $b = $this->participant('B');
         $entry = app(CycleEntryService::class);
-        $entry->enter($b, ['statement' => 'Origin', 'attestation' => ['direction' => 'support'],
+        $entry->enter($b, ['statement' => 'Origin', 'attestation' => ['direction' => 'positive'],
             'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/origin']]);
         $a = $this->participant('A');
         $entry->enter($a);

@@ -116,7 +116,7 @@ class WriteOnceTest extends TestCase
         $this->assertFalse($plan['tragedy']);
         $this->assertArrayNotHasKey('participant.rest', $plan['schema']['$defs']['actions']);
         app(ContributionDispatcher::class)->dispatch($participant, $return, [
-            'action' => 'attestation.create', 'proposition_id' => $write->id, 'direction' => 'refute',
+            'action' => 'attestation.create', 'proposition_id' => $write->id, 'direction' => 'negative',
         ]);
         $plan = $this->plan($participant);
         $this->assertContains($write->id, $this->targets($plan, 'proposition.traverse'));
@@ -134,7 +134,7 @@ class WriteOnceTest extends TestCase
         $input = ['action' => 'proposition.variant', 'statement' => 'First Variant'];
         $write = app(ContributionDispatcher::class)->dispatch($participant, $phase, $input);
         app(ContributionDispatcher::class)->dispatch($participant, $phase, [
-            'action' => 'attestation.create', 'proposition_id' => $write->id, 'direction' => 'refute',
+            'action' => 'attestation.create', 'proposition_id' => $write->id, 'direction' => 'negative',
         ]);
         $later = $this->phase($participant, PhaseKind::Persist, 'frontier', $gate);
         $revised = app(ContributionDispatcher::class)->dispatch($participant, $later, [
@@ -179,7 +179,7 @@ class WriteOnceTest extends TestCase
         $this->assertArrayNotHasKey('proposition.reclassify', $plan['schema']['$defs']['actions']);
         $this->assertContains($written->id, $this->targets($plan, 'attestation.create'));
         app(ParticipationService::class)->contribute($participant, $return->id,
-            ['action' => 'attestation.create', 'proposition_id' => $written->id, 'direction' => 'support']);
+            ['action' => 'attestation.create', 'proposition_id' => $written->id, 'direction' => 'positive']);
 
         $other = $this->participant($participant->substrate, 'other');
         $otherPhase = $this->phase($other, $kind, $register, $gate);
@@ -209,7 +209,7 @@ class WriteOnceTest extends TestCase
             $refutePhase = $this->phase($participant, PhaseKind::Disperse, 'activity', $gate);
             $this->assertSame([], $this->targets($this->plan($participant), 'proposition.revise'));
             app(ContributionDispatcher::class)->dispatch($participant, $refutePhase, [
-                'action' => 'attestation.create', 'proposition_id' => $first->id, 'direction' => 'refute',
+                'action' => 'attestation.create', 'proposition_id' => $first->id, 'direction' => 'negative',
             ]);
             $this->assertSame([], $this->targets($this->plan($participant), 'proposition.revise'));
             $return = $this->phase($participant, PhaseKind::Disperse, 'activity', $gate);
@@ -289,7 +289,7 @@ class WriteOnceTest extends TestCase
         $this->assertContains($commit->id, $this->targets($plan, 'attestation.create'));
         $this->assertContains($commit->id, $this->targets($plan, 'instrument.execute'));
         app(ContributionService::class)->validate($participant,
-            ['action' => 'attestation.create', 'proposition_id' => $commit->id, 'direction' => 'support']);
+            ['action' => 'attestation.create', 'proposition_id' => $commit->id, 'direction' => 'positive']);
 
         $other = $this->participant($participant->substrate, 'other');
         $otherPhase = $this->phase($other, PhaseKind::Order, 'canon', $a);
@@ -314,7 +314,7 @@ class WriteOnceTest extends TestCase
                 $this->assertUnavailable($participant, $phase, [
                     'action' => $action, 'proposition_id' => $target->id,
                     ...match ($action) {
-                        'attestation.create' => ['direction' => 'support'],
+                        'attestation.create' => ['direction' => 'positive'],
                         'instrument.execute' => ['instrument' => ['kind' => 'citation', 'reference' => $gate->id]],
                         default => ['statement' => 'Invalid revision'],
                     },

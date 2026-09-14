@@ -148,11 +148,11 @@ class CommitRegionTest extends TestCase
         $gate = $this->node($second, $left);
         $neutral = $this->node($second, $right);
         $negative = $this->node($second, $right);
-        $this->attest($negative, 'refute');
+        $this->attest($negative, 'negative');
         $regionDefault = $this->node($second, $negative);
         $boundary = $this->node($third, $right, 'committal');
         $outside = $this->node($second, $boundary);
-        $this->attest($outside, 'support');
+        $this->attest($outside, 'positive');
         $phase = $this->phase(PhaseKind::Bias, $gate, $third);
         $bias = app(BiasGateService::class);
         $this->assertEqualsCanonicalizing([$gate->id, $neutral->id, $negative->id, $regionDefault->id], $bias->populationFor($phase)->pluck('id')->all());
@@ -160,7 +160,7 @@ class CommitRegionTest extends TestCase
         $this->assertSame([$negative->id], $bias->forPhase($phase)->pluck('id')->all());
         $this->assertCount(0, $regionDefault->attestations);
         $this->reject($phase, ['action' => 'proposition.bias', 'proposition_id' => $outside->id]);
-        $this->attest($gate, 'support'); // Balanced aggregate retains its earlier negative direction.
+        $this->attest($gate, 'positive'); // Balanced aggregate retains its earlier negative direction.
         $this->assertSame([$negative->id], $bias->forPhase($phase)->pluck('id')->all());
     }
 
@@ -178,7 +178,7 @@ class CommitRegionTest extends TestCase
         $boundary = $this->node($third, $right, 'committal');
         $outside = $this->node($third, $boundary);
         foreach ([$positive, $negative, $misaligned, $outside] as $candidate) {
-            $this->attest($candidate, 'support');
+            $this->attest($candidate, 'positive');
             $this->loadedReceiptFixture($candidate);
             app(OperationalInstrumentService::class)->execute($this->history, $candidate,
                 ['kind' => 'hyperlink', 'reference' => 'https://example.test/'.$candidate->id]);

@@ -210,7 +210,7 @@ class InputSchemaServiceTest extends TestCase
         $this->assertValid($schema, [
             'action' => 'attestation.create',
             'proposition_id' => '01ARZ3NDEKTSV4RRFFQ69G5FAV',
-            'direction' => 'support',
+            'direction' => 'positive',
         ]);
     }
 
@@ -271,7 +271,7 @@ class InputSchemaServiceTest extends TestCase
         $this->assertValid($persistSchema, [
             'action' => 'attestation.create',
             'proposition_id' => '01m1xab7yakfnhy6tf52a9qg7z',
-            'direction' => 'support',
+            'direction' => 'positive',
         ]);
         $this->assertValid($persistSchema, [
             'action' => 'proposition.revise',

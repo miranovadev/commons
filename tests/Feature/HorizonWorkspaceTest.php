@@ -29,7 +29,7 @@ class HorizonWorkspaceTest extends TestCase
         $substrate->forceFill(['slug' => 'presentation', 'title' => 'Presentation', 'visibility' => 'public', 'configuration' => []])->save();
         $founder = new Participant;
         $founder->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'Founder'])->save();
-        app(CycleEntryService::class)->enter($founder, ['statement' => 'Origin', 'attestation' => ['direction' => 'support'],
+        app(CycleEntryService::class)->enter($founder, ['statement' => 'Origin', 'attestation' => ['direction' => 'positive'],
             'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/origin']]);
         $origin = $founder->fresh()->position;
         $h2 = $founder->cycles()->whereNull('completed_at')->sole()->contextHorizon;

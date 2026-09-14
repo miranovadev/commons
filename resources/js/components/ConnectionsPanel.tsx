@@ -75,7 +75,7 @@ export function ConnectionsPanel({ slug, participantId, participantName, opened,
             <Card key={attachment.id} withBorder padding="md">
               <Stack gap="sm">
                 <Group justify="space-between" wrap="nowrap">
-                  <Group wrap="nowrap"><ThemeIcon color="indigo" variant="light"><IconPlugConnected size={17} /></ThemeIcon><Box><Text fw={650}>{connection?.name || 'Connection'}</Text><Text size="xs" c="dimmed">{connection?.provider} · {connection?.configuration?.model}</Text></Box></Group>
+                  <Group wrap="nowrap"><ThemeIcon color="primary" variant="light"><IconPlugConnected size={17} /></ThemeIcon><Box><Text fw={650}>{connection?.name || 'Connection'}</Text><Text size="xs" c="dimmed">{connection?.provider} · {connection?.configuration?.model}</Text></Box></Group>
                   <Group gap="xs"><Switch checked={attachment.is_enabled} onChange={(event) => updateAttachment({ ...parameters, participantConnectionId: attachment.id, is_enabled: event.currentTarget.checked })} aria-label={`Enable ${connection?.name || 'connection'}`} /><ActionIcon color="red" variant="subtle" onClick={() => remove(attachment)} aria-label={`Detach ${connection?.name || 'connection'}`}><IconTrash size={17} /></ActionIcon></Group>
                 </Group>
                 <Select label="Wake mode" value={trigger.mode} data={options.trigger_modes} onChange={(value) => value && updateSchedule(attachment, value as TriggerMode, trigger.interval_minutes || 60)} />

@@ -100,11 +100,11 @@ function ParticipantPositionPage({ slug, participantId }: { slug: string; partic
   return (
     <Container fluid className={displayPlan ? 'participant-page participant-page--active' : 'participant-page'} p={displayPlan ? 0 : undefined}>
       {!displayPlan && <Breadcrumbs mb="lg"><Text component={Link} to="/" size="sm" c="dimmed">Substrates</Text><Text component={Link} to={`/substrates/${slug}`} size="sm" c="dimmed">{slug}</Text><Text size="sm">Participant</Text></Breadcrumbs>}
-      {(participantLoading || participationLoading) && !error && <Stack align="center" py={100}><Loader color="indigo" /><Text c="dimmed">Finding your current position…</Text></Stack>}
+      {(participantLoading || participationLoading) && !error && <Stack align="center" py={100}><Loader color="primary" /><Text c="dimmed">Finding your current position…</Text></Stack>}
       {error && <Alert color="red" variant="light" icon={<IconAlertCircle size={18} />} title="The Commons could not load this position">{messageFrom(error, 'This participation state could not be loaded.')}</Alert>}
       {participant && !displayPlan && <ParticipantIdentity participant={participant} onSelect={() => setSwitcherOpened(true)} opened={switcherOpened} />}
       {participant && participation?.status === 'waiting' && !completed && (
-        <Box p="xl"><Stack align="flex-start" maw={680} mx="auto"><ThemeIcon color="indigo" variant="light" size="xl" radius="xl"><IconSparkles size={22} /></ThemeIcon><Box><Title order={2}>{participation.entry?.mode === 'origin' ? 'Every substrate begins somewhere' : 'Ready to enter the cycle'}</Title></Box>{cycleEntry.error && <Alert color="red" variant="light">{messageFrom(cycleEntry.error, 'The cycle could not be entered.')}</Alert>}<CycleEntryControl participation={participation} loading={cycleEntry.isLoading} onEnter={enterFromPotential} onOrigin={() => { cycleEntry.reset(); openOrigin(); }} /></Stack></Box>
+        <Box p="xl"><Stack align="flex-start" maw={680} mx="auto"><ThemeIcon color="primary" variant="light" size="xl" radius="xl"><IconSparkles size={22} /></ThemeIcon><Box><Title order={2}>{participation.entry?.mode === 'origin' ? 'Every substrate begins somewhere' : 'Ready to enter the cycle'}</Title></Box>{cycleEntry.error && <Alert color="red" variant="light">{messageFrom(cycleEntry.error, 'The cycle could not be entered.')}</Alert>}<CycleEntryControl participation={participation} loading={cycleEntry.isLoading} onEnter={enterFromPotential} onOrigin={() => { cycleEntry.reset(); openOrigin(); }} /></Stack></Box>
       )}
       {!displayPlan && notices.map(notice => <Alert key={notice.id} color={notice.color} title={notice.title} m="md">{notice.content}</Alert>)}
       {participant && displayPlan && (
@@ -115,7 +115,7 @@ function ParticipantPositionPage({ slug, participantId }: { slug: string; partic
           </Box>
           {previewKind && <Group className="phase-preview-notice" justify="space-between" gap="xs">
             <Text size="xs" c="dimmed" role="status">Read-only active lineage · showing the resolved history in each register.</Text>
-            <Button size="compact-xs" variant="light" color="indigo" onClick={() => setPreviewSelection(null)}>Return to current Phase</Button>
+            <Button size="compact-xs" variant="light" color="primary" onClick={() => setPreviewSelection(null)}>Return to current Phase</Button>
           </Group>}
           <Box className="participant-cycle-content">
             <ParticipantWorkspace key={previewKind || 'live'} previewKind={previewKind} plan={{ ...displayPlan, perspectiveLimit: participant.max_read_count }} availableActions={previewKind || completed ? [] : availableActions} onAction={workspaceAction}

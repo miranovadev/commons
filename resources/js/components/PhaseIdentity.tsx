@@ -20,7 +20,7 @@ export function PhaseIdentity({ kind, selectedKind = kind, onSelect, busy }: Pha
 }
 export function PhaseProgress({ kind, selectedKind = kind, onSelect, busy = false }: PhaseIdentityProps) {
   const active = phaseMeta[kind].number - 1;
-  return <Stepper className="phase-progress" active={active} color="indigo" size="xs" iconSize={28} contentPadding={0}
+  return <Stepper className="phase-progress" active={active} color="primary" size="xs" iconSize={28} contentPadding={0}
     wrap={false} aria-label="Cycle Phase progress" onStepClick={index => {
       if (!busy && index <= active) onSelect?.(phaseOrder[index]);
     }} allowNextStepsSelect={false}>
@@ -28,7 +28,7 @@ export function PhaseProgress({ kind, selectedKind = kind, onSelect, busy = fals
       const current = phase === kind;
       const available = meta.number <= phaseMeta[kind].number;
       return <Stepper.Step key={phase} label={phaseTitle(phase)} icon={<Icon size={15} />} completedIcon={<Icon size={15} />}
-        color={current ? 'indigo' : 'gray'} data-state={current ? 'current' : available ? 'prior' : 'future'}
+        color={current ? 'primary' : 'gray'} data-state={current ? 'current' : available ? 'prior' : 'future'}
         data-preview={phase === selectedKind && !current || undefined}
         aria-label={current ? `Return to current Phase: ${phaseTitle(phase)}` : `Preview ${phaseTitle(phase)} registers`}
         aria-current={current ? 'step' : undefined} aria-pressed={phase === selectedKind}

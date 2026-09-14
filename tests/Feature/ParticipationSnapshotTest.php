@@ -47,7 +47,7 @@ class ParticipationSnapshotTest extends TestCase
         $origin = new Proposition;
         $origin->forceFill(['phase_id' => $history->id, 'register' => 'canon', 'tier' => 'committal', 'statement' => 'Origin'])->save();
         app(LedgerService::class)->record($origin);
-        app(CommitRegionPolarityService::class)->establishOrigin($origin, 'support');
+        app(CommitRegionPolarityService::class)->establishOrigin($origin, 'positive');
         $candidate = new Proposition;
         $candidate->forceFill(['phase_id' => $history->id, 'register' => 'stance', 'tier' => 'expressive', 'statement' => 'Candidate'])->save();
         app(LedgerService::class)->record($candidate);
@@ -69,7 +69,7 @@ class ParticipationSnapshotTest extends TestCase
                 $writer->table('substrates')->where('id', $substrate->id)->lockForUpdate()->first();
                 $id = (string) str()->ulid();
                 $writer->table('attestations')->insert(['id' => $id, 'phase_id' => $phase->id, 'proposition_id' => $candidate->id,
-                    'direction' => 'refute', 'created_at' => now(), 'updated_at' => now()]);
+                    'direction' => 'negative', 'created_at' => now(), 'updated_at' => now()]);
                 $writer->table('substrate_ledger_entries')->insert(['id' => (string) str()->ulid(), 'substrate_id' => $substrate->id,
                     'sequence' => $writer->table('substrate_ledger_entries')->where('substrate_id', $substrate->id)->max('sequence') + 1,
                     'kind' => 'attestation', 'ledgerable_type' => (new Attestation)->getMorphClass(), 'ledgerable_id' => $id, 'recorded_at' => now()]);
@@ -96,8 +96,8 @@ class ParticipationSnapshotTest extends TestCase
             $this->assertSame(json_encode($before), json_encode($during));
             $write();
             $after = $plans->forParticipant($viewer);
-            $this->assertSame(0, $before['gate']['attestation_counts']['refute']);
-            $this->assertSame(1, $after['gate']['attestation_counts']['refute']);
+            $this->assertSame(0, $before['gate']['attestation_counts']['negative']);
+            $this->assertSame(1, $after['gate']['attestation_counts']['negative']);
             $this->assertSame(0, DB::transactionLevel());
         } finally {
             $armed = false;

@@ -78,7 +78,7 @@ export function MeasurementRail({
             top: 0,
             height: '100%',
             borderRadius: 99,
-            background: 'var(--register-color, var(--mantine-color-indigo-5))',
+            background: 'var(--register-color, var(--mantine-color-primary-5))',
             opacity: 0.58,
           }}
         />

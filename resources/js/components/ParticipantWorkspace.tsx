@@ -1,3 +1,4 @@
+import { useSubstratePresentation } from '../SubstrateTheme';
 import { Box, Button, Group, Stack, Text, ThemeIcon } from '@mantine/core';
 import { IconArrowDown, IconArrowLeft, IconArrowRight, IconEye, IconPencil, IconRoute, IconTool } from '@tabler/icons-react';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
@@ -126,11 +127,12 @@ export function ParticipantWorkspace({ plan, availableActions, onAction, onSubmi
 }
 
 function WriteOptionCard({ proposition, directions, canAttest, canRevise, canInstrument, canTraverse, canCommit, committalObservables, onInspect, onAction }: {
-  proposition: Proposition; directions: Array<'refute' | 'support'>; canAttest: boolean; canRevise: boolean;
+  proposition: Proposition; directions: Array<'negative' | 'positive'>; canAttest: boolean; canRevise: boolean;
   canInstrument: boolean; canTraverse: boolean; canCommit: boolean; committalObservables?: Observables; onInspect: InspectHandler; onAction: ActionHandler;
 }) {
   const hasActions = canAttest || canRevise || canInstrument || canTraverse || canCommit;
-  const slots = directionSlots(proposition.attestation_summary?.support_direction);
+  const presentation = useSubstratePresentation();
+  const slots = directionSlots(proposition.attestation_summary?.positive_direction, presentation);
   function directionalAction(slot: typeof slots[number]) {
     const attest = canAttest && directions.includes(slot.label);
     const traverse = canTraverse && !directions.includes(slot.label);
@@ -149,7 +151,7 @@ function WriteOptionCard({ proposition, directions, canAttest, canRevise, canIns
     <PropositionCard proposition={proposition} committalObservables={committalObservables} compact flow="write" onClick={() => onInspect({ kind: 'write option', proposition })} />
     {hasActions && <>
       {(canCommit || canRevise) && <Group className="write-option-card__context-actions" data-action-region="middle" gap={4} justify="center">
-        {canCommit && <Button size="compact-xs" color="indigo" leftSection={<OperationIcon operation="commit" />} onClick={() => onAction('proposition.commit', { proposition_id: proposition.id })}>Commit</Button>}
+        {canCommit && <Button size="compact-xs" color="primary" leftSection={<OperationIcon operation="commit" />} onClick={() => onAction('proposition.commit', { proposition_id: proposition.id })}>Commit</Button>}
         {canRevise && <Button size="compact-xs" variant="subtle" color="gray" leftSection={<OperationIcon operation="revise" />} onClick={() => onAction('proposition.revise', { proposition_id: proposition.id })}>Revise</Button>}
       </Group>}
       {(canAttest || canTraverse || canInstrument) && <Box className="write-option-card__actions write-option-card__actions--directional" role="group" aria-label={`Attestation and traversal for ${proposition.title || proposition.statement.split('\n')[0]}`}>

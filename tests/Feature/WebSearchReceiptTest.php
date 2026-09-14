@@ -303,7 +303,7 @@ class WebSearchReceiptTest extends TestCase
     {
         [$fixture, $subject] = $this->scenario();
         $attestation = new Attestation;
-        $attestation->forceFill(['phase_id' => $subject->phase_id, 'proposition_id' => $subject->id, 'direction' => 'support'])->save();
+        $attestation->forceFill(['phase_id' => $subject->phase_id, 'proposition_id' => $subject->id, 'direction' => 'positive'])->save();
         app(LedgerService::class)->record($attestation);
         $time = CarbonImmutable::parse('2026-09-01T00:00:00Z');
         $this->travelTo($time);

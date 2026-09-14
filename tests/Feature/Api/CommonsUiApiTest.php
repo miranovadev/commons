@@ -115,8 +115,8 @@ class CommonsUiApiTest extends TestCase
 
         $response
             ->assertJsonPath('data.0.is_origin', true)
-            ->assertJsonPath('data.0.attestation_counts', ['support' => 0, 'refute' => 0])
-            ->assertJsonPath('data.1.attestation_counts', ['support' => 0, 'refute' => 0])
+            ->assertJsonPath('data.0.attestation_counts', ['positive' => 0, 'negative' => 0])
+            ->assertJsonPath('data.1.attestation_counts', ['positive' => 0, 'negative' => 0])
             ->assertJsonPath('data.0.children.0.id', $child->getKey())
             ->assertJsonPath('data.0.children.0.type', 'variant')
             ->assertJsonPath('data.1.parent_ids.0', $origin->getKey())

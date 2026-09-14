@@ -111,7 +111,7 @@ abstract class TestCase extends BaseTestCase
     {
         if (app(PropositionStateService::class)->attestations(collect([$node]))->isEmpty()) {
             $attestation = new Attestation;
-            $attestation->forceFill(['phase_id' => $node->phase_id, 'proposition_id' => $node->id, 'direction' => 'support'])->save();
+            $attestation->forceFill(['phase_id' => $node->phase_id, 'proposition_id' => $node->id, 'direction' => 'positive'])->save();
             app(LedgerService::class)->record($attestation);
         }
         $this->loadedReceiptFixture($node);

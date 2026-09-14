@@ -1,3 +1,4 @@
+import { useSubstratePresentation } from '../SubstrateTheme';
 import { Anchor, Badge, Box, Button, Group, Stack, Text } from '@mantine/core';
 import { IconAnchor, IconBook, IconRefresh } from '@tabler/icons-react';
 import { actionTargetIds } from '../participationOptions';
@@ -7,6 +8,7 @@ import type { ParticipantPlan } from '../types';
 export function ReceiptContextPanel({ plan, onRead, canRead = true, onReplay, canReplay = true }: {
   plan: ParticipantPlan; onRead: (id: string) => void; canRead?: boolean; onReplay?: (id: string) => void; canReplay?: boolean;
 }) {
+  const presentation = useSubstratePresentation();
   const replays = canReplay && onReplay ? actionTargetIds(plan, 'receipt.replay') : new Set<string>();
   const receipts = (plan.receipts ?? []).filter(receipt => receipt.status !== 'unqualified' || replays.has(receipt.id) || receipt.observation_error);
   if (!receipts.length) return null;
@@ -26,7 +28,7 @@ export function ReceiptContextPanel({ plan, onRead, canRead = true, onReplay, ca
       {receipt.observation_error && <Text size="xs" c="dimmed">{receipt.observation_error}</Text>}
       {receipt.evidence && <Box mt={5}>
         {receipt.evidence.statement && <Text size="sm">{receipt.evidence.statement}</Text>}
-        {receipt.evidence.direction && <Text size="xs">{receipt.evidence.direction}: {receipt.evidence.rationale}</Text>}
+        {receipt.evidence.direction && <Text size="xs">{receipt.evidence.direction === 'positive' || receipt.evidence.direction === 'negative' ? presentation[receipt.evidence.direction].label : receipt.evidence.direction}: {receipt.evidence.rationale}</Text>}
         {receipt.evidence.content_excerpt && <Text size="sm">{receipt.evidence.content_excerpt}{receipt.evidence.excerpt_truncated ? '…' : ''}</Text>}
         {receipt.evidence.resource && <Text size="xs" c="dimmed">Verified resource: {receipt.evidence.resource}</Text>}
         {receipt.evidence.executed_at && <Text size="xs" c="dimmed">Observed {receipt.evidence.executed_at}</Text>}

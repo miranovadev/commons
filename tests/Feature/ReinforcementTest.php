@@ -54,7 +54,7 @@ class ReinforcementTest extends TestCase
         app(LedgerService::class)->record($this->node);
         $this->later = $this->phase($substrate, $creation->cycle->participant);
         $attestation = new Attestation;
-        $attestation->forceFill(['phase_id' => $this->later->id, 'proposition_id' => $this->node->id, 'direction' => 'support'])->save();
+        $attestation->forceFill(['phase_id' => $this->later->id, 'proposition_id' => $this->node->id, 'direction' => 'positive'])->save();
         app(LedgerService::class)->record($attestation);
     }
 

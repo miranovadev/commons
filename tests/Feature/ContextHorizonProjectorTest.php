@@ -77,7 +77,7 @@ class ContextHorizonProjectorTest extends TestCase
         $attestation->forceFill([
             'phase_id' => $this->phase->getKey(),
             'proposition_id' => $first->getKey(),
-            'direction' => 'support',
+            'direction' => 'positive',
         ]);
         $attestation->save();
 

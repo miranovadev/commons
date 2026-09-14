@@ -47,7 +47,7 @@ $proposition = static function (string $action, string $title) use ($statement):
 };
 
 return [
-    'version' => 18,
+    'version' => 19,
 
     'cache' => [
         'store' => env('COMMONS_SCHEMA_CACHE_STORE'),
@@ -144,7 +144,7 @@ return [
                 'proposition_id' => $ulid,
                 'direction' => [
                     'type' => 'string',
-                    'enum' => ['support', 'refute'],
+                    'enum' => ['positive', 'negative'],
                 ],
                 'rationale' => $statement,
             ],

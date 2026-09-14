@@ -44,7 +44,7 @@ class OperationalCommitmentTest extends TestCase
         $this->participant = $this->participant($substrate, 'author');
         $state = app(ParticipationService::class)->enter($this->participant, [
             'statement' => 'The Origin.',
-            'attestation' => ['direction' => 'support'],
+            'attestation' => ['direction' => 'positive'],
             'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/origin'],
         ]);
         $this->origin = Proposition::findOrFail($state['plan']['gate_id']);
@@ -78,7 +78,7 @@ class OperationalCommitmentTest extends TestCase
         $this->phase($helper, PhaseKind::Persist, 'stance', Proposition::findOrFail($state['plan']['gate_id']));
         $helperState = $this->move($helper, ['action' => 'proposition.variant', 'statement' => 'Mediated Stance']);
         $stance = Proposition::findOrFail($helperState['plan']['gate_id']);
-        $this->move($this->participant, ['action' => 'attestation.create', 'proposition_id' => $stance->id, 'direction' => 'support']);
+        $this->move($this->participant, ['action' => 'attestation.create', 'proposition_id' => $stance->id, 'direction' => 'positive']);
         app(OperationalInstrumentService::class)->execute($stance->phase, $stance, ['kind' => 'citation', 'reference' => $this->origin->id]);
         $helperState = $this->move($helper, [
             'action' => 'proposition.reclassify', 'statement' => 'Final Concord',
@@ -88,7 +88,7 @@ class OperationalCommitmentTest extends TestCase
         $this->phase($reviewer, PhaseKind::Constrain, 'concord', $stance);
         $this->move($reviewer, [
             'action' => 'attestation.create', 'proposition_id' => $candidate->id,
-            'direction' => 'support',
+            'direction' => 'positive',
         ]);
 
         $state = $this->move($this->participant, [
@@ -286,7 +286,7 @@ class OperationalCommitmentTest extends TestCase
         $this->assertTrue($state['plan']['commitment']['requirements']['receipt']);
         $this->assertFalse($state['plan']['commitment']['requirements']['attestation']);
         $receipt = $candidate->instrumentExecutions()->with('receipt')->firstOrFail()->receipt;
-        $this->move($reader, ['action' => 'attestation.create', 'proposition_id' => $candidate->id, 'direction' => 'support']);
+        $this->move($reader, ['action' => 'attestation.create', 'proposition_id' => $candidate->id, 'direction' => 'positive']);
         $state = app(ParticipationService::class)->stateFor($reader);
         $this->assertNull($state['plan']);
         $this->assertNotNull($state['completion']);
@@ -339,7 +339,7 @@ class OperationalCommitmentTest extends TestCase
             // Earlier eligible Writes in the same region remain supportable too.
             $phaseCount = Phase::count();
             $input = ['action' => $action, 'proposition_id' => $candidate->id];
-            $input += $action === 'attestation.create' ? ['direction' => 'support']
+            $input += $action === 'attestation.create' ? ['direction' => 'positive']
                 : ['instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/order']];
             $state = $this->move($reader, $input);
             $this->assertNotNull($phase->fresh()->completed_at);
@@ -371,7 +371,7 @@ class OperationalCommitmentTest extends TestCase
         [$reader, $phase, $candidate] = $this->instrumentFixture(PhaseKind::Order);
         $before = [Phase::count(), Attestation::count(), Receipt::count(), InstrumentExecution::count()];
         foreach ([
-            ['action' => 'attestation.create', 'proposition_id' => $this->origin->id, 'direction' => 'support'],
+            ['action' => 'attestation.create', 'proposition_id' => $this->origin->id, 'direction' => 'positive'],
             ['action' => 'instrument.execute', 'proposition_id' => $this->origin->id, 'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test']],
             ['action' => 'instrument.execute', 'proposition_id' => $candidate->id, 'instrument' => ['kind' => 'hyperlink', 'reference' => 'file:///invalid']],
             ['action' => 'proposition.commit', 'proposition_id' => $candidate->id],
@@ -420,7 +420,7 @@ class OperationalCommitmentTest extends TestCase
         $attestation = new Attestation;
         $attestation->forceFill([
             'phase_id' => $phase->id, 'proposition_id' => $gate->id,
-            'direction' => $previous === null ? 'support' : 'refute',
+            'direction' => $previous === null ? 'positive' : 'negative',
             'supersedes_attestation_id' => $previous?->id,
         ])->save();
         app(LedgerService::class)->record($attestation);

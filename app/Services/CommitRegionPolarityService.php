@@ -16,7 +16,7 @@ final class CommitRegionPolarityService
     public function establishOrigin(Proposition $origin, string $positiveLabel): void
     {
         $this->store($origin, Direction::Positive,
-            $positiveLabel === 'support' ? Direction::Positive : Direction::Negative);
+            $positiveLabel === 'positive' ? Direction::Positive : Direction::Negative);
     }
 
     public function establishCommit(Proposition $commit, Direction $sourceDirection): void
@@ -24,7 +24,7 @@ final class CommitRegionPolarityService
         $this->store($commit, $sourceDirection, $sourceDirection);
     }
 
-    /** @return array{governing: Direction, support: Direction} */
+    /** @return array{governing: Direction, positive: Direction} */
     public function forSeed(Proposition $seed, ?ParticipationContext $context = null): array
     {
         if ($context !== null) {
@@ -39,7 +39,8 @@ final class CommitRegionPolarityService
         $frame = $context !== null ? $context->frames->get($seed->id) : DB::table('commit_region_polarities')->where('proposition_id', $seed->id)->first();
         if ($frame !== null) {
             return ['governing' => Direction::from($frame->governing_direction),
-                'support' => Direction::from($frame->support_direction)];
+                // Preserve the legacy storage column used by the original backfill migration.
+                'positive' => Direction::from($frame->support_direction)];
         }
 
         // Read-only reconstruction for pre-upgrade/legacy contributions. Commit-only
@@ -50,13 +51,13 @@ final class CommitRegionPolarityService
                 ->where('type', 'commit')->with('ledgerEntry')->firstOrFail();
             $direction = app(AttestationEvidenceService::class)->directionFor($source, $edge->ledgerEntry?->sequence, $context);
 
-            return ['governing' => $direction, 'support' => $direction];
+            return ['governing' => $direction, 'positive' => $direction];
         }
 
         $first = $context !== null ? $context->attestations->where('proposition_id', $seed->id)->sortBy([['created_at', 'asc'], ['id', 'asc']])->first() : $seed->attestations()->orderBy('created_at')->orderBy('id')->first();
 
         return ['governing' => Direction::Positive,
-            'support' => $first?->direction === 'refute' ? Direction::Negative : Direction::Positive];
+            'positive' => in_array($first?->direction, ['negative', 'refute'], true) ? Direction::Negative : Direction::Positive];
     }
 
     public function seedFor(Proposition $position): ?Proposition
@@ -67,7 +68,7 @@ final class CommitRegionPolarityService
     public function backfill(Proposition $seed): void
     {
         $frame = $this->forSeed($seed);
-        $this->store($seed, $frame['governing'], $frame['support']);
+        $this->store($seed, $frame['governing'], $frame['positive']);
     }
 
     private function store(Proposition $seed, Direction $governing, Direction $support): void
@@ -81,7 +82,7 @@ final class CommitRegionPolarityService
             'support_direction' => $support->value,
         ]);
         $stored = $this->forSeed($seed);
-        if ($stored['governing'] !== $governing || $stored['support'] !== $support) {
+        if ($stored['governing'] !== $governing || $stored['positive'] !== $support) {
             throw new \DomainException('Commit Region polarity is immutable.');
         }
     }

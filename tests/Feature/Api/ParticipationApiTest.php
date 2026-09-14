@@ -398,7 +398,7 @@ class ParticipationApiTest extends TestCase
             'origin' => [
                 'statement' => 'The Commons begins with a grounded commitment.',
                 'attestation' => [
-                    'direction' => 'support',
+                    'direction' => 'positive',
                     'rationale' => 'This is a worthy Origin.',
                 ],
                 'instrument' => [

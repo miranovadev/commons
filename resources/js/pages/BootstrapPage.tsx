@@ -37,7 +37,7 @@ export function BootstrapPage({ onComplete }: { onComplete: () => void }) {
           <Text c="dimmed" ta="center">Create the first user and establish system stewardship.</Text>
         </Stack>
         <Paper withBorder shadow="sm" p={{ base: 'lg', sm: 'xl' }} radius="lg">
-          <Alert mb="lg" color="indigo" variant="light" icon={<IconInfoCircle size={18} />}>
+          <Alert mb="lg" color="primary" variant="light" icon={<IconInfoCircle size={18} />}>
             This account receives system administration access. Additional participants remain bound by the same substrate rules.
           </Alert>
           <Box component="form" onSubmit={form.onSubmit(submit)}>

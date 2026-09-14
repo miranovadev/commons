@@ -29,7 +29,7 @@ const css = readFileSync('resources/css/workspace.css', 'utf8');
 function fixture(domain = 'settlement') {
   const registers = domain === 'settlement' ? ['signal', 'stance', 'concord'] : ['activity', 'frontier', 'canon'];
   const nodes = registers.map((register, index) => ({ id: 'p' + index, tier: 'expressive', register, statement: 'CARD ' + register }));
-  const actions = { 'proposition.variant': { properties: { statement: {} } }, 'attestation.create': { properties: { proposition_id: { enum: ['p2'] }, direction: { enum: ['support', 'refute'] } } } };
+  const actions = { 'proposition.variant': { properties: { statement: {} } }, 'attestation.create': { properties: { proposition_id: { enum: ['p2'] }, direction: { enum: ['positive', 'negative'] } } } };
   return { phase: { id: 'live', kind: 'order', number: 7, write_register: registers[2] }, gate: nodes[1], lineage: nodes.slice(0, 2),
     write_options: [nodes[2]], workspace: { domain, registers: { [registers[1]]: [nodes[1]] } }, schema: { $defs: { actions } } };
 }

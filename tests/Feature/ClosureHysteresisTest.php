@@ -82,14 +82,14 @@ class ClosureHysteresisTest extends TestCase
     public function test_commit_freezes_source_attestation_direction_as_the_next_region_frame(): void
     {
         $this->bootstrap(1);
-        [$phase, $gate] = $this->candidate([2], direction: 'refute');
+        [$phase, $gate] = $this->candidate([2], direction: 'negative');
         $this->assertSame(ObservableDirection::Negative, app(AttestationEvidenceService::class)->directionFor($gate));
         $state = app(ParticipationService::class)->contribute($this->participant, $phase->id,
             ['action' => 'proposition.commit', 'proposition_id' => $gate->id]);
         $commit = Proposition::findOrFail($state['current_proposition_id']);
-        $this->assertSame(['governing' => ObservableDirection::Negative, 'support' => ObservableDirection::Negative],
+        $this->assertSame(['governing' => ObservableDirection::Negative, 'positive' => ObservableDirection::Negative],
             app(CommitRegionPolarityService::class)->forSeed($commit));
-        $this->assertSame(['governing' => ObservableDirection::Positive, 'support' => ObservableDirection::Positive],
+        $this->assertSame(['governing' => ObservableDirection::Positive, 'positive' => ObservableDirection::Positive],
             app(CommitRegionPolarityService::class)->forSeed($this->origin));
         $this->assertSame($gate->statement, $commit->statement);
     }
@@ -143,7 +143,7 @@ class ClosureHysteresisTest extends TestCase
         $this->assertSame('settlement', $entered['domain']);
         $this->assertSame('emergence', $entered['last_commitment']['domain_after']);
         $this->origin = Proposition::findOrFail($entered['current_proposition_id']);
-        [$phase, $gate] = $this->candidate(range(3, 12), 'canon', 'activity', 'refute');
+        [$phase, $gate] = $this->candidate(range(3, 12), 'canon', 'activity', 'negative');
         for ($i = 0; $i < 9; $i++) {
             $touch = new Phase;
             $touch->forceFill(['cycle_id' => $phase->cycle_id, 'kind' => PhaseKind::Persist,
@@ -293,7 +293,7 @@ class ClosureHysteresisTest extends TestCase
     }
 
     /** @param list<int> $cycles @return array{Phase, Proposition} */
-    private function candidate(array $cycles, string $writeRegister = 'concord', string $gateRegister = 'signal', string $direction = 'support'): array
+    private function candidate(array $cycles, string $writeRegister = 'concord', string $gateRegister = 'signal', string $direction = 'positive'): array
     {
         $previous = $this->origin;
         foreach ($cycles as $sequence) {

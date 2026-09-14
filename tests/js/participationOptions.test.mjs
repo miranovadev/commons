@@ -60,27 +60,27 @@ test('Persist instruments expose only schema-authorized Writes, never nearby Gat
   assert.deepEqual(actionPropositions({ ...persist, schema: {} }, 'instrument.execute'), []);
 });
 
-for (const effective of [null, 'support', 'refute']) {
+for (const effective of [null, 'positive', 'negative']) {
   test(`Write directions follow the schema for ${effective ?? 'untouched'} descendants`, () => {
-    const directions = ['refute', 'support'].filter((direction) => direction !== effective);
+    const directions = ['negative', 'positive'].filter((direction) => direction !== effective);
     const localPlan = {
       ...plan, write_options: [archived],
       schema: { $defs: { actions: {
         'attestation.create': {
-          properties: { proposition_id: { enum: [archived.id] }, direction: { enum: ['support', 'refute'] } },
+          properties: { proposition_id: { enum: [archived.id] }, direction: { enum: ['positive', 'negative'] } },
           anyOf: directions.map((direction) => ({ properties: { proposition_id: { enum: [archived.id] }, direction: { enum: [direction] } } })),
         },
         ...(effective ? { 'proposition.traverse': { properties: { proposition_id: { enum: [archived.id] } } } } : {}),
       } } },
     };
     assert.deepEqual(attestationDirections(localPlan, archived.id), directions);
-    for (const direction of ['support', 'refute']) {
+    for (const direction of ['positive', 'negative']) {
       assert.deepEqual(quickContribution(localPlan, 'attestation.create', { proposition_id: archived.id, direction, rationale: 'Keep this for the drawer' }),
         directions.includes(direction) ? { action: 'attestation.create', proposition_id: archived.id, direction } : null);
     }
     assert.deepEqual(quickContribution(localPlan, 'proposition.traverse', { proposition_id: archived.id }),
       effective ? { action: 'proposition.traverse', proposition_id: archived.id } : null);
-    assert.equal(quickContribution(localPlan, 'attestation.create', { proposition_id: unavailable.id, direction: 'support' }), null);
+    assert.equal(quickContribution(localPlan, 'attestation.create', { proposition_id: unavailable.id, direction: 'positive' }), null);
     assert.equal(quickContribution(localPlan, 'proposition.revise', { proposition_id: archived.id }), null);
     assert.deepEqual(attestationDirections(localPlan, unavailable.id), []);
     assert.deepEqual(writePropositions(localPlan), [archived]);

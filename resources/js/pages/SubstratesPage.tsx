@@ -22,6 +22,9 @@ import { useForm } from '@mantine/form';
 import { useDisclosure } from '@mantine/hooks';
 import { IconAlertCircle, IconArrowUpRight, IconHexagon3d, IconLock, IconPlus, IconTopologyStar3, IconUsers, IconWorld } from '@tabler/icons-react';
 import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import { SubstratePresentationFields } from '../components/SubstratePresentationFields';
+import { defaultPresentation, presentationFor } from '../substratePresentation';
 import { messageFrom } from '../errors';
 import { useCreateSubstrateMutation, useGetSubstratesQuery } from '../services/commonsApi';
 import type { ChangeEvent } from 'react';
@@ -78,7 +81,7 @@ function SubstrateCard({ substrate }: { substrate: Substrate }) {
     <Card component={Link} to={`/substrates/${substrate.slug}`} withBorder padding="xl" className="substrate-card">
       <Group justify="space-between" align="flex-start" wrap="nowrap">
         <Group gap="md" align="flex-start" wrap="nowrap" miw={0}>
-          <ThemeIcon size={42} radius="md" color="gray" variant="light" className="substrate-card__icon"><IconTopologyStar3 size={22} /></ThemeIcon>
+          <ThemeIcon size={42} radius="md" color={presentationFor(substrate).primary_color} variant="light" className="substrate-card__icon"><IconTopologyStar3 size={22} /></ThemeIcon>
           <Box miw={0}>
             <Title order={3}>{substrate.title}</Title>
             <Text c="dimmed" size="sm" lineClamp={2} mih={42} mt={7}>{substrate.description || 'A shared cognitive substrate.'}</Text>
@@ -131,6 +134,7 @@ function CreateSubstrateModal({ opened, onClose, onCreated }: {
   onCreated: () => void;
 }) {
   const [createSubstrate] = useCreateSubstrateMutation();
+  const [presentation, setPresentation] = useState(defaultPresentation);
   const form = useForm<SubstrateFormValues>({
     initialValues: { title: '', slug: '', description: '', visibility: 'public', maximum_participants: 100 },
     validate: { title: (v) => v.trim() ? null : 'A title is required.', slug: (v) => /^[a-z0-9-]+$/.test(v) ? null : 'Use lowercase letters, numbers and hyphens.' },
@@ -150,10 +154,11 @@ function CreateSubstrateModal({ opened, onClose, onCreated }: {
         slug: values.slug,
         description: values.description || null,
         visibility: values.visibility,
-        configuration: { maximum_participants: values.maximum_participants },
+        configuration: { maximum_participants: values.maximum_participants, presentation },
       };
       await createSubstrate(substrate).unwrap();
       form.reset();
+      setPresentation(defaultPresentation);
       onCreated();
     } catch (error) {
       form.setFieldError('title', messageFrom(error, 'The substrate could not be created.'));
@@ -169,6 +174,7 @@ function CreateSubstrateModal({ opened, onClose, onCreated }: {
           <Textarea label="Description" autosize minRows={3} {...form.getInputProps('description')} />
           <Radio.Group label="Visibility" {...form.getInputProps('visibility')}><Group mt="xs"><Radio value="public" label="Public" /><Radio value="private" label="Private" /></Group></Radio.Group>
           <NumberInput label="Maximum participants" min={1} {...form.getInputProps('maximum_participants')} />
+          <SubstratePresentationFields value={presentation} onChange={setPresentation} />
           <Group justify="flex-end"><Button variant="default" onClick={onClose}>Cancel</Button><Button type="submit" loading={form.submitting}>Save substrate</Button></Group>
         </Stack>
       </Box>

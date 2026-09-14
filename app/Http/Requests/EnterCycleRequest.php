@@ -43,7 +43,7 @@ class EnterCycleRequest extends FormRequest
             'origin.attestation.direction' => [
                 'required',
                 'string',
-                Rule::in(['support', 'refute']),
+                Rule::in(['positive', 'negative']),
             ],
             'origin.attestation.rationale' => [
                 'nullable',

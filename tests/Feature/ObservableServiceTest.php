@@ -88,8 +88,8 @@ class ObservableServiceTest extends TestCase
             'committal',
         );
         $this->supersede($first, $boundary, 'revise');
-        $this->attest($first, 'refute');
-        $this->attest($boundary, 'support');
+        $this->attest($first, 'negative');
+        $this->attest($boundary, 'positive');
         $this->closeHorizon($boundary, prominence: 1, turbulence: 0);
 
         $this->phase = $this->phase(3);
@@ -97,8 +97,8 @@ class ObservableServiceTest extends TestCase
         $this->supersede($boundary, $next, 'variant');
         $target = $this->proposition('Emergence canon.', 'canon');
         $this->supersede($next, $target, 'revise');
-        $this->attest($next, 'refute');
-        $this->attest($target, 'support');
+        $this->attest($next, 'negative');
+        $this->attest($target, 'positive');
 
         $this->loadedReceiptFixture($target);
         $measurement = app(PropositionMeasurementService::class)
