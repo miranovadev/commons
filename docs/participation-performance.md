@@ -20,6 +20,9 @@ other reads. Query-count tests alone did not expose hydration or lock waiting.
 
 The context now hydrates the current Horizon's propositions plus recursive causal
 ancestors, Commit source history and required Horizon comparison boundaries.
+An indexed, batched ID walk visits each dependency once. A recursive SQL
+prototype produced pathological PostgreSQL plans after preceding data growth;
+the complete dense-test sequence runs in CI to cover that workload sensitivity.
 Memberships, frames, evidence, receipt contexts/events, phase-touch aggregates and
 commitment snapshots are restricted to those IDs. Parent and child adjacency and
 per-subject evidence are indexed and memoized within the calculation.
@@ -62,21 +65,21 @@ Measured locally on PHP 8.5.10 / SQLite, same deterministic 1,043-proposition fi
 | Measure | Main (`b7fe201`) | Optimistic working set |
 | --- | ---: | ---: |
 | Hydrated propositions + Attestations + Receipts + loads + events | 5,100 | 100 |
-| Context construction | 1,057.88 ms | 19.96 ms |
-| Participant plan | 4,919.63 ms | 294.04 ms |
-| Workspace plan | 9,989.49 ms | 362.29 ms |
-| Context queries | 34 | 35 |
-| Plan queries | 77 | 78 |
-| Workspace queries | 89 | 90 |
+| Context construction | 1,057.88 ms | 22.13 ms |
+| Participant plan | 4,919.63 ms | 296.09 ms |
+| Workspace plan | 9,989.49 ms | 277.09 ms |
+| Context queries | 34 | 37 |
+| Plan queries | 77 | 80 |
+| Workspace queries | 89 | 92 |
 
 This is a hydration/CPU improvement, not a query-count reduction on warm plans.
-The additional query resolves the causal working set. The original scale run
+Working-set queries follow newly discovered dependency batches. The original scale run
 exhausted a 128 MB local PHP limit; baseline timing above used a 1 GB benchmark
 limit and reported 142.5 MB peak. Application runtime settings are unchanged.
 These are isolated local fixture measurements, not production latency promises.
 PostgreSQL CI exercises real locks and emits its own benchmark measurements.
-The contribution diagnostic reports 61.58 ms in the write transaction out of
-94.91 ms total for its small fixture; response context construction begins only
+The contribution diagnostic reports 74.41 ms in the write transaction out of
+109.69 ms total for its small fixture; response context construction begins only
 after commit. This is a transaction-boundary assertion, not a latency guarantee.
 
 ## Deliberate remaining work

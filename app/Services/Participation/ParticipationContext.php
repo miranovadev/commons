@@ -133,40 +133,42 @@ final class ParticipationContext
      */
     private function workingSetIds(): Collection
     {
-        return collect(DB::select(<<<'SQL'
-            WITH RECURSIVE dependencies (id, parent_id) AS (
-                SELECT target_proposition_id, source_proposition_id FROM supersessions
-                UNION ALL
-                SELECT propositions.id, context_horizons.opened_by_proposition_id
-                FROM propositions
-                JOIN phases ON phases.id = propositions.phase_id
-                JOIN cycles ON cycles.id = phases.cycle_id
-                JOIN context_horizons ON context_horizons.id = cycles.context_horizon_id
-                WHERE context_horizons.opened_by_proposition_id IS NOT NULL
-            ), relevant (id) AS (
-                SELECT propositions.id FROM propositions
-                JOIN phases ON phases.id = propositions.phase_id
-                JOIN cycles ON cycles.id = phases.cycle_id
-                WHERE cycles.context_horizon_id = ?
-                UNION
-                SELECT CAST(? AS VARCHAR(26))
-                UNION
-                SELECT dependencies.parent_id FROM dependencies
-                JOIN relevant ON relevant.id = dependencies.id
-                JOIN propositions ON propositions.id = dependencies.parent_id
-                JOIN phases ON phases.id = propositions.phase_id
-                JOIN cycles ON cycles.id = phases.cycle_id
-                JOIN participants ON participants.id = cycles.participant_id
-                WHERE participants.substrate_id = ?
-            )
-            SELECT propositions.id FROM propositions
-            JOIN relevant ON relevant.id = propositions.id
-            JOIN phases ON phases.id = propositions.phase_id
-            JOIN cycles ON cycles.id = phases.cycle_id
-            JOIN participants ON participants.id = cycles.participant_id
-            WHERE participants.substrate_id = ?
-            SQL, [$this->phase->cycle->context_horizon_id, $this->phase->gate_proposition_id,
-            $this->substrate->id, $this->substrate->id]))->pluck('id');
+        // Walk only newly discovered IDs. A recursive UNION over the full dependency
+        // relation can produce pathological PostgreSQL plans as table statistics grow.
+        $owned = DB::table('propositions')
+            ->join('phases', 'phases.id', '=', 'propositions.phase_id')
+            ->join('cycles', 'cycles.id', '=', 'phases.cycle_id')
+            ->join('participants', 'participants.id', '=', 'cycles.participant_id')
+            ->where('participants.substrate_id', $this->substrate->id);
+        $gate = (clone $owned)->where('propositions.id', $this->phase->gate_proposition_id)->select('propositions.id');
+        $ids = $owned->where('cycles.context_horizon_id', $this->phase->cycle->context_horizon_id)
+            ->selectRaw('propositions.id /* participation working set */')->union($gate)->pluck('id');
+        $seen = array_fill_keys($ids->all(), true);
+        $frontier = $ids;
+        while ($frontier->isNotEmpty()) {
+            $boundaries = DB::table('propositions')
+                ->join('phases', 'phases.id', '=', 'propositions.phase_id')
+                ->join('cycles', 'cycles.id', '=', 'phases.cycle_id')
+                ->join('context_horizons', 'context_horizons.id', '=', 'cycles.context_horizon_id')
+                ->whereIn('propositions.id', $frontier)
+                ->whereNotNull('context_horizons.opened_by_proposition_id')
+                ->select('context_horizons.opened_by_proposition_id as id');
+            $dependencies = DB::table('supersessions')->whereIn('target_proposition_id', $frontier)
+                ->select('source_proposition_id as id')->union($boundaries);
+            $frontier = DB::query()->fromSub($dependencies, 'dependencies')
+                ->join('propositions', 'propositions.id', '=', 'dependencies.id')
+                ->join('phases', 'phases.id', '=', 'propositions.phase_id')
+                ->join('cycles', 'cycles.id', '=', 'phases.cycle_id')
+                ->join('participants', 'participants.id', '=', 'cycles.participant_id')
+                ->where('participants.substrate_id', $this->substrate->id)
+                ->distinct()->pluck('propositions.id')
+                ->reject(fn ($id) => isset($seen[$id]));
+            foreach ($frontier as $id) {
+                $seen[$id] = true;
+            }
+        }
+
+        return collect(array_keys($seen));
     }
 
     public function remember(string $key, callable $calculate): mixed

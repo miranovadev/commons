@@ -99,7 +99,7 @@ class ParticipationPerformanceTest extends TestCase
             DB::rollBack();
         }
         fwrite(STDERR, sprintf("GROWTH %s: cold %d -> %d; warm %d -> %d\n", $kind->name, $counts[0][0], $counts[1][0], $counts[0][1], $counts[1][1]));
-        // More cold projections require writes, but warm candidate evaluation is batched.
+        // Candidate evaluation is batched on both first and repeated observations.
         $this->assertLessThan(500, $counts[1][0]);
         $this->assertLessThan(200, $counts[1][1]);
         $this->assertLessThanOrEqual(125, $counts[1][0] - $counts[0][0]);

@@ -75,7 +75,7 @@ class OptimisticParticipationTest extends TestCase
             }
         });
         DB::listen(function (QueryExecuted $query) use (&$contexts): void {
-            if (str_contains($query->sql, 'WITH RECURSIVE dependencies')) {
+            if (str_contains($query->sql, '/* participation working set */')) {
                 $contexts[] = DB::transactionLevel();
             }
         });
