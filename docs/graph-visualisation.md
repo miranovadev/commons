@@ -15,7 +15,7 @@ Selection follows every causal parent path in the loaded dataset, including reco
 
 Domain remains available as accessible text; decorative silhouettes are omitted. Unrelated cards are faded and greyscale while ancestral paths stay saturated. Isolate Selected Lineage filters the loaded nodes and their connecting edges without changing selection, overlay scales or graph topology. Refute uses Blue 6 and Support Violet, independently of stored direction polarity. Participant identity colours remain independent. Default Tension readouts use dark/light Indigo for negative/positive values; only the explicit Tension lens switches readouts to Blue/Violet. A shared graph context also carries that choice into the inspector.
 
-Topology and parent indexes are memoized per dataset. Ancestry traverses the loaded nodes and edges once per selection, with cycle protection (O(V + E)). Selection never changes topology or the inspector target.
+Topology and parent indexes are memoized per dataset. Ancestry traverses the loaded nodes and edges once per selection, with cycle protection (O(V + E)). Lineage highlighting never rewrites topology or substitutes another inspector target.
 
 ## Analytical lenses
 
@@ -57,7 +57,7 @@ Previous uses `transition.source_id`: the API orders causal parents by supersess
 
 Next follows primary-parent children only. It first uses the remembered path through the last selected descendant; otherwise it chooses the oldest child's `created_at`, then lexical proposition ID. Going back and forward therefore returns to the same branch even if API hydration order changes. Reconciliation highlighting still includes every causal ancestor; the simple arrow path uses only its primary parent. Isolation uses the current selection's ancestry, while the remembered forward path can reveal its next child again.
 
-The rail reuses the existing inspector content. Only selected detail is fetched; graph nodes introduce no new requests. Canonical field metrics from the live graph remain current in the inspector while other detail is cached. The graph page header omits breadcrumbs and descriptive copy to reserve space for the workspace.
+The rail reuses the existing inspector content. Only selected detail is fetched; graph nodes introduce no new requests. The existing metric refresh updates both graph data and already-cached inspector details, preserving full receipt information without extra HTTP requests. Newly fetched detail is not overwritten by an older graph fallback. The graph page header omits breadcrumbs and descriptive copy to reserve space for the workspace.
 
 ## Substrate navigation
 

@@ -204,13 +204,12 @@ const GraphNode = memo(function GraphNode({ proposition, x, y, lineage, overlay,
   && previous.participants.every((participant, index) => participant.id === next.participants[index].id
     && participant.callsign === next.participants[index].callsign && participant.is_active === next.participants[index].is_active));
 
-/** Fetch only selected detail, keeping live graph field values authoritative. */
+/** Fetch only selected detail; shared metric refresh also updates this query cache. */
 function GraphInspector({ slug, propositionId, fallback }: {
   slug?: string; propositionId: Identifier; fallback?: Proposition;
 }) {
   const { currentData: data, error, isFetching } = useGetPropositionQuery({ slug: slug || '', propositionId }, { skip: !slug, refetchOnMountOrArgChange: true });
-  const proposition = data ? { ...data, field: fallback?.field ?? data.field,
-    participation_count: fallback?.participation_count ?? data.participation_count } : fallback;
+  const proposition = data || fallback;
   return <Box aria-busy={isFetching}>
     {error && <Alert color="gray" m="md">Full details could not be refreshed. Showing available graph data.</Alert>}
     <InspectorContent selection={proposition ? { kind: 'graph', proposition } : null} />

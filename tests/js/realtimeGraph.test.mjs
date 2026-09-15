@@ -104,14 +104,14 @@ function container() { const el = document.createElement('div'); document.body.a
 // Each test owns a mounted page and disposes every query/subscription afterwards.
 test('Graph fetches new nodes incrementally and both original and realtime nodes fill the persistent inspector rail', { timeout: 30000 }, async () => {
   const requests = [];
-  const origin = proposition('Origin');
+  const origin = { ...proposition('Origin'), field: { tension: null, charge: null, potential_charge: null } };
   globalThis.fetch = async request => {
     const path = new URL(request.url).pathname; requests.push(path);
     if (path.endsWith('/graph-participants')) return json({ server_time: new Date().toISOString(), participants: [] });
     if (path.endsWith('/graph-metrics')) return json([]);
     if (path.endsWith('/realtime')) return json({ substrate_id: 'substrate', public: true, context_horizon_ids: ['horizon'] });
     if (path.endsWith('/propositions')) return json([origin]);
-    if (path.includes('/propositions/')) return json(proposition(path.split('/').pop(), path.endsWith('/Origin') ? [] : ['Origin']));
+    if (path.includes('/propositions/')) return json({ ...proposition(path.split('/').pop(), path.endsWith('/Origin') ? [] : ['Origin']), field: { tension: -.5, charge: .5, potential_charge: .42 } });
     return json({ id: 'substrate', slug: 'test', title: 'Test', visibility: 'public' });
   };
   const el = container(); const page = mount(el);
@@ -133,6 +133,7 @@ test('Graph fetches new nodes incrementally and both original and realtime nodes
       await act(async () => cards().find(card => card.textContent.includes(id)).click());
       await until(() => document.querySelector('.graph-workspace__inspector')?.textContent.includes(`${id} authoritative detail`));
       assert.match(document.querySelector('.graph-workspace__inspector').textContent, /Proposition inspector/);
+      assert.ok(document.querySelector('.graph-workspace__inspector [aria-label="Potential Charge: 0.42"]'), 'fresh detail is not hidden by an older unavailable graph field');
       assert.equal(cards().length, 2);
       const edgesBefore = document.querySelector('.substrate-graph-edges').innerHTML;
       const select = document.querySelector('.substrate-graph-controls select');

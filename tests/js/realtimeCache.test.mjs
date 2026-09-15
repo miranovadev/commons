@@ -77,11 +77,18 @@ test('large event bursts use bounded batches and metric refresh preserves statem
   try {
     await refreshGraphPropositions(s.dispatch, 'test', Array.from({ length: 205 }, (_, i) => String(i)), () => true);
     assert.deepEqual(requests.map(url => url.searchParams.getAll('ids[]').length), [100, 100, 5]);
+    await s.dispatch(commonsApi.util.upsertQueryData('getProposition', { slug: 'test', propositionId: 'origin' }, { ...node('origin'), instruments: [{ id: 'receipt' }] }));
+    await s.dispatch(commonsApi.util.upsertQueryData('getProposition', { slug: 'other', propositionId: 'origin' }, node('origin')));
     const before = commonsApi.endpoints.getPropositions.select('test')(s.getState()).data;
     assert.equal(before.length, 206);
     await refreshGraphMetrics(s.dispatch, 'test', () => true);
     const after = commonsApi.endpoints.getPropositions.select('test')(s.getState()).data;
     assert.equal(after[0].field.potential_charge, .2);
+    const detail = commonsApi.endpoints.getProposition.select({ slug: 'test', propositionId: 'origin' })(s.getState()).data;
+    assert.equal(detail.field.potential_charge, .2, 'live field reaches the persistent inspector cache');
+    assert.deepEqual(detail.instruments, [{ id: 'receipt' }], 'full detail is preserved');
+    assert.equal(commonsApi.endpoints.getProposition.select({ slug: 'other', propositionId: 'origin' })(s.getState()).data.field, undefined);
+    assert.equal(requests.length, 4, 'detail cache refresh introduces no extra HTTP requests');
     assert.equal(after[0].participation_count, 9);
     assert.equal(after[0].statement, 'origin');
     assert.equal(after[1], before[1], 'unaffected cards keep their reference');
