@@ -102,7 +102,7 @@ async function until(condition) {
 function container() { const el = document.createElement('div'); document.body.append(el); return el; }
 
 // Each test owns a mounted page and disposes every query/subscription afterwards.
-test('Graph fetches new nodes incrementally and both original and realtime nodes open the existing drawer', { timeout: 30000 }, async () => {
+test('Graph fetches new nodes incrementally and both original and realtime nodes fill the persistent inspector rail', { timeout: 30000 }, async () => {
   const requests = [];
   const origin = proposition('Origin');
   globalThis.fetch = async request => {
@@ -128,17 +128,17 @@ test('Graph fetches new nodes incrementally and both original and realtime nodes
     assert.equal(document.querySelectorAll('.substrate-graph-edges path').length, 1);
     for (const id of ['Origin', 'New']) {
       await act(async () => cards().find(card => card.textContent.includes(id)).click());
-      await until(() => document.querySelector('[role="dialog"]')?.textContent.includes(`${id} authoritative detail`));
-      assert.match(document.querySelector('[role="dialog"]').textContent, /Proposition inspector/);
+      await until(() => document.querySelector('.graph-workspace__inspector')?.textContent.includes(`${id} authoritative detail`));
+      assert.match(document.querySelector('.graph-workspace__inspector').textContent, /Proposition inspector/);
       assert.equal(cards().length, 2);
       const edgesBefore = document.querySelector('.substrate-graph-edges').innerHTML;
       const select = document.querySelector('.substrate-graph-controls select');
       await act(async () => { select.value = 'register'; select.dispatchEvent(new window.Event('change', { bubbles: true })); });
       assert.equal(document.querySelector('.substrate-graph-edges').innerHTML, edgesBefore);
       assert.equal(cards().find(card => card.dataset.propositionId === id).getAttribute('aria-pressed'), 'true');
-      assert.ok(document.querySelector('[role="dialog"]').textContent.includes(`${id} authoritative detail`));
-      await act(async () => document.querySelector('[role="dialog"] button').click());
-      await until(() => !document.querySelector('[role="dialog"]'));
+      assert.ok(document.querySelector('.graph-workspace__inspector').textContent.includes(`${id} authoritative detail`));
+      await act(async () => document.querySelector('[aria-label="Collapse graph workspace"]').click());
+      await until(() => !document.querySelector('.graph-workspace__inspector'));
     }
     await act(async () => channel.callback(event));
     await settle();

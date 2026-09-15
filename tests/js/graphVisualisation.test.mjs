@@ -10,7 +10,7 @@ const result = await build({ stdin: { contents: `
   import { renderToStaticMarkup } from 'react-dom/server';
   import { MantineProvider } from '@mantine/core';
   import { PropositionGraph } from './resources/js/components/PropositionGraph';
-  export { graphParents, causalAncestors, lineageVisibility } from './resources/js/graphTopology';
+  export { graphParents, causalAncestors, lineageVisibility, graphNavigation, nextInLineage, rememberLineagePath } from './resources/js/graphTopology';
   export { attestationColors } from './resources/js/directionalPresentation';
   export { resolveGraphOverlays, graphOverlayOptions } from './resources/js/graphOverlays';
   export { activityAt, participantsByPosition } from './resources/js/graphParticipants';
@@ -28,7 +28,7 @@ const result = await build({ stdin: { contents: `
   jsx: 'automatic', loader: { '.css': 'empty' } });
 const module = { exports: {} };
 new Function('require', 'module', 'exports', result.outputFiles[0].text)(createRequire(import.meta.url), module, module.exports);
-const { render, card, graphParents, causalAncestors, lineageVisibility, attestationColors, resolveGraphOverlays, graphOverlayOptions, activityAt, participantsByPosition } = module.exports;
+const { render, card, graphParents, causalAncestors, lineageVisibility, graphNavigation, nextInLineage, rememberLineagePath, attestationColors, resolveGraphOverlays, graphOverlayOptions, activityAt, participantsByPosition } = module.exports;
 const node = (id, parent_ids = [], domain = 'emergence') => ({ id, title: id, statement: id, parent_ids,
   register: 'activity', tier: 'expressive', context_horizon: { domain } });
 const nodes = [node('origin'), node('left', ['origin'], 'settlement'), node('right', ['origin']),
@@ -145,4 +145,21 @@ test('focus styling desaturates unrelated cards and thickens the selected border
 test('available Potential survives unavailable Tension and Charge in the projection', () => {
   const html = card({ ...node('partial'), field: { tension: null, charge: null, potential_charge: .6 } }, 'potential-charge');
   assert.match(html, /aria-label="Potential Charge: 0.60"/);
+});
+
+
+test('lineage navigation uses the canonical transition source and stable forward ordering', () => {
+  const input = [node('origin'), { ...node('b', ['origin']), created_at: '2026-01-02' },
+    { ...node('a', ['origin']), created_at: '2026-01-01' },
+    { ...node('reconciled', ['a', 'b']), transition: { source_id: 'b' } }];
+  const nav = graphNavigation(input, graphParents(input));
+  assert.equal(nav.previous.get('reconciled'), 'b');
+  assert.equal(nextInLineage(nav.children, 'origin', new Map()), 'a');
+  const remembered = rememberLineagePath(nav.previous, 'reconciled');
+  assert.equal(nextInLineage(nav.children, 'origin', remembered), 'b');
+  assert.deepEqual(graphNavigation([...input].reverse(), graphParents(input)), nav);
+  const missing = [{ ...node('child', ['missing', 'origin']), transition: { source_id: 'missing' } }, node('origin')];
+  assert.equal(graphNavigation(missing, graphParents(missing)).previous.has('child'), false);
+  const cycle = [node('a', ['b']), node('b', ['a'])];
+  assert.equal(graphNavigation(cycle, graphParents(cycle)).previous.size, 0);
 });

@@ -1,17 +1,19 @@
-import { PropositionInspector } from './PropositionInspector';
+import { InspectorContent } from './PropositionInspector';
 import { useGetPropositionQuery } from '../services/commonsApi';
-import { Box, Checkbox, Group, NativeSelect, Paper, Stack, Text, ThemeIcon, Title } from '@mantine/core';
+import { Alert, Box, Group, Paper, Text, ThemeIcon, Title } from '@mantine/core';
 import { useLocalStorage } from '@mantine/hooks';
 import { IconArrowsMove, IconSparkles } from '@tabler/icons-react';
-import { memo, useCallback, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useLayoutEffect, useMemo, useReducer, useRef, useState } from 'react';
 import '../../css/substrate-graph.css';
 import { PropositionCard } from './PropositionCard';
 import type { GraphParticipant, Identifier, Proposition } from '../types';
 import { participantsByPosition } from '../graphParticipants';
 import { GraphParticipants } from './GraphParticipants';
 import { GraphTensionPalette } from '../graphPresentation';
-import { causalAncestors, graphParents, lineageVisibility } from '../graphTopology';
-import { graphOverlayDefinitions, graphOverlayOptions, isGraphOverlayMode, resolveGraphOverlays } from '../graphOverlays';
+import { GraphWorkspaceRail } from './GraphWorkspaceRail';
+import { graphRailReducer } from '../graphWorkspace';
+import { causalAncestors, graphParents, lineageVisibility, graphNavigation, rememberLineagePath, nextInLineage } from '../graphTopology';
+import { isGraphOverlayMode, resolveGraphOverlays } from '../graphOverlays';
 import type { GraphOverlay } from '../graphOverlays';
 
 interface GraphProps {
@@ -45,7 +47,8 @@ export function PropositionGraph({ propositions, substrateSlug, initialFocusId, 
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [selectedId, setSelectedId] = useState(initialFocusId || null);
   const [isolate, setIsolate] = useState(false);
-  const [inspectedId, setInspectedId] = useState<Identifier | null>(null);
+  const [railState, dispatchRail] = useReducer(graphRailReducer, 'open');
+  const [forwardPath, setForwardPath] = useState<Map<Identifier, Identifier>>(new Map());
   const [storedOverlay, setOverlay] = useLocalStorage<string>({ key: 'commons.graph.overlay', defaultValue: 'none' });
   const overlayMode = isGraphOverlayMode(storedOverlay) ? storedOverlay : 'none';
   const overlays = useMemo(() => resolveGraphOverlays(propositions, overlayMode), [propositions, overlayMode]);
@@ -54,8 +57,42 @@ export function PropositionGraph({ propositions, substrateSlug, initialFocusId, 
   const ancestors = useMemo(() => causalAncestors(parents, selectedId), [parents, selectedId]);
   const hasSelection = selectedId !== null && parents.has(selectedId);
   const visible = useMemo(() => lineageVisibility(parents, selectedId, ancestors, isolate), [parents, selectedId, ancestors, isolate]);
+  const selectedProposition = useMemo(() => propositions.find(p => p.id === selectedId), [propositions, selectedId]);
   const positions = useMemo(() => participantsByPosition(participants), [participants]);
-  const select = useCallback((id: Identifier) => { setSelectedId(id); setInspectedId(id); }, []);
+  const navigation = useMemo(() => graphNavigation(propositions, parents), [propositions, parents]);
+  const remembered = useMemo(() => selectedId ? rememberLineagePath(navigation.previous, selectedId, forwardPath) : forwardPath,
+    [navigation, selectedId, forwardPath]);
+  const previousId = selectedId ? navigation.previous.get(selectedId) : undefined;
+  const nextId = nextInLineage(navigation.children, selectedId, remembered);
+  const select = useCallback((id: Identifier) => {
+    setSelectedId(id);
+    setForwardPath(current => rememberLineagePath(navigation.previous, id, current));
+    dispatchRail('select');
+  }, [navigation]);
+  const navigateLineage = (id: Identifier) => {
+    setForwardPath(remembered);
+    setSelectedId(id);
+    // Arrow navigation preserves collapse/lock state as well as the active lens.
+  };
+  const deselect = () => { setSelectedId(null); setForwardPath(new Map()); };
+  const lastReveal = useRef('');
+  useLayoutEffect(() => {
+    const viewport = viewportRef.current;
+    const focus = selectedId || layout.origin?.id;
+    const key = `${focus}/${railState}`;
+    const node = layout.nodes.find(item => item.proposition.id === focus);
+    if (!viewport || !node || !viewport.clientWidth || lastReveal.current === key) return;
+    const initial = lastReveal.current === '';
+    lastReveal.current = key;
+    // Navigation and rail changes reveal the target; live refreshes never reset a pan.
+    setOffset(current => {
+      const x = initial || node.x + current.x < 20 || node.x + current.x + NODE_WIDTH > viewport.clientWidth - 20
+        ? (viewport.clientWidth - NODE_WIDTH) / 2 - node.x : current.x;
+      const y = node.y + current.y < 45 || node.y + current.y + NODE_HEIGHT > viewport.clientHeight - 20
+        ? Math.max(45, (viewport.clientHeight - NODE_HEIGHT) / 2) - node.y : current.y;
+      return x === current.x && y === current.y ? current : { x, y };
+    });
+  }, [selectedId, railState, layout]);
 
   if (!layout.origin) {
     return (
@@ -99,20 +136,7 @@ export function PropositionGraph({ propositions, substrateSlug, initialFocusId, 
 
   return (
     <GraphTensionPalette value={overlayMode === 'tension' ? 'analytical' : 'default'}>
-    <Box className="substrate-graph-shell" data-has-selection={hasSelection || undefined}>
-      {inspectedId && <GraphInspector key={`${substrateSlug}/${inspectedId}`} slug={substrateSlug} propositionId={inspectedId}
-        fallback={propositions.find(item => item.id === inspectedId)} onClose={() => setInspectedId(null)} />}
-      <Stack className="substrate-graph-controls" gap={5}>
-        <NativeSelect label="Visualisation" size="xs" value={overlayMode} data={graphOverlayOptions}
-          onChange={event => setOverlay(event.currentTarget.value)} />
-        <Text size="10px" c="dimmed">{graphOverlayDefinitions[overlayMode].legend}</Text>
-      <Checkbox size="xs" label="Isolate Selected Lineage" checked={isolate} disabled={!hasSelection} onChange={event => setIsolate(event.currentTarget.checked)} />
-      <Group className="substrate-graph-hint" gap={6} wrap="nowrap">
-        <IconArrowsMove size={14} />
-        <Text size="xs" c="dimmed">Drag the surface to explore</Text>
-        {participantMode && <Text size="xs" c="indigo" fw={650}>· {propositions.length} / {perspectiveLimit || propositions.length} visible</Text>}
-      </Group>
-      </Stack>
+    <Box className="substrate-graph-shell" data-has-selection={hasSelection || undefined} data-rail-state={railState}>
 
       <Box
         ref={viewportRef}
@@ -122,6 +146,10 @@ export function PropositionGraph({ propositions, substrateSlug, initialFocusId, 
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
       >
+        <Group className="substrate-graph-hint" gap={6} wrap="nowrap">
+          <IconArrowsMove size={14} /><Text size="xs">Drag the surface to explore</Text>
+          {participantMode && <Text size="xs">· {propositions.length} / {perspectiveLimit || propositions.length} visible</Text>}
+        </Group>
         <Box
           className="substrate-graph-canvas"
           style={{
@@ -144,6 +172,15 @@ export function PropositionGraph({ propositions, substrateSlug, initialFocusId, 
           ))}
         </Box>
       </Box>
+      <GraphWorkspaceRail state={railState} onState={dispatchRail} overlayMode={overlayMode} onOverlay={setOverlay}
+        hasSelection={hasSelection} isolate={isolate} onIsolate={setIsolate} onDeselect={deselect}
+        onPrevious={previousId ? () => navigateLineage(previousId) : undefined}
+        onNext={nextId ? () => navigateLineage(nextId) : undefined}>
+        {selectedId && hasSelection && substrateSlug
+          ? <GraphInspector key={`${substrateSlug}/${selectedId}`} slug={substrateSlug} propositionId={selectedId}
+              fallback={selectedProposition} />
+          : <InspectorContent selection={selectedProposition ? { kind: 'graph', proposition: selectedProposition } : null} />}
+      </GraphWorkspaceRail>
     </Box>
     </GraphTensionPalette>
   );
@@ -238,11 +275,15 @@ function buildGraphLayout(propositions: Proposition[]) {
   return { origin, nodes, edges, width, height };
 }
 
-/** Reuses the workspace drawer; fetched detail also lives in RTK Query. */
-function GraphInspector({ slug, propositionId, fallback, onClose }: {
-  slug?: string; propositionId: Identifier; fallback?: Proposition; onClose: () => void;
+/** Fetch only selected detail, keeping live graph field values authoritative. */
+function GraphInspector({ slug, propositionId, fallback }: {
+  slug?: string; propositionId: Identifier; fallback?: Proposition;
 }) {
-  const { data, error } = useGetPropositionQuery({ slug: slug || '', propositionId }, { skip: !slug, refetchOnMountOrArgChange: true });
-  const proposition = data || fallback;
-  return <PropositionInspector selection={proposition ? { kind: 'graph', proposition } : null} onClose={onClose} error={error} />;
+  const { currentData: data, error, isFetching } = useGetPropositionQuery({ slug: slug || '', propositionId }, { skip: !slug, refetchOnMountOrArgChange: true });
+  const proposition = data ? { ...data, field: fallback?.field ?? data.field,
+    participation_count: fallback?.participation_count ?? data.participation_count } : fallback;
+  return <Box aria-busy={isFetching}>
+    {error && <Alert color="gray" m="md">Full details could not be refreshed. Showing available graph data.</Alert>}
+    <InspectorContent selection={proposition ? { kind: 'graph', proposition } : null} />
+  </Box>;
 }

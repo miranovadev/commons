@@ -25,7 +25,8 @@ class PropositionController extends Controller
         Gate::authorize('view', $substrate);
         abort_unless($proposition->phase->cycle->participant->substrate_id === $substrate->id, 404);
         $proposition->load(['phase.cycle.participant:id,callsign,substrate_id', 'measurement',
-            'contextHorizonMembership.horizon', 'parents:id,register', 'children:id',
+            'contextHorizonMembership.horizon', 'parents' => fn ($query) => $query->select('propositions.id', 'propositions.register')
+                ->orderBy('supersessions.created_at')->orderBy('supersessions.id'), 'children:id',
             'instrumentExecutions.receipt']);
         $state->loadAttestationCounts(collect([$proposition]));
         $reinforcement->loadCounts(collect([$proposition]));
@@ -55,7 +56,8 @@ class PropositionController extends Controller
                 'phase.cycle.participant:id,callsign,substrate_id',
                 'measurement',
                 'contextHorizonMembership.horizon',
-                'parents:id,register',
+                'parents' => fn ($query) => $query->select('propositions.id', 'propositions.register')
+                ->orderBy('supersessions.created_at')->orderBy('supersessions.id'),
                 'children:id',
             ])
             ->oldest('created_at')

@@ -124,6 +124,16 @@ class PropositionPresentationTest extends TestCase
         $queries = DB::getQueryLog();
         DB::disableQueryLog();
         $this->assertCount(0, $queries);
+
+        // The graph and detail API must expose the same primary causal parent.
+        $this->participant->substrate->forceFill(['visibility' => 'public'])->save();
+        $this->getJson("/api/substrates/polarity/propositions/{$target->id}")
+            ->assertOk()->assertJsonPath('data.transition.source_id', $primary->id)
+            ->assertJsonPath('data.parent_ids.0', $primary->id);
+        $graph = $this->getJson('/api/substrates/polarity/propositions')->assertOk()->json('data');
+        $shown = collect($graph)->firstWhere('id', $target->id);
+        $this->assertSame($primary->id, $shown['transition']['source_id']);
+        $this->assertSame($primary->id, $shown['parent_ids'][0]);
     }
 
     private function node(string $register, Proposition $parent, string $tier = 'expressive', string $type = 'variant'): Proposition
