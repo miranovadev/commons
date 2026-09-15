@@ -223,12 +223,24 @@ final readonly class PotentialChargeService
         Collection $edges,
         ?string $excludedPositionId = null,
     ): float {
+        return $this->observePotential($positionId, $tension, $propositions, $edges, $excludedPositionId)['value'];
+    }
+
+    /** Read-only, unattenuated Potential using exactly the recovery traversal. */
+    public function observePotential(
+        string $positionId,
+        float $tension,
+        Collection $propositions,
+        Collection $edges,
+        ?string $excludedPositionId = null,
+    ): array {
         $frontier = collect([$positionId]);
         $visited = collect([$positionId => true]);
         if ($excludedPositionId !== null) {
             $visited->put($excludedPositionId, true);
         }
         $potential = 0.0;
+        $status = 'current';
 
         while ($frontier->isNotEmpty()) {
             $next = collect();
@@ -254,21 +266,22 @@ final readonly class PotentialChargeService
                         && $measurement->correspondence !== null
                         && $measurement->chirality !== null
                         && $measurement->closure !== null) {
-                        $projection = $this->projections->from(
+                        $projection = $this->projections->field(
                             new ObservableValues(
                                 $measurement->correspondence,
                                 $measurement->chirality,
                                 $measurement->closure,
                             ),
                         );
-                        $continuationTension = round(
-                            $projection['prominence'] - $projection['turbulence'],
-                            7,
-                        );
                         $potential = max(
                             $potential,
-                            abs($tension) - abs($continuationTension),
+                            $this->gain($tension, $projection['tension']),
                         );
+                        if ($measurement->calculator_version !== LineageMeasurementService::VERSION && $status === 'current') {
+                            $status = 'stale';
+                        }
+                    } else {
+                        $status = 'missing';
                     }
 
                     $next->push($targetId);
@@ -278,6 +291,11 @@ final readonly class PotentialChargeService
             $frontier = $next;
         }
 
-        return round(max(0, $potential), 7);
+        return ['value' => round(max(0, $potential), 7), 'status' => $status];
+    }
+
+    public function gain(float $committalTension, float $expressiveTension): float
+    {
+        return round(max(0, abs($committalTension) - abs($expressiveTension)), 7);
     }
 }

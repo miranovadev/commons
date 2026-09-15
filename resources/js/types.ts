@@ -19,6 +19,8 @@ export interface Proposition {
   title?: string | null;
   statement: string;
   is_origin?: boolean;
+  participation_count?: number;
+  field?: GraphField;
   participant?: Pick<Participant, 'id' | 'callsign'>;
   participant_callsign?: string;
   callsign?: string;
@@ -41,6 +43,17 @@ export interface Proposition {
     reinforcement_status?: string | null;
     content_verified?: boolean;
   }>;
+}
+
+export interface GraphField {
+  tension: number | null;
+  charge: number | null;
+  potential_charge: number | null;
+  status: 'current' | 'stale' | 'missing';
+  potential_status: 'current' | 'stale' | 'missing';
+  source: 'measurement' | 'commitment_snapshot';
+  potential_basis: 'region' | 'proposition';
+  committal_proposition_id: Identifier | null;
 }
 
 export interface User {

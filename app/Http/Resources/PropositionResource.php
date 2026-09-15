@@ -25,6 +25,8 @@ class PropositionResource extends JsonResource
 
         return [
             'id' => $this->getKey(),
+            'participation_count' => $this->when($this->participation_count !== null, $this->participation_count),
+            'field' => $this->when($this->field !== null, $this->field),
             'reinforcement_count' => $this->reinforcement_count ?? app(ReinforcementService::class)->count($this->resource),
             'attestation_summary' => $this->when($this->attestation_summary !== null, $this->attestation_summary),
             'instruments' => $this->whenLoaded('instrumentExecutions', fn () => $this->instrumentExecutions->map(fn ($execution) => [

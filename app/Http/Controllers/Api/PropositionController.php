@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\PropositionResource;
 use App\Models\Proposition;
 use App\Models\Substrate;
+use App\Services\GraphProjectionService;
 use App\Services\Observables\ReinforcementService;
 use App\Services\PropositionPresentationService;
 use App\Services\PropositionStateService;
@@ -18,6 +19,7 @@ class PropositionController extends Controller
         PropositionStateService $state,
         ReinforcementService $reinforcement,
         PropositionPresentationService $presentation,
+        GraphProjectionService $graph,
     ): PropositionResource {
         Gate::authorize('view', $substrate);
         abort_unless($proposition->phase->cycle->participant->substrate_id === $substrate->id, 404);
@@ -27,6 +29,7 @@ class PropositionController extends Controller
         $state->loadAttestationCounts(collect([$proposition]));
         $reinforcement->loadCounts(collect([$proposition]));
         $proposition->setAttribute('attestation_summary', $presentation->attestations($proposition));
+        $graph->load($substrate, collect([$proposition]));
 
         return new PropositionResource($proposition);
     }
@@ -35,6 +38,7 @@ class PropositionController extends Controller
         Substrate $substrate,
         PropositionStateService $state,
         ReinforcementService $reinforcement,
+        GraphProjectionService $graph,
     ): AnonymousResourceCollection {
         Gate::authorize('view', $substrate);
 
@@ -56,6 +60,7 @@ class PropositionController extends Controller
 
         $state->loadAttestationCounts($propositions);
         $reinforcement->loadCounts($propositions);
+        $graph->load($substrate, $propositions);
 
         return PropositionResource::collection($propositions);
     }

@@ -3,15 +3,20 @@
 namespace Tests\Feature\Api;
 
 use App\Enums\PhaseKind;
+use App\Models\Attestation;
+use App\Models\CommitmentSnapshot;
 use App\Models\Cycle;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\PropositionMeasurement;
 use App\Models\Substrate;
+use App\Models\Supersession;
 use App\Models\User;
+use App\Services\CommitRegionService;
 use App\Services\LedgerService;
 use App\Services\Observables\LineageMeasurementService;
+use App\Services\PotentialChargeService;
 use App\Services\PropositionMeasurementService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -46,7 +51,10 @@ class PropositionReadTest extends TestCase
             DB::disableQueryLog();
             $prefix = $index === 0 ? 'data.0' : 'data';
             $response->assertJsonPath($prefix.'.observables.status', $status === 'invalidated' ? 'stale' : $status)
-                ->assertJsonPath($prefix.'.observables.correspondence', $status === 'missing' ? null : -0.75);
+                ->assertJsonPath($prefix.'.observables.correspondence', $status === 'missing' ? null : -0.75)
+                ->assertJsonPath($prefix.'.field.status', $status === 'invalidated' ? 'stale' : $status)
+                ->assertJsonPath($prefix.'.field.tension', $status === 'missing' ? null : 0)
+                ->assertJsonPath($prefix.'.field.potential_charge', null);
             $this->assertReadOnly($queries);
             $this->assertSame($before, $this->snapshot());
         }
@@ -96,25 +104,91 @@ class PropositionReadTest extends TestCase
     public function test_overlapping_commit_histories_are_batched_and_counts_stop_at_expressive_nodes(): void
     {
         [$substrate, $origin] = $this->fixture();
-        $attestation = new \App\Models\Attestation;
+        $attestation = new Attestation;
         $attestation->forceFill(['phase_id' => $origin->phase_id, 'proposition_id' => $origin->id, 'direction' => 'support'])->save();
         $parent = $origin;
         for ($i = 0; $i < 30; $i++) {
             $child = $this->node($origin->phase, 'committal', false);
-            $edge = new \App\Models\Supersession;
+            $edge = new Supersession;
             $edge->forceFill(['phase_id' => $origin->phase_id, 'source_proposition_id' => $parent->id,
                 'target_proposition_id' => $child->id, 'type' => 'commit'])->save();
             $parent = $child;
         }
         $expressive = $this->node($origin->phase, 'expressive', false);
-        $edge = new \App\Models\Supersession;
+        $edge = new Supersession;
         $edge->forceFill(['phase_id' => $origin->phase_id, 'source_proposition_id' => $parent->id,
             'target_proposition_id' => $expressive->id, 'type' => 'variant'])->save();
         $queries = $this->graphQueries($substrate, 32);
-        $this->assertLessThanOrEqual(20, count($queries));
+        // Five fixed graph projection queries; history depth never adds per-card work.
+        $this->assertLessThanOrEqual(25, count($queries));
         $data = collect($this->getJson("/api/substrates/{$substrate->slug}/propositions")->assertOk()->json('data'))->keyBy('id');
         $this->assertSame(1, $data[$parent->id]['attestation_counts']['support']);
         $this->assertSame(0, $data[$expressive->id]['attestation_counts']['support']);
+    }
+
+    public function test_field_projection_uses_snapshots_canonical_potential_and_direct_phase_touches(): void
+    {
+        [$substrate, $origin] = $this->fixture();
+        $snapshot = new CommitmentSnapshot;
+        $snapshot->forceFill([
+            'proposition_id' => $origin->id, 'substrate_id' => $substrate->id,
+            'ledger_entry_id' => $origin->ledgerEntry->id,
+            'correspondence' => .8, 'chirality' => .8, 'closure' => .8,
+            'prominence' => .9, 'turbulence' => .1, 'tension' => .8,
+            'direction_before' => 'emergence', 'direction_after' => 'emergence',
+            'calculator_version' => 'fixture', 'evaluated_at' => now(),
+        ])->save();
+        $child = $this->node($origin->phase, 'expressive');
+        $edge = new Supersession;
+        $edge->forceFill(['phase_id' => $origin->phase_id, 'source_proposition_id' => $origin->id,
+            'target_proposition_id' => $child->id, 'type' => 'variant'])->save();
+        $origin->phase->forceFill(['gate_proposition_id' => $child->id])->save();
+        app(PropositionMeasurementService::class)->project($child, -.2, -.2, -.2);
+        $before = $this->snapshot();
+        $url = "/api/substrates/{$substrate->slug}/propositions";
+        $data = collect($this->getJson($url)->assertOk()->json('data'))->keyBy('id');
+        $this->assertSame(.8, $data[$origin->id]['field']['tension']);
+        $this->assertSame('commitment_snapshot', $data[$origin->id]['field']['source']);
+        $this->assertSame('current', $data[$origin->id]['field']['status']);
+        $this->assertSame('missing', $data[$origin->id]['observables']['status']);
+        $this->assertSame(-.2, $data[$child->id]['field']['tension']);
+        $this->assertSame(.6, $data[$child->id]['field']['potential_charge']);
+        $this->assertSame(.6, $data[$origin->id]['field']['potential_charge']);
+        $this->assertSame($origin->id, $data[$child->id]['field']['committal_proposition_id']);
+        $this->assertSame(1, $data[$child->id]['participation_count']);
+        $this->assertSame(0, $data[$origin->id]['participation_count']);
+        $this->assertSame($before, $this->snapshot());
+        $canonical = app(PotentialChargeService::class)->selectFor($substrate);
+        $this->assertSame($canonical['raw_potential_charge'], $data[$origin->id]['field']['potential_charge']);
+        $this->getJson($url.'/'.$child->id)->assertOk()->assertJsonPath('data.field', $data[$child->id]['field']);
+
+        // Absent continuation measurements are unknown, not an invented zero.
+        $child->measurement()->delete();
+        $this->getJson($url.'/'.$origin->id)->assertOk()->assertJsonPath('data.field.potential_charge', null)
+            ->assertJsonPath('data.field.potential_status', 'missing');
+    }
+
+    public function test_batched_region_seeds_follow_reconciliation_and_reject_cross_region_ancestry(): void
+    {
+        [$substrate, $origin] = $this->fixture();
+        $left = $this->node($origin->phase, 'expressive');
+        $right = $this->node($origin->phase, 'expressive');
+        $joined = $this->node($origin->phase, 'expressive');
+        foreach ([[$origin, $left], [$origin, $right], [$left, $joined], [$right, $joined]] as [$from, $to]) {
+            $edge = new Supersession;
+            $edge->forceFill(['phase_id' => $origin->phase_id, 'source_proposition_id' => $from->id,
+                'target_proposition_id' => $to->id, 'type' => 'variant'])->save();
+        }
+        $regions = app(CommitRegionService::class);
+        $batch = fn () => $regions->seedIdsFor(collect([$joined]), Proposition::all()->keyBy('id'),
+            DB::table('supersessions')->get()->groupBy('target_proposition_id'))[$joined->id];
+        $this->assertSame($regions->seedFor($joined)->id, $batch());
+        $other = $this->node($origin->phase, 'committal');
+        $edge = new Supersession;
+        $edge->forceFill(['phase_id' => $origin->phase_id, 'source_proposition_id' => $other->id,
+            'target_proposition_id' => $joined->id, 'type' => 'variant'])->save();
+        $this->assertNull($regions->seedFor($joined));
+        $this->assertNull($batch());
     }
 
     private function graphQueries(Substrate $substrate, int $count): array

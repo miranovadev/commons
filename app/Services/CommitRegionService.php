@@ -12,6 +12,33 @@ use Illuminate\Support\Facades\DB;
 
 final class CommitRegionService
 {
+    /** Batched read-only equivalent of seedFor, using a substrate-scoped graph. */
+    public function seedIdsFor(Collection $positions, Collection $nodes, Collection $parents): array
+    {
+        $result = [];
+        foreach ($positions as $position) {
+            $seen = $seeds = [];
+            $pending = [$position->id];
+            while ($pending !== []) {
+                $id = array_pop($pending);
+                if (isset($seen[$id]) || ! $nodes->has($id)) {
+                    continue;
+                }
+                $seen[$id] = true;
+                if ($nodes[$id]->tier === 'committal') {
+                    $seeds[$id] = true;
+                } else {
+                    foreach ($parents->get($id, collect()) as $edge) {
+                        $pending[] = $edge->source_proposition_id;
+                    }
+                }
+            }
+            $result[$position->id] = count($seeds) === 1 ? array_key_first($seeds) : null;
+        }
+
+        return $result;
+    }
+
     /** Walk every parent path, stopping at its first Committal Proposition. */
     public function seedFor(Proposition $position, ?ParticipationContext $context = null): ?Proposition
     {
