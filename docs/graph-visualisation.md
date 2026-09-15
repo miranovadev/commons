@@ -62,3 +62,11 @@ The rail reuses the existing inspector content. Only selected detail is fetched;
 ## Substrate navigation
 
 The main menu derives its context from the URL. A substrate route replaces the global menu with a separated Back to Substrates link, substrate title, Graph, Participants, and the existing disabled Settings entry. Participant detail routes keep Participants active. Leaving for `/` restores Substrates and the authenticated user's global Connections page; Connections is not presented as a substrate-scoped feature. The existing AppShell burger, responsive breakpoints, and close-on-route-change behaviour remain in use.
+
+## Detailed and Topology density
+
+View is independent of Visualisation. Detailed remains the default; `commons.graph.density` stores Detailed/Topology separately from the lens. Unknown saved values fall back to Detailed. The structure builder resolves loaded nodes, levels and edges once; layout presets only choose dimensions and route the same edges. Topology uses 84 × 40 nodes instead of 220 × 160 cards, with proportionately smaller gaps. It removes visual statement/measurement content while retaining a native selectable button with the proposition's statement as its accessible name and a title tooltip for the active analytical value.
+
+Every lens uses the same overlay resolver and scale in both densities. Selection borders, ancestor highlighting, unrelated greyscale, isolation and inspector navigation also share the same rendering path. Topology keeps two small position avatars and an overflow stack with every remaining callsign/activity state in its tooltip and accessible description. Live updates, activity expiry and participant identity colours use the existing shared snapshot; density changes add no network requests. Switching density reveals the current selection if it would otherwise be outside the viewport and does not change inspection or the chosen lens.
+
+The presets can later serve as semantic zoom levels. Wheel zoom and a separate graph engine are not implemented.

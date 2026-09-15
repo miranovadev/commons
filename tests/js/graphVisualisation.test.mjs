@@ -10,6 +10,7 @@ const result = await build({ stdin: { contents: `
   import { renderToStaticMarkup } from 'react-dom/server';
   import { MantineProvider } from '@mantine/core';
   import { PropositionGraph } from './resources/js/components/PropositionGraph';
+  export { buildGraphStructure, buildGraphLayout, graphDensities, isGraphDensity } from './resources/js/graphLayout';
   export { graphParents, causalAncestors, lineageVisibility, graphNavigation, nextInLineage, rememberLineagePath } from './resources/js/graphTopology';
   export { attestationColors } from './resources/js/directionalPresentation';
   export { resolveGraphOverlays, graphOverlayOptions } from './resources/js/graphOverlays';
@@ -28,7 +29,7 @@ const result = await build({ stdin: { contents: `
   jsx: 'automatic', loader: { '.css': 'empty' } });
 const module = { exports: {} };
 new Function('require', 'module', 'exports', result.outputFiles[0].text)(createRequire(import.meta.url), module, module.exports);
-const { render, card, graphParents, causalAncestors, lineageVisibility, graphNavigation, nextInLineage, rememberLineagePath, attestationColors, resolveGraphOverlays, graphOverlayOptions, activityAt, participantsByPosition } = module.exports;
+const { buildGraphStructure, buildGraphLayout, graphDensities, isGraphDensity, render, card, graphParents, causalAncestors, lineageVisibility, graphNavigation, nextInLineage, rememberLineagePath, attestationColors, resolveGraphOverlays, graphOverlayOptions, activityAt, participantsByPosition } = module.exports;
 const node = (id, parent_ids = [], domain = 'emergence') => ({ id, title: id, statement: id, parent_ids,
   register: 'activity', tier: 'expressive', context_horizon: { domain } });
 const nodes = [node('origin'), node('left', ['origin'], 'settlement'), node('right', ['origin']),
@@ -162,4 +163,24 @@ test('lineage navigation uses the canonical transition source and stable forward
   assert.equal(graphNavigation(missing, graphParents(missing)).previous.has('child'), false);
   const cycle = [node('a', ['b']), node('b', ['a'])];
   assert.equal(graphNavigation(cycle, graphParents(cycle)).previous.size, 0);
+});
+
+
+test('density changes geometry without changing topology, including a 500-node graph', () => {
+  const input = Array.from({ length: 500 }, (_, i) => node(String(i), i ? [String(Math.floor((i - 1) / 3))] : []));
+  const structure = buildGraphStructure(input);
+  const detailed = buildGraphLayout(structure, 'detailed');
+  const compact = buildGraphLayout(structure, 'topology');
+  assert.deepEqual(detailed.nodes.map(n => n.proposition.id), compact.nodes.map(n => n.proposition.id));
+  assert.equal(compact.nodes.length, 500);
+  assert.deepEqual(detailed.edges.map(({ from, to }) => [from, to]), compact.edges.map(({ from, to }) => [from, to]));
+  assert.equal(compact.edges.length, 499);
+  assert.ok(compact.width < detailed.width / 2 && compact.height < detailed.height / 2);
+  for (const [density, layout] of [['detailed', detailed], ['topology', compact]]) {
+    const target = layout.nodes.find(n => n.proposition.id === '1');
+    assert.ok(layout.edges.find(e => e.to === '1').path.endsWith(`${target.x + graphDensities[density].nodeWidth / 2} ${target.y}`));
+  }
+  assert.equal(isGraphDensity('topology'), true);
+  assert.equal(isGraphDensity('future-zoom'), false);
+  assert.equal(buildGraphLayout(buildGraphStructure([])).nodes.length, 0);
 });

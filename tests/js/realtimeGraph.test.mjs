@@ -118,6 +118,9 @@ test('Graph fetches new nodes incrementally and both original and realtime nodes
   try {
     await act(async () => page.graph());
     await until(() => cards().length === 1 && live()?.channels.size === 2);
+    assert.equal(document.querySelector('.mantine-Breadcrumbs-root'), null);
+    assert.ok(document.querySelector('.substrate-view__header [aria-label="0 Participants"]'));
+    assert.equal(document.querySelector('.substrate-view__header h3').textContent, 'Test');
     await settle(); requests.length = 0;
     const channel = live().channels.get('public.context-horizon.horizon');
     const event = { type: 'proposition.created', proposition_id: 'New', context_horizon_id: 'horizon' };
@@ -137,6 +140,11 @@ test('Graph fetches new nodes incrementally and both original and realtime nodes
       assert.equal(document.querySelector('.substrate-graph-edges').innerHTML, edgesBefore);
       assert.equal(cards().find(card => card.dataset.propositionId === id).getAttribute('aria-pressed'), 'true');
       assert.ok(document.querySelector('.graph-workspace__inspector').textContent.includes(`${id} authoritative detail`));
+      const requestCount = requests.length;
+      await act(async () => document.querySelector('input[value="topology"]').click());
+      assert.equal(requests.length, requestCount, 'density uses existing batched graph data');
+      assert.equal(cards().find(card => card.dataset.propositionId === id).getAttribute('aria-pressed'), 'true');
+      await act(async () => document.querySelector('input[value="detailed"]').click());
       await act(async () => document.querySelector('[aria-label="Collapse graph workspace"]').click());
       await until(() => !document.querySelector('.graph-workspace__inspector'));
     }

@@ -69,7 +69,7 @@ new Function('require', 'module', 'exports', result.outputFiles[0].text)(createR
 const { act, mount, mountNavigation } = module.exports;
 const node = (id, parent_ids = []) => ({ id, title: id, statement: `${id} full statement`, parent_ids,
   register: 'activity', tier: parent_ids.length ? 'expressive' : 'committal', is_origin: !parent_ids.length,
-  instruments: [], field: { tension: -.75, charge: .25, potential_charge: .42, status: 'current', potential_status: 'current' } });
+  participation_count: id.length * 2, instruments: [], field: { tension: -.75, charge: .25, potential_charge: .42, status: 'current', potential_status: 'current' } });
 const nodes = [node('origin'), node('a', ['origin']), node('b', ['origin']), node('c', ['a', 'b']), node('end', ['c'])];
 const card = id => document.querySelector(`.substrate-graph-node [data-proposition-id="${id}"]`);
 const ids = () => [...document.querySelectorAll('.substrate-graph-node [data-proposition-id]')].map(el => el.dataset.propositionId);
@@ -185,3 +185,77 @@ test('direct substrate routes, context exit and re-entry expose the correct comp
     } finally { await act(async () => page.close()); el.remove(); }
   }
 });
+
+async function density(value) {
+  const radio = document.querySelector(`input[type="radio"][value="${value}"]`);
+  await click(radio);
+}
+
+test('Topology composes every lens, selection, inspector and isolation without changing the graph', async () => withGraph(async () => {
+  await click(card('c'));
+  assert.ok(card('c').querySelector('.proposition-field'));
+  for (const mode of ['none', 'participation', 'potential-charge', 'tension', 'register']) {
+    await density('detailed');
+    await lens(mode);
+    const analytical = card('c').style.getPropertyValue('--graph-overlay-color');
+    const intensity = card('c').style.getPropertyValue('--graph-overlay-strength');
+    const detailedEdges = document.querySelectorAll('.substrate-graph-edges path').length;
+    await density('topology');
+    assert.equal(document.querySelector('.substrate-graph-shell').dataset.density, 'topology');
+    assert.equal(selected(), 'c');
+    assert.equal(ids().length, 5);
+    assert.equal(document.querySelectorAll('.substrate-graph-edges path').length, detailedEdges);
+    assert.equal(card('c').style.getPropertyValue('--graph-overlay-color'), analytical);
+    assert.equal(card('c').style.getPropertyValue('--graph-overlay-strength'), intensity);
+    assert.equal(card('c').querySelector('.proposition-field'), null);
+    assert.doesNotMatch(card('c').textContent, /full statement|Potential Charge|Tension/);
+    assert.match(card('c').getAttribute('aria-label'), /c full statement/);
+    assert.equal(card('c').tagName, 'BUTTON');
+    assert.equal(card('c').closest('.substrate-graph-node').dataset.lineage, 'selected');
+    assert.equal(card('end').closest('.substrate-graph-node').dataset.lineage, 'unrelated');
+    assert.match(document.querySelector('.graph-workspace__inspector').textContent, /c full statement/);
+    assert.match(document.querySelector('.graph-workspace__inspector').textContent, /0.42/);
+    assert.equal(document.querySelector('.substrate-graph-controls select').value, mode);
+    await click(document.querySelector('input[type="checkbox"]'));
+    assert.equal(card('end'), null);
+    await click(button('Previous proposition'));
+    assert.equal(selected(), 'a');
+    await click(button('Next proposition'));
+    assert.equal(selected(), 'c');
+    assert.equal(document.querySelector('.substrate-graph-shell').dataset.density, 'topology');
+    await click(document.querySelector('input[type="checkbox"]'));
+  }
+  await click(card('b'));
+  assert.equal(selected(), 'b');
+  await density('detailed');
+  assert.equal(selected(), 'b');
+  assert.ok(card('b').querySelector('.proposition-field'));
+  assert.equal(document.querySelector('.substrate-graph-controls select').value, 'register');
+}));
+
+test('Topology retains stacked presence, live movement, activity and selection while locked', async () => withGraph(async page => {
+  const positions = ['Nova', 'Vela', 'Luna', 'Sera', 'Claire'].map((callsign, i) => ({ id: String(i), callsign,
+    current_proposition_id: 'a', is_active: i === 0 || i === 4, activity_expires_at: null }));
+  await act(async () => page.render(nodes, positions));
+  await density('topology');
+  assert.equal(document.querySelector('.graph-participants').dataset.compact, 'true');
+  assert.equal(document.querySelectorAll('.graph-participant').length, 3);
+  assert.ok(document.querySelector('[aria-label="Nova: active"]'));
+  assert.ok(document.querySelector('[aria-label="Vela: inactive"]'));
+  assert.match(document.querySelector('.graph-participant--overflow').getAttribute('aria-label'), /Claire: active/);
+  assert.equal(document.querySelectorAll('.graph-participant__activity').length, 2);
+  await click(card('a'));
+  await lens('potential-charge');
+  await click(button('Lock graph workspace closed'));
+  const moved = positions.map((p, i) => i === 0 ? { ...p, current_proposition_id: 'b', is_active: false } : p);
+  await act(async () => page.render(nodes, moved));
+  const nova = document.querySelector('[data-participant-id="0"]');
+  assert.equal(nova.closest('.substrate-graph-node').querySelector('.proposition-card').dataset.propositionId, 'b');
+  assert.equal(nova.hasAttribute('data-active'), false);
+  await click(card('b'));
+  assert.equal(document.querySelector('.graph-workspace').dataset.state, 'locked');
+  assert.equal(selected(), 'b');
+  await click(button('Unlock and open graph workspace'));
+  assert.equal(document.querySelector('.substrate-graph-controls select').value, 'potential-charge');
+  assert.equal(document.querySelector('input[value="topology"]').checked, true);
+}));
