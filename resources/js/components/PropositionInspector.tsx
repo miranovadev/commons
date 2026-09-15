@@ -31,7 +31,7 @@ export function PropositionInspector({ selection, committalObservables, onClose,
   );
 }
 
-function InspectorContent({ selection, committalObservables }: Omit<PropositionInspectorProps, 'onClose'>) {
+export function InspectorContent({ selection, committalObservables }: Omit<PropositionInspectorProps, 'onClose'>) {
   if (!selection) {
     return (
       <Stack className="proposition-inspector__empty" align="center" justify="center" gap="xs">

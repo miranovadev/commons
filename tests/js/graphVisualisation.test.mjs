@@ -10,15 +10,17 @@ const result = await build({ stdin: { contents: `
   import { renderToStaticMarkup } from 'react-dom/server';
   import { MantineProvider } from '@mantine/core';
   import { PropositionGraph } from './resources/js/components/PropositionGraph';
-  export { graphParents, causalAncestors } from './resources/js/graphTopology';
+  export { buildGraphStructure, buildGraphLayout, graphDensities, isGraphDensity } from './resources/js/graphLayout';
+  export { graphParents, causalAncestors, lineageVisibility, graphNavigation, nextInLineage, rememberLineagePath } from './resources/js/graphTopology';
   export { attestationColors } from './resources/js/directionalPresentation';
   export { resolveGraphOverlays, graphOverlayOptions } from './resources/js/graphOverlays';
   export { activityAt, participantsByPosition } from './resources/js/graphParticipants';
   import { resolveGraphOverlays } from './resources/js/graphOverlays';
+  import { GraphTensionPalette } from './resources/js/graphPresentation';
   import { PropositionCard } from './resources/js/components/PropositionCard';
   export function card(proposition, mode) {
-    return renderToStaticMarkup(<MantineProvider env="test"><PropositionCard proposition={proposition} graph mini
-      overlay={resolveGraphOverlays([proposition], mode).get(proposition.id)} /></MantineProvider>);
+    return renderToStaticMarkup(<MantineProvider env="test"><GraphTensionPalette value={mode === 'tension' ? 'analytical' : 'default'}><PropositionCard proposition={proposition} graph mini
+      overlay={resolveGraphOverlays([proposition], mode).get(proposition.id)} /></GraphTensionPalette></MantineProvider>);
   }
   export function render(propositions, selectedId, participants = []) {
     return renderToStaticMarkup(<MantineProvider env="test"><PropositionGraph propositions={propositions} initialFocusId={selectedId} participants={participants} /></MantineProvider>);
@@ -27,7 +29,7 @@ const result = await build({ stdin: { contents: `
   jsx: 'automatic', loader: { '.css': 'empty' } });
 const module = { exports: {} };
 new Function('require', 'module', 'exports', result.outputFiles[0].text)(createRequire(import.meta.url), module, module.exports);
-const { render, card, graphParents, causalAncestors, attestationColors, resolveGraphOverlays, graphOverlayOptions, activityAt, participantsByPosition } = module.exports;
+const { buildGraphStructure, buildGraphLayout, graphDensities, isGraphDensity, render, card, graphParents, causalAncestors, lineageVisibility, graphNavigation, nextInLineage, rememberLineagePath, attestationColors, resolveGraphOverlays, graphOverlayOptions, activityAt, participantsByPosition } = module.exports;
 const node = (id, parent_ids = [], domain = 'emergence') => ({ id, title: id, statement: id, parent_ids,
   register: 'activity', tier: 'expressive', context_horizon: { domain } });
 const nodes = [node('origin'), node('left', ['origin'], 'settlement'), node('right', ['origin']),
@@ -43,11 +45,9 @@ test('selection follows all ancestral branches, deduplicates and excludes descen
   assert.deepEqual([...causalAncestors(fromChildren, 'b')], ['a'], 'corrupt cycles cannot select themselves or loop');
 });
 
-test('graph composes decorative canonical Domain icons, content, register and distinct selection', () => {
+test('graph retains accessible Domain, content, register and distinct selection without silhouettes', () => {
   const html = render(nodes, 'reconciled');
-  assert.match(html, /tabler-icon-sun-wind/);
-  assert.match(html, /tabler-icon-sun-high/);
-  assert.match(html, /class="[^"]*proposition-card__domain[^"]*"[^>]*aria-hidden="true"/);
+  assert.doesNotMatch(html, /tabler-icon-sun-wind|tabler-icon-sun-high|proposition-card__domain/);
   assert.match(html, /Settlement Domain/);
   assert.match(html, /Emergence Domain/);
   assert.match(html, /data-proposition-id="reconciled"[^>]*aria-pressed="true"/);
@@ -60,9 +60,9 @@ test('graph composes decorative canonical Domain icons, content, register and di
 });
 
 test('canonical Refute is Blue and Support stays Violet in CSS and component presentation', async () => {
-  assert.deepEqual(attestationColors, { support: 'violet', refute: 'blue' });
+  assert.deepEqual(attestationColors, { support: 'violet', refute: 'blue.6' });
   const css = await readFile('resources/css/workspace.css', 'utf8');
-  assert.match(css, /data-label="refute"[^}]+blue-8[^}]+blue-4/);
+  assert.match(css, /data-label="refute"[^}]+blue-6/);
   assert.match(css, /data-label="support"[^}]+violet/);
   const panel = await readFile('resources/js/components/AttestationPanel.tsx', 'utf8');
   assert.doesNotMatch(panel, /teal/);
@@ -89,7 +89,8 @@ test('canonical field values drive overlays and readouts even if raw observables
   assert.equal(resolve('register').color, 'red');
   for (const mode of graphOverlayOptions.map(o => o.value)) {
     const html = card(proposition, mode);
-    assert.match(html, /tabler-icon-sun-high/);
+    assert.doesNotMatch(html, /tabler-icon-sun-high/);
+    assert.match(html, new RegExp(`data-tension-palette="${mode === 'tension' ? 'analytical' : 'default'}"`));
     assert.match(html, /aria-label="Potential Charge: 0.42"/);
     assert.match(html, /aria-label="Tension: -0.75"/);
   }
@@ -100,7 +101,7 @@ test('canonical field values drive overlays and readouts even if raw observables
   proposition.field.potential_charge = null;
   assert.match(card(proposition, 'potential-charge'), /awaiting measurement/);
   proposition.field.tension = null;
-  assert.match(card(proposition, 'tension'), /Field awaiting complete measurement/);
+  assert.match(card(proposition, 'tension'), /aria-label="Tension: —"/);
 });
 
 test('position grouping retains inactive participants and keeps identity and overflow activity accessible', async () => {
@@ -126,4 +127,60 @@ test('lease expiry uses the server clock and leaves the last canonical position 
   const expired = activityAt(snapshot, 1100)[0];
   assert.equal(expired.is_active, false);
   assert.equal(expired.current_proposition_id, 'prepared-p1');
+});
+
+test('focus styling desaturates unrelated cards and thickens the selected border in place', async () => {
+  const css = await readFile('resources/css/substrate-graph.css', 'utf8');
+  assert.match(css, /data-lineage="unrelated"[^}]*opacity: .5; filter: grayscale\(1\)/);
+  const selected = css.slice(css.indexOf('.substrate-graph-node .proposition-card--mini.proposition-card--selected'));
+  assert.match(selected, /border-width: 3px/);
+  assert.match(selected, /outline: none/);
+  assert.match(selected, /box-shadow: none/);
+  const field = await readFile('resources/css/workspace.css', 'utf8');
+  assert.match(field, /data-sign="positive"[^}]+indigo-6[^}]+indigo-3/);
+  assert.match(field, /data-sign="negative"[^}]+indigo-9[^}]+indigo-5/);
+  assert.match(field, /data-tension-palette="analytical"\]\[data-sign="negative"[^}]+blue/);
+  assert.match(field, /data-tension-palette="analytical"\]\[data-sign="positive"[^}]+violet/);
+});
+
+test('available Potential survives unavailable Tension and Charge in the projection', () => {
+  const html = card({ ...node('partial'), field: { tension: null, charge: null, potential_charge: .6 } }, 'potential-charge');
+  assert.match(html, /aria-label="Potential Charge: 0.60"/);
+});
+
+
+test('lineage navigation uses the canonical transition source and stable forward ordering', () => {
+  const input = [node('origin'), { ...node('b', ['origin']), created_at: '2026-01-02' },
+    { ...node('a', ['origin']), created_at: '2026-01-01' },
+    { ...node('reconciled', ['a', 'b']), transition: { source_id: 'b' } }];
+  const nav = graphNavigation(input, graphParents(input));
+  assert.equal(nav.previous.get('reconciled'), 'b');
+  assert.equal(nextInLineage(nav.children, 'origin', new Map()), 'a');
+  const remembered = rememberLineagePath(nav.previous, 'reconciled');
+  assert.equal(nextInLineage(nav.children, 'origin', remembered), 'b');
+  assert.deepEqual(graphNavigation([...input].reverse(), graphParents(input)), nav);
+  const missing = [{ ...node('child', ['missing', 'origin']), transition: { source_id: 'missing' } }, node('origin')];
+  assert.equal(graphNavigation(missing, graphParents(missing)).previous.has('child'), false);
+  const cycle = [node('a', ['b']), node('b', ['a'])];
+  assert.equal(graphNavigation(cycle, graphParents(cycle)).previous.size, 0);
+});
+
+
+test('density changes geometry without changing topology, including a 500-node graph', () => {
+  const input = Array.from({ length: 500 }, (_, i) => node(String(i), i ? [String(Math.floor((i - 1) / 3))] : []));
+  const structure = buildGraphStructure(input);
+  const detailed = buildGraphLayout(structure, 'detailed');
+  const compact = buildGraphLayout(structure, 'topology');
+  assert.deepEqual(detailed.nodes.map(n => n.proposition.id), compact.nodes.map(n => n.proposition.id));
+  assert.equal(compact.nodes.length, 500);
+  assert.deepEqual(detailed.edges.map(({ from, to }) => [from, to]), compact.edges.map(({ from, to }) => [from, to]));
+  assert.equal(compact.edges.length, 499);
+  assert.ok(compact.width < detailed.width / 2 && compact.height < detailed.height / 2);
+  for (const [density, layout] of [['detailed', detailed], ['topology', compact]]) {
+    const target = layout.nodes.find(n => n.proposition.id === '1');
+    assert.ok(layout.edges.find(e => e.to === '1').path.endsWith(`${target.x + graphDensities[density].nodeWidth / 2} ${target.y}`));
+  }
+  assert.equal(isGraphDensity('topology'), true);
+  assert.equal(isGraphDensity('future-zoom'), false);
+  assert.equal(buildGraphLayout(buildGraphStructure([])).nodes.length, 0);
 });
