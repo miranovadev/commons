@@ -401,6 +401,7 @@ class TransactionLockOrderTest extends TestCase
         [$substrate, $first, $initial] = $this->fixture();
         $target = app(ContributionDispatcher::class)->dispatch($first, $initial,
             ['action' => 'proposition.variant', 'statement' => 'Instrument subject']);
+        $this->receiptFixture($target); // Allow the competing attestation to advance this Phase.
         $second = new Participant;
         $second->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'during-observation'])->save();
         app(CycleEntryService::class)->enter($second);
