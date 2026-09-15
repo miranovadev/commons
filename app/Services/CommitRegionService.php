@@ -15,9 +15,43 @@ final class CommitRegionService
     /** Batched read-only equivalent of seedFor, using a substrate-scoped graph. */
     public function seedIdsFor(Collection $positions, Collection $nodes, Collection $parents): array
     {
+        $children = $pendingParents = $seeds = [];
+        foreach ($nodes as $node) {
+            $incoming = $node->tier === 'committal' ? collect() : $parents->get($node->id, collect())
+                ->filter(fn ($edge) => $nodes->has($edge->source_proposition_id));
+            $pendingParents[$node->id] = $incoming->count();
+            $seeds[$node->id] = $node->tier === 'committal' ? $node->id : null;
+            foreach ($incoming as $edge) {
+                $children[$edge->source_proposition_id][] = $node->id;
+            }
+        }
+        $ready = array_keys(array_filter($pendingParents, fn ($count) => $count === 0));
+        $processed = [];
+        while ($ready !== []) {
+            $id = array_pop($ready);
+            $processed[$id] = true;
+            foreach ($children[$id] ?? [] as $child) {
+                if ($seeds[$id] !== null) {
+                    // false means multiple governing seeds; that ambiguity
+                    // persists through expressive descendants, until a Commit.
+                    $seeds[$child] = $seeds[$child] === null ? $seeds[$id]
+                        : ($seeds[$child] === $seeds[$id] ? $seeds[$child] : false);
+                }
+                if (--$pendingParents[$child] === 0) {
+                    $ready[] = $child;
+                }
+            }
+        }
         $result = [];
         foreach ($positions as $position) {
-            $seen = $seeds = [];
+            if (isset($processed[$position->id])) {
+                $result[$position->id] = is_string($seeds[$position->id]) ? $seeds[$position->id] : null;
+
+                continue;
+            }
+            // Legacy malformed cycles still terminate and obey seedFor's UNION
+            // semantics; normal acyclic substrate graphs take the linear path.
+            $seen = $found = [];
             $pending = [$position->id];
             while ($pending !== []) {
                 $id = array_pop($pending);
@@ -26,14 +60,14 @@ final class CommitRegionService
                 }
                 $seen[$id] = true;
                 if ($nodes[$id]->tier === 'committal') {
-                    $seeds[$id] = true;
+                    $found[$id] = true;
                 } else {
                     foreach ($parents->get($id, collect()) as $edge) {
                         $pending[] = $edge->source_proposition_id;
                     }
                 }
             }
-            $result[$position->id] = count($seeds) === 1 ? array_key_first($seeds) : null;
+            $result[$position->id] = count($found) === 1 ? array_key_first($found) : null;
         }
 
         return $result;

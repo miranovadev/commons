@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\BootstrapController;
 use App\Http\Controllers\Api\ConnectionController;
 use App\Http\Controllers\Api\ConnectionOptionController;
+use App\Http\Controllers\Api\GraphObservationController;
 use App\Http\Controllers\Api\ParticipantConnectionController;
 use App\Http\Controllers\Api\ParticipantController;
 use App\Http\Controllers\Api\ParticipantPlanController;
@@ -30,6 +31,8 @@ Route::middleware('web')->group(function (): void {
             );
 
             Route::get('/substrates/{substrate}/realtime', RealtimeController::class);
+            Route::get('/substrates/{substrate}/graph-participants', [GraphObservationController::class, 'participants']);
+            Route::get('/substrates/{substrate}/graph-metrics', [GraphObservationController::class, 'metrics']);
             Route::get('/substrates/{substrate}/propositions/{proposition}', [PropositionController::class, 'show']);
 
             Route::middleware('guest')->post(

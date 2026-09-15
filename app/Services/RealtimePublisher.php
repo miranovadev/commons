@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Events\GraphParticipantChanged;
 use App\Events\RealtimeInvalidation;
 use App\Models\ContextHorizonMembership;
 use Illuminate\Support\Facades\DB;
@@ -9,6 +10,20 @@ use Illuminate\Support\Facades\DB;
 /** Persistence adapters call this; it contains no eligibility or measurement rules. */
 final class RealtimePublisher
 {
+    public function graphParticipant(string $participantId, string $substrateId): void
+    {
+        $this->afterCommit(fn () => event(new GraphParticipantChanged($participantId, $substrateId)));
+    }
+
+    public function graphMetrics(string $substrateId): void
+    {
+        $this->afterCommit(fn () => event(new RealtimeInvalidation(
+            'substrate.'.$substrateId,
+            ['type' => 'graph.metrics_changed', 'substrate_id' => $substrateId],
+            $substrateId,
+        )));
+    }
+
     public function participant(string $id): void
     {
         $this->afterCommit(fn () => event(new RealtimeInvalidation(

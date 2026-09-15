@@ -95,6 +95,8 @@ button.proposition-card:focus-visible,.proposition-navigator__viewport:focus-vis
 .field-value[data-sign="negative"] { --field-color:light-dark(var(--mantine-color-indigo-9),var(--mantine-color-indigo-5)); }
 .field-value[data-sign="positive"] { --field-color:light-dark(var(--mantine-color-indigo-6),var(--mantine-color-indigo-3)); }
 .field-value[data-sign="neutral"] { --field-color:var(--mantine-color-dimmed); }
+.field-value[data-directional][data-sign="negative"] { --field-color:light-dark(var(--mantine-color-blue-8),var(--mantine-color-blue-4)); }
+.field-value[data-directional][data-sign="positive"] { --field-color:light-dark(var(--mantine-color-violet-7),var(--mantine-color-violet-4)); }
 .field-value:not([data-compact]) { padding:.55rem .65rem; border:1px solid light-dark(var(--mantine-color-gray-2),var(--mantine-color-dark-5)); border-radius:var(--mantine-radius-md); }
 .lineage-panel { position:relative; flex:none; margin-left:7.2rem; min-width:0; }
 .lineage-panel__toggle { display:block; width:100%; padding:.4rem .55rem; border:1px solid light-dark(var(--mantine-color-gray-3),var(--mantine-color-dark-6)); border-radius:var(--mantine-radius-md); color:var(--mantine-color-dimmed); }

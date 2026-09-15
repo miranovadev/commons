@@ -20,6 +20,7 @@ use App\Models\Supersession;
 use App\Services\ClosureGateService;
 use App\Services\CycleEntryService;
 use App\Services\LedgerService;
+use App\Services\ParticipantActivityService;
 use App\Services\ParticipantConnectionTriggerService;
 use App\Services\ParticipationService;
 use App\Services\PotentialChargeService;
@@ -495,7 +496,7 @@ class LocalParticipantNavigationTest extends TestCase
             'action' => 'proposition.traverse', 'proposition_id' => $target->id,
         ]);
         (new WakeParticipant($link->id))->handle($inference, app(ParticipationService::class),
-            app(ParticipantConnectionTriggerService::class));
+            app(ParticipantConnectionTriggerService::class), app(ParticipantActivityService::class));
         $this->assertSame($target->id, $participant->fresh()->current_proposition_id);
     }
 
