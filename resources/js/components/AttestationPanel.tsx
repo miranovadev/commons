@@ -4,6 +4,7 @@ import { messageFrom } from '../errors';
 import { attestationDirections } from '../participationOptions';
 import type { AttestationDirection, ContributionInput, ParticipantPlan, Proposition } from '../types';
 import { AttestationDirectionControl } from './AttestationDirectionControl';
+import { attestationColors } from '../directionalPresentation';
 
 export function AttestationPanel({ plan, proposition, loading = false, error, onSubmit }: {
   plan: ParticipantPlan;
@@ -30,7 +31,7 @@ export function AttestationPanel({ plan, proposition, loading = false, error, on
       <AttestationDirectionControl supportDirection={proposition.attestation_summary?.support_direction} value={direction} directions={directions} onChange={setSelected} />
       <Textarea label="Rationale" description="Optional context for your Attestation." minRows={4} maxLength={20000}
         value={rationale} onChange={(event) => setRationale(event.currentTarget.value)} disabled={loading} />
-      <Button type="submit" color={direction === 'support' ? 'violet' : 'teal'} loading={loading}>
+      <Button type="submit" color={attestationColors[direction]} loading={loading}>
         {direction === 'support' ? 'Support' : 'Refute'} with Attestation
       </Button>
     </Stack>
