@@ -92,5 +92,10 @@ jobs:
       - name: Prepare test environment
         run: cp .env.example .env
 
+      - name: Check optimistic reads and PostgreSQL contention
+        env:
+          PGOPTIONS: '-c statement_timeout=30s'
+        run: php artisan test --filter 'TransactionLockOrderTest|ten_to_five_hundred_unrelated_horizon_nodes' --stop-on-failure
+
       - name: Run test suite
         run: php artisan test --display-warnings
