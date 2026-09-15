@@ -49,6 +49,9 @@ final readonly class OperationalInstrumentService
                 'web_search' => [],
                 default => throw new DomainException('This instrument is not available yet.'),
             };
+            // Recheck under the substrate lock, before any execution row or external I/O.
+            app(RelevantInstrumentService::class)->assertAvailable($proposition, $input);
+
             $execution = $this->executions->start(
                 $phase, $proposition, $input['kind'], $reference, $input, $replayedFrom,
             );

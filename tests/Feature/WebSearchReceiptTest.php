@@ -12,11 +12,9 @@ use App\Models\Connection;
 use App\Models\InstrumentExecution;
 use App\Models\Participant;
 use App\Models\ParticipantReceiptContext;
-use App\Models\Phase;
 use App\Models\Receipt;
 use App\Models\ReceiptContextEvent;
 use App\Services\ContributionService;
-use App\Services\Evidence\HyperlinkVerifier;
 use App\Services\InstrumentExecutionService;
 use App\Services\LedgerService;
 use App\Services\Observables\ReinforcementService;
@@ -144,60 +142,44 @@ class WebSearchReceiptTest extends TestCase
         Http::assertNothingSent();
     }
 
-    public function test_replay_uses_original_query_and_preserves_observation_history_without_loading(): void
+    public function test_effective_observation_suppresses_replay_even_when_external_results_change(): void
     {
         [$fixture, $subject] = $this->scenario();
         $first = $this->search($fixture, $subject);
         $original = $first->fresh()->getAttributes();
         $this->excerpt = 'Changed result';
-        $replays = app(ReceiptReplayService::class);
-        $second = $replays->replay($fixture->viewer, $fixture->phase, $first->id);
-        $this->excerpt = 'Third result';
-        $third = $replays->replay($fixture->viewer, $fixture->phase, $second->id);
-        $this->assertNotSame($first->id, $second->id);
-        $this->assertNotSame($second->id, $third->id);
-        $this->assertNotSame($first->signature, $second->signature);
-        $this->assertSame($original, $first->fresh()->getAttributes());
-        $this->assertSame($first->instrumentExecution->input, $third->instrumentExecution->input);
-        $this->assertSame($first->id, $second->instrumentExecution->replayed_from_receipt_id);
-        $this->assertSame($second->id, $third->instrumentExecution->replayedFromReceipt->id);
-        $this->assertSame($subject->id, $third->receiptable_id);
-        $this->assertNotNull($third->ledgerEntry);
-        $this->assertSame('Changed result', $second->metadata['observation']['results'][0]['excerpt']);
-        $this->assertSame(0, ParticipantReceiptContext::count());
-        $this->assertSame(0, app(ReinforcementService::class)->count($subject));
-        Http::assertSent(fn ($r) => $r['query'] === 'evidence discovery');
-        $this->assertSame(3, Receipt::where('type', 'web_search')->count());
+        $this->travel(8)->days();
+        try {
+            app(ReceiptReplayService::class)->replay($fixture->viewer, $fixture->phase, $first->id);
+            $this->fail('Elapsed time cannot expire effective evidence.');
+        } catch (DomainException) {
+            $this->assertSame($original, $first->fresh()->getAttributes());
+            $this->assertSame(1, Receipt::where('type', 'web_search')->count());
+            $this->assertSame(0, ParticipantReceiptContext::count());
+            $this->assertSame(0, app(ReinforcementService::class)->count($subject));
+        }
+        Http::assertSentCount(1);
         $this->expectException(DomainException::class);
         $first->forceFill(['metadata' => ['observation' => 'mutated']])->save();
     }
 
-    public function test_read_and_replay_are_independent_options_and_replay_follows_instrument_progression(): void
+    public function test_read_remains_available_independently_of_duplicate_replay_suppression(): void
     {
         [$fixture, $subject] = $this->scenario();
         $receipt = $this->search($fixture, $subject);
         $service = app(ParticipationService::class);
         $plan = $service->stateFor($fixture->viewer)['plan'];
-        foreach (['receipt.read', 'receipt.replay'] as $action) {
-            $this->assertContains($receipt->id, $plan['schema']['$defs']['actions'][$action]['properties']['receipt_id']['enum']);
-        }
+        $this->assertContains($receipt->id, $plan['schema']['$defs']['actions']['receipt.read']['properties']['receipt_id']['enum']);
+        $this->assertArrayNotHasKey('receipt.replay', $plan['schema']['$defs']['actions']);
         $service->contribute($fixture->viewer, $fixture->phase->id, ['action' => 'receipt.read', 'receipt_id' => $receipt->id]);
         $plan = $service->stateFor($fixture->viewer)['plan'];
         $this->assertNotContains($receipt->id, $plan['schema']['$defs']['actions']['receipt.read']['properties']['receipt_id']['enum'] ?? []);
-        $this->assertContains($receipt->id, $plan['schema']['$defs']['actions']['receipt.replay']['properties']['receipt_id']['enum']);
-        $next = $service->contribute($fixture->viewer, $fixture->phase->id, ['action' => 'receipt.replay', 'receipt_id' => $receipt->id]);
-        $this->assertSame('constrain', $next['plan']['phase']['kind']);
-        $this->assertSame($subject->id, $next['plan']['gate_id']);
+        $this->assertArrayNotHasKey('receipt.replay', $plan['schema']['$defs']['actions']);
+        $this->assertSame($fixture->phase->id, $plan['phase']['id']);
         $this->assertSame(1, ParticipantReceiptContext::count());
         $this->assertSame(1, app(ReinforcementService::class)->count($subject));
-        $replayed = Receipt::whereHas('instrumentExecution', fn ($q) => $q->where('replayed_from_receipt_id', $receipt->id))->sole();
-        $this->assertSame('available', collect($next['plan']['receipts'])->firstWhere('id', $replayed->id)['status']);
-        $this->assertSame($receipt->signature, $replayed->signature);
-        $service->contribute($fixture->viewer, $next['plan']['phase']['id'], ['action' => 'receipt.read', 'receipt_id' => $replayed->id]);
-        $phase = Phase::findOrFail($next['plan']['phase']['id']);
-        app(ReceiptContextService::class)->read($fixture->viewer, $phase, $replayed->id);
-        $this->assertSame(2, ReceiptContextEvent::count());
-        $this->assertSame(1, app(ReinforcementService::class)->count($subject));
+        $this->assertSame(1, ReceiptContextEvent::count());
+        Http::assertSentCount(1);
     }
 
     public function test_capabilities_gate_options_and_cite_is_not_replayable(): void
@@ -215,7 +197,8 @@ class WebSearchReceiptTest extends TestCase
             $copy->forceFill(['instrument_execution_id' => $execution->id, 'capabilities' => $capabilities])->save();
             $plan = app(ParticipationService::class)->stateFor($fixture->viewer)['plan'];
             $this->assertNotContains($copy->id, $plan['schema']['$defs']['actions']['receipt.read']['properties']['receipt_id']['enum'] ?? []);
-            $this->assertSame($capabilities !== [], in_array($copy->id, $plan['schema']['$defs']['actions']['receipt.replay']['properties']['receipt_id']['enum'] ?? [], true));
+            $this->assertSame($capabilities !== [], $copy->supports(ReceiptCapability::Replayable));
+            $this->assertNotContains($copy->id, $plan['schema']['$defs']['actions']['receipt.replay']['properties']['receipt_id']['enum'] ?? []);
             try {
                 app(ReceiptContextService::class)->read($fixture->viewer, $fixture->phase, $copy->id);
                 $this->fail('An unreadable Receipt was loaded.');
@@ -249,7 +232,7 @@ class WebSearchReceiptTest extends TestCase
         app(ReceiptReplayService::class)->replay($fixture->viewer, $fixture->phase, $receipt->id);
     }
 
-    public function test_failure_creates_unqualified_unloaded_receipt_with_safe_retry_provenance(): void
+    public function test_failed_observation_is_immutable_and_the_query_can_be_retried_in_fresh_evidence(): void
     {
         [$fixture, $subject] = $this->scenario();
         config(['services.tavily.api_key' => null]);
@@ -259,9 +242,11 @@ class WebSearchReceiptTest extends TestCase
         $this->assertSame('unqualified', app(ReceiptContextService::class)->forPhase($fixture->phase)->firstWhere('id', $failed->id)['status']);
         Http::assertNothingSent();
         config(['services.tavily.api_key' => 'server-only-test-key']);
-        $retry = app(ReceiptReplayService::class)->replay($fixture->viewer, $fixture->phase, $failed->id);
+        $fresh = $fixture->node($subject, 'canon');
+        $retry = $this->search($fixture, $fresh);
         $this->assertNotNull($retry->signature);
-        $this->assertSame($failed->id, $retry->instrumentExecution->replayed_from_receipt_id);
+        $this->assertNull($retry->instrumentExecution->replayed_from_receipt_id);
+        $this->assertSame('search-failed', $failed->fresh()->metadata['validation']);
         $this->assertSame(0, ParticipantReceiptContext::count());
         $this->assertSame(0, app(ReinforcementService::class)->count($subject));
     }
@@ -299,7 +284,7 @@ class WebSearchReceiptTest extends TestCase
         Http::assertNothingSent();
     }
 
-    public function test_hyperlink_replay_retains_the_existing_stability_clock_and_attestation_subject(): void
+    public function test_historical_hyperlink_replays_retain_the_stability_clock_and_attestation_subject(): void
     {
         [$fixture, $subject] = $this->scenario();
         $attestation = new Attestation;
@@ -315,14 +300,22 @@ class WebSearchReceiptTest extends TestCase
         $original = $first->fresh()->getAttributes();
         $this->assertTrue($first->supports(ReceiptCapability::Readable));
         $this->assertTrue($first->supports(ReceiptCapability::Replayable));
-        $this->mock(HyperlinkVerifier::class)->shouldReceive('verify')->with($url)->twice()
-            ->andReturnUsing(fn () => new VerifiedHyperlink('example.test/paper', hash('sha256', 'changed'), CarbonImmutable::now()));
-        $pending = app(ReceiptReplayService::class)->replay($fixture->viewer, $fixture->phase, $first->id);
+        // Historical observations can contain replay provenance. The execution
+        // recorder must preserve that history even though new equivalent runtime
+        // replays are now rejected by relevance checks.
+        $record = function (Receipt $source) use ($fixture, $subject, $attestation): Receipt {
+            $execution = app(InstrumentExecutionService::class)->start($fixture->phase, $subject,
+                'hyperlink', $source->reference, $source->replayInvocation(), $source);
+
+            return app(InstrumentExecutionService::class)->complete($execution, $attestation,
+                verification: new VerifiedHyperlink('example.test/paper', hash('sha256', 'changed'), CarbonImmutable::now()));
+        };
+        $pending = $record($first);
         $this->assertNull($pending->signature);
         $this->assertSame('version-awaiting-stability', $pending->metadata['reinforcement_version']);
         $this->assertSame($attestation->id, $pending->receiptable_id);
         $this->travelTo($time->addDays(8));
-        $accepted = app(ReceiptReplayService::class)->replay($fixture->viewer, $fixture->phase, $pending->id);
+        $accepted = $record($pending);
         $this->assertNotNull($accepted->signature);
         $this->assertNotSame($first->signature, $accepted->signature);
         $this->assertSame('accepted-version', $accepted->metadata['reinforcement_version']);

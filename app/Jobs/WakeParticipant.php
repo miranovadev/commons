@@ -12,6 +12,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Queue\SerializesModels;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Throwable;
 
 class WakeParticipant implements ShouldQueue
@@ -20,7 +21,7 @@ class WakeParticipant implements ShouldQueue
 
     public int $tries = 3;
 
-    public int $timeout = 120;
+    public int $timeout;
 
     /** @var list<int> */
     public array $backoff = [10, 30];
@@ -28,14 +29,17 @@ class WakeParticipant implements ShouldQueue
     public function __construct(
         public readonly string $participantConnectionId,
     ) {
+        $this->timeout = max(300, (int) config('participation.wake_timeout', 1800));
         $this->onQueue('participants');
     }
 
     /** @return list<WithoutOverlapping> */
     public function middleware(): array
     {
+        $participantId = ParticipantConnection::query()->whereKey($this->participantConnectionId)->value('participant_id');
+
         return [
-            (new WithoutOverlapping($this->participantConnectionId))
+            (new WithoutOverlapping('participant:'.($participantId ?? $this->participantConnectionId)))->shared()
                 ->releaseAfter(10)
                 ->expireAfter($this->timeout + 30),
         ];
@@ -56,41 +60,46 @@ class WakeParticipant implements ShouldQueue
         }
 
         try {
-            $state = $participation->stateFor(
-                $participantConnection->participant,
-            );
-
-            if (($state['status'] ?? null) === 'waiting'
-                && in_array(data_get($state, 'entry.mode'), ['continuity', 'potential'], true)
-                && data_get($state, 'entry.available') === true) {
-                $state = $participation->enter(
-                    $participantConnection->participant,
-                );
-            }
-
+            $state = $participation->prepare($participantConnection->participant);
             if (($state['status'] ?? null) !== 'ready') {
-                $reason = data_get(
-                    $state,
-                    'reason.code',
-                    'participant_not_ready',
-                );
-                $triggers->recordFailure(
-                    $participantConnection,
-                    "Participant wake skipped: {$reason}.",
-                );
+                $reason = data_get($state, 'reason.code', 'participant_not_ready');
+                $triggers->recordFailure($participantConnection, "Participant wake skipped: {$reason}.");
 
                 return;
             }
 
-            $contribution = $inference->contribute(
-                $participantConnection->connection,
-                $state,
-            );
-            $participation->contribute(
-                $participantConnection->participant,
-                $state['plan']['phase']['id'],
-                $contribution,
-            );
+            $cycleId = $state['cycle']['id'];
+            $limit = max(1, (int) config('participation.max_actions_per_wake', 64));
+            for ($attempt = 0; $attempt < $limit; $attempt++) {
+                // Each plan and dispatch owns a short transaction. Inference
+                // never holds their locks, and every action gets fresh state.
+                if ($attempt > 0) {
+                    $state = $participation->stateFor($participantConnection->participant);
+                }
+                if (($state['status'] ?? null) !== 'ready' || $state['cycle']['id'] !== $cycleId) {
+                    break;
+                }
+                if (! $participantConnection->fresh()->is_enabled) {
+                    break;
+                }
+
+                $contribution = $inference->contribute($participantConnection->connection, $state);
+                try {
+                    $after = $participation->contribute(
+                        $participantConnection->participant,
+                        $state['plan']['phase']['id'],
+                        $contribution,
+                        $state['plan']['schema'],
+                    );
+                } catch (ConflictHttpException) {
+                    // A discarded stale inference consumes an attempt too.
+                    // Retry with fresh state, never replay its old payload.
+                    continue;
+                }
+                if (($after['cycle']['id'] ?? null) !== $cycleId || $after['status'] !== 'ready') {
+                    break;
+                }
+            }
             $triggers->recordSuccess($participantConnection);
         } catch (Throwable $exception) {
             $triggers->recordFailure(

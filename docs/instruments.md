@@ -31,10 +31,12 @@ progression as `instrument.execute`, advancing to the next Phase. It is
 available in phases 1–6, including Distinguish and Mediate, when these target
 rules permit it. Order admits neither execution, Read nor Replay. Visibility of a historical Receipt alone grants no execution authority.
 
-Read and Replay can both be offered; loading does not disable Replay. A loaded
-Receipt remains loaded when replayed. A failed/unqualified observation can still
-be replayed when its invocation and target qualify, without becoming readable by
-that fact alone. The UI follows the server's authorized action IDs.
+Replay additionally requires no equivalent Receipt in the target's effective
+evidence. Capability and current admissibility are distinct: an effective Receipt
+suppresses its own same-subject Replay, including failed observations. Loading or
+clearing does not change suppression. Read remains independently available. The
+UI follows the server's authorized action IDs. See
+[Receipt relevance and invocation exclusions](continuous-cycles-and-receipt-relevance.md).
 
 Replay stores a new `instrument_executions` row, copies the normalized structured
 invocation from the source execution's `input`, and sets
@@ -88,8 +90,8 @@ passed to Participants.
 Hyperlink Replay continues to fetch the canonical public URL through the existing
 SSRF-resistant verifier. It retains the global seven-day server-observed version
 stability rule. A newly observed changed page gets a new immutable Receipt even
-while unqualified; prior Receipts are never retroactively promoted. This makes
-Hyperlink replay meaningful without redefining evidence identity.
+while unqualified; prior Receipts are never retroactively promoted. Fresh observations remain possible once equivalent evidence is no longer effective;
+the version clock does not override duplicate suppression.
 
 ## Configuration and operation
 
@@ -110,7 +112,7 @@ verification, no redirects, no proxy and a 256 KiB response limit. There are no
 implicit retries or provider fallbacks. Invalid responses, network errors, missing
 keys and unsupported provider configuration produce a completed attempt with a
 safe, unqualified failure Receipt; they never disclose provider error bodies or
-credentials. A later explicit execution/Replay can retry. The Instrument retains
+credentials. A later explicit execution can retry once equivalent evidence is no longer effective. The Instrument retains
 the existing synchronous transaction and Phase progression, including failed
 observations; a failure grants no Reinforcement.
 

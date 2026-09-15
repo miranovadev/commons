@@ -2,10 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Contracts\ParticipantInference;
 use App\Domain\Observables\ClosureValues;
 use App\Enums\PhaseKind;
+use App\Jobs\WakeParticipant;
+use App\Models\Connection;
 use App\Models\Cycle;
 use App\Models\Participant;
+use App\Models\ParticipantConnection;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Substrate;
@@ -16,6 +20,7 @@ use App\Services\ContributionDispatcher;
 use App\Services\CycleEntryService;
 use App\Services\InstrumentExecutionService;
 use App\Services\LedgerService;
+use App\Services\ParticipantConnectionTriggerService;
 use App\Services\ParticipationService;
 use App\Services\PhaseProgressionService;
 use App\Services\PropositionMeasurementService;
@@ -272,6 +277,65 @@ class TransactionLockOrderTest extends TestCase
         });
         $this->assertSame($before + 1, Proposition::count());
         $this->assertSame(1, DB::table('commit_results')->where('source_proposition_id', $source->id)->count());
+    }
+
+    public function test_another_participant_can_commit_an_action_during_inference_between_steps_of_one_wake(): void
+    {
+        config()->set('participation.max_actions_per_wake', 2);
+        [$substrate, $first, $phase] = $this->fixture();
+        $second = new Participant;
+        $second->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'between-actions'])->save();
+        app(CycleEntryService::class)->enter($second);
+        $secondPhase = $this->activePhase($second);
+        $connection = new Connection;
+        $connection->forceFill(['provider' => 'openai', 'name' => 'Wake concurrency',
+            'configuration' => ['model' => 'test'], 'credentials' => ['api_key' => 'test']])->save();
+        $link = new ParticipantConnection;
+        $link->forceFill(['participant_id' => $first->id, 'connection_id' => $connection->id,
+            'is_enabled' => true, 'configuration' => []])->save();
+        $calls = 0;
+        $inference = \Mockery::mock(ParticipantInference::class);
+        $inference->shouldReceive('contribute')->twice()->andReturnUsing(function ($connection, $state) use (&$calls, $phase, $second, $secondPhase): array {
+            $this->assertSame(0, DB::transactionLevel());
+            $this->assertSame($phase->cycle_id, $state['cycle']['id']);
+            if (++$calls === 1) {
+                return ['action' => 'proposition.variant', 'statement' => 'First wake action'];
+            }
+            $this->assertSame('persist', $state['plan']['phase']['kind']);
+            $this->assertNotNull($phase->fresh()->completed_at);
+            $process = new Process([PHP_BINARY, base_path('tests/Support/concurrent-commons-worker.php')], base_path(), null,
+                json_encode(['operation' => 'contribute', 'participant_id' => $second->id, 'phase_id' => $secondPhase->id,
+                    'database' => config('database.connections.'.DB::getDefaultConnection())], JSON_THROW_ON_ERROR), 15);
+            $process->mustRun(); // Would time out if this wake retained a database/root lock.
+            $this->assertStringContainsString('completed', $process->getOutput());
+            $this->assertNotNull($secondPhase->fresh()->completed_at);
+
+            return ['action' => 'participant.rest'];
+        });
+        (new WakeParticipant($link->id))->handle($inference, app(ParticipationService::class), app(ParticipantConnectionTriggerService::class));
+        $this->assertSame(2, $calls);
+        $this->assertNotNull($phase->cycle->fresh()->rested_at);
+        $this->assertSame(0, DB::transactionLevel());
+    }
+
+    public function test_fresh_admissibility_rejects_a_previously_valid_schema_as_a_retryable_conflict(): void
+    {
+        [, $first, $initial] = $this->fixture();
+        app(ParticipationService::class)->contribute($first, $initial->id, ['action' => 'proposition.variant', 'statement' => 'Source']);
+        $source = $first->fresh()->position;
+        $this->classificationEvidenceFixture($source);
+        $phase = $this->activePhase($first);
+        $state = app(ParticipationService::class)->stateFor($first);
+        $input = ['action' => 'proposition.reclassify'];
+        app(ContributionDispatcher::class)->dispatch($first, $phase, $input);
+        try {
+            app(ParticipationService::class)->contribute($first, $phase->id, $input, $state['plan']['schema']);
+            $this->fail('A stale generation action was applied.');
+        } catch (ConflictHttpException $exception) {
+            $this->assertSame(409, $exception->getStatusCode());
+            $this->assertNull($phase->fresh()->completed_at);
+            $this->assertSame(1, DB::table('reclassification_results')->where('source_proposition_id', $source->id)->count());
+        }
     }
 
     private function whileWorkerWaits(Substrate $substrate, array $input, callable $competing): void

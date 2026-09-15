@@ -123,13 +123,13 @@ class CausalRecoveryTest extends TestCase
         $participant->forceFill(['current_proposition_id' => $position->id])->save();
         $this->refreshMeasurements();
         $rest = app(ParticipationService::class)->contribute($participant, $order->id, ['action' => 'participant.rest']);
-        $this->assertSame('recovery', $rest['entry']['selection']);
+        $this->assertSame('ready', $rest['status']);
+        $this->assertSame('distinguish', $rest['plan']['phase']['kind']);
         $this->assertNotNull($order->cycle->fresh()->rested_at);
         $historicalOwners = DB::table('cycles')->pluck('context_horizon_id', 'id')->all();
         $selection = $this->recover($position);
         $this->assertSame($origin->id, $selection['proposition']->id);
         $this->assertSame($h2->id, app(ContextHorizonProjector::class)->forEntry($origin)->id);
-        app(CycleEntryService::class)->enter($participant);
         $cycle = $participant->cycles()->whereNull('completed_at')->sole();
         $this->assertSame($h2->id, $cycle->context_horizon_id);
         $this->assertSame('signal', $cycle->currentPhase->write_register);

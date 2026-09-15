@@ -213,9 +213,9 @@ class ReceiptContextTest extends TestCase
         $phase = $this->move($fixture, $subject);
         $service = app(ReceiptContextService::class);
         $service->read($fixture->viewer, $phase, $first->id);
-        $duplicate = app(OperationalInstrumentService::class)->execute($phase, $subject, [
-            'kind' => 'citation', 'reference' => $reference->id,
-        ]);
+        // Legacy duplicate history still obeys load uniqueness; new dispatches reject it.
+        $execution = app(InstrumentExecutionService::class)->start($phase, $subject, 'citation', $reference->id);
+        $duplicate = app(InstrumentExecutionService::class)->complete($execution, $subject);
         $this->assertSame('already-in-context', $service->forPhase($phase)->firstWhere('id', $duplicate->id)['status']);
         $this->assertSame(1, ParticipantReceiptContext::count());
         $service->clear($fixture->viewer, $phase, $first->id);
