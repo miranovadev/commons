@@ -11,7 +11,9 @@ use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Receipt;
 use App\Models\Substrate;
+use App\Models\Supersession;
 use App\Services\ContributionDispatcher;
+use App\Services\LedgerService;
 use App\Services\ParticipantPromptFactory;
 use App\Services\ParticipationService;
 use App\Services\PropositionOptionService;
@@ -172,7 +174,16 @@ class PersistInstrumentTest extends TestCase
         $ownerPhase = $signal->phase->replicate();
         $ownerPhase->cycle_id = $ownerCycle->id;
         $ownerPhase->save();
+        $parent = $signal->parents()->sole();
+        $signal = $signal->replicate();
         $signal->forceFill(['phase_id' => $ownerPhase->id])->save();
+        app(LedgerService::class)->record($signal);
+        $edge = new Supersession;
+        $edge->forceFill(['phase_id' => $ownerPhase->id, 'source_proposition_id' => $parent->id,
+            'target_proposition_id' => $signal->id, 'type' => 'variant'])->save();
+        app(LedgerService::class)->record($edge);
+        Phase::findOrFail($state['plan']['phase']['id'])->forceFill(['gate_proposition_id' => $signal->id])->save();
+        $author->forceFill(['current_proposition_id' => $signal->id])->save();
         $state = $service->contribute($author, $state['plan']['phase']['id'], [
             'action' => 'proposition.variant', 'statement' => 'Stance awaiting evidence',
         ]);
