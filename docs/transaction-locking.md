@@ -1,74 +1,103 @@
-# Commons transaction lock order
+# Participation reads and write locks
 
-Shared Commons mutations acquire the owning **Substrate row FOR UPDATE first**,
-before any child row lock or write (including inserts that take foreign-key
-locks). Hold it until the outermost transaction commits or rolls back.
+Participation reads are optimistic and take no database write locks or enclosing
+transactions. Inference and external Instrument observation run outside database
+transactions. Contributions acquire locks while revalidating and committing a
+state transition. Races are resolved through stale-state rejection, not reader
+serialization. No lock survives a contribution response, inference call, or wake
+iteration. A wake still completes at most its original Cycle.
 
-Participant actions then acquire Participant → active Cycle → active Phase →
-contribution-specific rows. Cycle entry acquires Substrate → Participant before
-checking or creating a Cycle. Resolve ownership with ordinary reads first;
-ownership identifiers are not reassigned by Commons operations.
+## Request lifecycle
 
-The Substrate is the serialization boundary for its ledger, shared propositions,
-measurements and horizon transitions. Different contribution branches need
-different child rows; they cannot race with each other after owning the same
-root. Reacquiring an already-owned Substrate lock in a nested service is safe;
-acquiring it for the first time after a child lock is not. Nested transactions
-do not release locks at the end of their callback.
+1. Read the current Phase and build its calculation-local context without locks.
+   State, workspace and schema use the same observed Phase occurrence. The read
+   may include concurrent committed changes; it does not promise a frozen snapshot.
+2. Infer an action. For external Instruments, validate the input, collect the
+   observation, and retain it only in a request-local `InstrumentObservation`.
+   Hyperlink verification and Web Search never run in the write section.
+3. Begin the contribution transaction. Acquire Substrate → Participant → active
+   Cycle → active Phase. Confirm the submitted Phase and recalculate admissibility
+   with a fresh context. Validation builds the schema without display serialization.
+4. Dispatch, persist evidence/ledger/measurements, and advance or rest atomically.
+   Instrument invocation identity, source availability and duplicate evidence are
+   checked again. A stale observation persists neither an execution nor a Receipt.
+5. Commit, release locks, and build the response state as a fresh optimistic read.
 
-## Audited paths
+A formerly valid inference rejected by fresh validation remains a 409 conflict.
+Invalid model output is still an error. No timeout, retry, wake-frequency or
+queue-timeout settings were increased. Existing full-cycle retry behavior remains.
 
-| Path | Lock discipline |
+## Projection reads and maintenance
+
+`observeMissing` calculates missing/obsolete values in memory, using frozen
+Committal snapshots where applicable. It does not upsert measurements or retain
+new directions in the database. Numeric zero uses the existing persisted
+Correspondence direction/ancestry as before. Current projections remain reusable.
+Graph and Proposition Inspector reads continue to display persisted projection
+status without repair. Potential selection also uses read-only fallback values.
+
+`repairMissing`, `recalculate` and `project` remain explicit mutation/maintenance
+operations. Contributions maintain their changed subject's projection. The
+measurement repair command locks one subject's repair at a time. An explicit
+Horizon rebuild remains a maintenance transaction; it is never invoked by a page
+load. `forEntry` validates existing immutable causal ownership without locks;
+`currentFor` only locks when it may need to create the initial Horizon.
+
+## Remaining lock audit
+
+There are no `sharedLock` calls. These are the remaining application transactions
+and explicit row locks (schema migrations are outside the participation runtime):
+
+| Path | Scope and protected invariant |
 | --- | --- |
-| ParticipationService::contribute (including Rest and Traverse) | Substrate → Participant → Cycle → Phase, before validation, dispatch and progression |
-| CycleEntryService::enter | Substrate → Participant, before Origin, recovery, potential selection or Cycle writes |
-| ContributionDispatcher::dispatch | Substrate before direct dispatch; Bias/Commit nested root locks are reacquisitions |
-| Instrument start / operational execution | Substrate before execution inserts and their foreign-key locks |
-| Instrument complete / fail | Substrate → InstrumentExecution; complete then resolves evidence and records the Receipt |
-| LedgerService::record | Substrate before sequence allocation or horizon inclusion |
-| CommitmentSnapshotService::record | Ledger acquires Substrate before measurement lock and horizon transition |
-| ContextHorizonProjector current/include/apply/rebuild | Substrate before horizon locks, deletion or reconstruction |
-| PropositionMeasurementService::project | Substrate → Proposition → measurement upsert, including standalone plan repair |
-| SubstrateMembershipService::join | Substrate before participant/membership insertion |
-| DueParticipantWakeDispatcher | Connection-only claim transaction ends before dispatch; never enters participation while holding that lock |
+| ParticipationService::contribute | Substrate → Participant → Cycle → Phase; current occurrence, shared admissibility, atomic contribution/progression |
+| ContributionDispatcher::dispatch | Substrate for direct callers; shared generation, source consumption, directed reconciliation; effective Attestation row when replacing it |
+| CycleEntryService::start | Substrate → Participant; one active Cycle, Origin uniqueness, causal entry and immediate rollover/recovery. Active `prepare` is a lock-free no-op, then rechecks inside the transaction if entry is needed |
+| OperationalInstrumentService::execute | Substrate; recheck mutability/invocation duplication and persist the already gathered observation atomically |
+| ReceiptReplayService::replay | Substrate → Participant → Phase; fresh encounter/capability/eligibility check, immutable replay invocation |
+| ReceiptContextService::read/clear | Substrate → Participant → Phase; active occurrence, one load/event, reinforcement and projection invalidation |
+| InstrumentExecutionService::start | Single insert, no explicit lock or transaction; ULID and foreign keys protect the pending record |
+| InstrumentExecutionService::complete | Substrate → execution; pending-to-completed transition, one Receipt, evidence identity, ledger and projection writes |
+| InstrumentExecutionService::fail | Execution row only; terminal status and observer notification. Never enters ledger/projection code or escalates to Substrate |
+| LedgerService::record | Substrate; monotonic substrate sequence allocation and membership inclusion |
+| CommitmentSnapshotService::record | Ledger takes Substrate, then measurement; frozen snapshot and causal boundary application |
+| ContextHorizonProjector::currentFor/include/apply/rebuild | Substrate, then Horizon for apply; unique initial/child sequence, idempotent memberships and explicit boundary ownership |
+| PropositionMeasurementService::project / repair command | Substrate → Proposition; numeric projection and retained direction move together and cannot overwrite concurrent evidence maintenance |
+| ReinforcementSignatureService::resolve | Global resource-key row, after Substrate/execution; accepted content version and stability clock |
+| SubstrateMembershipService::join | Substrate; unique participant/membership establishment |
+| DueParticipantWakeDispatcher | Connection row only; short scheduler claim commits before dispatch |
+| SystemBootstrapService | Transaction for initial system identity/roles; no participation row locks |
 
-Phase progression and polarity creation are internal steps of the owning
-contribution/entry transaction. Callers that compose lower-level services must
-acquire the Substrate before their first write, not wait for Ledger::record to
-do it later. Legacy console insert commands are single statements and do not
-escalate to ledger/root locking; modernizing their obsolete payloads is separate.
+The remaining write root is intentional: ledger sequence allocation is shared,
+and admissibility depends on shared evidence, hard successors, classifications,
+Commit consumption and causal Horizon boundaries. Locking only a Participant
+would allow two writers to validate incompatible shared changes before either
+records its ledger entries. Replacing this with narrower source/version locks
+requires a separate complete conflict protocol. Reads need none of these locks.
+Private Bias/Commit helpers no longer reacquire the root or add savepoints.
+Nested write services may reacquire an already-owned root but never acquire one
+for the first time after a child lock. No multi-Substrate write is composed while
+holding a global reinforcement source lock.
 
-Reinforcement source rows are global. A supported operation resolves one source
-after taking its Substrate and execution locks, then only touches rows in that
-same Substrate. Never acquire another Substrate while holding a source lock.
-Future multi-Substrate or multi-source batches must acquire all roots by ascending
-ID, then all source keys in sorted order, before lower-level work.
-
-## Plan reads and contention
-
-Standalone plans retain their existing REPEATABLE READ snapshot and serialization
-retry policy. Warm projections require no new root lock. A missing or obsolete
-projection acquires the Substrate before its first repair write and holds it
-through the enclosing plan transaction, preventing opposite node visitation
-orders from becoming a deadlock. No deadlock retries were added to actions:
-synchronous instrument verification can perform external I/O, so replaying the
-entire action deserves a separate idempotency design.
-
-Contributions already serialized at ledger recording. They now wait before
-holding Participant/Cycle/Phase locks, and standalone repairs join that same
-serialization boundary. Synchronous hyperlink verification still runs inside
-the action transaction and therefore extends root lock duration. Moving network
-verification outside it requires revalidation of the action on return and is
-not part of this lock-order fix.
+Participant activity uses a short per-participant cache lease lock for
+compare-and-clear. Status snapshots use batched cache reads. Queue
+`WithoutOverlapping` prevents overlapping wakes for the same participant; neither
+cache lock is a database lock or a substrate-wide reader barrier.
 
 ## Regression coverage
 
-`php artisan test --filter=TransactionLockOrderTest` uses committed fixtures and
-an independent PHP/PostgreSQL backend. The parent holds the Substrate, observes
-the worker waiting via pg_stat_activity, exercises the competing operation,
-then releases the root. Timeouts bound failures; sleeps only poll the barrier.
-Coverage includes entry versus contribution for the same Participant, two
-Participants contributing within one Substrate, standalone Instrument completion,
-and standalone measurement projection. Assertions check completion, active Phase
-uniqueness, one Receipt, and contiguous ledger sequence allocation. These tests
-skip on non-PostgreSQL databases; the existing CI runs PostgreSQL 18.
+`TransactionLockOrderTest` uses committed fixtures and independent PostgreSQL
+processes. It launches simultaneous plan/state/workspace reads while the parent
+holds Substrate, Participant and Phase locks, with missing projections. All reads
+must finish before that writer commits. Existing competing-write tests retain
+Phase/ledger, generation, classification and Commit-source guarantees. Additional
+cases cover receipt-load uniqueness, boundary projection idempotency, external
+observation with a competing writer and stale-result rejection. Inference tests
+allow another participant to contribute between steps of a full-cycle wake.
+
+`ParticipationSnapshotTest` commits evidence from a second PostgreSQL connection
+while a plan is hydrating and verifies that the next read sees it.
+`OptimisticParticipationTest` rejects read transactions/mutations, preserves
+missing/stale persisted projections, and checks that response contexts are built
+after contribution commit. Performance fixtures and remaining scale limits are
+in [participation-performance.md](participation-performance.md).

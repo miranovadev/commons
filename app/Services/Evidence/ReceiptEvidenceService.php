@@ -3,6 +3,8 @@
 namespace App\Services\Evidence;
 
 use App\Enums\ReceiptCapability;
+use App\Models\Attestation;
+use App\Models\Proposition;
 use App\Models\Receipt;
 use App\Services\Participation\ParticipationContext;
 
@@ -35,9 +37,21 @@ final class ReceiptEvidenceService
             return null;
         }
         // Resolve the actual same-substrate object, never caller-supplied metadata.
-        $attestation = $context->attestations->get($receipt->reference);
-        $target = $context->propositions->get($receipt->reference)
-            ?? ($attestation === null ? null : $context->propositions->get($attestation->proposition_id));
+        [$attestation, $target] = $context->remember('citation-target:'.$receipt->reference, function () use ($receipt, $context): array {
+            $attestation = $context->attestations->get($receipt->reference);
+            $target = $context->propositions->get($receipt->reference)
+                ?? ($attestation === null ? null : $context->propositions->get($attestation->proposition_id));
+            if ($target === null) {
+                // A citation may intentionally point outside the active causal working set.
+                // Resolve just its subject, never hydrate that subject's entire branch/evidence.
+                $attestation ??= Attestation::whereKey($receipt->reference)
+                    ->whereHas('phase.cycle.participant', fn ($q) => $q->where('substrate_id', $context->substrate->id))->first();
+                $target = Proposition::whereKey($attestation?->proposition_id ?? $receipt->reference)
+                    ->whereHas('phase.cycle.participant', fn ($q) => $q->where('substrate_id', $context->substrate->id))->first();
+            }
+
+            return [$attestation, $target];
+        });
         if ($target === null) {
             return null;
         }

@@ -1,15 +1,18 @@
 <?php
 
 // A separate PHP process gives the regression tests a real, independent backend.
+use App\Models\CommitmentSnapshot;
 use App\Models\InstrumentExecution;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
+use App\Services\ContextHorizonProjector;
 use App\Services\ContributionDispatcher;
 use App\Services\InputPlanService;
 use App\Services\InstrumentExecutionService;
 use App\Services\ParticipationService;
 use App\Services\PropositionMeasurementService;
+use App\Services\ReceiptContextService;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -53,6 +56,11 @@ try {
             echo $response->getContent()."\n";
             $kernel->terminate($request, $response);
         })(),
+        'state' => app(ParticipationService::class)->stateFor(Participant::findOrFail($input['participant_id'])),
+        'workspace' => app(ParticipationService::class)->workspaceFor(Participant::findOrFail($input['participant_id'])),
+        'prepare' => app(ParticipationService::class)->prepare(Participant::findOrFail($input['participant_id'])),
+        'receipt-read' => app(ReceiptContextService::class)->read(Participant::findOrFail($input['participant_id']), Phase::findOrFail($input['phase_id']), $input['receipt_id']),
+        'horizon' => app(ContextHorizonProjector::class)->apply(CommitmentSnapshot::findOrFail($input['proposition_id'])),
         'plan' => app(InputPlanService::class)->forParticipant(Participant::findOrFail($input['participant_id'])),
         'contribute' => app(ParticipationService::class)->contribute(
             Participant::findOrFail($input['participant_id']),

@@ -27,6 +27,7 @@ use App\Services\PropositionStateService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Tests\Fixtures\ParticipationScaleFixture;
 use Tests\TestCase;
 
 class ParticipationPerformanceTest extends TestCase
@@ -135,6 +136,33 @@ class ParticipationPerformanceTest extends TestCase
         $this->assertNotSame($evidence->directionFor($target, context: $context), $evidence->directionFor($target, context: $fresh));
         // Old original IDs remain historical, but only the replacement is effective.
         $this->assertSame([$replacement->id], $fresh->effectiveAttestations([$target->id])->pluck('id')->all());
+    }
+
+    public function test_historical_population_does_not_expand_the_active_working_set(): void
+    {
+        $this->freezeTime();
+        [$viewer, $nodes] = $this->fixture(PhaseKind::Bias, 8);
+        $counts = [];
+        foreach ([0, 1000] as $history) {
+            if ($history) {
+                ParticipationScaleFixture::addHistory($nodes[0], $history);
+            }
+            [$context, $queries, $contextMs] = $this->measure(fn () => new ParticipationContext(app(PhaseService::class)->currentFor($viewer->fresh())));
+            [$plan, $planQueries, $planMs] = $this->measure(fn () => app(InputPlanService::class)->forParticipant($viewer->fresh()));
+            [$workspace, $workspaceQueries, $workspaceMs] = $this->measure(fn () => app(InputPlanService::class)->forWorkspace($viewer->fresh()));
+            $hydrated = $context->propositions->count() + $context->attestations->count() + $context->receipts->count()
+                + $context->receiptContexts->count() + $context->receiptContextEvents->count();
+            $counts[] = [$hydrated, count($planQueries), count($workspaceQueries)];
+            fwrite(STDERR, sprintf("\nSCALE history=%d total=%d hydrated=%d context=%.2fms/%dq plan=%.2fms/%dq workspace=%.2fms/%dq\n",
+                $history, Proposition::count(), $hydrated, $contextMs, count($queries), $planMs, count($planQueries), $workspaceMs, count($workspaceQueries)));
+            $this->assertSame($plan['schema'], $workspace['schema']);
+            if ($history === 0) {
+                $before = $this->comparablePlan($plan);
+            } else {
+                $this->assertSame($before, $this->comparablePlan($plan));
+            }
+        }
+        $this->assertSame($counts[0], $counts[1], 'Unrelated historical evidence must not increase hydrated rows or query count.');
     }
 
     private function measure(callable $calculate): array

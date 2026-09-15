@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Domain\Evidence\InstrumentObservation;
 use App\Domain\Observables\ObservableValues;
 use App\Enums\LedgerEntryKind;
 use App\Enums\PhaseKind;
@@ -52,7 +53,13 @@ final readonly class CycleEntryService
 
     private function start(Participant $participant, ?array $origin, bool $required): void
     {
-        DB::transaction(function () use ($participant, $origin, $required): void {
+        // Wakes call prepare on every iteration; an existing Cycle is a read-only no-op.
+        if (! $required && $this->hasActiveCycle($participant)) {
+            return;
+        }
+        $observed = $origin === null ? null : $this->instruments->observe($origin['instrument']);
+
+        DB::transaction(function () use ($participant, $origin, $required, $observed): void {
             $substrate = Substrate::query()
                 ->lockForUpdate()
                 ->findOrFail($participant->substrate_id);
@@ -135,6 +142,7 @@ final readonly class CycleEntryService
                 $order,
                 $proposition,
                 $origin['instrument'],
+                $observed,
             );
 
             $values = $this->measurements->recalculate($proposition);
@@ -299,7 +307,8 @@ final readonly class CycleEntryService
         Phase $phase,
         Proposition $proposition,
         array $input,
+        ?InstrumentObservation $observed,
     ): void {
-        $this->instruments->execute($phase, $proposition, $input, bootstrap: true);
+        $this->instruments->execute($phase, $proposition, $input, bootstrap: true, observed: $observed);
     }
 }

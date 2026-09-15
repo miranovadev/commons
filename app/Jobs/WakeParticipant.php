@@ -78,8 +78,8 @@ class WakeParticipant implements ShouldQueue
                 if ($token !== null) {
                     rescue(fn () => $activity->heartbeat($participantConnection->participant, $token), report: true);
                 }
-                // Each plan and dispatch owns a short transaction. Inference
-                // never holds their locks, and every action gets fresh state.
+                // Plans are optimistic reads. Only dispatch owns a write transaction;
+                // inference never holds locks, and every action gets fresh state.
                 if ($attempt > 0) {
                     $state = $participation->stateFor($participantConnection->participant);
                 }

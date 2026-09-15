@@ -15,6 +15,7 @@ use App\Services\OperationalInstrumentService;
 use App\Services\ParticipantContextSerializer;
 use App\Services\ParticipantPromptFactory;
 use App\Services\ParticipationService;
+use App\Services\PropositionMeasurementService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -181,6 +182,8 @@ class ParticipantContextTest extends TestCase
         // population a distinct timestamp so SQL tie ordering cannot hide it.
         $this->travel(1)->seconds();
         $fixture->growUnrelatedTo(10);
+        // Explicitly persist the projection whose invalidation this regression exercises.
+        app(PropositionMeasurementService::class)->recalculate($fixture->gate);
         $service = app(ParticipationService::class);
         $before = $service->stateFor($fixture->viewer)['plan'];
         $fixture->growUnrelatedTo(500);

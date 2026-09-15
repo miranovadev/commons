@@ -123,7 +123,7 @@ final readonly class ParticipationService
             );
         }
 
-        $plan = $workspace ? $this->plans->forWorkspace($participant) : $this->contributions->planFor($participant);
+        $plan = $this->plans->forPhase($participant, $phase, $workspace);
         $blocked = $phase->kind === PhaseKind::Order
             && ! isset($plan['schema']['$defs']['actions']['proposition.commit'])
             && ! isset($plan['schema']['$defs']['actions']['proposition.traverse'])
@@ -182,12 +182,35 @@ final readonly class ParticipationService
             $this->contributions->validateSchema($expectedSchema, $input);
         }
 
-        return DB::transaction(function () use (
+        // Validate before network I/O, then validate afresh under the write lock.
+        // An observation is discarded when the Phase or admissibility changed.
+        $observed = null;
+        if (in_array($input['action'] ?? null, ['instrument.execute', 'receipt.replay'], true)) {
+            $observedPhase = Phase::with('cycle')->find($phaseId);
+            if ($observedPhase === null || $observedPhase->cycle->participant_id !== $participant->id
+                || $observedPhase->completed_at !== null || $observedPhase->cycle->completed_at !== null) {
+                throw new ConflictHttpException('The participation state changed. Refresh before contributing.');
+            }
+            $plan = $this->plans->forPhase($participant, $observedPhase);
+            try {
+                $this->contributions->validateSchema($plan['schema'], $input);
+            } catch (InvalidArgumentException $exception) {
+                if ($expectedSchema !== null) {
+                    throw new ConflictHttpException('The participation options changed. Rebuild state before contributing.', $exception);
+                }
+                throw $exception;
+            }
+            $expectedSchema ??= $plan['schema'];
+            $observed = $this->dispatcher->observeInstrument($participant, $observedPhase, $input);
+        }
+
+        DB::transaction(function () use (
             $participant,
             $phaseId,
             $input,
             $expectedSchema,
-        ): array {
+            $observed,
+        ): void {
             // Acquire the shared root before any participant/phase or contribution lock.
             // Cycle entry, ledger writes, and horizon projection use the same order.
             Substrate::query()->lockForUpdate()->findOrFail($participant->substrate_id);
@@ -229,23 +252,27 @@ final readonly class ParticipationService
                 throw $exception;
             }
             if ($input['action'] === 'participant.rest') {
-                return $this->rest($lockedParticipant, $phase);
+                $this->rest($lockedParticipant, $phase);
+
+                return;
             }
             $gate = $this->dispatcher->dispatch(
                 $lockedParticipant,
                 $phase,
                 $input,
+                $observed,
             );
             if ($input['action'] !== 'receipt.read') {
                 $this->progression->advance($phase, $gate);
             }
 
-            return $this->stateFor($lockedParticipant);
         });
+
+        return $this->stateFor($participant->fresh());
     }
 
     /** The validated plan exposes Rest only in a Tragic Region. */
-    private function rest(Participant $participant, Phase $phase): array
+    private function rest(Participant $participant, Phase $phase): void
     {
         $participant->current_proposition_id = $phase->gate_proposition_id;
         $participant->save();
@@ -260,7 +287,6 @@ final readonly class ParticipationService
         // later recovery attempt; never undo Rest or fabricate a destination.
         $this->cycleEntry->prepare($participant);
 
-        return $this->stateFor($participant);
     }
 
     /**

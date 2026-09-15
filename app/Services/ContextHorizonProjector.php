@@ -19,6 +19,11 @@ final class ContextHorizonProjector
     /** Default for initial/unpositioned entry only; never a Cycle's current Domain. */
     public function currentFor(Substrate $substrate): ContextHorizon
     {
+        $horizon = ContextHorizon::whereBelongsTo($substrate)->whereNull('closed_at')->latest('sequence')->first();
+        if ($horizon !== null) {
+            return $horizon;
+        }
+
         return DB::transaction(function () use ($substrate): ContextHorizon {
             $locked = $this->lockSubstrate($substrate);
             $horizon = ContextHorizon::whereBelongsTo($locked)->whereNull('closed_at')->latest('sequence')->first();
@@ -36,35 +41,32 @@ final class ContextHorizonProjector
     /** A Committal enters its own Horizon, or the direct child it explicitly opened. */
     public function forEntry(Proposition $gate, ?ContextHorizon $expected = null): ContextHorizon
     {
-        return DB::transaction(function () use ($gate, $expected): ContextHorizon {
-            $gate = $gate->fresh(['phase.cycle.contextHorizon', 'commitmentSnapshot']);
-            $owner = $gate?->phase?->cycle?->contextHorizon;
-            if ($owner === null || $gate->tier !== 'committal' || $gate->commitmentSnapshot === null) {
-                throw new DomainException('Cycle entry requires a persisted Committal with a Context Horizon and commitment snapshot.');
+        $gate = $gate->fresh(['phase.cycle.contextHorizon', 'commitmentSnapshot']);
+        $owner = $gate?->phase?->cycle?->contextHorizon;
+        if ($owner === null || $gate->tier !== 'committal' || $gate->commitmentSnapshot === null) {
+            throw new DomainException('Cycle entry requires a persisted Committal with a Context Horizon and commitment snapshot.');
+        }
+        $snapshot = $gate->commitmentSnapshot;
+        if ($snapshot->substrate_id !== $owner->substrate_id || $snapshot->direction_before !== $owner->domain) {
+            throw new DomainException('The selected Committal must retain its creating Horizon direction.');
+        }
+        $child = ContextHorizon::where('opened_by_proposition_id', $gate->id)->first();
+        if ($snapshot->isClosureBoundary()) {
+            if ($child === null || $child->parent_context_horizon_id !== $owner->id) {
+                throw new DomainException('A boundary Committal must explicitly open its direct child Context Horizon.');
             }
-            $this->lockSubstrate($owner->substrate);
-            $snapshot = $gate->commitmentSnapshot;
-            if ($snapshot->substrate_id !== $owner->substrate_id || $snapshot->direction_before !== $owner->domain) {
-                throw new DomainException('The selected Committal must retain its creating Horizon direction.');
-            }
-            $child = ContextHorizon::where('opened_by_proposition_id', $gate->id)->first();
-            if ($snapshot->isClosureBoundary()) {
-                if ($child === null || $child->parent_context_horizon_id !== $owner->id) {
-                    throw new DomainException('A boundary Committal must explicitly open its direct child Context Horizon.');
-                }
-                $child->predecessorCommitment();
-            } elseif ($child !== null) {
-                throw new DomainException('A non-boundary Committal cannot open a Context Horizon.');
-            }
-            $horizon = $child ?? $owner;
-            if ($expected !== null && $expected->id !== $horizon->id) {
-                throw new DomainException('The selected Gate does not determine the requested entry Context Horizon.');
-            }
+            $child->predecessorCommitment();
+        } elseif ($child !== null) {
+            throw new DomainException('A non-boundary Committal cannot open a Context Horizon.');
+        }
+        $horizon = $child ?? $owner;
+        if ($expected !== null && $expected->id !== $horizon->id) {
+            throw new DomainException('The selected Gate does not determine the requested entry Context Horizon.');
+        }
 
-            app(CausalContextService::class)->assertGate($gate, $horizon);
+        app(CausalContextService::class)->assertGate($gate, $horizon);
 
-            return $horizon;
-        });
+        return $horizon;
     }
 
     public function include(SubstrateLedgerEntry $entry): ContextHorizonMembership

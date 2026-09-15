@@ -1,114 +1,91 @@
-# Participation-plan performance
+# Participation performance
 
-`InputPlanService` builds one explicit `ParticipationContext` per calculation.
-The context is passed through option selection, region resolution, evidence,
-lineage comparison, local measurements, Closure previews and serialization.
-It is never stored in the container, a static property, Redis or application
-cache. The existing static JSON-schema cache is unchanged.
+`InputPlanService` creates one explicit `ParticipationContext` for each read or
+write-boundary validation. It is never cached globally or retained between actions.
+Reads take no write locks and do not persist projection repair. Contribution
+validation builds only the admissibility schema; response serialization runs
+following commit. See [transaction-locking.md](transaction-locking.md).
 
-## What caused the multiplication
+## What was stalling
 
-Both participation endpoints and machine contribution validation reach the same
-plan builder. Previously, candidate filtering, schema construction and rendering
-repeatedly discovered overlapping data:
+Standalone plans took an exclusive Substrate lock before hydrating all substrate
+history. Missing/obsolete measurements were repaired inside that read transaction.
+Contributions then built their next full state before releasing their own root
+lock. Synchronous hyperlink verification/search also held that lock during network
+I/O. Four full-cycle workers therefore queued human reads behind shared writes and
+other reads. Query-count tests alone did not expose hydration or lock waiting.
 
-- Commit Region ancestry and membership CTEs, followed by repeated seed hydration
-  and fixed-polarity lookups;
-- ledger-prefix Attestation replay, superseding Attestations and reinforcing
-  Receipts;
-- current/previous Horizon membership and recursive lineage queries;
-- attenuation over ancestor positions, each repeating local calculations;
-- Phase touch counts and Proposition → Phase → Cycle → Participant loads;
-- repeated Closure previews and Write/Attestation option calculations;
-- separate ORM instances of the same Proposition during serialization.
+## Working set
 
-The supplied log contains **14,283 statements, 5,824.23 ms cumulative SQL time,
-and a 0.32 ms median**. It has overlapping request activity and no request IDs or
-bindings, so it cannot establish a precise isolated-request count. The reported
-~13,130-query request is the production symptom, not an after-change benchmark.
+The context now hydrates the current Horizon's propositions plus recursive causal
+ancestors, Commit source history and required Horizon comparison boundaries.
+Memberships, frames, evidence, receipt contexts/events, phase-touch aggregates and
+commitment snapshots are restricted to those IDs. Parent and child adjacency and
+per-subject evidence are indexed and memoized within the calculation.
 
-## Calculation scope and semantics
+Incoming edges retain the complete selected ancestry. Outgoing hard edges remain
+visible even when their successors are outside the working set, so historical
+source retirement is preserved. Outgoing Variant edges to excluded historical
+branches are not hydrated. Off-path citations resolve their exact same-substrate
+subject separately; they do not pull its entire graph into the plan. A compound
+Horizon/proposition membership index supports working-set entry.
 
-The context bulk-loads the current substrate's graph, Horizon memberships,
-region frames, evidence, relevant ledger entries, snapshots and grouped Phase
-touch counts. Parent/child adjacency, Attestations by Proposition and Receipts
-by subject are indexed in memory. Region resolution, history sources, timelines,
-raw local measurements and Closure previews are reused within that calculation.
+All calculators, attenuation, register equivalence, hard/soft supersession rules,
+ledger-prefix evidence replay and Commit-only inheritance remain authoritative.
+The complete batched plan/schema is compared against the unbatched calculation
+for Mediate, Bias and Order. No participant display/token limit truncates evidence
+needed for measurements.
 
-The existing calculators, attenuation weights, register equivalence, hard/soft
-edge rules and ledger-prefix arithmetic remain authoritative. In particular,
-Commit-only source IDs are distinct from structural ancestry; region traversal
-stops at Commits; original Attestation IDs and polarity survive inheritance;
-and numeric zero does not reset retained direction. Scoped and unscoped service
-paths share the same formulas. Unscoped calls remain available to mutation and
-projection workflows without retaining state between operations.
-
-Rendering uses shared Proposition objects. Missing/obsolete projections are
-still repaired and persisted; their locks, direction updates and upserts are
-preserved. Those necessary cold-projection writes explain most of the remaining
-cold/warm query difference.
-
-Standalone PostgreSQL plans can repair projections, so they acquire the Substrate
-lock before loading graph, evidence and rendering state under READ COMMITTED.
-Cooperating mutations cannot interleave with that context. Serialization/deadlock conflicts
-are retried up to three times by Laravel. An existing contribution transaction
-retains its own isolation and locks, and every new plan calculation inside it
-receives a fresh context after writes.
-
-## Reproducing the benchmark
+## Reproduce
 
 ```bash
 php artisan test --filter ParticipationPerformanceTest
+php artisan test --filter OptimisticParticipationTest
 php artisan test --filter ParticipationSnapshotTest
+php artisan test --filter TransactionLockOrderTest
 ```
 
-The fixture has 43 Propositions, three participants, multiple Cycles/Phases,
-two Horizons, multiple Commit Regions (including negative polarity), branching,
-Revise/Reconcile/Commit edges, Attestations, reinforcing Receipts and committed
-Closure history. Each late phase runs the unbatched calculation in a savepoint,
-rolls back its projection repairs, then runs the optimized calculation against
-the same rows. Frozen time and distinct creation timestamps make exact payload
-comparison deterministic. The unbatched query counts were also verified against
-the unchanged `5b9b5ff3dda172340939a59a4dc7b88e877a78a0` source tree.
+The scale regression starts from 43 propositions, multiple Committals, two Horizons,
+three participants, reclassification/Revise/Reconcile/Commit history, Attestations
+and Receipts. It adds 1,000 historical sibling propositions in the earlier Horizon,
+each with an Attestation, Receipt, participant load and ledgered context event.
+It reports context construction, plan/workspace query count and wall time. The test
+asserts unchanged hydrated working rows, query counts and complete plan after that
+history growth, rather than imposing a machine-sensitive millisecond limit.
 
-Local PHP 8.5.10 / SQLite measurements (cold projections):
+Measured locally on PHP 8.5.10 / SQLite, same deterministic 1,043-proposition fixture:
 
-| Phase | Before queries | After queries | Reduction | Before wall ms | After wall ms |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Mediate | 13,855 | 210 | 98.48% | 2,311.96 | 131.98 |
-| Bias | 13,992 | 196 | 98.60% | 2,236.74 | 122.77 |
-| Order / Closure | 44,536 | 194 | 99.56% | 7,811.89 | 189.73 |
+| Measure | Main (`b7fe201`) | Optimistic working set |
+| --- | ---: | ---: |
+| Hydrated propositions + Attestations + Receipts + loads + events | 5,100 | 100 |
+| Context construction | 1,057.88 ms | 19.46 ms |
+| Participant plan | 4,919.63 ms | 257.51 ms |
+| Workspace plan | 9,989.49 ms | 302.16 ms |
+| Context queries | 34 | 35 |
+| Plan queries | 77 | 78 |
+| Workspace queries | 89 | 90 |
 
-SQL execution time fell from 482.06/471.53/1,626.00 ms to
-9.20/8.26/8.96 ms respectively. These are fixture measurements, not predicted
-production latency. PostgreSQL CI emits its own counts and timings.
+This is a hydration/CPU improvement, not a query-count reduction on warm plans.
+The additional query resolves the causal working set. The original scale run
+exhausted a 128 MB local PHP limit; baseline timing above used a 1 GB benchmark
+limit and reported 142.5 MB peak. Application runtime settings are unchanged.
+These are isolated local fixture measurements, not production latency promises.
+PostgreSQL CI exercises real locks and emits its own benchmark measurements.
 
-Growing the fixture from 27 to 51 Propositions leaves warm counts unchanged:
-54 (Mediate), 48 (Bias), 46 (Order). Cold growth is bounded by newly repaired
-projections. Regression limits are <500 cold queries, <200 warm queries,
-<=125 additional cold queries and <=20 additional warm queries for that growth.
+## Deliberate remaining work
 
-The tests compare the entire serialized plan and schema, covering Gate, Read,
-Gate/Write/Revision options, actions, Attestation choices, commitment eligibility,
-measurements and provenance. Additional comparisons cover retained directions,
-region membership, history source IDs and touch counts. A fresh-context test
-replaces evidence between calculations. The PostgreSQL-only test interleaves
-a committed evidence write from a second connection with plan construction.
-
-## Index review and limits
-
-No indexes are added. Existing indexes cover Supersession source/target access,
-Attestation subjects and replacements, Receipt polymorphic subjects and
-signatures, ledger subjects and substrate sequence, phase gates/cycles, and
-participant/cycle ownership. Local `EXPLAIN QUERY PLAN` confirmed indexed
-Supersession and Receipt lookups and grouped gate-count access. Horizon
-membership loading currently scans its table: it has a Proposition primary key
-but no Horizon-leading index. This small bulk-read fixture does not justify a
-new PostgreSQL index without representative larger-table plans.
-
-Hydration is bounded to one substrate, not to the whole installation, but its
-memory footprint grows with that substrate's graph and evidence history. This
-change removes query multiplication; it does not claim constant memory or CPU
-for indefinitely growing substrates. A future narrower hydration strategy must
-retain all ancestry, historical population removals and original evidence
-needed by the same calculations.
+- Current-Horizon candidates and their actual ancestry can still grow. The context
+  is bounded causally, not to a fixed row count; it still loads the small collection
+  of Horizon metadata for the substrate. Restricting a large active Horizon to
+  region candidates would require a separate closure-completeness proof.
+- Initial Potential ranking and Rest recovery still traverse substrate topology to
+  rank eligible Committals. Their reads no longer repair projections or lock; when
+  used to create a Cycle, selection/validation is part of that write transition.
+- Evidence changes still invalidate substrate projection versions. Only requested
+  values are recomputed by a read, in memory. A dependency-indexed invalidation or
+  background projection scheduler could reduce repeated cold computation further.
+- Writes still serialize shared admissibility, ledger sequencing and projection
+  maintenance at the Substrate boundary. Response building and all network/model
+  waits have been removed from that interval; writes are not claimed constant-time.
+- Historical hydration improvements do not change graph pagination or the
+  independent human graph API, which already observes without projection repair.
