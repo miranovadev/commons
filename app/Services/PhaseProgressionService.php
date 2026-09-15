@@ -26,6 +26,8 @@ final class PhaseProgressionService
             $phase->cycle->completed_at = now();
             $phase->cycle->save();
 
+            app(CycleEntryService::class)->prepare($participant);
+
             return null;
         }
 

@@ -6,6 +6,7 @@ use App\Domain\Observables\ObservableValues;
 use App\Enums\LedgerEntryKind;
 use App\Enums\PhaseKind;
 use App\Models\Attestation;
+use App\Models\CommitmentSnapshot;
 use App\Models\ContextHorizon;
 use App\Models\Cycle;
 use App\Models\Participant;
@@ -40,7 +41,18 @@ final readonly class CycleEntryService
      */
     public function enter(Participant $participant, ?array $origin = null): void
     {
-        DB::transaction(function () use ($participant, $origin): void {
+        $this->start($participant, $origin, required: true);
+    }
+
+    /** Infrastructure entry/rollover: never infer an Origin or invent a recovery Gate. */
+    public function prepare(Participant $participant): void
+    {
+        $this->start($participant, null, required: false);
+    }
+
+    private function start(Participant $participant, ?array $origin, bool $required): void
+    {
+        DB::transaction(function () use ($participant, $origin, $required): void {
             $substrate = Substrate::query()
                 ->lockForUpdate()
                 ->findOrFail($participant->substrate_id);
@@ -49,6 +61,9 @@ final readonly class CycleEntryService
                 ->findOrFail($participant->getKey());
 
             if ($this->hasActiveCycle($lockedParticipant)) {
+                if (! $required) {
+                    return;
+                }
                 throw new ConflictHttpException(
                     'The Participant already has an active Cycle.'
                 );
@@ -58,6 +73,9 @@ final readonly class CycleEntryService
                 $gate = $this->continuationFor($lockedParticipant)
                     ?? ($this->potential->recoverFrom($lockedParticipant->position()->firstOrFail())['proposition'] ?? null);
                 if ($gate === null) {
+                    if (! $required) {
+                        return;
+                    }
                     throw new ConflictHttpException('No ancestral Committal region has positive Potential Charge.');
                 }
                 $this->createLiveCycle(
@@ -70,6 +88,9 @@ final readonly class CycleEntryService
             }
 
             if ($this->hasPropositionHistory($substrate)) {
+                if (! $required && ! CommitmentSnapshot::where('substrate_id', $substrate->id)->exists()) {
+                    return;
+                }
                 $selection = $this->potential->selectFor($substrate);
                 if ($selection === null) {
                     throw new ConflictHttpException('No structurally reachable measured Committal Proposition is available for Cycle entry.');
@@ -84,6 +105,9 @@ final readonly class CycleEntryService
             }
 
             if ($origin === null) {
+                if (! $required) {
+                    return;
+                }
                 throw new ConflictHttpException(
                     'The substrate requires an Origin before Potential can select a Gate.'
                 );

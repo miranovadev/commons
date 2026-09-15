@@ -3,6 +3,9 @@
 namespace Tests\Feature;
 
 use App\Contracts\ParticipantInference;
+use App\Contracts\WebSearchProvider;
+use App\Domain\Evidence\SearchObservation;
+use App\Domain\Observables\ClosureValues;
 use App\Enums\PhaseKind;
 use App\Jobs\WakeParticipant;
 use App\Models\Connection;
@@ -11,12 +14,16 @@ use App\Models\Participant;
 use App\Models\ParticipantConnection;
 use App\Models\Phase;
 use App\Models\Proposition;
+use App\Models\Receipt;
 use App\Models\Substrate;
+use App\Services\ClosureGateService;
 use App\Services\CycleEntryService;
 use App\Services\InputSchemaService;
 use App\Services\LedgerService;
 use App\Services\OpenAIResponseSchema;
 use App\Services\OpenAIResponsesClient;
+use App\Services\OperationalInstrumentService;
+use App\Services\ParticipationService;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
@@ -24,6 +31,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Mockery;
+use Tests\Fixtures\ParticipantContextFixture;
 use Tests\TestCase;
 
 class ParticipantWakeTest extends TestCase
@@ -189,8 +197,9 @@ class ParticipantWakeTest extends TestCase
         );
     }
 
-    public function test_wake_job_requests_and_applies_one_contribution(): void
+    public function test_wake_job_action_ceiling_leaves_the_cycle_active(): void
     {
+        config()->set('participation.max_actions_per_wake', 1);
         [$participant, $participantConnection] = $this->readyConnection();
         $inference = Mockery::mock(ParticipantInference::class);
         $inference->shouldReceive('contribute')
@@ -245,6 +254,7 @@ class ParticipantWakeTest extends TestCase
 
     public function test_wake_job_enters_an_established_substrate_via_potential(): void
     {
+        config()->set('participation.max_actions_per_wake', 1);
         $originParticipant = $this->participant();
         app(CycleEntryService::class)->enter($originParticipant, [
             'statement' => 'A measured Origin.',
@@ -294,6 +304,104 @@ class ParticipantWakeTest extends TestCase
             'tier' => 'expressive',
         ]);
         $this->assertNull($participantConnection->fresh()->last_error);
+    }
+
+    public function test_one_wake_reads_fresh_state_through_a_whole_cycle_and_stops_at_prepared_phase_one(): void
+    {
+        $f = new ParticipantContextFixture(1, 0);
+        $f->phase->forceFill(['kind' => PhaseKind::Distinguish, 'gate_proposition_id' => $f->seed->id, 'write_register' => 'activity'])->save();
+        $nodes = [];
+        $parent = $f->seed;
+        foreach (['activity', 'frontier', 'canon', 'activity', 'frontier', 'canon'] as $register) {
+            $node = $f->node($parent, $register);
+            $f->evidence($node);
+            $nodes[] = $node;
+            $parent = $node;
+        }
+        $closure = [...(new ClosureValues(1, 1))->resolve(), 'history_proposition_id' => null, 'history_source' => 'negative-default'];
+        $this->mock(ClosureGateService::class, fn ($mock) => $mock->shouldReceive('preview', 'forCommitment')->andReturn($closure));
+        $this->app->instance(WebSearchProvider::class, new class implements WebSearchProvider
+        {
+            public function search(string $query): SearchObservation
+            {
+                return new SearchObservation($query, CarbonImmutable::now(), [], 'test');
+            }
+        });
+        $receipt = app(OperationalInstrumentService::class)->execute($f->phase, $nodes[0], ['kind' => 'web_search', 'query' => 'wake evidence']);
+        $connection = $this->connectionFor($f->viewer);
+        $cycleId = $f->phase->cycle_id;
+        $calls = [];
+        $read = false;
+        $inference = Mockery::mock(ParticipantInference::class);
+        $inference->shouldReceive('contribute')->times(8)->andReturnUsing(function (Connection $connection, array $state) use (&$calls, &$read, $receipt, $nodes, $cycleId): array {
+            $this->assertSame($cycleId, $state['cycle']['id']);
+            $kind = $state['plan']['phase']['number'];
+            $calls[] = [$kind, $state['plan']['phase']['id']];
+            if (! $read) {
+                $this->assertSame('available', collect($state['plan']['receipts'])->firstWhere('id', $receipt->id)['status']);
+                $read = true;
+
+                return ['action' => 'receipt.read', 'receipt_id' => $receipt->id];
+            }
+            if ($kind === 1) {
+                $this->assertSame('loaded', collect($state['plan']['receipts'])->firstWhere('id', $receipt->id)['status']);
+            }
+
+            return $kind === 7 ? ['action' => 'proposition.commit', 'proposition_id' => $nodes[5]->id]
+                : ['action' => in_array($kind, [4, 5], true) ? 'attestation.create' : 'proposition.traverse',
+                    'proposition_id' => $nodes[$kind - 1]->id, ...(in_array($kind, [4, 5], true) ? ['direction' => 'refute'] : [])];
+        });
+        $this->app->instance(ParticipantInference::class, $inference);
+        $this->app->call([new WakeParticipant($connection->id), 'handle']);
+        $this->assertSame([1, 1, 2, 3, 4, 5, 6, 7], array_column($calls, 0));
+        $this->assertCount(7, array_unique(array_column($calls, 1)));
+        $this->assertNotNull(Cycle::findOrFail($cycleId)->completed_at);
+        $this->assertNull(Cycle::findOrFail($cycleId)->rested_at);
+        $next = app(ParticipationService::class)->stateFor($f->viewer);
+        $this->assertSame('ready', $next['status']);
+        $this->assertSame('distinguish', $next['plan']['phase']['kind']);
+        $this->assertNotSame($cycleId, $next['cycle']['id']);
+        $nextPhaseId = $next['plan']['phase']['id'];
+        $this->assertSame(1, Phase::where('cycle_id', $next['cycle']['id'])->count());
+
+        // A separately scheduled wake resumes the exact prepared occurrence.
+        config()->set('participation.max_actions_per_wake', 1);
+        $second = Mockery::mock(ParticipantInference::class);
+        $second->shouldReceive('contribute')->once()->withArgs(fn ($connection, $state) => $state['plan']['phase']['id'] === $nextPhaseId)
+            ->andReturn(['action' => 'proposition.variant', 'statement' => 'The next wake resumes Phase 1.']);
+        $this->app->instance(ParticipantInference::class, $second);
+        $this->app->call([new WakeParticipant($connection->id), 'handle']);
+        $this->assertNotNull(Phase::findOrFail($nextPhaseId)->completed_at);
+    }
+
+    public function test_stale_inference_rebuilds_state_and_counts_towards_the_operational_ceiling(): void
+    {
+        config()->set('participation.max_actions_per_wake', 2);
+        $f = new ParticipantContextFixture(1, 0);
+        $target = $f->node($f->gate, 'frontier');
+        $connection = $this->connectionFor($f->viewer);
+        $calls = 0;
+        $input = ['kind' => 'citation', 'reference' => $f->seed->id];
+        $inference = Mockery::mock(ParticipantInference::class);
+        $inference->shouldReceive('contribute')->twice()->andReturnUsing(function ($connection, $state) use (&$calls, $f, $target, $input): array {
+            $calls++;
+            if ($calls === 1) {
+                app(OperationalInstrumentService::class)->execute($f->phase, $target, $input);
+            } else {
+                $this->assertSame($input, $state['plan']['schema']['x-commons']['instrument_exclusions'][$target->id][0]['invocation']);
+                $this->assertSame($f->phase->id, $state['plan']['phase']['id']);
+            }
+
+            return ['action' => 'instrument.execute', 'proposition_id' => $target->id,
+                'instrument' => $calls === 1 ? $input : ['kind' => 'citation', 'reference' => $f->gate->id]];
+        });
+        $this->app->instance(ParticipantInference::class, $inference);
+        $this->app->call([new WakeParticipant($connection->id), 'handle']);
+        $this->assertSame(2, Receipt::where('receiptable_id', $target->id)->count());
+        $this->assertNull($f->phase->cycle->fresh()->completed_at);
+        $this->assertNull($f->phase->cycle->fresh()->rested_at);
+        $this->assertSame('bias', app(ParticipationService::class)->stateFor($f->viewer)['plan']['phase']['kind']);
+        $this->assertNull($connection->fresh()->last_error);
     }
 
     /** @return array{Participant, ParticipantConnection} */

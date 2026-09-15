@@ -53,7 +53,7 @@ class ParticipantActionContractTest extends TestCase
         $state = app(ParticipationService::class)->stateFor($participant);
         $schema = $state['plan']['schema'];
         // Coverage must not silently shrink when an action disappears from a fixture.
-        $expected = config('phases.'.$kind->value.'.actions');
+        $expected = array_values(array_diff(config('phases.'.$kind->value.'.actions'), ['receipt.replay'])); // Effective observations suppress Replay.
         if ($kind === PhaseKind::Persist) {
             // Both ownership cases run: Variant and Reclassify are now mutually exclusive.
             if (! $foreignGate) {
@@ -69,6 +69,9 @@ class ParticipantActionContractTest extends TestCase
         foreach ($variants as $variant) {
             $wire = $this->sample($variant, $schema['$defs'], $seed->id);
             $action = $wire['action'];
+            if ($action === 'instrument.execute') {
+                $wire['instrument'] = ['kind' => 'hyperlink', 'reference' => 'https://example.test/contract-new'];
+            }
             $contract = $schema['$defs']['actions'][$action];
             $minimal = array_intersect_key($wire, array_flip($contract['required']));
             $this->assertValid($schema, $minimal);

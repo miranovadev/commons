@@ -73,7 +73,8 @@ class ClosureHysteresisTest extends TestCase
         $this->assertSame('emergence', $result['last_commitment']['domain_after']);
         $this->assertSame(-1.0, $result['last_commitment']['tension_before']);
         $this->assertTrue($result['last_commitment']['closure_boundary']);
-        $this->assertSame(2, $result['horizon_sequence']); // The completed Cycle still belongs to H2.
+        $this->assertSame(3, $result['horizon_sequence']); // Eager Phase 1 belongs to the new Horizon.
+        $this->assertSame(2, $phase->cycle->contextHorizon->sequence);
         $this->assertSame($snapshot->proposition_id, $this->participant->fresh()->current_proposition_id);
         $this->assertNotNull($phase->fresh()->completed_at);
         $this->assertSame($result['last_commitment'], app(ParticipationService::class)->stateFor($this->participant)['last_commitment']);
@@ -140,10 +141,13 @@ class ClosureHysteresisTest extends TestCase
         $this->bootstrap(2);
         [$phase] = $this->candidate([2]);
         $entered = app(ParticipationService::class)->contribute($this->participant, $phase->id, ['action' => 'proposition.commit', 'proposition_id' => $phase->gate_proposition_id]);
-        $this->assertSame('settlement', $entered['domain']);
+        $this->assertSame('emergence', $entered['domain']);
         $this->assertSame('emergence', $entered['last_commitment']['domain_after']);
         $this->origin = Proposition::findOrFail($entered['current_proposition_id']);
-        [$phase, $gate] = $this->candidate(range(3, 12), 'canon', 'activity', 'refute');
+        // The prepared Cycle already owns sequence 3. Close this fixture-only
+        // occurrence before constructing later observation history.
+        $this->finish(Phase::findOrFail($entered['plan']['phase']['id']));
+        [$phase, $gate] = $this->candidate(range(4, 13), 'canon', 'activity', 'refute');
         for ($i = 0; $i < 9; $i++) {
             $touch = new Phase;
             $touch->forceFill(['cycle_id' => $phase->cycle_id, 'kind' => PhaseKind::Persist,
@@ -158,7 +162,7 @@ class ClosureHysteresisTest extends TestCase
         $snapshot = CommitmentSnapshot::findOrFail($state['current_proposition_id']);
         $this->assertSame($preview['depth'], $snapshot->depth);
         $this->assertSame($preview['cadence'], $snapshot->cadence);
-        $this->assertSame('emergence', $state['domain']);
+        $this->assertSame('settlement', $state['domain']);
         $this->assertSame('settlement', $state['last_commitment']['domain_after']);
         $this->assertTrue($state['last_commitment']['closure_boundary']);
     }

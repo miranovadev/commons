@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Participant;
+use App\Services\Evidence\InstrumentInvocation;
 use InvalidArgumentException;
 use Opis\JsonSchema\Errors\ErrorFormatter;
 use Opis\JsonSchema\Helper;
@@ -34,12 +35,24 @@ final readonly class ContributionService
     public function validate(Participant $participant, array $input): void
     {
         $plan = $this->planFor($participant);
+        $this->validateSchema($plan['schema'], $input);
+    }
+
+    public function validateSchema(array $schema, array $input): void
+    {
+        if (($input['action'] ?? null) === 'instrument.execute' && is_array($input['instrument'] ?? null)) {
+            try {
+                $input['instrument'] = app(InstrumentInvocation::class)->normalize($input['instrument']);
+            } catch (\DomainException) {
+                // Preserve invalid input for the ordinary shape/domain validation.
+            }
+        }
         // Phase schema IDs are stable, but their authorized targets change per
         // participant and move. Never reuse a compiled earlier specialization.
         $this->validator->loader()->clearCache();
         $result = $this->validator->validate(
             Helper::toJSON($input),
-            Helper::toJSON($plan['schema']),
+            Helper::toJSON($schema),
         );
 
         if ($result->isValid()) {

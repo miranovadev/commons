@@ -19,7 +19,6 @@ use App\Services\ContributionDispatcher;
 use App\Services\Observables\ClosureCalculator;
 use App\Services\Observables\ContextLineageComparisonService;
 use App\Services\Observables\LineageMeasurementService;
-use App\Services\OperationalInstrumentService;
 use App\Services\ParticipationService;
 use App\Services\PropositionStateService;
 use DomainException;
@@ -55,7 +54,7 @@ class OperationalClosurePathTest extends TestCase
         // The author creates the first branch through all four early phases.
         $signal = $this->gate($this->move($author, ['action' => 'proposition.variant', 'statement' => 'Initial Signal']));
         $earlyStance = $this->gate($this->move($author, ['action' => 'proposition.reclassify']));
-        app(OperationalInstrumentService::class)->execute($earlyStance->phase, $earlyStance, ['kind' => 'citation', 'reference' => $signal->id]);
+        // Reclassification already preserves the Signal's Citation Receipt.
         $read = $this->gate($this->move($author, ['action' => 'proposition.reclassify']));
         $left = $this->gate($this->move($author, ['action' => 'proposition.variant', 'statement' => 'First dispersed Signal']));
         $this->assertSame(PhaseKind::Disperse, $left->phase->kind);
@@ -181,10 +180,10 @@ class OperationalClosurePathTest extends TestCase
         $this->assertSame('committal', $committed->tier);
         $this->assertSame($concord->statement, $committed->statement);
         $this->assertSame([$committed->id, $concord->id], $history->sourceIds($committed)->all());
-        $this->assertSame($earnedTouches, $history->touchCount($committed));
+        $this->assertSame($earnedTouches + 1, $history->touchCount($committed));
         $this->assertSame($earnedAttestations, $history->attestations(collect([$committed]))->pluck('id')->all());
         $this->assertSame($earnedReceipts, $history->receipts($committed)->pluck('id')->all());
-        $this->assertSame($counts, [Attestation::count(), Receipt::count(), Phase::count()]);
+        $this->assertSame([$counts[0], $counts[1], $counts[2] + 1], [Attestation::count(), Receipt::count(), Phase::count()]);
         $this->assertSame($concord->id, Attestation::findOrFail($earnedAttestations[0])->proposition_id);
         $this->assertEqualsCanonicalizing([$stance->id, $concord->id], Receipt::whereKey($earnedReceipts)->pluck('receiptable_id')->all());
         $this->assertSame('commit', $committed->parents()->sole()->pivot->type);
@@ -201,7 +200,7 @@ class OperationalClosurePathTest extends TestCase
         $this->assertSame($origin->id, $snapshot->closure_history_proposition_id);
         $this->assertSame(LineageMeasurementService::VERSION, $snapshot->calculator_version);
         $this->assertSame(ContextDomain::after((float) $snapshot->tension, ContextDomain::Settlement), $snapshot->direction_after);
-        $this->assertSame('waiting', $state['status']);
+        $this->assertSame('ready', $state['status']);
         $this->assertSame($snapshot->isClosureBoundary(), $state['last_commitment']['closure_boundary']);
         $this->assertSame($snapshot->direction_after->value, $state['domain']);
         $this->assertSame($horizon->sequence + (int) $snapshot->isClosureBoundary(), $state['horizon_sequence']);
@@ -218,7 +217,7 @@ class OperationalClosurePathTest extends TestCase
         $this->assertSame(2, CommitmentSnapshot::count());
 
         // A successful Commit continues at that exact Committal in a fresh Cycle.
-        $restart = app(ParticipationService::class)->enter($builder);
+        $restart = $state;
         $entry = $this->gate($restart);
         $this->assertSame('committal', $entry->tier);
         $this->assertSame($committed->id, $entry->id);
@@ -244,7 +243,7 @@ class OperationalClosurePathTest extends TestCase
         ]));
         $signal = $this->gate($this->move($author, ['action' => 'proposition.variant', 'statement' => 'Signal']));
         $earlyStance = $this->gate($this->move($author, ['action' => 'proposition.reclassify']));
-        app(OperationalInstrumentService::class)->execute($earlyStance->phase, $earlyStance, ['kind' => 'citation', 'reference' => $signal->id]);
+        // Reclassification already preserves the Signal's Citation Receipt.
         $read = $this->gate($this->move($author, ['action' => 'proposition.reclassify']));
         $left = $this->gate($this->move($author, ['action' => 'proposition.variant', 'statement' => 'Dispersed Signal']));
         $builder = $this->participant('builder');
@@ -260,13 +259,13 @@ class OperationalClosurePathTest extends TestCase
         $this->move($author, ['action' => 'attestation.create', 'proposition_id' => $concord->id, 'direction' => 'support']);
         $this->assertSame(['participant.rest'], array_keys($this->state($author)['plan']['schema']['$defs']['actions']));
         $completed = $this->move($author, ['action' => 'participant.rest']);
-        $this->assertSame('waiting', $completed['status']);
-        $this->assertSame($concord->id, $author->fresh()->current_proposition_id);
+        $this->assertSame('ready', $completed['status']);
+        $this->assertSame($origin->id, $author->fresh()->current_proposition_id);
         $this->assertSame('order', $this->state($builder)['plan']['phase']['kind']);
         $this->assertSame(1, CommitmentSnapshot::count());
         $this->assertExpressiveDepth($concord, 6);
 
-        $state = app(ParticipationService::class)->enter($author);
+        $state = $completed;
         $this->assertSame($origin->id, $state['plan']['gate_id']);
         $this->assertSame('committal', $state['plan']['gate_options'][0]['tier']);
         $this->assertSame('distinguish', $state['plan']['phase']['kind']);

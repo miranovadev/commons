@@ -42,16 +42,17 @@ class ParticipantContinuityTest extends TestCase
         $this->assertSame('committal', $commit->tier);
         $this->assertSame([$candidate->id], $commit->commitSources()->pluck('propositions.id')->all());
         $this->assertSame($commit->id, $completed['current_proposition_id']);
-        $this->assertSame('continuity', $completed['entry']['mode']);
-        $this->assertSame($commit->id, $completed['entry']['proposition_id']);
+        $this->assertSame('ready', $completed['status']);
+        $this->assertSame('distinguish', $completed['plan']['phase']['kind']);
+        $this->assertSame($commit->id, $completed['plan']['gate_id']);
         $this->assertNotNull($cycle->fresh()->completed_at);
         $this->assertFalse($commit->children()->exists()); // No descendants, hence no Potential bonus.
 
         // Even observer-attenuated Potential prefers Origin's developed region.
         // The next Cycle must still start at the new, zero-Potential Commit.
         $this->assertSame($origin->id, app(PotentialChargeService::class)->selectFrom($commit)['proposition']->id);
-        $this->assertSame($commit->id, $service->workspaceFor($participant)['entry']['proposition_id']);
-        $next = $service->enter($participant);
+        $this->assertSame($commit->id, $service->workspaceFor($participant)['plan']['gate']['id']);
+        $next = $service->stateFor($participant);
         $this->assertSame($commit->id, $next['current_proposition_id']);
         $this->assertSame($commit->id, $next['plan']['gate_id']);
         $this->assertSame($commit->id, $next['plan']['provenance_id']);
@@ -97,7 +98,7 @@ class ParticipantContinuityTest extends TestCase
         $this->assertSame($commit->id, $traversed['current_proposition_id']);
         $this->assertNotNull($otherCycle->fresh()->completed_at);
         $this->assertNull($otherCycle->fresh()->rested_at);
-        $continued = $service->enter($other);
+        $continued = $traversed;
         $this->assertSame($commit->id, $continued['plan']['gate_id']);
         $this->assertSame($owner->id, $continued['cycle']['context_horizon_id']);
         $this->assertSame($domain, $continued['domain']);
@@ -112,7 +113,6 @@ class ParticipantContinuityTest extends TestCase
         $service->contribute($participant, $cycle->currentPhase->id,
             ['action' => 'proposition.commit', 'proposition_id' => $candidate->id]);
         $commit = $participant->fresh()->position;
-        $service->enter($participant);
         $next = $participant->cycles()->whereNull('completed_at')->sole();
         // An exhausted Order has no expressive candidate and exposes Rest alone.
         $phase = $next->currentPhase;
@@ -124,14 +124,14 @@ class ParticipantContinuityTest extends TestCase
         }
         $this->assertSame(['participant.rest'], array_keys($state['plan']['schema']['$defs']['actions']));
         $rested = app(ParticipationService::class)->contribute($participant, $phase->id, ['action' => 'participant.rest']);
-        $this->assertSame($commit->id, $participant->fresh()->current_proposition_id);
-        $this->assertSame('potential', $rested['entry']['mode']);
-        $this->assertSame('recovery', $rested['entry']['selection']);
+        $this->assertSame($origin->id, $participant->fresh()->current_proposition_id);
+        $this->assertSame('ready', $rested['status']);
+        $this->assertSame('distinguish', $rested['plan']['phase']['kind']);
         $selection = app(PotentialChargeService::class)->recoverFrom($commit);
         $this->assertSame($origin->id, $selection['proposition']->id);
         $this->assertGreaterThan(0, $selection['potential_charge']);
-        $this->assertSame($origin->id, $rested['entry']['proposition_id']);
-        $relocated = $service->enter($participant);
+        $this->assertSame($origin->id, $rested['plan']['gate_id']);
+        $relocated = $rested;
         $this->assertSame($origin->id, $relocated['current_proposition_id']);
         $this->assertSame($origin->id, $relocated['plan']['gate_id']);
         $this->assertNotSame($origin->phase->cycle->context_horizon_id, $relocated['cycle']['context_horizon_id']);
