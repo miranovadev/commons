@@ -104,11 +104,11 @@ jobs:
       - name: Prepare test environment
         run: cp .env.example .env
 
-      - name: Check optimistic reads and PostgreSQL contention
+      - name: Check recovery semantics, optimistic reads and PostgreSQL contention
         if: ${{ !matrix.profile }}
         env:
           PGOPTIONS: '-c statement_timeout=30s'
-        run: php artisan test --filter 'TransactionLockOrderTest|ParticipantContextTest' --stop-on-failure
+        run: php artisan test --filter 'TransactionLockOrderTest|ParticipantContextTest|CausalRecoveryTest|RecoveryBasinResolverTest|LocalParticipantNavigationTest|ParticipantContinuityTest' --stop-on-failure
 
       - name: Run test suite
         if: ${{ !matrix.profile }}

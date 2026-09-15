@@ -527,8 +527,8 @@ class CausalRecoveryTest extends TestCase
         [$origin, $h2, $commit, $h3] = $this->boundaryChain();
         $position = $this->expressive($h2, $origin);
         $this->opportunity($commit);
-        $this->refreshMeasurements();
         $participant = $this->resting($h2, $position);
+        $this->refreshMeasurements();
         $before = [Cycle::count(), Proposition::count(), $participant->fresh()->getAttributes()];
         $writes = [];
         DB::listen(function ($query) use (&$writes): void {
