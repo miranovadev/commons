@@ -62,9 +62,9 @@ Measured locally on PHP 8.5.10 / SQLite, same deterministic 1,043-proposition fi
 | Measure | Main (`b7fe201`) | Optimistic working set |
 | --- | ---: | ---: |
 | Hydrated propositions + Attestations + Receipts + loads + events | 5,100 | 100 |
-| Context construction | 1,057.88 ms | 19.46 ms |
-| Participant plan | 4,919.63 ms | 257.51 ms |
-| Workspace plan | 9,989.49 ms | 302.16 ms |
+| Context construction | 1,057.88 ms | 19.96 ms |
+| Participant plan | 4,919.63 ms | 294.04 ms |
+| Workspace plan | 9,989.49 ms | 362.29 ms |
 | Context queries | 34 | 35 |
 | Plan queries | 77 | 78 |
 | Workspace queries | 89 | 90 |
@@ -75,6 +75,9 @@ exhausted a 128 MB local PHP limit; baseline timing above used a 1 GB benchmark
 limit and reported 142.5 MB peak. Application runtime settings are unchanged.
 These are isolated local fixture measurements, not production latency promises.
 PostgreSQL CI exercises real locks and emits its own benchmark measurements.
+The contribution diagnostic reports 61.58 ms in the write transaction out of
+94.91 ms total for its small fixture; response context construction begins only
+after commit. This is a transaction-boundary assertion, not a latency guarantee.
 
 ## Deliberate remaining work
 
