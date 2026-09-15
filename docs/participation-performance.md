@@ -35,7 +35,8 @@ subject separately; they do not pull its entire graph into the plan. Persistent
 personal citation knowledge is projected as reference IDs across Horizons, so
 leaving a lineage does not make already-loaded citation content new again. Compound
 Cycle/Horizon and Proposition/Phase indexes support working-set entry, including
-legacy unledgered candidates. A Horizon membership index supports workspace reads.
+legacy unledgered candidates. Horizon membership and Receipt-event indexes support
+scoped workspace and evidence reads.
 
 All calculators, attenuation, register equivalence, hard/soft supersession rules,
 ledger-prefix evidence replay and Commit-only inheritance remain authoritative.
@@ -65,9 +66,9 @@ Measured locally on PHP 8.5.10 / SQLite, same deterministic 1,043-proposition fi
 | Measure | Main (`b7fe201`) | Optimistic working set |
 | --- | ---: | ---: |
 | Hydrated propositions + Attestations + Receipts + loads + events | 5,100 | 100 |
-| Context construction | 1,057.88 ms | 22.13 ms |
-| Participant plan | 4,919.63 ms | 296.09 ms |
-| Workspace plan | 9,989.49 ms | 277.09 ms |
+| Context construction | 1,057.88 ms | 19.53 ms |
+| Participant plan | 4,919.63 ms | 306.47 ms |
+| Workspace plan | 9,989.49 ms | 436.70 ms |
 | Context queries | 34 | 37 |
 | Plan queries | 77 | 80 |
 | Workspace queries | 89 | 92 |
