@@ -114,6 +114,7 @@ jobs:
         if: ${{ !matrix.profile }}
         env:
           PGOPTIONS: '-c statement_timeout=30s'
+          COMMONS_PROFILE_SQL: '1'
         run: php artisan test --display-warnings
 
       - name: Profile scoped PostgreSQL reads
@@ -121,4 +122,4 @@ jobs:
         env:
           PGOPTIONS: '-c statement_timeout=30s'
           COMMONS_PROFILE_SQL: '1'
-        run: php artisan test --filter 'historical_population|ReceiptContextMigrationTest' --display-warnings
+        run: php artisan test --filter 'ParticipationPerformanceTest|ReceiptContextMigrationTest' --display-warnings
