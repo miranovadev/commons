@@ -38,9 +38,19 @@ const result = await build({ stdin: { contents: `
   import { MantineProvider } from '@mantine/core';
   import { Provider } from 'react-redux';
   import { configureStore } from '@reduxjs/toolkit';
+  import { MemoryRouter, useLocation, Link } from 'react-router-dom';
+  import { MainNavigation } from './resources/js/components/MainNavigation';
   import { PropositionGraph } from './resources/js/components/PropositionGraph';
   import { commonsApi } from './resources/js/services/commonsApi';
   export { act } from 'react';
+  function NavProbe() {
+    const location = useLocation();
+    return <><MainNavigation hasUser substrateTitle="Test Substrate" /><output>{location.pathname}</output><Link to="/substrates/test">Enter substrate</Link></>;
+  }
+  export function mountNavigation(container, path) {
+    const root = createRoot(container);
+    return { render() { root.render(<MantineProvider env="test"><MemoryRouter initialEntries={[path]}><NavProbe /></MemoryRouter></MantineProvider>); }, close() { root.unmount(); } };
+  }
   export function mount(container, propositions, participants = []) {
     const store = configureStore({ reducer: { [commonsApi.reducerPath]: commonsApi.reducer },
       middleware: getDefault => getDefault().concat(commonsApi.middleware) });
@@ -56,7 +66,7 @@ const result = await build({ stdin: { contents: `
   jsx: 'automatic', loader: { '.css': 'empty' } });
 const module = { exports: {} };
 new Function('require', 'module', 'exports', result.outputFiles[0].text)(createRequire(import.meta.url), module, module.exports);
-const { act, mount } = module.exports;
+const { act, mount, mountNavigation } = module.exports;
 const node = (id, parent_ids = []) => ({ id, title: id, statement: `${id} full statement`, parent_ids,
   register: 'activity', tier: parent_ids.length ? 'expressive' : 'committal', is_origin: !parent_ids.length,
   instruments: [], field: { tension: -.75, charge: .25, potential_charge: .42, status: 'current', potential_status: 'current' } });
@@ -150,3 +160,28 @@ test('inspector arrows preserve the selected branch through isolation and live d
   assert.equal(document.querySelector('input[type="checkbox"]').checked, true);
   assert.match(document.querySelector('.graph-workspace__inspector').textContent, /end full statement/);
 }));
+
+
+test('direct substrate routes, context exit and re-entry expose the correct complete menu', async () => {
+  for (const path of ['/substrates/test', '/substrates/test/', '/substrates/test/participants', '/substrates/test/participants/nova']) {
+    const el = document.createElement('div'); document.body.append(el);
+    const page = mountNavigation(el, path);
+    try {
+      await act(async () => page.render());
+      let nav = document.querySelector('nav');
+      assert.equal(nav.getAttribute('aria-label'), 'Substrate navigation');
+      assert.deepEqual([...nav.querySelectorAll('a')].map(el => el.getAttribute('href')), ['/', '/substrates/test', '/substrates/test/participants', null]);
+      assert.equal(nav.querySelector('[data-active]').textContent, path.includes('participants') ? 'Participants' : 'Graph');
+      assert.equal(nav.querySelector('[data-disabled]').textContent, 'Settings');
+      assert.doesNotMatch(nav.textContent, /Connections/);
+      await click(nav.querySelector('[aria-label="Back to Substrates"]'));
+      assert.equal(document.querySelector('output').textContent, '/');
+      nav = document.querySelector('nav');
+      assert.equal(nav.getAttribute('aria-label'), 'Main navigation');
+      assert.match(nav.textContent, /Connections/);
+      assert.equal(nav.querySelector('[data-active]').textContent, 'Substrates');
+      await click([...document.querySelectorAll('a')].find(el => el.textContent === 'Enter substrate'));
+      assert.equal(document.querySelector('nav').getAttribute('aria-label'), 'Substrate navigation');
+    } finally { await act(async () => page.close()); el.remove(); }
+  }
+});

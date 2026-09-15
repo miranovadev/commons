@@ -58,3 +58,7 @@ Previous uses `transition.source_id`: the API orders causal parents by supersess
 Next follows primary-parent children only. It first uses the remembered path through the last selected descendant; otherwise it chooses the oldest child's `created_at`, then lexical proposition ID. Going back and forward therefore returns to the same branch even if API hydration order changes. Reconciliation highlighting still includes every causal ancestor; the simple arrow path uses only its primary parent. Isolation uses the current selection's ancestry, while the remembered forward path can reveal its next child again.
 
 The rail reuses the existing inspector content. Only selected detail is fetched; graph nodes introduce no new requests. Canonical field metrics from the live graph remain current in the inspector while other detail is cached. The graph page header omits breadcrumbs and descriptive copy to reserve space for the workspace.
+
+## Substrate navigation
+
+The main menu derives its context from the URL. A substrate route replaces the global menu with a separated Back to Substrates link, substrate title, Graph, Participants, and the existing disabled Settings entry. Participant detail routes keep Participants active. Leaving for `/` restores Substrates and the authenticated user's global Connections page; Connections is not presented as a substrate-scoped feature. The existing AppShell burger, responsive breakpoints, and close-on-route-change behaviour remain in use.
