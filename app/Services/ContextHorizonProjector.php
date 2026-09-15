@@ -33,33 +33,37 @@ final class ContextHorizonProjector
         });
     }
 
-    /** Keep the existing Gate selection; resolve entry only within that causal branch. */
-    public function forEntry(Proposition $gate): ContextHorizon
+    /** A Committal enters its own Horizon, or the direct child it explicitly opened. */
+    public function forEntry(Proposition $gate, ?ContextHorizon $expected = null): ContextHorizon
     {
-        return DB::transaction(function () use ($gate): ContextHorizon {
-            $owner = $gate->phase->cycle->contextHorizon;
+        return DB::transaction(function () use ($gate, $expected): ContextHorizon {
+            $gate = $gate->fresh(['phase.cycle.contextHorizon', 'commitmentSnapshot']);
+            $owner = $gate?->phase?->cycle?->contextHorizon;
+            if ($owner === null || $gate->tier !== 'committal' || $gate->commitmentSnapshot === null) {
+                throw new DomainException('Cycle entry requires a persisted Committal with a Context Horizon and commitment snapshot.');
+            }
             $this->lockSubstrate($owner->substrate);
-            $horizons = ContextHorizon::where('substrate_id', $owner->substrate_id)->get()->keyBy('id');
-            $start = $horizons->firstWhere('opened_by_proposition_id', $gate->id) ?? $horizons->get($owner->id);
-            $children = $horizons->groupBy('parent_context_horizon_id');
-            $queue = [$start];
-            $seen = $open = [];
-            while ($queue !== []) {
-                $horizon = array_shift($queue);
-                if (isset($seen[$horizon->id])) {
-                    throw new DomainException('Context Horizon lineage must be acyclic.');
+            $snapshot = $gate->commitmentSnapshot;
+            if ($snapshot->substrate_id !== $owner->substrate_id || $snapshot->direction_before !== $owner->domain) {
+                throw new DomainException('The selected Committal must retain its creating Horizon direction.');
+            }
+            $child = ContextHorizon::where('opened_by_proposition_id', $gate->id)->first();
+            if ($snapshot->isClosureBoundary()) {
+                if ($child === null || $child->parent_context_horizon_id !== $owner->id) {
+                    throw new DomainException('A boundary Committal must explicitly open its direct child Context Horizon.');
                 }
-                $seen[$horizon->id] = true;
-                if ($horizon->closed_at === null) {
-                    $open[] = $horizon;
-                }
-                foreach ($children->get($horizon->id, collect()) as $child) {
-                    $queue[] = $child;
-                }
+                $child->predecessorCommitment();
+            } elseif ($child !== null) {
+                throw new DomainException('A non-boundary Committal cannot open a Context Horizon.');
+            }
+            $horizon = $child ?? $owner;
+            if ($expected !== null && $expected->id !== $horizon->id) {
+                throw new DomainException('The selected Gate does not determine the requested entry Context Horizon.');
             }
 
-            return collect($open)->sortByDesc('sequence')->first()
-                ?? throw new DomainException('The selected Gate has no open descendant Context Horizon.');
+            app(CausalContextService::class)->assertGate($gate, $horizon);
+
+            return $horizon;
         });
     }
 
@@ -159,7 +163,7 @@ final class ContextHorizonProjector
 
             return $existing;
         }
-        // Closure stops new entry only. Retain the first closing Commit; all later
+        // Closure records a boundary, not a ban on causal backtracking. Retain the first closing Commit; all later
         // boundaries are represented by independently opened child Horizons.
         if ($horizon->closed_at === null) {
             $horizon->closed_by_proposition_id = $snapshot->proposition_id;

@@ -124,11 +124,13 @@ final readonly class PotentialChargeService
      * @param  Collection<int, object>  $edges
      * @return array<string, int>
      */
-    private function distancesFrom(Proposition $position, Collection $edges): array
+    private function distancesFrom(Proposition $position, Collection $edges, bool $ancestorsOnly = false): array
     {
         $adjacency = [];
         foreach ($edges as $edge) {
-            $adjacency[$edge->source_proposition_id][$edge->target_proposition_id] = true;
+            if (! $ancestorsOnly) {
+                $adjacency[$edge->source_proposition_id][$edge->target_proposition_id] = true;
+            }
             $adjacency[$edge->target_proposition_id][$edge->source_proposition_id] = true;
         }
         $frontier = [$position->getKey()];
@@ -150,10 +152,11 @@ final readonly class PotentialChargeService
     }
 
     /**
-     * Search complete distance shells before ranking. Recovery never uses the
-     * initial-entry Charge fallback, or a disconnected source of Potential.
+     * Rest recovery follows every causal parent path, across Committal/Domain
+     * boundaries. Compare all ancestors after observer-distance attenuation;
+     * the first positive distance does not necessarily contain the winner.
      *
-     * @return array{proposition: Proposition, potential_charge: float, charge: float, distance: int}|null
+     * @return array{proposition: Proposition, potential_charge: float, charge: float, raw_potential_charge: float, raw_charge: float, distance: int}|null
      */
     public function recoverFrom(Proposition $position): ?array
     {
@@ -169,55 +172,41 @@ final readonly class PotentialChargeService
             ->whereIn('target_proposition_id', $propositions->keys())
             ->get(['source_proposition_id', 'target_proposition_id']);
         $outgoing = $edges->groupBy('source_proposition_id');
-        $adjacency = [];
-        foreach ($edges as $edge) {
-            $adjacency[$edge->source_proposition_id][$edge->target_proposition_id] = true;
-            $adjacency[$edge->target_proposition_id][$edge->source_proposition_id] = true;
+        $distances = $this->distancesFrom($position, $edges, ancestorsOnly: true);
+        $ranked = [];
+        foreach ($distances as $id => $distance) {
+            $candidate = $propositions->get($id);
+            $snapshot = $candidate?->commitmentSnapshot;
+            // The exhausted position is not a recovery destination, even when
+            // it is itself Committal. Shared ancestors occur once at shortest distance.
+            if ($distance === 0 || $candidate?->tier !== 'committal' || $snapshot === null) {
+                continue;
+            }
+            $potential = $this->potentialFor(
+                $id, $snapshot->tension, $propositions, $outgoing,
+                $position->getKey(),
+            );
+            if ($potential <= 0) {
+                continue;
+            }
+            $charge = round(1 - abs($snapshot->tension), 7);
+            $weight = LineageMeasurementService::attenuation($distance);
+            $ranked[] = [
+                'proposition' => $candidate,
+                'potential_charge' => $potential * $weight,
+                'charge' => $charge * $weight,
+                'raw_potential_charge' => $potential,
+                'raw_charge' => $charge,
+                'distance' => $distance,
+            ];
         }
 
-        $frontier = [$position->getKey()];
-        $visited = [$position->getKey() => true];
-        $distance = 0;
-        while ($frontier !== []) {
-            $ranked = [];
-            $next = [];
-            foreach ($frontier as $id) {
-                $candidate = $propositions->get($id);
-                $snapshot = $candidate->commitmentSnapshot;
-                if ($distance > 0 && $candidate->tier === 'committal' && $snapshot !== null) {
-                    $potential = $this->potentialFor(
-                        $id, $snapshot->tension, $propositions, $outgoing,
-                        $position->getKey(),
-                    );
-                    if ($potential > 0) {
-                        $ranked[] = [
-                            'proposition' => $candidate,
-                            'potential_charge' => $potential,
-                            'charge' => round(1 - abs($snapshot->tension), 7),
-                            'distance' => $distance,
-                        ];
-                    }
-                }
-                foreach (array_keys($adjacency[$id] ?? []) as $neighbourId) {
-                    if (! isset($visited[$neighbourId])) {
-                        $visited[$neighbourId] = true;
-                        $next[] = $neighbourId;
-                    }
-                }
-            }
-            if ($ranked !== []) {
-                usort($ranked, fn (array $left, array $right): int =>
-                    ($right['potential_charge'] <=> $left['potential_charge'])
-                    ?: ($right['charge'] <=> $left['charge'])
-                    ?: strcmp($left['proposition']->getKey(), $right['proposition']->getKey()));
+        usort($ranked, fn (array $left, array $right): int => ($right['potential_charge'] <=> $left['potential_charge'])
+            ?: ($right['charge'] <=> $left['charge'])
+            ?: ($left['distance'] <=> $right['distance'])
+            ?: strcmp($left['proposition']->getKey(), $right['proposition']->getKey()));
 
-                return $ranked[0];
-            }
-            $frontier = $next;
-            $distance++;
-        }
-
-        return null;
+        return $ranked[0] ?? null;
     }
 
     /**
@@ -292,4 +281,3 @@ final readonly class PotentialChargeService
         return round(max(0, $potential), 7);
     }
 }
-

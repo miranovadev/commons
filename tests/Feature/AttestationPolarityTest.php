@@ -225,7 +225,7 @@ class AttestationPolarityTest extends TestCase
     private function node(string $register, Proposition $parent, string $tier = 'expressive', string $type = 'variant'): Proposition
     {
         $node = new Proposition;
-        $node->forceFill(['phase_id' => $this->history->id, 'register' => $register, 'tier' => $tier, 'statement' => 'Node '.Proposition::count()])->save();
+        $node->forceFill(['phase_id' => $this->phaseForRegisterFixture($this->history, $register)->id, 'register' => $register, 'tier' => $tier, 'statement' => 'Node '.Proposition::count()])->save();
         app(LedgerService::class)->record($node);
         $edge = new Supersession;
         $edge->forceFill(['phase_id' => $this->history->id, 'source_proposition_id' => $parent->id,
@@ -239,9 +239,8 @@ class AttestationPolarityTest extends TestCase
     {
         $participant ??= $this->participant;
         $cycle = new Cycle;
-        if ($kind === PhaseKind::Bias) {
-            $cycle->context_horizon_id = $this->horizonForRegisterFixture($participant, $register)->id;
-        }
+        $cycle->context_horizon_id = $gate?->phase->cycle->context_horizon_id
+            ?? $this->horizonForRegisterFixture($participant, $register)->id;
         $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => (int) $participant->cycles()->max('sequence') + 1])->save();
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => $kind, 'write_register' => $register,

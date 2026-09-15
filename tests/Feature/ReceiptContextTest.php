@@ -6,10 +6,13 @@ use App\Domain\Evidence\VerifiedHyperlink;
 use App\Enums\ObservableDirection;
 use App\Enums\PhaseKind;
 use App\Models\Attestation;
+use App\Models\ContextHorizon;
 use App\Models\Cycle;
 use App\Models\Participant;
 use App\Models\ParticipantReceiptContext;
 use App\Models\Phase;
+use App\Models\Proposition;
+use App\Models\User;
 use App\Services\AttestationEvidenceService;
 use App\Services\ContributionDispatcher;
 use App\Services\InstrumentExecutionService;
@@ -84,9 +87,17 @@ class ReceiptContextTest extends TestCase
         $phase->cycle->phases()->whereNull('completed_at')->update(['completed_at' => now()]);
         $phase->cycle->forceFill(['completed_at' => now()])->save();
         $horizon = $this->laterHorizonFixture($phase->cycle->contextHorizon);
-        $next = $this->newPhase($fixture->viewer, $subject->id);
+        $next = $this->newPhase($fixture->viewer, $horizon->opened_by_proposition_id, $horizon);
         $this->assertSame($horizon->id, $next->cycle->context_horizon_id);
         $this->assertNotSame($phase->cycle->context_horizon_id, $next->cycle->context_horizon_id);
+        $later = $service->stateFor($fixture->viewer)['plan'];
+        $this->assertNotContains($receipt->id, array_column($later['receipts'], 'id'));
+        $this->assertSame(1, ParticipantReceiptContext::active()->count());
+        // Return to the subject's actual historical Horizon; retained evidence becomes visible again.
+        $next->forceFill(['completed_at' => now()])->save();
+        $next->cycle->forceFill(['completed_at' => now()])->save();
+        $returned = $this->newPhase($fixture->viewer, $subject->id);
+        $this->assertSame($phase->cycle->context_horizon_id, $returned->cycle->context_horizon_id);
         $later = $service->stateFor($fixture->viewer)['plan'];
         $this->assertSame('loaded', collect($later['receipts'])->firstWhere('id', $receipt->id)['status']);
         $this->assertSame($loaded['loaded_at'], collect($later['receipts'])->firstWhere('id', $receipt->id)['loaded_at']);
@@ -110,8 +121,8 @@ class ReceiptContextTest extends TestCase
 
     private function assertPublicCount($fixture, $subject, int $expected): void
     {
-        if (! \App\Models\User::exists()) {
-            \App\Models\User::factory()->create();
+        if (! User::exists()) {
+            User::factory()->create();
         }
         $url = "/api/substrates/{$fixture->substrate->slug}/propositions";
         $this->getJson($url.'/'.$subject->id)->assertOk()->assertJsonPath('data.reinforcement_count', $expected);
@@ -237,10 +248,12 @@ class ReceiptContextTest extends TestCase
         $this->assertSame(2, DB::table('substrate_ledger_entries')->where('kind', 'receipt_context')->count());
     }
 
-    private function newPhase(Participant $participant, string $gateId): Phase
+    private function newPhase(Participant $participant, string $gateId, ?ContextHorizon $horizon = null): Phase
     {
+        $horizon ??= Proposition::findOrFail($gateId)->phase->cycle->contextHorizon;
         $cycle = new Cycle;
-        $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => $participant->cycles()->count() + 1])->save();
+        $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => $participant->cycles()->count() + 1,
+            'context_horizon_id' => $horizon->id])->save();
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Constrain, 'gate_proposition_id' => $gateId,
             'write_register' => 'canon', 'started_at' => now()])->save();

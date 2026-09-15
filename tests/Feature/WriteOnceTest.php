@@ -153,14 +153,20 @@ class WriteOnceTest extends TestCase
         $this->assertFalse($plan['tragedy']);
     }
 
-    public function test_persist_variant_quota_survives_a_change_in_horizon_register_vocabulary(): void
+    public function test_persist_variant_quota_cannot_be_reset_by_putting_the_gate_in_another_domain(): void
     {
         [$participant, $seed] = $this->fixture(true);
         $gate = $this->node($seed->phase, 'activity', 'Another Participant’s Gate', parent: $seed);
         $phase = $this->phase($participant, PhaseKind::Persist, 'frontier', $gate);
         $input = ['action' => 'proposition.variant', 'statement' => 'First Variant'];
         app(ContributionDispatcher::class)->dispatch($participant, $phase, $input);
-        $later = $this->phase($participant, PhaseKind::Persist, 'stance', $gate);
+        try {
+            $this->phase($participant, PhaseKind::Persist, 'stance', $gate);
+            $this->fail('An expressive Gate cannot be moved into the opposite Domain.');
+        } catch (DomainException) {
+            $this->assertSame('activity', $gate->fresh()->register);
+        }
+        $later = $this->phase($participant, PhaseKind::Persist, 'frontier', $gate);
         $this->assertUnavailable($participant, $later, $input);
     }
 

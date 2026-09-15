@@ -51,7 +51,8 @@ abstract class TestCase extends BaseTestCase
         $participant->forceFill(['substrate_id' => $node->phase->cycle->participant->substrate_id,
             'callsign' => 'verifier-'.str()->ulid()])->save();
         $cycle = new Cycle;
-        $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => 1])->save();
+        $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => 1,
+            'context_horizon_id' => $node->phase->cycle->context_horizon_id])->save();
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Order,
             'gate_proposition_id' => $node->id, 'write_register' => $node->register, 'started_at' => now()])->save();
@@ -103,8 +104,28 @@ abstract class TestCase extends BaseTestCase
         $horizon = app(ContextHorizonProjector::class)->currentFor($participant->substrate);
         $position = RegisterPosition::forRegister($register);
 
-        return $horizon->domain->registerAt($position) === $register
-            ? $horizon : $this->laterHorizonFixture($horizon, 1);
+        return $horizon->domain->registerAt($position) === $register ? $horizon
+            : (ContextHorizon::where('substrate_id', $participant->substrate_id)
+                ->where('domain', $horizon->domain->opposite())->oldest('sequence')->first()
+                ?? $this->laterHorizonFixture($horizon, 1));
+    }
+
+    /** Mixed-vocabulary topology fixtures still need a real creating Domain for every node. */
+    protected function phaseForRegisterFixture(Phase $base, string $register): Phase
+    {
+        if ($base->cycle->contextHorizon->domain->registerAt(RegisterPosition::forRegister($register)) === $register) {
+            return $base;
+        }
+        $participant = $base->cycle->participant;
+        $horizon = $this->horizonForRegisterFixture($participant, $register);
+        $cycle = new Cycle;
+        $cycle->forceFill(['participant_id' => $participant->id, 'context_horizon_id' => $horizon->id,
+            'sequence' => (int) $participant->cycles()->max('sequence') + 1, 'completed_at' => now()])->save();
+        $phase = new Phase;
+        $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => $base->kind, 'write_register' => $register,
+            'started_at' => now(), 'completed_at' => now()])->save();
+
+        return $phase;
     }
 
     /** Evidence-only setup for tests of navigation/judgment, without a vote or load. */

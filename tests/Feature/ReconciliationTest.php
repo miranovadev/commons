@@ -131,7 +131,6 @@ class ReconciliationTest extends TestCase
         $wrongHorizon = $this->sibling('Other Horizon');
         $horizon = $this->laterHorizonFixture($wrongHorizon->contextHorizonMembership->horizon);
         $wrongHorizon->contextHorizonMembership->forceFill(['context_horizon_id' => $horizon->id])->save();
-        $foreign = $this->sibling('Foreign substrate');
         $other = $this->substrate->replicate();
         $other->slug = 'foreign';
         $other->save();
@@ -139,8 +138,13 @@ class ReconciliationTest extends TestCase
         $outsider->substrate_id = $other->id;
         $outsider->save();
         $foreignPhase = $this->newPhase($outsider, PhaseKind::Distinguish, 'activity', true);
-        $foreign->phase_id = $foreignPhase->id;
-        $foreign->save();
+        $foreign = new Proposition;
+        $foreign->forceFill(['phase_id' => $foreignPhase->id, 'register' => 'activity',
+            'tier' => 'expressive', 'statement' => 'Foreign substrate'])->save();
+        app(LedgerService::class)->record($foreign);
+        // Malformed historical edge for substrate-isolation reads; ownership itself stays valid.
+        (new Supersession)->forceFill(['phase_id' => $foreignPhase->id, 'source_proposition_id' => $this->parent->id,
+            'target_proposition_id' => $foreign->id, 'type' => 'variant'])->save();
         $this->assertSame([$valid->id, $wrongHorizon->id], array_column($this->plan()['gate_options'], 'id'));
     }
 

@@ -58,7 +58,7 @@ final readonly class CycleEntryService
                 $gate = $this->continuationFor($lockedParticipant)
                     ?? ($this->potential->recoverFrom($lockedParticipant->position()->firstOrFail())['proposition'] ?? null);
                 if ($gate === null) {
-                    throw new ConflictHttpException('No structurally reachable Committal region has positive Potential Charge.');
+                    throw new ConflictHttpException('No ancestral Committal region has positive Potential Charge.');
                 }
                 $this->createLiveCycle(
                     $lockedParticipant,
@@ -168,9 +168,10 @@ final readonly class CycleEntryService
             throw new DomainException('A Cycle must begin from a Committal Proposition.');
         }
 
-        $participant->current_proposition_id = $gate->getKey();
-        $participant->save();
         $horizon = $this->horizons->forEntry($gate);
+        if ($horizon->substrate_id !== $substrate->id) {
+            throw new DomainException('Cycle entry cannot cross substrates.');
+        }
         $cycle = $this->createCycle($participant, $horizon);
         $firstRegister = $cycle->contextHorizon->domain->registerFor(PhaseKind::Distinguish);
 
@@ -180,6 +181,8 @@ final readonly class CycleEntryService
             $firstRegister,
             $gate,
         );
+        $participant->current_proposition_id = $gate->getKey();
+        $participant->save();
     }
 
     private function hasActiveCycle(Participant $participant): bool

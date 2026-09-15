@@ -35,10 +35,11 @@ class HorizonWorkspaceTest extends TestCase
         $h2 = $founder->cycles()->whereNull('completed_at')->sole()->contextHorizon;
         [$nova, $concord] = $this->orderWorkspace($h2, $origin, $user, 'Nova');
         $h3 = $this->laterHorizonFixture($h2, 1);
-        [$vela, $canon] = $this->orderWorkspace($h3, $origin, $user, 'Vela');
+        $boundary = $h3->openedBy->proposition;
+        [$vela, $canon] = $this->orderWorkspace($h3, $boundary, $user, 'Vela');
         $this->actingAs($user);
 
-        foreach ([[$nova, $concord, $h2, 'settlement'], [$vela, $canon, $h3, 'emergence']] as [$participant, $gate, $horizon, $domain]) {
+        foreach ([[$nova, $concord, $h2, 'settlement', $origin], [$vela, $canon, $h3, 'emergence', $boundary]] as [$participant, $gate, $horizon, $domain, $provenance]) {
             $response = $this->getJson('/api/substrates/presentation/participants/'.$participant->id.'/workspace')->assertOk()
                 ->assertJsonPath('data.plan.phase.number', 7)
                 ->assertJsonPath('data.plan.phase.write_register', $gate->register)
@@ -48,11 +49,11 @@ class HorizonWorkspaceTest extends TestCase
                 ->assertJsonPath('data.plan.workspace.horizon.id', $horizon->id)
                 ->assertJsonPath('data.plan.workspace.horizon.opened_by_proposition_id', $horizon->opened_by_proposition_id)
                 ->assertJsonPath('data.plan.workspace.horizon.opening_proposition.id', $horizon->opened_by_proposition_id)
-                ->assertJsonPath('data.plan.workspace.provenance.id', $origin->id)
-                ->assertJsonPath('data.plan.workspace.provenance.register', 'canon');
+                ->assertJsonPath('data.plan.workspace.provenance.id', $provenance->id)
+                ->assertJsonPath('data.plan.workspace.provenance.register', $provenance->register);
             $plan = $response->json('data.plan');
-            $this->assertSame([$origin->id], array_column($plan['lineage'], 'id'));
-            $this->assertSame('canon', $plan['lineage'][0]['register']);
+            $this->assertSame([$provenance->id], array_column($plan['lineage'], 'id'));
+            $this->assertSame($provenance->register, $plan['lineage'][0]['register']);
             foreach ($plan['workspace']['registers'] as $register => $cards) {
                 foreach ($cards as $card) {
                     $this->assertSame($register, $card['register']);

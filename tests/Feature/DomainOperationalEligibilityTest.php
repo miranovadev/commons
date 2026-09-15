@@ -29,6 +29,7 @@ use App\Services\PropositionMeasurementService;
 use App\Services\ReconciliationOptionService;
 use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -86,7 +87,14 @@ class DomainOperationalEligibilityTest extends TestCase
             $this->assertEqualsCanonicalizing([$gate->id, $counterpart->id], $result->parents->pluck('id')->all());
         }
         // Even the implicit anchor must have the exact Read register.
-        $disperse->forceFill(['gate_proposition_id' => $foreignRead->id])->save();
+        // Legacy corruption is rejected on write; retain a raw fixture to test read-side exclusion.
+        try {
+            $disperse->forceFill(['gate_proposition_id' => $foreignRead->id])->save();
+            $this->fail('A foreign Gate must be rejected.');
+        } catch (DomainException) {
+            $disperse->refresh();
+        }
+        DB::table('phases')->where('id', $disperse->id)->update(['gate_proposition_id' => $foreignRead->id]);
         foreach ([null, new ParticipationContext($mediate)] as $context) {
             $this->assertCount(0, $reads->readsFor($mediate, $context));
         }
@@ -165,7 +173,7 @@ class DomainOperationalEligibilityTest extends TestCase
             RegisterPosition::Second => PhaseKind::Persist,
             RegisterPosition::Third => PhaseKind::Constrain,
         };
-        $phase = $this->phase($cycle, $kind, $parent, completed: true);
+        $phase = $this->phase($cycle, $kind, completed: true);
         $node = new Proposition;
         $node->forceFill(['phase_id' => $phase->id, 'register' => $register, 'tier' => $tier, 'statement' => 'Local '.$register])->save();
         app(LedgerService::class)->record($node);

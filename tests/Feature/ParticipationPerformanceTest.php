@@ -165,14 +165,16 @@ class ParticipationPerformanceTest extends TestCase
             $cycle = new Cycle;
             $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => 1, 'completed_at' => now()])->save();
             $phase = new Phase;
-            $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Distinguish, 'write_register' => 'signal', 'started_at' => now(), 'completed_at' => now()])->save();
+            $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Distinguish, 'write_register' => 'activity', 'started_at' => now(), 'completed_at' => now()])->save();
 
             return $phase;
         });
         $nodes = [];
         $node = function ($register, $parent = null, $tier = 'expressive', $type = 'variant') use (&$nodes, $history) {
+            $index = count($nodes) % 3;
+            $history[$index] = $this->phaseForRegisterFixture($history[$index], $register);
             $p = new Proposition;
-            $p->forceFill(['phase_id' => $history[count($nodes) % 3]->id, 'register' => $register, 'tier' => $tier, 'statement' => 'Fixture proposition '.count($nodes), 'created_at' => now()->subSeconds(1000 - count($nodes))])->save();
+            $p->forceFill(['phase_id' => $history[$index]->id, 'register' => $register, 'tier' => $tier, 'statement' => 'Fixture proposition '.count($nodes), 'created_at' => now()->subSeconds(1000 - count($nodes))])->save();
             app(LedgerService::class)->record($p);
             if ($parent) {
                 $edge = new Supersession;
@@ -185,6 +187,9 @@ class ParticipationPerformanceTest extends TestCase
         };
         $origin = $node('canon', tier: 'committal');
         app(CommitRegionPolarityService::class)->establishOrigin($origin, 'support');
+        $this->groundFixture($origin);
+        app(PropositionMeasurementService::class)->recalculate($origin);
+        app(CommitmentSnapshotService::class)->record($origin, 0, 1, LineageMeasurementService::VERSION);
         $prior = $node('signal', $origin);
         $prior = $node('stance', $prior, type: 'reclassify');
         $prior = $node('concord', $prior, type: 'reclassify');
@@ -192,9 +197,6 @@ class ParticipationPerformanceTest extends TestCase
         app(CommitRegionPolarityService::class)->establishCommit($boundary, ObservableDirection::Positive);
         $this->groundFixture($boundary);
         app(PropositionMeasurementService::class)->recalculate($boundary);
-        app(CommitmentSnapshotService::class)->record($boundary, 0, 1,
-            LineageMeasurementService::VERSION,
-            Supersession::where('target_proposition_id', $boundary->id)->firstOrFail());
         $seed = $node('concord', $boundary, 'committal', 'commit');
         app(CommitRegionPolarityService::class)->establishCommit($seed, ObservableDirection::Positive);
         $reads = $gates = $bias = $writes = [];
@@ -228,7 +230,8 @@ class ParticipationPerformanceTest extends TestCase
         $node('stance', $other);
 
         $cycle = new Cycle;
-        $cycle->forceFill(['participant_id' => $participants[0]->id, 'sequence' => 2])->save();
+        $cycle->forceFill(['participant_id' => $participants[0]->id, 'sequence' => $participants[0]->cycles()->max('sequence') + 1,
+            'context_horizon_id' => $seed->phase->cycle->context_horizon_id])->save();
         $disperse = new Phase;
         $disperse->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Disperse, 'write_register' => 'signal', 'gate_proposition_id' => $reads[0]->id, 'started_at' => now(), 'completed_at' => now()])->save();
         $phase = new Phase;
