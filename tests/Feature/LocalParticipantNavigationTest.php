@@ -144,7 +144,7 @@ class LocalParticipantNavigationTest extends TestCase
         $recovery = $potential->recoverFrom($position);
         $this->assertSame($far->id, $recovery['proposition']->id);
         $this->assertSame(2, $recovery['distance']);
-        $this->assertSame(0.1, $recovery['potential_charge']);
+        $this->assertEqualsWithDelta(0.1, $recovery['potential_charge'], 1e-9);
         $this->assertSame(0.9, $recovery['raw_potential_charge']);
     }
 
