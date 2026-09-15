@@ -19,7 +19,7 @@ after(async () => {
   stop();
   for (const channel of messageChannels) { channel.port1.close(); channel.port2.close(); }
 }, { timeout: 5000 });
-for (const key of ['window', 'document', 'navigator', 'HTMLElement', 'Element', 'Node', 'ShadowRoot', 'MutationObserver', 'ResizeObserver']) {
+for (const key of ['window', 'document', 'navigator', 'HTMLElement', 'Element', 'Node', 'ShadowRoot', 'MutationObserver', 'ResizeObserver', 'Event', 'CustomEvent']) {
   Object.defineProperty(globalThis, key, { configurable: true, value: key === 'window' ? window : window[key] });
 }
 globalThis.getComputedStyle = window.getComputedStyle.bind(window);
@@ -128,6 +128,12 @@ test('Graph fetches new nodes incrementally and both original and realtime nodes
       await until(() => document.querySelector('[role="dialog"]')?.textContent.includes(`${id} authoritative detail`));
       assert.match(document.querySelector('[role="dialog"]').textContent, /Proposition inspector/);
       assert.equal(cards().length, 2);
+      const edgesBefore = document.querySelector('.substrate-graph-edges').innerHTML;
+      const select = document.querySelector('.substrate-graph-controls select');
+      await act(async () => { select.value = 'register'; select.dispatchEvent(new window.Event('change', { bubbles: true })); });
+      assert.equal(document.querySelector('.substrate-graph-edges').innerHTML, edgesBefore);
+      assert.equal(cards().find(card => card.dataset.propositionId === id).getAttribute('aria-pressed'), 'true');
+      assert.ok(document.querySelector('[role="dialog"]').textContent.includes(`${id} authoritative detail`));
       await act(async () => document.querySelector('[role="dialog"] button').click());
       await until(() => !document.querySelector('[role="dialog"]'));
     }

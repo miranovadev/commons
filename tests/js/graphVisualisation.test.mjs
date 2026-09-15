@@ -12,6 +12,13 @@ const result = await build({ stdin: { contents: `
   import { PropositionGraph } from './resources/js/components/PropositionGraph';
   export { graphParents, causalAncestors } from './resources/js/graphTopology';
   export { attestationColors } from './resources/js/directionalPresentation';
+  export { resolveGraphOverlays, graphOverlayOptions } from './resources/js/graphOverlays';
+  import { resolveGraphOverlays } from './resources/js/graphOverlays';
+  import { PropositionCard } from './resources/js/components/PropositionCard';
+  export function card(proposition, mode) {
+    return renderToStaticMarkup(<MantineProvider env="test"><PropositionCard proposition={proposition} graph mini
+      overlay={resolveGraphOverlays([proposition], mode).get(proposition.id)} /></MantineProvider>);
+  }
   export function render(propositions, selectedId) {
     return renderToStaticMarkup(<MantineProvider env="test"><PropositionGraph propositions={propositions} initialFocusId={selectedId} /></MantineProvider>);
   }
@@ -19,7 +26,7 @@ const result = await build({ stdin: { contents: `
   jsx: 'automatic', loader: { '.css': 'empty' } });
 const module = { exports: {} };
 new Function('require', 'module', 'exports', result.outputFiles[0].text)(createRequire(import.meta.url), module, module.exports);
-const { render, graphParents, causalAncestors, attestationColors } = module.exports;
+const { render, card, graphParents, causalAncestors, attestationColors, resolveGraphOverlays, graphOverlayOptions } = module.exports;
 const node = (id, parent_ids = [], domain = 'emergence') => ({ id, title: id, statement: id, parent_ids,
   register: 'activity', tier: 'expressive', context_horizon: { domain } });
 const nodes = [node('origin'), node('left', ['origin'], 'settlement'), node('right', ['origin']),
@@ -58,4 +65,39 @@ test('canonical Refute is Blue and Support stays Violet in CSS and component pre
   assert.match(css, /data-label="support"[^}]+violet/);
   const panel = await readFile('resources/js/components/AttestationPanel.tsx', 'utf8');
   assert.doesNotMatch(panel, /teal/);
+});
+
+test('overlay registry supplies every lens and participation stays readable with zeroes and extreme outliers', () => {
+  assert.deepEqual(graphOverlayOptions.map(o => o.value), ['none', 'participation', 'potential-charge', 'tension', 'register']);
+  const input = [0, 1, 5, 20, 1e9].map((participation_count, i) => ({ ...node(String(i)), participation_count }));
+  const values = [...resolveGraphOverlays(input, 'participation').values()].map(o => o.intensity);
+  assert.equal(values[0], 0);
+  assert.ok(values[1] >= .16 && values[2] > values[1] && values[3] > values[2]);
+  assert.equal(values[4], 1);
+  assert.equal(resolveGraphOverlays([node('zero')], 'participation').get('zero').intensity, 0);
+  assert.equal(resolveGraphOverlays([], 'participation').size, 0);
+  assert.match(render(nodes), /Visualisation/);
+});
+
+test('canonical field values drive overlays and readouts even if raw observables disagree', () => {
+  const proposition = { ...node('measured'), observables: { correspondence: 1, chirality: 1, closure: 1 },
+    field: { tension: -.75, charge: .25, potential_charge: .42, status: 'current', potential_status: 'current', potential_basis: 'proposition' } };
+  const resolve = mode => resolveGraphOverlays([proposition], mode).get(proposition.id);
+  assert.deepEqual(resolve('tension'), { color: 'blue', intensity: .75, label: 'Tension: -0.75' });
+  assert.equal(resolve('potential-charge').intensity, .42);
+  assert.equal(resolve('register').color, 'red');
+  for (const mode of graphOverlayOptions.map(o => o.value)) {
+    const html = card(proposition, mode);
+    assert.match(html, /tabler-icon-sun-high/);
+    assert.match(html, /aria-label="Potential Charge: 0.42"/);
+    assert.match(html, /aria-label="Tension: -0.75"/);
+  }
+  proposition.field.tension = .9;
+  assert.equal(resolve('tension').color, 'violet');
+  proposition.field.tension = .001;
+  assert.ok(resolve('tension').intensity < .01);
+  proposition.field.potential_charge = null;
+  assert.match(card(proposition, 'potential-charge'), /awaiting measurement/);
+  proposition.field.tension = null;
+  assert.match(card(proposition, 'tension'), /Field awaiting complete measurement/);
 });

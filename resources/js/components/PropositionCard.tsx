@@ -3,6 +3,7 @@ import { IconSunHigh, IconSunWind } from '@tabler/icons-react';
 import { metaForRegister } from '../registers';
 import { PropositionContent } from './PropositionContent';
 import type { Observables, Proposition } from '../types';
+import type { GraphOverlay } from '../graphOverlays';
 
 interface PropositionCardProps {
   proposition: Proposition;
@@ -10,6 +11,7 @@ interface PropositionCardProps {
   compact?: boolean;
   mini?: boolean;
   graph?: boolean;
+  overlay?: GraphOverlay;
   wireframe?: boolean;
   muted?: boolean;
   indigoHighlight?: boolean;
@@ -27,6 +29,7 @@ export function PropositionCard({
   compact = false,
   mini = false,
   graph = false,
+  overlay,
   wireframe = false,
   muted = false,
   indigoHighlight = false,
@@ -63,7 +66,10 @@ export function PropositionCard({
       data-proposition-id={proposition.id}
       data-domain={domain}
       aria-pressed={onClick ? selected : undefined}
-      style={{ '--register-color': `var(--mantine-color-${register.color}-6)` }}
+      title={overlay?.label || undefined}
+      style={{ '--register-color': `var(--mantine-color-${register.color}-6)`,
+        '--graph-overlay-color': `var(--mantine-color-${overlay?.color || 'indigo'}-6)`,
+        '--graph-overlay-strength': `${(overlay?.intensity || 0) * 25}%` }}
       onClick={onClick}
     >
       {domain && <>

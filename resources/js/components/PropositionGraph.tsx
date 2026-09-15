@@ -1,12 +1,14 @@
 import { PropositionInspector } from './PropositionInspector';
 import { useGetPropositionQuery } from '../services/commonsApi';
-import { Box, Group, Paper, Text, ThemeIcon, Title } from '@mantine/core';
+import { Box, Group, NativeSelect, Paper, Stack, Text, ThemeIcon, Title } from '@mantine/core';
+import { useLocalStorage } from '@mantine/hooks';
 import { IconArrowsMove, IconSparkles } from '@tabler/icons-react';
 import { useMemo, useRef, useState } from 'react';
 import '../../css/substrate-graph.css';
 import { PropositionCard } from './PropositionCard';
 import type { Identifier, Proposition } from '../types';
 import { causalAncestors, graphParents } from '../graphTopology';
+import { graphOverlayDefinitions, graphOverlayOptions, isGraphOverlayMode, resolveGraphOverlays } from '../graphOverlays';
 
 interface GraphProps {
   propositions: Proposition[];
@@ -24,7 +26,7 @@ interface DragState {
 }
 
 const NODE_WIDTH = 190;
-const NODE_HEIGHT = 104;
+const NODE_HEIGHT = 146;
 const COLUMN_GAP = 54;
 const ROW_GAP = 96;
 const CANVAS_PADDING = 90;
@@ -36,6 +38,9 @@ export function PropositionGraph({ propositions, substrateSlug, initialFocusId, 
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [selectedId, setSelectedId] = useState(initialFocusId || null);
   const [inspectedId, setInspectedId] = useState<Identifier | null>(null);
+  const [storedOverlay, setOverlay] = useLocalStorage<string>({ key: 'commons.graph.overlay', defaultValue: 'none' });
+  const overlayMode = isGraphOverlayMode(storedOverlay) ? storedOverlay : 'none';
+  const overlays = useMemo(() => resolveGraphOverlays(propositions, overlayMode), [propositions, overlayMode]);
   const layout = useMemo(() => buildGraphLayout(propositions), [propositions]);
   const parents = useMemo(() => graphParents(propositions), [propositions]);
   const ancestors = useMemo(() => causalAncestors(parents, selectedId), [parents, selectedId]);
@@ -85,11 +90,16 @@ export function PropositionGraph({ propositions, substrateSlug, initialFocusId, 
     <Box className="substrate-graph-shell" data-has-selection={hasSelection || undefined}>
       {inspectedId && <GraphInspector key={`${substrateSlug}/${inspectedId}`} slug={substrateSlug} propositionId={inspectedId}
         fallback={propositions.find(item => item.id === inspectedId)} onClose={() => setInspectedId(null)} />}
+      <Stack className="substrate-graph-controls" gap={5}>
+        <NativeSelect label="Visualisation" size="xs" value={overlayMode} data={graphOverlayOptions}
+          onChange={event => setOverlay(event.currentTarget.value)} />
+        <Text size="10px" c="dimmed">{graphOverlayDefinitions[overlayMode].legend}</Text>
       <Group className="substrate-graph-hint" gap={6} wrap="nowrap">
         <IconArrowsMove size={14} />
         <Text size="xs" c="dimmed">Drag the surface to explore</Text>
         {participantMode && <Text size="xs" c="indigo" fw={650}>· {propositions.length} / {perspectiveLimit || propositions.length} visible</Text>}
       </Group>
+      </Stack>
 
       <Box
         ref={viewportRef}
@@ -119,12 +129,13 @@ export function PropositionGraph({ propositions, substrateSlug, initialFocusId, 
               key={proposition.id}
               className="substrate-graph-node"
               data-lineage={selectedId === proposition.id ? 'selected' : ancestors.has(proposition.id) ? 'ancestor' : 'unrelated'}
-              style={{ left: x, top: y, width: NODE_WIDTH }}
+              style={{ left: x, top: y, width: NODE_WIDTH, '--graph-node-height': `${NODE_HEIGHT}px` }}
             >
               <PropositionCard
                 proposition={proposition}
                 mini
                 graph
+                overlay={overlays.get(proposition.id)}
                 selected={selectedId === proposition.id}
                 onClick={() => { setSelectedId(proposition.id); setInspectedId(proposition.id); }}
               />
