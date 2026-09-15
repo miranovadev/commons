@@ -23,6 +23,10 @@ ancestors, Commit source history and required Horizon comparison boundaries.
 An indexed, batched ID walk visits each dependency once. A recursive SQL
 prototype produced pathological PostgreSQL plans after preceding data growth;
 the complete dense-test sequence runs in CI to cover that workload sensitivity.
+Personal generation history filters Supersession source IDs directly and is
+memoized per source set within the calculation. This avoids a redundant parent
+join that PostgreSQL could repeatedly scan for every Bias candidate. Traversal
+and revision options reuse the context's effective personal Attestations.
 Memberships, frames, evidence, receipt contexts/events, phase-touch aggregates and
 commitment snapshots are restricted to those IDs. Parent and child adjacency and
 per-subject evidence are indexed and memoized within the calculation.
@@ -66,19 +70,23 @@ Measured locally on PHP 8.5.10 / SQLite, same deterministic 1,043-proposition fi
 | Measure | Main (`b7fe201`) | Optimistic working set |
 | --- | ---: | ---: |
 | Hydrated propositions + Attestations + Receipts + loads + events | 5,100 | 100 |
-| Context construction | 1,057.88 ms | 19.53 ms |
-| Participant plan | 4,919.63 ms | 306.47 ms |
-| Workspace plan | 9,989.49 ms | 436.70 ms |
+| Context construction | 1,057.88 ms | 25.38 ms |
+| Participant plan | 4,919.63 ms | 308.47 ms |
+| Workspace plan | 9,989.49 ms | 403.74 ms |
 | Context queries | 34 | 37 |
-| Plan queries | 77 | 80 |
-| Workspace queries | 89 | 92 |
+| Plan queries | 77 | 63 |
+| Workspace queries | 89 | 75 |
 
-This is a hydration/CPU improvement, not a query-count reduction on warm plans.
+The largest improvement is reduced hydration/CPU work; shared generation-history
+checks also reduce query counts on warm plans.
 Working-set queries follow newly discovered dependency batches. The original scale run
 exhausted a 128 MB local PHP limit; baseline timing above used a 1 GB benchmark
 limit and reported 142.5 MB peak. Application runtime settings are unchanged.
 These are isolated local fixture measurements, not production latency promises.
 PostgreSQL CI exercises real locks and emits its own benchmark measurements.
+Its separate profile job also compares plans against the unbatched reference.
+Set `COMMONS_PROFILE_SQL=1` when running the scale test to print the slowest plan
+queries and PostgreSQL execution plans for statements exceeding 100 ms.
 The contribution diagnostic reports 74.41 ms in the write transaction out of
 109.69 ms total for its small fixture; response context construction begins only
 after commit. This is a transaction-boundary assertion, not a latency guarantee.
