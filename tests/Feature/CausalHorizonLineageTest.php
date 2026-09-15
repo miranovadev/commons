@@ -217,12 +217,12 @@ class CausalHorizonLineageTest extends TestCase
         DB::table('cycles')->where('context_horizon_id', $root->id)->update(['context_horizon_id' => $h2->id]);
     }
 
-    public function test_closed_horizons_reject_new_cycles(): void
+    public function test_closed_horizons_retain_ownership_when_accepting_causal_reentry(): void
     {
         [, $h2] = $this->branches();
-        $this->expectException(DomainException::class);
-        $this->expectExceptionMessage('requires an open Context Horizon');
-        $this->phase($h2);
+        $phase = $this->phase($h2);
+        $this->assertSame($h2->id, $phase->cycle->context_horizon_id);
+        $this->assertNotNull($h2->fresh()->closed_at);
     }
 
     public function test_cycle_creation_rejects_a_horizon_from_another_substrate(): void

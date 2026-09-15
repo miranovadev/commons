@@ -279,8 +279,8 @@ final readonly class ParticipationService
                 'distance' => $selection['distance'] ?? null,
                 'potential_charge' => $selection['potential_charge'] ?? 0.0,
                 'message' => $selection === null
-                    ? 'Resting until a structurally reachable Committal region has positive Potential Charge.'
-                    : 'Begin the next Cycle at the nearest viable Committal distance.',
+                    ? 'Resting until an ancestral Committal region has positive Potential Charge.'
+                    : 'Begin the next Cycle at the ancestral Committal with greatest attenuated Potential Charge.',
             ];
         }
 

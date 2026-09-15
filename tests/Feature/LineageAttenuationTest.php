@@ -4,8 +4,8 @@ namespace Tests\Feature;
 
 use App\Domain\Observables\LocalMeasurements;
 use App\Enums\PhaseKind;
-use App\Models\Cycle;
 use App\Models\CommitmentSnapshot;
+use App\Models\Cycle;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
@@ -14,8 +14,8 @@ use App\Models\Supersession;
 use App\Services\LedgerService;
 use App\Services\Observables\LineageMeasurementService;
 use App\Services\Observables\LocalMeasurementService;
-use App\Services\PropositionMeasurementService;
 use App\Services\PotentialChargeService;
+use App\Services\PropositionMeasurementService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -143,7 +143,7 @@ class LineageAttenuationTest extends TestCase
         $continuation = $this->node('continuation');
         $observer = $this->node('observer');
         $this->edge($source, $continuation);
-        $this->edge($observer, $source);
+        $this->edge($source, $observer);
         $snapshot = new CommitmentSnapshot;
         $snapshot->forceFill([
             'proposition_id' => $source->id,
@@ -169,7 +169,8 @@ class LineageAttenuationTest extends TestCase
         $this->assertSame(0.05, $reentry['charge']);
         $this->assertSame(0.16, $values->fresh()->chirality); // No projection re-attenuation.
         $this->assertSame(0.64, $potential->selectFrom($source)['potential_charge']); // Distance zero.
-        $this->assertSame(0.64, $recovery['potential_charge']);
+        $this->assertSame(0.64, $recovery['raw_potential_charge']);
+        $this->assertSame(0.16, $recovery['potential_charge']);
         $this->assertSame(1, $recovery['distance']);
         $this->assertSame($history, $snapshot->fresh()->getAttributes());
     }
@@ -179,6 +180,7 @@ class LineageAttenuationTest extends TestCase
         $this->mock(LocalMeasurementService::class, function ($mock) use ($values): void {
             $mock->shouldReceive('calculate')->andReturnUsing(function (Proposition $node) use ($values): LocalMeasurements {
                 $value = (float) ($values[$node->id] ?? 0);
+
                 return new LocalMeasurements($value, $value, $value, $value);
             });
         });
@@ -189,6 +191,7 @@ class LineageAttenuationTest extends TestCase
         $node = new Proposition;
         $node->forceFill(['phase_id' => $this->phase->id, 'register' => 'canon', 'tier' => $tier, 'statement' => $statement])->save();
         app(LedgerService::class)->record($node);
+
         return $node;
     }
 

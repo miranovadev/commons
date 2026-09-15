@@ -13,15 +13,17 @@ Previously, every positioned Participant's ordinary re-entry called `PotentialCh
 - Rest marks the local path exhausted. Recovery then uses the existing `recoverFrom()` search. A positioned Participant with no valid local Committal seed also needs recovery.
 - Initial entry without a position still uses `selectFor()`. Origin creation keeps its existing bootstrap path.
 
-Recovery keeps its existing nearest-viable-distance search, positive-Potential requirement, measurement attenuation and tie-breaks. Initial and relative Potential calculations are unchanged. There is no age, recency, Horizon-opening or new-Commit bonus. Origin can legitimately win recovery when its reachable region has viable continuation; without a viable destination, the Participant waits at the exhausted position.
+Recovery follows incoming Supersession edges from the exhausted position through every ancestral path, including multiple Domain boundaries. Shared ancestors are deduplicated at their minimum causal distance. It compares all measured ancestral Committals with positive raw Potential after multiplying by the existing `1 / (1 + d)^2` attenuation. A farther candidate can beat a nearer positive one. Effective Potential ties use effective Charge, then shorter distance and stable ID. There is no zero-Potential fallback, age bonus, recency bonus, descendant/sibling traversal, or self-entry at the exhausted position.
+
+Raw Potential still uses measurable outgoing expressive continuations up to the next Committal, excluding the exhausted position. Measurements and immutable snapshots are not discounted again. Initial and relative selection retain their existing geometry; this directional search is specific to recovery.
 
 The API reports `entry.mode = continuity` for local entry and retains `potential` / `selection = recovery` for relocation. Scheduled wakes and the existing entry controls accept both paths. Only the committing Participant's position changes; other Participants keep their own Cycles, Horizons and positions.
 
 ## Horizon ownership
 
-Entry continues to use the causal Horizon resolver introduced by the preceding Horizon/Cycle PR. If Commit X opens H3, continuation at X enters H3 while it is open, with H3's Domain vocabulary. A later closure resolves entry through X's open causal descendants. Historical Horizons are never reopened and existing Cycles are never reassigned.
+If Commit X directly opens H3, selecting X enters H3 even after H3 has a recorded closure boundary. If X is a non-boundary Committal, selecting X enters its own creating Horizon. It never enters an arbitrary open descendant of H3.
 
-Recovery may select a Committal associated with another historical Domain or lineage. That choice positions the Participant toward its structure; it does not make the old Horizon open again. Entry still requires an open descendant in that selected lineage. Any later boundary-producing Commit establishes a new child Horizon with the opposite Domain relative to its own parent.
+Recovery can move backward across any number of Domains. The selected Horizon supplies the new Cycle's vocabulary: Signal/Stance/Concord for Settlement, Activity/Frontier/Canon for Emergence. Historical Horizon closure markers, ownership and boundary snapshots remain intact. Later boundary-producing Commits can establish additional direct child Horizons of that historical owner.
 
 ## Operational registers
 
@@ -31,5 +33,5 @@ Operational eligibility requires an exact register. `ContextDomain::registerAt()
 
 These checks preserve Commit Region boundaries and existing eligibility rules. They do not impose an extra Horizon-ID equality filter on same-Domain region members, restrict structural historical comparisons, or grant cross-Domain operations merely because two registers occupy the same role. Mediate continues to include superseded inputs for competing same-Domain reconciliations. No global "already superseded" restriction is restored.
 
-Regression coverage includes real boundary and non-boundary Commits, zero-Potential continuity despite Origin winning relative Potential, automated continuity entry, Tragedy recovery to Origin without reopening history, both Domains' exact candidate pools through both query paths, opposite-Domain action rejection, Bias history isolation, and competing reconciliations.
+Regression coverage includes real boundary and non-boundary Commits, zero-Potential continuity despite Origin winning relative Potential, automated continuity entry, Tragedy recovery to Origin in its direct Settlement child while retaining historical closure markers, both Domains' exact candidate pools through both query paths, opposite-Domain action rejection, Bias history isolation, and competing reconciliations.
 

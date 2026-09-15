@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\PhaseKind;
+use App\Services\CausalContextService;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,6 +19,14 @@ class Phase extends Model
 
     protected static function booted(): void
     {
+        static::saving(function (self $phase): void {
+            if ($phase->exists && $phase->isDirty('cycle_id')) {
+                throw new \DomainException('A Phase cannot change its creating Cycle.');
+            }
+            if (! $phase->exists || $phase->isDirty(['gate_proposition_id', 'write_register'])) {
+                app(CausalContextService::class)->assertPhase($phase);
+            }
+        });
         $invalidate = function (self $phase): void {
             // A new observation can affect either side of a lineage comparison.
             // Invalidate disposable views in this substrate; immutable snapshots remain intact.

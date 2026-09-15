@@ -50,6 +50,7 @@ final readonly class ContributionDispatcher
             if ($phase->cycle->participant->substrate_id !== $participant->substrate_id) {
                 throw new DomainException('A contribution cannot cross substrate boundaries.');
             }
+            app(CausalContextService::class)->assertPhase($phase);
             $gate = $phase->gate()->firstOrFail();
             $action = $input['action'];
             if (! in_array($action, config("phases.{$phase->kind->value}.actions", []), true)

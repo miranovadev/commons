@@ -122,7 +122,7 @@ class LocalParticipantNavigationTest extends TestCase
         $this->assertSame('committal', $this->state($right)['plan']['gate_options'][0]['tier']);
     }
 
-    public function test_relative_potential_ranking_can_select_beyond_the_recovery_shell(): void
+    public function test_relative_ranking_can_select_descendants_that_ancestral_recovery_excludes(): void
     {
         $near = $this->region('Near small Potential', 0.05);
         $far = $this->region('Far large Potential', 0.9);
@@ -143,7 +143,8 @@ class LocalParticipantNavigationTest extends TestCase
         $recovery = $potential->recoverFrom($position);
         $this->assertSame($near->id, $recovery['proposition']->id);
         $this->assertSame(1, $recovery['distance']);
-        $this->assertSame(0.05, $recovery['potential_charge']);
+        $this->assertSame(0.0125, $recovery['potential_charge']);
+        $this->assertSame(0.05, $recovery['raw_potential_charge']);
     }
 
     public function test_charge_fallback_is_attenuated_from_the_expressive_position(): void
@@ -179,7 +180,7 @@ class LocalParticipantNavigationTest extends TestCase
             app(CycleEntryService::class)->enter($participant);
             $this->fail('Disconnected candidates cannot supply ordinary entry.');
         } catch (ConflictHttpException $exception) {
-            $this->assertStringContainsString('structurally reachable', $exception->getMessage());
+            $this->assertStringContainsString('ancestral', $exception->getMessage());
             $this->assertSame($orphan->id, $participant->fresh()->current_proposition_id);
             $this->assertSame(0, $participant->cycles()->count());
         }
@@ -348,27 +349,27 @@ class LocalParticipantNavigationTest extends TestCase
         app(CycleEntryService::class)->enter($participant);
     }
 
-    public function test_recovery_uses_nearest_viable_distance_without_discounting_measurements_again(): void
+    public function test_recovery_ranks_all_ancestors_by_attenuated_potential(): void
     {
         $position = $this->node('Observer', 0.0);
         $low = $this->region('Near low', 0.03);
         $near = $this->region('Near winner', 0.06);
         $bridge = $this->node('Empty bridge', 0.0);
         $far = $this->region('Distant maximum', 1.0);
-        $this->edge($position, $low);
-        $this->edge($position, $near);
-        $this->edge($position, $bridge);
-        $this->edge($bridge, $far);
+        $this->edge($low, $position);
+        $this->edge($near, $position);
+        $this->edge($bridge, $position);
+        $this->edge($far, $bridge);
         $participant = $this->participant('observer', $position);
         $phase = $this->phase($participant, $position);
         $this->refreshFixtureMeasurements();
         $selection = app(PotentialChargeService::class)->recoverFrom($position);
-        $this->assertSame($near->id, $selection['proposition']->id);
-        $this->assertSame(1, $selection['distance']);
-        $this->assertEqualsWithDelta(0.06, $selection['potential_charge'], 0.0000001);
+        $this->assertSame($far->id, $selection['proposition']->id);
+        $this->assertSame(2, $selection['distance']);
+        $this->assertEqualsWithDelta(1 / 9, $selection['potential_charge'], 0.0000001);
         app(ParticipationService::class)->contribute($participant, $phase->id, ['action' => 'participant.rest']);
         app(CycleEntryService::class)->enter($participant);
-        $this->assertSame($near->id, $this->state($participant)['plan']['gate_id']);
+        $this->assertSame($far->id, $this->state($participant)['plan']['gate_id']);
     }
 
     public function test_equal_distance_ranking_uses_upstream_potential_and_id_ties(): void
@@ -378,24 +379,24 @@ class LocalParticipantNavigationTest extends TestCase
         $long = $this->node('Long continuation', 0.7);
         $middle = $this->node('Middle', 0.7, 'expressive');
         $end = $this->node('End', 0.0, 'expressive');
-        $this->edge($position, $near);
-        $this->edge($position, $long);
+        $this->edge($near, $position);
+        $this->edge($long, $position);
         $this->edge($long, $middle);
         $this->edge($middle, $end);
         $this->assertSame($near->id, app(PotentialChargeService::class)->recoverFrom($position)['proposition']->id);
         $tie = $this->region('Equal short continuation', 0.7);
         $this->edge($tie, $position);
-        $this->edge($long, $position); // A graph cycle must terminate.
+        $this->edge($position, $long); // Malformed legacy graph cycles must terminate.
         $this->assertSame(min($near->id, $tie->id), app(PotentialChargeService::class)->recoverFrom($position)['proposition']->id);
     }
 
     public function test_repeated_rest_moves_outward_after_a_region_is_exhausted(): void
     {
         $position = $this->node('Empty region', 0.0);
-        $first = $this->region('First viable', 0.3);
+        $first = $this->region('First viable', 0.6);
         $second = $this->region('Second viable', 0.9);
-        $this->edge($position, $first);
-        $this->edge($first, $second);
+        $this->edge($first, $position);
+        $this->edge($second, $first);
         $participant = $this->participant('explorer', $position);
         $target = $first->children()->where('tier', 'expressive')->firstOrFail();
         $target->register = 'canon';

@@ -274,7 +274,13 @@ class ParticipantActionContractTest extends TestCase
             $ownerPhase = $past->replicate();
             $ownerPhase->cycle_id = $ownerCycle->id;
             $ownerPhase->save();
+            $gate = $gate->replicate();
             $gate->forceFill(['phase_id' => $ownerPhase->id])->save();
+            app(LedgerService::class)->record($gate);
+            $edge = new Supersession;
+            $edge->forceFill(['phase_id' => $ownerPhase->id, 'source_proposition_id' => $anchor->id,
+                'target_proposition_id' => $gate->id, 'type' => 'variant'])->save();
+            app(LedgerService::class)->record($edge);
         }
         if (! $empty) {
             $this->classificationEvidenceFixture($gate);
