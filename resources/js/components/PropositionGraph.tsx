@@ -6,6 +6,7 @@ import { useMemo, useRef, useState } from 'react';
 import '../../css/substrate-graph.css';
 import { PropositionCard } from './PropositionCard';
 import type { Identifier, Proposition } from '../types';
+import { causalAncestors, graphParents } from '../graphTopology';
 
 interface GraphProps {
   propositions: Proposition[];
@@ -36,6 +37,9 @@ export function PropositionGraph({ propositions, substrateSlug, initialFocusId, 
   const [selectedId, setSelectedId] = useState(initialFocusId || null);
   const [inspectedId, setInspectedId] = useState<Identifier | null>(null);
   const layout = useMemo(() => buildGraphLayout(propositions), [propositions]);
+  const parents = useMemo(() => graphParents(propositions), [propositions]);
+  const ancestors = useMemo(() => causalAncestors(parents, selectedId), [parents, selectedId]);
+  const hasSelection = selectedId !== null && parents.has(selectedId);
 
   if (!layout.origin) {
     return (
@@ -78,7 +82,7 @@ export function PropositionGraph({ propositions, substrateSlug, initialFocusId, 
   }
 
   return (
-    <Box className="substrate-graph-shell">
+    <Box className="substrate-graph-shell" data-has-selection={hasSelection || undefined}>
       {inspectedId && <GraphInspector key={`${substrateSlug}/${inspectedId}`} slug={substrateSlug} propositionId={inspectedId}
         fallback={propositions.find(item => item.id === inspectedId)} onClose={() => setInspectedId(null)} />}
       <Group className="substrate-graph-hint" gap={6} wrap="nowrap">
@@ -105,7 +109,8 @@ export function PropositionGraph({ propositions, substrateSlug, initialFocusId, 
         >
           <svg className="substrate-graph-edges" width={layout.width} height={layout.height} aria-hidden="true">
             {layout.edges.map((edge) => (
-              <path key={`${edge.from}-${edge.to}`} d={edge.path} />
+              <path key={`${edge.from}-${edge.to}`} d={edge.path}
+                data-lineage={(ancestors.has(edge.from) && (ancestors.has(edge.to) || edge.to === selectedId)) || undefined} />
             ))}
           </svg>
 
@@ -113,11 +118,13 @@ export function PropositionGraph({ propositions, substrateSlug, initialFocusId, 
             <Box
               key={proposition.id}
               className="substrate-graph-node"
+              data-lineage={selectedId === proposition.id ? 'selected' : ancestors.has(proposition.id) ? 'ancestor' : 'unrelated'}
               style={{ left: x, top: y, width: NODE_WIDTH }}
             >
               <PropositionCard
                 proposition={proposition}
                 mini
+                graph
                 selected={selectedId === proposition.id}
                 onClick={() => { setSelectedId(proposition.id); setInspectedId(proposition.id); }}
               />

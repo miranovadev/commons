@@ -93,8 +93,33 @@
   min-height: 58px;
   display: flex;
   align-items: center;
-  border-color: light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+  border-color: color-mix(in srgb, var(--register-color) 45%, light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4)));
+  border-inline-start: 3px solid var(--register-color);
   box-shadow: 0 5px 18px color-mix(in srgb, var(--mantine-color-dark-9) 10%, transparent);
+}
+
+.proposition-card--graph { position: relative; isolation: isolate; overflow: hidden; }
+.proposition-card--graph > .mantine-Stack-root { position: relative; z-index: 1; width: 100%; }
+.proposition-card__domain {
+  position: absolute;
+  right: -34px;
+  bottom: -35px;
+  z-index: 0;
+  color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-gray-4));
+  opacity: .1;
+  pointer-events: none;
+}
+.substrate-graph-node { transition: opacity 160ms ease; }
+.substrate-graph-shell[data-has-selection] .substrate-graph-node[data-lineage="unrelated"] { opacity: .58; }
+.substrate-graph-node[data-lineage="ancestor"] .proposition-card--graph {
+  outline: 1px solid color-mix(in srgb, var(--mantine-color-indigo-5) 65%, transparent);
+  outline-offset: 3px;
+}
+.substrate-graph-shell[data-has-selection] .substrate-graph-edges path:not([data-lineage]) { opacity: .4; }
+.substrate-graph-edges path[data-lineage] { stroke: var(--mantine-color-indigo-5); stroke-width: 2.2; }
+.substrate-graph-node[data-lineage="selected"] { z-index: 3; }
+@media (prefers-reduced-motion: reduce) {
+  .substrate-graph-node { transition: none; }
 }
 
 .substrate-graph-node .proposition-card--mini.proposition-card--indigo {

@@ -23,6 +23,7 @@ export interface Proposition {
   participant_callsign?: string;
   callsign?: string;
   observables?: Observables & { status?: 'missing' | 'stale' | 'current' };
+  context_horizon?: { id: Identifier; sequence: number; domain: DomainName; parent_context_horizon_id?: Identifier | null; opened_by_proposition_id?: Identifier | null } | null;
   transition?: { type?: string; from?: RegisterName; to?: RegisterName };
   parent_ids?: Identifier[];
   children?: Proposition[];

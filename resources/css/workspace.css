@@ -74,7 +74,7 @@
 .directional-action .mantine-Button-section[data-position="left"] { margin-inline-end:6px; }
 .directional-action .mantine-Button-section[data-position="right"] { margin-inline-start:6px; }
 .attestation-semantic[data-label="support"] { color:light-dark(var(--mantine-color-violet-7),var(--mantine-color-violet-4)); }
-.attestation-semantic[data-label="refute"] { color:light-dark(var(--mantine-color-teal-8),var(--mantine-color-teal-4)); }
+.attestation-semantic[data-label="refute"] { color:light-dark(var(--mantine-color-blue-8),var(--mantine-color-blue-4)); }
 .attestation-semantic[data-label="neutral"] { color:var(--mantine-color-dimmed); }
 .directional-whirl { display:inline-flex; align-items:center; justify-content:center; vertical-align:middle; flex:none; }
 .directional-whirl[data-animated="true"] { animation:directional-spin 4s linear infinite; }
