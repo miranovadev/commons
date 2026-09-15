@@ -123,7 +123,7 @@ class LocalParticipantNavigationTest extends TestCase
         $this->assertSame('committal', $this->state($right)['plan']['gate_options'][0]['tier']);
     }
 
-    public function test_relative_ranking_can_select_descendants_that_ancestral_recovery_excludes(): void
+    public function test_recovery_can_rank_connected_alternatives_within_the_same_basin(): void
     {
         $near = $this->region('Near small Potential', 0.05);
         $far = $this->region('Far large Potential', 0.9);
@@ -142,10 +142,10 @@ class LocalParticipantNavigationTest extends TestCase
         $this->edge($near, $other);
         $this->refreshFixtureMeasurements();
         $recovery = $potential->recoverFrom($position);
-        $this->assertSame($near->id, $recovery['proposition']->id);
-        $this->assertSame(1, $recovery['distance']);
-        $this->assertSame(0.0125, $recovery['potential_charge']);
-        $this->assertSame(0.05, $recovery['raw_potential_charge']);
+        $this->assertSame($far->id, $recovery['proposition']->id);
+        $this->assertSame(2, $recovery['distance']);
+        $this->assertEqualsWithDelta(0.1, $recovery['potential_charge'], 1e-9);
+        $this->assertSame(0.9, $recovery['raw_potential_charge']);
     }
 
     public function test_charge_fallback_is_attenuated_from_the_expressive_position(): void
@@ -181,7 +181,7 @@ class LocalParticipantNavigationTest extends TestCase
             app(CycleEntryService::class)->enter($participant);
             $this->fail('Disconnected candidates cannot supply ordinary entry.');
         } catch (ConflictHttpException $exception) {
-            $this->assertStringContainsString('ancestral', $exception->getMessage());
+            $this->assertStringContainsString('recovery basin', $exception->getMessage());
             $this->assertSame($orphan->id, $participant->fresh()->current_proposition_id);
             $this->assertSame(0, $participant->cycles()->count());
         }

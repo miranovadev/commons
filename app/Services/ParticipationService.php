@@ -91,7 +91,7 @@ final readonly class ParticipationService
 
             return [...$this->waiting(
                 $recovering ? 'recovery_unavailable' : 'cycle_not_started',
-                $recovering ? 'Rest completed; no eligible ancestral Committal is available for recovery.' : 'The Participant is waiting for a Cycle to begin.',
+                $recovering ? 'Rest completed; no viable recovery basin is available.' : 'The Participant is waiting for a Cycle to begin.',
                 entry: $this->entryFor($participant),
             ), 'completion' => $completed !== null && $completed->rested_at === null && $finalPhase?->kind === PhaseKind::Order ? [
                 'cycle_id' => $completed->id,
@@ -283,7 +283,7 @@ final readonly class ParticipationService
         $phase->cycle->save();
 
         // Recovery and its causal Horizon are resolved in the terminal transaction.
-        // If no eligible ancestor exists, retain the exhausted position for a
+        // If no viable basin exists, retain the exhausted position for a
         // later recovery attempt; never undo Rest or fabricate a destination.
         $this->cycleEntry->prepare($participant);
 
@@ -324,7 +324,10 @@ final readonly class ParticipationService
                     'message' => 'Continue the next Cycle from the local Committal Proposition.',
                 ];
             }
-            $selection = $this->potential->recoverFrom($participant->position()->firstOrFail());
+            $selection = $this->potential->recoverFrom(
+                $participant->position()->firstOrFail(),
+                $participant->cycles()->latest('sequence')->first()?->contextHorizon,
+            );
 
             return [
                 'mode' => 'potential',
@@ -334,8 +337,8 @@ final readonly class ParticipationService
                 'distance' => $selection['distance'] ?? null,
                 'potential_charge' => $selection['potential_charge'] ?? 0.0,
                 'message' => $selection === null
-                    ? 'Resting until an ancestral Committal region has positive Potential Charge.'
-                    : 'Begin the next Cycle at the ancestral Committal with greatest attenuated Potential Charge.',
+                    ? 'Resting until a reachable recovery basin has positive Potential Charge.'
+                    : 'Begin the next Cycle at the Committal with greatest attenuated Potential Charge in the viable recovery basin.',
             ];
         }
 

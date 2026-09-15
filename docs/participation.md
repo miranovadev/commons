@@ -42,11 +42,11 @@ receives HTTP 409 and cannot create a second Origin. For an established
 substrate, POST an empty JSON object to `/participate/enter`. Initial entry has
 no observer position and ranks eligible Committal Propositions by Potential
 Charge. Ordinary completion continues from the exact selected Committal.
-Rest recovery ranks ancestral Committals by Potential Charge observed from the
-retained position, including substrate attenuation. Expressive positions inform distance but are never entry candidates.
+Rest recovery scopes eligible Committals to viable Domain basins before ranking
+Potential Charge from the retained position, including substrate attenuation. Expressive positions inform distance but are never entry candidates.
 Successful entry persists the selected Committal Gate; contributions still
 persist their resulting Gate within the Cycle. Rest recovery follows the causal
-ancestry rules below.
+basin rules below.
 
 Potential Charge is `max(0, max(|T| - |T_c|))`, where `T` is the Committal
 state's immutable Tension and `T_c` is the projected Tension of each measurable
@@ -227,8 +227,8 @@ traversal set alone says nothing about complete action exhaustion.
 
 The plan reports `traversal_options` and `instrument_options` separately from
 `tragedy`. Complete Write and traversal target sets are not truncated by the
-Horizon display limit. Recovery follows incoming causal ancestry and compares all
-positive candidates after distance attenuation, as described below.
+Horizon display limit. Recovery searches viable committed Domains before their
+provenance and compares local candidates after distance attenuation, as described below.
 
 Only a genuinely exhausted Phase exposes `participant.rest`:
 
@@ -240,17 +240,20 @@ Only a genuinely exhausted Phase exposes `participant.rest`:
 ```
 
 Rest creates no expressive contribution or evidence, completes the Phase and
-Cycle, records `cycles.rested_at`, and preserves the current position. The next
-`/participate/enter` rechecks recovery under the normal entry locks:
+Cycle, records `cycles.rested_at`, and immediately prepares the next Cycle when
+a viable recovery destination exists. Otherwise the current position is retained
+and the next wake or `/participate/enter` retries recovery:
 
-1. Follow incoming Supersession ancestry across all parent paths and Domain boundaries. Deduplicate ancestors at minimum edge distance.
-2. Consider every ancestral Committal with a snapshot and positive remaining raw Potential. Exclude the exhausted position itself; descendants, siblings and disconnected regions are not candidates.
-3. Rank by raw Potential times `1 / (1 + d)^2`, then attenuated Charge, shorter distance and stable Proposition ID. A farther high-Potential ancestor may win.
-4. Resolve only the winning Committal's own Horizon or the direct child it explicitly opened. Create the new Cycle and Phase 1 in that Horizon's Domain, even when it has a historical closure marker. Never search arbitrary open descendants.
+1. Start from the completed Cycle's persisted Context Horizon. Search explicit descendant Domains before their ancestors; viable descendant branches shadow their ancestors and sibling frontiers remain peers.
+2. In each searched basin, consider its opening boundary Committal and non-boundary Committals created there. Candidates require a snapshot, structural connectivity and positive remaining raw Potential. Exclude the exhausted position itself.
+3. Rank eligible frontier candidates by raw Potential times `1 / (1 + d)^2`, then attenuated Charge, shorter distance and stable Proposition ID. Scope grants no age, recency, or depth bonus.
+4. If the current subtree is exhausted, climb its explicit parent and search unvisited descendant branches before the parent's own candidates. Repeat through provenance; Origin remains eligible when it has positive Potential.
+5. The selected Committal determines the new Cycle's Horizon: its own creating Horizon for a non-boundary Commit, or its explicitly opened direct child for a boundary. Do not pair an old Gate with an arbitrary descendant Horizon.
 
 The retained position is excluded from a candidate's continuation search, so
 recovery does not borrow its signal by returning through the exhausted observer.
-Repeated Rest can progress outward as each region's continuation is exhausted.
+Repeated Rest can progress downstream while committed Domains are viable, or
+retreat through provenance when those basins exhaust. See [recovery basins](recovery-basins.md).
 No viable candidate leaves the participant resting in place; there is no global
 or zero-Potential fallback. GET exposes `entry.selection: recovery`, availability,
 prospective destination, distance and Potential Charge, but never moves anyone.
@@ -265,7 +268,7 @@ Committal still stops the outgoing continuation search. Immutable snapshot
 Tension remains the historical baseline. Ordinary re-entry additionally observes
 candidate Potential and Charge from the retained Participant position using the
 same inverse-square geometry. Initial entry has no positional attenuation;
-recovery compares all positive causal ancestors with that same destination attenuation. See
+recovery compares positive candidates within its viable basin frontier with that same destination attenuation. See
 [observables](observables.md) for the full calculation.
 
 Order returns an actionable `ready` plan even when Commit is inadmissible.
@@ -382,7 +385,7 @@ preferences disable animation.
 
 Order admits only `proposition.commit` and `proposition.traverse`, or exclusive Rest when neither remains. Commit and Committal Traverse both complete the Cycle at the exact Committal result. Natural completion leaves `rested_at` unset. The next explicit entry begins Phase 1 at that same Proposition, respecting its applicable Context Horizon; no normal completion relocates the Participant.
 
-The waiting state has `plan: null`, entry availability and the completed Cycle identity. The workspace can retain completed cards as read-only context. Return to Participants opens the Substrate collection; Enter another Cycle uses the normal entry endpoint. Rest is the separate exhausted-region path and can trigger ancestral Committal recovery by attenuated Potential.
+The waiting state has `plan: null`, entry availability and the completed Cycle identity. The workspace can retain completed cards as read-only context. Return to Participants opens the Substrate collection; Enter another Cycle uses the normal entry endpoint. Rest is the separate exhausted-region path and can trigger Domain-scoped Committal recovery by attenuated Potential.
 
 ### Receipt Reads
 

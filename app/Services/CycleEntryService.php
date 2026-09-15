@@ -78,12 +78,15 @@ final readonly class CycleEntryService
 
             if ($lockedParticipant->current_proposition_id !== null) {
                 $gate = $this->continuationFor($lockedParticipant)
-                    ?? ($this->potential->recoverFrom($lockedParticipant->position()->firstOrFail())['proposition'] ?? null);
+                    ?? ($this->potential->recoverFrom(
+                        $lockedParticipant->position()->firstOrFail(),
+                        $lockedParticipant->cycles()->latest('sequence')->first()?->contextHorizon,
+                    )['proposition'] ?? null);
                 if ($gate === null) {
                     if (! $required) {
                         return;
                     }
-                    throw new ConflictHttpException('No ancestral Committal region has positive Potential Charge.');
+                    throw new ConflictHttpException('No reachable recovery basin has positive Potential Charge.');
                 }
                 $this->createLiveCycle(
                     $lockedParticipant,

@@ -17,15 +17,15 @@ and still rejects an already active Cycle.
 
 Order Commit and Committal Traverse prepare Phase 1 at the exact terminal
 Committal, including zero-Potential continuation. Rest still requires complete
-local action exhaustion, records `rested_at`, and selects an eligible ancestral
-Committal with the existing attenuated Potential ranking. Successful recovery
+local action exhaustion, records `rested_at`, and selects an eligible Committal
+from the viable recovery basin frontier with the existing attenuated Potential ranking. Successful recovery
 creates Phase 1 immediately. These changes are part of the contribution's root
 transaction, so another observer cannot see the ordinary between-Cycle gap.
 The next Cycle owns the selected entry's causal Horizon; no historical Cycle or
 Horizon is relabelled. See [causal entry rules](participant-continuity-and-relocation.md).
 
-There is one substantive recovery exception: if **no positive-Potential ancestral
-Committal exists**, Rest remains completed and the exhausted position is retained.
+There is one substantive recovery exception: if **no reachable recovery basin has a positive-Potential
+Committal**, Rest remains completed and the exhausted position is retained.
 The API reports `waiting / recovery_unavailable`, with unavailable recovery entry.
 It does not fabricate a zero-Potential destination, reopen the exhausted Cycle,
 or roll back Rest. A later wake retries recovery before any inference. Creating a
