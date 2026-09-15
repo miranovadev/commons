@@ -1,6 +1,6 @@
 import { useContextHorizonRealtime } from '../realtime/useRealtime';
-import { Alert, Badge, Box, Breadcrumbs, Button, Group, LoadingOverlay, Stack, Text, Title } from '@mantine/core';
-import { IconAlertCircle, IconArrowRight, IconTopologyStar3, IconUserHexagon, IconUsers } from '@tabler/icons-react';
+import { Alert, Badge, Box, Button, Group, LoadingOverlay, Title } from '@mantine/core';
+import { IconAlertCircle, IconArrowRight, IconUserHexagon, IconUsers } from '@tabler/icons-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { messageFrom } from '../errors';
 import { PropositionGraph } from '../components/PropositionGraph';
@@ -27,27 +27,19 @@ export function SubstratePage({ user }: { user?: User | null }) {
         {substrate && (
           <>
             <Box className="substrate-view__header">
-              <Stack gap="sm">
-                <Breadcrumbs>
-                  <Text component={Link} to="/" size="sm" c="dimmed">Substrates</Text>
-                  <Text size="sm">{substrate.title}</Text>
-                  <Text size="sm" c="dimmed">Graph</Text>
-                </Breadcrumbs>
-                <Group justify="space-between" align="flex-start" wrap="wrap">
-                  <Box>
-                    <Group gap="xs"><Badge color="indigo" variant="light" leftSection={<IconTopologyStar3 size={12} />}>SUBSTRATE</Badge><Badge color="gray" variant="light" leftSection={<IconUsers size={12} />}>{substrate.participants_count ?? 0}</Badge></Group>
-                    <Title order={2} mt="xs">{substrate.title}</Title>
-                    <Text c="dimmed" size="sm" mt={4} maw={720}>{substrate.description || 'A shared cognitive substrate.'}</Text>
-                  </Box>
-                  {user ? (
-                    <Button leftSection={<IconUserHexagon size={18} />} rightSection={<IconArrowRight size={16} />} onClick={() => navigate(`/substrates/${slug}/participants`)}>Participants</Button>
-                  ) : (
-                    <Button component={Link} to="/login" variant="light">Sign in to participate</Button>
-                  )}
+              <Group justify="space-between" gap="xs" wrap="wrap">
+                <Group gap="sm" wrap="nowrap" miw={0} style={{ flex: 1 }}>
+                  <Title order={3} lineClamp={1} title={substrate.title}>{substrate.title}</Title>
+                  <Badge color="gray" variant="light" leftSection={<IconUsers size={12} />} style={{ flexShrink: 0 }}
+                    aria-label={`${substrate.participants_count ?? 0} Participants`}>{substrate.participants_count ?? 0}</Badge>
                 </Group>
-              </Stack>
+                {user ? (
+                  <Button size="xs" variant="light" leftSection={<IconUserHexagon size={16} />} rightSection={<IconArrowRight size={14} />}
+                    onClick={() => navigate(`/substrates/${slug}/participants`)}>Participants</Button>
+                ) : <Button size="xs" component={Link} to="/login" variant="light">Sign in to participate</Button>}
+              </Group>
             </Box>
-            <Box className="substrate-view__graph"><PropositionGraph propositions={propositions} substrateSlug={slug} participants={participants} /></Box>
+            <Box className="substrate-view__graph"><PropositionGraph key={slug} propositions={propositions} substrateSlug={slug} participants={participants} /></Box>
           </>
         )}
       </Box>
