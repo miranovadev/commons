@@ -1,8 +1,9 @@
-import { ActionIcon, Box, Button, Checkbox, Group, NativeSelect, Stack, Text, Tooltip } from '@mantine/core';
+import { ActionIcon, Box, Button, Checkbox, Group, NativeSelect, SegmentedControl, Stack, Text, Tooltip } from '@mantine/core';
 import { IconChevronLeft, IconChevronRight, IconLock, IconLockOpen, IconLayoutSidebarRightCollapse, IconLayoutSidebarRightExpand } from '@tabler/icons-react';
 import type { ReactNode } from 'react';
 import { graphOverlayDefinitions, graphOverlayOptions } from '../graphOverlays';
 import type { GraphOverlayMode } from '../graphOverlays';
+import type { GraphDensity } from '../graphLayout';
 import type { GraphRailAction, GraphRailState } from '../graphWorkspace';
 
 interface Props {
@@ -10,6 +11,8 @@ interface Props {
   onState: (action: GraphRailAction) => void;
   overlayMode: GraphOverlayMode;
   onOverlay: (mode: string) => void;
+  density: GraphDensity;
+  onDensity: (density: string) => void;
   hasSelection: boolean;
   isolate: boolean;
   onIsolate: (isolate: boolean) => void;
@@ -20,7 +23,7 @@ interface Props {
 }
 
 export function GraphWorkspaceRail({ state, onState, overlayMode, onOverlay, hasSelection, isolate,
-  onIsolate, onDeselect, onPrevious, onNext, children }: Props) {
+  onIsolate, onDeselect, onPrevious, onNext, density, onDensity, children }: Props) {
   const opened = state === 'open';
   const locked = state === 'locked';
   const toggleLabel = opened ? 'Collapse graph workspace' : locked ? 'Unlock and open graph workspace' : 'Open graph workspace';
@@ -40,6 +43,11 @@ export function GraphWorkspaceRail({ state, onState, overlayMode, onOverlay, has
     </Group>
     {opened && <Box id="graph-workspace-content" className="graph-workspace__content">
       <Stack component="section" className="graph-workspace__section substrate-graph-controls" aria-label="Visualisation" gap="xs">
+        <Box>
+          <Text size="xs" fw={600} mb={4} id="graph-density-label">View</Text>
+          <SegmentedControl fullWidth size="xs" aria-labelledby="graph-density-label" value={density} onChange={onDensity}
+            data={[{ value: 'detailed', label: 'Detailed' }, { value: 'topology', label: 'Topology' }]} />
+        </Box>
         <NativeSelect label="Visualisation" size="xs" value={overlayMode} data={graphOverlayOptions}
           onChange={event => onOverlay(event.currentTarget.value)} />
         <Text size="xs" c="dimmed">{graphOverlayDefinitions[overlayMode].legend}</Text>

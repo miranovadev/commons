@@ -40,8 +40,9 @@ export async function refreshGraphPropositions(dispatch: AppDispatch, slug: stri
 export async function refreshGraphMetrics(dispatch: AppDispatch, slug: string, active: () => boolean) {
   const metrics = await dispatch(commonsApi.endpoints.getGraphMetrics.initiate(slug, { subscribe: false, forceRefetch: true })).unwrap();
   await dispatch(commonsApi.util.getRunningQueryThunk('getPropositions', slug));
-  if (active()) dispatch(commonsApi.util.updateQueryData('getPropositions', slug, draft => {
-    const byId = new Map(metrics.map(item => [item.id, item]));
+  if (!active()) return;
+  const byId = new Map(metrics.map(item => [item.id, item]));
+  dispatch(commonsApi.util.updateQueryData('getPropositions', slug, draft => {
     for (const proposition of draft) {
       const metric = byId.get(proposition.id);
       if (metric) {
@@ -50,4 +51,17 @@ export async function refreshGraphMetrics(dispatch: AppDispatch, slug: string, a
       }
     }
   }));
+  // Refresh only detail already in the query cache. The persistent inspector
+  // receives the same live field without requesting every proposition's detail.
+  dispatch((dispatch, getState) => {
+    const cached = commonsApi.util.selectCachedArgsForQuery(getState(), 'getProposition');
+    for (const args of cached) {
+      const metric = args.slug === slug ? byId.get(args.propositionId) : undefined;
+      if (!metric) continue;
+      dispatch(commonsApi.util.updateQueryData('getProposition', args, draft => {
+        if (JSON.stringify(draft.field) !== JSON.stringify(metric.field)) draft.field = metric.field;
+        draft.participation_count = metric.participation_count;
+      }));
+    }
+  });
 }

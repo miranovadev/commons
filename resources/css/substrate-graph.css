@@ -41,7 +41,7 @@
 .graph-workspace { width: clamp(22rem, 35vw, 29rem); max-width: 48%; flex: none; min-height: 0; display: flex; flex-direction: column; border-inline-start: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-5)); background: light-dark(var(--mantine-color-white), var(--mantine-color-dark-7)); }
 .graph-workspace[data-state="collapsed"], .graph-workspace[data-state="locked"] { width: 40px; }
 .graph-workspace__header { flex: none; padding: .25rem; border-bottom: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-5)); }
-.graph-workspace:not([data-state="open"]) .graph-workspace__header { flex-direction: column; }
+.graph-workspace:not([data-state="open"]) .graph-workspace__header { flex-direction: column; padding-inline: 0; }
 .graph-workspace__content { min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
 .graph-workspace__section { padding: .85rem 1rem; border-bottom: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-5)); }
 .graph-workspace__inspector-header { padding: .75rem 1rem; position: sticky; top: 0; z-index: 2; background: light-dark(var(--mantine-color-white), var(--mantine-color-dark-7)); }
@@ -168,3 +168,9 @@
   .graph-workspace__header { padding-block: .1rem; }
   .graph-workspace__section { padding: .65rem .85rem; }
 }
+
+/* Density changes geometry and content only; the same visual channels still compose. */
+.substrate-graph-node .proposition-card--topology { padding: 0; border-radius: 8px; }
+.graph-participants[data-compact] { top: -14px; right: 4px; }
+.graph-participants[data-compact] .graph-participant--overflow { width: 24px; height: 24px; }
+.substrate-graph-shell[data-density="topology"] .substrate-graph-origin-label { font-size: 8px; margin-top: .2rem; }

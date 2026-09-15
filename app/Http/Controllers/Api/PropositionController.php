@@ -57,7 +57,7 @@ class PropositionController extends Controller
                 'measurement',
                 'contextHorizonMembership.horizon',
                 'parents' => fn ($query) => $query->select('propositions.id', 'propositions.register')
-                ->orderBy('supersessions.created_at')->orderBy('supersessions.id'),
+                    ->orderBy('supersessions.created_at')->orderBy('supersessions.id'),
                 'children:id',
             ])
             ->oldest('created_at')

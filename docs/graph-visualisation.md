@@ -15,7 +15,7 @@ Selection follows every causal parent path in the loaded dataset, including reco
 
 Domain remains available as accessible text; decorative silhouettes are omitted. Unrelated cards are faded and greyscale while ancestral paths stay saturated. Isolate Selected Lineage filters the loaded nodes and their connecting edges without changing selection, overlay scales or graph topology. Refute uses Blue 6 and Support Violet, independently of stored direction polarity. Participant identity colours remain independent. Default Tension readouts use dark/light Indigo for negative/positive values; only the explicit Tension lens switches readouts to Blue/Violet. A shared graph context also carries that choice into the inspector.
 
-Topology and parent indexes are memoized per dataset. Ancestry traverses the loaded nodes and edges once per selection, with cycle protection (O(V + E)). Selection never changes topology or the inspector target.
+Topology and parent indexes are memoized per dataset. Ancestry traverses the loaded nodes and edges once per selection, with cycle protection (O(V + E)). Lineage highlighting never rewrites topology or substitutes another inspector target.
 
 ## Analytical lenses
 
@@ -57,8 +57,16 @@ Previous uses `transition.source_id`: the API orders causal parents by supersess
 
 Next follows primary-parent children only. It first uses the remembered path through the last selected descendant; otherwise it chooses the oldest child's `created_at`, then lexical proposition ID. Going back and forward therefore returns to the same branch even if API hydration order changes. Reconciliation highlighting still includes every causal ancestor; the simple arrow path uses only its primary parent. Isolation uses the current selection's ancestry, while the remembered forward path can reveal its next child again.
 
-The rail reuses the existing inspector content. Only selected detail is fetched; graph nodes introduce no new requests. Canonical field metrics from the live graph remain current in the inspector while other detail is cached. The graph page header omits breadcrumbs and descriptive copy to reserve space for the workspace.
+The rail reuses the existing inspector content. Only selected detail is fetched; graph nodes introduce no new requests. The existing metric refresh updates both graph data and already-cached inspector details, preserving full receipt information without extra HTTP requests. Newly fetched detail is not overwritten by an older graph fallback. The graph page header omits breadcrumbs and descriptive copy to reserve space for the workspace.
 
 ## Substrate navigation
 
 The main menu derives its context from the URL. A substrate route replaces the global menu with a separated Back to Substrates link, substrate title, Graph, Participants, and the existing disabled Settings entry. Participant detail routes keep Participants active. Leaving for `/` restores Substrates and the authenticated user's global Connections page; Connections is not presented as a substrate-scoped feature. The existing AppShell burger, responsive breakpoints, and close-on-route-change behaviour remain in use.
+
+## Detailed and Topology density
+
+View is independent of Visualisation. Detailed remains the default; `commons.graph.density` stores Detailed/Topology separately from the lens. Unknown saved values fall back to Detailed. The structure builder resolves loaded nodes, levels and edges once; layout presets only choose dimensions and route the same edges. Topology uses 84 × 40 nodes instead of 220 × 160 cards, with proportionately smaller gaps. It removes visual statement/measurement content while retaining a native selectable button with the proposition's statement as its accessible name and a title tooltip for the active analytical value.
+
+Every lens uses the same overlay resolver and scale in both densities. Selection borders, ancestor highlighting, unrelated greyscale, isolation and inspector navigation also share the same rendering path. Topology keeps two small position avatars and an overflow stack with every remaining callsign/activity state in its tooltip and accessible description. Live updates, activity expiry and participant identity colours use the existing shared snapshot; density changes add no network requests. Switching density reveals the current selection if it would otherwise be outside the viewport and does not change inspection or the chosen lens.
+
+The presets can later serve as semantic zoom levels. Wheel zoom and a separate graph engine are not implemented.
