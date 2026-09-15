@@ -17,6 +17,7 @@ use App\Services\ContributionDispatcher;
 use App\Services\CycleEntryService;
 use App\Services\LedgerService;
 use App\Services\ParticipationService;
+use App\Services\PhaseProgressionService;
 use App\Services\PotentialChargeService;
 use App\Services\PropositionMeasurementService;
 use DomainException;
@@ -250,6 +251,29 @@ class CausalRecoveryTest extends TestCase
         $phase = $this->phase($this->root);
         $this->expectException(DomainException::class);
         $phase->forceFill(['write_register' => 'signal'])->save();
+    }
+
+    public function test_boundary_entry_cannot_choose_its_old_owner_instead_of_its_direct_child(): void
+    {
+        [$origin] = $this->boundaryChain();
+        $this->expectException(DomainException::class);
+        $this->phase($this->root, $origin, PhaseKind::Distinguish);
+    }
+
+    public function test_invalid_direct_progression_fails_before_changing_position_or_completing_the_phase(): void
+    {
+        [$origin, , $commit, $h3] = $this->boundaryChain();
+        $phase = $this->phase($h3, $commit, PhaseKind::Distinguish);
+        $participant = $phase->cycle->participant;
+        $participant->forceFill(['current_proposition_id' => $commit->id])->save();
+        try {
+            app(PhaseProgressionService::class)->advance($phase, $origin);
+            $this->fail('Invalid progression must reject before moving the Participant.');
+        } catch (DomainException) {
+            $this->assertSame($commit->id, $participant->fresh()->current_proposition_id);
+            $this->assertNull($phase->fresh()->completed_at);
+            $this->assertSame(1, $phase->cycle->phases()->count());
+        }
     }
 
     public function test_direct_proposition_creation_rejects_the_opposite_domains_register(): void

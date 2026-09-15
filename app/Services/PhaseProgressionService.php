@@ -12,6 +12,9 @@ final class PhaseProgressionService
         Phase $phase,
         Proposition $gate,
     ): ?Phase {
+        $causality = app(CausalContextService::class);
+        $horizon = $causality->assertPhase($phase);
+        $causality->assertGate($gate, $horizon);
         $participant = $phase->cycle->participant;
         $participant->current_proposition_id = $gate->getKey();
         $participant->save();
@@ -32,7 +35,7 @@ final class PhaseProgressionService
             'cycle_id' => $phase->cycle_id,
             'gate_proposition_id' => $gate->getKey(),
             'kind' => $kind,
-            'write_register' => $phase->cycle->contextHorizon->domain->registerFor($kind),
+            'write_register' => $horizon->domain->registerFor($kind),
             'started_at' => now(),
         ]);
         $next->save();

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\PhaseKind;
 use App\Enums\RegisterPosition;
 use App\Models\ContextHorizon;
 use App\Models\Phase;
@@ -43,7 +44,11 @@ final class CausalContextService
             $this->assertRegister($phase->write_register, $horizon);
         }
         if ($phase->gate_proposition_id !== null) {
-            $this->assertGate($phase->gate()->firstOrFail(), $horizon);
+            $gate = $phase->gate()->firstOrFail();
+            $this->assertGate($gate, $horizon);
+            if ($phase->kind === PhaseKind::Distinguish && $gate->commitmentSnapshot !== null) {
+                app(ContextHorizonProjector::class)->forEntry($gate, $horizon);
+            }
         }
 
         return $horizon;
