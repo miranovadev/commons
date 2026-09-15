@@ -11,6 +11,7 @@ use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Substrate;
 use App\Models\Supersession;
+use App\Models\User;
 use App\Services\CommitRegionPolarityService;
 use App\Services\CycleEntryService;
 use App\Services\InputPlanService;
@@ -126,6 +127,7 @@ class PropositionPresentationTest extends TestCase
         $this->assertCount(0, $queries);
 
         // The graph and detail API must expose the same primary causal parent.
+        User::factory()->create();
         $this->participant->substrate->forceFill(['visibility' => 'public'])->save();
         $this->getJson("/api/substrates/polarity/propositions/{$target->id}")
             ->assertOk()->assertJsonPath('data.transition.source_id', $primary->id)
