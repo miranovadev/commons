@@ -25,8 +25,8 @@ class Cycle extends Model
             $horizon = $cycle->context_horizon_id === null
                 ? app(ContextHorizonProjector::class)->currentFor($cycle->participant->substrate)
                 : $cycle->contextHorizon()->firstOrFail();
-            if ($horizon->substrate_id !== $cycle->participant->substrate_id || $horizon->closed_at !== null) {
-                throw new \DomainException('A new Cycle requires an open Context Horizon in its own substrate.');
+            if ($horizon->substrate_id !== $cycle->participant->substrate_id) {
+                throw new \DomainException('A new Cycle requires a Context Horizon in its own substrate.');
             }
             $cycle->context_horizon_id = $horizon->id;
             $cycle->setRelation('contextHorizon', $horizon);

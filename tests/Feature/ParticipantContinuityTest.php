@@ -135,7 +135,10 @@ class ParticipantContinuityTest extends TestCase
         $this->assertSame($origin->id, $relocated['current_proposition_id']);
         $this->assertSame($origin->id, $relocated['plan']['gate_id']);
         $this->assertNotSame($origin->phase->cycle->context_horizon_id, $relocated['cycle']['context_horizon_id']);
-        $this->assertSame($next->context_horizon_id, $relocated['cycle']['context_horizon_id']);
+        $selectedHorizon = ContextHorizon::where('opened_by_proposition_id', $origin->id)->sole();
+        $this->assertSame($selectedHorizon->id, $relocated['cycle']['context_horizon_id']);
+        $this->assertSame('settlement', $relocated['domain']);
+        $this->assertSame('signal', $relocated['plan']['phase']['write_register']);
         $this->assertSame($horizons, ContextHorizon::orderBy('sequence')->get()->map->getAttributes()->all());
     }
 

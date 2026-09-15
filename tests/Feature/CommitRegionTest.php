@@ -54,8 +54,8 @@ class CommitRegionTest extends TestCase
         $cycle->forceFill(['participant_id' => $this->viewer->id, 'sequence' => 1])->save();
         $this->history = new Phase;
         $this->history->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Distinguish,
-            'write_register' => 'signal', 'started_at' => now(), 'completed_at' => now()])->save();
-        $this->regionSeed = $this->node('canon', null, 'committal');
+            'write_register' => 'activity', 'started_at' => now(), 'completed_at' => now()])->save();
+        $this->regionSeed = $this->node('concord', null, 'committal');
         config()->set('schemas.options.limit', 1);
     }
 
@@ -263,7 +263,7 @@ class CommitRegionTest extends TestCase
     private function node(string $register, ?Proposition $parent, string $tier = 'expressive', string $edge = 'variant'): Proposition
     {
         $node = new Proposition;
-        $node->forceFill(['phase_id' => $this->history->id, 'register' => $register, 'tier' => $tier, 'statement' => 'Region '.$register])->save();
+        $node->forceFill(['phase_id' => $this->phaseForRegisterFixture($this->history, $register)->id, 'register' => $register, 'tier' => $tier, 'statement' => 'Region '.$register])->save();
         app(LedgerService::class)->record($node);
         if ($parent) {
             $this->edge($parent, $node, $edge);
@@ -282,11 +282,11 @@ class CommitRegionTest extends TestCase
 
     private function phase(PhaseKind $kind, Proposition $gate, string $register): Phase
     {
-        $cycle = $this->viewer->cycles()->latest('sequence')->firstOrFail();
-        $cycle->phases()->whereNull('completed_at')->update(['completed_at' => now()]);
-        if ($cycle->contextHorizon->domain->registerAt(RegisterPosition::forRegister($register)) !== $register) {
-            $cycle->forceFill(['completed_at' => now()])->save();
-            $horizon = $this->horizonForRegisterFixture($this->viewer, $register);
+        $cycle = $this->viewer->cycles()->whereNull('completed_at')->latest('sequence')->first();
+        $cycle?->phases()->whereNull('completed_at')->update(['completed_at' => now()]);
+        if ($cycle === null || $cycle->context_horizon_id !== $gate->phase->cycle->context_horizon_id) {
+            $cycle?->forceFill(['completed_at' => now()])->save();
+            $horizon = $gate->phase->cycle->contextHorizon;
             $cycle = new Cycle;
             $cycle->forceFill(['participant_id' => $this->viewer->id, 'sequence' => $this->viewer->cycles()->max('sequence') + 1,
                 'context_horizon_id' => $horizon->id])->save();

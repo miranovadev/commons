@@ -68,11 +68,7 @@ position informs distance but never becomes a candidate. Rank all reachable
 candidates by effective Potential, then effective Charge, then shorter distance
 and stable Proposition ID. Compare scores before rounding them for presentation.
 
-A Participant without a position uses the existing initial Potential/Charge/ID
-selection; no observer distance is invented. Rest recovery remains a separate
-nearest-viable-distance-shell search with its existing positive-Potential,
-exhausted-position exclusion and Charge/ID rules. It does not apply ordinary
-entry's destination weighting or zero-Potential fallback.
+A Participant without a position uses initial Potential/Charge/ID selection; no observer distance is invented. Ordinary completion preserves its exact Committal continuation. Rest recovery follows only incoming causal ancestry, deduplicating shared ancestors at minimum distance. It compares all positive ancestral candidates using the same destination weight `a(d) = 1 / (1 + d)^2`, with effective Charge/distance/ID tie-breaks. It excludes the exhausted position from both candidate selection and continuation evidence, and has no zero-Potential fallback. Generic `selectFrom()` remains a relative ranking utility over parent/child geometry, not the recovery algorithm.
 
 For each raw comparison, the boundary Proposition remains a member of the closing Horizon. It acts as
 the provenance root for the next Horizon without being duplicated into its

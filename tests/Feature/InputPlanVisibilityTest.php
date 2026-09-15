@@ -273,6 +273,8 @@ class InputPlanVisibilityTest extends TestCase
         $cycle = new Cycle;
         $cycle->forceFill([
             'participant_id' => $participant->getKey(),
+            'context_horizon_id' => $gate?->phase->cycle->context_horizon_id
+                ?? $this->horizonForRegisterFixture($participant, $writeRegister)->id,
             'sequence' => 1,
         ]);
         $cycle->save();
@@ -299,7 +301,7 @@ class InputPlanVisibilityTest extends TestCase
     ): Proposition {
         $proposition = new Proposition;
         $proposition->forceFill([
-            'phase_id' => $phase->getKey(),
+            'phase_id' => $this->phaseForRegisterFixture($phase, $register)->getKey(),
             'register' => $register,
             'tier' => $tier,
             'statement' => $statement,

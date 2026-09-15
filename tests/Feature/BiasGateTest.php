@@ -53,7 +53,7 @@ class BiasGateTest extends TestCase
     {
         $this->substrate = new Substrate;
         $this->substrate->forceFill(['slug' => 'bias', 'title' => 'Bias', 'visibility' => 'public', 'configuration' => []])->save();
-        $this->history = $this->newPhase($this->participant('author'), PhaseKind::Distinguish, 'signal', true);
+        $this->history = $this->newPhase($this->participant('author'), PhaseKind::Distinguish, $register === 'stance' ? 'signal' : 'activity', true);
         $this->parent = $this->node('Local provenance', $write, 'committal');
         $this->attest($this->parent, 'support');
         $this->gate = $this->node('Current Gate', $register);
@@ -108,8 +108,8 @@ class BiasGateTest extends TestCase
         $service = app(BiasGateService::class);
         $this->assertEqualsWithDelta(1 / 3, $service->leanFor($this->phase), 0.00001);
         $this->assertEqualsCanonicalizing([$this->gate->id, $support->id], $this->optionIds());
-        // Bootstrap projected Chirality is negative, but the raw lean is positive.
-        $this->assertLessThan(0, (float) $this->gate->fresh()->measurement->chirality);
+        // The Settlement projection is distinct from the raw population lean.
+        $this->assertNotEquals($service->leanFor($this->phase), (float) $this->gate->fresh()->measurement->chirality);
         $instruments = app(InstrumentExecutionService::class);
         foreach (range(1, 4) as $i) {
             $this->loadedReceiptFixture($refute, $negative);
@@ -305,14 +305,21 @@ class BiasGateTest extends TestCase
         $this->attest($wrongHorizon, 'refute');
         $horizon = $this->laterHorizonFixture($this->phase->cycle->contextHorizon);
         $wrongHorizon->contextHorizonMembership->forceFill(['context_horizon_id' => $horizon->id])->save();
-        $foreign = $this->sibling('Foreign');
-        $this->attest($foreign, 'refute');
         $other = $this->substrate->replicate();
         $other->slug = 'other';
         $other->save();
         $outsider = $this->participant('outsider');
         $outsider->forceFill(['substrate_id' => $other->id])->save();
-        $foreign->forceFill(['phase_id' => $this->newPhase($outsider, PhaseKind::Persist, 'stance', true)->id])->save();
+        $foreign = new Proposition;
+        $foreign->forceFill(['phase_id' => $this->newPhase($outsider, PhaseKind::Persist, 'stance', true)->id,
+            'register' => 'stance', 'tier' => 'expressive', 'statement' => 'Foreign'])->save();
+        app(LedgerService::class)->record($foreign);
+        // Preserve a malformed legacy edge solely to exercise read-side substrate exclusion.
+        (new Supersession)->forceFill(['phase_id' => $foreign->phase_id,
+            'source_proposition_id' => $this->parent->id, 'target_proposition_id' => $foreign->id, 'type' => 'variant'])->save();
+        $vote = new Attestation;
+        $vote->forceFill(['phase_id' => $foreign->phase_id, 'proposition_id' => $foreign->id, 'direction' => 'refute'])->save();
+        app(LedgerService::class)->record($vote);
         $this->assertSame([$this->gate->id], $this->optionIds());
         $this->assertSame(0.0, app(BiasGateService::class)->leanFor($this->phase));
     }
@@ -399,9 +406,7 @@ class BiasGateTest extends TestCase
     private function newPhase(Participant $participant, PhaseKind $kind, string $register, bool $completed = false): Phase
     {
         $cycle = new Cycle;
-        if ($kind === PhaseKind::Bias) {
-            $cycle->context_horizon_id = $this->horizonForRegisterFixture($participant, $register)->id;
-        }
+        $cycle->context_horizon_id = $this->horizonForRegisterFixture($participant, $register)->id;
         $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => (int) $participant->cycles()->max('sequence') + 1, 'completed_at' => $completed ? now() : null])->save();
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => $kind, 'write_register' => $register, 'started_at' => now(), 'completed_at' => $completed ? now() : null])->save();

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasLedgerEntry;
+use App\Services\CausalContextService;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,6 +18,20 @@ class Proposition extends Model
     public $incrementing = false;
 
     protected $keyType = 'string';
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $proposition): void {
+            if ($proposition->exists && $proposition->isDirty('phase_id')) {
+                throw new \DomainException('A Proposition cannot change its creating Phase.');
+            }
+            if (! $proposition->exists || $proposition->isDirty('register')) {
+                $causality = app(CausalContextService::class);
+                $horizon = $causality->assertPhase($proposition->phase()->firstOrFail());
+                $causality->assertRegister($proposition->register, $horizon);
+            }
+        });
+    }
 
     public function phase(): BelongsTo
     {

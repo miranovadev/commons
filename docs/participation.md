@@ -41,12 +41,12 @@ Origin entry is serialized on the Substrate. A concurrent or repeated request
 receives HTTP 409 and cannot create a second Origin. For an established
 substrate, POST an empty JSON object to `/participate/enter`. Initial entry has
 no observer position and ranks eligible Committal Propositions by Potential
-Charge. Ordinary re-entry ranks reachable Committal candidates by Potential
-Charge observed from the Participant's retained position, including substrate
-attenuation. Expressive positions inform distance but are never entry candidates.
+Charge. Ordinary completion continues from the exact selected Committal.
+Rest recovery ranks ancestral Committals by Potential Charge observed from the
+retained position, including substrate attenuation. Expressive positions inform distance but are never entry candidates.
 Successful entry persists the selected Committal Gate; contributions still
-persist their resulting Gate within the Cycle. Rest recovery retains its nearest
-viable Committal region rules below.
+persist their resulting Gate within the Cycle. Rest recovery follows the causal
+ancestry rules below.
 
 Potential Charge is `max(0, max(|T| - |T_c|))`, where `T` is the Committal
 state's immutable Tension and `T_c` is the projected Tension of each measurable
@@ -227,8 +227,8 @@ traversal set alone says nothing about complete action exhaustion.
 
 The plan reports `traversal_options` and `instrument_options` separately from
 `tragedy`. Complete Write and traversal target sets are not truncated by the
-Horizon display limit. Recovery still uses bidirectional neighbours and the
-same distance/ranking semantics.
+Horizon display limit. Recovery follows incoming causal ancestry and compares all
+positive candidates after distance attenuation, as described below.
 
 Only a genuinely exhausted Phase exposes `participant.rest`:
 
@@ -243,13 +243,10 @@ Rest creates no expressive contribution or evidence, completes the Phase and
 Cycle, records `cycles.rested_at`, and preserves the current position. The next
 `/participate/enter` rechecks recovery under the normal entry locks:
 
-1. Search outward over existing parent/child edges in breadth-first distance shells.
-2. Stop at the nearest positive distance containing measured Committal Propositions
-   with positive Potential Charge. Unmeasured, zero-Potential and disconnected
-   candidates cannot supply recovery.
-3. Rank only that shell by Potential Charge from upstream measurements, then existing Charge
-   and Proposition-ID tie-breaking. A farther high-Potential region cannot win.
-4. Persist the winner as the new Cycle's Committal Gate.
+1. Follow incoming Supersession ancestry across all parent paths and Domain boundaries. Deduplicate ancestors at minimum edge distance.
+2. Consider every ancestral Committal with a snapshot and positive remaining raw Potential. Exclude the exhausted position itself; descendants, siblings and disconnected regions are not candidates.
+3. Rank by raw Potential times `1 / (1 + d)^2`, then attenuated Charge, shorter distance and stable Proposition ID. A farther high-Potential ancestor may win.
+4. Resolve only the winning Committal's own Horizon or the direct child it explicitly opened. Create the new Cycle and Phase 1 in that Horizon's Domain, even when it has a historical closure marker. Never search arbitrary open descendants.
 
 The retained position is excluded from a candidate's continuation search, so
 recovery does not borrow its signal by returning through the exhausted observer.
@@ -268,7 +265,7 @@ Committal still stops the outgoing continuation search. Immutable snapshot
 Tension remains the historical baseline. Ordinary re-entry additionally observes
 candidate Potential and Charge from the retained Participant position using the
 same inverse-square geometry. Initial entry has no positional attenuation;
-recovery preserves its nearest viable region search. See
+recovery compares all positive causal ancestors with that same destination attenuation. See
 [observables](observables.md) for the full calculation.
 
 Order returns an actionable `ready` plan even when Commit is inadmissible.
@@ -385,7 +382,7 @@ preferences disable animation.
 
 Order admits only `proposition.commit` and `proposition.traverse`, or exclusive Rest when neither remains. Commit and Committal Traverse both complete the Cycle at the exact Committal result. Natural completion leaves `rested_at` unset. The next explicit entry begins Phase 1 at that same Proposition, respecting its applicable Context Horizon; no normal completion relocates the Participant.
 
-The waiting state has `plan: null`, entry availability and the completed Cycle identity. The workspace can retain completed cards as read-only context. Return to Participants opens the Substrate collection; Enter another Cycle uses the normal entry endpoint. Rest is the separate exhausted-region path and can trigger nearest-viable-Committal recovery.
+The waiting state has `plan: null`, entry availability and the completed Cycle identity. The workspace can retain completed cards as read-only context. Return to Participants opens the Substrate collection; Enter another Cycle uses the normal entry endpoint. Rest is the separate exhausted-region path and can trigger ancestral Committal recovery by attenuated Potential.
 
 ### Receipt Reads
 
@@ -398,4 +395,3 @@ contract. `receipt.read` loads existing evidence without advancing the Phase.
 `receipt.replay` uses the stored invocation, original eligible Instrument Write and
 normal Instrument progression to create a new immutable observation. Neither
 initial execution nor replay automatically loads a Receipt.
-
