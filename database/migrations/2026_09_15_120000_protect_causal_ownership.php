@@ -15,7 +15,7 @@ return new class extends Migration
             if (DB::getDriverName() === 'pgsql') {
                 $changed = implode(' OR ', array_map(fn ($column) => "NEW.{$column} IS DISTINCT FROM OLD.{$column}", $columns));
                 DB::unprepared(<<<SQL
-                    CREATE FUNCTION commons_{$trigger}() RETURNS trigger LANGUAGE plpgsql AS \$\$
+                    CREATE OR REPLACE FUNCTION commons_{$trigger}() RETURNS trigger LANGUAGE plpgsql AS \$\$
                     BEGIN
                         IF {$changed} THEN RAISE EXCEPTION '{$message}'; END IF;
                         RETURN NEW;
