@@ -1,6 +1,6 @@
 import { PropositionInspector } from './PropositionInspector';
 import { useGetPropositionQuery } from '../services/commonsApi';
-import { Box, Group, NativeSelect, Paper, Stack, Text, ThemeIcon, Title } from '@mantine/core';
+import { Box, Checkbox, Group, NativeSelect, Paper, Stack, Text, ThemeIcon, Title } from '@mantine/core';
 import { useLocalStorage } from '@mantine/hooks';
 import { IconArrowsMove, IconSparkles } from '@tabler/icons-react';
 import { memo, useCallback, useMemo, useRef, useState } from 'react';
@@ -9,7 +9,8 @@ import { PropositionCard } from './PropositionCard';
 import type { GraphParticipant, Identifier, Proposition } from '../types';
 import { participantsByPosition } from '../graphParticipants';
 import { GraphParticipants } from './GraphParticipants';
-import { causalAncestors, graphParents } from '../graphTopology';
+import { GraphTensionPalette } from '../graphPresentation';
+import { causalAncestors, graphParents, lineageVisibility } from '../graphTopology';
 import { graphOverlayDefinitions, graphOverlayOptions, isGraphOverlayMode, resolveGraphOverlays } from '../graphOverlays';
 import type { GraphOverlay } from '../graphOverlays';
 
@@ -43,6 +44,7 @@ export function PropositionGraph({ propositions, substrateSlug, initialFocusId, 
   const [dragging, setDragging] = useState(false);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [selectedId, setSelectedId] = useState(initialFocusId || null);
+  const [isolate, setIsolate] = useState(false);
   const [inspectedId, setInspectedId] = useState<Identifier | null>(null);
   const [storedOverlay, setOverlay] = useLocalStorage<string>({ key: 'commons.graph.overlay', defaultValue: 'none' });
   const overlayMode = isGraphOverlayMode(storedOverlay) ? storedOverlay : 'none';
@@ -51,6 +53,7 @@ export function PropositionGraph({ propositions, substrateSlug, initialFocusId, 
   const parents = useMemo(() => graphParents(propositions), [propositions]);
   const ancestors = useMemo(() => causalAncestors(parents, selectedId), [parents, selectedId]);
   const hasSelection = selectedId !== null && parents.has(selectedId);
+  const visible = useMemo(() => lineageVisibility(parents, selectedId, ancestors, isolate), [parents, selectedId, ancestors, isolate]);
   const positions = useMemo(() => participantsByPosition(participants), [participants]);
   const select = useCallback((id: Identifier) => { setSelectedId(id); setInspectedId(id); }, []);
 
@@ -95,6 +98,7 @@ export function PropositionGraph({ propositions, substrateSlug, initialFocusId, 
   }
 
   return (
+    <GraphTensionPalette value={overlayMode === 'tension' ? 'analytical' : 'default'}>
     <Box className="substrate-graph-shell" data-has-selection={hasSelection || undefined}>
       {inspectedId && <GraphInspector key={`${substrateSlug}/${inspectedId}`} slug={substrateSlug} propositionId={inspectedId}
         fallback={propositions.find(item => item.id === inspectedId)} onClose={() => setInspectedId(null)} />}
@@ -102,6 +106,7 @@ export function PropositionGraph({ propositions, substrateSlug, initialFocusId, 
         <NativeSelect label="Visualisation" size="xs" value={overlayMode} data={graphOverlayOptions}
           onChange={event => setOverlay(event.currentTarget.value)} />
         <Text size="10px" c="dimmed">{graphOverlayDefinitions[overlayMode].legend}</Text>
+      <Checkbox size="xs" label="Isolate Selected Lineage" checked={isolate} disabled={!hasSelection} onChange={event => setIsolate(event.currentTarget.checked)} />
       <Group className="substrate-graph-hint" gap={6} wrap="nowrap">
         <IconArrowsMove size={14} />
         <Text size="xs" c="dimmed">Drag the surface to explore</Text>
@@ -126,13 +131,13 @@ export function PropositionGraph({ propositions, substrateSlug, initialFocusId, 
           }}
         >
           <svg className="substrate-graph-edges" width={layout.width} height={layout.height} aria-hidden="true">
-            {layout.edges.map((edge) => (
+            {layout.edges.filter(edge => !visible || (visible.has(edge.from) && visible.has(edge.to))).map((edge) => (
               <path key={`${edge.from}-${edge.to}`} d={edge.path}
                 data-lineage={(ancestors.has(edge.from) && (ancestors.has(edge.to) || edge.to === selectedId)) || undefined} />
             ))}
           </svg>
 
-          {layout.nodes.map(({ proposition, x, y }) => (
+          {layout.nodes.filter(node => !visible || visible.has(node.proposition.id)).map(({ proposition, x, y }) => (
             <GraphNode key={proposition.id} proposition={proposition} x={x} y={y}
               lineage={selectedId === proposition.id ? 'selected' : ancestors.has(proposition.id) ? 'ancestor' : 'unrelated'}
               overlay={overlays.get(proposition.id)} participants={positions.get(proposition.id) || NO_PARTICIPANTS} onSelect={select} />
@@ -140,6 +145,7 @@ export function PropositionGraph({ propositions, substrateSlug, initialFocusId, 
         </Box>
       </Box>
     </Box>
+    </GraphTensionPalette>
   );
 }
 

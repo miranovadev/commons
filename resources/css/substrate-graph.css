@@ -103,17 +103,8 @@
   background: color-mix(in srgb, var(--graph-overlay-color) var(--graph-overlay-strength), light-dark(var(--mantine-color-white), var(--mantine-color-dark-7)));
 }
 .proposition-card--graph > .mantine-Stack-root { position: relative; z-index: 1; width: 100%; }
-.proposition-card__domain {
-  position: absolute;
-  right: -34px;
-  bottom: -35px;
-  z-index: 0;
-  color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-gray-4));
-  opacity: .1;
-  pointer-events: none;
-}
 .substrate-graph-node { transition: opacity 160ms ease; }
-.substrate-graph-shell[data-has-selection] .substrate-graph-node[data-lineage="unrelated"] .proposition-card { opacity: .62; }
+.substrate-graph-shell[data-has-selection] .substrate-graph-node[data-lineage="unrelated"] .proposition-card { opacity: .5; filter: grayscale(1); }
 .substrate-graph-node[data-lineage="ancestor"] .proposition-card--graph {
   outline: 1px solid color-mix(in srgb, var(--mantine-color-indigo-5) 65%, transparent);
   outline-offset: 3px;
@@ -147,7 +138,9 @@
 .substrate-graph-node .proposition-card--mini.proposition-card--selected {
   border-color: var(--mantine-color-indigo-5);
   border-inline-start-color: var(--register-color);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--mantine-color-indigo-5) 25%, transparent), 0 8px 24px color-mix(in srgb, var(--mantine-color-dark-9) 16%, transparent);
+  border-width: 3px;
+  outline: none;
+  box-shadow: none;
 }
 
 .substrate-graph-origin-label {
