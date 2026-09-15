@@ -155,6 +155,15 @@ class ParticipationPerformanceTest extends TestCase
             $counts[] = [$hydrated, count($planQueries), count($workspaceQueries)];
             fwrite(STDERR, sprintf("\nSCALE history=%d total=%d hydrated=%d context=%.2fms/%dq plan=%.2fms/%dq workspace=%.2fms/%dq\n",
                 $history, Proposition::count(), $hydrated, $contextMs, count($queries), $planMs, count($planQueries), $workspaceMs, count($workspaceQueries)));
+            if ($history && getenv('COMMONS_PROFILE_SQL') && DB::getDriverName() === 'pgsql') {
+                foreach (collect($planQueries)->sortByDesc('time')->take(3) as $query) {
+                    fwrite(STDERR, sprintf("\nPLAN SQL %.2fms: %s\n", $query['time'], $query['query']));
+                    if ($query['time'] > 100) {
+                        $explain = DB::select('EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) '.$query['query'], $query['bindings']);
+                        fwrite(STDERR, 'PLAN EXPLAIN '.json_encode($explain, JSON_THROW_ON_ERROR)."\n");
+                    }
+                }
+            }
             $this->assertSame($plan['schema'], $workspace['schema']);
             if ($history === 0) {
                 $before = $this->comparablePlan($plan);

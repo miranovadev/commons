@@ -12,7 +12,15 @@ concurrency:
 
 jobs:
   test:
-    name: PHP 8.5 / PostgreSQL 18 / Node 24
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: PHP 8.5 / PostgreSQL 18 / Node 24
+            profile: false
+          - name: PostgreSQL participation profile
+            profile: true
     runs-on: ubuntu-latest
     # Includes the exhaustive unbatched PostgreSQL reference calculation.
     timeout-minutes: 20
@@ -75,29 +83,42 @@ jobs:
         run: composer install --prefer-dist --no-interaction --no-progress
 
       - name: Set up Node
+        if: ${{ !matrix.profile }}
         uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
 
       - name: Install frontend dependencies
+        if: ${{ !matrix.profile }}
         run: npm ci
 
       - name: Build frontend
+        if: ${{ !matrix.profile }}
         run: npm run build
 
       - name: Test frontend action contracts
+        if: ${{ !matrix.profile }}
         run: npm run test:ui
 
       - name: Prepare test environment
         run: cp .env.example .env
 
       - name: Check optimistic reads and PostgreSQL contention
+        if: ${{ !matrix.profile }}
         env:
           PGOPTIONS: '-c statement_timeout=30s'
         run: php artisan test --filter 'TransactionLockOrderTest|ParticipantContextTest' --stop-on-failure
 
       - name: Run test suite
+        if: ${{ !matrix.profile }}
         env:
           PGOPTIONS: '-c statement_timeout=30s'
         run: php artisan test --display-warnings
+
+      - name: Profile scoped PostgreSQL reads
+        if: ${{ matrix.profile }}
+        env:
+          PGOPTIONS: '-c statement_timeout=30s'
+          COMMONS_PROFILE_SQL: '1'
+        run: php artisan test --filter 'historical_population|ReceiptContextMigrationTest' --display-warnings
