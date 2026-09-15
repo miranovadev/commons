@@ -91,7 +91,7 @@ final readonly class ParticipationService
 
             return [...$this->waiting(
                 $recovering ? 'recovery_unavailable' : 'cycle_not_started',
-                $recovering ? 'Rest completed; no eligible Committal in the recovery basins is available for recovery.' : 'The Participant is waiting for a Cycle to begin.',
+                $recovering ? 'Rest completed; no viable recovery basin is available.' : 'The Participant is waiting for a Cycle to begin.',
                 entry: $this->entryFor($participant),
             ), 'completion' => $completed !== null && $completed->rested_at === null && $finalPhase?->kind === PhaseKind::Order ? [
                 'cycle_id' => $completed->id,

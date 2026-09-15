@@ -169,6 +169,7 @@ final readonly class PotentialChargeService
         if ($startingBasin->substrate_id !== $substrateId) {
             throw new DomainException('Recovery cannot cross substrates.');
         }
+        app(CausalContextService::class)->assertGate($position, $startingBasin);
         $horizons = ContextHorizon::where('substrate_id', $substrateId)->get()->keyBy('id');
         $opened = $horizons->whereNotNull('opened_by_proposition_id')->keyBy('opened_by_proposition_id');
         $propositions = Proposition::query()

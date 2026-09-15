@@ -179,7 +179,7 @@ export function ContributionForm({
 
           {action === 'proposition.bias' && <Text size="sm" c="dimmed">The selected Proposition becomes fresh Concord/Canon with its statement preserved. Existing proposition evidence remains available; Attestations and phase history begin afresh.</Text>}
 
-          {action === 'participant.rest' && <Text size="sm" c="dimmed">No admissible non-Rest action remains in this Phase. End this Cycle and prepare Phase 1 at an eligible ancestral Committal.</Text>}
+          {action === 'participant.rest' && <Text size="sm" c="dimmed">No admissible non-Rest action remains in this Phase. End this Cycle and prepare Phase 1 at an eligible Committal in a viable Domain.</Text>}
 
           {action === 'proposition.commit' && commitment?.closure && <Text size="sm">Selected source: Depth {commitment.closure.depth} ({commitment.closure.depth_direction}) · Cadence {commitment.closure.cadence} ({commitment.closure.cadence_direction}).</Text>}
 

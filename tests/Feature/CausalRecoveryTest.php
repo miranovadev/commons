@@ -548,6 +548,16 @@ class CausalRecoveryTest extends TestCase
         $this->assertSame([], $writes);
     }
 
+    public function test_recovery_cannot_be_scoped_to_an_unrelated_horizon_by_a_supplied_context(): void
+    {
+        [$origin, $h2, $commit, $h3] = $this->boundaryChain();
+        $sibling = $this->committal($h2, .8, $origin, boundary: true);
+        $position = $this->expressive($h3, $commit);
+        $this->expectException(DomainException::class);
+        app(PotentialChargeService::class)->inspectRecoveryFrom($position,
+            app(ContextHorizonProjector::class)->forEntry($sibling));
+    }
+
     private function boundaryChain(): array
     {
         $origin = $this->committal($this->root, -.9, boundary: true);
