@@ -1,3 +1,5 @@
+import { useContext } from 'react';
+import { GraphTensionPalette } from '../graphPresentation';
 import { Badge, Box, Group, SimpleGrid, Stack, Text, ThemeIcon, Tooltip } from '@mantine/core';
 import { IconArrowRight, IconBolt, IconHexagon, IconHexagonalPrism, IconLayersDifference } from '@tabler/icons-react';
 import { ParticipantAvatar } from './ParticipantIdentity';
@@ -134,29 +136,29 @@ function FieldValues({ field, observables, committalObservables, tier, compact =
   const state = field ? (field.tension === null || field.charge === null ? null : { tension: field.tension, charge: field.charge }) : fieldState(observables);
   const committed = fieldState(committalObservables);
 
-  if (!state) return <Text size="xs" c="dimmed">Field awaiting complete measurement</Text>;
+  if (!state && !field) return <Text size="xs" c="dimmed">Field awaiting complete measurement</Text>;
 
   const values = [
     {
       key: 'tension',
       label: 'Tension',
       icon: IconLayersDifference,
-      value: state.tension,
-      delta: expressive && committed ? state.tension - committed.tension : null,
+      value: state?.tension ?? null,
+      delta: expressive && committed && state ? state.tension - committed.tension : null,
       signed: true,
     },
     {
       key: 'charge',
       label: expressive ? 'Expressive Charge' : 'Charge',
       icon: IconHexagon,
-      value: state.charge,
-      delta: expressive && committed ? state.charge - committed.charge : null,
+      value: state?.charge ?? null,
+      delta: expressive && committed && state ? state.charge - committed.charge : null,
     },
     ...(expressive || field ? [{
       key: 'potential-charge',
       label: field?.potential_basis === 'region' ? 'Region Potential Charge' : 'Potential Charge',
       icon: IconHexagonalPrism,
-      value: field ? field.potential_charge : committed ? Math.max(0, state.charge - committed.charge) : null,
+      value: field ? field.potential_charge : committed && state ? Math.max(0, state.charge - committed.charge) : null,
       delta: null,
     }] : []),
   ];
@@ -180,13 +182,14 @@ function FieldValue({ label, icon: Icon, value, delta, signed: signedValue = fal
   compact?: boolean;
   stale?: boolean;
 }) {
+  const tensionPalette = useContext(GraphTensionPalette);
   const sign = value === null || value === 0 ? 'neutral' : value < 0 ? 'negative' : 'positive';
   const color = 'var(--field-color)';
   const readout = value === null ? (compact ? '—' : 'Awaiting measurement') : number(value, signedValue);
   const deltaReadout = delta === null ? null : `Δ ${number(delta, true)} from Committal`;
   const description = `${label}: ${readout}${stale ? ' · last measured' : ''}${deltaReadout ? ` · ${deltaReadout}` : ''}`;
   const content = (
-    <Box className="field-value" data-sign={sign} data-directional={signedValue || undefined} data-compact={compact || undefined} aria-label={description}>
+    <Box className="field-value" data-sign={sign} data-directional={signedValue || undefined} data-tension-palette={signedValue ? tensionPalette : undefined} data-compact={compact || undefined} aria-label={description}>
       <Group gap={5} wrap="nowrap">
         <ThemeIcon color={color} variant={compact ? 'transparent' : 'light'} size={compact ? 22 : 28}>
           <Icon size={compact ? 15 : 17} />

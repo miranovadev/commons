@@ -28,3 +28,9 @@ export function causalAncestors(parents: Map<Identifier, Set<Identifier>>, selec
   }
   return ancestors;
 }
+
+/** Null means the whole dataset; isolation never changes topology or selection. */
+export function lineageVisibility(parents: Map<Identifier, Set<Identifier>>, selectedId: Identifier | null,
+  ancestors: Set<Identifier>, isolate: boolean) {
+  return isolate && selectedId !== null && parents.has(selectedId) ? new Set([...ancestors, selectedId]) : null;
+}

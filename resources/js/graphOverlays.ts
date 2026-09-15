@@ -20,7 +20,7 @@ const measured = (label: string, value: number | null | undefined, status?: stri
 
 /** Adding a lens changes this registry, never the card's rendering rules. */
 export const graphOverlayDefinitions = {
-  none: { label: 'None', legend: 'Domain and register structure', resolve: () => wash('indigo', 0, '') },
+  none: { label: 'None', legend: 'Register and causal structure', resolve: () => wash('indigo', 0, '') },
   participation: {
     label: 'Participation', legend: 'Phase touches · low → high',
     resolve: (p, scale) => {

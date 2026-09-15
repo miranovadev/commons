@@ -1,5 +1,4 @@
 import { Card, VisuallyHidden } from '@mantine/core';
-import { IconSunHigh, IconSunWind } from '@tabler/icons-react';
 import { metaForRegister } from '../registers';
 import { PropositionContent } from './PropositionContent';
 import type { Observables, Proposition } from '../types';
@@ -42,7 +41,6 @@ export function PropositionCard({
 }: PropositionCardProps) {
   const register = metaForRegister(proposition.register);
   const domain = graph ? proposition.context_horizon?.domain : undefined;
-  const DomainIcon = domain === 'settlement' ? IconSunWind : IconSunHigh;
   const structurallyHighlighted = indigoHighlight;
   const classes = [
     'proposition-card',
@@ -73,7 +71,6 @@ export function PropositionCard({
       onClick={onClick}
     >
       {domain && <>
-        <DomainIcon className="proposition-card__domain" size={152} stroke={2.1} aria-hidden="true" />
         <VisuallyHidden>{domain === 'settlement' ? 'Settlement' : 'Emergence'} Domain.</VisuallyHidden>
       </>}
       <PropositionContent
