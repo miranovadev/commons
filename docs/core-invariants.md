@@ -137,7 +137,7 @@ entry when a current position exists. Any entry fallback remains Committal and
 respects that observational position. A prospective Commitment is not eligible
 until the Committal Proposition exists.
 
-Rest recovery follows all causal parent paths, across any number of Domain boundaries, and compares all positive ancestral Committals after distance attenuation. It never substitutes generic graph reachability or stops at the first positive distance. The exhausted position is not a recovery destination.
+Rest recovery derives its search basin from the Participant’s persisted Cycle Horizon and its explicit descendant/parent topology. Viable downstream Domains take precedence over their ancestors. Sibling frontiers remain peers, ranked by existing observer-distance-attenuated Potential Charge. Only exhaustion of the current subtree permits retreat through its own provenance. Within an eligible basin, all reachable Committal entry points compete, including local branches; generic graph reachability alone never grants Domain eligibility. The exhausted position is not a recovery destination. Origin remains reachable through provenance when it has positive Potential; complete exhaustion preserves Rest without inventing a new Cycle.
 
 Potential selects a Committal. That Committal determines the entry Horizon: its own creating Horizon, or the direct child explicitly opened by its boundary. Closure markers do not prohibit causal backtracking. Entry must never search arbitrary open descendants to make an old Gate fit. Persisted ownership remains `Proposition → Phase → Cycle → Context Horizon → Domain`; Gates must belong to or explicitly open their Cycle Horizon, and writes must use that Domain's vocabulary.
 
