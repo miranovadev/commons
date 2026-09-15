@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Domain\Observables\ObservableValues;
 use App\Models\CommitmentSnapshot;
+use App\Models\ContextHorizon;
 use App\Models\Proposition;
 use App\Models\Substrate;
 use App\Services\Observables\LineageMeasurementService;
@@ -16,6 +17,7 @@ final readonly class PotentialChargeService
     public function __construct(
         private ProjectionService $projections,
         private PropositionMeasurementService $measurements,
+        private RecoveryBasinResolver $basins,
     ) {}
 
     /**
@@ -124,13 +126,11 @@ final readonly class PotentialChargeService
      * @param  Collection<int, object>  $edges
      * @return array<string, int>
      */
-    private function distancesFrom(Proposition $position, Collection $edges, bool $ancestorsOnly = false): array
+    private function distancesFrom(Proposition $position, Collection $edges): array
     {
         $adjacency = [];
         foreach ($edges as $edge) {
-            if (! $ancestorsOnly) {
-                $adjacency[$edge->source_proposition_id][$edge->target_proposition_id] = true;
-            }
+            $adjacency[$edge->source_proposition_id][$edge->target_proposition_id] = true;
             $adjacency[$edge->target_proposition_id][$edge->source_proposition_id] = true;
         }
         $frontier = [$position->getKey()];
@@ -151,62 +151,94 @@ final readonly class PotentialChargeService
         return $distances;
     }
 
-    /**
-     * Rest recovery follows every causal parent path, across Committal/Domain
-     * boundaries. Compare all ancestors after observer-distance attenuation;
-     * the first positive distance does not necessarily contain the winner.
-     *
-     * @return array{proposition: Proposition, potential_charge: float, charge: float, raw_potential_charge: float, raw_charge: float, distance: int}|null
-     */
-    public function recoverFrom(Proposition $position): ?array
+    /** Domain-scoped recovery; ordinary continuation and initial entry are unchanged. */
+    public function recoverFrom(Proposition $position, ?ContextHorizon $startingBasin = null): ?array
+    {
+        return $this->inspectRecoveryFrom($position, $startingBasin)['selection'];
+    }
+
+    /** Read-only diagnostics share exactly the selection path used by Cycle entry. */
+    public function inspectRecoveryFrom(Proposition $position, ?ContextHorizon $startingBasin = null): array
     {
         $substrateId = $position->phase->cycle->participant->substrate_id;
+        // A retained boundary belongs to its creating Domain but enters its child.
+        // Callers with a completed Cycle supply that Cycle's durable Horizon.
+        $startingBasin ??= $position->tier === 'committal' && $position->commitmentSnapshot !== null
+            ? app(ContextHorizonProjector::class)->forEntry($position)
+            : $position->phase->cycle->contextHorizon;
+        if ($startingBasin->substrate_id !== $substrateId) {
+            throw new DomainException('Recovery cannot cross substrates.');
+        }
+        $horizons = ContextHorizon::where('substrate_id', $substrateId)->get()->keyBy('id');
+        $opened = $horizons->whereNotNull('opened_by_proposition_id')->keyBy('opened_by_proposition_id');
         $propositions = Proposition::query()
-            ->whereHas('phase.cycle.participant', fn ($query) => $query
-                ->where('substrate_id', $substrateId))
-            ->with(['measurement', 'commitmentSnapshot'])
+            ->whereHas('phase.cycle.participant', fn ($query) => $query->where('substrate_id', $substrateId))
+            ->with(['measurement', 'commitmentSnapshot', 'phase.cycle'])
             ->get()->keyBy('id');
-        $this->measurements->observeMissing($propositions->filter(fn ($item) => $item->measurement !== null));
         $edges = DB::table('supersessions')
             ->whereIn('source_proposition_id', $propositions->keys())
             ->whereIn('target_proposition_id', $propositions->keys())
             ->get(['source_proposition_id', 'target_proposition_id']);
         $outgoing = $edges->groupBy('source_proposition_id');
-        $distances = $this->distancesFrom($position, $edges, ancestorsOnly: true);
-        $ranked = [];
-        foreach ($distances as $id => $distance) {
-            $candidate = $propositions->get($id);
-            $snapshot = $candidate?->commitmentSnapshot;
-            // The exhausted position is not a recovery destination, even when
-            // it is itself Committal. Shared ancestors occur once at shortest distance.
-            if ($distance === 0 || $candidate?->tier !== 'committal' || $snapshot === null) {
-                continue;
-            }
-            $potential = $this->potentialFor(
-                $id, $snapshot->tension, $propositions, $outgoing,
-                $position->getKey(),
-            );
-            if ($potential <= 0) {
-                continue;
-            }
-            $charge = round(1 - abs($snapshot->tension), 7);
-            $weight = LineageMeasurementService::attenuation($distance);
-            $ranked[] = [
-                'proposition' => $candidate,
-                'potential_charge' => $potential * $weight,
-                'charge' => $charge * $weight,
-                'raw_potential_charge' => $potential,
-                'raw_charge' => $charge,
-                'distance' => $distance,
-            ];
-        }
+        // Topology determines eligibility. Undirected parent/child distance only
+        // supplies the established observer attenuation for local/sibling routes.
+        $distances = $this->distancesFrom($position, $edges);
+        $members = $propositions->groupBy(fn (Proposition $node) => $node->phase->cycle->context_horizon_id);
+        $entries = $propositions->filter(fn (Proposition $node) => $node->tier === 'committal'
+            && $node->commitmentSnapshot?->substrate_id === $substrateId)
+            ->groupBy(function (Proposition $node) use ($opened): string {
+                // A boundary's entry belongs exclusively to its direct child.
+                return $node->commitmentSnapshot->isClosureBoundary()
+                    ? ($opened->get($node->id)?->id ?? '')
+                    : $node->phase->cycle->context_horizon_id;
+            });
+        $result = $this->basins->resolve($startingBasin, $horizons,
+            function (ContextHorizon $basin) use ($position, $members, $entries, $outgoing, $distances): Collection {
+                $candidates = $entries->get($basin->id, collect())
+                    ->filter(fn (Proposition $node) => $node->id !== $position->id && isset($distances[$node->id]));
+                if ($candidates->isEmpty()) {
+                    return collect();
+                }
+                // Scope before observation and scoring. A boundary seed is added
+                // as provenance; expressive evidence comes only from this Domain.
+                $local = $members->get($basin->id, collect())->keyBy('id')->union($candidates->keyBy('id'));
+                $this->measurements->observeMissing($local->filter(fn ($node) => $node->measurement !== null));
+                $ranked = collect();
+                foreach ($candidates as $candidate) {
+                    $snapshot = $candidate->commitmentSnapshot;
+                    $potential = $this->potentialFor($candidate->id, $snapshot->tension, $local, $outgoing, $position->id);
+                    if ($potential <= 0) {
+                        continue;
+                    }
+                    $charge = round(1 - abs($snapshot->tension), 7);
+                    $distance = $distances[$candidate->id];
+                    $weight = LineageMeasurementService::attenuation($distance);
+                    $ranked->push([
+                        'proposition' => $candidate,
+                        'potential_charge' => $potential * $weight,
+                        'charge' => $charge * $weight,
+                        'raw_potential_charge' => $potential,
+                        'raw_charge' => $charge,
+                        'distance' => $distance,
+                        'context_horizon_id' => $basin->id,
+                    ]);
+                }
 
+                return $ranked;
+            });
+        $ranked = $result['candidates']->all();
         usort($ranked, fn (array $left, array $right): int => ($right['potential_charge'] <=> $left['potential_charge'])
             ?: ($right['charge'] <=> $left['charge'])
             ?: ($left['distance'] <=> $right['distance'])
             ?: strcmp($left['proposition']->getKey(), $right['proposition']->getKey()));
 
-        return $ranked[0] ?? null;
+        return [
+            'selection' => $ranked[0] ?? null,
+            'starting_context_horizon_id' => $startingBasin->id,
+            'searched_basins' => $result['searched_basins'],
+            'fallback_depth' => $result['fallback_depth'],
+            'eligible_candidate_ids' => array_map(fn (array $candidate) => $candidate['proposition']->id, $ranked),
+        ];
     }
 
     /**

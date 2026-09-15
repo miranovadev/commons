@@ -90,7 +90,7 @@ class CausalRecoveryTest extends TestCase
         $this->assertSame(.9, $selection['raw_potential_charge']);
     }
 
-    public function test_descendants_siblings_and_disconnected_regions_are_not_recovery_candidates(): void
+    public function test_connected_descendants_and_siblings_compete_locally_but_disconnected_regions_do_not(): void
     {
         $ancestor = $this->committal($this->root, .1);
         $position = $this->expressive($this->root, $ancestor);
@@ -100,7 +100,10 @@ class CausalRecoveryTest extends TestCase
         foreach ([$ancestor, $descendant, $sibling, $disconnected] as $candidate) {
             $this->opportunity($candidate);
         }
-        $this->assertSame($ancestor->id, $this->recover($position)['proposition']->id);
+        $selection = $this->recover($position);
+        $this->assertSame($descendant->id, $selection['proposition']->id);
+        $this->assertSame(1, $selection['distance']);
+        $this->assertNotSame($disconnected->id, $selection['proposition']->id);
     }
 
     public function test_recovery_cannot_borrow_potential_through_the_exhausted_position(): void
@@ -355,6 +358,194 @@ class CausalRecoveryTest extends TestCase
         $migration->down();
         $migration->up();
         $this->assertSame($attributes, $node->fresh()->getAttributes());
+    }
+
+    public function test_old_domain_rest_enters_viable_downstream_domain_despite_origins_greater_potential(): void
+    {
+        [$origin, $h2, $commit, $h3] = $this->boundaryChain();
+        $position = $this->expressive($h2, $origin);
+        $this->opportunity($origin);
+        $this->opportunity($commit);
+        $participant = $this->resting($h2, $position);
+        $selection = $this->recover($position);
+        $this->assertSame($commit->id, $selection['proposition']->id);
+        $this->assertSame($h3->id, $selection['context_horizon_id']);
+        $this->assertSame(.01, $selection['raw_potential_charge']);
+        $this->assertGreaterThan(.01, abs($origin->commitmentSnapshot->tension));
+        app(CycleEntryService::class)->prepare($participant);
+        $cycle = $participant->cycles()->whereNull('completed_at')->sole();
+        $this->assertSame($h3->id, $cycle->context_horizon_id);
+        $this->assertSame('activity', $cycle->currentPhase->write_register);
+        $this->assertSame($commit->id, $participant->fresh()->current_proposition_id);
+    }
+
+    public function test_real_rest_moves_downstream_without_changing_another_participants_active_cycle(): void
+    {
+        [$origin, $h2, $commit, $h3] = $this->boundaryChain();
+        $position = $this->expressive($h2, $origin);
+        $this->opportunity($origin);
+        $this->opportunity($commit);
+        $participant = $this->participant();
+        $phase = $this->phase($h2, $position, participant: $participant);
+        $participant->forceFill(['current_proposition_id' => $position->id])->save();
+        $other = $this->participant();
+        $otherPhase = $this->phase($h2, $origin, PhaseKind::Distinguish, $other);
+        $other->forceFill(['current_proposition_id' => $origin->id])->save();
+        $this->refreshMeasurements();
+        $before = [$other->fresh()->getAttributes(), $otherPhase->fresh()->getAttributes(), $otherPhase->cycle->fresh()->getAttributes()];
+        $result = app(ParticipationService::class)->contribute($participant, $phase->id, ['action' => 'participant.rest']);
+        $this->assertSame('ready', $result['status']);
+        $this->assertSame($commit->id, $result['plan']['gate_id']);
+        $this->assertSame($h3->id, $result['cycle']['context_horizon_id']);
+        $this->assertSame('emergence', $result['domain']);
+        $this->assertNotNull($phase->cycle->fresh()->rested_at);
+        app(CycleEntryService::class)->prepare($other);
+        $this->assertSame($before, [$other->fresh()->getAttributes(), $otherPhase->fresh()->getAttributes(), $otherPhase->cycle->fresh()->getAttributes()]);
+    }
+
+    public function test_local_potential_selects_among_non_boundary_committals_within_the_downstream_basin(): void
+    {
+        [$origin, $h2, $commit, $h3] = $this->boundaryChain();
+        $position = $this->expressive($h2, $origin);
+        $local = $this->committal($h3, .9, $commit);
+        $this->opportunity($origin);
+        $this->opportunity($commit);
+        $this->opportunity($local);
+        $selection = $this->recover($position);
+        $this->assertSame($local->id, $selection['proposition']->id);
+        $this->assertSame($h3->id, $selection['context_horizon_id']);
+        $this->assertSame(3, $selection['distance']);
+        $this->assertEqualsWithDelta(.9 / 16, $selection['potential_charge'], 1e-9);
+    }
+
+    public function test_sibling_domains_compete_by_potential_without_a_latest_commit_bonus(): void
+    {
+        [$origin, $h2, $first, $h3] = $this->boundaryChain();
+        $winner = $this->committal($h2, .8, $origin, boundary: true);
+        $newest = $this->committal($h2, .02, $origin, boundary: true);
+        foreach ([$origin, $first, $winner, $newest] as $candidate) {
+            $this->opportunity($candidate);
+        }
+        $position = $this->expressive($h2, $origin);
+        $selection = $this->recover($position);
+        $this->assertSame($winner->id, $selection['proposition']->id);
+        $this->assertSame(2, $selection['distance']);
+        $this->assertEqualsWithDelta(.8 / 9, $selection['potential_charge'], 1e-9);
+    }
+
+    public function test_viable_current_domain_retains_its_participant_despite_stronger_sibling_and_origin(): void
+    {
+        [$origin, $h2, $commit, $h3] = $this->boundaryChain();
+        $sibling = $this->committal($h2, .8, $origin, boundary: true);
+        foreach ([$origin, $commit, $sibling] as $candidate) {
+            $this->opportunity($candidate);
+        }
+        $position = $this->expressive($h3, $commit);
+        $this->assertSame($commit->id, $this->recover($position)['proposition']->id);
+    }
+
+    public function test_exhausted_current_domain_can_reach_a_sibling_through_its_parent_before_returning_to_origin(): void
+    {
+        [$origin, $h2, $commit, $h3] = $this->boundaryChain();
+        $sibling = $this->committal($h2, .01, $origin, boundary: true);
+        $this->opportunity($origin);
+        $this->opportunity($sibling);
+        $position = $this->expressive($h3, $commit);
+        $this->refreshMeasurements();
+        $inspection = app(PotentialChargeService::class)->inspectRecoveryFrom($position, $h3);
+        $this->assertSame($sibling->id, $inspection['selection']['proposition']->id);
+        $this->assertSame(1, $inspection['fallback_depth']);
+        $this->assertSame([$sibling->id], $inspection['eligible_candidate_ids']);
+    }
+
+    public function test_viable_descendant_shadows_its_parent_even_with_very_small_positive_potential(): void
+    {
+        [$origin, $h2, $commit, $h3] = $this->boundaryChain();
+        $later = $this->committal($h3, -.00001, $commit, boundary: true);
+        $h4 = app(ContextHorizonProjector::class)->forEntry($later);
+        foreach ([$origin, $commit, $later] as $candidate) {
+            $this->opportunity($candidate);
+        }
+        $position = $this->expressive($h2, $origin);
+        $selection = $this->recover($position);
+        $this->assertSame($later->id, $selection['proposition']->id);
+        $this->assertSame($h4->id, $selection['context_horizon_id']);
+    }
+
+    public function test_a_deeper_sibling_does_not_receive_a_depth_bonus_over_another_viable_frontier(): void
+    {
+        [$origin, $h2, $commit, $h3] = $this->boundaryChain();
+        $deep = $this->committal($h3, -.001, $commit, boundary: true);
+        $sibling = $this->committal($h2, .5, $origin, boundary: true);
+        foreach ([$origin, $commit, $deep, $sibling] as $candidate) {
+            $this->opportunity($candidate);
+        }
+        $position = $this->expressive($h2, $origin);
+        $selection = $this->recover($position);
+        $this->assertSame($sibling->id, $selection['proposition']->id);
+    }
+
+    public function test_downstream_basin_cannot_borrow_potential_from_cross_domain_expressive_edges(): void
+    {
+        [$origin, $h2, $commit, $h3] = $this->boundaryChain();
+        $historical = $this->expressive($h2, $origin);
+        $this->measurements[$historical->id] = 0;
+        $this->edge($commit, $historical); // Legacy cross-Domain edge cannot expand the scoring scope.
+        $position = $this->expressive($h2, $origin);
+        $this->assertSame($origin->id, $this->recover($position)['proposition']->id);
+    }
+
+    public function test_zero_potential_downstream_domain_reactivates_historical_domain_without_changing_history(): void
+    {
+        [$origin, $h2, $commit, $h3] = $this->boundaryChain();
+        $this->opportunity($origin);
+        $position = $this->expressive($h3, $commit);
+        $before = ContextHorizon::orderBy('sequence')->get()->map->getAttributes()->all();
+        $this->assertSame($origin->id, $this->recover($position)['proposition']->id);
+        $this->assertSame($before, ContextHorizon::orderBy('sequence')->get()->map->getAttributes()->all());
+        // New shared evidence reactivates the child on the next observation.
+        $this->opportunity($commit);
+        $this->assertSame($commit->id, $this->recover($position)['proposition']->id);
+    }
+
+    public function test_retained_boundary_position_uses_its_entry_horizon_and_excludes_self_reentry(): void
+    {
+        [$origin, $h2, $commit, $h3] = $this->boundaryChain();
+        $this->opportunity($origin);
+        $this->opportunity($commit);
+        $local = $this->committal($h3, .2, $commit);
+        $this->opportunity($local);
+        $this->refreshMeasurements();
+        $inspection = app(PotentialChargeService::class)->inspectRecoveryFrom($commit);
+        $this->assertSame($h3->id, $inspection['starting_context_horizon_id']);
+        $this->assertSame($local->id, $inspection['selection']['proposition']->id);
+        $this->assertNotContains($commit->id, $inspection['eligible_candidate_ids']);
+    }
+
+    public function test_recovery_diagnostics_and_selection_are_read_only(): void
+    {
+        [$origin, $h2, $commit, $h3] = $this->boundaryChain();
+        $position = $this->expressive($h2, $origin);
+        $this->opportunity($commit);
+        $this->refreshMeasurements();
+        $participant = $this->resting($h2, $position);
+        $before = [Cycle::count(), Proposition::count(), $participant->fresh()->getAttributes()];
+        $writes = [];
+        DB::listen(function ($query) use (&$writes): void {
+            if (preg_match('/^\s*(insert|update|delete|alter|create)\b/i', $query->sql)) {
+                $writes[] = $query->sql;
+            }
+        });
+        $inspection = app(PotentialChargeService::class)->inspectRecoveryFrom($position, $h2);
+        $this->assertSame($commit->id, $inspection['selection']['proposition']->id);
+        $this->assertSame($h2->id, $inspection['starting_context_horizon_id']);
+        $this->assertSame(0, $inspection['fallback_depth']);
+        $this->assertSame([$h3->id], array_column($inspection['searched_basins'], 'context_horizon_id'));
+        $this->assertSame($before, [Cycle::count(), Proposition::count(), $participant->fresh()->getAttributes()]);
+        $this->artisan('commons:recovery-inspect', ['participant' => $participant->id])
+            ->expectsOutputToContain($commit->id)
+            ->assertSuccessful();
+        $this->assertSame([], $writes);
     }
 
     private function boundaryChain(): array
