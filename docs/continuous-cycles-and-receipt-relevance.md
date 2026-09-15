@@ -59,7 +59,7 @@ output and other failures retain the existing queue failure/backoff behavior.
 `PARTICIPANT_MAX_ACTIONS_PER_WAKE` defaults to **64 inference attempts**, including
 stale conflicts. At the limit the job exits successfully with the existing Cycle
 and Phase active. No Rest or terminal action is manufactured.
-`PARTICIPANT_WAKE_TIMEOUT` defaults to **1800 seconds**. Database, Redis and
+`PARTICIPANT_WAKE_TIMEOUT` defaults to **1800 seconds**, with a 300-second minimum. Database, Redis and
 Beanstalkd default retry/visibility intervals exceed it by 60 seconds; explicit
 queue overrides and externally managed/SQS visibility settings must also exceed
 the job timeout. The normal action ceiling and hard worker timeout are operational

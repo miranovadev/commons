@@ -57,6 +57,17 @@ class RelevantInstrumentTest extends TestCase
         $this->assertSame($receipt->id, $relevance->equivalent($target, $equivalent)->id);
         $this->assertSame($receipt->id, $relevance->equivalent($target, $equivalent, new ParticipationContext($f->phase))->id);
         $action = ['action' => 'instrument.execute', 'proposition_id' => $target->id, 'instrument' => $equivalent];
+        $schema = app(ParticipationService::class)->stateFor($f->viewer)['plan']['schema'];
+        $normalized = app(InstrumentInvocation::class)->normalize($equivalent);
+        $this->assertSame([['receipt_id' => $receipt->id, 'invocation' => $normalized]], $schema['x-commons']['instrument_exclusions'][$target->id]);
+        $validator = new Validator;
+        $this->assertFalse($validator->validate(Helper::toJSON(array_replace($action, ['instrument' => $normalized])), Helper::toJSON($schema))->isValid());
+        try {
+            app(ContributionService::class)->validateSchema($schema, $action);
+            $this->fail('The authoritative schema accepted an equivalent normalized invocation.');
+        } catch (\InvalidArgumentException) {
+            $this->assertSame($count, InstrumentExecution::count());
+        }
         foreach ([fn () => $instruments->execute($f->phase, $target, $equivalent),
             fn () => app(ContributionDispatcher::class)->dispatch($f->viewer, $f->phase, $action),
             fn () => app(ParticipationService::class)->contribute($f->viewer, $f->phase->id, $action)] as $submit) {
