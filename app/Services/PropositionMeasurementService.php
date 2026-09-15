@@ -78,6 +78,36 @@ final class PropositionMeasurementService
         }
     }
 
+    /** Derive missing/stale values for this observation without writing projections or directions. */
+    public function observeMissing(Collection $propositions, ?ParticipationContext $context = null): void
+    {
+        foreach ($propositions as $original) {
+            $proposition = $context?->proposition($original) ?? $original;
+            $proposition->loadMissing('measurement');
+            if ($proposition->measurement === null
+                || $proposition->measurement->calculator_version !== LineageMeasurementService::VERSION) {
+                $measurable = $context !== null ? $context->memberships->has($proposition->id)
+                    : ContextHorizonMembership::whereKey($proposition->id)->exists();
+                if ($measurable) {
+                    $snapshot = $proposition->tier === 'committal'
+                        ? ($context !== null ? $context->snapshots->firstWhere('proposition_id', $proposition->id) : CommitmentSnapshot::find($proposition->id)) : null;
+                    $values = $snapshot ?? $this->observables->calculate($proposition, $context);
+                    $measurement = new PropositionMeasurement;
+                    $measurement->forceFill([
+                        'proposition_id' => $proposition->id,
+                        'correspondence' => $values->correspondence,
+                        'chirality' => $values->chirality,
+                        'closure' => $values->closure,
+                        'calculated_at' => now(),
+                        'calculator_version' => LineageMeasurementService::VERSION,
+                    ]);
+                    $proposition->setRelation('measurement', $measurement);
+                }
+            }
+            $original->setRelation('measurement', $proposition->measurement);
+        }
+    }
+
     public function project(
         Proposition $proposition,
         ?float $correspondence,
@@ -90,8 +120,7 @@ final class PropositionMeasurementService
         $this->assertMeasurement('closure', $closure);
 
         return DB::transaction(function () use ($proposition, $correspondence, $chirality, $closure, $calculatedAt): PropositionMeasurement {
-            // Standalone plan repair can update many shared nodes in one transaction.
-            // Serialize at the same root as contributions before taking any node lock.
+            // Maintenance and contribution writes use the same root-before-node order.
             Substrate::query()->lockForUpdate()->findOrFail($proposition->phase->cycle->participant->substrate_id);
             // Lock the Proposition so the numeric projection and retained direction move together.
             Proposition::query()->whereKey($proposition->id)->lockForUpdate()->firstOrFail();
@@ -147,7 +176,7 @@ final class PropositionMeasurementService
             if ($context === null) {
                 $position->load('measurement');
             }
-            $this->repairMissing(collect([$position]), $context);
+            $this->observeMissing(collect([$position]), $context);
             $value = $position->measurement?->correspondence;
             if ($value !== null && $value !== 0.0) {
                 return ObservableDirection::after($value);

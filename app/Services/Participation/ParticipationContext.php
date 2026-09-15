@@ -73,7 +73,7 @@ final class ParticipationContext
         $phase->loadMissing('cycle.participant.substrate');
         $this->substrate = $phase->cycle->participant->substrate;
         $this->propositions = Proposition::query()
-            ->whereHas('phase.cycle.participant', fn ($q) => $q->where('substrate_id', $this->substrate->id))
+            ->whereIn('id', $this->workingSetIds())
             ->with(['phase.cycle.participant', 'measurement', 'ledgerEntry'])->get()->keyBy('id');
         foreach ($this->propositions as $proposition) {
             $proposition->phase->cycle->participant->setRelation('substrate', $this->substrate);
@@ -81,7 +81,8 @@ final class ParticipationContext
         $ids = $this->propositions->keys();
         // Include outgoing hard edges even when their target is outside this substrate.
         $this->edges = Supersession::query()->where(fn ($q) => $q
-            ->whereIn('source_proposition_id', $ids)->orWhereIn('target_proposition_id', $ids))
+            ->where(fn ($q) => $q->whereIn('source_proposition_id', $ids)->where('type', '!=', 'variant'))
+            ->orWhereIn('target_proposition_id', $ids))
             ->with('ledgerEntry')->get();
         $this->parents = $this->edges->groupBy('target_proposition_id');
         $this->children = $this->edges->groupBy('source_proposition_id');
@@ -96,7 +97,7 @@ final class ParticipationContext
         foreach ($this->propositions as $proposition) {
             $proposition->phase->cycle->setRelation('contextHorizon', $this->horizons->get($proposition->phase->cycle->context_horizon_id));
         }
-        $this->memberships = ContextHorizonMembership::whereIn('context_horizon_id', $this->horizons->keys())->get()->keyBy('proposition_id');
+        $this->memberships = ContextHorizonMembership::whereIn('proposition_id', $ids)->get()->keyBy('proposition_id');
         $this->membershipsByHorizon = $this->memberships->groupBy('context_horizon_id');
         $this->frames = DB::table('commit_region_polarities')->whereIn('proposition_id', $ids)->get()->keyBy('proposition_id');
         $this->attestations = Attestation::whereIn('proposition_id', $ids)
@@ -115,12 +116,59 @@ final class ParticipationContext
         $this->reinforcements = $this->receiptContexts->whereNull('cleared_at');
         $this->receiptContextEvents = ReceiptContextEvent::whereIn('participant_receipt_context_id', $this->receiptContexts->pluck('id'))->with('ledgerEntry')->get();
         $this->receiptsBySubject = $this->receipts->groupBy(fn ($receipt) => $receipt->receiptable_type.':'.$receipt->receiptable_id);
-        $this->touches = Phase::query()->whereHas('cycle.participant', fn ($q) => $q->where('substrate_id', $this->substrate->id))
+        $this->touches = Phase::query()->whereIn('gate_proposition_id', $ids)
             ->whereNotNull('gate_proposition_id')->selectRaw('gate_proposition_id, count(*) as aggregate')
             ->groupBy('gate_proposition_id')->pluck('aggregate', 'gate_proposition_id');
-        $this->snapshots = CommitmentSnapshot::where('substrate_id', $this->substrate->id)
+        $this->snapshots = CommitmentSnapshot::whereIn('proposition_id', $ids)
             ->with('ledgerEntry')->get();
         $this->nextSequence = (int) SubstrateLedgerEntry::where('substrate_id', $this->substrate->id)->max('sequence') + 1;
+    }
+
+    /**
+     * The live Horizon plus its causal ancestors and comparison boundaries.
+     * Ownership seeds also retain legacy/unledgered candidates; membership still
+     * separately decides whether a proposition can be measured.
+     * Parent traversal is complete (including Commit-only inherited history).
+     * Outgoing edges are loaded separately so excluded hard successors still retire sources.
+     */
+    private function workingSetIds(): Collection
+    {
+        // Walk only newly discovered IDs. A recursive UNION over the full dependency
+        // relation can produce pathological PostgreSQL plans as table statistics grow.
+        $owned = DB::table('propositions')
+            ->join('phases', 'phases.id', '=', 'propositions.phase_id')
+            ->join('cycles', 'cycles.id', '=', 'phases.cycle_id')
+            ->join('participants', 'participants.id', '=', 'cycles.participant_id')
+            ->where('participants.substrate_id', $this->substrate->id);
+        $gate = (clone $owned)->where('propositions.id', $this->phase->gate_proposition_id)->select('propositions.id');
+        $ids = $owned->where('cycles.context_horizon_id', $this->phase->cycle->context_horizon_id)
+            ->selectRaw('propositions.id /* participation working set */')->union($gate)->pluck('id');
+        $seen = array_fill_keys($ids->all(), true);
+        $frontier = $ids;
+        while ($frontier->isNotEmpty()) {
+            $boundaries = DB::table('propositions')
+                ->join('phases', 'phases.id', '=', 'propositions.phase_id')
+                ->join('cycles', 'cycles.id', '=', 'phases.cycle_id')
+                ->join('context_horizons', 'context_horizons.id', '=', 'cycles.context_horizon_id')
+                ->whereIn('propositions.id', $frontier)
+                ->whereNotNull('context_horizons.opened_by_proposition_id')
+                ->select('context_horizons.opened_by_proposition_id as id');
+            $dependencies = DB::table('supersessions')->whereIn('target_proposition_id', $frontier)
+                ->select('source_proposition_id as id')->union($boundaries);
+            $frontier = DB::query()->fromSub($dependencies, 'dependencies')
+                ->join('propositions', 'propositions.id', '=', 'dependencies.id')
+                ->join('phases', 'phases.id', '=', 'propositions.phase_id')
+                ->join('cycles', 'cycles.id', '=', 'phases.cycle_id')
+                ->join('participants', 'participants.id', '=', 'cycles.participant_id')
+                ->where('participants.substrate_id', $this->substrate->id)
+                ->distinct()->pluck('propositions.id')
+                ->reject(fn ($id) => isset($seen[$id]));
+            foreach ($frontier as $id) {
+                $seen[$id] = true;
+            }
+        }
+
+        return collect(array_keys($seen));
     }
 
     public function remember(string $key, callable $calculate): mixed
@@ -132,7 +180,7 @@ final class ParticipationContext
         return $this->memo[$key];
     }
 
-    /** Reuse authoritative hydrated objects, including freshly repaired measurements. */
+    /** Reuse authoritative hydrated objects, including observation-local measurement fallbacks. */
     public function proposition(Proposition $position): Proposition
     {
         return $position->exists ? ($this->propositions->get($position->id) ?? $position) : $position;

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\PhaseKind;
 use App\Models\Phase;
 use App\Models\Proposition;
+use App\Models\Supersession;
 use App\Services\Participation\ParticipationContext;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -58,7 +59,12 @@ final readonly class PhaseGenerationService
             ? $this->regions->membersFor($gate, $context)->pluck('id')
             : collect([$gate->id]);
 
-        return ! Proposition::query()
+        // Sources are already resolved Propositions. Filtering the edge directly
+        // avoids a redundant parent join and global scans under stale statistics.
+        $results = Supersession::query()->select('target_proposition_id')
+            ->whereIn('source_proposition_id', $sources)
+            ->whereIn('type', ['variant', 'reclassify', 'commit']);
+        $check = fn () => ! Proposition::query()
             // Persist Variant belongs to the Participant/Gate, even if a later
             // Context Horizon presents that Gate with different register labels.
             ->when($phase->kind !== PhaseKind::Persist || $action !== 'proposition.variant',
@@ -66,9 +72,15 @@ final readonly class PhaseGenerationService
             ->where('tier', $phase->kind === PhaseKind::Order ? 'committal' : 'expressive')
             ->whereHas('phase', fn ($query) => $query->where('kind', $phase->kind->value)
                 ->whereHas('cycle', fn ($query) => $query->where('participant_id', $phase->cycle->participant_id)))
-            ->whereHas('parents', fn ($query) => $query->whereKey($sources)
-                ->whereIn('supersessions.type', ['variant', 'reclassify', 'commit']))
+            ->whereIn('id', $results)
             ->exists();
+
+        // Bias evaluates multiple Gates in one region. Its personal history is
+        // identical for that source set, but is never cached between calculations.
+        return $context === null ? $check() : $context->remember(
+            'generation-history:'.$phase->id.':'.$action.':'.$phase->write_register.':'.implode(',', $sources->sort()->all()),
+            $check,
+        );
     }
 
     /** Commits end the region, so its Write row is just outside expressive membership. */
@@ -79,7 +91,8 @@ final readonly class PhaseGenerationService
         return Proposition::query()->where('tier', 'committal')->where('register', $phase->write_register)->whereHas('commitmentSnapshot')
             ->whereHas('phase', fn ($query) => $query->where('kind', PhaseKind::Order->value)
                 ->whereHas('cycle.participant', fn ($query) => $query->where('substrate_id', $phase->cycle->participant->substrate_id)))
-            ->whereHas('parents', fn ($query) => $query->whereKey($sources)->where('supersessions.type', 'commit'))
+            ->whereIn('id', Supersession::query()->select('target_proposition_id')
+                ->whereIn('source_proposition_id', $sources)->where('type', 'commit'))
             ->orderBy('id')->get();
     }
 }

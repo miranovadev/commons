@@ -46,7 +46,16 @@ final class PropositionOptionService
             return collect();
         }
 
-        return Proposition::query()->whereKey($this->attestationOptionsFor($phase, $context)->pluck('id'))
+        $options = $this->attestationOptionsFor($phase, $context);
+        if ($context !== null) {
+            $attested = $context->effectiveAttestations($options->pluck('id'))
+                ->filter(fn ($attestation) => $attestation->phase->cycle->participant_id === $phase->cycle->participant_id)
+                ->pluck('proposition_id')->flip();
+
+            return $options->filter(fn ($node) => $attested->has($node->id))->sortBy('id')->values();
+        }
+
+        return Proposition::query()->whereKey($options->pluck('id'))
             ->whereHas('effectiveAttestations.phase.cycle', fn ($query) => $query
                 ->whereBelongsTo($phase->cycle->participant))
             ->orderBy('id')->get();
@@ -131,7 +140,7 @@ final class PropositionOptionService
             return collect();
         }
 
-        return Proposition::query()->whereDoesntHave('children')
+        $query = Proposition::query()->whereDoesntHave('children')
             ->whereKey($this->descendantIds($phase, $context))
             ->where('register', $phase->write_register)
             ->where('tier', 'expressive')
@@ -139,13 +148,23 @@ final class PropositionOptionService
             ->whereHas(
                 'phase.cycle',
                 fn (Builder $query) => $query->whereBelongsTo($participant),
-            )
-            ->whereHas('effectiveAttestations', fn (Builder $query) => $query
+            );
+        if ($context !== null) {
+            $refuted = $context->effectiveAttestations($context->propositions->keys())
+                ->filter(fn ($attestation) => $attestation->direction === 'refute'
+                    && $attestation->phase->cycle->participant_id === $participant->id
+                    && $attestation->phase->cycle->sequence < $phase->cycle->sequence)
+                ->pluck('proposition_id');
+            $query->whereKey($refuted);
+        } else {
+            $query->whereHas('effectiveAttestations', fn (Builder $query) => $query
                 ->where('direction', 'refute')
                 ->whereHas('phase.cycle', fn (Builder $query) => $query
                     ->whereBelongsTo($participant)
-                    ->where('sequence', '<', $phase->cycle->sequence)))
-            ->latest('created_at')
+                    ->where('sequence', '<', $phase->cycle->sequence)));
+        }
+
+        return $query->latest('created_at')
             ->limit($this->limit())
             ->get();
     }

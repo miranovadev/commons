@@ -78,11 +78,8 @@ class WakeParticipant implements ShouldQueue
                 if ($token !== null) {
                     rescue(fn () => $activity->heartbeat($participantConnection->participant, $token), report: true);
                 }
-                // Each plan and dispatch owns a short transaction. Inference
-                // never holds their locks, and every action gets fresh state.
-                if ($attempt > 0) {
-                    $state = $participation->stateFor($participantConnection->participant);
-                }
+                // Plans are optimistic reads. Only dispatch owns a write transaction;
+                // inference never holds locks, and every action gets fresh state.
                 if (($state['status'] ?? null) !== 'ready' || $state['cycle']['id'] !== $cycleId) {
                     break;
                 }
@@ -101,11 +98,15 @@ class WakeParticipant implements ShouldQueue
                 } catch (ConflictHttpException) {
                     // A discarded stale inference consumes an attempt too.
                     // Retry with fresh state, never replay its old payload.
+                    $state = $participation->stateFor($participantConnection->participant);
+
                     continue;
                 }
                 if (($after['cycle']['id'] ?? null) !== $cycleId || $after['status'] !== 'ready') {
                     break;
                 }
+                // contribute already returned a fresh post-commit observation.
+                $state = $after;
             }
             $triggers->recordSuccess($participantConnection);
         } catch (Throwable $exception) {

@@ -14,7 +14,6 @@ use App\Services\CommitRegionPolarityService;
 use App\Services\InputPlanService;
 use App\Services\LedgerService;
 use Illuminate\Database\Events\QueryExecuted;
-use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -30,7 +29,7 @@ class ParticipationSnapshotTest extends TestCase
         }
     }
 
-    public function test_concurrent_evidence_does_not_split_a_plan_and_the_next_plan_sees_it(): void
+    public function test_evidence_can_commit_during_an_optimistic_plan_and_the_next_plan_sees_it(): void
     {
         if (DB::getDriverName() !== 'pgsql') {
             $this->markTestSkipped('Requires two PostgreSQL connections and MVCC.');
@@ -76,25 +75,21 @@ class ParticipationSnapshotTest extends TestCase
                 $writer->table('proposition_measurements')->where('proposition_id', $candidate->id)->update(['calculator_version' => null]);
             });
         };
-        $blocked = false;
+        $written = false;
         $armed = true;
-        DB::listen(function (QueryExecuted $query) use (&$armed, &$blocked, $writer, $substrate): void {
+        DB::listen(function (QueryExecuted $query) use (&$armed, &$written, $write): void {
             if (! $armed || $query->connectionName === 'performance_writer' || ! str_contains($query->sql, 'from "supersessions"')) {
                 return;
             }
             $armed = false;
-            try {
-                $writer->transaction(fn () => $writer->table('substrates')->where('id', $substrate->id)->lock('for update nowait')->first());
-            } catch (QueryException $exception) {
-                $this->assertSame('55P03', $exception->errorInfo[0]);
-                $blocked = true;
-            }
+            $this->assertSame(0, DB::transactionLevel());
+            $write();
+            $written = true;
         });
         try {
             $during = $plans->forParticipant($viewer);
-            $this->assertTrue($blocked);
-            $this->assertSame(json_encode($before), json_encode($during));
-            $write();
+            $this->assertTrue($written);
+            $this->assertSame($before['phase']['id'], $during['phase']['id']);
             $after = $plans->forParticipant($viewer);
             $this->assertSame(0, $before['gate']['attestation_counts']['refute']);
             $this->assertSame(1, $after['gate']['attestation_counts']['refute']);

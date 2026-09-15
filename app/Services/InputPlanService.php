@@ -7,11 +7,9 @@ use App\Enums\PhaseKind;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
-use App\Models\Substrate;
 use App\Services\Observables\ReinforcementService;
 use App\Services\Participation\ParticipationContext;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 
 final readonly class InputPlanService
 {
@@ -41,33 +39,28 @@ final readonly class InputPlanService
         return $this->calculate($participant, true);
     }
 
-    private function calculate(Participant $participant, bool $workspace): array
+    /** Keep the response's Cycle, Phase and schema on the same observed occurrence. */
+    public function forPhase(Participant $participant, Phase $phase, bool $workspace = false): array
     {
-        $calculate = function () use ($participant, $workspace): array {
-            $phase = $this->phases->currentFor($participant);
+        return $this->build($participant, $phase, new ParticipationContext($phase), $workspace);
+    }
 
-            return $this->build($participant, $phase, new ParticipationContext($phase), $workspace);
-        };
-        // Contribution transactions own their locks/isolation and get a fresh
-        // context after each write. Plans may repair projections, so standalone
-        // plans must own the root before reading calculation state as well.
-        if (DB::transactionLevel() > 0) {
-            return $calculate();
-        }
+    /** Contribution validation needs admissibility, never workspace/presentation serialization. */
+    public function forValidation(Participant $participant): array
+    {
+        return $this->calculate($participant, false, true);
+    }
 
-        return DB::transaction(function () use ($calculate, $participant): array {
-            if (DB::getDriverName() === 'pgsql') {
-                DB::statement('SET TRANSACTION ISOLATION LEVEL READ COMMITTED');
-            }
+    private function calculate(Participant $participant, bool $workspace, bool $validation = false): array
+    {
+        $phase = $this->phases->currentFor($participant);
 
-            Substrate::query()->lockForUpdate()->findOrFail($participant->substrate_id);
-
-            return $calculate();
-        }, attempts: 3);
+        // Observation is optimistic. Only contribution validation owns write locks.
+        return $this->build($participant, $phase, new ParticipationContext($phase), $workspace, $validation);
     }
 
     /** All repeated evaluation shares this calculation-local context. */
-    private function build(Participant $participant, Phase $phase, ?ParticipationContext $context, bool $includeWorkspace = false): array
+    private function build(Participant $participant, Phase $phase, ?ParticipationContext $context, bool $includeWorkspace = false, bool $validation = false): array
     {
         $plan = $this->phases->plan($phase->kind);
         $gate = $context?->propositions->get($phase->gate_proposition_id) ?? $this->gates->forPhase($phase);
@@ -91,6 +84,21 @@ final readonly class InputPlanService
                 $collection->transform(fn (Proposition $node) => $context->proposition($node));
             }
         }
+        $attestationOptionIds = $attestationOptions->pluck('id')->all();
+        $schema = $this->schemas->forParticipant(
+            $participant,
+            $writeOptions->pluck('id')->all(),
+            $gateOptions->pluck('id')->all(),
+            $revisionOptions->pluck('id')->all(),
+            $attestationOptionIds,
+            $traversalOptions->pluck('id')->all(),
+            $instrumentOptions->pluck('id')->all(),
+            $context,
+        );
+
+        if ($validation) {
+            return ['schema' => $schema];
+        }
         $this->loadPropositionState(
             $participant,
             $context,
@@ -111,18 +119,6 @@ final readonly class InputPlanService
             $lineage,
             $context,
         ) : null;
-        $attestationOptionIds = $attestationOptions->pluck('id')->all();
-        $schema = $this->schemas->forParticipant(
-            $participant,
-            $writeOptions->pluck('id')->all(),
-            $gateOptions->pluck('id')->all(),
-            $revisionOptions->pluck('id')->all(),
-            $attestationOptionIds,
-            $traversalOptions->pluck('id')->all(),
-            $instrumentOptions->pluck('id')->all(),
-            $context,
-        );
-
         $targetIds = collect($schema['$defs']['actions'] ?? [])->flatMap(fn ($action) => array_merge(
             $action['properties']['proposition_id']['enum'] ?? [],
             $action['properties']['other_proposition_id']['enum'] ?? [],
@@ -199,7 +195,7 @@ final readonly class InputPlanService
                 ->limit(max(1, (int) ($participant->max_read_count ?? 25)))
                 ->get());
 
-        $this->measurements->repairMissing($propositions, $context);
+        $this->measurements->observeMissing($propositions, $context);
 
         $provenance = $lineage->firstWhere('tier', 'committal');
 
@@ -214,7 +210,7 @@ final readonly class InputPlanService
             'effectiveAttestations' => $this->attestationsFor($participant),
             'phase.cycle.participant:id,callsign,substrate_id',
         ]);
-        $this->measurements->repairMissing(collect([$provenance]), $context);
+        $this->measurements->observeMissing(collect([$provenance]), $context);
         $this->state->loadAttestationCounts($propositions->concat([$provenance]), $context);
 
         // A causal boundary is context, not an invented ancestor of this Gate.
@@ -273,7 +269,7 @@ final readonly class InputPlanService
             'effectiveAttestations' => $this->attestationsFor($participant),
             'phase.cycle.participant:id,callsign,substrate_id',
         ]);
-        $this->measurements->repairMissing($collection, $context);
+        $this->measurements->observeMissing($collection, $context);
         $this->state->loadAttestationCounts($collection, $context);
     }
 

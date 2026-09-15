@@ -62,7 +62,7 @@ final readonly class PotentialChargeService
             ->with('measurement')
             ->get()
             ->keyBy(fn (Proposition $proposition) => $proposition->getKey());
-        $this->measurements->repairMissing($propositions->filter(fn ($item) => $item->measurement !== null));
+        $this->measurements->observeMissing($propositions->filter(fn ($item) => $item->measurement !== null));
         $edges = DB::table('supersessions')
             ->whereIn('source_proposition_id', $propositions->keys())
             ->whereIn('target_proposition_id', $propositions->keys())
@@ -166,7 +166,7 @@ final readonly class PotentialChargeService
                 ->where('substrate_id', $substrateId))
             ->with(['measurement', 'commitmentSnapshot'])
             ->get()->keyBy('id');
-        $this->measurements->repairMissing($propositions->filter(fn ($item) => $item->measurement !== null));
+        $this->measurements->observeMissing($propositions->filter(fn ($item) => $item->measurement !== null));
         $edges = DB::table('supersessions')
             ->whereIn('source_proposition_id', $propositions->keys())
             ->whereIn('target_proposition_id', $propositions->keys())
