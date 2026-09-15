@@ -6,7 +6,7 @@ import { operationHistoryLabel } from '../operationHistory';
 import { DirectionalWhirl } from './DirectionalWhirl';
 import { attestationPresentation } from '../directionalPresentation';
 import { metaForRegister } from '../registers';
-import type { Observables, Proposition } from '../types';
+import type { GraphField, Observables, Proposition } from '../types';
 
 interface PropositionContentProps {
   proposition?: Partial<Proposition>;
@@ -40,7 +40,7 @@ export function PropositionContent({
       <Stack gap={6}>
         <Text size="xs" fw={650} lineClamp={2}>{title}</Text>
         <PropositionMetadata proposition={proposition} />
-        <Group gap="xs" justify="space-between"><FieldValues observables={proposition.observables} committalObservables={committalObservables} tier={proposition.tier} compact /><AttestationCounts proposition={proposition} /></Group>
+        <Group gap="xs" justify="space-between"><FieldValues field={proposition.field} observables={proposition.observables} committalObservables={committalObservables} tier={proposition.tier} compact /><AttestationCounts proposition={proposition} /></Group>
       </Stack>
     );
   }
@@ -75,6 +75,7 @@ export function PropositionContent({
           {detailed && <Text fw={700} size="sm" mb="sm">Field state</Text>}
           <Group gap="xs" justify="space-between" align="center">
           <FieldValues
+            field={projectedObservables ? undefined : proposition.field}
             observables={projectedObservables || proposition.observables}
             committalObservables={committalObservables}
             tier={proposition.tier}
@@ -122,14 +123,15 @@ export function AttestationCounts({ proposition }: { proposition: Partial<Propos
   </Group>;
 }
 
-function FieldValues({ observables, committalObservables, tier, compact = false }: {
+function FieldValues({ field, observables, committalObservables, tier, compact = false }: {
+  field?: GraphField;
   observables?: Observables;
   committalObservables?: Observables;
   tier?: string;
   compact?: boolean;
 }) {
   const expressive = tier === 'expressive';
-  const state = fieldState(observables);
+  const state = field ? (field.tension === null || field.charge === null ? null : { tension: field.tension, charge: field.charge }) : fieldState(observables);
   const committed = fieldState(committalObservables);
 
   if (!state) return <Text size="xs" c="dimmed">Field awaiting complete measurement</Text>;
@@ -150,16 +152,17 @@ function FieldValues({ observables, committalObservables, tier, compact = false 
       value: state.charge,
       delta: expressive && committed ? state.charge - committed.charge : null,
     },
-    ...(expressive ? [{
+    ...(expressive || field ? [{
       key: 'potential-charge',
-      label: 'Potential Charge',
+      label: field?.potential_basis === 'region' ? 'Region Potential Charge' : 'Potential Charge',
       icon: IconHexagonalPrism,
-      value: committed ? Math.max(0, state.charge - committed.charge) : null,
+      value: field ? field.potential_charge : committed ? Math.max(0, state.charge - committed.charge) : null,
       delta: null,
     }] : []),
   ];
-  const items = values.map(({ key, ...field }) => (
-    <FieldValue key={key} {...field} tier={tier} compact={compact} />
+  const items = values.map(({ key, ...item }) => (
+    <FieldValue key={key} {...item} tier={tier} compact={compact}
+      stale={(key === 'potential-charge' ? field?.potential_status : field?.status) === 'stale'} />
   ));
 
   return compact
@@ -167,7 +170,7 @@ function FieldValues({ observables, committalObservables, tier, compact = false 
     : <SimpleGrid className="proposition-field" data-tier={tier} cols={{ base: 1, xs: values.length }} spacing="xs">{items}</SimpleGrid>;
 }
 
-function FieldValue({ label, icon: Icon, value, delta, signed: signedValue = false, tier, compact }: {
+function FieldValue({ label, icon: Icon, value, delta, signed: signedValue = false, tier, compact, stale = false }: {
   label: string;
   icon: React.ElementType;
   value: number | null;
@@ -175,13 +178,15 @@ function FieldValue({ label, icon: Icon, value, delta, signed: signedValue = fal
   signed?: boolean;
   tier?: string;
   compact?: boolean;
+  stale?: boolean;
 }) {
   const sign = value === null || value === 0 ? 'neutral' : value < 0 ? 'negative' : 'positive';
   const color = 'var(--field-color)';
   const readout = value === null ? (compact ? '—' : 'Awaiting measurement') : number(value, signedValue);
   const deltaReadout = delta === null ? null : `Δ ${number(delta, true)} from Committal`;
+  const description = `${label}: ${readout}${stale ? ' · last measured' : ''}${deltaReadout ? ` · ${deltaReadout}` : ''}`;
   const content = (
-    <Box className="field-value" data-sign={sign} data-compact={compact || undefined}>
+    <Box className="field-value" data-sign={sign} data-directional={signedValue || undefined} data-compact={compact || undefined} aria-label={description}>
       <Group gap={5} wrap="nowrap">
         <ThemeIcon color={color} variant={compact ? 'transparent' : 'light'} size={compact ? 22 : 28}>
           <Icon size={compact ? 15 : 17} />
@@ -190,11 +195,12 @@ function FieldValue({ label, icon: Icon, value, delta, signed: signedValue = fal
         <Text size="xs" fw={750} c={color} style={{ whiteSpace: 'nowrap' }}>{readout}</Text>
       </Group>
       {!compact && deltaReadout && <Text size="10px" c="dimmed" mt={3}>{deltaReadout}</Text>}
+      {!compact && stale && <Text size="10px" c="dimmed">Last measured</Text>}
     </Box>
   );
 
   return compact
-    ? <Tooltip label={`${label}: ${readout}${deltaReadout ? ` · ${deltaReadout}` : ''}`} withArrow>{content}</Tooltip>
+    ? <Tooltip label={description} withArrow>{content}</Tooltip>
     : content;
 }
 

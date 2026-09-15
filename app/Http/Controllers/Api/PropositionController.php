@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\PropositionResource;
 use App\Models\Proposition;
 use App\Models\Substrate;
+use App\Services\GraphProjectionService;
 use App\Services\Observables\ReinforcementService;
 use App\Services\PropositionPresentationService;
 use App\Services\PropositionStateService;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Gate;
 
@@ -18,6 +20,7 @@ class PropositionController extends Controller
         PropositionStateService $state,
         ReinforcementService $reinforcement,
         PropositionPresentationService $presentation,
+        GraphProjectionService $graph,
     ): PropositionResource {
         Gate::authorize('view', $substrate);
         abort_unless($proposition->phase->cycle->participant->substrate_id === $substrate->id, 404);
@@ -27,6 +30,7 @@ class PropositionController extends Controller
         $state->loadAttestationCounts(collect([$proposition]));
         $reinforcement->loadCounts(collect([$proposition]));
         $proposition->setAttribute('attestation_summary', $presentation->attestations($proposition));
+        $graph->load($substrate, collect([$proposition]));
 
         return new PropositionResource($proposition);
     }
@@ -35,14 +39,18 @@ class PropositionController extends Controller
         Substrate $substrate,
         PropositionStateService $state,
         ReinforcementService $reinforcement,
+        GraphProjectionService $graph,
+        Request $request,
     ): AnonymousResourceCollection {
         Gate::authorize('view', $substrate);
+        $input = $request->validate(['ids' => ['sometimes', 'array', 'min:1', 'max:100'], 'ids.*' => ['required', 'ulid', 'distinct']]);
 
         $propositions = Proposition::query()
             ->whereHas(
                 'phase.cycle.participant',
                 fn ($query) => $query->whereBelongsTo($substrate),
             )
+            ->when(isset($input['ids']), fn ($query) => $query->whereKey($input['ids']))
             ->with([
                 'phase.cycle.participant:id,callsign,substrate_id',
                 'measurement',
@@ -56,6 +64,7 @@ class PropositionController extends Controller
 
         $state->loadAttestationCounts($propositions);
         $reinforcement->loadCounts($propositions);
+        $graph->load($substrate, $propositions);
 
         return PropositionResource::collection($propositions);
     }

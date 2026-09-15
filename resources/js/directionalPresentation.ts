@@ -2,7 +2,7 @@ import type { AttestationDirection, Proposition } from './types';
 
 export type RotationDirection = 'positive' | 'negative';
 export const attestationLabels = { support: 'Support', refute: 'Refute' } as const;
-export const attestationColors = { support: 'violet', refute: 'teal' } as const;
+export const attestationColors = { support: 'violet', refute: 'blue' } as const;
 export function opposite(direction: RotationDirection): RotationDirection {
   return direction === 'positive' ? 'negative' : 'positive';
 }

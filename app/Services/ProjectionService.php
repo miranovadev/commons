@@ -6,6 +6,15 @@ use App\Domain\Observables\ObservableValues;
 
 final class ProjectionService
 {
+    /** Canonical signed field projection, shared by recovery and human observation. */
+    public function field(ObservableValues $values): array
+    {
+        $projection = $this->from($values);
+        $tension = round($projection['prominence'] - $projection['turbulence'], 7);
+
+        return ['tension' => $tension, 'charge' => round(1 - abs($tension), 7)];
+    }
+
     /**
      * @return array{prominence: float, turbulence: float}
      */

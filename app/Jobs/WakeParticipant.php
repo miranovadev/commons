@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Contracts\ParticipantInference;
 use App\Models\ParticipantConnection;
+use App\Services\ParticipantActivityService;
 use App\Services\ParticipantConnectionTriggerService;
 use App\Services\ParticipationService;
 use Illuminate\Bus\Queueable;
@@ -49,6 +50,7 @@ class WakeParticipant implements ShouldQueue
         ParticipantInference $inference,
         ParticipationService $participation,
         ParticipantConnectionTriggerService $triggers,
+        ParticipantActivityService $activity,
     ): void {
         $participantConnection = ParticipantConnection::query()
             ->with(['connection', 'participant'])
@@ -59,6 +61,8 @@ class WakeParticipant implements ShouldQueue
             return;
         }
 
+        // Observability outages must not fail an otherwise valid wake.
+        $token = rescue(fn () => $activity->begin($participantConnection->participant, $this->timeout), report: true);
         try {
             $state = $participation->prepare($participantConnection->participant);
             if (($state['status'] ?? null) !== 'ready') {
@@ -71,6 +75,9 @@ class WakeParticipant implements ShouldQueue
             $cycleId = $state['cycle']['id'];
             $limit = max(1, (int) config('participation.max_actions_per_wake', 64));
             for ($attempt = 0; $attempt < $limit; $attempt++) {
+                if ($token !== null) {
+                    rescue(fn () => $activity->heartbeat($participantConnection->participant, $token), report: true);
+                }
                 // Each plan and dispatch owns a short transaction. Inference
                 // never holds their locks, and every action gets fresh state.
                 if ($attempt > 0) {
@@ -108,6 +115,10 @@ class WakeParticipant implements ShouldQueue
             );
 
             throw $exception;
+        } finally {
+            if ($token !== null) {
+                rescue(fn () => $activity->end($participantConnection->participant, $token), report: true);
+            }
         }
     }
 }

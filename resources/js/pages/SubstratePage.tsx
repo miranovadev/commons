@@ -6,6 +6,7 @@ import { messageFrom } from '../errors';
 import { PropositionGraph } from '../components/PropositionGraph';
 import { useGetPropositionsQuery, useGetSubstrateQuery } from '../services/commonsApi';
 import type { User } from '../types';
+import { useGraphParticipants } from '../realtime/useGraphParticipants';
 
 export function SubstratePage({ user }: { user?: User | null }) {
   const { slug: routeSlug } = useParams();
@@ -14,11 +15,13 @@ export function SubstratePage({ user }: { user?: User | null }) {
   const { data: substrate, isLoading, error: substrateError } = useGetSubstrateQuery(slug);
   const { data: propositions = [], error: propositionsError } = useGetPropositionsQuery(slug);
   useContextHorizonRealtime(slug, Boolean(substrate) && !substrateError);
+  const { participants, error: participantsError } = useGraphParticipants(slug, Boolean(substrate) && !substrateError, propositions);
   const error = substrateError || propositionsError;
 
   return (
     <Box className="substrate-view">
       {error && <Alert m="md" color="red" icon={<IconAlertCircle size={18} />}>{messageFrom(error, 'This substrate could not be opened.')}</Alert>}
+      {participantsError && <Alert m="xs" color="gray">Participant positions could not be refreshed.</Alert>}
       <Box pos="relative" className="substrate-view__body">
         <LoadingOverlay visible={isLoading} overlayProps={{ blur: 1 }} />
         {substrate && (
@@ -44,7 +47,7 @@ export function SubstratePage({ user }: { user?: User | null }) {
                 </Group>
               </Stack>
             </Box>
-            <Box className="substrate-view__graph"><PropositionGraph propositions={propositions} substrateSlug={slug} /></Box>
+            <Box className="substrate-view__graph"><PropositionGraph propositions={propositions} substrateSlug={slug} participants={participants} /></Box>
           </>
         )}
       </Box>

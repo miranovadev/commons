@@ -45,7 +45,7 @@ for (const support of ['positive', 'negative']) {
     const slots = ui.directionSlots(support);
     assert.deepEqual(slots.map(s => s.direction), ['negative', 'positive']);
     assert.deepEqual(slots.map(s => s.label), support === 'positive' ? ['refute', 'support'] : ['support', 'refute']);
-    for (const slot of slots) assert.equal(slot.color, slot.label === 'support' ? 'violet' : 'teal');
+    for (const slot of slots) assert.equal(slot.color, slot.label === 'support' ? 'violet' : 'blue');
     const markup = ui.workspace(support);
     const footer = markup.slice(markup.indexOf('write-option-card__actions--directional'));
     const buttons = [...footer.matchAll(/<button\b[\s\S]*?<\/button>/g)].map(match => match[0]);
@@ -83,7 +83,7 @@ test('legacy tied-count payloads without retained direction stay neutral; geomet
   assert.match(css, /\[data-direction="negative"\]\s*\{ animation-direction:reverse/);
   assert.doesNotMatch(css, /data-label="refute"[^}]*scaleX/);
   assert.match(css, /data-label="support"[^}]*mantine-color-violet-7[^}]*mantine-color-violet-4/);
-  assert.match(css, /data-label="refute"[^}]*mantine-color-teal-8[^}]*mantine-color-teal-4/);
+  assert.match(css, /data-label="refute"[^}]*mantine-color-blue-8[^}]*mantine-color-blue-4/);
 });
 
 test('participant palette selection is deterministic and distinguishes the active callsigns', () => {
