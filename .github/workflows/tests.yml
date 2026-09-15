@@ -14,7 +14,8 @@ jobs:
   test:
     name: PHP 8.5 / PostgreSQL 18 / Node 24
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # Includes the exhaustive unbatched PostgreSQL reference calculation.
+    timeout-minutes: 20
 
     services:
       postgres:
