@@ -23,6 +23,7 @@ use App\Services\LedgerService;
 use App\Services\OpenAIResponseSchema;
 use App\Services\OpenAIResponsesClient;
 use App\Services\OperationalInstrumentService;
+use App\Services\ParticipantActivityService;
 use App\Services\ParticipationService;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -333,7 +334,10 @@ class ParticipantWakeTest extends TestCase
         $calls = [];
         $read = false;
         $inference = Mockery::mock(ParticipantInference::class);
-        $inference->shouldReceive('contribute')->times(8)->andReturnUsing(function (Connection $connection, array $state) use (&$calls, &$read, $receipt, $nodes, $cycleId): array {
+        $inference->shouldReceive('contribute')->times(8)->andReturnUsing(function (Connection $connection, array $state) use (&$calls, &$read, $receipt, $nodes, $cycleId, $f): array {
+            $activity = app(ParticipantActivityService::class)->snapshot(collect([$f->viewer->fresh()]))['participants'][0];
+            $this->assertTrue($activity['is_active']);
+            $this->assertNotNull($activity['current_proposition_id']);
             $this->assertSame($cycleId, $state['cycle']['id']);
             $kind = $state['plan']['phase']['number'];
             $calls[] = [$kind, $state['plan']['phase']['id']];
@@ -362,6 +366,9 @@ class ParticipantWakeTest extends TestCase
         $this->assertSame('distinguish', $next['plan']['phase']['kind']);
         $this->assertNotSame($cycleId, $next['cycle']['id']);
         $nextPhaseId = $next['plan']['phase']['id'];
+        $activity = app(ParticipantActivityService::class)->snapshot(collect([$f->viewer->fresh()]))['participants'][0];
+        $this->assertFalse($activity['is_active']);
+        $this->assertSame($next['plan']['gate_id'], $activity['current_proposition_id']);
         $this->assertSame(1, Phase::where('cycle_id', $next['cycle']['id'])->count());
 
         // A separately scheduled wake resumes the exact prepared occurrence.
@@ -402,6 +409,28 @@ class ParticipantWakeTest extends TestCase
         $this->assertNull($f->phase->cycle->fresh()->rested_at);
         $this->assertSame('bias', app(ParticipationService::class)->stateFor($f->viewer)['plan']['phase']['kind']);
         $this->assertNull($connection->fresh()->last_error);
+    }
+
+    public function test_inference_failure_clears_activity_and_preserves_canonical_position(): void
+    {
+        [$participant, $connection] = $this->readyConnection();
+        $participant->forceFill(['current_proposition_id' => Proposition::whereHas('phase.cycle', fn ($q) => $q->where('participant_id', $participant->id))->value('id')])->save();
+        $position = $participant->current_proposition_id;
+        $inference = Mockery::mock(ParticipantInference::class);
+        $inference->shouldReceive('contribute')->once()->andReturnUsing(function () use ($participant): array {
+            $this->assertTrue(app(ParticipantActivityService::class)->snapshot(collect([$participant->fresh()]))['participants'][0]['is_active']);
+            throw new \RuntimeException('Inference failed');
+        });
+        $this->app->instance(ParticipantInference::class, $inference);
+        try {
+            $this->app->call([new WakeParticipant($connection->id), 'handle']);
+            $this->fail('The wake should retain its retry behaviour.');
+        } catch (\RuntimeException $exception) {
+            $this->assertSame('Inference failed', $exception->getMessage());
+        }
+        $state = app(ParticipantActivityService::class)->snapshot(collect([$participant->fresh()]))['participants'][0];
+        $this->assertFalse($state['is_active']);
+        $this->assertSame($position, $state['current_proposition_id']);
     }
 
     /** @return array{Participant, ParticipantConnection} */

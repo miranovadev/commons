@@ -113,7 +113,7 @@
   pointer-events: none;
 }
 .substrate-graph-node { transition: opacity 160ms ease; }
-.substrate-graph-shell[data-has-selection] .substrate-graph-node[data-lineage="unrelated"] { opacity: .58; }
+.substrate-graph-shell[data-has-selection] .substrate-graph-node[data-lineage="unrelated"] .proposition-card { opacity: .62; }
 .substrate-graph-node[data-lineage="ancestor"] .proposition-card--graph {
   outline: 1px solid color-mix(in srgb, var(--mantine-color-indigo-5) 65%, transparent);
   outline-offset: 3px;
@@ -121,8 +121,18 @@
 .substrate-graph-shell[data-has-selection] .substrate-graph-edges path:not([data-lineage]) { opacity: .4; }
 .substrate-graph-edges path[data-lineage] { stroke: var(--mantine-color-indigo-5); stroke-width: 2.2; }
 .substrate-graph-node[data-lineage="selected"] { z-index: 3; }
+.graph-participants { position: absolute; z-index: 4; top: -17px; right: 9px; display: flex; align-items: center; }
+.graph-participant { position: relative; border: 2px solid light-dark(var(--mantine-color-white), var(--mantine-color-dark-7)); border-radius: 50%; background: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6)); }
+.graph-participant + .graph-participant { margin-left: -5px; }
+.graph-participant:not([data-active]) .mantine-Avatar-root { filter: grayscale(1); opacity: .65; }
+.graph-participant[data-active] { box-shadow: 0 0 0 1px color-mix(in srgb, var(--mantine-color-indigo-5) 65%, transparent); }
+.graph-participant:focus-visible { outline: 2px solid var(--mantine-color-indigo-5); outline-offset: 2px; }
+.graph-participant__activity { position: absolute; width: 7px; height: 7px; top: -2px; right: -2px; border-radius: 50%; background: var(--mantine-color-indigo-5); border: 1px solid light-dark(var(--mantine-color-white), var(--mantine-color-dark-7)); animation: graph-activity-pulse 1.8s ease-in-out infinite; }
+.graph-participant--overflow { width: 31px; height: 31px; display: grid; place-items: center; color: var(--mantine-color-dimmed); }
+@keyframes graph-activity-pulse { 50% { opacity: .45; } }
 @media (prefers-reduced-motion: reduce) {
   .substrate-graph-node { transition: none; }
+  .graph-participant__activity { animation: none; }
 }
 
 .substrate-graph-node .proposition-card--mini.proposition-card--indigo {
@@ -136,6 +146,7 @@
 
 .substrate-graph-node .proposition-card--mini.proposition-card--selected {
   border-color: var(--mantine-color-indigo-5);
+  border-inline-start-color: var(--register-color);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--mantine-color-indigo-5) 25%, transparent), 0 8px 24px color-mix(in srgb, var(--mantine-color-dark-9) 16%, transparent);
 }
 

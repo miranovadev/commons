@@ -107,6 +107,8 @@ test('Graph fetches new nodes incrementally and both original and realtime nodes
   const origin = proposition('Origin');
   globalThis.fetch = async request => {
     const path = new URL(request.url).pathname; requests.push(path);
+    if (path.endsWith('/graph-participants')) return json({ server_time: new Date().toISOString(), participants: [] });
+    if (path.endsWith('/graph-metrics')) return json([]);
     if (path.endsWith('/realtime')) return json({ substrate_id: 'substrate', public: true, context_horizon_ids: ['horizon'] });
     if (path.endsWith('/propositions')) return json([origin]);
     if (path.includes('/propositions/')) return json(proposition(path.split('/').pop(), path.endsWith('/Origin') ? [] : ['Origin']));
@@ -121,7 +123,8 @@ test('Graph fetches new nodes incrementally and both original and realtime nodes
     const event = { type: 'proposition.created', proposition_id: 'New', context_horizon_id: 'horizon' };
     await act(async () => { channel.callback(event); channel.callback(event); });
     await until(() => cards().length === 2);
-    assert.deepEqual(requests, ['/api/substrates/test/propositions/New']);
+    await until(() => requests.includes('/api/substrates/test/graph-metrics'));
+    assert.deepEqual(requests, ['/api/substrates/test/propositions/New', '/api/substrates/test/graph-metrics']);
     assert.equal(document.querySelectorAll('.substrate-graph-edges path').length, 1);
     for (const id of ['Origin', 'New']) {
       await act(async () => cards().find(card => card.textContent.includes(id)).click());
@@ -148,6 +151,8 @@ test('an empty Graph discovers its first Horizon and a reconnect catches up miss
   let horizons = []; let nodes = [];
   globalThis.fetch = async request => {
     const path = new URL(request.url).pathname;
+    if (path.endsWith('/graph-participants')) return json({ server_time: new Date().toISOString(), participants: [] });
+    if (path.endsWith('/graph-metrics')) return json([]);
     if (path.endsWith('/realtime')) return json({ substrate_id: 'substrate', public: true, context_horizon_ids: horizons });
     if (path.endsWith('/propositions')) return json(nodes);
     return json({ id: 'substrate', slug: 'test', title: 'Test', visibility: 'public' });
@@ -187,4 +192,72 @@ test('Participant hook refreshes its state and releases the previous channel whe
     assert.equal(first.channels.size, 0);
   } finally { await act(async () => page.close()); el.remove(); }
   assert.equal(live(), undefined);
+});
+
+test('graph activity follows canonical positions through a wake, keeps prepared P1, and reconnects authoritatively', { timeout: 30000 }, async () => {
+  const requests = [];
+  let nodes = [proposition('Origin')];
+  let current = 'Origin'; let active = false;
+  globalThis.fetch = async request => {
+    const path = new URL(request.url).pathname; requests.push(path);
+    if (path.endsWith('/realtime')) return json({ substrate_id: 'substrate', public: true, context_horizon_ids: ['horizon'] });
+    if (path.endsWith('/graph-participants')) return json({ server_time: new Date().toISOString(), participants: [
+      { id: 'nova', callsign: 'Nova', current_proposition_id: current, is_active: active, activity_expires_at: active ? Date.now() + 60000 : null },
+      { id: 'vela', callsign: 'Vela', current_proposition_id: 'Origin', is_active: false, activity_expires_at: null },
+    ] });
+    if (path.endsWith('/graph-metrics')) return json([]);
+    if (path.endsWith('/propositions')) return json(nodes);
+    if (path.includes('/propositions/')) return json(nodes.find(n => n.id === path.split('/').pop()));
+    return json({ id: 'substrate', slug: 'test', title: 'Test', visibility: 'public' });
+  };
+  const el = container(); const page = mount(el);
+  const nova = () => document.querySelector('[data-participant-id="nova"]');
+  const position = () => nova()?.closest('.substrate-graph-node').querySelector('.proposition-card').dataset.propositionId;
+  const notify = () => live().channels.get('public.substrate.substrate').callback({ type: 'graph.participant_changed', substrate_id: 'substrate', participant_id: 'nova' });
+  try {
+    await act(async () => page.graph());
+    await until(() => position() === 'Origin' && live()?.channels.size === 2);
+    assert.equal(nova().getAttribute('data-active'), null);
+    assert.equal(document.querySelectorAll('.graph-participant').length, 2);
+    await settle(); requests.length = 0;
+    active = true;
+    await act(async () => notify());
+    await until(() => nova()?.getAttribute('data-active') === 'true');
+    assert.deepEqual(requests, ['/api/substrates/test/graph-participants']);
+    nodes.push(proposition('Move', ['Origin'])); current = 'Move';
+    await act(async () => notify());
+    await until(() => position() === 'Move');
+    assert.equal(nova().getAttribute('data-active'), 'true');
+    nodes.push(proposition('Prepared', ['Move'])); current = 'Prepared'; active = false;
+    await act(async () => notify());
+    await until(() => position() === 'Prepared' && !nova()?.getAttribute('data-active'));
+    assert.equal(nova().querySelector('.graph-participant__activity'), null);
+    // Missed start and position events are recovered by subscription acknowledgement.
+    current = 'Origin'; active = true;
+    await act(async () => { for (const channel of live().channels.values()) channel.subscribedCallback(); });
+    await until(() => position() === 'Origin' && nova()?.getAttribute('data-active') === 'true');
+  } finally { await act(async () => page.close()); el.remove(); }
+  assert.equal(live(), undefined);
+});
+
+test('an expired activity snapshot deactivates locally even if the end event never arrives', { timeout: 15000 }, async () => {
+  const server = Date.parse('2050-01-01T00:00:00Z');
+  globalThis.fetch = async request => {
+    const path = new URL(request.url).pathname;
+    if (path.endsWith('/realtime')) return json({ substrate_id: 'substrate', public: true, context_horizon_ids: [] });
+    if (path.endsWith('/graph-participants')) return json({ server_time: new Date(server).toISOString(), participants: [
+      { id: 'nova', callsign: 'Nova', current_proposition_id: 'Origin', is_active: true, activity_expires_at: server + 1500 },
+    ] });
+    if (path.endsWith('/propositions')) return json([proposition('Origin')]);
+    return json({ id: 'substrate', slug: 'test', title: 'Test', visibility: 'public' });
+  };
+  const el = container(); const page = mount(el);
+  const avatar = () => document.querySelector('[data-participant-id="nova"]');
+  try {
+    await act(async () => page.graph());
+    await until(() => avatar()?.getAttribute('data-active') === 'true');
+    await until(() => avatar() && !avatar().getAttribute('data-active'));
+    assert.equal(cards().length, 1);
+    assert.match(avatar().getAttribute('aria-label'), /inactive/);
+  } finally { await act(async () => page.close()); el.remove(); }
 });

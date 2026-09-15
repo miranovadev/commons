@@ -13,20 +13,21 @@ const result = await build({ stdin: { contents: `
   export { graphParents, causalAncestors } from './resources/js/graphTopology';
   export { attestationColors } from './resources/js/directionalPresentation';
   export { resolveGraphOverlays, graphOverlayOptions } from './resources/js/graphOverlays';
+  export { activityAt, participantsByPosition } from './resources/js/graphParticipants';
   import { resolveGraphOverlays } from './resources/js/graphOverlays';
   import { PropositionCard } from './resources/js/components/PropositionCard';
   export function card(proposition, mode) {
     return renderToStaticMarkup(<MantineProvider env="test"><PropositionCard proposition={proposition} graph mini
       overlay={resolveGraphOverlays([proposition], mode).get(proposition.id)} /></MantineProvider>);
   }
-  export function render(propositions, selectedId) {
-    return renderToStaticMarkup(<MantineProvider env="test"><PropositionGraph propositions={propositions} initialFocusId={selectedId} /></MantineProvider>);
+  export function render(propositions, selectedId, participants = []) {
+    return renderToStaticMarkup(<MantineProvider env="test"><PropositionGraph propositions={propositions} initialFocusId={selectedId} participants={participants} /></MantineProvider>);
   }
 `, loader: 'tsx', resolveDir: process.cwd() }, bundle: true, platform: 'node', format: 'cjs', write: false,
   jsx: 'automatic', loader: { '.css': 'empty' } });
 const module = { exports: {} };
 new Function('require', 'module', 'exports', result.outputFiles[0].text)(createRequire(import.meta.url), module, module.exports);
-const { render, card, graphParents, causalAncestors, attestationColors, resolveGraphOverlays, graphOverlayOptions } = module.exports;
+const { render, card, graphParents, causalAncestors, attestationColors, resolveGraphOverlays, graphOverlayOptions, activityAt, participantsByPosition } = module.exports;
 const node = (id, parent_ids = [], domain = 'emergence') => ({ id, title: id, statement: id, parent_ids,
   register: 'activity', tier: 'expressive', context_horizon: { domain } });
 const nodes = [node('origin'), node('left', ['origin'], 'settlement'), node('right', ['origin']),
@@ -100,4 +101,29 @@ test('canonical field values drive overlays and readouts even if raw observables
   assert.match(card(proposition, 'potential-charge'), /awaiting measurement/);
   proposition.field.tension = null;
   assert.match(card(proposition, 'tension'), /Field awaiting complete measurement/);
+});
+
+test('position grouping retains inactive participants and keeps identity and overflow activity accessible', async () => {
+  const participants = ['Nova', 'Vela', 'Luna', 'Sera', 'Claire'].map((callsign, i) => ({ id: String(i), callsign,
+    current_proposition_id: 'origin', is_active: i === 1 || i === 4, activity_expires_at: null }));
+  assert.equal(participantsByPosition([...participants, { id: 'unplaced', current_proposition_id: null }]).get('origin').length, 5);
+  const html = render(nodes, 'reconciled', participants);
+  assert.match(html, /aria-label="Nova: inactive"/);
+  assert.match(html, /aria-label="Vela: active"/);
+  assert.match(html, /aria-label="Claire: active"/);
+  assert.match(html, />\+1<\/p>/);
+  assert.equal((html.match(/class="graph-participant__activity"/g) || []).length, 2);
+  const css = await readFile('resources/css/substrate-graph.css', 'utf8');
+  assert.match(css, /grayscale\(1\)/);
+  assert.match(css, /prefers-reduced-motion: reduce[\s\S]*graph-participant__activity \{ animation: none/);
+});
+
+test('lease expiry uses the server clock and leaves the last canonical position visible', () => {
+  const server = Date.parse('2050-01-01T00:00:00Z');
+  const snapshot = { server_time: '2050-01-01T00:00:00Z', received_at: 100,
+    participants: [{ id: 'p', callsign: 'Nova', current_proposition_id: 'prepared-p1', is_active: true, activity_expires_at: server + 1000 }] };
+  assert.equal(activityAt(snapshot, 500)[0].is_active, true);
+  const expired = activityAt(snapshot, 1100)[0];
+  assert.equal(expired.is_active, false);
+  assert.equal(expired.current_proposition_id, 'prepared-p1');
 });

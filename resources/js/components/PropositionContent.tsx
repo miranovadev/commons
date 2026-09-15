@@ -186,7 +186,7 @@ function FieldValue({ label, icon: Icon, value, delta, signed: signedValue = fal
   const deltaReadout = delta === null ? null : `Δ ${number(delta, true)} from Committal`;
   const description = `${label}: ${readout}${stale ? ' · last measured' : ''}${deltaReadout ? ` · ${deltaReadout}` : ''}`;
   const content = (
-    <Box className="field-value" data-sign={sign} data-compact={compact || undefined} aria-label={description}>
+    <Box className="field-value" data-sign={sign} data-directional={signedValue || undefined} data-compact={compact || undefined} aria-label={description}>
       <Group gap={5} wrap="nowrap">
         <ThemeIcon color={color} variant={compact ? 'transparent' : 'light'} size={compact ? 22 : 28}>
           <Icon size={compact ? 15 : 17} />

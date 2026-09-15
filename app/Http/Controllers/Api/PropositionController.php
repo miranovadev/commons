@@ -10,6 +10,7 @@ use App\Services\GraphProjectionService;
 use App\Services\Observables\ReinforcementService;
 use App\Services\PropositionPresentationService;
 use App\Services\PropositionStateService;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Gate;
 
@@ -39,14 +40,17 @@ class PropositionController extends Controller
         PropositionStateService $state,
         ReinforcementService $reinforcement,
         GraphProjectionService $graph,
+        Request $request,
     ): AnonymousResourceCollection {
         Gate::authorize('view', $substrate);
+        $input = $request->validate(['ids' => ['sometimes', 'array', 'min:1', 'max:100'], 'ids.*' => ['required', 'ulid', 'distinct']]);
 
         $propositions = Proposition::query()
             ->whereHas(
                 'phase.cycle.participant',
                 fn ($query) => $query->whereBelongsTo($substrate),
             )
+            ->when(isset($input['ids']), fn ($query) => $query->whereKey($input['ids']))
             ->with([
                 'phase.cycle.participant:id,callsign,substrate_id',
                 'measurement',

@@ -20,6 +20,7 @@ use App\Services\ContributionDispatcher;
 use App\Services\CycleEntryService;
 use App\Services\InstrumentExecutionService;
 use App\Services\LedgerService;
+use App\Services\ParticipantActivityService;
 use App\Services\ParticipantConnectionTriggerService;
 use App\Services\ParticipationService;
 use App\Services\PhaseProgressionService;
@@ -329,7 +330,7 @@ class TransactionLockOrderTest extends TestCase
 
             return ['action' => 'receipt.read', 'receipt_id' => $receiptIds[0]];
         });
-        (new WakeParticipant($link->id))->handle($inference, app(ParticipationService::class), app(ParticipantConnectionTriggerService::class));
+        (new WakeParticipant($link->id))->handle($inference, app(ParticipationService::class), app(ParticipantConnectionTriggerService::class), app(ParticipantActivityService::class));
         $this->assertSame(2, $calls);
         $this->assertNull($phase->cycle->fresh()->completed_at);
         $this->assertNull($phase->cycle->fresh()->rested_at);

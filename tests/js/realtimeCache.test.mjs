@@ -6,11 +6,11 @@ import { createRequire } from 'node:module';
 const result = await build({ stdin: { contents: `
   export { configureStore } from '@reduxjs/toolkit';
   export { commonsApi } from './resources/js/services/commonsApi';
-  export { refreshParticipant, refreshGraphPropositions } from './resources/js/realtime/cacheActions';
+  export { refreshParticipant, refreshGraphPropositions, refreshGraphMetrics } from './resources/js/realtime/cacheActions';
 `, resolveDir: process.cwd() }, bundle: true, platform: 'node', format: 'cjs', write: false });
 const module = { exports: {} };
 new Function('require', 'module', 'exports', result.outputFiles[0].text)(createRequire(import.meta.url), module, module.exports);
-const { configureStore, commonsApi, refreshParticipant, refreshGraphPropositions } = module.exports;
+const { configureStore, commonsApi, refreshParticipant, refreshGraphPropositions, refreshGraphMetrics } = module.exports;
 const node = id => ({ id, statement: id, register: 'activity', tier: 'expressive' });
 function store() {
   return configureStore({ reducer: { [commonsApi.reducerPath]: commonsApi.reducer },
@@ -57,4 +57,39 @@ test('Participant refresh invalidates only that Participant and its derived plan
     assert.equal(commonsApi.endpoints[endpoint].select({ slug: 'test', participantId: 'b' })(s.getState()).isSuccess, true);
   }
   s.dispatch(commonsApi.util.resetApiState());
+});
+
+test('large event bursts use bounded batches and metric refresh preserves statements and topology', async () => {
+  const s = store();
+  await s.dispatch(commonsApi.util.upsertQueryData('getPropositions', 'test', [node('origin')]));
+  const originalRequest = globalThis.Request, originalFetch = globalThis.fetch, originalDocument = globalThis.document;
+  globalThis.document = { cookie: '' };
+  globalThis.Request = class extends originalRequest {
+    constructor(input, options) { super(typeof input === 'string' && input.startsWith('/') ? `http://localhost${input}` : input, options); }
+  };
+  const requests = [];
+  globalThis.fetch = async request => {
+    const url = new URL(request.url); requests.push(url);
+    const data = url.pathname.endsWith('/graph-metrics') ? [{ id: 'origin', field: { tension: -.5, charge: .5, potential_charge: .2 }, participation_count: 9 }]
+      : url.searchParams.getAll('ids[]').map(id => ({ ...node(id), parent_ids: ['origin'] }));
+    return new Response(JSON.stringify({ data }), { headers: { 'Content-Type': 'application/json' } });
+  };
+  try {
+    await refreshGraphPropositions(s.dispatch, 'test', Array.from({ length: 205 }, (_, i) => String(i)), () => true);
+    assert.deepEqual(requests.map(url => url.searchParams.getAll('ids[]').length), [100, 100, 5]);
+    const before = commonsApi.endpoints.getPropositions.select('test')(s.getState()).data;
+    assert.equal(before.length, 206);
+    await refreshGraphMetrics(s.dispatch, 'test', () => true);
+    const after = commonsApi.endpoints.getPropositions.select('test')(s.getState()).data;
+    assert.equal(after[0].field.potential_charge, .2);
+    assert.equal(after[0].participation_count, 9);
+    assert.equal(after[0].statement, 'origin');
+    assert.equal(after[1], before[1], 'unaffected cards keep their reference');
+    assert.deepEqual(after[1].parent_ids, ['origin']);
+    await refreshGraphMetrics(s.dispatch, 'test', () => true);
+    assert.equal(commonsApi.endpoints.getPropositions.select('test')(s.getState()).data, after, 'unchanged metrics do not invalidate the graph');
+  } finally {
+    s.dispatch(commonsApi.util.resetApiState());
+    globalThis.Request = originalRequest; globalThis.fetch = originalFetch; globalThis.document = originalDocument;
+  }
 });

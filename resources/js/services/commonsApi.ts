@@ -23,6 +23,7 @@ import type {
   Substrate,
   SubstrateInput,
   User,
+  GraphParticipantsSnapshot,
 } from '../types';
 import type { FetchArgs } from '@reduxjs/toolkit/query';
 
@@ -105,6 +106,7 @@ export const commonsApi = createApi({
   reducerPath: 'commonsApi',
   baseQuery,
   tagTypes: [
+    'GraphParticipants',
     'GraphSubscriptions',
     'Session',
     'Substrate',
@@ -125,6 +127,19 @@ export const commonsApi = createApi({
     getGraphSubscriptions: builder.query<GraphSubscriptions, string>({
       query: slug => `/substrates/${slug}/realtime`, transformResponse: data,
       providesTags: (_result, _error, slug) => [{ type: 'GraphSubscriptions', id: slug }],
+    }),
+    getGraphParticipants: builder.query<GraphParticipantsSnapshot, string>({
+      query: slug => `/substrates/${slug}/graph-participants`,
+      transformResponse: (response: ApiEnvelope<Omit<GraphParticipantsSnapshot, 'received_at'>>) => ({ ...response.data, received_at: Date.now() }),
+      providesTags: (_result, _error, slug) => [{ type: 'GraphParticipants', id: slug }],
+    }),
+    getGraphMetrics: builder.query<Array<Pick<Proposition, 'id' | 'field' | 'participation_count'>>, string>({
+      query: slug => `/substrates/${slug}/graph-metrics`, transformResponse: data,
+      keepUnusedDataFor: 0,
+    }),
+    getPropositionBatch: builder.query<Proposition[], { slug: string; ids: Identifier[] }>({
+      query: ({ slug, ids }) => `/substrates/${slug}/propositions?${ids.map(id => `ids[]=${encodeURIComponent(id)}`).join('&')}`,
+      transformResponse: data, keepUnusedDataFor: 0,
     }),
     getProposition: builder.query<Proposition, { slug: string; propositionId: Identifier }>({
       query: ({ slug, propositionId }) => `/substrates/${slug}/propositions/${propositionId}`,
@@ -278,6 +293,7 @@ export const {
   useGetParticipantsQuery,
   useGetPropositionQuery,
   useGetGraphSubscriptionsQuery,
+  useGetGraphParticipantsQuery,
   useGetPropositionsQuery,
   useGetSessionQuery,
   useGetSubstrateQuery,

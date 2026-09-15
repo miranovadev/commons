@@ -56,6 +56,20 @@ export interface GraphField {
   committal_proposition_id: Identifier | null;
 }
 
+export interface GraphParticipant {
+  id: Identifier;
+  callsign: string;
+  current_proposition_id: Identifier | null;
+  is_active: boolean;
+  activity_expires_at: number | null;
+}
+
+export interface GraphParticipantsSnapshot {
+  participants: GraphParticipant[];
+  server_time: string;
+  received_at: number;
+}
+
 export interface User {
   id: Identifier;
   name: string;

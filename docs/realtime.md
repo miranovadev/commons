@@ -18,6 +18,10 @@ Notifications contain no statements, rationale, credentials, connection configur
 | `context-horizon.{id}` | `type: proposition.created`, `proposition_id`, `context_horizon_id` | Fetch and upsert Proposition detail and graph list |
 | `context-horizon.{id}` | `type: proposition.updated` or `attestation.created`, the same two IDs | Refresh the affected Proposition, including measurements/evidence representation |
 | `substrate.{id}` | `type: context-horizons.changed`, `substrate_id` | Refresh the small horizon subscription descriptor |
+| `substrate.{id}` | `type: graph.participant_changed`, `participant_id`, `substrate_id` | Refresh canonical graph positions and expiring wake activity |
+| `substrate.{id}` | `type: graph.metrics_changed`, `substrate_id` | Refresh field values and Phase touches without resending statements/topology |
+
+Graph Participant hints use `ShouldBroadcastNow` after commit, so a busy default queue cannot defer activity until the wake has finished. They retain the same public/private channel scoping and failure isolation. The remaining invalidations use the normal queue. See [graph visualisation](graph-visualisation.md) for the shared-cache lease, reconnect/expiry behavior and visual channels.
 
 The current workspace API bundles eligibility, measurements, lineage and active Phase into Participation state. Every accepted workspace contribution advances or completes a Phase, including Attestation and Instrument actions. Refreshing that Participant's derived state is therefore necessary; the event does not separately fetch a duplicate Proposition representation for the workspace. The Participant card endpoint also embeds position and needs refreshing. Other Participant caches are unaffected.
 
