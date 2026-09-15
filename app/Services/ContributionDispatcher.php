@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Domain\Evidence\InstrumentObservation;
 use App\Domain\Observables\ObservableValues;
 use App\Enums\PhaseKind;
 use App\Models\Attestation;
@@ -43,8 +44,11 @@ final readonly class ContributionDispatcher
         Participant $participant,
         Phase $phase,
         array $input,
+        ?InstrumentObservation $observed = null,
     ): Proposition {
-        return DB::transaction(function () use ($participant, $phase, $input): Proposition {
+        $observed ??= $this->observeInstrument($participant, $phase, $input);
+
+        return DB::transaction(function () use ($participant, $phase, $input, $observed): Proposition {
             // Also protect direct service callers before attestations or FK inserts.
             Substrate::query()->lockForUpdate()->findOrFail($participant->substrate_id);
             if ($phase->cycle->participant->substrate_id !== $participant->substrate_id) {
@@ -82,7 +86,7 @@ final readonly class ContributionDispatcher
                     throw new DomainException('Replay takes only action and receipt_id.');
                 }
 
-                return $this->replays->replay($participant, $phase, $input['receipt_id'])->instrumentExecution->proposition;
+                return $this->replays->replay($participant, $phase, $input['receipt_id'], $observed)->instrumentExecution->proposition;
             }
 
             if ($action === 'receipt.read') {
@@ -122,6 +126,7 @@ final readonly class ContributionDispatcher
                 'instrument.execute' => $this->executeInstrument(
                     $phase,
                     $input,
+                    $observed,
                 ),
                 'proposition.commit' => $this->commit($phase, $input),
                 default => throw new DomainException(
@@ -129,6 +134,26 @@ final readonly class ContributionDispatcher
                 ),
             };
         });
+    }
+
+    public function observeInstrument(Participant $participant, Phase $phase, array $input): ?InstrumentObservation
+    {
+        return match ($input['action'] ?? null) {
+            'instrument.execute' => $this->observeExecution($participant, $phase, $input),
+            'receipt.replay' => $this->replays->observe($participant, $phase, $input['receipt_id']),
+            default => null,
+        };
+    }
+
+    private function observeExecution(Participant $participant, Phase $phase, array $input): InstrumentObservation
+    {
+        if ($phase->cycle->participant_id !== $participant->id
+            || ! in_array('instrument.execute', config("phases.{$phase->kind->value}.actions", []), true)
+            || ! $this->options->instrumentOptionsFor($phase)->contains('id', $input['proposition_id'] ?? null)) {
+            throw new DomainException('Support requires an admissible Proposition in the current Write.');
+        }
+
+        return $this->instruments->observeFor($phase, Proposition::findOrFail($input['proposition_id']), $input['instrument']);
     }
 
     /** @param array<string, mixed> $input */
@@ -243,16 +268,12 @@ final readonly class ContributionDispatcher
             throw new DomainException('Bias selects one Proposition; it accepts no statement or second source.');
         }
 
-        return DB::transaction(function () use ($phase, $input): Proposition {
-            Substrate::query()->whereKey($phase->cycle->participant->substrate_id)
-                ->lockForUpdate()->firstOrFail();
-            $source = $this->bias->forPhase($phase)->firstWhere('id', $input['proposition_id'] ?? null);
-            if ($source === null || ! $this->generation->available($phase, 'proposition.bias', position: $source)) {
-                throw new DomainException('Bias requires an active Gate aligned with its own causal lineage.');
-            }
+        $source = $this->bias->forPhase($phase)->firstWhere('id', $input['proposition_id'] ?? null);
+        if ($source === null || ! $this->generation->available($phase, 'proposition.bias', position: $source)) {
+            throw new DomainException('Bias requires an active Gate aligned with its own causal lineage.');
+        }
 
-            return $this->classified($phase, $source);
-        });
+        return $this->classified($phase, $source);
     }
 
     /** @param array<string, mixed> $input */
@@ -297,10 +318,11 @@ final readonly class ContributionDispatcher
     private function executeInstrument(
         Phase $phase,
         array $input,
+        ?InstrumentObservation $observed,
     ): Proposition {
         $proposition = Proposition::query()
             ->findOrFail($input['proposition_id']);
-        $this->instruments->execute($phase, $proposition, $input['instrument']);
+        $this->instruments->execute($phase, $proposition, $input['instrument'], observed: $observed);
 
         return $proposition;
     }
@@ -313,56 +335,51 @@ final readonly class ContributionDispatcher
             throw new DomainException('Commit selects one Proposition; it accepts no authored statement.');
         }
 
-        return DB::transaction(function () use ($phase, $input): Proposition {
-            // Serialize evaluation and the resulting horizon transition with ledger writes.
-            Substrate::query()->whereKey($phase->cycle->participant->substrate_id)
-                ->lockForUpdate()->firstOrFail();
-            $gate = $phase->kind === PhaseKind::Order
-                ? $this->regions->forPhase($phase)->firstWhere('id', $input['proposition_id'] ?? null) : null;
-            if ($gate === null) {
-                throw new DomainException('Commit requires an active Closure candidate in the current Commit Region.');
-            }
-            $eligibility = $this->admissibility->evaluate($gate, $phase);
-            if (! $eligibility['admissible']) {
-                throw new DomainException(
-                    'Commitment requires an effective Attestation, completed Receipt, and aligned Depth/Cadence directions. Missing: '.implode(', ', $eligibility['reasons'])
-                );
-            }
+        $gate = $phase->kind === PhaseKind::Order
+            ? $this->regions->forPhase($phase)->firstWhere('id', $input['proposition_id'] ?? null) : null;
+        if ($gate === null) {
+            throw new DomainException('Commit requires an active Closure candidate in the current Commit Region.');
+        }
+        $eligibility = $this->admissibility->evaluate($gate, $phase);
+        if (! $eligibility['admissible']) {
+            throw new DomainException(
+                'Commitment requires an effective Attestation, completed Receipt, and aligned Depth/Cadence directions. Missing: '.implode(', ', $eligibility['reasons'])
+            );
+        }
 
-            $governing = $this->evidence->directionFor($gate);
-            $target = $this->write(
-                $phase,
-                $gate->statement,
-                tier: 'committal',
-                preserveStatement: true,
-            );
-            DB::table('commit_results')->insert(['source_proposition_id' => $gate->id, 'target_proposition_id' => $target->id]);
-            $this->polarity->establishCommit($target, $governing);
-            $supersession = $this->supersede(
-                $phase,
-                $gate,
-                $target,
-                'commit',
-            );
-            $this->ledger->record($supersession);
-            $values = $this->measurements->recalculate($target);
-            $projections = $this->projections->from(
-                new ObservableValues(
-                    $values->correspondence,
-                    $values->chirality,
-                    $values->closure,
-                ),
-            );
-            $this->commitments->record(
-                $target,
-                $projections['prominence'],
-                $projections['turbulence'],
-                LineageMeasurementService::VERSION,
-                $supersession,
-            );
+        $governing = $this->evidence->directionFor($gate);
+        $target = $this->write(
+            $phase,
+            $gate->statement,
+            tier: 'committal',
+            preserveStatement: true,
+        );
+        DB::table('commit_results')->insert(['source_proposition_id' => $gate->id, 'target_proposition_id' => $target->id]);
+        $this->polarity->establishCommit($target, $governing);
+        $supersession = $this->supersede(
+            $phase,
+            $gate,
+            $target,
+            'commit',
+        );
+        $this->ledger->record($supersession);
+        $values = $this->measurements->recalculate($target);
+        $projections = $this->projections->from(
+            new ObservableValues(
+                $values->correspondence,
+                $values->chirality,
+                $values->closure,
+            ),
+        );
+        $this->commitments->record(
+            $target,
+            $projections['prominence'],
+            $projections['turbulence'],
+            LineageMeasurementService::VERSION,
+            $supersession,
+        );
 
-            return $target;
-        });
+        return $target;
     }
 
     private function write(

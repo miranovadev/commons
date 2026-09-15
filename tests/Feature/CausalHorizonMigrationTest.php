@@ -21,6 +21,7 @@ class CausalHorizonMigrationTest extends TestCase
 
     protected function afterRefreshingDatabase(): void
     {
+        $this->artisan('migrate:rollback', ['--path' => 'database/migrations/2026_09_15_150000_index_context_horizon_working_set.php'])->assertSuccessful();
         $this->artisan('migrate:rollback', ['--path' => 'database/migrations/2026_09_15_120000_protect_causal_ownership.php'])->assertSuccessful();
         $this->artisan('migrate:rollback', ['--path' => 'database/'.self::MIGRATION])->assertSuccessful();
     }

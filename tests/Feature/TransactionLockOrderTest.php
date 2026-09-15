@@ -3,21 +3,30 @@
 namespace Tests\Feature;
 
 use App\Contracts\ParticipantInference;
+use App\Contracts\WebSearchProvider;
+use App\Domain\Evidence\SearchObservation;
+use App\Domain\Evidence\VerifiedHyperlink;
 use App\Domain\Observables\ClosureValues;
 use App\Enums\PhaseKind;
 use App\Jobs\WakeParticipant;
 use App\Models\Connection;
+use App\Models\ContextHorizon;
 use App\Models\Cycle;
+use App\Models\InstrumentExecution;
 use App\Models\Participant;
 use App\Models\ParticipantConnection;
+use App\Models\ParticipantReceiptContext;
 use App\Models\Phase;
 use App\Models\Proposition;
+use App\Models\ReceiptContextEvent;
 use App\Models\Substrate;
 use App\Models\Supersession;
 use App\Models\User;
 use App\Services\ClosureGateService;
+use App\Services\ContextHorizonProjector;
 use App\Services\ContributionDispatcher;
 use App\Services\CycleEntryService;
+use App\Services\Evidence\HyperlinkVerifier;
 use App\Services\InstrumentExecutionService;
 use App\Services\LedgerService;
 use App\Services\ParticipantActivityService;
@@ -25,6 +34,8 @@ use App\Services\ParticipantConnectionTriggerService;
 use App\Services\ParticipationService;
 use App\Services\PhaseProgressionService;
 use App\Services\PropositionMeasurementService;
+use App\Services\ReceiptContextService;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Support\Facades\DB;
@@ -168,15 +179,37 @@ class TransactionLockOrderTest extends TestCase
         }
     }
 
-    public function test_standalone_plan_loads_state_after_waiting_for_a_measurement_writer(): void
+    public function test_plan_state_workspace_and_active_prepare_complete_concurrently_while_a_writer_holds_the_root(): void
     {
         [$substrate, $participant, $phase] = $this->fixture();
-        $phase->gate->measurement()->update(['calculator_version' => null]);
-        $this->whileWorkerWaits($substrate, [
-            'operation' => 'plan', 'participant_id' => $participant->id,
-        ], function () use ($phase): void {
-            app(PropositionMeasurementService::class)->project($phase->gate, -0.75, 0.25, 0.5);
-        });
+        $phase->gate->measurement()->delete(); // The read-only fallback must not repair under a lock.
+        $processes = [];
+        DB::beginTransaction();
+        try {
+            Substrate::query()->lockForUpdate()->findOrFail($substrate->id);
+            Participant::query()->lockForUpdate()->findOrFail($participant->id);
+            Phase::query()->lockForUpdate()->findOrFail($phase->id);
+            foreach (['plan', 'plan', 'state', 'workspace', 'prepare'] as $operation) {
+                $process = new Process([PHP_BINARY, base_path('tests/Support/concurrent-commons-worker.php')], base_path(), null,
+                    json_encode(['operation' => $operation, 'participant_id' => $participant->id,
+                        'database' => config('database.connections.'.DB::getDefaultConnection())], JSON_THROW_ON_ERROR), 5);
+                $process->start();
+                $processes[] = $process;
+            }
+            foreach ($processes as $process) {
+                $process->wait(); // All reads finish before the writer commits.
+                $this->assertSame(0, $process->getExitCode(), $process->getErrorOutput());
+                $this->assertStringContainsString('completed', $process->getOutput());
+            }
+            $this->assertNull($phase->gate->fresh()->measurement);
+        } finally {
+            DB::rollBack();
+            foreach ($processes as $process) {
+                if ($process->isRunning()) {
+                    $process->stop(0);
+                }
+            }
+        }
     }
 
     /** Hold the root, observe a real lock wait, exercise the competing operation, release. */
@@ -355,6 +388,77 @@ class TransactionLockOrderTest extends TestCase
             $this->assertNull($phase->fresh()->completed_at);
             $this->assertSame(1, DB::table('reclassification_results')->where('source_proposition_id', $source->id)->count());
         }
+    }
+
+    public static function externalInstruments(): array
+    {
+        return [['hyperlink'], ['web_search']];
+    }
+
+    #[DataProvider('externalInstruments')]
+    public function test_external_instrument_observation_allows_another_writer_and_discards_a_stale_result(string $kind): void
+    {
+        [$substrate, $first, $initial] = $this->fixture();
+        $target = app(ContributionDispatcher::class)->dispatch($first, $initial,
+            ['action' => 'proposition.variant', 'statement' => 'Instrument subject']);
+        $this->receiptFixture($target); // Allow the competing attestation to advance this Phase.
+        $second = new Participant;
+        $second->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'during-observation'])->save();
+        app(CycleEntryService::class)->enter($second);
+        $secondPhase = $this->activePhase($second);
+        $input = ['action' => 'instrument.execute', 'proposition_id' => $target->id,
+            'instrument' => $kind === 'hyperlink' ? ['kind' => $kind, 'reference' => 'https://example.test/outside-lock']
+                : ['kind' => $kind, 'query' => 'Observe outside the write lock']];
+        $before = InstrumentExecution::count();
+        $observed = false;
+        $this->mock($kind === 'hyperlink' ? HyperlinkVerifier::class : WebSearchProvider::class, function ($mock) use ($kind, &$observed, $second, $secondPhase, $first, $initial, $target): void {
+            $mock->shouldReceive($kind === 'hyperlink' ? 'verify' : 'search')->once()->andReturnUsing(function ($reference) use ($kind, &$observed, $second, $secondPhase, $first, $initial, $target) {
+                $observed = DB::transactionLevel() === 0;
+                $process = new Process([PHP_BINARY, base_path('tests/Support/concurrent-commons-worker.php')], base_path(), null,
+                    json_encode(['operation' => 'contribute', 'participant_id' => $second->id, 'phase_id' => $secondPhase->id,
+                        'database' => config('database.connections.'.DB::getDefaultConnection())], JSON_THROW_ON_ERROR), 5);
+                $process->mustRun();
+                // Another actor also advances this Participant while observation is in flight.
+                app(ParticipationService::class)->contribute($first, $initial->id,
+                    ['action' => 'attestation.create', 'proposition_id' => $target->id, 'direction' => 'support']);
+
+                return $kind === 'hyperlink' ? new VerifiedHyperlink($reference, hash('sha256', $reference), CarbonImmutable::now())
+                    : new SearchObservation($reference, CarbonImmutable::now(), [], 'fixture');
+            });
+        });
+        try {
+            app(ParticipationService::class)->contribute($first, $initial->id, $input);
+            $this->fail('A stale instrument result advanced the old Phase.');
+        } catch (ConflictHttpException $exception) {
+            $this->assertSame(409, $exception->getStatusCode());
+        }
+        $this->assertTrue($observed, 'External observation must run without a transaction.');
+        $this->assertNotNull($secondPhase->fresh()->completed_at);
+        $this->assertSame($before, InstrumentExecution::count(), 'Discarded observation persists no execution or Receipt.');
+    }
+
+    public function test_competing_receipt_reads_keep_one_load_and_one_event(): void
+    {
+        [$substrate, $participant, $phase] = $this->fixture();
+        $receiptId = app(ParticipationService::class)->stateFor($participant)['plan']['schema']['$defs']['actions']['receipt.read']['properties']['receipt_id']['enum'][0];
+        $this->whileWorkerWaits($substrate, ['operation' => 'receipt-read', 'participant_id' => $participant->id,
+            'phase_id' => $phase->id, 'receipt_id' => $receiptId], function () use ($participant, $phase, $receiptId): void {
+                app(ReceiptContextService::class)->read($participant, $phase, $receiptId);
+            });
+        $load = ParticipantReceiptContext::where('participant_id', $participant->id)->where('receipt_id', $receiptId)->sole();
+        $this->assertSame(1, ReceiptContextEvent::where('participant_receipt_context_id', $load->id)->count());
+    }
+
+    public function test_competing_boundary_projection_reuses_the_same_child_horizon(): void
+    {
+        [$substrate, , $phase] = $this->fixture();
+        $snapshot = $phase->gate->commitmentSnapshot;
+        $before = ContextHorizon::where('substrate_id', $substrate->id)->count();
+        $this->whileWorkerWaits($substrate, ['operation' => 'horizon', 'proposition_id' => $snapshot->proposition_id], function () use ($snapshot): void {
+            app(ContextHorizonProjector::class)->apply($snapshot);
+        });
+        $this->assertSame($before, ContextHorizon::where('substrate_id', $substrate->id)->count());
+        $this->assertSame(1, ContextHorizon::where('opened_by_proposition_id', $snapshot->proposition_id)->count());
     }
 
     private function whileWorkerWaits(Substrate $substrate, array $input, callable $competing): void

@@ -14,7 +14,9 @@ use App\Services\OpenAIResponsesClient;
 use App\Services\OperationalInstrumentService;
 use App\Services\ParticipantContextSerializer;
 use App\Services\ParticipantPromptFactory;
+use App\Services\Participation\ParticipationContext;
 use App\Services\ParticipationService;
+use App\Services\PropositionMeasurementService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -175,17 +177,28 @@ class ParticipantContextTest extends TestCase
 
     public function test_ten_to_five_hundred_unrelated_horizon_nodes_cannot_grow_inference(): void
     {
+        $started = hrtime(true);
+        $profile = static function (string $stage) use ($started): void {
+            fwrite(STDERR, sprintf("\nWORKSPACE growth %s: %.2fms\n", $stage, (hrtime(true) - $started) / 1e6));
+        };
         $this->freezeTime();
         $fixture = new ParticipantContextFixture;
+        $profile('fixture');
         // The human workspace shows the newest 25 cards. Give the unrelated
         // population a distinct timestamp so SQL tie ordering cannot hide it.
         $this->travel(1)->seconds();
         $fixture->growUnrelatedTo(10);
+        // Explicitly persist the projection whose invalidation this regression exercises.
+        app(PropositionMeasurementService::class)->recalculate($fixture->gate, context: new ParticipationContext($fixture->phase));
+        $profile('projection');
         $service = app(ParticipationService::class);
         $before = $service->stateFor($fixture->viewer)['plan'];
+        $profile('initial read');
         $fixture->growUnrelatedTo(500);
+        $profile('500 candidates');
         $this->assertDatabaseHas('proposition_measurements', ['proposition_id' => $fixture->gate->id, 'calculator_version' => null]);
         $after = $service->stateFor($fixture->viewer)['plan'];
+        $profile('expanded read');
         $this->assertSame($before, $after);
         $this->assertSame(strlen(json_encode($before)), strlen(json_encode($after)));
         $ids = array_column($this->objects($after), 'id');
@@ -194,6 +207,7 @@ class ParticipantContextTest extends TestCase
         $this->assertSame(count($ids), count(array_unique($ids)));
         $this->assertSame($before['schema'], $after['schema']);
         $workspace = $service->workspaceFor($fixture->viewer)['plan'];
+        $profile('workspace');
         $humanIds = collect($workspace['workspace']['registers'])->flatten(1)->pluck('id')->all();
         $this->assertNotEmpty(array_intersect($fixture->unrelated, $humanIds));
         $this->assertSame(array_column($after['lineage'], 'id'), array_column($workspace['lineage'], 'id'));

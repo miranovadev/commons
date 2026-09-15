@@ -34,7 +34,7 @@ final readonly class ContributionService
      */
     public function validate(Participant $participant, array $input): void
     {
-        $plan = $this->planFor($participant);
+        $plan = $this->plans->forValidation($participant);
         $this->validateSchema($plan['schema'], $input);
     }
 

@@ -41,8 +41,11 @@ class ReceiptContextMigrationTest extends TestCase
         ]);
         $history = $receipt->fresh()->getAttributes();
         $migration = require database_path('migrations/2026_09_14_000000_create_participant_receipt_contexts.php');
+        $indexes = require database_path('migrations/2026_09_15_150000_index_context_horizon_working_set.php');
+        $indexes->down();
         $migration->down();
         $migration->up();
+        $indexes->up();
         $this->assertSame($history, $receipt->fresh()->getAttributes());
         $this->assertSame(1, DB::table('reinforcements')->count());
         $this->assertSame(0, ParticipantReceiptContext::count());

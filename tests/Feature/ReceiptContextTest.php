@@ -225,6 +225,31 @@ class ReceiptContextTest extends TestCase
         (require database_path('migrations/2026_09_14_000000_create_participant_receipt_contexts.php'))->down();
     }
 
+    public function test_loaded_citation_knowledge_survives_outside_the_hydrated_causal_lineage(): void
+    {
+        [$fixture, $reference, $subject, $first] = $this->scenario();
+        $phase = $this->move($fixture, $subject);
+        $service = app(ReceiptContextService::class);
+        $service->read($fixture->viewer, $phase, $first->id);
+        $phase->forceFill(['completed_at' => now()])->save();
+        $phase->cycle->forceFill(['completed_at' => now()])->save();
+        $horizon = $this->laterHorizonFixture($phase->cycle->contextHorizon);
+        $next = $this->newPhase($fixture->viewer, $horizon->opened_by_proposition_id, $horizon);
+        $next->forceFill(['kind' => PhaseKind::Distinguish, 'write_register' => $horizon->domain->registerFor(PhaseKind::Distinguish)])->save();
+        $newSubject = app(ContributionDispatcher::class)->dispatch($fixture->viewer, $next,
+            ['action' => 'proposition.variant', 'statement' => 'A new lineage']);
+        $duplicate = app(OperationalInstrumentService::class)->execute($next, $newSubject,
+            ['kind' => 'citation', 'reference' => $reference->id]);
+        $context = new ParticipationContext($next->fresh());
+        $this->assertFalse($context->propositions->has($subject->id));
+        $this->assertFalse($context->propositions->has($reference->id));
+        $this->assertSame('already-in-context', $service->forPhase($next, $context)->firstWhere('id', $duplicate->id)['status']);
+        $this->assertNotContains($first->id, $service->forPhase($next, $context)->pluck('id'));
+        // Clearing remembered evidence changes availability without importing old history.
+        $service->clear($fixture->viewer, $next, $first->id);
+        $this->assertSame('available', $service->forPhase($next)->firstWhere('id', $duplicate->id)['status']);
+    }
+
     public function test_clearing_attestation_evidence_removes_weight_but_preserves_hysteretic_history(): void
     {
         [$fixture, , $subject] = $this->scenario();
