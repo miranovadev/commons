@@ -22,15 +22,25 @@ final class RealtimeObserver
             $this->realtime->horizons($model->substrate_id);
         } elseif ($model instanceof Phase) {
             $this->realtime->participant($model->cycle->participant_id);
+            $this->realtime->graphMetrics($model->cycle->participant->substrate_id);
         } elseif ($model instanceof Cycle) {
             $this->realtime->participant($model->participant_id);
-        } elseif ($model instanceof Participant && $model->wasChanged('current_proposition_id')) {
-            $this->realtime->participant($model->getKey());
+        } elseif ($model instanceof Participant) {
+            if ($model->wasChanged('current_proposition_id')) {
+                $this->realtime->participant($model->getKey());
+            }
+            if ($model->wasRecentlyCreated || $model->wasChanged(['current_proposition_id', 'callsign'])) {
+                $this->realtime->graphParticipant($model->id, $model->substrate_id);
+            }
         }
     }
 
-    public function deleted(ContextHorizon $horizon): void
+    public function deleted(Model $model): void
     {
-        $this->realtime->horizons($horizon->substrate_id);
+        if ($model instanceof ContextHorizon) {
+            $this->realtime->horizons($model->substrate_id);
+        } elseif ($model instanceof Participant) {
+            $this->realtime->graphParticipant($model->id, $model->substrate_id);
+        }
     }
 }

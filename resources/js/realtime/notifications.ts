@@ -2,6 +2,8 @@ import type { Identifier, Proposition } from '../types';
 
 export type Invalidation =
   | { type: 'participant.state_changed'; participant_id: Identifier }
+  | { type: 'graph.participant_changed'; participant_id: Identifier; substrate_id: Identifier }
+  | { type: 'graph.metrics_changed'; substrate_id: Identifier }
   | { type: 'proposition.created' | 'proposition.updated' | 'attestation.created'; proposition_id: Identifier; context_horizon_id: Identifier }
   | { type: 'context-horizons.changed'; substrate_id: Identifier };
 

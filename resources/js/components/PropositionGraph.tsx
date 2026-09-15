@@ -1,11 +1,17 @@
 import { PropositionInspector } from './PropositionInspector';
 import { useGetPropositionQuery } from '../services/commonsApi';
-import { Box, Group, Paper, Text, ThemeIcon, Title } from '@mantine/core';
+import { Box, Group, NativeSelect, Paper, Stack, Text, ThemeIcon, Title } from '@mantine/core';
+import { useLocalStorage } from '@mantine/hooks';
 import { IconArrowsMove, IconSparkles } from '@tabler/icons-react';
-import { useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import '../../css/substrate-graph.css';
 import { PropositionCard } from './PropositionCard';
-import type { Identifier, Proposition } from '../types';
+import type { GraphParticipant, Identifier, Proposition } from '../types';
+import { participantsByPosition } from '../graphParticipants';
+import { GraphParticipants } from './GraphParticipants';
+import { causalAncestors, graphParents } from '../graphTopology';
+import { graphOverlayDefinitions, graphOverlayOptions, isGraphOverlayMode, resolveGraphOverlays } from '../graphOverlays';
+import type { GraphOverlay } from '../graphOverlays';
 
 interface GraphProps {
   propositions: Proposition[];
@@ -13,6 +19,7 @@ interface GraphProps {
   initialFocusId?: Identifier | null;
   perspectiveLimit?: number;
   participantMode?: boolean;
+  participants?: GraphParticipant[];
 }
 
 interface DragState {
@@ -22,20 +29,30 @@ interface DragState {
   offsetY: number;
 }
 
-const NODE_WIDTH = 190;
-const NODE_HEIGHT = 104;
+const NODE_WIDTH = 220;
+const NODE_HEIGHT = 160;
 const COLUMN_GAP = 54;
 const ROW_GAP = 96;
-const CANVAS_PADDING = 90;
+const CANVAS_PADDING = 115;
 
-export function PropositionGraph({ propositions, substrateSlug, initialFocusId, perspectiveLimit, participantMode = false }: GraphProps) {
+const NO_PARTICIPANTS: GraphParticipant[] = [];
+
+export function PropositionGraph({ propositions, substrateSlug, initialFocusId, perspectiveLimit, participantMode = false, participants = NO_PARTICIPANTS }: GraphProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const dragState = useRef<DragState | null>(null);
   const [dragging, setDragging] = useState(false);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [selectedId, setSelectedId] = useState(initialFocusId || null);
   const [inspectedId, setInspectedId] = useState<Identifier | null>(null);
+  const [storedOverlay, setOverlay] = useLocalStorage<string>({ key: 'commons.graph.overlay', defaultValue: 'none' });
+  const overlayMode = isGraphOverlayMode(storedOverlay) ? storedOverlay : 'none';
+  const overlays = useMemo(() => resolveGraphOverlays(propositions, overlayMode), [propositions, overlayMode]);
   const layout = useMemo(() => buildGraphLayout(propositions), [propositions]);
+  const parents = useMemo(() => graphParents(propositions), [propositions]);
+  const ancestors = useMemo(() => causalAncestors(parents, selectedId), [parents, selectedId]);
+  const hasSelection = selectedId !== null && parents.has(selectedId);
+  const positions = useMemo(() => participantsByPosition(participants), [participants]);
+  const select = useCallback((id: Identifier) => { setSelectedId(id); setInspectedId(id); }, []);
 
   if (!layout.origin) {
     return (
@@ -48,7 +65,7 @@ export function PropositionGraph({ propositions, substrateSlug, initialFocusId, 
   }
 
   function beginDrag(event: React.PointerEvent<HTMLDivElement>) {
-    if (event.button !== 0 || (event.target as Element).closest('.proposition-card')) return;
+    if (event.button !== 0 || (event.target as Element).closest('.proposition-card, .graph-participants')) return;
     const viewport = viewportRef.current;
     if (!viewport) return;
     dragState.current = {
@@ -78,14 +95,19 @@ export function PropositionGraph({ propositions, substrateSlug, initialFocusId, 
   }
 
   return (
-    <Box className="substrate-graph-shell">
+    <Box className="substrate-graph-shell" data-has-selection={hasSelection || undefined}>
       {inspectedId && <GraphInspector key={`${substrateSlug}/${inspectedId}`} slug={substrateSlug} propositionId={inspectedId}
         fallback={propositions.find(item => item.id === inspectedId)} onClose={() => setInspectedId(null)} />}
+      <Stack className="substrate-graph-controls" gap={5}>
+        <NativeSelect label="Visualisation" size="xs" value={overlayMode} data={graphOverlayOptions}
+          onChange={event => setOverlay(event.currentTarget.value)} />
+        <Text size="10px" c="dimmed">{graphOverlayDefinitions[overlayMode].legend}</Text>
       <Group className="substrate-graph-hint" gap={6} wrap="nowrap">
         <IconArrowsMove size={14} />
         <Text size="xs" c="dimmed">Drag the surface to explore</Text>
         {participantMode && <Text size="xs" c="indigo" fw={650}>· {propositions.length} / {perspectiveLimit || propositions.length} visible</Text>}
       </Group>
+      </Stack>
 
       <Box
         ref={viewportRef}
@@ -105,30 +127,39 @@ export function PropositionGraph({ propositions, substrateSlug, initialFocusId, 
         >
           <svg className="substrate-graph-edges" width={layout.width} height={layout.height} aria-hidden="true">
             {layout.edges.map((edge) => (
-              <path key={`${edge.from}-${edge.to}`} d={edge.path} />
+              <path key={`${edge.from}-${edge.to}`} d={edge.path}
+                data-lineage={(ancestors.has(edge.from) && (ancestors.has(edge.to) || edge.to === selectedId)) || undefined} />
             ))}
           </svg>
 
           {layout.nodes.map(({ proposition, x, y }) => (
-            <Box
-              key={proposition.id}
-              className="substrate-graph-node"
-              style={{ left: x, top: y, width: NODE_WIDTH }}
-            >
-              <PropositionCard
-                proposition={proposition}
-                mini
-                selected={selectedId === proposition.id}
-                onClick={() => { setSelectedId(proposition.id); setInspectedId(proposition.id); }}
-              />
-              {proposition.is_origin && <Text className="substrate-graph-origin-label" size="10px" c="indigo" fw={700}>ORIGIN</Text>}
-            </Box>
+            <GraphNode key={proposition.id} proposition={proposition} x={x} y={y}
+              lineage={selectedId === proposition.id ? 'selected' : ancestors.has(proposition.id) ? 'ancestor' : 'unrelated'}
+              overlay={overlays.get(proposition.id)} participants={positions.get(proposition.id) || NO_PARTICIPANTS} onSelect={select} />
           ))}
         </Box>
       </Box>
     </Box>
   );
 }
+
+const GraphNode = memo(function GraphNode({ proposition, x, y, lineage, overlay, participants, onSelect }: {
+  proposition: Proposition; x: number; y: number; lineage: string; overlay?: GraphOverlay;
+  participants: GraphParticipant[]; onSelect: (id: Identifier) => void;
+}) {
+  return <Box className="substrate-graph-node" data-lineage={lineage}
+    style={{ left: x, top: y, width: NODE_WIDTH, '--graph-node-height': `${NODE_HEIGHT}px` }}>
+    <GraphParticipants participants={participants} />
+    <PropositionCard proposition={proposition} mini graph overlay={overlay} selected={lineage === 'selected'} onClick={() => onSelect(proposition.id)} />
+    {proposition.is_origin && <Text className="substrate-graph-origin-label" size="10px" c="indigo" fw={700}>ORIGIN</Text>}
+  </Box>;
+}, (previous, next) => previous.proposition === next.proposition && previous.x === next.x && previous.y === next.y
+  && previous.lineage === next.lineage && previous.onSelect === next.onSelect
+  && previous.overlay?.color === next.overlay?.color && previous.overlay?.intensity === next.overlay?.intensity
+  && previous.overlay?.label === next.overlay?.label
+  && previous.participants.length === next.participants.length
+  && previous.participants.every((participant, index) => participant.id === next.participants[index].id
+    && participant.callsign === next.participants[index].callsign && participant.is_active === next.participants[index].is_active));
 
 function buildGraphLayout(propositions: Proposition[]) {
   const origin = propositions.find((proposition) => proposition.is_origin) || propositions[0];
