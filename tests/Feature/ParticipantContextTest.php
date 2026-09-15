@@ -14,6 +14,7 @@ use App\Services\OpenAIResponsesClient;
 use App\Services\OperationalInstrumentService;
 use App\Services\ParticipantContextSerializer;
 use App\Services\ParticipantPromptFactory;
+use App\Services\Participation\ParticipationContext;
 use App\Services\ParticipationService;
 use App\Services\PropositionMeasurementService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -183,7 +184,7 @@ class ParticipantContextTest extends TestCase
         $this->travel(1)->seconds();
         $fixture->growUnrelatedTo(10);
         // Explicitly persist the projection whose invalidation this regression exercises.
-        app(PropositionMeasurementService::class)->recalculate($fixture->gate);
+        app(PropositionMeasurementService::class)->recalculate($fixture->gate, context: new ParticipationContext($fixture->phase));
         $service = app(ParticipationService::class);
         $before = $service->stateFor($fixture->viewer)['plan'];
         $fixture->growUnrelatedTo(500);
