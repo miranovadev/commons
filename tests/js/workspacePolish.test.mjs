@@ -45,7 +45,7 @@ for (const support of ['positive', 'negative']) {
     const slots = ui.directionSlots(support);
     assert.deepEqual(slots.map(s => s.direction), ['negative', 'positive']);
     assert.deepEqual(slots.map(s => s.label), support === 'positive' ? ['refute', 'support'] : ['support', 'refute']);
-    for (const slot of slots) assert.equal(slot.color, slot.label === 'support' ? 'violet' : 'blue');
+    for (const slot of slots) assert.equal(slot.color, slot.label === 'support' ? 'violet' : 'blue.6');
     const markup = ui.workspace(support);
     const footer = markup.slice(markup.indexOf('write-option-card__actions--directional'));
     const buttons = [...footer.matchAll(/<button\b[\s\S]*?<\/button>/g)].map(match => match[0]);
@@ -53,7 +53,7 @@ for (const support of ['positive', 'negative']) {
     buttons.forEach((button, index) => {
       const slot = slots[index];
       assert.ok(button.includes(`data-label="${slot.label}"`) && button.includes(`data-direction="${slot.direction}"`));
-      assert.ok(button.includes(`--button-color:var(--mantine-color-${slot.color}-light-color)`));
+      assert.ok(button.includes(`--button-color:var(--mantine-color-${slot.label === 'refute' ? 'blue-6' : 'violet-light-color'})`));
       assert.ok(index === 0 ? button.indexOf('directional-whirl') < button.indexOf(`>${slot.text}</span>`) : button.indexOf('directional-whirl') > button.indexOf(`>${slot.text}</span>`));
     });
     const summary = ui.summary(support, 5, 2);
@@ -83,7 +83,7 @@ test('legacy tied-count payloads without retained direction stay neutral; geomet
   assert.match(css, /\[data-direction="negative"\]\s*\{ animation-direction:reverse/);
   assert.doesNotMatch(css, /data-label="refute"[^}]*scaleX/);
   assert.match(css, /data-label="support"[^}]*mantine-color-violet-7[^}]*mantine-color-violet-4/);
-  assert.match(css, /data-label="refute"[^}]*mantine-color-blue-8[^}]*mantine-color-blue-4/);
+  assert.match(css, /data-label="refute"[^}]*mantine-color-blue-6/);
 });
 
 test('participant palette selection is deterministic and distinguishes the active callsigns', () => {

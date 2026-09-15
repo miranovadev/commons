@@ -26,7 +26,8 @@ export interface Proposition {
   callsign?: string;
   observables?: Observables & { status?: 'missing' | 'stale' | 'current' };
   context_horizon?: { id: Identifier; sequence: number; domain: DomainName; parent_context_horizon_id?: Identifier | null; opened_by_proposition_id?: Identifier | null } | null;
-  transition?: { type?: string; from?: RegisterName; to?: RegisterName };
+  transition?: { type?: string; from?: RegisterName; to?: RegisterName; source_id?: Identifier };
+  created_at?: string;
   parent_ids?: Identifier[];
   children?: Proposition[];
   attestation?: { direction: AttestationDirection };

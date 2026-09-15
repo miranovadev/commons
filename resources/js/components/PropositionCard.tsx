@@ -1,8 +1,8 @@
 import { Card, VisuallyHidden } from '@mantine/core';
-import { IconSunHigh, IconSunWind } from '@tabler/icons-react';
 import { metaForRegister } from '../registers';
 import { PropositionContent } from './PropositionContent';
 import type { Observables, Proposition } from '../types';
+import type { GraphDensity } from '../graphLayout';
 import type { GraphOverlay } from '../graphOverlays';
 
 interface PropositionCardProps {
@@ -11,6 +11,7 @@ interface PropositionCardProps {
   compact?: boolean;
   mini?: boolean;
   graph?: boolean;
+  density?: GraphDensity;
   overlay?: GraphOverlay;
   wireframe?: boolean;
   muted?: boolean;
@@ -29,6 +30,7 @@ export function PropositionCard({
   compact = false,
   mini = false,
   graph = false,
+  density = 'detailed',
   overlay,
   wireframe = false,
   muted = false,
@@ -42,12 +44,12 @@ export function PropositionCard({
 }: PropositionCardProps) {
   const register = metaForRegister(proposition.register);
   const domain = graph ? proposition.context_horizon?.domain : undefined;
-  const DomainIcon = domain === 'settlement' ? IconSunWind : IconSunHigh;
   const structurallyHighlighted = indigoHighlight;
   const classes = [
     'proposition-card',
     mini && 'proposition-card--mini',
     graph && 'proposition-card--graph',
+    graph && density === 'topology' && 'proposition-card--topology',
     selected && 'proposition-card--selected',
     wireframe && 'proposition-card--wireframe',
     muted && 'proposition-card--muted',
@@ -66,17 +68,17 @@ export function PropositionCard({
       data-proposition-id={proposition.id}
       data-domain={domain}
       aria-pressed={onClick ? selected : undefined}
-      title={overlay?.label || undefined}
+      aria-label={density === 'topology' ? `${proposition.tier} ${register.label} proposition: ${proposition.statement || proposition.title || proposition.id}` : undefined}
+      title={density === 'topology' ? [proposition.title || proposition.statement, overlay?.label].filter(Boolean).join(' · ') : overlay?.label || undefined}
       style={{ '--register-color': `var(--mantine-color-${register.color}-6)`,
         '--graph-overlay-color': `var(--mantine-color-${overlay?.color || 'indigo'}-6)`,
         '--graph-overlay-strength': `${(overlay?.intensity || 0) * 25}%` }}
       onClick={onClick}
     >
       {domain && <>
-        <DomainIcon className="proposition-card__domain" size={152} stroke={2.1} aria-hidden="true" />
         <VisuallyHidden>{domain === 'settlement' ? 'Settlement' : 'Emergence'} Domain.</VisuallyHidden>
       </>}
-      <PropositionContent
+      {density !== 'topology' && <PropositionContent
         proposition={proposition}
         mode={mini ? 'minimal' : 'card'}
         actionLabel={actionLabel}
@@ -84,7 +86,7 @@ export function PropositionCard({
         wireframe={wireframe}
         projectedObservables={projectedObservables}
         committalObservables={committalObservables}
-      />
+      />}
     </Card>
   );
 }

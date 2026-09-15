@@ -1,11 +1,12 @@
 import { useEffect } from 'react';
-import { ActionIcon, AppShell, Avatar, Box, Burger, Button, Center, Group, Loader, MantineProvider, Menu, NavLink, Stack, Text, useMantineColorScheme } from '@mantine/core';
+import { ActionIcon, AppShell, Avatar, Box, Burger, Button, Center, Group, Loader, MantineProvider, Menu, Text, useMantineColorScheme } from '@mantine/core';
 import { useDisclosure, useMediaQuery } from '@mantine/hooks';
-import { IconAdjustments, IconBinaryTree2, IconChevronDown, IconLogin2, IconLogout2, IconMoon, IconPlugConnected, IconSettings, IconSun, IconTopologyStar3, IconUserHexagon } from '@tabler/icons-react';
+import { IconChevronDown, IconLogin2, IconLogout2, IconMoon, IconSettings, IconSun } from '@tabler/icons-react';
 import { BrowserRouter, Link, Navigate, Route, Routes, matchPath, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import '../css/ui-polish.css';
 import '../css/workspace.css';
+import { MainNavigation } from './components/MainNavigation';
 import { CommonsLogo } from './components/CommonsLogo';
 import { commonsApi, useGetSessionQuery, useGetSubstrateQuery, useLogoutMutation } from './services/commonsApi';
 import { systemBootstrapped } from './systemSlice';
@@ -51,11 +52,8 @@ function CommonsApp() {
   if (bootstrapRequired) return <Routes><Route path="*" element={<BootstrapPage onComplete={() => { dispatch(systemBootstrapped()); navigate('/'); }} />} /></Routes>;
 
   const participantDetailActive = location.pathname.includes('/participants/') && !location.pathname.endsWith('/participants');
-  const participantsActive = Boolean(substrateSlug) && (location.pathname === `/substrates/${substrateSlug}/participants` || participantDetailActive);
-  const connectionsActive = location.pathname === '/connections';
   const substrateRoot = substrateSlug && location.pathname === `/substrates/${substrateSlug}`;
   const flushMain = participantDetailActive || substrateRoot;
-  const substratesListActive = location.pathname === '/';
 
   return (
     <AppShell
@@ -66,7 +64,7 @@ function CommonsApp() {
       <AppShell.Header className="app-header">
         <Group h="100%" px="md" justify="space-between">
           <Group gap="sm">
-            <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
+            <Burger aria-label="Toggle navigation" opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
             <Link to="/" className="brand-link">
               <Group gap="xs">
                 <CommonsLogo size={30} />
@@ -94,27 +92,7 @@ function CommonsApp() {
         </Group>
       </AppShell.Header>
       <AppShell.Navbar className="commons-navbar" p="sm">
-        <Stack h="100%" gap={4} pt="xs">
-          <NavLink
-            component={Link}
-            to="/"
-            label="Substrates"
-            leftSection={<IconTopologyStar3 size={18} />}
-            active={substratesListActive || Boolean(substrateSlug)}
-            className={substrateSlug && !substratesListActive ? 'substrates-nav-context' : undefined}
-          />
-          {substrateSlug && (
-            <Box className="substrate-nav-section">
-              <Text className="substrate-nav-section__title" size="xs" fw={700} lineClamp={2}>{selectedSubstrate?.title || substrateSlug}</Text>
-              <Stack gap={2} mt={4}>
-                <NavLink component={Link} to={`/substrates/${substrateSlug}`} label="Graph" leftSection={<IconBinaryTree2 size={16} />} active={Boolean(substrateRoot)} />
-                <NavLink component={Link} to={`/substrates/${substrateSlug}/participants`} label="Participants" leftSection={<IconUserHexagon size={16} />} active={participantsActive} />
-                <NavLink label="Settings" leftSection={<IconAdjustments size={16} />} disabled />
-              </Stack>
-            </Box>
-          )}
-          {user && <NavLink component={Link} to="/connections" label="Connections" leftSection={<IconPlugConnected size={18} />} active={connectionsActive} />}
-        </Stack>
+        <MainNavigation hasUser={Boolean(user)} substrateTitle={selectedSubstrate?.title} />
       </AppShell.Navbar>
       <AppShell.Main className="app-main">
         <Routes>
