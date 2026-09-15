@@ -93,7 +93,6 @@ class CausalHorizonLineageTest extends TestCase
         $this->assertSame('settlement', $workspace['domain']);
         $this->assertNotNull($h2->fresh()->closed_at);
 
-        $entry->enter($b);
         $next = $b->cycles()->whereNull('completed_at')->sole();
         $this->assertSame($h3->id, $next->context_horizon_id);
         $this->assertSame('activity', $next->currentPhase->write_register);

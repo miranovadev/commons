@@ -142,7 +142,7 @@ final class PropositionStateService
         $attestations = $this->attestations(collect([$proposition]))->pluck('id');
         $linked = DB::table('proposition_receipt_links')->whereIn('proposition_id', $ids)->pluck('receipt_id');
 
-        return Receipt::query()
+        return Receipt::query()->with('instrumentExecution')
             ->whereHas('instrumentExecution', fn ($query) => $query->where('status', 'completed'))
             ->where(function ($query) use ($ids, $attestations, $linked): void {
                 $query->whereIn('id', $linked)->orWhere(function ($query) use ($ids, $attestations): void {

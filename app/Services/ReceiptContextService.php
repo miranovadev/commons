@@ -73,7 +73,11 @@ final readonly class ReceiptContextService
                         'replayable' => $receipt->supports(ReceiptCapability::Replayable),
                     ],
                     'can_replay' => $receipt->supports(ReceiptCapability::Replayable)
-                        && $replayTargets->contains($receipt->instrumentExecution->proposition_id),
+                        && $replayTargets->contains($receipt->instrumentExecution->proposition_id)
+                        && app(RelevantInstrumentService::class)->equivalent(
+                            $context->propositions->get($receipt->instrumentExecution->proposition_id),
+                            $receipt->replayInvocation(), $context,
+                        ) === null,
                     'replayed_from_receipt_id' => $receipt->instrumentExecution->replayed_from_receipt_id,
                     'observation_error' => $receipt->metadata['observation_error'] ?? null,
                     'signature' => $verified['signature'] ?? null,

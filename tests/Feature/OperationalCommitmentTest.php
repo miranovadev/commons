@@ -118,8 +118,8 @@ class OperationalCommitmentTest extends TestCase
         $committed = Proposition::findOrFail($this->participant->fresh()->current_proposition_id);
         $this->assertSame($earnedAttestations, $history->attestations(collect([$committed]))->pluck('id')->all());
         $this->assertSame($earnedReceipts, $history->receipts($committed)->pluck('id')->all());
-        $this->assertSame($earnedTouches, $history->touchCount($committed));
-        $this->assertSame($contributionCounts, [Attestation::count(), Receipt::count(), Phase::count()]);
+        $this->assertSame($earnedTouches + 1, $history->touchCount($committed)); // Prepared Phase 1 is a new observation.
+        $this->assertSame([$contributionCounts[0], $contributionCounts[1], $contributionCounts[2] + 1], [Attestation::count(), Receipt::count(), Phase::count()]);
         $this->assertSame('committal', $committed->tier);
         $this->assertSame('concord', $committed->register);
         $this->assertSame($candidate->statement, $committed->statement);

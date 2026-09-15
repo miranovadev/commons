@@ -12,6 +12,7 @@ use App\Models\Phase;
 use App\Models\Substrate;
 use App\Models\SubstrateLedgerEntry;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 final readonly class ParticipationService
@@ -86,9 +87,11 @@ final readonly class ParticipationService
             $completed = $participant->cycles()->whereNotNull('completed_at')->latest('sequence')->first();
             $finalPhase = $completed?->phases()->whereNotNull('completed_at')->latest('id')->first();
 
+            $recovering = $completed?->rested_at !== null;
+
             return [...$this->waiting(
-                'cycle_not_started',
-                'The Participant is waiting for a Cycle to begin.',
+                $recovering ? 'recovery_unavailable' : 'cycle_not_started',
+                $recovering ? 'Rest completed; no eligible ancestral Committal is available for recovery.' : 'The Participant is waiting for a Cycle to begin.',
                 entry: $this->entryFor($participant),
             ), 'completion' => $completed !== null && $completed->rested_at === null && $finalPhase?->kind === PhaseKind::Order ? [
                 'cycle_id' => $completed->id,
@@ -156,6 +159,13 @@ final readonly class ParticipationService
         return $this->stateFor($participant);
     }
 
+    public function prepare(Participant $participant): array
+    {
+        $this->cycleEntry->prepare($participant);
+
+        return $this->stateFor($participant);
+    }
+
     /**
      * @param  array<string, mixed>  $input
      * @return array<string, mixed>
@@ -164,11 +174,19 @@ final readonly class ParticipationService
         Participant $participant,
         string $phaseId,
         array $input,
+        ?array $expectedSchema = null,
     ): array {
+        // Invalid model output is still an error; only a formerly valid action
+        // rejected by fresh admissibility is a retryable participation conflict.
+        if ($expectedSchema !== null) {
+            $this->contributions->validateSchema($expectedSchema, $input);
+        }
+
         return DB::transaction(function () use (
             $participant,
             $phaseId,
             $input,
+            $expectedSchema,
         ): array {
             // Acquire the shared root before any participant/phase or contribution lock.
             // Cycle entry, ledger writes, and horizon projection use the same order.
@@ -202,7 +220,14 @@ final readonly class ParticipationService
                 );
             }
 
-            $this->contributions->validate($lockedParticipant, $input);
+            try {
+                $this->contributions->validate($lockedParticipant, $input);
+            } catch (InvalidArgumentException $exception) {
+                if ($expectedSchema !== null) {
+                    throw new ConflictHttpException('The participation options changed. Rebuild state before contributing.', $exception);
+                }
+                throw $exception;
+            }
             if ($input['action'] === 'participant.rest') {
                 return $this->rest($lockedParticipant, $phase);
             }
@@ -230,7 +255,11 @@ final readonly class ParticipationService
         $phase->cycle->completed_at = now();
         $phase->cycle->save();
 
-        // Keep the exhausted position until the next Cycle is explicitly entered.
+        // Recovery and its causal Horizon are resolved in the terminal transaction.
+        // If no eligible ancestor exists, retain the exhausted position for a
+        // later recovery attempt; never undo Rest or fabricate a destination.
+        $this->cycleEntry->prepare($participant);
+
         return $this->stateFor($participant);
     }
 

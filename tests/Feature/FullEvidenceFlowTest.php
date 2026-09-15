@@ -71,7 +71,7 @@ class FullEvidenceFlowTest extends TestCase
         $this->assertSame(0, $final->attestations()->count());
         $this->assertSame(['participant.rest'], array_keys($this->state($a)['plan']['schema']['$defs']['actions']));
         $this->move($a, 'participant.rest');
-        $this->assertSame($final->id, $a->fresh()->current_proposition_id);
+        $this->assertSame('distinguish', $this->state($a)['plan']['phase']['kind']);
         $this->attest($b, $final);
         $this->attest($c, $final, 'refute'); // Either direction permits engagement.
         $this->assertSame(0, ParticipantReceiptContext::active()->count());
@@ -88,14 +88,14 @@ class FullEvidenceFlowTest extends TestCase
         $this->move($c, 'proposition.traverse', ['proposition_id' => $commit->id]);
         foreach ([$b, $c] as $participant) {
             $completed = $this->state($participant);
-            $this->assertSame('waiting', $completed['status']);
-            $this->assertSame($commit->id, $completed['entry']['proposition_id']);
-            $next = $service->enter($participant);
+            $this->assertSame('ready', $completed['status']);
+            $this->assertSame($commit->id, $completed['plan']['gate_id']);
+            $next = $completed;
             $this->assertSame('distinguish', $next['plan']['phase']['kind']);
             $this->assertSame($commit->id, $next['plan']['gate_id']);
             $this->assertSame($commit->id, $next['current_proposition_id']);
         }
-        $returned = $service->enter($a);
+        $returned = $this->state($a);
         $this->assertSame('distinguish', $returned['plan']['phase']['kind']);
         $this->assertSame('committal', Proposition::findOrFail($returned['plan']['gate_id'])->tier);
     }

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { messageFrom } from '../errors';
 import { actionPropositions, attestationDirections } from '../participationOptions';
+import { duplicateInstrument } from '../instrumentInvocations';
 import { InstrumentFields } from './InstrumentFields';
 import { AttestationDirectionControl } from './AttestationDirectionControl';
 import type {
@@ -76,6 +77,7 @@ export function ContributionForm({
 
   const directions = attestationDirections(plan, values.proposition_id);
   const direction = directions.includes(values.direction) ? values.direction : directions[0];
+  const duplicate = action === 'instrument.execute' ? duplicateInstrument(plan, values.proposition_id, values.instrument) : undefined;
 
   if (!schema || !action) return null;
   const activeAction = action;
@@ -88,6 +90,7 @@ export function ContributionForm({
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (duplicate) return;
     const contribution: ContributionInput = { action: properties.action?.const || activeAction };
 
     (Object.keys(properties) as Array<keyof ContributionInput>).forEach((name) => {
@@ -169,14 +172,14 @@ export function ContributionForm({
             />
           )}
 
-          {properties.instrument && <InstrumentFields value={values.instrument} onChange={(instrument) => set('instrument', instrument)} />}
+          {properties.instrument && <InstrumentFields error={duplicate ? `This resource already has relevant evidence (Receipt ${duplicate.receipt_id}). Use the existing Receipt or choose another resource.` : undefined} value={values.instrument} onChange={(instrument) => set('instrument', instrument)} />}
 
           {action === 'proposition.reclassify' && <Text size="sm" c="dimmed">The Gate statement and existing proposition evidence are preserved. The new classification begins without Attestations.</Text>}
           {action === 'proposition.reconcile' && <Text size="sm" c="dimmed">The new Proposition copies the current Gate statement exactly. The selected counterpart contributes a second hard parent edge.</Text>}
 
           {action === 'proposition.bias' && <Text size="sm" c="dimmed">The selected Proposition becomes fresh Concord/Canon with its statement preserved. Existing proposition evidence remains available; Attestations and phase history begin afresh.</Text>}
 
-          {action === 'participant.rest' && <Text size="sm" c="dimmed">No admissible non-Rest action remains in this Phase. End this Cycle and retain your current position for recovery when the next Cycle begins.</Text>}
+          {action === 'participant.rest' && <Text size="sm" c="dimmed">No admissible non-Rest action remains in this Phase. End this Cycle and prepare Phase 1 at an eligible ancestral Committal.</Text>}
 
           {action === 'proposition.commit' && commitment?.closure && <Text size="sm">Selected source: Depth {commitment.closure.depth} ({commitment.closure.depth_direction}) · Cadence {commitment.closure.cadence} ({commitment.closure.cadence_direction}).</Text>}
 
@@ -193,7 +196,7 @@ export function ContributionForm({
               type="submit"
               color={action === 'proposition.commit' ? 'indigo' : 'blue'}
               loading={loading}
-              disabled={action === 'attestation.create' && !direction}
+              disabled={Boolean(duplicate) || (action === 'attestation.create' && !direction)}
             >
               Apply contribution
             </Button>

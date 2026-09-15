@@ -77,6 +77,33 @@ final readonly class InputSchemaService
             $this->receipts->forPhase($occurrence, $context)->where('can_replay', true)->pluck('id')->all(),
         );
 
+        if (isset($schema['$defs']['actions']['instrument.execute'])) {
+            $targets = $this->options->instrumentOptionsFor($occurrence, $context);
+            $excluded = $targets->mapWithKeys(fn ($target) => [
+                $target->id => app(RelevantInstrumentService::class)->exclusions($target, $context)->all(),
+            ])->filter(fn ($items) => $items !== [])->all();
+            if ($excluded !== []) {
+                $schema['x-commons']['instrument_exclusions'] = $excluded;
+                $denied = [];
+                foreach ($excluded as $targetId => $items) {
+                    foreach ($items as $item) {
+                        $invocation = $item['invocation'];
+                        $field = $invocation['kind'] === 'web_search' ? 'query' : 'reference';
+                        $denied[] = ['required' => ['proposition_id', 'instrument'], 'properties' => [
+                            'proposition_id' => ['const' => $targetId],
+                            'instrument' => ['required' => ['kind', $field], 'properties' => [
+                                'kind' => ['const' => $invocation['kind']],
+                                $field => ['enum' => [$invocation[$field]]],
+                            ]],
+                        ]];
+                    }
+                }
+                $schema['$defs']['actions']['instrument.execute']['not'] = ['anyOf' => $denied];
+                $schema['$defs']['actions']['instrument.execute']['properties']['instrument']['description'] =
+                    $schema['$defs']['instrument']['description'].' Invocations denied by this action’s not clause are already relevant. Choose a different resource or use an existing Receipt.';
+            }
+        }
+
         if (isset($schema['$defs']['actions']['attestation.create'])) {
             $ids = $attestationOptionIds ?? $writeOptionIds;
             $effective = Attestation::query()->effective()

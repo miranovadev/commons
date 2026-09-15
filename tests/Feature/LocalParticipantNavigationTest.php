@@ -368,7 +368,6 @@ class LocalParticipantNavigationTest extends TestCase
         $this->assertSame(2, $selection['distance']);
         $this->assertEqualsWithDelta(1 / 9, $selection['potential_charge'], 0.0000001);
         app(ParticipationService::class)->contribute($participant, $phase->id, ['action' => 'participant.rest']);
-        app(CycleEntryService::class)->enter($participant);
         $this->assertSame($far->id, $this->state($participant)['plan']['gate_id']);
     }
 
@@ -405,7 +404,6 @@ class LocalParticipantNavigationTest extends TestCase
         $phase = $this->phase($participant, $position);
         $this->refreshFixtureMeasurements();
         app(ParticipationService::class)->contribute($participant, $phase->id, ['action' => 'participant.rest']);
-        app(CycleEntryService::class)->enter($participant);
         $state = $this->state($participant);
         $this->assertSame($first->id, $state['plan']['gate_id']);
         // Exercise recovery from an exhausted Order, not Persist (which has Variant).
@@ -425,8 +423,7 @@ class LocalParticipantNavigationTest extends TestCase
         $state = $this->state($participant);
         $this->assertTrue($state['plan']['tragedy']);
         $state = app(ParticipationService::class)->contribute($participant, $state['plan']['phase']['id'], ['action' => 'participant.rest']);
-        $this->assertSame(1, $state['entry']['distance']);
-        app(CycleEntryService::class)->enter($participant);
+        $this->assertSame('distinguish', $state['plan']['phase']['kind']);
         $this->assertSame($second->id, $this->state($participant)['plan']['gate_id']);
     }
 
@@ -476,6 +473,7 @@ class LocalParticipantNavigationTest extends TestCase
 
     public function test_automated_wakes_ask_inference_to_choose_traversal(): void
     {
+        config()->set('participation.max_actions_per_wake', 1);
         $gate = $this->node('Current', 0.8);
         $target = $this->node('Local', 0.0, 'expressive');
         $this->edge($gate, $target);

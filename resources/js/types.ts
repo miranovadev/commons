@@ -168,6 +168,7 @@ export interface ActionSchema {
 }
 
 export interface InputSchema {
+  'x-commons'?: { instrument_exclusions?: Record<Identifier, Array<{ receipt_id: Identifier; invocation: InstrumentInput }>> };
   oneOf?: Array<{ $ref?: string }>;
   $defs?: { actions?: Partial<Record<ActionName, ActionSchema>> };
 }

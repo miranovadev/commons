@@ -33,6 +33,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class ReinforcementTest extends TestCase
@@ -143,24 +144,24 @@ class ReinforcementTest extends TestCase
                 return new VerifiedHyperlink('example.test/page', hash('sha256', $version), CarbonImmutable::now(), CarbonImmutable::parse('2000-01-01'));
             });
         });
-        $first = $this->loadedReceipt();
+        $first = $this->loadedReceipt(reference: 'https://example.test/page?observation='.(string) Str::ulid());
         $version = 'changed';
         $this->travel(1)->minutes();
-        $changed = $this->loadedReceipt();
+        $changed = $this->loadedReceipt(reference: 'https://example.test/page?observation='.(string) Str::ulid());
         $this->assertNull($changed->signature);
         $this->travel(6)->days();
-        $this->assertNull($this->loadedReceipt()->signature);
+        $this->assertNull($this->loadedReceipt(reference: 'https://example.test/page?observation='.(string) Str::ulid())->signature);
         $this->travel(2)->days();
-        $eligible = $this->loadedReceipt();
+        $eligible = $this->loadedReceipt(reference: 'https://example.test/page?observation='.(string) Str::ulid());
         $this->assertNotNull($eligible->signature);
         $this->assertNotSame($first->signature, $eligible->signature);
         $this->assertSame(1, $this->reinforcementCount());
         $this->assertSame(4, Receipt::count());
         $version = 'churn';
-        $this->assertNull($this->loadedReceipt()->signature);
+        $this->assertNull($this->loadedReceipt(reference: 'https://example.test/page?observation='.(string) Str::ulid())->signature);
         $this->travel(8)->days();
         $version = 'another mutation';
-        $this->assertNull($this->loadedReceipt()->signature, 'A newly seen body starts its own stability interval.');
+        $this->assertNull($this->loadedReceipt(reference: 'https://example.test/page?observation='.(string) Str::ulid())->signature, 'A newly seen body starts its own stability interval.');
     }
 
     public function test_failed_verification_records_history_without_reinforcement(): void
@@ -233,7 +234,7 @@ class ReinforcementTest extends TestCase
     public function test_rollback_refuses_to_destroy_shared_signature_history(): void
     {
         $first = $this->loadedReceipt();
-        $second = $this->loadedReceipt();
+        $second = $this->loadedReceipt(reference: 'https://example.test/page?different-invocation=1');
         $migration = require database_path('migrations/2026_09_13_000000_add_counted_reinforcement.php');
         try {
             $migration->down();

@@ -1,8 +1,8 @@
 import { Select, TextInput } from '@mantine/core';
 import type { InstrumentInput } from '../types';
 
-export function InstrumentFields({ value, onChange, includeCitation = true }: {
-  value: InstrumentInput; onChange: (value: InstrumentInput) => void; includeCitation?: boolean;
+export function InstrumentFields({ value, onChange, includeCitation = true, error }: {
+  value: InstrumentInput; onChange: (value: InstrumentInput) => void; includeCitation?: boolean; error?: string;
 }) {
   const search = value.kind === 'web_search';
   return <>
@@ -13,7 +13,7 @@ export function InstrumentFields({ value, onChange, includeCitation = true }: {
         if (kind === 'web_search') onChange({ kind, query: '' });
         else if (kind === 'citation' || kind === 'hyperlink') onChange({ kind, reference: '' });
       }} />
-    <TextInput label={search ? 'Search query' : 'Reference'} required maxLength={search ? 1000 : undefined}
+    <TextInput error={error} label={search ? 'Search query' : 'Reference'} required maxLength={search ? 1000 : undefined}
       description={search ? 'Discover up to five resources. The results are recorded as a Receipt.'
         : value.kind === 'hyperlink' ? 'A public HTTP(S) URL. The server verifies retrieval, not the truth of its claims.'
           : 'The ID of an existing Proposition or Attestation in this substrate.'}
