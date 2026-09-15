@@ -25,6 +25,7 @@ use App\Services\ParticipationService;
 use App\Services\PhaseProgressionService;
 use App\Services\PropositionMeasurementService;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
@@ -34,6 +35,19 @@ use Tests\TestCase;
 class TransactionLockOrderTest extends TestCase
 {
     use DatabaseMigrations;
+
+    public function runDatabaseMigrations(): void
+    {
+        $this->beforeRefreshingDatabase();
+        $this->refreshTestDatabase();
+        $this->afterRefreshingDatabase();
+        // Each test starts with migrate:fresh and independent connections.
+        // Rolling fixtures back through old schemas would correctly refuse
+        // persistent Receipt loads and histories with repeated Phase kinds.
+        $this->beforeApplicationDestroyed(static function (): void {
+            RefreshDatabaseState::$migrated = false;
+        });
+    }
 
     protected function setUp(): void
     {
@@ -310,11 +324,15 @@ class TransactionLockOrderTest extends TestCase
             $this->assertStringContainsString('completed', $process->getOutput());
             $this->assertNotNull($secondPhase->fresh()->completed_at);
 
-            return ['action' => 'participant.rest'];
+            $receiptIds = $state['plan']['schema']['$defs']['actions']['receipt.read']['properties']['receipt_id']['enum'];
+            $this->assertNotEmpty($receiptIds);
+
+            return ['action' => 'receipt.read', 'receipt_id' => $receiptIds[0]];
         });
         (new WakeParticipant($link->id))->handle($inference, app(ParticipationService::class), app(ParticipantConnectionTriggerService::class));
         $this->assertSame(2, $calls);
-        $this->assertNotNull($phase->cycle->fresh()->rested_at);
+        $this->assertNull($phase->cycle->fresh()->completed_at);
+        $this->assertNull($phase->cycle->fresh()->rested_at);
         $this->assertSame(0, DB::transactionLevel());
     }
 
@@ -324,7 +342,7 @@ class TransactionLockOrderTest extends TestCase
         app(ParticipationService::class)->contribute($first, $initial->id, ['action' => 'proposition.variant', 'statement' => 'Source']);
         $source = $first->fresh()->position;
         $this->classificationEvidenceFixture($source);
-        $phase = $this->activePhase($first);
+        $phase = $first->cycles()->whereNull('completed_at')->sole()->currentPhase;
         $state = app(ParticipationService::class)->stateFor($first);
         $input = ['action' => 'proposition.reclassify'];
         app(ContributionDispatcher::class)->dispatch($first, $phase, $input);
