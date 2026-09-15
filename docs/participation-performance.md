@@ -4,7 +4,8 @@
 write-boundary validation. It is never cached globally or retained between actions.
 Reads take no write locks and do not persist projection repair. Contribution
 validation builds only the admissibility schema; response serialization runs
-following commit. See [transaction-locking.md](transaction-locking.md).
+following commit. Full-cycle wakes reuse that fresh response for the next inference
+instead of immediately hydrating it a second time. See [transaction-locking.md](transaction-locking.md).
 
 ## What was stalling
 
@@ -27,8 +28,11 @@ Incoming edges retain the complete selected ancestry. Outgoing hard edges remain
 visible even when their successors are outside the working set, so historical
 source retirement is preserved. Outgoing Variant edges to excluded historical
 branches are not hydrated. Off-path citations resolve their exact same-substrate
-subject separately; they do not pull its entire graph into the plan. A compound
-Horizon/proposition membership index supports working-set entry.
+subject separately; they do not pull its entire graph into the plan. Persistent
+personal citation knowledge is projected as reference IDs across Horizons, so
+leaving a lineage does not make already-loaded citation content new again. Compound
+Cycle/Horizon and Proposition/Phase indexes support working-set entry, including
+legacy unledgered candidates. A Horizon membership index supports workspace reads.
 
 All calculators, attenuation, register equivalence, hard/soft supersession rules,
 ledger-prefix evidence replay and Commit-only inheritance remain authoritative.

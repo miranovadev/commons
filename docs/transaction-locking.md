@@ -58,7 +58,7 @@ and explicit row locks (schema migrations are outside the participation runtime)
 | ReceiptContextService::read/clear | Substrate → Participant → Phase; active occurrence, one load/event, reinforcement and projection invalidation |
 | InstrumentExecutionService::start | Single insert, no explicit lock or transaction; ULID and foreign keys protect the pending record |
 | InstrumentExecutionService::complete | Substrate → execution; pending-to-completed transition, one Receipt, evidence identity, ledger and projection writes |
-| InstrumentExecutionService::fail | Execution row only; terminal status and observer notification. Never enters ledger/projection code or escalates to Substrate |
+| InstrumentExecutionService::fail | Execution row only; terminal status. Never enters ledger/projection code or escalates to Substrate |
 | LedgerService::record | Substrate; monotonic substrate sequence allocation and membership inclusion |
 | CommitmentSnapshotService::record | Ledger takes Substrate, then measurement; frozen snapshot and causal boundary application |
 | ContextHorizonProjector::currentFor/include/apply/rebuild | Substrate, then Horizon for apply; unique initial/child sequence, idempotent memberships and explicit boundary ownership |

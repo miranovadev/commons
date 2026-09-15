@@ -8,6 +8,12 @@ return new class extends Migration
 {
     public function up(): void
     {
+        Schema::table('cycles', function (Blueprint $table): void {
+            $table->index(['context_horizon_id', 'id'], 'cycle_horizon_working_set');
+        });
+        Schema::table('propositions', function (Blueprint $table): void {
+            $table->index(['phase_id', 'id'], 'proposition_phase_working_set');
+        });
         Schema::table('context_horizon_memberships', function (Blueprint $table): void {
             $table->index(['context_horizon_id', 'proposition_id'], 'horizon_membership_working_set');
         });
@@ -15,6 +21,12 @@ return new class extends Migration
 
     public function down(): void
     {
+        Schema::table('propositions', function (Blueprint $table): void {
+            $table->dropIndex('proposition_phase_working_set');
+        });
+        Schema::table('cycles', function (Blueprint $table): void {
+            $table->dropIndex('cycle_horizon_working_set');
+        });
         Schema::table('context_horizon_memberships', function (Blueprint $table): void {
             $table->dropIndex('horizon_membership_working_set');
         });

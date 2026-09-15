@@ -139,10 +139,21 @@ final readonly class ContributionDispatcher
     public function observeInstrument(Participant $participant, Phase $phase, array $input): ?InstrumentObservation
     {
         return match ($input['action'] ?? null) {
-            'instrument.execute' => $this->instruments->observeFor($phase, Proposition::findOrFail($input['proposition_id']), $input['instrument']),
+            'instrument.execute' => $this->observeExecution($participant, $phase, $input),
             'receipt.replay' => $this->replays->observe($participant, $phase, $input['receipt_id']),
             default => null,
         };
+    }
+
+    private function observeExecution(Participant $participant, Phase $phase, array $input): InstrumentObservation
+    {
+        if ($phase->cycle->participant_id !== $participant->id
+            || ! in_array('instrument.execute', config("phases.{$phase->kind->value}.actions", []), true)
+            || ! $this->options->instrumentOptionsFor($phase)->contains('id', $input['proposition_id'] ?? null)) {
+            throw new DomainException('Support requires an admissible Proposition in the current Write.');
+        }
+
+        return $this->instruments->observeFor($phase, Proposition::findOrFail($input['proposition_id']), $input['instrument']);
     }
 
     /** @param array<string, mixed> $input */

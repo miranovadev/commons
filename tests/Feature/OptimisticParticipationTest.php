@@ -11,6 +11,7 @@ use App\Services\ParticipationService;
 use App\Services\PotentialChargeService;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Database\Events\TransactionBeginning;
+use Illuminate\Database\Events\TransactionCommitted;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -61,6 +62,18 @@ class OptimisticParticipationTest extends TestCase
         [$participant, $phase] = $this->fixture();
         $outerLevel = DB::transactionLevel();
         $contexts = [];
+        $transactionStart = null;
+        $transactionMs = null;
+        Event::listen(TransactionBeginning::class, function () use ($outerLevel, &$transactionStart): void {
+            if (DB::transactionLevel() === $outerLevel + 1) {
+                $transactionStart = hrtime(true);
+            }
+        });
+        Event::listen(TransactionCommitted::class, function () use ($outerLevel, &$transactionStart, &$transactionMs): void {
+            if (DB::transactionLevel() === $outerLevel && $transactionStart !== null) {
+                $transactionMs = (hrtime(true) - $transactionStart) / 1e6;
+            }
+        });
         DB::listen(function (QueryExecuted $query) use (&$contexts): void {
             if (str_contains($query->sql, 'WITH RECURSIVE dependencies')) {
                 $contexts[] = DB::transactionLevel();
@@ -69,7 +82,7 @@ class OptimisticParticipationTest extends TestCase
         $started = hrtime(true);
         $result = app(ParticipationService::class)->contribute($participant, $phase->id,
             ['action' => 'proposition.variant', 'statement' => 'A fresh distinction']);
-        fwrite(STDERR, sprintf("\nCONTRIBUTION total=%.2fms context_transaction_levels=%s\n", (hrtime(true) - $started) / 1e6, json_encode($contexts)));
+        fwrite(STDERR, sprintf("\nCONTRIBUTION transaction=%.2fms total=%.2fms context_transaction_levels=%s\n", $transactionMs, (hrtime(true) - $started) / 1e6, json_encode($contexts)));
         $this->assertContains($outerLevel + 1, $contexts, 'Admissibility must still be validated in the write transaction.');
         $this->assertSame($outerLevel, $contexts[array_key_last($contexts)], 'Response context is built after releasing write locks.');
         $this->assertSame(PhaseKind::Persist->value, $result['plan']['phase']['number']);

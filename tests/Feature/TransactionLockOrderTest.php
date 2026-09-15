@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Contracts\ParticipantInference;
+use App\Contracts\WebSearchProvider;
+use App\Domain\Evidence\SearchObservation;
 use App\Domain\Evidence\VerifiedHyperlink;
 use App\Domain\Observables\ClosureValues;
 use App\Enums\PhaseKind;
@@ -388,7 +390,13 @@ class TransactionLockOrderTest extends TestCase
         }
     }
 
-    public function test_external_instrument_observation_allows_another_writer_and_discards_a_stale_result(): void
+    public static function externalInstruments(): array
+    {
+        return [['hyperlink'], ['web_search']];
+    }
+
+    #[DataProvider('externalInstruments')]
+    public function test_external_instrument_observation_allows_another_writer_and_discards_a_stale_result(string $kind): void
     {
         [$substrate, $first, $initial] = $this->fixture();
         $target = app(ContributionDispatcher::class)->dispatch($first, $initial,
@@ -398,11 +406,12 @@ class TransactionLockOrderTest extends TestCase
         app(CycleEntryService::class)->enter($second);
         $secondPhase = $this->activePhase($second);
         $input = ['action' => 'instrument.execute', 'proposition_id' => $target->id,
-            'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/outside-lock']];
+            'instrument' => $kind === 'hyperlink' ? ['kind' => $kind, 'reference' => 'https://example.test/outside-lock']
+                : ['kind' => $kind, 'query' => 'Observe outside the write lock']];
         $before = InstrumentExecution::count();
         $observed = false;
-        $this->mock(HyperlinkVerifier::class, function ($mock) use (&$observed, $second, $secondPhase, $first, $initial, $target): void {
-            $mock->shouldReceive('verify')->once()->andReturnUsing(function ($reference) use (&$observed, $second, $secondPhase, $first, $initial, $target) {
+        $this->mock($kind === 'hyperlink' ? HyperlinkVerifier::class : WebSearchProvider::class, function ($mock) use ($kind, &$observed, $second, $secondPhase, $first, $initial, $target): void {
+            $mock->shouldReceive($kind === 'hyperlink' ? 'verify' : 'search')->once()->andReturnUsing(function ($reference) use ($kind, &$observed, $second, $secondPhase, $first, $initial, $target) {
                 $observed = DB::transactionLevel() === 0;
                 $process = new Process([PHP_BINARY, base_path('tests/Support/concurrent-commons-worker.php')], base_path(), null,
                     json_encode(['operation' => 'contribute', 'participant_id' => $second->id, 'phase_id' => $secondPhase->id,
@@ -412,7 +421,8 @@ class TransactionLockOrderTest extends TestCase
                 app(ParticipationService::class)->contribute($first, $initial->id,
                     ['action' => 'attestation.create', 'proposition_id' => $target->id, 'direction' => 'support']);
 
-                return new VerifiedHyperlink($reference, hash('sha256', $reference), CarbonImmutable::now());
+                return $kind === 'hyperlink' ? new VerifiedHyperlink($reference, hash('sha256', $reference), CarbonImmutable::now())
+                    : new SearchObservation($reference, CarbonImmutable::now(), [], 'fixture');
             });
         });
         try {

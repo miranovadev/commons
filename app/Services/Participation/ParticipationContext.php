@@ -126,6 +126,8 @@ final class ParticipationContext
 
     /**
      * The live Horizon plus its causal ancestors and comparison boundaries.
+     * Ownership seeds also retain legacy/unledgered candidates; membership still
+     * separately decides whether a proposition can be measured.
      * Parent traversal is complete (including Commit-only inherited history).
      * Outgoing edges are loaded separately so excluded hard successors still retire sources.
      */
@@ -142,7 +144,10 @@ final class ParticipationContext
                 JOIN context_horizons ON context_horizons.id = cycles.context_horizon_id
                 WHERE context_horizons.opened_by_proposition_id IS NOT NULL
             ), relevant (id) AS (
-                SELECT proposition_id FROM context_horizon_memberships WHERE context_horizon_id = ?
+                SELECT propositions.id FROM propositions
+                JOIN phases ON phases.id = propositions.phase_id
+                JOIN cycles ON cycles.id = phases.cycle_id
+                WHERE cycles.context_horizon_id = ?
                 UNION
                 SELECT CAST(? AS VARCHAR(26))
                 UNION

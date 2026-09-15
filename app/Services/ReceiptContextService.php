@@ -46,13 +46,8 @@ final readonly class ReceiptContextService
             $present = $exposed->pluck('id');
             $receipts = $exposed->flatMap(fn ($node) => $this->state->receipts($node, $context))->unique('id');
             $loads = $context->receiptContexts->where('participant_id', $phase->cycle->participant_id)->keyBy('receipt_id');
-            $knownReceipts = $context->receipts->keyBy('id');
-            foreach ($loads->whereNull('cleared_at') as $load) {
-                $known = $knownReceipts->get($load->receipt_id);
-                $reference = $known === null ? null : ($this->evidence->describe($known, $context)['referenced_proposition_id'] ?? null);
-                if ($reference !== null) {
-                    $present->push($reference);
-                }
+            if ($receipts->contains('type', 'citation')) {
+                $present = $present->merge($this->evidence->loadedCitationTargets($context));
             }
 
             $replayTargets = in_array('instrument.execute', config("phases.{$phase->kind->value}.actions", []), true)
