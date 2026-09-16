@@ -28,6 +28,7 @@ class Phase extends Model
             }
         });
         $invalidate = function (self $phase): void {
+            Substrate::whereKey($phase->cycle->participant->substrate_id)->increment('field_version');
             // A new observation can affect either side of a lineage comparison.
             // Invalidate disposable views in this substrate; immutable snapshots remain intact.
             PropositionMeasurement::query()->whereHas('proposition.phase.cycle.participant',

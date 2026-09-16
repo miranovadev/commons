@@ -20,14 +20,14 @@ final readonly class GraphProjectionService
         private CommitRegionService $regions,
     ) {}
 
-    public function load(Substrate $substrate, Collection $visible): void
+    public function load(Substrate $substrate, Collection $visible, bool $historical = true): void
     {
         if ($visible->isEmpty()) {
             return;
         }
         // Include hidden history/continuations: the 500-card display limit must
         // not change the canonical value of a visible proposition.
-        $nodes = Proposition::whereHas('phase.cycle.participant', fn ($q) => $q->whereBelongsTo($substrate))
+        $nodes = Proposition::query()->when(! $historical, fn ($query) => $query->active())->whereHas('phase.cycle.participant', fn ($q) => $q->whereBelongsTo($substrate))
             ->select(['id', 'tier'])->with('measurement')->get()->keyBy('id');
         $edges = DB::table('supersessions')->whereIn('source_proposition_id', $nodes->keys())
             ->whereIn('target_proposition_id', $nodes->keys())->get(['source_proposition_id', 'target_proposition_id']);
@@ -38,7 +38,11 @@ final readonly class GraphProjectionService
         $seeds = $this->regions->seedIdsFor($visible, $nodes, $edges->groupBy('target_proposition_id'));
         $outgoing = $edges->groupBy('source_proposition_id');
 
+        $activeIds = $historical
+            ? Proposition::active()->whereKey($visible->pluck('id'))->pluck('id')->flip()
+            : $nodes->keys()->flip();
         foreach ($visible as $proposition) {
+            $proposition->setAttribute('active', $activeIds->has($proposition->id));
             $measurement = $nodes->get($proposition->id)?->measurement;
             $snapshot = $proposition->tier === 'committal' ? $snapshots->get($proposition->id) : null;
             $source = $snapshot ?? $measurement;

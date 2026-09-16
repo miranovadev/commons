@@ -21,6 +21,7 @@ use App\Models\Proposition;
 use App\Models\ReceiptContextEvent;
 use App\Models\Substrate;
 use App\Models\Supersession;
+use App\Models\Tragedy;
 use App\Models\User;
 use App\Services\ClosureGateService;
 use App\Services\ContextHorizonProjector;
@@ -459,6 +460,47 @@ class TransactionLockOrderTest extends TestCase
         });
         $this->assertSame($before, ContextHorizon::where('substrate_id', $substrate->id)->count());
         $this->assertSame(1, ContextHorizon::where('opened_by_proposition_id', $snapshot->proposition_id)->count());
+    }
+
+    public function test_concurrent_rests_record_one_tragedy_and_leave_both_participants_with_valid_entry(): void
+    {
+        [$substrate, $first, $phase] = $this->fixture();
+        app(ParticipationService::class)->contribute($first, $phase->id, ['action' => 'proposition.variant', 'statement' => 'A finite attempt']);
+        $root = $first->fresh()->position;
+        $firstRest = $this->tragicPhase($first, $root);
+        $second = (new Participant)->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'second-rest']);
+        $second->save();
+        $secondRest = $this->tragicPhase($second, $root);
+        app(PropositionMeasurementService::class)->project($root, 1.0, 1.0, 1.0);
+        $this->whileWorkerWaits($substrate, ['operation' => 'rest', 'participant_id' => $second->id, 'phase_id' => $secondRest->id],
+            function () use ($first, $firstRest): void {
+                app(ParticipationService::class)->contribute($first, $firstRest->id, ['action' => 'participant.rest']);
+            });
+        $this->assertSame(1, Tragedy::count());
+        $this->assertSame(1, DB::table('origin_branches')->whereNotNull('pruned_at')->count());
+        foreach ([$first, $second] as $participant) {
+            $this->assertSame(1, $participant->cycles()->whereNull('completed_at')->count());
+            $this->assertSame('ready', app(ParticipationService::class)->stateFor($participant)['status']);
+        }
+    }
+
+    private function tragicPhase(Participant $participant, Proposition $root): Phase
+    {
+        foreach ($participant->cycles()->whereNull('completed_at')->get() as $cycle) {
+            $cycle->phases()->whereNull('completed_at')->update(['completed_at' => now()]);
+            $cycle->forceFill(['completed_at' => now()])->save();
+        }
+        $cycle = (new Cycle)->forceFill(['participant_id' => $participant->id,
+            'context_horizon_id' => $root->phase->cycle->context_horizon_id,
+            'sequence' => (int) $participant->cycles()->max('sequence') + 1]);
+        $cycle->save();
+        $phase = (new Phase)->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Order,
+            'write_register' => $cycle->contextHorizon->domain->registerFor(PhaseKind::Order),
+            'gate_proposition_id' => $root->id, 'started_at' => now()]);
+        $phase->save();
+        $participant->forceFill(['current_proposition_id' => $root->id])->save();
+
+        return $phase;
     }
 
     private function whileWorkerWaits(Substrate $substrate, array $input, callable $competing): void

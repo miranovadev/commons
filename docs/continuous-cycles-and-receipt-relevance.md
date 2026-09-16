@@ -19,18 +19,20 @@ Order Commit and Committal Traverse prepare Phase 1 at the exact terminal
 Committal, including zero-Potential continuation. Rest still requires complete
 local action exhaustion, records `rested_at`, and selects an eligible Committal
 from the viable recovery basin frontier with the existing attenuated Potential ranking. Successful recovery
-creates Phase 1 immediately. These changes are part of the contribution's root
-transaction, so another observer cannot see the ordinary between-Cycle gap.
+creates Phase 1 before the terminal response when its observation remains current.
+The contribution commits first; recovery is calculated without locks, followed by
+a short version-checked entry transaction. Optimistic readers may see this gap.
 The next Cycle owns the selected entry's causal Horizon; no historical Cycle or
 Horizon is relabelled. See [causal entry rules](participant-continuity-and-relocation.md).
 
-There is one substantive recovery exception: if **no reachable recovery basin has a positive-Potential
-Committal**, Rest remains completed and the exhausted position is retained.
-The API reports `waiting / recovery_unavailable`, with unavailable recovery entry.
-It does not fabricate a zero-Potential destination, reopen the exhausted Cycle,
-or roll back Rest. A later wake retries recovery before any inference. Creating a
-valid Phase 1 here would require changing the existing recovery rule or assigning
-an unknown Horizon; this exception is causal unavailability, not scheduler delay.
+Complete Origin-branch exhaustion is now a persisted [Tragedy](branch-tragedy.md).
+The validated Rest transition retires that branch; viable other basins remain
+preferred, then structural Origin renewal supplies fresh Distinguish. No Potential
+score is invented. Other participants remain in place until their own Rest.
+`waiting / recovery_unavailable` describes a genuinely unavailable valid entry,
+such as missing Origin or invalid/unmeasurable provenance. A concurrent field
+change can defer entry and expose `recovery_pending`; the next prepare observes
+fresh state. Neither case rolls back the completed Rest.
 
 Ready API/workspace state points directly to the prepared Phase 1. Its creation
 is a real Phase touch, counted by the existing Cadence projection. Commitment
@@ -42,8 +44,8 @@ Each iteration builds fresh participation state, performs one inference, then
 validates and dispatches one contribution transactionally. No database/Substrate
 lock survives into inference or across the whole wake. The queue overlap guard
 is shared by a Participant's connections; other Participants may contribute
-between steps. Existing synchronous Instruments still perform their I/O within
-one contribution transaction.
+between steps. Synchronous Instrument observation runs outside the
+contribution transaction; its result is revalidated during the short write.
 
 The wake remembers its starting Cycle ID and stops when that Cycle ends, including
 when another actor advances that Participant. It never infers a contribution for

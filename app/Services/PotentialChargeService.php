@@ -48,7 +48,7 @@ final readonly class PotentialChargeService
     {
         $snapshots = CommitmentSnapshot::query()
             ->whereBelongsTo($substrate)
-            ->whereHas('proposition', fn ($query) => $query->where('tier', 'committal'))
+            ->whereHas('proposition', fn ($query) => $query->active()->where('tier', 'committal'))
             ->with('proposition')
             ->get();
 
@@ -56,7 +56,7 @@ final readonly class PotentialChargeService
             return null;
         }
 
-        $propositions = Proposition::query()
+        $propositions = Proposition::query()->active()
             ->whereHas(
                 'phase.cycle.participant',
                 fn ($query) => $query->whereBelongsTo($substrate),
@@ -172,13 +172,14 @@ final readonly class PotentialChargeService
         app(CausalContextService::class)->assertGate($position, $startingBasin);
         $horizons = ContextHorizon::where('substrate_id', $substrateId)->get()->keyBy('id');
         $opened = $horizons->whereNotNull('opened_by_proposition_id')->keyBy('opened_by_proposition_id');
-        $propositions = Proposition::query()
+        $propositions = Proposition::query()->active()
             ->whereHas('phase.cycle.participant', fn ($query) => $query->where('substrate_id', $substrateId))
             ->with(['measurement', 'commitmentSnapshot', 'phase.cycle'])
             ->get()->keyBy('id');
+        $historicalIds = Proposition::whereHas('phase.cycle.participant', fn ($query) => $query->where('substrate_id', $substrateId))->select('id');
         $edges = DB::table('supersessions')
-            ->whereIn('source_proposition_id', $propositions->keys())
-            ->whereIn('target_proposition_id', $propositions->keys())
+            ->whereIn('source_proposition_id', $historicalIds)
+            ->whereIn('target_proposition_id', $historicalIds)
             ->get(['source_proposition_id', 'target_proposition_id']);
         $outgoing = $edges->groupBy('source_proposition_id');
         // Topology determines eligibility. Undirected parent/child distance only
@@ -233,6 +234,28 @@ final readonly class PotentialChargeService
             ?: ($left['distance'] <=> $right['distance'])
             ?: strcmp($left['proposition']->getKey(), $right['proposition']->getKey()));
 
+        // Renewal is a structural entry, considered only after viable basins.
+        // Its actual measured Potential remains unchanged, including numeric zero.
+        if ($ranked === [] && $this->originRenewalAvailable($position)) {
+            $origin = $propositions->first(fn ($node) => $node->commitmentSnapshot?->calculator_version === 'origin-bootstrap-v1');
+            if ($origin === null) {
+                throw new DomainException('Origin renewal requires the original bootstrap commitment.');
+            }
+            $horizon = app(ContextHorizonProjector::class)->forEntry($origin);
+            $local = $members->get($horizon->id, collect())->keyBy('id');
+            $local->put($origin->id, $origin);
+            $raw = $this->potentialFor($origin->id, $origin->commitmentSnapshot->tension, $local, $outgoing);
+            $charge = round(1 - abs($origin->commitmentSnapshot->tension), 7);
+            $distance = $distances[$origin->id] ?? null;
+            if ($distance === null) {
+                throw new DomainException('Origin renewal requires connected causal provenance.');
+            }
+            $weight = LineageMeasurementService::attenuation($distance);
+            $ranked[] = ['proposition' => $origin, 'potential_charge' => $raw * $weight,
+                'raw_potential_charge' => $raw, 'charge' => $charge * $weight, 'raw_charge' => $charge,
+                'distance' => $distance, 'context_horizon_id' => $horizon->id, 'reason' => 'origin_renewal'];
+        }
+
         return [
             'selection' => $ranked[0] ?? null,
             'starting_context_horizon_id' => $startingBasin->id,
@@ -240,6 +263,16 @@ final readonly class PotentialChargeService
             'fallback_depth' => $result['fallback_depth'],
             'eligible_candidate_ids' => array_map(fn (array $candidate) => $candidate['proposition']->id, $ranked),
         ];
+    }
+
+    private function originRenewalAvailable(Proposition $position): bool
+    {
+        if (app(OriginBranchService::class)->pruned($position)) {
+            return true;
+        }
+
+        return $position->commitmentSnapshot?->calculator_version === 'origin-bootstrap-v1'
+            && DB::table('origin_branches')->where('origin_proposition_id', $position->id)->whereNotNull('pruned_at')->exists();
     }
 
     /**

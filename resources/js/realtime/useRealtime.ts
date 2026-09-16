@@ -56,7 +56,10 @@ export function useContextHorizonRealtime(slug: string, enabled: boolean) {
     names.forEach(name => {
       const channel = publicChannel ? echo.channel(name) : echo.private(name);
       channel.listen('.invalidation', (event: Invalidation) => {
-        if (event.type === 'context-horizons.changed' && event.substrate_id === substrateId) queue.add('subscriptions');
+        if (event.type === 'context-horizons.changed' && event.substrate_id === substrateId) {
+          queue.add('subscriptions');
+          queue.add('catchup');
+        }
         if (event.type === 'graph.participant_changed' && event.substrate_id === substrateId) queue.add('participants');
         if (event.type === 'graph.metrics_changed' && event.substrate_id === substrateId) queue.add('metrics');
         if ('proposition_id' in event && horizonIds.includes(event.context_horizon_id)) {

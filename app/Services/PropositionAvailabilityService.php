@@ -17,6 +17,7 @@ final readonly class PropositionAvailabilityService
 
     public function mutable(Proposition $source, ?ParticipationContext $context = null): bool
     {
-        return $source->tier === 'expressive' && ! $this->committed($source, $context);
+        return $source->tier === 'expressive'
+            && ($context !== null ? $context->activeIds->has($source->id) || ! $source->exists : ! app(OriginBranchService::class)->pruned($source)) && ! $this->committed($source, $context);
     }
 }

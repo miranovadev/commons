@@ -16,6 +16,10 @@ export interface GraphSubscriptions {
 /** Upsert into RTK Query's draft; this is not a separate resource cache. */
 export function mergeProposition(items: Proposition[], proposition: Proposition) {
   const index = items.findIndex(item => item.id === proposition.id);
+  if (proposition.active === false) {
+    if (index >= 0) items.splice(index, 1);
+    return;
+  }
   if (index < 0) items.push(proposition);
   else items[index] = proposition;
 }
