@@ -13,6 +13,10 @@ regardless of implementation. If an implementation detail conflicts with an
 invariant, the invariant takes precedence. These normative semantic constraints
 govern the more specific operational rules below.
 
+**Register identity does not confer phase identity.** The
+[phase-position matrix and enforcement rules](docs/phase-positions.md) distinguish
+repeated register labels across the seven phases.
+
 ## Operational documentation
 
 Implementation notes for the lineage-based measurement projection live in

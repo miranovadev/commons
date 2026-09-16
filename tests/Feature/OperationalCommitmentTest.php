@@ -73,19 +73,21 @@ class OperationalCommitmentTest extends TestCase
         $this->assertDatabaseCount('instrument_executions', 3);
         $state = $this->move($this->participant, ['action' => 'proposition.variant', 'statement' => 'New Signal']);
 
-        // Other participants prepare local write-register heads through real contributions.
+        // Other participants prepare phase-5 and phase-6 heads through real contributions.
         $helper = $this->participant($this->participant->substrate, 'helper');
-        $this->phase($helper, PhaseKind::Persist, 'stance', Proposition::findOrFail($state['plan']['gate_id']));
-        $helperState = $this->move($helper, ['action' => 'proposition.variant', 'statement' => 'Mediated Stance']);
+        $signal = Proposition::findOrFail($state['plan']['gate_id']);
+        $this->phase($helper, PhaseKind::Disperse, 'signal', $signal->phase->gate);
+        $this->move($helper, ['action' => 'proposition.variant', 'statement' => 'Other Signal']);
+        $helperState = $this->move($helper, ['action' => 'proposition.reconcile', 'other_proposition_id' => $signal->id]);
         $stance = Proposition::findOrFail($helperState['plan']['gate_id']);
         app(OperationalInstrumentService::class)->execute($stance->phase, $stance, ['kind' => 'citation', 'reference' => $this->origin->id]);
         $this->move($this->participant, ['action' => 'attestation.create', 'proposition_id' => $stance->id, 'direction' => 'support']);
         $helperState = $this->move($helper, [
-            'action' => 'proposition.reclassify',
+            'action' => 'proposition.bias', 'proposition_id' => $stance->id,
         ]);
         $candidate = Proposition::findOrFail($helperState['plan']['gate_id']);
         $reviewer = $this->participant($this->participant->substrate, 'reviewer');
-        $this->phase($reviewer, PhaseKind::Constrain, 'concord', $stance);
+        $this->phase($reviewer, PhaseKind::Bias, 'concord', $stance);
         $this->move($reviewer, [
             'action' => 'attestation.create', 'proposition_id' => $candidate->id,
             'direction' => 'support',
@@ -135,8 +137,7 @@ class OperationalCommitmentTest extends TestCase
 
     public function test_blocked_commitment_rechecks_grounding_and_does_not_advance(): void
     {
-        $gate = $this->candidate();
-        $gate->forceFill(['register' => 'concord'])->save();
+        $gate = $this->positionedCandidate(PhaseKind::Bias);
         $phase = $this->phase($this->participant($this->participant->substrate, 'committer'), PhaseKind::Order, 'concord', $gate);
         $participant = $phase->cycle->participant;
         $this->publishPotentialFixture($participant);
@@ -196,7 +197,7 @@ class OperationalCommitmentTest extends TestCase
 
     public function test_pending_and_failed_executions_are_visible_without_satisfying_grounding(): void
     {
-        $gate = $this->candidate();
+        $gate = $this->positionedCandidate(PhaseKind::Bias);
         $this->attest($gate);
         $committer = $this->participant($this->participant->substrate, 'waiting-committer');
         $this->phase($committer, PhaseKind::Order, 'concord', $gate);
@@ -257,9 +258,7 @@ class OperationalCommitmentTest extends TestCase
 
     public function test_bias_grounding_waits_for_another_participants_attestation_before_commit(): void
     {
-        $left = $this->candidate();
-        $left->register = 'stance';
-        $left->save();
+        $left = $this->positionedCandidate(PhaseKind::Mediate);
         $this->classificationEvidenceFixture($left);
         $builder = $this->participant($this->participant->substrate, 'orienter');
         $biasPhase = $this->phase($builder, PhaseKind::Bias, 'concord', $left);
@@ -267,12 +266,8 @@ class OperationalCommitmentTest extends TestCase
             'action' => 'proposition.bias', 'proposition_id' => $left->id,
         ]);
         // Another lineage does not erase the existing Concord.
-        $dispersePhase = $this->phase($builder, PhaseKind::Disperse, 'signal', $candidate);
-        $descendant = app(ContributionDispatcher::class)->dispatch($builder, $dispersePhase, [
-            'action' => 'proposition.variant', 'statement' => 'Another lineage',
-        ]);
-        $descendant->register = 'signal';
-        $descendant->save();
+        // Historical soft descendants remain visible without promoting their source.
+        $this->positionedCandidate(PhaseKind::Disperse, $candidate);
         $reader = $this->participant($this->participant->substrate, 'reader');
         $bias = $this->phase($reader, PhaseKind::Bias, 'concord', $left);
         $this->publishPotentialFixture($reader);
@@ -388,19 +383,31 @@ class OperationalCommitmentTest extends TestCase
 
     private function instrumentFixture(PhaseKind $kind): array
     {
-        $builder = $this->participant($this->participant->substrate, 'builder-'.str()->ulid());
-        $phase = $this->phase($builder, PhaseKind::Persist, 'stance', $this->origin);
-        $stance = app(ContributionDispatcher::class)->dispatch($builder, $phase, ['action' => 'proposition.variant', 'statement' => 'Stance']);
-        $this->classificationEvidenceFixture($stance);
-        $phase->write_register = 'concord';
-        $phase->gate_proposition_id = $stance->id;
-        $phase->save();
-        $candidate = app(ContributionDispatcher::class)->dispatch($builder, $phase, ['action' => 'proposition.reclassify']);
+        $sourcePosition = $kind === PhaseKind::Constrain ? PhaseKind::Persist : PhaseKind::Mediate;
+        $stance = $this->positionedCandidate($sourcePosition);
+        $candidate = $this->positionedCandidate($kind === PhaseKind::Order ? PhaseKind::Bias : $kind, $stance);
         $reader = $this->participant($this->participant->substrate, 'reader-'.str()->ulid());
-        $reader->current_proposition_id = $stance->id;
-        $reader->save();
+        $gate = $kind === PhaseKind::Order ? $candidate : $stance;
+        $reader->forceFill(['current_proposition_id' => $gate->id])->save();
 
-        return [$reader, $this->phase($reader, $kind, 'concord', $stance), $candidate];
+        return [$reader, $this->phase($reader, $kind, 'concord', $gate), $candidate];
+    }
+
+    private function positionedCandidate(PhaseKind $position, ?Proposition $parent = null): Proposition
+    {
+        $parent ??= $this->origin;
+        $phase = $this->phase($this->participant($this->participant->substrate, 'builder-'.str()->ulid()),
+            $position, \App\Enums\ContextDomain::Settlement->registerFor($position), $parent);
+        $candidate = new Proposition;
+        $candidate->forceFill(['phase_id' => $phase->id, 'register' => $phase->write_register,
+            'tier' => 'expressive', 'statement' => 'Prepared '.$position->name])->save();
+        app(LedgerService::class)->record($candidate);
+        $edge = new \App\Models\Supersession;
+        $edge->forceFill(['phase_id' => $phase->id, 'source_proposition_id' => $parent->id,
+            'target_proposition_id' => $candidate->id, 'type' => 'variant'])->save();
+        app(LedgerService::class)->record($edge);
+
+        return $candidate;
     }
 
     private function candidate(): Proposition

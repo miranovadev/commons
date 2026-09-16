@@ -439,8 +439,8 @@ class LocalParticipantNavigationTest extends TestCase
 
     public function test_order_rejects_attestation_and_expressive_traverse_without_weakening_commit(): void
     {
-        $parent = $this->node('Forward descendant', 0.0, 'expressive');
-        $gate = $this->node('Current', 0.0, 'expressive');
+        $parent = $this->node('Forward descendant', 0.0, 'expressive', PhaseKind::Bias);
+        $gate = $this->node('Current', 0.0, 'expressive', PhaseKind::Bias);
         foreach ([$parent, $gate] as $node) {
             $node->register = 'canon';
             $node->save();
@@ -582,12 +582,12 @@ class LocalParticipantNavigationTest extends TestCase
         return $source;
     }
 
-    private function node(string $name, float $tension, string $tier = 'committal'): Proposition
+    private function node(string $name, float $tension, string $tier = 'committal', PhaseKind $position = PhaseKind::Distinguish): Proposition
     {
         $node = new Proposition;
         $node->forceFill([
-            'phase_id' => $this->authorPhase->id, 'statement' => $name,
-            'register' => $tier === 'committal' ? 'canon' : 'activity', 'tier' => $tier,
+            'phase_id' => $this->phaseAtPositionFixture($this->authorPhase, $position)->id, 'statement' => $name,
+            'register' => $tier === 'committal' ? 'canon' : ContextDomain::Emergence->registerFor($position), 'tier' => $tier,
         ])->save();
         $entry = app(LedgerService::class)->record($node);
         $this->fixtureTensions[$node->id] = $tension;

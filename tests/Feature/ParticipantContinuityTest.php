@@ -166,7 +166,7 @@ class ParticipantContinuityTest extends TestCase
         $phase = $cycle->currentPhase;
         $phase->forceFill(['kind' => PhaseKind::Order, 'write_register' => 'concord'])->save();
         $candidate = new Proposition;
-        $candidate->forceFill(['phase_id' => $phase->id, 'register' => 'concord', 'tier' => 'expressive', 'statement' => 'Prepared local continuation'])->save();
+        $candidate->forceFill(['phase_id' => $this->phaseAtPositionFixture($phase, PhaseKind::Bias)->id, 'register' => 'concord', 'tier' => 'expressive', 'statement' => 'Prepared local continuation'])->save();
         app(LedgerService::class)->record($candidate);
         $edge = new Supersession;
         $edge->forceFill(['phase_id' => $phase->id, 'source_proposition_id' => $origin->id,

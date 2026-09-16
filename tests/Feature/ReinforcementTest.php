@@ -50,6 +50,7 @@ class ReinforcementTest extends TestCase
         $substrate = new Substrate;
         $substrate->forceFill(['slug' => 'reinforcement', 'title' => 'Reinforcement', 'visibility' => 'public', 'configuration' => []])->save();
         $creation = $this->phase($substrate);
+        $creation->forceFill(['kind' => PhaseKind::Bias])->save();
         $this->node = new Proposition;
         $this->node->forceFill(['phase_id' => $creation->id, 'register' => 'canon', 'tier' => 'expressive', 'statement' => 'Persistence must be earned.'])->save();
         app(LedgerService::class)->record($this->node);
@@ -61,6 +62,7 @@ class ReinforcementTest extends TestCase
 
     public function test_citation_and_unverified_metadata_cannot_reinforce_or_unlock_commit(): void
     {
+        $this->commitRegionFixture();
         app(PropositionMeasurementService::class)->project($this->node, 1, 1, 1);
         $cite = $this->loadedReceipt('citation', $this->node->id);
         $this->assertNull($cite->signature);
@@ -81,6 +83,7 @@ class ReinforcementTest extends TestCase
 
     public function test_signatures_are_shared_but_only_one_reinforcement_per_participant_counts(): void
     {
+        $this->commitRegionFixture();
         $first = $this->loadedReceipt('hyperlink', 'https://EXAMPLE.test/article?id=123#section');
         $duplicate = $this->loadedReceipt('hyperlink', 'http://example.test/article?utm_source=x');
         $otherSource = $this->loadedReceipt('hyperlink', 'https://example.test/another');
@@ -245,6 +248,16 @@ class ReinforcementTest extends TestCase
         $this->assertSame($first->signature, $second->fresh()->signature);
         $this->assertSame(2, Receipt::count());
         $this->assertSame(1, $this->reinforcementCount());
+    }
+
+    private function commitRegionFixture(): void
+    {
+        $seed = new Proposition;
+        $seed->forceFill(['phase_id' => $this->later->id, 'register' => 'canon', 'tier' => 'committal', 'statement' => 'Region provenance'])->save();
+        app(LedgerService::class)->record($seed);
+        $edge = new Supersession;
+        $edge->forceFill(['phase_id' => $this->node->phase_id, 'source_proposition_id' => $seed->id, 'target_proposition_id' => $this->node->id, 'type' => 'variant'])->save();
+        app(LedgerService::class)->record($edge);
     }
 
     private function reinforcementCount(): int

@@ -15,6 +15,10 @@ final class PhaseProgressionService
         $causality = app(CausalContextService::class);
         $horizon = $causality->assertPhase($phase);
         $causality->assertGate($gate, $horizon);
+        if (! app(PhasePositionService::class)->matches($gate, $phase, $phase->kind,
+            $phase->kind === PhaseKind::Order ? 'committal' : 'expressive')) {
+            throw new \DomainException('Progression requires a Write at the current producing Phase position.');
+        }
         $participant = $phase->cycle->participant;
         $participant->current_proposition_id = $gate->getKey();
         $participant->save();

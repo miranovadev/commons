@@ -174,6 +174,19 @@ Reinforcement must not globally consume source Propositions or prohibit reuse of
 organically reachable hard-superseded inputs. Multiple alternatives earn their own
 persistence within the existing phase, register and region rules.
 
+## 16. Register Identity Does Not Confer Phase Identity
+
+Register labels classify Propositions but do not define structural hierarchy.
+Eligibility for phase operations is determined by producing phase position and
+causal role. Repeated register labels across the seven-phase Cycle remain
+structurally distinct, across Participants and Cycles alike.
+
+Order may Commit only an Expressive candidate at the Bias-produced Closure
+position for its Domain and Commit Region. A Constrain Canon or Concord remains
+contextual region material; grounding and favourable Closure cannot promote it.
+Mediate reads Constrain and reconciles Disperse children; Bias consumes Mediate.
+See the [complete phase-role matrix](phase-positions.md).
+
 ## Relationship to More Specific Rules
 
 These invariants govern more detailed operational rules; they do not replace

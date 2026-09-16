@@ -23,8 +23,8 @@ class CommitBoundaryTest extends TestCase
     public function test_zero_loaded_reinforcement_can_commit_and_the_direct_source_is_consumed_globally(): void
     {
         $f = new ParticipantContextFixture(1, 0);
-        $source = $f->node($f->gate, 'canon');
-        $alternative = $f->node($f->gate, 'canon');
+        $source = $f->node($f->gate, 'canon', position: PhaseKind::Bias);
+        $alternative = $f->node($f->gate, 'canon', position: PhaseKind::Bias);
         $this->classificationEvidenceFixture($source);
         $closure = [...(new ClosureValues(1, 1))->resolve(), 'history_proposition_id' => null, 'history_source' => 'negative-default'];
         $this->mock(ClosureGateService::class, fn ($mock) => $mock->shouldReceive('preview', 'forCommitment')->andReturn($closure));
@@ -44,6 +44,9 @@ class CommitBoundaryTest extends TestCase
         } catch (\DomainException) {
             $this->assertSame($before, Proposition::count());
         }
+        $f->phase->forceFill(['completed_at' => now()])->save();
+        $f->phase = $f->phase->replicate();
+        $f->phase->completed_at = null;
         $f->phase->forceFill(['kind' => PhaseKind::Bias, 'gate_proposition_id' => $f->gate->id])->save();
         $plan = app(InputPlanService::class)->forParticipant($f->viewer);
         foreach (['instrument_options', 'attestation_options', 'revision_options', 'write_options'] as $key) {

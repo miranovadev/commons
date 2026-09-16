@@ -28,8 +28,8 @@ const result = await build({ stdin: { contents: `
     // Stale client action labels must never override the new authoritative schema.
     return render(<ParticipantWorkspace plan={plan} availableActions={['proposition.variant', ...Object.keys(actions)]} onAction={() => {}} />);
   }
-  export function exhaustedCommitNotice() {
-    const plan = { commitment: { requirements: { attestation: true, receipt: true, reinforcement: true, closure: true, write_opportunity: false } } };
+  export function exhaustedCommitNotice(phasePosition = true) {
+    const plan = { commitment: { requirements: { attestation: true, receipt: true, reinforcement: true, closure: true, phase_position: phasePosition, write_opportunity: false } } };
     const notices = participationNotices({ plan, participation: { reason: { message: 'This source has already been committed. Continue through its Committal result.' } }, canCommit: false, canRest: false, onRest: () => {} });
     return { title: notices[0].title, content: render(notices[0].content) };
   }
@@ -69,4 +69,12 @@ test('Persist hides unavailable Variant and Revise while retaining schema-author
   assert.match(html, />Support<\/span>/);
   assert.match(html, />Refute<\/span>/);
   assert.match(html, />Instrument<\/span>/);
+});
+
+
+test('an early same-register Gate is not described as an already committed source', () => {
+  const notice = module.exports.exhaustedCommitNotice(false);
+  assert.equal(notice.title, 'No phase-6 candidate at this Gate');
+  assert.match(notice.content, /Bias-produced candidate in the current Commit Region/);
+  assert.doesNotMatch(notice.content, /Grounding can be added/);
 });

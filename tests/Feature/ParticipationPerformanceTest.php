@@ -208,9 +208,9 @@ class ParticipationPerformanceTest extends TestCase
             return $phase;
         });
         $nodes = [];
-        $node = function ($register, $parent = null, $tier = 'expressive', $type = 'variant') use (&$nodes, $history) {
+        $node = function ($register, $parent = null, $tier = 'expressive', $type = 'variant', ?PhaseKind $position = null) use (&$nodes, $history) {
             $index = count($nodes) % 3;
-            $history[$index] = $this->phaseForRegisterFixture($history[$index], $register);
+            $history[$index] = $this->phaseForRegisterFixture($history[$index], $register, $position);
             $p = new Proposition;
             $p->forceFill(['phase_id' => $history[$index]->id, 'register' => $register, 'tier' => $tier, 'statement' => 'Fixture proposition '.count($nodes), 'created_at' => now()->subSeconds(1000 - count($nodes))])->save();
             app(LedgerService::class)->record($p);
@@ -239,10 +239,10 @@ class ParticipationPerformanceTest extends TestCase
         app(CommitRegionPolarityService::class)->establishCommit($seed, ObservableDirection::Positive);
         $reads = $gates = $bias = $writes = [];
         for ($i = 0; $i < $branches; $i++) {
-            $read = $reads[] = $node('concord', $seed);
-            $gate = $gates[] = $node('signal', $read);
-            $b = $bias[] = $node('stance', $gate);
-            $write = $writes[] = $node('concord', $b);
+            $read = $reads[] = $node('concord', $seed, position: PhaseKind::Constrain);
+            $gate = $gates[] = $node('signal', $read, position: PhaseKind::Disperse);
+            $b = $bias[] = $node('stance', $gate, position: PhaseKind::Mediate);
+            $write = $writes[] = $node('concord', $b, position: PhaseKind::Bias);
             foreach ([$read, $b, $write] as $target) {
                 $a = new Attestation;
                 $a->forceFill(['phase_id' => $history[$i % 3]->id, 'proposition_id' => $target->id, 'direction' => $i % 3 === 0 ? 'refute' : 'support'])->save();
@@ -253,11 +253,11 @@ class ParticipationPerformanceTest extends TestCase
         }
         // Retired population evidence and fresh Revise/Reconcile history are
         // present alongside a negative-polarity neighbouring Commit Region.
-        $retired = $node('stance', $gates[0]);
+        $retired = $node('stance', $gates[0], position: PhaseKind::Mediate);
         $old = new Attestation;
         $old->forceFill(['phase_id' => $history[0]->id, 'proposition_id' => $retired->id, 'direction' => 'refute'])->save();
         app(LedgerService::class)->record($old);
-        $node('stance', $retired, 'expressive', 'revise');
+        $node('stance', $retired, 'expressive', 'revise', PhaseKind::Mediate);
         $merged = $node('concord', $writes[2], 'expressive', 'reconcile');
         $edge = new Supersession;
         $edge->forceFill(['phase_id' => $merged->phase_id, 'source_proposition_id' => $writes[3]->id,

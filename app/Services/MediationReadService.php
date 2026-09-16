@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Enums\PhaseKind;
-use App\Enums\RegisterPosition;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Services\Participation\ParticipationContext;
@@ -14,6 +13,7 @@ final readonly class MediationReadService
     public function __construct(
         private PropositionMeasurementService $measurements,
         private CommitRegionService $regions,
+        private PhasePositionService $positions,
     ) {}
 
     /** The previous Disperse Gate is the anchor, regardless of display ordering. */
@@ -44,8 +44,7 @@ final readonly class MediationReadService
     private function resolveReads(Phase $phase, ?ParticipationContext $context = null): Collection
     {
         $anchor = $this->anchorFor($phase);
-        if ($anchor === null || $anchor->tier !== 'expressive'
-            || $anchor->register !== $phase->cycle->contextHorizon->domain->registerAt(RegisterPosition::Third)
+        if ($anchor === null || ! $this->positions->matches($anchor, $phase, PhaseKind::Constrain)
             || $this->regions->seedFor($anchor, $context) === null) {
             return collect();
         }
@@ -66,7 +65,7 @@ final readonly class MediationReadService
         }
         $gate = $context?->propositions->get($phase->gate_proposition_id) ?? $phase->gate()->firstOrFail();
 
-        $pool = $this->regions->atPosition($phase, $gate, RegisterPosition::First, $context, includeSuperseded: true);
+        $pool = $this->regions->atPhasePosition($phase, $gate, PhaseKind::Disperse, $context, includeSuperseded: true);
 
         return Proposition::query()->active()->whereKey($pool->pluck('id'))
             ->whereHas('parents', fn ($query) => $query->whereKey($reads->pluck('id')))

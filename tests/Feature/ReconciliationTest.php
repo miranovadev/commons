@@ -52,10 +52,10 @@ class ReconciliationTest extends TestCase
         $this->substrate = new Substrate;
         $this->substrate->forceFill(['slug' => 'reconcile', 'title' => 'Reconcile', 'visibility' => 'public', 'configuration' => []])->save();
         $this->history = $this->newPhase($this->participant('author'), PhaseKind::Distinguish, 'activity', true);
-        $this->parent = $this->node('Parent', 'canon');
-        $root = $this->node('Shared provenance', 'frontier', tier: 'committal');
+        $this->parent = $this->node('Parent', 'canon', position: PhaseKind::Constrain);
+        $root = $this->node('Shared provenance', 'frontier', tier: 'committal', position: PhaseKind::Mediate);
         $this->edge($root, $this->parent);
-        $this->gate = $this->node("  Gate statement\nwith exact whitespace.  \n", 'activity', $correspondence);
+        $this->gate = $this->node("  Gate statement\nwith exact whitespace.  \n", 'activity', $correspondence, position: PhaseKind::Disperse);
         $this->edge($this->parent, $this->gate);
         $this->viewer = $this->participant('viewer');
         $this->viewer->current_proposition_id = $this->gate->id;
@@ -103,19 +103,19 @@ class ReconciliationTest extends TestCase
     {
         $this->fixture();
         $valid = $this->sibling('Valid');
-        $unrelated = $this->node('Unrelated active head', 'activity');
-        $otherParent = $this->node('Other parent', 'canon', tier: 'committal');
+        $unrelated = $this->node('Unrelated active head', 'activity', position: PhaseKind::Disperse);
+        $otherParent = $this->node('Other parent', 'canon', tier: 'committal', position: PhaseKind::Constrain);
         $this->edge($otherParent, $unrelated);
-        $child = $this->node('Write child', 'frontier');
+        $child = $this->node('Write child', 'frontier', position: PhaseKind::Mediate);
         $this->edge($this->gate, $child);
-        $grandchild = $this->node('Grandchild', 'activity');
+        $grandchild = $this->node('Grandchild', 'activity', position: PhaseKind::Disperse);
         $this->edge($child, $grandchild);
-        $wrongRegister = $this->node('Wrong register sibling', 'frontier');
+        $wrongRegister = $this->node('Wrong register sibling', 'frontier', position: PhaseKind::Mediate);
         $this->edge($this->parent, $wrongRegister);
         $hard = $this->sibling('Hard superseded');
-        $this->edge($hard, $this->node('Replacement', 'frontier'), 'reclassify');
+        $this->edge($hard, $this->node('Replacement', 'frontier', position: PhaseKind::Mediate), 'reclassify');
         $soft = $this->sibling('Soft branch remains active');
-        $this->edge($soft, $this->node('Soft continuation', 'frontier'));
+        $this->edge($soft, $this->node('Soft continuation', 'frontier', position: PhaseKind::Mediate));
         $plan = $this->plan();
         $this->assertEqualsCanonicalizing([$valid->id, $soft->id, $hard->id], array_column($plan['gate_options'], 'id'));
         $this->assertSame([$child->id], array_column($plan['write_options'], 'id'));
@@ -224,7 +224,7 @@ class ReconciliationTest extends TestCase
     public function test_dispatcher_rejects_non_sibling_without_partial_writes(): void
     {
         $this->fixture();
-        $unrelated = $this->node('Not a sibling', 'activity');
+        $unrelated = $this->node('Not a sibling', 'activity', position: PhaseKind::Disperse);
         $count = Proposition::count();
         try {
             app(ContributionDispatcher::class)->dispatch($this->viewer, $this->phase, ['action' => 'proposition.reconcile', 'other_proposition_id' => $unrelated->id]);
@@ -243,16 +243,16 @@ class ReconciliationTest extends TestCase
         $wrongRegister->register = 'frontier';
         $wrongRegister->save();
         [$hardRead, $hardGate] = $this->readSibling('Replaced Read', -0.7, -1);
-        $this->edge($hardRead, $this->node('Read replacement', 'canon'), 'reclassify');
+        $this->edge($hardRead, $this->node('Read replacement', 'canon', position: PhaseKind::Constrain), 'reclassify');
         [$foreignHorizon, $foreignGate] = $this->readSibling('Other Horizon Read', -0.7, -1);
         $horizon = $this->laterHorizonFixture($foreignHorizon->contextHorizonMembership->horizon);
         $foreignHorizon->contextHorizonMembership->forceFill(['context_horizon_id' => $horizon->id])->save();
-        $distantRead = $this->node('Read grandchild', 'canon');
+        $distantRead = $this->node('Read grandchild', 'canon', position: PhaseKind::Constrain);
         $this->edge($validRead, $distantRead);
-        $distantGate = $this->node('Distant Gate', 'activity');
+        $distantGate = $this->node('Distant Gate', 'activity', position: PhaseKind::Disperse);
         $this->edge($distantRead, $distantGate);
-        $unrelatedRead = $this->node('Unrelated matching Read', 'canon');
-        $unrelatedGate = $this->node('Unrelated Gate', 'activity');
+        $unrelatedRead = $this->node('Unrelated matching Read', 'canon', position: PhaseKind::Constrain);
+        $unrelatedGate = $this->node('Unrelated Gate', 'activity', position: PhaseKind::Disperse);
         $this->edge($unrelatedRead, $unrelatedGate);
         $plan = $this->plan();
         $this->assertEqualsCanonicalizing([$this->parent->id, $validRead->id, $foreignHorizon->id, $distantRead->id, $hardRead->id, $hardRead->children()->where('register', 'canon')->firstOrFail()->id], array_column($plan['read_options'], 'id'));
@@ -288,7 +288,7 @@ class ReconciliationTest extends TestCase
         $this->fixture();
         $this->sibling('Available counterpart');
         $this->assertNotEmpty($this->plan()['gate_options']);
-        $this->edge($this->gate, $this->node('Hard replacement', 'frontier'), 'reclassify');
+        $this->edge($this->gate, $this->node('Hard replacement', 'frontier', position: PhaseKind::Mediate), 'reclassify');
         $this->assertNotEmpty($this->plan()['gate_options']);
         $this->phase->cycle->phases()->where('kind', PhaseKind::Disperse->value)->update(['completed_at' => null]);
         $this->assertCount(0, app(MediationReadService::class)->readsFor($this->phase));
@@ -296,9 +296,9 @@ class ReconciliationTest extends TestCase
 
     private function readSibling(string $statement, float $correspondence, float $gateCorrespondence): array
     {
-        $read = $this->node($statement, $this->parent->register, $correspondence);
+        $read = $this->node($statement, $this->parent->register, $correspondence, position: PhaseKind::Constrain);
         $this->edge($this->parent->parents()->firstOrFail(), $read);
-        $gate = $this->node($statement.' child', $this->gate->register, $gateCorrespondence);
+        $gate = $this->node($statement.' child', $this->gate->register, $gateCorrespondence, position: PhaseKind::Disperse);
         $this->edge($read, $gate);
 
         return [$read, $gate];
@@ -368,16 +368,16 @@ class ReconciliationTest extends TestCase
 
     private function sibling(string $statement, float $correspondence = -0.5): Proposition
     {
-        $node = $this->node($statement, $this->gate->register, $correspondence);
+        $node = $this->node($statement, $this->gate->register, $correspondence, position: PhaseKind::Disperse);
         $this->edge($this->parent, $node);
 
         return $node;
     }
 
-    private function node(string $statement, string $register, float $correspondence = -0.5, string $tier = 'expressive'): Proposition
+    private function node(string $statement, string $register, float $correspondence = -0.5, string $tier = 'expressive', PhaseKind $position = PhaseKind::Disperse): Proposition
     {
         $node = new Proposition;
-        $node->forceFill(['phase_id' => $this->history->id, 'register' => $register, 'tier' => $tier, 'statement' => $statement])->save();
+        $node->forceFill(['phase_id' => $this->phaseAtPositionFixture($this->history, $position)->id, 'register' => $register, 'tier' => $tier, 'statement' => $statement])->save();
         app(LedgerService::class)->record($node);
         app(PropositionMeasurementService::class)->project($node, $correspondence, -1, -1);
 

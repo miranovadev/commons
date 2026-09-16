@@ -30,7 +30,7 @@ class SharedReclassificationTest extends TestCase
     public function test_receipt_and_attestation_allow_a_foreign_participant_one_shared_classification(PhaseKind $kind, string $from, string $to): void
     {
         $f = new ParticipantContextFixture(1, 0);
-        $source = $f->node($f->seed, $from);
+        $source = $f->node($f->seed, $from, position: PhaseKind::from($kind->value - 1));
         [$actor, $phase] = $this->encounter($f, $source, $kind, $to);
         $action = $kind === PhaseKind::Bias ? 'proposition.bias' : 'proposition.reclassify';
         $input = ['action' => $action] + ($kind === PhaseKind::Bias ? ['proposition_id' => $source->id] : []);

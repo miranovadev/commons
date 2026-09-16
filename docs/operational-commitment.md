@@ -1,8 +1,10 @@
 # Operational Commitment
 
-Order is terminal selection: Commit an admissible expressive Concord/Canon Gate or Traverse an established Committal Concord/Canon Write. Read contains Stance/Frontier ancestry. Neither Instrument, Receipt Read, Replay nor Attestation is an Order action. Both productive actions finish the Cycle at the exact Committal; the next Cycle continues there under its applicable Context Horizon.
+Order is terminal selection: Commit an admissible Bias-produced expressive Concord/Canon Gate or Traverse an established Committal Concord/Canon Write. Read contains Mediate-produced Stance/Frontier ancestry. Neither Instrument, Receipt Read, Replay nor Attestation is an Order action. Both productive actions finish the Cycle at the exact Committal; the next Cycle continues there under its applicable Context Horizon.
 
-`CommitmentAdmissibilityService` requires a completed Receipt, an effective Attestation on the selected classification, and aligned Depth/Cadence with hysteresis. Reinforcement is an optional weight, never a hard minimum. Receipt existence does not assert that evidence is correct or that a Participant has read it.
+`CommitmentAdmissibilityService` first requires the selected source to occupy Phase 6 / Bias in the same Domain, Horizon and Commit Region, with an active, unconsumed expressive third-register classification. Register identity alone cannot confer this position: a Phase 3 / Constrain Canon or Concord remains contextual history. See [phase positions](phase-positions.md).
+
+It also requires a completed Receipt, an effective Attestation on the selected classification, and aligned Depth/Cadence with hysteresis. Reinforcement is an optional weight, never a hard minimum. Receipt existence does not assert that evidence is correct or that a Participant has read it.
 
 Commit preserves the selected source's exact statement, effective judgments, referenced receipts and phase-touch history. It consumes that direct expressive source globally and records an immutable evaluation. Alternative branches remain available. Committal results accept no new Attestations, Instruments or revisions; further development uses Variants. Reading historical evidence cannot rewrite the commitment snapshot.
 

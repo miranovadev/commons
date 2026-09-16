@@ -18,6 +18,7 @@ final readonly class PhaseGenerationService
         private PropositionStateService $state,
         private PropositionOwnershipService $ownership,
         private PropositionAvailabilityService $availability,
+        private PhasePositionService $positions,
     ) {}
 
     public function available(Phase $phase, string $action, ?ParticipationContext $context = null, ?Proposition $position = null): bool
@@ -28,7 +29,8 @@ final readonly class PhaseGenerationService
         }
         if ($action === 'proposition.commit') {
             // A preview with no selected source must not suppress other eligible Gates.
-            return $position === null || $this->availability->mutable($position, $context);
+            return $phase->kind === PhaseKind::Order && ($position === null
+                || ($this->positions->matches($position, $phase, PhaseKind::Bias) && $this->availability->mutable($position, $context)));
         }
         if (! in_array($action, ['proposition.variant', 'proposition.reclassify', 'proposition.bias', 'proposition.commit'], true)) {
             // Mediate owns a directed relationship, rather than a personal quota.
@@ -37,7 +39,7 @@ final readonly class PhaseGenerationService
         // Standalone evidence previews may supply a candidate before a Phase
         // has a Gate. Operational plans always use the Phase's recorded Gate.
         $gate = $position ?? $context?->propositions->get($phase->gate_proposition_id) ?? $phase->gate()->first();
-        if ($gate === null) {
+        if ($gate === null || ! $this->positions->acceptsGate($phase, $gate)) {
             return false;
         }
         if (($action !== 'proposition.bias' || $position !== null)
@@ -90,9 +92,9 @@ final readonly class PhaseGenerationService
     /** Commits end the region, so its Write row is just outside expressive membership. */
     public function committedWrites(Phase $phase, ?ParticipationContext $context = null): Collection
     {
-        $sources = $this->regions->membersFor($context?->propositions->get($phase->gate_proposition_id) ?? $phase->gate, $context)->pluck('id');
+        $sources = $this->positions->filter($this->regions->membersFor($context?->propositions->get($phase->gate_proposition_id) ?? $phase->gate, $context), $phase, PhaseKind::Bias)->pluck('id');
 
-        return Proposition::query()->active()->where('tier', 'committal')->where('register', $phase->write_register)->whereHas('commitmentSnapshot')
+        return $this->positions->scope(Proposition::query()->active(), $phase, PhaseKind::Order, 'committal')->whereHas('commitmentSnapshot')
             ->whereHas('phase', fn ($query) => $query->where('kind', PhaseKind::Order->value)
                 ->whereHas('cycle.participant', fn ($query) => $query->where('substrate_id', $phase->cycle->participant->substrate_id)))
             ->whereIn('id', Supersession::query()->select('target_proposition_id')

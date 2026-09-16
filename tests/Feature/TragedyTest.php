@@ -125,14 +125,16 @@ class TragedyTest extends TestCase
             PhaseKind::Persist, PhaseKind::Mediate => 'frontier',
             default => 'canon',
         };
-        $gate = $this->proposition(
-            $action === 'proposition.reclassify' ? $history : $authorPhase,
-            $action === 'instrument.execute' ? $writeRegister : 'activity',
-        );
+        $gateKind = $kind === PhaseKind::Distinguish ? PhaseKind::Order : PhaseKind::from($kind->value - 1);
+        $gatePhase = $this->phaseAtPositionFixture($action === 'proposition.reclassify' ? $history : $authorPhase, $gateKind);
+        $gate = $this->proposition($gatePhase, $gatePhase->write_register);
+        if ($kind === PhaseKind::Distinguish) {
+            $gate->forceFill(['tier' => 'committal'])->save();
+        }
         $viewer->current_proposition_id = $gate->id;
         $viewer->save();
         if ($kind === PhaseKind::Mediate) {
-            $parent = $this->proposition($authorPhase, 'canon');
+            $parent = $this->proposition($this->phaseAtPositionFixture($authorPhase, PhaseKind::Constrain), 'canon');
             $seed = $this->proposition($authorPhase, 'canon');
             $seed->forceFill(['tier' => 'committal'])->save();
             $seed->children()->attach($parent->id, [
@@ -155,14 +157,15 @@ class TragedyTest extends TestCase
             $this->loadedReceiptFixture($gate);
         }
         if ($action === 'instrument.execute') {
-            $written = $this->proposition($authorPhase, $writeRegister);
+            $written = $this->proposition($this->phaseAtPositionFixture($authorPhase, $kind), $writeRegister);
             $gate->children()->attach($written->id, [
                 'id' => (string) str()->ulid(), 'phase_id' => $authorPhase->id, 'type' => 'variant',
             ]);
         }
         if (in_array($action, ['proposition.revise', 'attestation.create', 'proposition.traverse', 'proposition.reconcile'], true)) {
             $target = $this->proposition(
-                $action === 'proposition.revise' ? $history : $authorPhase,
+                $this->phaseAtPositionFixture($action === 'proposition.revise' ? $history : $authorPhase,
+                    $action === 'proposition.reconcile' ? PhaseKind::Disperse : $kind),
                 $action === 'proposition.reconcile' ? 'activity' : $writeRegister,
             );
             if ($action === 'proposition.reconcile') {

@@ -48,7 +48,7 @@ class ParticipationSnapshotTest extends TestCase
         app(LedgerService::class)->record($origin);
         app(CommitRegionPolarityService::class)->establishOrigin($origin, 'support');
         $candidate = new Proposition;
-        $candidate->forceFill(['phase_id' => $history->id, 'register' => 'frontier', 'tier' => 'expressive', 'statement' => 'Candidate'])->save();
+        $candidate->forceFill(['phase_id' => $this->phaseAtPositionFixture($history, PhaseKind::Mediate)->id, 'register' => 'frontier', 'tier' => 'expressive', 'statement' => 'Candidate'])->save();
         app(LedgerService::class)->record($candidate);
         $edge = new Supersession;
         $edge->forceFill(['phase_id' => $history->id, 'source_proposition_id' => $origin->id, 'target_proposition_id' => $candidate->id, 'type' => 'variant'])->save();

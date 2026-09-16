@@ -119,8 +119,11 @@ abstract class TestCase extends BaseTestCase
     }
 
     /** Mixed-vocabulary topology fixtures still need a real creating Domain for every node. */
-    protected function phaseForRegisterFixture(Phase $base, string $register): Phase
+    protected function phaseForRegisterFixture(Phase $base, string $register, ?PhaseKind $position = null): Phase
     {
+        if ($position !== null) {
+            $base = $this->phaseAtPositionFixture($base, $position);
+        }
         if ($base->cycle->contextHorizon->domain->registerAt(RegisterPosition::forRegister($register)) === $register) {
             return $base;
         }
@@ -131,6 +134,17 @@ abstract class TestCase extends BaseTestCase
             'sequence' => (int) $participant->cycles()->max('sequence') + 1, 'completed_at' => now()])->save();
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => $base->kind, 'write_register' => $register,
+            'started_at' => now(), 'completed_at' => now()])->save();
+
+        return $phase;
+    }
+
+    /** Explicit producing position for semantic fixtures; never inferred from register equality. */
+    protected function phaseAtPositionFixture(Phase $base, PhaseKind $position): Phase
+    {
+        $phase = new Phase;
+        $phase->forceFill(['cycle_id' => $base->cycle_id, 'kind' => $position,
+            'write_register' => $base->cycle->contextHorizon->domain->registerFor($position),
             'started_at' => now(), 'completed_at' => now()])->save();
 
         return $phase;
