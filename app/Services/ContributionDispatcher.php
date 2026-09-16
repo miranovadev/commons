@@ -57,7 +57,7 @@ final readonly class ContributionDispatcher
             }
             app(CausalContextService::class)->assertPhase($phase);
             $gate = $phase->gate()->firstOrFail();
-            if (app(OriginBranchService::class)->pruned($gate)) {
+            if (app(ExhaustionService::class)->unavailable($gate)) {
                 throw new ConflictHttpException('This branch is historical. Refresh and Rest.');
             }
             $action = $input['action'];

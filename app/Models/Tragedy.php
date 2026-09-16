@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 
-/** Immutable retirement event; membership and original history supply analytics. */
+/** Immutable Origin-lineage exhaustion event; membership and original history supply analytics. */
 class Tragedy extends Model
 {
     use HasUlids;

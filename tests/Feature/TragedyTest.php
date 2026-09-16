@@ -57,7 +57,7 @@ class TragedyTest extends TestCase
         $plan = $state['plan'];
         $schema = $plan['schema'];
         $actions = array_keys($schema['$defs']['actions']);
-        $this->assertSame($action === null, $plan['tragedy']);
+        $this->assertSame($action === null, $plan['rest_available']);
         $this->assertSame($actions, array_map(fn ($ref) => basename($ref['$ref']), $schema['oneOf']));
         if ($action === null) {
             $this->assertSame(['participant.rest'], $actions);
@@ -73,7 +73,7 @@ class TragedyTest extends TestCase
         // Autonomous inference receives the same action set through the autonomous context.
         $prompt = app(ParticipantPromptFactory::class)->make(new Connection, $state);
         $this->assertSame($schema, $prompt['schema']);
-        $this->assertSame($plan['tragedy'], json_decode($prompt['user'], true)['plan']['tragedy']);
+        $this->assertSame($plan['rest_available'], json_decode($prompt['user'], true)['plan']['rest_available']);
         $transport = app(OpenAIResponseSchema::class)->fromCommons($prompt['schema']);
         $contribution = $transport['properties']['contribution'];
         $variants = $contribution['anyOf'] ?? [$contribution];
@@ -115,7 +115,7 @@ class TragedyTest extends TestCase
     private function fixture(PhaseKind $kind, ?string $action): array
     {
         $substrate = new Substrate;
-        $substrate->forceFill(['slug' => 'tragedy', 'title' => 'Tragedy', 'visibility' => 'public', 'configuration' => []])->save();
+        $substrate->forceFill(['slug' => 'rest_available', 'title' => 'Tragedy', 'visibility' => 'public', 'configuration' => []])->save();
         $author = $this->participant($substrate, 'author');
         $viewer = $this->participant($substrate, 'viewer');
         $authorPhase = $this->phase($author, PhaseKind::Distinguish, 'activity', true);

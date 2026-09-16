@@ -24,6 +24,7 @@ class ContextHorizon extends Model
             'sequence' => 'integer',
             'opened_at' => 'immutable_datetime',
             'closed_at' => 'immutable_datetime',
+            'exhausted_at' => 'immutable_datetime',
         ];
     }
 

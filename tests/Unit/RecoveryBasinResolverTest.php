@@ -43,6 +43,7 @@ class RecoveryBasinResolverTest extends TestCase
     {
         [$root, $settlement, $emergence] = $this->chain();
         $sibling = $this->basin('sibling', $settlement, 4);
+        $emergence->setRawAttributes([...$emergence->getAttributes(), 'exhausted_at' => '2026-09-17 00:00:00']);
         $result = $this->resolve($emergence, [$root, $settlement, $emergence, $sibling], ['settlement', 'sibling']);
         $this->assertSame(['sibling'], $result['candidates']->all());
         $this->assertSame(1, $result['fallback_depth']);
@@ -52,6 +53,8 @@ class RecoveryBasinResolverTest extends TestCase
     public function test_exhaustion_reaches_historical_domains_and_the_root_without_revisiting_basins(): void
     {
         [$root, $settlement, $emergence] = $this->chain();
+        $emergence->setRawAttributes([...$emergence->getAttributes(), 'exhausted_at' => '2026-09-17 00:00:00']);
+        $settlement->setRawAttributes([...$settlement->getAttributes(), 'exhausted_at' => '2026-09-17 00:00:00']);
         $result = $this->resolve($emergence, [$root, $settlement, $emergence], ['root']);
         $this->assertSame(['root'], $result['candidates']->all());
         $this->assertSame(2, $result['fallback_depth']);
@@ -74,6 +77,7 @@ class RecoveryBasinResolverTest extends TestCase
     {
         [$root, , $emergence] = $this->chain();
         $this->expectException(DomainException::class);
+        $emergence->setRawAttributes([...$emergence->getAttributes(), 'exhausted_at' => '2026-09-17 00:00:00']);
         $this->resolve($emergence, [$root, $emergence], ['root']);
     }
 
@@ -101,7 +105,7 @@ class RecoveryBasinResolverTest extends TestCase
 
     private function basin(string $id, ?ContextHorizon $parent = null, int $sequence = 1): ContextHorizon
     {
-        return (new ContextHorizon)->forceFill(['id' => $id, 'substrate_id' => 'substrate', 'sequence' => $sequence,
+        return (new ContextHorizon)->setDateFormat('Y-m-d H:i:s')->forceFill(['id' => $id, 'substrate_id' => 'substrate', 'sequence' => $sequence,
             'parent_context_horizon_id' => $parent?->id, 'domain' => $parent?->domain->opposite() ?? 'emergence']);
     }
 }

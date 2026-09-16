@@ -6,6 +6,7 @@ use App\Domain\Evidence\InstrumentObservation;
 use App\Domain\Observables\ObservableValues;
 use App\Enums\LedgerEntryKind;
 use App\Enums\PhaseKind;
+use App\Exceptions\PotentialProjectionUnavailable;
 use App\Models\Attestation;
 use App\Models\CommitmentSnapshot;
 use App\Models\ContextHorizon;
@@ -57,7 +58,7 @@ final readonly class CycleEntryService
             if (! $activeBefore && $this->hasActiveCycle($participant)) {
                 app(PotentialProjectionService::class)->refresh($participant->substrate_id);
             }
-        } catch (\App\Exceptions\PotentialProjectionUnavailable) {
+        } catch (PotentialProjectionUnavailable) {
             // stateFor exposes the recoverable maintenance state; the scheduler
             // owns retries if a worker died after the ledger write.
         }
@@ -71,18 +72,18 @@ final readonly class CycleEntryService
         }
         $observed = $origin === null ? null : $this->instruments->observe($origin['instrument']);
 
-        // Legacy already-rested participants may have exhausted before pruning
-        // existed. Observe without locks, then record only the guarded transition.
+        // Resume an interrupted exhaustion transition using the completed Rest witness.
+        // Read-only state requests never run this lifecycle repair.
         $completed = $participant->cycles()->latest('sequence')->first();
         if ($completed?->rested_at !== null && ! $this->hasActiveCycle($participant)) {
             $terminal = $completed->phases()->whereNotNull('completed_at')->orderByDesc('kind')->first();
             if ($terminal !== null) {
-                $proof = app(TragedyService::class)->inspect($terminal);
-                if ($proof['stable'] && collect($proof['branches'])->contains('exhausted', true)) {
+                $proof = app(ExhaustionService::class)->inspect($terminal);
+                if ($proof['stable'] && $proof['transitions'] !== []) {
                     DB::transaction(function () use ($participant, $terminal, $proof): void {
                         $locked = Substrate::whereKey($participant->substrate_id)->lockForUpdate()->firstOrFail();
                         if ((int) $locked->field_version === $proof['field_version'] && ! $this->hasActiveCycle($participant)) {
-                            app(TragedyService::class)->retire($terminal, $proof);
+                            app(ExhaustionService::class)->publish($terminal, $proof);
                         }
                     });
                     app(PotentialProjectionService::class)->refresh($participant->substrate_id);
@@ -126,7 +127,7 @@ final readonly class CycleEntryService
                 throw new ConflictHttpException('The active field changed during Cycle entry. Retry from fresh state.');
             }
             if ($gate !== null) {
-                if (app(OriginBranchService::class)->pruned($gate)) {
+                if (app(ExhaustionService::class)->unavailable($gate)) {
                     throw new ConflictHttpException('The selected branch became historical. Retry from fresh state.');
                 }
                 $this->createLiveCycle($lockedParticipant, $substrate, $gate);
@@ -202,8 +203,8 @@ final readonly class CycleEntryService
 
     /**
      * A Commit is already a continuation, regardless of its current Potential.
-     * Non-tragic expressive completion resumes its own Committal region. Rest
-     * explicitly exhausts that local path, so recovery must select elsewhere.
+     * Ordinary expressive completion resumes its own Committal region. Rest
+     * invokes structural recovery, which may retain an unexplored open basin.
      */
     public function continuationFor(Participant $participant): ?Proposition
     {
@@ -215,7 +216,7 @@ final readonly class CycleEntryService
         if ($position->phase->cycle->participant->substrate_id !== $participant->substrate_id) {
             throw new DomainException('A Participant cannot continue in another substrate.');
         }
-        if (app(OriginBranchService::class)->pruned($position)) {
+        if (app(ExhaustionService::class)->unavailable($position)) {
             return null;
         }
         $seed = $this->regions->seedFor($position);

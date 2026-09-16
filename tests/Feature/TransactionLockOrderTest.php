@@ -9,6 +9,7 @@ use App\Domain\Evidence\VerifiedHyperlink;
 use App\Domain\Observables\ClosureValues;
 use App\Enums\PhaseKind;
 use App\Jobs\WakeParticipant;
+use App\Models\Attestation;
 use App\Models\CommitmentSnapshot;
 use App\Models\Connection;
 use App\Models\ContextHorizon;
@@ -29,6 +30,7 @@ use App\Services\ContextHorizonProjector;
 use App\Services\ContributionDispatcher;
 use App\Services\CycleEntryService;
 use App\Services\Evidence\HyperlinkVerifier;
+use App\Services\ExhaustionAuditService;
 use App\Services\InstrumentExecutionService;
 use App\Services\LedgerService;
 use App\Services\ParticipantActivityService;
@@ -47,11 +49,13 @@ use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\Process\Process;
+use Tests\Fixtures\ExhaustionFixture;
 use Tests\TestCase;
 
 class TransactionLockOrderTest extends TestCase
 {
     use DatabaseMigrations;
+    use ExhaustionFixture;
 
     public function runDatabaseMigrations(): void
     {
@@ -485,6 +489,10 @@ class TransactionLockOrderTest extends TestCase
         app(ParticipationService::class)->contribute($first, $phase->id, ['action' => 'proposition.variant', 'statement' => 'A finite attempt']);
         $root = $first->fresh()->position;
         $head = $this->matureTragedyHead($root);
+        $this->loadedReceiptFixture($head);
+        $vote = (new Attestation)->forceFill(['phase_id' => $head->phase_id, 'proposition_id' => $head->id, 'direction' => 'refute']);
+        $vote->save();
+        app(LedgerService::class)->record($vote);
         $firstRest = $this->tragicPhase($first, $head);
         $second = (new Participant)->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'second-rest']);
         $second->save();
@@ -497,11 +505,54 @@ class TransactionLockOrderTest extends TestCase
                 app(ParticipationService::class)->contribute($first, $firstRest->id, ['action' => 'participant.rest']);
             });
         $this->assertSame(1, Tragedy::count());
-        $this->assertSame(1, DB::table('origin_branches')->whereNotNull('pruned_at')->count());
+        $this->assertSame(1, DB::table('origin_branches')->whereNotNull('exhausted_at')->count());
         foreach ([$first, $second] as $participant) {
             $this->assertSame(1, $participant->cycles()->whereNull('completed_at')->count());
             $this->assertSame('ready', app(ParticipationService::class)->stateFor($participant)['status']);
         }
+    }
+
+    public function test_concurrent_sibling_rests_close_the_shared_basin_once(): void
+    {
+        $this->initializeExhaustionFixture();
+        [$root, $first, , $commit] = $this->exhaustedBranch();
+        $sibling = $this->node($this->phase($commit, PhaseKind::Constrain), $commit);
+        $this->explore($sibling);
+        $second = $this->phase($sibling);
+        $this->measure($sibling, 1);
+        $this->whileWorkerWaits($this->substrate, ['operation' => 'rest',
+            'participant_id' => $second->cycle->participant_id, 'phase_id' => $second->id], function () use ($first, $commit): void {
+                $this->rest($first);
+                $this->assertSame(0, Tragedy::count());
+                $this->assertDatabaseMissing('exhaustion_states', ['proposition_id' => $commit->id]);
+            });
+        $this->assertSame($root->id, Tragedy::sole()->root_proposition_id);
+        $this->assertSame(1, DB::table('exhaustion_states')->where('proposition_id', $commit->id)->count());
+        $audit = app(ExhaustionAuditService::class)->inspect($this->substrate->id);
+        $this->assertTrue($audit['matches'], json_encode($audit));
+    }
+
+    public function test_concurrent_fresh_sibling_invalidates_exhaustion_proof(): void
+    {
+        $this->initializeExhaustionFixture();
+        [, $terminal, , $commit] = $this->exhaustedBranch();
+        $generation = $this->phase($commit, PhaseKind::Distinguish);
+        $newId = null;
+        $this->whileWorkerWaits($this->substrate, ['operation' => 'rest',
+            'participant_id' => $terminal->cycle->participant_id, 'phase_id' => $terminal->id], function () use ($generation, &$newId): void {
+                $result = app(ParticipationService::class)->contribute($generation->cycle->participant, $generation->id,
+                    ['action' => 'proposition.variant', 'statement' => 'A fresh sibling during exhaustion']);
+                $newId = $result['current_proposition_id'];
+            });
+        $this->assertNotNull($newId);
+        $this->assertDatabaseMissing('exhaustion_states', ['proposition_id' => $newId]);
+        $this->assertDatabaseMissing('exhaustion_states', ['proposition_id' => $commit->id]);
+        $this->assertSame(0, Tragedy::count());
+        $actual = app(PotentialChargeService::class)->recoverFrom($terminal->gate);
+        $expected = app(ReferencePotentialChargeService::class)->recoverFrom($terminal->gate);
+        $this->assertSame($commit->id, $actual['proposition']->id);
+        $this->assertSame($expected['proposition']->id, $actual['proposition']->id);
+        $this->assertEqualsWithDelta($expected['potential_charge'], $actual['potential_charge'], 1e-12);
     }
 
     private function matureTragedyHead(Proposition $root): Proposition

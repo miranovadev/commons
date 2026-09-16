@@ -19,13 +19,13 @@ The ledger, immutable commitment snapshots, causal Horizon ownership, and explic
 - `potential_region_states` stores each Horizon's local topology, active measured nodes, Committal entries, strongest raw Potential, and viable descendant frontier.
 - `potential_region_dependencies` indexes the causal evidence read by each region, in both directions.
 - `potential_entries` supports indexed initial entry, including the existing Charge fallback at zero Potential.
-- `potential_branch_regions` records per-branch region maxima and completeness for Tragedy.
+- `potential_branch_regions` records per-lineage numeric summaries for diagnostics, never exhaustion proofs.
 
 Individual region versions record when that region changed. They need not equal the substrate version when an unrelated write occurs. The single published substrate certificate asserts that every affected region has been updated; changing the global version never requires touching every clean region.
 
 ## Mutation boundary
 
-Ledger contributions, Phase touches (including the old Gate when a Gate changes), receipt-context loads/clears, snapshot creation, Horizon creation/rebuild, numeric measurement projection, configuration changes, and pruning register impacts. Ordinary changes consult the reverse dependency index and the owning/opened Horizons. Receipt-weight configuration changes legitimately affect the whole substrate.
+Ledger contributions, Phase touches (including the old Gate when a Gate changes), receipt-context loads/clears, snapshot creation, Horizon creation/rebuild, numeric measurement projection, configuration changes, and exhaustion register impacts. Ordinary changes consult the reverse dependency index and the owning/opened Horizons. Receipt-weight configuration changes legitimately affect the whole substrate.
 
 The dependency set conservatively includes the region's complete causal calculation working set. This includes previous-Domain comparison evidence, Commit-only inherited evidence, reconciliation inputs, receipt links, and phase-touch observations. It is deliberately broader than the newly written proposition. A change to older shared evidence can legitimately require several regions to be refreshed.
 
@@ -39,7 +39,7 @@ A viable descendant shadows its parent, while sibling Domain frontiers remain pe
 
 Each upward summary retains the distance/value tradeoffs that can win for an observer entering through the region's boundary. A candidate is removed from that summary only when another candidate beats it for **every** possible upstream distance, including Charge and stable-ID ties. A dominated sibling can change without changing the summary, stopping propagation immediately. If a distance/value tradeoff changes, propagation must continue even when the numeric maximum stays equal; stopping at numeric equality alone would change recovery semantics.
 
-Local raw values continue to use all active expressive continuations, including alternative paths through reconciliation diamonds. Pruned nodes cannot contribute Potential; their edges remain available as historical distance geometry.
+Local raw values continue to use all active expressive continuations, including alternative paths through reconciliation diamonds. Exhausted or legacy-held routes cannot contribute operational Potential; their edges remain available as historical distance geometry.
 
 ## Recovery
 
@@ -51,13 +51,14 @@ Work is proportional to the upward provenance chain plus the visited regions' lo
 
 Active graph cards also use projected region state and indexed entries. Explicit historical inspection may still traverse historical geometry, but never repairs measurements.
 
-## Tragedy and renewal
+## Exhaustion and renewal
 
-Local exhaustion and Domain exhaustion are not Tragedy. Tragedy inspection uses the branch-region summaries to veto pruning whenever another region has positive Potential or unknown measurements. Only the current region needs observer-specific exclusion. No branch graph is hydrated or measured to prove exhaustion.
+[Explicit exhaustion](branch-tragedy.md) supplies operational eligibility. Numeric
+zero is never a structural proof. Maintained frontiers include fresh open entries
+at zero without inventing fuel. Exhaustion dirties only affected Horizons and
+indexed dependencies; changed frontiers propagate through provenance. Committals
+and historical geometry persist. Publication sends an ID-only metrics invalidation.
 
-The existing guarded retirement transaction checks the proof's field version, completed Rest, participant/phase/position identity, and branch status. It records Tragedy once and marks the Origin branch historical. It invalidates affected active projections without changing ledger facts or teleporting other participants. Shared descendants remain active while another causal Origin branch lives.
-
-After publication, recovery considers other viable branches before structural Origin renewal. Renewal preserves actual measured Potential, including zero. A fresh Distinction creates a new Origin branch and does not inherit an old branch's exhausted projection.
 
 ## Rollout and repair
 
@@ -71,6 +72,6 @@ New substrates initialize their projection during Origin creation. Existing subs
 
 ## Validation
 
-Routing fixtures explicitly publish controlled measurement projections before observation. The causal recovery suite compares projected selection, exact distance, and attenuated Potential against the slow reference across siblings, diamonds, multiple alternating Domains, exclusion, and disconnected graphs. Additional tests cover sibling maximum replacement, dominated-sibling early stopping, branch isolation/pruning, Origin renewal, backfill equivalence, optimistic publication races, lock boundaries, and recovery query growth with 1,000 unrelated historical propositions.
+Routing fixtures explicitly publish controlled measurement projections before observation. The causal recovery suite compares projected selection, exact distance, and attenuated Potential against the slow reference across siblings, diamonds, multiple alternating Domains, exclusion, and disconnected graphs. Additional tests cover sibling maximum replacement, dominated-sibling early stopping, lineage isolation/exhaustion, Origin renewal, backfill equivalence, optimistic publication races, lock boundaries, and recovery query growth with 1,000 unrelated historical propositions.
 
 Overlapping scheduled wakes are discarded while the same participant is already running. The due scheduler has already advanced that occurrence; the next cadence remains scheduled. Infrastructure overlap therefore does not consume a wake's three inference attempts.

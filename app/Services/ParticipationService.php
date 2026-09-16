@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\LedgerEntryKind;
 use App\Enums\PhaseKind;
+use App\Exceptions\PotentialProjectionUnavailable;
 use App\Models\CommitmentSnapshot;
 use App\Models\ContextHorizon;
 use App\Models\Cycle;
@@ -45,7 +46,7 @@ final readonly class ParticipationService
     {
         try {
             $state = $this->currentStateFor($participant, $workspace);
-        } catch (\App\Exceptions\PotentialProjectionUnavailable) {
+        } catch (PotentialProjectionUnavailable) {
             $state = $this->waiting('potential_projection_pending',
                 'The field is updating. Your position is preserved. Please retry shortly.');
         }
@@ -95,14 +96,14 @@ final readonly class ParticipationService
             $recovering = $completed?->rested_at !== null;
             $entry = $this->entryFor($participant);
             $recoveryReady = $recovering && ($entry['available'] ?? false);
-            $retirementPending = $recovering && ! $recoveryReady && DB::table('origin_branch_memberships as membership')
+            $exhaustionPending = $recovering && ! $recoveryReady && DB::table('origin_branch_memberships as membership')
                 ->join('origin_branches as branch', 'branch.root_proposition_id', '=', 'membership.root_proposition_id')
-                ->where('membership.proposition_id', $participant->current_proposition_id)->whereNull('branch.pruned_at')->exists();
+                ->where('membership.proposition_id', $participant->current_proposition_id)->whereNull('branch.exhausted_at')->whereNull('branch.legacy_retired_at')->exists();
 
             return [...$this->waiting(
-                $recovering ? ($recoveryReady || $retirementPending ? 'recovery_pending' : 'recovery_unavailable') : 'cycle_not_started',
+                $recovering ? ($recoveryReady || $exhaustionPending ? 'recovery_pending' : 'recovery_unavailable') : 'cycle_not_started',
                 $recovering ? ($recoveryReady ? 'Rest completed; recovery is ready for the next entry attempt.'
-                    : ($retirementPending ? 'Rest completed; branch exhaustion will be reconsidered from fresh state.'
+                    : ($exhaustionPending ? 'Rest completed; branch exhaustion will be reconsidered from fresh state.'
                         : 'Rest completed; no valid recovery basin entry can be established.')) : 'The Participant is waiting for a Cycle to begin.',
                 entry: $entry,
             ), 'completion' => $completed !== null && $completed->rested_at === null && $finalPhase?->kind === PhaseKind::Order ? [
@@ -138,12 +139,12 @@ final readonly class ParticipationService
         $version = app(PotentialProjectionService::class)->assertCurrent($participant->substrate_id);
         $plan = $this->plans->forPhase($participant, $phase, $workspace);
         if ($version !== app(PotentialProjectionService::class)->assertCurrent($participant->substrate_id)) {
-            throw new \App\Exceptions\PotentialProjectionUnavailable($participant->substrate_id);
+            throw new PotentialProjectionUnavailable($participant->substrate_id);
         }
         $blocked = $phase->kind === PhaseKind::Order
             && ! isset($plan['schema']['$defs']['actions']['proposition.commit'])
             && ! isset($plan['schema']['$defs']['actions']['proposition.traverse'])
-            && ! $plan['tragedy'];
+            && ! $plan['rest_available'];
 
         return [
             'status' => 'ready',
@@ -156,8 +157,8 @@ final readonly class ParticipationService
                 'message' => in_array('source_already_committed', $plan['commitment']['reasons'], true)
                     ? 'This source has already been committed. Continue through its Committal result.'
                     : 'Commitment requires grounding and aligned Depth/Cadence directions. Use an action available in the current Phase.',
-            ] : ($plan['tragedy'] ? [
-                'code' => 'tragic_region',
+            ] : ($plan['rest_available'] ? [
+                'code' => 'local_actions_exhausted',
                 'message' => 'No admissible non-Rest action remains in the current Phase. Rest is the only available action.',
             ] : null),
             'entry' => null,
@@ -235,11 +236,11 @@ final readonly class ParticipationService
             throw $exception;
         }
 
-        $tragedy = null;
+        $exhaustion = null;
         if (($input['action'] ?? null) === 'participant.rest') {
             $restPhase = Phase::with('cycle.participant')->find($phaseId);
             if ($restPhase !== null && $restPhase->cycle->participant_id === $participant->id) {
-                $tragedy = app(TragedyService::class)->inspect($restPhase);
+                $exhaustion = app(ExhaustionService::class)->inspect($restPhase);
             }
         }
 
@@ -247,9 +248,8 @@ final readonly class ParticipationService
             $participant,
             $phaseId,
             $input,
-            $expectedSchema,
             $observed,
-            $tragedy,
+            $exhaustion,
             $validatedVersion,
         ): void {
             // Acquire the shared root before any participant/phase or contribution lock.
@@ -290,11 +290,11 @@ final readonly class ParticipationService
             if ($input['action'] === 'participant.rest') {
                 // Rest changes lifecycle only; it adds no observation/measurement.
                 // A stale proof is discarded and can be retried after this Rest.
-                $validProof = $tragedy !== null && $tragedy['stable']
-                    && $tragedy['field_version'] === (int) $substrate->field_version;
+                $validProof = $exhaustion !== null && $exhaustion['stable']
+                    && $exhaustion['field_version'] === (int) $substrate->field_version;
                 $this->rest($lockedParticipant, $phase);
                 if ($validProof) {
-                    app(TragedyService::class)->retire($phase, $tragedy);
+                    app(ExhaustionService::class)->publish($phase, $exhaustion);
                 }
 
                 return;
@@ -317,7 +317,7 @@ final readonly class ParticipationService
         return $this->stateFor($participant->fresh());
     }
 
-    /** The validated plan exposes Rest only in a Tragic Region. */
+    /** The validated plan exposes Rest only in a Phase with no admissible non-Rest actions. */
     private function rest(Participant $participant, Phase $phase): void
     {
         $participant->current_proposition_id = $phase->gate_proposition_id;

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\ContextDomain;
 use App\Enums\PhaseKind;
+use App\Models\Attestation;
 use App\Models\CommitmentSnapshot;
 use App\Models\ContextHorizon;
 use App\Models\Cycle;
@@ -15,16 +16,18 @@ use App\Models\Supersession;
 use App\Services\ContextHorizonProjector;
 use App\Services\ContributionDispatcher;
 use App\Services\CycleEntryService;
+use App\Services\ExhaustionService;
 use App\Services\LedgerService;
 use App\Services\ParticipationService;
 use App\Services\PhaseProgressionService;
 use App\Services\PotentialChargeService;
+use App\Services\PotentialProjectionService;
 use App\Services\PropositionMeasurementService;
+use App\Services\ReferencePotentialChargeService;
 use DomainException;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
-use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Tests\TestCase;
 
 class CausalRecoveryTest extends TestCase
@@ -106,14 +109,15 @@ class CausalRecoveryTest extends TestCase
         $this->assertNotSame($disconnected->id, $selection['proposition']->id);
     }
 
-    public function test_recovery_cannot_borrow_potential_through_the_exhausted_position(): void
+    public function test_an_unexplored_position_is_not_silently_excluded_from_potential(): void
     {
         $ancestor = $this->committal($this->root, .9);
         $position = $this->expressive($this->root, $ancestor);
         $this->measurements[$position->id] = 0;
         $continuation = $this->expressive($this->root, $position);
         $this->measurements[$continuation->id] = 0;
-        $this->assertNull($this->recover($position));
+        $this->assertSame($ancestor->id, $this->recover($position)['proposition']->id);
+        $this->assertSame(.9, $this->recover($position)['raw_potential_charge']);
     }
 
     public function test_recovery_crosses_one_domain_boundary_and_writes_signal_in_the_selected_origins_direct_child(): void
@@ -122,6 +126,7 @@ class CausalRecoveryTest extends TestCase
         $position = $this->expressive($h3, $commit);
         $this->opportunity($origin);
         $participant = $this->participant();
+        $this->explore($position);
         $order = $this->phase($h3, $position, participant: $participant);
         $participant->forceFill(['current_proposition_id' => $position->id])->save();
         $this->refreshMeasurements();
@@ -156,6 +161,7 @@ class CausalRecoveryTest extends TestCase
         $h4 = app(ContextHorizonProjector::class)->forEntry($later);
         $position = $this->expressive($h4, $later);
         $this->opportunity($origin);
+        $this->exhaust($position);
         $participant = $this->resting($h4, $position);
         $selection = $this->recover($position);
         $this->assertSame($origin->id, $selection['proposition']->id);
@@ -216,6 +222,7 @@ class CausalRecoveryTest extends TestCase
         [$origin, $h2, $commit, $h3] = $this->boundaryChain();
         $position = $this->expressive($h3, $commit);
         $this->opportunity($origin);
+        $this->exhaust($position);
         $participants = [$this->resting($h3, $position), $this->resting($h3, $position)];
         foreach ($participants as $participant) {
             $this->refreshMeasurements();
@@ -226,20 +233,16 @@ class CausalRecoveryTest extends TestCase
         }
     }
 
-    public function test_no_positive_ancestral_potential_leaves_rest_and_position_intact_without_inventing_a_cycle(): void
+    public function test_zero_potential_unexplored_basin_remains_a_structural_entry(): void
     {
         $gate = $this->committal($this->root, 0);
         $position = $this->expressive($this->root, $gate);
         $participant = $this->resting($this->root, $position);
-        $this->assertNull($this->recover($position));
-        try {
-            app(CycleEntryService::class)->enter($participant);
-            $this->fail('Exhaustion must not create entry.');
-        } catch (ConflictHttpException) {
-            $this->assertSame(1, $participant->cycles()->count());
-            $this->assertSame($position->id, $participant->fresh()->current_proposition_id);
-            $this->assertNotNull($participant->cycles()->sole()->rested_at);
-        }
+        $this->assertSame($gate->id, $this->recover($position)['proposition']->id);
+        app(CycleEntryService::class)->enter($participant);
+        $this->assertSame($gate->id, $participant->fresh()->current_proposition_id);
+        $this->assertSame(2, $participant->cycles()->count());
+        $this->assertSame(0, DB::table('exhaustion_states')->count());
     }
 
     public function test_direct_phase_creation_cannot_pair_old_origin_with_newest_horizon(): void
@@ -451,6 +454,7 @@ class CausalRecoveryTest extends TestCase
         $this->opportunity($origin);
         $this->opportunity($sibling);
         $position = $this->expressive($h3, $commit);
+        $this->exhaust($position);
         $this->refreshMeasurements();
         $inspection = app(PotentialChargeService::class)->inspectRecoveryFrom($position, $h3);
         $this->assertSame($sibling->id, $inspection['selection']['proposition']->id);
@@ -492,23 +496,25 @@ class CausalRecoveryTest extends TestCase
         $this->measurements[$historical->id] = 0;
         $this->edge($commit, $historical); // Legacy cross-Domain edge cannot expand the scoring scope.
         $position = $this->expressive($h2, $origin);
-        $this->assertSame($origin->id, $this->recover($position)['proposition']->id);
+        $selection = $this->recover($position);
+        $this->assertSame($commit->id, $selection['proposition']->id);
+        $this->assertSame(0.0, (float) $selection['raw_potential_charge']);
     }
 
-    public function test_zero_potential_downstream_domain_reactivates_historical_domain_without_changing_history(): void
+    public function test_zero_potential_downstream_domain_stays_open_without_changing_history(): void
     {
         [$origin, $h2, $commit, $h3] = $this->boundaryChain();
         $this->opportunity($origin);
         $position = $this->expressive($h3, $commit);
         $before = ContextHorizon::orderBy('sequence')->get()->map->getAttributes()->all();
-        $this->assertSame($origin->id, $this->recover($position)['proposition']->id);
+        $this->assertSame($commit->id, $this->recover($position)['proposition']->id);
         $this->assertSame($before, ContextHorizon::orderBy('sequence')->get()->map->getAttributes()->all());
-        // New shared evidence reactivates the child on the next observation.
+        // New shared evidence changes Potential without changing structural openness.
         $this->opportunity($commit);
         $this->assertSame($commit->id, $this->recover($position)['proposition']->id);
     }
 
-    public function test_retained_boundary_position_uses_its_entry_horizon_and_excludes_self_reentry(): void
+    public function test_retained_boundary_position_keeps_its_open_basin_eligible(): void
     {
         [$origin, $h2, $commit, $h3] = $this->boundaryChain();
         $this->opportunity($origin);
@@ -519,7 +525,7 @@ class CausalRecoveryTest extends TestCase
         $inspection = app(PotentialChargeService::class)->inspectRecoveryFrom($commit);
         $this->assertSame($h3->id, $inspection['starting_context_horizon_id']);
         $this->assertSame($local->id, $inspection['selection']['proposition']->id);
-        $this->assertNotContains($commit->id, $inspection['eligible_candidate_ids']);
+        $this->assertContains($commit->id, $inspection['eligible_candidate_ids']);
     }
 
     public function test_recovery_diagnostics_and_selection_are_read_only(): void
@@ -569,15 +575,35 @@ class CausalRecoveryTest extends TestCase
             ->orderBy('context_horizon_id')->get()->toJson();
         $changed = Proposition::whereHas('phase.cycle', fn ($q) => $q->where('context_horizon_id', $h3->id))->where('tier', 'expressive')->sole();
         app(PropositionMeasurementService::class)->project($changed, .005, .005, .005);
-        $this->assertTrue(app(\App\Services\PotentialProjectionService::class)->refresh($this->substrate->id));
+        $this->assertTrue(app(PotentialProjectionService::class)->refresh($this->substrate->id));
         $this->assertSame($before, DB::table('potential_region_states')->whereIn('context_horizon_id', [$this->root->id, $h2->id])
             ->orderBy('context_horizon_id')->get()->toJson());
         $this->assertSame(.005, (float) DB::table('potential_entries')->where('proposition_id', $commit->id)->value('raw_potential_charge'));
         $terrain = fn () => DB::table('potential_region_states')->orderBy('context_horizon_id')
             ->get(['context_horizon_id', 'local_state', 'frontier', 'remaining_potential'])->toJson();
         $incremental = $terrain();
-        $this->assertTrue(app(\App\Services\PotentialProjectionService::class)->rebuild($this->substrate->id, false));
+        $this->assertTrue(app(PotentialProjectionService::class)->rebuild($this->substrate->id, false));
         $this->assertSame($incremental, $terrain());
+    }
+
+    private function explore(Proposition $node): void
+    {
+        $this->loadedReceiptFixture($node);
+        $attestation = (new Attestation)->forceFill(['phase_id' => $node->phase_id, 'proposition_id' => $node->id, 'direction' => 'refute']);
+        $attestation->save();
+        app(LedgerService::class)->record($attestation);
+    }
+
+    private function exhaust(Proposition $node): void
+    {
+        $this->explore($node);
+        $phase = $this->phase($node->phase->cycle->contextHorizon, $node);
+        $this->refreshMeasurements();
+        $proof = app(ExhaustionService::class)->inspect($phase);
+        $phase->forceFill(['completed_at' => now()])->save();
+        $phase->cycle->forceFill(['rested_at' => now(), 'completed_at' => now()])->save();
+        app(ExhaustionService::class)->publish($phase, $proof);
+        $this->refreshMeasurements();
     }
 
     private function boundaryChain(): array
@@ -676,7 +702,7 @@ class CausalRecoveryTest extends TestCase
         $this->refreshMeasurements();
 
         $actual = app(PotentialChargeService::class)->recoverFrom($position);
-        $reference = app(\App\Services\ReferencePotentialChargeService::class)->recoverFrom($position);
+        $reference = app(ReferencePotentialChargeService::class)->recoverFrom($position);
         $this->assertSame($reference['proposition']->id ?? null, $actual['proposition']->id ?? null);
         $this->assertSame($reference['distance'] ?? null, $actual['distance'] ?? null);
         $this->assertEqualsWithDelta($reference['potential_charge'] ?? 0, $actual['potential_charge'] ?? 0, 1e-12);
@@ -694,6 +720,6 @@ class CausalRecoveryTest extends TestCase
         // mutation worklist incrementally; production derives these raw values.
         DB::table('potential_dirty_horizons')->where('substrate_id', $this->substrate->id)
             ->update(['measurements_dirty' => false]);
-        $this->assertTrue(app(\App\Services\PotentialProjectionService::class)->refresh($this->substrate->id));
+        $this->assertTrue(app(PotentialProjectionService::class)->refresh($this->substrate->id));
     }
 }

@@ -44,7 +44,7 @@ final readonly class InputSchemaService
         $kind = $occurrence->kind;
         $plan = $this->phases->plan($kind);
         $gate = $context?->propositions->get($occurrence->gate_proposition_id) ?? $this->gates->forPhase($occurrence);
-        if (app(OriginBranchService::class)->pruned($gate)) {
+        if (app(ExhaustionService::class)->unavailable($gate)) {
             return $this->forPhase($kind, ['participant.rest']);
         }
         $ownsGate = $this->ownership->ownedBy($gate, $participant);

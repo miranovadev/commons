@@ -25,6 +25,7 @@ class PropositionResource extends JsonResource
 
         return [
             'id' => $this->getKey(),
+            'exhaustion' => $this->when($this->exhaustion !== null, $this->exhaustion),
             'active' => $this->when($this->active !== null, $this->active),
             'participation_count' => $this->when($this->participation_count !== null, $this->participation_count),
             'field' => $this->when($this->field !== null, $this->field),
@@ -86,6 +87,7 @@ class PropositionResource extends JsonResource
                 'parent_context_horizon_id' => $horizon->parent_context_horizon_id,
                 'opened_by_proposition_id' => $horizon->opened_by_proposition_id,
                 'domain' => $horizon->domain->value,
+                'exhausted_at' => $horizon->exhausted_at,
             ],
             'created_at' => $this->created_at,
         ];

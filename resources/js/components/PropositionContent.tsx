@@ -96,6 +96,10 @@ export function PropositionMetadata({ proposition, wireframe = false }: { propos
   return <Group gap={5} wrap="wrap" className="proposition-metadata">
     {(proposition.tier || wireframe) && <TierBadge tier={wireframe ? 'possible' : proposition.tier} />}
     {proposition.register && <Badge size="xs" color={register.color} variant="light">{register.label}</Badge>}
+    {proposition.exhaustion?.exhausted && <Badge size="xs" color="gray" variant="outline">Exhausted</Badge>}
+    {proposition.exhaustion?.basin_exhausted && <Badge size="xs" color="gray" variant="outline">Basin exhausted</Badge>}
+    {proposition.active === false && !proposition.exhaustion?.exhausted && !proposition.exhaustion?.basin_exhausted
+      && <Badge size="xs" color="gray" variant="outline">Legacy hold</Badge>}
     {proposition.transition?.type && <Badge size="xs" color="gray" variant="outline" className="operation-badge"
       leftSection={<OperationIcon operation={proposition.transition.type} size={11} />}>{operationHistoryLabel(proposition.transition.type)}</Badge>}
   </Group>;

@@ -195,10 +195,11 @@ final readonly class ReferencePotentialChargeService
                     ? ($opened->get($node->id)?->id ?? '')
                     : $node->phase->cycle->context_horizon_id;
             });
+        $excluded = app(ExhaustionService::class)->unavailable($position) ? $position->id : null;
         $result = $this->basins->resolve($startingBasin, $horizons,
-            function (ContextHorizon $basin) use ($position, $members, $entries, $outgoing, $distances): Collection {
+            function (ContextHorizon $basin) use ($excluded, $members, $entries, $outgoing, $distances): Collection {
                 $candidates = $entries->get($basin->id, collect())
-                    ->filter(fn (Proposition $node) => $node->id !== $position->id && isset($distances[$node->id]));
+                    ->filter(fn (Proposition $node) => $node->id !== $excluded && isset($distances[$node->id]));
                 if ($candidates->isEmpty()) {
                     return collect();
                 }
@@ -209,10 +210,7 @@ final readonly class ReferencePotentialChargeService
                 $ranked = collect();
                 foreach ($candidates as $candidate) {
                     $snapshot = $candidate->commitmentSnapshot;
-                    $potential = $this->potentialFor($candidate->id, $snapshot->tension, $local, $outgoing, $position->id);
-                    if ($potential <= 0) {
-                        continue;
-                    }
+                    $potential = $this->potentialFor($candidate->id, $snapshot->tension, $local, $outgoing, $excluded);
                     $charge = round(1 - abs($snapshot->tension), 7);
                     $distance = $distances[$candidate->id];
                     $weight = LineageMeasurementService::attenuation($distance);
@@ -228,34 +226,13 @@ final readonly class ReferencePotentialChargeService
                 }
 
                 return $ranked;
-            });
+            }, fn (ContextHorizon $basin): bool => $basin->exhausted_at !== null
+                || ($basin->opened_by_proposition_id !== null && ! $propositions->has($basin->opened_by_proposition_id)));
         $ranked = $result['candidates']->all();
         usort($ranked, fn (array $left, array $right): int => ($right['potential_charge'] <=> $left['potential_charge'])
             ?: ($right['charge'] <=> $left['charge'])
             ?: ($left['distance'] <=> $right['distance'])
             ?: strcmp($left['proposition']->getKey(), $right['proposition']->getKey()));
-
-        // Renewal is a structural entry, considered only after viable basins.
-        // Its actual measured Potential remains unchanged, including numeric zero.
-        if ($ranked === [] && $this->originRenewalAvailable($position)) {
-            $origin = $propositions->first(fn ($node) => $node->commitmentSnapshot?->calculator_version === 'origin-bootstrap-v1');
-            if ($origin === null) {
-                throw new DomainException('Origin renewal requires the original bootstrap commitment.');
-            }
-            $horizon = app(ContextHorizonProjector::class)->forEntry($origin);
-            $local = $members->get($horizon->id, collect())->keyBy('id');
-            $local->put($origin->id, $origin);
-            $raw = $this->potentialFor($origin->id, $origin->commitmentSnapshot->tension, $local, $outgoing);
-            $charge = round(1 - abs($origin->commitmentSnapshot->tension), 7);
-            $distance = $distances[$origin->id] ?? null;
-            if ($distance === null) {
-                throw new DomainException('Origin renewal requires connected causal provenance.');
-            }
-            $weight = LineageMeasurementService::attenuation($distance);
-            $ranked[] = ['proposition' => $origin, 'potential_charge' => $raw * $weight,
-                'raw_potential_charge' => $raw, 'charge' => $charge * $weight, 'raw_charge' => $charge,
-                'distance' => $distance, 'context_horizon_id' => $horizon->id, 'reason' => 'origin_renewal'];
-        }
 
         return [
             'selection' => $ranked[0] ?? null,
@@ -264,16 +241,6 @@ final readonly class ReferencePotentialChargeService
             'fallback_depth' => $result['fallback_depth'],
             'eligible_candidate_ids' => array_map(fn (array $candidate) => $candidate['proposition']->id, $ranked),
         ];
-    }
-
-    private function originRenewalAvailable(Proposition $position): bool
-    {
-        if (app(OriginBranchService::class)->pruned($position)) {
-            return true;
-        }
-
-        return $position->commitmentSnapshot?->calculator_version === 'origin-bootstrap-v1'
-            && DB::table('origin_branches')->where('origin_proposition_id', $position->id)->whereNotNull('pruned_at')->exists();
     }
 
     /**
