@@ -63,7 +63,7 @@ class PropositionHistorySemanticsTest extends TestCase
     public static function expressiveOperations(): array
     {
         return [
-            'Variant from Expressive' => ['variant', PhaseKind::Distinguish, 'concord', 'signal', 'expressive'],
+            'Variant from Expressive' => ['variant', PhaseKind::Disperse, 'concord', 'signal', 'expressive'],
             'Variant from Committal' => ['variant', PhaseKind::Distinguish, 'concord', 'signal', 'committal'],
             'Revise' => ['revise', PhaseKind::Persist, 'signal', 'stance', 'expressive'],
             'Reclassify' => ['reclassify', PhaseKind::Constrain, 'stance', 'concord', 'expressive'],
@@ -82,11 +82,11 @@ class PropositionHistorySemanticsTest extends TestCase
     ): void {
         $parent = $this->node('Provenance', 'concord', 'committal');
         if ($operation === 'reconcile') {
-            $read = $this->node('Expressive Read', 'concord');
+            $read = $this->node('Expressive Read', 'concord', position: PhaseKind::Constrain);
             $this->edge($parent, $read);
             $parent = $read;
         }
-        $gate = $gateTier === 'committal' ? $parent : $this->node('Gate', $gateRegister);
+        $gate = $gateTier === 'committal' ? $parent : $this->node('Gate', $gateRegister, position: PhaseKind::from($kind->value - 1));
         if ($gate->isNot($parent)) {
             $this->edge($parent, $gate);
         }
@@ -96,7 +96,7 @@ class PropositionHistorySemanticsTest extends TestCase
             unset($input['statement']);
         }
         if ($operation === 'revise') {
-            $source = $this->node('Owned prior Write', $writeRegister);
+            $source = $this->node('Owned prior Write', $writeRegister, position: $kind);
             $this->edge($gate, $source);
             $input['proposition_id'] = $source->id;
         }
@@ -105,7 +105,7 @@ class PropositionHistorySemanticsTest extends TestCase
         }
         $sources = collect([$source]);
         if ($operation === 'reconcile') {
-            $other = $this->node('Other structure', $gateRegister);
+            $other = $this->node('Other structure', $gateRegister, position: PhaseKind::Disperse);
             $this->edge($parent, $other);
             $sources->push($other);
             $input = ['action' => 'proposition.reconcile', 'other_proposition_id' => $other->id];
@@ -210,11 +210,11 @@ class PropositionHistorySemanticsTest extends TestCase
         }
     }
 
-    private function node(string $statement, string $register, string $tier = 'expressive'): Proposition
+    private function node(string $statement, string $register, string $tier = 'expressive', PhaseKind $position = PhaseKind::Distinguish): Proposition
     {
         $proposition = new Proposition;
         $proposition->forceFill([
-            'phase_id' => $this->history->id, 'register' => $register,
+            'phase_id' => $this->phaseAtPositionFixture($this->history, $position)->id, 'register' => $register,
             'tier' => $tier, 'statement' => $statement,
         ])->save();
         app(LedgerService::class)->record($proposition);

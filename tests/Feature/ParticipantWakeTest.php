@@ -338,8 +338,8 @@ class ParticipantWakeTest extends TestCase
         $f->phase->forceFill(['kind' => PhaseKind::Distinguish, 'gate_proposition_id' => $f->seed->id, 'write_register' => 'activity'])->save();
         $nodes = [];
         $parent = $f->seed;
-        foreach (['activity', 'frontier', 'canon', 'activity', 'frontier', 'canon'] as $register) {
-            $node = $f->node($parent, $register);
+        foreach (['activity', 'frontier', 'canon', 'activity', 'frontier', 'canon'] as $offset => $register) {
+            $node = $f->node($parent, $register, position: PhaseKind::from($offset + 1));
             $f->evidence($node);
             $nodes[] = $node;
             $parent = $node;
@@ -411,7 +411,7 @@ class ParticipantWakeTest extends TestCase
     {
         config()->set('participation.max_actions_per_wake', 2);
         $f = new ParticipantContextFixture(1, 0);
-        $target = $f->node($f->gate, 'frontier');
+        $target = $f->node($f->gate, 'frontier', position: PhaseKind::Mediate);
         $this->publishPotentialFixture($f->viewer);
         $connection = $this->connectionFor($f->viewer);
         $calls = 0;

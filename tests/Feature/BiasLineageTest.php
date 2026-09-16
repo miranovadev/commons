@@ -28,13 +28,13 @@ class BiasLineageTest extends TestCase
         $negative = $f->node($f->seed, 'activity');
         $this->vote($f, $positive, 'support');
         $this->vote($f, $negative, 'refute');
-        $a = $f->node($positive, 'frontier');
-        $b = $f->node($negative, 'frontier');
+        $a = $f->node($positive, 'frontier', position: PhaseKind::Mediate);
+        $b = $f->node($negative, 'frontier', position: PhaseKind::Mediate);
         $this->vote($f, $a, 'support');
         $this->vote($f, $b, 'refute');
         $f->phase->forceFill(['kind' => PhaseKind::Bias, 'gate_proposition_id' => $a->id, 'write_register' => 'canon'])->save();
         foreach (range(1, 4) as $_) {
-            $unrelated = $f->node($f->seed, 'frontier');
+            $unrelated = $f->node($f->seed, 'frontier', position: PhaseKind::Mediate);
             $this->vote($f, $unrelated, 'refute');
         }
         foreach ([null, new ParticipationContext($f->phase->fresh())] as $context) {

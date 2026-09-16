@@ -35,7 +35,7 @@ class AttestationDirectionChangeTest extends TestCase
 
         $phase->completed_at = now();
         $phase->save();
-        $next = $this->phase($cycle, PhaseKind::Persist, $proposition->parents()->firstOrFail());
+        $next = $this->phase($cycle, PhaseKind::Distinguish, $proposition->parents()->firstOrFail());
 
         $dispatcher->dispatch($participant, $next, [
             'action' => 'attestation.create',

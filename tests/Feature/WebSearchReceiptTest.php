@@ -60,7 +60,7 @@ class WebSearchReceiptTest extends TestCase
     {
         $fixture = new ParticipantContextFixture(1, 0);
         $reference = $fixture->node($fixture->seed, 'activity');
-        $subject = $fixture->node($reference, 'frontier', 'reclassify');
+        $subject = $fixture->node($reference, 'frontier', 'reclassify', position: PhaseKind::Persist);
         $fixture->phase->forceFill(['kind' => PhaseKind::Persist, 'gate_proposition_id' => $reference->id, 'write_register' => 'frontier'])->save();
 
         return [$fixture, $subject];

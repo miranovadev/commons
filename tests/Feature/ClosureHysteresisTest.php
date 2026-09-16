@@ -310,7 +310,7 @@ class ClosureHysteresisTest extends TestCase
         $previous = $this->origin;
         foreach ($cycles as $sequence) {
             $phase = $this->phase($sequence, $writeRegister);
-            $gate = $this->node($phase, 'expressive', $sequence === end($cycles) ? $writeRegister : $gateRegister);
+            $gate = $this->node($this->phaseAtPositionFixture($phase, PhaseKind::Bias), 'expressive', $sequence === end($cycles) ? $writeRegister : $gateRegister);
             $this->edge($phase, $previous, $gate, 'variant');
             $phase->gate_proposition_id = $gate->id;
             $phase->save();

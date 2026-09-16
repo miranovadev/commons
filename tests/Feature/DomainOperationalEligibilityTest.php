@@ -51,13 +51,13 @@ class DomainOperationalEligibilityTest extends TestCase
         $first = $domain->registerAt(RegisterPosition::First);
         $second = $domain->registerAt(RegisterPosition::Second);
         $third = $domain->registerAt(RegisterPosition::Third);
-        $anchor = $this->node($cycle, $third, $seed);
-        $otherRead = $this->node($cycle, $third, $seed);
-        $foreignRead = $this->node($foreign, $domain->opposite()->registerAt(RegisterPosition::Third), $seed);
-        $gate = $this->node($cycle, $first, $anchor);
-        $counterpart = $this->node($cycle, $first, $otherRead);
-        $foreignGate = $this->node($foreign, $domain->opposite()->registerAt(RegisterPosition::First), $anchor);
-        $wrongReadChild = $this->node($cycle, $first, $foreignRead);
+        $anchor = $this->node($cycle, $third, $seed, kind: PhaseKind::Constrain);
+        $otherRead = $this->node($cycle, $third, $seed, kind: PhaseKind::Constrain);
+        $foreignRead = $this->node($foreign, $domain->opposite()->registerAt(RegisterPosition::Third), $seed, kind: PhaseKind::Constrain);
+        $gate = $this->node($cycle, $first, $anchor, kind: PhaseKind::Disperse);
+        $counterpart = $this->node($cycle, $first, $otherRead, kind: PhaseKind::Disperse);
+        $foreignGate = $this->node($foreign, $domain->opposite()->registerAt(RegisterPosition::First), $anchor, kind: PhaseKind::Disperse);
+        $wrongReadChild = $this->node($cycle, $first, $foreignRead, kind: PhaseKind::Disperse);
         $disperse = $this->phase($cycle, PhaseKind::Disperse, $anchor, completed: true);
         $mediate = $this->phase($cycle, PhaseKind::Mediate, $gate);
         $measurements = app(PropositionMeasurementService::class);
@@ -99,7 +99,7 @@ class DomainOperationalEligibilityTest extends TestCase
             $this->assertCount(0, $reads->readsFor($mediate, $context));
         }
 
-        $foreignMiddle = $this->node($foreign, $domain->opposite()->registerAt(RegisterPosition::Second), $gate);
+        $foreignMiddle = $this->node($foreign, $domain->opposite()->registerAt(RegisterPosition::Second), $gate, kind: PhaseKind::Mediate);
         $attestation = new Attestation;
         $attestation->forceFill(['phase_id' => $foreignMiddle->phase_id, 'proposition_id' => $foreignMiddle->id, 'direction' => 'refute'])->save();
         app(LedgerService::class)->record($attestation);
@@ -131,7 +131,7 @@ class DomainOperationalEligibilityTest extends TestCase
         $substrate = new Substrate;
         $substrate->forceFill(['slug' => 'eligibility', 'title' => 'Eligibility', 'visibility' => 'public', 'configuration' => []])->save();
         $emergence = $this->cycle($substrate, 'emergence');
-        $seed = $this->node($emergence, 'canon', tier: 'committal');
+        $seed = $this->node($emergence, 'canon', tier: 'committal', kind: PhaseKind::Constrain);
         app(CommitRegionPolarityService::class)->establishOrigin($seed, 'support');
         $snapshot = new CommitmentSnapshot;
         $snapshot->forceFill(['proposition_id' => $seed->id, 'substrate_id' => $substrate->id, 'ledger_entry_id' => $seed->ledgerEntry->id,
@@ -166,13 +166,8 @@ class DomainOperationalEligibilityTest extends TestCase
         return $phase;
     }
 
-    private function node(Cycle $cycle, string $register, ?Proposition $parent = null, string $tier = 'expressive'): Proposition
+    private function node(Cycle $cycle, string $register, ?Proposition $parent = null, string $tier = 'expressive', PhaseKind $kind = PhaseKind::Constrain): Proposition
     {
-        $kind = match (RegisterPosition::forRegister($register)) {
-            RegisterPosition::First => PhaseKind::Distinguish,
-            RegisterPosition::Second => PhaseKind::Persist,
-            RegisterPosition::Third => PhaseKind::Constrain,
-        };
         $phase = $this->phase($cycle, $kind, completed: true);
         $node = new Proposition;
         $node->forceFill(['phase_id' => $phase->id, 'register' => $register, 'tier' => $tier, 'statement' => 'Local '.$register])->save();

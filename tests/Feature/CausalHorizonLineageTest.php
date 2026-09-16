@@ -66,7 +66,7 @@ class CausalHorizonLineageTest extends TestCase
         $this->positiveMeasurements();
         $order = $cycleB->currentPhase;
         $order->forceFill(['kind' => PhaseKind::Order, 'write_register' => 'concord'])->save();
-        $candidate = $this->node($order, $b->fresh()->position, 'expressive');
+        $candidate = $this->node($this->phaseAtPositionFixture($order, PhaseKind::Bias), $b->fresh()->position, 'expressive');
         $this->groundFixture($candidate);
         $order->forceFill(['gate_proposition_id' => $candidate->id])->save();
         $b->forceFill(['current_proposition_id' => $candidate->id])->save();
@@ -100,14 +100,15 @@ class CausalHorizonLineageTest extends TestCase
         $next = $b->cycles()->whereNull('completed_at')->sole();
         $this->assertSame($h3->id, $next->context_horizon_id);
         $this->assertSame('activity', $next->currentPhase->write_register);
-        // Even traversal through a parent-domain Gate cannot change the Cycle vocabulary.
-        $advanced = app(PhaseProgressionService::class)->advance($next->currentPhase, $commit);
+        // A fresh distinction from the parent-domain boundary uses the new Cycle vocabulary.
+        $distinction = $this->node($next->currentPhase, $commit);
+        $advanced = app(PhaseProgressionService::class)->advance($next->currentPhase, $distinction);
         $this->assertSame('frontier', $advanced->write_register);
 
         // A finishes its original H2 Cycle after B is already operating in H3.
         $lateOrder = $cycleA->fresh()->currentPhase;
         $lateOrder->forceFill(['kind' => PhaseKind::Order, 'write_register' => 'concord'])->save();
-        $lateCandidate = $this->node($lateOrder, $stance);
+        $lateCandidate = $this->node($this->phaseAtPositionFixture($lateOrder, PhaseKind::Bias), $stance);
         $this->groundFixture($lateCandidate);
         $lateOrder->forceFill(['gate_proposition_id' => $lateCandidate->id])->save();
         $a->forceFill(['current_proposition_id' => $lateCandidate->id])->save();

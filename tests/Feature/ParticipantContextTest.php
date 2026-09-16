@@ -108,7 +108,7 @@ class ParticipantContextTest extends TestCase
     {
         $fixture = new ParticipantContextFixture(2, 0);
         $gate = Proposition::findOrFail($fixture->writes[0]);
-        $candidate = $fixture->node($gate, 'canon');
+        $candidate = $fixture->node($gate, 'canon', position: PhaseKind::Constrain);
         $fixture->phase->forceFill([
             'kind' => PhaseKind::Constrain,
             'gate_proposition_id' => $gate->id,
@@ -153,7 +153,7 @@ class ParticipantContextTest extends TestCase
         $gate = Proposition::findOrFail($fixture->writes[0]);
         $candidates = [];
         foreach ($fixture->writes as $id) {
-            $candidate = $fixture->node(Proposition::findOrFail($id), 'canon');
+            $candidate = $fixture->node(Proposition::findOrFail($id), 'canon', position: $kind === PhaseKind::Order ? PhaseKind::Bias : $kind);
             $fixture->evidence($candidate);
             $candidates[] = $candidate;
         }

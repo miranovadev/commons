@@ -107,8 +107,8 @@ class AttestationPolarityTest extends TestCase
         $seed = $this->regionSeed($majority, $write);
         $left = $this->node('signal', $seed);
         $right = $this->node('activity', $seed);
-        $major = $this->node($register, $left);
-        $gate = $this->node($register, $right);
+        $major = $this->node($register, $left, position: PhaseKind::Mediate);
+        $gate = $this->node($register, $right, position: PhaseKind::Mediate);
         // The traversed Gate opposes the majority. No plan is read while history evolves.
         $this->attest($major, 'support');
         $this->attest($major, 'support');
@@ -123,7 +123,7 @@ class AttestationPolarityTest extends TestCase
         $this->assertNotSame($majority, $evidence->directionFor($gate));
         $this->assertSame([$major->id], $bias->forPhase($phase)->pluck('id')->all());
 
-        $outsider = $this->node($register, $this->regionSeed($majority, $write));
+        $outsider = $this->node($register, $this->regionSeed($majority, $write), position: PhaseKind::Mediate);
         $wrongRegister = $this->node('signal', $seed);
         foreach ([$outsider, $wrongRegister] as $excluded) {
             foreach (range(1, 3) as $_) {
@@ -222,10 +222,10 @@ class AttestationPolarityTest extends TestCase
         return $seed;
     }
 
-    private function node(string $register, Proposition $parent, string $tier = 'expressive', string $type = 'variant'): Proposition
+    private function node(string $register, Proposition $parent, string $tier = 'expressive', string $type = 'variant', ?PhaseKind $position = null): Proposition
     {
         $node = new Proposition;
-        $node->forceFill(['phase_id' => $this->phaseForRegisterFixture($this->history, $register)->id, 'register' => $register, 'tier' => $tier, 'statement' => 'Node '.Proposition::count()])->save();
+        $node->forceFill(['phase_id' => $this->phaseForRegisterFixture($this->history, $register, $position)->id, 'register' => $register, 'tier' => $tier, 'statement' => 'Node '.Proposition::count()])->save();
         app(LedgerService::class)->record($node);
         $edge = new Supersession;
         $edge->forceFill(['phase_id' => $this->history->id, 'source_proposition_id' => $parent->id,

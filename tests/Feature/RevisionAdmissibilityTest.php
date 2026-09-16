@@ -364,8 +364,8 @@ class RevisionAdmissibilityTest extends TestCase
             $phase = new Phase;
             $phase->forceFill([
                 'cycle_id' => $cycle->getKey(),
-                'kind' => PhaseKind::Distinguish,
-                'write_register' => $register,
+                'kind' => PhaseKind::Persist,
+                'write_register' => 'frontier',
                 'started_at' => now()->subMinute(),
                 'completed_at' => now(),
             ]);

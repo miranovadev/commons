@@ -54,12 +54,17 @@ class ParticipantActionContractTest extends TestCase
         $schema = $state['plan']['schema'];
         // Coverage must not silently shrink when an action disappears from a fixture.
         $expected = array_values(array_diff(config('phases.'.$kind->value.'.actions'), ['receipt.replay'])); // Effective observations suppress Replay.
-        if ($kind === PhaseKind::Persist) {
-            // Both ownership cases run: Variant and Reclassify are now mutually exclusive.
-            if (! $foreignGate) {
-                $expected = array_values(array_diff($expected, ['proposition.variant']));
-            }
-        }
+        // The explicitly positioned owned Writes have already spent this
+        // participant's generative opportunity. Fresh generation is covered by
+        // FullEvidenceFlowTest and SharedReclassificationTest.
+        $spent = match ($kind) {
+            PhaseKind::Distinguish, PhaseKind::Disperse => ['proposition.variant'],
+            PhaseKind::Persist => ['proposition.variant', 'proposition.reclassify'],
+            PhaseKind::Constrain => ['proposition.reclassify'],
+            PhaseKind::Bias => ['proposition.bias'],
+            default => [],
+        };
+        $expected = array_values(array_diff($expected, $spent));
         $this->assertEqualsCanonicalizing($expected, array_keys($schema['$defs']['actions']), json_encode($state['plan']));
         $transport = app(OpenAIResponseSchema::class)->fromCommons($schema);
         $variants = $transport['properties']['contribution']['anyOf'] ?? [$transport['properties']['contribution']];
@@ -249,9 +254,9 @@ class ParticipantActionContractTest extends TestCase
         $history->forceFill(['participant_id' => $participant->id, 'sequence' => 1, 'completed_at' => now()])->save();
         $past = new Phase;
         $past->forceFill(['cycle_id' => $history->id, 'kind' => PhaseKind::Order, 'write_register' => 'activity', 'started_at' => now(), 'completed_at' => now()])->save();
-        $node = function (string $register, ?Proposition $parent = null) use ($past): Proposition {
+        $node = function (string $register, ?Proposition $parent = null, PhaseKind $position = PhaseKind::Order) use ($past): Proposition {
             $node = new Proposition;
-            $node->forceFill(['phase_id' => $past->id, 'register' => $register, 'tier' => $parent ? 'expressive' : 'committal', 'statement' => 'Contract fixture'])->save();
+            $node->forceFill(['phase_id' => $this->phaseAtPositionFixture($past, $position)->id, 'register' => $register, 'tier' => $parent ? 'expressive' : 'committal', 'statement' => 'Contract fixture'])->save();
             app(LedgerService::class)->record($node);
             if ($parent) {
                 $edge = new Supersession;
@@ -267,15 +272,15 @@ class ParticipantActionContractTest extends TestCase
         app(CommitRegionPolarityService::class)->establishOrigin($seed, 'support');
         $registers = ['canon', 'activity', 'frontier', 'canon', 'activity', 'frontier', 'canon'];
         $writes = ['activity', 'frontier', 'canon', 'activity', 'frontier', 'canon', 'canon'];
-        $anchor = $kind === PhaseKind::Mediate ? $node('canon', $seed) : $seed;
-        $gate = $kind === PhaseKind::Distinguish ? $seed : $node($registers[$kind->value - 1], $anchor);
+        $anchor = $kind === PhaseKind::Mediate ? $node('canon', $seed, PhaseKind::Constrain) : $seed;
+        $gate = $kind === PhaseKind::Distinguish ? $seed : $node($registers[$kind->value - 1], $anchor, PhaseKind::from($kind->value - 1));
         if ($foreignGate) {
             $owner = new Participant;
             $owner->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'gate-owner'])->save();
             $ownerCycle = $history->replicate();
             $ownerCycle->participant_id = $owner->id;
             $ownerCycle->save();
-            $ownerPhase = $past->replicate();
+            $ownerPhase = $gate->phase->replicate();
             $ownerPhase->cycle_id = $ownerCycle->id;
             $ownerPhase->save();
             $gate = $gate->replicate();
@@ -289,19 +294,19 @@ class ParticipantActionContractTest extends TestCase
         if (! $empty) {
             $this->classificationEvidenceFixture($gate);
             if ($kind === PhaseKind::Mediate) {
-                $node('activity', $anchor);
+                $node('activity', $anchor, PhaseKind::Disperse);
             }
-            $write = $node($writes[$kind->value - 1], $gate);
+            $write = $node($writes[$kind->value - 1], $gate, $kind === PhaseKind::Order ? PhaseKind::Bias : $kind);
             if (in_array('proposition.revise', config('phases.'.$kind->value.'.actions'), true)) {
                 // Keep the untouched Write for attestation coverage, and qualify
                 // a separate revision target with an earlier effective self-Refute.
-                $revision = $node($writes[$kind->value - 1], $gate);
+                $revision = $node($writes[$kind->value - 1], $gate, $kind === PhaseKind::Order ? PhaseKind::Bias : $kind);
                 $refute = new Attestation;
                 $refute->forceFill(['phase_id' => $past->id, 'proposition_id' => $revision->id, 'direction' => 'refute'])->save();
                 app(LedgerService::class)->record($refute);
             }
             if (in_array($kind, [PhaseKind::Distinguish, PhaseKind::Persist, PhaseKind::Constrain, PhaseKind::Bias], true)) {
-                $traverse = $node($writes[$kind->value - 1], $gate);
+                $traverse = $node($writes[$kind->value - 1], $gate, $kind === PhaseKind::Order ? PhaseKind::Bias : $kind);
                 $attestation = new Attestation;
                 $attestation->forceFill(['phase_id' => $past->id, 'proposition_id' => $traverse->id, 'direction' => 'support'])->save();
                 app(LedgerService::class)->record($attestation);
@@ -318,7 +323,7 @@ class ParticipantActionContractTest extends TestCase
                     $mock->shouldReceive('preview')->andReturn($values);
                     $mock->shouldReceive('forCommitment')->andReturn($values);
                 });
-                $committedSource = $node('canon', $seed);
+                $committedSource = $node('canon', $seed, PhaseKind::Bias);
                 $this->groundFixture($committedSource);
                 $past->forceFill(['write_register' => 'canon', 'gate_proposition_id' => $committedSource->id])->save();
             }

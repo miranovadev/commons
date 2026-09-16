@@ -14,23 +14,29 @@ final readonly class CommitmentAdmissibilityService
         private PropositionStateService $state,
         private ReinforcementService $reinforcement,
         private PhaseGenerationService $generation,
+        private CommitRegionService $regions,
+        private PhasePositionService $positions,
     ) {}
 
     /** @return array<string, mixed> */
     public function evaluate(Proposition $gate, Phase $phase, ?ParticipationContext $context = null): array
     {
+        $phasePosition = $phase->kind === \App\Enums\PhaseKind::Order
+            && $this->positions->matches($gate, $phase, \App\Enums\PhaseKind::Bias);
+        $structural = $phasePosition && $this->regions->isCandidateFor($gate, $phase, $context);
         $grounding = $this->grounding($gate, $context);
         $closure = $this->closure->preview($gate, $phase, $context);
         $opportunity = $this->generation->available($phase, 'proposition.commit', $context, $gate);
 
         return [
             ...$grounding,
-            'admissible' => $grounding['admissible'] && $closure['admissible'] && $opportunity,
-            'requirements' => [...$grounding['requirements'], 'closure' => $closure['admissible'], 'write_opportunity' => $opportunity],
+            'admissible' => $structural && $grounding['admissible'] && $closure['admissible'] && $opportunity,
+            'requirements' => [...$grounding['requirements'], 'phase_position' => $phasePosition, 'active_region_candidate' => $structural, 'closure' => $closure['admissible'], 'write_opportunity' => $opportunity],
             'closure_enforced' => true,
             'closure' => $closure,
-            'reasons' => [...$grounding['reasons'], ...($closure['admissible'] ? [] : ['depth_cadence_directions_diverge']),
-                ...($opportunity ? [] : ['source_already_committed'])],
+            'reasons' => [...($phasePosition ? [] : ['invalid_order_phase_position']), ...$grounding['reasons'], ...($closure['admissible'] ? [] : ['depth_cadence_directions_diverge']),
+                ...($phasePosition && ! $opportunity ? ['source_already_committed'] : []),
+                ...($phasePosition && $opportunity && ! $structural ? ['invalid_commit_region_candidate'] : [])],
         ];
     }
 

@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Enums\PhaseKind;
-use App\Enums\RegisterPosition;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Services\Participation\ParticipationContext;
@@ -12,6 +11,8 @@ use Illuminate\Support\Facades\DB;
 
 final class CommitRegionService
 {
+    public function __construct(private readonly PhasePositionService $positions) {}
+
     /** Batched read-only equivalent of seedFor, using a substrate-scoped graph. */
     public function seedIdsFor(Collection $positions, Collection $nodes, Collection $parents): array
     {
@@ -141,36 +142,58 @@ final class CommitRegionService
     /** Operational pool in the Cycle's Domain: Mediate Read, Bias Gate, or Closure Write. */
     public function forPhase(Phase $phase, ?Proposition $position = null, ?ParticipationContext $context = null): Collection
     {
-        $register = match ($phase->kind) {
-            PhaseKind::Mediate, PhaseKind::Order => RegisterPosition::Third,
-            PhaseKind::Bias => RegisterPosition::Second,
-            default => null,
-        };
-        if ($register === null || $phase->write_register === null) {
+        return $context === null ? $this->phaseCandidates($phase, $position)
+            : $context->remember('phase-candidates:'.$phase->id.':'.($position?->id ?? $phase->gate_proposition_id),
+                fn () => $this->phaseCandidates($phase, $position, $context));
+    }
+
+    private function phaseCandidates(Phase $phase, ?Proposition $position = null, ?ParticipationContext $context = null): Collection
+    {
+        $positionKind = $this->positions->candidatePosition($phase->kind);
+        if ($positionKind === null || $phase->write_register === null) {
             return collect();
         }
 
-        return $this->atPosition($phase, $position ?? ($context?->propositions->get($phase->gate_proposition_id) ?? $phase->gate()->firstOrFail()), $register, $context, includeSuperseded: $phase->kind === PhaseKind::Mediate);
+        return $this->atPhasePosition($phase, $position ?? ($context?->propositions->get($phase->gate_proposition_id) ?? $phase->gate()->firstOrFail()), $positionKind, $context, includeSuperseded: $phase->kind === PhaseKind::Mediate);
     }
 
-    public function atPosition(Phase $phase, Proposition $position, RegisterPosition $register, ?ParticipationContext $context = null, bool $includeSuperseded = false): Collection
+    /** Direct admissibility checks need one source and its ancestry, not a region scan per candidate. */
+    public function isCandidateFor(Proposition $node, Phase $phase, ?ParticipationContext $context = null): bool
+    {
+        $position = $this->positions->candidatePosition($phase->kind);
+        if ($position === null || ! $this->positions->matches($node, $phase, $position)) {
+            return false;
+        }
+        if ($context !== null) {
+            return $this->forPhase($phase, context: $context)->contains('id', $node->id);
+        }
+        if (! Proposition::query()->active()->whereKey($node->id)
+            ->when($phase->kind !== PhaseKind::Mediate, fn ($query) => $query->whereDoesntHave('children',
+                fn ($query) => $query->where('supersessions.type', '!=', 'variant')))->exists()) {
+            return false;
+        }
+        $gate = $phase->gate()->first();
+        $seed = $gate === null ? null : $this->seedFor($gate);
+
+        return $seed !== null && $this->seedFor($node)?->id === $seed->id;
+    }
+
+    public function atPhasePosition(Phase $phase, Proposition $position, PhaseKind $positionKind, ?ParticipationContext $context = null, bool $includeSuperseded = false): Collection
     {
         if ($position->phase->cycle->participant->substrate_id !== $phase->cycle->participant->substrate_id) {
             return collect();
         }
-        $exactRegister = $phase->cycle->contextHorizon->domain->registerAt($register);
 
         // A direct Commit consumes the source for everyone; Variants preserve alternatives.
         $nonConsuming = ['variant'];
         if ($context !== null) {
-            $members = $this->membersFor($position, $context)->where('register', $exactRegister);
+            $members = $this->positions->filter($this->membersFor($position, $context), $phase, $positionKind);
 
             return $includeSuperseded ? $members->values()
                 : $members->filter(fn ($node) => $context->children->get($node->id, collect())->whereNotIn('type', $nonConsuming)->isEmpty())->values();
         }
 
-        return Proposition::query()->whereKey($this->membersFor($position)->pluck('id'))
-            ->where('register', $exactRegister)
+        return $this->positions->scope(Proposition::query()->whereKey($this->membersFor($position)->pluck('id')), $phase, $positionKind)
             ->when(! $includeSuperseded, fn ($query) => $query->whereDoesntHave('children', fn ($query) => $query->whereNotIn('supersessions.type', $nonConsuming)))
             ->orderBy('id')->get();
     }

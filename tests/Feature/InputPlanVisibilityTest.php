@@ -149,22 +149,18 @@ class InputPlanVisibilityTest extends TestCase
     {
         $substrate = $this->substrate();
         $author = $this->participant($substrate, 'author');
-        $sourcePhase = $this->phase($author, PhaseKind::Persist, 'frontier');
-        $gate = $this->proposition($sourcePhase, 'activity', 'expressive', 'Gate', 0);
-        $child = $this->proposition($sourcePhase, 'frontier', 'expressive', 'Child', 0);
+        $writeKind = $kind === PhaseKind::Order ? PhaseKind::Bias : $kind;
+        $register = \App\Enums\ContextDomain::Emergence->registerFor($kind);
+        $sourcePhase = $this->phase($author, $writeKind, $register);
+        $gateKind = $kind === PhaseKind::Distinguish ? PhaseKind::Order : PhaseKind::from($kind->value - 1);
+        $gatePhase = $this->phaseAtPositionFixture($sourcePhase, $gateKind);
+        $gate = $this->proposition($gatePhase, $gatePhase->write_register, $kind === PhaseKind::Distinguish ? 'committal' : 'expressive', 'Gate', 0);
+        $child = $this->proposition($sourcePhase, $register, 'expressive', 'Child', 0);
         $this->supersession($sourcePhase, $gate, $child, 'variant');
-        $untouched = $this->proposition($sourcePhase, 'frontier', 'expressive', 'Untouched neighbour', 0);
+        $untouched = $this->proposition($sourcePhase, $register, 'expressive', 'Untouched neighbour', 0);
         $this->supersession($sourcePhase, $gate, $untouched, 'variant');
         $viewer = $this->participant($substrate, 'viewer');
-        $phase = $this->phase($viewer, $kind, 'frontier', $gate);
-        if ($kind === PhaseKind::Order) {
-            // Closure selects Third-position expressive members of a seeded region.
-            $gate->forceFill(['tier' => 'committal', 'register' => 'canon'])->save();
-            foreach ([$child, $untouched] as $candidate) {
-                $candidate->forceFill(['register' => 'canon'])->save();
-            }
-            $phase->forceFill(['write_register' => 'canon'])->save();
-        }
+        $phase = $this->phase($viewer, $kind, $register, $gate);
 
         // Another participant's evidence must never establish the viewer's path.
         $other = new Attestation;
