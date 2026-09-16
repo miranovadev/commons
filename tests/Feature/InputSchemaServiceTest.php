@@ -464,7 +464,7 @@ class InputSchemaServiceTest extends TestCase
             'created_at' => $now,
             'updated_at' => $now,
         ]);
-        $horizon = app(ContextHorizonProjector::class)->currentFor(Substrate::findOrFail('01ARZ3NDEKTSV4RRFFQ69G5000'));
+        $horizon = $this->horizonForRegisterFixture(Participant::findOrFail($participantId), $writeRegister);
         DB::table('cycles')->insert([
             'id' => $cycleId,
             'context_horizon_id' => $horizon->id,
@@ -482,11 +482,14 @@ class InputSchemaServiceTest extends TestCase
             'created_at' => $now,
             'updated_at' => $now,
         ]);
+        $sourcePhase = $kind === PhaseKind::Persist
+            ? $this->phaseAtPositionFixture(\App\Models\Phase::findOrFail($phaseId), PhaseKind::Distinguish)
+            : \App\Models\Phase::findOrFail($phaseId);
         DB::table('propositions')->insert([
             'id' => $gateId,
-            'phase_id' => $phaseId,
-            'register' => 'canon',
-            'tier' => 'committal',
+            'phase_id' => $sourcePhase->id,
+            'register' => $kind === PhaseKind::Persist ? $horizon->domain->registerFor(PhaseKind::Distinguish) : $horizon->domain->registerFor(PhaseKind::Order),
+            'tier' => $kind === PhaseKind::Persist ? 'expressive' : 'committal',
             'statement' => 'Current gate.',
             'created_at' => $now,
             'updated_at' => $now,

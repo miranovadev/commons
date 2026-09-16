@@ -86,7 +86,7 @@ The human projection names the active Domain and Context Horizon, returns the
 current Commit Region's governing Committal Proposition, and groups the visible measurement population
 by Classification Register. The human workspace presents these as operational
 Read, Gate and Write rows. Mediate exposes the authoritative `read_options`
-population. Order shows the nearest Second-register ancestors along the current
+population. Order shows the nearest Mediate-position ancestors along the current
 Gate paths; other phases retain their single Read card. Mediate Gate privileges
 the current Proposition and adds admissible reconciliation counterparts. Bias
 Gate shows only the field-admissible unary choices, including the current
@@ -136,7 +136,7 @@ substrate's complete public graph before it can render.
 Revision is bound to a specific `proposition_id`. The server only advertises
 owned, unsuperseded expressive Propositions in the current write register and
 explicitly excludes the Gate. Because a Proposition written during one Cycle
-becomes available when that register is encountered again, revision naturally
+becomes available when that producing phase position is encountered again, revision naturally
 occurs in a subsequent Cycle rather than revising the current Gate in place.
 
 ## Proposition history
@@ -294,7 +294,7 @@ This applies equally to the Read anchor and other candidate Reads. Existing Corr
 and attenuation are unchanged.
 
 Gate candidates remain active immediate Expressive children of the exposed
-Reads, at the First register position and within the same Commit Region.
+Reads, produced at Disperse in the First register slot and within the same Commit Region.
 Gate Correspondence and Chirality do not filter these children. The current
 Gate must belong to that population; `gate_options` contains its counterparts.
 Reconcile still copies the current Gate's statement and creates two hard edges.
@@ -320,13 +320,15 @@ ledger entries have different Horizon labels. Substrate isolation remains.
 
 The reusable `RegisterPosition` mapping is extracted unchanged from structural
 Correspondence: Activity/Signal = First (R), Frontier/Stance = Second (G), and
-Canon/Concord = Third (B). Late phases share this structural service:
+Canon/Concord = Third (B). These are vocabulary slots, not phase positions.
+[Invariant 16](core-invariants.md#16-register-identity-does-not-confer-phase-identity)
+requires an independent producing Phase check. Late phases use this matrix:
 
 | Phase | Candidate position | Selection |
 | --- | --- | --- |
-| Mediate | Third / Read | Matches the Read anchor's retained Correspondence direction |
-| Bias | Second / Gate | Retained direction agrees with causal ancestry excluding itself; receipt and attestation exist |
-| Order | Third / Gate | Grounded, attested sources with aligned Depth/Cadence |
+| Mediate | Constrain-produced Third / Read | Matches the Read anchor's retained Correspondence direction |
+| Bias | Mediate-produced Second / Gate | Retained direction agrees with causal ancestry excluding itself; receipt and attestation exist |
+| Order | Bias-produced Third / Gate | Grounded, attested sources with aligned Depth/Cadence |
 
 Active candidates exclude outgoing hard supersessions; soft Variant branches
 remain active. A direct Commit edge consumes its source globally; other branches remain available.
@@ -339,7 +341,7 @@ Bias additionally requires a completed Receipt and an effective source Attestati
 
 ## Order: Commit Gate and Committal Write
 
-Read contains nearest Stance/Frontier ancestry. Gate contains uncommitted Concord/Canon sources satisfying receipt, effective Attestation and prospective Depth/Cadence checks. Write contains established Committal Concord/Canon results. Commit selects an authorized Gate `proposition_id`; Traverse selects a Committal Write `proposition_id`. Consumed sources are not duplicate contribution cards.
+Read contains nearest Mediate-produced Stance/Frontier ancestry. Gate contains uncommitted Bias-produced Concord/Canon sources satisfying receipt, effective Attestation and prospective Depth/Cadence checks. Write contains established Committal Concord/Canon results. Commit selects an authorized Gate `proposition_id`; Traverse selects a Committal Write `proposition_id`. Consumed sources are not duplicate contribution cards.
 
 Commit copies the selected source's exact statement and participation history by reference, creates an immutable snapshot, and consumes the direct source globally. Later evidence reads cannot rewrite that snapshot. Reinforcement is optional weight; Depth/Cadence remain the admissibility gate. `plan.commitment` describes the current position and `commitment_options` describes each eligible Gate source. The same rules govern schema, UI and execution.
 
@@ -403,3 +405,5 @@ Branch-wide Tragedy is explicitly recorded at validated Rest after an optimistic
 exhaustion proof. A pruned branch is historical; participants there retain their
 position and receive only Rest. Recovery/Origin renewal then follows their own Rest.
 See [Branch Tragedy and Origin renewal](branch-tragedy.md).
+
+Producing phase identity, enforcement boundaries and read-only historical diagnostics: [Phase positions](phase-positions.md).

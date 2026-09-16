@@ -240,9 +240,9 @@ class TransactionLockOrderTest extends TestCase
     {
         [$substrate, $first, $phase] = $this->fixture();
         $seed = $phase->gate;
-        $node = function (string $register, Proposition $parent) use ($phase): Proposition {
+        $node = function (string $register, Proposition $parent, PhaseKind $position) use ($phase): Proposition {
             $node = new Proposition;
-            $node->forceFill(['phase_id' => $phase->id, 'register' => $register, 'tier' => 'expressive', 'statement' => 'Shared structure'])->save();
+            $node->forceFill(['phase_id' => $this->phaseAtPositionFixture($phase, $position)->id, 'register' => $register, 'tier' => 'expressive', 'statement' => 'Shared structure'])->save();
             app(LedgerService::class)->record($node);
             $edge = new Supersession;
             $edge->forceFill(['phase_id' => $phase->id, 'source_proposition_id' => $parent->id,
@@ -251,9 +251,9 @@ class TransactionLockOrderTest extends TestCase
 
             return $node;
         };
-        $read = $node('concord', $seed);
-        $a = $node('signal', $read);
-        $b = $node('signal', $read);
+        $read = $node('concord', $seed, PhaseKind::Constrain);
+        $a = $node('signal', $read, PhaseKind::Disperse);
+        $b = $node('signal', $read, PhaseKind::Disperse);
         $second = new Participant;
         $second->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'second'])->save();
         $phases = [];
@@ -309,7 +309,7 @@ class TransactionLockOrderTest extends TestCase
     {
         [$substrate, $first, $initial] = $this->fixture();
         $source = new Proposition;
-        $source->forceFill(['phase_id' => $initial->id, 'register' => 'concord', 'tier' => 'expressive', 'statement' => 'Shared commitment source'])->save();
+        $source->forceFill(['phase_id' => $this->phaseAtPositionFixture($initial, PhaseKind::Bias)->id, 'register' => 'concord', 'tier' => 'expressive', 'statement' => 'Shared commitment source'])->save();
         app(LedgerService::class)->record($source);
         $edge = new Supersession;
         $edge->forceFill(['phase_id' => $initial->id, 'source_proposition_id' => $initial->gate_proposition_id,

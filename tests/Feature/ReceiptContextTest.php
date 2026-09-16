@@ -38,7 +38,7 @@ class ReceiptContextTest extends TestCase
     {
         $fixture = new ParticipantContextFixture(1, 0);
         $reference = $fixture->node($fixture->seed, 'activity');
-        $subject = $fixture->node($reference, 'frontier', 'reclassify');
+        $subject = $fixture->node($reference, 'frontier', 'reclassify', position: PhaseKind::Persist);
         $fixture->phase->forceFill(['kind' => PhaseKind::Persist, 'gate_proposition_id' => $reference->id, 'write_register' => 'frontier'])->save();
         $receipt = app(OperationalInstrumentService::class)->execute($subject->phase, $subject, [
             'kind' => 'citation', 'reference' => $reference->id,
@@ -119,7 +119,7 @@ class ReceiptContextTest extends TestCase
         $this->assertPublicCount($fixture, $subject, 2);
         $commit = $fixture->node($subject, 'canon', 'commit', 'committal');
         $this->assertPublicCount($fixture, $commit, 2);
-        $variant = $fixture->node($subject, 'frontier', 'variant');
+        $variant = $fixture->node($subject, 'frontier', 'variant', position: PhaseKind::Persist);
         $this->assertPublicCount($fixture, $variant, 0);
         $this->assertSame(2, ParticipantReceiptContext::count());
         $this->assertSame(2, DB::table('receipt_context_events')->count());

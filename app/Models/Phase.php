@@ -23,6 +23,9 @@ class Phase extends Model
             if ($phase->exists && $phase->isDirty('cycle_id')) {
                 throw new \DomainException('A Phase cannot change its creating Cycle.');
             }
+            if ($phase->exists && $phase->isDirty('kind') && $phase->propositions()->exists()) {
+                throw new \DomainException('A Phase cannot change its producing position.');
+            }
             if (! $phase->exists || $phase->isDirty(['kind', 'gate_proposition_id', 'write_register'])) {
                 app(CausalContextService::class)->assertPhase($phase);
             }

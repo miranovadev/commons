@@ -107,43 +107,36 @@ class CommitRegionTest extends TestCase
     #[DataProvider('domains')]
     public function test_phase_positions_require_exact_registers_and_early_phases_stay_local(string $first, string $second, string $third): void
     {
-        $left = $this->node($first, $this->regionSeed);
-        $right = $this->node($first, $this->regionSeed);
-        $middle = $this->node($second, $left);
-        $end = $this->node($third, $middle);
-        $parallel = $this->node($third, $right);
+        $left = $this->node($first, $this->regionSeed, position: PhaseKind::Distinguish);
+        $middle = $this->node($second, $left, position: PhaseKind::Mediate);
+        $early = $this->node($third, $middle, position: PhaseKind::Constrain);
+        $late = $this->node($third, $middle, position: PhaseKind::Bias);
         $regions = app(CommitRegionService::class);
-        foreach ([PhaseKind::Mediate, PhaseKind::Order] as $kind) {
-            $phase = $this->phase($kind, $end, $kind === PhaseKind::Mediate ? $second : $third);
-            $this->assertEqualsCanonicalizing([$end->id, $parallel->id], $regions->forPhase($phase)->pluck('id')->all());
+        foreach ([[PhaseKind::Mediate, $second, $early], [PhaseKind::Bias, $third, $middle], [PhaseKind::Order, $third, $late]] as [$kind, $write, $expected]) {
+            $phase = $this->phase($kind, $late, $write);
+            $this->assertSame([$expected->id], $regions->forPhase($phase)->pluck('id')->all());
         }
-        $phase = $this->phase(PhaseKind::Bias, $middle, $third);
-        $this->assertSame([$middle->id], $regions->forPhase($phase)->pluck('id')->all());
-        $equivalent = $this->node($second === 'stance' ? 'frontier' : 'stance', $right);
-        $this->assertSame([$middle->id], $regions->forPhase($phase)->pluck('id')->all());
-        $this->assertSame(RegisterPosition::forRegister($second), RegisterPosition::forRegister($equivalent->register));
-        $unvisited = $this->node($third, $middle);
-        foreach ([PhaseKind::Distinguish, PhaseKind::Persist, PhaseKind::Constrain, PhaseKind::Disperse] as $kind) {
-            $early = $this->phase($kind, $middle, $third);
-            $this->assertCount(0, $regions->forPhase($early));
-            $this->assertSame([$unvisited->id], app(PropositionOptionService::class)->writeOptionsFor($early)->pluck('id')->all());
-        }
+        $phase = $this->phase(PhaseKind::Constrain, $middle, $third);
+        $this->assertSame([$early->id], app(PropositionOptionService::class)->writeOptionsFor($phase)->pluck('id')->all());
+        $this->assertSame(RegisterPosition::forRegister($early->register), RegisterPosition::forRegister($late->register));
+        $this->assertNotSame($early->phase->kind, $late->phase->kind);
+        $this->assertCount(0, $regions->forPhase($phase));
     }
 
     #[DataProvider('domains')]
     public function test_mediate_reads_cross_parent_branches_before_filtering_correspondence(string $first, string $second, string $third): void
     {
-        $left = $this->node($second, $this->regionSeed);
-        $right = $this->node($second, $this->regionSeed);
-        $anchor = $this->node($third, $left);
-        $matching = $this->node($third, $right);
-        $opposite = $this->node($third, $right);
-        $gate = $this->node($first, $anchor);
-        $counterpart = $this->node($first, $matching);
-        $this->node($first, $opposite);
-        $otherSeed = $this->node($third, $right, 'committal');
-        $otherRead = $this->node($third, $otherSeed);
-        $otherGate = $this->node($first, $otherRead);
+        $left = $this->node($second, $this->regionSeed, position: PhaseKind::Persist);
+        $right = $this->node($second, $this->regionSeed, position: PhaseKind::Persist);
+        $anchor = $this->node($third, $left, position: PhaseKind::Constrain);
+        $matching = $this->node($third, $right, position: PhaseKind::Constrain);
+        $opposite = $this->node($third, $right, position: PhaseKind::Constrain);
+        $gate = $this->node($first, $anchor, position: PhaseKind::Disperse);
+        $counterpart = $this->node($first, $matching, position: PhaseKind::Disperse);
+        $this->node($first, $opposite, position: PhaseKind::Disperse);
+        $otherSeed = $this->node($third, $right, 'committal', position: PhaseKind::Constrain);
+        $otherRead = $this->node($third, $otherSeed, position: PhaseKind::Constrain);
+        $otherGate = $this->node($first, $otherRead, position: PhaseKind::Disperse);
         $disperse = $this->phase(PhaseKind::Disperse, $anchor, $first);
         $phase = app(PhaseProgressionService::class)->advance($disperse, $gate);
         foreach ([1, -1] as $direction) {
@@ -167,15 +160,15 @@ class CommitRegionTest extends TestCase
     #[DataProvider('domains')]
     public function test_bias_filters_cross_branch_retained_directions_including_zero_attestations(string $first, string $second, string $third): void
     {
-        $left = $this->node($first, $this->regionSeed);
-        $right = $this->node($first, $this->regionSeed);
-        $gate = $this->node($second, $left);
-        $neutral = $this->node($second, $right);
-        $negative = $this->node($second, $right);
+        $left = $this->node($first, $this->regionSeed, position: PhaseKind::Disperse);
+        $right = $this->node($first, $this->regionSeed, position: PhaseKind::Disperse);
+        $gate = $this->node($second, $left, position: PhaseKind::Mediate);
+        $neutral = $this->node($second, $right, position: PhaseKind::Mediate);
+        $negative = $this->node($second, $right, position: PhaseKind::Mediate);
         $this->attest($negative, 'refute');
-        $regionDefault = $this->node($second, $negative);
-        $boundary = $this->node($third, $right, 'committal');
-        $outside = $this->node($second, $boundary);
+        $regionDefault = $this->node($second, $negative, position: PhaseKind::Mediate);
+        $boundary = $this->node($third, $right, 'committal', position: PhaseKind::Bias);
+        $outside = $this->node($second, $boundary, position: PhaseKind::Mediate);
         $this->attest($outside, 'support');
         $phase = $this->phase(PhaseKind::Bias, $gate, $third);
         $bias = app(BiasGateService::class);
@@ -191,16 +184,16 @@ class CommitRegionTest extends TestCase
     #[DataProvider('domains')]
     public function test_closure_filters_each_cross_branch_write_and_revalidates_the_selected_source(string $first, string $second, string $third): void
     {
-        $left = $this->node($second, $this->regionSeed);
-        $right = $this->node($second, $this->regionSeed);
-        $gate = $this->node($third, $left);
-        $positive = $this->node($third, $right);
-        $negative = $this->node($third, $right);
-        $misaligned = $this->node($third, $right);
-        $ungrounded = $this->node($third, $right);
-        $wrongRegister = $this->node($first, $right);
-        $boundary = $this->node($third, $right, 'committal');
-        $outside = $this->node($third, $boundary);
+        $left = $this->node($second, $this->regionSeed, position: PhaseKind::Mediate);
+        $right = $this->node($second, $this->regionSeed, position: PhaseKind::Mediate);
+        $gate = $this->node($third, $left, position: PhaseKind::Bias);
+        $positive = $this->node($third, $right, position: PhaseKind::Bias);
+        $negative = $this->node($third, $right, position: PhaseKind::Bias);
+        $misaligned = $this->node($third, $right, position: PhaseKind::Bias);
+        $ungrounded = $this->node($third, $right, position: PhaseKind::Bias);
+        $wrongRegister = $this->node($first, $right, position: PhaseKind::Disperse);
+        $boundary = $this->node($third, $right, 'committal', position: PhaseKind::Bias);
+        $outside = $this->node($third, $boundary, position: PhaseKind::Bias);
         foreach ([$positive, $negative, $misaligned, $outside] as $candidate) {
             $this->attest($candidate, 'support');
             $this->loadedReceiptFixture($candidate);
@@ -260,10 +253,10 @@ class CommitRegionTest extends TestCase
         }
     }
 
-    private function node(string $register, ?Proposition $parent, string $tier = 'expressive', string $edge = 'variant'): Proposition
+    private function node(string $register, ?Proposition $parent, string $tier = 'expressive', string $edge = 'variant', PhaseKind $position = PhaseKind::Distinguish): Proposition
     {
         $node = new Proposition;
-        $node->forceFill(['phase_id' => $this->phaseForRegisterFixture($this->history, $register)->id, 'register' => $register, 'tier' => $tier, 'statement' => 'Region '.$register])->save();
+        $node->forceFill(['phase_id' => $this->phaseForRegisterFixture($this->history, $register, $position)->id, 'register' => $register, 'tier' => $tier, 'statement' => 'Region '.$register])->save();
         app(LedgerService::class)->record($node);
         if ($parent) {
             $this->edge($parent, $node, $edge);

@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Enums\PhaseKind;
-use App\Enums\RegisterPosition;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
@@ -23,6 +22,7 @@ final class PropositionOptionService
         private readonly PhaseGenerationService $generation,
         private readonly EvidenceEligibilityService $evidence,
         private readonly PropositionAvailabilityService $availability,
+        private readonly PhasePositionService $positions,
     ) {}
 
     /** @return Collection<int, string> */
@@ -106,7 +106,7 @@ final class PropositionOptionService
             // discoverable when the next Cycle arrives through another source.
             $gate = $context?->propositions->get($phase->gate_proposition_id) ?? $phase->gate;
 
-            return $this->regions->membersFor($gate, $context)->where('register', $phase->write_register)
+            return $this->positions->filter($this->regions->membersFor($gate, $context), $phase, PhaseKind::Bias)
                 ->concat($this->writeDescendants($phase, $context)->orderBy('id')->get())->unique('id')->values();
         }
 
@@ -124,7 +124,7 @@ final class PropositionOptionService
     }
 
     /**
-     * Revision is an ownership-preserving move within a register. It cannot
+     * Revision is an ownership-preserving move within a producing phase position. It cannot
      * target the Gate merely because the Gate belongs to the Participant.
      * The exact Write must have an effective self-Refute from an earlier Cycle;
      * a revision's ancestry never supplies its personal revision eligibility.
@@ -188,7 +188,6 @@ final class PropositionOptionService
         if ($phase->kind !== PhaseKind::Order) {
             return collect();
         }
-        $register = $phase->cycle->contextHorizon->domain->registerAt(RegisterPosition::Second);
         $frontier = collect([$context?->propositions->get($phase->gate_proposition_id) ?? $phase->gate()->firstOrFail()]);
         $seen = [];
         $reads = collect();
@@ -199,7 +198,7 @@ final class PropositionOptionService
                     continue;
                 }
                 $seen[$node->id] = true;
-                if ($node->register === $register) {
+                if ($this->positions->matches($node, $phase, PhaseKind::Mediate)) {
                     $reads->push($node);
 
                     continue;
@@ -213,14 +212,14 @@ final class PropositionOptionService
         return $reads->unique('id')->sortBy('id')->values();
     }
 
-    /** Follow revisions within Write without crossing into another phase's register. */
+    /** Follow revisions within the exact producing Phase position, not merely its label. */
     private function descendantIds(Phase $phase, ?ParticipationContext $context): Collection
     {
         $ids = $context !== null
             ? $context->children->get($phase->gate_proposition_id, collect())->pluck('target_proposition_id')
                 ->reject(fn ($id) => $id === $phase->gate_proposition_id)->unique()->values()
             : $this->lineage->immediateDescendantIds($phase->gate()->firstOrFail());
-        $ids = $this->inWriteRegister($ids, $phase, $context);
+        $ids = $this->atWritePosition($ids, $phase, $context);
         $frontier = $ids;
         while ($frontier->isNotEmpty()) {
             $next = $context !== null
@@ -228,18 +227,18 @@ final class PropositionOptionService
                 : Supersession::query()->whereIn('source_proposition_id', $frontier)
                     ->where('type', 'revise')->whereHas('target', fn ($query) => $query->where('register', $phase->write_register))
                     ->pluck('target_proposition_id');
-            $frontier = $this->inWriteRegister($next, $phase, $context)->diff($ids)->unique()->values();
+            $frontier = $this->atWritePosition($next, $phase, $context)->diff($ids)->unique()->values();
             $ids = $ids->merge($frontier)->unique()->values();
         }
 
         return $ids;
     }
 
-    private function inWriteRegister(Collection $ids, Phase $phase, ?ParticipationContext $context): Collection
+    private function atWritePosition(Collection $ids, Phase $phase, ?ParticipationContext $context): Collection
     {
         return $context !== null
-            ? $context->nodes($ids)->where('register', $phase->write_register)->where('tier', 'expressive')->pluck('id')
-            : Proposition::query()->active()->whereKey($ids)->where('register', $phase->write_register)->where('tier', 'expressive')
+            ? $this->positions->filter($context->nodes($ids), $phase, $phase->kind)->pluck('id')
+            : $this->positions->scope(Proposition::query()->active()->whereKey($ids), $phase, $phase->kind)
                 ->whereHas('phase.cycle.participant', fn ($query) => $query->where('substrate_id', $phase->cycle->participant->substrate_id))
                 ->pluck('id');
     }

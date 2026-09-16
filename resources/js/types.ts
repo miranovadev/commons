@@ -233,7 +233,7 @@ export interface ParticipantPlan {
   commitment_options?: Record<Identifier, NonNullable<ParticipantPlan['commitment']>>;
   commitment?: {
     admissible: boolean;
-    requirements: { attestation: boolean; receipt: boolean; closure: boolean | null; write_opportunity?: boolean };
+    requirements: { attestation: boolean; receipt: boolean; closure: boolean | null; phase_position?: boolean; active_region_candidate?: boolean; write_opportunity?: boolean };
     reinforcement_count: number;
     closure_enforced: boolean;
     closure?: {

@@ -2,7 +2,7 @@
 
 namespace App\Enums;
 
-/** Domain-independent register labels used by structural Correspondence. */
+/** Domain-independent vocabulary slots for Correspondence, NOT producing Phase positions. */
 enum RegisterPosition: string
 {
     case First = 'R';

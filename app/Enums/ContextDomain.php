@@ -25,7 +25,7 @@ enum ContextDomain: string
         };
     }
 
-    /** Resolve a structural role to its exact operational register. */
+    /** Resolve a vocabulary slot; repeated labels never confer producing Phase identity. */
     public function registerAt(RegisterPosition $position): string
     {
         return match ($position) {

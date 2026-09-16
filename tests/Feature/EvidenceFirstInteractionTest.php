@@ -25,9 +25,9 @@ class EvidenceFirstInteractionTest extends TestCase
     public function test_receipt_then_attestation_unlocks_personal_traversal_without_loading(PhaseKind $kind, string $register): void
     {
         $f = new ParticipantContextFixture(1, 0);
-        $gate = $kind === PhaseKind::Bias ? $f->node($f->gate, 'frontier') : $f->gate;
-        $write = $f->node($gate, $register);
-        $other = $f->node($gate, $register);
+        $gate = $kind === PhaseKind::Bias ? $f->node($f->gate, 'frontier', position: PhaseKind::Mediate) : $f->node($f->seed, 'activity', position: PhaseKind::Distinguish);
+        $write = $f->node($gate, $register, position: $kind);
+        $other = $f->node($gate, $register, position: $kind);
         $f->evidence($other);
         $f->phase->forceFill(['kind' => $kind, 'gate_proposition_id' => $gate->id, 'write_register' => $register])->save();
         $service = app(ParticipationService::class);

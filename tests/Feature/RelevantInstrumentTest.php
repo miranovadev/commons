@@ -43,7 +43,7 @@ class RelevantInstrumentTest extends TestCase
     {
         Http::fake();
         $f = new ParticipantContextFixture(1, 0);
-        $target = $f->node($f->gate, 'frontier');
+        $target = $f->node($f->gate, 'frontier', position: \App\Enums\PhaseKind::Mediate);
         if ($input['kind'] === 'citation') {
             $input['reference'] = $f->seed->id;
             $equivalent['reference'] = ' '.$f->seed->id.' ';
@@ -116,7 +116,7 @@ class RelevantInstrumentTest extends TestCase
     public function test_schema_exposes_target_specific_exclusions_and_retains_other_free_form_resources(): void
     {
         $f = new ParticipantContextFixture(1, 0);
-        $target = $f->node($f->gate, 'frontier');
+        $target = $f->node($f->gate, 'frontier', position: \App\Enums\PhaseKind::Mediate);
         $input = ['kind' => 'citation', 'reference' => $f->seed->id];
         $receipt = app(OperationalInstrumentService::class)->execute($f->phase, $target, $input);
         $this->publishPotentialFixture($f->viewer);
@@ -138,7 +138,7 @@ class RelevantInstrumentTest extends TestCase
     {
         Http::fake();
         $f = new ParticipantContextFixture(1, 0);
-        $target = $f->node($f->gate, 'frontier');
+        $target = $f->node($f->gate, 'frontier', position: \App\Enums\PhaseKind::Mediate);
         $receipt = app(OperationalInstrumentService::class)->execute($f->phase, $target, ['kind' => 'web_search', 'query' => 'evidence']);
         $this->assertTrue($receipt->supports(ReceiptCapability::Readable));
         $this->assertTrue($receipt->supports(ReceiptCapability::Replayable));

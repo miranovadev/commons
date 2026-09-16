@@ -54,9 +54,9 @@ class BiasGateTest extends TestCase
         $this->substrate = new Substrate;
         $this->substrate->forceFill(['slug' => 'bias', 'title' => 'Bias', 'visibility' => 'public', 'configuration' => []])->save();
         $this->history = $this->newPhase($this->participant('author'), PhaseKind::Distinguish, $register === 'stance' ? 'signal' : 'activity', true);
-        $this->parent = $this->node('Local provenance', $write, 'committal');
+        $this->parent = $this->node('Local provenance', $write, 'committal', position: PhaseKind::Mediate);
         $this->attest($this->parent, 'support');
-        $this->gate = $this->node('Current Gate', $register);
+        $this->gate = $this->node('Current Gate', $register, position: PhaseKind::Mediate);
         $this->edge($this->parent, $this->gate);
         $this->viewer = $this->participant('viewer');
         $this->phase = $this->newPhase($this->viewer, PhaseKind::Bias, $write);
@@ -79,16 +79,16 @@ class BiasGateTest extends TestCase
         $this->assertArrayNotHasKey('proposition.bias', $plan['schema']['$defs']['actions']);
         $this->assertSame([], array_column($plan['gate_options'], 'id'));
 
-        $descendant = $this->node('Neutral descendant', $this->gate->register);
+        $descendant = $this->node('Neutral descendant', $this->gate->register, position: PhaseKind::Mediate);
         $this->edge($this->gate, $descendant);
         $this->assertSame(0.0, $chirality->leanFor(collect([$descendant->id]), $this->substrate));
         $this->assertSame(ObservableDirection::Positive, $chirality->directionFor($descendant));
         $this->assertSame([], $this->optionIds());
 
-        $flipped = $this->node('Legitimate opposite direction', $this->gate->register);
+        $flipped = $this->node('Legitimate opposite direction', $this->gate->register, position: PhaseKind::Mediate);
         $this->edge($descendant, $flipped);
         $this->attest($flipped, 'refute');
-        $afterFlip = $this->node('Neutral after the flip', $this->gate->register);
+        $afterFlip = $this->node('Neutral after the flip', $this->gate->register, position: PhaseKind::Mediate);
         $this->edge($flipped, $afterFlip);
 
         $this->assertSame(ObservableDirection::Negative, $chirality->directionFor($flipped));
@@ -204,7 +204,7 @@ class BiasGateTest extends TestCase
     {
         $this->fixture();
         $this->attest($this->gate, 'support');
-        $concord = $this->node('Existing Write Concord', 'concord');
+        $concord = $this->node('Existing Write Concord', 'concord', position: PhaseKind::Bias);
         $this->edge($this->gate, $concord);
         $this->receiptFixture($concord);
         $schema = $this->plan()['schema'];
@@ -247,30 +247,30 @@ class BiasGateTest extends TestCase
         $this->attest($positive, 'support');
         $this->attest($negative, 'refute');
         $this->assertSame([$positive->id], $this->optionIds());
-        $this->edge($negative, $this->node('Fresh Concord', 'concord'), 'reclassify');
+        $this->edge($negative, $this->node('Fresh Concord', 'concord', position: PhaseKind::Bias), 'reclassify');
         $this->assertSame([$positive->id], $this->optionIds());
     }
 
     public function test_population_has_deeper_stances_but_excludes_other_registers_and_stops_at_boundaries(): void
     {
         $this->fixture();
-        $bridge = $this->node('Bridge', 'signal');
+        $bridge = $this->node('Bridge', 'signal', position: PhaseKind::Disperse);
         $this->edge($this->parent, $bridge);
-        $deep = $this->node('Non-sibling Stance', 'stance');
+        $deep = $this->node('Non-sibling Stance', 'stance', position: PhaseKind::Mediate);
         $this->edge($bridge, $deep);
         $this->attest($deep, 'support');
-        $wrongRegister = $this->node('Supported Concord must not enter the Stance field', 'concord');
+        $wrongRegister = $this->node('Supported Concord must not enter the Stance field', 'concord', position: PhaseKind::Bias);
         $this->edge($this->parent, $wrongRegister);
         $this->attest($wrongRegister, 'refute');
         $hard = $this->sibling('Hard superseded');
         $this->attest($hard, 'refute');
-        $this->edge($hard, $this->node('Hard successor', 'concord'), 'reclassify');
-        $boundary = $this->node('Committal boundary', 'concord', 'committal');
+        $this->edge($hard, $this->node('Hard successor', 'concord', position: PhaseKind::Bias), 'reclassify');
+        $boundary = $this->node('Committal boundary', 'concord', 'committal', position: PhaseKind::Bias);
         $this->edge($deep, $boundary); // Soft edge leaves deep active.
-        $beyond = $this->node('Beyond boundary', 'stance');
+        $beyond = $this->node('Beyond boundary', 'stance', position: PhaseKind::Mediate);
         $this->edge($boundary, $beyond);
         $this->attest($beyond, 'refute');
-        $this->attest($this->node('Unrelated Stance', 'stance'), 'refute');
+        $this->attest($this->node('Unrelated Stance', 'stance', position: PhaseKind::Mediate), 'refute');
         config()->set('schemas.options.limit', 1);
         $this->viewer->forceFill(['max_read_count' => 1])->save();
         $other = $this->sibling('Another supported Stance');
@@ -287,11 +287,11 @@ class BiasGateTest extends TestCase
         $this->fixture();
         $positive = $this->sibling('Shared positive');
         $this->attest($positive, 'support');
-        $second = $this->node('Second parent', 'signal');
+        $second = $this->node('Second parent', 'signal', position: PhaseKind::Disperse);
         $this->edge($this->parent, $second);
         $this->edge($second, $this->gate);
         $this->edge($second, $positive);
-        $negative = $this->node('Second family negative', 'stance');
+        $negative = $this->node('Second family negative', 'stance', position: PhaseKind::Mediate);
         $this->edge($second, $negative);
         $this->attest($negative, 'refute');
         $this->assertSame(0.0, app(BiasGateService::class)->leanFor($this->phase));
@@ -344,7 +344,7 @@ class BiasGateTest extends TestCase
         $this->rejectDispatch([...$input, 'other_proposition_id' => $negative->id]);
         $this->rejectDispatch([...$input, 'statement' => 'Overwritten']);
         $this->rejectDispatch(['action' => 'proposition.reconcile', 'other_proposition_id' => $negative->id]);
-        $this->edge($this->gate, $this->node('Replacement', 'concord'), 'reclassify');
+        $this->edge($this->gate, $this->node('Replacement', 'concord', position: PhaseKind::Bias), 'reclassify');
         $this->rejectDispatch($input);
     }
 
@@ -377,16 +377,16 @@ class BiasGateTest extends TestCase
 
     private function sibling(string $statement): Proposition
     {
-        $node = $this->node($statement, $this->gate->register);
+        $node = $this->node($statement, $this->gate->register, position: PhaseKind::Mediate);
         $this->edge($this->parent, $node);
 
         return $node;
     }
 
-    private function node(string $statement, string $register, string $tier = 'expressive'): Proposition
+    private function node(string $statement, string $register, string $tier = 'expressive', PhaseKind $position = PhaseKind::Mediate): Proposition
     {
         $node = new Proposition;
-        $node->forceFill(['phase_id' => $this->history->id, 'register' => $register, 'tier' => $tier, 'statement' => $statement])->save();
+        $node->forceFill(['phase_id' => $this->phaseAtPositionFixture($this->history, $position)->id, 'register' => $register, 'tier' => $tier, 'statement' => $statement])->save();
         app(LedgerService::class)->record($node);
 
         return $node;

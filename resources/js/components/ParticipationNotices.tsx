@@ -15,10 +15,11 @@ export function participationNotices({ participation, plan, canCommit, canRest, 
     <Text size="xs">Depth: {last.depth ?? 'unrecorded'} ({last.depth_direction ?? 'unknown'}) · Cadence: {last.cadence ?? 'unrecorded'} ({last.cadence_direction ?? 'unknown'})</Text>
     <Text size="xs" c="dimmed">Current Domain: {participation.domain} · Horizon {participation.horizon_sequence}</Text>
   </Stack> });
-  if (plan?.commitment) notices.push({ id: 'commitment', title: plan.commitment.requirements.write_opportunity === false ? 'Source already committed' : canCommit ? 'Committable candidate' : 'No committable candidate',
+  if (plan?.commitment) notices.push({ id: 'commitment', title: plan.commitment.requirements.phase_position === false ? 'No phase-6 candidate at this Gate' : plan.commitment.requirements.write_opportunity === false ? 'Source already committed' : canCommit ? 'Committable candidate' : 'No committable candidate',
     color: canCommit ? 'indigo' : 'gray', icon: canCommit ? IconLock : IconLockOpen, satisfied: canCommit, content: <Stack gap="xs">
     {canCommit && <Text size="sm">An eligible source is available to Commit in Gate.</Text>}
     {!canCommit && <Text size="sm">{participation.reason?.message}</Text>}
+    {plan.commitment.requirements.phase_position === false && <Text size="xs">Commit requires a Bias-produced candidate in the current Commit Region. A matching register label does not change the producing phase.</Text>}
     <Text size="xs">Current Gate Attestation: {plan.commitment.requirements.attestation ? 'available' : 'missing'}.</Text>
     <Text size="xs">Current Gate Receipt: {plan.commitment.requirements.receipt ? 'available' : 'missing'}.</Text>
     {!canCommit && plan.commitment.requirements.write_opportunity !== false && <Text size="xs" c="dimmed">Grounding can be added in Bias and retained for a later Cycle. Use an available Phase action; the Closure conditions still apply.</Text>}

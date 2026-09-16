@@ -21,7 +21,7 @@ class ReclassificationEvidenceTest extends TestCase
     public function test_reclassification_preserves_evidence_and_content_without_copying_judgments_or_uptake(): void
     {
         $f = new ParticipantContextFixture(1, 0);
-        $source = $f->node($f->seed, 'frontier');
+        $source = $f->node($f->seed, 'frontier', position: PhaseKind::Persist);
         $source->forceFill(['statement' => "  Exact content\nwith whitespace.  "])->save();
         $receipt = $this->loadedReceiptFixture($source);
         $f->evidence($source); // Old attestation evidence must not follow the new classification.
@@ -53,6 +53,7 @@ class ReclassificationEvidenceTest extends TestCase
     public function test_reclassification_rejects_authored_text_even_for_direct_dispatch_callers(): void
     {
         $f = new ParticipantContextFixture(1, 0);
+        $f->gate = $f->node($f->seed, 'activity', position: PhaseKind::Distinguish);
         $f->phase->forceFill(['kind' => PhaseKind::Persist, 'gate_proposition_id' => $f->gate->id])->save();
         $f->evidence($f->gate);
         $this->expectException(\DomainException::class);

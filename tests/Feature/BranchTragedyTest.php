@@ -179,7 +179,7 @@ class BranchTragedyTest extends TestCase
     public function test_a_formerly_valid_action_is_rejected_after_pruning_then_only_rest_is_exposed(): void
     {
         [$root, $first] = $this->exhaustedBranch();
-        $other = $this->phase($root, PhaseKind::Distinguish);
+        $other = $this->phase($root, PhaseKind::Disperse);
         $this->measure($root, 1);
         $schema = app(InputPlanService::class)->forParticipant($other->cycle->participant)['schema'];
         $this->assertArrayHasKey('proposition.variant', $schema['$defs']['actions']);
@@ -282,7 +282,7 @@ class BranchTragedyTest extends TestCase
 
     private function exhaustedBranch(): array
     {
-        $root = $this->node($this->phase($this->origin), $this->origin);
+        $root = $this->node($this->phase($this->origin, PhaseKind::Constrain), $this->origin);
         $first = $this->phase($root);
         $second = $this->phase($root);
         $this->measure($root, 1);

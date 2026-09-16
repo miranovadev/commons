@@ -68,15 +68,16 @@ final class ParticipantContextFixture
             $this->chain[] = $head;
         }
         // The Read anchor and current Gate are operational roles, outside history.
-        $anchor = $this->node($head, 'canon');
-        $this->gate = $this->node($anchor, 'activity');
+        $anchor = $this->node($head, 'canon', position: PhaseKind::Constrain);
+        $this->gate = $this->node($anchor, 'activity', position: PhaseKind::Disperse);
+        $this->evidence($anchor);
         for ($i = 0; $i < $branches; $i++) {
-            $read = $this->node($this->seed, 'canon');
-            $this->node($read, 'activity');
+            $read = $this->node($this->seed, 'canon', position: PhaseKind::Constrain);
+            $this->node($read, 'activity', position: PhaseKind::Disperse);
             $this->evidence($read);
         }
         for ($i = 0; $i < 3; $i++) {
-            $write = $this->node($this->gate, 'frontier');
+            $write = $this->node($this->gate, 'frontier', position: PhaseKind::Mediate);
             $this->evidence($write);
             $this->writes[] = $write->id;
         }
@@ -91,10 +92,10 @@ final class ParticipantContextFixture
         $this->viewer->forceFill(['current_proposition_id' => $this->gate->id])->save();
     }
 
-    public function node(?Proposition $parent, string $register, string $type = 'variant', string $tier = 'expressive'): Proposition
+    public function node(?Proposition $parent, string $register, string $type = 'variant', string $tier = 'expressive', ?PhaseKind $position = null): Proposition
     {
         $phase = new Phase;
-        $kind = $type === 'reconcile' ? PhaseKind::Mediate : ($type === 'commit' ? PhaseKind::Order : PhaseKind::Distinguish);
+        $kind = $position ?? ($type === 'reconcile' ? PhaseKind::Mediate : ($type === 'commit' ? PhaseKind::Order : PhaseKind::Distinguish));
         $phase->forceFill(['cycle_id' => $this->history->id, 'kind' => $kind, 'write_register' => $register,
             'gate_proposition_id' => $parent?->id, 'started_at' => now(), 'completed_at' => now()])->save();
         $node = new Proposition;

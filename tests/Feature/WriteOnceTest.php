@@ -176,8 +176,9 @@ class WriteOnceTest extends TestCase
     public function test_generation_is_personal_and_survives_cycles_but_not_a_different_gate(PhaseKind $kind, string $register, string $action): void
     {
         [$participant, $gate] = $this->fixture($kind === PhaseKind::Persist && $action === 'proposition.variant');
-        if ($action === 'proposition.reclassify') {
-            $gate = $this->node($gate->phase, $kind === PhaseKind::Persist ? 'activity' : 'frontier', 'Expressive Gate', parent: $gate);
+        if ($kind !== PhaseKind::Distinguish) {
+            $sourcePhase = $this->phaseAtPositionFixture($gate->phase, PhaseKind::from($kind->value - 1));
+            $gate = $this->node($sourcePhase, $sourcePhase->write_register, 'Expressive Gate', parent: $gate);
         }
         $phase = $this->phase($participant, $kind, $register, $gate);
         if ($kind === PhaseKind::Constrain) {
@@ -213,7 +214,7 @@ class WriteOnceTest extends TestCase
             $this->assertContains($otherWrite->id, $this->targets($this->plan($participant), 'attestation.create'));
         }
         // A new local Gate in the same substrate/Horizon is a fresh opportunity.
-        $newGate = $this->node($gate->phase, $gate->register, 'Another Gate');
+        $newGate = $this->node($gate->phase, $gate->register, 'Another Gate', tier: $gate->tier);
         $this->phase($participant, $kind, $register, $newGate);
         if ($kind === PhaseKind::Constrain) {
             $this->loadedReceiptFixture($newGate);
@@ -227,6 +228,7 @@ class WriteOnceTest extends TestCase
     public function test_disperse_revision_stays_in_write_and_does_not_reset_generation(): void
     {
         [$participant, $gate] = $this->fixture();
+        $gate = $this->node($this->phaseAtPositionFixture($gate->phase, PhaseKind::Constrain), 'canon', 'Constrain Gate', parent: $gate);
         $phase = $this->phase($participant, PhaseKind::Disperse, 'activity', $gate);
         $input = ['action' => 'proposition.variant', 'statement' => 'First Variant'];
         $first = app(ContributionDispatcher::class)->dispatch($participant, $phase, $input);
@@ -260,7 +262,7 @@ class WriteOnceTest extends TestCase
     public function test_constrain_requires_receipt_but_not_reinforcement(): void
     {
         [$participant, $gate] = $this->fixture();
-        $gate = $this->node($gate->phase, 'frontier', 'Expressive Gate', parent: $gate);
+        $gate = $this->node($this->phaseAtPositionFixture($gate->phase, PhaseKind::Persist), 'frontier', 'Expressive Gate', parent: $gate);
         $phase = $this->phase($participant, PhaseKind::Constrain, 'canon', $gate);
         $input = ['action' => 'proposition.reclassify'];
         $this->assertUnavailable($participant, $phase, $input);
@@ -276,8 +278,8 @@ class WriteOnceTest extends TestCase
     public function test_bias_is_once_per_participant_region_row_and_existing_writes_survive_alternative_gates(): void
     {
         [$participant, $seed] = $this->fixture();
-        $a = $this->node($seed->phase, 'frontier', 'A', parent: $seed);
-        $b = $this->node($seed->phase, 'frontier', 'B', parent: $seed);
+        $a = $this->node($this->phaseAtPositionFixture($seed->phase, PhaseKind::Mediate), 'frontier', 'A', parent: $seed);
+        $b = $this->node($this->phaseAtPositionFixture($seed->phase, PhaseKind::Mediate), 'frontier', 'B', parent: $seed);
         $this->classificationEvidenceFixture($a);
         $this->classificationEvidenceFixture($b);
         $phase = $this->phase($participant, PhaseKind::Bias, 'canon', $a);
@@ -304,8 +306,8 @@ class WriteOnceTest extends TestCase
                 'history_proposition_id' => null, 'history_source' => 'negative-default',
             ]);
         });
-        $a = $this->node($seed->phase, 'canon', 'A', parent: $seed);
-        $b = $this->node($seed->phase, 'canon', 'B', parent: $seed);
+        $a = $this->node($this->phaseAtPositionFixture($seed->phase, PhaseKind::Bias), 'canon', 'A', parent: $seed);
+        $b = $this->node($this->phaseAtPositionFixture($seed->phase, PhaseKind::Bias), 'canon', 'B', parent: $seed);
         $this->groundFixture($a);
         $this->groundFixture($b);
         $phase = $this->phase($participant, PhaseKind::Order, 'canon', $a);
@@ -326,7 +328,7 @@ class WriteOnceTest extends TestCase
         $this->assertUnavailable($other, $otherPhase, $input);
 
         // A new Committal seed creates a new row even within the same Horizon.
-        $next = $this->node($seed->phase, 'canon', 'Next region', parent: $commit);
+        $next = $this->node($this->phaseAtPositionFixture($seed->phase, PhaseKind::Bias), 'canon', 'Next region', parent: $commit);
         $this->groundFixture($next);
         $this->phase($participant, PhaseKind::Order, 'canon', $next);
         app(ContributionService::class)->validate($participant, ['action' => 'proposition.commit', 'proposition_id' => $next->id]);
