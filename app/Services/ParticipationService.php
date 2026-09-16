@@ -299,8 +299,6 @@ final readonly class ParticipationService
         $phase->cycle->rested_at = now();
         $phase->cycle->completed_at = now();
         $phase->cycle->save();
-
-
     }
 
     /**

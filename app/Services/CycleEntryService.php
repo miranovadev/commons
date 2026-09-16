@@ -124,7 +124,7 @@ final readonly class CycleEntryService
                 if (! $required) {
                     return;
                 }
-                throw new ConflictHttpException('No valid recovery entry can be established from this position.');
+                throw new ConflictHttpException('No valid recovery basin entry can be established from this position.');
             }
 
             if ($origin === null) {

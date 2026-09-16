@@ -142,7 +142,8 @@ final class ParticipationContext
             ->join('phases', 'phases.id', '=', 'propositions.phase_id')
             ->join('cycles', 'cycles.id', '=', 'phases.cycle_id')
             ->join('participants', 'participants.id', '=', 'cycles.participant_id')
-            ->where('participants.substrate_id', $this->substrate->id);
+            ->where('participants.substrate_id', $this->substrate->id)
+            ->whereIn('propositions.id', Proposition::active()->select('id'));
         $gate = (clone $owned)->where('propositions.id', $this->phase->gate_proposition_id)->select('propositions.id');
         $ids = $owned->where('cycles.context_horizon_id', $this->phase->cycle->context_horizon_id)
             ->selectRaw('propositions.id /* participation working set */')->union($gate)->pluck('id');

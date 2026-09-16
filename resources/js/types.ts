@@ -13,6 +13,7 @@ export interface Observables {
 }
 
 export interface Proposition {
+  active?: boolean;
   id: Identifier;
   register: RegisterName;
   tier: PropositionTier;

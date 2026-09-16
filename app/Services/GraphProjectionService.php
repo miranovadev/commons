@@ -38,7 +38,9 @@ final readonly class GraphProjectionService
         $seeds = $this->regions->seedIdsFor($visible, $nodes, $edges->groupBy('target_proposition_id'));
         $outgoing = $edges->groupBy('source_proposition_id');
 
+        $activeIds = Proposition::active()->whereKey($visible->pluck('id'))->pluck('id')->flip();
         foreach ($visible as $proposition) {
+            $proposition->setAttribute('active', $activeIds->has($proposition->id));
             $measurement = $nodes->get($proposition->id)?->measurement;
             $snapshot = $proposition->tier === 'committal' ? $snapshots->get($proposition->id) : null;
             $source = $snapshot ?? $measurement;

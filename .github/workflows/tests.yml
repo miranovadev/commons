@@ -108,7 +108,7 @@ jobs:
         if: ${{ !matrix.profile }}
         env:
           PGOPTIONS: '-c statement_timeout=30s'
-        run: php artisan test --filter 'TransactionLockOrderTest|ParticipantContextTest|CausalRecoveryTest|RecoveryBasinResolverTest|LocalParticipantNavigationTest|ParticipantContinuityTest' --stop-on-failure
+        run: php artisan test --filter 'BranchTragedyTest|TransactionLockOrderTest|ParticipantContextTest|CausalRecoveryTest|RecoveryBasinResolverTest|LocalParticipantNavigationTest|ParticipantContinuityTest' --stop-on-failure
 
       - name: Run test suite
         if: ${{ !matrix.profile }}

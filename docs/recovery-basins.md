@@ -48,8 +48,9 @@ comparable after topology has established eligibility. There is no recency,
 sequence, depth, or arbitrary positive-Potential threshold.
 
 Origin remains a candidate for its direct Settlement child during provenance
-retreat. If all basins have zero Potential, the existing `recovery_unavailable`
-state preserves Rest and position; no zero-Potential Cycle is fabricated.
+retreat. Complete branch exhaustion is now explicitly retired by Tragedy, after
+which structural Origin renewal is available without fabricating a Potential score.
+See [Branch Tragedy](branch-tragedy.md) for the active/history boundary.
 
 ## Continuity and limits
 
@@ -58,8 +59,8 @@ Domain remain authoritative until completion. Successful Commit continuity still
 starts immediately at the selected Committal, even at zero Potential. Initial
 unpositioned entry and local Phase traversal retain their existing rules.
 
-This change does not persist route exhaustion or blacklist old propositions.
-New shared state is observed on each recovery. Scope removes historical competition
+Recovery observes shared state on each attempt. Branch-wide retirement is explicit;
+local route exhaustion remains participant-relative. Scope removes historical competition
 while downstream Potential exists, but is not a guarantee that every local route
 is productive: measured historical intermediates can still contribute Potential
 inside a basin. If a live run still repeats sterile routes within the same viable
