@@ -101,6 +101,7 @@ final class ContextHorizonProjector
     {
         return DB::transaction(function () use ($substrate): int {
             $locked = $this->lockSubstrate($substrate);
+            Substrate::whereKey($locked->id)->increment('field_version');
             ContextHorizonMembership::whereIn('context_horizon_id', ContextHorizon::whereBelongsTo($locked)->select('id'))->delete();
             $snapshots = CommitmentSnapshot::whereBelongsTo($locked)->get()->keyBy('proposition_id');
             foreach (SubstrateLedgerEntry::whereBelongsTo($locked)->where('kind', LedgerEntryKind::Proposition->value)->oldest('sequence')->get() as $entry) {

@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Models\Concerns\HasLedgerEntry;
 use App\Services\CausalContextService;
+use App\Services\OriginBranchService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -33,9 +35,9 @@ class Proposition extends Model
         });
     }
 
-    public function scopeActive(\Illuminate\Database\Eloquent\Builder $query): void
+    public function scopeActive(Builder $query): void
     {
-        app(\App\Services\OriginBranchService::class)->active($query);
+        app(OriginBranchService::class)->active($query);
     }
 
     public function phase(): BelongsTo

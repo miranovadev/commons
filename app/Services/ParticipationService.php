@@ -88,11 +88,14 @@ final readonly class ParticipationService
             $finalPhase = $completed?->phases()->whereNotNull('completed_at')->latest('id')->first();
 
             $recovering = $completed?->rested_at !== null;
+            $entry = $this->entryFor($participant);
+            $recoveryReady = $recovering && ($entry['available'] ?? false);
 
             return [...$this->waiting(
-                $recovering ? 'recovery_unavailable' : 'cycle_not_started',
-                $recovering ? 'Rest completed; no viable recovery basin is available.' : 'The Participant is waiting for a Cycle to begin.',
-                entry: $this->entryFor($participant),
+                $recovering ? ($recoveryReady ? 'recovery_pending' : 'recovery_unavailable') : 'cycle_not_started',
+                $recovering ? ($recoveryReady ? 'Rest completed; recovery is ready for the next entry attempt.'
+                    : 'Rest completed; no valid recovery basin entry can be established.') : 'The Participant is waiting for a Cycle to begin.',
+                entry: $entry,
             ), 'completion' => $completed !== null && $completed->rested_at === null && $finalPhase?->kind === PhaseKind::Order ? [
                 'cycle_id' => $completed->id,
                 'phase_id' => $finalPhase->id,
@@ -343,14 +346,16 @@ final readonly class ParticipationService
 
             return [
                 'mode' => 'potential',
-                'selection' => 'recovery',
+                'selection' => $selection['reason'] ?? 'recovery',
                 'available' => $selection !== null,
                 'proposition_id' => ($selection['proposition'] ?? null)?->getKey(),
                 'distance' => $selection['distance'] ?? null,
                 'potential_charge' => $selection['potential_charge'] ?? 0.0,
                 'message' => $selection === null
                     ? 'Resting until a reachable recovery basin has positive Potential Charge.'
-                    : 'Begin the next Cycle at the Committal with greatest attenuated Potential Charge in the viable recovery basin.',
+                    : (($selection['reason'] ?? null) === 'origin_renewal'
+                        ? 'The exhausted branch is historical. Begin a fresh Distinction at Origin.'
+                        : 'Begin the next Cycle at the Committal with greatest attenuated Potential Charge in the viable recovery basin.'),
             ];
         }
 

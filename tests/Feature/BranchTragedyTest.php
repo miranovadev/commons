@@ -13,7 +13,6 @@ use App\Models\Supersession;
 use App\Models\Tragedy;
 use App\Models\User;
 use App\Services\ContextHorizonProjector;
-use App\Services\CycleEntryService;
 use App\Services\InputPlanService;
 use App\Services\LedgerService;
 use App\Services\OriginBranchService;
@@ -31,6 +30,7 @@ class BranchTragedyTest extends TestCase
     use RefreshDatabase;
 
     private Substrate $substrate;
+
     private Proposition $origin;
 
     protected function setUp(): void
@@ -90,6 +90,26 @@ class BranchTragedyTest extends TestCase
         $this->assertSame(2, DB::table('origin_branches')->count());
     }
 
+    public function test_origin_renewal_reopens_a_participants_previous_distinguish_opportunity(): void
+    {
+        $first = $this->phase($this->origin, PhaseKind::Distinguish);
+        $participant = $first->cycle->participant;
+        app(ParticipationService::class)->contribute($participant, $first->id,
+            ['action' => 'proposition.variant', 'statement' => 'The first attempt']);
+        $old = $participant->fresh()->position;
+        $first->cycle->phases()->whereNull('completed_at')->update(['completed_at' => now()]);
+        $terminal = (new Phase)->forceFill(['cycle_id' => $first->cycle_id, 'gate_proposition_id' => $old->id,
+            'kind' => PhaseKind::Order, 'write_register' => 'canon', 'started_at' => now()]);
+        $terminal->save();
+        $this->measure($old, 1);
+        $state = app(ParticipationService::class)->contribute($participant, $terminal->id, ['action' => 'participant.rest']);
+        $this->assertArrayHasKey('proposition.variant', $state['plan']['schema']['$defs']['actions']);
+        app(ParticipationService::class)->contribute($participant, $state['plan']['phase']['id'],
+            ['action' => 'proposition.variant', 'statement' => 'A genuinely new attempt']);
+        $this->assertNotSame($old->id, $participant->fresh()->current_proposition_id);
+        $this->assertTrue(app(OriginBranchService::class)->pruned($old));
+    }
+
     public function test_viable_sibling_prevents_branch_exhaustion_even_if_the_resting_path_is_exhausted(): void
     {
         [$root, $phase] = $this->exhaustedBranch();
@@ -122,14 +142,37 @@ class BranchTragedyTest extends TestCase
     public function test_stale_exhaustion_proof_cannot_retire_new_viable_work(): void
     {
         [$root, $phase] = $this->exhaustedBranch();
+        $phase->forceFill(['completed_at' => now()])->save();
+        $phase->cycle->forceFill(['completed_at' => now(), 'rested_at' => now()])->save();
         $before = app(TragedyService::class)->inspect($phase);
         $this->assertTrue($before['branches'][0]['exhausted']);
-        $sibling = $this->node($this->phase($root), $root);
+        $commit = $this->node($this->phase($root), $root, 'committal');
+        $this->snapshot($commit, .5);
+        $opportunity = $this->node($this->phase($commit), $commit);
         $this->measure($root, 1);
-        $this->measure($sibling, 0);
+        $this->measure($opportunity, 0);
         $this->assertNotSame($before['field_version'], (int) $this->substrate->fresh()->field_version);
+        DB::transaction(function () use ($phase, $before): void {
+            Substrate::whereKey($this->substrate->id)->lockForUpdate()->firstOrFail();
+            app(TragedyService::class)->retire($phase, $before);
+        });
+        $this->assertSame(0, Tragedy::count());
         $after = app(TragedyService::class)->inspect($phase);
+        // This descendant region must be checked even though the exhausted path
+        // from Origin passes through the resting node.
         $this->assertFalse($after['branches'][0]['exhausted']);
+    }
+
+    public function test_potential_on_the_exhausted_rest_path_does_not_leave_a_healthy_branch_stranded(): void
+    {
+        [$root, $phase] = $this->exhaustedBranch();
+        $this->measure($root, 0);
+        $proof = app(TragedyService::class)->inspect($phase);
+        $this->assertTrue($proof['branches'][0]['exhausted']);
+        $state = app(ParticipationService::class)->contribute($phase->cycle->participant, $phase->id, ['action' => 'participant.rest']);
+        $this->assertSame(1, Tragedy::count());
+        $this->assertSame('ready', $state['status']);
+        $this->assertSame($this->origin->id, $state['current_proposition_id']);
     }
 
     public function test_a_formerly_valid_action_is_rejected_after_pruning_then_only_rest_is_exposed(): void
@@ -169,7 +212,9 @@ class BranchTragedyTest extends TestCase
         $phase->forceFill(['completed_at' => now()])->save();
         $phase->cycle->forceFill(['completed_at' => now(), 'rested_at' => now()])->save();
         $sql = [];
-        DB::listen(function ($query) use (&$sql): void { $sql[] = $query->sql; });
+        DB::listen(function ($query) use (&$sql): void {
+            $sql[] = $query->sql;
+        });
         $proof = app(TragedyService::class)->inspect($phase);
         $this->assertTrue($proof['stable']);
         foreach ($sql as $query) {
@@ -183,6 +228,35 @@ class BranchTragedyTest extends TestCase
         $this->assertLessThanOrEqual(8, count($sql));
         $this->assertSame(1, Tragedy::count());
         $this->assertSame($root->id, Tragedy::sole()->root_proposition_id);
+    }
+
+    public function test_shared_descendants_remain_active_and_membership_backfill_preserves_causal_branches(): void
+    {
+        [$root, $phase] = $this->exhaustedBranch();
+        $other = $this->node($this->phase($this->origin), $this->origin);
+        $shared = $this->node($this->phase($root), $root);
+        $edge = (new Supersession)->forceFill(['phase_id' => $shared->phase_id,
+            'source_proposition_id' => $other->id, 'target_proposition_id' => $shared->id, 'type' => 'reconcile']);
+        $edge->save();
+        app(LedgerService::class)->record($edge);
+        $descendant = $this->node($this->phase($shared), $shared);
+        $before = DB::table('origin_branch_memberships')->orderBy('root_proposition_id')->orderBy('proposition_id')->get()->toJson();
+        $migration = require database_path('migrations/2026_09_16_020000_create_origin_branches.php');
+        $migration->down();
+        $migration->up();
+        $this->assertSame($before, DB::table('origin_branch_memberships')->orderBy('root_proposition_id')->orderBy('proposition_id')->get()->toJson());
+        foreach ([$root, $other, $shared, $descendant] as $node) {
+            $this->measure($node, 1);
+        }
+        app(ParticipationService::class)->contribute($phase->cycle->participant, $phase->id, ['action' => 'participant.rest']);
+        $this->assertTrue(app(OriginBranchService::class)->pruned($root));
+        foreach ([$other, $shared, $descendant] as $node) {
+            $this->assertFalse(app(OriginBranchService::class)->pruned($node));
+        }
+        $this->assertSame(1, Tragedy::count());
+        $continued = $this->node($this->phase($descendant), $descendant);
+        $this->assertSame([$other->id], DB::table('origin_branch_memberships')
+            ->where('proposition_id', $continued->id)->pluck('root_proposition_id')->all());
     }
 
     private function exhaustedBranch(): array

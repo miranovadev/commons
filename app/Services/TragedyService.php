@@ -33,9 +33,13 @@ final readonly class TragedyService
                 ->whereIn('target_proposition_id', $nodes->keys())->get(['source_proposition_id', 'target_proposition_id'])
                 ->groupBy('source_proposition_id');
             $this->measurements->observeMissing($nodes);
+            // Unknown measurements below an excluded Rest path cannot silently
+            // become a proof of full exhaustion.
+            $unknown = $nodes->where('tier', 'expressive')->contains(fn ($node) => $node->measurement === null
+                || $node->measurement->correspondence === null || $node->measurement->chirality === null || $node->measurement->closure === null);
             $regions = [];
-            $exhausted = true;
-            foreach ($nodes->where('tier', 'committal') as $seed) {
+            $exhausted = ! $unknown;
+            foreach ($nodes->where('tier', 'committal')->where('id', '!=', $phase->gate_proposition_id) as $seed) {
                 if ($seed->commitmentSnapshot === null) {
                     $exhausted = false;
                     break;
@@ -43,15 +47,18 @@ final readonly class TragedyService
                 $horizon = app(ContextHorizonProjector::class)->forEntry($seed);
                 $local = $nodes->filter(fn ($node) => $node->phase->cycle->context_horizon_id === $horizon->id)->keyBy('id');
                 $local->put($seed->id, $seed);
-                // Complete branch observation: never exclude the resting node or
-                // another participant's continuation merely because it is local.
-                $observation = $this->potential->observePotential($seed->id, $seed->commitmentSnapshot->tension, $local, $edges);
+                // Apply the existing Rest path exclusion, but inspect EVERY region
+                // in this branch, not just the current basin's recovery frontier.
+                // A descendant Commit is evaluated independently even when the
+                // path to it crosses the resting node. Other viable regions veto pruning.
+                $observation = $this->potential->observePotential($seed->id, $seed->commitmentSnapshot->tension, $local, $edges, $phase->gate_proposition_id);
                 $regions[] = ['proposition_id' => $seed->id, 'context_horizon_id' => $horizon->id, ...$observation];
                 if ($observation['value'] > 0 || $observation['status'] !== 'current') {
                     $exhausted = false;
                 }
             }
             $proof['branches'][] = ['root_proposition_id' => $branch->root_proposition_id,
+                'origin_proposition_id' => $origin->id,
                 'exhausted' => $exhausted && $regions !== [], 'regions' => $regions,
                 'proposition_count' => $nodes->count() - 1, 'opened_at' => $branch->opened_at];
         }
@@ -62,32 +69,35 @@ final readonly class TragedyService
         return $proof;
     }
 
-    /** Caller owns Substrate and has compared this proof before writing Rest. */
+    /** Final guarded write; normal callers already own the Substrate root. */
     public function retire(Phase $phase, array $proof): void
     {
-        if (! $proof['stable'] || $proof['phase_id'] !== $phase->id || $proof['position_id'] !== $phase->gate_proposition_id
-            || $proof['substrate_id'] !== $phase->cycle->participant->substrate_id
-            || $phase->cycle->fresh()->rested_at === null
-            || $proof['field_version'] !== (int) Substrate::whereKey($proof['substrate_id'])->value('field_version')) {
-            return;
-        }
-        foreach ($proof['branches'] as $branch) {
-            if (! $branch['exhausted']) {
-                continue;
+        DB::transaction(function () use ($phase, $proof): void {
+            $substrate = Substrate::whereKey($proof['substrate_id'])->lockForUpdate()->firstOrFail();
+            if (! $proof['stable'] || $proof['phase_id'] !== $phase->id || $proof['position_id'] !== $phase->gate_proposition_id
+                || $proof['substrate_id'] !== $phase->cycle->participant->substrate_id
+                || $phase->cycle->fresh()->rested_at === null
+                || $proof['field_version'] !== (int) $substrate->field_version) {
+                return;
             }
-            $changed = DB::table('origin_branches')->where('substrate_id', $proof['substrate_id'])
-                ->where('root_proposition_id', $branch['root_proposition_id'])->whereNull('pruned_at')->update(['pruned_at' => now()]);
-            if (! $changed) {
-                continue;
+            foreach ($proof['branches'] as $branch) {
+                if (! $branch['exhausted']) {
+                    continue;
+                }
+                $changed = DB::table('origin_branches')->where('substrate_id', $proof['substrate_id'])
+                    ->where('root_proposition_id', $branch['root_proposition_id'])->whereNull('pruned_at')->update(['pruned_at' => now()]);
+                if (! $changed) {
+                    continue;
+                }
+                (new Tragedy)->forceFill([
+                    'root_proposition_id' => $branch['root_proposition_id'], 'substrate_id' => $proof['substrate_id'],
+                    'participant_id' => $phase->cycle->participant_id, 'phase_id' => $phase->id,
+                    'terminal_proposition_id' => $phase->gate_proposition_id,
+                    'observed_field_version' => $proof['field_version'], 'occurred_at' => now(), 'evidence' => $branch,
+                ])->save();
+                Substrate::whereKey($proof['substrate_id'])->increment('field_version');
+                app(RealtimePublisher::class)->horizons($proof['substrate_id']);
             }
-            (new Tragedy)->forceFill([
-                'root_proposition_id' => $branch['root_proposition_id'], 'substrate_id' => $proof['substrate_id'],
-                'participant_id' => $phase->cycle->participant_id, 'phase_id' => $phase->id,
-                'terminal_proposition_id' => $phase->gate_proposition_id,
-                'observed_field_version' => $proof['field_version'], 'occurred_at' => now(), 'evidence' => $branch,
-            ])->save();
-            Substrate::whereKey($proof['substrate_id'])->increment('field_version');
-            app(RealtimePublisher::class)->horizons($proof['substrate_id']);
-        }
+        });
     }
 }

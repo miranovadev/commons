@@ -14,6 +14,7 @@ use App\Models\Supersession;
 use App\Services\Observables\LineageMeasurementService;
 use DomainException;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 final readonly class ContributionDispatcher
 {
@@ -57,7 +58,7 @@ final readonly class ContributionDispatcher
             app(CausalContextService::class)->assertPhase($phase);
             $gate = $phase->gate()->firstOrFail();
             if (app(OriginBranchService::class)->pruned($gate)) {
-                throw new \Symfony\Component\HttpKernel\Exception\ConflictHttpException('This branch is historical. Refresh and Rest.');
+                throw new ConflictHttpException('This branch is historical. Refresh and Rest.');
             }
             $action = $input['action'];
             if (! in_array($action, config("phases.{$phase->kind->value}.actions", []), true)

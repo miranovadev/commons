@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Participant;
 use App\Services\PotentialChargeService;
+use App\Services\TragedyService;
 use Illuminate\Console\Command;
 
 class InspectRecovery extends Command
@@ -29,12 +30,15 @@ class InspectRecovery extends Command
             'proposition_id' => $selection['proposition']->id,
             ...array_diff_key($selection, ['proposition' => true]),
         ];
+        $phase = $participant->cycles()->latest('sequence')->first()?->phases()->orderByDesc('kind')->first();
+        $exhaustion = $phase === null ? null : app(TragedyService::class)->inspect($phase);
         $this->line(json_encode([
             'participant_id' => $participant->id,
             'position_id' => $participant->current_proposition_id,
             ...$inspection,
-            'branch_exhaustion' => ($phase = $participant->cycles()->latest('sequence')->first()?->phases()->orderByDesc('kind')->first()) === null
-                ? null : app(\App\Services\TragedyService::class)->inspect($phase),
+            'branch_exhaustion' => $exhaustion,
+            'origin_renewal_after_tragedy' => $selection === null && ($exhaustion['stable'] ?? false)
+                && collect($exhaustion['branches'] ?? [])->contains('exhausted', true),
         ], JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR));
 
         return self::SUCCESS;

@@ -21,6 +21,7 @@ use App\Models\Proposition;
 use App\Models\ReceiptContextEvent;
 use App\Models\Substrate;
 use App\Models\Supersession;
+use App\Models\Tragedy;
 use App\Models\User;
 use App\Services\ClosureGateService;
 use App\Services\ContextHorizonProjector;
@@ -475,7 +476,7 @@ class TransactionLockOrderTest extends TestCase
             function () use ($first, $firstRest): void {
                 app(ParticipationService::class)->contribute($first, $firstRest->id, ['action' => 'participant.rest']);
             });
-        $this->assertSame(1, \App\Models\Tragedy::count());
+        $this->assertSame(1, Tragedy::count());
         $this->assertSame(1, DB::table('origin_branches')->whereNotNull('pruned_at')->count());
         foreach ([$first, $second] as $participant) {
             $this->assertSame(1, $participant->cycles()->whereNull('completed_at')->count());

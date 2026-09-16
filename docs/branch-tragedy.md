@@ -23,8 +23,9 @@ The first validated **Rest contribution** is the normal retirement boundary:
 
 1. Outside the contribution transaction, observe the entire branch's regional
    Potential, including every reachable Committal entry and Origin's continuations
-   belonging to this branch. No observer path is excluded from this proof. Local
-   exhaustion must not hide another participant's positive continuation.
+   belonging to this branch. Apply the existing Rest exclusion to its exhausted
+   position/path, but inspect every other Committal region independently, including
+   descendant regions beyond that path. Any viable region vetoes pruning.
 2. Acquire Substrate → Participant → Cycle → Phase and validate the current Rest.
 3. Write Rest. If the observation's substrate `field_version` still matches,
    atomically set the exhausted root's `pruned_at` and insert its unique Tragedy.
@@ -42,7 +43,9 @@ one retirement. Already-rested pre-upgrade participants use the same guarded
 transition during preparation, with measurement outside its write transaction.
 
 A missing/unmeasurable continuation is not proof of zero Potential. A branch is
-retired only when all its observed regional values are current and non-positive.
+retired only when all its observed regional recovery values are current and
+non-positive. Raw historical Potential on an exhausted Rest path remains history;
+that path is already excluded by ordinary recovery admissibility.
 Origin and historical commitment measurements are never overwritten to manufacture
 eligibility. In particular, failure to find a candidate on one excluded recovery
 path is insufficient proof of complete branch exhaustion.
