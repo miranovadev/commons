@@ -57,6 +57,10 @@ final class PotentialProjectionTest extends TestCase
     public function test_missing_or_inconsistent_projection_returns_explicit_state_without_rebuilding(): void
     {
         [$participant] = $this->fixture();
+        $certificate = DB::table('potential_projection_states')->where('substrate_id', $participant->substrate_id)->first();
+        DB::table('potential_projection_states')->where('substrate_id', $participant->substrate_id)->delete();
+        $this->assertSame('potential_projection_pending', app(ParticipationService::class)->stateFor($participant)['reason']['code']);
+        DB::table('potential_projection_states')->insert((array) $certificate);
         $cycle = $participant->cycles()->whereNull('completed_at')->sole();
         $cycle->currentPhase->forceFill(['completed_at' => now()])->save();
         $cycle->forceFill(['rested_at' => now(), 'completed_at' => now()])->save();
@@ -104,14 +108,19 @@ final class PotentialProjectionTest extends TestCase
             foreach ($log as $query) {
                 $this->assertDoesNotMatchRegularExpression('/from ["`]supersessions|insert |update |delete |for update/i', $query['query']);
             }
-            DB::enableQueryLog();
-            DB::flushQueryLog();
-            $referenceStart = hrtime(true);
-            app(ReferencePotentialChargeService::class)->inspectRecoveryFrom($position, $cycle->contextHorizon);
-            $referenceQueries = count(DB::getQueryLog());
-            DB::disableQueryLog();
-            fwrite(STDERR, sprintf("\nREFERENCE RECOVERY history=%d queries=%d wall=%.2fms\n",
-                $size, $referenceQueries, (hrtime(true) - $referenceStart) / 1e6));
+            foreach (['PROJECTED' => PotentialChargeService::class, 'REFERENCE' => ReferencePotentialChargeService::class] as $label => $calculator) {
+                $freshPosition = $position->fresh();
+                DB::enableQueryLog();
+                DB::flushQueryLog();
+                $referenceStart = hrtime(true);
+                $selection = app($calculator)->inspectRecoveryFrom($freshPosition, $cycle->contextHorizon)['selection'];
+                $referenceQueries = count(DB::getQueryLog());
+                DB::disableQueryLog();
+                $selections[$label] = $selection['proposition']->id ?? null;
+                fwrite(STDERR, sprintf("\n%s RECOVERY history=%d queries=%d wall=%.2fms\n",
+                    $label, $size, $referenceQueries, (hrtime(true) - $referenceStart) / 1e6));
+            }
+            $this->assertSame($selections['REFERENCE'], $selections['PROJECTED']);
         }
         $this->assertSame($counts[0], $counts[1]);
         $this->assertLessThan(100, $counts[1]);

@@ -16,25 +16,26 @@ iteration. A wake still completes at most its original Cycle.
    observation, and retain it only in a request-local `InstrumentObservation`.
    Hyperlink verification and Web Search never run in the write section.
 3. Begin the contribution transaction. Acquire Substrate → Participant → active
-   Cycle → active Phase. Confirm the submitted Phase and recalculate admissibility
-   with a fresh context. Validation builds the schema without display serialization.
+   Cycle → active Phase. Confirm the submitted Phase and the field version of the
+   schema prepared before the transaction. A mismatch rejects the stale action.
 4. Dispatch, persist evidence/ledger/measurements, and advance or rest atomically.
    Instrument invocation identity, source availability and duplicate evidence are
    checked again. A stale observation persists neither an execution nor a Receipt.
-5. Commit, release locks, and build the response state as a fresh optimistic read.
+5. Commit and release locks. Maintain affected region projections optimistically,
+   then build the response state from the published field version.
 
 A formerly valid inference rejected by fresh validation remains a 409 conflict.
 Invalid model output is still an error. No timeout, retry, wake-frequency or
-queue-timeout settings were increased. Existing full-cycle retry behavior remains.
+queue-timeout settings were increased. Existing full-cycle retry behavior remains; redundant overlapping due wakes are dropped without consuming inference retries.
 
 ## Projection reads and maintenance
 
-`observeMissing` calculates missing/obsolete values in memory, using frozen
-Committal snapshots where applicable. It does not upsert measurements or retain
-new directions in the database. Numeric zero uses the existing persisted
-Correspondence direction/ancestry as before. Current projections remain reusable.
-Graph and Proposition Inspector reads continue to display persisted projection
-status without repair. Potential selection reads maintained, version-certified region projections and never falls back to full derivation.
+Ordinary participation never calls `observeMissing`. State and recovery consume
+maintained measurements and Potential. The global projection certificate must
+match the field version; incomplete maintenance yields a recoverable waiting
+state. Missing numeric rows remain missing. `observeMissing` remains available
+only to explicit reference diagnostics. Graph and Proposition Inspector reads
+show persisted status without repair; active graph Potential uses projected regions.
 
 `repairMissing`, `recalculate` and `project` remain explicit mutation/maintenance
 operations. Contributions maintain their changed subject's projection. The

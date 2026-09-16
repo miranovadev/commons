@@ -339,6 +339,7 @@ class ParticipantActionContractTest extends TestCase
         }
         $participant->forceFill(['current_proposition_id' => $gate->id])->save();
 
+        $this->publishPotentialFixture($participant);
         return [$participant, $phase, $seed];
     }
 }

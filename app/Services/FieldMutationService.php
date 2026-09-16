@@ -18,6 +18,12 @@ final class FieldMutationService
 
     public function mark(string $substrateId, array $horizonIds = [], array $propositionIds = [], bool $measurementsDirty = true): void
     {
+        if (DB::transactionLevel() === 0) {
+            // A standalone maintenance caller must publish version and impact
+            // together; the sweep must never certify only part of its dirt.
+            DB::transaction(fn () => $this->mark($substrateId, $horizonIds, $propositionIds, $measurementsDirty));
+            return;
+        }
         Substrate::whereKey($substrateId)->increment('field_version');
         $dependencies = DB::table('potential_region_dependencies')->whereIn('proposition_id', $propositionIds)
             ->pluck('context_horizon_id');

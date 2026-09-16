@@ -47,7 +47,7 @@ class OptimisticParticipationTest extends TestCase
             DB::disableQueryLog();
             $this->assertSame('ready', $state['status']);
             $this->assertSame($state['plan']['phase']['id'], $workspace['plan']['phase']['id']);
-            $this->assertSame($projection['correspondence'] ?? null, $workspace['plan']['gate']['observables']['correspondence']);
+            $this->assertSame(isset($projection['correspondence']) ? (float) $projection['correspondence'] : null, $workspace['plan']['gate']['observables']['correspondence']);
             $this->assertSame(0, $transactions);
             foreach ($queries as $query) {
                 $this->assertDoesNotMatchRegularExpression('/\b(for update|for share|insert into|update ["`]|delete from|savepoint)\b/i', $query['query']);

@@ -27,9 +27,11 @@ class PreOrderInstrumentPathTest extends TestCase
         $write = $f->node($gate, $register);
         $f->phase->forceFill(['kind' => $kind, 'gate_proposition_id' => $gate->id, 'write_register' => $register])->save();
         $service = app(ParticipationService::class);
+        $this->publishPotentialFixture($f->viewer);
         $before = $service->stateFor($f->viewer)['plan'];
         $this->assertContains($write->id, $before['schema']['$defs']['actions']['instrument.execute']['properties']['proposition_id']['enum']);
         $this->assertNotContains($gate->id, $before['schema']['$defs']['actions']['instrument.execute']['properties']['proposition_id']['enum']);
+        $this->publishPotentialFixture($f->viewer);
         $next = $service->contribute($f->viewer, $f->phase->id, ['action' => 'instrument.execute', 'proposition_id' => $write->id,
             'instrument' => ['kind' => 'citation', 'reference' => $gate->id]]);
         $this->assertSame($kind->value + 1, $next['plan']['phase']['number']);

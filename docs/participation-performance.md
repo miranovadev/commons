@@ -91,20 +91,21 @@ The contribution diagnostic reports 74.41 ms in the write transaction out of
 109.69 ms total for its small fixture; response context construction begins only
 after commit. This is a transaction-boundary assertion, not a latency guarantee.
 
-## Deliberate remaining work
+## Incremental Potential and remaining scale limits
+
+[Incremental Potential](incremental-potential.md) supersedes the former whole-substrate
+recovery and read-time measurement fallback. Initial selection reads indexed entries;
+Rest recovery walks maintained region frontiers upward. Writes dirty affected regions
+through reverse dependencies and publish prepared measurements after releasing the
+contribution lock. Ordinary reads never derive measurements.
 
 - Current-Horizon candidates and their actual ancestry can still grow. The context
-  is bounded causally, not to a fixed row count; it still loads the small collection
-  of Horizon metadata for the substrate. Restricting a large active Horizon to
-  region candidates would require a separate closure-completeness proof.
-- Initial Potential ranking and Rest recovery still traverse substrate topology to
-  rank eligible Committals. Their reads no longer repair projections or lock; when
-  used to create a Cycle, selection/validation is part of that write transition.
-- Evidence changes still invalidate substrate projection versions. Only requested
-  values are recomputed by a read, in memory. A dependency-indexed invalidation or
-  background projection scheduler could reduce repeated cold computation further.
-- Writes still serialize shared admissibility, ledger sequencing and projection
-  maintenance at the Substrate boundary. Response building and all network/model
-  waits have been removed from that interval; writes are not claimed constant-time.
-- Historical hydration improvements do not change graph pagination or the
-  independent human graph API, which already observes without projection repair.
+  is bounded causally, not to a fixed row count; Horizon metadata is restricted to
+  the hydrated working set. A very large single live Horizon still has a cost.
+- Recovery depends on provenance depth, local topology and nondominated frontier
+  width. It no longer hydrates unrelated historical Horizons.
+- Writes retain existing target validation and immutable Commit snapshot work in
+  the guarded transaction. New region-wide measurement and Potential calculation
+  runs outside it; prepared rows publish in bounded batches under a version check.
+- Direct historical graph inspection remains explicit and can traverse history.
+  Active graph cards consume maintained Potential.

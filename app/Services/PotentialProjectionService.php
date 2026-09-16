@@ -132,28 +132,24 @@ final class PotentialProjectionService
                 DB::table('potential_entries')->whereIn('context_horizon_id', array_keys($prepared))->delete();
                 foreach ($prepared as $id => $region) {
                     if ($region['measurements'] !== []) {
-                        DB::table('proposition_measurements')->upsert($region['measurements'], ['proposition_id'],
-                            ['correspondence', 'chirality', 'closure', 'calculated_at', 'calculator_version']);
+                        foreach (array_chunk($region['measurements'], 500) as $measurements) {
+                            DB::table('proposition_measurements')->upsert($measurements, ['proposition_id'],
+                                ['correspondence', 'chirality', 'closure', 'calculated_at', 'calculator_version']);
+                        }
                         foreach ($region['directions'] as $direction => $nodes) {
                             DB::table('propositions')->whereIn('id', $nodes)->update(['correspondence_direction' => $direction]);
                         }
                     }
                     DB::table('potential_region_dependencies')->where('context_horizon_id', $id)->delete();
                     foreach (array_chunk($region['dependencies'], 500) as $dependencies) {
-                        DB::table('potential_region_dependencies')->insert(array_map(fn ($node) => [
-                            'context_horizon_id' => $id, 'proposition_id' => $node,
-                        ], $dependencies));
+                        DB::table('potential_region_dependencies')->insert($dependencies);
                     }
-                    foreach ($region['entries'] as $entry) {
-                        DB::table('potential_entries')->insert([
-                            'proposition_id' => $entry['proposition_id'], 'context_horizon_id' => $id,
-                            'substrate_id' => $substrateId, 'raw_potential_charge' => $entry['raw_potential_charge'],
-                            'raw_charge' => $entry['raw_charge'], 'complete' => $entry['complete'],
-                        ]);
+                    foreach (array_chunk($region['entries'], 500) as $entries) {
+                        DB::table('potential_entries')->insert($entries);
                     }
                     DB::table('potential_branch_regions')->where('context_horizon_id', $id)->delete();
-                    if ($region['branches'] !== []) {
-                        DB::table('potential_branch_regions')->insert($region['branches']);
+                    foreach (array_chunk($region['branches'], 500) as $branches) {
+                        DB::table('potential_branch_regions')->insert($branches);
                     }
                 }
                 foreach ($summaries as $id => $summary) {
@@ -250,10 +246,15 @@ final class PotentialProjectionService
             $branches[] = ['root_proposition_id' => $branch->root_proposition_id, 'context_horizon_id' => $horizon->id,
                 'remaining_potential' => collect($candidates)->max('raw_potential_charge') ?? 0,
                 'complete' => ! $branchNodes->contains(fn ($node) => ! $node['complete']),
-                'candidate_count' => count($candidates), 'proposition_count' => $branchNodes->where('origin', false)->count()];
+                'candidate_count' => count($candidates),
+                // An opener is already counted in its creating region.
+                'proposition_count' => $branchNodes->only($owned->keys()->all())->where('origin', false)->count()];
         }
 
-        return ['local' => $local, 'entries' => $this->calculator->candidates($local), 'branches' => $branches, 'measurements' => $measurements, 'directions' => $directions,
-            'dependencies' => $context?->propositions->keys()->merge($nodes->keys())->unique()->all() ?? $nodes->keys()->all()];
+        $dependencies = $context?->propositions->keys()->merge($nodes->keys())->unique()->all() ?? $nodes->keys()->all();
+
+        return ['local' => $local, 'entries' => array_map(fn ($entry) => ['substrate_id' => $horizon->substrate_id, ...$entry], $this->calculator->candidates($local)),
+            'branches' => $branches, 'measurements' => $measurements, 'directions' => $directions,
+            'dependencies' => array_map(fn ($id) => ['context_horizon_id' => $horizon->id, 'proposition_id' => $id], $dependencies)];
     }
 }

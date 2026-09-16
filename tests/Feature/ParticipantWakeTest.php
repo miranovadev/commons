@@ -329,6 +329,7 @@ class ParticipantWakeTest extends TestCase
             }
         });
         $receipt = app(OperationalInstrumentService::class)->execute($f->phase, $nodes[0], ['kind' => 'web_search', 'query' => 'wake evidence']);
+        $this->publishPotentialFixture($f->viewer);
         $connection = $this->connectionFor($f->viewer);
         $cycleId = $f->phase->cycle_id;
         $calls = [];
@@ -386,6 +387,7 @@ class ParticipantWakeTest extends TestCase
         config()->set('participation.max_actions_per_wake', 2);
         $f = new ParticipantContextFixture(1, 0);
         $target = $f->node($f->gate, 'frontier');
+        $this->publishPotentialFixture($f->viewer);
         $connection = $this->connectionFor($f->viewer);
         $calls = 0;
         $input = ['kind' => 'citation', 'reference' => $f->seed->id];
@@ -394,6 +396,7 @@ class ParticipantWakeTest extends TestCase
             $calls++;
             if ($calls === 1) {
                 app(OperationalInstrumentService::class)->execute($f->phase, $target, $input);
+                $this->publishPotentialFixture($f->viewer);
             } else {
                 $this->assertSame($input, $state['plan']['schema']['x-commons']['instrument_exclusions'][$target->id][0]['invocation']);
                 $this->assertSame($f->phase->id, $state['plan']['phase']['id']);
@@ -462,6 +465,7 @@ class ParticipantWakeTest extends TestCase
         $gate->save();
         app(LedgerService::class)->record($gate);
         $phase->forceFill(['gate_proposition_id' => $gate->getKey()])->save();
+        $this->publishPotentialFixture($participant);
 
         return [
             $participant,

@@ -107,6 +107,7 @@ jobs:
         run: npm run test:ui
 
       - name: Prepare test environment
+        if: ${{ !cancelled() }}
         run: cp .env.example .env
 
       - name: Check recovery semantics, optimistic reads and PostgreSQL contention

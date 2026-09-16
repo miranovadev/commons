@@ -222,6 +222,7 @@ class RevisionAdmissibilityTest extends TestCase
 
     private function assertRevisionUnavailable(Participant $participant, Phase $phase, Proposition $head): void
     {
+        $this->publishPotentialFixture($participant);
         $state = app(ParticipationService::class)->stateFor($participant);
         $plan = app(InputPlanService::class)->forParticipant($participant);
         $this->assertSame([], $plan['revision_options']);

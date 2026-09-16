@@ -47,7 +47,7 @@ final readonly class ParticipationService
             $state = $this->currentStateFor($participant, $workspace);
         } catch (\App\Exceptions\PotentialProjectionUnavailable) {
             $state = $this->waiting('potential_projection_pending',
-                'The active field is awaiting projection maintenance. Please retry shortly.');
+                'The field is updating. Your position is preserved. Please retry shortly.');
         }
         $snapshot = CommitmentSnapshot::query()
             ->where('commitment_snapshots.substrate_id', $participant->substrate_id)
@@ -198,15 +198,16 @@ final readonly class ParticipationService
             $this->contributions->validateSchema($expectedSchema, $input);
         }
 
+        $observedPhase = Phase::with('cycle')->find($phaseId);
+        if ($observedPhase === null || $observedPhase->cycle->participant_id !== $participant->id
+            || $observedPhase->completed_at !== null || $observedPhase->cycle->completed_at !== null) {
+            throw new ConflictHttpException('The participation state changed. Refresh before contributing.');
+        }
+
         // Validate before network I/O, then guard the prepared plan by version.
         // An observation is discarded when the Phase or admissibility changed.
         $observed = null;
         if (in_array($input['action'] ?? null, ['instrument.execute', 'receipt.replay'], true)) {
-            $observedPhase = Phase::with('cycle')->find($phaseId);
-            if ($observedPhase === null || $observedPhase->cycle->participant_id !== $participant->id
-                || $observedPhase->completed_at !== null || $observedPhase->cycle->completed_at !== null) {
-                throw new ConflictHttpException('The participation state changed. Refresh before contributing.');
-            }
             $plan = $this->plans->forPhase($participant, $observedPhase);
             try {
                 $this->contributions->validateSchema($plan['schema'], $input);

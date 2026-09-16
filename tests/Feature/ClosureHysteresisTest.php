@@ -53,6 +53,7 @@ class ClosureHysteresisTest extends TestCase
         [$phase, $gate] = $this->candidate([2]);
         $counts = $this->counts();
         $preview = app(ClosureGateService::class)->preview($gate, $phase);
+        $this->publishPotentialFixture($this->participant);
         $state = app(ParticipationService::class)->stateFor($this->participant);
         $this->assertSame($counts, $this->counts());
         // Candidate/Gate/provenance raw Depth (1, 0, -1). Reinforcement
@@ -63,6 +64,7 @@ class ClosureHysteresisTest extends TestCase
         $this->assertSame('ready', $state['status']);
         $this->assertTrue($state['plan']['commitment']['closure_enforced']);
 
+        $this->publishPotentialFixture($this->participant);
         $result = app(ParticipationService::class)->contribute($this->participant, $phase->id, ['action' => 'proposition.commit', 'proposition_id' => $phase->gate_proposition_id]);
         $snapshot = CommitmentSnapshot::findOrFail($result['current_proposition_id']);
         $this->assertSame($preview['depth'], $snapshot->depth);
@@ -77,6 +79,7 @@ class ClosureHysteresisTest extends TestCase
         $this->assertSame(2, $phase->cycle->contextHorizon->sequence);
         $this->assertSame($snapshot->proposition_id, $this->participant->fresh()->current_proposition_id);
         $this->assertNotNull($phase->fresh()->completed_at);
+        $this->publishPotentialFixture($this->participant);
         $this->assertSame($result['last_commitment'], app(ParticipationService::class)->stateFor($this->participant)['last_commitment']);
     }
 
@@ -85,6 +88,7 @@ class ClosureHysteresisTest extends TestCase
         $this->bootstrap(1);
         [$phase, $gate] = $this->candidate([2], direction: 'refute');
         $this->assertSame(ObservableDirection::Negative, app(AttestationEvidenceService::class)->directionFor($gate));
+        $this->publishPotentialFixture($this->participant);
         $state = app(ParticipationService::class)->contribute($this->participant, $phase->id,
             ['action' => 'proposition.commit', 'proposition_id' => $gate->id]);
         $commit = Proposition::findOrFail($state['current_proposition_id']);
@@ -112,6 +116,7 @@ class ClosureHysteresisTest extends TestCase
         $this->assertSame(round((-1 - 1 / 4 + 1 / 9 + 1 / 16 - 1 / 25)
             / (1 + 1 / 4 + 1 / 9 + 1 / 16 + 1 / 25), 7), $preview['cadence']);
         $this->assertTrue($preview['admissible']);
+        $this->publishPotentialFixture($this->participant);
         $state = app(ParticipationService::class)->contribute($this->participant, $phase->id, ['action' => 'proposition.commit', 'proposition_id' => $phase->gate_proposition_id]);
         $this->assertFalse($state['last_commitment']['closure_boundary']);
         $this->assertSame('settlement', $state['domain']);
@@ -140,6 +145,7 @@ class ClosureHysteresisTest extends TestCase
     {
         $this->bootstrap(2);
         [$phase] = $this->candidate([2]);
+        $this->publishPotentialFixture($this->participant);
         $entered = app(ParticipationService::class)->contribute($this->participant, $phase->id, ['action' => 'proposition.commit', 'proposition_id' => $phase->gate_proposition_id]);
         $this->assertSame('emergence', $entered['domain']);
         $this->assertSame('emergence', $entered['last_commitment']['domain_after']);
@@ -158,6 +164,7 @@ class ClosureHysteresisTest extends TestCase
         $this->assertLessThan(0, $preview['depth']);
         $this->assertLessThan(0, $preview['cadence']);
         $this->assertTrue($preview['admissible']);
+        $this->publishPotentialFixture($this->participant);
         $state = app(ParticipationService::class)->contribute($this->participant, $phase->id, ['action' => 'proposition.commit', 'proposition_id' => $phase->gate_proposition_id]);
         $snapshot = CommitmentSnapshot::findOrFail($state['current_proposition_id']);
         $this->assertSame($preview['depth'], $snapshot->depth);
@@ -173,6 +180,7 @@ class ClosureHysteresisTest extends TestCase
         $this->zeroDepthLocalValues();
         [$phase, $gate] = $this->candidate([2]);
         $counts = $this->counts();
+        $this->publishPotentialFixture($this->participant);
         $state = app(ParticipationService::class)->stateFor($this->participant);
         $closure = $state['plan']['commitment']['closure'];
         $this->assertSame(0.0, $closure['depth']);
@@ -241,6 +249,7 @@ class ClosureHysteresisTest extends TestCase
         $this->assertSame($counts, $this->counts());
         $this->assertSame($gate->id, $this->participant->fresh()->current_proposition_id);
         $this->assertNull($phase->fresh()->completed_at);
+        $this->publishPotentialFixture($this->participant);
         $this->assertSame('settlement', app(ParticipationService::class)->stateFor($this->participant)['domain']);
     }
 
@@ -317,6 +326,7 @@ class ClosureHysteresisTest extends TestCase
         $this->participant->current_proposition_id = $gate->id;
         $this->participant->save();
 
+        $this->publishPotentialFixture($this->participant);
         return [$phase, $gate];
     }
 
