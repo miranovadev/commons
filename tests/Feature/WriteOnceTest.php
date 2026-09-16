@@ -65,6 +65,7 @@ class WriteOnceTest extends TestCase
         }
         $phase = $this->phase($participant, PhaseKind::Persist, 'frontier', $gate);
         $input = ['action' => 'proposition.variant', 'statement' => 'Divergent Frontier'];
+        $this->publishPotentialFixture($participant);
         $state = app(ParticipationService::class)->stateFor($participant);
         $this->assertSame($available, isset($state['plan']['schema']['$defs']['actions']['proposition.variant']));
         $packet = app(ParticipantPromptFactory::class)->make(new Connection, $state);
@@ -74,6 +75,7 @@ class WriteOnceTest extends TestCase
 
             return;
         }
+        $this->publishPotentialFixture($participant);
         $next = app(ParticipationService::class)->contribute($participant, $phase->id, $input);
         $written = Proposition::findOrFail($next['plan']['gate_id']);
         $this->assertSame('constrain', $next['plan']['phase']['kind']);
@@ -186,6 +188,7 @@ class WriteOnceTest extends TestCase
         }
         $input = $action === 'proposition.reclassify' ? ['action' => $action] : ['action' => $action, 'statement' => 'First Write'];
         app(ContributionService::class)->validate($participant, $input);
+        $this->publishPotentialFixture($participant);
         app(ParticipationService::class)->contribute($participant, $phase->id, $input);
         $written = Proposition::findOrFail($participant->fresh()->current_proposition_id);
         $this->receiptFixture($written);
@@ -195,6 +198,7 @@ class WriteOnceTest extends TestCase
         $this->assertArrayNotHasKey('proposition.variant', $plan['schema']['$defs']['actions']);
         $this->assertArrayNotHasKey('proposition.reclassify', $plan['schema']['$defs']['actions']);
         $this->assertContains($written->id, $this->targets($plan, 'attestation.create'));
+        $this->publishPotentialFixture($participant);
         app(ParticipationService::class)->contribute($participant, $return->id,
             ['action' => 'attestation.create', 'proposition_id' => $written->id, 'direction' => 'support']);
 
@@ -307,6 +311,7 @@ class WriteOnceTest extends TestCase
         $phase = $this->phase($participant, PhaseKind::Order, 'canon', $a);
         $input = ['action' => 'proposition.commit', 'proposition_id' => $a->id];
         app(ContributionService::class)->validate($participant, $input);
+        $this->publishPotentialFixture($participant);
         app(ParticipationService::class)->contribute($participant, $phase->id, $input);
         $commit = Proposition::findOrFail($participant->fresh()->current_proposition_id);
         $return = $this->phase($participant, PhaseKind::Order, 'canon', $b);

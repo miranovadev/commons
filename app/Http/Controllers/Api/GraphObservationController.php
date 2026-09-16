@@ -25,11 +25,10 @@ final class GraphObservationController extends Controller
     {
         Gate::authorize('view', $substrate);
         $nodes = Proposition::active()->whereHas('phase.cycle.participant', fn ($q) => $q->whereBelongsTo($substrate))
-            ->get(['id', 'tier']);
+            ->with(['measurement', 'phase.cycle'])->get(['id', 'tier', 'phase_id']);
         $graph->load($substrate, $nodes, historical: false);
 
-        // Phase changes invalidate measurements across the substrate. Refresh
-        // these small projections together, without resending statements/topology.
+        // Refresh the small maintained fields without resending statements/topology.
         return response()->json(['data' => $nodes->map(fn ($node) => [
             'id' => $node->id, 'field' => $node->field, 'participation_count' => $node->participation_count,
         ])]);

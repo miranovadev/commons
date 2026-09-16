@@ -37,6 +37,7 @@ class HorizonWorkspaceTest extends TestCase
         $h3 = $this->laterHorizonFixture($h2, 1);
         $boundary = $h3->openedBy->proposition;
         [$vela, $canon] = $this->orderWorkspace($h3, $boundary, $user, 'Vela');
+        $this->publishPotentialFixture($substrate);
         $this->actingAs($user);
 
         foreach ([[$nova, $concord, $h2, 'settlement', $origin], [$vela, $canon, $h3, 'emergence', $boundary]] as [$participant, $gate, $horizon, $domain, $provenance]) {

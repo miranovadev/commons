@@ -49,6 +49,7 @@ class ReceiptContextTest extends TestCase
 
     private function move($fixture, $subject): Phase
     {
+        $this->publishPotentialFixture($fixture->viewer);
         app(ParticipationService::class)->contribute($fixture->viewer, $fixture->phase->id, [
             'action' => 'attestation.create', 'proposition_id' => $subject->id, 'direction' => 'support',
         ]);
@@ -60,6 +61,7 @@ class ReceiptContextTest extends TestCase
     {
         [$fixture, $reference, $subject, $receipt] = $this->scenario();
         $service = app(ParticipationService::class);
+        $this->publishPotentialFixture($fixture->viewer);
         $before = $service->stateFor($fixture->viewer)['plan'];
         $this->assertSame('already-in-context', collect($before['receipts'])->firstWhere('id', $receipt->id)['status']);
         $this->assertArrayNotHasKey('receipt.read', $before['schema']['$defs']['actions']);
@@ -67,8 +69,10 @@ class ReceiptContextTest extends TestCase
         $this->assertPublicCount($fixture, $subject, 0);
         $this->assertSame(0, ParticipantReceiptContext::count());
         $phase = $this->move($fixture, $subject);
+        $this->publishPotentialFixture($fixture->viewer);
         $plan = $service->stateFor($fixture->viewer)['plan'];
         $this->assertContains($receipt->id, $plan['schema']['$defs']['actions']['receipt.read']['properties']['receipt_id']['enum']);
+        $this->publishPotentialFixture($fixture->viewer);
         $state = $service->contribute($fixture->viewer, $phase->id, ['action' => 'receipt.read', 'receipt_id' => $receipt->id]);
         $this->assertSame($phase->id, $state['plan']['phase']['id']);
         $this->assertSame($subject->id, $state['plan']['gate_id']);
@@ -90,6 +94,7 @@ class ReceiptContextTest extends TestCase
         $next = $this->newPhase($fixture->viewer, $horizon->opened_by_proposition_id, $horizon);
         $this->assertSame($horizon->id, $next->cycle->context_horizon_id);
         $this->assertNotSame($phase->cycle->context_horizon_id, $next->cycle->context_horizon_id);
+        $this->publishPotentialFixture($fixture->viewer);
         $later = $service->stateFor($fixture->viewer)['plan'];
         $this->assertNotContains($receipt->id, array_column($later['receipts'], 'id'));
         $this->assertSame(1, ParticipantReceiptContext::active()->count());
@@ -98,6 +103,7 @@ class ReceiptContextTest extends TestCase
         $next->cycle->forceFill(['completed_at' => now()])->save();
         $returned = $this->newPhase($fixture->viewer, $subject->id);
         $this->assertSame($phase->cycle->context_horizon_id, $returned->cycle->context_horizon_id);
+        $this->publishPotentialFixture($fixture->viewer);
         $later = $service->stateFor($fixture->viewer)['plan'];
         $this->assertSame('loaded', collect($later['receipts'])->firstWhere('id', $receipt->id)['status']);
         $this->assertSame($loaded['loaded_at'], collect($later['receipts'])->firstWhere('id', $receipt->id)['loaded_at']);
@@ -107,6 +113,7 @@ class ReceiptContextTest extends TestCase
         $other = new Participant;
         $other->forceFill(['substrate_id' => $fixture->substrate->id, 'callsign' => 'Another reader'])->save();
         $otherPhase = $this->newPhase($other, $subject->id);
+        $this->publishPotentialFixture($other);
         $service->contribute($other, $otherPhase->id, ['action' => 'receipt.read', 'receipt_id' => $receipt->id]);
         $this->assertSame(2, app(ReinforcementService::class)->count($subject));
         $this->assertPublicCount($fixture, $subject, 2);
@@ -199,6 +206,7 @@ class ReceiptContextTest extends TestCase
         }
         $this->assertSame(1, app(ReinforcementService::class)->count($subject));
         $this->assertSame(2, ParticipantReceiptContext::active()->count());
+        $this->publishPotentialFixture($fixture->viewer);
         $packet = app(ParticipationService::class)->stateFor($fixture->viewer)['plan'];
         $this->assertSame('verified body', collect($packet['receipts'])->firstWhere('id', $receipts[0]->id)['evidence']['content_excerpt']);
         $service->clear($fixture->viewer, $phase, $receipts[0]->id);

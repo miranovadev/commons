@@ -1,5 +1,5 @@
 import { useParticipantRealtime } from '../realtime/useRealtime';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Box, Breadcrumbs, Button, Container, Group, Loader, Stack, Text, ThemeIcon, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { IconAlertCircle, IconSparkles } from '@tabler/icons-react';
@@ -32,8 +32,13 @@ function ParticipantPositionPage({ slug, participantId }: { slug: string; partic
   const parameters = { slug, participantId };
   const [switcherOpened, setSwitcherOpened] = useState(false);
   const { data: participant, isLoading: participantLoading, error: participantError } = useGetParticipantQuery(parameters);
-  const { data: participation, isLoading: participationLoading, error: participationError } = useGetParticipantWorkspaceQuery(parameters);
+  const { data: participation, isLoading: participationLoading, isFetching: participationFetching, error: participationError, refetch: refetchParticipation } = useGetParticipantWorkspaceQuery(parameters);
   useParticipantRealtime(slug, participantId, Boolean(participation) && !participationError);
+  useEffect(() => {
+    if (participationFetching || participation?.reason?.code !== 'potential_projection_pending') return;
+    const timer = setTimeout(() => { void refetchParticipation(); }, 2000);
+    return () => clearTimeout(timer);
+  }, [participation, participationFetching, refetchParticipation]);
   const [contribute, contribution] = useContributeMutation();
   const submitting = useRef(false);
   const submittedPhase = useRef<string | null>(null);
@@ -104,7 +109,7 @@ function ParticipantPositionPage({ slug, participantId }: { slug: string; partic
       {error && <Alert color="red" variant="light" icon={<IconAlertCircle size={18} />} title="The Commons could not load this position">{messageFrom(error, 'This participation state could not be loaded.')}</Alert>}
       {participant && !displayPlan && <ParticipantIdentity participant={participant} onSelect={() => setSwitcherOpened(true)} opened={switcherOpened} />}
       {participant && participation?.status === 'waiting' && !completed && (
-        <Box p="xl"><Stack align="flex-start" maw={680} mx="auto"><ThemeIcon color="indigo" variant="light" size="xl" radius="xl"><IconSparkles size={22} /></ThemeIcon><Box><Title order={2}>{participation.entry?.mode === 'origin' ? 'Every substrate begins somewhere' : 'Ready to enter the cycle'}</Title></Box>{cycleEntry.error && <Alert color="red" variant="light">{messageFrom(cycleEntry.error, 'The cycle could not be entered.')}</Alert>}<CycleEntryControl participation={participation} loading={cycleEntry.isLoading} onEnter={enterFromPotential} onOrigin={() => { cycleEntry.reset(); openOrigin(); }} /></Stack></Box>
+        <Box p="xl"><Stack align="flex-start" maw={680} mx="auto"><ThemeIcon color="indigo" variant="light" size="xl" radius="xl"><IconSparkles size={22} /></ThemeIcon><Box><Title order={2}>{participation.reason?.code === 'potential_projection_pending' ? 'Updating your position' : participation.entry?.mode === 'origin' ? 'Every substrate begins somewhere' : 'Ready to enter the cycle'}</Title></Box>{cycleEntry.error && <Alert color="red" variant="light">{messageFrom(cycleEntry.error, 'The cycle could not be entered.')}</Alert>}<CycleEntryControl participation={participation} loading={cycleEntry.isLoading} onEnter={enterFromPotential} onOrigin={() => { cycleEntry.reset(); openOrigin(); }} /></Stack></Box>
       )}
       {!displayPlan && notices.map(notice => <Alert key={notice.id} color={notice.color} title={notice.title} m="md">{notice.content}</Alert>)}
       {participant && displayPlan && (

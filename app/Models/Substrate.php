@@ -14,6 +14,18 @@ class Substrate extends Model
 
     protected $keyType = 'string';
 
+    protected static function booted(): void
+    {
+        static::updated(function (self $substrate): void {
+            if ($substrate->wasChanged('configuration')) {
+                // A receipt-weight configuration change really affects every
+                // region; ordinary contributions never use this broad boundary.
+                app(\App\Services\FieldMutationService::class)->mark($substrate->id,
+                    $substrate->contextHorizons()->pluck('id')->all());
+            }
+        });
+    }
+
     protected function casts(): array
     {
         return [

@@ -605,6 +605,7 @@ class LocalParticipantNavigationTest extends TestCase
             ])->save();
         }
 
+        app(\App\Services\PotentialProjectionService::class)->rebuild($this->substrate->id, false);
         return $node;
     }
 
@@ -614,6 +615,7 @@ class LocalParticipantNavigationTest extends TestCase
         foreach ($this->fixtureTensions as $id => $tension) {
             app(PropositionMeasurementService::class)->project(Proposition::findOrFail($id), $tension, $tension, $tension);
         }
+        app(\App\Services\PotentialProjectionService::class)->rebuild($this->substrate->id, false);
     }
 
     private function edge(Proposition $source, Proposition $target): void
@@ -623,10 +625,12 @@ class LocalParticipantNavigationTest extends TestCase
             'phase_id' => $this->authorPhase->id, 'source_proposition_id' => $source->id,
             'target_proposition_id' => $target->id, 'type' => 'variant',
         ])->save();
+        app(\App\Services\PotentialProjectionService::class)->rebuild($this->substrate->id, false);
     }
 
     private function state(Participant $participant): array
     {
+        $this->refreshFixtureMeasurements();
         return app(ParticipationService::class)->stateFor($participant);
     }
 }

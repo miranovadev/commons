@@ -30,6 +30,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Fixtures\ParticipationScaleFixture;
 use Tests\TestCase;
 
+#[\PHPUnit\Framework\Attributes\Group('performance')]
 class ParticipationPerformanceTest extends TestCase
 {
     use RefreshDatabase;

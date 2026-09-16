@@ -156,6 +156,7 @@ class BiasGateTest extends TestCase
             $this->assertInput($plan['schema'], [...$input, ...$extra], false);
         }
         $this->assertInput($plan['schema'], ['action' => 'proposition.reconcile', 'other_proposition_id' => $selected->id], false);
+        $this->publishPotentialFixture($this->viewer);
         $prompt = app(ParticipantPromptFactory::class)->make(new Connection, app(ParticipationService::class)->stateFor($this->viewer));
         $this->assertSame($plan['schema'], $prompt['schema']);
         $this->assertSame($this->optionIds(), array_column(json_decode($prompt['user'], true)['plan']['gate_options'], 'id'));
@@ -170,6 +171,7 @@ class BiasGateTest extends TestCase
 
         $count = Proposition::count();
         $ledger = $this->substrate->ledgerEntries()->count();
+        $this->publishPotentialFixture($this->viewer);
         $state = app(ParticipationService::class)->contribute($this->viewer, $this->phase->id, $input);
         $target = Proposition::findOrFail($this->viewer->fresh()->current_proposition_id);
         $this->assertSame($count + 1, Proposition::count());
@@ -230,6 +232,7 @@ class BiasGateTest extends TestCase
         $plan = $this->plan();
         $this->assertSame([$this->gate->id], $this->optionIds());
         $this->assertSame(['proposition.bias'], array_keys($plan['schema']['$defs']['actions']));
+        $this->publishPotentialFixture($this->viewer);
         $state = app(ParticipationService::class)->contribute($this->viewer, $this->phase->id,
             ['action' => 'proposition.bias', 'proposition_id' => $this->gate->id]);
         $this->assertSame('order', $state['plan']['phase']['kind']);
@@ -358,6 +361,7 @@ class BiasGateTest extends TestCase
 
     private function plan(): array
     {
+        $this->publishPotentialFixture($this->viewer);
         return app(InputPlanService::class)->forParticipant($this->viewer);
     }
 

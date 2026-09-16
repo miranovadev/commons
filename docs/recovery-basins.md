@@ -11,8 +11,8 @@ Cycle context, an expressive position uses its creating Horizon; a Committal
 uses its actual entry Horizon. A boundary belongs to its creating Horizon but
 opens the direct child into which it provides entry.
 
-`RecoveryBasinResolver` searches the explicit Horizon parent tree. It searches
-descendants first. A viable descendant shadows its ancestors; sibling branches
+`ProjectedRecoveryService` follows the explicit Horizon parent tree, reading
+maintained descendant frontier summaries before local entries. A viable descendant shadows its ancestors; sibling branches
 remain peers. If a branch's descendants are exhausted, that branch's own basin
 can supply candidates. This produces a frontier, not a global active node.
 
@@ -87,3 +87,11 @@ still retreats through provenance. Only complete Origin-branch exhaustion permit
 explicit pruning. Retired branches leave the active field but remain inspectable;
 Origin then supports a fresh Distinction after viable recovery options are exhausted.
 Branch retirement does not move other participants: their own Rest enables recovery.
+
+## Maintained terrain
+
+[Incremental Potential](incremental-potential.md) defines the projection lifecycle,
+version certificate, dependency boundary, and explicit backfill. Reads never derive
+measurements. The old full resolver remains an explicit diagnostic/reference oracle.
+`commons:potential-inspect <participant-id> --verify` compares projected and full
+reference selection, distance, and attenuated Potential.

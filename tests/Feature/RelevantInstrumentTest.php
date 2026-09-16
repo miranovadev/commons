@@ -57,6 +57,7 @@ class RelevantInstrumentTest extends TestCase
         $this->assertSame($receipt->id, $relevance->equivalent($target, $equivalent)->id);
         $this->assertSame($receipt->id, $relevance->equivalent($target, $equivalent, new ParticipationContext($f->phase))->id);
         $action = ['action' => 'instrument.execute', 'proposition_id' => $target->id, 'instrument' => $equivalent];
+        $this->publishPotentialFixture($f->viewer);
         $schema = app(ParticipationService::class)->stateFor($f->viewer)['plan']['schema'];
         $normalized = app(InstrumentInvocation::class)->normalize($equivalent);
         $this->assertSame([['receipt_id' => $receipt->id, 'invocation' => $normalized]], $schema['x-commons']['instrument_exclusions'][$target->id]);
@@ -118,6 +119,7 @@ class RelevantInstrumentTest extends TestCase
         $target = $f->node($f->gate, 'frontier');
         $input = ['kind' => 'citation', 'reference' => $f->seed->id];
         $receipt = app(OperationalInstrumentService::class)->execute($f->phase, $target, $input);
+        $this->publishPotentialFixture($f->viewer);
         $plan = app(ParticipationService::class)->stateFor($f->viewer)['plan'];
         $this->assertSame([['receipt_id' => $receipt->id, 'invocation' => $input]], $plan['schema']['x-commons']['instrument_exclusions'][$target->id]);
         $validator = new Validator;
@@ -140,6 +142,7 @@ class RelevantInstrumentTest extends TestCase
         $receipt = app(OperationalInstrumentService::class)->execute($f->phase, $target, ['kind' => 'web_search', 'query' => 'evidence']);
         $this->assertTrue($receipt->supports(ReceiptCapability::Readable));
         $this->assertTrue($receipt->supports(ReceiptCapability::Replayable));
+        $this->publishPotentialFixture($f->viewer);
         $plan = app(ParticipationService::class)->stateFor($f->viewer)['plan'];
         $this->assertFalse(collect($plan['receipts'])->firstWhere('id', $receipt->id)['can_replay']);
         $this->assertArrayNotHasKey('receipt.replay', $plan['schema']['$defs']['actions']);

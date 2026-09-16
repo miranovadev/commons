@@ -16,25 +16,26 @@ iteration. A wake still completes at most its original Cycle.
    observation, and retain it only in a request-local `InstrumentObservation`.
    Hyperlink verification and Web Search never run in the write section.
 3. Begin the contribution transaction. Acquire Substrate → Participant → active
-   Cycle → active Phase. Confirm the submitted Phase and recalculate admissibility
-   with a fresh context. Validation builds the schema without display serialization.
+   Cycle → active Phase. Confirm the submitted Phase and the field version of the
+   schema prepared before the transaction. A mismatch rejects the stale action.
 4. Dispatch, persist evidence/ledger/measurements, and advance or rest atomically.
    Instrument invocation identity, source availability and duplicate evidence are
    checked again. A stale observation persists neither an execution nor a Receipt.
-5. Commit, release locks, and build the response state as a fresh optimistic read.
+5. Commit and release locks. Maintain affected region projections optimistically,
+   then build the response state from the published field version.
 
 A formerly valid inference rejected by fresh validation remains a 409 conflict.
 Invalid model output is still an error. No timeout, retry, wake-frequency or
-queue-timeout settings were increased. Existing full-cycle retry behavior remains.
+queue-timeout settings were increased. Existing full-cycle retry behavior remains; redundant overlapping due wakes are dropped without consuming inference retries.
 
 ## Projection reads and maintenance
 
-`observeMissing` calculates missing/obsolete values in memory, using frozen
-Committal snapshots where applicable. It does not upsert measurements or retain
-new directions in the database. Numeric zero uses the existing persisted
-Correspondence direction/ancestry as before. Current projections remain reusable.
-Graph and Proposition Inspector reads continue to display persisted projection
-status without repair. Potential selection also uses read-only fallback values.
+Ordinary participation never calls `observeMissing`. State and recovery consume
+maintained measurements and Potential. The global projection certificate must
+match the field version; incomplete maintenance yields a recoverable waiting
+state. Missing numeric rows remain missing. `observeMissing` remains available
+only to explicit reference diagnostics. Graph and Proposition Inspector reads
+show persisted status without repair; active graph Potential uses projected regions.
 
 `repairMissing`, `recalculate` and `project` remain explicit mutation/maintenance
 operations. Contributions maintain their changed subject's projection. The
@@ -111,3 +112,12 @@ Cycle recovery/selection now runs outside the contribution transaction and outsi
 the subsequent Cycle-entry transaction; entry validates its observed field version.
 Order rollover likewise follows contribution commit. Existing positions are retained
 until each participant's own Rest/entry transition.
+
+## Incremental Potential publication
+
+Contributions prepare admissibility outside the root lock and validate its field
+version inside the transaction. After the ledger commit, affected-region
+measurement derivation and ancestor summary propagation run without write locks.
+Publication takes only the Substrate lock, checks the observed version, and writes
+prepared rows atomically. Raced computations retry; dirty records survive failure.
+See [Incremental Potential](incremental-potential.md) for the maintenance boundary.

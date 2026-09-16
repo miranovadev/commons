@@ -28,12 +28,9 @@ class Phase extends Model
             }
         });
         $invalidate = function (self $phase): void {
-            Substrate::whereKey($phase->cycle->participant->substrate_id)->increment('field_version');
-            // A new observation can affect either side of a lineage comparison.
-            // Invalidate disposable views in this substrate; immutable snapshots remain intact.
-            PropositionMeasurement::query()->whereHas('proposition.phase.cycle.participant',
-                fn ($query) => $query->where('substrate_id', $phase->cycle->participant->substrate_id),
-            )->update(['calculator_version' => null]);
+            app(\App\Services\FieldMutationService::class)->touch($phase, [
+                $phase->gate_proposition_id, $phase->getOriginal('gate_proposition_id'),
+            ]);
         };
         static::created(function (self $phase) use ($invalidate): void {
             if ($phase->gate_proposition_id !== null) {

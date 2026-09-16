@@ -188,6 +188,7 @@ class ParticipantActionContractTest extends TestCase
         $this->assertRejected($participant, [...$input, 'rationale' => 'No rationale for Rest']);
         $this->assertValid($transport, ['contribution' => [...$input, 'rationale' => 'No rationale for Rest']], false);
         app(ContributionService::class)->validate($participant, $input);
+        app(\App\Services\PotentialProjectionService::class)->rebuild($participant->substrate_id, false);
         app(ParticipationService::class)->contribute($participant, $phase->id, $input);
         $this->assertNotNull($phase->cycle->fresh()->rested_at);
     }
@@ -338,6 +339,7 @@ class ParticipantActionContractTest extends TestCase
         }
         $participant->forceFill(['current_proposition_id' => $gate->id])->save();
 
+        $this->publishPotentialFixture($participant);
         return [$participant, $phase, $seed];
     }
 }

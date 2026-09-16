@@ -31,7 +31,10 @@ class EvidenceFirstInteractionTest extends TestCase
         $f->evidence($other);
         $f->phase->forceFill(['kind' => $kind, 'gate_proposition_id' => $gate->id, 'write_register' => $register])->save();
         $service = app(ParticipationService::class);
-        $targets = fn (string $action) => $service->stateFor($f->viewer)['plan']['schema']['$defs']['actions'][$action]['properties']['proposition_id']['enum'] ?? [];
+        $targets = function (string $action) use ($f, $service): array {
+            $this->publishPotentialFixture($f->viewer);
+            return $service->stateFor($f->viewer)['plan']['schema']['$defs']['actions'][$action]['properties']['proposition_id']['enum'] ?? [];
+        };
         $this->assertContains($write->id, $targets('instrument.execute'));
         $this->assertNotContains($write->id, $targets('attestation.create'));
         $this->assertContains($other->id, $targets('attestation.create'));
