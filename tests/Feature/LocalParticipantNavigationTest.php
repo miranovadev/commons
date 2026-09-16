@@ -24,6 +24,7 @@ use App\Services\ParticipantActivityService;
 use App\Services\ParticipantConnectionTriggerService;
 use App\Services\ParticipationService;
 use App\Services\PotentialChargeService;
+use App\Services\PotentialProjectionService;
 use App\Services\PropositionMeasurementService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -286,7 +287,7 @@ class LocalParticipantNavigationTest extends TestCase
         $this->assertArrayHasKey('proposition.variant', $actions);
         $this->assertArrayHasKey('proposition.traverse', $actions);
         $this->assertArrayNotHasKey('participant.rest', $actions);
-        $this->assertFalse($state['plan']['tragedy']);
+        $this->assertFalse($state['plan']['rest_available']);
         $count = Proposition::count();
         $edges = Supersession::count();
         $after = app(ParticipationService::class)->contribute($participant, $state['plan']['phase']['id'], [
@@ -328,13 +329,13 @@ class LocalParticipantNavigationTest extends TestCase
         }
     }
 
-    public function test_complete_exhaustion_allows_rest_and_preserves_position(): void
+    public function test_local_rest_in_an_unexplored_empty_basin_preserves_its_entry(): void
     {
         $position = $this->node('Isolated', 0.0);
         $participant = $this->participant('resting', $position);
         $this->phase($participant, $position);
         $state = $this->state($participant);
-        $this->assertTrue($state['plan']['tragedy']);
+        $this->assertTrue($state['plan']['rest_available']);
         $this->assertSame(['participant.rest'], array_keys($state['plan']['schema']['$defs']['actions']));
         $count = Proposition::count();
         $after = app(ParticipationService::class)->contribute($participant, $state['plan']['phase']['id'], ['action' => 'participant.rest']);
@@ -344,8 +345,10 @@ class LocalParticipantNavigationTest extends TestCase
         $this->assertNotNull($phase->completed_at);
         $this->assertNotNull($phase->cycle->rested_at);
         $this->assertNotNull($phase->cycle->completed_at);
-        $this->assertSame('recovery', $after['entry']['selection']);
-        $this->assertFalse($after['entry']['available']);
+        $this->assertSame('ready', $after['status']);
+        $this->assertSame('distinguish', $after['plan']['phase']['kind']);
+        $this->assertSame($position->id, $after['plan']['gate_id']);
+        $this->assertDatabaseMissing('exhaustion_states', ['proposition_id' => $position->id]);
         $this->expectException(ConflictHttpException::class);
         app(CycleEntryService::class)->enter($participant);
     }
@@ -390,7 +393,7 @@ class LocalParticipantNavigationTest extends TestCase
         $this->assertSame(min($near->id, $tie->id), app(PotentialChargeService::class)->recoverFrom($position)['proposition']->id);
     }
 
-    public function test_repeated_rest_moves_outward_after_a_region_is_exhausted(): void
+    public function test_repeated_local_rest_does_not_mark_a_still_open_region_exhausted(): void
     {
         $position = $this->node('Empty region', 0.0);
         $first = $this->region('First viable', 0.6);
@@ -422,19 +425,22 @@ class LocalParticipantNavigationTest extends TestCase
         });
         $this->refreshFixtureMeasurements();
         $state = $this->state($participant);
-        $this->assertTrue($state['plan']['tragedy']);
+        $this->assertTrue($state['plan']['rest_available']);
         $state = app(ParticipationService::class)->contribute($participant, $state['plan']['phase']['id'], ['action' => 'participant.rest']);
         $this->assertSame('distinguish', $state['plan']['phase']['kind']);
-        $this->assertSame($second->id, $this->state($participant)['plan']['gate_id']);
+        $this->assertSame($first->id, $this->state($participant)['plan']['gate_id']);
+        $this->assertDatabaseMissing('exhaustion_states', ['proposition_id' => $first->id]);
     }
 
-    public function test_disconnected_and_zero_potential_regions_cannot_supply_recovery(): void
+    public function test_connected_zero_potential_remains_available_without_borrowing_from_disconnected_regions(): void
     {
         $position = $this->node('Observer', 0.0);
         $empty = $this->node('Connected zero', 0.0);
         $this->edge($position, $empty);
         $this->region('Disconnected high', 1.0);
-        $this->assertNull(app(PotentialChargeService::class)->recoverFrom($position));
+        $selection = app(PotentialChargeService::class)->recoverFrom($position);
+        $this->assertSame($position->id, $selection['proposition']->id);
+        $this->assertSame(0.0, $selection['raw_potential_charge']);
     }
 
     public function test_order_rejects_attestation_and_expressive_traverse_without_weakening_commit(): void
@@ -454,7 +460,7 @@ class LocalParticipantNavigationTest extends TestCase
         $phase->write_register = 'canon';
         $phase->save();
         $state = $this->state($participant);
-        $this->assertFalse($state['plan']['tragedy']);
+        $this->assertFalse($state['plan']['rest_available']);
         $this->assertFalse($state['plan']['commitment']['admissible']);
         $this->assertArrayNotHasKey('reinforcement', $state['plan']['commitment']['requirements']);
         $actions = $state['plan']['schema']['$defs']['actions'];
@@ -605,7 +611,8 @@ class LocalParticipantNavigationTest extends TestCase
             ])->save();
         }
 
-        app(\App\Services\PotentialProjectionService::class)->rebuild($this->substrate->id, false);
+        app(PotentialProjectionService::class)->rebuild($this->substrate->id, false);
+
         return $node;
     }
 
@@ -615,7 +622,7 @@ class LocalParticipantNavigationTest extends TestCase
         foreach ($this->fixtureTensions as $id => $tension) {
             app(PropositionMeasurementService::class)->project(Proposition::findOrFail($id), $tension, $tension, $tension);
         }
-        app(\App\Services\PotentialProjectionService::class)->rebuild($this->substrate->id, false);
+        app(PotentialProjectionService::class)->rebuild($this->substrate->id, false);
     }
 
     private function edge(Proposition $source, Proposition $target): void
@@ -625,12 +632,13 @@ class LocalParticipantNavigationTest extends TestCase
             'phase_id' => $this->authorPhase->id, 'source_proposition_id' => $source->id,
             'target_proposition_id' => $target->id, 'type' => 'variant',
         ])->save();
-        app(\App\Services\PotentialProjectionService::class)->rebuild($this->substrate->id, false);
+        app(PotentialProjectionService::class)->rebuild($this->substrate->id, false);
     }
 
     private function state(Participant $participant): array
     {
         $this->refreshFixtureMeasurements();
+
         return app(ParticipationService::class)->stateFor($participant);
     }
 }

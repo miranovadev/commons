@@ -16,6 +16,7 @@ use App\Services\ContributionDispatcher;
 use App\Services\LedgerService;
 use App\Services\ParticipantPromptFactory;
 use App\Services\ParticipationService;
+use App\Services\PotentialProjectionService;
 use App\Services\PropositionOptionService;
 use App\Services\PropositionStateService;
 use DomainException;
@@ -81,7 +82,7 @@ class PersistInstrumentTest extends TestCase
         $ownerState = $service->stateFor($author);
         $this->assertArrayNotHasKey('proposition.reclassify', $ownerState['plan']['schema']['$defs']['actions']);
         $this->classificationEvidenceFixture($write);
-        app(\App\Services\PotentialProjectionService::class)->refresh($author->substrate_id);
+        app(PotentialProjectionService::class)->refresh($author->substrate_id);
         $ownerState = $service->stateFor($author);
         $this->assertArrayHasKey('proposition.reclassify', $service->stateFor($grounder)['plan']['schema']['$defs']['actions']);
         $this->assertArrayHasKey('proposition.reclassify', $ownerState['plan']['schema']['$defs']['actions']);
@@ -141,12 +142,12 @@ class PersistInstrumentTest extends TestCase
         // Isolate action exhaustion from other Persist actions, without mocking options.
         config(['phases.2.actions' => ['instrument.execute']]);
         $plan = app(ParticipationService::class)->stateFor($grounder)['plan'];
-        $this->assertFalse($plan['tragedy']);
+        $this->assertFalse($plan['rest_available']);
         $this->assertSame(['instrument.execute'], array_keys($plan['schema']['$defs']['actions']));
         // Removing the only Write leaves no valid Instrument target.
         $write->forceFill(['register' => 'concord'])->save();
         $plan = app(ParticipationService::class)->stateFor($grounder)['plan'];
-        $this->assertTrue($plan['tragedy']);
+        $this->assertTrue($plan['rest_available']);
         $this->assertSame(['participant.rest'], array_keys($plan['schema']['$defs']['actions']));
     }
 
@@ -185,7 +186,7 @@ class PersistInstrumentTest extends TestCase
         app(LedgerService::class)->record($edge);
         Phase::findOrFail($state['plan']['phase']['id'])->forceFill(['gate_proposition_id' => $signal->id])->save();
         $author->forceFill(['current_proposition_id' => $signal->id])->save();
-        app(\App\Services\PotentialProjectionService::class)->refresh($author->substrate_id);
+        app(PotentialProjectionService::class)->refresh($author->substrate_id);
         $state = $service->contribute($author, $state['plan']['phase']['id'], [
             'action' => 'proposition.variant', 'statement' => 'Stance awaiting evidence',
         ]);
@@ -193,7 +194,7 @@ class PersistInstrumentTest extends TestCase
         $this->receiptFixture($signal);
         $grounder = new Participant;
         $grounder->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'grounder', 'max_read_count' => 25])->save();
-        app(\App\Services\PotentialProjectionService::class)->refresh($author->substrate_id);
+        app(PotentialProjectionService::class)->refresh($author->substrate_id);
         $state = $service->enter($grounder);
         $this->assertSame($signal->parents()->sole()->id, $state['plan']['gate_id']);
         $this->assertSame($signal->register, $state['plan']['phase']['write_register']);

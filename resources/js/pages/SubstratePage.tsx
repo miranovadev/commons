@@ -1,10 +1,11 @@
+import { useState } from 'react';
 import { useContextHorizonRealtime } from '../realtime/useRealtime';
-import { Alert, Badge, Box, Button, Group, LoadingOverlay, Title } from '@mantine/core';
+import { Alert, Badge, Box, Button, Group, LoadingOverlay, NativeSelect, Title } from '@mantine/core';
 import { IconAlertCircle, IconArrowRight, IconUserHexagon, IconUsers } from '@tabler/icons-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { messageFrom } from '../errors';
 import { PropositionGraph } from '../components/PropositionGraph';
-import { useGetPropositionsQuery, useGetSubstrateQuery } from '../services/commonsApi';
+import { useGetPropositionsQuery, useGetObservedPropositionsQuery, useGetSubstrateQuery } from '../services/commonsApi';
 import type { User } from '../types';
 import { useGraphParticipants } from '../realtime/useGraphParticipants';
 
@@ -13,10 +14,14 @@ export function SubstratePage({ user }: { user?: User | null }) {
   const slug = routeSlug ?? '';
   const navigate = useNavigate();
   const { data: substrate, isLoading, error: substrateError } = useGetSubstrateQuery(slug);
-  const { data: propositions = [], error: propositionsError } = useGetPropositionsQuery(slug);
+  const [view, setView] = useState<'active' | 'exhausted' | 'history'>('active');
+  const { data: activePropositions = [], error: propositionsError } = useGetPropositionsQuery(slug);
+  const { currentData: observedPropositions = [], error: historyError } = useGetObservedPropositionsQuery(
+    { slug, view: view === 'active' ? 'exhausted' : view }, { skip: view === 'active' });
+  const propositions = view === 'active' ? activePropositions : observedPropositions;
   useContextHorizonRealtime(slug, Boolean(substrate) && !substrateError);
   const { participants, error: participantsError } = useGraphParticipants(slug, Boolean(substrate) && !substrateError, propositions);
-  const error = substrateError || propositionsError;
+  const error = substrateError || propositionsError || (view !== 'active' && historyError);
 
   return (
     <Box className="substrate-view">
@@ -33,6 +38,9 @@ export function SubstratePage({ user }: { user?: User | null }) {
                   <Badge color="gray" variant="light" leftSection={<IconUsers size={12} />} style={{ flexShrink: 0 }}
                     aria-label={`${substrate.participants_count ?? 0} Participants`}>{substrate.participants_count ?? 0}</Badge>
                 </Group>
+                <NativeSelect size="xs" aria-label="Graph visibility" value={view}
+                  onChange={event => setView(event.currentTarget.value as typeof view)}
+                  data={[{ value: 'active', label: 'Active structure' }, { value: 'exhausted', label: 'Include exhausted alternatives' }, { value: 'history', label: 'Full history' }]} />
                 {user ? (
                   <Button size="xs" variant="light" leftSection={<IconUserHexagon size={16} />} rightSection={<IconArrowRight size={14} />}
                     onClick={() => navigate(`/substrates/${slug}/participants`)}>Participants</Button>

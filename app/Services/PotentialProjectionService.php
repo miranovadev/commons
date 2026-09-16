@@ -8,6 +8,7 @@ use App\Exceptions\PotentialProjectionUnavailable;
 use App\Models\ContextHorizon;
 use App\Models\Phase;
 use App\Models\Proposition;
+use App\Models\PropositionMeasurement;
 use App\Models\Substrate;
 use App\Services\Observables\LineageMeasurementService;
 use App\Services\Observables\ObservableService;
@@ -17,7 +18,7 @@ use Illuminate\Support\Facades\DB;
 /** Disposable terrain, published atomically against the ledger's field version. */
 final class PotentialProjectionService
 {
-    public const VERSION = 'potential-regions-v1';
+    public const VERSION = 'potential-regions-v2-exhaustion';
 
     public function __construct(private PotentialRegionCalculator $calculator) {}
 
@@ -74,6 +75,7 @@ final class PotentialProjectionService
                 // never permission to declare an old projection current.
                 try {
                     $this->assertCurrent($substrateId);
+
                     return true;
                 } catch (PotentialProjectionUnavailable) {
                     return false;
@@ -171,6 +173,8 @@ final class PotentialProjectionService
                 return true;
             });
             if ($published) {
+                app(RealtimePublisher::class)->graphMetrics($substrateId);
+
                 return true;
             }
         }
@@ -201,7 +205,7 @@ final class PotentialProjectionService
                     'chirality' => $values->chirality, 'closure' => $values->closure,
                     'calculated_at' => now(), 'calculator_version' => LineageMeasurementService::VERSION];
                 $measurements[] = $row;
-                $measurement = new \App\Models\PropositionMeasurement;
+                $measurement = new PropositionMeasurement;
                 $measurement->forceFill($row);
                 $node->setRelation('measurement', $measurement);
                 if ($values->correspondence !== null && $values->correspondence != 0) {
@@ -228,7 +232,7 @@ final class PotentialProjectionService
                 $local['entries'][$id] = ['tension' => $node->commitmentSnapshot->tension];
             }
         }
-        // Historical geometry is retained for distances from pruned positions;
+        // Historical geometry is retained for distances from exhausted positions;
         // active-only nodes above independently constrain numeric Potential.
         $edges = DB::table('supersessions')->whereIn('target_proposition_id', $owned->keys())
             ->get(['source_proposition_id', 'target_proposition_id']);
@@ -240,7 +244,7 @@ final class PotentialProjectionService
         }
         $branches = [];
         $roots = $memberships->flatten(1)->pluck('root_proposition_id')->unique();
-        foreach (DB::table('origin_branches')->whereIn('root_proposition_id', $roots)->whereNull('pruned_at')->get() as $branch) {
+        foreach (DB::table('origin_branches')->whereIn('root_proposition_id', $roots)->whereNull('exhausted_at')->whereNull('legacy_retired_at')->get() as $branch) {
             $candidates = $this->calculator->candidates($local, branch: $branch->root_proposition_id);
             $branchNodes = collect($local['nodes'])->filter(fn ($node) => $node['active'] && $this->calculator->inBranch($node, $branch->root_proposition_id));
             $branches[] = ['root_proposition_id' => $branch->root_proposition_id, 'context_horizon_id' => $horizon->id,

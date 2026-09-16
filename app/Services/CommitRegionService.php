@@ -80,23 +80,40 @@ final class CommitRegionService
         if ($context !== null) {
             return $context->seed($position);
         }
-        $ancestors = DB::select(<<<'SQL'
-            WITH RECURSIVE ancestors (id, tier) AS (
-                SELECT id, tier FROM propositions WHERE id = ?
-                UNION
-                SELECT p.id, p.tier FROM propositions p
-                JOIN supersessions s ON s.source_proposition_id = p.id
-                JOIN ancestors a ON a.id = s.target_proposition_id
-                JOIN phases ph ON ph.id = p.phase_id
-                JOIN cycles c ON c.id = ph.cycle_id
-                JOIN participants participant ON participant.id = c.participant_id
-                WHERE a.tier = 'expressive' AND participant.substrate_id = ?
-            ) SELECT id FROM ancestors WHERE tier = 'committal'
-            SQL, [$position->getKey(), $position->phase->cycle->participant->substrate_id]);
+        if (! $position->exists) {
+            return null;
+        }
+        // Expand only indexed parent edges from the current frontier. PostgreSQL
+        // can choose a whole-relation recursive-CTE plan even for a short path.
+        $substrateId = $position->phase->cycle->participant->substrate_id;
+        $frontier = collect([$position]);
+        $seen = $seeds = [];
+        while ($frontier->isNotEmpty()) {
+            $expressive = [];
+            foreach ($frontier as $node) {
+                if (isset($seen[$node->id])) {
+                    continue;
+                }
+                $seen[$node->id] = true;
+                if ($node->tier === 'committal') {
+                    $seeds[$node->id] = $node;
+                } elseif ($node->tier === 'expressive') {
+                    $expressive[] = $node->id;
+                }
+            }
+            // Different first Commits are ambiguous; never union their regions.
+            if (count($seeds) > 1) {
+                return null;
+            }
+            if ($expressive === []) {
+                break;
+            }
+            $parents = DB::table('supersessions')->whereIn('target_proposition_id', $expressive)->select('source_proposition_id');
+            $frontier = Proposition::whereIn('id', $parents)->whereNotIn('id', array_keys($seen))
+                ->whereHas('phase.cycle.participant', fn ($q) => $q->where('substrate_id', $substrateId))->get();
+        }
 
-        // A valid reconciliation joins one region. Never union unrelated seeds
-        // when inspecting legacy cross-region or incomplete ancestry.
-        return count($ancestors) === 1 ? Proposition::query()->find($ancestors[0]->id) : null;
+        return count($seeds) === 1 ? reset($seeds) : null;
     }
 
     /** Structural membership includes superseded intermediates, but never crosses a Commit. */

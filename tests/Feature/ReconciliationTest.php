@@ -162,7 +162,7 @@ class ReconciliationTest extends TestCase
         $input = ['action' => 'proposition.reconcile', 'other_proposition_id' => $sibling->id];
         $this->assertSame([$sibling->id], array_column($plan['gate_options'], 'id'));
         $this->assertSame([], $plan['write_options']);
-        $this->assertFalse($plan['tragedy']);
+        $this->assertFalse($plan['rest_available']);
         $this->assertSame(['action', 'other_proposition_id'], $plan['schema']['$defs']['actions']['proposition.reconcile']['required']);
         $this->assertInput($plan['schema'], $input, true);
         $this->assertInput($plan['schema'], [...$input, 'statement' => 'Synthesis'], false);

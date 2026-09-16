@@ -7,7 +7,6 @@ use App\Models\Participant;
 use App\Models\ParticipantReceiptContext;
 use App\Models\Phase;
 use App\Models\Proposition;
-use App\Models\PropositionMeasurement;
 use App\Models\ReceiptContextEvent;
 use App\Models\Substrate;
 use App\Services\Evidence\ReceiptEvidenceService;
@@ -32,7 +31,7 @@ final readonly class ReceiptContextService
     {
         if ($phase->gate_proposition_id !== null && ($context !== null
             ? ! $context->activeIds->has($phase->gate_proposition_id)
-            : app(OriginBranchService::class)->pruned($phase->gate_proposition_id))) {
+            : app(ExhaustionService::class)->unavailable($phase->gate_proposition_id))) {
             return collect();
         }
         $context ??= new ParticipationContext($phase);

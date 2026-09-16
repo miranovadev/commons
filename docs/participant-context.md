@@ -37,7 +37,7 @@ inference. The resumable API retains those lifecycle fields for clients.
   "read_options": [],
   "gate_options": [],
   "write_options": [],
-  "tragedy": false,
+  "rest_available": false,
   "schema": {}
 }
 ```

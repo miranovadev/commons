@@ -18,6 +18,7 @@ use App\Services\ParticipationService;
 use App\Services\PotentialChargeService;
 use App\Services\PotentialProjectionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Arr;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -118,10 +119,23 @@ class ParticipantContinuityTest extends TestCase
             ['action' => 'proposition.commit', 'proposition_id' => $candidate->id]);
         $commit = $participant->fresh()->position;
         $next = $participant->cycles()->whereNull('completed_at')->sole();
-        // An exhausted Order has no expressive candidate and exposes Rest alone.
+        // An actually explored terminal supplies the witness; an empty fresh
+        // Commit alone is never sufficient to close the new child Horizon.
         $phase = $next->currentPhase;
-        $phase->forceFill(['kind' => PhaseKind::Order, 'write_register' => 'canon'])->save();
-        $horizons = ContextHorizon::orderBy('sequence')->get()->map->getAttributes()->all();
+        $creation = $this->phaseAtPositionFixture($phase, PhaseKind::Constrain);
+        $head = (new Proposition)->forceFill(['phase_id' => $creation->id, 'register' => $creation->write_register,
+            'tier' => 'expressive', 'statement' => 'Explored terminal in the new Horizon']);
+        $head->save();
+        app(LedgerService::class)->record($head);
+        $edge = (new Supersession)->forceFill(['phase_id' => $creation->id, 'source_proposition_id' => $commit->id,
+            'target_proposition_id' => $head->id, 'type' => 'variant']);
+        $edge->save();
+        app(LedgerService::class)->record($edge);
+        $this->classificationEvidenceFixture($head);
+        $phase->forceFill(['kind' => PhaseKind::Order, 'write_register' => 'canon', 'gate_proposition_id' => $head->id])->save();
+        $participant->forceFill(['current_proposition_id' => $head->id])->save();
+        app(PotentialProjectionService::class)->refresh($participant->substrate_id);
+        $horizons = ContextHorizon::orderBy('sequence')->get()->map(fn ($h) => Arr::except($h->getAttributes(), ['exhausted_at', 'updated_at']))->all();
         $state = $service->stateFor($participant);
         foreach ($state['plan']['schema']['$defs']['actions']['receipt.read']['properties']['receipt_id']['enum'] ?? [] as $receiptId) {
             $state = $service->contribute($participant, $phase->id, ['action' => 'receipt.read', 'receipt_id' => $receiptId]);
@@ -145,7 +159,7 @@ class ParticipantContinuityTest extends TestCase
         $this->assertSame($selectedHorizon->id, $relocated['cycle']['context_horizon_id']);
         $this->assertSame('settlement', $relocated['domain']);
         $this->assertSame('signal', $relocated['plan']['phase']['write_register']);
-        $this->assertSame($horizons, ContextHorizon::orderBy('sequence')->get()->map->getAttributes()->all());
+        $this->assertSame($horizons, ContextHorizon::orderBy('sequence')->get()->map(fn ($h) => Arr::except($h->getAttributes(), ['exhausted_at', 'updated_at']))->all());
     }
 
     private function prepareCommit(float $value): array

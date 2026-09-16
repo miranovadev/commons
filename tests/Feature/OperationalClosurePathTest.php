@@ -269,18 +269,16 @@ class OperationalClosurePathTest extends TestCase
         $this->assertSame($origin->id, $state['plan']['gate_id']);
         $this->assertSame('committal', $state['plan']['gate_options'][0]['tier']);
         $this->assertSame('distinguish', $state['plan']['phase']['kind']);
-        $this->assertArrayNotHasKey('proposition.variant', $state['plan']['schema']['$defs']['actions']);
+        // This fully grounded/attested terminal has actually exhausted. Its
+        // earlier route remains context, but cannot be re-entered as active work.
+        $this->assertArrayHasKey('proposition.variant', $state['plan']['schema']['$defs']['actions']);
+        $this->assertDatabaseHas('exhaustion_states', ['proposition_id' => $signal->id]);
+        $this->assertSame(['participant.rest'], array_keys($this->state($builder)['plan']['schema']['$defs']['actions']));
         $before = Proposition::count();
-        $continued = $this->gate($this->move($author, [
-            'action' => 'proposition.traverse', 'proposition_id' => $signal->id,
-        ]));
-        $this->assertSame($signal->id, $continued->id);
-        $this->assertSame($before, Proposition::count());
+        $continued = $this->gate($this->move($author, ['action' => 'proposition.variant', 'statement' => 'A new route']));
+        $this->assertNotSame($signal->id, $continued->id);
+        $this->assertSame($before + 1, Proposition::count());
         $this->assertSame([$origin->id], $continued->parents()->pluck('propositions.id')->all());
-        $this->assertDatabaseMissing('supersessions', [
-            'source_proposition_id' => $concord->id,
-            'target_proposition_id' => $continued->id,
-        ]);
         foreach (Proposition::where('tier', 'expressive')->get() as $proposition) {
             $this->assertExpressiveDepth($proposition, 6);
         }
@@ -338,6 +336,7 @@ class OperationalClosurePathTest extends TestCase
     private function state(Participant $participant): array
     {
         $this->publishPotentialFixture($participant);
+
         return app(ParticipationService::class)->stateFor($participant);
     }
 

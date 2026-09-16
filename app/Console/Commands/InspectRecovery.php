@@ -3,9 +3,10 @@
 namespace App\Console\Commands;
 
 use App\Models\Participant;
+use App\Services\ExhaustionService;
 use App\Services\PotentialChargeService;
-use App\Services\TragedyService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 
 class InspectRecovery extends Command
 {
@@ -31,10 +32,17 @@ class InspectRecovery extends Command
             ...array_diff_key($selection, ['proposition' => true]),
         ];
         $phase = $participant->cycles()->latest('sequence')->first()?->phases()->orderByDesc('kind')->first();
-        $exhaustion = $phase === null ? null : app(TragedyService::class)->inspect($phase);
+        $exhaustion = $phase === null ? null : app(ExhaustionService::class)->inspect($phase);
         $this->line(json_encode([
             'participant_id' => $participant->id,
             'position_id' => $participant->current_proposition_id,
+            'current_path_exhausted' => DB::table('exhaustion_states')->where('proposition_id', $participant->current_proposition_id)->where('kind', 'excursion')->exists(),
+            'current_horizon_id' => $phase?->cycle->context_horizon_id,
+            'current_horizon_exhausted' => $phase?->cycle->contextHorizon->exhausted_at !== null,
+            'parent_horizon_id' => $phase?->cycle->contextHorizon->parent_context_horizon_id,
+            'exhausted_alternatives' => app(ExhaustionService::class)->context($participant->position),
+            'origin_lineages' => DB::table('origin_branch_memberships')->where('proposition_id', $participant->current_proposition_id)->pluck('root_proposition_id')->all(),
+            'would_tragedy' => collect($exhaustion['branches'] ?? [])->contains('exhausted', true),
             ...$inspection,
             'branch_exhaustion' => $exhaustion,
             'origin_renewal_after_tragedy' => $selection === null && ($exhaustion['stable'] ?? false)

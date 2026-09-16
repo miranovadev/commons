@@ -6,12 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\PropositionResource;
 use App\Models\Proposition;
 use App\Models\Substrate;
+use App\Services\ExhaustionService;
 use App\Services\GraphProjectionService;
 use App\Services\Observables\ReinforcementService;
 use App\Services\PropositionPresentationService;
 use App\Services\PropositionStateService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
 class PropositionController extends Controller
@@ -31,7 +33,7 @@ class PropositionController extends Controller
         $state->loadAttestationCounts(collect([$proposition]));
         $reinforcement->loadCounts(collect([$proposition]));
         $proposition->setAttribute('attestation_summary', $presentation->attestations($proposition));
-        $graph->load($substrate, collect([$proposition]), app(\App\Services\OriginBranchService::class)->pruned($proposition));
+        $graph->load($substrate, collect([$proposition]), app(ExhaustionService::class)->unavailable($proposition));
 
         return new PropositionResource($proposition);
     }
@@ -44,10 +46,15 @@ class PropositionController extends Controller
         Request $request,
     ): AnonymousResourceCollection {
         Gate::authorize('view', $substrate);
-        $input = $request->validate(['history' => ['sometimes', 'boolean'], 'ids' => ['sometimes', 'array', 'min:1', 'max:100'], 'ids.*' => ['required', 'ulid', 'distinct']]);
+        $input = $request->validate(['view' => ['sometimes', 'in:active,exhausted,history'], 'history' => ['sometimes', 'boolean'], 'ids' => ['sometimes', 'array', 'min:1', 'max:100'], 'ids.*' => ['required', 'ulid', 'distinct']]);
 
-        $historical = $request->boolean('history');
-        $propositions = Proposition::query()->when(! $historical, fn ($query) => $query->active())
+        $view = $input['view'] ?? ($request->boolean('history') ? 'history' : 'active');
+        $historical = $view !== 'active';
+        $propositions = Proposition::query()->when($view === 'active', fn ($query) => $query->active())
+            ->when($view === 'exhausted', fn ($query) => $query->where(fn ($q) => $q
+                ->whereIn('propositions.id', Proposition::active()->select('propositions.id'))
+                ->orWhereIn('propositions.id', DB::table('supersessions')->select('target_proposition_id')
+                    ->whereIn('source_proposition_id', Proposition::active()->select('propositions.id')))))
             ->whereHas(
                 'phase.cycle.participant',
                 fn ($query) => $query->whereBelongsTo($substrate),

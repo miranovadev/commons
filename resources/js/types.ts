@@ -13,6 +13,7 @@ export interface Observables {
 }
 
 export interface Proposition {
+  exhaustion?: { exhausted: boolean; basin_exhausted: boolean; exhausted_at: string | null };
   active?: boolean;
   id: Identifier;
   register: RegisterName;
@@ -228,7 +229,19 @@ export interface ReceiptContext {
   evidence?: { query?: string; executed_at?: string; results?: Array<{ title: string; url: string; excerpt: string; excerpt_truncated: boolean; source: string; rank: number; relevance: number | null; published_at: string | null }>; proposition_id?: Identifier; statement?: string; direction?: string; rationale?: string | null; resource?: string; fingerprint?: string; observed_at?: string; content_excerpt?: string | null; excerpt_truncated?: boolean };
 }
 
+export interface ExhaustedAlternative {
+  id: Identifier;
+  statement: string;
+  tier: string;
+  register: string;
+  exhausted: boolean;
+  basin_exhausted: boolean;
+  exhausted_at: string;
+  actionable: false;
+}
+
 export interface ParticipantPlan {
+  exhausted_alternatives?: ExhaustedAlternative[];
   receipts?: ReceiptContext[];
   commitment_options?: Record<Identifier, NonNullable<ParticipantPlan['commitment']>>;
   commitment?: {
@@ -250,7 +263,7 @@ export interface ParticipantPlan {
   phase: Phase;
   gate: Proposition;
   lineage?: Proposition[];
-  tragedy?: boolean;
+  rest_available?: boolean;
   traversal_options?: Proposition[];
   instrument_options?: Proposition[];
   write_options?: Proposition[];
@@ -349,7 +362,8 @@ export interface ApiEnvelope<T> {
 
 /** Protected autonomous context; human display uses ParticipantPlan via /workspace. */
 export interface ParticipantContext {
-  tragedy: boolean;
+  exhausted_alternatives?: ExhaustedAlternative[];
+  rest_available: boolean;
   commitment?: ParticipantPlan['commitment'];
   commitment_options?: ParticipantPlan['commitment_options'];
   phase: Pick<Phase, 'id' | 'number' | 'kind' | 'write_register'>;

@@ -53,6 +53,7 @@ export function useContextHorizonRealtime(slug: string, enabled: boolean) {
         await dispatch(commonsApi.endpoints.getPropositions.initiate(slug, { subscribe: false, forceRefetch: true }));
       }
       if (!active) return;
+      dispatch(commonsApi.util.invalidateTags([{ type: 'PropositionHistory', id: slug }]));
       await refreshGraphPropositions(dispatch, slug, keys.filter(key => !['catchup', 'subscriptions', 'participants', 'metrics'].includes(key)), () => active);
       if (keys.includes('metrics') || keys.includes('catchup')) await refreshGraphMetrics(dispatch, slug, () => active);
     });

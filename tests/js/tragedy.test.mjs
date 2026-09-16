@@ -16,11 +16,13 @@ test('the participant page offers Rest only when the authoritative schema expose
         import { MemoryRouter } from 'react-router-dom';
         import { ParticipantPage } from './resources/js/pages/ParticipantPage';
         import { setParticipation } from './resources/js/services/commonsApi';
-        export function render(action, tragedy) {
+        export function render(action, rest_available) {
           setParticipation({ status: 'ready', plan: {
             gate: { id: 'gate', register: 'canon', tier: 'expressive', statement: 'Gate' },
             phase: { id: 'phase', kind: 'order', number: 7, write_register: 'canon' },
-            tragedy, traversal_options: [],
+            rest_available, traversal_options: [],
+            exhausted_alternatives: [{ id: 'spent', statement: 'A route we learned from', tier: 'expressive', register: 'activity',
+              exhausted: true, basin_exhausted: false, exhausted_at: '2026-09-16', actionable: false }],
             schema: {
               oneOf: [{ $ref: '#/$defs/actions/' + action }],
               $defs: { actions: { [action]: { title: action, properties: { action: { const: action } } } } },
@@ -58,14 +60,18 @@ export const useGetParticipantWorkspaceQuery = () => ({ data: participation });
   new Function('require', 'module', 'exports', result.outputFiles[0].text)(require, module, module.exports);
   for (const action of ['proposition.variant', 'proposition.reclassify', 'proposition.revise', 'attestation.create', 'proposition.traverse', 'proposition.reconcile', 'instrument.execute', 'proposition.commit']) {
     const markup = module.exports.render(action, false);
-    assert.doesNotMatch(markup, /Tragic Region|>Rest<\/span>/);
+    assert.doesNotMatch(markup, /Local actions exhausted|>Rest<\/span>/);
   }
-  // No independent client inference from an empty traversal set or tragedy flag.
-  assert.doesNotMatch(module.exports.render('proposition.variant', true), /Tragic Region|>Rest<\/span>/);
+  // No independent client inference from an empty traversal set or rest_available flag.
+  assert.doesNotMatch(module.exports.render('proposition.variant', true), /Local actions exhausted|>Rest<\/span>/);
   const exhausted = module.exports.render('participant.rest', true);
-  assert.match(exhausted, /Tragic Region/);
-  assert.match(exhausted, /aria-label="Open Tragic Region · Rest"/);
-  // Even a stale/absent Tragedy flag cannot hide an authoritative Rest action.
-  assert.match(module.exports.render('participant.rest', false), /aria-label="Open Tragic Region · Rest"/);
-  assert.match(module.exports.render('participant.rest', undefined), /aria-label="Open Tragic Region · Rest"/);
+  assert.match(exhausted, /Local actions exhausted/);
+  assert.doesNotMatch(exhausted, /Tragic Region/);
+  assert.match(exhausted, /aria-label="Exhausted alternatives"/);
+  assert.match(exhausted, /A route we learned from/);
+  assert.doesNotMatch(exhausted, /data-proposition-id="spent"/);
+  assert.match(exhausted, /aria-label="Open Local actions exhausted · Rest"/);
+  // Even a stale/absent Rest flag cannot hide an authoritative Rest action.
+  assert.match(module.exports.render('participant.rest', false), /aria-label="Open Local actions exhausted · Rest"/);
+  assert.match(module.exports.render('participant.rest', undefined), /aria-label="Open Local actions exhausted · Rest"/);
 });

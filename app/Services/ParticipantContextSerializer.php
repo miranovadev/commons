@@ -21,7 +21,7 @@ final class ParticipantContextSerializer
             ->concat($plan['attestation_options'] ?? [])
             ->whereIn('id', $targetIds)->unique('id');
         // Current Gate is context even when it has no selectable Gate action.
-        $gate = ($plan['phase']['kind'] === 'order' || ($plan['branch_pruned'] ?? false) ? collect() : collect([$plan['gate']]))
+        $gate = ($plan['phase']['kind'] === 'order' || ($plan['position_exhausted'] ?? false) ? collect() : collect([$plan['gate']]))
             ->concat($plan['gate_options'] ?? [])->unique('id');
         $read = collect($plan['read_options'] ?? [])->unique('id');
         // Operational roles own their objects; any additional role uses schema IDs.
@@ -33,6 +33,7 @@ final class ParticipantContextSerializer
         return [
             'phase' => Arr::only($plan['phase'], ['id', 'number', 'kind', 'write_register']),
             'provenance_id' => $plan['provenance_id'] ?? null,
+            'exhausted_alternatives' => $plan['exhausted_alternatives'] ?? [],
             'gate_id' => $plan['gate']['id'],
             'lineage' => $lineage->map($this->proposition(...))->values()->all(),
             'read_options' => $read->map($this->proposition(...))->values()->all(),
@@ -41,7 +42,7 @@ final class ParticipantContextSerializer
             ...(! empty($plan['commitment']) ? ['commitment' => $plan['commitment']] : []),
             ...(! empty($plan['commitment_options']) ? ['commitment_options' => $plan['commitment_options']] : []),
             'receipts' => array_map($this->receipt(...), $plan['receipts'] ?? []),
-            'tragedy' => $plan['tragedy'] ?? false,
+            'rest_available' => $plan['rest_available'] ?? false,
             'schema' => $plan['schema'],
         ];
     }
@@ -50,7 +51,7 @@ final class ParticipantContextSerializer
     public function inference(array $state): array
     {
         $plan = Arr::only($state['plan'], ['phase', 'provenance_id', 'gate_id',
-            'lineage', 'read_options', 'gate_options', 'write_options', 'commitment', 'commitment_options', 'tragedy', 'receipts', 'schema']);
+            'lineage', 'exhausted_alternatives', 'read_options', 'gate_options', 'write_options', 'commitment', 'commitment_options', 'rest_available', 'receipts', 'schema']);
         $plan['phase'] = Arr::only($plan['phase'], ['id', 'number', 'kind', 'write_register']);
         foreach (['lineage', 'read_options', 'gate_options', 'write_options'] as $key) {
             if (isset($plan[$key])) {

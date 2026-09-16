@@ -48,6 +48,16 @@ export function ParticipantWorkspace({ plan, availableActions, onAction, onSubmi
       <Box component="fieldset" disabled={busy} className="operational-board" aria-busy={busy}>
         {!preview && <HorizonContext horizon={plan.workspace?.horizon} domain={domainName} provenance={provenance} onInspect={setInspection} />}
         <LineagePanel lineage={lineage} committalObservables={provenance.observables} onInspect={setInspection} />
+        {!preview && Boolean(plan.exhausted_alternatives?.length) && <Box component="details" m="xs" aria-label="Exhausted alternatives">
+          <Text component="summary" size="sm" fw={600}>Exhausted alternatives ({plan.exhausted_alternatives!.length})</Text>
+          <Text size="xs" c="dimmed" mt="xs">These routes were explored and are no longer actionable.</Text>
+          <Stack gap="xs" mt="xs">
+            {plan.exhausted_alternatives!.map(item => <Box key={item.id}>
+              <Text size="xs" fw={600}>{item.basin_exhausted ? 'Basin exhausted · Commit retained' : 'Excursion exhausted'}</Text>
+              <Text size="sm">{item.statement}</Text>
+            </Box>)}
+          </Stack>
+        </Box>}
         {!preview && <ReceiptContextPanel plan={plan} canRead={allowed('receipt.read')} onRead={(receipt_id) => onAction('receipt.read', { receipt_id })} canReplay={allowed('receipt.replay')} onReplay={(receipt_id) => onAction('receipt.replay', { receipt_id })} />}
         <Box className="operational-regions">
           {lanes.map((lane, index) => {

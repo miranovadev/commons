@@ -107,7 +107,7 @@ in [participation-performance.md](participation-performance.md).
 
 [Branch Tragedy](branch-tragedy.md) observes exhaustion before the Rest transaction.
 The locked contribution writes Rest, checks the observation version, and conditionally
-retires the branch with one immutable event. It never walks the branch under the lock.
+publishes prepared local exhaustion transitions and any Origin-only Tragedy event. It never walks the branch under the lock.
 Cycle recovery/selection now runs outside the contribution transaction and outside
 the subsequent Cycle-entry transaction; entry validates its observed field version.
 Order rollover likewise follows contribution commit. Existing positions are retained

@@ -26,7 +26,7 @@ The next Cycle owns the selected entry's causal Horizon; no historical Cycle or
 Horizon is relabelled. See [causal entry rules](participant-continuity-and-relocation.md).
 
 Complete Origin-branch exhaustion is now a persisted [Tragedy](branch-tragedy.md).
-The validated Rest transition retires that branch; viable other basins remain
+The validated, fully explored Rest transition records structural exhaustion; viable other basins remain
 preferred, then structural Origin renewal supplies fresh Distinguish. No Potential
 score is invented. Other participants remain in place until their own Rest.
 `waiting / recovery_unavailable` describes a genuinely unavailable valid entry,

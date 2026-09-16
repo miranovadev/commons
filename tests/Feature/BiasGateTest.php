@@ -75,7 +75,7 @@ class BiasGateTest extends TestCase
         $this->assertSame(0.0, $chirality->leanFor(collect([$this->gate->id]), $this->substrate));
         $this->assertSame(ObservableDirection::Positive, $chirality->directionFor($this->gate));
         $plan = $this->plan();
-        $this->assertTrue($plan['tragedy']);
+        $this->assertTrue($plan['rest_available']);
         $this->assertArrayNotHasKey('proposition.bias', $plan['schema']['$defs']['actions']);
         $this->assertSame([], array_column($plan['gate_options'], 'id'));
 
@@ -362,6 +362,7 @@ class BiasGateTest extends TestCase
     private function plan(): array
     {
         $this->publishPotentialFixture($this->viewer);
+
         return app(InputPlanService::class)->forParticipant($this->viewer);
     }
 
