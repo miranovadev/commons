@@ -27,15 +27,23 @@ The current workspace API bundles eligibility, measurements, lineage and active 
 
 ## Graph scope and incremental updates
 
-The existing Graph displays a Substrate, not a single selected Context Horizon. `GET /api/substrates/{slug}/realtime` exposes its horizon IDs without creating an initial horizon. The Graph owns subscriptions to those horizons plus one Substrate discovery channel. An empty Graph therefore discovers its first horizon, and a Closure boundary or horizon rebuild can replace the subscriptions. A future horizon selector can narrow the same hook's horizon set without changing event semantics.
+The existing Graph displays a Substrate, not a single selected Context Horizon. `GET /api/substrates/{slug}/realtime` exposes its horizon IDs without creating an initial horizon. The Graph owns subscriptions to those horizons plus one Substrate discovery channel. Horizon changes add or release only the changed channels; retained channels and the notification queue remain alive. An empty Graph therefore discovers its first horizon, and a Closure boundary or horizon rebuild can replace the subscriptions. A future horizon selector can narrow the same hook's horizon set without changing event semantics.
 
 For ordinary Proposition events, `GET /api/substrates/{slug}/propositions/{id}` supplies the authoritative representation and minimal parent/child edges. `getProposition` retains detail in RTK Query; `updateQueryData` upserts by ID into the existing graph query. Duplicate notifications never append duplicate nodes. An event arriving during a fetch schedules another fetch after it completes. A failed fetch leaves the existing list intact. Leaving the page cancels pending work and prevents late results from being merged into its graph list.
 
-A subscription/reconnection performs one catch-up list refresh to cover the gap between the initial HTTP response and subscription acknowledgement. It also refreshes horizon discovery to cover a Closure missed while disconnected. A horizon-set change also uses this catch-up path. Ordinary events do not refetch the graph list. There is no event replay log.
+Subscription acknowledgements (including reconnection) coalesce catch-up work through the notification queue: refresh the graph list, Participant positions, metrics and horizon discovery. This covers a Closure or position/field changes missed while disconnected. Catch-up waits for any older in-flight graph list request before forcing a fresh snapshot; otherwise RTK Query would join the older request even with `forceRefetch`. New horizons catch up when acknowledged; horizon removal also refreshes the list so retired nodes disappear. An unavailable horizon does not block catch-up for acknowledged channels. Ordinary Proposition events do not refetch the graph list. There is no event replay log.
 
 The existing initial HTTP list limit (500) is unchanged. New events append their fetched nodes during an observation session; an ordinary reload/catch-up restores the existing endpoint's bounded initial dataset. Pagination and long-running graph retention remain separate work.
 
 Graph cards open the existing `PropositionInspector`. The loaded card is available immediately while the same detail endpoint supplies instruments and Attestation presentation. Newly received cards use the identical click path. Graph dragging, layout and styling remain unchanged.
+
+## Browser connection ownership
+
+`getEcho()` lazily creates one Echo/Pusher transport per browser application (one per tab). Missing frontend configuration leaves realtime disabled. Graph and Participation hooks share that transport and never disconnect it on rerenders, route changes, horizon reconciliation or unmount.
+
+`subscribeInvalidations()` tracks independent owners by the exact wire channel name. A channel has one invalidation listener and one subscription-acknowledgement listener, forwarding to its current observers. The final release removes both named callbacks and leaves only that channel; another observer or public/private variant remains subscribed. Late observers catch up if the shared channel is already acknowledged. Strict Mode cleanup and a cancelled pending subscription cannot retain callbacks from disposed observers.
+
+Pusher owns connection retry and channel resubscription. Its `pusher:subscription_succeeded` event triggers catch-up after initial subscribe and every reconnect; no application retry timer or connection-state listener is needed. Leaving a page disposes its pending notification queue and stops follow-on requests/graph merges after outstanding HTTP work settles. Shared RTK Query requests already in flight may still complete. Browser document destruction ends the transport naturally.
 
 ## Access
 
@@ -88,7 +96,7 @@ Set environment values before the existing production asset build, refresh Larav
 
 ## Validation
 
-`php artisan test --filter='RealtimeTest|ReverbTransportTest'` exercises real commits/rollbacks, contribution events, public/private payload scoping, authorization and detail lookup isolation. It also starts a temporary Reverb process and verifies delivery to a real WebSocket client when npm dependencies are installed. `npm run test:ui` includes rendered Graph drawer tests for original and realtime nodes, subscription/reconnection/cleanup tests, RTK Query integration and notification queue tests; `npm run build` includes TypeScript checking. The dependency-free queue checks can also run alone with Node 24:
+`php artisan test --filter='RealtimeTest|ReverbTransportTest'` exercises real commits/rollbacks, contribution events, public/private payload scoping, authorization and detail lookup isolation. It also starts a temporary Reverb process and verifies delivery to a real WebSocket client when npm dependencies are installed. `npm run test:ui` includes rendered Graph drawer tests for original and realtime nodes, incremental horizon reconciliation, shared channel ownership, Strict Mode/coexistence, subscription/reconnection/cleanup, HTTP-to-subscription races, RTK Query integration and notification queue tests; `npm run build` includes TypeScript checking. The dependency-free queue checks can also run alone with Node 24:
 
 ```sh
 node --test tests/js/realtimeQueue.test.mjs
