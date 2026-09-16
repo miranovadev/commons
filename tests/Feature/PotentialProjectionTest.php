@@ -104,6 +104,14 @@ final class PotentialProjectionTest extends TestCase
             foreach ($log as $query) {
                 $this->assertDoesNotMatchRegularExpression('/from ["`]supersessions|insert |update |delete |for update/i', $query['query']);
             }
+            DB::enableQueryLog();
+            DB::flushQueryLog();
+            $referenceStart = hrtime(true);
+            app(ReferencePotentialChargeService::class)->inspectRecoveryFrom($position, $cycle->contextHorizon);
+            $referenceQueries = count(DB::getQueryLog());
+            DB::disableQueryLog();
+            fwrite(STDERR, sprintf("\nREFERENCE RECOVERY history=%d queries=%d wall=%.2fms\n",
+                $size, $referenceQueries, (hrtime(true) - $referenceStart) / 1e6));
         }
         $this->assertSame($counts[0], $counts[1]);
         $this->assertLessThan(100, $counts[1]);

@@ -115,14 +115,17 @@ class CommitParticipationStateTest extends TestCase
         $this->assertCount(0, $state->attestations(collect([$variant])));
     }
 
-    public function test_new_phase_touches_invalidate_disposable_measurements_but_completion_is_not_another_touch(): void
+    public function test_new_phase_touches_dirty_the_region_but_completion_is_not_another_touch(): void
     {
         $node = $this->node('expressive');
         $measurements = app(\App\Services\PropositionMeasurementService::class);
         $measurement = $measurements->recalculate($node);
         $touch = $this->touch($node);
-        $this->assertNull($measurement->fresh()->calculator_version);
-        $measurements->repairMissing(collect([$node->fresh()]));
+        $this->assertDatabaseHas('potential_dirty_horizons', [
+            'context_horizon_id' => $this->phase->cycle->context_horizon_id, 'measurements_dirty' => true,
+        ]);
+        app(\App\Services\PotentialProjectionService::class)->refresh($this->phase->cycle->participant->substrate_id);
+        $this->assertDatabaseCount('potential_dirty_horizons', 0);
         $touch->completed_at = now()->addHour();
         $touch->save();
         $this->assertSame(\App\Services\Observables\LineageMeasurementService::VERSION,

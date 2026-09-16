@@ -113,14 +113,14 @@ jobs:
         if: ${{ matrix.recovery }}
         env:
           PGOPTIONS: '-c statement_timeout=30s'
-        run: php artisan test --filter 'PotentialProjectionTest|PotentialRegionCalculatorTest|PropositionReadTest|BranchTragedyTest|TransactionLockOrderTest|ParticipantContextTest|CausalRecoveryTest|RecoveryBasinResolverTest|LocalParticipantNavigationTest|ParticipantContinuityTest'
+        run: php artisan test --filter 'CommitParticipationStateTest|LineageAttenuationTest|OptimisticParticipationTest|ParticipantActionContractTest|PersistInstrumentTest|PotentialProjectionTest|PotentialRegionCalculatorTest|PropositionReadTest|BranchTragedyTest|TransactionLockOrderTest|ParticipantContextTest|CausalRecoveryTest|RecoveryBasinResolverTest|LocalParticipantNavigationTest|ParticipantContinuityTest'
 
       - name: Run test suite
         if: ${{ !matrix.profile && !matrix.recovery && !cancelled() }}
         env:
           PGOPTIONS: '-c statement_timeout=30s'
           COMMONS_PROFILE_SQL: '1'
-        run: php artisan test --display-warnings
+        run: php artisan test --exclude-group=performance --display-warnings
 
       - name: Profile scoped PostgreSQL reads
         if: ${{ matrix.profile }}

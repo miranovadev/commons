@@ -43,6 +43,7 @@ class BranchTragedyTest extends TestCase
         $this->snapshot($this->origin, .8, 'origin-bootstrap-v1');
         $phase->forceFill(['completed_at' => now()])->save();
         $phase->cycle->forceFill(['completed_at' => now()])->save();
+        $this->measure($this->origin, .8);
     }
 
     public function test_complete_exhaustion_prunes_after_rest_without_moving_other_participants(): void
@@ -301,6 +302,7 @@ class BranchTragedyTest extends TestCase
             'kind' => $kind, 'write_register' => $horizon->domain->registerFor($kind), 'started_at' => now()]);
         $phase->save();
 
+        app(\App\Services\PotentialProjectionService::class)->rebuild($this->substrate->id, false);
         return $phase;
     }
 
@@ -337,6 +339,6 @@ class BranchTragedyTest extends TestCase
     private function history(): array
     {
         return collect(['propositions', 'supersessions', 'attestations', 'receipts', 'commitment_snapshots', 'context_horizons', 'substrate_ledger_entries'])
-            ->mapWithKeys(fn ($table) => [$table => DB::table($table)->get()->map(fn ($row) => (array) $row)->all()])->all();
+            ->mapWithKeys(fn ($table) => [$table => DB::table($table)->orderBy($table === 'commitment_snapshots' ? 'proposition_id' : 'id')->get()->map(fn ($row) => (array) $row)->all()])->all();
     }
 }
