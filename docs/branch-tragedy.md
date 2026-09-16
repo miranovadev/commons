@@ -94,3 +94,12 @@ remain available for future runtime, depth, participation and evidence analytics
 `branch_exhaustion` section reports branch identities, existing pruning, regional
 observations, proof stability and whether Tragedy would occur. Running it never
 retires a branch or changes a participant.
+
+## Rollout
+
+Apply the migration and deploy the application/participant workers together.
+Quiesce participant writes during the membership backfill and restart old workers
+before resuming: pre-release code does not maintain branch membership or field
+versions. The migration is additive and uses restrictive foreign keys. It does
+not prune existing data; the next validated Rest or preparation of an already
+rested participant performs the first version-checked retirement.
