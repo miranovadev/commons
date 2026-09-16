@@ -259,6 +259,25 @@ class BranchTragedyTest extends TestCase
             ->where('proposition_id', $continued->id)->pluck('root_proposition_id')->all());
     }
 
+    public function test_missing_branch_projections_are_observed_in_a_batched_read_without_repairs(): void
+    {
+        [$root, $phase] = $this->exhaustedBranch();
+        for ($i = 0; $i < 25; $i++) {
+            $this->node($this->phase($root), $root);
+        }
+        DB::table('proposition_measurements')->update(['calculator_version' => null]);
+        $sql = [];
+        DB::listen(function ($query) use (&$sql): void {
+            $sql[] = $query->sql;
+        });
+        $proof = app(TragedyService::class)->inspect($phase);
+        $this->assertTrue($proof['stable']);
+        $this->assertLessThan(300, count($sql), 'Branch observation must share one batched measurement context.');
+        foreach ($sql as $query) {
+            $this->assertDoesNotMatchRegularExpression('/^\s*(insert|update|delete)\b|for update/i', $query);
+        }
+    }
+
     private function exhaustedBranch(): array
     {
         $root = $this->node($this->phase($this->origin), $this->origin);

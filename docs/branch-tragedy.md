@@ -32,7 +32,8 @@ The first validated **Rest contribution** is the normal retirement boundary:
 4. Commit and release the lock. Calculate recovery without locks, then establish
    the selected Phase 1 with a separate short, version-checked entry write.
 
-All branch measurement and graph traversal are outside the lock. The retirement
+All branch measurement and graph traversal are outside the lock. Stale/missing
+measurements share one batched context across the observed branch Domains. The retirement
 write does indexed version/identity checks, one conditional root update and one
 event insert per exhausted root. It does not update descendants, collect analytics,
 or relocate other participants. Ledger/evidence changes, new Phase observations,
@@ -70,8 +71,8 @@ open new branch roots and never clear an old root's pruning timestamp.
 Healthy, fully proven branch exhaustion therefore leads to retirement and a valid
 new entry. `recovery_unavailable` is reserved for cases where no valid entry can be
 established: malformed/missing Origin or provenance, unmeasurable structure, or an
-incomplete exhaustion observation. A concurrent field change may defer preparation
-until the next fresh attempt; it never authorizes stale pruning.
+incomplete exhaustion observation. A concurrent field change or pending branch observation may defer preparation
+until the next fresh attempt (`recovery_pending`); it never authorizes stale pruning.
 
 ## Active and historical surfaces
 

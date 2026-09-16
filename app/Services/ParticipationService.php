@@ -90,11 +90,15 @@ final readonly class ParticipationService
             $recovering = $completed?->rested_at !== null;
             $entry = $this->entryFor($participant);
             $recoveryReady = $recovering && ($entry['available'] ?? false);
+            $retirementPending = $recovering && ! $recoveryReady && DB::table('origin_branch_memberships as membership')
+                ->join('origin_branches as branch', 'branch.root_proposition_id', '=', 'membership.root_proposition_id')
+                ->where('membership.proposition_id', $participant->current_proposition_id)->whereNull('branch.pruned_at')->exists();
 
             return [...$this->waiting(
-                $recovering ? ($recoveryReady ? 'recovery_pending' : 'recovery_unavailable') : 'cycle_not_started',
+                $recovering ? ($recoveryReady || $retirementPending ? 'recovery_pending' : 'recovery_unavailable') : 'cycle_not_started',
                 $recovering ? ($recoveryReady ? 'Rest completed; recovery is ready for the next entry attempt.'
-                    : 'Rest completed; no valid recovery basin entry can be established.') : 'The Participant is waiting for a Cycle to begin.',
+                    : ($retirementPending ? 'Rest completed; branch exhaustion will be reconsidered from fresh state.'
+                        : 'Rest completed; no valid recovery basin entry can be established.')) : 'The Participant is waiting for a Cycle to begin.',
                 entry: $entry,
             ), 'completion' => $completed !== null && $completed->rested_at === null && $finalPhase?->kind === PhaseKind::Order ? [
                 'cycle_id' => $completed->id,

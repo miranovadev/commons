@@ -6,6 +6,7 @@ use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Substrate;
 use App\Models\Tragedy;
+use App\Services\Participation\ParticipationContext;
 use Illuminate\Support\Facades\DB;
 
 /** Exhaustion is an optimistic observation; retirement is a small guarded write. */
@@ -32,7 +33,8 @@ final readonly class TragedyService
             $edges = DB::table('supersessions')->whereIn('source_proposition_id', $nodes->keys())
                 ->whereIn('target_proposition_id', $nodes->keys())->get(['source_proposition_id', 'target_proposition_id'])
                 ->groupBy('source_proposition_id');
-            $this->measurements->observeMissing($nodes);
+            $context = new ParticipationContext($phase, $nodes->keys());
+            $this->measurements->observeMissing($nodes, $context);
             // Unknown measurements below an excluded Rest path cannot silently
             // become a proof of full exhaustion.
             $unknown = $nodes->where('tier', 'expressive')->contains(fn ($node) => $node->measurement === null
