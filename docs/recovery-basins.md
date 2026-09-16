@@ -78,3 +78,11 @@ more shared participation in later Domains, and Potential-correlated distributio
 within the selected frontier. Historical retreat remains expected when downstream
 Potential is exhausted. The diagnostics explain why a retreat happened; a newer
 Commit's existence alone does not make it viable.
+
+## Complete branch exhaustion
+
+See [Branch Tragedy and Origin renewal](branch-tragedy.md). Local/Domain exhaustion
+still retreats through provenance. Only complete Origin-branch exhaustion permits
+explicit pruning. Retired branches leave the active field but remain inspectable;
+Origin then supports a fresh Distinction after viable recovery options are exhausted.
+Branch retirement does not move other participants: their own Rest enables recovery.

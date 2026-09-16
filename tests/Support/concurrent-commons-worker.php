@@ -62,6 +62,9 @@ try {
         'receipt-read' => app(ReceiptContextService::class)->read(Participant::findOrFail($input['participant_id']), Phase::findOrFail($input['phase_id']), $input['receipt_id']),
         'horizon' => app(ContextHorizonProjector::class)->apply(CommitmentSnapshot::findOrFail($input['proposition_id'])),
         'plan' => app(InputPlanService::class)->forParticipant(Participant::findOrFail($input['participant_id'])),
+        'rest' => app(ParticipationService::class)->contribute(
+            Participant::findOrFail($input['participant_id']), $input['phase_id'], ['action' => 'participant.rest'],
+        ),
         'contribute' => app(ParticipationService::class)->contribute(
             Participant::findOrFail($input['participant_id']),
             $input['phase_id'],

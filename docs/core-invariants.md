@@ -195,3 +195,12 @@ When ambiguity arises, prefer the interpretation that preserves these invariants
 rather than inferring semantics from current code behaviour.
 
 
+
+## Active branches and historical Tragedies
+
+Complete exhaustion of an Origin branch retires that branch from active participation.
+Local exhaustion alone does not. Tragedy preserves all historical contributions and
+never relocates other participants; a historical position admits only Rest. Following
+Rest, viable causal recovery remains preferred, with structural Origin renewal when
+those options are exhausted. Potential measurements are not fabricated for renewal.
+See [the lifecycle and concurrency contract](branch-tragedy.md).

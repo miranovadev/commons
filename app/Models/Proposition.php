@@ -33,6 +33,11 @@ class Proposition extends Model
         });
     }
 
+    public function scopeActive(\Illuminate\Database\Eloquent\Builder $query): void
+    {
+        app(\App\Services\OriginBranchService::class)->active($query);
+    }
+
     public function phase(): BelongsTo
     {
         return $this->belongsTo(Phase::class);

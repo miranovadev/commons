@@ -26,6 +26,8 @@ final class ParticipationContext
 {
     public readonly Collection $propositions;
 
+    public readonly Collection $activeIds;
+
     public readonly Collection $edges;
 
     public readonly Collection $parents;
@@ -79,6 +81,7 @@ final class ParticipationContext
             $proposition->phase->cycle->participant->setRelation('substrate', $this->substrate);
         }
         $ids = $this->propositions->keys();
+        $this->activeIds = Proposition::active()->whereKey($ids)->pluck('id')->flip();
         // Include outgoing hard edges even when their target is outside this substrate.
         $this->edges = Supersession::query()->where(fn ($q) => $q
             ->where(fn ($q) => $q->whereIn('source_proposition_id', $ids)->where('type', '!=', 'variant'))
@@ -279,13 +282,13 @@ final class ParticipationContext
                 }
             }
 
-            return $members->sortBy('id')->values();
+            return $members->filter(fn ($node) => $this->activeIds->has($node->id))->sortBy('id')->values();
         });
     }
 
     public function active(Collection $nodes): Collection
     {
-        return $nodes->filter(fn ($node) => $this->children->get($node->id, collect())->where('type', '!=', 'variant')->isEmpty())->values();
+        return $nodes->filter(fn ($node) => $this->activeIds->has($node->id) && $this->children->get($node->id, collect())->where('type', '!=', 'variant')->isEmpty())->values();
     }
 
     public function effectiveAttestations(iterable $sourceIds): Collection

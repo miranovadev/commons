@@ -33,6 +33,8 @@ class InspectRecovery extends Command
             'participant_id' => $participant->id,
             'position_id' => $participant->current_proposition_id,
             ...$inspection,
+            'branch_exhaustion' => ($phase = $participant->cycles()->latest('sequence')->first()?->phases()->orderByDesc('kind')->first()) === null
+                ? null : app(\App\Services\TragedyService::class)->inspect($phase),
         ], JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR));
 
         return self::SUCCESS;

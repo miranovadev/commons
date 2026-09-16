@@ -68,7 +68,7 @@ final readonly class MediationReadService
 
         $pool = $this->regions->atPosition($phase, $gate, RegisterPosition::First, $context, includeSuperseded: true);
 
-        return Proposition::query()->whereKey($pool->pluck('id'))
+        return Proposition::query()->active()->whereKey($pool->pluck('id'))
             ->whereHas('parents', fn ($query) => $query->whereKey($reads->pluck('id')))
             ->orderBy('id')->get();
     }

@@ -398,3 +398,8 @@ contract. `receipt.read` loads existing evidence without advancing the Phase.
 `receipt.replay` uses the stored invocation, original eligible Instrument Write and
 normal Instrument progression to create a new immutable observation. Neither
 initial execution nor replay automatically loads a Receipt.
+
+Branch-wide Tragedy is explicitly recorded at validated Rest after an optimistic
+exhaustion proof. A pruned branch is historical; participants there retain their
+position and receive only Rest. Recovery/Origin renewal then follows their own Rest.
+See [Branch Tragedy and Origin renewal](branch-tragedy.md).

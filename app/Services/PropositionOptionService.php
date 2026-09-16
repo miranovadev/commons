@@ -55,7 +55,7 @@ final class PropositionOptionService
             return $options->filter(fn ($node) => $attested->has($node->id))->sortBy('id')->values();
         }
 
-        return Proposition::query()->whereKey($options->pluck('id'))
+        return Proposition::query()->active()->whereKey($options->pluck('id'))
             ->whereHas('effectiveAttestations.phase.cycle', fn ($query) => $query
                 ->whereBelongsTo($phase->cycle->participant))
             ->orderBy('id')->get();
@@ -63,7 +63,7 @@ final class PropositionOptionService
 
     private function writeDescendants(Phase $phase, ?ParticipationContext $context = null): Builder
     {
-        return Proposition::query()
+        return Proposition::query()->active()
             ->whereKey($this->descendantIds($phase, $context))
             ->where('register', $phase->write_register)
             ->where('tier', 'expressive')
@@ -140,7 +140,7 @@ final class PropositionOptionService
             return collect();
         }
 
-        $query = Proposition::query()->whereDoesntHave('children')
+        $query = Proposition::query()->active()->whereDoesntHave('children')
             ->whereKey($this->descendantIds($phase, $context))
             ->where('register', $phase->write_register)
             ->where('tier', 'expressive')
@@ -239,7 +239,7 @@ final class PropositionOptionService
     {
         return $context !== null
             ? $context->nodes($ids)->where('register', $phase->write_register)->where('tier', 'expressive')->pluck('id')
-            : Proposition::query()->whereKey($ids)->where('register', $phase->write_register)->where('tier', 'expressive')
+            : Proposition::query()->active()->whereKey($ids)->where('register', $phase->write_register)->where('tier', 'expressive')
                 ->whereHas('phase.cycle.participant', fn ($query) => $query->where('substrate_id', $phase->cycle->participant->substrate_id))
                 ->pluck('id');
     }

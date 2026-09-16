@@ -59,7 +59,37 @@ final readonly class CycleEntryService
         }
         $observed = $origin === null ? null : $this->instruments->observe($origin['instrument']);
 
-        DB::transaction(function () use ($participant, $origin, $required, $observed): void {
+        // Legacy already-rested participants may have exhausted before pruning
+        // existed. Observe without locks, then record only the guarded transition.
+        $completed = $participant->cycles()->latest('sequence')->first();
+        if ($completed?->rested_at !== null && ! $this->hasActiveCycle($participant)) {
+            $terminal = $completed->phases()->whereNotNull('completed_at')->orderByDesc('kind')->first();
+            if ($terminal !== null) {
+                $proof = app(TragedyService::class)->inspect($terminal);
+                if ($proof['stable'] && collect($proof['branches'])->contains('exhausted', true)) {
+                    DB::transaction(function () use ($participant, $terminal, $proof): void {
+                        $locked = Substrate::whereKey($participant->substrate_id)->lockForUpdate()->firstOrFail();
+                        if ((int) $locked->field_version === $proof['field_version'] && ! $this->hasActiveCycle($participant)) {
+                            app(TragedyService::class)->retire($terminal, $proof);
+                        }
+                    });
+                }
+            }
+        }
+        $participant = $participant->fresh();
+        $version = (int) Substrate::whereKey($participant->substrate_id)->value('field_version');
+        $positionId = $participant->current_proposition_id;
+        $gate = null;
+        if ($positionId !== null) {
+            $gate = $this->continuationFor($participant)
+                ?? ($this->potential->recoverFrom($participant->position()->firstOrFail(),
+                    $participant->cycles()->latest('sequence')->first()?->contextHorizon)['proposition'] ?? null);
+        } elseif ($this->hasPropositionHistory($participant->substrate)
+            && CommitmentSnapshot::where('substrate_id', $participant->substrate_id)->exists()) {
+            $gate = $this->potential->selectFor($participant->substrate)['proposition'];
+        }
+
+        DB::transaction(function () use ($participant, $origin, $required, $observed, $version, $positionId, $gate): void {
             $substrate = Substrate::query()
                 ->lockForUpdate()
                 ->findOrFail($participant->substrate_id);
@@ -76,42 +106,25 @@ final readonly class CycleEntryService
                 );
             }
 
-            if ($lockedParticipant->current_proposition_id !== null) {
-                $gate = $this->continuationFor($lockedParticipant)
-                    ?? ($this->potential->recoverFrom(
-                        $lockedParticipant->position()->firstOrFail(),
-                        $lockedParticipant->cycles()->latest('sequence')->first()?->contextHorizon,
-                    )['proposition'] ?? null);
-                if ($gate === null) {
-                    if (! $required) {
-                        return;
-                    }
-                    throw new ConflictHttpException('No reachable recovery basin has positive Potential Charge.');
+            if ((int) $substrate->field_version !== $version || $lockedParticipant->current_proposition_id !== $positionId) {
+                if (! $required) {
+                    return;
                 }
-                $this->createLiveCycle(
-                    $lockedParticipant,
-                    $substrate,
-                    $gate,
-                );
+                throw new ConflictHttpException('The active field changed during Cycle entry. Retry from fresh state.');
+            }
+            if ($gate !== null) {
+                if (app(OriginBranchService::class)->pruned($gate)) {
+                    throw new ConflictHttpException('The selected branch became historical. Retry from fresh state.');
+                }
+                $this->createLiveCycle($lockedParticipant, $substrate, $gate);
 
                 return;
             }
-
-            if ($this->hasPropositionHistory($substrate)) {
-                if (! $required && ! CommitmentSnapshot::where('substrate_id', $substrate->id)->exists()) {
+            if ($positionId !== null || $this->hasPropositionHistory($substrate)) {
+                if (! $required) {
                     return;
                 }
-                $selection = $this->potential->selectFor($substrate);
-                if ($selection === null) {
-                    throw new ConflictHttpException('No structurally reachable measured Committal Proposition is available for Cycle entry.');
-                }
-                $this->createLiveCycle(
-                    $lockedParticipant,
-                    $substrate,
-                    $selection['proposition'],
-                );
-
-                return;
+                throw new ConflictHttpException('No valid recovery entry can be established from this position.');
             }
 
             if ($origin === null) {
@@ -188,6 +201,9 @@ final readonly class CycleEntryService
         $position = $participant->position()->firstOrFail();
         if ($position->phase->cycle->participant->substrate_id !== $participant->substrate_id) {
             throw new DomainException('A Participant cannot continue in another substrate.');
+        }
+        if (app(OriginBranchService::class)->pruned($position)) {
+            return null;
         }
         $seed = $this->regions->seedFor($position);
 

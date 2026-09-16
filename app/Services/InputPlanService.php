@@ -42,7 +42,7 @@ final readonly class InputPlanService
     /** Keep the response's Cycle, Phase and schema on the same observed occurrence. */
     public function forPhase(Participant $participant, Phase $phase, bool $workspace = false): array
     {
-        return $this->build($participant, $phase, new ParticipationContext($phase), $workspace);
+        return $this->retiredPlan($phase, $workspace) ?? $this->build($participant, $phase, new ParticipationContext($phase), $workspace);
     }
 
     /** Contribution validation needs admissibility, never workspace/presentation serialization. */
@@ -56,7 +56,29 @@ final readonly class InputPlanService
         $phase = $this->phases->currentFor($participant);
 
         // Observation is optimistic. Only contribution validation owns write locks.
-        return $this->build($participant, $phase, new ParticipationContext($phase), $workspace, $validation);
+        return $this->retiredPlan($phase, $workspace) ?? $this->build($participant, $phase, new ParticipationContext($phase), $workspace, $validation);
+    }
+
+    private function retiredPlan(Phase $phase, bool $workspace): ?array
+    {
+        if ($phase->gate_proposition_id === null || ! app(OriginBranchService::class)->pruned($phase->gate_proposition_id)) {
+            return null;
+        }
+        $plan = $this->phases->plan($phase->kind);
+
+        return [
+            'phase' => ['id' => $phase->id, 'number' => $phase->kind->value, 'kind' => $plan['name'],
+                'description' => 'This branch is historical. Rest to begin recovery.',
+                'write_register' => $phase->write_register, 'started_at' => $phase->started_at],
+            ...($workspace ? ['workspace' => null] : []),
+            'gate' => ['id' => $phase->gate_proposition_id, 'statement' => 'Historical position',
+                'register' => $phase->write_register, 'tier' => 'expressive', 'parent_ids' => []],
+            'provenance_id' => null, 'lineage' => [], 'read_options' => [], 'write_options' => [],
+            'gate_options' => [], 'revision_options' => [], 'traversal_options' => [],
+            'attestation_options' => [], 'instrument_options' => [], 'receipts' => [],
+            'commitment' => null, 'commitment_options' => [], 'tragedy' => true, 'branch_pruned' => true,
+            'schema' => $this->schemas->forPhase($phase->kind, ['participant.rest']),
+        ];
     }
 
     /** All repeated evaluation shares this calculation-local context. */
@@ -68,6 +90,7 @@ final readonly class InputPlanService
             $gate,
             $context,
         );
+        $lineage = $lineage->filter(fn ($node) => $context === null || $context->activeIds->has($node->id))->values();
         $writeOptions = $this->options->writeOptionsFor($phase, $context);
         $revisionOptions = $this->options->revisionOptionsFor(
             $phase,
@@ -178,9 +201,9 @@ final readonly class InputPlanService
             : ['signal', 'stance', 'concord'];
         $propositions = $horizon === null
             ? collect()
-            : ($context !== null ? $context->nodes($horizon->propositions()->whereIn('register', $registers)
+            : ($context !== null ? $context->nodes($horizon->propositions()->active()->whereIn('register', $registers)
                 ->latest('propositions.created_at')->limit(max(1, (int) ($participant->max_read_count ?? 25)))->pluck('propositions.id'))
-            : $horizon->propositions()
+            : $horizon->propositions()->active()
                 ->with([
                     'measurement',
                     'parents',

@@ -101,3 +101,13 @@ while a plan is hydrating and verifies that the next read sees it.
 missing/stale persisted projections, and checks that response contexts are built
 after contribution commit. Performance fixtures and remaining scale limits are
 in [participation-performance.md](participation-performance.md).
+
+## Tragedy and recovery
+
+[Branch Tragedy](branch-tragedy.md) observes exhaustion before the Rest transaction.
+The locked contribution writes Rest, checks the observation version, and conditionally
+retires the branch with one immutable event. It never walks the branch under the lock.
+Cycle recovery/selection now runs outside the contribution transaction and outside
+the subsequent Cycle-entry transaction; entry validates its observed field version.
+Order rollover likewise follows contribution commit. Existing positions are retained
+until each participant's own Rest/entry transition.

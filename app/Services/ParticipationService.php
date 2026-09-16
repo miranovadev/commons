@@ -204,16 +204,25 @@ final readonly class ParticipationService
             $observed = $this->dispatcher->observeInstrument($participant, $observedPhase, $input);
         }
 
+        $tragedy = null;
+        if (($input['action'] ?? null) === 'participant.rest') {
+            $restPhase = Phase::with('cycle.participant')->find($phaseId);
+            if ($restPhase !== null && $restPhase->cycle->participant_id === $participant->id) {
+                $tragedy = app(TragedyService::class)->inspect($restPhase);
+            }
+        }
+
         DB::transaction(function () use (
             $participant,
             $phaseId,
             $input,
             $expectedSchema,
             $observed,
+            $tragedy,
         ): void {
             // Acquire the shared root before any participant/phase or contribution lock.
             // Cycle entry, ledger writes, and horizon projection use the same order.
-            Substrate::query()->lockForUpdate()->findOrFail($participant->substrate_id);
+            $substrate = Substrate::query()->lockForUpdate()->findOrFail($participant->substrate_id);
             $lockedParticipant = Participant::query()
                 ->lockForUpdate()
                 ->findOrFail($participant->getKey());
@@ -252,7 +261,14 @@ final readonly class ParticipationService
                 throw $exception;
             }
             if ($input['action'] === 'participant.rest') {
+                // Rest changes lifecycle only; it adds no observation/measurement.
+                // A stale proof is discarded and can be retried after this Rest.
+                $validProof = $tragedy !== null && $tragedy['stable']
+                    && $tragedy['field_version'] === (int) $substrate->field_version;
                 $this->rest($lockedParticipant, $phase);
+                if ($validProof) {
+                    app(TragedyService::class)->retire($phase, $tragedy);
+                }
 
                 return;
             }
@@ -268,6 +284,8 @@ final readonly class ParticipationService
 
         });
 
+        $this->cycleEntry->prepare($participant->fresh());
+
         return $this->stateFor($participant->fresh());
     }
 
@@ -282,10 +300,6 @@ final readonly class ParticipationService
         $phase->cycle->completed_at = now();
         $phase->cycle->save();
 
-        // Recovery and its causal Horizon are resolved in the terminal transaction.
-        // If no viable basin exists, retain the exhausted position for a
-        // later recovery attempt; never undo Rest or fabricate a destination.
-        $this->cycleEntry->prepare($participant);
 
     }
 

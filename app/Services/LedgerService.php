@@ -76,6 +76,10 @@ final readonly class LedgerService
             }
 
             if (! $wasRecorded) {
+                Substrate::whereKey($locked->id)->increment('field_version');
+                if ($ledgerable instanceof Supersession) {
+                    app(OriginBranchService::class)->include($ledgerable);
+                }
                 $realtime = app(RealtimePublisher::class);
                 if ($ledgerable instanceof Proposition) {
                     $realtime->proposition($ledgerable->getKey(), 'proposition.created');

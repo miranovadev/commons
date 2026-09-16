@@ -56,6 +56,9 @@ final readonly class ContributionDispatcher
             }
             app(CausalContextService::class)->assertPhase($phase);
             $gate = $phase->gate()->firstOrFail();
+            if (app(OriginBranchService::class)->pruned($gate)) {
+                throw new \Symfony\Component\HttpKernel\Exception\ConflictHttpException('This branch is historical. Refresh and Rest.');
+            }
             $action = $input['action'];
             if (! in_array($action, config("phases.{$phase->kind->value}.actions", []), true)
                 || $phase->cycle->participant_id !== $participant->id) {
