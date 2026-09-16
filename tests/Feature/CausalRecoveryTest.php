@@ -573,6 +573,11 @@ class CausalRecoveryTest extends TestCase
         $this->assertSame($before, DB::table('potential_region_states')->whereIn('context_horizon_id', [$this->root->id, $h2->id])
             ->orderBy('context_horizon_id')->get()->toJson());
         $this->assertSame(.005, (float) DB::table('potential_entries')->where('proposition_id', $commit->id)->value('raw_potential_charge'));
+        $terrain = fn () => DB::table('potential_region_states')->orderBy('context_horizon_id')
+            ->get(['context_horizon_id', 'local_state', 'frontier', 'remaining_potential'])->toJson();
+        $incremental = $terrain();
+        $this->assertTrue(app(\App\Services\PotentialProjectionService::class)->rebuild($this->substrate->id, false));
+        $this->assertSame($incremental, $terrain());
     }
 
     private function boundaryChain(): array
@@ -685,6 +690,10 @@ class CausalRecoveryTest extends TestCase
         foreach ($this->measurements as $id => $value) {
             app(PropositionMeasurementService::class)->project(Proposition::findOrFail($id), $value, $value, $value);
         }
-        app(\App\Services\PotentialProjectionService::class)->rebuild($this->substrate->id, false);
+        // Routing fixtures supply controlled raw values. Apply their actual
+        // mutation worklist incrementally; production derives these raw values.
+        DB::table('potential_dirty_horizons')->where('substrate_id', $this->substrate->id)
+            ->update(['measurements_dirty' => false]);
+        $this->assertTrue(app(\App\Services\PotentialProjectionService::class)->refresh($this->substrate->id));
     }
 }

@@ -151,6 +151,38 @@ final class PotentialProjectionTest extends TestCase
             app(PotentialProjectionService::class)->assertCurrent($participant->substrate_id));
     }
 
+    public function test_repeated_contention_leaves_durable_work_for_the_next_sweep_without_releasing_the_job(): void
+    {
+        [$participant] = $this->fixture();
+        $phase = $participant->cycles()->whereNull('completed_at')->sole()->currentPhase;
+        app(FieldMutationService::class)->touch($phase, [$phase->gate_proposition_id]);
+        $contended = true;
+        $attempts = 0;
+        DB::listen(function (QueryExecuted $query) use (&$contended, &$attempts, $phase): void {
+            if ($contended && str_contains($query->sql, '/* participation working set */')) {
+                $attempts++;
+                app(FieldMutationService::class)->touch($phase, [$phase->gate_proposition_id]);
+            }
+        });
+        $queueJob = \Mockery::mock(\Illuminate\Contracts\Queue\Job::class);
+        $queueJob->shouldNotReceive('release');
+        $job = new \App\Jobs\RefreshPotentialProjection($participant->substrate_id);
+        $job->setJob($queueJob);
+        $job->handle(app(PotentialProjectionService::class));
+        $this->assertSame(3, $attempts);
+        $this->assertDatabaseHas('potential_dirty_horizons', ['substrate_id' => $participant->substrate_id]);
+        $this->assertSame('potential_projection_pending', app(ParticipationService::class)->stateFor($participant)['reason']['code']);
+
+        \Illuminate\Support\Facades\Queue::fake();
+        $this->artisan('commons:potential-refresh')->assertSuccessful();
+        \Illuminate\Support\Facades\Queue::assertPushed(\App\Jobs\RefreshPotentialProjection::class,
+            fn ($next) => $next->substrateId === $participant->substrate_id);
+        $contended = false;
+        $job->handle(app(PotentialProjectionService::class));
+        $this->assertDatabaseMissing('potential_dirty_horizons', ['substrate_id' => $participant->substrate_id]);
+        app(PotentialProjectionService::class)->assertCurrent($participant->substrate_id);
+    }
+
     private function assertProjectionMatches(Participant $participant, Proposition $position): void
     {
         $projection = app(PotentialProjectionService::class);

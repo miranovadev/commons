@@ -30,8 +30,8 @@ final class RefreshPotentialProjection implements ShouldBeUnique, ShouldQueue
 
     public function handle(PotentialProjectionService $projection): void
     {
-        if (! $projection->refresh($this->substrateId)) {
-            $this->release(10);
-        }
+        // Exhausted optimistic retries are contention, not a failed queue
+        // attempt. Dirt remains durable and the next sweep retries it.
+        $projection->refresh($this->substrateId);
     }
 }

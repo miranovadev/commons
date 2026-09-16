@@ -88,6 +88,31 @@ class ParticipantWakeTest extends TestCase
         Queue::assertPushed(WakeParticipant::class, 1);
     }
 
+    public function test_overlapping_wake_does_not_burn_queue_attempts_and_a_later_wake_can_run(): void
+    {
+        [, $connection] = $this->readyConnection();
+        $wake = new WakeParticipant($connection->id);
+        $queueJob = Mockery::mock(\Illuminate\Contracts\Queue\Job::class);
+        $queueJob->shouldNotReceive('release');
+        $wake->setJob($queueJob);
+        $middleware = $wake->middleware()[0];
+        $lock = Cache::lock($middleware->getLockKey($wake), 60);
+        $this->assertTrue($lock->get());
+        $ran = false;
+        try {
+            $middleware->handle($wake, function () use (&$ran): void {
+                $ran = true;
+            });
+            $this->assertFalse($ran);
+        } finally {
+            $lock->release();
+        }
+        $middleware->handle($wake, function () use (&$ran): void {
+            $ran = true;
+        });
+        $this->assertTrue($ran);
+    }
+
     public function test_openai_receives_only_the_autonomous_context_as_json_and_a_strict_response_schema(): void
     {
         config()->set('services.openai.base_url', 'https://api.openai.test/v1');

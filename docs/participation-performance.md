@@ -109,3 +109,24 @@ contribution lock. Ordinary reads never derive measurements.
   runs outside it; prepared rows publish in bounded batches under a version check.
 - Direct historical graph inspection remains explicit and can traverse history.
   Active graph cards consume maintained Potential.
+
+### Recovery growth comparison
+
+The PostgreSQL 18 / PHP 8.5 recovery lane on 2026-09-16 measured the following
+on the same rested-participant fixture, before and after adding 1,000 historical
+propositions. Each direct recovery calculation receives a fresh position model;
+the test asserts that the projected and full-reference selections agree.
+
+| Operation | Extra history | Queries | Wall time |
+| --- | ---: | ---: | ---: |
+| Full-reference recovery | 0 | 15 | 16.33 ms |
+| Projected recovery | 0 | 15 | 12.44 ms |
+| Full-reference recovery | 1,000 | 15 | 5,640.53 ms |
+| Projected recovery | 1,000 | 14 | 14.16 ms |
+| Complete participant state | 0 | 28 | 36.99 ms |
+| Complete participant state | 1,000 | 28 | 41.29 ms |
+
+The reference's query count stays flat while its hydration and graph work grow;
+query count alone is insufficient. The state regression also rejects supersession
+hydration, measurement writes, and write locks. Timings describe this CI fixture,
+not production latency guarantees. Evidence: [recovery and contention run](https://github.com/miranovadev/commons/actions/runs/35061727074).

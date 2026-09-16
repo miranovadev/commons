@@ -10,6 +10,7 @@ use App\Models\CommitmentSnapshot;
 use App\Models\ContextHorizon;
 use App\Models\Cycle;
 use App\Models\Participant;
+use App\Models\Substrate;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Receipt;
