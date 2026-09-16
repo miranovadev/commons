@@ -12,6 +12,7 @@ use App\Services\ExhaustionAuditService;
 use App\Services\ExhaustionService;
 use App\Services\InputPlanService;
 use App\Services\LedgerService;
+use App\Services\Participation\ParticipationContext;
 use App\Services\ParticipationService;
 use App\Services\PotentialChargeService;
 use App\Services\ReferencePotentialChargeService;
@@ -73,6 +74,18 @@ class ExhaustionTest extends TestCase
         $this->assertFalse($context[0]['actionable']);
         $this->assertArrayNotHasKey('children', $context[0]);
         $this->assertStringNotContainsString($dead->id, json_encode($state['plan']['schema']));
+        $hydrated = new ParticipationContext($fresh->phase);
+        DB::enableQueryLog();
+        DB::flushQueryLog();
+        $direct = app(ExhaustionService::class)->context($fresh);
+        $reused = app(ExhaustionService::class)->context($fresh, context: $hydrated);
+        $queries = DB::getQueryLog();
+        DB::disableQueryLog();
+        $this->assertSame($direct, $reused);
+        $this->assertSame($dead->id, $direct[0]['id']);
+        foreach ($queries as $query) {
+            $this->assertStringNotContainsString('WITH RECURSIVE', strtoupper($query['query']));
+        }
     }
 
     public function test_actual_terminal_exploration_exhausts_lineage_once_preserving_commits_and_other_participants(): void

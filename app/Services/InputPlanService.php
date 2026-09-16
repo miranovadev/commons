@@ -178,7 +178,7 @@ final readonly class InputPlanService
             'lineage' => $this->propositions($historical, $participant, $context),
             'read_options' => $this->propositions($readOptions, $participant, $context),
             'receipts' => $this->receipts->forPhase($phase, $context)->all(),
-            'exhausted_alternatives' => app(ExhaustionService::class)->context($gate, (int) ($participant->max_read_count ?? 25)),
+            'exhausted_alternatives' => app(ExhaustionService::class)->context($gate, (int) ($participant->max_read_count ?? 25), $context),
             'rest_available' => isset($schema['$defs']['actions']['participant.rest']),
             'traversal_options' => $this->propositions($traversalOptions, $participant, $context),
             'instrument_options' => $this->propositions($instrumentOptions, $participant, $context),

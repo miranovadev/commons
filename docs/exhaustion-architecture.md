@@ -57,13 +57,19 @@ fixtures (timings are illustrative, query-growth assertions are enforced):
 
 | Read/proof | No added history | 1,000 historical propositions |
 | --- | --- | --- |
-| Exhaustion proof | 114 queries, 27 ms | 114 queries, 29–41 ms |
+| Exhaustion proof | 112 queries, 27 ms | 112 queries, 30 ms |
 | Recovery participant state | 26 queries, 13 ms | 26 queries, 14 ms |
 | Projected recovery | 14 queries, 1.5 ms | 13 queries, 1.7 ms |
 | Slow recovery reference | 14 queries, 3 ms | 14 queries, 43 ms |
 
 The graph read remains 20 queries at both 1 and 500 cards. Existing dense
-participation profiles stay at 75/69/54 queries for Mediate/Bias/Order. Exhaustion
+participation profiles stay at 73/67/52 queries for Mediate/Bias/Order. Exhaustion
 proof and context computation run outside the guarded contribution transaction.
 PostgreSQL CI separately exercises actual lock contention, simultaneous sibling
 Rest, a fresh sibling racing publication, and projected/reference agreement.
+
+The PostgreSQL full-suite scale gate exposed a pathological recursive ancestry
+plan in the new historical-context lookup. Plans now reuse the hydrated governing
+Commit; standalone lookups expand indexed parent frontiers instead of a recursive
+whole-relation join. This also removes two queries from each dense plan. The
+30-second statement timeout remains in place.

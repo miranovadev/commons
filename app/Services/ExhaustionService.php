@@ -7,6 +7,7 @@ use App\Models\ContextHorizon;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Substrate;
+use App\Services\Participation\ParticipationContext;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
@@ -170,9 +171,9 @@ final class ExhaustionService
     }
 
     /** Compact local alternatives, never a recursively serialized historical tree. */
-    public function context(Proposition $gate, int $limit = 25): array
+    public function context(Proposition $gate, int $limit = 25, ?ParticipationContext $context = null): array
     {
-        $seed = app(CommitRegionService::class)->seedFor($gate);
+        $seed = app(CommitRegionService::class)->seedFor($gate, $context);
         if ($seed === null) {
             return [];
         }
