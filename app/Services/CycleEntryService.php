@@ -203,8 +203,8 @@ final readonly class CycleEntryService
 
     /**
      * A Commit is already a continuation, regardless of its current Potential.
-     * Non-tragic expressive completion resumes its own Committal region. Rest
-     * explicitly exhausts that local path, so recovery must select elsewhere.
+     * Ordinary expressive completion resumes its own Committal region. Rest
+     * invokes structural recovery, which may retain an unexplored open basin.
      */
     public function continuationFor(Participant $participant): ?Proposition
     {

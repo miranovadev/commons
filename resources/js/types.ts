@@ -229,7 +229,19 @@ export interface ReceiptContext {
   evidence?: { query?: string; executed_at?: string; results?: Array<{ title: string; url: string; excerpt: string; excerpt_truncated: boolean; source: string; rank: number; relevance: number | null; published_at: string | null }>; proposition_id?: Identifier; statement?: string; direction?: string; rationale?: string | null; resource?: string; fingerprint?: string; observed_at?: string; content_excerpt?: string | null; excerpt_truncated?: boolean };
 }
 
+export interface ExhaustedAlternative {
+  id: Identifier;
+  statement: string;
+  tier: string;
+  register: string;
+  exhausted: boolean;
+  basin_exhausted: boolean;
+  exhausted_at: string;
+  actionable: false;
+}
+
 export interface ParticipantPlan {
+  exhausted_alternatives?: ExhaustedAlternative[];
   receipts?: ReceiptContext[];
   commitment_options?: Record<Identifier, NonNullable<ParticipantPlan['commitment']>>;
   commitment?: {
@@ -350,6 +362,7 @@ export interface ApiEnvelope<T> {
 
 /** Protected autonomous context; human display uses ParticipantPlan via /workspace. */
 export interface ParticipantContext {
+  exhausted_alternatives?: ExhaustedAlternative[];
   rest_available: boolean;
   commitment?: ParticipantPlan['commitment'];
   commitment_options?: ParticipantPlan['commitment_options'];

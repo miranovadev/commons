@@ -220,9 +220,9 @@ the schema and UI. Human controls and autonomous inference receive the same resu
 
 Rest is never a participant preference or a competing action. An available
 Variant, Reclassify, Revise, Attestation, phase-admissible Traverse, Reconcile, Instrument or Commit
-prevents Rest. In particular, Distinguish, Persist and Disperse cannot be
-Tragic while their first Variant opportunity remains admissible. After generation,
-existing Write support determines whether the region is Tragic. An empty
+prevents Rest. In particular, Distinguish, Persist and Disperse cannot offer
+Rest while their first Variant opportunity remains admissible. After generation,
+existing Write support determines whether local actions remain. An empty
 traversal set alone says nothing about complete action exhaustion.
 
 The plan reports `traversal_options` and `instrument_options` separately from
