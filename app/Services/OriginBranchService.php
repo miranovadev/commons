@@ -15,7 +15,7 @@ final class OriginBranchService
     {
         $origin = CommitmentSnapshot::where('proposition_id', $edge->source_proposition_id)
             ->where('calculator_version', 'origin-bootstrap-v1')->first();
-        if ($origin !== null) {
+        if ($origin !== null && $edge->target->tier === 'expressive') {
             DB::table('origin_branches')->insertOrIgnore([
                 'root_proposition_id' => $edge->target_proposition_id,
                 'origin_proposition_id' => $origin->proposition_id,

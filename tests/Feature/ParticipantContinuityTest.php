@@ -9,12 +9,14 @@ use App\Models\Participant;
 use App\Models\Proposition;
 use App\Models\Substrate;
 use App\Models\Supersession;
+use App\Models\Tragedy;
 use App\Services\ContributionService;
 use App\Services\CycleEntryService;
 use App\Services\LedgerService;
 use App\Services\Observables\LocalMeasurementService;
 use App\Services\ParticipationService;
 use App\Services\PotentialChargeService;
+use App\Services\PotentialProjectionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -79,7 +81,7 @@ class ParticipantContinuityTest extends TestCase
             ['action' => 'proposition.variant', 'statement' => 'Continue locally']);
         $this->assertSame($value > 0 ? 'frontier' : 'stance', $first['plan']['phase']['write_register']);
         $this->classificationEvidenceFixture(Proposition::findOrFail($first['plan']['gate_id']));
-        app(\App\Services\PotentialProjectionService::class)->refresh($participant->substrate_id);
+        app(PotentialProjectionService::class)->refresh($participant->substrate_id);
         $second = $service->contribute($participant, $first['plan']['phase']['id'],
             ['action' => 'proposition.reclassify']);
         $this->assertSame($value > 0 ? 'canon' : 'concord', $second['plan']['phase']['write_register']);
@@ -89,7 +91,7 @@ class ParticipantContinuityTest extends TestCase
         $otherPhase = $otherCycle->currentPhase;
         $otherPhase->forceFill(['kind' => PhaseKind::Order, 'write_register' => 'concord', 'gate_proposition_id' => $candidate->id])->save();
         $other->forceFill(['current_proposition_id' => $candidate->id])->save();
-        app(\App\Services\PotentialProjectionService::class)->refresh($other->substrate_id);
+        app(PotentialProjectionService::class)->refresh($other->substrate_id);
         $order = $service->stateFor($other)['plan'];
         $this->assertNotContains($candidate->id, array_column($order['gate_options'], 'id'));
         $this->assertSame([$commit->id], array_column($order['write_options'], 'id'));
@@ -131,7 +133,9 @@ class ParticipantContinuityTest extends TestCase
         $this->assertSame('distinguish', $rested['plan']['phase']['kind']);
         $selection = app(PotentialChargeService::class)->recoverFrom($commit);
         $this->assertSame($origin->id, $selection['proposition']->id);
-        $this->assertGreaterThan(0, $selection['potential_charge']);
+        $this->assertSame('origin_renewal', $selection['reason']);
+        $this->assertSame(0.0, $selection['potential_charge']);
+        $this->assertSame($candidate->id, Tragedy::sole()->root_proposition_id);
         $this->assertSame($origin->id, $rested['plan']['gate_id']);
         $relocated = $rested;
         $this->assertSame($origin->id, $relocated['current_proposition_id']);
@@ -176,7 +180,8 @@ class ParticipantContinuityTest extends TestCase
         $phase->forceFill(['gate_proposition_id' => $candidate->id])->save();
         $participant->forceFill(['current_proposition_id' => $candidate->id])->save();
 
-        app(\App\Services\PotentialProjectionService::class)->refresh($participant->substrate_id);
+        app(PotentialProjectionService::class)->refresh($participant->substrate_id);
+
         return [$participant, $other, $cycle->fresh(), $origin, $candidate];
     }
 }

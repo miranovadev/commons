@@ -9,6 +9,7 @@ use App\Domain\Evidence\VerifiedHyperlink;
 use App\Domain\Observables\ClosureValues;
 use App\Enums\PhaseKind;
 use App\Jobs\WakeParticipant;
+use App\Models\CommitmentSnapshot;
 use App\Models\Connection;
 use App\Models\ContextHorizon;
 use App\Models\Cycle;
@@ -34,8 +35,11 @@ use App\Services\ParticipantActivityService;
 use App\Services\ParticipantConnectionTriggerService;
 use App\Services\ParticipationService;
 use App\Services\PhaseProgressionService;
+use App\Services\PotentialChargeService;
+use App\Services\PotentialProjectionService;
 use App\Services\PropositionMeasurementService;
 use App\Services\ReceiptContextService;
+use App\Services\ReferencePotentialChargeService;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\RefreshDatabaseState;
@@ -114,11 +118,11 @@ class TransactionLockOrderTest extends TestCase
         $this->assertSame(range(1, count($sequences)), $sequences);
         $this->assertSame(2, Proposition::where('tier', 'expressive')->count());
         $this->assertSame((int) $substrate->fresh()->field_version,
-            app(\App\Services\PotentialProjectionService::class)->assertCurrent($substrate->id));
+            app(PotentialProjectionService::class)->assertCurrent($substrate->id));
         foreach ([$first, $second] as $participant) {
             $position = $participant->fresh()->position;
-            $actual = app(\App\Services\PotentialChargeService::class)->recoverFrom($position);
-            $expected = app(\App\Services\ReferencePotentialChargeService::class)->recoverFrom($position);
+            $actual = app(PotentialChargeService::class)->recoverFrom($position);
+            $expected = app(ReferencePotentialChargeService::class)->recoverFrom($position);
             $this->assertSame($expected['proposition']->id ?? null, $actual['proposition']->id ?? null);
             $this->assertEqualsWithDelta($expected['potential_charge'] ?? 0, $actual['potential_charge'] ?? 0, 1e-12);
         }
@@ -284,7 +288,7 @@ class TransactionLockOrderTest extends TestCase
         app(ParticipationService::class)->contribute($first, $initial->id, ['action' => 'proposition.variant', 'statement' => 'Shared classification source']);
         $source = $first->fresh()->position;
         $this->classificationEvidenceFixture($source);
-        app(\App\Services\PotentialProjectionService::class)->refresh($first->substrate_id);
+        app(PotentialProjectionService::class)->refresh($first->substrate_id);
         $firstPhase = $first->cycles()->whereNull('completed_at')->sole()->currentPhase;
         $second = new Participant;
         $second->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'second-classifier'])->save();
@@ -316,7 +320,7 @@ class TransactionLockOrderTest extends TestCase
             'target_proposition_id' => $source->id, 'type' => 'variant'])->save();
         app(LedgerService::class)->record($edge);
         $this->classificationEvidenceFixture($source);
-        app(\App\Services\PotentialProjectionService::class)->refresh($first->substrate_id);
+        app(PotentialProjectionService::class)->refresh($first->substrate_id);
         $closure = [...(new ClosureValues(1, 1))->resolve(), 'history_proposition_id' => null, 'history_source' => 'negative-default'];
         $this->mock(ClosureGateService::class, fn ($mock) => $mock->shouldReceive('preview', 'forCommitment')->andReturn($closure));
         $initial->forceFill(['kind' => PhaseKind::Order, 'write_register' => 'concord', 'gate_proposition_id' => $source->id])->save();
@@ -388,7 +392,7 @@ class TransactionLockOrderTest extends TestCase
         app(ParticipationService::class)->contribute($first, $initial->id, ['action' => 'proposition.variant', 'statement' => 'Source']);
         $source = $first->fresh()->position;
         $this->classificationEvidenceFixture($source);
-        app(\App\Services\PotentialProjectionService::class)->refresh($first->substrate_id);
+        app(PotentialProjectionService::class)->refresh($first->substrate_id);
         $phase = $first->cycles()->whereNull('completed_at')->sole()->currentPhase;
         $state = app(ParticipationService::class)->stateFor($first);
         $input = ['action' => 'proposition.reclassify'];
@@ -415,7 +419,7 @@ class TransactionLockOrderTest extends TestCase
         $target = app(ContributionDispatcher::class)->dispatch($first, $initial,
             ['action' => 'proposition.variant', 'statement' => 'Instrument subject']);
         $this->receiptFixture($target); // Allow the competing attestation to advance this Phase.
-        app(\App\Services\PotentialProjectionService::class)->refresh($substrate->id);
+        app(PotentialProjectionService::class)->refresh($substrate->id);
         $second = new Participant;
         $second->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'during-observation'])->save();
         app(CycleEntryService::class)->enter($second);
@@ -480,12 +484,14 @@ class TransactionLockOrderTest extends TestCase
         [$substrate, $first, $phase] = $this->fixture();
         app(ParticipationService::class)->contribute($first, $phase->id, ['action' => 'proposition.variant', 'statement' => 'A finite attempt']);
         $root = $first->fresh()->position;
-        $firstRest = $this->tragicPhase($first, $root);
+        $head = $this->matureTragedyHead($root);
+        $firstRest = $this->tragicPhase($first, $head);
         $second = (new Participant)->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'second-rest']);
         $second->save();
-        $secondRest = $this->tragicPhase($second, $root);
+        $secondRest = $this->tragicPhase($second, $head);
         app(PropositionMeasurementService::class)->project($root, 1.0, 1.0, 1.0);
-        app(\App\Services\PotentialProjectionService::class)->rebuild($substrate->id, false);
+        app(PropositionMeasurementService::class)->project($head, 1.0, 1.0, 1.0);
+        app(PotentialProjectionService::class)->rebuild($substrate->id, false);
         $this->whileWorkerWaits($substrate, ['operation' => 'rest', 'participant_id' => $second->id, 'phase_id' => $secondRest->id],
             function () use ($first, $firstRest): void {
                 app(ParticipationService::class)->contribute($first, $firstRest->id, ['action' => 'participant.rest']);
@@ -496,6 +502,36 @@ class TransactionLockOrderTest extends TestCase
             $this->assertSame(1, $participant->cycles()->whereNull('completed_at')->count());
             $this->assertSame('ready', app(ParticipationService::class)->stateFor($participant)['status']);
         }
+    }
+
+    private function matureTragedyHead(Proposition $root): Proposition
+    {
+        $parent = $root;
+        foreach ([PhaseKind::Bias, PhaseKind::Order, PhaseKind::Constrain] as $kind) {
+            $phase = $this->phaseAtPositionFixture($root->phase, $kind);
+            $node = (new Proposition)->forceFill(['phase_id' => $phase->id, 'register' => $phase->write_register,
+                'tier' => $kind === PhaseKind::Order ? 'committal' : 'expressive', 'statement' => 'Mature exhausted trajectory']);
+            $node->save();
+            $entry = app(LedgerService::class)->record($node);
+            $edge = (new Supersession)->forceFill(['phase_id' => $phase->id, 'source_proposition_id' => $parent->id,
+                'target_proposition_id' => $node->id, 'type' => $kind === PhaseKind::Order ? 'commit' : 'variant']);
+            $edge->save();
+            app(LedgerService::class)->record($edge);
+            app(PropositionMeasurementService::class)->project($node, 1.0, 1.0, 1.0);
+            if ($kind === PhaseKind::Order) {
+                (new CommitmentSnapshot)->forceFill(['proposition_id' => $node->id,
+                    'substrate_id' => $phase->cycle->participant->substrate_id,
+                    'ledger_entry_id' => $entry->id, 'supersession_id' => $edge->id,
+                    'correspondence' => .5, 'chirality' => .5, 'closure' => .5,
+                    'prominence' => .75, 'turbulence' => .25, 'tension' => .5,
+                    'direction_before' => $phase->cycle->contextHorizon->domain,
+                    'direction_after' => $phase->cycle->contextHorizon->domain,
+                    'calculator_version' => 'tragedy-fixture', 'evaluated_at' => now()])->save();
+            }
+            $parent = $node;
+        }
+
+        return $parent;
     }
 
     private function tragicPhase(Participant $participant, Proposition $root): Phase
