@@ -106,6 +106,7 @@ export const commonsApi = createApi({
   reducerPath: 'commonsApi',
   baseQuery,
   tagTypes: [
+    'PropositionHistory',
     'GraphParticipants',
     'GraphSubscriptions',
     'Session',
@@ -147,6 +148,10 @@ export const commonsApi = createApi({
       providesTags: (_result, _error, { propositionId }) => [{ type: 'Proposition', id: propositionId }],
     }),
     getPropositions: builder.query<Proposition[], string>({ query: (slug) => `/substrates/${slug}/propositions`, transformResponse: data, providesTags: ['Proposition'] }),
+    getObservedPropositions: builder.query<Proposition[], { slug: string; view: 'exhausted' | 'history' }>({
+      query: ({ slug, view }) => `/substrates/${slug}/propositions?view=${view}`, transformResponse: data,
+      providesTags: (_result, _error, { slug }) => [{ type: 'PropositionHistory', id: slug }],
+    }),
     getParticipants: builder.query<Participant[], string>({ query: (slug) => `/substrates/${slug}/participants`, transformResponse: data, providesTags: (result) => result ? [...result.map(({ id }) => ({ type: 'Participant' as const, id })), { type: 'Participant', id: 'LIST' }] : [{ type: 'Participant', id: 'LIST' }] }),
     joinParticipant: builder.mutation<Participant, JoinParticipantInput>({
       query: ({ slug, ...body }) => ({
@@ -295,6 +300,7 @@ export const {
   useGetGraphSubscriptionsQuery,
   useGetGraphParticipantsQuery,
   useGetPropositionsQuery,
+  useGetObservedPropositionsQuery,
   useGetSessionQuery,
   useGetSubstrateQuery,
   useGetSubstratesQuery,

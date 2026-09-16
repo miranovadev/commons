@@ -549,3 +549,38 @@ test('leaving while catch-up waits for HTTP cancels follow-on requests and pendi
     assert.equal(live().disconnected, false);
   } finally { releaseInitial?.(); await act(async () => page.close()); el.remove(); }
 });
+
+test('history visibility keeps exhausted paths without changing the live cache or realtime transport', { timeout: 30000 }, async () => {
+  const origin = proposition('Origin');
+  const historical = { ...proposition('Exhausted', ['Origin']), active: false,
+    exhaustion: { exhausted: true, basin_exhausted: false, exhausted_at: '2026-09-17T00:00:00Z' } };
+  let extra = [];
+  globalThis.fetch = async request => {
+    const url = new URL(request.url); const path = url.pathname;
+    if (path.endsWith('/graph-participants')) return json({ server_time: new Date().toISOString(), participants: [] });
+    if (path.endsWith('/graph-metrics')) return json([]);
+    if (path.endsWith('/realtime')) return json({ substrate_id: 'substrate', public: true, context_horizon_ids: ['horizon'] });
+    if (path.endsWith('/propositions')) return json(url.searchParams.has('view') ? [origin, historical, ...extra] : [origin]);
+    if (path.includes('/propositions/')) return json(historical);
+    return json({ id: 'substrate', slug: 'test', title: 'Test', visibility: 'public' });
+  };
+  const el = container(); const page = mount(el);
+  try {
+    await act(async () => page.graph());
+    await until(() => cards().length === 1 && live()?.channels.size === 2);
+    const transport = live(); const joins = transport.joins.length;
+    const select = document.querySelector('select[aria-label="Graph visibility"]');
+    assert.ok(select);
+    await act(async () => { select.value = 'history'; select.dispatchEvent(new Event('change', { bubbles: true })); });
+    await until(() => cards().length === 2);
+    assert.equal(live(), transport);
+    assert.equal(transport.joins.length, joins);
+    assert.deepEqual(commonsApi.endpoints.getPropositions.select('test')(page.store.getState()).data.map(node => node.id), ['Origin']);
+    extra = [{ ...historical, id: 'Another', title: 'Another' }];
+    await act(async () => transport.channels.get('public.substrate.substrate').callback({ type: 'context-horizons.changed', substrate_id: 'substrate' }));
+    await until(() => cards().length === 3);
+    await act(async () => { select.value = 'active'; select.dispatchEvent(new Event('change', { bubbles: true })); });
+    await until(() => cards().length === 1);
+    assert.equal(live(), transport);
+  } finally { await act(async () => page.close()); el.remove(); }
+});

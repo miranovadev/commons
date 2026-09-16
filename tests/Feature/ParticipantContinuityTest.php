@@ -18,6 +18,7 @@ use App\Services\ParticipationService;
 use App\Services\PotentialChargeService;
 use App\Services\PotentialProjectionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Arr;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -121,7 +122,7 @@ class ParticipantContinuityTest extends TestCase
         // An exhausted Order has no expressive candidate and exposes Rest alone.
         $phase = $next->currentPhase;
         $phase->forceFill(['kind' => PhaseKind::Order, 'write_register' => 'canon'])->save();
-        $horizons = ContextHorizon::orderBy('sequence')->get()->map->getAttributes()->all();
+        $horizons = ContextHorizon::orderBy('sequence')->get()->map(fn ($h) => Arr::except($h->getAttributes(), ['exhausted_at', 'updated_at']))->all();
         $state = $service->stateFor($participant);
         foreach ($state['plan']['schema']['$defs']['actions']['receipt.read']['properties']['receipt_id']['enum'] ?? [] as $receiptId) {
             $state = $service->contribute($participant, $phase->id, ['action' => 'receipt.read', 'receipt_id' => $receiptId]);
@@ -145,7 +146,7 @@ class ParticipantContinuityTest extends TestCase
         $this->assertSame($selectedHorizon->id, $relocated['cycle']['context_horizon_id']);
         $this->assertSame('settlement', $relocated['domain']);
         $this->assertSame('signal', $relocated['plan']['phase']['write_register']);
-        $this->assertSame($horizons, ContextHorizon::orderBy('sequence')->get()->map->getAttributes()->all());
+        $this->assertSame($horizons, ContextHorizon::orderBy('sequence')->get()->map(fn ($h) => Arr::except($h->getAttributes(), ['exhausted_at', 'updated_at']))->all());
     }
 
     private function prepareCommit(float $value): array

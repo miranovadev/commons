@@ -24,7 +24,7 @@ final readonly class PhaseGenerationService
     public function available(Phase $phase, string $action, ?ParticipationContext $context = null, ?Proposition $position = null): bool
     {
         if ($phase->gate_proposition_id !== null
-            && ($context !== null ? ! $context->activeIds->has($phase->gate_proposition_id) : app(OriginBranchService::class)->pruned($phase->gate_proposition_id))) {
+            && ($context !== null ? ! $context->activeIds->has($phase->gate_proposition_id) : app(ExhaustionService::class)->unavailable($phase->gate_proposition_id))) {
             return false;
         }
         if ($action === 'proposition.commit') {

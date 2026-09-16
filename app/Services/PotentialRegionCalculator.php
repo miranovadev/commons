@@ -98,7 +98,7 @@ final class PotentialRegionCalculator
         if ($frontier === []) {
             foreach ($this->candidates($local) as $entry) {
                 $distance = $local['opener'] === null ? 0 : ($distances[$entry['proposition_id']] ?? null);
-                if ($entry['raw_potential_charge'] > 0 && $distance !== null) {
+                if ($distance !== null) {
                     $frontier[] = [...$entry, 'distance' => $distance];
                 }
             }
@@ -118,6 +118,7 @@ final class PotentialRegionCalculator
                     return false;
                 }
             }
+
             return true;
         }));
         usort($frontier, fn ($a, $b) => strcmp($a['proposition_id'], $b['proposition_id']));

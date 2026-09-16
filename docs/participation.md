@@ -161,7 +161,7 @@ Persist Variant and Reclassify retain their shared personal generation opportuni
 
 Instruments and Replay target mutable expressive Writes in phases 1–6. Variant children alone do not disqualify a target. A completed Receipt is required before Attestation; reading is optional. Receipt and Attestation are both required before reclassification. A newly instrumented but unattested Gate may require Rest until another participant attests it or another action becomes available. Database uniqueness and transaction-locked execution recheck the same rules advertised in the schema.
 
-## Traverse, Tragedy and Rest
+## Traverse, local exhaustion, and Rest
 
 The earlier selection action (`participant.select`, implemented on main as
 `proposition.select`) is now `proposition.traverse`. There is no compatibility
@@ -209,24 +209,24 @@ on the left, other authorized actions such as Revise and Instrument in the
 middle, and Support (or its Traverse replacement) on the right. Empty regions
 remain in place, and middle actions wrap without moving the directional slots.
 The UI renders Rest only from the authoritative schema, never from its own
-interpretation of the Tragedy flag or visible cards.
+interpretation of the rest_available flag or visible cards.
 
-**Tragedy** means the current Phase has zero admissible non-Rest actions.
+**Local action exhaustion** means the current Phase has zero admissible non-Rest actions. Tragedy is reserved for full Origin-lineage exhaustion.
 The server first applies all phase-native, ownership, target and Commitment
 constraints, then specializes the complete non-Rest action schema. Only when
-that action set is empty does it set `tragedy: true` and inject `participant.rest`
-as the sole action. Otherwise `tragedy` is false and Rest is absent from both
+that action set is empty does it set `rest_available: true` and inject `participant.rest`
+as the sole action. Otherwise `rest_available` is false and Rest is absent from both
 the schema and UI. Human controls and autonomous inference receive the same result.
 
 Rest is never a participant preference or a competing action. An available
 Variant, Reclassify, Revise, Attestation, phase-admissible Traverse, Reconcile, Instrument or Commit
-prevents Tragedy. In particular, Distinguish, Persist and Disperse cannot be
+prevents Rest. In particular, Distinguish, Persist and Disperse cannot be
 Tragic while their first Variant opportunity remains admissible. After generation,
 existing Write support determines whether the region is Tragic. An empty
 traversal set alone says nothing about complete action exhaustion.
 
 The plan reports `traversal_options` and `instrument_options` separately from
-`tragedy`. Complete Write and traversal target sets are not truncated by the
+`rest_available`. Complete Write and traversal target sets are not truncated by the
 Horizon display limit. Recovery searches viable committed Domains before their
 provenance and compares local candidates after distance attenuation, as described below.
 
@@ -401,9 +401,8 @@ contract. `receipt.read` loads existing evidence without advancing the Phase.
 normal Instrument progression to create a new immutable observation. Neither
 initial execution nor replay automatically loads a Receipt.
 
-Branch-wide Tragedy is explicitly recorded at validated Rest after an optimistic
-exhaustion proof. A pruned branch is historical; participants there retain their
-position and receive only Rest. Recovery/Origin renewal then follows their own Rest.
-See [Branch Tragedy and Origin renewal](branch-tragedy.md).
-
-Producing phase identity, enforcement boundaries and read-only historical diagnostics: [Phase positions](phase-positions.md).
+Exhaustion is observed outside the Rest write lock and published with an exact
+field-version guard. A fresh ungrounded or unattested Write is not exhausted by
+its author's Rest. Compact `exhausted_alternatives` provide non-actionable local
+context. Tragedy is recorded only for full direct Origin-lineage exhaustion.
+See [Exhaustion and Origin Tragedy](branch-tragedy.md).

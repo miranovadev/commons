@@ -17,10 +17,12 @@ final class RecoveryBasinResolver
      *
      * @param  Collection<string, ContextHorizon>  $horizons
      * @param  Closure(ContextHorizon): Collection  $candidatesFor
+     * @param  null|Closure(ContextHorizon): bool  $isClosed
      * @return array{candidates: Collection, searched_basins: array, fallback_depth: int}
      */
-    public function resolve(ContextHorizon $start, Collection $horizons, Closure $candidatesFor): array
+    public function resolve(ContextHorizon $start, Collection $horizons, Closure $candidatesFor, ?Closure $isClosed = null): array
     {
+        $isClosed ??= fn (ContextHorizon $basin): bool => $basin->exhausted_at !== null;
         $horizons = $horizons->where('substrate_id', $start->substrate_id)->keyBy('id');
         $children = $horizons->groupBy('parent_context_horizon_id');
         $visited = $searching = $searched = [];
@@ -60,7 +62,7 @@ final class RecoveryBasinResolver
             }
             $ancestors[$basin->id] = true;
             $candidates = $visit($basin);
-            if ($candidates->isNotEmpty() || $basin->parent_context_horizon_id === null) {
+            if ($candidates->isNotEmpty() || $basin->parent_context_horizon_id === null || ! $isClosed($basin)) {
                 return ['candidates' => $candidates, 'searched_basins' => $searched, 'fallback_depth' => $fallbackDepth];
             }
             $basin = $horizons->get($basin->parent_context_horizon_id)

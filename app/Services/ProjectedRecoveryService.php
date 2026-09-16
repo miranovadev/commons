@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Exceptions\PotentialProjectionUnavailable;
-use App\Models\CommitmentSnapshot;
 use App\Models\ContextHorizon;
 use App\Models\Proposition;
 use DomainException;
@@ -23,6 +22,8 @@ final readonly class ProjectedRecoveryService
         }
         app(CausalContextService::class)->assertGate($position, $start);
         $version = $this->projection->assertCurrent($substrateId);
+        $unavailable = app(ExhaustionService::class)->unavailable($position);
+        $excluded = $unavailable ? $position->id : null;
         $id = $start->id;
         $from = $position->id;
         $offset = $depth = 0;
@@ -35,9 +36,14 @@ final readonly class ProjectedRecoveryService
             $region = $this->projection->region($id);
             $local = $region['local'];
             $distances = $this->calculator->distances($local, $from);
-            $ranked = $this->frontierFrom($local, $distances, $offset, $position->id, $visited, $searched);
+            $ranked = $this->frontierFrom($local, $distances, $offset, $excluded, $visited, $searched);
             $visited[$id] = true;
             if ($ranked !== [] || $local['parent'] === null) {
+                break;
+            }
+            // Empty numeric frontiers never authorize retreat. Only the explicit
+            // closure of the opening basin (or an isolated legacy hold) does.
+            if (($local['nodes'][$local['opener']]['active'] ?? true)) {
                 break;
             }
             if (! isset($distances[$local['opener']])) {
@@ -48,22 +54,11 @@ final readonly class ProjectedRecoveryService
             $id = $local['parent'];
             $depth++;
         }
-        if ($ranked === [] && $this->renewable($position)) {
-            $origin = CommitmentSnapshot::where('substrate_id', $substrateId)->where('calculator_version', 'origin-bootstrap-v1')->firstOrFail();
-            $entry = DB::table('potential_entries')->where('proposition_id', $origin->proposition_id)->first();
-            $distance = $distances[$origin->proposition_id] ?? null;
-            if ($entry === null || $distance === null) {
-                throw new PotentialProjectionUnavailable($substrateId);
-            }
-            $ranked[] = [...$this->calculator->attenuate([
-                'proposition_id' => $origin->proposition_id, 'context_horizon_id' => $entry->context_horizon_id,
-                'raw_potential_charge' => (float) $entry->raw_potential_charge, 'raw_charge' => (float) $entry->raw_charge,
-            ], $offset + $distance), 'reason' => 'origin_renewal'];
-        }
         $ranked = $this->calculator->rank($ranked);
         $selection = $ranked[0] ?? null;
         if ($selection !== null) {
             $selection['proposition'] = Proposition::findOrFail($selection['proposition_id']);
+            $selection['reason'] = $selection['proposition']->commitmentSnapshot?->calculator_version === 'origin-bootstrap-v1' && $unavailable ? 'origin_renewal' : 'open_basin';
         }
         if ($version !== $this->projection->assertCurrent($substrateId)) {
             throw new PotentialProjectionUnavailable($substrateId);
@@ -75,7 +70,7 @@ final readonly class ProjectedRecoveryService
             'projected_field_version' => $version, 'recovery_hops' => $depth];
     }
 
-    private function frontierFrom(array $local, array $distances, int $offset, string $excluded, array $visited, array &$searched): array
+    private function frontierFrom(array $local, array $distances, int $offset, ?string $excluded, array $visited, array &$searched): array
     {
         $ranked = [];
         $children = DB::table('context_horizons as horizon')->leftJoin('potential_region_states as projection',
@@ -93,6 +88,7 @@ final readonly class ProjectedRecoveryService
                 $state = $this->projection->region($child->id)['local'];
                 $ranked = array_merge($ranked, $this->frontierFrom($state,
                     $this->calculator->distances($state, $excluded), $distance, $excluded, $visited, $searched));
+
                 continue;
             }
             $frontier = json_decode($child->frontier, true, flags: JSON_THROW_ON_ERROR);
@@ -105,20 +101,13 @@ final readonly class ProjectedRecoveryService
         }
         if ($ranked === []) {
             foreach ($this->calculator->candidates($local, $excluded) as $entry) {
-                if ($entry['raw_potential_charge'] > 0 && isset($distances[$entry['proposition_id']])) {
+                if (isset($distances[$entry['proposition_id']])) {
                     $ranked[] = $this->calculator->attenuate($entry, $offset + $distances[$entry['proposition_id']]);
                 }
             }
-            $searched[] = ['context_horizon_id' => $local['id'], 'domain' => $local['domain'], 'eligible_candidates' => count($ranked)];
+            $searched[] = ['context_horizon_id' => $local['id'], 'domain' => $local['domain'], 'committal_proposition_id' => $local['opener'] ?? ($ranked[0]['proposition_id'] ?? null), 'eligible_candidates' => count($ranked)];
         }
 
         return $ranked;
-    }
-
-    private function renewable(Proposition $position): bool
-    {
-        return app(OriginBranchService::class)->pruned($position)
-            || ($position->commitmentSnapshot?->calculator_version === 'origin-bootstrap-v1'
-                && DB::table('origin_branches')->where('origin_proposition_id', $position->id)->whereNotNull('pruned_at')->exists());
     }
 }

@@ -4,10 +4,10 @@ namespace App\Console\Commands;
 
 use App\Exceptions\PotentialProjectionUnavailable;
 use App\Models\Participant;
+use App\Services\ExhaustionService;
 use App\Services\PotentialChargeService;
 use App\Services\PotentialProjectionService;
 use App\Services\ReferencePotentialChargeService;
-use App\Services\TragedyService;
 use Illuminate\Console\Command;
 
 final class InspectPotential extends Command
@@ -25,6 +25,7 @@ final class InspectPotential extends Command
             $result = $potential->inspectRecoveryFrom($position, $cycle?->contextHorizon);
         } catch (PotentialProjectionUnavailable $exception) {
             $this->error($exception->getMessage());
+
             return self::FAILURE;
         }
         $selection = $result['selection'];
@@ -35,7 +36,7 @@ final class InspectPotential extends Command
         $result['region_potential'] = $region['potential'];
         $result['substrate_field_version'] = (int) $participant->substrate->fresh()->field_version;
         $phase = $cycle?->phases()->orderByDesc('kind')->first();
-        $result['would_tragedy'] = $phase !== null && collect(app(TragedyService::class)->inspect($phase)['branches'])->contains('exhausted', true);
+        $result['would_tragedy'] = $phase !== null && collect(app(ExhaustionService::class)->inspect($phase)['branches'])->contains('exhausted', true);
         if ($this->option('verify')) {
             $reference = app(ReferencePotentialChargeService::class)->inspectRecoveryFrom($position, $cycle?->contextHorizon)['selection'];
             $result['reference_matches'] = ($selection['proposition_id'] ?? null) === ($reference['proposition']->id ?? null)

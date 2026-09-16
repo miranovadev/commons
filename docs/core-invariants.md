@@ -5,6 +5,9 @@ If an implementation detail conflicts with an invariant, the invariant takes
 precedence. These are normative constraints on The Commons model and govern the
 more specific operational rules documented beneath them.
 
+Persistence, exhaustion, recursive recovery, Origin-only Tragedy, and observer
+separation are normative; see [the exhaustion invariants](#persistence-exhaustion-recovery-and-observation).
+
 ## 1. The Measurements Are Independent
 
 Correspondence, Chirality, and Closure are irreducible and independent
@@ -137,7 +140,12 @@ entry when a current position exists. Any entry fallback remains Committal and
 respects that observational position. A prospective Commitment is not eligible
 until the Committal Proposition exists.
 
-Rest recovery derives its search basin from the Participant’s persisted Cycle Horizon and its explicit descendant/parent topology. Viable downstream Domains take precedence over their ancestors. Sibling frontiers remain peers, ranked by existing observer-distance-attenuated Potential Charge. Only exhaustion of the current subtree permits retreat through its own provenance. Within an eligible basin, all reachable Committal entry points compete, including local branches; generic graph reachability alone never grants Domain eligibility. The exhausted position is not a recovery destination. Origin remains reachable through provenance when it has positive Potential. Branch-level Tragedy requires a committed lineage whose later regions have exhausted back to its earliest Commit; Origin itself need not reach zero Potential. Retirement then permits structural Origin renewal without inventing positive Potential.
+Rest recovery uses the persisted Cycle Horizon and its explicit parent topology.
+Open downstream frontiers remain eligible even at zero measured Potential.
+Only explicit exhaustion permits retreat through the opening Commit into the
+immediate parent basin. At each level, viable sibling routes stop further retreat.
+Potential ranks structurally eligible entries; numeric zero never proves closure.
+Origin remains generative. See the persistence and exhaustion invariants below.
 
 Potential is the strongest remaining viable continuation under absolute-Tension-reduction semantics, never an additive budget. Writes maintain affected region projections and propagate changed routing summaries through provenance. Ordinary reads consume the published field version; they never repair measurements or reconstruct the whole substrate. A missing or inconsistent projection is an explicit recoverable maintenance condition. See [Incremental Potential](incremental-potential.md).
 
@@ -211,23 +219,28 @@ rather than inferring semantics from current code behaviour.
 
 
 
-## Active branches and historical Tragedies
+## Persistence, exhaustion, recovery, and observation
 
-**Tragedy maturity invariant:** An Origin-rooted lineage cannot be retired before
-it has persisted through at least one Commit. Branch-level Tragedy occurs only
-when recovery exhausts all later committed regions back to the lineage's earliest
-Commit and that Commit has no remaining Potential. The expressive proposition
-directly linking that lineage to Origin is then pruned from active participation
-while all historical data remains.
+**Persistence invariant:** Committal propositions persist. Exhaustion applies to
+expressive excursions and outgoing recovery basins, never to the existence of a
+Committal boundary.
 
-Zero Potential on a fresh expressive root is not Tragedy. Local zero Potential
-means recover/explore, not retire. Origin is generative and is never itself pruned.
-No Commit, no Tragedy. A Commit elsewhere on a sibling path does not establish
-maturity for an uncommitted terminal path. Shared descendants remain active while
-any supporting Origin branch remains live.
+**Exhaustion invariant:** An expressive excursion closes only after actual
+exploration and exhaustion of every child route. A leaf requires a validated
+terminal Rest after completed evidence and an effective Attestation. A basin
+closes only when all its routes close. Freshness and numeric zero are never proof.
 
-Local exhaustion alone does not retire a branch. Tragedy preserves all historical contributions and
-never relocates other participants; a historical position admits only Rest. Following
-Rest, viable causal recovery remains preferred, with structural Origin renewal when
-those options are exhausted. Potential measurements are not fabricated for renewal.
-See [the lifecycle and concurrency contract](branch-tragedy.md).
+**Recovery invariant:** Recovery climbs one basin upward at a time through
+persistent Committal boundaries and stops at the first remaining viable frontier.
+Fresh open basins are generative even before they measure positive Potential.
+
+**Tragedy invariant:** Tragedy occurs only when an entire direct Origin-rooted
+expressive lineage exhausts back to the genuine Origin. A local Rest is not
+Tragedy. Other Participants remain in place until their normal lifecycle recovers.
+
+**Observer invariant:** Hiding exhausted structure is presentation only. Historical
+visibility cannot alter Potential, eligibility, recovery, or ledger history.
+
+**Phase-position invariant:** Labels classify. Position governs.
+
+See [the state, concurrency, and legacy contract](branch-tragedy.md).

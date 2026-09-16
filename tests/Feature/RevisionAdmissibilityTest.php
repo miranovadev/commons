@@ -229,7 +229,7 @@ class RevisionAdmissibilityTest extends TestCase
         $this->assertArrayNotHasKey('proposition.revise', $plan['schema']['$defs']['actions']);
         $prompt = app(ParticipantPromptFactory::class)->make(new Connection, $state);
         $this->assertSame($plan['schema'], $prompt['schema']);
-        $this->assertFalse($plan['tragedy'], 'Support actions remain available.');
+        $this->assertFalse($plan['rest_available'], 'Support actions remain available.');
         $this->assertTrue(app(PropositionOptionService::class)->revisionOptionsFor($phase, $participant)->isEmpty());
         $input = ['action' => 'proposition.revise', 'proposition_id' => $head->id, 'statement' => 'Must not be written'];
         $counts = [Proposition::count(), Supersession::count(), $participant->substrate->ledgerEntries()->count()];

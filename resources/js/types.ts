@@ -13,6 +13,7 @@ export interface Observables {
 }
 
 export interface Proposition {
+  exhaustion?: { exhausted: boolean; basin_exhausted: boolean; exhausted_at: string | null };
   active?: boolean;
   id: Identifier;
   register: RegisterName;
@@ -250,7 +251,7 @@ export interface ParticipantPlan {
   phase: Phase;
   gate: Proposition;
   lineage?: Proposition[];
-  tragedy?: boolean;
+  rest_available?: boolean;
   traversal_options?: Proposition[];
   instrument_options?: Proposition[];
   write_options?: Proposition[];
@@ -349,7 +350,7 @@ export interface ApiEnvelope<T> {
 
 /** Protected autonomous context; human display uses ParticipantPlan via /workspace. */
 export interface ParticipantContext {
-  tragedy: boolean;
+  rest_available: boolean;
   commitment?: ParticipantPlan['commitment'];
   commitment_options?: ParticipantPlan['commitment_options'];
   phase: Pick<Phase, 'id' | 'number' | 'kind' | 'write_register'>;

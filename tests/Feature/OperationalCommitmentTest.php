@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Domain\Observables\ClosureValues;
+use App\Enums\ContextDomain;
 use App\Enums\PhaseKind;
 use App\Models\Attestation;
 use App\Models\Cycle;
@@ -12,6 +13,7 @@ use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Receipt;
 use App\Models\Substrate;
+use App\Models\Supersession;
 use App\Services\ClosureGateService;
 use App\Services\CommitmentAdmissibilityService;
 use App\Services\ContributionDispatcher;
@@ -104,7 +106,7 @@ class OperationalCommitmentTest extends TestCase
         $this->assertTrue($state['plan']['commitment']['closure_enforced']);
         $this->assertTrue($state['plan']['commitment']['requirements']['closure']);
         $this->assertArrayHasKey('proposition.commit', $state['plan']['schema']['$defs']['actions']);
-        $this->assertFalse($state['plan']['tragedy']);
+        $this->assertFalse($state['plan']['rest_available']);
         $this->assertArrayNotHasKey('participant.rest', $state['plan']['schema']['$defs']['actions']);
 
         $phaseId = $state['plan']['phase']['id'];
@@ -397,12 +399,12 @@ class OperationalCommitmentTest extends TestCase
     {
         $parent ??= $this->origin;
         $phase = $this->phase($this->participant($this->participant->substrate, 'builder-'.str()->ulid()),
-            $position, \App\Enums\ContextDomain::Settlement->registerFor($position), $parent);
+            $position, ContextDomain::Settlement->registerFor($position), $parent);
         $candidate = new Proposition;
         $candidate->forceFill(['phase_id' => $phase->id, 'register' => $phase->write_register,
             'tier' => 'expressive', 'statement' => 'Prepared '.$position->name])->save();
         app(LedgerService::class)->record($candidate);
-        $edge = new \App\Models\Supersession;
+        $edge = new Supersession;
         $edge->forceFill(['phase_id' => $phase->id, 'source_proposition_id' => $parent->id,
             'target_proposition_id' => $candidate->id, 'type' => 'variant'])->save();
         app(LedgerService::class)->record($edge);
@@ -473,6 +475,7 @@ class OperationalCommitmentTest extends TestCase
         $state = $service->stateFor($participant);
 
         $this->publishPotentialFixture($participant);
+
         return $service->contribute($participant, $state['plan']['phase']['id'], $input);
     }
 }

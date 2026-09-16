@@ -117,7 +117,7 @@ class WriteOnceTest extends TestCase
         $this->assertSame([], $this->targets($plan, 'proposition.revise'));
         $this->assertContains($write->id, $this->targets($plan, 'attestation.create'));
         $this->assertContains($write->id, $this->targets($plan, 'instrument.execute'));
-        $this->assertFalse($plan['tragedy']);
+        $this->assertFalse($plan['rest_available']);
         $this->assertArrayNotHasKey('participant.rest', $plan['schema']['$defs']['actions']);
         app(ContributionDispatcher::class)->dispatch($participant, $return, [
             'action' => 'attestation.create', 'proposition_id' => $write->id, 'direction' => 'refute',
@@ -152,7 +152,7 @@ class WriteOnceTest extends TestCase
         $this->assertContains($revised->id, $this->targets($plan, 'attestation.create'));
         $this->assertContains($revised->id, $this->targets($plan, 'instrument.execute'));
         $this->assertSame([], $this->targets($plan, 'proposition.revise'));
-        $this->assertFalse($plan['tragedy']);
+        $this->assertFalse($plan['rest_available']);
     }
 
     public function test_persist_variant_quota_cannot_be_reset_by_putting_the_gate_in_another_domain(): void

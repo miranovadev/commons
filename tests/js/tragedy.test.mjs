@@ -16,11 +16,11 @@ test('the participant page offers Rest only when the authoritative schema expose
         import { MemoryRouter } from 'react-router-dom';
         import { ParticipantPage } from './resources/js/pages/ParticipantPage';
         import { setParticipation } from './resources/js/services/commonsApi';
-        export function render(action, tragedy) {
+        export function render(action, rest_available) {
           setParticipation({ status: 'ready', plan: {
             gate: { id: 'gate', register: 'canon', tier: 'expressive', statement: 'Gate' },
             phase: { id: 'phase', kind: 'order', number: 7, write_register: 'canon' },
-            tragedy, traversal_options: [],
+            rest_available, traversal_options: [],
             schema: {
               oneOf: [{ $ref: '#/$defs/actions/' + action }],
               $defs: { actions: { [action]: { title: action, properties: { action: { const: action } } } } },
@@ -60,12 +60,12 @@ export const useGetParticipantWorkspaceQuery = () => ({ data: participation });
     const markup = module.exports.render(action, false);
     assert.doesNotMatch(markup, /Tragic Region|>Rest<\/span>/);
   }
-  // No independent client inference from an empty traversal set or tragedy flag.
+  // No independent client inference from an empty traversal set or rest_available flag.
   assert.doesNotMatch(module.exports.render('proposition.variant', true), /Tragic Region|>Rest<\/span>/);
   const exhausted = module.exports.render('participant.rest', true);
   assert.match(exhausted, /Tragic Region/);
   assert.match(exhausted, /aria-label="Open Tragic Region · Rest"/);
-  // Even a stale/absent Tragedy flag cannot hide an authoritative Rest action.
+  // Even a stale/absent Rest flag cannot hide an authoritative Rest action.
   assert.match(module.exports.render('participant.rest', false), /aria-label="Open Tragic Region · Rest"/);
   assert.match(module.exports.render('participant.rest', undefined), /aria-label="Open Tragic Region · Rest"/);
 });

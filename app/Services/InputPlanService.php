@@ -10,6 +10,7 @@ use App\Models\Proposition;
 use App\Services\Observables\ReinforcementService;
 use App\Services\Participation\ParticipationContext;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 final readonly class InputPlanService
 {
@@ -42,7 +43,7 @@ final readonly class InputPlanService
     /** Keep the response's Cycle, Phase and schema on the same observed occurrence. */
     public function forPhase(Participant $participant, Phase $phase, bool $workspace = false): array
     {
-        return $this->retiredPlan($phase, $workspace) ?? $this->build($participant, $phase, new ParticipationContext($phase), $workspace);
+        return $this->exhaustedPlan($phase, $workspace) ?? $this->build($participant, $phase, new ParticipationContext($phase), $workspace);
     }
 
     /** Contribution validation needs admissibility, never workspace/presentation serialization. */
@@ -56,27 +57,32 @@ final readonly class InputPlanService
         $phase = $this->phases->currentFor($participant);
 
         // Observation is optimistic. Only contribution validation owns write locks.
-        return $this->retiredPlan($phase, $workspace) ?? $this->build($participant, $phase, new ParticipationContext($phase), $workspace, $validation);
+        return $this->exhaustedPlan($phase, $workspace) ?? $this->build($participant, $phase, new ParticipationContext($phase), $workspace, $validation);
     }
 
-    private function retiredPlan(Phase $phase, bool $workspace): ?array
+    private function exhaustedPlan(Phase $phase, bool $workspace): ?array
     {
-        if ($phase->gate_proposition_id === null || ! app(OriginBranchService::class)->pruned($phase->gate_proposition_id)) {
+        if ($phase->gate_proposition_id === null || ! app(ExhaustionService::class)->unavailable($phase->gate_proposition_id)) {
             return null;
         }
         $plan = $this->phases->plan($phase->kind);
+        $state = DB::table('exhaustion_states')->where('proposition_id', $phase->gate_proposition_id)->first();
+        $description = $state === null ? 'This continuation has a legacy retirement hold. Rest to recover.'
+            : ($state->kind === 'basin' ? 'This Commit persists, but its outgoing basin is exhausted. Rest to recover.'
+                : 'This continuation is exhausted. Rest to recover through its persistent Commit.');
 
         return [
             'phase' => ['id' => $phase->id, 'number' => $phase->kind->value, 'kind' => $plan['name'],
-                'description' => 'This branch is historical. Rest to begin recovery.',
+                'description' => $description,
                 'write_register' => $phase->write_register, 'started_at' => $phase->started_at],
             ...($workspace ? ['workspace' => null] : []),
-            'gate' => [...$phase->gate()->firstOrFail(['id', 'register', 'tier'])->only(['id', 'register', 'tier']),
-                'statement' => 'Historical position', 'parent_ids' => []],
+            'gate' => [...$phase->gate()->firstOrFail(['id', 'register', 'tier', 'statement'])->only(['id', 'register', 'tier', 'statement']),
+                'parent_ids' => []],
             'provenance_id' => null, 'lineage' => [], 'read_options' => [], 'write_options' => [],
             'gate_options' => [], 'revision_options' => [], 'traversal_options' => [],
             'attestation_options' => [], 'instrument_options' => [], 'receipts' => [],
-            'commitment' => null, 'commitment_options' => [], 'tragedy' => true, 'branch_pruned' => true,
+            'exhausted_alternatives' => app(ExhaustionService::class)->context($phase->gate),
+            'commitment' => null, 'commitment_options' => [], 'rest_available' => true, 'position_exhausted' => true,
             'schema' => $this->schemas->forPhase($phase->kind, ['participant.rest']),
         ];
     }
@@ -172,7 +178,8 @@ final readonly class InputPlanService
             'lineage' => $this->propositions($historical, $participant, $context),
             'read_options' => $this->propositions($readOptions, $participant, $context),
             'receipts' => $this->receipts->forPhase($phase, $context)->all(),
-            'tragedy' => isset($schema['$defs']['actions']['participant.rest']),
+            'exhausted_alternatives' => app(ExhaustionService::class)->context($gate, (int) ($participant->max_read_count ?? 25)),
+            'rest_available' => isset($schema['$defs']['actions']['participant.rest']),
             'traversal_options' => $this->propositions($traversalOptions, $participant, $context),
             'instrument_options' => $this->propositions($instrumentOptions, $participant, $context),
             'write_options' => $this->propositions($writeOptions, $participant, $context),
@@ -217,7 +224,6 @@ final readonly class InputPlanService
                 ->latest('propositions.created_at')
                 ->limit(max(1, (int) ($participant->max_read_count ?? 25)))
                 ->get());
-
 
         $provenance = $lineage->firstWhere('tier', 'committal');
 
