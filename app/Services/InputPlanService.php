@@ -218,7 +218,6 @@ final readonly class InputPlanService
                 ->limit(max(1, (int) ($participant->max_read_count ?? 25)))
                 ->get());
 
-        $this->measurements->observeMissing($propositions, $context);
 
         $provenance = $lineage->firstWhere('tier', 'committal');
 
@@ -233,7 +232,6 @@ final readonly class InputPlanService
             'effectiveAttestations' => $this->attestationsFor($participant),
             'phase.cycle.participant:id,callsign,substrate_id',
         ]);
-        $this->measurements->observeMissing(collect([$provenance]), $context);
         $this->state->loadAttestationCounts($propositions->concat([$provenance]), $context);
 
         // A causal boundary is context, not an invented ancestor of this Gate.
@@ -292,7 +290,6 @@ final readonly class InputPlanService
             'effectiveAttestations' => $this->attestationsFor($participant),
             'phase.cycle.participant:id,callsign,substrate_id',
         ]);
-        $this->measurements->observeMissing($collection, $context);
         $this->state->loadAttestationCounts($collection, $context);
     }
 

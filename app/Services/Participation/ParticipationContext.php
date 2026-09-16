@@ -89,7 +89,9 @@ final class ParticipationContext
             ->with('ledgerEntry')->get();
         $this->parents = $this->edges->groupBy('target_proposition_id');
         $this->children = $this->edges->groupBy('source_proposition_id');
-        $this->horizons = ContextHorizon::where('substrate_id', $this->substrate->id)->get()->keyBy('id');
+        $horizonIds = $this->propositions->map(fn ($node) => $node->phase->cycle->context_horizon_id)
+            ->push($phase->cycle->context_horizon_id)->unique();
+        $this->horizons = ContextHorizon::where('substrate_id', $this->substrate->id)->whereKey($horizonIds)->get()->keyBy('id');
         foreach ($this->horizons as $horizon) {
             $horizon->setRelation('substrate', $this->substrate);
         }

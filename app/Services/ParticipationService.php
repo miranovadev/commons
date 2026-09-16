@@ -43,7 +43,12 @@ final readonly class ParticipationService
 
     private function state(Participant $participant, bool $workspace): array
     {
-        $state = $this->currentStateFor($participant, $workspace);
+        try {
+            $state = $this->currentStateFor($participant, $workspace);
+        } catch (\App\Exceptions\PotentialProjectionUnavailable) {
+            $state = $this->waiting('potential_projection_pending',
+                'The active field is awaiting projection maintenance. Please retry shortly.');
+        }
         $snapshot = CommitmentSnapshot::query()
             ->where('commitment_snapshots.substrate_id', $participant->substrate_id)
             ->whereHas('proposition.phase.cycle', fn ($query) => $query->where('participant_id', $participant->getKey()))
@@ -291,6 +296,7 @@ final readonly class ParticipationService
 
         });
 
+        app(PotentialProjectionService::class)->refresh($participant->substrate_id);
         $this->cycleEntry->prepare($participant->fresh());
 
         return $this->stateFor($participant->fresh());

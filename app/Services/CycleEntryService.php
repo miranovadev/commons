@@ -43,12 +43,23 @@ final readonly class CycleEntryService
     public function enter(Participant $participant, ?array $origin = null): void
     {
         $this->start($participant, $origin, required: true);
+        app(PotentialProjectionService::class)->refresh($participant->substrate_id);
     }
 
     /** Infrastructure entry/rollover: never infer an Origin or invent a recovery Gate. */
     public function prepare(Participant $participant): void
     {
-        $this->start($participant, null, required: false);
+        try {
+            $this->start($participant, null, required: false);
+            // Only a newly created Cycle has dirty Phase touches. Never derive
+            // recovery or backfill merely to find an existing position.
+            if ($this->hasActiveCycle($participant)) {
+                app(PotentialProjectionService::class)->refresh($participant->substrate_id);
+            }
+        } catch (\App\Exceptions\PotentialProjectionUnavailable) {
+            // stateFor exposes the recoverable maintenance state; the scheduler
+            // owns retries if a worker died after the ledger write.
+        }
     }
 
     private function start(Participant $participant, ?array $origin, bool $required): void
@@ -73,6 +84,7 @@ final readonly class CycleEntryService
                             app(TragedyService::class)->retire($terminal, $proof);
                         }
                     });
+                    app(PotentialProjectionService::class)->refresh($participant->substrate_id);
                 }
             }
         }

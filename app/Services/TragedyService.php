@@ -17,55 +17,37 @@ final readonly class TragedyService
     public function inspect(Phase $phase): array
     {
         $substrateId = $phase->cycle->participant->substrate_id;
-        $version = (int) Substrate::whereKey($substrateId)->value('field_version');
+        $projection = app(PotentialProjectionService::class);
+        $version = $projection->assertCurrent($substrateId);
         $branches = DB::table('origin_branches')->where('substrate_id', $substrateId)
             ->whereIn('root_proposition_id', DB::table('origin_branch_memberships')
                 ->where('proposition_id', $phase->gate_proposition_id)->select('root_proposition_id'))->get();
         $proof = ['substrate_id' => $substrateId, 'field_version' => $version,
             'phase_id' => $phase->id, 'position_id' => $phase->gate_proposition_id,
             'branches' => [], 'pruned_roots' => $branches->whereNotNull('pruned_at')->pluck('root_proposition_id')->all()];
+        $local = $branches->whereNull('pruned_at')->isEmpty() ? null
+            : $projection->region($phase->cycle->context_horizon_id)['local'];
+        $calculator = app(PotentialRegionCalculator::class);
         foreach ($branches->whereNull('pruned_at') as $branch) {
-            $nodes = Proposition::active()->whereIn('id', DB::table('origin_branch_memberships')
-                ->where('root_proposition_id', $branch->root_proposition_id)->select('proposition_id'))
-                ->with(['measurement', 'commitmentSnapshot', 'phase.cycle'])->get()->keyBy('id');
-            $origin = Proposition::with(['measurement', 'commitmentSnapshot', 'phase.cycle'])->findOrFail($branch->origin_proposition_id);
-            $nodes->put($origin->id, $origin);
-            $edges = DB::table('supersessions')->whereIn('source_proposition_id', $nodes->keys())
-                ->whereIn('target_proposition_id', $nodes->keys())->get(['source_proposition_id', 'target_proposition_id'])
-                ->groupBy('source_proposition_id');
-            $context = new ParticipationContext($phase, $nodes->keys());
-            $this->measurements->observeMissing($nodes, $context);
-            // Unknown measurements below an excluded Rest path cannot silently
-            // become a proof of full exhaustion.
-            $unknown = $nodes->where('tier', 'expressive')->contains(fn ($node) => $node->measurement === null
-                || $node->measurement->correspondence === null || $node->measurement->chirality === null || $node->measurement->closure === null);
-            $regions = [];
-            $exhausted = ! $unknown;
-            foreach ($nodes->where('tier', 'committal')->where('id', '!=', $phase->gate_proposition_id) as $seed) {
-                if ($seed->commitmentSnapshot === null) {
-                    $exhausted = false;
-                    break;
-                }
-                $horizon = app(ContextHorizonProjector::class)->forEntry($seed);
-                $local = $nodes->filter(fn ($node) => $node->phase->cycle->context_horizon_id === $horizon->id)->keyBy('id');
-                $local->put($seed->id, $seed);
-                // Apply the existing Rest path exclusion, but inspect EVERY region
-                // in this branch, not just the current basin's recovery frontier.
-                // A descendant Commit is evaluated independently even when the
-                // path to it crosses the resting node. Other viable regions veto pruning.
-                $observation = $this->potential->observePotential($seed->id, $seed->commitmentSnapshot->tension, $local, $edges, $phase->gate_proposition_id);
-                $regions[] = ['proposition_id' => $seed->id, 'context_horizon_id' => $horizon->id, ...$observation];
-                if ($observation['value'] > 0 || $observation['status'] !== 'current') {
-                    $exhausted = false;
-                }
-            }
+            $regions = DB::table('potential_branch_regions')->where('root_proposition_id', $branch->root_proposition_id);
+            // Only the observer's own region can change when its exhausted path
+            // is excluded. Any other viable/unknown region vetoes retirement.
+            $otherViable = (clone $regions)->where('context_horizon_id', '!=', $local['id'])
+                ->where(fn ($q) => $q->where('remaining_potential', '>', 0)->orWhere('complete', false))->exists();
+            $candidates = $calculator->candidates($local, $phase->gate_proposition_id, $branch->root_proposition_id);
+            $unknown = collect($local['nodes'])->contains(fn ($node) => $node['active']
+                && $calculator->inBranch($node, $branch->root_proposition_id) && ! $node['complete']);
+            $stats = (clone $regions)->selectRaw('sum(candidate_count) as candidates, sum(proposition_count) as propositions')->first();
+            $exhausted = ! $otherViable && ! $unknown && (int) $stats->candidates > 0
+                && ! collect($candidates)->contains(fn ($candidate) => $candidate['raw_potential_charge'] > 0 || ! $candidate['complete']);
             $proof['branches'][] = ['root_proposition_id' => $branch->root_proposition_id,
-                'origin_proposition_id' => $origin->id,
-                'exhausted' => $exhausted && $regions !== [], 'regions' => $regions,
-                'proposition_count' => $nodes->count() - 1, 'opened_at' => $branch->opened_at];
+                'origin_proposition_id' => $branch->origin_proposition_id, 'exhausted' => $exhausted,
+                'regions' => array_map(fn ($candidate) => ['proposition_id' => $candidate['proposition_id'],
+                    'context_horizon_id' => $local['id'], 'value' => $candidate['raw_potential_charge'],
+                    'status' => $candidate['complete'] ? 'current' : 'missing'], $candidates),
+                'other_region_viable_or_unknown' => $otherViable,
+                'proposition_count' => (int) $stats->propositions, 'opened_at' => $branch->opened_at];
         }
-        // A concurrent commit invalidates the entire observation, even if the
-        // read saw a mixture of its rows. No lock was held during measurement.
         $proof['stable'] = $version === (int) Substrate::whereKey($substrateId)->value('field_version');
 
         return $proof;
@@ -97,7 +79,9 @@ final readonly class TragedyService
                     'terminal_proposition_id' => $phase->gate_proposition_id,
                     'observed_field_version' => $proof['field_version'], 'occurred_at' => now(), 'evidence' => $branch,
                 ])->save();
-                Substrate::whereKey($proof['substrate_id'])->increment('field_version');
+                $affected = DB::table('potential_branch_regions')->where('root_proposition_id', $branch['root_proposition_id'])
+                    ->pluck('context_horizon_id')->all();
+                app(FieldMutationService::class)->mark($proof['substrate_id'], $affected);
                 app(RealtimePublisher::class)->horizons($proof['substrate_id']);
             }
         });

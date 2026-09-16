@@ -101,7 +101,7 @@ final class ContextHorizonProjector
     {
         return DB::transaction(function () use ($substrate): int {
             $locked = $this->lockSubstrate($substrate);
-            Substrate::whereKey($locked->id)->increment('field_version');
+            app(FieldMutationService::class)->mark($locked->id, ContextHorizon::whereBelongsTo($locked)->pluck('id')->all());
             ContextHorizonMembership::whereIn('context_horizon_id', ContextHorizon::whereBelongsTo($locked)->select('id'))->delete();
             $snapshots = CommitmentSnapshot::whereBelongsTo($locked)->get()->keyBy('proposition_id');
             foreach (SubstrateLedgerEntry::whereBelongsTo($locked)->where('kind', LedgerEntryKind::Proposition->value)->oldest('sequence')->get() as $entry) {
@@ -184,6 +184,8 @@ final class ContextHorizonProjector
             'opened_at' => $snapshot->evaluated_at,
         ])->save();
 
+        app(FieldMutationService::class)->mark($horizon->substrate_id, [$horizon->id, $next->id], [$snapshot->proposition_id]);
+
         return $next;
     }
 
@@ -195,6 +197,9 @@ final class ContextHorizonProjector
             'domain' => ContextDomain::Emergence,
             'opened_at' => $substrate->created_at ?? now(),
         ])->save();
+
+        DB::table('potential_projection_states')->insertOrIgnore(['substrate_id' => $substrate->id]);
+        app(FieldMutationService::class)->mark($substrate->id, [$horizon->id]);
 
         return $horizon;
     }
