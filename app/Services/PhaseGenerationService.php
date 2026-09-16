@@ -22,6 +22,10 @@ final readonly class PhaseGenerationService
 
     public function available(Phase $phase, string $action, ?ParticipationContext $context = null, ?Proposition $position = null): bool
     {
+        if ($phase->gate_proposition_id !== null
+            && ($context !== null ? ! $context->activeIds->has($phase->gate_proposition_id) : app(OriginBranchService::class)->pruned($phase->gate_proposition_id))) {
+            return false;
+        }
         if ($action === 'proposition.commit') {
             // A preview with no selected source must not suppress other eligible Gates.
             return $position === null || $this->availability->mutable($position, $context);
@@ -64,7 +68,7 @@ final readonly class PhaseGenerationService
         $results = Supersession::query()->select('target_proposition_id')
             ->whereIn('source_proposition_id', $sources)
             ->whereIn('type', ['variant', 'reclassify', 'commit']);
-        $check = fn () => ! Proposition::query()
+        $check = fn () => ! Proposition::query()->active()
             // Persist Variant belongs to the Participant/Gate, even if a later
             // Context Horizon presents that Gate with different register labels.
             ->when($phase->kind !== PhaseKind::Persist || $action !== 'proposition.variant',
@@ -88,7 +92,7 @@ final readonly class PhaseGenerationService
     {
         $sources = $this->regions->membersFor($context?->propositions->get($phase->gate_proposition_id) ?? $phase->gate, $context)->pluck('id');
 
-        return Proposition::query()->where('tier', 'committal')->where('register', $phase->write_register)->whereHas('commitmentSnapshot')
+        return Proposition::query()->active()->where('tier', 'committal')->where('register', $phase->write_register)->whereHas('commitmentSnapshot')
             ->whereHas('phase', fn ($query) => $query->where('kind', PhaseKind::Order->value)
                 ->whereHas('cycle.participant', fn ($query) => $query->where('substrate_id', $phase->cycle->participant->substrate_id)))
             ->whereIn('id', Supersession::query()->select('target_proposition_id')

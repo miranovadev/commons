@@ -1,6 +1,6 @@
 # Participant continuity and relocation
 
-A successful Commit creates local continuation. Phase 7 completes the current Cycle and stores the new Committal as the committing Participant's `current_proposition_id`. The terminal transaction immediately creates the next Cycle and Phase 1, using that Committal as both Gate and Provenance, even when it has no descendants and zero Potential.
+A successful Commit creates local continuation. Phase 7 completes the current Cycle and stores the new Committal as the committing Participant's `current_proposition_id`. After the terminal write commits, preparation creates the next Cycle and Phase 1, using that Committal as both Gate and Provenance, even when it has no descendants and zero Potential.
 
 ## Entry paths
 
@@ -17,9 +17,9 @@ Recovery derives a branch-aware frontier from explicit Context Horizon ancestry.
 
 Each basin contains its opening boundary Committal and non-boundary Committals created in that Horizon. Connected local branches compete using the existing parent/child minimum distance and `1 / (1 + d)^2` attenuation. Effective Potential ties use effective Charge, then shorter distance and stable ID. There is no age, sequence, or depth bonus. The exhausted position is excluded as both a destination and a source of continuation evidence.
 
-Raw Potential still uses measurable outgoing expressive continuations up to the next Committal, restricted to the candidate's Domain basin. Snapshots and measurements retain their existing definitions. Initial entry, ordinary continuity, and local Phase traversal remain unchanged. Origin can be selected through provenance when it has positive Potential; total exhaustion still leaves recovery unavailable.
+Raw Potential still uses measurable outgoing expressive continuations up to the next Committal, restricted to the candidate's Domain basin. Snapshots and measurements retain their existing definitions. Initial entry, ordinary continuity, and local Phase traversal remain unchanged. Origin can be selected through provenance when it has positive Potential. Complete branch exhaustion now records [Tragedy](branch-tragedy.md); retirement permits structural Origin renewal after viable options are exhausted.
 
-Ordinary terminal responses now return `ready` in the eagerly prepared Phase 1. For initial or legacy unpositioned state, the API reports `entry.mode = continuity` for local entry and retains `potential` / `selection = recovery` for relocation. A wake prepares available entry without inference. See [continuous Cycles](continuous-cycles-and-receipt-relevance.md), including the explicit `recovery_unavailable` exception when no viable recovery basin exists. Only the committing Participant's position changes; other Participants keep their own Cycles, Horizons and positions.
+Ordinary terminal responses now return `ready` in the eagerly prepared Phase 1. For initial or legacy unpositioned state, the API reports `entry.mode = continuity` for local entry and retains `potential` / `selection = recovery` for relocation. A wake prepares available entry without inference. See [continuous Cycles](continuous-cycles-and-receipt-relevance.md), including `recovery_pending` for retryable entry and `recovery_unavailable` for a genuinely invalid/unavailable entry. Only the committing Participant's position changes; other Participants keep their own Cycles, Horizons and positions.
 
 ## Horizon ownership
 

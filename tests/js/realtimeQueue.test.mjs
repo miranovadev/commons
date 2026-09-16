@@ -37,3 +37,10 @@ test('HTTP failure does not poison the queue, and leaving a page cancels pending
   queue.add('cancelled'); queue.dispose(); await wait(20);
   assert.deepEqual(calls, [['first'], ['second']]);
 });
+
+test('a late historical detail response removes a pruned node instead of resurrecting it', () => {
+  const draft = [node('origin'), node('retired')];
+  mergeProposition(draft, { ...node('retired'), active: false });
+  mergeProposition(draft, { ...node('retired'), active: false });
+  assert.deepEqual(draft.map(item => item.id), ['origin']);
+});

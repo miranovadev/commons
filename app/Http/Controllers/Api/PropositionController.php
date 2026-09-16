@@ -44,9 +44,10 @@ class PropositionController extends Controller
         Request $request,
     ): AnonymousResourceCollection {
         Gate::authorize('view', $substrate);
-        $input = $request->validate(['ids' => ['sometimes', 'array', 'min:1', 'max:100'], 'ids.*' => ['required', 'ulid', 'distinct']]);
+        $input = $request->validate(['history' => ['sometimes', 'boolean'], 'ids' => ['sometimes', 'array', 'min:1', 'max:100'], 'ids.*' => ['required', 'ulid', 'distinct']]);
 
-        $propositions = Proposition::query()
+        $historical = $request->boolean('history');
+        $propositions = Proposition::query()->when(! $historical, fn ($query) => $query->active())
             ->whereHas(
                 'phase.cycle.participant',
                 fn ($query) => $query->whereBelongsTo($substrate),
@@ -58,7 +59,7 @@ class PropositionController extends Controller
                 'contextHorizonMembership.horizon',
                 'parents' => fn ($query) => $query->select('propositions.id', 'propositions.register')
                     ->orderBy('supersessions.created_at')->orderBy('supersessions.id'),
-                'children:id',
+                'children' => fn ($query) => $query->when(! $historical, fn ($q) => $q->active())->select('propositions.id'),
             ])
             ->oldest('created_at')
             ->limit(500)
@@ -66,7 +67,7 @@ class PropositionController extends Controller
 
         $state->loadAttestationCounts($propositions);
         $reinforcement->loadCounts($propositions);
-        $graph->load($substrate, $propositions);
+        $graph->load($substrate, $propositions, $historical);
 
         return PropositionResource::collection($propositions);
     }

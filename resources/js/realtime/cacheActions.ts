@@ -22,6 +22,10 @@ export async function refreshGraphPropositions(dispatch: AppDispatch, slug: stri
       )).unwrap();
       if (active()) {
         dispatch(commonsApi.util.updateQueryData('getPropositions', slug, draft => {
+          const returned = new Set(propositions.map(proposition => proposition.id));
+          for (let index = draft.length - 1; index >= 0; index--) {
+            if (batch.includes(draft[index].id) && !returned.has(draft[index].id)) draft.splice(index, 1);
+          }
           for (const proposition of propositions) mergeProposition(draft, proposition);
         }));
         dispatch(commonsApi.util.invalidateTags(batch.map(id => ({ type: 'Proposition' as const, id }))));

@@ -26,6 +26,8 @@ final class ParticipationContext
 {
     public readonly Collection $propositions;
 
+    public readonly Collection $activeIds;
+
     public readonly Collection $edges;
 
     public readonly Collection $parents;
@@ -68,17 +70,18 @@ final class ParticipationContext
 
     private readonly Collection $membershipsByHorizon;
 
-    public function __construct(public readonly Phase $phase)
+    public function __construct(public readonly Phase $phase, ?Collection $additionalPropositionIds = null)
     {
         $phase->loadMissing('cycle.participant.substrate');
         $this->substrate = $phase->cycle->participant->substrate;
         $this->propositions = Proposition::query()
-            ->whereIn('id', $this->workingSetIds())
+            ->whereIn('id', $this->workingSetIds($additionalPropositionIds))
             ->with(['phase.cycle.participant', 'measurement', 'ledgerEntry'])->get()->keyBy('id');
         foreach ($this->propositions as $proposition) {
             $proposition->phase->cycle->participant->setRelation('substrate', $this->substrate);
         }
         $ids = $this->propositions->keys();
+        $this->activeIds = Proposition::active()->whereKey($ids)->pluck('id')->flip();
         // Include outgoing hard edges even when their target is outside this substrate.
         $this->edges = Supersession::query()->where(fn ($q) => $q
             ->where(fn ($q) => $q->whereIn('source_proposition_id', $ids)->where('type', '!=', 'variant'))
@@ -131,7 +134,7 @@ final class ParticipationContext
      * Parent traversal is complete (including Commit-only inherited history).
      * Outgoing edges are loaded separately so excluded hard successors still retire sources.
      */
-    private function workingSetIds(): Collection
+    private function workingSetIds(?Collection $additionalPropositionIds = null): Collection
     {
         // Walk only newly discovered IDs. A recursive UNION over the full dependency
         // relation can produce pathological PostgreSQL plans as table statistics grow.
@@ -139,8 +142,14 @@ final class ParticipationContext
             ->join('phases', 'phases.id', '=', 'propositions.phase_id')
             ->join('cycles', 'cycles.id', '=', 'phases.cycle_id')
             ->join('participants', 'participants.id', '=', 'cycles.participant_id')
-            ->where('participants.substrate_id', $this->substrate->id);
+            ->where('participants.substrate_id', $this->substrate->id)
+            ->whereIn('propositions.id', Proposition::active()->select('id'));
         $gate = (clone $owned)->where('propositions.id', $this->phase->gate_proposition_id)->select('propositions.id');
+        if ($additionalPropositionIds !== null) {
+            // Branch exhaustion observes multiple causal Domains with one batched
+            // read model. Ownership and active membership still constrain the seeds.
+            $gate->union((clone $owned)->whereIn('propositions.id', $additionalPropositionIds)->select('propositions.id'));
+        }
         $ids = $owned->where('cycles.context_horizon_id', $this->phase->cycle->context_horizon_id)
             ->selectRaw('propositions.id /* participation working set */')->union($gate)->pluck('id');
         $seen = array_fill_keys($ids->all(), true);
@@ -279,13 +288,13 @@ final class ParticipationContext
                 }
             }
 
-            return $members->sortBy('id')->values();
+            return $members->filter(fn ($node) => $this->activeIds->has($node->id))->sortBy('id')->values();
         });
     }
 
     public function active(Collection $nodes): Collection
     {
-        return $nodes->filter(fn ($node) => $this->children->get($node->id, collect())->where('type', '!=', 'variant')->isEmpty())->values();
+        return $nodes->filter(fn ($node) => $this->activeIds->has($node->id) && $this->children->get($node->id, collect())->where('type', '!=', 'variant')->isEmpty())->values();
     }
 
     public function effectiveAttestations(iterable $sourceIds): Collection

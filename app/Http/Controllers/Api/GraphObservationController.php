@@ -24,9 +24,9 @@ final class GraphObservationController extends Controller
     public function metrics(Substrate $substrate, GraphProjectionService $graph): JsonResponse
     {
         Gate::authorize('view', $substrate);
-        $nodes = Proposition::whereHas('phase.cycle.participant', fn ($q) => $q->whereBelongsTo($substrate))
+        $nodes = Proposition::active()->whereHas('phase.cycle.participant', fn ($q) => $q->whereBelongsTo($substrate))
             ->get(['id', 'tier']);
-        $graph->load($substrate, $nodes);
+        $graph->load($substrate, $nodes, historical: false);
 
         // Phase changes invalidate measurements across the substrate. Refresh
         // these small projections together, without resending statements/topology.

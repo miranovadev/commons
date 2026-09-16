@@ -30,6 +30,11 @@ final readonly class ReceiptContextService
     /** Encountered evidence only; persistent memory is not an unbounded packet inbox. */
     public function forPhase(Phase $phase, ?ParticipationContext $context = null): Collection
     {
+        if ($phase->gate_proposition_id !== null && ($context !== null
+            ? ! $context->activeIds->has($phase->gate_proposition_id)
+            : app(OriginBranchService::class)->pruned($phase->gate_proposition_id))) {
+            return collect();
+        }
         $context ??= new ParticipationContext($phase);
 
         return $context->remember('receipt-context', function () use ($phase, $context): Collection {
@@ -42,7 +47,7 @@ final readonly class ReceiptContextService
                 ->concat($this->options->gateOptionsFor($phase, $context))
                 ->concat($this->options->writeOptionsFor($phase, $context))
                 ->concat($this->options->instrumentOptionsFor($phase, $context))
-                ->unique('id');
+                ->unique('id')->filter(fn ($node) => $context->activeIds->has($node->id));
             $present = $exposed->pluck('id');
             $receipts = $exposed->flatMap(fn ($node) => $this->state->receipts($node, $context))->unique('id');
             $loads = $context->receiptContexts->where('participant_id', $phase->cycle->participant_id)->keyBy('receipt_id');

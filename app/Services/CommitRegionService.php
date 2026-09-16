@@ -135,7 +135,7 @@ final class CommitRegionService
             SQL, [$seed->getKey(), $seed->phase->cycle->participant->substrate_id,
             $seed->phase->cycle->participant->substrate_id, $seed->getKey(), $seed->getKey()]);
 
-        return Proposition::query()->whereKey(collect($members)->pluck('id'))->orderBy('id')->get();
+        return Proposition::query()->active()->whereKey(collect($members)->pluck('id'))->orderBy('id')->get();
     }
 
     /** Operational pool in the Cycle's Domain: Mediate Read, Bias Gate, or Closure Write. */
