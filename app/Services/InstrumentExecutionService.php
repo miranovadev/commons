@@ -132,10 +132,6 @@ final readonly class InstrumentExecutionService
 
             $proposition = $locked->proposition()->first();
             if ($proposition !== null) {
-                // Evidence affects local comparisons and all their propagated projections.
-                PropositionMeasurement::whereHas('proposition.phase.cycle.participant', fn ($q) => $q
-                    ->where('substrate_id', $locked->phase->cycle->participant->substrate_id))
-                    ->update(['calculator_version' => null]);
                 $this->measurements->recalculateIfMeasurable($proposition);
             }
 

@@ -135,7 +135,11 @@ final readonly class ParticipationService
             );
         }
 
+        $version = app(PotentialProjectionService::class)->assertCurrent($participant->substrate_id);
         $plan = $this->plans->forPhase($participant, $phase, $workspace);
+        if ($version !== app(PotentialProjectionService::class)->assertCurrent($participant->substrate_id)) {
+            throw new \App\Exceptions\PotentialProjectionUnavailable($participant->substrate_id);
+        }
         $blocked = $phase->kind === PhaseKind::Order
             && ! isset($plan['schema']['$defs']['actions']['proposition.commit'])
             && ! isset($plan['schema']['$defs']['actions']['proposition.traverse'])
@@ -194,7 +198,7 @@ final readonly class ParticipationService
             $this->contributions->validateSchema($expectedSchema, $input);
         }
 
-        // Validate before network I/O, then validate afresh under the write lock.
+        // Validate before network I/O, then guard the prepared plan by version.
         // An observation is discarded when the Phase or admissibility changed.
         $observed = null;
         if (in_array($input['action'] ?? null, ['instrument.execute', 'receipt.replay'], true)) {
@@ -216,6 +220,20 @@ final readonly class ParticipationService
             $observed = $this->dispatcher->observeInstrument($participant, $observedPhase, $input);
         }
 
+        // Build admissibility optimistically before acquiring the shared root.
+        // The version check below makes this exact schema authoritative for the
+        // guarded write without hydrating a graph while other writers wait.
+        $validatedVersion = app(PotentialProjectionService::class)->assertCurrent($participant->substrate_id);
+        $validationPlan = $this->plans->forValidation($participant);
+        try {
+            $this->contributions->validateSchema($validationPlan['schema'], $input);
+        } catch (InvalidArgumentException $exception) {
+            if ($expectedSchema !== null) {
+                throw new ConflictHttpException('The participation options changed. Rebuild state before contributing.', $exception);
+            }
+            throw $exception;
+        }
+
         $tragedy = null;
         if (($input['action'] ?? null) === 'participant.rest') {
             $restPhase = Phase::with('cycle.participant')->find($phaseId);
@@ -231,6 +249,7 @@ final readonly class ParticipationService
             $expectedSchema,
             $observed,
             $tragedy,
+            $validatedVersion,
         ): void {
             // Acquire the shared root before any participant/phase or contribution lock.
             // Cycle entry, ledger writes, and horizon projection use the same order.
@@ -264,13 +283,8 @@ final readonly class ParticipationService
                 );
             }
 
-            try {
-                $this->contributions->validate($lockedParticipant, $input);
-            } catch (InvalidArgumentException $exception) {
-                if ($expectedSchema !== null) {
-                    throw new ConflictHttpException('The participation options changed. Rebuild state before contributing.', $exception);
-                }
-                throw $exception;
+            if ((int) $substrate->field_version !== $validatedVersion) {
+                throw new ConflictHttpException('The active field changed during contribution validation. Retry from fresh state.');
             }
             if ($input['action'] === 'participant.rest') {
                 // Rest changes lifecycle only; it adds no observation/measurement.

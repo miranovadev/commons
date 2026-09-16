@@ -42,6 +42,7 @@ return new class extends Migration
             $table->ulid('substrate_id');
             $table->double('raw_potential_charge');
             $table->double('raw_charge');
+            $table->boolean('complete');
             $table->index(['substrate_id', 'raw_potential_charge', 'raw_charge'], 'potential_entry_rank');
         });
         Schema::create('potential_branch_regions', function (Blueprint $table): void {

@@ -1,5 +1,5 @@
 import { useParticipantRealtime } from '../realtime/useRealtime';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Box, Breadcrumbs, Button, Container, Group, Loader, Stack, Text, ThemeIcon, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { IconAlertCircle, IconSparkles } from '@tabler/icons-react';
@@ -32,8 +32,13 @@ function ParticipantPositionPage({ slug, participantId }: { slug: string; partic
   const parameters = { slug, participantId };
   const [switcherOpened, setSwitcherOpened] = useState(false);
   const { data: participant, isLoading: participantLoading, error: participantError } = useGetParticipantQuery(parameters);
-  const { data: participation, isLoading: participationLoading, error: participationError } = useGetParticipantWorkspaceQuery(parameters);
+  const { data: participation, isLoading: participationLoading, isFetching: participationFetching, error: participationError, refetch: refetchParticipation } = useGetParticipantWorkspaceQuery(parameters);
   useParticipantRealtime(slug, participantId, Boolean(participation) && !participationError);
+  useEffect(() => {
+    if (participationFetching || participation?.reason?.code !== 'potential_projection_pending') return;
+    const timer = setTimeout(() => { void refetchParticipation(); }, 2000);
+    return () => clearTimeout(timer);
+  }, [participation, participationFetching, refetchParticipation]);
   const [contribute, contribution] = useContributeMutation();
   const submitting = useRef(false);
   const submittedPhase = useRef<string | null>(null);

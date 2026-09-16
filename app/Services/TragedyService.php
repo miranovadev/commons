@@ -18,13 +18,16 @@ final readonly class TragedyService
     {
         $substrateId = $phase->cycle->participant->substrate_id;
         $projection = app(PotentialProjectionService::class);
-        $version = $projection->assertCurrent($substrateId);
+        $version = (int) Substrate::whereKey($substrateId)->value('field_version');
         $branches = DB::table('origin_branches')->where('substrate_id', $substrateId)
             ->whereIn('root_proposition_id', DB::table('origin_branch_memberships')
                 ->where('proposition_id', $phase->gate_proposition_id)->select('root_proposition_id'))->get();
         $proof = ['substrate_id' => $substrateId, 'field_version' => $version,
             'phase_id' => $phase->id, 'position_id' => $phase->gate_proposition_id,
             'branches' => [], 'pruned_roots' => $branches->whereNotNull('pruned_at')->pluck('root_proposition_id')->all()];
+        if ($branches->whereNull('pruned_at')->isNotEmpty()) {
+            $projection->assertCurrent($substrateId);
+        }
         $local = $branches->whereNull('pruned_at')->isEmpty() ? null
             : $projection->region($phase->cycle->context_horizon_id)['local'];
         $calculator = app(PotentialRegionCalculator::class);

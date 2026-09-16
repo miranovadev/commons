@@ -31,7 +31,7 @@ class PropositionController extends Controller
         $state->loadAttestationCounts(collect([$proposition]));
         $reinforcement->loadCounts(collect([$proposition]));
         $proposition->setAttribute('attestation_summary', $presentation->attestations($proposition));
-        $graph->load($substrate, collect([$proposition]));
+        $graph->load($substrate, collect([$proposition]), app(\App\Services\OriginBranchService::class)->pruned($proposition));
 
         return new PropositionResource($proposition);
     }

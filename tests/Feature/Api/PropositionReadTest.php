@@ -42,6 +42,7 @@ class PropositionReadTest extends TestCase
                 $node->measurement()->update(['calculator_version' => $status === 'stale' ? 'obsolete' : null]);
             }
         }
+        app(\App\Services\PotentialProjectionService::class)->rebuild($substrate->id, false);
         $before = $this->snapshot();
         foreach (["/api/substrates/{$substrate->slug}/propositions", "/api/substrates/{$substrate->slug}/propositions/{$node->id}"] as $index => $url) {
             DB::enableQueryLog();
@@ -144,6 +145,7 @@ class PropositionReadTest extends TestCase
             'target_proposition_id' => $child->id, 'type' => 'variant'])->save();
         $origin->phase->forceFill(['gate_proposition_id' => $child->id])->save();
         app(PropositionMeasurementService::class)->project($child, -.2, -.2, -.2);
+        app(\App\Services\PotentialProjectionService::class)->rebuild($substrate->id, false);
         $before = $this->snapshot();
         $url = "/api/substrates/{$substrate->slug}/propositions";
         $data = collect($this->getJson($url)->assertOk()->json('data'))->keyBy('id');
@@ -165,6 +167,7 @@ class PropositionReadTest extends TestCase
 
         // Absent continuation measurements are unknown, not an invented zero.
         $child->measurement()->delete();
+        app(\App\Services\PotentialProjectionService::class)->rebuild($substrate->id, false);
         $this->getJson($url.'/'.$origin->id)->assertOk()->assertJsonPath('data.field.potential_charge', null)
             ->assertJsonPath('data.field.potential_status', 'missing');
     }

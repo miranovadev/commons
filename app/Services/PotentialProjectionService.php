@@ -148,7 +148,7 @@ final class PotentialProjectionService
                         DB::table('potential_entries')->insert([
                             'proposition_id' => $entry['proposition_id'], 'context_horizon_id' => $id,
                             'substrate_id' => $substrateId, 'raw_potential_charge' => $entry['raw_potential_charge'],
-                            'raw_charge' => $entry['raw_charge'],
+                            'raw_charge' => $entry['raw_charge'], 'complete' => $entry['complete'],
                         ]);
                     }
                     DB::table('potential_branch_regions')->where('context_horizon_id', $id)->delete();
@@ -226,7 +226,8 @@ final class PotentialProjectionService
                 new ObservableValues($values->correspondence, $values->chirality, $values->closure))['tension']) : null;
             $local['nodes'][$id] = ['tier' => $node->tier, 'active' => $active->has($id), 'complete' => $complete,
                 'tension' => $tension, 'roots' => $memberships->get($id, collect())->pluck('root_proposition_id')->all(),
-                'origin' => $node->commitmentSnapshot?->calculator_version === 'origin-bootstrap-v1'];
+                'origin' => $node->commitmentSnapshot?->calculator_version === 'origin-bootstrap-v1',
+                'seed_id' => $node->tier === 'committal' ? $id : ($context?->seed($node)?->id)];
             if ($active->has($id) && $node->tier === 'committal' && $node->commitmentSnapshot !== null && ! $openingIds->has($id)) {
                 $local['entries'][$id] = ['tension' => $node->commitmentSnapshot->tension];
             }

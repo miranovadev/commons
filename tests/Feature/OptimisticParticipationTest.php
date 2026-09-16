@@ -83,7 +83,7 @@ class OptimisticParticipationTest extends TestCase
         $result = app(ParticipationService::class)->contribute($participant, $phase->id,
             ['action' => 'proposition.variant', 'statement' => 'A fresh distinction']);
         fwrite(STDERR, sprintf("\nCONTRIBUTION transaction=%.2fms total=%.2fms context_transaction_levels=%s\n", $transactionMs, (hrtime(true) - $started) / 1e6, json_encode($contexts)));
-        $this->assertContains($outerLevel + 1, $contexts, 'Admissibility must still be validated in the write transaction.');
+        $this->assertNotContains($outerLevel + 1, $contexts, 'Admissibility and projection derivation run before/after guarded writes.');
         $this->assertSame($outerLevel, $contexts[array_key_last($contexts)], 'Response context is built after releasing write locks.');
         $this->assertSame(PhaseKind::Persist->value, $result['plan']['phase']['number']);
         $this->assertSame($outerLevel, DB::transactionLevel());

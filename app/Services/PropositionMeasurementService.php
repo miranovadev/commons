@@ -124,7 +124,7 @@ final class PropositionMeasurementService
             Substrate::query()->lockForUpdate()->findOrFail($proposition->phase->cycle->participant->substrate_id);
             // Lock the Proposition so the numeric projection and retained direction move together.
             Proposition::query()->whereKey($proposition->id)->lockForUpdate()->firstOrFail();
-            app(FieldMutationService::class)->touch($proposition->phase, [$proposition->id]);
+            app(FieldMutationService::class)->touch($proposition->phase, [$proposition->id], measurementsDirty: false);
             $snapshot = $proposition->tier === 'committal' ? CommitmentSnapshot::find($proposition->id) : null;
             if ($snapshot !== null) {
                 [$correspondence, $chirality, $closure] = [$snapshot->correspondence, $snapshot->chirality, $snapshot->closure];

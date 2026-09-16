@@ -34,7 +34,7 @@ Committal snapshots where applicable. It does not upsert measurements or retain
 new directions in the database. Numeric zero uses the existing persisted
 Correspondence direction/ancestry as before. Current projections remain reusable.
 Graph and Proposition Inspector reads continue to display persisted projection
-status without repair. Potential selection also uses read-only fallback values.
+status without repair. Potential selection reads maintained, version-certified region projections and never falls back to full derivation.
 
 `repairMissing`, `recalculate` and `project` remain explicit mutation/maintenance
 operations. Contributions maintain their changed subject's projection. The
@@ -111,3 +111,12 @@ Cycle recovery/selection now runs outside the contribution transaction and outsi
 the subsequent Cycle-entry transaction; entry validates its observed field version.
 Order rollover likewise follows contribution commit. Existing positions are retained
 until each participant's own Rest/entry transition.
+
+## Incremental Potential publication
+
+Contributions prepare admissibility outside the root lock and validate its field
+version inside the transaction. After the ledger commit, affected-region
+measurement derivation and ancestor summary propagation run without write locks.
+Publication takes only the Substrate lock, checks the observed version, and writes
+prepared rows atomically. Raced computations retry; dirty records survive failure.
+See [Incremental Potential](incremental-potential.md) for the maintenance boundary.

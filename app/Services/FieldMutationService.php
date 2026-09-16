@@ -10,10 +10,10 @@ use Illuminate\Support\Facades\DB;
 /** Indexed invalidation only. Calculation never runs in the contribution transaction. */
 final class FieldMutationService
 {
-    public function touch(Phase $phase, array $propositionIds = []): void
+    public function touch(Phase $phase, array $propositionIds = [], bool $measurementsDirty = true): void
     {
         $this->mark($phase->cycle->participant->substrate_id,
-            [$phase->cycle->context_horizon_id], array_filter($propositionIds));
+            [$phase->cycle->context_horizon_id], array_filter($propositionIds), $measurementsDirty);
     }
 
     public function mark(string $substrateId, array $horizonIds = [], array $propositionIds = [], bool $measurementsDirty = true): void

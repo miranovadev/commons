@@ -558,6 +558,23 @@ class CausalRecoveryTest extends TestCase
             app(ContextHorizonProjector::class)->forEntry($sibling));
     }
 
+    public function test_non_best_sibling_update_stops_before_unchanged_ancestors(): void
+    {
+        [$origin, $h2, $commit, $h3] = $this->boundaryChain();
+        $winner = $this->committal($h2, .8, $origin, boundary: true);
+        $this->opportunity($winner);
+        $this->opportunity($commit);
+        $this->refreshMeasurements();
+        $before = DB::table('potential_region_states')->whereIn('context_horizon_id', [$this->root->id, $h2->id])
+            ->orderBy('context_horizon_id')->get()->toJson();
+        $changed = Proposition::whereHas('phase.cycle', fn ($q) => $q->where('context_horizon_id', $h3->id))->where('tier', 'expressive')->sole();
+        app(PropositionMeasurementService::class)->project($changed, .005, .005, .005);
+        $this->assertTrue(app(\App\Services\PotentialProjectionService::class)->refresh($this->substrate->id));
+        $this->assertSame($before, DB::table('potential_region_states')->whereIn('context_horizon_id', [$this->root->id, $h2->id])
+            ->orderBy('context_horizon_id')->get()->toJson());
+        $this->assertSame(.005, (float) DB::table('potential_entries')->where('proposition_id', $commit->id)->value('raw_potential_charge'));
+    }
+
     private function boundaryChain(): array
     {
         $origin = $this->committal($this->root, -.9, boundary: true);
