@@ -1,8 +1,16 @@
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
 
-/** Each observing page owns its connection, channels, and cleanup. */
-export function createEcho() {
+let echo: Echo<'reverb'> | null | undefined;
+
+/** The browser application owns the transport; observers only own subscriptions. */
+export function getEcho() {
+  if (echo !== undefined) return echo;
+  echo = createEcho();
+  return echo;
+}
+
+function createEcho() {
   const key = import.meta.env.VITE_REVERB_APP_KEY;
   if (!key) return null;
 
