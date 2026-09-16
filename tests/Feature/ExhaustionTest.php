@@ -4,12 +4,14 @@ namespace Tests\Feature;
 
 use App\Enums\PhaseKind;
 use App\Models\Proposition;
+use App\Models\Supersession;
 use App\Models\Tragedy;
 use App\Models\User;
 use App\Services\ContextHorizonProjector;
 use App\Services\ExhaustionAuditService;
 use App\Services\ExhaustionService;
 use App\Services\InputPlanService;
+use App\Services\LedgerService;
 use App\Services\ParticipationService;
 use App\Services\PotentialChargeService;
 use App\Services\ReferencePotentialChargeService;
@@ -263,6 +265,35 @@ class ExhaustionTest extends TestCase
         $this->assertSame(0, Tragedy::count());
         $this->assertDatabaseMissing('exhaustion_states', ['proposition_id' => $commit->id]);
         $this->rest($second);
+        $this->assertSame($root->id, Tragedy::sole()->root_proposition_id);
+        $this->assertTrue(app(ExhaustionAuditService::class)->inspect($this->substrate->id)['matches']);
+    }
+
+    public function test_reconciliation_propagates_to_both_inputs_but_preserves_their_open_siblings(): void
+    {
+        $root = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
+        $commit = $this->commitFrom($root, .5, true);
+        $left = $this->node($this->phase($commit, PhaseKind::Constrain), $commit);
+        $right = $this->node($this->phase($commit, PhaseKind::Constrain), $commit);
+        $head = $this->node($this->phase($left, PhaseKind::Constrain), $left);
+        $edge = (new Supersession)->forceFill(['phase_id' => $head->phase_id,
+            'source_proposition_id' => $right->id, 'target_proposition_id' => $head->id, 'type' => 'reconcile']);
+        $edge->save();
+        app(LedgerService::class)->record($edge);
+        $sibling = $this->node($this->phase($right, PhaseKind::Constrain), $right);
+        $this->explore($head);
+        $first = $this->phase($head);
+        $this->measure($head, 1);
+        $this->rest($first);
+        $this->assertDatabaseHas('exhaustion_states', ['proposition_id' => $left->id]);
+        $this->assertDatabaseMissing('exhaustion_states', ['proposition_id' => $right->id]);
+        $this->assertDatabaseMissing('exhaustion_states', ['proposition_id' => $commit->id]);
+        $this->assertSame(0, Tragedy::count());
+        $this->explore($sibling);
+        $second = $this->phase($sibling);
+        $this->measure($sibling, 1);
+        $this->rest($second);
+        $this->assertDatabaseHas('exhaustion_states', ['proposition_id' => $right->id]);
         $this->assertSame($root->id, Tragedy::sole()->root_proposition_id);
         $this->assertTrue(app(ExhaustionAuditService::class)->inspect($this->substrate->id)['matches']);
     }

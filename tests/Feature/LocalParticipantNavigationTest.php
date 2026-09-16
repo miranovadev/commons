@@ -329,7 +329,7 @@ class LocalParticipantNavigationTest extends TestCase
         }
     }
 
-    public function test_complete_exhaustion_allows_rest_and_preserves_position(): void
+    public function test_local_rest_in_an_unexplored_empty_basin_preserves_its_entry(): void
     {
         $position = $this->node('Isolated', 0.0);
         $participant = $this->participant('resting', $position);
@@ -345,8 +345,10 @@ class LocalParticipantNavigationTest extends TestCase
         $this->assertNotNull($phase->completed_at);
         $this->assertNotNull($phase->cycle->rested_at);
         $this->assertNotNull($phase->cycle->completed_at);
-        $this->assertSame('recovery', $after['entry']['selection']);
-        $this->assertFalse($after['entry']['available']);
+        $this->assertSame('ready', $after['status']);
+        $this->assertSame('distinguish', $after['plan']['phase']['kind']);
+        $this->assertSame($position->id, $after['plan']['gate_id']);
+        $this->assertDatabaseMissing('exhaustion_states', ['proposition_id' => $position->id]);
         $this->expectException(ConflictHttpException::class);
         app(CycleEntryService::class)->enter($participant);
     }
