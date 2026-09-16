@@ -158,8 +158,12 @@ final class PotentialProjectionTest extends TestCase
         app(FieldMutationService::class)->touch($phase, [$phase->gate_proposition_id]);
         $contended = true;
         $attempts = 0;
-        DB::listen(function (QueryExecuted $query) use (&$contended, &$attempts, $phase): void {
-            if ($contended && str_contains($query->sql, '/* participation working set */')) {
+        $horizonId = $phase->cycle->context_horizon_id;
+        DB::listen(function (QueryExecuted $query) use (&$contended, &$attempts, $phase, $horizonId): void {
+            // Exactly one competing write per attempt, even when another
+            // affected region also constructs a calculation context.
+            if ($contended && str_contains($query->sql, '/* participation working set */')
+                && in_array($horizonId, $query->bindings, true)) {
                 $attempts++;
                 app(FieldMutationService::class)->touch($phase, [$phase->gate_proposition_id]);
             }
