@@ -81,7 +81,7 @@ final readonly class TragedyService
                 ])->save();
                 $affected = DB::table('potential_branch_regions')->where('root_proposition_id', $branch['root_proposition_id'])
                     ->pluck('context_horizon_id')->all();
-                app(FieldMutationService::class)->mark($proof['substrate_id'], $affected);
+                app(FieldMutationService::class)->mark($proof['substrate_id'], $affected, measurementsDirty: false);
                 app(RealtimePublisher::class)->horizons($proof['substrate_id']);
             }
         });

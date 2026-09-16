@@ -18,6 +18,7 @@ return new class extends Migration
         Schema::create('potential_dirty_horizons', function (Blueprint $table): void {
             $table->ulid('context_horizon_id')->primary();
             $table->ulid('substrate_id')->index();
+            $table->boolean('measurements_dirty')->default(true);
         });
         Schema::create('potential_region_states', function (Blueprint $table): void {
             $table->ulid('context_horizon_id')->primary();

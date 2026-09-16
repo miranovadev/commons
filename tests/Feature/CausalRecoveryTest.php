@@ -653,7 +653,13 @@ class CausalRecoveryTest extends TestCase
     {
         $this->refreshMeasurements();
 
-        return app(PotentialChargeService::class)->recoverFrom($position);
+        $actual = app(PotentialChargeService::class)->recoverFrom($position);
+        $reference = app(\App\Services\ReferencePotentialChargeService::class)->recoverFrom($position);
+        $this->assertSame($reference['proposition']->id ?? null, $actual['proposition']->id ?? null);
+        $this->assertSame($reference['distance'] ?? null, $actual['distance'] ?? null);
+        $this->assertEqualsWithDelta($reference['potential_charge'] ?? 0, $actual['potential_charge'] ?? 0, 1e-12);
+
+        return $actual;
     }
 
     /** Controlled values only for routing; Potential still evaluates the real continuation graph. */
@@ -662,5 +668,6 @@ class CausalRecoveryTest extends TestCase
         foreach ($this->measurements as $id => $value) {
             app(PropositionMeasurementService::class)->project(Proposition::findOrFail($id), $value, $value, $value);
         }
+        app(\App\Services\PotentialProjectionService::class)->rebuild($this->substrate->id, false);
     }
 }

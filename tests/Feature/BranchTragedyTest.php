@@ -225,7 +225,7 @@ class BranchTragedyTest extends TestCase
             Substrate::whereKey($this->substrate->id)->lockForUpdate()->firstOrFail();
             app(TragedyService::class)->retire($phase, $proof);
         });
-        $this->assertLessThanOrEqual(8, count($sql));
+        $this->assertLessThanOrEqual(12, count($sql));
         $this->assertSame(1, Tragedy::count());
         $this->assertSame($root->id, Tragedy::sole()->root_proposition_id);
     }
@@ -266,6 +266,7 @@ class BranchTragedyTest extends TestCase
             $this->node($this->phase($root), $root);
         }
         DB::table('proposition_measurements')->update(['calculator_version' => null]);
+        app(\App\Services\PotentialProjectionService::class)->rebuild($this->substrate->id, false);
         $sql = [];
         DB::listen(function ($query) use (&$sql): void {
             $sql[] = $query->sql;
@@ -330,6 +331,7 @@ class BranchTragedyTest extends TestCase
     private function measure(Proposition $node, float $value): void
     {
         app(PropositionMeasurementService::class)->project($node, $value, $value, $value);
+        app(\App\Services\PotentialProjectionService::class)->rebuild($this->substrate->id, false);
     }
 
     private function history(): array

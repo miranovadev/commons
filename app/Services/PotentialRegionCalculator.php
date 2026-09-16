@@ -103,6 +103,23 @@ final class PotentialRegionCalculator
                 }
             }
         }
+        // Remove only candidates beaten for EVERY possible upstream distance.
+        // This is the early-stop boundary: changing a dominated sibling need not
+        // rewrite ancestors, while a nearer/weaker tradeoff remains discoverable.
+        $frontier = array_values(array_filter($frontier, function ($entry) use ($frontier): bool {
+            foreach ($frontier as $other) {
+                if ($other['proposition_id'] === $entry['proposition_id']) {
+                    continue;
+                }
+                if ($other['distance'] <= $entry['distance'] && $other['raw_potential_charge'] >= $entry['raw_potential_charge']
+                    && ($other['distance'] < $entry['distance'] || $other['raw_potential_charge'] > $entry['raw_potential_charge']
+                        || $other['raw_charge'] > $entry['raw_charge']
+                        || ($other['raw_charge'] === $entry['raw_charge'] && strcmp($other['proposition_id'], $entry['proposition_id']) < 0))) {
+                    return false;
+                }
+            }
+            return true;
+        }));
         usort($frontier, fn ($a, $b) => strcmp($a['proposition_id'], $b['proposition_id']));
 
         return $frontier;

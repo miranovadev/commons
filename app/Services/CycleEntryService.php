@@ -49,11 +49,12 @@ final readonly class CycleEntryService
     /** Infrastructure entry/rollover: never infer an Origin or invent a recovery Gate. */
     public function prepare(Participant $participant): void
     {
+        $activeBefore = $this->hasActiveCycle($participant);
         try {
             $this->start($participant, null, required: false);
             // Only a newly created Cycle has dirty Phase touches. Never derive
             // recovery or backfill merely to find an existing position.
-            if ($this->hasActiveCycle($participant)) {
+            if (! $activeBefore && $this->hasActiveCycle($participant)) {
                 app(PotentialProjectionService::class)->refresh($participant->substrate_id);
             }
         } catch (\App\Exceptions\PotentialProjectionUnavailable) {

@@ -81,7 +81,7 @@ final class PotentialProjectionService
             }
             $prepared = [];
             foreach (ContextHorizon::whereKey($ids)->orderByDesc('sequence')->get() as $horizon) {
-                $prepared[$horizon->id] = $this->derive($horizon, $recalculate);
+                $prepared[$horizon->id] = $this->derive($horizon, $recalculate && ($all || (bool) DB::table('potential_dirty_horizons')->where('context_horizon_id', $horizon->id)->value('measurements_dirty')));
             }
             // Compute ancestor summaries OUTSIDE the write lock. An unchanged
             // complete frontier ends propagation, even if local evidence changed.
@@ -117,6 +117,13 @@ final class PotentialProjectionService
                     $queue[] = $local['parent'];
                 }
             }
+            foreach ($summaries as &$summary) {
+                $best = collect($summary['frontier'])->sortByDesc('raw_potential_charge')->first();
+                $summary['best'] = $best;
+                $summary['local_json'] = json_encode($summary['local'], JSON_THROW_ON_ERROR);
+                $summary['frontier_json'] = json_encode($summary['frontier'], JSON_THROW_ON_ERROR);
+            }
+            unset($summary);
             $published = DB::transaction(function () use ($substrateId, $version, $prepared, $summaries, $ids): bool {
                 $root = Substrate::whereKey($substrateId)->lockForUpdate()->firstOrFail();
                 if ((int) $root->field_version !== $version) {
@@ -150,13 +157,13 @@ final class PotentialProjectionService
                     }
                 }
                 foreach ($summaries as $id => $summary) {
-                    $best = collect($summary['frontier'])->sortByDesc('raw_potential_charge')->first();
+                    $best = $summary['best'];
                     DB::table('potential_region_states')->updateOrInsert(['context_horizon_id' => $id], [
                         'substrate_id' => $substrateId, 'parent_context_horizon_id' => $summary['local']['parent'],
                         'best_recovery_proposition_id' => $best['proposition_id'] ?? null,
                         'remaining_potential' => $best['raw_potential_charge'] ?? 0,
-                        'field_version' => $version, 'local_state' => json_encode($summary['local'], JSON_THROW_ON_ERROR),
-                        'frontier' => json_encode($summary['frontier'], JSON_THROW_ON_ERROR),
+                        'field_version' => $version, 'local_state' => $summary['local_json'],
+                        'frontier' => $summary['frontier_json'],
                     ]);
                 }
                 DB::table('potential_dirty_horizons')->whereIn('context_horizon_id', $ids)->delete();
@@ -220,7 +227,7 @@ final class PotentialProjectionService
             $local['nodes'][$id] = ['tier' => $node->tier, 'active' => $active->has($id), 'complete' => $complete,
                 'tension' => $tension, 'roots' => $memberships->get($id, collect())->pluck('root_proposition_id')->all(),
                 'origin' => $node->commitmentSnapshot?->calculator_version === 'origin-bootstrap-v1'];
-            if ($active->has($id) && $node->commitmentSnapshot !== null && ! $openingIds->has($id)) {
+            if ($active->has($id) && $node->tier === 'committal' && $node->commitmentSnapshot !== null && ! $openingIds->has($id)) {
                 $local['entries'][$id] = ['tension' => $node->commitmentSnapshot->tension];
             }
         }

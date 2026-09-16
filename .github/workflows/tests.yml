@@ -108,10 +108,10 @@ jobs:
         if: ${{ !matrix.profile }}
         env:
           PGOPTIONS: '-c statement_timeout=30s'
-        run: php artisan test --filter 'PropositionReadTest|BranchTragedyTest|TransactionLockOrderTest|ParticipantContextTest|CausalRecoveryTest|RecoveryBasinResolverTest|LocalParticipantNavigationTest|ParticipantContinuityTest' --stop-on-failure
+        run: php artisan test --filter 'PotentialProjectionTest|PotentialRegionCalculatorTest|PropositionReadTest|BranchTragedyTest|TransactionLockOrderTest|ParticipantContextTest|CausalRecoveryTest|RecoveryBasinResolverTest|LocalParticipantNavigationTest|ParticipantContinuityTest' --stop-on-failure
 
       - name: Run test suite
-        if: ${{ !matrix.profile }}
+        if: ${{ !matrix.profile && !cancelled() }}
         env:
           PGOPTIONS: '-c statement_timeout=30s'
           COMMONS_PROFILE_SQL: '1'

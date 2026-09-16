@@ -158,6 +158,7 @@ class PropositionReadTest extends TestCase
         $this->assertSame(1, $data[$child->id]['participation_count']);
         $this->assertSame(0, $data[$origin->id]['participation_count']);
         $this->assertSame($before, $this->snapshot());
+        app(\App\Services\PotentialProjectionService::class)->rebuild($substrate->id, false);
         $canonical = app(PotentialChargeService::class)->selectFor($substrate);
         $this->assertSame($canonical['raw_potential_charge'], $data[$origin->id]['field']['potential_charge']);
         $this->getJson($url.'/'.$child->id)->assertOk()->assertJsonPath('data.field', $data[$child->id]['field']);

@@ -403,6 +403,7 @@ class TransactionLockOrderTest extends TestCase
         $target = app(ContributionDispatcher::class)->dispatch($first, $initial,
             ['action' => 'proposition.variant', 'statement' => 'Instrument subject']);
         $this->receiptFixture($target); // Allow the competing attestation to advance this Phase.
+        app(\App\Services\PotentialProjectionService::class)->refresh($substrate->id);
         $second = new Participant;
         $second->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'during-observation'])->save();
         app(CycleEntryService::class)->enter($second);
@@ -472,6 +473,7 @@ class TransactionLockOrderTest extends TestCase
         $second->save();
         $secondRest = $this->tragicPhase($second, $root);
         app(PropositionMeasurementService::class)->project($root, 1.0, 1.0, 1.0);
+        app(\App\Services\PotentialProjectionService::class)->rebuild($substrate->id, false);
         $this->whileWorkerWaits($substrate, ['operation' => 'rest', 'participant_id' => $second->id, 'phase_id' => $secondRest->id],
             function () use ($first, $firstRest): void {
                 app(ParticipationService::class)->contribute($first, $firstRest->id, ['action' => 'participant.rest']);

@@ -39,9 +39,12 @@ class WakeParticipant implements ShouldQueue
     {
         $participantId = ParticipantConnection::query()->whereKey($this->participantConnectionId)->value('participant_id');
 
+        // A due occurrence already advanced the schedule. Drop a redundant wake
+        // while the same participant is running; middleware collisions must not
+        // burn three attempts and falsely report an inference failure.
         return [
             (new WithoutOverlapping('participant:'.($participantId ?? $this->participantConnectionId)))->shared()
-                ->releaseAfter(10)
+                ->dontRelease()
                 ->expireAfter($this->timeout + 30),
         ];
     }

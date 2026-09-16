@@ -21,7 +21,7 @@ class OptimisticParticipationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_missing_and_obsolete_measurements_are_observed_without_mutations_or_transactions(): void
+    public function test_missing_and_obsolete_measurements_are_not_rebuilt_by_observation(): void
     {
         [$participant, $phase] = $this->fixture();
         foreach ([false, true] as $missing) {
@@ -47,7 +47,7 @@ class OptimisticParticipationTest extends TestCase
             DB::disableQueryLog();
             $this->assertSame('ready', $state['status']);
             $this->assertSame($state['plan']['phase']['id'], $workspace['plan']['phase']['id']);
-            $this->assertNotNull($workspace['plan']['gate']['observables']['correspondence']);
+            $this->assertSame($projection['correspondence'] ?? null, $workspace['plan']['gate']['observables']['correspondence']);
             $this->assertSame(0, $transactions);
             foreach ($queries as $query) {
                 $this->assertDoesNotMatchRegularExpression('/\b(for update|for share|insert into|update ["`]|delete from|savepoint)\b/i', $query['query']);

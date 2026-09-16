@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Jobs\RefreshPotentialProjection;
 use App\Models\ContextHorizon;
 use App\Models\Phase;
 use App\Models\Substrate;
@@ -17,7 +16,7 @@ final class FieldMutationService
             [$phase->cycle->context_horizon_id], array_filter($propositionIds));
     }
 
-    public function mark(string $substrateId, array $horizonIds = [], array $propositionIds = []): void
+    public function mark(string $substrateId, array $horizonIds = [], array $propositionIds = [], bool $measurementsDirty = true): void
     {
         Substrate::whereKey($substrateId)->increment('field_version');
         $dependencies = DB::table('potential_region_dependencies')->whereIn('proposition_id', $propositionIds)
@@ -28,8 +27,11 @@ final class FieldMutationService
         $ids = collect($horizonIds)->merge($dependencies)->merge($opened)->filter()->unique();
         foreach ($ids as $id) {
             DB::table('potential_dirty_horizons')->insertOrIgnore([
-                'substrate_id' => $substrateId, 'context_horizon_id' => $id,
+                'substrate_id' => $substrateId, 'context_horizon_id' => $id, 'measurements_dirty' => $measurementsDirty,
             ]);
+            if ($measurementsDirty) {
+                DB::table('potential_dirty_horizons')->where('context_horizon_id', $id)->update(['measurements_dirty' => true]);
+            }
         }
         // Durable dirt survives process death; the scheduled sweep is the retry
         // boundary. Do not dispatch a synchronous queue job while locks are held.

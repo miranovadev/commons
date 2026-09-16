@@ -35,7 +35,9 @@ final readonly class PotentialChargeService
 
     public function selectFrom(Proposition $position): ?array
     {
-        return $this->recoverFrom($position);
+        // Legacy relative-ranking diagnostic (no production callers). Recovery
+        // has a different contract: it excludes the exhausted observer path.
+        return app(ReferencePotentialChargeService::class)->selectFrom($position);
     }
 
     public function recoverFrom(Proposition $position, ?ContextHorizon $startingBasin = null): ?array

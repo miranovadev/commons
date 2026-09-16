@@ -28,6 +28,7 @@ class PotentialChargeServiceTest extends TestCase
         $this->committal($substrate, $phase, 'Second', 0.4);
         $this->continuation($phase, $first, 'A lower-tension continuation', 0.1);
 
+        app(\App\Services\PotentialProjectionService::class)->rebuild($substrate->id, false);
         $selection = app(PotentialChargeService::class)
             ->selectFor($substrate);
 
@@ -47,6 +48,7 @@ class PotentialChargeServiceTest extends TestCase
             -0.25,
         );
 
+        app(\App\Services\PotentialProjectionService::class)->rebuild($substrate->id, false);
         $selection = app(PotentialChargeService::class)
             ->selectFor($substrate);
 
@@ -64,6 +66,7 @@ class PotentialChargeServiceTest extends TestCase
         $expressive->forceFill(['tier' => 'expressive'])->save();
         $this->continuation($phase, $expressive, 'Attractive continuation', 0.0);
 
+        app(\App\Services\PotentialProjectionService::class)->rebuild($substrate->id, false);
         $selection = app(PotentialChargeService::class)->selectFor($substrate);
 
         $this->assertTrue($selection['proposition']->is($eligible));
@@ -76,6 +79,7 @@ class PotentialChargeServiceTest extends TestCase
         $expressive = $this->committal($substrate, $phase, 'Invalid entry', 0.0);
         $expressive->forceFill(['tier' => 'expressive'])->save();
 
+        app(\App\Services\PotentialProjectionService::class)->rebuild($substrate->id, false);
         $this->expectException(\DomainException::class);
         $this->expectExceptionMessage('without a Committal Proposition');
         app(PotentialChargeService::class)->selectFor($substrate);
