@@ -79,6 +79,7 @@ class ParticipantContinuityTest extends TestCase
             ['action' => 'proposition.variant', 'statement' => 'Continue locally']);
         $this->assertSame($value > 0 ? 'frontier' : 'stance', $first['plan']['phase']['write_register']);
         $this->classificationEvidenceFixture(Proposition::findOrFail($first['plan']['gate_id']));
+        app(\App\Services\PotentialProjectionService::class)->refresh($participant->substrate_id);
         $second = $service->contribute($participant, $first['plan']['phase']['id'],
             ['action' => 'proposition.reclassify']);
         $this->assertSame($value > 0 ? 'canon' : 'concord', $second['plan']['phase']['write_register']);
@@ -88,6 +89,7 @@ class ParticipantContinuityTest extends TestCase
         $otherPhase = $otherCycle->currentPhase;
         $otherPhase->forceFill(['kind' => PhaseKind::Order, 'write_register' => 'concord', 'gate_proposition_id' => $candidate->id])->save();
         $other->forceFill(['current_proposition_id' => $candidate->id])->save();
+        app(\App\Services\PotentialProjectionService::class)->refresh($other->substrate_id);
         $order = $service->stateFor($other)['plan'];
         $this->assertNotContains($candidate->id, array_column($order['gate_options'], 'id'));
         $this->assertSame([$commit->id], array_column($order['write_options'], 'id'));
@@ -174,6 +176,7 @@ class ParticipantContinuityTest extends TestCase
         $phase->forceFill(['gate_proposition_id' => $candidate->id])->save();
         $participant->forceFill(['current_proposition_id' => $candidate->id])->save();
 
+        app(\App\Services\PotentialProjectionService::class)->refresh($participant->substrate_id);
         return [$participant, $other, $cycle->fresh(), $origin, $candidate];
     }
 }

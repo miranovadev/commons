@@ -76,7 +76,16 @@ final readonly class LedgerService
             }
 
             if (! $wasRecorded) {
-                Substrate::whereKey($locked->id)->increment('field_version');
+                $affected = match (true) {
+                    $ledgerable instanceof Proposition => [$ledgerable->id],
+                    $ledgerable instanceof Supersession => [$ledgerable->source_proposition_id, $ledgerable->target_proposition_id],
+                    $ledgerable instanceof Attestation => [$ledgerable->proposition_id],
+                    $ledgerable instanceof ReceiptContextEvent => [$ledgerable->context->proposition_id],
+                    $ledgerable instanceof Receipt => [$ledgerable->instrumentExecution->proposition_id],
+                    default => [],
+                };
+                $phase = $ledgerable instanceof Receipt ? $ledgerable->instrumentExecution->phase : $ledgerable->phase;
+                app(FieldMutationService::class)->touch($phase, $affected);
                 if ($ledgerable instanceof Supersession) {
                     app(OriginBranchService::class)->include($ledgerable);
                 }

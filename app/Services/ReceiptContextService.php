@@ -148,8 +148,6 @@ final readonly class ReceiptContextService
         $event->setRelation('phase', $phase);
         $event->setRelation('context', $load);
         app(LedgerService::class)->record($event);
-        PropositionMeasurement::whereHas('proposition.phase.cycle.participant', fn ($q) => $q
-            ->where('substrate_id', $phase->cycle->participant->substrate_id))->update(['calculator_version' => null]);
         $this->measurements->recalculateIfMeasurable(Proposition::findOrFail($load->proposition_id));
         app(RealtimePublisher::class)->participant($load->participant_id);
         app(RealtimePublisher::class)->proposition($load->proposition_id);

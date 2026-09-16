@@ -160,6 +160,7 @@ class LineageAttenuationTest extends TestCase
         // (0 + .8/4) / (1 + 1/4) = .16; observer is beyond provenance.
         $this->assertSame(0.16, $values->chirality);
         $potential = app(PotentialChargeService::class);
+        app(\App\Services\PotentialProjectionService::class)->rebuild($this->phase->cycle->participant->substrate_id, false);
         $entry = $potential->selectFor($this->phase->cycle->participant->substrate);
         $reentry = $potential->selectFrom($observer);
         $recovery = $potential->recoverFrom($observer);

@@ -12,3 +12,5 @@ Schedule::command('commons:participants-wake-due')
     ->everyMinute()
     ->onOneServer()
     ->withoutOverlapping();
+
+Schedule::command('commons:potential-refresh')->everyMinute()->onOneServer()->withoutOverlapping();

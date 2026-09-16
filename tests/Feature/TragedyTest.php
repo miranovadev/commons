@@ -52,6 +52,7 @@ class TragedyTest extends TestCase
     {
         [$participant, $phase] = $this->fixture($kind, $action);
         $service = app(ParticipationService::class);
+        $this->publishPotentialFixture($participant);
         $state = $service->stateFor($participant);
         $plan = $state['plan'];
         $schema = $plan['schema'];
@@ -91,12 +92,14 @@ class TragedyTest extends TestCase
         $propositions = Proposition::count();
         $supersessions = Supersession::count();
         if ($action === null) {
+            $this->publishPotentialFixture($participant);
             $after = $service->contribute($participant, $phase->id, $rest);
             $this->assertSame('waiting', $after['status']);
             $this->assertNotNull($phase->fresh()->completed_at);
             $this->assertNotNull($phase->cycle->fresh()->rested_at);
         } else {
             try {
+                $this->publishPotentialFixture($participant);
                 $service->contribute($participant, $phase->id, $rest);
                 $this->fail('Rest cannot compete with an admissible action.');
             } catch (InvalidArgumentException) {

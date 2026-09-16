@@ -21,7 +21,7 @@ class OptimisticParticipationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_missing_and_obsolete_measurements_are_observed_without_mutations_or_transactions(): void
+    public function test_missing_and_obsolete_measurements_are_not_rebuilt_by_observation(): void
     {
         [$participant, $phase] = $this->fixture();
         foreach ([false, true] as $missing) {
@@ -47,7 +47,7 @@ class OptimisticParticipationTest extends TestCase
             DB::disableQueryLog();
             $this->assertSame('ready', $state['status']);
             $this->assertSame($state['plan']['phase']['id'], $workspace['plan']['phase']['id']);
-            $this->assertNotNull($workspace['plan']['gate']['observables']['correspondence']);
+            $this->assertSame(isset($projection['correspondence']) ? (float) $projection['correspondence'] : null, $workspace['plan']['gate']['observables']['correspondence']);
             $this->assertSame(0, $transactions);
             foreach ($queries as $query) {
                 $this->assertDoesNotMatchRegularExpression('/\b(for update|for share|insert into|update ["`]|delete from|savepoint)\b/i', $query['query']);
@@ -83,7 +83,7 @@ class OptimisticParticipationTest extends TestCase
         $result = app(ParticipationService::class)->contribute($participant, $phase->id,
             ['action' => 'proposition.variant', 'statement' => 'A fresh distinction']);
         fwrite(STDERR, sprintf("\nCONTRIBUTION transaction=%.2fms total=%.2fms context_transaction_levels=%s\n", $transactionMs, (hrtime(true) - $started) / 1e6, json_encode($contexts)));
-        $this->assertContains($outerLevel + 1, $contexts, 'Admissibility must still be validated in the write transaction.');
+        $this->assertNotContains($outerLevel + 1, $contexts, 'Admissibility and projection derivation run before/after guarded writes.');
         $this->assertSame($outerLevel, $contexts[array_key_last($contexts)], 'Response context is built after releasing write locks.');
         $this->assertSame(PhaseKind::Persist->value, $result['plan']['phase']['number']);
         $this->assertSame($outerLevel, DB::transactionLevel());

@@ -139,6 +139,7 @@ class OperationalCommitmentTest extends TestCase
         $gate->forceFill(['register' => 'concord'])->save();
         $phase = $this->phase($this->participant($this->participant->substrate, 'committer'), PhaseKind::Order, 'concord', $gate);
         $participant = $phase->cycle->participant;
+        $this->publishPotentialFixture($participant);
         $state = app(ParticipationService::class)->stateFor($participant);
         $this->assertSame('ready', $state['status']);
         $this->assertFalse($state['plan']['commitment']['admissible']);
@@ -156,6 +157,7 @@ class OperationalCommitmentTest extends TestCase
         app(OperationalInstrumentService::class)->execute($gate->phase, $gate, [
             'kind' => 'hyperlink', 'reference' => 'https://example.test/ready',
         ]);
+        $this->publishPotentialFixture($participant);
         $this->assertSame('ready', app(ParticipationService::class)->stateFor($participant)['status']);
     }
 
@@ -200,6 +202,7 @@ class OperationalCommitmentTest extends TestCase
         $this->phase($committer, PhaseKind::Order, 'concord', $gate);
         $service = app(InstrumentExecutionService::class);
         $execution = $service->start($gate->phase, $gate, 'hyperlink', 'https://example.test/pending');
+        $this->publishPotentialFixture($committer);
         $state = app(ParticipationService::class)->stateFor($committer);
         $this->assertSame('ready', $state['status']);
         $this->assertFalse($state['plan']['commitment']['admissible']);
@@ -207,6 +210,7 @@ class OperationalCommitmentTest extends TestCase
         $this->assertNull($this->workspaceCard($committer, $gate)['instruments'][0]['receipt_id']);
 
         $service->fail($execution, 'Instrument unavailable.');
+        $this->publishPotentialFixture($committer);
         $state = app(ParticipationService::class)->stateFor($committer);
         $this->assertSame('ready', $state['status']);
         $this->assertFalse($state['plan']['commitment']['admissible']);
@@ -271,6 +275,7 @@ class OperationalCommitmentTest extends TestCase
         $descendant->save();
         $reader = $this->participant($this->participant->substrate, 'reader');
         $bias = $this->phase($reader, PhaseKind::Bias, 'concord', $left);
+        $this->publishPotentialFixture($reader);
         $state = app(ParticipationService::class)->stateFor($reader);
         $this->assertContains($candidate->id, array_column($state['plan']['write_options'], 'id'));
         $this->assertContains($candidate->id, $state['plan']['schema']['$defs']['actions']['instrument.execute']['properties']['proposition_id']['enum']);
@@ -286,6 +291,7 @@ class OperationalCommitmentTest extends TestCase
         $attestor = $this->participant($this->participant->substrate, 'attestor');
         $this->phase($attestor, PhaseKind::Bias, 'concord', $left);
         $this->move($attestor, ['action' => 'attestation.create', 'proposition_id' => $candidate->id, 'direction' => 'support']);
+        $this->publishPotentialFixture($reader);
         $this->assertTrue(app(ParticipationService::class)->stateFor($reader)['plan']['commitment']['admissible']);
         $this->move($reader, ['action' => 'proposition.commit']);
         $committed = Proposition::findOrFail($reader->fresh()->current_proposition_id);
@@ -313,6 +319,7 @@ class OperationalCommitmentTest extends TestCase
     public function test_constrain_instrument_targets_are_specialised_and_execute_normally(): void
     {
         [$reader, $phase, $candidate] = $this->instrumentFixture(PhaseKind::Constrain);
+        $this->publishPotentialFixture($reader);
         $state = app(ParticipationService::class)->stateFor($reader);
         $this->assertSame([$candidate->id], $state['plan']['schema']['$defs']['actions']['instrument.execute']['properties']['proposition_id']['enum']);
         $state = $this->move($reader, ['action' => 'instrument.execute', 'proposition_id' => $candidate->id,
@@ -336,6 +343,7 @@ class OperationalCommitmentTest extends TestCase
             ['action' => 'receipt.replay', 'receipt_id' => $receipt->id],
         ] as $input) {
             try {
+                $this->publishPotentialFixture($reader);
                 app(ParticipationService::class)->contribute($reader, $phase->id, $input);
                 $this->fail('Order must reject pre-terminal actions.');
             } catch (\InvalidArgumentException|DomainException) {
@@ -358,6 +366,7 @@ class OperationalCommitmentTest extends TestCase
             ['action' => 'proposition.commit', 'proposition_id' => $candidate->id],
         ] as $input) {
             try {
+                $this->publishPotentialFixture($reader);
                 app(ParticipationService::class)->contribute($reader, $phase->id, $input);
                 $this->fail('Invalid contribution should fail.');
             } catch (\InvalidArgumentException|DomainException) {
@@ -371,6 +380,7 @@ class OperationalCommitmentTest extends TestCase
 
     private function workspaceCard(Participant $participant, Proposition $node): array
     {
+        $this->publishPotentialFixture($participant);
         $plan = app(ParticipationService::class)->workspaceFor($participant)['plan'];
 
         return collect($plan['workspace']['registers'])->flatten(1)->firstWhere('id', $node->id);
@@ -452,8 +462,10 @@ class OperationalCommitmentTest extends TestCase
             $input['proposition_id'] = $participant->fresh()->current_proposition_id;
         }
         $service = app(ParticipationService::class);
+        $this->publishPotentialFixture($participant);
         $state = $service->stateFor($participant);
 
+        $this->publishPotentialFixture($participant);
         return $service->contribute($participant, $state['plan']['phase']['id'], $input);
     }
 }

@@ -75,6 +75,7 @@ class WebSearchReceiptTest extends TestCase
     {
         [$fixture, $subject] = $this->scenario();
         $service = app(ParticipationService::class);
+        $this->publishPotentialFixture($fixture->viewer);
         $state = $service->stateFor($fixture->viewer);
         $input = ['action' => 'instrument.execute', 'proposition_id' => $subject->id,
             'instrument' => ['kind' => 'web_search', 'query' => "  evidence\n discovery  "]];
@@ -88,6 +89,7 @@ class WebSearchReceiptTest extends TestCase
         foreach ([['kind' => 'web_search', 'reference' => 'wrong'], ['kind' => 'web_search', 'query' => 'valid', 'reference' => 'extra']] as $invalid) {
             $this->assertFalse($validator->validate(Helper::toJSON(['contribution' => [...$wire, 'instrument' => $invalid]]), Helper::toJSON($transport))->isValid());
         }
+        $this->publishPotentialFixture($fixture->viewer);
         $next = $service->contribute($fixture->viewer, $fixture->phase->id, $input);
         $receipt = Receipt::where('type', 'web_search')->sole();
         $this->assertSame(['kind' => 'web_search', 'query' => 'evidence discovery'], $receipt->instrumentExecution->input);
@@ -104,6 +106,7 @@ class WebSearchReceiptTest extends TestCase
         $option = collect($next['plan']['receipts'])->firstWhere('id', $receipt->id);
         $this->assertSame(['readable' => true, 'replayable' => true], $option['capabilities']);
         $this->assertArrayNotHasKey('evidence', $option);
+        $this->publishPotentialFixture($fixture->viewer);
         $read = $service->contribute($fixture->viewer, $next['plan']['phase']['id'], ['action' => 'receipt.read', 'receipt_id' => $receipt->id]);
         $this->assertSame($next['plan']['phase']['id'], $read['plan']['phase']['id']);
         $this->assertSame($receipt->metadata['observation'], collect($read['plan']['receipts'])->firstWhere('id', $receipt->id)['evidence']);
@@ -168,10 +171,13 @@ class WebSearchReceiptTest extends TestCase
         [$fixture, $subject] = $this->scenario();
         $receipt = $this->search($fixture, $subject);
         $service = app(ParticipationService::class);
+        $this->publishPotentialFixture($fixture->viewer);
         $plan = $service->stateFor($fixture->viewer)['plan'];
         $this->assertContains($receipt->id, $plan['schema']['$defs']['actions']['receipt.read']['properties']['receipt_id']['enum']);
         $this->assertArrayNotHasKey('receipt.replay', $plan['schema']['$defs']['actions']);
+        $this->publishPotentialFixture($fixture->viewer);
         $service->contribute($fixture->viewer, $fixture->phase->id, ['action' => 'receipt.read', 'receipt_id' => $receipt->id]);
+        $this->publishPotentialFixture($fixture->viewer);
         $plan = $service->stateFor($fixture->viewer)['plan'];
         $this->assertNotContains($receipt->id, $plan['schema']['$defs']['actions']['receipt.read']['properties']['receipt_id']['enum'] ?? []);
         $this->assertArrayNotHasKey('receipt.replay', $plan['schema']['$defs']['actions']);
@@ -195,6 +201,7 @@ class WebSearchReceiptTest extends TestCase
             $execution->forceFill(['status' => 'completed', 'completed_at' => now()])->save();
             $copy = $search->replicate();
             $copy->forceFill(['instrument_execution_id' => $execution->id, 'capabilities' => $capabilities])->save();
+            $this->publishPotentialFixture($fixture->viewer);
             $plan = app(ParticipationService::class)->stateFor($fixture->viewer)['plan'];
             $this->assertNotContains($copy->id, $plan['schema']['$defs']['actions']['receipt.read']['properties']['receipt_id']['enum'] ?? []);
             $this->assertSame($capabilities !== [], $copy->supports(ReceiptCapability::Replayable));
@@ -226,6 +233,7 @@ class WebSearchReceiptTest extends TestCase
             }
         }
         $fixture->phase->forceFill(['kind' => PhaseKind::Disperse, 'write_register' => 'activity'])->save();
+        $this->publishPotentialFixture($fixture->viewer);
         $plan = app(ParticipationService::class)->stateFor($fixture->viewer)['plan'];
         $this->assertArrayNotHasKey('receipt.replay', $plan['schema']['$defs']['actions']);
         $this->expectException(DomainException::class);
@@ -258,8 +266,10 @@ class WebSearchReceiptTest extends TestCase
         $this->excerpt = $text;
         $receipt = $this->search($fixture, $subject);
         $factory = app(ParticipantPromptFactory::class);
+        $this->publishPotentialFixture($fixture->viewer);
         $before = $factory->make(new Connection, app(ParticipationService::class)->stateFor($fixture->viewer));
         app(ReceiptContextService::class)->read($fixture->viewer, $fixture->phase, $receipt->id);
+        $this->publishPotentialFixture($fixture->viewer);
         $state = app(ParticipationService::class)->stateFor($fixture->viewer);
         $after = $factory->make(new Connection, $state);
         $this->assertSame($text, collect($state['plan']['receipts'])->firstWhere('id', $receipt->id)['evidence']['results'][0]['excerpt']);

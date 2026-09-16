@@ -127,6 +127,7 @@ final readonly class CommitmentSnapshotService
                 'evaluated_at' => $evaluatedAt,
             ]);
             $snapshot->save();
+            app(FieldMutationService::class)->touch($proposition->phase, [$proposition->id]);
 
             $this->horizons->apply($snapshot);
             $proposition->setRelation('commitmentSnapshot', $snapshot);

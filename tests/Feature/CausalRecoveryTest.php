@@ -558,6 +558,28 @@ class CausalRecoveryTest extends TestCase
             app(ContextHorizonProjector::class)->forEntry($sibling));
     }
 
+    public function test_non_best_sibling_update_stops_before_unchanged_ancestors(): void
+    {
+        [$origin, $h2, $commit, $h3] = $this->boundaryChain();
+        $winner = $this->committal($h2, .8, $origin, boundary: true);
+        $this->opportunity($winner);
+        $this->opportunity($commit);
+        $this->refreshMeasurements();
+        $before = DB::table('potential_region_states')->whereIn('context_horizon_id', [$this->root->id, $h2->id])
+            ->orderBy('context_horizon_id')->get()->toJson();
+        $changed = Proposition::whereHas('phase.cycle', fn ($q) => $q->where('context_horizon_id', $h3->id))->where('tier', 'expressive')->sole();
+        app(PropositionMeasurementService::class)->project($changed, .005, .005, .005);
+        $this->assertTrue(app(\App\Services\PotentialProjectionService::class)->refresh($this->substrate->id));
+        $this->assertSame($before, DB::table('potential_region_states')->whereIn('context_horizon_id', [$this->root->id, $h2->id])
+            ->orderBy('context_horizon_id')->get()->toJson());
+        $this->assertSame(.005, (float) DB::table('potential_entries')->where('proposition_id', $commit->id)->value('raw_potential_charge'));
+        $terrain = fn () => DB::table('potential_region_states')->orderBy('context_horizon_id')
+            ->get(['context_horizon_id', 'local_state', 'frontier', 'remaining_potential'])->toJson();
+        $incremental = $terrain();
+        $this->assertTrue(app(\App\Services\PotentialProjectionService::class)->rebuild($this->substrate->id, false));
+        $this->assertSame($incremental, $terrain());
+    }
+
     private function boundaryChain(): array
     {
         $origin = $this->committal($this->root, -.9, boundary: true);
@@ -653,7 +675,13 @@ class CausalRecoveryTest extends TestCase
     {
         $this->refreshMeasurements();
 
-        return app(PotentialChargeService::class)->recoverFrom($position);
+        $actual = app(PotentialChargeService::class)->recoverFrom($position);
+        $reference = app(\App\Services\ReferencePotentialChargeService::class)->recoverFrom($position);
+        $this->assertSame($reference['proposition']->id ?? null, $actual['proposition']->id ?? null);
+        $this->assertSame($reference['distance'] ?? null, $actual['distance'] ?? null);
+        $this->assertEqualsWithDelta($reference['potential_charge'] ?? 0, $actual['potential_charge'] ?? 0, 1e-12);
+
+        return $actual;
     }
 
     /** Controlled values only for routing; Potential still evaluates the real continuation graph. */
@@ -662,5 +690,10 @@ class CausalRecoveryTest extends TestCase
         foreach ($this->measurements as $id => $value) {
             app(PropositionMeasurementService::class)->project(Proposition::findOrFail($id), $value, $value, $value);
         }
+        // Routing fixtures supply controlled raw values. Apply their actual
+        // mutation worklist incrementally; production derives these raw values.
+        DB::table('potential_dirty_horizons')->where('substrate_id', $this->substrate->id)
+            ->update(['measurements_dirty' => false]);
+        $this->assertTrue(app(\App\Services\PotentialProjectionService::class)->refresh($this->substrate->id));
     }
 }

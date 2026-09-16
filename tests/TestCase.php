@@ -10,6 +10,7 @@ use App\Models\CommitmentSnapshot;
 use App\Models\ContextHorizon;
 use App\Models\Cycle;
 use App\Models\Participant;
+use App\Models\Substrate;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Receipt;
@@ -26,6 +27,13 @@ use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 
 abstract class TestCase extends BaseTestCase
 {
+    /** Finish direct fixture writes before exercising an ordinary read or contribution. */
+    protected function publishPotentialFixture(Participant|Substrate $subject, bool $recalculate = false): void
+    {
+        $id = $subject instanceof Substrate ? $subject->id : $subject->substrate_id;
+        $this->assertTrue(app(\App\Services\PotentialProjectionService::class)->rebuild($id, $recalculate));
+    }
+
     protected function setUp(): void
     {
         parent::setUp();

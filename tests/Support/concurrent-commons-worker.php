@@ -62,10 +62,10 @@ try {
         'receipt-read' => app(ReceiptContextService::class)->read(Participant::findOrFail($input['participant_id']), Phase::findOrFail($input['phase_id']), $input['receipt_id']),
         'horizon' => app(ContextHorizonProjector::class)->apply(CommitmentSnapshot::findOrFail($input['proposition_id'])),
         'plan' => app(InputPlanService::class)->forParticipant(Participant::findOrFail($input['participant_id'])),
-        'rest' => app(ParticipationService::class)->contribute(
+        'rest' => contributeWithRetry(
             Participant::findOrFail($input['participant_id']), $input['phase_id'], ['action' => 'participant.rest'],
         ),
-        'contribute' => app(ParticipationService::class)->contribute(
+        'contribute' => contributeWithRetry(
             Participant::findOrFail($input['participant_id']),
             $input['phase_id'],
             ['action' => 'proposition.variant', 'statement' => 'Concurrent distinction'],
@@ -82,4 +82,19 @@ try {
 } catch (Throwable $exception) {
     fwrite(STDERR, $exception::class.': '.$exception->getMessage()."\n");
     exit(1);
+}
+
+/** A separate wake retries a version conflict against newly published terrain. */
+function contributeWithRetry(Participant $participant, string $phaseId, array $input): array
+{
+    for ($attempt = 0; ; $attempt++) {
+        try {
+            return app(ParticipationService::class)->contribute($participant->fresh(), $phaseId, $input);
+        } catch (Symfony\Component\HttpKernel\Exception\ConflictHttpException $exception) {
+            if ($attempt >= 2 || Phase::findOrFail($phaseId)->completed_at !== null) {
+                throw $exception;
+            }
+            app(App\Services\PotentialProjectionService::class)->refresh($participant->substrate_id);
+        }
+    }
 }

@@ -21,27 +21,24 @@ normal ledger writes extend membership from the source to the new result.
 
 The first validated **Rest contribution** is the normal retirement boundary:
 
-1. Outside the contribution transaction, observe the entire branch's regional
-   Potential, including every reachable Committal entry and Origin's continuations
-   belonging to this branch. Apply the existing Rest exclusion to its exhausted
-   position/path, but inspect every other Committal region independently, including
-   descendant regions beyond that path. Any viable region vetoes pruning.
+1. Outside the contribution transaction, read the maintained branch-region summaries.
+   Any other region with positive Potential or incomplete measurements vetoes
+   pruning. Re-evaluate only the current region's projected local topology with
+   the existing exhausted-position/path exclusion.
 2. Acquire Substrate → Participant → Cycle → Phase and validate the current Rest.
 3. Write Rest. If the observation's substrate `field_version` still matches,
    atomically set the exhausted root's `pruned_at` and insert its unique Tragedy.
 4. Commit and release the lock. Calculate recovery without locks, then establish
    the selected Phase 1 with a separate short, version-checked entry write.
 
-All branch measurement and graph traversal are outside the lock. Stale/missing
-measurements share one batched context across the observed branch Domains. The retirement
-write does indexed version/identity checks, one conditional root update and one
-event insert per exhausted root. It does not update descendants, collect analytics,
-or relocate other participants. Ledger/evidence changes, new Phase observations,
-measurement maintenance, and retirement invalidate the substrate field version.
-A proof spanning a concurrent change is discarded. Several participants can
-observe exhaustion; the conditional root transition and unique event root ensure
-one retirement. Already-rested pre-upgrade participants use the same guarded
-transition during preparation, with measurement outside its write transaction.
+No branch graph or measurement derivation occurs during inspection. The retirement
+write does indexed version/identity checks, one conditional root update, one
+Tragedy insert per exhausted root, and durable projection invalidation. It does
+not traverse descendants or relocate other participants. Ledger/evidence changes,
+Phase observations, measurement maintenance and retirement advance the field version.
+A proof spanning a concurrent change is discarded. The conditional transition and
+unique event root permit only one retirement. Already-rested participants use
+this same guarded transition during preparation.
 
 A missing/unmeasurable continuation is not proof of zero Potential. A branch is
 retired only when all its observed regional recovery values are current and
@@ -103,3 +100,5 @@ before resuming: pre-release code does not maintain branch membership or field
 versions. The migration is additive and uses restrictive foreign keys. It does
 not prune existing data; the next validated Rest or preparation of an already
 rested participant performs the first version-checked retirement.
+
+Potential projections require the explicit backfill described in [Incremental Potential](incremental-potential.md). Ordinary inspection never repairs missing terrain.

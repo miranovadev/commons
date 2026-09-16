@@ -19,8 +19,13 @@ jobs:
         include:
           - name: PHP 8.5 / PostgreSQL 18 / Node 24
             profile: false
+            recovery: false
           - name: PostgreSQL participation profile
             profile: true
+            recovery: false
+          - name: PostgreSQL recovery and contention
+            profile: false
+            recovery: true
     runs-on: ubuntu-latest
     # Includes the exhaustive unbatched PostgreSQL reference calculation.
     timeout-minutes: 20
@@ -83,39 +88,40 @@ jobs:
         run: composer install --prefer-dist --no-interaction --no-progress
 
       - name: Set up Node
-        if: ${{ !matrix.profile }}
+        if: ${{ !matrix.profile && !matrix.recovery }}
         uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
 
       - name: Install frontend dependencies
-        if: ${{ !matrix.profile }}
+        if: ${{ !matrix.profile && !matrix.recovery }}
         run: npm ci
 
       - name: Build frontend
-        if: ${{ !matrix.profile }}
+        if: ${{ !matrix.profile && !matrix.recovery }}
         run: npm run build
 
       - name: Test frontend action contracts
-        if: ${{ !matrix.profile }}
+        if: ${{ !matrix.profile && !matrix.recovery }}
         run: npm run test:ui
 
       - name: Prepare test environment
+        if: ${{ !cancelled() }}
         run: cp .env.example .env
 
       - name: Check recovery semantics, optimistic reads and PostgreSQL contention
-        if: ${{ !matrix.profile }}
+        if: ${{ matrix.recovery }}
         env:
           PGOPTIONS: '-c statement_timeout=30s'
-        run: php artisan test --filter 'PropositionReadTest|BranchTragedyTest|TransactionLockOrderTest|ParticipantContextTest|CausalRecoveryTest|RecoveryBasinResolverTest|LocalParticipantNavigationTest|ParticipantContinuityTest' --stop-on-failure
+        run: php artisan test --filter 'CommitParticipationStateTest|LineageAttenuationTest|OptimisticParticipationTest|ParticipantActionContractTest|PersistInstrumentTest|PotentialProjectionTest|PotentialRegionCalculatorTest|PropositionReadTest|BranchTragedyTest|TransactionLockOrderTest|ParticipantContextTest|CausalRecoveryTest|RecoveryBasinResolverTest|LocalParticipantNavigationTest|ParticipantContinuityTest|HorizonWorkspaceTest|ParticipantWakeTest'
 
       - name: Run test suite
-        if: ${{ !matrix.profile }}
+        if: ${{ !matrix.profile && !matrix.recovery && !cancelled() }}
         env:
           PGOPTIONS: '-c statement_timeout=30s'
           COMMONS_PROFILE_SQL: '1'
-        run: php artisan test --display-warnings
+        run: php artisan test --exclude-group=performance --display-warnings
 
       - name: Profile scoped PostgreSQL reads
         if: ${{ matrix.profile }}

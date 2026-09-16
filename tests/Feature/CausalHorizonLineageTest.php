@@ -58,6 +58,7 @@ class CausalHorizonLineageTest extends TestCase
         $this->assertSame($h2->id, $cycleB->context_horizon_id);
         $this->assertSame(ContextDomain::Settlement, $h2->domain);
         $service = app(ParticipationService::class);
+        $this->publishPotentialFixture($a);
         $stateA = $service->contribute($a, $cycleA->currentPhase->id, ['action' => 'proposition.variant', 'statement' => 'Signal in H2']);
 
         // Isolate transition routing from the numeric threshold. The action,
@@ -69,6 +70,7 @@ class CausalHorizonLineageTest extends TestCase
         $this->groundFixture($candidate);
         $order->forceFill(['gate_proposition_id' => $candidate->id])->save();
         $b->forceFill(['current_proposition_id' => $candidate->id])->save();
+        $this->publishPotentialFixture($b);
         $service->contribute($b, $order->id, ['action' => 'proposition.commit', 'proposition_id' => $candidate->id]);
         $commit = $b->fresh()->position;
         $h3 = ContextHorizon::where('opened_by_proposition_id', $commit->id)->sole();
@@ -79,6 +81,7 @@ class CausalHorizonLineageTest extends TestCase
 
         $this->classificationEvidenceFixture($a->fresh()->position);
         $this->travel(10)->seconds();
+        $this->publishPotentialFixture($a);
         $stateA = $service->contribute($a, $stateA['plan']['phase']['id'], ['action' => 'proposition.reclassify']);
         $stance = $a->fresh()->position;
         $this->assertGreaterThan($h3->opened_at, $stance->created_at);
@@ -88,6 +91,7 @@ class CausalHorizonLineageTest extends TestCase
         $this->assertSame($h2->id, $stateA['cycle']['context_horizon_id']);
         $this->assertSame($h2->id, $stance->contextHorizonMembership->context_horizon_id);
         $this->assertFalse($h3->propositions()->whereKey($stance->id)->exists());
+        $this->publishPotentialFixture($a);
         $workspace = $service->workspaceFor($a)['plan']['workspace'];
         $this->assertSame($h2->id, $workspace['horizon']['id']);
         $this->assertSame('settlement', $workspace['domain']);
@@ -107,6 +111,7 @@ class CausalHorizonLineageTest extends TestCase
         $this->groundFixture($lateCandidate);
         $lateOrder->forceFill(['gate_proposition_id' => $lateCandidate->id])->save();
         $a->forceFill(['current_proposition_id' => $lateCandidate->id])->save();
+        $this->publishPotentialFixture($a);
         app(ParticipationService::class)->contribute($a, $lateOrder->id, ['action' => 'proposition.commit', 'proposition_id' => $lateCandidate->id]);
         $lateCommit = $a->fresh()->position;
         $sibling = ContextHorizon::where('opened_by_proposition_id', $lateCommit->id)->sole();
@@ -117,6 +122,7 @@ class CausalHorizonLineageTest extends TestCase
         $this->assertNotSame($h3->id, $sibling->id);
         $this->assertSame($commit->id, $h2->fresh()->closed_by_proposition_id);
         $this->assertSame($h3->id, $next->fresh()->context_horizon_id);
+        $this->publishPotentialFixture($b);
         $this->assertSame($h3->id, app(ParticipationService::class)->stateFor($b)['context_horizon_id']);
 
         $ids = ContextHorizon::orderBy('sequence')->pluck('id')->all();

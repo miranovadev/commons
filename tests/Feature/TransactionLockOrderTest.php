@@ -113,6 +113,15 @@ class TransactionLockOrderTest extends TestCase
             ->orderBy('sequence')->pluck('sequence')->all();
         $this->assertSame(range(1, count($sequences)), $sequences);
         $this->assertSame(2, Proposition::where('tier', 'expressive')->count());
+        $this->assertSame((int) $substrate->fresh()->field_version,
+            app(\App\Services\PotentialProjectionService::class)->assertCurrent($substrate->id));
+        foreach ([$first, $second] as $participant) {
+            $position = $participant->fresh()->position;
+            $actual = app(\App\Services\PotentialChargeService::class)->recoverFrom($position);
+            $expected = app(\App\Services\ReferencePotentialChargeService::class)->recoverFrom($position);
+            $this->assertSame($expected['proposition']->id ?? null, $actual['proposition']->id ?? null);
+            $this->assertEqualsWithDelta($expected['potential_charge'] ?? 0, $actual['potential_charge'] ?? 0, 1e-12);
+        }
     }
 
     public function test_standalone_instrument_completion_does_not_hold_the_execution_while_waiting_for_the_root(): void
@@ -275,6 +284,7 @@ class TransactionLockOrderTest extends TestCase
         app(ParticipationService::class)->contribute($first, $initial->id, ['action' => 'proposition.variant', 'statement' => 'Shared classification source']);
         $source = $first->fresh()->position;
         $this->classificationEvidenceFixture($source);
+        app(\App\Services\PotentialProjectionService::class)->refresh($first->substrate_id);
         $firstPhase = $first->cycles()->whereNull('completed_at')->sole()->currentPhase;
         $second = new Participant;
         $second->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'second-classifier'])->save();
@@ -306,6 +316,7 @@ class TransactionLockOrderTest extends TestCase
             'target_proposition_id' => $source->id, 'type' => 'variant'])->save();
         app(LedgerService::class)->record($edge);
         $this->classificationEvidenceFixture($source);
+        app(\App\Services\PotentialProjectionService::class)->refresh($first->substrate_id);
         $closure = [...(new ClosureValues(1, 1))->resolve(), 'history_proposition_id' => null, 'history_source' => 'negative-default'];
         $this->mock(ClosureGateService::class, fn ($mock) => $mock->shouldReceive('preview', 'forCommitment')->andReturn($closure));
         $initial->forceFill(['kind' => PhaseKind::Order, 'write_register' => 'concord', 'gate_proposition_id' => $source->id])->save();
@@ -377,6 +388,7 @@ class TransactionLockOrderTest extends TestCase
         app(ParticipationService::class)->contribute($first, $initial->id, ['action' => 'proposition.variant', 'statement' => 'Source']);
         $source = $first->fresh()->position;
         $this->classificationEvidenceFixture($source);
+        app(\App\Services\PotentialProjectionService::class)->refresh($first->substrate_id);
         $phase = $first->cycles()->whereNull('completed_at')->sole()->currentPhase;
         $state = app(ParticipationService::class)->stateFor($first);
         $input = ['action' => 'proposition.reclassify'];
@@ -403,6 +415,7 @@ class TransactionLockOrderTest extends TestCase
         $target = app(ContributionDispatcher::class)->dispatch($first, $initial,
             ['action' => 'proposition.variant', 'statement' => 'Instrument subject']);
         $this->receiptFixture($target); // Allow the competing attestation to advance this Phase.
+        app(\App\Services\PotentialProjectionService::class)->refresh($substrate->id);
         $second = new Participant;
         $second->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'during-observation'])->save();
         app(CycleEntryService::class)->enter($second);
@@ -472,6 +485,7 @@ class TransactionLockOrderTest extends TestCase
         $second->save();
         $secondRest = $this->tragicPhase($second, $root);
         app(PropositionMeasurementService::class)->project($root, 1.0, 1.0, 1.0);
+        app(\App\Services\PotentialProjectionService::class)->rebuild($substrate->id, false);
         $this->whileWorkerWaits($substrate, ['operation' => 'rest', 'participant_id' => $second->id, 'phase_id' => $secondRest->id],
             function () use ($first, $firstRest): void {
                 app(ParticipationService::class)->contribute($first, $firstRest->id, ['action' => 'participant.rest']);

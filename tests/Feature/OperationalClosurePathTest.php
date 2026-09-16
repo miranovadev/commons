@@ -318,6 +318,7 @@ class OperationalClosurePathTest extends TestCase
 
     private function reachDisperse(Participant $participant, Proposition $signal, Proposition $stance, Proposition $read): void
     {
+        $this->publishPotentialFixture($participant);
         app(ParticipationService::class)->enter($participant);
         foreach ([$signal, $stance, $read] as $proposition) {
             $this->receiptFixture($proposition);
@@ -336,6 +337,7 @@ class OperationalClosurePathTest extends TestCase
 
     private function state(Participant $participant): array
     {
+        $this->publishPotentialFixture($participant);
         return app(ParticipationService::class)->stateFor($participant);
     }
 

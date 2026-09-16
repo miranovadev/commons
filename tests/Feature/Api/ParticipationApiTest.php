@@ -378,6 +378,7 @@ class ParticipationApiTest extends TestCase
         $phase->save();
         app(LedgerService::class)->record($origin);
 
+        $this->publishPotentialFixture($participant);
         return [$phase, $origin];
     }
 

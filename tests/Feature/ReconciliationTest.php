@@ -166,6 +166,7 @@ class ReconciliationTest extends TestCase
         $this->assertSame(['action', 'other_proposition_id'], $plan['schema']['$defs']['actions']['proposition.reconcile']['required']);
         $this->assertInput($plan['schema'], $input, true);
         $this->assertInput($plan['schema'], [...$input, 'statement' => 'Synthesis'], false);
+        $this->publishPotentialFixture($this->viewer);
         $state = app(ParticipationService::class)->stateFor($this->viewer);
         $prompt = app(ParticipantPromptFactory::class)->make(new Connection, $state);
         $this->assertSame($plan['schema'], $prompt['schema']);
@@ -180,6 +181,7 @@ class ReconciliationTest extends TestCase
         $this->assertInput($transport, ['contribution' => [...$wire, 'statement' => 'Synthesis']], false);
         $count = Proposition::count();
         $ledger = $this->substrate->ledgerEntries()->count();
+        $this->publishPotentialFixture($this->viewer);
         app(ParticipationService::class)->contribute($this->viewer, $this->phase->id, $input);
         $created = Proposition::findOrFail($this->viewer->fresh()->current_proposition_id);
         $this->assertSame($count + 1, Proposition::count());
@@ -308,6 +310,7 @@ class ReconciliationTest extends TestCase
         $b = $this->sibling('B');
         $c = $this->sibling('C');
         $input = ['action' => 'proposition.reconcile', 'other_proposition_id' => $b->id];
+        $this->publishPotentialFixture($this->viewer);
         app(ParticipationService::class)->contribute($this->viewer, $this->phase->id, $input);
         $x = Proposition::findOrFail($this->viewer->fresh()->current_proposition_id);
         $this->receiptFixture($x);
