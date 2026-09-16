@@ -31,21 +31,51 @@ globalThis.Request = class extends NativeRequest {
   constructor(input, options) { super(typeof input === 'string' && input.startsWith('/') ? `http://localhost${input}` : input, options); }
 };
 
-// Replace only the transport. React, Mantine, RTK Query and the page hooks are real.
+// Keep the real singleton, Echo adapter, channel ownership, hooks and RTK Query.
+// Model Pusher's ACK/pending-cancellation lifecycle at the network boundary.
 const connections = [];
-globalThis.__createTestEcho = () => {
+globalThis.__createTestPusher = () => {
   const channels = new Map();
   const connection = {
-    channels, disconnected: false,
-    channel(name) {
-      const channel = { callback: null, subscribedCallback: null,
-        listen(_event, callback) { this.callback = callback; return this; },
-        subscribed(callback) { this.subscribedCallback = callback; queueMicrotask(callback); return this; },
-      };
-      channels.set(name, channel); return channel;
+    channels, disconnected: false, joins: [], leaves: [],
+    connection: { state: 'connected', socket_id: 'test.1' },
+    subscribe(name) {
+      this.joins.push(name);
+      let channel = channels.get(name);
+      if (!channel) {
+        channel = { listeners: new Map(), subscribed: false, subscriptionPending: false, subscriptionCancelled: false,
+          bind(event, callback) {
+            if (!this.listeners.has(event)) this.listeners.set(event, new Set());
+            this.listeners.get(event).add(callback); return this;
+          },
+          unbind(event, callback) { this.listeners.get(event)?.delete(callback); return this; },
+          emit(event, payload) { this.listeners.get(event)?.forEach(callback => callback(payload)); },
+          callback(payload) { this.emit('invalidation', payload); },
+          subscribedCallback() {
+            this.subscriptionPending = false; this.subscribed = true;
+            if (this.subscriptionCancelled) connection.unsubscribe(name);
+            else this.emit('pusher:subscription_succeeded');
+          },
+        };
+        channels.set(name, channel);
+      }
+      if (channel.subscriptionPending) channel.subscriptionCancelled = false;
+      else if (!channel.subscribed) {
+        channel.subscriptionPending = true;
+        queueMicrotask(() => channel.subscribedCallback());
+      }
+      return channel;
     },
-    private(name) { return this.channel(`private-${name}`); },
-    leave(name) { channels.delete(name); channels.delete(`private-${name}`); },
+    unsubscribe(name) {
+      this.leaves.push(name);
+      const channel = channels.get(name);
+      if (channel?.subscriptionPending) channel.subscriptionCancelled = true;
+      else channels.delete(name);
+    },
+    reconnect() {
+      for (const channel of channels.values()) { channel.subscribed = false; channel.subscriptionPending = false; }
+      for (const name of channels.keys()) this.subscribe(name);
+    },
     disconnect() { this.disconnected = true; },
   };
   connections.push(connection); return connection;
@@ -59,15 +89,18 @@ const result = await build({ stdin: { contents: `
   import { MemoryRouter, Routes, Route } from 'react-router-dom';
   import { SubstratePage } from './resources/js/pages/SubstratePage';
   import { commonsApi, useGetParticipantQuery, useGetParticipationQuery } from './resources/js/services/commonsApi';
-  import { useParticipantRealtime } from './resources/js/realtime/useRealtime';
+  import { useParticipantRealtime, useContextHorizonRealtime } from './resources/js/realtime/useRealtime';
   export { act } from 'react';
   export { commonsApi };
+  export { getEcho } from './resources/js/realtime/echo';
+  export { subscribeInvalidations } from './resources/js/realtime/subscriptions';
   function ParticipantProbe({ id }) {
     useGetParticipantQuery({ slug: 'test', participantId: id });
     const { data } = useGetParticipationQuery({ slug: 'test', participantId: id });
     useParticipantRealtime('test', id, Boolean(data));
     return <div>{data?.status}</div>;
   }
+  function GraphProbe({ slug, enabled = true }) { useContextHorizonRealtime(slug, enabled); return null; }
   export function mount(container) {
     const store = configureStore({ reducer: { [commonsApi.reducerPath]: commonsApi.reducer },
       middleware: getDefault => getDefault().concat(commonsApi.middleware) });
@@ -77,18 +110,24 @@ const result = await build({ stdin: { contents: `
         <Routes><Route path="/substrates/:slug" element={<SubstratePage />} /></Routes>
       </MemoryRouter></MantineProvider></Provider>); },
       participant(id) { root.render(<Provider store={store}><ParticipantProbe id={id} /></Provider>); },
+      probes({ graphSlugs = [], participantIds = [], enabled = true } = {}) {
+        root.render(<React.StrictMode><Provider store={store}>
+          {graphSlugs.map((slug, i) => <GraphProbe key={'graph-' + i} slug={slug} enabled={enabled} />)}
+          {participantIds.map((id, i) => <ParticipantProbe key={'participant-' + i} id={id} />)}
+        </Provider></React.StrictMode>);
+      },
       close() { root.unmount(); store.dispatch(commonsApi.util.resetApiState()); },
     };
   }
 `, loader: 'tsx', resolveDir: process.cwd() }, bundle: true, platform: 'node', format: 'cjs', write: false, jsx: 'automatic',
   loader: { '.css': 'empty' }, plugins: [{ name: 'test-transport', setup(builder) {
-    builder.onResolve({ filter: /\/echo$/ }, () => ({ path: 'test-transport', namespace: 'test' }));
-    builder.onLoad({ filter: /.*/, namespace: 'test' }, () => ({ contents: 'export const createEcho = () => globalThis.__createTestEcho();', loader: 'js' }));
-  } }],
+    builder.onResolve({ filter: /^pusher-js$/ }, () => ({ path: 'test-transport', namespace: 'test' }));
+    builder.onLoad({ filter: /.*/, namespace: 'test' }, () => ({ contents: 'export default class Pusher { constructor() { return globalThis.__createTestPusher(); } }', loader: 'js' }));
+  } }], define: { 'import.meta.env': JSON.stringify({ VITE_REVERB_APP_KEY: 'test' }) },
 });
 const module = { exports: {} };
 new Function('require', 'module', 'exports', result.outputFiles[0].text)(createRequire(import.meta.url), module, module.exports);
-const { act, mount } = module.exports;
+const { act, mount, getEcho, subscribeInvalidations, commonsApi } = module.exports;
 const proposition = (id, parent_ids = []) => ({ id, title: id, statement: `${id} authoritative detail`, parent_ids,
   register: 'activity', tier: parent_ids.length ? 'expressive' : 'committal', is_origin: !parent_ids.length, instruments: [] });
 const json = data => new Response(JSON.stringify({ data }), { headers: { 'Content-Type': 'application/json' } });
@@ -153,7 +192,9 @@ test('Graph fetches new nodes incrementally and both original and realtime nodes
     await settle();
     assert.equal(cards().length, 2);
   } finally { await act(async () => page.close()); el.remove(); }
-  assert.equal(live(), undefined);
+  assert.equal(live().channels.size, 0);
+  assert.equal(connections.length, 1);
+  assert.equal(live().disconnected, false);
 });
 
 test('an empty Graph discovers its first Horizon and a reconnect catches up missed nodes', { timeout: 30000 }, async () => {
@@ -174,10 +215,12 @@ test('an empty Graph discovers its first Horizon and a reconnect catches up miss
     await act(async () => live().channels.get('public.substrate.substrate').callback({ type: 'context-horizons.changed', substrate_id: 'substrate' }));
     await until(() => live()?.channels.has('public.context-horizon.first') && cards().length === 1);
     nodes = [...nodes, proposition('Missed', ['Origin'])];
-    await act(async () => { for (const channel of live().channels.values()) channel.subscribedCallback(); });
+    await act(async () => { live().reconnect(); });
     await until(() => cards().length === 2);
   } finally { await act(async () => page.close()); el.remove(); }
-  assert.equal(live(), undefined);
+  assert.equal(live().channels.size, 0);
+  assert.equal(connections.length, 1);
+  assert.equal(live().disconnected, false);
 });
 
 test('Participant hook refreshes its state and releases the previous channel when switching or leaving', { timeout: 30000 }, async () => {
@@ -197,10 +240,13 @@ test('Participant hook refreshes its state and releases the previous channel whe
     const first = live();
     await act(async () => page.participant('b'));
     await until(() => live()?.channels.has('private-participant.b'));
-    assert.equal(first.disconnected, true);
-    assert.equal(first.channels.size, 0);
+    assert.equal(live(), first);
+    assert.equal(first.disconnected, false);
+    assert.deepEqual([...first.channels.keys()], ['private-participant.b']);
   } finally { await act(async () => page.close()); el.remove(); }
-  assert.equal(live(), undefined);
+  assert.equal(live().channels.size, 0);
+  assert.equal(connections.length, 1);
+  assert.equal(live().disconnected, false);
 });
 
 test('graph activity follows canonical positions through a wake, keeps prepared P1, and reconnects authoritatively', { timeout: 30000 }, async () => {
@@ -243,10 +289,12 @@ test('graph activity follows canonical positions through a wake, keeps prepared 
     assert.equal(nova().querySelector('.graph-participant__activity'), null);
     // Missed start and position events are recovered by subscription acknowledgement.
     current = 'Origin'; active = true;
-    await act(async () => { for (const channel of live().channels.values()) channel.subscribedCallback(); });
+    await act(async () => { live().reconnect(); });
     await until(() => position() === 'Origin' && nova()?.getAttribute('data-active') === 'true');
   } finally { await act(async () => page.close()); el.remove(); }
-  assert.equal(live(), undefined);
+  assert.equal(live().channels.size, 0);
+  assert.equal(connections.length, 1);
+  assert.equal(live().disconnected, false);
 });
 
 test('an expired activity snapshot deactivates locally even if the end event never arrives', { timeout: 15000 }, async () => {
@@ -257,6 +305,7 @@ test('an expired activity snapshot deactivates locally even if the end event nev
     if (path.endsWith('/graph-participants')) return json({ server_time: new Date(server).toISOString(), participants: [
       { id: 'nova', callsign: 'Nova', current_proposition_id: 'Origin', is_active: true, activity_expires_at: server + 1500 },
     ] });
+    if (path.endsWith('/graph-metrics')) return json([]);
     if (path.endsWith('/propositions')) return json([proposition('Origin')]);
     return json({ id: 'substrate', slug: 'test', title: 'Test', visibility: 'public' });
   };
@@ -269,4 +318,234 @@ test('an expired activity snapshot deactivates locally even if the end event nev
     assert.equal(cards().length, 1);
     assert.match(avatar().getAttribute('aria-label'), /inactive/);
   } finally { await act(async () => page.close()); el.remove(); }
+});
+
+test('horizon growth, shrinkage and reordering preserve retained channels and pending invalidations', { timeout: 30000 }, async () => {
+  let horizons = ['A', 'B'];
+  const requests = [];
+  globalThis.fetch = async request => {
+    const path = new URL(request.url).pathname; requests.push(path);
+    if (path.endsWith('/realtime')) return json({ substrate_id: 'substrate', public: true, context_horizon_ids: horizons });
+    if (path.endsWith('/graph-participants')) return json({ server_time: new Date().toISOString(), participants: [] });
+    if (path.endsWith('/graph-metrics')) return json([]);
+    if (path.endsWith('/propositions')) return json([proposition('Origin')]);
+    if (path.includes('/propositions/')) return json(proposition(path.split('/').pop(), ['Origin']));
+    return json({ id: 'substrate', slug: 'test', title: 'Test', visibility: 'public' });
+  };
+  const el = container(); const page = mount(el);
+  const describe = () => page.store.dispatch(commonsApi.util.upsertQueryData('getGraphSubscriptions', 'test', {
+    substrate_id: 'substrate', public: true, context_horizon_ids: horizons,
+  }));
+  try {
+    await act(async () => page.graph());
+    await until(() => live()?.channels.size === 3);
+    await settle();
+    const connection = live(); const original = new Map(connection.channels);
+    connection.joins.length = 0; connection.leaves.length = 0; requests.length = 0;
+    horizons = ['A', 'B', 'C'];
+    await act(async () => {
+      original.get('public.context-horizon.A').callback({ type: 'proposition.created', proposition_id: 'Pending', context_horizon_id: 'A' });
+      await describe();
+    });
+    await until(() => requests.includes('/api/substrates/test/propositions/Pending'));
+    assert.equal(live(), connection);
+    assert.deepEqual(connection.joins, ['public.context-horizon.C']);
+    assert.deepEqual(connection.leaves, []);
+    for (const [name, channel] of original) assert.equal(connection.channels.get(name), channel);
+    const c = connection.channels.get('public.context-horizon.C');
+    // A descriptor with different ordering/duplicates is the same subscription set.
+    horizons = ['C', 'B', 'A', 'A'];
+    await act(async () => describe()); await settle();
+    assert.deepEqual(connection.joins, ['public.context-horizon.C']);
+    horizons = ['A', 'C'];
+    await act(async () => describe()); await settle();
+    assert.deepEqual(connection.leaves, ['public.context-horizon.B']);
+    assert.equal(connection.channels.get('public.context-horizon.A'), original.get('public.context-horizon.A'));
+    assert.equal(connection.channels.get('public.context-horizon.C'), c);
+    requests.length = 0;
+    original.get('public.context-horizon.B').callback({ type: 'proposition.updated', proposition_id: 'Removed', context_horizon_id: 'B' });
+    await settle();
+    assert.deepEqual(requests, [], 'removed horizons cannot enqueue stale work');
+    for (const channel of connection.channels.values()) {
+      assert.equal(channel.listeners.get('invalidation').size, 1);
+      assert.equal(channel.listeners.get('pusher:subscription_succeeded').size, 1);
+    }
+    assert.equal(connections.length, 1);
+    assert.equal(connection.disconnected, false);
+  } finally { await act(async () => page.close()); el.remove(); }
+  assert.equal(live().channels.size, 0);
+});
+
+test('Strict Mode Graph and Participation consumers share channels and survive independent teardown and reconnect', { timeout: 30000 }, async () => {
+  const requests = []; let status = 'waiting';
+  globalThis.fetch = async request => {
+    const path = new URL(request.url).pathname; requests.push(path);
+    if (path.endsWith('/realtime')) return json({ substrate_id: 'substrate', public: false, context_horizon_ids: ['horizon'] });
+    if (path.endsWith('/propositions') || path.endsWith('/graph-metrics')) return json([]);
+    return json(path.endsWith('/participate') ? { status } : { id: path.split('/').pop() });
+  };
+  const el = container(); const page = mount(el);
+  try {
+    await act(async () => page.probes({ graphSlugs: ['test', 'test'], participantIds: ['a', 'a'] }));
+    await until(() => live()?.channels.size === 3 && el.textContent === 'waitingwaiting');
+    await settle();
+    const connection = live(); const original = new Map(connection.channels);
+    assert.equal(getEcho().connector.pusher, connection);
+    assert.equal(connections.length, 1);
+    for (const channel of original.values()) assert.equal(channel.listeners.get('invalidation').size, 1);
+    // Remove one owner of each channel. The surviving hooks must still receive events.
+    connection.leaves.length = 0;
+    await act(async () => page.probes({ graphSlugs: ['test'], participantIds: ['a'] }));
+    await settle();
+    assert.deepEqual(connection.leaves, []);
+    for (const [name, channel] of original) assert.equal(connection.channels.get(name), channel);
+    for (let i = 0; i < 3; i++) {
+      status = `reconnected-${i}`; requests.length = 0;
+      await act(async () => connection.reconnect());
+      await until(() => el.textContent === status && requests.includes('/api/substrates/test/graph-metrics'));
+      assert.equal(requests.filter(path => path.endsWith('/participate')).length, 1);
+      assert.equal(requests.filter(path => path.endsWith('/realtime')).length, 1);
+      assert.equal(requests.filter(path => path.endsWith('/propositions')).length, 1);
+      for (const channel of connection.channels.values()) assert.equal(channel.listeners.get('pusher:subscription_succeeded').size, 1);
+    }
+    await act(async () => page.probes({ participantIds: ['a'] })); await settle();
+    assert.deepEqual([...connection.channels.keys()], ['private-participant.a']);
+    requests.length = 0; status = 'still live';
+    await act(async () => original.get('private-participant.a').callback({ type: 'participant.state_changed', participant_id: 'a' }));
+    await until(() => el.textContent === status);
+    assert.deepEqual(requests.sort(), ['/api/substrates/test/participants/a', '/api/substrates/test/participants/a/participate']);
+    assert.equal(connection.disconnected, false);
+  } finally { await act(async () => page.close()); el.remove(); }
+  assert.equal(live().channels.size, 0);
+});
+
+test('reconnect discovers missed horizons and catches up metrics as well as graph nodes', { timeout: 30000 }, async () => {
+  let horizons = ['A']; let potential = .1;
+  const requests = [];
+  globalThis.fetch = async request => {
+    const path = new URL(request.url).pathname; requests.push(path);
+    if (path.endsWith('/realtime')) return json({ substrate_id: 'substrate', public: true, context_horizon_ids: horizons });
+    if (path.endsWith('/graph-participants')) return json({ server_time: new Date().toISOString(), participants: [] });
+    if (path.endsWith('/propositions')) return json([proposition('Origin')]);
+    if (path.endsWith('/graph-metrics')) return json([{ id: 'Origin', field: { tension: 0, charge: 1, potential_charge: potential }, participation_count: 7 }]);
+    return json({ id: 'substrate', slug: 'test', title: 'Test', visibility: 'public' });
+  };
+  const el = container(); const page = mount(el);
+  const field = () => commonsApi.endpoints.getPropositions.select('test')(page.store.getState()).data?.[0].field;
+  try {
+    await act(async () => page.graph());
+    await until(() => field()?.potential_charge === .1);
+    const a = live().channels.get('public.context-horizon.A');
+    horizons = ['B']; potential = .8; requests.length = 0;
+    await act(async () => live().reconnect());
+    await until(() => field()?.potential_charge === .8 && live().channels.has('public.context-horizon.B'));
+    await settle();
+    assert.equal(live().channels.has('public.context-horizon.A'), false);
+    assert.equal(a.listeners.get('invalidation').size, 0);
+    assert.ok(requests.some(path => path.endsWith('/graph-participants')));
+    assert.equal(connections.length, 1);
+    assert.equal(live().disconnected, false);
+  } finally { await act(async () => page.close()); el.remove(); }
+});
+
+test('channel ownership handles pending remounts, late observers, and stale callbacks without listener leaks', async () => {
+  const counts = { first: 0, second: 0, firstAck: 0, secondAck: 0 };
+  const first = { invalidated: () => counts.first++, subscribed: () => counts.firstAck++ };
+  const second = { invalidated: () => counts.second++, subscribed: () => counts.secondAck++ };
+  let release = subscribeInvalidations('participant.owned', false, first);
+  const pending = live().channels.get('private-participant.owned');
+  const stale = [...pending.listeners.get('invalidation')][0];
+  release(); release();
+  // Pusher retains cancelled pending subscriptions until acknowledgement.
+  release = subscribeInvalidations('participant.owned', false, first);
+  assert.equal(live().channels.get('private-participant.owned'), pending);
+  await Promise.resolve();
+  assert.equal(counts.firstAck, 1);
+  const releaseSecond = subscribeInvalidations('participant.owned', false, second);
+  await Promise.resolve();
+  assert.equal(counts.secondAck, 1, 'late observer catches up an already acknowledged channel');
+  pending.callback({}); stale({});
+  assert.equal(counts.first, 1); assert.equal(counts.second, 1);
+  release(); pending.callback({});
+  assert.equal(counts.first, 1); assert.equal(counts.second, 2);
+  live().reconnect(); await Promise.resolve();
+  assert.equal(counts.firstAck, 1); assert.equal(counts.secondAck, 2);
+  releaseSecond();
+  assert.equal(pending.listeners.get('invalidation').size, 0);
+  assert.equal(pending.listeners.get('pusher:subscription_succeeded').size, 0);
+  pending.callback({}); pending.subscribedCallback();
+  assert.equal(counts.second, 2); assert.equal(counts.secondAck, 2);
+  assert.equal(live().channels.size, 0);
+  assert.equal(live().disconnected, false);
+});
+
+test('releasing one channel never removes the public or private channel variant owned by another consumer', async () => {
+  let publicEvents = 0; let privateEvents = 0;
+  const leavePublic = subscribeInvalidations('scope', true, { invalidated: () => publicEvents++, subscribed() {} });
+  const leavePrivate = subscribeInvalidations('scope', false, { invalidated: () => privateEvents++, subscribed() {} });
+  await Promise.resolve();
+  leavePublic();
+  assert.equal(live().channels.has('scope'), false);
+  live().channels.get('private-scope').callback({});
+  assert.equal(publicEvents, 0); assert.equal(privateEvents, 1);
+  leavePrivate();
+  assert.equal(live().channels.size, 0);
+});
+
+test('subscription catch-up waits for an older HTTP list then fetches a post-ACK snapshot', { timeout: 30000 }, async () => {
+  let releaseInitial; let listRequests = 0;
+  globalThis.fetch = async request => {
+    const path = new URL(request.url).pathname;
+    if (path.endsWith('/realtime')) return json({ substrate_id: 'substrate', public: true, context_horizon_ids: [] });
+    if (path.endsWith('/graph-participants')) return json({ server_time: new Date().toISOString(), participants: [] });
+    if (path.endsWith('/graph-metrics')) return json([]);
+    if (path.endsWith('/propositions')) {
+      listRequests++;
+      if (listRequests === 1) return new Promise(resolve => { releaseInitial = () => resolve(json([proposition('Origin')])); });
+      return json([proposition('Origin'), proposition('DuringHandshake', ['Origin'])]);
+    }
+    return json({ id: 'substrate', slug: 'test', title: 'Test', visibility: 'public' });
+  };
+  const el = container(); const page = mount(el);
+  try {
+    await act(async () => page.graph());
+    await until(() => releaseInitial && live()?.channels.get('public.substrate.substrate')?.subscribed);
+    await settle();
+    assert.equal(listRequests, 1, 'the pre-ACK request is still running');
+    await act(async () => releaseInitial());
+    await until(() => cards().length === 2);
+    assert.equal(listRequests, 2, 'catch-up must start a fresh request after the old one');
+  } finally { releaseInitial?.(); await act(async () => page.close()); el.remove(); }
+});
+
+test('leaving while catch-up waits for HTTP cancels follow-on requests and pending callbacks', { timeout: 30000 }, async () => {
+  let releaseInitial; let listRequests = 0; let metricRequests = 0;
+  globalThis.fetch = async request => {
+    const path = new URL(request.url).pathname;
+    if (path.endsWith('/realtime')) return json({ substrate_id: 'substrate', public: true, context_horizon_ids: [] });
+    if (path.endsWith('/graph-participants')) return json({ server_time: new Date().toISOString(), participants: [] });
+    if (path.endsWith('/graph-metrics')) { metricRequests++; return json([]); }
+    if (path.endsWith('/propositions')) {
+      listRequests++;
+      return new Promise(resolve => { releaseInitial = () => resolve(json([proposition('Origin')])); });
+    }
+    return json({ id: 'substrate', slug: 'test', title: 'Test', visibility: 'public' });
+  };
+  const el = container(); const page = mount(el);
+  try {
+    await act(async () => page.graph());
+    await until(() => releaseInitial && live()?.channels.get('public.substrate.substrate')?.subscribed);
+    await settle();
+    const channel = live().channels.get('public.substrate.substrate');
+    await act(async () => page.probes());
+    await act(async () => {
+      channel.callback({ type: 'graph.metrics_changed', substrate_id: 'substrate' });
+      releaseInitial();
+    });
+    await settle();
+    assert.equal(listRequests, 1);
+    assert.equal(metricRequests, 0);
+    assert.equal(live().channels.size, 0);
+    assert.equal(live().disconnected, false);
+  } finally { releaseInitial?.(); await act(async () => page.close()); el.remove(); }
 });

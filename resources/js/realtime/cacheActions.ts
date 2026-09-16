@@ -10,12 +10,15 @@ export function refreshParticipant(dispatch: AppDispatch, participantId: string)
 }
 
 export async function refreshGraphPropositions(dispatch: AppDispatch, slug: string, ids: string[], active: () => boolean) {
+  if (!active() || !ids.length) return;
   // An initial or ordinary HTTP list refresh must finish before an incremental merge.
   await dispatch(commonsApi.util.getRunningQueryThunk('getPropositions', slug));
+  if (!active()) return;
   const unique = [...new Set(ids)];
   if (unique.length > 1) {
     // One burst is a bounded batch; never one HTTP request per graph card.
     for (let offset = 0; offset < unique.length; offset += 100) {
+      if (!active()) return;
       const batch = unique.slice(offset, offset + 100);
       const propositions = await dispatch(commonsApi.endpoints.getPropositionBatch.initiate(
         { slug, ids: batch }, { subscribe: false, forceRefetch: true },
@@ -42,7 +45,9 @@ export async function refreshGraphPropositions(dispatch: AppDispatch, slug: stri
 }
 
 export async function refreshGraphMetrics(dispatch: AppDispatch, slug: string, active: () => boolean) {
+  if (!active()) return;
   const metrics = await dispatch(commonsApi.endpoints.getGraphMetrics.initiate(slug, { subscribe: false, forceRefetch: true })).unwrap();
+  if (!active()) return;
   await dispatch(commonsApi.util.getRunningQueryThunk('getPropositions', slug));
   if (!active()) return;
   const byId = new Map(metrics.map(item => [item.id, item]));
