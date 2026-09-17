@@ -29,6 +29,13 @@ class Receipt extends Model
 
     protected static function booted(): void
     {
+        static::creating(function (self $receipt): void {
+            $horizonId = $receipt->instrumentExecution?->phase->cycle->context_horizon_id;
+            if ($receipt->context_horizon_id !== null && $receipt->context_horizon_id !== $horizonId) {
+                throw new DomainException('A Receipt belongs to its creating action’s Horizon.');
+            }
+            $receipt->context_horizon_id = $horizonId;
+        });
         static::updating(function (self $receipt): void {
             if ($receipt->isDirty()) {
                 throw new DomainException('Receipts are immutable observations. Execute an Instrument to create a new Receipt.');
@@ -70,6 +77,16 @@ class Receipt extends Model
     public function instrumentExecution(): BelongsTo
     {
         return $this->belongsTo(InstrumentExecution::class);
+    }
+
+    public function horizon(): BelongsTo
+    {
+        return $this->belongsTo(ContextHorizon::class, 'context_horizon_id');
+    }
+
+    public function consumption(): HasOne
+    {
+        return $this->hasOne(ReceiptConsumption::class);
     }
 
     public function receiptable(): MorphTo
