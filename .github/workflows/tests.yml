@@ -138,4 +138,4 @@ jobs:
         if: ${{ matrix.proof }}
         env:
           PGOPTIONS: '-c statement_timeout=30s'
-        run: php artisan test --filter 'HorizonReceiptLifecycleTest|ReceiptGatedReclassificationTest|ExpressiveEvidenceGatingTest|AuthoritativeRestReasonTest|HorizonTragedyTest|FinalAttemptExhaustionTest|HorizonProofConcurrencyTest'
+        run: php artisan test --filter 'HorizonReceiptLifecycleTest|ReceiptGatedReclassificationTest|ExpressiveEvidenceGatingTest|AuthoritativeRestReasonTest|HorizonTragedyTest|FinalAttemptExhaustionTest|HorizonProofConcurrencyTest|ExhaustionTest'
