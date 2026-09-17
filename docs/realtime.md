@@ -105,3 +105,11 @@ node --test tests/js/realtimeQueue.test.mjs
 Check the Graph drawer for both initially loaded and newly arrived cards, and disconnect/restart Reverb while performing ordinary HTTP actions. No live Reverb instance is needed for the automated transaction/cache tests.
 
 References: [Laravel broadcasting](https://laravel.com/docs/13.x/broadcasting), [Reverb](https://laravel.com/docs/13.x/reverb), and [RTK Query cache updates](https://redux-toolkit.js.org/rtk-query/usage/manual-cache-updates).
+
+Participant workspaces also retain a private subscription to their current
+Context Horizon using the existing shared channel/transport owner. An identifier
+notification for a local Proposition invalidates that Participant's workspace and
+compact plan, including exhausted context, without moving the Participant. This
+covers exhaustion published by someone else while the viewer is stationary.
+Horizon changes release the previous listener; ACK/reconnect catches up the
+workspace. Graph subscriptions, observer modes and avatar events are unchanged.

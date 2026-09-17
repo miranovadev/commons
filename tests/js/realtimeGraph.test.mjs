@@ -88,7 +88,8 @@ const result = await build({ stdin: { contents: `
   import { configureStore } from '@reduxjs/toolkit';
   import { MemoryRouter, Routes, Route } from 'react-router-dom';
   import { SubstratePage } from './resources/js/pages/SubstratePage';
-  import { commonsApi, useGetParticipantQuery, useGetParticipationQuery } from './resources/js/services/commonsApi';
+  import { commonsApi, useGetParticipantQuery, useGetParticipationQuery, useGetParticipantWorkspaceQuery } from './resources/js/services/commonsApi';
+  import { ParticipantWorkspace } from './resources/js/components/ParticipantWorkspace';
   import { useParticipantRealtime, useContextHorizonRealtime } from './resources/js/realtime/useRealtime';
   export { act } from 'react';
   export { commonsApi };
@@ -101,6 +102,12 @@ const result = await build({ stdin: { contents: `
     return <div>{data?.status}</div>;
   }
   function GraphProbe({ slug, enabled = true }) { useContextHorizonRealtime(slug, enabled); return null; }
+  function WorkspaceProbe({ id }) {
+    const { data } = useGetParticipantWorkspaceQuery({ slug: 'test', participantId: id });
+    useParticipantRealtime('test', id, Boolean(data), data?.context_horizon_id);
+    return data?.plan ? <MantineProvider env="test"><ParticipantWorkspace plan={data.plan}
+      availableActions={Object.keys(data.plan.schema.$defs.actions)} onAction={() => {}} /></MantineProvider> : null;
+  }
   export function mount(container) {
     const store = configureStore({ reducer: { [commonsApi.reducerPath]: commonsApi.reducer },
       middleware: getDefault => getDefault().concat(commonsApi.middleware) });
@@ -110,6 +117,7 @@ const result = await build({ stdin: { contents: `
         <Routes><Route path="/substrates/:slug" element={<SubstratePage />} /></Routes>
       </MemoryRouter></MantineProvider></Provider>); },
       participant(id) { root.render(<Provider store={store}><ParticipantProbe id={id} /></Provider>); },
+      workspace(id) { root.render(<Provider store={store}><WorkspaceProbe id={id} /></Provider>); },
       probes({ graphSlugs = [], participantIds = [], enabled = true } = {}) {
         root.render(<React.StrictMode><Provider store={store}>
           {graphSlugs.map((slug, i) => <GraphProbe key={'graph-' + i} slug={slug} enabled={enabled} />)}
@@ -583,4 +591,44 @@ test('history visibility keeps exhausted paths without changing the live cache o
     await until(() => cards().length === 1);
     assert.equal(live(), transport);
   } finally { await act(async () => page.close()); el.remove(); }
+});
+
+test('a stationary workspace learns local exhaustion through the shared Horizon channel', { timeout: 30000 }, async () => {
+  let exhausted = false;
+  let requests = 0;
+  const origin = { ...proposition('Origin'), register: 'canon' };
+  const scar = { id: 'A', role: 'write', phase_number: 1, register: 'activity', tier: 'expressive',
+    statement: 'A previously explored route', statement_truncated: false,
+    exhausted: true, basin_exhausted: false, exhausted_at: '2026-09-17', actionable: false };
+  globalThis.fetch = async request => {
+    const path = new URL(request.url).pathname;
+    if (path.endsWith('/workspace')) {
+      requests++;
+      return json({ status: 'ready', context_horizon_id: 'local', plan: {
+        phase: { id: 'phase', kind: 'distinguish', number: 1, write_register: 'activity' }, gate: origin,
+        write_options: exhausted ? [] : [proposition('A', ['Origin'])],
+        exhausted_alternatives: exhausted ? [scar] : [],
+        schema: { $defs: { actions: exhausted ? { 'proposition.variant': { properties: {} } }
+          : { 'instrument.execute': { properties: { proposition_id: { enum: ['A'] } } } } } },
+      } });
+    }
+    return json({ id: 'viewer' });
+  };
+  const el = container(); const page = mount(el);
+  try {
+    await act(async () => page.workspace('viewer'));
+    await until(() => live()?.channels.has('private-context-horizon.local') && el.querySelector('[data-proposition-id="A"]'));
+    await settle(); requests = 0;
+    const transport = live();
+    exhausted = true;
+    const event = { type: 'proposition.updated', proposition_id: 'A', context_horizon_id: 'local' };
+    await act(async () => { transport.channels.get('private-context-horizon.local').callback(event); transport.channels.get('private-context-horizon.local').callback(event); });
+    await until(() => el.querySelector('[data-role="write"] [data-exhausted-id="A"]'));
+    assert.equal(el.querySelector('[data-proposition-id="A"]'), null);
+    assert.equal(el.querySelector('[data-exhausted-id="A"] button'), null);
+    assert.equal(requests, 1, 'the event burst coalesces into one workspace refresh');
+    assert.equal(live(), transport);
+    assert.equal(connections.length, 1);
+  } finally { await act(async () => page.close()); el.remove(); }
+  assert.equal(live().channels.size, 0);
 });

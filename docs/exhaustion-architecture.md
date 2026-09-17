@@ -63,7 +63,8 @@ fixtures (timings are illustrative, query-growth assertions are enforced):
 | Slow recovery reference | 14 queries, 3 ms | 14 queries, 43 ms |
 
 The graph read remains 20 queries at both 1 and 500 cards. Existing dense
-participation profiles stay at 73/67/52 queries for Mediate/Bias/Order. Exhaustion
+participation profiles, including local historical context, use 78/68/55 queries
+for Mediate/Bias/Order. Exhaustion
 proof and context computation run outside the guarded contribution transaction.
 PostgreSQL CI separately exercises actual lock contention, simultaneous sibling
 Rest, a fresh sibling racing publication, and projected/reference agreement.
@@ -73,3 +74,19 @@ plan in the new historical-context lookup. Plans now reuse the hydrated governin
 Commit; standalone lookups expand indexed parent frontiers instead of a recursive
 whole-relation join. This also removes two queries from each dense plan. The
 30-second statement timeout remains in place.
+
+## Context versus eligibility audit
+
+The original replacement still seeded `ParticipationContext` with active-only
+Horizon membership. `InputPlanService` populated Write from action options, the
+compact serializer intersected Write with schema IDs, and the workspace did the
+same in `writePropositions`. Those paths are correct for operational options but
+cannot be the entire cognitive context. The separate `ExhaustionService::context`
+summary was capped at 25, mixed direct children of the governing Commit and Gate
+without producing-position checks, and appeared outside the workspace lanes.
+
+`ParticipantHistoricalContext` now supplies a separate phase-scoped observation
+collection. The former unscoped summary is removed. No active scope, option
+service, exhaustion proof, recovery selection, graph observer filter, or action
+validator is relaxed. See [local exhausted context](participant-context.md#local-exhausted-context)
+for selection and payload boundaries.

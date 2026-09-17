@@ -12,7 +12,6 @@ use App\Services\ExhaustionAuditService;
 use App\Services\ExhaustionService;
 use App\Services\InputPlanService;
 use App\Services\LedgerService;
-use App\Services\Participation\ParticipationContext;
 use App\Services\ParticipationService;
 use App\Services\PotentialChargeService;
 use App\Services\ReferencePotentialChargeService;
@@ -69,23 +68,10 @@ class ExhaustionTest extends TestCase
         $this->assertDatabaseMissing('exhaustion_states', ['proposition_id' => $fresh->id]);
         $this->assertNull($terminal->cycle->contextHorizon->fresh()->exhausted_at);
         $this->assertSame(0, Tragedy::count());
-        $context = $state['plan']['exhausted_alternatives'];
-        $this->assertSame($dead->id, $context[0]['id']);
-        $this->assertFalse($context[0]['actionable']);
-        $this->assertArrayNotHasKey('children', $context[0]);
+        // Recovery is Phase 1. The exhausted Constrain position is not a
+        // Distinguish alternative merely because both share a governing Commit.
+        $this->assertSame([], $state['plan']['exhausted_alternatives']);
         $this->assertStringNotContainsString($dead->id, json_encode($state['plan']['schema']));
-        $hydrated = new ParticipationContext($fresh->phase);
-        DB::enableQueryLog();
-        DB::flushQueryLog();
-        $direct = app(ExhaustionService::class)->context($fresh);
-        $reused = app(ExhaustionService::class)->context($fresh, context: $hydrated);
-        $queries = DB::getQueryLog();
-        DB::disableQueryLog();
-        $this->assertSame($direct, $reused);
-        $this->assertSame($dead->id, $direct[0]['id']);
-        foreach ($queries as $query) {
-            $this->assertStringNotContainsString('WITH RECURSIVE', strtoupper($query['query']));
-        }
     }
 
     public function test_actual_terminal_exploration_exhausts_lineage_once_preserving_commits_and_other_participants(): void

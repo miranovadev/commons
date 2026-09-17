@@ -84,9 +84,12 @@ performs recovery. No bulk participant updates occur.
 ## Participant context and observers
 
 Plans expose `rest_available` for local action exhaustion. `exhausted_alternatives`
-contains at most 25 direct alternatives under the current Gate/governing Commit,
-with short statements and explicit `actionable: false`. Descendants are not
-serialized. These objects never enter action target enums. A Committal can expose
+contains alternatives at the current structural Read/Gate/Write position,
+with short statements, producing-phase identity and explicit `actionable: false`.
+All local scars remain visible independently of the broader browsing limit;
+historical descendant subtrees are not serialized. See the
+[local context contract](participant-context.md#local-exhausted-context).
+These objects never enter action target enums. A Committal can expose
 `basin_exhausted: true` while its own `exhausted` remains false.
 
 Graph/API modes are presentation choices:

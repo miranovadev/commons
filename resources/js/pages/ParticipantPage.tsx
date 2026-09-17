@@ -33,7 +33,7 @@ function ParticipantPositionPage({ slug, participantId }: { slug: string; partic
   const [switcherOpened, setSwitcherOpened] = useState(false);
   const { data: participant, isLoading: participantLoading, error: participantError } = useGetParticipantQuery(parameters);
   const { data: participation, isLoading: participationLoading, isFetching: participationFetching, error: participationError, refetch: refetchParticipation } = useGetParticipantWorkspaceQuery(parameters);
-  useParticipantRealtime(slug, participantId, Boolean(participation) && !participationError);
+  useParticipantRealtime(slug, participantId, Boolean(participation) && !participationError, participation?.context_horizon_id);
   useEffect(() => {
     if (participationFetching || participation?.reason?.code !== 'potential_projection_pending') return;
     const timer = setTimeout(() => { void refetchParticipation(); }, 2000);

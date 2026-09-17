@@ -37,6 +37,7 @@ inference. The resumable API retains those lifecycle fields for clients.
   "read_options": [],
   "gate_options": [],
   "write_options": [],
+  "exhausted_alternatives": [],
   "rest_available": false,
   "schema": {}
 }
@@ -175,3 +176,58 @@ Receipt entries expose independent `capabilities.readable` and
 `replayed_from_receipt_id` provenance. Only explicitly loaded Web Search results
 appear under `evidence`; external text never enters system instructions or the
 action schema. See [Instrument semantics and setup](instruments.md).
+
+## Local exhausted context
+
+Exhaustion removes operational eligibility, not local contextual visibility.
+`ParticipantHistoricalContext` owns `exhausted_alternatives`, separately from the
+operational/evidence working set in `ParticipationContext` and the active-only
+`PropositionOptionService`. Both workspace and autonomous plans receive this same
+collection. The provider boundary explicitly allowlists its compact fields.
+
+Each alternative contains `id`, `role` (`read`, `gate`, or `write`), producing
+`phase_number`, `register`, `tier`, a statement excerpt (240 characters plus the
+ellipsis, with `statement_truncated`), `exhausted`, `basin_exhausted`,
+`exhausted_at`, and `actionable: false`. Only `exhaustion_states` establishes its
+status. An unavailable legacy hold is not relabelled as proven exhaustion.
+
+Selection uses the exact producing Phase, creating Horizon, Domain-derived
+register and tier, then the local structural relationship:
+
+| Current Phase | Historical context |
+| --- | --- |
+| Distinguish–Mediate Write | Direct Gate children and same-position revisions |
+| Mediate Read | Constrain alternatives in the governing Commit Region |
+| Mediate Gate | Disperse children of exposed Reads or local exhausted Reads, within that region |
+| Bias Gate / Write | Mediate / Bias alternatives in the governing Commit Region |
+| Order Gate / Write | Bias alternatives and their Order-produced Committal results with exhausted outgoing basins |
+
+Historical alternatives explain explored structure; directional/evidence
+admissibility remains solely in the action services. Region resolution batches
+candidate ancestry and stops at each Committal, including same-Horizon Commits;
+ambiguous multi-Commit ancestry is excluded. Direct Write lookup follows revisions
+only, never later-phase descendants. Neither lookup hydrates historical evidence
+or serializes downstream subtrees. The normal validation plan returns before
+historical context is calculated.
+
+Every return to Origin Distinguish exposes exhausted direct first-register
+excursions in the Cycle's Domain (Signal or Activity). Persist replaces those
+with exhausted alternatives at its own local Write position. A repeated register
+label never grants historical relevance across producing positions. A current
+exhausted position awaiting Rest is itself represented as Gate context; persistent
+Commits are marked `basin_exhausted`, never `exhausted`.
+
+There is no arbitrary first-25 cutoff for relevant scars. As with the active
+lineage, `max_read_count` only bounds broader human register browsing. Packet size
+can grow with the number of local alternatives, but not with the size of the
+historical subtrees below them. Existing active option/schema populations retain
+their strict eligibility semantics. No historical ID enters receipt targeting,
+Traverse, Attest, Instrument, Revise, Reconcile, Bias, or Commit because it is visible.
+
+The workspace shows these excerpts within their actual Read/Gate/Write lane, with
+an exhausted context label and no controls. Previewing an earlier phase does not
+reuse the current phase's scars. Graph observer modes remain separate. The human
+participant view subscribes to its current Horizon through the shared Reverb
+transport, so another participant's proposition status update refreshes local
+context even while this viewer remains still. Events retain identifier-only
+payloads; no history is broadcast.

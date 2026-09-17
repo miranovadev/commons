@@ -33,7 +33,7 @@ final class ParticipantContextSerializer
         return [
             'phase' => Arr::only($plan['phase'], ['id', 'number', 'kind', 'write_register']),
             'provenance_id' => $plan['provenance_id'] ?? null,
-            'exhausted_alternatives' => $plan['exhausted_alternatives'] ?? [],
+            'exhausted_alternatives' => array_map($this->historical(...), $plan['exhausted_alternatives'] ?? []),
             'gate_id' => $plan['gate']['id'],
             'lineage' => $lineage->map($this->proposition(...))->values()->all(),
             'read_options' => $read->map($this->proposition(...))->values()->all(),
@@ -60,6 +60,9 @@ final class ParticipantContextSerializer
         }
 
         $plan['receipts'] = array_map($this->receipt(...), $plan['receipts'] ?? []);
+        if (isset($plan['exhausted_alternatives'])) {
+            $plan['exhausted_alternatives'] = array_map($this->historical(...), $plan['exhausted_alternatives']);
+        }
 
         return ['status' => $state['status'], 'plan' => $plan];
     }
@@ -74,6 +77,12 @@ final class ParticipantContextSerializer
                 'query', 'executed_at', 'results', 'provider', 'request_id',
             ])] : []),
         ];
+    }
+
+    private function historical(array $node): array
+    {
+        return Arr::only($node, ['id', 'role', 'phase_number', 'statement', 'statement_truncated',
+            'tier', 'register', 'exhausted', 'basin_exhausted', 'exhausted_at', 'actionable']);
     }
 
     private function proposition(array $node): array
