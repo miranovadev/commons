@@ -84,6 +84,7 @@ final readonly class InputPlanService
             'attestation_options' => [], 'instrument_options' => [], 'receipts' => [],
             'exhausted_alternatives' => $this->historicalContext->position($phase->gate),
             'commitment' => null, 'commitment_options' => [], 'rest_available' => true, 'position_exhausted' => true,
+            'rest_reason' => \App\Enums\RestReason::NoAvailableMove->value,
             'schema' => $this->schemas->forPhase($phase->kind, ['participant.rest']),
         ];
     }
@@ -181,6 +182,8 @@ final readonly class InputPlanService
             'receipts' => $this->receipts->forPhase($phase, $context)->all(),
             'exhausted_alternatives' => $this->historicalContext->forPhase($phase, $context, $readOptions),
             'rest_available' => isset($schema['$defs']['actions']['participant.rest']),
+            'rest_reason' => isset($schema['$defs']['actions']['participant.rest'])
+                ? app(RestReasonService::class)->derive($phase, $context)->value : null,
             'traversal_options' => $this->propositions($traversalOptions, $participant, $context),
             'instrument_options' => $this->propositions($instrumentOptions, $participant, $context),
             'write_options' => $this->propositions($writeOptions, $participant, $context),

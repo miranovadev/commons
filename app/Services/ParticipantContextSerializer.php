@@ -43,6 +43,7 @@ final class ParticipantContextSerializer
             ...(! empty($plan['commitment_options']) ? ['commitment_options' => $plan['commitment_options']] : []),
             'receipts' => array_map($this->receipt(...), $plan['receipts'] ?? []),
             'rest_available' => $plan['rest_available'] ?? false,
+            'rest_reason' => $plan['rest_reason'] ?? null,
             'schema' => $plan['schema'],
         ];
     }
@@ -51,7 +52,7 @@ final class ParticipantContextSerializer
     public function inference(array $state): array
     {
         $plan = Arr::only($state['plan'], ['phase', 'provenance_id', 'gate_id',
-            'lineage', 'exhausted_alternatives', 'read_options', 'gate_options', 'write_options', 'commitment', 'commitment_options', 'rest_available', 'receipts', 'schema']);
+            'lineage', 'exhausted_alternatives', 'read_options', 'gate_options', 'write_options', 'commitment', 'commitment_options', 'rest_available', 'rest_reason', 'receipts', 'schema']);
         $plan['phase'] = Arr::only($plan['phase'], ['id', 'number', 'kind', 'write_register']);
         foreach (['lineage', 'read_options', 'gate_options', 'write_options'] as $key) {
             if (isset($plan[$key])) {

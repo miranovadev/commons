@@ -52,8 +52,15 @@ final class ExhaustionService
             'transitions' => [], 'horizons' => [], 'branches' => [], 'stable' => false];
         // Diagnostic calls must not turn a currently actionable Phase into a witness.
         $plan = app(InputPlanService::class)->forPhase($phase->cycle->participant, $phase);
+        $proof['rest_reason'] = $plan['rest_reason'] ?? 'no_available_move';
         if (! isset($plan['schema']['$defs']['actions']['participant.rest'])) {
             $proof['reason'] = 'actions_remain';
+            $proof['stable'] = $version === (int) Substrate::whereKey($substrateId)->value('field_version');
+
+            return $proof;
+        }
+        if ($proof['rest_reason'] !== 'no_remaining_potential') {
+            $proof['reason'] = 'no_available_move';
             $proof['stable'] = $version === (int) Substrate::whereKey($substrateId)->value('field_version');
 
             return $proof;
@@ -139,7 +146,8 @@ final class ExhaustionService
                 || $proof['participant_id'] !== $phase->cycle->participant_id
                 || $proof['substrate_id'] !== $phase->cycle->participant->substrate_id
                 || $phase->fresh()->completed_at === null
-                || $phase->cycle->fresh()->rested_at === null) {
+                || $phase->cycle->fresh()->rested_at === null
+                || $phase->cycle->fresh()->rest_reason !== \App\Enums\RestReason::NoRemainingPotential) {
                 return;
             }
             $affected = $ids = [];

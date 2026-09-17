@@ -48,6 +48,7 @@ class Cycle extends Model
         return [
             'completed_at' => 'immutable_datetime',
             'rested_at' => 'immutable_datetime',
+            'rest_reason' => \App\Enums\RestReason::class,
         ];
     }
 
