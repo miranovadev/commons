@@ -4,13 +4,14 @@ namespace App\Services;
 
 use App\Enums\ContextDomain;
 use App\Enums\PhaseKind;
+use App\Enums\RestReason;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
+use App\Models\Tragedy;
 use App\Services\Observables\ReinforcementService;
 use App\Services\Participation\ParticipationContext;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 
 final readonly class InputPlanService
 {
@@ -67,10 +68,9 @@ final readonly class InputPlanService
             return null;
         }
         $plan = $this->phases->plan($phase->kind);
-        $state = DB::table('exhaustion_states')->where('proposition_id', $phase->gate_proposition_id)->first();
-        $description = $state === null ? 'This continuation has a legacy retirement hold. Rest to recover.'
-            : ($state->kind === 'basin' ? 'This Commit persists, but its outgoing basin is exhausted. Rest to recover.'
-                : 'This continuation is exhausted. Rest to recover through its persistent Commit.');
+        $description = $phase->gate->tier === 'committal'
+            ? 'This exhausted Committal persists as context. Rest to recover.'
+            : 'This continuation is historical. Rest to recover through persistent provenance.';
 
         return [
             'phase' => ['id' => $phase->id, 'number' => $phase->kind->value, 'kind' => $plan['name'],
@@ -84,7 +84,7 @@ final readonly class InputPlanService
             'attestation_options' => [], 'instrument_options' => [], 'receipts' => [],
             'exhausted_alternatives' => $this->historicalContext->position($phase->gate),
             'commitment' => null, 'commitment_options' => [], 'rest_available' => true, 'position_exhausted' => true,
-            'rest_reason' => \App\Enums\RestReason::NoAvailableMove->value,
+            'rest_reason' => RestReason::NoAvailableMove->value,
             'schema' => $this->schemas->forPhase($phase->kind, ['participant.rest']),
         ];
     }
@@ -262,6 +262,8 @@ final readonly class InputPlanService
                 'opened_by_proposition_id' => $horizon->opened_by_proposition_id,
                 'opening_proposition' => $opening === null ? null : $this->proposition($opening, $participant, $context),
                 'opened_at' => $horizon->opened_at,
+                'tragedy' => Tragedy::where('context_horizon_id', $horizon->id)->first()?->only(['id', 'receipt_id', 'occurred_at']),
+                'exhausted_at' => $horizon->exhausted_at,
             ],
             'provenance' => $this->proposition($provenance, $participant, $context),
             'registers' => collect($registers)

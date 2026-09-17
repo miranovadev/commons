@@ -37,7 +37,7 @@ export function workspaceLanes(plan: ParticipantPlan, previewKind?: PhaseKind): 
       || plan.lineage?.find(node => node.register === read);
   const reads = ['mediate', 'order'].includes(plan.phase.kind) ? plan.read_options || [] : readCard ? [readCard] : [];
   const gates = plan.phase.kind === 'order' ? actionPropositions(plan, 'proposition.commit')
-    : plan.phase.kind === 'bias' ? actionPropositions(plan, 'proposition.bias')
+    : plan.phase.kind === 'bias' ? actionPropositions(plan, 'proposition.reclassify')
     : [plan.gate, ...(plan.phase.kind === 'mediate' ? actionPropositions(plan, 'proposition.reconcile') : [])];
   const lanes = [
     ...groupLane('read', reads, inheritedRead ? provenance.register : read),

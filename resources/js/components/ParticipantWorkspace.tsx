@@ -88,17 +88,13 @@ export function ParticipantWorkspace({ plan, availableActions, onAction, onSubmi
                         <Button size="compact-xs" variant="subtle" color="gray" leftSection={<OperationIcon operation="variant" />}
                           onClick={() => onAction('proposition.variant')}>Variant</Button>
                       </Group>}
-                      {allowed('proposition.bias') && targets.get('proposition.bias')?.has(item.id) && <Group className="write-option-card__context-actions" gap={4}>
-                        <Button size="compact-xs" variant="subtle" color="gray" leftSection={<OperationIcon operation="bias" />}
-                          onClick={() => onAction('proposition.bias', { proposition_id: item.id })}>Bias</Button>
-                      </Group>}
                       {allowed('proposition.commit') && targets.get('proposition.commit')?.has(item.id) && <Group className="write-option-card__context-actions" gap={4}>
                         <Button size="compact-xs" color="indigo" leftSection={<OperationIcon operation="commit" />}
                           onClick={() => onAction('proposition.commit', { proposition_id: item.id })}>Commit</Button>
                       </Group>}
-                      {item.id === gate.id && allowed('proposition.reclassify') && <Group className="write-option-card__context-actions" gap={4}>
+                      {allowed('proposition.reclassify') && targets.get('proposition.reclassify')?.has(item.id) && <Group className="write-option-card__context-actions" gap={4}>
                         <Button size="compact-xs" variant="subtle" color="gray" leftSection={<OperationIcon operation="reclassify" />}
-                          onClick={() => onAction('proposition.reclassify')}>Reclassify</Button>
+                          onClick={() => onAction('proposition.reclassify', { proposition_id: item.id })}>Reclassify</Button>
                       </Group>}
                     </Box>)}
                   </PropositionNavigator> : <EmptyState text="No eligible Gate Proposition is available here." />)}
@@ -116,7 +112,7 @@ export function ParticipantWorkspace({ plan, availableActions, onAction, onSubmi
                   </Stack>}
                   {Boolean(lane.history?.length) && <Stack gap="xs" p="xs" aria-label={`Exhausted ${role.label} alternatives`}>
                     {lane.history!.map(item => <Box key={item.id} data-exhausted-id={item.id}>
-                      <Text size="xs" c="dimmed" fw={600}>{item.basin_exhausted ? 'Basin exhausted · Commit retained' : 'Exhausted · Context only'}</Text>
+                      <Text size="xs" c="dimmed" fw={600}>{item.basin_exhausted ? 'Horizon exhausted · Committal retained' : 'Failed continuation · Context only'}</Text>
                       <Text size="sm" c="dimmed">{item.statement}</Text>
                     </Box>)}
                   </Stack>}

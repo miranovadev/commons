@@ -56,6 +56,8 @@ final class HorizonReceiptService
             'proposition_id' => $target->id, 'receipt_id' => $receipt->id, 'created_at' => now(),
         ]);
         app(RealtimePublisher::class)->proposition($target->id);
+        app(RealtimePublisher::class)->horizon($receipt->context_horizon_id, $phase->cycle->participant->substrate_id,
+            ['type' => 'receipt.consumed', 'receipt_id' => $receipt->id]);
 
         return $receipt;
     }

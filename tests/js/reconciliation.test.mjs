@@ -23,7 +23,7 @@ test('Mediate counterparts and unary Bias choices use their own schema-authorize
           const read = { ...gate, id: 'read', register: 'canon', statement: 'Disperse Read anchor' };
           const readSibling = { ...read, id: 'read-sibling', statement: 'Matching Read sibling' };
           const child = { ...gate, id: 'child', register: writeRegister, statement: 'Forward child' };
-          const gateAction = kind === 'bias' ? 'proposition.bias' : 'proposition.reconcile';
+          const gateAction = kind === 'bias' ? 'proposition.reclassify' : 'proposition.reconcile';
           const target = kind === 'bias' ? 'proposition_id' : 'other_proposition_id';
           const choices = kind === 'bias' ? ['gate', 'sibling'] : ['sibling'];
           const actions = {
@@ -66,8 +66,8 @@ test('Mediate counterparts and unary Bias choices use their own schema-authorize
     } else {
       assert.match(gate, /data-bias-candidate="gate"/);
       assert.match(gate, /data-bias-candidate="sibling"/);
-      assert.equal([...gate.matchAll(/>Bias<\/span>/g)].length, 2);
-      assert.doesNotMatch(write, />Bias<\/span>/);
+      assert.equal([...gate.matchAll(/>Reclassify<\/span>/g)].length, 2);
+      assert.doesNotMatch(write, />Reclassify<\/span>/);
       assert.doesNotMatch(gate, /Reconcile/);
       assert.equal([...gate.matchAll(/Privileged Gate/g)].length, 1);
     }
@@ -75,7 +75,7 @@ test('Mediate counterparts and unary Bias choices use their own schema-authorize
     assert.doesNotMatch(write, /Sibling alternative/);
     assert.doesNotMatch(markup, /Unrelated alternative/);
     const denied = module.exports.render(kind, false);
-    assert.doesNotMatch(denied, /Sibling alternative|>Reconcile<\/span>|>Bias<\/span>/);
+    assert.doesNotMatch(denied, /Sibling alternative|>Reconcile<\/span>|>Reclassify<\/span>/);
     if (kind === 'bias') {
       const deniedGate = denied.slice(denied.indexOf('data-role="gate"'), denied.indexOf('data-role="write"'));
       assert.doesNotMatch(deniedGate, /Privileged Gate/);

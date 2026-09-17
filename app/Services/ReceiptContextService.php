@@ -7,6 +7,7 @@ use App\Models\Participant;
 use App\Models\ParticipantReceiptContext;
 use App\Models\Phase;
 use App\Models\Proposition;
+use App\Models\Receipt;
 use App\Models\ReceiptContextEvent;
 use App\Models\Substrate;
 use App\Services\Evidence\ReceiptEvidenceService;
@@ -26,7 +27,7 @@ final readonly class ReceiptContextService
         private PropositionMeasurementService $measurements,
     ) {}
 
-    /** Encountered evidence only; persistent memory is not an unbounded packet inbox. */
+    /** Current Horizon evidence is shared; exposed ancestor evidence remains contextual. */
     public function forPhase(Phase $phase, ?ParticipationContext $context = null): Collection
     {
         if ($phase->gate_proposition_id !== null && ($context !== null
@@ -48,8 +49,9 @@ final readonly class ReceiptContextService
                 ->concat($this->options->instrumentOptionsFor($phase, $context))
                 ->unique('id')->filter(fn ($node) => $context->activeIds->has($node->id));
             $present = $exposed->pluck('id');
-            $receipts = \App\Models\Receipt::where('context_horizon_id', $phase->cycle->context_horizon_id)
-                ->with(['instrumentExecution', 'consumption', 'phase'])->get();
+            $receipts = Receipt::where('context_horizon_id', $phase->cycle->context_horizon_id)
+                ->with(['instrumentExecution', 'consumption', 'phase'])->get()
+                ->concat($exposed->flatMap(fn ($node) => $this->state->receipts($node, $context)))->unique('id');
             $loads = $context->receiptContexts->where('participant_id', $phase->cycle->participant_id)->keyBy('receipt_id');
             if ($receipts->contains('type', 'citation')) {
                 $present = $present->merge($this->evidence->loadedCitationTargets($context));
@@ -68,7 +70,8 @@ final readonly class ReceiptContextService
                 return [
                     'id' => $receipt->id, 'proposition_id' => $receipt->instrumentExecution?->proposition_id ?? $receipt->phase->gate_proposition_id,
                     'context_horizon_id' => $receipt->context_horizon_id,
-                    'availability' => $receipt->consumption === null ? 'available' : 'consumed',
+                    'availability' => $receipt->consumption !== null ? 'consumed' :
+                        ($receipt->context_horizon_id === $context->phase->cycle->context_horizon_id && $receipt->observationComplete() ? 'available' : 'historical'),
                     'consumed_at' => $receipt->consumption?->consumed_at?->toISOString(),
                     'attached_proposition_id' => $receipt->consumption?->proposition_id,
                     'type' => $receipt->type, 'reference' => $receipt->reference,
@@ -86,7 +89,7 @@ final readonly class ReceiptContextService
                     'observation_error' => $receipt->metadata['observation_error'] ?? null,
                     'signature' => $verified['signature'] ?? null,
                     'status' => $status, 'loaded_at' => $loaded ? $load->loaded_at->toISOString() : null,
-                    ...(($loaded || $receipt->type === 'tragedy') && $verified !== null ? ['evidence' => $verified['evidence']] : []),
+                    ...($verified !== null ? ['evidence' => $verified['evidence']] : []),
                 ];
             })->sortBy('id')->values();
         });

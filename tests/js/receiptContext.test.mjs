@@ -27,7 +27,7 @@ test('Receipt panel exposes only authorized Reads and preloads evidence without 
   new Function('require', 'module', 'exports', result.outputFiles[0].text)(createRequire(import.meta.url), module, module.exports);
   const receipts = [
     { id: 'available', type: 'citation', reference: 'Outside context', status: 'available' },
-    { id: 'loaded', type: 'citation', reference: 'Remembered', status: 'loaded', evidence: { statement: 'Preloaded evidence body' } },
+    { id: 'loaded', type: 'tragedy', reference: 'Remembered', status: 'loaded', availability: 'consumed', attached_proposition_id: 'classified', evidence: { statement: 'Preloaded evidence body', exhausted_committals: [{ id: 'old', statement: 'Historical Committal loaded by reference', register: 'canon', phase_number: 7 }] } },
     { id: 'present', type: 'citation', reference: 'In lineage', status: 'already-in-context' },
     { id: 'failed', type: 'hyperlink', reference: 'Failed verification', status: 'unqualified' },
   ];
@@ -35,8 +35,10 @@ test('Receipt panel exposes only authorized Reads and preloads evidence without 
   assert.equal([...html.matchAll(/>Read Receipt</g)].length, 1);
   assert.match(html, /Preloaded evidence body/);
   assert.match(html, />Loaded</);
+  assert.match(html, />Consumed</);
+  assert.match(html, /Historical Committal loaded by reference/);
   assert.match(html, /already in this context/);
-  assert.doesNotMatch(html, /Failed verification/);
+  assert.match(html, /Failed verification/);
   assert.doesNotMatch(module.exports.render({ receipts, schema: {} }), />Read Receipt</);
   assert.doesNotMatch(module.exports.render({ receipts, schema }, false), />Read Receipt</);
 });

@@ -51,7 +51,7 @@ class HorizonReceiptLifecycleTest extends TestCase
         $phase = $this->phase($source, PhaseKind::Constrain);
         $target = $this->node($phase, $source);
         $service = app(HorizonReceiptService::class);
-        $original = $receipt->getAttributes();
+        $original = $receipt->fresh()->getAttributes();
         DB::transaction(fn () => $service->consume($phase, $source, $target, $receipt->id));
         $this->assertEquals($original, $receipt->fresh()->getAttributes());
         $this->assertTrue($service->available($source->phase)->isEmpty());
