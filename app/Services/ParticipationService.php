@@ -96,9 +96,7 @@ final readonly class ParticipationService
             $recovering = $completed?->rested_at !== null;
             $entry = $this->entryFor($participant);
             $recoveryReady = $recovering && ($entry['available'] ?? false);
-            $exhaustionPending = $recovering && ! $recoveryReady && DB::table('origin_branch_memberships as membership')
-                ->join('origin_branches as branch', 'branch.root_proposition_id', '=', 'membership.root_proposition_id')
-                ->where('membership.proposition_id', $participant->current_proposition_id)->whereNull('branch.exhausted_at')->whereNull('branch.legacy_retired_at')->exists();
+            $exhaustionPending = false; // Rest transitions are atomic; no legacy pruning repair is needed.
 
             return [...$this->waiting(
                 $recovering ? ($recoveryReady || $exhaustionPending ? 'recovery_pending' : 'recovery_unavailable') : 'cycle_not_started',

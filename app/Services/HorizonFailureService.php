@@ -74,8 +74,11 @@ final class HorizonFailureService
                 app(RealtimePublisher::class)->proposition($id);
             }
             $tragedy = app(TragedyService::class)->record($phase, $proof);
-            $phase->cycle->forceFill(['recovery_proposition_id' => $tragedy->opening_proposition_id])->save();
-            $phase->cycle->participant->forceFill(['current_proposition_id' => $tragedy->opening_proposition_id])->save();
+            $exhausted = app(ExhaustionService::class)->afterFailure($phase, $tragedy, $proof);
+            $phase->cycle->forceFill(['recovery_proposition_id' => $exhausted ? null : $tragedy->opening_proposition_id])->save();
+            if (! $exhausted) {
+                $phase->cycle->participant->forceFill(['current_proposition_id' => $tragedy->opening_proposition_id])->save();
+            }
             app(FieldMutationService::class)->mark($substrate->id, [$proof['context_horizon_id']], $proof['transitions'], measurementsDirty: false);
             app(RealtimePublisher::class)->horizons($substrate->id);
             app(RealtimePublisher::class)->graphMetrics($substrate->id);
