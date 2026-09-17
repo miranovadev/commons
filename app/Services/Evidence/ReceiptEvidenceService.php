@@ -35,6 +35,11 @@ final class ReceiptEvidenceService
 
     public function describe(Receipt $receipt, ParticipationContext $context): ?array
     {
+        if ($receipt->type === 'tragedy') {
+            return $receipt->context_horizon_id === $context->phase->cycle->context_horizon_id
+                ? ['signature' => hash('sha256', 'tragedy:'.$receipt->id),
+                    'evidence' => app(\App\Services\TragedyEvidenceService::class)->describe($receipt)] : null;
+        }
         $execution = $receipt->instrumentExecution;
         if (! $receipt->supports(ReceiptCapability::Readable) || $execution?->status !== 'completed' || ! $context->propositions->has($execution->proposition_id)) {
             return null;

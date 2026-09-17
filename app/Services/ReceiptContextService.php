@@ -48,7 +48,8 @@ final readonly class ReceiptContextService
                 ->concat($this->options->instrumentOptionsFor($phase, $context))
                 ->unique('id')->filter(fn ($node) => $context->activeIds->has($node->id));
             $present = $exposed->pluck('id');
-            $receipts = $exposed->flatMap(fn ($node) => $this->state->receipts($node, $context))->unique('id');
+            $receipts = \App\Models\Receipt::where('context_horizon_id', $phase->cycle->context_horizon_id)
+                ->with(['instrumentExecution', 'consumption', 'phase'])->get();
             $loads = $context->receiptContexts->where('participant_id', $phase->cycle->participant_id)->keyBy('receipt_id');
             if ($receipts->contains('type', 'citation')) {
                 $present = $present->merge($this->evidence->loadedCitationTargets($context));
@@ -66,6 +67,10 @@ final readonly class ReceiptContextService
 
                 return [
                     'id' => $receipt->id, 'proposition_id' => $receipt->instrumentExecution?->proposition_id ?? $receipt->phase->gate_proposition_id,
+                    'context_horizon_id' => $receipt->context_horizon_id,
+                    'availability' => $receipt->consumption === null ? 'available' : 'consumed',
+                    'consumed_at' => $receipt->consumption?->consumed_at?->toISOString(),
+                    'attached_proposition_id' => $receipt->consumption?->proposition_id,
                     'type' => $receipt->type, 'reference' => $receipt->reference,
                     'capabilities' => [
                         'readable' => $receipt->supports(ReceiptCapability::Readable),
@@ -81,7 +86,7 @@ final readonly class ReceiptContextService
                     'observation_error' => $receipt->metadata['observation_error'] ?? null,
                     'signature' => $verified['signature'] ?? null,
                     'status' => $status, 'loaded_at' => $loaded ? $load->loaded_at->toISOString() : null,
-                    ...($loaded && $verified !== null ? ['evidence' => $verified['evidence']] : []),
+                    ...(($loaded || $receipt->type === 'tragedy') && $verified !== null ? ['evidence' => $verified['evidence']] : []),
                 ];
             })->sortBy('id')->values();
         });

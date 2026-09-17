@@ -35,8 +35,10 @@ final class HorizonFailureService
                     continue;
                 }
                 $children = DB::table('supersessions as edge')->leftJoin('continuation_failures as failure', 'failure.proposition_id', '=', 'edge.target_proposition_id')
-                    ->where('edge.source_proposition_id', $id)->get(['edge.target_proposition_id', 'failure.failed_at']);
-                if ($children->contains(fn ($child) => $child->failed_at === null && ! isset($closed[$child->target_proposition_id]))) {
+                    ->leftJoin('horizon_exhaustions as basin', 'basin.opening_proposition_id', '=', 'edge.target_proposition_id')
+                    ->where('edge.source_proposition_id', $id)->get(['edge.target_proposition_id', 'failure.failed_at', 'basin.exhausted_at']);
+                if ($children->contains(fn ($child) => $child->failed_at === null && $child->exhausted_at === null
+                    && ! isset($closed[$child->target_proposition_id]))) {
                     continue;
                 }
                 $closed[$id] = true;

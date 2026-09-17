@@ -107,4 +107,31 @@ class FinalAttemptExhaustionTest extends TestCase
             ->update(['pruned_at' => now(), 'legacy_retired_at' => now(), 'exhausted_at' => now()]);
         $this->assertFalse(app(ExhaustionService::class)->unavailable($root));
     }
+
+    public function test_child_exhaustion_enriches_parent_tragedy_with_ids_and_loads_statements_locally(): void
+    {
+        [$opening, $horizon, $childTragedy] = $this->firstFailure();
+        [$terminal] = $this->exercise($opening, $childTragedy);
+        $this->rest($terminal);
+        $this->assertNotNull($horizon->fresh()->exhausted_at);
+        $parentHead = $this->node($this->phase($this->origin, PhaseKind::Constrain), $this->origin);
+        $this->explore($parentHead);
+        $parentRest = $this->phase($parentHead);
+        $this->measure($parentHead, 1);
+        $this->rest($parentRest);
+        $parentTragedy = Tragedy::where('context_horizon_id', $horizon->parent_context_horizon_id)->sole();
+        $receipt = Receipt::findOrFail($parentTragedy->receipt_id);
+        $this->assertSame([$opening->id], $receipt->metadata['exhausted_committal_ids']);
+        $this->assertStringNotContainsString($opening->statement, json_encode($receipt->metadata));
+        $evidence = app(\App\Services\TragedyEvidenceService::class)->describe($receipt);
+        $this->assertSame($opening->statement, $evidence['exhausted_committals'][0]['statement']);
+        $this->assertSame($horizon->id, $evidence['exhausted_committals'][0]['exhausted_horizon_id']);
+        $this->assertSame(7, $evidence['exhausted_committals'][0]['phase_number']);
+        $viewer = $this->phase($this->origin, PhaseKind::Distinguish);
+        $context = app(\App\Services\ReceiptContextService::class)->forPhase($viewer)->firstWhere('id', $receipt->id);
+        $this->assertSame($opening->id, $context['evidence']['exhausted_committals'][0]['id']);
+        $this->assertSame('available', $context['availability']);
+        $this->assertDatabaseHas('propositions', ['id' => $opening->id]);
+        $this->assertNull($horizon->parent->fresh()->exhausted_at);
+    }
 }

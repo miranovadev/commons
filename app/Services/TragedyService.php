@@ -27,7 +27,8 @@ final class TragedyService
             'phase_id' => $phase->id, 'context_horizon_id' => $horizon->id,
             'type' => 'tragedy', 'reference' => $id, 'capabilities' => ['readable'],
             'metadata' => ['tragedy_id' => $id, 'terminal_proposition_id' => $phase->gate_proposition_id,
-                'opening_proposition_id' => $opener],
+                'opening_proposition_id' => $opener,
+                'exhausted_committal_ids' => app(TragedyEvidenceService::class)->references($horizon->id)],
         ]);
         // This is the observed subject, not an attachment. Only Reclassify attaches.
         $receipt->receiptable()->associate($phase->gate);
