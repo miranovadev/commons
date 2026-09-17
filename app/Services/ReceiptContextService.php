@@ -89,7 +89,7 @@ final readonly class ReceiptContextService
                     'observation_error' => $receipt->metadata['observation_error'] ?? null,
                     'signature' => $verified['signature'] ?? null,
                     'status' => $status, 'loaded_at' => $loaded ? $load->loaded_at->toISOString() : null,
-                    ...($verified !== null && ($loaded || $receipt->type === 'tragedy') ? ['evidence' => $verified['evidence']] : []),
+                    ...($verified !== null ? ['evidence' => $verified['evidence']] : []),
                 ];
             })->sortBy('id')->values();
         });

@@ -150,8 +150,8 @@ Variant, Revise and Reconcile create new content/structure with fresh votes and 
 | Position/state | Available progression |
 | --- | --- |
 | Empty Phase 1 or Phase 4 opportunity | Variant |
-| Existing Proposition, no available Horizon Receipt | Instrument; no Variant, Attest or Reclassify |
-| Existing Proposition, available Horizon Receipt | Attest |
+| Existing Proposition without its own completed Instrument | Instrument, even if other shared Receipts exist; no Attest |
+| Own completed Instrument and available Horizon Receipt | Attest |
 | Personal Attestation from an earlier Cycle | Same-side Traverse |
 | Phase 2 | Structural Variant, governed by viable existing results |
 | Phase 3 | Reclassify an attested Phase-2 source with an available Receipt |
@@ -159,9 +159,9 @@ Variant, Revise and Reconcile create new content/structure with fresh votes and 
 | Phase 6 | Reclassify an attested Phase-5 source with Receipt and lineage agreement |
 | Phase 7 | Existing grounded, freshly attested and Closure-aligned Commit or Committal Traverse |
 
-Variant eligibility does not depend on Receipt generation/consumption or Participant count. A healthy result blocks redundant siblings. A completed Mediate Rest with one viable Disperse candidate permits one missing binary counterpart; see the review assumption in [the integrated flow](flow-integration.md).
+Variant eligibility does not depend on Receipt generation/consumption or Participant count. A new Variant requires every current viable Variant to have its own completed Instrument and effective Attestation, plus positive remaining Horizon Potential Charge. Each new Variant repeats this sequence. No prior Mediate Rest or fixed sibling cap applies; see the [confirmed clarification](horizon-proof-variant-clarification.md).
 
-Instruments target mutable expressive Writes in phases 1–6. Phase 1/4 additionally require no available Horizon Receipt. Existing evidence makes Attestation available without a transfer from its author or a paid visibility action. Transactional execution rechecks the same rules advertised in the schema.
+Instruments target mutable expressive Writes in phases 1–6. Phase 1/4 offer Instrument when a Write lacks its own completed Instrument or no shared Receipt remains available. Existing evidence makes Attestation available without a transfer from its author or a paid visibility action. Transactional execution rechecks the same rules advertised in the schema.
 
 ## Traverse and authoritative Rest
 

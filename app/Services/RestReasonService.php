@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Enums\RestReason;
 use App\Models\Phase;
 use App\Services\Participation\ParticipationContext;
-use Illuminate\Support\Facades\DB;
 
 /** Called only after the authoritative action schema has established that Rest is admissible. */
 final class RestReasonService
@@ -28,14 +27,8 @@ final class RestReasonService
                 && app(HorizonReceiptService::class)->available($phase, $context)->isEmpty())) {
             return RestReason::NoAvailableMove;
         }
-        $horizonId = $phase->cycle->context_horizon_id;
-        app(PotentialProjectionService::class)->assertCurrent($phase->cycle->participant->substrate_id);
-        $local = DB::table('potential_entries')->where('context_horizon_id', $horizonId)
-            ->where('raw_potential_charge', '>', 0.00000005)->exists();
-        $frontier = json_decode(DB::table('potential_region_states')->where('context_horizon_id', $horizonId)
-            ->value('frontier') ?? '[]', true, flags: JSON_THROW_ON_ERROR);
 
-        return $local || collect($frontier)->contains(fn ($entry) => $entry['raw_potential_charge'] > 0.00000005)
+        return app(PotentialChargeService::class)->hasRemainingInHorizon($phase)
             ? RestReason::NoAvailableMove : RestReason::NoRemainingPotential;
     }
 }

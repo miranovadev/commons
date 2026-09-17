@@ -231,7 +231,7 @@ rather than inferring semantics from current code behaviour.
 
 **Reclassification invariant:** Phase 3 and Phase 6 reclassification require an available Receipt. Reclassification atomically attaches/consumes the Receipt. No Receipt, no Reclassification. Tragedy is exceptional in generation, not in consumption.
 
-**Generation invariant:** Variant availability is controlled by structural viability, not Receipt lifecycle and not Participant count. A healthy lineage does not justify redundant siblings.
+**Generation invariant:** Variant availability is controlled by structural viability, not Receipt lifecycle and not Participant count. A further Variant requires each current viable Variant to have its own completed Instrument and effective Attestation, with positive remaining Horizon Potential Charge. Each new Variant repeats that sequence; no prior Rest or fixed sibling cap applies. See the [confirmed clarification](horizon-proof-variant-clarification.md).
 
 **Observation invariant:** Instrument generates evidence; Attestation becomes available only when evidence exists; Attestation becomes Traverse on the next Cycle under the existing rule.
 
