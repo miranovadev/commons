@@ -10,6 +10,13 @@ use Illuminate\Support\Facades\DB;
 /** Persistence adapters call this; it contains no eligibility or measurement rules. */
 final class RealtimePublisher
 {
+    public function horizon(string $horizonId, string $substrateId, array $change): void
+    {
+        $this->afterCommit(fn () => event(new RealtimeInvalidation(
+            'context-horizon.'.$horizonId, [...$change, 'context_horizon_id' => $horizonId], $substrateId,
+        )));
+    }
+
     public function graphParticipant(string $participantId, string $substrateId): void
     {
         $this->afterCommit(fn () => event(new GraphParticipantChanged($participantId, $substrateId)));

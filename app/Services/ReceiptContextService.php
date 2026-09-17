@@ -65,7 +65,7 @@ final readonly class ReceiptContextService
                 $status = $loaded ? 'loaded' : ($verified === null ? 'unqualified' : ($alreadyPresent ? 'already-in-context' : 'available'));
 
                 return [
-                    'id' => $receipt->id, 'proposition_id' => $receipt->instrumentExecution->proposition_id,
+                    'id' => $receipt->id, 'proposition_id' => $receipt->instrumentExecution?->proposition_id ?? $receipt->phase->gate_proposition_id,
                     'type' => $receipt->type, 'reference' => $receipt->reference,
                     'capabilities' => [
                         'readable' => $receipt->supports(ReceiptCapability::Readable),
@@ -77,7 +77,7 @@ final readonly class ReceiptContextService
                             $context->propositions->get($receipt->instrumentExecution->proposition_id),
                             $receipt->replayInvocation(), $context,
                         ) === null,
-                    'replayed_from_receipt_id' => $receipt->instrumentExecution->replayed_from_receipt_id,
+                    'replayed_from_receipt_id' => $receipt->instrumentExecution?->replayed_from_receipt_id,
                     'observation_error' => $receipt->metadata['observation_error'] ?? null,
                     'signature' => $verified['signature'] ?? null,
                     'status' => $status, 'loaded_at' => $loaded ? $load->loaded_at->toISOString() : null,

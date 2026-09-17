@@ -19,7 +19,8 @@ final class HorizonReceiptService
     public function availableQuery(string $horizonId): Builder
     {
         return Receipt::where('context_horizon_id', $horizonId)->whereDoesntHave('consumption')
-            ->whereHas('instrumentExecution', fn ($query) => $query->where('status', 'completed'));
+            ->where(fn ($query) => $query->where('type', 'tragedy')
+                ->orWhereHas('instrumentExecution', fn ($query) => $query->where('status', 'completed')));
     }
 
     public function available(Phase $phase, ?ParticipationContext $context = null): Collection
@@ -39,7 +40,7 @@ final class HorizonReceiptService
         Substrate::whereKey($phase->cycle->participant->substrate_id)->lockForUpdate()->firstOrFail();
         $receipt = Receipt::whereKey($receiptId)->lockForUpdate()->first();
         if ($receipt === null || $receipt->context_horizon_id !== $phase->cycle->context_horizon_id
-            || $receipt->instrumentExecution?->status !== 'completed'
+            || ! $receipt->observationComplete()
             || $receipt->consumption()->exists()) {
             throw new DomainException('Reclassification requires an unconsumed Receipt from this Horizon.');
         }

@@ -134,7 +134,7 @@ final class PropositionStateService
             $linked = $context->receiptLinks->whereIn('proposition_id', $ids)->pluck('receipt_id');
             $attestations = $context->effectiveAttestations($ids)->pluck('id');
 
-            return $context->receipts->filter(fn ($receipt) => $receipt->instrumentExecution?->status === 'completed'
+            return $context->receipts->filter(fn ($receipt) => $receipt->observationComplete()
                 && ($linked->contains($receipt->id) || ($receipt->receiptable_type === (new Proposition)->getMorphClass() && $ids->contains($receipt->receiptable_id))
                     || ($receipt->receiptable_type === (new Attestation)->getMorphClass() && $attestations->contains($receipt->receiptable_id))))->values();
         }
@@ -143,7 +143,8 @@ final class PropositionStateService
         $linked = DB::table('proposition_receipt_links')->whereIn('proposition_id', $ids)->pluck('receipt_id');
 
         return Receipt::query()->with('instrumentExecution')
-            ->whereHas('instrumentExecution', fn ($query) => $query->where('status', 'completed'))
+            ->where(fn ($query) => $query->where('type', 'tragedy')
+                ->orWhereHas('instrumentExecution', fn ($query) => $query->where('status', 'completed')))
             ->where(function ($query) use ($ids, $attestations, $linked): void {
                 $query->whereIn('id', $linked)->orWhere(function ($query) use ($ids, $attestations): void {
                     $query->where(fn ($query) => $query

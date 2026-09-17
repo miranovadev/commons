@@ -30,7 +30,11 @@ class Receipt extends Model
     protected static function booted(): void
     {
         static::creating(function (self $receipt): void {
-            $horizonId = $receipt->instrumentExecution?->phase->cycle->context_horizon_id;
+            $receipt->phase_id ??= $receipt->instrumentExecution?->phase_id;
+            $horizonId = $receipt->phase?->cycle->context_horizon_id;
+            if ($horizonId === null || ($receipt->type !== 'tragedy' && $receipt->instrument_execution_id === null)) {
+                throw new DomainException('A Receipt requires a creating action in a Horizon.');
+            }
             if ($receipt->context_horizon_id !== null && $receipt->context_horizon_id !== $horizonId) {
                 throw new DomainException('A Receipt belongs to its creating action’s Horizon.');
             }
@@ -82,6 +86,16 @@ class Receipt extends Model
     public function horizon(): BelongsTo
     {
         return $this->belongsTo(ContextHorizon::class, 'context_horizon_id');
+    }
+
+    public function phase(): BelongsTo
+    {
+        return $this->belongsTo(Phase::class);
+    }
+
+    public function observationComplete(): bool
+    {
+        return $this->type === 'tragedy' || $this->instrumentExecution?->status === 'completed';
     }
 
     public function consumption(): HasOne

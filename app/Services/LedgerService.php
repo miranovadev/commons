@@ -81,10 +81,10 @@ final readonly class LedgerService
                     $ledgerable instanceof Supersession => [$ledgerable->source_proposition_id, $ledgerable->target_proposition_id],
                     $ledgerable instanceof Attestation => [$ledgerable->proposition_id],
                     $ledgerable instanceof ReceiptContextEvent => [$ledgerable->context->proposition_id],
-                    $ledgerable instanceof Receipt => [$ledgerable->instrumentExecution->proposition_id],
+                    $ledgerable instanceof Receipt => [$ledgerable->instrumentExecution?->proposition_id ?? $ledgerable->phase->gate_proposition_id],
                     default => [],
                 };
-                $phase = $ledgerable instanceof Receipt ? $ledgerable->instrumentExecution->phase : $ledgerable->phase;
+                $phase = $ledgerable->phase;
                 app(FieldMutationService::class)->touch($phase, $affected);
                 if ($ledgerable instanceof Supersession) {
                     app(OriginBranchService::class)->include($ledgerable);
@@ -98,7 +98,8 @@ final readonly class LedgerService
                     $realtime->proposition($ledgerable->source_proposition_id);
                     $realtime->proposition($ledgerable->target_proposition_id);
                 } elseif ($ledgerable instanceof Receipt) {
-                    $realtime->proposition($ledgerable->instrumentExecution->proposition_id);
+                    $realtime->horizon($phase->cycle->context_horizon_id, $substrate->id,
+                        ['type' => 'receipt.created', 'receipt_id' => $ledgerable->id]);
                 }
             }
 
@@ -178,14 +179,14 @@ final readonly class LedgerService
 
         if ($ledgerable instanceof ReceiptContextEvent) {
             $substrate = $this->substrateForPhase($ledgerable->phase);
-            $this->assertSameSubstrate($substrate, $this->substrateForPhase($ledgerable->context->receipt->instrumentExecution->phase));
+            $this->assertSameSubstrate($substrate, $this->substrateForPhase($ledgerable->context->receipt->phase));
 
             return [LedgerEntryKind::ReceiptContext, $substrate];
         }
 
         if ($ledgerable instanceof Receipt) {
             $execution = $ledgerable->instrumentExecution;
-            $substrate = $this->substrateForPhase($execution->phase);
+            $substrate = $this->substrateForPhase($ledgerable->phase);
             $receiptable = $ledgerable->receiptable;
             $receiptableSubstrate = match (true) {
                 $receiptable instanceof Proposition => $this->substrateForPhase(
@@ -200,7 +201,7 @@ final readonly class LedgerService
             };
             $this->assertSameSubstrate(
                 $substrate,
-                $this->substrateForPhase($execution->proposition->phase),
+                $this->substrateForPhase($execution?->proposition->phase ?? $ledgerable->phase),
                 $receiptableSubstrate,
             );
 
