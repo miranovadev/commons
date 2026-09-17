@@ -21,6 +21,9 @@ use Illuminate\Support\Facades\DB;
  * One calculation's read model. Never container-bound, static or persisted.
  * Graph/evidence hydration is batched; calculators retain ownership of semantics.
  * A new plan (including the response after a write) always gets a new instance.
+ * This is the operational/evidence working set, not all participant cognition.
+ * ParticipantHistoricalContext separately projects local exhausted alternatives
+ * without hydrating their descendants, evidence, or action eligibility here.
  */
 final class ParticipationContext
 {

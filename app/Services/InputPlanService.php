@@ -27,6 +27,7 @@ final readonly class InputPlanService
         private PropositionPresentationService $presentation,
         private ReceiptContextService $receipts,
         private ReinforcementService $reinforcement,
+        private ParticipantHistoricalContext $historicalContext,
     ) {}
 
     /** @return array<string, mixed> */
@@ -81,7 +82,7 @@ final readonly class InputPlanService
             'provenance_id' => null, 'lineage' => [], 'read_options' => [], 'write_options' => [],
             'gate_options' => [], 'revision_options' => [], 'traversal_options' => [],
             'attestation_options' => [], 'instrument_options' => [], 'receipts' => [],
-            'exhausted_alternatives' => app(ExhaustionService::class)->context($phase->gate),
+            'exhausted_alternatives' => $this->historicalContext->position($phase->gate),
             'commitment' => null, 'commitment_options' => [], 'rest_available' => true, 'position_exhausted' => true,
             'schema' => $this->schemas->forPhase($phase->kind, ['participant.rest']),
         ];
@@ -178,7 +179,7 @@ final readonly class InputPlanService
             'lineage' => $this->propositions($historical, $participant, $context),
             'read_options' => $this->propositions($readOptions, $participant, $context),
             'receipts' => $this->receipts->forPhase($phase, $context)->all(),
-            'exhausted_alternatives' => app(ExhaustionService::class)->context($gate, (int) ($participant->max_read_count ?? 25), $context),
+            'exhausted_alternatives' => $this->historicalContext->forPhase($phase, $context, $readOptions),
             'rest_available' => isset($schema['$defs']['actions']['participant.rest']),
             'traversal_options' => $this->propositions($traversalOptions, $participant, $context),
             'instrument_options' => $this->propositions($instrumentOptions, $participant, $context),

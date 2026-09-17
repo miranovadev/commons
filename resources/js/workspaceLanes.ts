@@ -1,10 +1,10 @@
 import { actionPropositions, writePropositions } from './participationOptions';
 import { phaseRegisterPreview } from './phasePreview';
 import { domainForRegister } from './registers';
-import type { ParticipantPlan, PhaseKind, Proposition, RegisterName } from './types';
+import type { ExhaustedAlternative, ParticipantPlan, PhaseKind, Proposition, RegisterName } from './types';
 
 export type LaneRole = 'read' | 'gate' | 'write';
-export interface WorkspaceLane { key: string; role: LaneRole; register?: RegisterName; cards: Proposition[]; }
+export interface WorkspaceLane { key: string; role: LaneRole; register?: RegisterName; cards: Proposition[]; history?: ExhaustedAlternative[]; }
 
 /** The Cycle-owned Horizon is authoritative, including during overlapping Cycles. */
 export function workspaceDomain(plan: ParticipantPlan) {
@@ -39,11 +39,18 @@ export function workspaceLanes(plan: ParticipantPlan, previewKind?: PhaseKind): 
   const gates = plan.phase.kind === 'order' ? actionPropositions(plan, 'proposition.commit')
     : plan.phase.kind === 'bias' ? actionPropositions(plan, 'proposition.bias')
     : [plan.gate, ...(plan.phase.kind === 'mediate' ? actionPropositions(plan, 'proposition.reconcile') : [])];
-  return [
+  const lanes = [
     ...groupLane('read', reads, inheritedRead ? provenance.register : read),
     ...groupLane('gate', gates, plan.gate.register),
     ...groupLane('write', writePropositions(plan), write),
   ];
+  // Historical context has no path into schema-driven action cards or form choices.
+  for (const item of plan.exhausted_alternatives ?? []) {
+    const lane = lanes.find(lane => lane.role === item.role && lane.register === item.register);
+    if (lane) lane.history = [...(lane.history ?? []), item];
+    else lanes.push({ key: `${item.role}-${item.register}`, role: item.role, register: item.register, cards: [], history: [item] });
+  }
+  return lanes;
 }
 
 function groupLane(role: LaneRole, cards: Proposition[], emptyRegister?: RegisterName): WorkspaceLane[] {

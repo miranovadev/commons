@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Participant;
 use App\Services\ExhaustionService;
+use App\Services\ParticipantHistoricalContext;
 use App\Services\PotentialChargeService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -14,7 +15,7 @@ class InspectRecovery extends Command
 
     protected $description = 'Inspect a hypothetical Rest recovery without changing the Participant or substrate.';
 
-    public function handle(PotentialChargeService $potential): int
+    public function handle(PotentialChargeService $potential, ParticipantHistoricalContext $history): int
     {
         $participant = Participant::find($this->argument('participant'));
         if ($participant?->current_proposition_id === null) {
@@ -40,7 +41,8 @@ class InspectRecovery extends Command
             'current_horizon_id' => $phase?->cycle->context_horizon_id,
             'current_horizon_exhausted' => $phase?->cycle->contextHorizon->exhausted_at !== null,
             'parent_horizon_id' => $phase?->cycle->contextHorizon->parent_context_horizon_id,
-            'exhausted_alternatives' => app(ExhaustionService::class)->context($participant->position),
+            'exhausted_alternatives' => $phase === null || app(ExhaustionService::class)->unavailable($participant->position)
+                ? $history->position($participant->position) : $history->forPhase($phase),
             'origin_lineages' => DB::table('origin_branch_memberships')->where('proposition_id', $participant->current_proposition_id)->pluck('root_proposition_id')->all(),
             'would_tragedy' => collect($exhaustion['branches'] ?? [])->contains('exhausted', true),
             ...$inspection,

@@ -48,16 +48,6 @@ export function ParticipantWorkspace({ plan, availableActions, onAction, onSubmi
       <Box component="fieldset" disabled={busy} className="operational-board" aria-busy={busy}>
         {!preview && <HorizonContext horizon={plan.workspace?.horizon} domain={domainName} provenance={provenance} onInspect={setInspection} />}
         <LineagePanel lineage={lineage} committalObservables={provenance.observables} onInspect={setInspection} />
-        {!preview && Boolean(plan.exhausted_alternatives?.length) && <Box component="details" m="xs" aria-label="Exhausted alternatives">
-          <Text component="summary" size="sm" fw={600}>Exhausted alternatives ({plan.exhausted_alternatives!.length})</Text>
-          <Text size="xs" c="dimmed" mt="xs">These routes were explored and are no longer actionable.</Text>
-          <Stack gap="xs" mt="xs">
-            {plan.exhausted_alternatives!.map(item => <Box key={item.id}>
-              <Text size="xs" fw={600}>{item.basin_exhausted ? 'Basin exhausted · Commit retained' : 'Excursion exhausted'}</Text>
-              <Text size="sm">{item.statement}</Text>
-            </Box>)}
-          </Stack>
-        </Box>}
         {!preview && <ReceiptContextPanel plan={plan} canRead={allowed('receipt.read')} onRead={(receipt_id) => onAction('receipt.read', { receipt_id })} canReplay={allowed('receipt.replay')} onReplay={(receipt_id) => onAction('receipt.replay', { receipt_id })} />}
         <Box className="operational-regions">
           {lanes.map((lane, index) => {
@@ -122,7 +112,13 @@ export function ParticipantWorkspace({ plan, availableActions, onAction, onSubmi
                         canCommit={allowed('proposition.commit') && Boolean(targets.get('proposition.commit')?.has(proposition.id))}
                         canTraverse={allowed('proposition.traverse') && Boolean(targets.get('proposition.traverse')?.has(proposition.id))}
                         committalObservables={provenance.observables} onInspect={setInspection} onAction={onAction} />)}
-                    </PropositionNavigator> : <EmptyState text="No existing Proposition is available in Write." />}
+                    </PropositionNavigator> : !lane.history?.length && <EmptyState text="No existing Proposition is available in Write." />}
+                  </Stack>}
+                  {Boolean(lane.history?.length) && <Stack gap="xs" p="xs" aria-label={`Exhausted ${role.label} alternatives`}>
+                    {lane.history!.map(item => <Box key={item.id} data-exhausted-id={item.id}>
+                      <Text size="xs" c="dimmed" fw={600}>{item.basin_exhausted ? 'Basin exhausted · Commit retained' : 'Exhausted · Context only'}</Text>
+                      <Text size="sm" c="dimmed">{item.statement}</Text>
+                    </Box>)}
                   </Stack>}
                   </>}
                 </Box>
