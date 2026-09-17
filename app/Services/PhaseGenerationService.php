@@ -10,7 +10,7 @@ use App\Services\Participation\ParticipationContext;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
-/** Generative opportunities survive Cycle completion and revision of their results. */
+/** Structural opportunity is shared; Participant count is never basin capacity. */
 final readonly class PhaseGenerationService
 {
     public function __construct(
@@ -51,10 +51,6 @@ final readonly class PhaseGenerationService
                 || ($action !== 'proposition.variant' && $gate->tier !== 'expressive'))) {
             return false;
         }
-        if ($phase->kind === PhaseKind::Persist && $action === 'proposition.variant'
-            && $this->ownership->ownedBy($gate, $phase->cycle->participant)) {
-            return false;
-        }
         if ($action === 'proposition.reclassify' || ($action === 'proposition.bias' && $position !== null)) {
             $existing = $context !== null
                 ? $context->classifications->where('source_proposition_id', $gate->id)->where('register', $phase->write_register)->isNotEmpty()
@@ -76,19 +72,28 @@ final readonly class PhaseGenerationService
         $results = Supersession::query()->select('target_proposition_id')
             ->whereIn('source_proposition_id', $sources)
             ->whereIn('type', ['variant', 'reclassify', 'commit']);
-        $check = fn () => ! Proposition::query()->active()
-            // Persist Variant belongs to the Participant/Gate, even if a later
-            // Context Horizon presents that Gate with different register labels.
-            ->when($phase->kind !== PhaseKind::Persist || $action !== 'proposition.variant',
-                fn ($query) => $query->where('register', $phase->write_register))
+        $viable = Proposition::query()->active()
+            ->where('register', $phase->write_register)
             ->where('tier', $phase->kind === PhaseKind::Order ? 'committal' : 'expressive')
             ->whereHas('phase', fn ($query) => $query->where('kind', $phase->kind->value)
-                ->whereHas('cycle', fn ($query) => $query->where('participant_id', $phase->cycle->participant_id)))
-            ->whereIn('id', $results)
-            ->exists();
+                ->whereHas('cycle', fn ($query) => $query->where('context_horizon_id', $phase->cycle->context_horizon_id)))
+            ->whereIn('id', $results);
+        $check = function () use ($viable, $phase, $action): bool {
+            $existing = $viable->pluck('id');
+            if ($existing->isEmpty()) {
+                return true;
+            }
+            // A persisted Mediate Rest with one candidate proves a structural
+            // deficit, not failure of that candidate. Permit the missing binary
+            // counterpart once, retaining the first for later reconciliation.
+            return $action === 'proposition.variant' && $phase->kind === PhaseKind::Disperse
+                && $existing->count() === 1
+                && Phase::where('kind', PhaseKind::Mediate->value)->whereIn('gate_proposition_id', $existing)
+                    ->whereNotNull('completed_at')->whereHas('cycle', fn ($query) => $query
+                        ->where('context_horizon_id', $phase->cycle->context_horizon_id)->whereNotNull('rested_at'))->exists();
+        };
 
-        // Bias evaluates multiple Gates in one region. Its personal history is
-        // identical for that source set, but is never cached between calculations.
+        // Reuse this calculation's structural query, never a cross-action cache.
         return $context === null ? $check() : $context->remember(
             'generation-history:'.$phase->id.':'.$action.':'.$phase->write_register.':'.implode(',', $sources->sort()->all()),
             $check,

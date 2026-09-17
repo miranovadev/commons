@@ -42,14 +42,16 @@ final class PropositionOptionService
             return $this->generation->committedWrites($phase, $context);
         }
 
-        if (! in_array($phase->kind, [PhaseKind::Distinguish, PhaseKind::Persist, PhaseKind::Constrain, PhaseKind::Bias], true)) {
+        if (! in_array($phase->kind, [PhaseKind::Distinguish, PhaseKind::Persist, PhaseKind::Constrain, PhaseKind::Disperse, PhaseKind::Bias], true)) {
             return collect();
         }
 
-        $options = $this->attestationOptionsFor($phase, $context);
+        // Receipt consumption never erases the path established by an earlier vote.
+        $options = $this->writeOptionsFor($phase, $context);
         if ($context !== null) {
             $attested = $context->effectiveAttestations($options->pluck('id'))
-                ->filter(fn ($attestation) => $attestation->phase->cycle->participant_id === $phase->cycle->participant_id)
+                ->filter(fn ($attestation) => $attestation->phase->cycle->participant_id === $phase->cycle->participant_id
+                    && $attestation->phase->cycle_id !== $phase->cycle_id)
                 ->pluck('proposition_id')->flip();
 
             return $options->filter(fn ($node) => $attested->has($node->id))->sortBy('id')->values();
@@ -57,7 +59,7 @@ final class PropositionOptionService
 
         return Proposition::query()->active()->whereKey($options->pluck('id'))
             ->whereHas('effectiveAttestations.phase.cycle', fn ($query) => $query
-                ->whereBelongsTo($phase->cycle->participant))
+                ->whereBelongsTo($phase->cycle->participant)->whereKeyNot($phase->cycle_id))
             ->orderBy('id')->get();
     }
 
@@ -81,7 +83,16 @@ final class PropositionOptionService
             return collect();
         }
 
-        return $this->writeOptionsFor($phase, $context);
+        $writes = $this->writeOptionsFor($phase, $context);
+        if (in_array($phase->kind, [PhaseKind::Distinguish, PhaseKind::Disperse], true)) {
+            if (app(HorizonReceiptService::class)->available($phase, $context)->isNotEmpty()) {
+                return collect();
+            }
+
+            return $writes->whereNotIn('id', $this->traversalOptionsFor($phase, $context)->pluck('id'))->values();
+        }
+
+        return $writes;
     }
 
     /**
@@ -120,7 +131,12 @@ final class PropositionOptionService
             return collect();
         }
 
-        return $this->writeOptionsFor($phase, $context)->filter(fn (Proposition $node): bool => $this->availability->mutable($node, $context) && $this->evidence->canAttest($node, $context))->values();
+        $shared = app(HorizonReceiptService::class)->available($phase, $context)->isNotEmpty();
+        $expressive = in_array($phase->kind, [PhaseKind::Distinguish, PhaseKind::Disperse], true);
+
+        return $this->writeOptionsFor($phase, $context)->filter(fn (Proposition $node): bool =>
+            $this->availability->mutable($node, $context)
+            && ($shared || (! $expressive && $this->evidence->canAttest($node, $context))))->values();
     }
 
     /**
