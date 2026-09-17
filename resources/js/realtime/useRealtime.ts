@@ -7,7 +7,7 @@ import { notificationQueue } from './notifications';
 import type { Invalidation } from './notifications';
 import { subscribeInvalidations } from './subscriptions';
 
-export function useParticipantRealtime(slug: string, participantId: string, enabled: boolean) {
+export function useParticipantRealtime(slug: string, participantId: string, enabled: boolean, horizonId?: string | null) {
   const dispatch = useDispatch<AppDispatch>();
   useEffect(() => {
     if (!enabled || !participantId) return;
@@ -22,6 +22,20 @@ export function useParticipantRealtime(slug: string, participantId: string, enab
     });
     return () => { queue.dispose(); release(); };
   }, [dispatch, slug, participantId, enabled]);
+
+  // Another Participant may exhaust a local alternative while this viewer stays
+  // still. Reuse channel ownership/transport; refresh the workspace by ID only.
+  useEffect(() => {
+    if (!enabled || !participantId || !horizonId) return;
+    const queue = notificationQueue(async () => { refreshParticipant(dispatch, participantId); });
+    const release = subscribeInvalidations(`context-horizon.${horizonId}`, false, {
+      invalidated: event => {
+        if ('proposition_id' in event && event.context_horizon_id === horizonId) queue.add(participantId);
+      },
+      subscribed: () => queue.add(participantId),
+    });
+    return () => { queue.dispose(); release(); };
+  }, [dispatch, slug, participantId, enabled, horizonId]);
 }
 
 export function useContextHorizonRealtime(slug: string, enabled: boolean) {

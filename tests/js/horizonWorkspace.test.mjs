@@ -10,6 +10,7 @@ const bundle = await build({ stdin: { contents: `
   import { MantineProvider } from '@mantine/core';
   import { ParticipantWorkspace } from './resources/js/components/ParticipantWorkspace';
   export { workspaceLanes, workspaceDomain } from './resources/js/workspaceLanes';
+  export { actionPropositions, quickContribution } from './resources/js/participationOptions';
   export { chronologicalLineage } from './resources/js/lineage';
   export { configureStore } from '@reduxjs/toolkit';
   export { commonsApi } from './resources/js/services/commonsApi';
@@ -57,6 +58,39 @@ function assertRegisterGroups(document) {
     if (register) assert.equal(group.querySelector('.register-row__title').textContent.toLowerCase(), register);
     for (const card of group.querySelectorAll('.proposition-card')) assert.equal(card.dataset.register, register);
   }
+}
+for (const domain of Object.keys(domains)) {
+  test(`${domain} exhausted alternatives stay visible in Write with no operational controls`, () => {
+    const plan = fixture(domain, 1);
+    plan.exhausted_alternatives = ['A', 'B'].map(id => ({
+      id, role: 'write', phase_number: 1, register: plan.phase.write_register, tier: 'expressive',
+      statement: `${id} was explored`, statement_truncated: false,
+      exhausted: true, basin_exhausted: false, exhausted_at: '2026-09-17', actionable: false,
+    }));
+    const document = documentFor(plan);
+    const write = document.querySelector('[data-role="write"]');
+    assert.equal(write.querySelectorAll('[data-exhausted-id]').length, 2);
+    assert.equal(write.querySelector('.proposition-card').dataset.propositionId, `write-${domain}`);
+    for (const scar of write.querySelectorAll('[data-exhausted-id]')) {
+      assert.match(scar.textContent, /Exhausted · Context only/);
+      assert.equal(scar.querySelector('button, input, [role="button"]'), null);
+    }
+    assert.deepEqual(ui.actionPropositions(plan, 'attestation.create').map(node => node.id), [`write-${domain}`]);
+    assert.equal(ui.quickContribution(plan, 'proposition.traverse', { proposition_id: 'A' }), null);
+    assert.equal(ui.quickContribution(plan, 'attestation.create', { proposition_id: 'A', direction: 'support' }), null);
+    const next = fixture(domain, 2);
+    next.exhausted_alternatives = [{ ...plan.exhausted_alternatives[0], id: 'phase-two', phase_number: 2,
+      register: next.phase.write_register, statement: 'Phase two history' }];
+    assert.equal(documentFor(next).querySelector('[data-exhausted-id="A"]'), null);
+    assert.ok(documentFor(next).querySelector('[data-role="write"] [data-exhausted-id="phase-two"]'));
+    assert.equal(documentFor(next, 'distinguish').querySelector('[data-exhausted-id]'), null);
+    plan.write_options = [];
+    plan.schema.$defs.actions = { 'proposition.variant': { properties: {} } };
+    const allSpent = documentFor(plan);
+    assert.equal(allSpent.querySelectorAll('[data-role="write"] [data-exhausted-id]').length, 2);
+    assert.match(allSpent.querySelector('[data-role="gate"]').textContent, /Variant/);
+    assert.doesNotMatch(allSpent.querySelector('[data-role="write"]').textContent, /No existing Proposition/);
+  });
 }
 for (const domain of Object.keys(domains)) {
   test(`Phase 7 ${domain} keeps the actual third-register Gate and Write headings`, () => {

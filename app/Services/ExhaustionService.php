@@ -7,7 +7,6 @@ use App\Models\ContextHorizon;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Substrate;
-use App\Services\Participation\ParticipationContext;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
@@ -168,23 +167,5 @@ final class ExhaustionService
             app(RealtimePublisher::class)->horizons($substrate->id);
             app(RealtimePublisher::class)->graphMetrics($substrate->id);
         });
-    }
-
-    /** Compact local alternatives, never a recursively serialized historical tree. */
-    public function context(Proposition $gate, int $limit = 25, ?ParticipationContext $context = null): array
-    {
-        $seed = app(CommitRegionService::class)->seedFor($gate, $context);
-        if ($seed === null) {
-            return [];
-        }
-
-        return DB::table('supersessions as edge')->join('exhaustion_states as state', 'state.proposition_id', '=', 'edge.target_proposition_id')
-            ->join('propositions as node', 'node.id', '=', 'state.proposition_id')
-            ->whereIn('edge.source_proposition_id', array_unique([$seed->id, $gate->id]))
-            ->select(['node.id', 'node.statement', 'node.tier', 'node.register', 'state.kind', 'state.exhausted_at'])
-            ->distinct()->orderBy('node.id')->limit(min(25, max(1, $limit)))->get()
-            ->map(fn ($row) => ['id' => $row->id, 'statement' => str($row->statement)->limit(240)->toString(),
-                'tier' => $row->tier, 'register' => $row->register, 'exhausted' => $row->kind === 'excursion',
-                'basin_exhausted' => $row->kind === 'basin', 'exhausted_at' => $row->exhausted_at, 'actionable' => false])->all();
     }
 }

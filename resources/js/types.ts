@@ -231,9 +231,12 @@ export interface ReceiptContext {
 
 export interface ExhaustedAlternative {
   id: Identifier;
+  role: 'read' | 'gate' | 'write';
+  phase_number: number;
   statement: string;
+  statement_truncated: boolean;
   tier: string;
-  register: string;
+  register: RegisterName;
   exhausted: boolean;
   basin_exhausted: boolean;
   exhausted_at: string;

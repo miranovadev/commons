@@ -21,7 +21,7 @@ test('the participant page offers Rest only when the authoritative schema expose
             gate: { id: 'gate', register: 'canon', tier: 'expressive', statement: 'Gate' },
             phase: { id: 'phase', kind: 'order', number: 7, write_register: 'canon' },
             rest_available, traversal_options: [],
-            exhausted_alternatives: [{ id: 'spent', statement: 'A route we learned from', tier: 'expressive', register: 'activity',
+            exhausted_alternatives: [{ id: 'spent', statement: 'A route we learned from', tier: 'expressive', register: 'canon', role: 'gate', phase_number: 6, statement_truncated: false,
               exhausted: true, basin_exhausted: false, exhausted_at: '2026-09-16', actionable: false }],
             schema: {
               oneOf: [{ $ref: '#/$defs/actions/' + action }],
@@ -67,7 +67,7 @@ export const useGetParticipantWorkspaceQuery = () => ({ data: participation });
   const exhausted = module.exports.render('participant.rest', true);
   assert.match(exhausted, /Local actions exhausted/);
   assert.doesNotMatch(exhausted, /Tragic Region/);
-  assert.match(exhausted, /aria-label="Exhausted alternatives"/);
+  assert.match(exhausted, /aria-label="Exhausted Gate alternatives"/);
   assert.match(exhausted, /A route we learned from/);
   assert.doesNotMatch(exhausted, /data-proposition-id="spent"/);
   assert.match(exhausted, /aria-label="Open Local actions exhausted · Rest"/);

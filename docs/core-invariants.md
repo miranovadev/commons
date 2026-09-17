@@ -241,6 +241,15 @@ Tragedy. Other Participants remain in place until their normal lifecycle recover
 **Observer invariant:** Hiding exhausted structure is presentation only. Historical
 visibility cannot alter Potential, eligibility, recovery, or ledger history.
 
+**Context invariant:** Exhaustion removes operational eligibility, not local
+contextual visibility. Participants may observe exhausted alternatives at their
+current structural phase position as historical evidence of explored paths, but
+no action may target them. Phase progression naturally removes exhausted context
+that no longer occupies the current structural position.
+
+Active-only filtering is an actionability/observer concern and must not be applied
+wholesale to participant cognition. Visible does not mean actionable.
+
 **Phase-position invariant:** Labels classify. Position governs.
 
 See [the state, concurrency, and legacy contract](branch-tragedy.md).
