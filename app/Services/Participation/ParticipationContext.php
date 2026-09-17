@@ -118,7 +118,8 @@ final class ParticipationContext
         $this->receiptLinks = DB::table('proposition_receipt_links')->whereIn('proposition_id', $ids)->get();
         $this->receipts = Receipt::query()->where(fn ($q) => $q
             ->where(fn ($q) => $q->where('receiptable_type', (new Proposition)->getMorphClass())->whereIn('receiptable_id', $ids))
-            ->orWhere(fn ($q) => $q->where('receiptable_type', (new Attestation)->getMorphClass())->whereIn('receiptable_id', $this->attestations->keys())))
+            ->orWhere(fn ($q) => $q->where('receiptable_type', (new Attestation)->getMorphClass())->whereIn('receiptable_id', $this->attestations->keys()))
+            ->orWhereIn('id', $this->receiptLinks->pluck('receipt_id')))
             ->with(['ledgerEntry', 'instrumentExecution'])->get();
         $this->receiptContexts = ParticipantReceiptContext::whereIn('proposition_id', $ids)->get();
         $this->reinforcements = $this->receiptContexts->whereNull('cleared_at');

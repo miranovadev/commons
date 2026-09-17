@@ -32,6 +32,10 @@ final readonly class PhaseGenerationService
             return $phase->kind === PhaseKind::Order && ($position === null
                 || ($this->positions->matches($position, $phase, PhaseKind::Bias) && $this->availability->mutable($position, $context)));
         }
+        if ($action === 'proposition.reclassify' && $phase->kind === PhaseKind::Bias && $position === null) {
+            return app(BiasGateService::class)->forPhase($phase, $context)
+                ->contains(fn (Proposition $candidate) => $this->available($phase, $action, $context, $candidate));
+        }
         if (! in_array($action, ['proposition.variant', 'proposition.reclassify', 'proposition.bias', 'proposition.commit'], true)) {
             // Mediate owns a directed relationship, rather than a personal quota.
             return true;
@@ -55,10 +59,12 @@ final readonly class PhaseGenerationService
             $existing = $context !== null
                 ? $context->classifications->where('source_proposition_id', $gate->id)->where('register', $phase->write_register)->isNotEmpty()
                 : DB::table('reclassification_results')->where('source_proposition_id', $gate->id)->where('register', $phase->write_register)->exists();
-            if ($existing || $this->state->receipts($gate, $context)->isEmpty()
+            if ($existing || app(HorizonReceiptService::class)->available($phase, $context)->isEmpty()
                 || $this->state->attestations(collect([$gate]), $context)->isEmpty()) {
                 return false;
             }
+
+            return true; // Shared structural classification has no personal quota.
         }
 
         $sources = in_array($phase->kind, [PhaseKind::Bias, PhaseKind::Order], true)

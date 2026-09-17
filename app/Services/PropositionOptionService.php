@@ -179,7 +179,7 @@ final class PropositionOptionService
         }
 
         return $phase->kind === PhaseKind::Bias
-            ? $this->bias->forPhase($phase, $context)->filter(fn (Proposition $node): bool => $this->generation->available($phase, 'proposition.bias', $context, $node))->values()
+            ? $this->bias->forPhase($phase, $context)->filter(fn (Proposition $node): bool => $this->generation->available($phase, 'proposition.reclassify', $context, $node))->values()
             : $this->reconciliation->forPhase($phase, $context);
     }
 

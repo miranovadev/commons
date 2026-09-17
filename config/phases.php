@@ -92,14 +92,14 @@ return [
         'gate' => 'previous-phase-position',
         'actions' => [
             'receipt.read',
-            'proposition.bias',
+            'proposition.reclassify',
             'instrument.execute',
             'receipt.replay',
             'attestation.create',
             'proposition.traverse',
         ],
         'constraints' => [
-            'proposition.bias' => [
+            'proposition.reclassify' => [
                 'lineage-direction-agreement',
                 'unary-selection-fresh-history',
                 'completed-receipt-and-effective-attestation',
