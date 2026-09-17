@@ -6,6 +6,8 @@ use App\Enums\PhaseKind;
 use App\Models\Receipt;
 use App\Services\HorizonReceiptService;
 use App\Services\InstrumentExecutionService;
+use App\Services\Participation\ParticipationContext;
+use App\Services\ReceiptContextService;
 use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -43,6 +45,29 @@ class HorizonReceiptLifecycleTest extends TestCase
         $this->assertSame(1, Receipt::where('instrument_execution_id', $execution->id)->count());
         $this->expectException(DomainException::class);
         app(InstrumentExecutionService::class)->complete($execution, $source);
+    }
+
+    public function test_receipt_evidence_is_free_and_shared_even_when_its_producer_is_outside_the_working_set(): void
+    {
+        $producerPhase = $this->phase($this->origin, PhaseKind::Distinguish);
+        // A failed producer leaves the operational working set. Its persistent
+        // unconsumed Receipt remains shared evidence in the Horizon.
+        $producer = $this->node($producerPhase, null);
+        $service = app(InstrumentExecutionService::class);
+        $receipt = $service->complete($service->start($producerPhase, $producer, 'citation', $this->origin->id), $producer);
+        DB::table('continuation_failures')->insert(['proposition_id' => $producer->id,
+            'context_horizon_id' => $producerPhase->cycle->context_horizon_id,
+            'phase_id' => $producerPhase->id, 'failed_at' => now()]);
+        $viewer = $this->phase($this->origin, PhaseKind::Distinguish);
+        $context = new ParticipationContext($viewer);
+        $this->assertFalse($context->propositions->has($producer->id));
+        $before = DB::table('substrate_ledger_entries')->count();
+        $item = app(ReceiptContextService::class)->forPhase($viewer, $context)->firstWhere('id', $receipt->id);
+        $this->assertSame('available', $item['availability']);
+        $this->assertSame($this->origin->statement, $item['evidence']['statement']);
+        $this->assertSame($before, DB::table('substrate_ledger_entries')->count());
+        $this->assertDatabaseCount('participant_receipt_contexts', 0);
+        $this->assertNull($receipt->fresh()->consumption);
     }
 
     public function test_one_use_attachment_preserves_receipt_and_is_visible_to_every_participant(): void

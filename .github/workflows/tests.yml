@@ -20,6 +20,10 @@ jobs:
           - name: PHP 8.5 / PostgreSQL 18 / Node 24
             profile: false
             recovery: false
+          - name: PostgreSQL Horizon proof
+            profile: false
+            recovery: false
+            proof: true
           - name: PostgreSQL participation profile
             profile: true
             recovery: false
@@ -88,22 +92,22 @@ jobs:
         run: composer install --prefer-dist --no-interaction --no-progress
 
       - name: Set up Node
-        if: ${{ !matrix.profile && !matrix.recovery }}
+        if: ${{ !matrix.profile && !matrix.recovery && !matrix.proof }}
         uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
 
       - name: Install frontend dependencies
-        if: ${{ !matrix.profile && !matrix.recovery }}
+        if: ${{ !matrix.profile && !matrix.recovery && !matrix.proof }}
         run: npm ci
 
       - name: Build frontend
-        if: ${{ !matrix.profile && !matrix.recovery }}
+        if: ${{ !matrix.profile && !matrix.recovery && !matrix.proof }}
         run: npm run build
 
       - name: Test frontend action contracts
-        if: ${{ !matrix.profile && !matrix.recovery }}
+        if: ${{ !matrix.profile && !matrix.recovery && !matrix.proof }}
         run: npm run test:ui
 
       - name: Prepare test environment
@@ -117,7 +121,7 @@ jobs:
         run: php artisan test --filter 'CommitParticipationStateTest|LineageAttenuationTest|OptimisticParticipationTest|ParticipantActionContractTest|PersistInstrumentTest|PotentialProjectionTest|PotentialRegionCalculatorTest|PropositionReadTest|ExhaustionTest|ExhaustionRealtimeTest|TransactionLockOrderTest|ParticipantContextTest|CausalRecoveryTest|RecoveryBasinResolverTest|LocalParticipantNavigationTest|ParticipantContinuityTest|HorizonWorkspaceTest|ParticipantWakeTest'
 
       - name: Run test suite
-        if: ${{ !matrix.profile && !matrix.recovery && !cancelled() }}
+        if: ${{ !matrix.profile && !matrix.recovery && !matrix.proof && !cancelled() }}
         env:
           PGOPTIONS: '-c statement_timeout=30s'
           COMMONS_PROFILE_SQL: '1'
@@ -129,3 +133,9 @@ jobs:
           PGOPTIONS: '-c statement_timeout=30s'
           COMMONS_PROFILE_SQL: '1'
         run: php artisan test --filter 'ParticipationPerformanceTest|ReceiptContextMigrationTest' --display-warnings
+
+      - name: Check Horizon receipt, Variant and final-attempt invariants
+        if: ${{ matrix.proof }}
+        env:
+          PGOPTIONS: '-c statement_timeout=30s'
+        run: php artisan test --filter 'HorizonReceiptLifecycleTest|ReceiptGatedReclassificationTest|ExpressiveEvidenceGatingTest|AuthoritativeRestReasonTest|HorizonTragedyTest|FinalAttemptExhaustionTest|HorizonProofConcurrencyTest'
