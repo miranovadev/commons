@@ -44,9 +44,12 @@ class HorizonProofCompatibilityTest extends TestCase
         $before = $receipt->only(['metadata', 'reference', 'signature', 'instrument_execution_id']);
         DB::table('receipt_consumptions')->update(['legacy' => true]);
         $migration = require database_path('migrations/2026_09_18_000100_scope_receipts_to_horizons.php');
+        $index = require database_path('migrations/2026_09_18_000500_index_horizon_receipt_lookup.php');
+        $index->down();
         $migration->down();
         $this->assertDatabaseHas('proposition_receipt_links', ['receipt_id' => $receipt->id, 'proposition_id' => $result->id]);
         $migration->up();
+        $index->up();
         $this->assertSame($before, $receipt->fresh()->only(array_keys($before)));
         $this->assertSame($phase->cycle->context_horizon_id, $receipt->fresh()->context_horizon_id);
         $this->assertDatabaseHas('receipt_consumptions', ['receipt_id' => $receipt->id, 'legacy' => true, 'proposition_id' => $result->id]);

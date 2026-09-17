@@ -81,7 +81,7 @@ final readonly class InputPlanService
                 'parent_ids' => []],
             'provenance_id' => null, 'lineage' => [], 'read_options' => [], 'write_options' => [],
             'gate_options' => [], 'revision_options' => [], 'traversal_options' => [],
-            'attestation_options' => [], 'instrument_options' => [], 'receipts' => [],
+            'attestation_options' => [], 'instrument_options' => [], 'receipts' => $this->receipts->forPhase($phase)->all(),
             'exhausted_alternatives' => $this->historicalContext->position($phase->gate),
             'commitment' => null, 'commitment_options' => [], 'rest_available' => true, 'position_exhausted' => true,
             'rest_reason' => RestReason::NoAvailableMove->value,

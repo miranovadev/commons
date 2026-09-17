@@ -6,6 +6,7 @@ use App\Enums\PhaseKind;
 use App\Models\Receipt;
 use App\Models\Tragedy;
 use App\Services\ExhaustionService;
+use App\Services\InputPlanService;
 use App\Services\ParticipantHistoricalContext;
 use App\Services\ReceiptContextService;
 use App\Services\TragedyEvidenceService;
@@ -50,6 +51,10 @@ class FinalAttemptExhaustionTest extends TestCase
         $this->assertDatabaseHas('propositions', ['id' => $opening->id]);
         $this->assertDatabaseHas('receipts', ['id' => $tragedy->receipt_id]);
         $this->assertDatabaseCount('horizon_exhaustions', 1);
+        $historyPlan = app(InputPlanService::class)->forPhase($terminal->cycle->participant, $terminal);
+        $historicalReceipt = collect($historyPlan['receipts'])->firstWhere('id', $tragedy->receipt_id);
+        $this->assertSame('consumed', $historicalReceipt['availability']);
+        $this->assertSame(['participant.rest'], array_keys($historyPlan['schema']['$defs']['actions']));
         $parentSource = $opening->parents()->wherePivot('type', 'commit')->sole();
         $observer = $this->phase($parentSource, PhaseKind::Order);
         $history = app(ParticipantHistoricalContext::class)->forPhase($observer);

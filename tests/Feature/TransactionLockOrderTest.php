@@ -690,6 +690,6 @@ class TransactionLockOrderTest extends TestCase
     {
         $cycle = Cycle::where('participant_id', $participant->id)->whereNull('completed_at')->sole();
 
-        return Phase::where('cycle_id', $cycle->id)->whereNull('completed_at')->where('kind', PhaseKind::Distinguish)->sole();
+        return Phase::where('cycle_id', $cycle->id)->whereNull('completed_at')->sole();
     }
 }

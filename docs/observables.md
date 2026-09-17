@@ -189,8 +189,8 @@ at Commitment.
 relationship, including the in-memory source declared by Commit preview.
 Generic `parents` describe topology. Variant, Revise and Reconcile start with
 fresh contribution history. Reclassify resets Attestations and Phase touches,
-but explicitly links completed proposition-level Receipts because content is
-unchanged. A later Commit resolves those links without recovering reset votes
+and explicitly attaches the selected available Horizon Receipt, consuming it once.
+The exact source content is unchanged. A later Commit resolves those links without recovering reset votes
 or attestation-level evidence.
 
 Fresh history does not remove structural ancestry or its attenuated influence.

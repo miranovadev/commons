@@ -51,7 +51,9 @@ Execution and Replay never load a Receipt or create active Reinforcement.
 Explicit Read is required. Even if multiple equivalent or changed observations
 are loaded, each Participant still contributes at most one counted Reinforcement
 per active classification under the evidence inheritance rules. Reclassification
-preserves qualifying proposition evidence; committed results remain frozen.
+attaches its selected Horizon Receipt; committed results remain frozen.
+Receipt inspection is free and shared. Read establishes optional personal loading
+for Reinforcement, independently of one-use consumption by Reclassify.
 
 ## Web Search: the first discovery Instrument
 

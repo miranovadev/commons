@@ -31,7 +31,7 @@ Origin persists uniquely even if the Origin Horizon reaches Exhaustion. Its exha
 
 ## Receipt evidence
 
-Receipt JSON metadata contains reference IDs only: Tragedy, opening and terminal Proposition IDs, and exhausted Committal IDs from the same Horizon. It contains no statements or serialized descendants. The read service resolves statements, producing phase/register, owner and exhausted Horizon IDs, exhaustion state and terminal provenance. Context uses bounded statement excerpts with explicit truncation flags and stable Proposition IDs for full inspection. The flat local ID set is retained without an age cutoff and ordered newest creation first.
+Receipt JSON metadata contains reference IDs only: Tragedy, opening and terminal Proposition IDs, and exhausted Committal IDs from the same Horizon. It contains no statements or serialized descendants. The read service resolves statements, producing phase/register, owner and exhausted Horizon IDs, exhaustion state and terminal provenance. Receipt inspection resolves the full local statements by ID; ordinary participation history may use bounded excerpts. The flat local ID set is retained without an age cutoff and ordered newest creation first.
 
 Receipts are visible throughout their Horizon regardless of who generated them or whether another Participant is present. Consumption changes availability, not existence. Explicit loading for Reinforcement is distinct from free visibility and from consumption.
 

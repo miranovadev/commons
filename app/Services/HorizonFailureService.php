@@ -61,7 +61,8 @@ final class HorizonFailureService
                 || $proof['phase_id'] !== $phase->id || $proof['position_id'] !== $phase->gate_proposition_id
                 || $proof['participant_id'] !== $phase->cycle->participant_id
                 || $proof['substrate_id'] !== $substrate->id || $proof['context_horizon_id'] !== $phase->cycle->context_horizon_id
-                || $phase->fresh()->completed_at === null || $phase->cycle->fresh()->rest_reason?->value !== 'no_remaining_potential') {
+                || $phase->fresh()->completed_at === null || $phase->cycle->fresh()->rested_at === null
+                || $phase->cycle->fresh()->rest_reason?->value !== 'no_remaining_potential') {
                 return;
             }
             if (! DB::table('horizon_failure_witnesses')->insertOrIgnore([

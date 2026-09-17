@@ -32,8 +32,7 @@ final class TragedyEvidenceService
                 'node.phase_id', 'cycle.context_horizon_id as owner_horizon_id',
                 'exhaustion.context_horizon_id as exhausted_horizon_id', 'exhaustion.tragedy_id',
                 'exhaustion.terminal_proposition_id', 'exhaustion.exhausted_at'])
-            ->map(fn ($row) => [...(array) $row, 'statement' => str($row->statement)->limit(480)->toString(),
-                'statement_truncated' => mb_strwidth($row->statement, 'UTF-8') > 480,
+            ->map(fn ($row) => [...(array) $row, 'statement_truncated' => false,
                 'exhausted' => true, 'actionable' => false])->all();
 
         return ['tragedy_id' => $receipt->reference,

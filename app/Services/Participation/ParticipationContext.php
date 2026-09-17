@@ -14,6 +14,7 @@ use App\Models\ReceiptContextEvent;
 use App\Models\Substrate;
 use App\Models\SubstrateLedgerEntry;
 use App\Models\Supersession;
+use App\Services\ExhaustionService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -148,8 +149,8 @@ final class ParticipationContext
             ->join('phases', 'phases.id', '=', 'propositions.phase_id')
             ->join('cycles', 'cycles.id', '=', 'phases.cycle_id')
             ->join('participants', 'participants.id', '=', 'cycles.participant_id')
-            ->where('participants.substrate_id', $this->substrate->id)
-            ->whereIn('propositions.id', Proposition::active()->select('id'));
+            ->where('participants.substrate_id', $this->substrate->id);
+        app(ExhaustionService::class)->scopeActionable($owned, 'cycles.context_horizon_id');
         $gate = (clone $owned)->where('propositions.id', $this->phase->gate_proposition_id)->select('propositions.id');
         if ($additionalPropositionIds !== null) {
             // Branch exhaustion observes multiple causal Domains with one batched

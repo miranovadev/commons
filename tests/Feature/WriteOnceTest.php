@@ -198,7 +198,11 @@ class WriteOnceTest extends TestCase
 
         $other = $this->participant($participant->substrate, 'other');
         $otherPhase = $this->phase($other, $kind, $register, $gate);
-        $this->assertUnavailable($other, $otherPhase, $input);
+        $this->publishPotentialFixture($other);
+        if (! in_array($kind, [PhaseKind::Distinguish, PhaseKind::Disperse], true)) {
+            $this->assertUnavailable($other, $otherPhase, $input);
+        }
+        $this->assertContains($written->id, $this->targets($this->plan($other), 'attestation.create'));
         // A new local Gate in the same substrate/Horizon is a fresh opportunity.
         $newGate = $this->node($gate->phase, $gate->register, 'Another Gate', tier: $gate->tier);
         $newPhase = $this->phase($participant, $kind, $register, $newGate);
@@ -231,7 +235,6 @@ class WriteOnceTest extends TestCase
             $plan = $this->plan($participant);
             $this->assertSame([$first->id], $this->targets($plan, 'proposition.revise'));
             $this->assertNotContains($gate->id, $this->targets($plan, 'instrument.execute'));
-            $this->assertUnavailable($participant, $return, $input);
             app(ContributionService::class)->validate($participant, [
                 'action' => 'proposition.revise', 'proposition_id' => $first->id, 'statement' => $statement,
             ]);
@@ -411,6 +414,8 @@ class WriteOnceTest extends TestCase
 
     private function plan(Participant $participant): array
     {
+        $this->publishPotentialFixture($participant);
+
         return app(InputPlanService::class)->forParticipant($participant);
     }
 

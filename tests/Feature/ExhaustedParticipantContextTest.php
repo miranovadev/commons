@@ -218,6 +218,7 @@ class ExhaustedParticipantContextTest extends TestCase
         $next = $old->replicate();
         $next->forceFill(['cycle_id' => $cycle->id, 'completed_at' => null])->save();
         $participant = $old->cycle->participant;
+        $this->publishPotentialFixture($participant);
         $before = app(InputPlanService::class)->forParticipant($participant);
         foreach (['traversal_options', 'attestation_options', 'write_options'] as $key) {
             $this->assertContains($node->id, array_column($before[$key], 'id'));

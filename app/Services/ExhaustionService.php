@@ -8,6 +8,7 @@ use App\Models\Proposition;
 use App\Models\ReceiptConsumption;
 use App\Models\Tragedy;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\DB;
 
 /** Exhaustion requires a failed continuation after the unique Tragedy Receipt was exercised. */
@@ -15,12 +16,26 @@ final class ExhaustionService
 {
     public function actionable(Builder $query): Builder
     {
+        return $this->scopeActionable($query);
+    }
+
+    /** Reuse a caller's joined Horizon column to keep scoped reads out of nested global subqueries. */
+    public function scopeActionable(Builder|QueryBuilder $query, ?string $horizonColumn = null): Builder|QueryBuilder
+    {
         return $query->whereNotExists(fn ($q) => $q->selectRaw('1')->from('continuation_failures')
             ->whereColumn('continuation_failures.proposition_id', 'propositions.id'))
             ->whereNotExists(fn ($q) => $q->selectRaw('1')->from('horizon_exhaustions')
                 ->whereColumn('horizon_exhaustions.opening_proposition_id', 'propositions.id'))
-            ->whereHas('phase.cycle', fn ($q) => $q->whereNotExists(fn ($closed) => $closed->selectRaw('1')
-                ->from('horizon_exhaustions')->whereColumn('horizon_exhaustions.context_horizon_id', 'cycles.context_horizon_id')));
+            ->whereNotExists(function ($closed) use ($horizonColumn): void {
+                $closed->selectRaw('1')->from('horizon_exhaustions as closed_horizon');
+                if ($horizonColumn !== null) {
+                    $closed->whereColumn('closed_horizon.context_horizon_id', $horizonColumn);
+                } else {
+                    $closed->join('cycles as closed_cycle', 'closed_cycle.context_horizon_id', '=', 'closed_horizon.context_horizon_id')
+                        ->join('phases as closed_phase', 'closed_phase.cycle_id', '=', 'closed_cycle.id')
+                        ->whereColumn('closed_phase.id', 'propositions.phase_id');
+                }
+            });
     }
 
     /** Compatibility entry point: archived retirement markers have no semantic authority. */
