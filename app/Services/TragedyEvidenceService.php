@@ -21,12 +21,12 @@ final class TragedyEvidenceService
 
     public function references(string $horizonId): array
     {
-        return $this->localCommittals($horizonId)->limit(25)->pluck('node.id')->all();
+        return $this->localCommittals($horizonId)->pluck('node.id')->all();
     }
 
     public function describe(Receipt $receipt): array
     {
-        $ids = array_slice($receipt->metadata['exhausted_committal_ids'] ?? [], 0, 25);
+        $ids = $receipt->metadata['exhausted_committal_ids'] ?? [];
         $history = $this->localCommittals($receipt->context_horizon_id)->whereIn('node.id', $ids)
             ->get(['node.id', 'node.statement', 'node.register', 'node.tier', 'phase.kind as phase_number',
                 'node.phase_id', 'cycle.context_horizon_id as owner_horizon_id',

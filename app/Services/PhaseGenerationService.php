@@ -36,7 +36,7 @@ final readonly class PhaseGenerationService
             return app(BiasGateService::class)->forPhase($phase, $context)
                 ->contains(fn (Proposition $candidate) => $this->available($phase, $action, $context, $candidate));
         }
-        if (! in_array($action, ['proposition.variant', 'proposition.reclassify', 'proposition.bias', 'proposition.commit'], true)) {
+        if (! in_array($action, ['proposition.variant', 'proposition.reclassify', 'proposition.commit'], true)) {
             // Mediate owns a directed relationship, rather than a personal quota.
             return true;
         }
@@ -46,12 +46,11 @@ final readonly class PhaseGenerationService
         if ($gate === null || ! $this->positions->acceptsGate($phase, $gate)) {
             return false;
         }
-        if (($action !== 'proposition.bias' || $position !== null)
-            && ($this->availability->committed($gate, $context)
-                || ($action !== 'proposition.variant' && $gate->tier !== 'expressive'))) {
+        if ($this->availability->committed($gate, $context)
+            || ($action !== 'proposition.variant' && $gate->tier !== 'expressive')) {
             return false;
         }
-        if ($action === 'proposition.reclassify' || ($action === 'proposition.bias' && $position !== null)) {
+        if ($action === 'proposition.reclassify') {
             $existing = $context !== null
                 ? $context->classifications->where('source_proposition_id', $gate->id)->where('register', $phase->write_register)->isNotEmpty()
                 : DB::table('reclassification_results')->where('source_proposition_id', $gate->id)->where('register', $phase->write_register)->exists();
@@ -83,6 +82,7 @@ final readonly class PhaseGenerationService
             if ($existing->isEmpty()) {
                 return true;
             }
+
             // A persisted Mediate Rest with one candidate proves a structural
             // deficit, not failure of that candidate. Permit the missing binary
             // counterpart once, retaining the first for later reconciliation.
@@ -90,7 +90,7 @@ final readonly class PhaseGenerationService
                 && $existing->count() === 1
                 && Phase::where('kind', PhaseKind::Mediate->value)->whereIn('gate_proposition_id', $existing)
                     ->whereNotNull('completed_at')->whereHas('cycle', fn ($query) => $query
-                        ->where('context_horizon_id', $phase->cycle->context_horizon_id)->whereNotNull('rested_at'))->exists();
+                    ->where('context_horizon_id', $phase->cycle->context_horizon_id)->whereNotNull('rested_at'))->exists();
         };
 
         // Reuse this calculation's structural query, never a cross-action cache.

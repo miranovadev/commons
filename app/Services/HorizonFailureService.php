@@ -57,7 +57,7 @@ final class HorizonFailureService
     {
         DB::transaction(function () use ($phase, $proof): void {
             $substrate = Substrate::whereKey($phase->cycle->participant->substrate_id)->lockForUpdate()->firstOrFail();
-            if (! $proof['stable'] || $proof['field_version'] !== (int) $substrate->field_version
+            if ($proof['rest_reason'] !== 'no_remaining_potential' || ! $proof['stable'] || $proof['field_version'] !== (int) $substrate->field_version
                 || $proof['phase_id'] !== $phase->id || $proof['position_id'] !== $phase->gate_proposition_id
                 || $proof['participant_id'] !== $phase->cycle->participant_id
                 || $proof['substrate_id'] !== $substrate->id || $proof['context_horizon_id'] !== $phase->cycle->context_horizon_id

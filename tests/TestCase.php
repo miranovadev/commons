@@ -10,16 +10,18 @@ use App\Models\CommitmentSnapshot;
 use App\Models\ContextHorizon;
 use App\Models\Cycle;
 use App\Models\Participant;
-use App\Models\Substrate;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Receipt;
+use App\Models\Substrate;
 use App\Services\ContextHorizonProjector;
 use App\Services\Evidence\HyperlinkIdentity;
 use App\Services\Evidence\HyperlinkVerifier;
 use App\Services\Evidence\PublicResourceAddress;
+use App\Services\HorizonReceiptService;
 use App\Services\InstrumentExecutionService;
 use App\Services\LedgerService;
+use App\Services\PotentialProjectionService;
 use App\Services\PropositionStateService;
 use App\Services\ReceiptContextService;
 use Carbon\CarbonImmutable;
@@ -31,7 +33,7 @@ abstract class TestCase extends BaseTestCase
     protected function publishPotentialFixture(Participant|Substrate $subject, bool $recalculate = false): void
     {
         $id = $subject instanceof Substrate ? $subject->id : $subject->substrate_id;
-        $this->assertTrue(app(\App\Services\PotentialProjectionService::class)->rebuild($id, $recalculate));
+        $this->assertTrue(app(PotentialProjectionService::class)->rebuild($id, $recalculate));
     }
 
     protected function setUp(): void
@@ -160,6 +162,17 @@ abstract class TestCase extends BaseTestCase
             $attestation->forceFill(['phase_id' => $node->phase_id, 'proposition_id' => $node->id, 'direction' => 'support'])->save();
             app(LedgerService::class)->record($attestation);
         }
+    }
+
+    /** Select evidence explicitly; fixture authors still supply a valid Phase and source. */
+    protected function reclassificationInputFixture(Phase $phase, ?Proposition $source = null): array
+    {
+        $source ??= $phase->gate;
+        $available = app(HorizonReceiptService::class)->available($phase);
+        $receipt = $available->first(fn ($item) => $item->instrumentExecution?->proposition_id === $source->id)
+            ?? $available->firstOrFail();
+
+        return ['action' => 'proposition.reclassify', 'proposition_id' => $source->id, 'receipt_id' => $receipt->id];
     }
 
     protected function receiptFixture(Proposition $node): void

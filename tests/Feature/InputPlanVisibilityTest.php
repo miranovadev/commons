@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ContextDomain;
 use App\Enums\PhaseKind;
 use App\Models\Attestation;
 use App\Models\Cycle;
@@ -150,7 +151,7 @@ class InputPlanVisibilityTest extends TestCase
         $substrate = $this->substrate();
         $author = $this->participant($substrate, 'author');
         $writeKind = $kind === PhaseKind::Order ? PhaseKind::Bias : $kind;
-        $register = \App\Enums\ContextDomain::Emergence->registerFor($kind);
+        $register = ContextDomain::Emergence->registerFor($kind);
         $sourcePhase = $this->phase($author, $writeKind, $register);
         $gateKind = $kind === PhaseKind::Distinguish ? PhaseKind::Order : PhaseKind::from($kind->value - 1);
         $gatePhase = $this->phaseAtPositionFixture($sourcePhase, $gateKind);
@@ -166,8 +167,10 @@ class InputPlanVisibilityTest extends TestCase
         $other = new Attestation;
         $other->forceFill(['phase_id' => $sourcePhase->id, 'proposition_id' => $child->id, 'direction' => 'support'])->save();
         if ($direction !== null) {
+            $previousCycle = $phase->cycle->replicate();
+            $previousCycle->forceFill(['sequence' => 0, 'completed_at' => now()])->save();
             $previousPhase = $phase->replicate();
-            $previousPhase->forceFill(['gate_proposition_id' => null, 'completed_at' => now()])->save();
+            $previousPhase->forceFill(['cycle_id' => $previousCycle->id, 'gate_proposition_id' => null, 'completed_at' => now()])->save();
             $prior = new Attestation;
             $prior->forceFill(['phase_id' => $previousPhase->id, 'proposition_id' => $child->id, 'direction' => $direction])->save();
         }
@@ -182,7 +185,7 @@ class InputPlanVisibilityTest extends TestCase
             return;
         }
         $this->assertEqualsCanonicalizing([$child->id, $untouched->id], array_column($plan['write_options'], 'id'));
-        $traversable = ($kind->value <= PhaseKind::Constrain->value || $kind === PhaseKind::Bias) && $direction !== null;
+        $traversable = (in_array($kind, [PhaseKind::Distinguish, PhaseKind::Persist, PhaseKind::Constrain, PhaseKind::Disperse, PhaseKind::Bias], true)) && $direction !== null;
         $card = collect($plan['write_options'])->firstWhere('id', $child->id);
         $this->assertSame(['support' => 1 + (int) ($direction === 'support'), 'refute' => (int) ($direction === 'refute')], $card['attestation_counts']);
         $this->assertSame($traversable ? [$child->id] : [], array_column($plan['traversal_options'], 'id'));

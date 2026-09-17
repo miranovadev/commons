@@ -274,7 +274,7 @@ class LocalParticipantNavigationTest extends TestCase
         ]);
     }
 
-    public function test_traverse_is_an_explicit_local_choice_alongside_creation(): void
+    public function test_traverse_remains_an_explicit_local_choice_without_redundant_creation(): void
     {
         $position = $this->node('Current', 0.8);
         $target = $this->node('Existing distinction', 0.1, 'expressive');
@@ -284,7 +284,7 @@ class LocalParticipantNavigationTest extends TestCase
         app(CycleEntryService::class)->enter($participant);
         $state = $this->state($participant);
         $actions = $state['plan']['schema']['$defs']['actions'];
-        $this->assertArrayHasKey('proposition.variant', $actions);
+        $this->assertArrayNotHasKey('proposition.variant', $actions);
         $this->assertArrayHasKey('proposition.traverse', $actions);
         $this->assertArrayNotHasKey('participant.rest', $actions);
         $this->assertFalse($state['plan']['rest_available']);
@@ -406,6 +406,11 @@ class LocalParticipantNavigationTest extends TestCase
         $target->save();
         $this->establishPath($participant, $target);
         $phase = $this->phase($participant, $position);
+        $this->refreshFixtureMeasurements();
+        $state = $this->state($participant);
+        foreach ($state['plan']['schema']['$defs']['actions']['receipt.read']['properties']['receipt_id']['enum'] ?? [] as $receiptId) {
+            app(ParticipationService::class)->contribute($participant, $phase->id, ['action' => 'receipt.read', 'receipt_id' => $receiptId]);
+        }
         $this->refreshFixtureMeasurements();
         app(ParticipationService::class)->contribute($participant, $phase->id, ['action' => 'participant.rest']);
         $state = $this->state($participant);

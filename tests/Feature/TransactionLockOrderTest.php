@@ -20,6 +20,7 @@ use App\Models\ParticipantConnection;
 use App\Models\ParticipantReceiptContext;
 use App\Models\Phase;
 use App\Models\Proposition;
+use App\Models\Receipt;
 use App\Models\ReceiptContextEvent;
 use App\Models\Substrate;
 use App\Models\Supersession;
@@ -49,13 +50,13 @@ use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\Process\Process;
-use Tests\Fixtures\ExhaustionFixture;
+use Tests\Fixtures\HorizonProofFixture;
 use Tests\TestCase;
 
 class TransactionLockOrderTest extends TestCase
 {
     use DatabaseMigrations;
-    use ExhaustionFixture;
+    use HorizonProofFixture;
 
     public function runDatabaseMigrations(): void
     {
@@ -120,7 +121,7 @@ class TransactionLockOrderTest extends TestCase
         $sequences = DB::table('substrate_ledger_entries')->where('substrate_id', $substrate->id)
             ->orderBy('sequence')->pluck('sequence')->all();
         $this->assertSame(range(1, count($sequences)), $sequences);
-        $this->assertSame(2, Proposition::where('tier', 'expressive')->count());
+        $this->assertSame(1, Proposition::where('tier', 'expressive')->count(), 'The second action develops shared evidence rather than a redundant sibling');
         $this->assertSame((int) $substrate->fresh()->field_version,
             app(PotentialProjectionService::class)->assertCurrent($substrate->id));
         foreach ([$first, $second] as $participant) {
@@ -231,7 +232,7 @@ class TransactionLockOrderTest extends TestCase
     }
 
     /** Hold the root, observe a real lock wait, exercise the competing operation, release. */
-    public function test_waiting_generation_rechecks_personal_history_after_the_first_writer_commits(): void
+    public function test_waiting_generation_rechecks_structural_viability_after_the_first_writer_commits(): void
     {
         [$substrate, $participant, $phase] = $this->fixture();
         $input = ['action' => 'proposition.variant', 'statement' => 'One distinction'];
@@ -290,6 +291,8 @@ class TransactionLockOrderTest extends TestCase
     {
         [$substrate, $first, $initial] = $this->fixture();
         app(ParticipationService::class)->contribute($first, $initial->id, ['action' => 'proposition.variant', 'statement' => 'Shared classification source']);
+        $persist = $first->cycles()->whereNull('completed_at')->sole()->currentPhase;
+        app(ParticipationService::class)->contribute($first, $persist->id, ['action' => 'proposition.variant', 'statement' => 'Persisted source']);
         $source = $first->fresh()->position;
         $this->classificationEvidenceFixture($source);
         app(PotentialProjectionService::class)->refresh($first->substrate_id);
@@ -301,7 +304,7 @@ class TransactionLockOrderTest extends TestCase
         $phase = $firstPhase->replicate();
         $phase->cycle_id = $cycle->id;
         $phase->save();
-        $input = ['action' => 'proposition.reclassify'];
+        $input = $this->reclassificationInputFixture($firstPhase, $source);
         $before = Proposition::count();
         $this->whileWorkerWaits($substrate, [
             'operation' => 'dispatch-rejected', 'participant_id' => $second->id, 'phase_id' => $phase->id,
@@ -394,12 +397,14 @@ class TransactionLockOrderTest extends TestCase
     {
         [, $first, $initial] = $this->fixture();
         app(ParticipationService::class)->contribute($first, $initial->id, ['action' => 'proposition.variant', 'statement' => 'Source']);
+        $persist = $first->cycles()->whereNull('completed_at')->sole()->currentPhase;
+        app(ParticipationService::class)->contribute($first, $persist->id, ['action' => 'proposition.variant', 'statement' => 'Persisted source']);
         $source = $first->fresh()->position;
         $this->classificationEvidenceFixture($source);
         app(PotentialProjectionService::class)->refresh($first->substrate_id);
         $phase = $first->cycles()->whereNull('completed_at')->sole()->currentPhase;
         $state = app(ParticipationService::class)->stateFor($first);
-        $input = ['action' => 'proposition.reclassify'];
+        $input = $this->reclassificationInputFixture($phase, $source);
         app(ContributionDispatcher::class)->dispatch($first, $phase, $input);
         try {
             app(ParticipationService::class)->contribute($first, $phase->id, $input, $state['plan']['schema']);
@@ -420,6 +425,9 @@ class TransactionLockOrderTest extends TestCase
     public function test_external_instrument_observation_allows_another_writer_and_discards_a_stale_result(string $kind): void
     {
         [$substrate, $first, $initial] = $this->fixture();
+        app(ParticipationService::class)->contribute($first, $initial->id,
+            ['action' => 'proposition.variant', 'statement' => 'Instrument lineage']);
+        $initial = $this->activePhase($first);
         $target = app(ContributionDispatcher::class)->dispatch($first, $initial,
             ['action' => 'proposition.variant', 'statement' => 'Instrument subject']);
         $this->receiptFixture($target); // Allow the competing attestation to advance this Phase.
@@ -505,31 +513,51 @@ class TransactionLockOrderTest extends TestCase
                 app(ParticipationService::class)->contribute($first, $firstRest->id, ['action' => 'participant.rest']);
             });
         $this->assertSame(1, Tragedy::count());
-        $this->assertSame(1, DB::table('origin_branches')->whereNotNull('exhausted_at')->count());
+        $this->assertDatabaseCount('horizon_exhaustions', 0);
+        $this->assertSame(1, Receipt::where('type', 'tragedy')->count());
         foreach ([$first, $second] as $participant) {
             $this->assertSame(1, $participant->cycles()->whereNull('completed_at')->count());
             $this->assertSame('ready', app(ParticipationService::class)->stateFor($participant)['status']);
         }
     }
 
-    public function test_concurrent_sibling_rests_close_the_shared_basin_once(): void
+    public function test_concurrent_failed_final_attempt_records_one_exhaustion(): void
     {
         $this->initializeExhaustionFixture();
-        [$root, $first, , $commit] = $this->exhaustedBranch();
-        $sibling = $this->node($this->phase($commit, PhaseKind::Constrain), $commit);
-        $this->explore($sibling);
-        $second = $this->phase($sibling);
-        $this->measure($sibling, 1);
+        [$opening, $horizon, $tragedy] = $this->firstFailure();
+        [$first, $head] = $this->exercise($opening, $tragedy);
+        $second = $this->phase($head);
         $this->whileWorkerWaits($this->substrate, ['operation' => 'rest',
-            'participant_id' => $second->cycle->participant_id, 'phase_id' => $second->id], function () use ($first, $commit): void {
-                $this->rest($first);
-                $this->assertSame(0, Tragedy::count());
-                $this->assertDatabaseMissing('exhaustion_states', ['proposition_id' => $commit->id]);
-            });
-        $this->assertSame($root->id, Tragedy::sole()->root_proposition_id);
-        $this->assertSame(1, DB::table('exhaustion_states')->where('proposition_id', $commit->id)->count());
-        $audit = app(ExhaustionAuditService::class)->inspect($this->substrate->id);
-        $this->assertTrue($audit['matches'], json_encode($audit));
+            'participant_id' => $second->cycle->participant_id, 'phase_id' => $second->id],
+            fn () => $this->rest($first));
+        $this->assertDatabaseCount('horizon_tragedies', 1);
+        $this->assertDatabaseCount('horizon_exhaustions', 1);
+        $this->assertDatabaseCount('receipt_consumptions', 1);
+        $this->assertNotNull($horizon->fresh()->exhausted_at);
+        $this->assertDatabaseHas('propositions', ['id' => $opening->id]);
+        $this->assertTrue(app(ExhaustionAuditService::class)->inspect($this->substrate->id)['matches']);
+    }
+
+    public function test_two_reclassifications_compete_for_one_receipt_with_one_winner_and_no_partial_target(): void
+    {
+        $this->initializeExhaustionFixture();
+        $a = $this->node($this->phase($this->origin, PhaseKind::Persist), $this->origin);
+        $b = $this->node($this->phase($this->origin, PhaseKind::Persist), $this->origin);
+        $this->classificationEvidenceFixture($a);
+        $this->classificationEvidenceFixture($b); // Keep another Receipt available so the loser tests this exact consumed ID.
+        $first = $this->phase($a, PhaseKind::Constrain);
+        $second = $this->phase($b, PhaseKind::Constrain);
+        $input = $this->reclassificationInputFixture($first, $a);
+        $before = Proposition::count();
+        $this->whileWorkerWaits($this->substrate, ['operation' => 'dispatch-rejected',
+            'participant_id' => $second->cycle->participant_id, 'phase_id' => $second->id,
+            'contribution' => [...$input, 'proposition_id' => $b->id], 'expected_message' => 'unconsumed Receipt'],
+            fn () => app(ContributionDispatcher::class)->dispatch($first->cycle->participant, $first, $input));
+        $this->assertSame($before + 1, Proposition::count());
+        $this->assertDatabaseCount('receipt_consumptions', 1);
+        $this->assertDatabaseCount('reclassification_results', 1);
+        $this->assertDatabaseMissing('reclassification_results', ['source_proposition_id' => $b->id]);
+        $this->assertDatabaseHas('receipts', ['id' => $input['receipt_id']]);
     }
 
     public function test_concurrent_fresh_sibling_invalidates_exhaustion_proof(): void
@@ -547,7 +575,8 @@ class TransactionLockOrderTest extends TestCase
         $this->assertNotNull($newId);
         $this->assertDatabaseMissing('exhaustion_states', ['proposition_id' => $newId]);
         $this->assertDatabaseMissing('exhaustion_states', ['proposition_id' => $commit->id]);
-        $this->assertSame(0, Tragedy::count());
+        $this->assertSame(1, Tragedy::count());
+        $this->assertDatabaseCount('horizon_exhaustions', 0);
         $actual = app(PotentialChargeService::class)->recoverFrom($terminal->gate);
         $expected = app(ReferencePotentialChargeService::class)->recoverFrom($terminal->gate);
         $this->assertSame($commit->id, $actual['proposition']->id);

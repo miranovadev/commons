@@ -84,7 +84,7 @@ class ParticipantContinuityTest extends TestCase
         $this->classificationEvidenceFixture(Proposition::findOrFail($first['plan']['gate_id']));
         app(PotentialProjectionService::class)->refresh($participant->substrate_id);
         $second = $service->contribute($participant, $first['plan']['phase']['id'],
-            ['action' => 'proposition.reclassify']);
+            ['action' => 'proposition.variant', 'statement' => 'Develop the current structural position']);
         $this->assertSame($value > 0 ? 'canon' : 'concord', $second['plan']['phase']['write_register']);
 
         // A participant still in the previous Horizon can choose the Committal
@@ -111,7 +111,7 @@ class ParticipantContinuityTest extends TestCase
 
     }
 
-    public function test_tragedy_can_relocate_back_to_origin_without_reopening_a_historical_horizon(): void
+    public function test_tragedy_returns_to_the_opening_commit_without_reopening_or_exhausting_history(): void
     {
         [$participant, , $cycle, $origin, $candidate] = $this->prepareCommit(.6);
         $service = app(ParticipationService::class);
@@ -142,23 +142,15 @@ class ParticipantContinuityTest extends TestCase
         }
         $this->assertSame(['participant.rest'], array_keys($state['plan']['schema']['$defs']['actions']));
         $rested = app(ParticipationService::class)->contribute($participant, $phase->id, ['action' => 'participant.rest']);
-        $this->assertSame($origin->id, $participant->fresh()->current_proposition_id);
+        $this->assertSame($commit->id, $participant->fresh()->current_proposition_id);
         $this->assertSame('ready', $rested['status']);
         $this->assertSame('distinguish', $rested['plan']['phase']['kind']);
-        $selection = app(PotentialChargeService::class)->recoverFrom($commit);
-        $this->assertSame($origin->id, $selection['proposition']->id);
-        $this->assertSame('origin_renewal', $selection['reason']);
-        $this->assertSame(0.0, $selection['potential_charge']);
-        $this->assertSame($candidate->id, Tragedy::sole()->root_proposition_id);
-        $this->assertSame($origin->id, $rested['plan']['gate_id']);
-        $relocated = $rested;
-        $this->assertSame($origin->id, $relocated['current_proposition_id']);
-        $this->assertSame($origin->id, $relocated['plan']['gate_id']);
-        $this->assertNotSame($origin->phase->cycle->context_horizon_id, $relocated['cycle']['context_horizon_id']);
-        $selectedHorizon = ContextHorizon::where('opened_by_proposition_id', $origin->id)->sole();
-        $this->assertSame($selectedHorizon->id, $relocated['cycle']['context_horizon_id']);
-        $this->assertSame('settlement', $relocated['domain']);
-        $this->assertSame('signal', $relocated['plan']['phase']['write_register']);
+        $this->assertSame($commit->id, $rested['plan']['gate_id']);
+        $this->assertSame($commit->id, Tragedy::sole()->opening_proposition_id);
+        $this->assertSame($next->context_horizon_id, $rested['cycle']['context_horizon_id']);
+        $this->assertNull($next->contextHorizon->fresh()->exhausted_at);
+        $this->assertSame('emergence', $rested['domain']);
+        $this->assertSame('activity', $rested['plan']['phase']['write_register']);
         $this->assertSame($horizons, ContextHorizon::orderBy('sequence')->get()->map(fn ($h) => Arr::except($h->getAttributes(), ['exhausted_at', 'updated_at']))->all());
     }
 

@@ -22,7 +22,7 @@ class PreOrderInstrumentPathTest extends TestCase
     #[DataProvider('phases')]
     public function test_fresh_writes_can_be_grounded_before_attestation(PhaseKind $kind, string $register): void
     {
-        $f = new ParticipantContextFixture(1, 0);
+        $f = new ParticipantContextFixture(1, 0, false);
         $gate = $kind === PhaseKind::Distinguish ? $f->seed : $f->gate;
         $write = $f->node($gate, $register, position: $kind);
         $f->phase->forceFill(['kind' => $kind, 'gate_proposition_id' => $gate->id, 'write_register' => $register])->save();
@@ -41,7 +41,7 @@ class PreOrderInstrumentPathTest extends TestCase
 
     public function test_variant_children_do_not_prevent_pre_order_grounding(): void
     {
-        $f = new ParticipantContextFixture(1, 0);
+        $f = new ParticipantContextFixture(1, 0, false);
         $write = $f->node($f->gate, 'canon', position: PhaseKind::Bias);
         $f->node($write, 'activity', 'variant');
         $f->phase->forceFill(['kind' => PhaseKind::Bias, 'gate_proposition_id' => $f->gate->id, 'write_register' => 'canon'])->save();

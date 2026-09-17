@@ -158,13 +158,13 @@ class PhasePositionInvariantTest extends TestCase
             $this->assertSame([$nodes[6]->id], app(PropositionOptionService::class)->writeOptionsFor($bias, $context)->pluck('id')->all());
         }
         $plan = app(InputPlanService::class)->forPhase($reader, $bias);
-        $this->assertSame([$late->id], $plan['schema']['$defs']['actions']['proposition.bias']['properties']['proposition_id']['enum']);
+        $this->assertSame([$late->id], $plan['schema']['$defs']['actions']['proposition.reclassify']['properties']['proposition_id']['enum']);
         $this->assertSame([$nodes[6]->id], array_column($plan['write_options'], 'id'));
         try {
-            app(ContributionDispatcher::class)->dispatch($reader, $bias, ['action' => 'proposition.bias', 'proposition_id' => $early->id]);
+            app(ContributionDispatcher::class)->dispatch($reader, $bias, $this->reclassificationInputFixture($bias, $early));
             $this->fail('Persist cannot bypass Mediate.');
         } catch (DomainException $exception) {
-            $this->assertStringContainsString('active Gate', $exception->getMessage());
+            $this->assertStringContainsString('exact preceding Phase position', $exception->getMessage());
         }
     }
 
@@ -251,7 +251,7 @@ class PhasePositionInvariantTest extends TestCase
             $phase = $this->phase($author, PhaseKind::from($kind), $nodes[$kind - 1]);
             $nodes[$kind] = $this->node($phase);
             $this->edge($nodes[$kind - 1], $nodes[$kind], match ($kind) {
-                1, 4 => 'variant', 5 => 'reconcile', default => 'reclassify'
+                1, 2, 4 => 'variant', 5 => 'reconcile', default => 'reclassify'
             });
         }
         $closure = [...(new ClosureValues(1, 1))->resolve(), 'history_proposition_id' => null, 'history_source' => 'negative-default'];

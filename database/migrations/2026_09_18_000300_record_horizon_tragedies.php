@@ -44,6 +44,17 @@ return new class extends Migration
             $table->timestampTz('failed_at');
         });
         Schema::table('cycles', fn (Blueprint $table) => $table->foreignUlid('recovery_proposition_id')->nullable()->constrained('propositions')->restrictOnDelete());
+        // SQLite rebuilds the table when adding the foreign key. Restore its
+        // existing causal immutability triggers; PostgreSQL retains its triggers.
+        if (DB::getDriverName() === 'sqlite') {
+            DB::unprepared("CREATE TRIGGER IF NOT EXISTS cycles_context_horizon_immutable BEFORE UPDATE OF context_horizon_id ON cycles
+                WHEN NEW.context_horizon_id IS NOT OLD.context_horizon_id
+                BEGIN SELECT RAISE(ABORT, 'Cycle Context Horizon cannot be changed'); END;");
+            DB::unprepared("CREATE TRIGGER IF NOT EXISTS cycles_causal_owner_immutable BEFORE UPDATE OF participant_id ON cycles
+                WHEN NEW.participant_id IS NOT OLD.participant_id
+                BEGIN SELECT RAISE(ABORT, 'Creating causal ownership cannot be changed'); END;");
+        }
+
     }
 
     public function down(): void

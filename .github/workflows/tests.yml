@@ -114,7 +114,7 @@ jobs:
         if: ${{ matrix.recovery }}
         env:
           PGOPTIONS: '-c statement_timeout=30s'
-        run: php artisan test --filter 'CommitParticipationStateTest|LineageAttenuationTest|OptimisticParticipationTest|ParticipantActionContractTest|PersistInstrumentTest|PotentialProjectionTest|PotentialRegionCalculatorTest|PropositionReadTest|ExhaustionTest|ExhaustionRealtimeTest|TransactionLockOrderTest|ParticipantContextTest|CausalRecoveryTest|RecoveryBasinResolverTest|LocalParticipantNavigationTest|ParticipantContinuityTest|HorizonWorkspaceTest|ParticipantWakeTest'
+        run: php artisan test --filter 'HorizonReceiptLifecycleTest|ReceiptGatedReclassificationTest|HorizonTragedyTest|HorizonProofCycleTest|FinalAttemptExhaustionTest|HorizonProofMigrationTest|CommitParticipationStateTest|LineageAttenuationTest|OptimisticParticipationTest|ParticipantActionContractTest|PersistInstrumentTest|PotentialProjectionTest|PotentialRegionCalculatorTest|PropositionReadTest|ExhaustionTest|ExhaustionRealtimeTest|TransactionLockOrderTest|ParticipantContextTest|CausalRecoveryTest|RecoveryBasinResolverTest|LocalParticipantNavigationTest|ParticipantContinuityTest|HorizonWorkspaceTest|ParticipantWakeTest'
 
       - name: Run test suite
         if: ${{ !matrix.profile && !matrix.recovery && !cancelled() }}

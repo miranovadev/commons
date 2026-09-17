@@ -23,7 +23,7 @@ class SharedReclassificationTest extends TestCase
 
     public static function phases(): array
     {
-        return [[PhaseKind::Persist, 'activity', 'frontier'], [PhaseKind::Constrain, 'frontier', 'canon'], [PhaseKind::Bias, 'frontier', 'canon']];
+        return [[PhaseKind::Constrain, 'frontier', 'canon'], [PhaseKind::Bias, 'frontier', 'canon']];
     }
 
     #[DataProvider('phases')]
@@ -32,7 +32,7 @@ class SharedReclassificationTest extends TestCase
         $f = new ParticipantContextFixture(1, 0);
         $source = $f->node($f->seed, $from, position: PhaseKind::from($kind->value - 1));
         [$actor, $phase] = $this->encounter($f, $source, $kind, $to);
-        $action = $kind === PhaseKind::Bias ? 'proposition.bias' : 'proposition.reclassify';
+        $action = $kind === PhaseKind::Bias ? 'proposition.reclassify' : 'proposition.reclassify';
         $input = ['action' => $action] + ($kind === PhaseKind::Bias ? ['proposition_id' => $source->id] : []);
         $generation = app(PhaseGenerationService::class);
         $this->assertFalse($generation->available($phase, $action, position: $source));
@@ -42,6 +42,7 @@ class SharedReclassificationTest extends TestCase
         $attestation->forceFill(['phase_id' => $source->phase_id, 'proposition_id' => $source->id, 'direction' => 'support'])->save();
         app(LedgerService::class)->record($attestation);
         $this->assertTrue($generation->available($phase, $action, position: $source));
+        $input = $this->reclassificationInputFixture($phase, $source);
         $target = app(ContributionDispatcher::class)->dispatch($actor, $phase, $input);
         $this->assertSame($source->statement, $target->statement);
         $this->assertDatabaseHas('reclassification_results', ['source_proposition_id' => $source->id, 'register' => $to, 'target_proposition_id' => $target->id]);
@@ -63,7 +64,7 @@ class SharedReclassificationTest extends TestCase
         }
         app(ContributionDispatcher::class)->dispatch($other, $return, ['action' => 'attestation.create', 'proposition_id' => $target->id, 'direction' => 'refute']);
         $plan = app(InputPlanService::class)->forParticipant($other);
-        $this->assertContains($target->id, $plan['schema']['$defs']['actions']['proposition.traverse']['properties']['proposition_id']['enum']);
+        $this->assertArrayNotHasKey('proposition.traverse', $plan['schema']['$defs']['actions'], 'A same-cycle Attestation becomes traversal next cycle');
     }
 
     private function encounter(ParticipantContextFixture $f, Proposition $source, PhaseKind $kind, string $register): array

@@ -121,16 +121,6 @@ return [
                 'receipt_id' => $ulid,
             ],
         ],
-        'proposition.bias' => [
-            'title' => 'Classify one Gate aligned with its own lineage',
-            'type' => 'object',
-            'additionalProperties' => false,
-            'required' => ['action', 'proposition_id'],
-            'properties' => [
-                'action' => ['const' => 'proposition.bias'],
-                'proposition_id' => $ulid,
-            ],
-        ],
         'proposition.reconcile' => [
             'title' => 'Reconcile an admissible counterpart with the current Gate statement',
             'type' => 'object',
