@@ -31,6 +31,16 @@ final class HorizonReceiptService
         return $context === null ? $load() : $context->remember('available-horizon-receipts', $load);
     }
 
+    /** Generating an observation is separate from attaching or consuming it. */
+    public function instrumentedIds(Phase $phase, Collection $ids): Collection
+    {
+        return DB::table('instrument_executions as execution')
+            ->join('receipts as receipt', 'receipt.instrument_execution_id', '=', 'execution.id')
+            ->where('execution.status', 'completed')
+            ->where('receipt.context_horizon_id', $phase->cycle->context_horizon_id)
+            ->whereIn('execution.proposition_id', $ids)->distinct()->pluck('execution.proposition_id');
+    }
+
     /** Call within the classification transaction so any later failure rolls back attachment. */
     public function consume(Phase $phase, Proposition $source, Proposition $target, string $receiptId): Receipt
     {

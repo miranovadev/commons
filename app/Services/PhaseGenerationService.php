@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\PhaseKind;
+use App\Models\Attestation;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Supersession;
@@ -83,14 +84,20 @@ final readonly class PhaseGenerationService
             if ($existing->isEmpty()) {
                 return true;
             }
-            // A persisted Mediate Rest with one candidate proves a structural
-            // deficit, not failure of that candidate. Permit the missing binary
-            // counterpart once, retaining the first for later reconciliation.
-            return $action === 'proposition.variant' && $phase->kind === PhaseKind::Disperse
-                && $existing->count() === 1
-                && Phase::where('kind', PhaseKind::Mediate->value)->whereIn('gate_proposition_id', $existing)
-                    ->whereNotNull('completed_at')->whereHas('cycle', fn ($query) => $query
-                        ->where('context_horizon_id', $phase->cycle->context_horizon_id)->whereNotNull('rested_at'))->exists();
+            if ($action !== 'proposition.variant'
+                || ! in_array($phase->kind, [PhaseKind::Distinguish, PhaseKind::Disperse], true)) {
+                return false;
+            }
+            // Evidence and judgment must exist for each viable opportunity before
+            // another is generated. Neither receipt consumption nor author count
+            // supplies this permission, and a prior Mediate Rest is not required.
+            $observed = app(HorizonReceiptService::class)->instrumentedIds($phase, $existing);
+            $attested = Attestation::query()->effective()
+                ->whereIn('proposition_id', $existing)->distinct()->pluck('proposition_id');
+
+            return $existing->diff($observed)->isEmpty() && $existing->diff($attested)->isEmpty()
+                && app(PotentialChargeService::class)->hasRemainingInHorizon($phase);
+
         };
 
         // Reuse this calculation's structural query, never a cross-action cache.

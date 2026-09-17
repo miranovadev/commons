@@ -98,18 +98,54 @@ class ExpressiveEvidenceGatingTest extends TestCase
         $this->assertArrayNotHasKey('instrument.execute', $actions);
     }
 
-    public function test_missing_binary_counterpart_allows_one_participant_to_build_plurality(): void
+    #[DataProvider('expressivePhases')]
+    public function test_another_variant_requires_instrument_attestation_and_remaining_potential(PhaseKind $kind): void
     {
-        $phase = $this->position(PhaseKind::Disperse);
+        $phase = $this->position($kind);
         $first = $this->node($phase, $phase->gate);
         $generation = app(PhaseGenerationService::class);
         $this->assertFalse($generation->available($phase, 'proposition.variant'));
-        $mediate = $this->phase($first, PhaseKind::Mediate);
+        $instruments = app(InstrumentExecutionService::class);
+        $receipt = $instruments->complete($instruments->start($phase, $first, 'citation', $this->origin->id), $first);
+        $this->assertFalse($generation->available($phase, 'proposition.variant'), 'Instrument alone is insufficient');
+        $vote = (new Attestation)->forceFill(['phase_id' => $phase->id, 'proposition_id' => $first->id, 'direction' => 'support']);
+        $vote->save();
+        app(LedgerService::class)->record($vote);
+        $this->measure($first, 1);
+        $this->assertFalse($generation->available($phase, 'proposition.variant'), 'Evidence cannot invent Potential');
+        $this->measure($first, 0);
+        $this->assertTrue($generation->available($phase, 'proposition.variant'));
+        $this->assertArrayHasKey('proposition.variant', $this->actions($phase));
+        // No Rest or other Participant is needed to authorize the next Variant.
+        $second = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
+            ['action' => 'proposition.variant', 'statement' => 'The next independent possibility']);
+        $this->assertFalse($generation->available($phase, 'proposition.variant'));
+        $actions = $this->actions($phase);
+        $this->assertContains($second->id, $actions['instrument.execute']['properties']['proposition_id']['enum']);
+        $this->assertNotContains($second->id, $actions['attestation.create']['properties']['proposition_id']['enum'] ?? []);
+        $instruments->complete($instruments->start($phase, $second, 'citation', $this->origin->id), $second);
+        $this->assertFalse($generation->available($phase, 'proposition.variant'));
+        $vote = (new Attestation)->forceFill(['phase_id' => $phase->id, 'proposition_id' => $second->id, 'direction' => 'support']);
+        $vote->save();
+        app(LedgerService::class)->record($vote);
+        $this->measure($second, 0);
+        $this->assertTrue($generation->available($phase, 'proposition.variant'), 'The rule repeats beyond two Variants');
+        $this->assertNull($receipt->fresh()->consumption, 'Variant eligibility never consumes evidence');
+    }
+
+    #[DataProvider('expressivePhases')]
+    public function test_attestation_without_own_instrument_and_positive_potential_does_not_unlock_variant(PhaseKind $kind): void
+    {
+        $phase = $this->position($kind);
+        $write = $this->node($phase, $phase->gate);
+        $vote = (new Attestation)->forceFill(['phase_id' => $phase->id, 'proposition_id' => $write->id, 'direction' => 'support']);
+        $vote->save();
+        app(LedgerService::class)->record($vote);
+        $this->measure($write, 0);
+        $this->assertFalse(app(PhaseGenerationService::class)->available($phase, 'proposition.variant'));
+        $mediate = $this->phase($write, PhaseKind::Mediate);
         $mediate->forceFill(['completed_at' => now()])->save();
         $mediate->cycle->forceFill(['rested_at' => now(), 'completed_at' => now()])->save();
-        $this->assertTrue($generation->available($phase, 'proposition.variant'));
-        $second = $this->node($phase, $phase->gate);
-        $this->assertNotSame($first->id, $second->id);
-        $this->assertFalse($generation->available($phase, 'proposition.variant'), 'Binary demand does not authorize endless siblings');
+        $this->assertFalse(app(PhaseGenerationService::class)->available($phase, 'proposition.variant'), 'Mediate Rest cannot bypass evidence');
     }
 }

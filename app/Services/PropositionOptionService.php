@@ -85,11 +85,12 @@ final class PropositionOptionService
 
         $writes = $this->writeOptionsFor($phase, $context);
         if (in_array($phase->kind, [PhaseKind::Distinguish, PhaseKind::Disperse], true)) {
-            if (app(HorizonReceiptService::class)->available($phase, $context)->isNotEmpty()) {
-                return collect();
-            }
+            $receipts = app(HorizonReceiptService::class);
+            $instrumented = $receipts->instrumentedIds($phase, $writes->pluck('id'));
+            $shared = $receipts->available($phase, $context)->isNotEmpty();
 
-            return $writes->whereNotIn('id', $this->traversalOptionsFor($phase, $context)->pluck('id'))->values();
+            return $writes->whereNotIn('id', $this->traversalOptionsFor($phase, $context)->pluck('id'))
+                ->filter(fn ($node) => ! $shared || ! $instrumented->contains($node->id))->values();
         }
 
         return $writes;
@@ -134,9 +135,12 @@ final class PropositionOptionService
         $shared = app(HorizonReceiptService::class)->available($phase, $context)->isNotEmpty();
         $expressive = in_array($phase->kind, [PhaseKind::Distinguish, PhaseKind::Disperse], true);
 
-        return $this->writeOptionsFor($phase, $context)->filter(fn (Proposition $node): bool =>
-            $this->availability->mutable($node, $context)
-            && ($shared || (! $expressive && $this->evidence->canAttest($node, $context))))->values();
+        $writes = $this->writeOptionsFor($phase, $context);
+        $instrumented = $expressive ? app(HorizonReceiptService::class)->instrumentedIds($phase, $writes->pluck('id')) : collect();
+
+        return $writes->filter(fn (Proposition $node): bool => $this->availability->mutable($node, $context)
+            && ($expressive ? ($shared && $instrumented->contains($node->id))
+                : ($shared || $this->evidence->canAttest($node, $context))))->values();
     }
 
     /**
