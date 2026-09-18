@@ -205,6 +205,10 @@ final readonly class ContributionDispatcher
 
         $this->ledger->record($supersession);
 
+        if ($input['action'] === 'proposition.variant') {
+            app(ExplorationEpochService::class)->advance($phase);
+        }
+
         return $this->refreshMeasurement($target);
     }
 

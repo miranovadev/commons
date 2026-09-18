@@ -23,7 +23,7 @@ export function useParticipantRealtime(slug: string, participantId: string, enab
     return () => { queue.dispose(); release(); };
   }, [dispatch, slug, participantId, enabled]);
 
-  // Another Participant may exhaust a local alternative while this viewer stays
+  // Another Participant may spend or reopen a local route while this viewer stays
   // still. Reuse channel ownership/transport; refresh the workspace by ID only.
   useEffect(() => {
     if (!enabled || !participantId || !horizonId) return;

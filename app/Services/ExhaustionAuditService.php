@@ -20,8 +20,8 @@ final class ExhaustionAuditService
         $witnesses = DB::table('horizon_failure_witnesses')->whereIn('phase_id', $phaseIds)->get()->keyBy('phase_id');
         $receipts = DB::table('receipts')->whereIn('id', $tragedies->pluck('receipt_id'))->get()->keyBy('id');
         $consumptions = DB::table('receipt_consumptions')->whereIn('receipt_id', $tragedies->pluck('receipt_id'))->get()->keyBy('receipt_id');
-        $validRest = fn ($id, $horizon) => ($phase = $phases->get($id)) !== null
-            && $phase->context_horizon_id === $horizon && $phase->rest_reason === 'no_remaining_potential'
+        $validRest = fn ($id, $horizon, $potentialRequired = true) => ($phase = $phases->get($id)) !== null
+            && $phase->context_horizon_id === $horizon && (! $potentialRequired || $phase->rest_reason === 'no_remaining_potential')
             && $phase->completed_at !== null && $phase->rested_at !== null
             && $witnesses->get($id)?->context_horizon_id === $horizon;
         $invalidRest = $invalidTragedy = $invalidConsumption = $horizonMismatch = [];
@@ -63,11 +63,11 @@ final class ExhaustionAuditService
         $invalidFailures = [];
         $subjects = DB::table('propositions as node')->join('phases as phase', 'phase.id', '=', 'node.phase_id')
             ->join('cycles as cycle', 'cycle.id', '=', 'phase.cycle_id')->whereIn('node.id', $failures->pluck('proposition_id'))
-            ->get(['node.id', 'node.tier', 'cycle.context_horizon_id'])->keyBy('id');
+            ->get(['node.id', 'node.tier', 'phase.kind', 'cycle.context_horizon_id'])->keyBy('id');
         foreach ($failures as $failure) {
             $node = $subjects->get($failure->proposition_id);
-            if (! $validRest($failure->phase_id, $failure->context_horizon_id) || $node === null
-                || $node->tier !== 'expressive' || $node->context_horizon_id !== $failure->context_horizon_id) {
+            if (! $validRest($failure->phase_id, $failure->context_horizon_id, false) || $node === null
+                || (int) $node->kind !== (int) $failure->structural_position || $node->tier !== 'expressive' || $node->context_horizon_id !== $failure->context_horizon_id) {
                 $invalidFailures[] = $failure->proposition_id;
             }
         }

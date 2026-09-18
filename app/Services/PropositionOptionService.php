@@ -47,7 +47,7 @@ final class PropositionOptionService
         }
 
         // Receipt consumption never erases the path established by an earlier vote.
-        $options = $this->writeOptionsFor($phase, $context);
+        $options = $this->unspentWrites($phase, $context);
         if ($context !== null) {
             $attested = $context->effectiveAttestations($options->pluck('id'))
                 ->filter(fn ($attestation) => $attestation->phase->cycle->participant_id === $phase->cycle->participant_id
@@ -83,7 +83,7 @@ final class PropositionOptionService
             return collect();
         }
 
-        $writes = $this->writeOptionsFor($phase, $context);
+        $writes = $this->unspentWrites($phase, $context);
         if (in_array($phase->kind, [PhaseKind::Distinguish, PhaseKind::Disperse], true)) {
             $receipts = app(HorizonReceiptService::class);
             $instrumented = $receipts->instrumentedIds($phase, $writes->pluck('id'));
@@ -102,6 +102,16 @@ final class PropositionOptionService
     public function writeOptionsFor(Phase $phase, ?ParticipationContext $context = null): Collection
     {
         return $this->resolveWrites($phase, $context)->filter(fn (Proposition $node): bool => ($phase->kind === PhaseKind::Order && $node->tier === 'committal') || $this->availability->mutable($node, $context))->values();
+    }
+
+    /** Keep historical Writes visible while suppressing spent action targets. */
+    private function unspentWrites(Phase $phase, ?ParticipationContext $context): Collection
+    {
+        $writes = $this->writeOptionsFor($phase, $context);
+        $spent = app(ExplorationEpochService::class)->failuresFor($phase, $writes->pluck('id'), $context);
+
+        return $writes->reject(fn (Proposition $node) => $spent->has($node->id)
+            && (int) $spent->get($node->id)->structural_position === $phase->kind->value)->values();
     }
 
     private function resolveWrites(Phase $phase, ?ParticipationContext $context = null): Collection
@@ -135,7 +145,7 @@ final class PropositionOptionService
         $shared = app(HorizonReceiptService::class)->available($phase, $context)->isNotEmpty();
         $expressive = in_array($phase->kind, [PhaseKind::Distinguish, PhaseKind::Disperse], true);
 
-        $writes = $this->writeOptionsFor($phase, $context);
+        $writes = $this->unspentWrites($phase, $context);
         $instrumented = $expressive ? app(HorizonReceiptService::class)->instrumentedIds($phase, $writes->pluck('id')) : collect();
 
         return $writes->filter(fn (Proposition $node): bool => $this->availability->mutable($node, $context)
@@ -186,7 +196,7 @@ final class PropositionOptionService
 
         return $query->latest('created_at')
             ->limit($this->limit())
-            ->get();
+            ->get()->reject(fn (Proposition $node) => app(ExplorationEpochService::class)->spentNow($node, $phase, $context))->values();
     }
 
     /**

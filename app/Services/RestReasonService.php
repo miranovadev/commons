@@ -22,9 +22,12 @@ final class RestReasonService
         $state = app(PropositionStateService::class);
         // Unobserved structure has not failed a measured probe. A missing vote
         // or evidence can leave a Phase actionless while earlier work remains.
-        if ($state->attestations(collect([$gate]), $context)->isEmpty()
+        $writes = app(PropositionOptionService::class)->writeOptionsFor($phase, $context);
+        $spent = app(ExplorationEpochService::class)->failuresFor($phase, $writes->pluck('id'), $context);
+        $testedWrites = $writes->isNotEmpty() && $writes->pluck('id')->diff($spent->keys())->isEmpty();
+        if (! $testedWrites && ($state->attestations(collect([$gate]), $context)->isEmpty()
             || ($state->receipts($gate, $context)->isEmpty()
-                && app(HorizonReceiptService::class)->available($phase, $context)->isEmpty())) {
+                && app(HorizonReceiptService::class)->available($phase, $context)->isEmpty()))) {
             return RestReason::NoAvailableMove;
         }
 

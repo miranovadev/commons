@@ -47,20 +47,20 @@ class HorizonReceiptLifecycleTest extends TestCase
         app(InstrumentExecutionService::class)->complete($execution, $source);
     }
 
-    public function test_receipt_evidence_is_free_and_shared_even_when_its_producer_is_outside_the_working_set(): void
+    public function test_receipt_evidence_remains_free_and_shared_when_its_producer_is_spent(): void
     {
         $producerPhase = $this->phase($this->origin, PhaseKind::Distinguish);
-        // A failed producer leaves the operational working set. Its persistent
-        // unconsumed Receipt remains shared evidence in the Horizon.
+        // A spent producer and its unconsumed Receipt remain contextual evidence.
         $producer = $this->node($producerPhase, null);
         $service = app(InstrumentExecutionService::class);
         $receipt = $service->complete($service->start($producerPhase, $producer, 'citation', $this->origin->id), $producer);
         DB::table('continuation_failures')->insert(['proposition_id' => $producer->id,
             'context_horizon_id' => $producerPhase->cycle->context_horizon_id,
-            'phase_id' => $producerPhase->id, 'failed_at' => now()]);
+            'phase_id' => $producerPhase->id, 'failed_at' => now(),
+            'structural_position' => $producerPhase->kind->value, 'exploration_epoch' => 0]);
         $viewer = $this->phase($this->origin, PhaseKind::Distinguish);
         $context = new ParticipationContext($viewer);
-        $this->assertFalse($context->propositions->has($producer->id));
+        $this->assertTrue($context->propositions->has($producer->id));
         $before = DB::table('substrate_ledger_entries')->count();
         $item = app(ReceiptContextService::class)->forPhase($viewer, $context)->firstWhere('id', $receipt->id);
         $this->assertSame('available', $item['availability']);

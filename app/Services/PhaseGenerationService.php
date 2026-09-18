@@ -78,25 +78,31 @@ final readonly class PhaseGenerationService
             ->whereHas('phase', fn ($query) => $query->where('kind', $phase->kind->value)
                 ->whereHas('cycle', fn ($query) => $query->where('context_horizon_id', $phase->cycle->context_horizon_id)))
             ->whereIn('id', $results);
-        $check = function () use ($viable, $phase, $action): bool {
+        $check = function () use ($viable, $phase, $action, $context): bool {
             $existing = $viable->pluck('id');
             if ($existing->isEmpty()) {
                 return true;
             }
-            if ($action !== 'proposition.variant'
-                || ! in_array($phase->kind, [PhaseKind::Distinguish, PhaseKind::Disperse], true)) {
+            if ($action !== 'proposition.variant') {
                 return false;
             }
-            // Evidence and judgment must exist for each viable opportunity before
-            // another is generated. Neither receipt consumption nor author count
-            // supplies this permission, and a prior Mediate Rest is not required.
-            $observed = app(HorizonReceiptService::class)->instrumentedIds($phase, $existing);
-            $attested = Attestation::query()->effective()
-                ->whereIn('proposition_id', $existing)->distinct()->pluck('proposition_id');
+            $spent = app(ExplorationEpochService::class)->failuresFor($phase, $existing, $context)
+                ->where('structural_position', $phase->kind->value)->keys();
+            if ($existing->diff($spent)->isNotEmpty()) {
+                // Evidence alone does not prove downstream failure. Keep using
+                // healthy continuations; do not assign Variant a priority.
+                return false;
+            }
+            if (in_array($phase->kind, [PhaseKind::Distinguish, PhaseKind::Disperse], true)) {
+                $observed = app(HorizonReceiptService::class)->instrumentedIds($phase, $existing);
+                $attested = Attestation::query()->effective()
+                    ->whereIn('proposition_id', $existing)->distinct()->pluck('proposition_id');
+                if ($existing->diff($observed)->isNotEmpty() || $existing->diff($attested)->isNotEmpty()) {
+                    return false;
+                }
+            }
 
-            return $existing->diff($observed)->isEmpty() && $existing->diff($attested)->isEmpty()
-                && app(PotentialChargeService::class)->hasRemainingInHorizon($phase);
-
+            return app(PotentialChargeService::class)->hasRemainingInHorizon($phase);
         };
 
         // Reuse this calculation's structural query, never a cross-action cache.

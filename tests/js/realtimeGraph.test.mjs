@@ -593,23 +593,22 @@ test('history visibility keeps exhausted paths without changing the live cache o
   } finally { await act(async () => page.close()); el.remove(); }
 });
 
-test('a stationary workspace learns local exhaustion through the shared Horizon channel', { timeout: 30000 }, async () => {
-  let exhausted = false;
+test('a stationary workspace keeps spent context and reopens only after an epoch event through the shared Horizon channel', { timeout: 30000 }, async () => {
+  let spent = false;
+  let epoch = 0;
   let requests = 0;
   const origin = { ...proposition('Origin'), register: 'canon' };
-  const scar = { id: 'A', role: 'write', phase_number: 1, register: 'activity', tier: 'expressive',
-    statement: 'A previously explored route', statement_truncated: false,
-    exhausted: true, basin_exhausted: false, exhausted_at: '2026-09-17', actionable: false };
+
   globalThis.fetch = async request => {
     const path = new URL(request.url).pathname;
     if (path.endsWith('/workspace')) {
       requests++;
       return json({ status: 'ready', context_horizon_id: 'local', plan: {
         phase: { id: 'phase', kind: 'distinguish', number: 1, write_register: 'activity' }, gate: origin,
-        write_options: exhausted ? [] : [proposition('A', ['Origin'])],
-        exhausted_alternatives: exhausted ? [scar] : [],
-        schema: { $defs: { actions: exhausted ? { 'proposition.variant': { properties: {} } }
-          : { 'instrument.execute': { properties: { proposition_id: { enum: ['A'] } } } } } },
+        write_options: [{ ...proposition('A', ['Origin']), spent, structural_position: 1, exploration_epoch: epoch }],
+        exhausted_alternatives: [],
+        schema: { $defs: { actions: spent ? { 'proposition.variant': { properties: {} } }
+          : { 'proposition.traverse': { properties: { proposition_id: { enum: ['A'] } } } } } },
       } });
     }
     return json({ id: 'viewer' });
@@ -620,13 +619,21 @@ test('a stationary workspace learns local exhaustion through the shared Horizon 
     await until(() => live()?.channels.has('private-context-horizon.local') && el.querySelector('[data-proposition-id="A"]'));
     await settle(); requests = 0;
     const transport = live();
-    exhausted = true;
-    const event = { type: 'proposition.updated', proposition_id: 'A', context_horizon_id: 'local' };
+    spent = true;
+    const event = { type: 'proposition.spent', proposition_id: 'A', context_horizon_id: 'local' };
     await act(async () => { transport.channels.get('private-context-horizon.local').callback(event); transport.channels.get('private-context-horizon.local').callback(event); });
-    await until(() => el.querySelector('[data-role="write"] [data-exhausted-id="A"]'));
-    assert.equal(el.querySelector('[data-proposition-id="A"]'), null);
-    assert.equal(el.querySelector('[data-exhausted-id="A"] button'), null);
+    await until(() => el.textContent.includes('Spent in current epoch'));
+    assert.ok(el.querySelector('[data-proposition-id="A"]'));
+    assert.equal(el.querySelector('[data-exhausted-id="A"]'), null);
+    assert.equal(el.querySelector('[data-proposition-id="A"] button'), null);
     assert.equal(requests, 1, 'the event burst coalesces into one workspace refresh');
+    spent = false; epoch = 1;
+    await act(async () => transport.channels.get('private-context-horizon.local').callback({
+      type: 'exploration.epoch_advanced', context_horizon_id: 'local', structural_position: 1, exploration_epoch: epoch,
+    }));
+    await until(() => !el.textContent.includes('Spent in current epoch') && el.textContent.includes('Traverse'));
+    assert.ok(el.querySelector('[data-proposition-id="A"]'));
+    assert.equal(requests, 2, 'epoch advance refreshes eligibility without hiding the historical proposition');
     for (const type of ['receipt.created', 'receipt.consumed', 'horizon.tragedy', 'horizon.exhausted']) {
       const before = requests;
       await act(async () => transport.channels.get('private-context-horizon.local').callback({ type, context_horizon_id: 'local', receipt_id: 'shared' }));
