@@ -15,8 +15,8 @@ test('Write renders only local cards and exactly the two schema-driven direction
         import { MantineProvider } from '@mantine/core';
         import { ParticipantWorkspace } from './resources/js/components/ParticipantWorkspace';
         const gate = { id: 'gate', register: 'activity', tier: 'expressive', statement: 'Gate' };
-        const target = { id: 'historical', register: 'frontier', tier: 'expressive', statement: 'Historical target' };
-        export function render(effective, allowed = true, auxiliary = false, kind = 'persist') {
+        export function render(effective, allowed = true, auxiliary = false, kind = 'persist', spent = false) {
+          const target = { id: 'historical', register: 'frontier', tier: 'expressive', statement: 'Historical target', spent };
           const directions = ['refute', 'support'].filter(direction => direction !== effective);
           const traversalAllowed = ['distinguish', 'persist', 'constrain', 'bias'].includes(kind);
           const actions = allowed ? {
@@ -75,6 +75,14 @@ test('Write renders only local cards and exactly the two schema-driven direction
     }
   }
   assert.doesNotMatch(module.exports.render(null, false), /Historical target|>(Support|Refute|Traverse)<\/span>/);
+  const spent = module.exports.render('support', false, false, 'distinguish', true);
+  assert.match(spent, /Historical target/);
+  assert.match(spent, /Spent in current epoch/);
+  assert.doesNotMatch(spent, />(Support|Refute|Traverse|Instrument|Revise)<\/span>/);
+  const reopened = module.exports.render('support', true, false, 'distinguish', false);
+  assert.match(reopened, /Historical target/);
+  assert.match(reopened, />Traverse<\/span>/);
+  assert.doesNotMatch(reopened, /Spent in current epoch/);
   for (const kind of ['disperse', 'mediate']) {
     // The schema is authoritative even if a stale caller lists Traverse as available.
     const markup = module.exports.render('support', true, false, kind);

@@ -8,6 +8,7 @@ use App\Models\Proposition;
 use App\Models\Receipt;
 use App\Models\Substrate;
 use App\Services\ContributionDispatcher;
+use App\Services\ExplorationEpochService;
 use App\Services\InstrumentExecutionService;
 use App\Services\LedgerService;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
@@ -89,6 +90,9 @@ class HorizonProofConcurrencyTest extends TestCase
         $this->observeAndAttest($previous);
         $secondPhase = $this->phase($this->origin, PhaseKind::Distinguish);
         $this->measure($previous, 0);
+        DB::table('continuation_failures')->insert(['proposition_id' => $previous->id,
+            'context_horizon_id' => $firstPhase->cycle->context_horizon_id, 'structural_position' => 1,
+            'exploration_epoch' => 0, 'phase_id' => $firstPhase->id, 'failed_at' => now()]);
         $before = Proposition::count();
         $input = ['action' => 'proposition.variant', 'statement' => 'Next opportunity'];
         $this->whileWorkerWaits($this->substrate, [
@@ -99,6 +103,8 @@ class HorizonProofConcurrencyTest extends TestCase
             app(ContributionDispatcher::class)->dispatch($firstPhase->cycle->participant, $firstPhase, $input);
         });
         $this->assertSame($before + 1, Proposition::count());
+        $this->assertSame(1, app(ExplorationEpochService::class)->current($firstPhase->cycle->context_horizon_id, PhaseKind::Distinguish));
+        $this->assertDatabaseCount('continuation_failures', 1);
     }
 
     private function whileWorkerWaits(Substrate $substrate, array $input, callable $competing): void

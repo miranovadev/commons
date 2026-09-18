@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\Participant;
 use App\Models\Tragedy;
 use App\Services\ExhaustionService;
+use App\Services\ExplorationEpochService;
 use App\Services\ParticipantHistoricalContext;
 use App\Services\PotentialChargeService;
 use Illuminate\Console\Command;
@@ -38,7 +39,7 @@ class InspectRecovery extends Command
         $this->line(json_encode([
             'participant_id' => $participant->id,
             'position_id' => $participant->current_proposition_id,
-            'current_path_exhausted' => DB::table('continuation_failures')->where('proposition_id', $participant->current_proposition_id)->exists(),
+            'current_path_spent' => $phase !== null && app(ExplorationEpochService::class)->spentNow($participant->position, $phase),
             'current_horizon_id' => $phase?->cycle->context_horizon_id,
             'current_horizon_exhausted' => $phase?->cycle->contextHorizon->exhausted_at !== null,
             'parent_horizon_id' => $phase?->cycle->contextHorizon->parent_context_horizon_id,

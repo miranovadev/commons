@@ -5,22 +5,36 @@ namespace Tests\Feature;
 use App\Events\RealtimeInvalidation;
 use App\Models\ContextHorizon;
 use App\Models\Participant;
+use App\Models\Permission;
 use App\Models\Proposition;
+use App\Models\Role;
 use App\Models\Substrate;
 use App\Models\SubstrateMembership;
 use App\Models\User;
 use App\Services\CycleEntryService;
 use App\Services\ParticipationService;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Tests\TestCase;
 
 class RealtimeTest extends TestCase
 {
     // Real commits are essential here: RefreshDatabase wraps tests in a transaction.
     use DatabaseMigrations;
+
+    public function runDatabaseMigrations(): void
+    {
+        $this->beforeRefreshingDatabase();
+        $this->refreshTestDatabase();
+        $this->afterRefreshingDatabase();
+        $this->beforeApplicationDestroyed(static function (): void {
+            RefreshDatabaseState::$migrated = false;
+        });
+    }
 
     private array $notifications = [];
 
@@ -84,7 +98,7 @@ class RealtimeTest extends TestCase
         try {
             $service->contribute($participant, $state['plan']['phase']['id'], ['action' => 'proposition.variant', 'statement' => 'Stale.']);
             $this->fail('A stale Phase must be rejected.');
-        } catch (\Symfony\Component\HttpKernel\Exception\ConflictHttpException) {
+        } catch (ConflictHttpException) {
             $this->assertSame([], $this->notifications);
         }
     }
@@ -115,15 +129,15 @@ class RealtimeTest extends TestCase
         $auth('participant.'.$participant->id)->assertForbidden();
         $auth('context-horizon.missing')->assertForbidden();
         $auth('participant.missing')->assertForbidden();
-        $permission = \App\Models\Permission::create(['name' => 'participants.act']);
-        $role = \App\Models\Role::create(['name' => 'participant', 'scope' => 'substrate']);
+        $permission = Permission::create(['name' => 'participants.act']);
+        $role = Role::create(['name' => 'participant', 'scope' => 'substrate']);
         $role->permissions()->attach($permission);
         $owner->roles()->attach($role, ['substrate_id' => $substrate->id]);
         $this->actingAs($owner);
         $auth('participant.'.$participant->id)->assertOk();
         $this->getJson("/api/substrates/{$substrate->slug}/participants/{$participant->id}/participate")->assertOk();
-        $systemPermission = \App\Models\Permission::create(['name' => 'system.access']);
-        $systemRole = \App\Models\Role::create(['name' => 'system', 'scope' => 'system']);
+        $systemPermission = Permission::create(['name' => 'system.access']);
+        $systemRole = Role::create(['name' => 'system', 'scope' => 'system']);
         $systemRole->permissions()->attach($systemPermission);
         $outsider->roles()->attach($systemRole, ['substrate_id' => null]);
         $this->actingAs($outsider);

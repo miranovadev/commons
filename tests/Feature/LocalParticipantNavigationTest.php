@@ -274,7 +274,7 @@ class LocalParticipantNavigationTest extends TestCase
         ]);
     }
 
-    public function test_traverse_remains_an_explicit_choice_alongside_an_evidenced_positive_potential_variant(): void
+    public function test_healthy_evidenced_traverse_prevents_redundant_variant_even_with_positive_potential(): void
     {
         $position = $this->node('Current', 0.8);
         $target = $this->node('Existing distinction', 0.1, 'expressive');
@@ -284,7 +284,7 @@ class LocalParticipantNavigationTest extends TestCase
         app(CycleEntryService::class)->enter($participant);
         $state = $this->state($participant);
         $actions = $state['plan']['schema']['$defs']['actions'];
-        $this->assertArrayHasKey('proposition.variant', $actions);
+        $this->assertArrayNotHasKey('proposition.variant', $actions);
         $this->assertArrayHasKey('proposition.traverse', $actions);
         $this->assertArrayNotHasKey('participant.rest', $actions);
         $this->assertFalse($state['plan']['rest_available']);

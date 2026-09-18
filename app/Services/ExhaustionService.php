@@ -22,10 +22,8 @@ final class ExhaustionService
     /** Reuse a caller's joined Horizon column to keep scoped reads out of nested global subqueries. */
     public function scopeActionable(Builder|QueryBuilder $query, ?string $horizonColumn = null): Builder|QueryBuilder
     {
-        return $query->whereNotExists(fn ($q) => $q->selectRaw('1')->from('continuation_failures')
-            ->whereColumn('continuation_failures.proposition_id', 'propositions.id'))
-            ->whereNotExists(fn ($q) => $q->selectRaw('1')->from('horizon_exhaustions')
-                ->whereColumn('horizon_exhaustions.opening_proposition_id', 'propositions.id'))
+        return $query->whereNotExists(fn ($q) => $q->selectRaw('1')->from('horizon_exhaustions')
+            ->whereColumn('horizon_exhaustions.opening_proposition_id', 'propositions.id'))
             ->whereNotExists(function ($closed) use ($horizonColumn): void {
                 $closed->selectRaw('1')->from('horizon_exhaustions as closed_horizon');
                 if ($horizonColumn !== null) {
@@ -56,15 +54,14 @@ final class ExhaustionService
     /** Presentation over a caller-scoped proposition query; never an action source. */
     public function withHistoricalState(Builder $query): Builder
     {
-        return $query->leftJoin('continuation_failures as failure', 'failure.proposition_id', '=', 'propositions.id')
-            ->leftJoin('horizon_exhaustions as opened', 'opened.opening_proposition_id', '=', 'propositions.id')
+        return $query->leftJoin('horizon_exhaustions as opened', 'opened.opening_proposition_id', '=', 'propositions.id')
             ->join('phases as history_phase', 'history_phase.id', '=', 'propositions.phase_id')
             ->join('cycles as history_cycle', 'history_cycle.id', '=', 'history_phase.cycle_id')
             ->leftJoin('horizon_exhaustions as owner', 'owner.context_horizon_id', '=', 'history_cycle.context_horizon_id')
-            ->where(fn ($q) => $q->whereNotNull('failure.proposition_id')->orWhereNotNull('opened.context_horizon_id')->orWhereNotNull('owner.context_horizon_id'))
+            ->where(fn ($q) => $q->whereNotNull('opened.context_horizon_id')->orWhereNotNull('owner.context_horizon_id'))
             ->select(['propositions.id', 'propositions.statement', 'propositions.register', 'propositions.tier', 'propositions.created_at'])
             ->selectRaw("CASE WHEN propositions.tier = 'committal' THEN 'basin' ELSE 'excursion' END as exhaustion_kind")
-            ->selectRaw('COALESCE(opened.exhausted_at, owner.exhausted_at, failure.failed_at) as exhausted_at');
+            ->selectRaw('COALESCE(opened.exhausted_at, owner.exhausted_at) as exhausted_at');
     }
 
     public function inspect(Phase $phase): array

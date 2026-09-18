@@ -13,6 +13,9 @@ export interface Observables {
 }
 
 export interface Proposition {
+  spent?: boolean;
+  structural_position?: number;
+  exploration_epoch?: number;
   exhaustion?: { exhausted: boolean; basin_exhausted: boolean; exhausted_at: string | null };
   active?: boolean;
   id: Identifier;
