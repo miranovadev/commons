@@ -15,7 +15,7 @@ jobs:
           docker pull postgres:18
           docker run --rm --entrypoint bash postgres:18 -c '
             set -e
-            binary=$(command -v pg_restore)
+            binary=/usr/lib/postgresql/18/bin/pg_restore
             mkdir -p /tmp/bundle/bin /tmp/bundle/lib
             cp "$binary" /tmp/bundle/bin/pg_restore
             ldd "$binary" | awk '\''/=> \// {print $3} /^\// {print $1}'\'' | while read library; do cp -L "$library" "/tmp/bundle/lib/$(basename "$library")"; done
