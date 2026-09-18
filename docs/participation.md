@@ -229,7 +229,7 @@ traversal set alone says nothing about complete action exhaustion.
 
 The plan reports `traversal_options` and `instrument_options` separately from
 `rest_available`. Complete Write and traversal target sets are not truncated by the
-Horizon display limit. Recovery searches viable committed Domains before their
+Horizon display limit. A successful Commit forms the downstream recovery frontier inside the same Context Horizon, including when its ancestor has greater numeric Potential. Recovery searches viable committed Domains before their
 provenance and compares local candidates after distance attenuation, as described below.
 
 Only an actionless Phase exposes `participant.rest`:
