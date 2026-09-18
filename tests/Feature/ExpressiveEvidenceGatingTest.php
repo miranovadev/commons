@@ -7,6 +7,7 @@ use App\Models\Attestation;
 use App\Models\Cycle;
 use App\Models\Phase;
 use App\Services\ContributionDispatcher;
+use App\Services\ExplorationEpochService;
 use App\Services\HorizonReceiptService;
 use App\Services\InputPlanService;
 use App\Services\InstrumentExecutionService;
@@ -99,7 +100,7 @@ class ExpressiveEvidenceGatingTest extends TestCase
     }
 
     #[DataProvider('expressivePhases')]
-    public function test_another_variant_requires_instrument_attestation_and_remaining_potential(PhaseKind $kind): void
+    public function test_another_variant_requires_spent_evidenced_routes_and_remaining_potential(PhaseKind $kind): void
     {
         $phase = $this->position($kind);
         $first = $this->node($phase, $phase->gate);
@@ -114,9 +115,11 @@ class ExpressiveEvidenceGatingTest extends TestCase
         $this->measure($first, 1);
         $this->assertFalse($generation->available($phase, 'proposition.variant'), 'Evidence cannot invent Potential');
         $this->measure($first, 0);
+        $this->assertFalse($generation->available($phase, 'proposition.variant'), 'A healthy evidenced route remains viable');
+        $this->recordSpent($first, $phase);
         $this->assertTrue($generation->available($phase, 'proposition.variant'));
         $this->assertArrayHasKey('proposition.variant', $this->actions($phase));
-        // No Rest or other Participant is needed to authorize the next Variant.
+        // Failure is a substrate fact, never an author-count or action-priority quota.
         $second = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
             ['action' => 'proposition.variant', 'statement' => 'The next independent possibility']);
         $this->assertFalse($generation->available($phase, 'proposition.variant'));
@@ -129,7 +132,10 @@ class ExpressiveEvidenceGatingTest extends TestCase
         $vote->save();
         app(LedgerService::class)->record($vote);
         $this->measure($second, 0);
-        $this->assertTrue($generation->available($phase, 'proposition.variant'), 'The rule repeats beyond two Variants');
+        $this->assertFalse($generation->available($phase, 'proposition.variant'), 'New and reopened routes must be tested');
+        $this->recordSpent($first, $phase);
+        $this->recordSpent($second, $phase);
+        $this->assertTrue($generation->available($phase, 'proposition.variant'), 'The rule repeats after all current routes fail');
         $this->assertNull($receipt->fresh()->consumption, 'Variant eligibility never consumes evidence');
     }
 
@@ -147,5 +153,13 @@ class ExpressiveEvidenceGatingTest extends TestCase
         $mediate->forceFill(['completed_at' => now()])->save();
         $mediate->cycle->forceFill(['rested_at' => now(), 'completed_at' => now()])->save();
         $this->assertFalse(app(PhaseGenerationService::class)->available($phase, 'proposition.variant'), 'Mediate Rest cannot bypass evidence');
+    }
+
+    private function recordSpent($node, Phase $phase): void
+    {
+        DB::table('continuation_failures')->insert(['proposition_id' => $node->id,
+            'context_horizon_id' => $phase->cycle->context_horizon_id, 'structural_position' => $phase->kind->value,
+            'exploration_epoch' => app(ExplorationEpochService::class)->current($phase->cycle->context_horizon_id, $phase->kind),
+            'phase_id' => $phase->id, 'failed_at' => now()]);
     }
 }
