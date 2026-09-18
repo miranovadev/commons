@@ -72,7 +72,7 @@ for (const domain of Object.keys(domains)) {
     assert.equal(write.querySelectorAll('[data-exhausted-id]').length, 2);
     assert.equal(write.querySelector('.proposition-card').dataset.propositionId, `write-${domain}`);
     for (const scar of write.querySelectorAll('[data-exhausted-id]')) {
-      assert.match(scar.textContent, /Exhausted · Context only/);
+      assert.match(scar.textContent, /Failed continuation · Context only/);
       assert.equal(scar.querySelector('button, input, [role="button"]'), null);
     }
     assert.deepEqual(ui.actionPropositions(plan, 'attestation.create').map(node => node.id), [`write-${domain}`]);

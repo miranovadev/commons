@@ -2,31 +2,46 @@
 
 namespace App\Services;
 
-use App\Models\CommitmentSnapshot;
 use App\Models\ContextHorizon;
 use App\Models\Phase;
 use App\Models\Proposition;
-use App\Models\Substrate;
+use App\Models\ReceiptConsumption;
+use App\Models\Tragedy;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\DB;
 
-/** Explicit structural closure, independent of numeric Potential and observer visibility. */
+/** Exhaustion requires a failed continuation after the unique Tragedy Receipt was exercised. */
 final class ExhaustionService
 {
     public function actionable(Builder $query): Builder
     {
-        return $this->withoutLegacyHolds($query)->whereNotExists(fn ($q) => $q->selectRaw('1')->from('exhaustion_states')
-            ->whereColumn('exhaustion_states.proposition_id', 'propositions.id'));
+        return $this->scopeActionable($query);
     }
 
+    /** Reuse a caller's joined Horizon column to keep scoped reads out of nested global subqueries. */
+    public function scopeActionable(Builder|QueryBuilder $query, ?string $horizonColumn = null): Builder|QueryBuilder
+    {
+        return $query->whereNotExists(fn ($q) => $q->selectRaw('1')->from('continuation_failures')
+            ->whereColumn('continuation_failures.proposition_id', 'propositions.id'))
+            ->whereNotExists(fn ($q) => $q->selectRaw('1')->from('horizon_exhaustions')
+                ->whereColumn('horizon_exhaustions.opening_proposition_id', 'propositions.id'))
+            ->whereNotExists(function ($closed) use ($horizonColumn): void {
+                $closed->selectRaw('1')->from('horizon_exhaustions as closed_horizon');
+                if ($horizonColumn !== null) {
+                    $closed->whereColumn('closed_horizon.context_horizon_id', $horizonColumn);
+                } else {
+                    $closed->join('cycles as closed_cycle', 'closed_cycle.context_horizon_id', '=', 'closed_horizon.context_horizon_id')
+                        ->join('phases as closed_phase', 'closed_phase.cycle_id', '=', 'closed_cycle.id')
+                        ->whereColumn('closed_phase.id', 'propositions.phase_id');
+                }
+            });
+    }
+
+    /** Compatibility entry point: archived retirement markers have no semantic authority. */
     public function withoutLegacyHolds(Builder $query): Builder
     {
-        return $query->where(fn ($q) => $q
-            ->whereNotExists(fn ($m) => $m->selectRaw('1')->from('origin_branch_memberships as membership')
-                ->whereColumn('membership.proposition_id', 'propositions.id'))
-            ->orWhereExists(fn ($m) => $m->selectRaw('1')->from('origin_branch_memberships as membership')
-                ->join('origin_branches as branch', 'branch.root_proposition_id', '=', 'membership.root_proposition_id')
-                ->whereColumn('membership.proposition_id', 'propositions.id')->whereNull('branch.legacy_retired_at')));
+        return $query;
     }
 
     public function unavailable(Proposition|string $node): bool
@@ -38,134 +53,57 @@ final class ExhaustionService
         return ! $this->actionable(Proposition::whereKey($node instanceof Proposition ? $node->id : $node))->exists();
     }
 
-    /**
-     * Optimistic, indexed parent propagation. A Rest witness closes only a leaf;
-     * every internal node requires ALL children closed, including fresh basins.
-     * A failed parent is reconsidered if another input later closes in a diamond.
-     */
-    public function inspect(Phase $phase): array
+    /** Presentation over a caller-scoped proposition query; never an action source. */
+    public function withHistoricalState(Builder $query): Builder
     {
-        $substrateId = $phase->cycle->participant->substrate_id;
-        $version = app(PotentialProjectionService::class)->assertCurrent($substrateId);
-        $proof = ['substrate_id' => $substrateId, 'field_version' => $version, 'phase_id' => $phase->id,
-            'participant_id' => $phase->cycle->participant_id, 'position_id' => $phase->gate_proposition_id,
-            'transitions' => [], 'horizons' => [], 'branches' => [], 'stable' => false];
-        // Diagnostic calls must not turn a currently actionable Phase into a witness.
-        $plan = app(InputPlanService::class)->forPhase($phase->cycle->participant, $phase);
-        if (! isset($plan['schema']['$defs']['actions']['participant.rest'])) {
-            $proof['reason'] = 'actions_remain';
-            $proof['stable'] = $version === (int) Substrate::whereKey($substrateId)->value('field_version');
-
-            return $proof;
-        }
-        if (! $this->withoutLegacyHolds(Proposition::whereKey($phase->gate_proposition_id))->exists()) {
-            $proof['reason'] = 'legacy_retirement_hold';
-            $proof['stable'] = $version === (int) Substrate::whereKey($substrateId)->value('field_version');
-
-            return $proof;
-        }
-        $pending = [$phase->gate_proposition_id];
-        $closed = [];
-        $origin = CommitmentSnapshot::where('substrate_id', $substrateId)->where('calculator_version', 'origin-bootstrap-v1')->value('proposition_id');
-        while ($pending !== []) {
-            $id = array_shift($pending);
-            if ($id === null || $id === $origin || isset($closed[$id])) {
-                continue;
-            }
-            $node = Proposition::with('phase.cycle')->findOrFail($id);
-            if ($node->phase->cycle->participant->substrate_id !== $substrateId) {
-                throw new \DomainException('Exhaustion cannot cross substrates.');
-            }
-            $existing = DB::table('exhaustion_states')->where('proposition_id', $id)->exists();
-            $children = DB::table('supersessions as edge')->leftJoin('exhaustion_states as state', 'state.proposition_id', '=', 'edge.target_proposition_id')
-                ->where('edge.source_proposition_id', $id)->get(['edge.target_proposition_id', 'state.exhausted_at']);
-            if (! $existing && ($children->contains(fn ($child) => $child->exhausted_at === null && ! isset($closed[$child->target_proposition_id]))
-                || ($children->isEmpty() && $id !== $phase->gate_proposition_id))) {
-                continue;
-            }
-            if (! $existing && $children->isEmpty() && $node->tier === 'expressive') {
-                // A fresh Write may reach a later Phase before another participant
-                // grounds/attests it. That local Rest is not spent possibility.
-                $state = app(PropositionStateService::class);
-                if ($state->receipts($node)->isEmpty() || $state->attestations(collect([$node]))->isEmpty()) {
-                    continue;
-                }
-            }
-            if (! $existing && $children->isEmpty() && $node->tier === 'committal') {
-                continue; // An unopened outgoing possibility has no exploration witness.
-            }
-            if ($node->tier === 'committal' && $node->commitmentSnapshot === null) {
-                continue; // Incomplete legacy provenance cannot establish a basin.
-            }
-            $closed[$id] = true;
-            if (! $existing) {
-                $entryHorizon = $node->tier === 'committal'
-                    ? app(ContextHorizonProjector::class)->forEntry($node)->id : $node->phase->cycle->context_horizon_id;
-                $proof['transitions'][] = ['proposition_id' => $id, 'kind' => $node->tier === 'committal' ? 'basin' : 'excursion',
-                    'context_horizon_id' => $entryHorizon, 'owner_horizon_id' => $node->phase->cycle->context_horizon_id,
-                    'evidence' => ['reason' => $children->isEmpty() ? 'validated_rest' : 'all_children_exhausted',
-                        'child_ids' => $children->pluck('target_proposition_id')->unique()->values()->all()]];
-                if ($node->tier === 'committal') {
-                    $child = ContextHorizon::where('opened_by_proposition_id', $id)->first();
-                    if ($child !== null) {
-                        $proof['horizons'][] = $child->id;
-                    }
-                }
-            }
-            $branch = DB::table('origin_branches')->where('root_proposition_id', $id)
-                ->whereNull('legacy_retired_at')->whereNull('exhausted_at')->first();
-            if ($branch !== null && $branch->origin_proposition_id === $origin && $node->tier === 'expressive') {
-                $proof['branches'][] = ['root_proposition_id' => $id, 'origin_proposition_id' => $origin,
-                    'exhausted' => true, 'would_tragedy' => true, 'reason' => 'origin_lineage_exhausted',
-                    'opened_at' => $branch->opened_at];
-            }
-            foreach (DB::table('supersessions')->where('target_proposition_id', $id)->pluck('source_proposition_id') as $parent) {
-                $pending[] = $parent;
-            }
-        }
-        $proof['reason'] = $proof['transitions'] === [] ? 'open_continuations_or_already_exhausted' : 'structural_exhaustion';
-        $proof['stable'] = $version === (int) Substrate::whereKey($substrateId)->value('field_version');
-
-        return $proof;
+        return $query->leftJoin('continuation_failures as failure', 'failure.proposition_id', '=', 'propositions.id')
+            ->leftJoin('horizon_exhaustions as opened', 'opened.opening_proposition_id', '=', 'propositions.id')
+            ->join('phases as history_phase', 'history_phase.id', '=', 'propositions.phase_id')
+            ->join('cycles as history_cycle', 'history_cycle.id', '=', 'history_phase.cycle_id')
+            ->leftJoin('horizon_exhaustions as owner', 'owner.context_horizon_id', '=', 'history_cycle.context_horizon_id')
+            ->where(fn ($q) => $q->whereNotNull('failure.proposition_id')->orWhereNotNull('opened.context_horizon_id')->orWhereNotNull('owner.context_horizon_id'))
+            ->select(['propositions.id', 'propositions.statement', 'propositions.register', 'propositions.tier', 'propositions.created_at'])
+            ->selectRaw("CASE WHEN propositions.tier = 'committal' THEN 'basin' ELSE 'excursion' END as exhaustion_kind")
+            ->selectRaw('COALESCE(opened.exhausted_at, owner.exhausted_at, failure.failed_at) as exhausted_at');
     }
 
-    /** Caller already owns the tiny version-guarded contribution transaction. */
+    public function inspect(Phase $phase): array
+    {
+        return app(HorizonFailureService::class)->inspect($phase);
+    }
+
     public function publish(Phase $phase, array $proof): void
     {
-        DB::transaction(function () use ($phase, $proof): void {
-            $substrate = Substrate::whereKey($proof['substrate_id'])->lockForUpdate()->firstOrFail();
-            if (! $proof['stable'] || $proof['field_version'] !== (int) $substrate->field_version
-                || $proof['phase_id'] !== $phase->id || $proof['position_id'] !== $phase->gate_proposition_id
-                || $proof['participant_id'] !== $phase->cycle->participant_id
-                || $proof['substrate_id'] !== $phase->cycle->participant->substrate_id
-                || $phase->fresh()->completed_at === null
-                || $phase->cycle->fresh()->rested_at === null) {
-                return;
+        app(HorizonFailureService::class)->publish($phase, $proof);
+    }
+
+    /** The caller holds the root and owns a fresh authoritative no-Potential Rest witness. */
+    public function afterFailure(Phase $phase, Tragedy $tragedy, array $proof): bool
+    {
+        if ($tragedy->phase_id === $phase->id || $proof['rest_reason'] !== 'no_remaining_potential'
+            || ! ReceiptConsumption::whereKey($tragedy->receipt_id)->where('legacy', false)->exists()) {
+            return false;
+        }
+        $horizon = ContextHorizon::whereKey($tragedy->context_horizon_id)->lockForUpdate()->firstOrFail();
+        $changed = DB::table('horizon_exhaustions')->insertOrIgnore([
+            'context_horizon_id' => $horizon->id, 'tragedy_id' => $tragedy->id, 'receipt_id' => $tragedy->receipt_id,
+            // Origin has no predecessor opening Committal. It remains unique forever.
+            'opening_proposition_id' => $horizon->opened_by_proposition_id,
+            'phase_id' => $phase->id, 'terminal_proposition_id' => $phase->gate_proposition_id,
+            'observed_field_version' => $proof['field_version'], 'exhausted_at' => now(),
+        ]);
+        if ($changed) {
+            $horizon->forceFill(['exhausted_at' => now()])->save();
+            $affected = array_values(array_filter([$horizon->id, $horizon->parent_context_horizon_id]));
+            app(FieldMutationService::class)->mark($horizon->substrate_id, $affected,
+                array_values(array_filter([$horizon->opened_by_proposition_id])), measurementsDirty: false);
+            if ($horizon->opened_by_proposition_id !== null) {
+                app(RealtimePublisher::class)->proposition($horizon->opened_by_proposition_id);
             }
-            $affected = $ids = [];
-            foreach ($proof['transitions'] as $transition) {
-                $changed = DB::table('exhaustion_states')->insertOrIgnore([
-                    ...collect($transition)->except(['owner_horizon_id', 'evidence'])->all(),
-                    'substrate_id' => $substrate->id, 'phase_id' => $phase->id,
-                    'terminal_proposition_id' => $phase->gate_proposition_id,
-                    'observed_field_version' => $proof['field_version'], 'exhausted_at' => now(),
-                    'evidence' => json_encode($transition['evidence'], JSON_THROW_ON_ERROR),
-                ]);
-                if ($changed) {
-                    $affected[] = $transition['owner_horizon_id'];
-                    $affected[] = $transition['context_horizon_id'];
-                    $ids[] = $transition['proposition_id'];
-                    app(RealtimePublisher::class)->proposition($transition['proposition_id']);
-                }
-            }
-            if ($ids === []) {
-                return;
-            }
-            ContextHorizon::whereKey($proof['horizons'])->whereNull('exhausted_at')->update(['exhausted_at' => now()]);
-            app(TragedyService::class)->record($phase, $proof);
-            app(FieldMutationService::class)->mark($substrate->id, array_unique($affected), $ids, measurementsDirty: false);
-            app(RealtimePublisher::class)->horizons($substrate->id);
-            app(RealtimePublisher::class)->graphMetrics($substrate->id);
-        });
+            app(RealtimePublisher::class)->horizon($horizon->id, $horizon->substrate_id,
+                ['type' => 'horizon.exhausted', 'opening_proposition_id' => $horizon->opened_by_proposition_id]);
+        }
+
+        return true;
     }
 }

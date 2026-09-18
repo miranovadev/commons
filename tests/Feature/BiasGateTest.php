@@ -76,7 +76,7 @@ class BiasGateTest extends TestCase
         $this->assertSame(ObservableDirection::Positive, $chirality->directionFor($this->gate));
         $plan = $this->plan();
         $this->assertTrue($plan['rest_available']);
-        $this->assertArrayNotHasKey('proposition.bias', $plan['schema']['$defs']['actions']);
+        $this->assertArrayNotHasKey('proposition.reclassify', $plan['schema']['$defs']['actions']);
         $this->assertSame([], array_column($plan['gate_options'], 'id'));
 
         $descendant = $this->node('Neutral descendant', $this->gate->register, position: PhaseKind::Mediate);
@@ -146,9 +146,9 @@ class BiasGateTest extends TestCase
             $touch->forceFill(['gate_proposition_id' => $selected->id])->save();
         }
         $plan = $this->plan();
-        $input = ['action' => 'proposition.bias', 'proposition_id' => $selected->id];
-        $this->assertSame(['action', 'proposition_id'], $plan['schema']['$defs']['actions']['proposition.bias']['required']);
-        $this->assertSame($this->optionIds(), $plan['schema']['$defs']['actions']['proposition.bias']['properties']['proposition_id']['enum']);
+        $input = $this->reclassificationInputFixture($this->phase, $selected);
+        $this->assertSame(['action', 'proposition_id', 'receipt_id'], $plan['schema']['$defs']['actions']['proposition.reclassify']['required']);
+        $this->assertSame($this->optionIds(), $plan['schema']['$defs']['actions']['proposition.reclassify']['properties']['proposition_id']['enum']);
         $this->assertArrayNotHasKey('proposition.reconcile', $plan['schema']['$defs']['actions']);
         $this->assertCount(0, app(ReconciliationOptionService::class)->forPhase($this->phase));
         $this->assertInput($plan['schema'], $input, true);
@@ -163,7 +163,7 @@ class BiasGateTest extends TestCase
         $transport = app(OpenAIResponseSchema::class)->fromCommons($prompt['schema']);
         $union = $transport['properties']['contribution'];
         $properties = isset($union['anyOf'])
-            ? collect($union['anyOf'])->first(fn ($variant) => $variant['properties']['action']['enum'] === ['proposition.bias']) : $union;
+            ? collect($union['anyOf'])->first(fn ($variant) => $variant['properties']['action']['enum'] === ['proposition.reclassify']) : $union;
         $this->assertArrayNotHasKey('other_proposition_id', $properties['properties']);
         $this->assertArrayNotHasKey('statement', $properties['properties']);
         $wire = array_replace(array_fill_keys($properties['required'], null), $input);
@@ -188,7 +188,7 @@ class BiasGateTest extends TestCase
         $history = app(PropositionStateService::class);
         $this->assertSame([$target->id], $history->sourceIds($target)->all());
         $this->assertCount(0, $history->attestations(collect([$target])));
-        $this->assertSame($history->receipts($selected)->pluck('id')->all(), $history->receipts($target)->pluck('id')->all());
+        $this->assertSame([$input['receipt_id']], $history->receipts($target)->pluck('id')->all());
         $this->assertSame(1, $history->touchCount($target)); // Only the newly opened Order Phase.
         $this->assertSame(3, $history->touchCount($selected));
         $this->assertCount(2, $history->receipts($selected));
@@ -214,7 +214,7 @@ class BiasGateTest extends TestCase
         $variant = $transport['properties']['contribution']['anyOf'][0];
         $empty = array_fill_keys($variant['required'], null);
         foreach ([$this->gate, $concord] as $target) {
-            $input = ['action' => 'proposition.bias', 'proposition_id' => $target->id];
+            $input = $this->reclassificationInputFixture($this->phase, $target);
             $this->assertInput($schema, $input, $target->is($this->gate));
             $this->assertInput($transport, ['contribution' => array_replace($empty, $input)], $target->is($this->gate));
             $input = ['action' => 'instrument.execute', 'proposition_id' => $target->id,
@@ -231,10 +231,10 @@ class BiasGateTest extends TestCase
         $this->attest($this->gate, 'support');
         $plan = $this->plan();
         $this->assertSame([$this->gate->id], $this->optionIds());
-        $this->assertSame(['proposition.bias'], array_keys($plan['schema']['$defs']['actions']));
+        $this->assertSame(['proposition.reclassify'], array_keys($plan['schema']['$defs']['actions']));
         $this->publishPotentialFixture($this->viewer);
         $state = app(ParticipationService::class)->contribute($this->viewer, $this->phase->id,
-            ['action' => 'proposition.bias', 'proposition_id' => $this->gate->id]);
+            $this->reclassificationInputFixture($this->phase, $this->gate));
         $this->assertSame('order', $state['plan']['phase']['kind']);
     }
 
@@ -278,7 +278,7 @@ class BiasGateTest extends TestCase
         $this->assertEqualsCanonicalizing([$deep->id, $other->id], $this->optionIds());
         $this->assertSame(1.0, app(BiasGateService::class)->leanFor($this->phase));
         $target = app(ContributionDispatcher::class)->dispatch($this->viewer, $this->phase,
-            ['action' => 'proposition.bias', 'proposition_id' => $deep->id]);
+            $this->reclassificationInputFixture($this->phase, $deep));
         $this->assertSame([$deep->id], $target->parents()->pluck('propositions.id')->all());
     }
 
@@ -331,7 +331,7 @@ class BiasGateTest extends TestCase
     {
         $this->fixture();
         $this->attest($this->gate, 'support');
-        $input = ['action' => 'proposition.bias', 'proposition_id' => $this->gate->id];
+        $input = $this->reclassificationInputFixture($this->phase, $this->gate);
         $this->assertInput($this->plan()['schema'], $input, true);
         $negative = $this->sibling('Negative');
         $this->attest($negative, 'refute');

@@ -2,29 +2,48 @@
 
 namespace App\Services;
 
+use App\Models\CommitmentSnapshot;
+use App\Models\ContextHorizon;
 use App\Models\Phase;
+use App\Models\Receipt;
 use App\Models\Tragedy;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
-/** Tragedy is a unique Origin-lineage event, never local Rest or numeric zero. */
+/** First evidenced no-Potential Rest. Tragedy opens a final attempt; it never closes a Horizon. */
 final class TragedyService
 {
-    public function record(Phase $phase, array $proof): void
+    /** Caller owns the substrate contribution lock. Unique Horizon and Receipt keys back it. */
+    public function record(Phase $phase, array $proof): Tragedy
     {
-        foreach ($proof['branches'] as $branch) {
-            $changed = DB::table('origin_branches')->where('root_proposition_id', $branch['root_proposition_id'])
-                ->whereNull('exhausted_at')->whereNull('legacy_retired_at')->update(['exhausted_at' => now()]);
-            if (! $changed) {
-                continue;
-            }
-            (new Tragedy)->forceFill([
-                'root_proposition_id' => $branch['root_proposition_id'], 'substrate_id' => $proof['substrate_id'],
-                'participant_id' => $phase->cycle->participant_id, 'phase_id' => $phase->id,
-                'terminal_proposition_id' => $phase->gate_proposition_id, 'observed_field_version' => $proof['field_version'],
-                'occurred_at' => now(), 'evidence' => [...$branch, 'semantics' => 'exhaustion-v1',
-                    'transition_ids' => array_column($proof['transitions'], 'proposition_id'),
-                    'exhausted_horizon_ids' => $proof['horizons']],
-            ])->save();
+        $horizon = ContextHorizon::whereKey($phase->cycle->context_horizon_id)->lockForUpdate()->firstOrFail();
+        $existing = Tragedy::where('context_horizon_id', $horizon->id)->first();
+        if ($existing !== null) {
+            return $existing;
         }
+        $opener = $horizon->opened_by_proposition_id ?? CommitmentSnapshot::where('substrate_id', $horizon->substrate_id)
+            ->where('calculator_version', 'origin-bootstrap-v1')->sole()->proposition_id;
+        $id = (string) Str::ulid();
+        $receipt = (new Receipt)->forceFill([
+            'phase_id' => $phase->id, 'context_horizon_id' => $horizon->id,
+            'type' => 'tragedy', 'reference' => $id, 'capabilities' => ['readable'],
+            'metadata' => ['tragedy_id' => $id, 'terminal_proposition_id' => $phase->gate_proposition_id,
+                'opening_proposition_id' => $opener,
+                'exhausted_committal_ids' => app(TragedyEvidenceService::class)->references($horizon->id)],
+        ]);
+        // This is the observed subject, not an attachment. Only Reclassify attaches.
+        $receipt->receiptable()->associate($phase->gate);
+        $receipt->save();
+        $tragedy = (new Tragedy)->forceFill([
+            'id' => $id, 'context_horizon_id' => $horizon->id, 'receipt_id' => $receipt->id,
+            'phase_id' => $phase->id, 'participant_id' => $phase->cycle->participant_id,
+            'terminal_proposition_id' => $phase->gate_proposition_id, 'opening_proposition_id' => $opener,
+            'observed_field_version' => $proof['field_version'], 'occurred_at' => now(),
+        ]);
+        $tragedy->save();
+        app(LedgerService::class)->record($receipt);
+        app(RealtimePublisher::class)->horizon($horizon->id, $horizon->substrate_id,
+            ['type' => 'horizon.tragedy', 'tragedy_id' => $id, 'receipt_id' => $receipt->id]);
+
+        return $tragedy;
     }
 }

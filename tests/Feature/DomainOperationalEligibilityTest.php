@@ -110,9 +110,9 @@ class DomainOperationalEligibilityTest extends TestCase
             $this->assertSame(ObservableDirection::Positive, app(AttestationEvidenceService::class)->populationDirection($seed, $second, $context));
             $this->assertEqualsCanonicalizing([$x->id, $y->id], $bias->forPhase($biasPhase, $context)->pluck('id')->all());
         }
-        $this->reject($biasPhase, ['action' => 'proposition.bias', 'proposition_id' => $foreignMiddle->id]);
+        $this->reject($biasPhase, ['action' => 'proposition.reclassify', 'proposition_id' => $foreignMiddle->id]);
         $this->classificationEvidenceFixture($x);
-        $biased = $dispatcher->dispatch($cycle->participant, $biasPhase, ['action' => 'proposition.bias', 'proposition_id' => $x->id]);
+        $biased = $dispatcher->dispatch($cycle->participant, $biasPhase, $this->reclassificationInputFixture($biasPhase, $x));
         $this->assertSame($third, $biased->register);
 
         $order = $this->phase($cycle, PhaseKind::Order, $biased);

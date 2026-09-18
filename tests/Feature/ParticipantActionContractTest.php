@@ -23,6 +23,7 @@ use App\Services\OpenAIResponseSchema;
 use App\Services\OpenAIResponsesClient;
 use App\Services\OperationalInstrumentService;
 use App\Services\ParticipationService;
+use App\Services\PotentialProjectionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -58,10 +59,9 @@ class ParticipantActionContractTest extends TestCase
         // participant's generative opportunity. Fresh generation is covered by
         // FullEvidenceFlowTest and SharedReclassificationTest.
         $spent = match ($kind) {
-            PhaseKind::Distinguish, PhaseKind::Disperse => ['proposition.variant'],
+            PhaseKind::Distinguish, PhaseKind::Disperse => ['proposition.variant', 'instrument.execute'],
             PhaseKind::Persist => ['proposition.variant', 'proposition.reclassify'],
-            PhaseKind::Constrain => ['proposition.reclassify'],
-            PhaseKind::Bias => ['proposition.bias'],
+            PhaseKind::Constrain, PhaseKind::Bias => [],
             default => [],
         };
         $expected = array_values(array_diff($expected, $spent));
@@ -193,7 +193,7 @@ class ParticipantActionContractTest extends TestCase
         $this->assertRejected($participant, [...$input, 'rationale' => 'No rationale for Rest']);
         $this->assertValid($transport, ['contribution' => [...$input, 'rationale' => 'No rationale for Rest']], false);
         app(ContributionService::class)->validate($participant, $input);
-        app(\App\Services\PotentialProjectionService::class)->rebuild($participant->substrate_id, false);
+        app(PotentialProjectionService::class)->rebuild($participant->substrate_id, false);
         app(ParticipationService::class)->contribute($participant, $phase->id, $input);
         $this->assertNotNull($phase->cycle->fresh()->rested_at);
     }
@@ -305,7 +305,7 @@ class ParticipantActionContractTest extends TestCase
                 $refute->forceFill(['phase_id' => $past->id, 'proposition_id' => $revision->id, 'direction' => 'refute'])->save();
                 app(LedgerService::class)->record($refute);
             }
-            if (in_array($kind, [PhaseKind::Distinguish, PhaseKind::Persist, PhaseKind::Constrain, PhaseKind::Bias], true)) {
+            if (in_array($kind, [PhaseKind::Distinguish, PhaseKind::Persist, PhaseKind::Constrain, PhaseKind::Disperse, PhaseKind::Bias], true)) {
                 $traverse = $node($writes[$kind->value - 1], $gate, $kind === PhaseKind::Order ? PhaseKind::Bias : $kind);
                 $attestation = new Attestation;
                 $attestation->forceFill(['phase_id' => $past->id, 'proposition_id' => $traverse->id, 'direction' => 'support'])->save();
@@ -345,6 +345,7 @@ class ParticipantActionContractTest extends TestCase
         $participant->forceFill(['current_proposition_id' => $gate->id])->save();
 
         $this->publishPotentialFixture($participant);
+
         return [$participant, $phase, $seed];
     }
 }

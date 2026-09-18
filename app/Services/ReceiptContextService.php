@@ -7,6 +7,7 @@ use App\Models\Participant;
 use App\Models\ParticipantReceiptContext;
 use App\Models\Phase;
 use App\Models\Proposition;
+use App\Models\Receipt;
 use App\Models\ReceiptContextEvent;
 use App\Models\Substrate;
 use App\Services\Evidence\ReceiptEvidenceService;
@@ -26,35 +27,30 @@ final readonly class ReceiptContextService
         private PropositionMeasurementService $measurements,
     ) {}
 
-    /** Encountered evidence only; persistent memory is not an unbounded packet inbox. */
+    /** Current Horizon evidence is shared; exposed ancestor evidence remains contextual. */
     public function forPhase(Phase $phase, ?ParticipationContext $context = null): Collection
     {
-        if ($phase->gate_proposition_id !== null && ($context !== null
-            ? ! $context->activeIds->has($phase->gate_proposition_id)
-            : app(ExhaustionService::class)->unavailable($phase->gate_proposition_id))) {
-            return collect();
-        }
         $context ??= new ParticipationContext($phase);
 
         return $context->remember('receipt-context', function () use ($phase, $context): Collection {
             $gate = $context->propositions->get($phase->gate_proposition_id);
-            if ($gate === null) {
-                return collect();
-            }
-            $exposed = $this->lineage->endingAt($gate, $context)->concat([$gate])
+            $exposed = $gate === null ? collect() : $this->lineage->endingAt($gate, $context)->concat([$gate])
                 ->concat($this->mediation->readsFor($phase, $context))
                 ->concat($this->options->gateOptionsFor($phase, $context))
                 ->concat($this->options->writeOptionsFor($phase, $context))
                 ->concat($this->options->instrumentOptionsFor($phase, $context))
                 ->unique('id')->filter(fn ($node) => $context->activeIds->has($node->id));
             $present = $exposed->pluck('id');
-            $receipts = $exposed->flatMap(fn ($node) => $this->state->receipts($node, $context))->unique('id');
-            $loads = $context->receiptContexts->where('participant_id', $phase->cycle->participant_id)->keyBy('receipt_id');
+            $receipts = Receipt::where('context_horizon_id', $phase->cycle->context_horizon_id)
+                ->with(['instrumentExecution', 'consumption', 'phase'])->get()
+                ->concat($exposed->flatMap(fn ($node) => $this->state->receipts($node, $context)))->unique('id');
+            $loads = ParticipantReceiptContext::where('participant_id', $phase->cycle->participant_id)
+                ->whereIn('receipt_id', $receipts->pluck('id'))->get()->keyBy('receipt_id');
             if ($receipts->contains('type', 'citation')) {
                 $present = $present->merge($this->evidence->loadedCitationTargets($context));
             }
 
-            $replayTargets = in_array('instrument.execute', config("phases.{$phase->kind->value}.actions", []), true)
+            $replayTargets = $gate !== null && in_array('instrument.execute', config("phases.{$phase->kind->value}.actions", []), true)
                 ? $this->options->instrumentOptionsFor($phase, $context)->pluck('id') : collect();
 
             return $receipts->map(function ($receipt) use ($context, $loads, $present, $replayTargets): array {
@@ -65,7 +61,12 @@ final readonly class ReceiptContextService
                 $status = $loaded ? 'loaded' : ($verified === null ? 'unqualified' : ($alreadyPresent ? 'already-in-context' : 'available'));
 
                 return [
-                    'id' => $receipt->id, 'proposition_id' => $receipt->instrumentExecution->proposition_id,
+                    'id' => $receipt->id, 'proposition_id' => $receipt->instrumentExecution?->proposition_id ?? $receipt->phase->gate_proposition_id,
+                    'context_horizon_id' => $receipt->context_horizon_id,
+                    'availability' => $receipt->consumption !== null ? 'consumed' :
+                        ($receipt->context_horizon_id === $context->phase->cycle->context_horizon_id && $receipt->observationComplete() ? 'available' : 'historical'),
+                    'consumed_at' => $receipt->consumption?->consumed_at?->toISOString(),
+                    'attached_proposition_id' => $receipt->consumption?->proposition_id,
                     'type' => $receipt->type, 'reference' => $receipt->reference,
                     'capabilities' => [
                         'readable' => $receipt->supports(ReceiptCapability::Readable),
@@ -77,11 +78,11 @@ final readonly class ReceiptContextService
                             $context->propositions->get($receipt->instrumentExecution->proposition_id),
                             $receipt->replayInvocation(), $context,
                         ) === null,
-                    'replayed_from_receipt_id' => $receipt->instrumentExecution->replayed_from_receipt_id,
+                    'replayed_from_receipt_id' => $receipt->instrumentExecution?->replayed_from_receipt_id,
                     'observation_error' => $receipt->metadata['observation_error'] ?? null,
                     'signature' => $verified['signature'] ?? null,
                     'status' => $status, 'loaded_at' => $loaded ? $load->loaded_at->toISOString() : null,
-                    ...($loaded && $verified !== null ? ['evidence' => $verified['evidence']] : []),
+                    ...($verified !== null ? ['evidence' => $verified['evidence']] : []),
                 ];
             })->sortBy('id')->values();
         });

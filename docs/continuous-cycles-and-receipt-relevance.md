@@ -25,10 +25,7 @@ a short version-checked entry transaction. Optimistic readers may see this gap.
 The next Cycle owns the selected entry's causal Horizon; no historical Cycle or
 Horizon is relabelled. See [causal entry rules](participant-continuity-and-relocation.md).
 
-Complete Origin-branch exhaustion is now a persisted [Tragedy](branch-tragedy.md).
-The validated, fully explored Rest transition records structural exhaustion; viable other basins remain
-preferred, then structural Origin renewal supplies fresh Distinguish. No Potential
-score is invented. Other participants remain in place until their own Rest.
+A first no-Potential Rest creates [Tragedy](branch-tragedy.md), one Horizon Receipt and recovery to the opening Committal. The Horizon remains open. Only a later no-Potential Rest after that Receipt has been exercised by Reclassify records Exhaustion and enables outward recovery. No Potential score is invented; other Participants move through their normal lifecycle.
 `waiting / recovery_unavailable` describes a genuinely unavailable valid entry,
 such as missing Origin or invalid/unmeasurable provenance. A concurrent field
 change can defer entry and expose `recovery_pending`; the next prepare observes
@@ -82,8 +79,8 @@ Participant loading, Reinforcement signatures, context packet truncation and wal
 clock age do not determine duplicate suppression.
 
 Ordinary Variants, revisions and reconciliations start fresh evidence; they do not
-inherit arbitrary structural ancestry. Reclassification preserves proposition
-evidence references, so equivalent invocation remains suppressed there. Once the
+inherit arbitrary structural ancestry. Reclassification retains its selected Receipt
+reference, so equivalent invocation remains suppressed there. Once the
 effective set no longer includes an equivalent observation, the same resource can
 be observed again. Historical Receipts and InstrumentExecution rows are not expired,
 updated, deleted or backfilled. Superseded Attestation evidence similarly ceases

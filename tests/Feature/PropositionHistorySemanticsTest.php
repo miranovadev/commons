@@ -101,7 +101,7 @@ class PropositionHistorySemanticsTest extends TestCase
             $input['proposition_id'] = $source->id;
         }
         if ($operation === 'bias') {
-            $input = ['action' => 'proposition.bias', 'proposition_id' => $source->id];
+            $input = ['action' => 'proposition.reclassify', 'proposition_id' => $source->id];
         }
         $sources = collect([$source]);
         if ($operation === 'reconcile') {
@@ -132,6 +132,9 @@ class PropositionHistorySemanticsTest extends TestCase
         // Isolate history from Mediate/Bias candidate mathematics, covered separately.
         foreach ($sources as $item) {
             app(PropositionMeasurementService::class)->project($item, -0.8, -1, -1);
+        }
+        if (in_array($operation, ['reclassify', 'bias'], true)) {
+            $input = $this->reclassificationInputFixture($phase, $source);
         }
         app(ContributionService::class)->validate($this->participant, $input);
         $state = app(PropositionStateService::class);

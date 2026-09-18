@@ -96,9 +96,7 @@ final readonly class ParticipationService
             $recovering = $completed?->rested_at !== null;
             $entry = $this->entryFor($participant);
             $recoveryReady = $recovering && ($entry['available'] ?? false);
-            $exhaustionPending = $recovering && ! $recoveryReady && DB::table('origin_branch_memberships as membership')
-                ->join('origin_branches as branch', 'branch.root_proposition_id', '=', 'membership.root_proposition_id')
-                ->where('membership.proposition_id', $participant->current_proposition_id)->whereNull('branch.exhausted_at')->whereNull('branch.legacy_retired_at')->exists();
+            $exhaustionPending = false; // Rest transitions are atomic; no legacy pruning repair is needed.
 
             return [...$this->waiting(
                 $recovering ? ($recoveryReady || $exhaustionPending ? 'recovery_pending' : 'recovery_unavailable') : 'cycle_not_started',
@@ -158,8 +156,10 @@ final readonly class ParticipationService
                     ? 'This source has already been committed. Continue through its Committal result.'
                     : 'Commitment requires grounding and aligned Depth/Cadence directions. Use an action available in the current Phase.',
             ] : ($plan['rest_available'] ? [
-                'code' => 'local_actions_exhausted',
-                'message' => 'No admissible non-Rest action remains in the current Phase. Rest is the only available action.',
+                'code' => $plan['rest_reason'],
+                'message' => $plan['rest_reason'] === 'no_remaining_potential'
+                    ? 'The current Horizon has no remaining measured Potential. Rest records this failure.'
+                    : 'No admissible non-Rest action remains in this Phase. Rest does not prove Horizon failure.',
             ] : null),
             'entry' => null,
         ];
@@ -292,7 +292,7 @@ final readonly class ParticipationService
                 // A stale proof is discarded and can be retried after this Rest.
                 $validProof = $exhaustion !== null && $exhaustion['stable']
                     && $exhaustion['field_version'] === (int) $substrate->field_version;
-                $this->rest($lockedParticipant, $phase);
+                $this->rest($lockedParticipant, $phase, \App\Enums\RestReason::from($exhaustion['rest_reason'] ?? 'no_available_move'));
                 if ($validProof) {
                     app(ExhaustionService::class)->publish($phase, $exhaustion);
                 }
@@ -318,13 +318,14 @@ final readonly class ParticipationService
     }
 
     /** The validated plan exposes Rest only in a Phase with no admissible non-Rest actions. */
-    private function rest(Participant $participant, Phase $phase): void
+    private function rest(Participant $participant, Phase $phase, \App\Enums\RestReason $reason): void
     {
         $participant->current_proposition_id = $phase->gate_proposition_id;
         $participant->save();
         $phase->completed_at = now();
         $phase->save();
         $phase->cycle->rested_at = now();
+        $phase->cycle->rest_reason = $reason;
         $phase->cycle->completed_at = now();
         $phase->cycle->save();
     }

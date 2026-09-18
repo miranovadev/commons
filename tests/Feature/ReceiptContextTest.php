@@ -146,8 +146,9 @@ class ReceiptContextTest extends TestCase
         } catch (DomainException) {
             $this->assertSame(0, ParticipantReceiptContext::count());
         }
-        $hidden = $fixture->node($fixture->seed, 'canon');
-        $hiddenReceipt = app(OperationalInstrumentService::class)->execute($hidden->phase, $hidden, ['kind' => 'citation', 'reference' => $reference->id]);
+        $foreign = new ParticipantContextFixture(1, 0);
+        $hidden = $foreign->node($foreign->seed, 'canon');
+        $hiddenReceipt = app(OperationalInstrumentService::class)->execute($hidden->phase, $hidden, ['kind' => 'citation', 'reference' => $foreign->seed->id]);
         $phase = $this->move($fixture, $subject);
         foreach ([$hiddenReceipt->id, strtolower((string) str()->ulid())] as $id) {
             try {

@@ -627,6 +627,12 @@ test('a stationary workspace learns local exhaustion through the shared Horizon 
     assert.equal(el.querySelector('[data-proposition-id="A"]'), null);
     assert.equal(el.querySelector('[data-exhausted-id="A"] button'), null);
     assert.equal(requests, 1, 'the event burst coalesces into one workspace refresh');
+    for (const type of ['receipt.created', 'receipt.consumed', 'horizon.tragedy', 'horizon.exhausted']) {
+      const before = requests;
+      await act(async () => transport.channels.get('private-context-horizon.local').callback({ type, context_horizon_id: 'local', receipt_id: 'shared' }));
+      await until(() => requests > before);
+      assert.equal(requests, before + 1, `${type} refreshes a stationary workspace without a proposition payload`);
+    }
     assert.equal(live(), transport);
     assert.equal(connections.length, 1);
   } finally { await act(async () => page.close()); el.remove(); }

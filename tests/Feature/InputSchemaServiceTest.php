@@ -5,9 +5,8 @@ namespace Tests\Feature;
 use App\Enums\PhaseKind;
 use App\Models\Connection;
 use App\Models\Participant;
+use App\Models\Phase;
 use App\Models\Proposition;
-use App\Models\Substrate;
-use App\Services\ContextHorizonProjector;
 use App\Services\InputPlanService;
 use App\Services\InputSchemaService;
 use App\Services\InstrumentExecutionService;
@@ -52,9 +51,9 @@ class InputSchemaServiceTest extends TestCase
         $schema = app(InputSchemaService::class)->forPhase(PhaseKind::Bias);
         $this->assertArrayNotHasKey('stale_binary_bias', $schema);
         $this->assertArrayNotHasKey('proposition.reconcile', $schema['$defs']['actions']);
-        $this->assertSame(['action', 'proposition_id'], $schema['$defs']['actions']['proposition.bias']['required']);
+        $this->assertSame(['action', 'proposition_id', 'receipt_id'], $schema['$defs']['actions']['proposition.reclassify']['required']);
         $this->assertSame(['lineage-direction-agreement', 'unary-selection-fresh-history', 'completed-receipt-and-effective-attestation'],
-            $schema['x-commons']['constraints']['proposition.bias']);
+            $schema['x-commons']['constraints']['proposition.reclassify']);
     }
 
     public function test_order_retires_implicit_gate_commit_schema(): void
@@ -97,7 +96,6 @@ class InputSchemaServiceTest extends TestCase
             PhaseKind::Persist->value => [
                 'proposition.variant',
                 'proposition.revise',
-                'proposition.reclassify',
                 'instrument.execute',
                 'receipt.replay',
                 'attestation.create',
@@ -117,6 +115,7 @@ class InputSchemaServiceTest extends TestCase
                 'instrument.execute',
                 'receipt.replay',
                 'attestation.create',
+                'proposition.traverse',
             ],
             PhaseKind::Mediate->value => [
                 'proposition.reconcile',
@@ -125,7 +124,7 @@ class InputSchemaServiceTest extends TestCase
                 'attestation.create',
             ],
             PhaseKind::Bias->value => [
-                'proposition.bias',
+                'proposition.reclassify',
                 'instrument.execute',
                 'receipt.replay',
                 'attestation.create',
@@ -151,7 +150,7 @@ class InputSchemaServiceTest extends TestCase
             $this->assertNotEmpty(
                 $schema['x-commons']['description'],
             );
-            $expectsTraverse = in_array($kind, [PhaseKind::Distinguish, PhaseKind::Persist, PhaseKind::Constrain, PhaseKind::Bias, PhaseKind::Order], true);
+            $expectsTraverse = in_array($kind, [PhaseKind::Distinguish, PhaseKind::Persist, PhaseKind::Constrain, PhaseKind::Disperse, PhaseKind::Bias, PhaseKind::Order], true);
             $this->assertSame(
                 $expectsTraverse,
                 isset($schema['$defs']['actions']['proposition.traverse']),
@@ -176,11 +175,11 @@ class InputSchemaServiceTest extends TestCase
             .file_get_contents(base_path('docs/operational-commitment.md'));
 
         $this->assertStringContainsString(
-            'In Distinguish, Persist, Constrain and Bias,',
+            'In Distinguish, Persist, Constrain, Disperse and Bias,',
             $prompt,
         );
         $this->assertStringContainsString(
-            'Expressive Traverse is never admissible in Disperse, Mediate or Order.',
+            'Expressive Traverse is never admissible in Mediate or Order.',
             $prompt,
         );
         foreach ([
@@ -200,6 +199,8 @@ class InputSchemaServiceTest extends TestCase
 
         $this->assertValid($schema, [
             'action' => 'proposition.reclassify',
+            'proposition_id' => '01ARZ3NDEKTSV4RRFFQ69G5FAV',
+            'receipt_id' => '01ARZ3NDEKTSV4RRFFQ69G5FAW',
         ]);
         $this->assertInvalid($schema, [
             'action' => 'proposition.reclassify',
@@ -367,7 +368,7 @@ class InputSchemaServiceTest extends TestCase
         );
     }
 
-    public function test_receipts_require_an_instrument_execution(): void
+    public function test_receipts_record_generation_phase_with_optional_execution_for_tragedy(): void
     {
         $this->assertTrue(Schema::hasTable('instrument_executions'));
         $this->assertTrue(
@@ -388,10 +389,12 @@ class InputSchemaServiceTest extends TestCase
         $this->assertTrue(
             Schema::hasColumn('receipts', 'instrument_execution_id'),
         );
-        $this->assertFalse(Schema::hasColumn('receipts', 'phase_id'));
+        $this->assertTrue(Schema::hasColumn('receipts', 'phase_id'));
+        $this->assertTrue(Schema::hasTable('horizon_tragedies'));
+        $this->assertTrue(Schema::hasTable('receipt_consumptions'));
     }
 
-    public function test_instrument_completion_can_create_an_unsigned_attached_receipt(): void
+    public function test_instrument_completion_creates_a_persistent_unconsumed_receipt(): void
     {
         $state = $this->seedPhase(
             PhaseKind::Disperse,
@@ -483,8 +486,8 @@ class InputSchemaServiceTest extends TestCase
             'updated_at' => $now,
         ]);
         $sourcePhase = $kind === PhaseKind::Persist
-            ? $this->phaseAtPositionFixture(\App\Models\Phase::findOrFail($phaseId), PhaseKind::Distinguish)
-            : \App\Models\Phase::findOrFail($phaseId);
+            ? $this->phaseAtPositionFixture(Phase::findOrFail($phaseId), PhaseKind::Distinguish)
+            : Phase::findOrFail($phaseId);
         DB::table('propositions')->insert([
             'id' => $gateId,
             'phase_id' => $sourcePhase->id,

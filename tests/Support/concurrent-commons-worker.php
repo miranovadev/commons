@@ -11,11 +11,13 @@ use App\Services\ContributionDispatcher;
 use App\Services\InputPlanService;
 use App\Services\InstrumentExecutionService;
 use App\Services\ParticipationService;
+use App\Services\PotentialProjectionService;
 use App\Services\PropositionMeasurementService;
 use App\Services\ReceiptContextService;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 require dirname(__DIR__, 2).'/vendor/autoload.php';
 $app = require dirname(__DIR__, 2).'/bootstrap/app.php';
@@ -68,7 +70,7 @@ try {
         'contribute' => contributeWithRetry(
             Participant::findOrFail($input['participant_id']),
             $input['phase_id'],
-            ['action' => 'proposition.variant', 'statement' => 'Concurrent distinction'],
+            [], // Select from fresh shared structure after any optimistic retry.
         ),
         'complete' => app(InstrumentExecutionService::class)->complete(
             InstrumentExecution::findOrFail($input['execution_id']),
@@ -89,12 +91,28 @@ function contributeWithRetry(Participant $participant, string $phaseId, array $i
 {
     for ($attempt = 0; ; $attempt++) {
         try {
-            return app(ParticipationService::class)->contribute($participant->fresh(), $phaseId, $input);
-        } catch (Symfony\Component\HttpKernel\Exception\ConflictHttpException $exception) {
+            $contribution = $input;
+            if ($contribution === []) {
+                $phase = Phase::findOrFail($phaseId);
+                $actions = app(InputPlanService::class)->forPhase($participant->fresh(), $phase)['schema']['$defs']['actions'];
+                if (isset($actions['proposition.variant'])) {
+                    $contribution = ['action' => 'proposition.variant', 'statement' => 'Concurrent distinction'];
+                } elseif (isset($actions['attestation.create'])) {
+                    $choice = $actions['attestation.create']['anyOf'][0]['properties'];
+                    $contribution = ['action' => 'attestation.create', 'proposition_id' => $choice['proposition_id']['enum'][0],
+                        'direction' => $choice['direction']['enum'][0]];
+                } else {
+                    $contribution = ['action' => 'instrument.execute', 'proposition_id' => $actions['instrument.execute']['properties']['proposition_id']['enum'][0],
+                        'instrument' => ['kind' => 'citation', 'reference' => $phase->gate_proposition_id]];
+                }
+            }
+
+            return app(ParticipationService::class)->contribute($participant->fresh(), $phaseId, $contribution);
+        } catch (ConflictHttpException $exception) {
             if ($attempt >= 2 || Phase::findOrFail($phaseId)->completed_at !== null) {
                 throw $exception;
             }
-            app(App\Services\PotentialProjectionService::class)->refresh($participant->substrate_id);
+            app(PotentialProjectionService::class)->refresh($participant->substrate_id);
         }
     }
 }

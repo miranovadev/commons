@@ -16,21 +16,18 @@ return [
     ],
     2 => [
         'name' => 'persist',
-        'description' => 'Variant another Participant’s Gate once, reclassify a receipted and attested Gate, or interact with eligible existing Writes.',
+        'description' => 'Develop the selected distinction structurally, or support its existing viable Write.',
         'gate' => 'previous-phase-position',
         'actions' => [
             'receipt.read',
             'proposition.variant',
             'proposition.revise',
-            'proposition.reclassify',
             'instrument.execute',
             'receipt.replay',
             'attestation.create',
             'proposition.traverse',
         ],
         'constraints' => [
-            'proposition.variant' => ['gate-non-owner'],
-            'proposition.reclassify' => ['completed-receipt-and-effective-attestation'],
             'instrument.execute' => ['write-register'],
         ],
     ],
@@ -55,7 +52,7 @@ return [
     ],
     4 => [
         'name' => 'disperse',
-        'description' => 'Open one expressive branch per Participant at this Gate, revise an owned Write, execute an instrument, or attest a Write descendant.',
+        'description' => 'Open a structurally needed expressive opportunity, generate shared evidence, attest, or traverse an already-attested Write.',
         'gate' => 'previous-phase-position',
         'actions' => [
             'receipt.read',
@@ -64,6 +61,7 @@ return [
             'instrument.execute',
             'receipt.replay',
             'attestation.create',
+            'proposition.traverse',
         ],
         'constraints' => [
             'instrument.execute' => ['write-register'],
@@ -92,14 +90,14 @@ return [
         'gate' => 'previous-phase-position',
         'actions' => [
             'receipt.read',
-            'proposition.bias',
+            'proposition.reclassify',
             'instrument.execute',
             'receipt.replay',
             'attestation.create',
             'proposition.traverse',
         ],
         'constraints' => [
-            'proposition.bias' => [
+            'proposition.reclassify' => [
                 'lineage-direction-agreement',
                 'unary-selection-fresh-history',
                 'completed-receipt-and-effective-attestation',

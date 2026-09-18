@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Participant;
+use App\Models\Tragedy;
 use App\Services\ExhaustionService;
 use App\Services\ParticipantHistoricalContext;
 use App\Services\PotentialChargeService;
@@ -37,18 +38,18 @@ class InspectRecovery extends Command
         $this->line(json_encode([
             'participant_id' => $participant->id,
             'position_id' => $participant->current_proposition_id,
-            'current_path_exhausted' => DB::table('exhaustion_states')->where('proposition_id', $participant->current_proposition_id)->where('kind', 'excursion')->exists(),
+            'current_path_exhausted' => DB::table('continuation_failures')->where('proposition_id', $participant->current_proposition_id)->exists(),
             'current_horizon_id' => $phase?->cycle->context_horizon_id,
             'current_horizon_exhausted' => $phase?->cycle->contextHorizon->exhausted_at !== null,
             'parent_horizon_id' => $phase?->cycle->contextHorizon->parent_context_horizon_id,
             'exhausted_alternatives' => $phase === null || app(ExhaustionService::class)->unavailable($participant->position)
                 ? $history->position($participant->position) : $history->forPhase($phase),
             'origin_lineages' => DB::table('origin_branch_memberships')->where('proposition_id', $participant->current_proposition_id)->pluck('root_proposition_id')->all(),
-            'would_tragedy' => collect($exhaustion['branches'] ?? [])->contains('exhausted', true),
+            'would_tragedy' => ($exhaustion['rest_reason'] ?? null) === 'no_remaining_potential'
+                && ! Tragedy::where('context_horizon_id', $phase?->cycle->context_horizon_id)->exists(),
             ...$inspection,
-            'branch_exhaustion' => $exhaustion,
-            'origin_renewal_after_tragedy' => $selection === null && ($exhaustion['stable'] ?? false)
-                && collect($exhaustion['branches'] ?? [])->contains('exhausted', true),
+            'horizon_failure' => $exhaustion,
+
         ], JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR));
 
         return self::SUCCESS;

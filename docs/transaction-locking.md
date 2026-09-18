@@ -105,13 +105,11 @@ in [participation-performance.md](participation-performance.md).
 
 ## Tragedy and recovery
 
-[Branch Tragedy](branch-tragedy.md) observes exhaustion before the Rest transaction.
-The locked contribution writes Rest, checks the observation version, and conditionally
-publishes prepared local exhaustion transitions and any Origin-only Tragedy event. It never walks the branch under the lock.
-Cycle recovery/selection now runs outside the contribution transaction and outside
-the subsequent Cycle-entry transaction; entry validates its observed field version.
-Order rollover likewise follows contribution commit. Existing positions are retained
-until each participant's own Rest/entry transition.
+[Horizon failure](branch-tragedy.md) is observed before the Rest transaction. The locked contribution validates phase identity, completed Rest reason and field version, then publishes prepared local failure markers. First failure records one Tragedy/Receipt; a later failure after its Receipt is consumed records one Exhaustion. It never scans a branch under the lock.
+
+Reclassify takes the Substrate lock before the selected Receipt row, validates scope and structural position, and inserts the unique consumption together with the target, attachment, edge and ledger writes in one transaction. Tragedy and Exhaustion take the Horizon row after the Substrate lock. Unique keys back the application checks. All realtime proof/Receipt invalidations are emitted after commit.
+
+Recovery runs after contribution commit and outside the subsequent entry transaction. Entry checks the observed field version. First Tragedy uses its recorded opening Committal; Exhaustion enables the existing parent-provenance recovery. Other Participants retain their positions until their normal transition.
 
 ## Incremental Potential publication
 

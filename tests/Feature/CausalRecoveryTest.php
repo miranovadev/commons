@@ -13,10 +13,10 @@ use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Substrate;
 use App\Models\Supersession;
+use App\Models\Tragedy;
 use App\Services\ContextHorizonProjector;
 use App\Services\ContributionDispatcher;
 use App\Services\CycleEntryService;
-use App\Services\ExhaustionService;
 use App\Services\LedgerService;
 use App\Services\ParticipationService;
 use App\Services\PhaseProgressionService;
@@ -120,7 +120,7 @@ class CausalRecoveryTest extends TestCase
         $this->assertSame(.9, $this->recover($position)['raw_potential_charge']);
     }
 
-    public function test_recovery_crosses_one_domain_boundary_and_writes_signal_in_the_selected_origins_direct_child(): void
+    public function test_first_tragedy_returns_to_its_opening_committal_without_crossing_the_boundary(): void
     {
         [$origin, $h2, $commit, $h3] = $this->boundaryChain();
         $position = $this->expressive($h3, $commit);
@@ -136,17 +136,17 @@ class CausalRecoveryTest extends TestCase
         $this->assertNotNull($order->cycle->fresh()->rested_at);
         $historicalOwners = DB::table('cycles')->pluck('context_horizon_id', 'id')->all();
         $selection = $this->recover($position);
-        $this->assertSame($origin->id, $selection['proposition']->id);
+        $this->assertSame($commit->id, $selection['proposition']->id);
         $this->assertSame($h2->id, app(ContextHorizonProjector::class)->forEntry($origin)->id);
         $cycle = $participant->cycles()->whereNull('completed_at')->sole();
-        $this->assertSame($h2->id, $cycle->context_horizon_id);
-        $this->assertSame('signal', $cycle->currentPhase->write_register);
+        $this->assertSame($h3->id, $cycle->context_horizon_id);
+        $this->assertSame('activity', $cycle->currentPhase->write_register);
         $state = app(ParticipationService::class)->contribute($participant, $cycle->currentPhase->id,
             ['action' => 'proposition.variant', 'statement' => 'A new Signal in the selected historical region.']);
         $write = $participant->fresh()->position;
-        $this->assertSame('signal', $write->register);
-        $this->assertSame('settlement', $state['domain']);
-        $this->assertSame($h2->id, $write->contextHorizonMembership->context_horizon_id);
+        $this->assertSame('activity', $write->register);
+        $this->assertSame('emergence', $state['domain']);
+        $this->assertSame($h3->id, $write->contextHorizonMembership->context_horizon_id);
         foreach ($historicalOwners as $id => $owner) {
             $this->assertSame($owner, Cycle::findOrFail($id)->context_horizon_id);
         }
@@ -162,6 +162,8 @@ class CausalRecoveryTest extends TestCase
         $position = $this->expressive($h4, $later);
         $this->opportunity($origin);
         $this->exhaust($position);
+        $this->assertNull($h3->fresh()->exhausted_at, 'Parent requires its own final attempt');
+        $this->exhaust($this->expressive($h3, $commit));
         $participant = $this->resting($h4, $position);
         $selection = $this->recover($position);
         $this->assertSame($origin->id, $selection['proposition']->id);
@@ -596,13 +598,23 @@ class CausalRecoveryTest extends TestCase
 
     private function exhaust(Proposition $node): void
     {
+        $horizon = $node->phase->cycle->contextHorizon;
+        $opening = Proposition::findOrFail($horizon->opened_by_proposition_id);
         $this->explore($node);
-        $phase = $this->phase($node->phase->cycle->contextHorizon, $node);
+        $phase = $this->phase($horizon, $node);
         $this->refreshMeasurements();
-        $proof = app(ExhaustionService::class)->inspect($phase);
-        $phase->forceFill(['completed_at' => now()])->save();
-        $phase->cycle->forceFill(['rested_at' => now(), 'completed_at' => now()])->save();
-        app(ExhaustionService::class)->publish($phase, $proof);
+        app(ParticipationService::class)->contribute($phase->cycle->participant, $phase->id, ['action' => 'participant.rest']);
+        $tragedy = Tragedy::where('context_horizon_id', $horizon->id)->sole();
+        $source = $this->node($this->phase($horizon, $opening, PhaseKind::Persist), $opening);
+        $this->classificationEvidenceFixture($source);
+        $classification = $this->phase($horizon, $source, PhaseKind::Constrain);
+        $target = app(ContributionDispatcher::class)->dispatch($classification->cycle->participant, $classification,
+            ['action' => 'proposition.reclassify', 'proposition_id' => $source->id, 'receipt_id' => $tragedy->receipt_id]);
+        $this->explore($target);
+        $terminal = $this->phase($horizon, $target);
+        $this->refreshMeasurements();
+        app(ParticipationService::class)->contribute($terminal->cycle->participant, $terminal->id, ['action' => 'participant.rest']);
+        $this->assertNotNull($horizon->fresh()->exhausted_at);
         $this->refreshMeasurements();
     }
 

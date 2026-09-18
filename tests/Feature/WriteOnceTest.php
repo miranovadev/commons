@@ -37,7 +37,6 @@ class WriteOnceTest extends TestCase
         return [
             'Distinguish' => [PhaseKind::Distinguish, 'activity', 'proposition.variant'],
             'Persist Variant' => [PhaseKind::Persist, 'frontier', 'proposition.variant'],
-            'Persist Reclassify' => [PhaseKind::Persist, 'frontier', 'proposition.reclassify'],
             'Constrain' => [PhaseKind::Constrain, 'canon', 'proposition.reclassify'],
             'Disperse' => [PhaseKind::Disperse, 'activity', 'proposition.variant'],
         ];
@@ -46,7 +45,7 @@ class WriteOnceTest extends TestCase
     public static function persistOwnership(): array
     {
         return [
-            'own Gate, unused' => [false, false, false],
+            'own Gate, unused' => [false, false, true],
             'own Gate, historical Variant' => [false, true, false],
             'another owner, unused' => [true, false, true],
             'another owner, historical Variant' => [true, true, false],
@@ -94,22 +93,16 @@ class WriteOnceTest extends TestCase
         $this->assertUnavailable($participant, $return, $input);
         $other = $this->participant($participant->substrate, 'independent');
         $otherPhase = $this->phase($other, PhaseKind::Persist, 'frontier', $gate);
-        app(ContributionService::class)->validate($other, $input);
-        $otherWrite = app(ContributionDispatcher::class)->dispatch($other, $otherPhase, $input);
-        $this->assertNotSame($written->id, $otherWrite->id);
+        $this->assertUnavailable($other, $otherPhase, $input);
+
     }
 
-    public function test_owned_persist_gate_retains_support_without_variant_or_unearned_revision(): void
+    public function test_owned_persist_gate_develops_structure_then_retains_support_without_redundant_variant(): void
     {
         [$participant, $seed] = $this->fixture();
         $gate = $this->node($seed->phase, 'activity', 'My distinction', parent: $seed);
         $phase = $this->phase($participant, PhaseKind::Persist, 'frontier', $gate);
-        $this->assertUnavailable($participant, $phase, ['action' => 'proposition.variant', 'statement' => 'Self Variant']);
-        // A grounded and attested source can be classified by any Participant.
-        $this->classificationEvidenceFixture($gate);
-        $write = app(ContributionDispatcher::class)->dispatch($participant, $phase, [
-            'action' => 'proposition.reclassify',
-        ]);
+        $write = app(ContributionDispatcher::class)->dispatch($participant, $phase, ['action' => 'proposition.variant', 'statement' => 'Structural development']);
         $this->receiptFixture($write);
         $return = $this->phase($participant, PhaseKind::Persist, 'frontier', $gate);
         $plan = $this->plan($participant);
@@ -123,7 +116,7 @@ class WriteOnceTest extends TestCase
             'action' => 'attestation.create', 'proposition_id' => $write->id, 'direction' => 'refute',
         ]);
         $plan = $this->plan($participant);
-        $this->assertContains($write->id, $this->targets($plan, 'proposition.traverse'));
+        $this->assertNotContains($write->id, $this->targets($plan, 'proposition.traverse'));
         $this->assertSame([], $this->targets($plan, 'proposition.revise'));
         $later = $this->phase($participant, PhaseKind::Persist, 'frontier', $gate);
         $this->assertContains($write->id, $this->targets($this->plan($participant), 'proposition.revise'));
@@ -155,7 +148,7 @@ class WriteOnceTest extends TestCase
         $this->assertFalse($plan['rest_available']);
     }
 
-    public function test_persist_variant_quota_cannot_be_reset_by_putting_the_gate_in_another_domain(): void
+    public function test_structural_viability_cannot_be_bypassed_by_another_domain(): void
     {
         [$participant, $seed] = $this->fixture(true);
         $gate = $this->node($seed->phase, 'activity', 'Another Participant’s Gate', parent: $seed);
@@ -173,7 +166,7 @@ class WriteOnceTest extends TestCase
     }
 
     #[DataProvider('localPhases')]
-    public function test_generation_is_personal_and_survives_cycles_but_not_a_different_gate(PhaseKind $kind, string $register, string $action): void
+    public function test_viable_generation_is_shared_across_participants_and_cycles_but_not_a_different_gate(PhaseKind $kind, string $register, string $action): void
     {
         [$participant, $gate] = $this->fixture($kind === PhaseKind::Persist && $action === 'proposition.variant');
         if ($kind !== PhaseKind::Distinguish) {
@@ -187,7 +180,7 @@ class WriteOnceTest extends TestCase
         if ($action === 'proposition.reclassify') {
             $this->classificationEvidenceFixture($gate);
         }
-        $input = $action === 'proposition.reclassify' ? ['action' => $action] : ['action' => $action, 'statement' => 'First Write'];
+        $input = $action === 'proposition.reclassify' ? $this->reclassificationInputFixture($phase, $gate) : ['action' => $action, 'statement' => 'First Write'];
         app(ContributionService::class)->validate($participant, $input);
         $this->publishPotentialFixture($participant);
         app(ParticipationService::class)->contribute($participant, $phase->id, $input);
@@ -205,22 +198,20 @@ class WriteOnceTest extends TestCase
 
         $other = $this->participant($participant->substrate, 'other');
         $otherPhase = $this->phase($other, $kind, $register, $gate);
-        if ($kind !== PhaseKind::Constrain) {
-            $otherInput = ['action' => 'proposition.variant', 'statement' => 'Another Participant'];
-            app(ContributionService::class)->validate($other, $otherInput);
-            $otherWrite = app(ContributionDispatcher::class)->dispatch($other, $otherPhase, $otherInput);
-            $this->receiptFixture($otherWrite);
-            $this->phase($participant, $kind, $register, $gate);
-            $this->assertContains($otherWrite->id, $this->targets($this->plan($participant), 'attestation.create'));
+        $this->publishPotentialFixture($other);
+        if (! in_array($kind, [PhaseKind::Distinguish, PhaseKind::Disperse], true)) {
+            $this->assertUnavailable($other, $otherPhase, $input);
         }
+        $this->assertContains($written->id, $this->targets($this->plan($other), 'attestation.create'));
         // A new local Gate in the same substrate/Horizon is a fresh opportunity.
         $newGate = $this->node($gate->phase, $gate->register, 'Another Gate', tier: $gate->tier);
-        $this->phase($participant, $kind, $register, $newGate);
+        $newPhase = $this->phase($participant, $kind, $register, $newGate);
         if ($kind === PhaseKind::Constrain) {
             $this->loadedReceiptFixture($newGate);
         }
         if ($action === 'proposition.reclassify') {
             $this->classificationEvidenceFixture($newGate);
+            $input = $this->reclassificationInputFixture($newPhase, $newGate);
         }
         app(ContributionService::class)->validate($participant, $input);
     }
@@ -244,7 +235,6 @@ class WriteOnceTest extends TestCase
             $plan = $this->plan($participant);
             $this->assertSame([$first->id], $this->targets($plan, 'proposition.revise'));
             $this->assertNotContains($gate->id, $this->targets($plan, 'instrument.execute'));
-            $this->assertUnavailable($participant, $return, $input);
             app(ContributionService::class)->validate($participant, [
                 'action' => 'proposition.revise', 'proposition_id' => $first->id, 'statement' => $statement,
             ]);
@@ -256,7 +246,7 @@ class WriteOnceTest extends TestCase
         $this->phase($participant, PhaseKind::Disperse, 'activity', $gate);
         $plan = $this->plan($participant);
         $this->assertContains($first->id, $this->targets($plan, 'attestation.create'));
-        $this->assertContains($first->id, $this->targets($plan, 'instrument.execute'));
+        $this->assertNotContains($first->id, $this->targets($plan, 'instrument.execute'), 'An available shared Receipt enables Attest');
     }
 
     public function test_constrain_requires_receipt_but_not_reinforcement(): void
@@ -270,12 +260,13 @@ class WriteOnceTest extends TestCase
         $this->assertSame(0, app(ReinforcementService::class)->count($gate));
         $this->assertUnavailable($participant, $phase, $input);
         $this->classificationEvidenceFixture($gate);
+        $input = $this->reclassificationInputFixture($phase, $gate);
         app(ContributionService::class)->validate($participant, $input);
         $written = app(ContributionDispatcher::class)->dispatch($participant, $phase, $input);
         $this->assertSame('canon', $written->register);
     }
 
-    public function test_bias_is_once_per_participant_region_row_and_existing_writes_survive_alternative_gates(): void
+    public function test_bias_is_once_per_source_and_does_not_impose_a_personal_quota(): void
     {
         [$participant, $seed] = $this->fixture();
         $a = $this->node($this->phaseAtPositionFixture($seed->phase, PhaseKind::Mediate), 'frontier', 'A', parent: $seed);
@@ -283,18 +274,18 @@ class WriteOnceTest extends TestCase
         $this->classificationEvidenceFixture($a);
         $this->classificationEvidenceFixture($b);
         $phase = $this->phase($participant, PhaseKind::Bias, 'canon', $a);
-        $input = ['action' => 'proposition.bias', 'proposition_id' => $a->id];
+        $input = $this->reclassificationInputFixture($phase, $a);
         app(ContributionService::class)->validate($participant, $input);
         $written = app(ContributionDispatcher::class)->dispatch($participant, $phase, $input);
         $this->receiptFixture($written);
         $return = $this->phase($participant, PhaseKind::Bias, 'canon', $b);
-        $this->assertUnavailable($participant, $return, ['action' => 'proposition.bias', 'proposition_id' => $b->id]);
+        app(ContributionService::class)->validate($participant, $this->reclassificationInputFixture($return, $b));
         $plan = $this->plan($participant);
         $this->assertContains($written->id, $this->targets($plan, 'attestation.create'));
         $this->assertContains($written->id, $this->targets($plan, 'instrument.execute'));
         $other = $this->participant($participant->substrate, 'other');
-        $this->phase($other, PhaseKind::Bias, 'canon', $b);
-        app(ContributionService::class)->validate($other, ['action' => 'proposition.bias', 'proposition_id' => $b->id]);
+        $otherPhase = $this->phase($other, PhaseKind::Bias, 'canon', $b);
+        app(ContributionService::class)->validate($other, $this->reclassificationInputFixture($otherPhase, $b));
     }
 
     public function test_order_consumes_each_direct_source_globally_and_preserves_other_sources(): void
@@ -423,6 +414,8 @@ class WriteOnceTest extends TestCase
 
     private function plan(Participant $participant): array
     {
+        $this->publishPotentialFixture($participant);
+
         return app(InputPlanService::class)->forParticipant($participant);
     }
 

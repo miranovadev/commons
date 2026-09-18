@@ -20,12 +20,12 @@ use App\Services\PotentialChargeService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
-use Tests\Fixtures\ExhaustionFixture;
+use Tests\Fixtures\HorizonProofFixture;
 use Tests\TestCase;
 
 class ExhaustedParticipantContextTest extends TestCase
 {
-    use ExhaustionFixture, RefreshDatabase;
+    use HorizonProofFixture, RefreshDatabase;
 
     protected function setUp(): void
     {
@@ -49,9 +49,9 @@ class ExhaustedParticipantContextTest extends TestCase
         $phase = $this->phase($this->origin, PhaseKind::Distinguish);
         $plan = app(InputPlanService::class)->forWorkspace($phase->cycle->participant);
         $history = collect($plan['exhausted_alternatives'])->where('role', 'write');
-        $this->assertSame([$a->id, $b->id], $history->pluck('id')->all());
+        $this->assertSame([$b->id, $a->id], $history->pluck('id')->all());
         $this->assertSame([$c->id], array_column($plan['write_options'], 'id'));
-        $this->assertArrayHasKey('proposition.variant', $plan['schema']['$defs']['actions']);
+        $this->assertArrayNotHasKey('proposition.variant', $plan['schema']['$defs']['actions']);
         foreach ([$a, $b] as $node) {
             $this->assertStringNotContainsString($node->id, json_encode($plan['schema']));
             $this->assertFalse($history->firstWhere('id', $node->id)['actionable']);
@@ -152,7 +152,7 @@ class ExhaustedParticipantContextTest extends TestCase
         $this->exhaust($local, $revised, $other, $foreign, $wrongTier, $wrongRegister);
         $phase = $this->phase($this->origin, PhaseKind::Distinguish);
         $history = app(ParticipantHistoricalContext::class)->forPhase($phase);
-        $this->assertSame([$local->id, $revised->id], array_column($history, 'id'));
+        $this->assertSame([$revised->id, $local->id], array_column($history, 'id'));
     }
 
     public function test_late_context_obeys_commit_boundaries_even_within_one_horizon(): void
@@ -188,21 +188,19 @@ class ExhaustedParticipantContextTest extends TestCase
         $this->assertSame([], collect($history)->where('role', 'write')->all());
     }
 
-    public function test_order_context_marks_exhausted_basins_without_calling_commits_exhausted(): void
+    public function test_order_context_retains_exhausted_opening_committal_without_actions(): void
     {
-        $root = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
-        $commit = $this->commitFrom($root);
-        $source = $commit->parents()->firstOrFail();
-        $gate = $this->node($this->phase($root, PhaseKind::Bias), $root);
-        $this->exhaust($source, $commit);
-        $phase = $this->phase($gate, PhaseKind::Order);
+        [$commit, , $tragedy] = $this->firstFailure();
+        [$terminal] = $this->exercise($commit, $tragedy);
+        $this->rest($terminal);
+        $source = $commit->parents()->wherePivot('type', 'commit')->sole();
+        $phase = $this->phase($source, PhaseKind::Order);
         $plan = app(InputPlanService::class)->forPhase($phase->cycle->participant, $phase);
-        $write = collect($plan['exhausted_alternatives'])->firstWhere('role', 'write');
-        $this->assertSame($commit->id, $write['id']);
-        $this->assertFalse($write['exhausted']);
+        $write = collect($plan['exhausted_alternatives'])->firstWhere('id', $commit->id);
+        $this->assertNotNull($write);
         $this->assertTrue($write['basin_exhausted']);
+        $this->assertFalse($write['actionable']);
         $this->assertStringNotContainsString($commit->id, json_encode($plan['schema']));
-        $this->assertStringNotContainsString($source->id, json_encode($plan['schema']));
     }
 
     public function test_personal_evidence_and_ownership_cannot_reactivate_exhausted_targets(): void
@@ -215,11 +213,14 @@ class ExhaustedParticipantContextTest extends TestCase
         app(LedgerService::class)->record($vote);
         $old->forceFill(['completed_at' => now()])->save();
         $old->cycle->forceFill(['completed_at' => now()])->save();
-        $next = $this->phase($this->origin, PhaseKind::Distinguish);
-        $next->cycle->forceFill(['participant_id' => $old->cycle->participant_id, 'sequence' => 2])->save();
+        $cycle = $old->cycle->replicate();
+        $cycle->forceFill(['sequence' => 2, 'completed_at' => null])->save();
+        $next = $old->replicate();
+        $next->forceFill(['cycle_id' => $cycle->id, 'completed_at' => null])->save();
         $participant = $old->cycle->participant;
+        $this->publishPotentialFixture($participant);
         $before = app(InputPlanService::class)->forParticipant($participant);
-        foreach (['traversal_options', 'attestation_options', 'instrument_options', 'revision_options', 'write_options'] as $key) {
+        foreach (['traversal_options', 'attestation_options', 'write_options'] as $key) {
             $this->assertContains($node->id, array_column($before[$key], 'id'));
         }
         $this->exhaust($node);
@@ -243,7 +244,7 @@ class ExhaustedParticipantContextTest extends TestCase
         $phase = $this->phase($this->origin, PhaseKind::Distinguish);
         $phase->cycle->participant->forceFill(['max_read_count' => 1])->save();
         $before = app(InputPlanService::class)->forParticipant($phase->cycle->participant);
-        $this->assertSame($roots->pluck('id')->all(), array_column($before['exhausted_alternatives'], 'id'));
+        $this->assertSame($roots->pluck('id')->reverse()->values()->all(), array_column($before['exhausted_alternatives'], 'id'));
         $childPhase = $this->phase($roots->first(), PhaseKind::Disperse);
         $children = collect(range(1, 120))->map(fn () => $this->node($childPhase, $roots->first()));
         $this->exhaust(...$children);
@@ -259,7 +260,10 @@ class ExhaustedParticipantContextTest extends TestCase
 
     public function test_actual_rest_returns_to_origin_with_memory_independent_of_graph_observer_mode(): void
     {
-        [$root, $terminal] = $this->exhaustedBranch();
+        $root = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
+        $this->explore($root);
+        $terminal = $this->phase($root);
+        $this->measure($root, 1);
         $state = $this->rest($terminal);
         $participant = $terminal->cycle->participant->fresh();
         $this->assertSame($this->origin->id, $state['current_proposition_id']);
@@ -293,13 +297,12 @@ class ExhaustedParticipantContextTest extends TestCase
     private function exhaust(Proposition ...$nodes): void
     {
         foreach ($nodes as $node) {
-            DB::table('exhaustion_states')->insert([
-                'proposition_id' => $node->id, 'substrate_id' => $this->substrate->id,
-                'context_horizon_id' => $node->phase->cycle->context_horizon_id,
-                'kind' => $node->tier === 'committal' ? 'basin' : 'excursion',
-                'phase_id' => $node->phase_id, 'terminal_proposition_id' => $node->id,
-                'observed_field_version' => $this->substrate->fresh()->field_version,
-                'exhausted_at' => now(), 'evidence' => '{}',
+            if ($node->tier === 'committal') {
+                continue; // Wrong-tier fixtures never represent a proven Horizon closure.
+            }
+            DB::table('continuation_failures')->insert([
+                'proposition_id' => $node->id, 'context_horizon_id' => $node->phase->cycle->context_horizon_id,
+                'phase_id' => $node->phase_id, 'failed_at' => now(),
             ]);
         }
     }

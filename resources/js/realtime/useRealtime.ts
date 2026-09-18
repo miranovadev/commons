@@ -30,7 +30,7 @@ export function useParticipantRealtime(slug: string, participantId: string, enab
     const queue = notificationQueue(async () => { refreshParticipant(dispatch, participantId); });
     const release = subscribeInvalidations(`context-horizon.${horizonId}`, false, {
       invalidated: event => {
-        if ('proposition_id' in event && event.context_horizon_id === horizonId) queue.add(participantId);
+        if ('context_horizon_id' in event && event.context_horizon_id === horizonId) queue.add(participantId);
       },
       subscribed: () => queue.add(participantId),
     });
@@ -79,6 +79,8 @@ export function useContextHorizonRealtime(slug: string, enabled: boolean) {
       if (event.type === 'context-horizons.changed' && event.substrate_id === substrateId) catchup();
       if (event.type === 'graph.participant_changed' && event.substrate_id === substrateId) queue.add('participants');
       if (event.type === 'graph.metrics_changed' && event.substrate_id === substrateId) queue.add('metrics');
+      if ('context_horizon_id' in event && horizons.has(event.context_horizon_id)
+        && (event.type === 'horizon.tragedy' || event.type === 'horizon.exhausted')) catchup();
       if ('proposition_id' in event && horizons.has(event.context_horizon_id)) {
         queue.add(event.proposition_id);
         queue.add('metrics');

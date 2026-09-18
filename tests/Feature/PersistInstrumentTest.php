@@ -86,9 +86,7 @@ class PersistInstrumentTest extends TestCase
         $ownerState = $service->stateFor($author);
         $this->assertArrayHasKey('proposition.reclassify', $service->stateFor($grounder)['plan']['schema']['$defs']['actions']);
         $this->assertArrayHasKey('proposition.reclassify', $ownerState['plan']['schema']['$defs']['actions']);
-        $after = app(ParticipationService::class)->contribute($author, $ownerState['plan']['phase']['id'], [
-            'action' => 'proposition.reclassify',
-        ]);
+        $after = app(ParticipationService::class)->contribute($author, $ownerState['plan']['phase']['id'], $this->reclassificationInputFixture(Phase::findOrFail($ownerState['plan']['phase']['id']), $write));
         $this->assertSame('disperse', $after['plan']['phase']['kind']);
         $this->assertSame($write->id, $receipt->fresh()->receiptable_id);
     }

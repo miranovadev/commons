@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\PhaseKind;
+use App\Models\Attestation;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Supersession;
@@ -10,7 +11,7 @@ use App\Services\Participation\ParticipationContext;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
-/** Generative opportunities survive Cycle completion and revision of their results. */
+/** Structural opportunity is shared; Participant count is never basin capacity. */
 final readonly class PhaseGenerationService
 {
     public function __construct(
@@ -32,7 +33,11 @@ final readonly class PhaseGenerationService
             return $phase->kind === PhaseKind::Order && ($position === null
                 || ($this->positions->matches($position, $phase, PhaseKind::Bias) && $this->availability->mutable($position, $context)));
         }
-        if (! in_array($action, ['proposition.variant', 'proposition.reclassify', 'proposition.bias', 'proposition.commit'], true)) {
+        if ($action === 'proposition.reclassify' && $phase->kind === PhaseKind::Bias && $position === null) {
+            return app(BiasGateService::class)->forPhase($phase, $context)
+                ->contains(fn (Proposition $candidate) => $this->available($phase, $action, $context, $candidate));
+        }
+        if (! in_array($action, ['proposition.variant', 'proposition.reclassify', 'proposition.commit'], true)) {
             // Mediate owns a directed relationship, rather than a personal quota.
             return true;
         }
@@ -42,23 +47,20 @@ final readonly class PhaseGenerationService
         if ($gate === null || ! $this->positions->acceptsGate($phase, $gate)) {
             return false;
         }
-        if (($action !== 'proposition.bias' || $position !== null)
-            && ($this->availability->committed($gate, $context)
-                || ($action !== 'proposition.variant' && $gate->tier !== 'expressive'))) {
+        if ($this->availability->committed($gate, $context)
+            || ($action !== 'proposition.variant' && $gate->tier !== 'expressive')) {
             return false;
         }
-        if ($phase->kind === PhaseKind::Persist && $action === 'proposition.variant'
-            && $this->ownership->ownedBy($gate, $phase->cycle->participant)) {
-            return false;
-        }
-        if ($action === 'proposition.reclassify' || ($action === 'proposition.bias' && $position !== null)) {
+        if ($action === 'proposition.reclassify') {
             $existing = $context !== null
                 ? $context->classifications->where('source_proposition_id', $gate->id)->where('register', $phase->write_register)->isNotEmpty()
                 : DB::table('reclassification_results')->where('source_proposition_id', $gate->id)->where('register', $phase->write_register)->exists();
-            if ($existing || $this->state->receipts($gate, $context)->isEmpty()
+            if ($existing || app(HorizonReceiptService::class)->available($phase, $context)->isEmpty()
                 || $this->state->attestations(collect([$gate]), $context)->isEmpty()) {
                 return false;
             }
+
+            return true; // Shared structural classification has no personal quota.
         }
 
         $sources = in_array($phase->kind, [PhaseKind::Bias, PhaseKind::Order], true)
@@ -70,19 +72,34 @@ final readonly class PhaseGenerationService
         $results = Supersession::query()->select('target_proposition_id')
             ->whereIn('source_proposition_id', $sources)
             ->whereIn('type', ['variant', 'reclassify', 'commit']);
-        $check = fn () => ! Proposition::query()->active()
-            // Persist Variant belongs to the Participant/Gate, even if a later
-            // Context Horizon presents that Gate with different register labels.
-            ->when($phase->kind !== PhaseKind::Persist || $action !== 'proposition.variant',
-                fn ($query) => $query->where('register', $phase->write_register))
+        $viable = Proposition::query()->active()
+            ->where('register', $phase->write_register)
             ->where('tier', $phase->kind === PhaseKind::Order ? 'committal' : 'expressive')
             ->whereHas('phase', fn ($query) => $query->where('kind', $phase->kind->value)
-                ->whereHas('cycle', fn ($query) => $query->where('participant_id', $phase->cycle->participant_id)))
-            ->whereIn('id', $results)
-            ->exists();
+                ->whereHas('cycle', fn ($query) => $query->where('context_horizon_id', $phase->cycle->context_horizon_id)))
+            ->whereIn('id', $results);
+        $check = function () use ($viable, $phase, $action): bool {
+            $existing = $viable->pluck('id');
+            if ($existing->isEmpty()) {
+                return true;
+            }
+            if ($action !== 'proposition.variant'
+                || ! in_array($phase->kind, [PhaseKind::Distinguish, PhaseKind::Disperse], true)) {
+                return false;
+            }
+            // Evidence and judgment must exist for each viable opportunity before
+            // another is generated. Neither receipt consumption nor author count
+            // supplies this permission, and a prior Mediate Rest is not required.
+            $observed = app(HorizonReceiptService::class)->instrumentedIds($phase, $existing);
+            $attested = Attestation::query()->effective()
+                ->whereIn('proposition_id', $existing)->distinct()->pluck('proposition_id');
 
-        // Bias evaluates multiple Gates in one region. Its personal history is
-        // identical for that source set, but is never cached between calculations.
+            return $existing->diff($observed)->isEmpty() && $existing->diff($attested)->isEmpty()
+                && app(PotentialChargeService::class)->hasRemainingInHorizon($phase);
+
+        };
+
+        // Reuse this calculation's structural query, never a cross-action cache.
         return $context === null ? $check() : $context->remember(
             'generation-history:'.$phase->id.':'.$action.':'.$phase->write_register.':'.implode(',', $sources->sort()->all()),
             $check,

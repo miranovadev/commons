@@ -32,7 +32,7 @@ export function participationNotices({ participation, plan, canCommit, canRest, 
       <Text size="xs" c="dimmed">Zero retains the previous committed direction. History: {closure.history_source}.</Text>
     </Stack> });
   }
-  if (canRest) notices.push({ id: 'rest', title: 'Local actions exhausted · Rest', color: 'gray', icon: IconMoon, content: <Stack gap="xs">
+  if (canRest) notices.push({ id: 'rest', title: plan?.rest_reason === 'no_remaining_potential' ? 'No remaining Potential · Rest' : 'No available move · Rest', color: 'gray', icon: IconMoon, content: <Stack gap="xs">
     <Text size="sm">No admissible non-Rest action remains in this Phase. Rest ends this Cycle; recovery begins at the nearest viable Committal region.</Text>
     <Button variant="light" color="gray" onClick={onRest}>Rest</Button>
   </Stack> });
