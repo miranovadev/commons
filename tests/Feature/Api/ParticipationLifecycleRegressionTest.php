@@ -90,7 +90,8 @@ class ParticipationLifecycleRegressionTest extends ParticipationHttpTestCase
 
     private function continuationFailures(string $proposition): array
     {
-        return DB::table('continuation_failures')->where('proposition_id', $proposition)->orderBy('id')
+        return DB::table('continuation_failures')->where('proposition_id', $proposition)
+            ->orderBy('context_horizon_id')->orderBy('structural_position')->orderBy('exploration_epoch')
             ->get()->map(fn ($row) => (array) $row)->all();
     }
 }
