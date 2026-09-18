@@ -213,14 +213,14 @@ remain in place, and middle actions wrap without moving the directional slots.
 The UI renders Rest only from the authoritative schema, never from its own
 interpretation of the rest_available flag or visible cards.
 
-**No available move** means the current Phase has zero admissible non-Rest actions. The backend separately derives `no_remaining_potential` from an evidenced failure. Only that reason can create Tragedy or Exhaustion.
+**No available move** means the current Phase has zero admissible Phase-advancing actions. The backend separately derives `no_remaining_potential` from an evidenced failure. Only that reason can create Tragedy or Exhaustion.
 The server first applies all phase-native, ownership, target and Commitment
-constraints, then specializes the complete non-Rest action schema. Only when
-that action set is empty does it set `rest_available: true` and inject `participant.rest`
-as the sole action. Otherwise `rest_available` is false and Rest is absent from both
-the schema and UI. Human controls and autonomous inference receive the same result.
+constraints, then specializes the complete action schema. When no Phase-advancing
+action remains it sets `rest_available: true` and injects `participant.rest`.
+An optional `receipt.read` may remain beside Rest because it changes context without
+advancing the Phase. Human controls and autonomous inference receive the same result.
 
-Rest is never a participant preference or a competing action. An available
+Rest is never a preference over a Phase-advancing action. An available
 Variant, Reclassify, Revise, Attestation, phase-admissible Traverse, Reconcile, Instrument or Commit
 prevents Rest. In particular, Distinguish, Persist and Disperse cannot offer
 Rest while their first Variant opportunity remains admissible. After generation,

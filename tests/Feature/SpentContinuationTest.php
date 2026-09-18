@@ -21,6 +21,15 @@ class SpentContinuationTest extends TestCase
 {
     use RefreshDatabase, SpentContinuationFixture;
 
+    public function test_real_mediate_arrival_can_rest_without_mandatory_receipt_reads(): void
+    {
+        $this->initializeExhaustionFixture();
+        [, , $terminal] = $this->testedLineage();
+        $plan = app(InputPlanService::class)->forPhase($terminal->cycle->participant, $terminal, true);
+        $this->assertArrayHasKey('receipt.read', $plan['schema']['$defs']['actions']);
+        $this->assertArrayHasKey('participant.rest', $plan['schema']['$defs']['actions']);
+    }
+
     public function test_mediate_failure_blocks_the_previously_attested_distinguish_route(): void
     {
         $this->initializeExhaustionFixture();

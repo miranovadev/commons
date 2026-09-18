@@ -27,15 +27,47 @@ final class PotentialRegionCalculator
         return $distances;
     }
 
-    public function candidates(array $local, ?string $excluded = null, ?string $branch = null): array
+    public function candidates(array $local, ?string $excluded = null, ?string $branch = null, ?string $retained = null): array
     {
         $children = [];
-        foreach ($local['edges'] as [$source, $target]) {
+        $commits = [];
+        foreach ($local['edges'] as $edge) {
+            [$source, $target] = $edge;
+            $type = $edge[2] ?? null;
             $children[$source][] = $target;
+            if ($type === 'commit') {
+                $commits[$target] = true;
+            }
         }
+        $eligible = array_filter($local['entries'], fn ($entry, $id) => $id !== $excluded
+            && ($branch === null || $this->inBranch($local['nodes'][$id], $branch)), ARRAY_FILTER_USE_BOTH);
+        $entryIds = array_fill_keys(array_keys($eligible), true);
         $result = [];
-        foreach ($local['entries'] as $id => $entry) {
-            if ($id === $excluded || ($branch !== null && ! $this->inBranch($local['nodes'][$id], $branch))) {
+        foreach ($eligible as $id => $entry) {
+            // A successful Commit is the continuation of its provenance even
+            // when it stays inside the same Context Horizon. Keep only the
+            // downstream Commit frontier so a stronger ancestor cannot pull a
+            // resting Participant out of a fresh zero-Potential Commit Region.
+            $search = [$id];
+            $searched = [$id => true];
+            $shadowed = false;
+            for ($i = 0; $i < count($search) && ! $shadowed; $i++) {
+                foreach ($children[$search[$i]] ?? [] as $target) {
+                    if (isset($searched[$target])) {
+                        continue;
+                    }
+                    $searched[$target] = true;
+                    if (isset($entryIds[$target]) && isset($commits[$target])) {
+                        $shadowed = true;
+                        break;
+                    }
+                    $node = $local['nodes'][$target] ?? null;
+                    if ($node !== null && $node['active'] && $node['tier'] !== 'committal') {
+                        $search[] = $target;
+                    }
+                }
+            }
+            if ($shadowed && $id !== $retained) {
                 continue;
             }
             $seen = [$id => true];

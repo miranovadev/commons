@@ -423,6 +423,29 @@ class CausalRecoveryTest extends TestCase
         $this->assertEqualsWithDelta(.9 / 16, $selection['potential_charge'], 1e-9);
     }
 
+    public function test_same_domain_commit_shadows_its_stronger_ancestor_during_rest_recovery(): void
+    {
+        $origin = $this->committal($this->root, -.9, boundary: true);
+        $horizon = app(ContextHorizonProjector::class)->forEntry($origin);
+        $commit = $this->committal($horizon, -.01, $origin);
+        DB::table('supersessions')->where('target_proposition_id', $commit->id)->update(['type' => 'commit']);
+        $this->opportunity($origin);
+        $position = $this->expressive($horizon, $commit);
+        $this->refreshMeasurements();
+        $state = DB::table('potential_region_states')->where('context_horizon_id', $horizon->id)->first();
+        $legacy = json_decode($state->local_state, true, flags: JSON_THROW_ON_ERROR);
+        $legacy['edges'] = array_map(fn (array $edge): array => array_slice($edge, 0, 2), $legacy['edges']);
+        DB::table('potential_region_states')->where('context_horizon_id', $horizon->id)
+            ->update(['local_state' => json_encode($legacy, JSON_THROW_ON_ERROR)]);
+        $selection = app(PotentialChargeService::class)->recoverFrom($position);
+        $reference = app(ReferencePotentialChargeService::class)->recoverFrom($position);
+
+        $this->assertSame($commit->id, $selection['proposition']->id);
+        $this->assertSame($reference['proposition']->id, $selection['proposition']->id);
+        $this->assertSame($horizon->id, $selection['context_horizon_id']);
+        $this->assertSame(0.0, (float) $selection['raw_potential_charge']);
+    }
+
     public function test_sibling_domains_compete_by_potential_without_a_latest_commit_bonus(): void
     {
         [$origin, $h2, $first, $h3] = $this->boundaryChain();

@@ -181,7 +181,7 @@ final readonly class ReferencePotentialChargeService
         $edges = DB::table('supersessions')
             ->whereIn('source_proposition_id', $historicalIds)
             ->whereIn('target_proposition_id', $historicalIds)
-            ->get(['source_proposition_id', 'target_proposition_id']);
+            ->get(['source_proposition_id', 'target_proposition_id', 'type']);
         $outgoing = $edges->groupBy('source_proposition_id');
         // Topology determines eligibility. Undirected parent/child distance only
         // supplies the established observer attenuation for local/sibling routes.
@@ -197,9 +197,39 @@ final readonly class ReferencePotentialChargeService
             });
         $excluded = app(ExhaustionService::class)->unavailable($position) ? $position->id : null;
         $result = $this->basins->resolve($startingBasin, $horizons,
-            function (ContextHorizon $basin) use ($excluded, $members, $entries, $outgoing, $distances): Collection {
+            function (ContextHorizon $basin) use ($excluded, $members, $entries, $outgoing, $distances, $position, $propositions): Collection {
                 $candidates = $entries->get($basin->id, collect())
                     ->filter(fn (Proposition $node) => $node->id !== $excluded && isset($distances[$node->id]));
+                $candidateIds = $candidates->pluck('id')->flip();
+                $candidates = $candidates->reject(function (Proposition $candidate) use ($candidateIds, $outgoing, $position, $propositions): bool {
+                    if ($candidate->id === $position->id && $position->tier === 'committal') {
+                        return false;
+                    }
+                    $frontier = collect([$candidate->id]);
+                    $seen = collect([$candidate->id => true]);
+                    while ($frontier->isNotEmpty()) {
+                        $next = collect();
+                        foreach ($frontier as $sourceId) {
+                            foreach ($outgoing->get($sourceId, collect()) as $edge) {
+                                $targetId = $edge->target_proposition_id;
+                                if ($seen->has($targetId)) {
+                                    continue;
+                                }
+                                $seen->put($targetId, true);
+                                if ($candidateIds->has($targetId) && $edge->type === 'commit') {
+                                    return true;
+                                }
+                                $target = $propositions->get($targetId);
+                                if ($target !== null && $target->tier !== 'committal') {
+                                    $next->push($targetId);
+                                }
+                            }
+                        }
+                        $frontier = $next;
+                    }
+
+                    return false;
+                })->values();
                 if ($candidates->isEmpty()) {
                     return collect();
                 }
