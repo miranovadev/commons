@@ -1,0 +1,25 @@
+name: Export PostgreSQL dump reader
+on:
+  push:
+    branches: [nova/postgres-dump-reader]
+permissions:
+  contents: read
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Package pg_restore with runtime libraries
+        run: |
+          docker pull postgres:18
+          docker run --rm --entrypoint bash postgres:18 -c '
+            set -e
+            mkdir -p /tmp/bundle/usr/local/bin /tmp/bundle/lib
+            cp /usr/local/bin/pg_restore /tmp/bundle/usr/local/bin/
+            ldd /usr/local/bin/pg_restore | awk '\''/=> \// {print $3} /^\// {print $1}'\'' | while read library; do cp -L "$library" "/tmp/bundle/lib/$(basename "$library")"; done
+            tar -C /tmp/bundle -czf - .
+          ' > pg-restore-portable.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pg-restore-portable
+          path: pg-restore-portable.tar.gz
+          retention-days: 1
