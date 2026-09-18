@@ -1,0 +1,19 @@
+name: Load / Concurrency
+
+on:
+  push:
+    branches: ['ci/load/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  load:
+    uses: ./.github/workflows/php-tests.yml
+    with:
+      suite: load

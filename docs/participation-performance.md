@@ -84,7 +84,7 @@ exhausted a 128 MB local PHP limit; baseline timing above used a 1 GB benchmark
 limit and reported 142.5 MB peak. Application runtime settings are unchanged.
 These are isolated local fixture measurements, not production latency promises.
 PostgreSQL CI exercises real locks and emits its own benchmark measurements.
-Its separate profile job also compares plans against the unbatched reference.
+The manually invoked [Query Regression workflow](testing.md) also compares plans against the unbatched reference.
 Set `COMMONS_PROFILE_SQL=1` when running the scale test to print the slowest plan
 queries and PostgreSQL execution plans for statements exceeding 100 ms.
 The contribution diagnostic reports 74.41 ms in the write transaction out of

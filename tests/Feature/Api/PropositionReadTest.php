@@ -21,6 +21,7 @@ use App\Services\PropositionMeasurementService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
 class PropositionReadTest extends TestCase
@@ -87,6 +88,7 @@ class PropositionReadTest extends TestCase
         $this->artisan('commons:measurements-repair', ['substrate' => $substrate->slug, '--limit' => 501])->assertExitCode(2);
     }
 
+    #[Group('query')]
     public function test_500_node_graph_has_a_bounded_read_only_query_budget(): void
     {
         [$substrate, $node] = $this->fixture();

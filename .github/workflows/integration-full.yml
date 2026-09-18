@@ -1,0 +1,21 @@
+name: Full Integration
+
+on:
+  push:
+    branches:
+      - nova/restore-substrate-motor
+      - 'ci/integration/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  integration-full:
+    uses: ./.github/workflows/php-tests.yml
+    with:
+      suite: integration-full

@@ -11,6 +11,7 @@ use App\Services\InputPlanService;
 use App\Services\PotentialChargeService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\HorizonProofFixture;
 use Tests\Fixtures\ParticipationScaleFixture;
 use Tests\TestCase;
@@ -112,6 +113,7 @@ class HorizonFailureInvariantTest extends TestCase
         $this->assertNotNull(Proposition::find($root->id));
     }
 
+    #[Group('query')]
     public function test_failure_inspection_is_read_only_and_does_not_scan_unrelated_history(): void
     {
         $root = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);

@@ -48,6 +48,7 @@ use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\Process\Process;
 use Tests\Fixtures\HorizonProofFixture;
@@ -81,6 +82,7 @@ class TransactionLockOrderTest extends TestCase
         DB::statement("SET statement_timeout = '10s'");
     }
 
+    #[Group('load')]
     public function test_cycle_entry_can_lock_the_participant_while_a_contribution_waits_for_the_substrate(): void
     {
         [$substrate, $participant, $phase] = $this->fixture();
@@ -100,6 +102,7 @@ class TransactionLockOrderTest extends TestCase
         $this->assertSame(1, $participant->cycles()->whereNull('completed_at')->count());
     }
 
+    #[Group('load')]
     public function test_two_participants_can_contribute_to_the_same_substrate_without_a_lock_cycle(): void
     {
         [$substrate, $first, $firstPhase] = $this->fixture();
@@ -133,6 +136,7 @@ class TransactionLockOrderTest extends TestCase
         }
     }
 
+    #[Group('load')]
     public function test_standalone_instrument_completion_does_not_hold_the_execution_while_waiting_for_the_root(): void
     {
         [$substrate, , $phase] = $this->fixture();
@@ -146,6 +150,7 @@ class TransactionLockOrderTest extends TestCase
         $this->assertSame(1, $execution->receipt()->count());
     }
 
+    #[Group('load')]
     public function test_standalone_measurement_projection_waits_before_locking_the_proposition(): void
     {
         [$substrate, , $phase] = $this->fixture();
@@ -162,6 +167,7 @@ class TransactionLockOrderTest extends TestCase
     }
 
     #[DataProvider('projectionKinds')]
+    #[Group('load')]
     public function test_graph_and_detail_finish_while_measurement_update_holds_shared_write_locks(bool $expressive): void
     {
         [$substrate, $participant, $phase] = $this->fixture();
@@ -198,6 +204,7 @@ class TransactionLockOrderTest extends TestCase
         }
     }
 
+    #[Group('load')]
     public function test_plan_state_workspace_and_active_prepare_complete_concurrently_while_a_writer_holds_the_root(): void
     {
         [$substrate, $participant, $phase] = $this->fixture();
@@ -232,6 +239,7 @@ class TransactionLockOrderTest extends TestCase
     }
 
     /** Hold the root, observe a real lock wait, exercise the competing operation, release. */
+    #[Group('load')]
     public function test_waiting_generation_rechecks_structural_viability_after_the_first_writer_commits(): void
     {
         [$substrate, $participant, $phase] = $this->fixture();
@@ -245,6 +253,7 @@ class TransactionLockOrderTest extends TestCase
         $this->assertSame(1, Proposition::where('tier', 'expressive')->count());
     }
 
+    #[Group('load')]
     public function test_waiting_reconciliation_rechecks_the_directed_pair_across_participants(): void
     {
         [$substrate, $first, $phase] = $this->fixture();
@@ -287,6 +296,7 @@ class TransactionLockOrderTest extends TestCase
         $this->assertSame(1, $a->children()->wherePivot('type', 'reconcile')->count());
     }
 
+    #[Group('load')]
     public function test_waiting_reclassification_reuses_the_first_participants_result(): void
     {
         [$substrate, $first, $initial] = $this->fixture();
@@ -316,6 +326,7 @@ class TransactionLockOrderTest extends TestCase
         $this->assertSame(1, DB::table('reclassification_results')->where('source_proposition_id', $source->id)->count());
     }
 
+    #[Group('load')]
     public function test_waiting_commit_rechecks_global_source_consumption(): void
     {
         [$substrate, $first, $initial] = $this->fixture();
@@ -350,6 +361,7 @@ class TransactionLockOrderTest extends TestCase
         $this->assertSame(1, DB::table('commit_results')->where('source_proposition_id', $source->id)->count());
     }
 
+    #[Group('load')]
     public function test_another_participant_can_commit_an_action_during_inference_between_steps_of_one_wake(): void
     {
         config()->set('participation.max_actions_per_wake', 2);
@@ -422,6 +434,7 @@ class TransactionLockOrderTest extends TestCase
     }
 
     #[DataProvider('externalInstruments')]
+    #[Group('load')]
     public function test_external_instrument_observation_allows_another_writer_and_discards_a_stale_result(string $kind): void
     {
         [$substrate, $first, $initial] = $this->fixture();
@@ -474,6 +487,7 @@ class TransactionLockOrderTest extends TestCase
         $this->assertDatabaseMissing('instrument_executions', ['proposition_id' => $target->id, 'kind' => $kind]);
     }
 
+    #[Group('load')]
     public function test_competing_receipt_reads_keep_one_load_and_one_event(): void
     {
         [$substrate, $participant, $phase] = $this->fixture();
@@ -486,6 +500,7 @@ class TransactionLockOrderTest extends TestCase
         $this->assertSame(1, ReceiptContextEvent::where('participant_receipt_context_id', $load->id)->count());
     }
 
+    #[Group('load')]
     public function test_competing_boundary_projection_reuses_the_same_child_horizon(): void
     {
         [$substrate, , $phase] = $this->fixture();
@@ -498,6 +513,7 @@ class TransactionLockOrderTest extends TestCase
         $this->assertSame(1, ContextHorizon::where('opened_by_proposition_id', $snapshot->proposition_id)->count());
     }
 
+    #[Group('load')]
     public function test_concurrent_rests_record_one_tragedy_and_leave_both_participants_with_valid_entry(): void
     {
         [$substrate, $first, $phase] = $this->fixture();
@@ -528,6 +544,7 @@ class TransactionLockOrderTest extends TestCase
         }
     }
 
+    #[Group('load')]
     public function test_concurrent_failed_final_attempt_records_one_exhaustion(): void
     {
         $this->initializeExhaustionFixture();
@@ -545,6 +562,7 @@ class TransactionLockOrderTest extends TestCase
         $this->assertTrue(app(ExhaustionAuditService::class)->inspect($this->substrate->id)['matches']);
     }
 
+    #[Group('load')]
     public function test_two_reclassifications_compete_for_one_receipt_with_one_winner_and_no_partial_target(): void
     {
         $this->initializeExhaustionFixture();
@@ -567,6 +585,7 @@ class TransactionLockOrderTest extends TestCase
         $this->assertDatabaseHas('receipts', ['id' => $input['receipt_id']]);
     }
 
+    #[Group('load')]
     public function test_concurrent_fresh_sibling_invalidates_exhaustion_proof(): void
     {
         $this->initializeExhaustionFixture();

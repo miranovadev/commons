@@ -13,6 +13,7 @@ use App\Services\LedgerService;
 use App\Services\PotentialChargeService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\ExhaustionFixture;
 use Tests\Fixtures\ParticipationScaleFixture;
 use Tests\TestCase;
@@ -181,6 +182,7 @@ class ExhaustionTest extends TestCase
         $this->assertSame([$phase->id], $audit['invalid_rest_witnesses']);
     }
 
+    #[Group('query')]
     public function test_horizon_proof_does_not_grow_with_unrelated_historical_terrain(): void
     {
         $root = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
