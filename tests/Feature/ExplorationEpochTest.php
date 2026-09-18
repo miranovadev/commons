@@ -34,9 +34,7 @@ class ExplorationEpochTest extends TestCase
         }
         $proof = app(HorizonFailureService::class)->inspect($terminal);
         $this->assertSame('continuation_failed', $proof['reason']);
-        $terminal->forceFill(['completed_at' => now()])->save();
-        $terminal->cycle->forceFill(['rested_at' => now(), 'completed_at' => now(), 'rest_reason' => 'no_available_move'])->save();
-        app(HorizonFailureService::class)->publish($terminal, $proof, exploration: true);
+        $this->rest($terminal);
         foreach ([[$signal, 1, 3], [$activity, 4, 7]] as [$node, $position, $epoch]) {
             $this->assertDatabaseHas('continuation_failures', ['proposition_id' => $node->id,
                 'context_horizon_id' => $horizon, 'structural_position' => $position, 'exploration_epoch' => $epoch]);
@@ -50,6 +48,7 @@ class ExplorationEpochTest extends TestCase
         $this->assertNull($terminal->cycle->contextHorizon->fresh()->exhausted_at);
         $this->assertTrue(app(ExhaustionAuditService::class)->inspect($this->substrate->id)['matches']);
 
+        $this->measure($activity, 0);
         app(ContributionDispatcher::class)->dispatch($return->cycle->participant, $return,
             ['action' => 'proposition.variant', 'statement' => 'A changed Distinguish field']);
         $epochs = app(ExplorationEpochService::class);
@@ -108,5 +107,20 @@ class ExplorationEpochTest extends TestCase
         $this->assertContains($activity->id, $proof['transitions']);
         $this->assertNotContains($signal->id, $proof['transitions']);
         $this->assertNotContains($sibling->id, $proof['transitions']);
+    }
+
+    public function test_a_captured_failure_cannot_spend_a_new_epoch_even_if_field_version_matches(): void
+    {
+        [, , $terminal] = $this->testedLineage();
+        $proof = app(HorizonFailureService::class)->inspect($terminal);
+        $terminal->forceFill(['completed_at' => now()])->save();
+        $terminal->cycle->forceFill(['completed_at' => now(), 'rested_at' => now(), 'rest_reason' => $proof['rest_reason']])->save();
+        // Isolate epoch validation from the additional field-version defense.
+        DB::table('horizon_exploration_states')->insert(['context_horizon_id' => $terminal->cycle->context_horizon_id,
+            'structural_position' => 4, 'epoch' => 1]);
+        app(HorizonFailureService::class)->publish($terminal, $proof);
+        $this->assertDatabaseCount('continuation_failures', 0);
+        $this->assertDatabaseCount('horizon_failure_witnesses', 0);
+        $this->assertSame(0, Tragedy::count());
     }
 }

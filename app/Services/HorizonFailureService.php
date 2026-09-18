@@ -63,13 +63,8 @@ final class HorizonFailureService
         return $proof;
     }
 
-    public function publish(Phase $phase, array $proof, bool $exploration = false): void
+    public function publish(Phase $phase, array $proof): void
     {
-        // Stage 1 persists exploration proofs without enabling them through the
-        // legacy global exclusion. The eligibility stage activates this path.
-        if (! $exploration && $proof['rest_reason'] !== 'no_remaining_potential') {
-            return;
-        }
         DB::transaction(function () use ($phase, $proof): void {
             $substrate = Substrate::whereKey($phase->cycle->participant->substrate_id)->lockForUpdate()->firstOrFail();
             if (! in_array($proof['reason'], ['no_remaining_potential', 'continuation_failed'], true) || ! $proof['stable'] || $proof['field_version'] !== (int) $substrate->field_version
@@ -96,9 +91,10 @@ final class HorizonFailureService
                 return;
             }
             foreach ($proof['failures'] as $failure) {
-                DB::table('continuation_failures')->insertOrIgnore([...$failure,
-                    'context_horizon_id' => $proof['context_horizon_id'], 'phase_id' => $phase->id, 'failed_at' => now()]);
-                app(RealtimePublisher::class)->proposition($failure['proposition_id']);
+                if (DB::table('continuation_failures')->insertOrIgnore([...$failure,
+                    'context_horizon_id' => $proof['context_horizon_id'], 'phase_id' => $phase->id, 'failed_at' => now()])) {
+                    app(RealtimePublisher::class)->proposition($failure['proposition_id'], 'proposition.spent');
+                }
             }
             if ($proof['rest_reason'] === 'no_remaining_potential') {
                 $tragedy = app(TragedyService::class)->record($phase, $proof);
@@ -121,10 +117,21 @@ final class HorizonFailureService
     {
         $gate = $phase->gate;
 
-        return $phase->kind->value >= PhaseKind::Mediate->value
-            && $gate?->tier === 'expressive' && $gate->phase->kind->value < $phase->kind->value
-            && ! app(ExhaustionService::class)->unavailable($gate)
-            && $this->exercised($gate);
+        if ($gate?->tier !== 'expressive' || $gate->phase->kind->value >= $phase->kind->value
+            || app(ExhaustionService::class)->unavailable($gate)) {
+            return false;
+        }
+        if ($phase->kind->value >= PhaseKind::Mediate->value && $this->exercised($gate)) {
+            return true;
+        }
+        // On recovery an earlier position can encounter a continuation already
+        // proved dead downstream. Reuse that proof, rather than retrying forever
+        // because this return happens before Mediate. An empty Write is no proof.
+        $children = DB::table('supersessions')->where('source_proposition_id', $gate->id)->pluck('target_proposition_id');
+
+        return $children->isNotEmpty()
+            && app(PropositionStateService::class)->attestations(collect([$gate]))->isNotEmpty()
+            && $children->diff(app(ExplorationEpochService::class)->currentFailures($phase->cycle->context_horizon_id, $children)->keys())->isEmpty();
     }
 
     private function exercised(Proposition $node, bool $instrumentRequired = false): bool

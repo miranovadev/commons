@@ -231,7 +231,7 @@ rather than inferring semantics from current code behaviour.
 
 **Reclassification invariant:** Phase 3 and Phase 6 reclassification require an available Receipt. Reclassification atomically attaches/consumes the Receipt. No Receipt, no Reclassification. Tragedy is exceptional in generation, not in consumption.
 
-**Generation invariant:** Variant availability is controlled by structural viability, not Receipt lifecycle and not Participant count. A further Variant requires each current viable Variant to have its own completed Instrument and effective Attestation, with positive remaining Horizon Potential Charge. Each new Variant repeats that sequence; no prior Rest or fixed sibling cap applies. See the [confirmed clarification](horizon-proof-variant-clarification.md).
+**Generation invariant:** Variant availability is controlled by structural viability, not Receipt lifecycle and not Participant count. A further Variant requires all current expressive routes at that structural position to be spent in its current exploration epoch, each with its own completed Instrument and effective Attestation, with positive remaining Horizon Potential Charge. A healthy route blocks redundant generation. Each new Variant repeats that sequence; no prior Rest or fixed sibling cap applies. See the [confirmed clarification](horizon-proof-variant-clarification.md).
 
 **Observation invariant:** Instrument generates evidence; Attestation becomes available only when evidence exists; Attestation becomes Traverse on the next Cycle under the existing rule.
 
@@ -246,3 +246,12 @@ rather than inferring semantics from current code behaviour.
 The backend derives Rest reason. Only `no_remaining_potential` can create Tragedy or Exhaustion; `no_available_move` cannot. Neither is a Participant assertion.
 
 See [the proof lifecycle](branch-tragedy.md), [migration and compatibility](horizon-proof-migration.md), and [the integrated phase rules](flow-integration.md).
+
+## Epoch-scoped expressive exploration
+
+The [exploration epoch invariants](exploration-epochs.md#invariants) are normative.
+Expressive propositions become spent relative to a Horizon, structural position
+and exploration epoch; Horizons become exhausted permanently. Failure history
+is immutable. Only a successful Variant advances its own position's epoch.
+Spent propositions remain contextual evidence without Traverse or Attestation
+targets; a later epoch restores normal eligibility without erasing history.

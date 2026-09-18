@@ -4,6 +4,7 @@ namespace Tests\Fixtures;
 
 use App\Enums\PhaseKind;
 use App\Models\Attestation;
+use App\Models\Proposition;
 use App\Models\Tragedy;
 use App\Services\ContributionDispatcher;
 use App\Services\LedgerService;
@@ -38,6 +39,12 @@ trait HorizonProofFixture
             ['action' => 'proposition.reclassify', 'proposition_id' => $source->id, 'receipt_id' => $tragedy->receipt_id]);
         $this->explore($result);
         $terminal = $this->phase($result);
+        // Spent history stays in the measured field. This fixture asserts a
+        // genuinely zero-Potential final attempt, including the original probe.
+        foreach (Proposition::whereHas('phase.cycle', fn ($query) => $query
+            ->where('context_horizon_id', $terminal->cycle->context_horizon_id))->where('tier', 'expressive')->get() as $node) {
+            $this->measure($node, 1);
+        }
         $this->measure($source, 1);
         $this->measure($result, 1);
 

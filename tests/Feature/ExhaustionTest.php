@@ -54,6 +54,10 @@ class ExhaustionTest extends TestCase
             ['action' => 'proposition.reclassify', 'proposition_id' => $source->id, 'receipt_id' => $tragedy->receipt_id]);
         $this->explore($result);
         $terminal = $this->phase($result);
+        foreach (Proposition::whereHas('phase.cycle', fn ($query) => $query
+            ->where('context_horizon_id', $terminal->cycle->context_horizon_id))->where('tier', 'expressive')->get() as $node) {
+            $this->measure($node, 1);
+        }
         $this->measure($source, 1);
         $this->measure($result, 1);
         $this->rest($terminal);
