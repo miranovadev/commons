@@ -133,11 +133,19 @@ final readonly class InputSchemaService
             $schema['$defs']['actions']['attestation.create']['anyOf'] = $choices;
         }
 
-        // Rest is the sole fallback after every non-Rest action is specialized.
-        // It must never compete with a phase-native or target-bound action.
-        return $schema['$defs']['actions'] === []
-            ? $this->forPhase($kind, ['participant.rest'])
-            : $schema;
+        // Receipt Read only changes Participant context. It must not turn an
+        // otherwise actionless Phase into a mandatory read loop or suppress
+        // the structural Rest which ends the current probe.
+        $progressActions = array_diff(array_keys($schema['$defs']['actions']), ['receipt.read']);
+        if ($progressActions === []) {
+            if ($schema['$defs']['actions'] === []) {
+                return $this->forPhase($kind, ['participant.rest']);
+            }
+            $schema['$defs']['actions']['participant.rest'] = config('schemas.actions')['participant.rest'];
+            $schema['oneOf'][] = ['$ref' => '#/$defs/actions/participant.rest'];
+        }
+
+        return $schema;
     }
 
     /**

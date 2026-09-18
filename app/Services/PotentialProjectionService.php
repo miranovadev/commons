@@ -43,7 +43,22 @@ final class PotentialProjectionService
             throw new PotentialProjectionUnavailable($horizon->substrate_id);
         }
 
-        return ['local' => json_decode($row->local_state, true, flags: JSON_THROW_ON_ERROR),
+        $local = json_decode($row->local_state, true, flags: JSON_THROW_ON_ERROR);
+        // v2 projections stored only edge endpoints. Enrich that disposable
+        // legacy shape on read so an already-live same-Horizon Commit becomes
+        // a recovery frontier immediately, before the next normal projection.
+        if (collect($local['edges'])->contains(fn (array $edge): bool => ! isset($edge[2]))) {
+            $types = DB::table('supersessions')->whereIn('target_proposition_id',
+                collect($local['edges'])->pluck(1)->unique())->get(['source_proposition_id', 'target_proposition_id', 'type'])
+                ->keyBy(fn ($edge) => $edge->source_proposition_id.'|'.$edge->target_proposition_id);
+            $local['edges'] = array_map(function (array $edge) use ($types): array {
+                $type = $types->get($edge[0].'|'.$edge[1])?->type;
+
+                return [$edge[0], $edge[1], $type];
+            }, $local['edges']);
+        }
+
+        return ['local' => $local,
             'frontier' => json_decode($row->frontier, true, flags: JSON_THROW_ON_ERROR),
             'potential' => (float) $row->remaining_potential, 'version' => (int) $row->field_version];
     }
@@ -235,12 +250,12 @@ final class PotentialProjectionService
         // Historical geometry is retained for distances from exhausted positions;
         // active-only nodes above independently constrain numeric Potential.
         $edges = DB::table('supersessions')->whereIn('target_proposition_id', $owned->keys())
-            ->get(['source_proposition_id', 'target_proposition_id']);
+            ->get(['source_proposition_id', 'target_proposition_id', 'type']);
         foreach ($edges as $edge) {
             if (! $nodes->has($edge->source_proposition_id)) {
                 throw new \DomainException('Potential projection requires causal Horizon edges. Run commons:causal-audit before rebuilding.');
             }
-            $local['edges'][] = [$edge->source_proposition_id, $edge->target_proposition_id];
+            $local['edges'][] = [$edge->source_proposition_id, $edge->target_proposition_id, $edge->type];
         }
         $branches = [];
         $roots = $memberships->flatten(1)->pluck('root_proposition_id')->unique();

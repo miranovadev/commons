@@ -36,7 +36,8 @@ final readonly class ProjectedRecoveryService
             $region = $this->projection->region($id);
             $local = $region['local'];
             $distances = $this->calculator->distances($local, $from);
-            $ranked = $this->frontierFrom($local, $distances, $offset, $excluded, $visited, $searched);
+            $ranked = $this->frontierFrom($local, $distances, $offset, $excluded,
+                $position->tier === 'committal' ? $position->id : null, $visited, $searched);
             $visited[$id] = true;
             if ($ranked !== [] || $local['parent'] === null) {
                 break;
@@ -70,7 +71,7 @@ final readonly class ProjectedRecoveryService
             'projected_field_version' => $version, 'recovery_hops' => $depth];
     }
 
-    private function frontierFrom(array $local, array $distances, int $offset, ?string $excluded, array $visited, array &$searched): array
+    private function frontierFrom(array $local, array $distances, int $offset, ?string $excluded, ?string $retained, array $visited, array &$searched): array
     {
         $ranked = [];
         $children = DB::table('context_horizons as horizon')->leftJoin('potential_region_states as projection',
@@ -87,7 +88,7 @@ final readonly class ProjectedRecoveryService
             if ($excluded === $child->opened_by_proposition_id) {
                 $state = $this->projection->region($child->id)['local'];
                 $ranked = array_merge($ranked, $this->frontierFrom($state,
-                    $this->calculator->distances($state, $excluded), $distance, $excluded, $visited, $searched));
+                    $this->calculator->distances($state, $excluded), $distance, $excluded, null, $visited, $searched));
 
                 continue;
             }
@@ -100,7 +101,7 @@ final readonly class ProjectedRecoveryService
             }
         }
         if ($ranked === []) {
-            foreach ($this->calculator->candidates($local, $excluded) as $entry) {
+            foreach ($this->calculator->candidates($local, $excluded, retained: $retained) as $entry) {
                 if (isset($distances[$entry['proposition_id']])) {
                     $ranked[] = $this->calculator->attenuate($entry, $offset + $distances[$entry['proposition_id']]);
                 }

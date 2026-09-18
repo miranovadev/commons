@@ -5,9 +5,7 @@ namespace Tests\Fixtures;
 use App\Enums\PhaseKind;
 use App\Models\Cycle;
 use App\Models\Phase;
-use App\Services\HorizonReceiptService;
 use App\Services\PotentialChargeService;
-use App\Services\ReceiptContextService;
 
 trait SpentContinuationFixture
 {
@@ -34,9 +32,6 @@ trait SpentContinuationFixture
         $return = (new Phase)->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Distinguish,
             'gate_proposition_id' => $this->origin->id, 'write_register' => $distinguish->write_register, 'started_at' => now()]);
         $return->save();
-        foreach (app(HorizonReceiptService::class)->available($terminal) as $receipt) {
-            app(ReceiptContextService::class)->read($terminal->cycle->participant, $terminal, $receipt->id);
-        }
         $this->measure($activity, 0);
         $this->assertTrue(app(PotentialChargeService::class)->hasRemainingInHorizon($terminal));
 
