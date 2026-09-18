@@ -24,3 +24,4 @@ jobs:
           name: pg-restore-portable
           path: pg-restore-portable.tar.gz
           retention-days: 1
+# diagnostic export only
