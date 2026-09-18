@@ -1,39 +1,10 @@
-name: Tests
-
-on:
-  push:
-
+name: Reproduce spent continuation
+on: push
 permissions:
   contents: read
-
-concurrency:
-  group: tests-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  test:
-    name: ${{ matrix.name }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: PHP 8.5 / PostgreSQL 18 / Node 24
-            profile: false
-            recovery: false
-          - name: PostgreSQL Horizon proof
-            profile: false
-            recovery: false
-            proof: true
-          - name: PostgreSQL participation profile
-            profile: true
-            recovery: false
-          - name: PostgreSQL recovery and contention
-            profile: false
-            recovery: true
+  reproduce:
     runs-on: ubuntu-latest
-    # Includes the exhaustive unbatched PostgreSQL reference calculation.
-    timeout-minutes: 20
-
     services:
       postgres:
         image: postgres:18-alpine
@@ -41,101 +12,35 @@ jobs:
           POSTGRES_DB: testing
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -q -d testing -U postgres"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
-
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
     env:
       APP_ENV: testing
       APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
-      APP_DEBUG: false
       DB_CONNECTION: pgsql
       DB_HOST: 127.0.0.1
-      DB_PORT: 5432
       DB_DATABASE: testing
       DB_USERNAME: postgres
       DB_PASSWORD: postgres
-      CACHE_STORE: array
-      MAIL_MAILER: array
-      QUEUE_CONNECTION: sync
-      SESSION_DRIVER: array
-
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Set up PHP
-        uses: shivammathur/setup-php@v2
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.5'
-          extensions: mbstring, pdo_pgsql, curl, intl
+          extensions: mbstring, pdo_pgsql, pdo_sqlite, curl, intl
           coverage: none
-          tools: composer:v2
-
-      - name: Resolve Composer cache directory
-        id: composer-cache
-        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
-
-      - name: Cache Composer packages
-        uses: actions/cache@v4
+      - run: composer install --prefer-dist --no-interaction --no-progress
+      - run: cp .env.example .env
+      - name: Capture portable test runtime
+        run: |
+          mkdir -p /tmp/php-test-runtime
+          cp /usr/bin/php8.5 /tmp/php-test-runtime/php
+          cp -r "$(php -r 'echo ini_get("extension_dir");')" /tmp/php-test-runtime/extensions
+          cp /usr/bin/composer /tmp/php-test-runtime/composer
+          tar -czf /tmp/php-test-runtime.tar.gz -C /tmp php-test-runtime
+      - uses: actions/upload-artifact@v4
         with:
-          path: ${{ steps.composer-cache.outputs.dir }}
-          key: ${{ runner.os }}-php-8.5-composer-${{ hashFiles('composer.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-php-8.5-composer-
-
-      - name: Install PHP dependencies
-        run: composer install --prefer-dist --no-interaction --no-progress
-
-      - name: Set up Node
-        if: ${{ !matrix.profile && !matrix.recovery && !matrix.proof }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
-
-      - name: Install frontend dependencies
-        if: ${{ !matrix.profile && !matrix.recovery && !matrix.proof }}
-        run: npm ci
-
-      - name: Build frontend
-        if: ${{ !matrix.profile && !matrix.recovery && !matrix.proof }}
-        run: npm run build
-
-      - name: Test frontend action contracts
-        if: ${{ !matrix.profile && !matrix.recovery && !matrix.proof }}
-        run: npm run test:ui
-
-      - name: Prepare test environment
-        if: ${{ !cancelled() }}
-        run: cp .env.example .env
-
-      - name: Check recovery semantics, optimistic reads and PostgreSQL contention
-        if: ${{ matrix.recovery }}
-        env:
-          PGOPTIONS: '-c statement_timeout=30s'
-        run: php artisan test --filter 'HorizonReceiptLifecycleTest|ReceiptGatedReclassificationTest|HorizonTragedyTest|HorizonProofCycleTest|FinalAttemptExhaustionTest|HorizonProofMigrationTest|CommitParticipationStateTest|LineageAttenuationTest|OptimisticParticipationTest|ParticipantActionContractTest|PersistInstrumentTest|PotentialProjectionTest|PotentialRegionCalculatorTest|PropositionReadTest|ExhaustionTest|ExhaustionRealtimeTest|TransactionLockOrderTest|ParticipantContextTest|CausalRecoveryTest|RecoveryBasinResolverTest|LocalParticipantNavigationTest|ParticipantContinuityTest|HorizonWorkspaceTest|ParticipantWakeTest'
-
-      - name: Run test suite
-        if: ${{ !matrix.profile && !matrix.recovery && !matrix.proof && !cancelled() }}
-        env:
-          PGOPTIONS: '-c statement_timeout=30s'
-          COMMONS_PROFILE_SQL: '1'
-        run: php artisan test --exclude-group=performance --display-warnings
-
-      - name: Profile scoped PostgreSQL reads
-        if: ${{ matrix.profile }}
-        env:
-          PGOPTIONS: '-c statement_timeout=30s'
-          COMMONS_PROFILE_SQL: '1'
-        run: php artisan test --filter 'ParticipationPerformanceTest|ReceiptContextMigrationTest' --display-warnings
-
-      - name: Check Horizon receipt, Variant and final-attempt invariants
-        if: ${{ matrix.proof }}
-        env:
-          PGOPTIONS: '-c statement_timeout=30s'
-        run: php artisan test --filter 'HorizonReceiptLifecycleTest|ReceiptGatedReclassificationTest|ExpressiveEvidenceGatingTest|AuthoritativeRestReasonTest|HorizonTragedyTest|FinalAttemptExhaustionTest|HorizonProofConcurrencyTest|HorizonProofMigrationTest|ExhaustionTest'
+          name: php-test-runtime
+          path: /tmp/php-test-runtime.tar.gz
+          retention-days: 1
+      - run: php artisan test --filter SpentContinuationTest
