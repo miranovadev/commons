@@ -38,6 +38,11 @@ class SpentContinuationTest extends TestCase
         $return = (new Phase)->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Distinguish,
             'gate_proposition_id' => $this->origin->id, 'write_register' => $distinguish->write_register, 'started_at' => now()]);
         $return->save();
+        foreach (app(\App\Services\HorizonReceiptService::class)->available($terminal) as $receipt) {
+            app(\App\Services\ReceiptContextService::class)->read($terminal->cycle->participant, $terminal, $receipt->id);
+        }
+        $this->measure($activity, 0);
+        $this->assertTrue(app(PotentialChargeService::class)->hasRemainingInHorizon($terminal));
         $plan = fn () => app(InputPlanService::class)->forPhase($return->cycle->participant, $return);
         $this->assertContains($signal->id, array_column($plan()['traversal_options'], 'id'));
 
