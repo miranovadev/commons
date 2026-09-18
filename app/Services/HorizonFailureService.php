@@ -63,8 +63,13 @@ final class HorizonFailureService
         return $proof;
     }
 
-    public function publish(Phase $phase, array $proof): void
+    public function publish(Phase $phase, array $proof, bool $exploration = false): void
     {
+        // Stage 1 persists exploration proofs without enabling them through the
+        // legacy global exclusion. The eligibility stage activates this path.
+        if (! $exploration && $proof['rest_reason'] !== 'no_remaining_potential') {
+            return;
+        }
         DB::transaction(function () use ($phase, $proof): void {
             $substrate = Substrate::whereKey($phase->cycle->participant->substrate_id)->lockForUpdate()->firstOrFail();
             if (! in_array($proof['reason'], ['no_remaining_potential', 'continuation_failed'], true) || ! $proof['stable'] || $proof['field_version'] !== (int) $substrate->field_version
