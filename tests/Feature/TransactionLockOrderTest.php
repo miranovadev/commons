@@ -439,7 +439,10 @@ class TransactionLockOrderTest extends TestCase
         $input = ['action' => 'instrument.execute', 'proposition_id' => $target->id,
             'instrument' => $kind === 'hyperlink' ? ['kind' => $kind, 'reference' => 'https://example.test/outside-lock']
                 : ['kind' => $kind, 'query' => 'Observe outside the write lock']];
-        $before = InstrumentExecution::count();
+        // The other Participant may legitimately generate its own citation.
+        // Only the stale invocation's Phase must retain exactly its old evidence.
+        $beforeExecutions = InstrumentExecution::where('phase_id', $initial->id)->orderBy('id')->pluck('id')->all();
+        $beforeReceipts = Receipt::where('phase_id', $initial->id)->orderBy('id')->pluck('id')->all();
         $observed = false;
         $this->mock($kind === 'hyperlink' ? HyperlinkVerifier::class : WebSearchProvider::class, function ($mock) use ($kind, &$observed, $second, $secondPhase, $first, $initial, $target): void {
             $mock->shouldReceive($kind === 'hyperlink' ? 'verify' : 'search')->once()->andReturnUsing(function ($reference) use ($kind, &$observed, $second, $secondPhase, $first, $initial, $target) {
@@ -464,7 +467,11 @@ class TransactionLockOrderTest extends TestCase
         }
         $this->assertTrue($observed, 'External observation must run without a transaction.');
         $this->assertNotNull($secondPhase->fresh()->completed_at);
-        $this->assertSame($before, InstrumentExecution::count(), 'Discarded observation persists no execution or Receipt.');
+        $this->assertSame($beforeExecutions, InstrumentExecution::where('phase_id', $initial->id)->orderBy('id')->pluck('id')->all(),
+            'The stale observation must not persist an execution.');
+        $this->assertSame($beforeReceipts, Receipt::where('phase_id', $initial->id)->orderBy('id')->pluck('id')->all(),
+            'The stale observation must not persist a Receipt.');
+        $this->assertDatabaseMissing('instrument_executions', ['proposition_id' => $target->id, 'kind' => $kind]);
     }
 
     public function test_competing_receipt_reads_keep_one_load_and_one_event(): void
