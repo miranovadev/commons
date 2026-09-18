@@ -13,8 +13,13 @@ use Illuminate\Support\Facades\DB;
 /** Failure is historical; only a successful Variant changes its local epoch. */
 final class ExplorationEpochService
 {
-    public function current(string $horizonId, PhaseKind $position): int
+    public function current(string $horizonId, PhaseKind $position, ?ParticipationContext $context = null): int
     {
+        if ($context !== null) {
+            return (int) $context->remember('exploration-epochs:'.$horizonId, fn () => DB::table('horizon_exploration_states')
+                ->where('context_horizon_id', $horizonId)->pluck('epoch', 'structural_position'))->get($position->value, 0);
+        }
+
         return (int) DB::table('horizon_exploration_states')->where('context_horizon_id', $horizonId)
             ->where('structural_position', $position->value)->value('epoch');
     }
@@ -28,6 +33,9 @@ final class ExplorationEpochService
         $key = ['context_horizon_id' => $phase->cycle->context_horizon_id, 'structural_position' => $phase->kind->value];
         DB::table('horizon_exploration_states')->insertOrIgnore([...$key, 'epoch' => 0]);
         DB::table('horizon_exploration_states')->where($key)->increment('epoch');
+        app(RealtimePublisher::class)->horizon($key['context_horizon_id'], $phase->cycle->participant->substrate_id,
+            ['type' => 'exploration.epoch_advanced', 'structural_position' => $phase->kind->value,
+                'exploration_epoch' => $this->current($key['context_horizon_id'], $phase->kind)]);
     }
 
     /** One indexed lookup for a bounded candidate set; old epochs never match. */

@@ -91,9 +91,10 @@ final class HorizonFailureService
                 return;
             }
             foreach ($proof['failures'] as $failure) {
-                DB::table('continuation_failures')->insertOrIgnore([...$failure,
-                    'context_horizon_id' => $proof['context_horizon_id'], 'phase_id' => $phase->id, 'failed_at' => now()]);
-                app(RealtimePublisher::class)->proposition($failure['proposition_id']);
+                if (DB::table('continuation_failures')->insertOrIgnore([...$failure,
+                    'context_horizon_id' => $proof['context_horizon_id'], 'phase_id' => $phase->id, 'failed_at' => now()])) {
+                    app(RealtimePublisher::class)->proposition($failure['proposition_id'], 'proposition.spent');
+                }
             }
             if ($proof['rest_reason'] === 'no_remaining_potential') {
                 $tragedy = app(TragedyService::class)->record($phase, $proof);

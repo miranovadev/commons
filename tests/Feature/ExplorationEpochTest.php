@@ -108,4 +108,19 @@ class ExplorationEpochTest extends TestCase
         $this->assertNotContains($signal->id, $proof['transitions']);
         $this->assertNotContains($sibling->id, $proof['transitions']);
     }
+
+    public function test_a_captured_failure_cannot_spend_a_new_epoch_even_if_field_version_matches(): void
+    {
+        [, , $terminal] = $this->testedLineage();
+        $proof = app(HorizonFailureService::class)->inspect($terminal);
+        $terminal->forceFill(['completed_at' => now()])->save();
+        $terminal->cycle->forceFill(['completed_at' => now(), 'rested_at' => now(), 'rest_reason' => $proof['rest_reason']])->save();
+        // Isolate epoch validation from the additional field-version defense.
+        DB::table('horizon_exploration_states')->insert(['context_horizon_id' => $terminal->cycle->context_horizon_id,
+            'structural_position' => 4, 'epoch' => 1]);
+        app(HorizonFailureService::class)->publish($terminal, $proof);
+        $this->assertDatabaseCount('continuation_failures', 0);
+        $this->assertDatabaseCount('horizon_failure_witnesses', 0);
+        $this->assertSame(0, Tragedy::count());
+    }
 }
