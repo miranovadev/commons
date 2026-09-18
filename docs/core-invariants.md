@@ -5,7 +5,7 @@ If an implementation detail conflicts with an invariant, the invariant takes
 precedence. These are normative constraints on The Commons model and govern the
 more specific operational rules documented beneath them.
 
-Persistence, exhaustion, recursive recovery, Origin-only Tragedy, and observer
+Persistence, final-attempt Exhaustion, recursive recovery, Horizon Tragedy, and observer
 separation are normative; see [the exhaustion invariants](#persistence-exhaustion-recovery-and-observation).
 
 ## 1. The Measurements Are Independent
@@ -145,7 +145,7 @@ Open downstream frontiers remain eligible even at zero measured Potential.
 Only explicit exhaustion permits retreat through the opening Commit into the
 immediate parent basin. At each level, viable sibling routes stop further retreat.
 Potential ranks structurally eligible entries; numeric zero never proves closure.
-Origin remains generative. See the persistence and exhaustion invariants below.
+Origin remains unique and persistent. Its Horizon follows the same final-attempt proof. See the invariants below.
 
 Potential is the strongest remaining viable continuation under absolute-Tension-reduction semantics, never an additive budget. Writes maintain affected region projections and propagate changed routing summaries through provenance. Ordinary reads consume the published field version; they never repair measurements or reconstruct the whole substrate. A missing or inconsistent projection is an explicit recoverable maintenance condition. See [Incremental Potential](incremental-potential.md).
 
@@ -153,7 +153,7 @@ Potential selects a Committal. That Committal determines the entry Horizon: its 
 
 Under normal Phase progression, there may be at most six consecutive Expressive
 Proposition tiers between Committal Propositions. A new Committal Proposition may
-seed fresh Phase 1 branches, including branches from multiple Participants.
+seed fresh Phase 1 opportunities when structural viability permits; Participant count does not determine their number.
 
 ## 12. Receipts and Reinforcement Are Distinct
 
@@ -221,35 +221,28 @@ rather than inferring semantics from current code behaviour.
 
 ## Persistence, exhaustion, recovery, and observation
 
-**Persistence invariant:** Committal propositions persist. Exhaustion applies to
-expressive excursions and outgoing recovery basins, never to the existence of a
-Committal boundary.
+**Potential invariant:** Potential measures currently instantiated opportunity. Zero Potential does not by itself prove a Horizon exhausted.
 
-**Exhaustion invariant:** An expressive excursion closes only after actual
-exploration and exhaustion of every child route. A leaf requires a validated
-terminal Rest after completed evidence and an effective Attestation. A basin
-closes only when all its routes close. Freshness and numeric zero are never proof.
+**Tragedy invariant:** Tragedy is the first no-Potential Rest within a Horizon. It creates exactly one Tragedy Receipt and opens the Horizon's final evidence-bearing attempt.
 
-**Recovery invariant:** Recovery climbs one basin upward at a time through
-persistent Committal boundaries and stops at the first remaining viable frontier.
-Fresh open basins are generative even before they measure positive Potential.
+**Exhaustion invariant:** A Horizon exhausts only after its Tragedy Receipt has been exercised and a subsequent no-Potential Rest proves the final attempt also failed.
 
-**Tragedy invariant:** Tragedy occurs only when an entire direct Origin-rooted
-expressive lineage exhausts back to the genuine Origin. A local Rest is not
-Tragedy. Other Participants remain in place until their normal lifecycle recovers.
+**Receipt invariant:** Receipts exist at Horizon scope, are visible without cost, persist historically, and may be consumed exactly once. Generation costs an action; visibility is free; attachment costs an action and changes structure. Receipts belong to the Horizon, not their generating Participant.
 
-**Observer invariant:** Hiding exhausted structure is presentation only. Historical
-visibility cannot alter Potential, eligibility, recovery, or ledger history.
+**Reclassification invariant:** Phase 3 and Phase 6 reclassification require an available Receipt. Reclassification atomically attaches/consumes the Receipt. No Receipt, no Reclassification. Tragedy is exceptional in generation, not in consumption.
 
-**Context invariant:** Exhaustion removes operational eligibility, not local
-contextual visibility. Participants may observe exhausted alternatives at their
-current structural phase position as historical evidence of explored paths, but
-no action may target them. Phase progression naturally removes exhausted context
-that no longer occupies the current structural position.
+**Generation invariant:** Variant availability is controlled by structural viability, not Receipt lifecycle and not Participant count. A further Variant requires each current viable Variant to have its own completed Instrument and effective Attestation, with positive remaining Horizon Potential Charge. Each new Variant repeats that sequence; no prior Rest or fixed sibling cap applies. See the [confirmed clarification](horizon-proof-variant-clarification.md).
 
-Active-only filtering is an actionability/observer concern and must not be applied
-wholesale to participant cognition. Visible does not mean actionable.
+**Observation invariant:** Instrument generates evidence; Attestation becomes available only when evidence exists; Attestation becomes Traverse on the next Cycle under the existing rule.
+
+**Persistence invariant:** Exhausted Committals persist permanently and remain contextually visible where structurally relevant. They expose no actions. Historical context is ordered newest-first by creation date. Exhausted means learned-from, not forgotten.
+
+**Recovery invariant:** Exhaustion proof propagates upward through provenance locally, without global graph-wide recomputation. Tragedy recovers the triggering Participant to the Committal that opened its Horizon. Exhaustion subsequently permits existing outward recovery. Other Participants move through their normal lifecycle.
+
+**Observer invariant:** Active/exhausted filtering in the graph is presentation-only and must not alter Participant cognition or substrate dynamics.
 
 **Phase-position invariant:** Labels classify. Position governs.
 
-See [the state, concurrency, and legacy contract](branch-tragedy.md).
+The backend derives Rest reason. Only `no_remaining_potential` can create Tragedy or Exhaustion; `no_available_move` cannot. Neither is a Participant assertion.
+
+See [the proof lifecycle](branch-tragedy.md), [migration and compatibility](horizon-proof-migration.md), and [the integrated phase rules](flow-integration.md).

@@ -157,7 +157,6 @@ export type ActionName =
   | 'proposition.commit'
   | 'proposition.reclassify'
   | 'proposition.reconcile'
-  | 'proposition.bias'
   | 'proposition.revise'
   | 'participant.rest'
   | 'proposition.traverse'
@@ -212,9 +211,15 @@ export interface WorkspaceHorizon {
   opened_by_proposition_id: Identifier | null;
   opening_proposition: Proposition | null;
   opened_at: string;
+  tragedy?: { id: Identifier; receipt_id: Identifier; occurred_at: string } | null;
+  exhausted_at?: string | null;
 }
 
 export interface ReceiptContext {
+  context_horizon_id?: Identifier;
+  availability?: 'available' | 'consumed' | 'historical';
+  consumed_at?: string | null;
+  attached_proposition_id?: Identifier | null;
   id: Identifier;
   proposition_id: Identifier;
   type: string;
@@ -226,7 +231,7 @@ export interface ReceiptContext {
   can_replay: boolean;
   replayed_from_receipt_id: Identifier | null;
   observation_error?: string | null;
-  evidence?: { query?: string; executed_at?: string; results?: Array<{ title: string; url: string; excerpt: string; excerpt_truncated: boolean; source: string; rank: number; relevance: number | null; published_at: string | null }>; proposition_id?: Identifier; statement?: string; direction?: string; rationale?: string | null; resource?: string; fingerprint?: string; observed_at?: string; content_excerpt?: string | null; excerpt_truncated?: boolean };
+  evidence?: { tragedy_id?: Identifier; terminal_proposition_id?: Identifier; opening_proposition_id?: Identifier; exhausted_committals?: Array<{ id: Identifier; statement: string; statement_truncated: boolean; register: RegisterName; phase_number: number; exhausted_horizon_id: Identifier; exhausted_at: string; actionable: false }>; query?: string; executed_at?: string; results?: Array<{ title: string; url: string; excerpt: string; excerpt_truncated: boolean; source: string; rank: number; relevance: number | null; published_at: string | null }>; proposition_id?: Identifier; statement?: string; direction?: string; rationale?: string | null; resource?: string; fingerprint?: string; observed_at?: string; content_excerpt?: string | null; excerpt_truncated?: boolean };
 }
 
 export interface ExhaustedAlternative {
@@ -267,6 +272,7 @@ export interface ParticipantPlan {
   gate: Proposition;
   lineage?: Proposition[];
   rest_available?: boolean;
+  rest_reason?: 'no_available_move' | 'no_remaining_potential' | null;
   traversal_options?: Proposition[];
   instrument_options?: Proposition[];
   write_options?: Proposition[];

@@ -82,7 +82,7 @@ class CausalHorizonLineageTest extends TestCase
         $this->classificationEvidenceFixture($a->fresh()->position);
         $this->travel(10)->seconds();
         $this->publishPotentialFixture($a);
-        $stateA = $service->contribute($a, $stateA['plan']['phase']['id'], ['action' => 'proposition.reclassify']);
+        $stateA = $service->contribute($a, $stateA['plan']['phase']['id'], ['action' => 'proposition.variant', 'statement' => 'Structural development in the retained Horizon']);
         $stance = $a->fresh()->position;
         $this->assertGreaterThan($h3->opened_at, $stance->created_at);
         $this->assertSame('stance', $stance->register);

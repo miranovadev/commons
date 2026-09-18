@@ -72,24 +72,6 @@ final readonly class CycleEntryService
         }
         $observed = $origin === null ? null : $this->instruments->observe($origin['instrument']);
 
-        // Resume an interrupted exhaustion transition using the completed Rest witness.
-        // Read-only state requests never run this lifecycle repair.
-        $completed = $participant->cycles()->latest('sequence')->first();
-        if ($completed?->rested_at !== null && ! $this->hasActiveCycle($participant)) {
-            $terminal = $completed->phases()->whereNotNull('completed_at')->orderByDesc('kind')->first();
-            if ($terminal !== null) {
-                $proof = app(ExhaustionService::class)->inspect($terminal);
-                if ($proof['stable'] && $proof['transitions'] !== []) {
-                    DB::transaction(function () use ($participant, $terminal, $proof): void {
-                        $locked = Substrate::whereKey($participant->substrate_id)->lockForUpdate()->firstOrFail();
-                        if ((int) $locked->field_version === $proof['field_version'] && ! $this->hasActiveCycle($participant)) {
-                            app(ExhaustionService::class)->publish($terminal, $proof);
-                        }
-                    });
-                    app(PotentialProjectionService::class)->refresh($participant->substrate_id);
-                }
-            }
-        }
         $participant = $participant->fresh();
         $version = (int) Substrate::whereKey($participant->substrate_id)->value('field_version');
         $positionId = $participant->current_proposition_id;
@@ -208,8 +190,13 @@ final readonly class CycleEntryService
      */
     public function continuationFor(Participant $participant): ?Proposition
     {
-        if ($participant->current_proposition_id === null
-            || $participant->cycles()->latest('sequence')->first()?->rested_at !== null) {
+        $latest = $participant->cycles()->latest('sequence')->first();
+        if ($latest?->rested_at !== null && $latest->recovery_proposition_id !== null) {
+            $recovery = Proposition::find($latest->recovery_proposition_id);
+
+            return $recovery !== null && ! app(ExhaustionService::class)->unavailable($recovery) ? $recovery : null;
+        }
+        if ($participant->current_proposition_id === null || $latest?->rested_at !== null) {
             return null;
         }
         $position = $participant->position()->firstOrFail();

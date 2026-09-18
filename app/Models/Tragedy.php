@@ -5,16 +5,18 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 
-/** Immutable Origin-lineage exhaustion event; membership and original history supply analytics. */
+/** First no-Potential Rest in a Horizon. Legacy Origin-lineage records remain archived separately. */
 class Tragedy extends Model
 {
     use HasUlids;
+
+    protected $table = 'horizon_tragedies';
 
     public $timestamps = false;
 
     protected function casts(): array
     {
-        return ['evidence' => 'array', 'occurred_at' => 'immutable_datetime'];
+        return ['occurred_at' => 'immutable_datetime'];
     }
 
     protected static function booted(): void

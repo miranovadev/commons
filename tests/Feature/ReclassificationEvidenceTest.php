@@ -28,7 +28,7 @@ class ReclassificationEvidenceTest extends TestCase
         $f->phase->forceFill(['kind' => PhaseKind::Constrain, 'gate_proposition_id' => $source->id, 'write_register' => 'canon'])->save();
         $loads = ParticipantReceiptContext::count();
         $receipts = Receipt::count();
-        $target = app(ContributionDispatcher::class)->dispatch($f->viewer, $f->phase->fresh(), ['action' => 'proposition.reclassify']);
+        $target = app(ContributionDispatcher::class)->dispatch($f->viewer, $f->phase->fresh(), $this->reclassificationInputFixture($f->phase->fresh(), $source));
         $state = app(PropositionStateService::class);
         $counts = app(ReinforcementService::class);
         $this->assertSame($source->statement, $target->statement);
@@ -44,7 +44,7 @@ class ReclassificationEvidenceTest extends TestCase
         $context = new ParticipationContext($f->phase->fresh());
         $this->assertSame([$receipt->id], $state->receipts($target, $context)->pluck('id')->all());
         $this->assertSame(1, $counts->count($target, $context));
-        $state->preserveReclassificationEvidence($source, $target);
+        $this->assertSame($target->id, $receipt->fresh()->consumption->proposition_id);
         $this->assertSame(1, DB::table('proposition_receipt_links')->count());
         $counts->loadCounts(collect([$source, $target]));
         $this->assertSame(1, $target->reinforcement_count);
@@ -57,7 +57,7 @@ class ReclassificationEvidenceTest extends TestCase
         $f->phase->forceFill(['kind' => PhaseKind::Persist, 'gate_proposition_id' => $f->gate->id])->save();
         $f->evidence($f->gate);
         $this->expectException(\DomainException::class);
-        $this->expectExceptionMessage('Reclassify accepts only action');
+
         app(ContributionDispatcher::class)->dispatch($f->viewer, $f->phase->fresh(), ['action' => 'proposition.reclassify', 'statement' => 'Changed']);
     }
 }

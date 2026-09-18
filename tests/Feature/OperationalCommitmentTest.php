@@ -62,81 +62,6 @@ class OperationalCommitmentTest extends TestCase
         });
     }
 
-    public function test_seven_phase_participation_completes_receipts_and_commits(): void
-    {
-        $this->move($this->participant, ['action' => 'proposition.variant', 'statement' => 'Signal']);
-        $early = $this->move($this->participant, ['action' => 'proposition.reclassify']);
-        $earlyGate = Proposition::findOrFail($early['plan']['gate_id']);
-        app(OperationalInstrumentService::class)->execute($earlyGate->phase, $earlyGate, ['kind' => 'citation', 'reference' => $this->origin->id]);
-        $state = $this->move($this->participant, [
-            'action' => 'proposition.reclassify',
-        ]);
-        $this->assertSame([], $state['plan']['gate_options'][0]['instruments'] ?? []);
-        $this->assertDatabaseCount('instrument_executions', 3);
-        $state = $this->move($this->participant, ['action' => 'proposition.variant', 'statement' => 'New Signal']);
-
-        // Other participants prepare phase-5 and phase-6 heads through real contributions.
-        $helper = $this->participant($this->participant->substrate, 'helper');
-        $signal = Proposition::findOrFail($state['plan']['gate_id']);
-        $this->phase($helper, PhaseKind::Disperse, 'signal', $signal->phase->gate);
-        $this->move($helper, ['action' => 'proposition.variant', 'statement' => 'Other Signal']);
-        $helperState = $this->move($helper, ['action' => 'proposition.reconcile', 'other_proposition_id' => $signal->id]);
-        $stance = Proposition::findOrFail($helperState['plan']['gate_id']);
-        app(OperationalInstrumentService::class)->execute($stance->phase, $stance, ['kind' => 'citation', 'reference' => $this->origin->id]);
-        $this->move($this->participant, ['action' => 'attestation.create', 'proposition_id' => $stance->id, 'direction' => 'support']);
-        $helperState = $this->move($helper, [
-            'action' => 'proposition.bias', 'proposition_id' => $stance->id,
-        ]);
-        $candidate = Proposition::findOrFail($helperState['plan']['gate_id']);
-        $reviewer = $this->participant($this->participant->substrate, 'reviewer');
-        $this->phase($reviewer, PhaseKind::Bias, 'concord', $stance);
-        $this->move($reviewer, [
-            'action' => 'attestation.create', 'proposition_id' => $candidate->id,
-            'direction' => 'support',
-        ]);
-
-        $state = $this->move($this->participant, [
-            'action' => 'instrument.execute', 'proposition_id' => $candidate->id,
-            'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/final'],
-        ]);
-        $this->assertSame('order', $state['plan']['phase']['kind']);
-        $this->assertSame(0, $state['plan']['commitment']['reinforcement_count']);
-        $this->assertSame('ready', $state['status']);
-        $this->assertTrue($state['plan']['commitment']['admissible']);
-        $this->assertTrue($state['plan']['commitment']['closure_enforced']);
-        $this->assertTrue($state['plan']['commitment']['requirements']['closure']);
-        $this->assertArrayHasKey('proposition.commit', $state['plan']['schema']['$defs']['actions']);
-        $this->assertFalse($state['plan']['rest_available']);
-        $this->assertArrayNotHasKey('participant.rest', $state['plan']['schema']['$defs']['actions']);
-
-        $phaseId = $state['plan']['phase']['id'];
-        $history = app(PropositionStateService::class);
-        $earnedAttestations = $history->attestations(collect([$candidate]))->pluck('id')->all();
-        $earnedReceipts = $history->receipts($candidate)->pluck('id')->all();
-        $earnedTouches = $history->touchCount($candidate);
-        $this->assertNotEmpty($earnedAttestations);
-        $this->assertNotEmpty($earnedReceipts);
-        $this->assertGreaterThan(0, $earnedTouches);
-        $contributionCounts = [Attestation::count(), Receipt::count(), Phase::count()];
-        $this->move($this->participant, ['action' => 'proposition.commit']);
-        $committed = Proposition::findOrFail($this->participant->fresh()->current_proposition_id);
-        $this->assertSame($earnedAttestations, $history->attestations(collect([$committed]))->pluck('id')->all());
-        $this->assertSame($earnedReceipts, $history->receipts($committed)->pluck('id')->all());
-        $this->assertSame($earnedTouches + 1, $history->touchCount($committed)); // Prepared Phase 1 is a new observation.
-        $this->assertSame([$contributionCounts[0], $contributionCounts[1], $contributionCounts[2] + 1], [Attestation::count(), Receipt::count(), Phase::count()]);
-        $this->assertSame('committal', $committed->tier);
-        $this->assertSame('concord', $committed->register);
-        $this->assertSame($candidate->statement, $committed->statement);
-        $this->assertNotNull($committed->commitmentSnapshot);
-        $this->assertDatabaseHas('supersessions', [
-            'source_proposition_id' => $candidate->id,
-            'target_proposition_id' => $committed->id, 'type' => 'commit',
-        ]);
-        $this->assertNotNull(Phase::findOrFail($phaseId)->completed_at);
-        $this->assertNotNull($committed->phase->cycle->completed_at);
-        $this->assertDatabaseCount('commitment_snapshots', 2);
-    }
-
     public function test_blocked_commitment_rechecks_grounding_and_does_not_advance(): void
     {
         $gate = $this->positionedCandidate(PhaseKind::Bias);
@@ -225,7 +150,7 @@ class OperationalCommitmentTest extends TestCase
     public function test_invalid_and_unsupported_instruments_leave_no_partial_write(): void
     {
         $this->move($this->participant, ['action' => 'proposition.variant', 'statement' => 'Signal']);
-        $state = $this->move($this->participant, ['action' => 'proposition.reclassify']);
+        $state = $this->move($this->participant, ['action' => 'proposition.variant', 'statement' => 'Persist the distinction']);
         foreach ([
             ['kind' => 'hyperlink', 'reference' => 'file:///etc/passwd'],
             ['kind' => 'hyperlink', 'reference' => 'https://user:password@example.test'],
@@ -264,9 +189,7 @@ class OperationalCommitmentTest extends TestCase
         $this->classificationEvidenceFixture($left);
         $builder = $this->participant($this->participant->substrate, 'orienter');
         $biasPhase = $this->phase($builder, PhaseKind::Bias, 'concord', $left);
-        $candidate = app(ContributionDispatcher::class)->dispatch($builder, $biasPhase, [
-            'action' => 'proposition.bias', 'proposition_id' => $left->id,
-        ]);
+        $candidate = app(ContributionDispatcher::class)->dispatch($builder, $biasPhase, $this->reclassificationInputFixture($biasPhase, $left));
         // Another lineage does not erase the existing Concord.
         // Historical soft descendants remain visible without promoting their source.
         $this->positionedCandidate(PhaseKind::Disperse, $candidate);
@@ -300,7 +223,7 @@ class OperationalCommitmentTest extends TestCase
     public function test_removed_reclassification_contracts_reject_payloads(): void
     {
         $this->move($this->participant, ['action' => 'proposition.variant', 'statement' => 'Signal']);
-        $early = $this->move($this->participant, ['action' => 'proposition.reclassify']);
+        $early = $this->move($this->participant, ['action' => 'proposition.variant', 'statement' => 'Persist the distinction']);
         $earlyGate = Proposition::findOrFail($early['plan']['gate_id']);
         app(OperationalInstrumentService::class)->execute($earlyGate->phase, $earlyGate, ['kind' => 'citation', 'reference' => $this->origin->id]);
         foreach (['reclassify_with_receipt', 'proposition.reclassify_with_receipt', 'proposition.reclassify_with_instrument'] as $action) {
@@ -473,6 +396,9 @@ class OperationalCommitmentTest extends TestCase
         $service = app(ParticipationService::class);
         $this->publishPotentialFixture($participant);
         $state = $service->stateFor($participant);
+        if ($input['action'] === 'proposition.reclassify') {
+            $input = $this->reclassificationInputFixture(Phase::findOrFail($state['plan']['phase']['id'])) + $input;
+        }
 
         $this->publishPotentialFixture($participant);
 

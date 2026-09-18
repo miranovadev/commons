@@ -136,7 +136,7 @@ class AttestationPolarityTest extends TestCase
         $this->assertSame($counts, [Proposition::count(), $this->participant->substrate->ledgerEntries()->count()]);
         $this->receiptFixture($major);
         $target = app(ContributionDispatcher::class)->dispatch($this->participant, $phase,
-            ['action' => 'proposition.bias', 'proposition_id' => $major->id]);
+            $this->reclassificationInputFixture($phase, $major));
         $this->assertSame($major->statement, $target->statement);
         $this->assertSame([$gate->id], $bias->populationFor($phase)->pluck('id')->all());
         $this->assertSame([], $bias->forPhase($phase)->pluck('id')->all()); // Removing a sibling does not change this head's lineage.

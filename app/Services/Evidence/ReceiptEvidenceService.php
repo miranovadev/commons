@@ -8,6 +8,7 @@ use App\Models\ParticipantReceiptContext;
 use App\Models\Proposition;
 use App\Models\Receipt;
 use App\Services\Participation\ParticipationContext;
+use App\Services\TragedyEvidenceService;
 use Illuminate\Support\Collection;
 
 /** Evidence identity is independent of its producer and of participant uptake. */
@@ -35,8 +36,15 @@ final class ReceiptEvidenceService
 
     public function describe(Receipt $receipt, ParticipationContext $context): ?array
     {
+        if ($receipt->type === 'tragedy') {
+            return $receipt->context_horizon_id === $context->phase->cycle->context_horizon_id
+                ? ['signature' => hash('sha256', 'tragedy:'.$receipt->id),
+                    'evidence' => app(TragedyEvidenceService::class)->describe($receipt)] : null;
+        }
         $execution = $receipt->instrumentExecution;
-        if (! $receipt->supports(ReceiptCapability::Readable) || $execution?->status !== 'completed' || ! $context->propositions->has($execution->proposition_id)) {
+        if (! $receipt->supports(ReceiptCapability::Readable) || $execution?->status !== 'completed'
+            || ($receipt->context_horizon_id !== $context->phase->cycle->context_horizon_id
+                && ! $context->propositions->has($execution->proposition_id))) {
             return null;
         }
         if ($receipt->type === 'hyperlink' && $receipt->signature !== null

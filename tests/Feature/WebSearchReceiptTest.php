@@ -105,7 +105,8 @@ class WebSearchReceiptTest extends TestCase
         $this->assertSame('constrain', $next['plan']['phase']['kind']);
         $option = collect($next['plan']['receipts'])->firstWhere('id', $receipt->id);
         $this->assertSame(['readable' => true, 'replayable' => true], $option['capabilities']);
-        $this->assertArrayNotHasKey('evidence', $option);
+        $this->assertSame($receipt->metadata['observation'], $option['evidence']);
+        $this->assertDatabaseCount('participant_receipt_contexts', 0);
         $this->publishPotentialFixture($fixture->viewer);
         $read = $service->contribute($fixture->viewer, $next['plan']['phase']['id'], ['action' => 'receipt.read', 'receipt_id' => $receipt->id]);
         $this->assertSame($next['plan']['phase']['id'], $read['plan']['phase']['id']);

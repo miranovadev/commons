@@ -45,8 +45,7 @@ final class ValidatePhasePositions extends Command
                     $phase = $edge->phase;
                     $source = $edge->source;
                     $target = $edge->target;
-                    $action = $edge->type === 'reclassify' && $phase->kind === PhaseKind::Bias
-                        ? 'proposition.bias' : 'proposition.'.$edge->type;
+                    $action = 'proposition.'.$edge->type;
                     $valid = $source !== null && $target !== null
                         && in_array($action, config('phases.'.$phase->kind->value.'.actions', []), true)
                         && $positions->matches($target, $phase, $phase->kind, $edge->type === 'commit' ? 'committal' : 'expressive')

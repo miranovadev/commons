@@ -43,6 +43,7 @@ final class ParticipantContextSerializer
             ...(! empty($plan['commitment_options']) ? ['commitment_options' => $plan['commitment_options']] : []),
             'receipts' => array_map($this->receipt(...), $plan['receipts'] ?? []),
             'rest_available' => $plan['rest_available'] ?? false,
+            'rest_reason' => $plan['rest_reason'] ?? null,
             'schema' => $plan['schema'],
         ];
     }
@@ -51,7 +52,7 @@ final class ParticipantContextSerializer
     public function inference(array $state): array
     {
         $plan = Arr::only($state['plan'], ['phase', 'provenance_id', 'gate_id',
-            'lineage', 'exhausted_alternatives', 'read_options', 'gate_options', 'write_options', 'commitment', 'commitment_options', 'rest_available', 'receipts', 'schema']);
+            'lineage', 'exhausted_alternatives', 'read_options', 'gate_options', 'write_options', 'commitment', 'commitment_options', 'rest_available', 'rest_reason', 'receipts', 'schema']);
         $plan['phase'] = Arr::only($plan['phase'], ['id', 'number', 'kind', 'write_register']);
         foreach (['lineage', 'read_options', 'gate_options', 'write_options'] as $key) {
             if (isset($plan[$key])) {
@@ -70,11 +71,12 @@ final class ParticipantContextSerializer
     private function receipt(array $receipt): array
     {
         return [
-            ...Arr::only($receipt, ['id', 'proposition_id', 'type', 'reference', 'signature', 'status', 'loaded_at', 'capabilities', 'can_replay', 'replayed_from_receipt_id', 'observation_error']),
+            ...Arr::only($receipt, ['id', 'proposition_id', 'context_horizon_id', 'availability', 'consumed_at', 'attached_proposition_id', 'type', 'reference', 'signature', 'status', 'loaded_at', 'capabilities', 'can_replay', 'replayed_from_receipt_id', 'observation_error']),
             ...(isset($receipt['evidence']) ? ['evidence' => Arr::only($receipt['evidence'], [
                 'proposition_id', 'statement', 'attestation_id', 'direction', 'rationale',
                 'resource', 'fingerprint', 'observed_at', 'last_modified', 'content_excerpt', 'excerpt_truncated',
                 'query', 'executed_at', 'results', 'provider', 'request_id',
+                'tragedy_id', 'terminal_proposition_id', 'opening_proposition_id', 'exhausted_committals',
             ])] : []),
         ];
     }

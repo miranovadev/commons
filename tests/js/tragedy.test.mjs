@@ -60,18 +60,18 @@ export const useGetParticipantWorkspaceQuery = () => ({ data: participation });
   new Function('require', 'module', 'exports', result.outputFiles[0].text)(require, module, module.exports);
   for (const action of ['proposition.variant', 'proposition.reclassify', 'proposition.revise', 'attestation.create', 'proposition.traverse', 'proposition.reconcile', 'instrument.execute', 'proposition.commit']) {
     const markup = module.exports.render(action, false);
-    assert.doesNotMatch(markup, /Local actions exhausted|>Rest<\/span>/);
+    assert.doesNotMatch(markup, /No available move|>Rest<\/span>/);
   }
   // No independent client inference from an empty traversal set or rest_available flag.
-  assert.doesNotMatch(module.exports.render('proposition.variant', true), /Local actions exhausted|>Rest<\/span>/);
+  assert.doesNotMatch(module.exports.render('proposition.variant', true), /No available move|>Rest<\/span>/);
   const exhausted = module.exports.render('participant.rest', true);
-  assert.match(exhausted, /Local actions exhausted/);
+  assert.match(exhausted, /No available move/);
   assert.doesNotMatch(exhausted, /Tragic Region/);
   assert.match(exhausted, /aria-label="Exhausted Gate alternatives"/);
   assert.match(exhausted, /A route we learned from/);
   assert.doesNotMatch(exhausted, /data-proposition-id="spent"/);
-  assert.match(exhausted, /aria-label="Open Local actions exhausted · Rest"/);
+  assert.match(exhausted, /aria-label="Open No available move · Rest"/);
   // Even a stale/absent Rest flag cannot hide an authoritative Rest action.
-  assert.match(module.exports.render('participant.rest', false), /aria-label="Open Local actions exhausted · Rest"/);
-  assert.match(module.exports.render('participant.rest', undefined), /aria-label="Open Local actions exhausted · Rest"/);
+  assert.match(module.exports.render('participant.rest', false), /aria-label="Open No available move · Rest"/);
+  assert.match(module.exports.render('participant.rest', undefined), /aria-label="Open No available move · Rest"/);
 });

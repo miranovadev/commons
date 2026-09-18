@@ -114,17 +114,11 @@ return [
             'type' => 'object',
             'title' => 'Reclassify the Gate without changing its statement',
             'additionalProperties' => false,
-            'required' => ['action'],
-            'properties' => ['action' => ['const' => 'proposition.reclassify']],
-        ],
-        'proposition.bias' => [
-            'title' => 'Classify one Gate aligned with its own lineage',
-            'type' => 'object',
-            'additionalProperties' => false,
-            'required' => ['action', 'proposition_id'],
+            'required' => ['action', 'proposition_id', 'receipt_id'],
             'properties' => [
-                'action' => ['const' => 'proposition.bias'],
+                'action' => ['const' => 'proposition.reclassify'],
                 'proposition_id' => $ulid,
+                'receipt_id' => $ulid,
             ],
         ],
         'proposition.reconcile' => [

@@ -121,7 +121,6 @@ final readonly class ContributionDispatcher
                     $gate,
                     $input,
                 ),
-                'proposition.bias' => $this->bias($phase, $input),
                 'attestation.create' => $this->attest(
                     $participant,
                     $phase,
@@ -212,21 +211,29 @@ final readonly class ContributionDispatcher
     /** Classification has no authored content and no inherited judgments. */
     private function reclassify(Phase $phase, Proposition $source, array $input): Proposition
     {
-        if (array_diff(array_keys($input), ['action']) !== []) {
-            throw new DomainException('Reclassify accepts only action; the Gate statement is preserved exactly.');
+        if (array_diff(array_keys($input), ['action', 'proposition_id', 'receipt_id']) !== []
+            || ! is_string($input['receipt_id'] ?? null) || ! is_string($input['proposition_id'] ?? null)) {
+            throw new DomainException('Reclassify requires proposition_id and receipt_id; the statement is preserved.');
+        }
+        $source = $phase->kind === PhaseKind::Bias
+            ? $this->bias->forPhase($phase)->firstWhere('id', $input['proposition_id'])
+            : ($source->id === $input['proposition_id'] ? $source : null);
+        if ($source === null || ! $this->generation->available($phase, 'proposition.reclassify', position: $source)
+            || ! app(PhasePositionService::class)->acceptsGate($phase, $source)) {
+            throw new DomainException('Reclassify requires an eligible Gate at the exact preceding Phase position.');
         }
 
-        return $this->classified($phase, $source);
+        return $this->classified($phase, $source, $input['receipt_id']);
     }
 
-    private function classified(Phase $phase, Proposition $source): Proposition
+    private function classified(Phase $phase, Proposition $source, string $receiptId): Proposition
     {
         $target = $this->write($phase, $source->statement, tier: 'expressive', preserveStatement: true);
+        app(HorizonReceiptService::class)->consume($phase, $source, $target, $receiptId);
         DB::table('reclassification_results')->insert([
             'source_proposition_id' => $source->id, 'register' => $phase->write_register, 'target_proposition_id' => $target->id,
         ]);
         $this->ledger->record($this->supersede($phase, $source, $target, 'reclassify'));
-        $this->state->preserveReclassificationEvidence($source, $target);
 
         return $this->refreshMeasurement($target);
     }
@@ -263,21 +270,6 @@ final readonly class ContributionDispatcher
         }
 
         return $this->refreshMeasurement($target);
-    }
-
-    /** Unary directional selection preserves content, never accumulated history. */
-    private function bias(Phase $phase, array $input): Proposition
-    {
-        if (array_diff(array_keys($input), ['action', 'proposition_id']) !== []) {
-            throw new DomainException('Bias selects one Proposition; it accepts no statement or second source.');
-        }
-
-        $source = $this->bias->forPhase($phase)->firstWhere('id', $input['proposition_id'] ?? null);
-        if ($source === null || ! $this->generation->available($phase, 'proposition.bias', position: $source)) {
-            throw new DomainException('Bias requires an active Gate aligned with its own causal lineage.');
-        }
-
-        return $this->classified($phase, $source);
     }
 
     /** @param array<string, mixed> $input */

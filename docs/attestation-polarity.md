@@ -85,8 +85,8 @@ reinforcement copies. An eligible candidate must agree with that direction and
 have both a completed Receipt and an effective Attestation.
 
 Unary Bias copies one selected statement exactly into the next register and
-creates one shared hard reclassification result. It preserves proposition-level
-Receipts by reference and resets Attestations and Phase touches. Another
+creates one shared hard reclassification result. Reclassify explicitly selects, attaches and consumes one available Horizon
+Receipt by reference, and resets Attestations and Phase touches. Another
 Participant uses that existing Write rather than creating a duplicate.
 
 ## Upgrade

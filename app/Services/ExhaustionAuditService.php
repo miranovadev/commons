@@ -2,66 +2,85 @@
 
 namespace App\Services;
 
-use App\Models\CommitmentSnapshot;
-use App\Models\Proposition;
 use Illuminate\Support\Facades\DB;
 
-/** Slow diagnostic truth: reconstruct closure from terminal Rest witnesses and ledger topology. */
+/** Diagnostic only: audit persisted final-attempt proofs, never revive the retired closure algorithm. */
 final class ExhaustionAuditService
 {
     public function inspect(string $substrateId): array
     {
-        $nodes = Proposition::whereHas('phase.cycle.participant', fn ($q) => $q->where('substrate_id', $substrateId))->get(['id', 'tier'])->keyBy('id');
-        $edges = DB::table('supersessions')->whereIn('source_proposition_id', $nodes->keys())
-            ->whereIn('target_proposition_id', $nodes->keys())->get();
-        $children = $edges->groupBy('source_proposition_id');
-        $states = DB::table('exhaustion_states')->where('substrate_id', $substrateId)->get()->keyBy('proposition_id');
-        $origin = CommitmentSnapshot::where('substrate_id', $substrateId)->where('calculator_version', 'origin-bootstrap-v1')->value('proposition_id');
-        $witnesses = $invalid = [];
-        foreach ($states as $id => $state) {
-            $evidence = json_decode($state->evidence, true, flags: JSON_THROW_ON_ERROR);
-            if ($evidence['reason'] !== 'validated_rest') {
-                continue;
+        $horizons = DB::table('context_horizons')->where('substrate_id', $substrateId)->get()->keyBy('id');
+        $tragedies = DB::table('horizon_tragedies')->whereIn('context_horizon_id', $horizons->keys())->get()->keyBy('id');
+        $exhaustions = DB::table('horizon_exhaustions')->whereIn('context_horizon_id', $horizons->keys())->get()->keyBy('context_horizon_id');
+        $failures = DB::table('continuation_failures')->whereIn('context_horizon_id', $horizons->keys())->get();
+        $phaseIds = $tragedies->pluck('phase_id')->merge($exhaustions->pluck('phase_id'))->merge($failures->pluck('phase_id'))->unique();
+        $phases = DB::table('phases as phase')->join('cycles as cycle', 'cycle.id', '=', 'phase.cycle_id')
+            ->whereIn('phase.id', $phaseIds)->get(['phase.id', 'phase.gate_proposition_id', 'phase.completed_at',
+                'cycle.context_horizon_id', 'cycle.rest_reason', 'cycle.rested_at'])->keyBy('id');
+        $witnesses = DB::table('horizon_failure_witnesses')->whereIn('phase_id', $phaseIds)->get()->keyBy('phase_id');
+        $receipts = DB::table('receipts')->whereIn('id', $tragedies->pluck('receipt_id'))->get()->keyBy('id');
+        $consumptions = DB::table('receipt_consumptions')->whereIn('receipt_id', $tragedies->pluck('receipt_id'))->get()->keyBy('receipt_id');
+        $validRest = fn ($id, $horizon) => ($phase = $phases->get($id)) !== null
+            && $phase->context_horizon_id === $horizon && $phase->rest_reason === 'no_remaining_potential'
+            && $phase->completed_at !== null && $phase->rested_at !== null
+            && $witnesses->get($id)?->context_horizon_id === $horizon;
+        $invalidRest = $invalidTragedy = $invalidConsumption = $horizonMismatch = [];
+        foreach ($tragedies as $tragedy) {
+            $receipt = $receipts->get($tragedy->receipt_id);
+            if (! $validRest($tragedy->phase_id, $tragedy->context_horizon_id)
+                || $phases->get($tragedy->phase_id)?->gate_proposition_id !== $tragedy->terminal_proposition_id
+                || $witnesses->get($tragedy->phase_id)?->observed_field_version !== $tragedy->observed_field_version) {
+                $invalidRest[] = $tragedy->phase_id;
             }
-            $valid = $state->terminal_proposition_id === $id && DB::table('phases as phase')->join('cycles as cycle', 'cycle.id', '=', 'phase.cycle_id')
-                ->where('phase.id', $state->phase_id)->where('phase.gate_proposition_id', $id)
-                ->whereNotNull('phase.completed_at')->whereNotNull('cycle.rested_at')->exists();
-            if ($valid) {
-                $witnesses[$id] = true;
-            } else {
-                $invalid[] = $id;
+            if ($receipt === null || $receipt->type !== 'tragedy' || $receipt->instrument_execution_id !== null
+                || $receipt->context_horizon_id !== $tragedy->context_horizon_id || $receipt->phase_id !== $tragedy->phase_id) {
+                $invalidTragedy[] = $tragedy->id;
             }
         }
-        $closed = [];
-        do {
-            $changed = false;
-            foreach ($nodes as $id => $node) {
-                if ($id === $origin || isset($closed[$id])) {
-                    continue;
-                }
-                $outgoing = $children->get($id, collect());
-                if (($outgoing->isNotEmpty() || isset($witnesses[$id]))
-                    && ! $outgoing->contains(fn ($edge) => ! isset($closed[$edge->target_proposition_id]))) {
-                    $closed[$id] = $node->tier === 'committal' ? 'basin' : 'excursion';
-                    $changed = true;
-                }
+        foreach ($exhaustions as $id => $exhaustion) {
+            $tragedy = $tragedies->get($exhaustion->tragedy_id);
+            $consumption = $consumptions->get($exhaustion->receipt_id);
+            if (! $validRest($exhaustion->phase_id, $id)
+                || $phases->get($exhaustion->phase_id)?->gate_proposition_id !== $exhaustion->terminal_proposition_id
+                || $witnesses->get($exhaustion->phase_id)?->observed_field_version !== $exhaustion->observed_field_version) {
+                $invalidRest[] = $exhaustion->phase_id;
             }
-        } while ($changed);
-        $missing = array_values(array_diff(array_keys($closed), $states->keys()->all()));
-        $unexpected = $states->filter(fn ($state, $id) => ($closed[$id] ?? null) !== $state->kind)->keys()->all();
-        $horizonMismatch = DB::table('context_horizons')->where('substrate_id', $substrateId)->get()
-            ->filter(fn ($h) => ($h->exhausted_at !== null) !== (($closed[$h->opened_by_proposition_id] ?? null) === 'basin'))->pluck('id')->all();
-        $lineageMismatch = DB::table('origin_branches')->where('substrate_id', $substrateId)->whereNull('legacy_retired_at')->get()
-            ->filter(fn ($b) => ($b->exhausted_at !== null) !== isset($closed[$b->root_proposition_id]))->pluck('root_proposition_id')->all();
-        $tragedyMismatch = DB::table('origin_branches as branch')->leftJoin('tragedies as tragedy', 'tragedy.root_proposition_id', '=', 'branch.root_proposition_id')
-            ->where('branch.substrate_id', $substrateId)->whereNull('branch.legacy_retired_at')->get()
-            ->filter(fn ($b) => ($b->exhausted_at !== null) !== ($b->occurred_at !== null))->pluck('root_proposition_id')->all();
+            if ($tragedy === null || $tragedy->context_horizon_id !== $id
+                || $tragedy->receipt_id !== $exhaustion->receipt_id || $tragedy->phase_id === $exhaustion->phase_id
+                || $consumption === null || $consumption->legacy || $consumption->context_horizon_id !== $id
+                || $consumption->consumed_at > $exhaustion->exhausted_at) {
+                $invalidConsumption[] = $id;
+            }
+            if ($horizons[$id]->opened_by_proposition_id !== $exhaustion->opening_proposition_id) {
+                $horizonMismatch[] = $id;
+            }
+        }
+        foreach ($horizons as $id => $horizon) {
+            if (($horizon->exhausted_at !== null) !== $exhaustions->has($id)) {
+                $horizonMismatch[] = $id;
+            }
+        }
+        $invalidFailures = [];
+        $subjects = DB::table('propositions as node')->join('phases as phase', 'phase.id', '=', 'node.phase_id')
+            ->join('cycles as cycle', 'cycle.id', '=', 'phase.cycle_id')->whereIn('node.id', $failures->pluck('proposition_id'))
+            ->get(['node.id', 'node.tier', 'cycle.context_horizon_id'])->keyBy('id');
+        foreach ($failures as $failure) {
+            $node = $subjects->get($failure->proposition_id);
+            if (! $validRest($failure->phase_id, $failure->context_horizon_id) || $node === null
+                || $node->tier !== 'expressive' || $node->context_horizon_id !== $failure->context_horizon_id) {
+                $invalidFailures[] = $failure->proposition_id;
+            }
+        }
+        $horizonMismatch = array_values(array_unique($horizonMismatch));
+        $invalidRest = array_values(array_unique($invalidRest));
 
-        return ['substrate_id' => $substrateId, 'matches' => $missing === [] && $unexpected === [] && $invalid === []
-            && $horizonMismatch === [] && $lineageMismatch === [] && $tragedyMismatch === [],
-            'missing' => $missing, 'unexpected' => $unexpected, 'invalid_rest_witnesses' => $invalid,
-            'horizon_mismatches' => $horizonMismatch, 'lineage_mismatches' => $lineageMismatch, 'tragedy_mismatches' => $tragedyMismatch,
-            'derived_states' => count($closed), 'projected_states' => $states->count(),
+        return ['substrate_id' => $substrateId,
+            'matches' => $invalidRest === [] && $invalidTragedy === [] && $invalidConsumption === [] && $horizonMismatch === [] && $invalidFailures === [],
+            'missing' => $horizonMismatch, 'unexpected' => $invalidFailures,
+            'invalid_rest_witnesses' => $invalidRest, 'invalid_receipt_consumptions' => $invalidConsumption,
+            'horizon_mismatches' => $horizonMismatch, 'lineage_mismatches' => [], 'tragedy_mismatches' => $invalidTragedy,
+            'derived_states' => $failures->count() + $exhaustions->count() - count($invalidFailures) - count($invalidConsumption),
+            'projected_states' => $failures->count() + $exhaustions->count(),
             'legacy_holds' => DB::table('origin_branches')->where('substrate_id', $substrateId)->whereNotNull('legacy_retired_at')->count()];
     }
 }

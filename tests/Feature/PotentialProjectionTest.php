@@ -2,11 +2,9 @@
 
 namespace Tests\Feature;
 
-use App\Enums\PhaseKind;
-use App\Exceptions\PotentialProjectionUnavailable;
+use App\Jobs\RefreshPotentialProjection;
 use App\Models\Attestation;
 use App\Models\Participant;
-use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Substrate;
 use App\Services\CycleEntryService;
@@ -17,9 +15,11 @@ use App\Services\ParticipationService;
 use App\Services\PotentialChargeService;
 use App\Services\PotentialProjectionService;
 use App\Services\ReferencePotentialChargeService;
+use Illuminate\Contracts\Queue\Job;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
 use Tests\Fixtures\ParticipationScaleFixture;
 use Tests\TestCase;
 
@@ -38,7 +38,7 @@ final class PotentialProjectionTest extends TestCase
         $other = $this->participant($participant->substrate);
         app(CycleEntryService::class)->enter($other);
         $phase = $other->cycles()->whereNull('completed_at')->sole()->currentPhase;
-        $service->contribute($other, $phase->id, ['action' => 'proposition.variant', 'statement' => 'A sibling']);
+        $service->contribute($other, $phase->id, ['action' => 'instrument.execute', 'proposition_id' => $first->id, 'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/shared-observation']]);
         $sibling = $other->fresh()->position;
         $attestation = (new Attestation)->forceFill(['phase_id' => $phase->id, 'proposition_id' => $first->id, 'direction' => 'refute']);
         $attestation->save();
@@ -168,18 +168,18 @@ final class PotentialProjectionTest extends TestCase
                 app(FieldMutationService::class)->touch($phase, [$phase->gate_proposition_id]);
             }
         });
-        $queueJob = \Mockery::mock(\Illuminate\Contracts\Queue\Job::class);
+        $queueJob = \Mockery::mock(Job::class);
         $queueJob->shouldNotReceive('release');
-        $job = new \App\Jobs\RefreshPotentialProjection($participant->substrate_id);
+        $job = new RefreshPotentialProjection($participant->substrate_id);
         $job->setJob($queueJob);
         $job->handle(app(PotentialProjectionService::class));
         $this->assertSame(3, $attempts);
         $this->assertDatabaseHas('potential_dirty_horizons', ['substrate_id' => $participant->substrate_id]);
         $this->assertSame('potential_projection_pending', app(ParticipationService::class)->stateFor($participant)['reason']['code']);
 
-        \Illuminate\Support\Facades\Queue::fake();
+        Queue::fake();
         $this->artisan('commons:potential-refresh')->assertSuccessful();
-        \Illuminate\Support\Facades\Queue::assertPushed(\App\Jobs\RefreshPotentialProjection::class,
+        Queue::assertPushed(RefreshPotentialProjection::class,
             fn ($next) => $next->substrateId === $participant->substrate_id);
         $contended = false;
         $job->handle(app(PotentialProjectionService::class));
@@ -209,6 +209,7 @@ final class PotentialProjectionTest extends TestCase
     {
         $participant = (new Participant)->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'projection-'.str()->ulid()]);
         $participant->save();
+
         return $participant;
     }
 
@@ -219,6 +220,7 @@ final class PotentialProjectionTest extends TestCase
         $participant = $this->participant($substrate);
         app(CycleEntryService::class)->enter($participant, ['statement' => 'Projection Origin',
             'attestation' => ['direction' => 'support'], 'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/origin']]);
+
         return [$participant, $participant->fresh()->position];
     }
 }

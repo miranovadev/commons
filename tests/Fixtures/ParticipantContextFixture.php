@@ -43,7 +43,7 @@ final class ParticipantContextFixture
 
     public array $writes = [];
 
-    public function __construct(int $depth = 25, int $branches = 6)
+    public function __construct(int $depth = 25, int $branches = 6, bool $withEvidence = true)
     {
         $this->substrate = new Substrate;
         $this->substrate->forceFill(['slug' => 'context-'.str()->ulid(), 'title' => 'Participant context', 'visibility' => 'public', 'configuration' => []])->save();
@@ -70,15 +70,21 @@ final class ParticipantContextFixture
         // The Read anchor and current Gate are operational roles, outside history.
         $anchor = $this->node($head, 'canon', position: PhaseKind::Constrain);
         $this->gate = $this->node($anchor, 'activity', position: PhaseKind::Disperse);
-        $this->evidence($anchor);
+        if ($withEvidence) {
+            $this->evidence($anchor);
+        }
         for ($i = 0; $i < $branches; $i++) {
             $read = $this->node($this->seed, 'canon', position: PhaseKind::Constrain);
             $this->node($read, 'activity', position: PhaseKind::Disperse);
-            $this->evidence($read);
+            if ($withEvidence) {
+                $this->evidence($read);
+            }
         }
         for ($i = 0; $i < 3; $i++) {
             $write = $this->node($this->gate, 'frontier', position: PhaseKind::Mediate);
-            $this->evidence($write);
+            if ($withEvidence) {
+                $this->evidence($write);
+            }
             $this->writes[] = $write->id;
         }
         $cycle = new Cycle;

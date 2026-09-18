@@ -33,23 +33,26 @@ class EvidenceFirstInteractionTest extends TestCase
         $service = app(ParticipationService::class);
         $targets = function (string $action) use ($f, $service): array {
             $this->publishPotentialFixture($f->viewer);
+
             return $service->stateFor($f->viewer)['plan']['schema']['$defs']['actions'][$action]['properties']['proposition_id']['enum'] ?? [];
         };
         $this->assertContains($write->id, $targets('instrument.execute'));
-        $this->assertNotContains($write->id, $targets('attestation.create'));
+        $this->assertContains($write->id, $targets('attestation.create'), 'Shared same-Horizon evidence is sufficient');
         $this->assertContains($other->id, $targets('attestation.create'));
         $this->assertNotContains($write->id, $targets('proposition.traverse'));
-        try {
-            app(ContributionDispatcher::class)->dispatch($f->viewer, $f->phase->fresh(), ['action' => 'attestation.create', 'proposition_id' => $write->id, 'direction' => 'support']);
-            $this->fail('Ungrounded attestation passed.');
-        } catch (\DomainException) {
-            $this->assertSame(0, $write->attestations()->count());
-        }
         app(OperationalInstrumentService::class)->execute($f->phase->fresh(), $write, ['kind' => 'citation', 'reference' => $gate->id]);
         $this->assertSame(0, ParticipantReceiptContext::count());
         $this->assertContains($write->id, $targets('attestation.create'));
         $this->assertNotContains($write->id, $targets('proposition.traverse'));
         app(ContributionDispatcher::class)->dispatch($f->viewer, $f->phase->fresh(), ['action' => 'attestation.create', 'proposition_id' => $write->id, 'direction' => 'refute']);
+        $this->assertNotContains($write->id, $targets('proposition.traverse'));
+        $f->phase->forceFill(['completed_at' => now()])->save();
+        $f->phase->cycle->forceFill(['completed_at' => now()])->save();
+        $cycle = $f->phase->cycle->replicate();
+        $cycle->forceFill(['sequence' => 3, 'completed_at' => null])->save();
+        $later = $f->phase->replicate();
+        $later->forceFill(['cycle_id' => $cycle->id, 'completed_at' => null])->save();
+        $f->phase = $later;
         $this->assertContains($write->id, $targets('proposition.traverse'));
         $next = $service->contribute($f->viewer, $f->phase->id, ['action' => 'proposition.traverse', 'proposition_id' => $write->id]);
         $this->assertSame($kind->value + 1, $next['plan']['phase']['number']);

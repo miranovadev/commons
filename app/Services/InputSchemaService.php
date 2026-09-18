@@ -80,6 +80,13 @@ final readonly class InputSchemaService
             $this->receipts->forPhase($occurrence, $context)->where('can_replay', true)->pluck('id')->all(),
         );
 
+        if (isset($schema['$defs']['actions']['proposition.reclassify'])) {
+            $schema['$defs']['actions']['proposition.reclassify']['properties']['proposition_id']['enum'] =
+                $kind === PhaseKind::Bias ? $gateOptionIds : [$gate->id];
+            $schema['$defs']['actions']['proposition.reclassify']['properties']['receipt_id']['enum'] =
+                app(HorizonReceiptService::class)->available($occurrence, $context)->pluck('id')->all();
+        }
+
         if (isset($schema['$defs']['actions']['instrument.execute'])) {
             $targets = $this->options->instrumentOptionsFor($occurrence, $context);
             $excluded = $targets->mapWithKeys(fn ($target) => [
@@ -259,10 +266,6 @@ final readonly class InputSchemaService
             'instrument.execute' => [
                 'property' => 'proposition_id',
                 'values' => $instrumentOptionIds,
-            ],
-            'proposition.bias' => [
-                'property' => 'proposition_id',
-                'values' => $gateOptionIds,
             ],
             'proposition.reconcile' => [
                 'property' => 'other_proposition_id',

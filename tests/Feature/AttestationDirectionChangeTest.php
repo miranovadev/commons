@@ -56,6 +56,7 @@ class AttestationDirectionChangeTest extends TestCase
             0.6,
             0.4,
         );
+        $this->publishPotentialFixture($participant);
         $plan = app(InputPlanService::class)->forWorkspace($participant);
         $write = collect($plan['write_options'])->firstWhere('id', $proposition->id);
         $this->assertSame('refute', $write['attestation']['direction']);

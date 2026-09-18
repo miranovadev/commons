@@ -1,5 +1,7 @@
 # The Commons
 
+**Normative phase model:** [Horizon Tragedy, Receipts and final-attempt Exhaustion](docs/core-invariants.md#persistence-exhaustion-recovery-and-observation). See [the phase flow](docs/flow-integration.md) and [migration compatibility](docs/horizon-proof-migration.md) before rollout.
+
 An emergent simulation where ideas are allowed to exist, but only if they can persist under constraint.
 
 The Commons provides a shared cognitive substrate in which propositions are distinguished, related, reinforced, and committed through participant-driven cycles. The implementation is built with Laravel, React, Mantine, and RTK Query.

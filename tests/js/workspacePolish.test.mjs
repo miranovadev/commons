@@ -22,7 +22,7 @@ const result = await build({ stdin: { contents: `
     const child = { id: 'child', register: 'stance', tier: 'expressive', statement: 'Write context', attestation_summary: { support_direction: support, negative: 2, positive: 3 } };
     const actions = {
       'proposition.variant': { properties: { statement: {} } },
-      'proposition.reclassify': { properties: {} },
+      'proposition.reclassify': { properties: { proposition_id: { enum: ['gate'] }, receipt_id: { enum: ['receipt'] } } },
       'proposition.revise': { properties: { proposition_id: { enum: ['child'] } } },
       'proposition.traverse': { properties: { proposition_id: { enum: effective ? ['child'] : [] } } },
       'attestation.create': { properties: { proposition_id: { enum: ['child'] }, direction: { enum: ['support', 'refute'].filter(label => label !== effective) } } },

@@ -10,7 +10,7 @@ class ExhaustionAudit extends Command
 {
     protected $signature = 'commons:exhaustion-audit {substrate : Substrate ID}';
 
-    protected $description = 'Compare maintained exhaustion with a slow structural derivation from recorded Rest witnesses.';
+    protected $description = 'Audit persisted Horizon Tragedy, Receipt exercise and final-attempt Exhaustion proofs.';
 
     public function handle(ExhaustionAuditService $audit): int
     {

@@ -244,7 +244,7 @@ final class PotentialProjectionService
         }
         $branches = [];
         $roots = $memberships->flatten(1)->pluck('root_proposition_id')->unique();
-        foreach (DB::table('origin_branches')->whereIn('root_proposition_id', $roots)->whereNull('exhausted_at')->whereNull('legacy_retired_at')->get() as $branch) {
+        foreach (DB::table('origin_branches')->whereIn('root_proposition_id', $roots)->get() as $branch) {
             $candidates = $this->calculator->candidates($local, branch: $branch->root_proposition_id);
             $branchNodes = collect($local['nodes'])->filter(fn ($node) => $node['active'] && $this->calculator->inBranch($node, $branch->root_proposition_id));
             $branches[] = ['root_proposition_id' => $branch->root_proposition_id, 'context_horizon_id' => $horizon->id,

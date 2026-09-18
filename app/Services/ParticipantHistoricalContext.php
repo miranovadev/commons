@@ -77,15 +77,13 @@ final readonly class ParticipantHistoricalContext
     private function exhaustedAt(Phase $phase, PhaseKind $position, string $tier = 'expressive'): Builder
     {
         return $this->withExhaustion($this->positions->scope(Proposition::query(), $phase, $position, $tier))
-            ->where('state.substrate_id', $phase->cycle->participant->substrate_id)
-            ->where('state.kind', $tier === 'committal' ? 'basin' : 'excursion');
+            ->whereHas('phase.cycle', fn ($query) => $query->where('context_horizon_id', $phase->cycle->context_horizon_id));
     }
 
     private function withExhaustion(Builder $query): Builder
     {
-        return $query->join('exhaustion_states as state', 'state.proposition_id', '=', 'propositions.id')
-            ->select(['propositions.id', 'propositions.statement', 'propositions.register', 'propositions.tier',
-                'state.kind as exhaustion_kind', 'state.exhausted_at'])->orderBy('propositions.id');
+        return app(ExhaustionService::class)->withHistoricalState($query)
+            ->orderByDesc('propositions.created_at')->orderByDesc('propositions.id');
     }
 
     /** Direct Writes and same-position revisions, never the downstream excursion. */

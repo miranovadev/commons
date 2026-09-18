@@ -57,11 +57,11 @@ final readonly class GraphProjectionService
             }
         }
         $activeIds = $historical ? Proposition::active()->whereKey($visible->pluck('id'))->pluck('id')->flip() : $visible->pluck('id')->flip();
-        $exhaustion = $historical ? DB::table('exhaustion_states')->whereIn('proposition_id', $visible->pluck('id'))->get()->keyBy('proposition_id') : collect();
+        $exhaustion = $historical ? app(ExhaustionService::class)->withHistoricalState(Proposition::whereKey($visible->pluck('id')))->get()->keyBy('id') : collect();
         foreach ($visible as $node) {
             $state = $exhaustion->get($node->id);
-            $node->setAttribute('exhaustion', ['exhausted' => $state?->kind === 'excursion',
-                'basin_exhausted' => $state?->kind === 'basin', 'exhausted_at' => $state?->exhausted_at]);
+            $node->setAttribute('exhaustion', ['exhausted' => $state?->exhaustion_kind === 'excursion',
+                'basin_exhausted' => $state?->exhaustion_kind === 'basin', 'exhausted_at' => $state?->exhausted_at]);
             $measurement = $node->measurement;
             $snapshot = $node->tier === 'committal' ? $snapshots->get($node->id) : null;
             $source = $snapshot ?? $measurement;
