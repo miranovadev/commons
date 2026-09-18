@@ -7,8 +7,10 @@ participant-count requirement is introduced.
 An empty viable structural position exposes Variant. Once a Variant exists,
 it must receive its own completed Instrument execution, producing a Receipt
 in the Horizon, and at least one effective Attestation. Only when those
-prerequisites have been met and positive Potential Charge remains in the
-Horizon does another Variant become an available option.
+prerequisites have been met, every current route is proven spent in this
+position's current exploration epoch, and positive Potential Charge remains in
+the Horizon does another Variant become an available option. A viable route
+blocks redundant Variant generation. See [exploration epochs](exploration-epochs.md).
 
 Each new Variant repeats that sequence. A shared Receipt generated against a
 different Variant does not satisfy the new Variant's Instrument prerequisite.
@@ -24,7 +26,10 @@ existing continuations retain their ordinary Attest/Traverse options.
 
 The backend checks every currently viable direct opportunity at the same
 producing Phase/register position before allowing another. Failed opportunities
-remain historical under the Horizon proof rules. An empty viable position can
+remain visible historical evidence. Failure only blocks actions when its Horizon,
+producing structural position and epoch match the current state. A successful
+Variant advances only that position's epoch, reopening older failures under the
+normal action rules without clearing them. An empty viable position can
 start an attempt even at zero currently instantiated Potential; this preserves
 the distinction between Potential and proof of Exhaustion.
 

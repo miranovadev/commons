@@ -71,6 +71,20 @@ class SpentContinuationTest extends TestCase
         $this->assertSame($distinguishEpoch + 1, $epochs->current($horizon, PhaseKind::Distinguish));
         $this->assertFalse($epochs->spentNow($activity, $disperse));
         $this->assertSame($history, DB::table('continuation_failures')->orderBy('proposition_id')->get()->toJson());
+
+        // Testing the same route in the changed field appends a second fact.
+        $again = $this->phase($activity, PhaseKind::Mediate);
+        foreach (app(HorizonReceiptService::class)->available($again) as $receipt) {
+            app(ReceiptContextService::class)->read($again->cycle->participant, $again, $receipt->id);
+        }
+        $this->measure($activity, 0);
+        $this->rest($again);
+        $this->assertTrue($epochs->spentNow($activity, $disperse));
+        $this->assertSame([$disperseEpoch, $disperseEpoch + 1], DB::table('continuation_failures')
+            ->where('proposition_id', $activity->id)->orderBy('exploration_epoch')->pluck('exploration_epoch')->map(fn ($epoch) => (int) $epoch)->all());
+        $this->assertSame($history, DB::table('continuation_failures')->where('exploration_epoch', 0)->orderBy('proposition_id')->get()->toJson());
+        $this->assertFalse($epochs->spentNow($signal, $return), 'The fresh Disperse sibling stops propagation to this reopened ancestor');
+        $this->assertSame(0, Tragedy::count());
     }
 
     public function test_all_spent_without_potential_uses_tragedy_without_advancing_an_epoch(): void

@@ -3,7 +3,9 @@
 namespace Tests\Feature;
 
 use App\Enums\PhaseKind;
+use App\Exceptions\PotentialProjectionUnavailable;
 use App\Services\ExplorationEpochService;
+use App\Services\PotentialProjectionService;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Support\Facades\DB;
@@ -52,5 +54,32 @@ class ExplorationEpochMigrationTest extends TestCase
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('Cannot discard exploration epoch history');
         $migration->down();
+    }
+
+    public function test_rollout_invalidates_old_failure_excluding_projections_without_mutating_evidence(): void
+    {
+        $this->initializeExhaustionFixture();
+        $node = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
+        $this->measure($node, .5);
+        DB::table('continuation_failures')->insert(['proposition_id' => $node->id,
+            'context_horizon_id' => $node->phase->cycle->context_horizon_id,
+            'structural_position' => 1, 'exploration_epoch' => 0,
+            'phase_id' => $node->phase_id, 'failed_at' => '2026-09-17 12:34:56']);
+        $before = DB::table('continuation_failures')->get()->toJson();
+        $projection = app(PotentialProjectionService::class);
+        $version = $projection->assertCurrent($this->substrate->id);
+        $migration = require database_path('migrations/2026_09_18_000700_refresh_spent_context_projections.php');
+        $migration->up();
+        $this->assertSame($version + 1, (int) $this->substrate->fresh()->field_version);
+        $this->assertDatabaseHas('potential_dirty_horizons', [
+            'context_horizon_id' => $node->phase->cycle->context_horizon_id, 'measurements_dirty' => true]);
+        try {
+            $projection->assertCurrent($this->substrate->id);
+            $this->fail('The pre-rollout projection cannot be certified current');
+        } catch (PotentialProjectionUnavailable) {
+            $this->assertTrue($projection->refresh($this->substrate->id));
+        }
+        $this->assertSame($version + 1, $projection->assertCurrent($this->substrate->id));
+        $this->assertSame($before, DB::table('continuation_failures')->get()->toJson());
     }
 }
