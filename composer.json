@@ -74,11 +74,26 @@
         "pre-package-uninstall": [
             "Illuminate\\Foundation\\ComposerScripts::prePackageUninstall"
         ],
-        "test:core": "@php artisan test --exclude-group=integration-full --exclude-group=query --exclude-group=load --display-warnings --fail-on-empty-test-suite",
-        "test:integration-full": "@php artisan test --exclude-group=query --exclude-group=load --display-warnings --fail-on-empty-test-suite",
-        "test:query": "@php artisan test --group=query --display-warnings --fail-on-empty-test-suite",
-        "test:load": "@php artisan test --group=load --display-warnings --fail-on-empty-test-suite",
-        "test:all": "@php artisan test --display-warnings --fail-on-empty-test-suite"
+        "test:core": [
+            "Composer\\Config::disableProcessTimeout",
+            "@php artisan test --exclude-group=integration-full --exclude-group=query --exclude-group=load --display-warnings --fail-on-empty-test-suite"
+        ],
+        "test:integration-full": [
+            "Composer\\Config::disableProcessTimeout",
+            "@php artisan test --exclude-group=query --exclude-group=load --display-warnings --fail-on-empty-test-suite"
+        ],
+        "test:query": [
+            "Composer\\Config::disableProcessTimeout",
+            "@php artisan test --group=query --display-warnings --fail-on-empty-test-suite"
+        ],
+        "test:load": [
+            "Composer\\Config::disableProcessTimeout",
+            "@php artisan test --group=load --display-warnings --fail-on-empty-test-suite"
+        ],
+        "test:all": [
+            "Composer\\Config::disableProcessTimeout",
+            "@php artisan test --display-warnings --fail-on-empty-test-suite"
+        ]
     },
     "extra": {
         "laravel": {

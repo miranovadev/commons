@@ -30,6 +30,8 @@ and `npm run test:ui`. Query and Load do not install frontend dependencies.
 All four workflows share `php-tests.yml` for the same database, PHP extensions,
 dependency caching, SQL profiling, statement timeout, and 20-minute job ceiling.
 Each uploads JUnit results even when PHP tests fail.
+The named Composer test commands disable Composer's five-minute process timeout
+locally as well; GitHub Actions still enforces its 20-minute job ceiling.
 
 Normal feature branches run Core when their PR opens or changes. There are no
 path filters. The dedicated `ci/*` namespaces are explicit requests for extra
