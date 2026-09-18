@@ -62,6 +62,7 @@ class HorizonProofMigrationTest extends TestCase
             '2026_09_18_000300_record_horizon_tragedies.php',
             '2026_09_18_000400_record_proven_horizon_exhaustion.php',
             '2026_09_18_000500_index_horizon_receipt_lookup.php',
+            '2026_09_18_000600_scope_continuation_failures_to_exploration_epochs.php',
         ])->map(fn ($file) => require database_path('migrations/'.$file));
         foreach ($migrations->reverse() as $migration) {
             $migration->down();

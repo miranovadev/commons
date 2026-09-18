@@ -303,6 +303,7 @@ class ExhaustedParticipantContextTest extends TestCase
             DB::table('continuation_failures')->insert([
                 'proposition_id' => $node->id, 'context_horizon_id' => $node->phase->cycle->context_horizon_id,
                 'phase_id' => $node->phase_id, 'failed_at' => now(),
+                'structural_position' => $node->phase->kind->value, 'exploration_epoch' => 0,
             ]);
         }
     }

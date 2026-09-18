@@ -57,7 +57,8 @@ class HorizonReceiptLifecycleTest extends TestCase
         $receipt = $service->complete($service->start($producerPhase, $producer, 'citation', $this->origin->id), $producer);
         DB::table('continuation_failures')->insert(['proposition_id' => $producer->id,
             'context_horizon_id' => $producerPhase->cycle->context_horizon_id,
-            'phase_id' => $producerPhase->id, 'failed_at' => now()]);
+            'phase_id' => $producerPhase->id, 'failed_at' => now(),
+            'structural_position' => $producerPhase->kind->value, 'exploration_epoch' => 0]);
         $viewer = $this->phase($this->origin, PhaseKind::Distinguish);
         $context = new ParticipationContext($viewer);
         $this->assertFalse($context->propositions->has($producer->id));
