@@ -29,6 +29,8 @@ class ExplorationEpochMigrationTest extends TestCase
     public function test_existing_failures_keep_their_identity_and_producing_position_in_epoch_zero(): void
     {
         $this->initializeExhaustionFixture();
+        $local = require database_path('migrations/2026_09_19_000100_localize_exploration_positions.php');
+        $local->down();
         $migration = require database_path('migrations/2026_09_18_000600_scope_continuation_failures_to_exploration_epochs.php');
         $migration->down();
         $nodes = [];
@@ -41,6 +43,7 @@ class ExplorationEpochMigrationTest extends TestCase
         }
         $before = DB::table('continuation_failures')->orderBy('proposition_id')->get();
         $migration->up();
+        $local->up();
         foreach ($before as $row) {
             $this->assertDatabaseHas('continuation_failures', (array) $row);
         }

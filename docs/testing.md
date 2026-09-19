@@ -89,6 +89,11 @@ without an expensive-suite group. Stage 2's seven tests use the
 `http-participation` group for focused runs; ordinary Core still includes them.
 See [participation-http-harness.md](participation-http-harness.md) for their
 expected red regressions and HTTP-only fixture discipline.
+Stage 3 adds one more HTTP case plus nine provenance/migration cases. Its
+expected discovery counts are Core 596, Full Integration 598, Query 16, Load 22,
+and All PHP 636. Only the successful-route Bias revisit is intentionally red;
+the two epoch collisions and the repeated local reopening journey must pass.
+See [local-exploration-epochs.md](local-exploration-epochs.md).
 Use method-level groups in mixed classes. Keep `integration-full`,
 `query`, and `load` mutually exclusive, and do not use runtime alone to choose.
 The Load suite currently proves bounded concurrency scenarios; it does not yet

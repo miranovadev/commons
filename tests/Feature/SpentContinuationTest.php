@@ -58,13 +58,12 @@ class SpentContinuationTest extends TestCase
         $this->assertArrayHasKey('proposition.variant', $plan()['schema']['$defs']['actions']);
         $history = DB::table('continuation_failures')->orderBy('proposition_id')->get()->toJson();
         $epochs = app(ExplorationEpochService::class);
-        $horizon = $return->cycle->context_horizon_id;
-        $distinguishEpoch = $epochs->current($horizon, PhaseKind::Distinguish);
-        $disperseEpoch = $epochs->current($horizon, PhaseKind::Disperse);
+        $distinguishEpoch = $epochs->forProposition($signal);
+        $disperseEpoch = $epochs->forProposition($activity);
         $fresh = app(ContributionDispatcher::class)->dispatch($return->cycle->participant, $return,
             ['action' => 'proposition.variant', 'statement' => 'A new distinction changes this field']);
-        $this->assertSame($distinguishEpoch + 1, $epochs->current($horizon, PhaseKind::Distinguish));
-        $this->assertSame($disperseEpoch, $epochs->current($horizon, PhaseKind::Disperse));
+        $this->assertSame($distinguishEpoch + 1, $epochs->forProposition($signal));
+        $this->assertSame($disperseEpoch, $epochs->forProposition($activity));
         $this->assertFalse($epochs->spentNow($signal, $return));
         $this->assertTrue($epochs->spentNow($activity, $return));
         $this->assertContains($signal->id, app(PropositionOptionService::class)->traversalOptionsFor($return)->pluck('id'));
@@ -76,8 +75,8 @@ class SpentContinuationTest extends TestCase
         $this->assertTrue(app(PropositionOptionService::class)->attestationOptionsFor($disperse)->isEmpty());
         app(ContributionDispatcher::class)->dispatch($disperse->cycle->participant, $disperse,
             ['action' => 'proposition.variant', 'statement' => 'A new dispersed possibility']);
-        $this->assertSame($disperseEpoch + 1, $epochs->current($horizon, PhaseKind::Disperse));
-        $this->assertSame($distinguishEpoch + 1, $epochs->current($horizon, PhaseKind::Distinguish));
+        $this->assertSame($disperseEpoch + 1, $epochs->forProposition($activity));
+        $this->assertSame($distinguishEpoch + 1, $epochs->forProposition($signal));
         $this->assertFalse($epochs->spentNow($activity, $disperse));
         $this->assertSame($history, DB::table('continuation_failures')->orderBy('proposition_id')->get()->toJson());
 
@@ -113,6 +112,6 @@ class SpentContinuationTest extends TestCase
         $this->rest($return);
         $this->assertSame(1, Tragedy::count());
         $this->assertNull($return->cycle->contextHorizon->fresh()->exhausted_at);
-        $this->assertSame(0, app(ExplorationEpochService::class)->current($return->cycle->context_horizon_id, PhaseKind::Distinguish));
+        $this->assertSame(0, app(ExplorationEpochService::class)->forPhase($return));
     }
 }

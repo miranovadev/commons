@@ -6,6 +6,7 @@ use App\Enums\PhaseKind;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Substrate;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
 /** Versioned, Horizon-local failure witnesses. No inference about ungenerated possibility. */
@@ -51,8 +52,12 @@ final class HorizonFailureService
                 }
                 $closed[$id] = true;
                 $proof['transitions'][] = $id;
-                $proof['failures'][] = ['proposition_id' => $id, 'structural_position' => $node->phase->kind->value,
-                    'exploration_epoch' => $epochs->current($proof['context_horizon_id'], $node->phase->kind)];
+                $position = app(ExplorationPositionService::class)->forProposition($node);
+                if ($position === null) {
+                    throw new \DomainException('Cannot publish failure without exact exploration provenance.');
+                }
+                $proof['failures'][] = ['proposition_id' => $id, 'structural_position' => $position['structural_position'],
+                    'structural_source_id' => $position['structural_source_id'], 'exploration_epoch' => $epochs->current($position)];
                 foreach (DB::table('supersessions')->where('target_proposition_id', $id)->pluck('source_proposition_id') as $parent) {
                     $pending[] = $parent;
                 }
@@ -77,7 +82,10 @@ final class HorizonFailureService
             }
             // Revalidate the exact per-position epochs as well as the field version.
             foreach ($proof['failures'] as $failure) {
-                if (app(ExplorationEpochService::class)->current($proof['context_horizon_id'], PhaseKind::from($failure['structural_position'])) !== $failure['exploration_epoch']) {
+                $position = app(ExplorationPositionService::class)->forProposition(Proposition::findOrFail($failure['proposition_id']));
+                if ($position !== ['context_horizon_id' => $proof['context_horizon_id'],
+                    'structural_position' => $failure['structural_position'], 'structural_source_id' => $failure['structural_source_id'] ?? null]
+                    || app(ExplorationEpochService::class)->current($position) !== $failure['exploration_epoch']) {
                     return;
                 }
             }
@@ -91,7 +99,8 @@ final class HorizonFailureService
                 return;
             }
             foreach ($proof['failures'] as $failure) {
-                if (DB::table('continuation_failures')->insertOrIgnore([...$failure,
+                // The immutable subject already determines its source; historical scope is not rewritten.
+                if (DB::table('continuation_failures')->insertOrIgnore([...Arr::except($failure, 'structural_source_id'),
                     'context_horizon_id' => $proof['context_horizon_id'], 'phase_id' => $phase->id, 'failed_at' => now()])) {
                     app(RealtimePublisher::class)->proposition($failure['proposition_id'], 'proposition.spent');
                 }
