@@ -1,24 +1,26 @@
 # Constitutional trace preservation and runtime investigation
 
-This is an investigation checkpoint, not a completed Stage 6 or aggregate suite pass.
-The minimal Core round trip is still outstanding. The long scripts must not be
-presented as the final Core solution merely because they pass.
+This records the completed lightweight investigation, not an aggregate suite pass.
+Acceptance was subsequently revised: full Domain-round-trip minimization is stopped,
+and the long journeys are manual replay/reference/performance artifacts. Runtime
+growth is deferred to a separate performance effort. Core proves focused API
+invariants; fresh natural substrates will validate the emergent whole lifecycle.
 
 ## Golden sources
 
 `tests/Replay/Golden/` retains the complete natural HTTP captures, losslessly
 compressed with XZ, including every input and full before/after response. Its
 manifest records compressed and uncompressed SHA-256 hashes. The separate fixed
-scripts in `tests/Fixtures/participation/` retain deterministic replay expectations.
+scripts in `tests/Replay/Fixtures/` retain deterministic replay expectations.
 Neither natural capture has been edited during minimization.
 
 The solo capture has 600 contributions; the coordinated capture has three entries
 and 630 contributions. Their operational round trip is **Settlement → Emergence →
 Settlement**. Origin bootstrap precedes it; that bootstrap is not substituted for
 a complete working Horizon. Local fixed replay results are 728.51 seconds and
-820.69 seconds respectively. These are richer replay/soak sources, not acceptable
-final Core sizes. Suite placement will change together with a validated replacement,
-so the currently published selection has not silently lost the round-trip assertion.
+820.69 seconds respectively. These are richer replay/soak sources. Both tests and their unchanged fixtures now
+live under `tests/Replay/`, outside mandatory discovery, by explicit acceptance
+change. No minimal replacement or further minimization is required.
 
 ## Measured runtime shape
 
@@ -68,7 +70,7 @@ not been measured. No broad performance refactor is proposed in this checkpoint.
 The exact window measurements and source hashes are in
 `docs/evidence/constitutional-runtime.json`.
 
-## Causal reduction status
+## Historical causal reduction investigation (stopped)
 
 Whole excursions cannot be deleted solely because their new proposition IDs are
 unused later. Attestations, receipt loads, spentness and actual phase touches affect
@@ -86,8 +88,8 @@ the current Gate's own commitment summary is still inadmissible. Minimization
 must preserve candidate-specific admissibility and the actual history needed for
 that selection, not bypass Closure or mistake the current Gate for the only option.
 
-No shortened sequence has yet been validated as the final Core scenario. Next work
-is causal reduction against real API replay, followed by freezing all intermediate
-expected states and moving the complete traces into the manual/replay selection.
-The proposed larger regular suite ceilings were withdrawn; final aggregate
-validation remains outstanding.
+No shortened sequence was accepted. The subsequent acceptance decision explicitly
+stopped this work. The full natural captures and fixed scripts remain unchanged;
+focused production-path invariants replace the full round trip as mandatory
+constitutional acceptance. The runtime measurements above remain a separate
+performance backlog item. No performance refactor or timeout increase is included.

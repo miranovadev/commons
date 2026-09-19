@@ -40,13 +40,6 @@ frontier rank or action availability.
   `source-equivalence.json`: fixed counterparts of the existing API contracts.
   The separate synchronous worker case uses exactly two Variants followed by
   Rest, with expected phase/position/lineage checks at each inference call.
-- `solo-domain-cycle.json`: entry plus exactly 600 contributions, ending with
-  a real Emergence → Settlement Commit; no continuation beyond the last step.
-- `collective-domain-cycle.json`: three entries and exactly 630 contributions.
-  All three participants interleave Settlement work. One continues their shared
-  route through Emergence and back; the other two retain their actual positions.
-  The test checks multiple structural authors, cross-owner attestations and receipt
-  consumption, Rest/recovery for each participant, and both causal boundary Commits.
 - `staggered-epochs.json`: 30 steps. The same failed continuation spends A and B
   at step 27; A alone reopens at 28; B alone reopens at 29. Semantic assertions
   inspect parked observers between those final steps.
@@ -60,3 +53,8 @@ frontier rank or action availability.
 An unexpected state fails at that step. Do not regenerate expected output to
 make a failing test pass: determine whether it exposes a regression or an explicitly
 authorised change to the lifecycle contract first.
+
+The complete solo and collective Domain scripts live unchanged in
+`tests/Replay/Fixtures/`. They are manual reference/performance replays, invoked
+with `composer test:replay-domain`, and are outside mandatory PHPUnit discovery.
+A deterministic full Domain round trip is not a Core acceptance requirement.

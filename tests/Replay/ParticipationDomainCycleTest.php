@@ -1,27 +1,26 @@
 <?php
 
-namespace Tests\Feature\Api;
+namespace Tests\Replay;
 
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\Support\ScriptedParticipationTestCase;
 
 #[Group('http-participation')]
-#[Group('constitutional')]
+#[Group('manual-replay')]
 class ParticipationDomainCycleTest extends ScriptedParticipationTestCase
 {
     public function test_one_participant_completes_settlement_emergence_settlement_through_http(): void
     {
-        $journey = $this->replayParticipationScript(__DIR__.'/../../Fixtures/participation/solo-domain-cycle.json');
+        $journey = $this->replayParticipationScript(__DIR__.'/Fixtures/solo-domain-cycle.json');
         $this->assertParticipationScriptComplete();
         $this->assertDomainRoundTrip($journey);
         $this->assertDatabaseCount('participants', 1);
     }
 
-    #[Group('integration-full')]
     public function test_interleaved_participants_complete_settlement_emergence_settlement_through_http(): void
     {
-        $journey = $this->replayParticipationScript(__DIR__.'/../../Fixtures/participation/collective-domain-cycle.json');
+        $journey = $this->replayParticipationScript(__DIR__.'/Fixtures/collective-domain-cycle.json');
         $this->assertParticipationScriptComplete();
         $this->assertDomainRoundTrip($journey);
         $this->assertDatabaseCount('participants', 3);

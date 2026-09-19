@@ -1,146 +1,120 @@
-# Stage 6: constitutional participation coverage
+# Stage 6: focused constitutional participation coverage
 
-The `constitutional` group identifies a small set of participant-visible laws.
-It is a selection label, not an exemption from Core. `composer test:constitutional`
-selects its Core cases; `composer test:integration-full -- --group=constitutional`
-also includes any broader constitutional cases. Normal Core
-and Full Integration continue discovering these tests through their existing
-commands. No pre-existing test changes suite membership.
+Constitutional acceptance is a collection of focused production-path invariant
+proofs. It no longer requires a deterministic full Domain round trip in Core or
+Full Integration. Minimizing the natural traces is explicitly stopped. Fresh
+substrates running naturally will validate the emergent whole lifecycle after
+these focused invariants are green; that live validation has not been run here.
 
-## Acceptance map
+`composer test:constitutional` selects 13 cases, all included in ordinary Core
+and Full Integration. They use predefined real API actions and deterministic
+expected intermediate state. No constitutional test depends on an autonomous
+probe eventually returning. Numerical Potential, structural actionability and
+current spentness remain separate concepts.
 
-| Epic scenario | Production-path evidence | Additional primitive coverage |
+## Focused acceptance map
+
+| Invariant | Production-path proof | Boundary retained |
 | --- | --- | --- |
-| A: repeated Variant reopening | `ParticipationLocalEpochTest` creates a third Distinguish Variant through natural failures and Rest, checking epoch-local eligibility and unchanged failure rows. | `ExplorationEpochTest`, `ExplorationPositionTest`, migration/provenance tests. |
-| B: staggered causal positions | `ParticipationStaggeredEpochTest` causes one real failure to spend Distinguish A and Disperse B, advances A while B remains spent, then advances B. Parked HTTP observers see each independent reopening. | Exact structural identity tests retain revision and multi-input cases. |
-| C: ancestral recovery and attenuation | `ParticipationRecoveryTest` checks actual traversed edges and executed actionless Rest; the successful route's untraversed Commit is excluded. | `CausalRecoveryTest` explicitly proves near/far winners, true edge distance, and exclusion of attractive siblings, descendants and unrelated Committals. These controlled numeric fixtures are recovery-primitive evidence, not API-created topology. |
-| D: current-Horizon confinement | Every live step of the natural Tragedy consumer stays in the current Horizon until actual Exhaustion. | Controlled positive-capacity/multiple-ancestor recovery cases, plus authoritative numerical-capacity tests. |
-| E: backward boundary crossing | The natural Tragedy journey crosses its API-created Horizon boundary backward and inspects actual distance. | The controlled cross-Horizon fixture distinguishes an intermediate ancestral Committal from the previous Horizon's provenance node. |
-| F/G: full Tragedy and shared evidence | `ParticipationTragedyLifecycleTest` creates Tragedy naturally, admits another participant into its Horizon, claims the shared final attempt, reads and consumes the receipt, exhausts the failed continuation, recovers to Origin and takes live exploration. Foreign-Horizon access and duplicate claims are rejected. | Atomic claim/rollback, unrelated-lineage failure exclusion, immutable history and migration tests. |
-| H: one participant's Domain round trip | The fixed 600-contribution HTTP script proves Settlement → Emergence → Settlement through actual boundary Commits and all seven phases in both working Horizons. SQLite replay passed; PostgreSQL validation is in progress. | Existing service-level cycle tests remain; a single Commit is not described as a Domain round trip. |
-| I: collective Domain round trip | A fixed 630-contribution, three-participant script now checks position persistence, cross-owner attestations and shared receipt consumption along a real Horizon chain. All three interleave Settlement work; one continues that shared route through Emergence and back while the others retain their positions. Replay validation is in progress. | Existing `FullEvidenceFlowTest` is retained as separate service coverage. |
-| J: structural Rest | The two constitutional Rest methods in `ParticipationHttpHarnessTest` cover both productive-action rejection and an unread informational receipt that leaves Rest available. | `AuthoritativeRestReasonTest` and action-contract tests. |
-| K: positive and negative visibility | `ParticipationVisibilityLifecycleTest`, the Bias revisit and the Tragedy journey pair expected context with forbidden targets/evidence. | Existing packet, exhausted-history, projection and query-budget cases remain. |
-| L: participant-source equivalence | `ParticipationSourceEquivalenceTest` compares HTTP state with a real worker's input and checks the complete seven-phase contribution contract with connection enablement toggled. | Worker locking/retry and concurrency coverage remain in their existing suites. |
+| Repeated Variant after genuine exhaustion | `ParticipationLocalEpochTest`: first, second and third Distinguish Variants through real failures and Rest | Before reopening all current options are spent; only the local epoch advances; old failures stay immutable |
+| Independent structural epochs | Two epoch regressions in `ParticipationLifecycleRegressionTest`, plus `ParticipationStaggeredEpochTest` | A later Committal cannot reopen Origin; different Disperse Gates advance independently; parked participants observe A reopening while B stays spent, then B reopening |
+| Successful-route forward navigation / Bias revisit | `ParticipationLifecycleRegressionTest::test_successful_route_revisit_can_advance_through_bias_to_its_existing_commit` | Traverse the frozen Bias classification and existing Commit; reject source mutation and inappropriate Rest; preserve content, attestations, commitment snapshot and failure history |
+| Rest availability | Two constitutional cases in `ParticipationHttpHarnessTest` | Productive actions exclude Rest; an unread informational receipt does not; reading it leaves the Phase unchanged |
+| Backward recovery and actual distance | Two cases in `ParticipationRecoveryTest` | API-produced phase Gates establish the traversed path; untraversed successful Commit is excluded; actual actionless Rest recovers two edges backward |
+| Current-Horizon confinement and boundary recovery | `ParticipationTragedyLifecycleTest` | Every live final-attempt step stays in its Horizon until Exhaustion; recovery then crosses the actual API-created boundary backward, counting distance across both Horizons; exploration resumes |
+| Tragedy lifecycle | The same fixed 107-step Tragedy journey | Natural creation, receipt availability, another participant's legitimate final Variant, Read, consumption, later Exhaustion; duplicate claims and foreign-Horizon receipt access rejected; original evidence unchanged |
+| Visibility, positive and negative | `ParticipationVisibilityLifecycleTest`, Bias revisit and Tragedy assertions | Expected propositions, attestation summaries, receipt evidence and parent references are visible; foreign/distant structure and forbidden action targets are absent/rejected; exhausted successful history stays visible without becoming failure |
+| Multi-participant evidence and action semantics | Tragedy's producer/consumer/outside observer; independent-epoch parked observers; visibility's separate author/observer; two `ParticipationSourceEquivalenceTest` cases | Shared receipt consumption is observed by another participant; outsiders cannot use it; one participant's local advance does not move or reopen another position; manual/connected state and worker contribution contract agree |
+
+Recovery's controlled near/far fixtures remain in `CausalRecoveryTest`: they
+prove inverse-square attenuation can change the winning ancestral Committal,
+exclude attractive siblings/descendants/unrelated nodes, and cross a Horizon
+boundary through an intermediate ancestor rather than its provenance opener.
+These are explicitly recovery-primitive fixtures. They complement the real HTTP
+recovery journeys; they are not described as API-created numeric conditions.
+Revision and multi-input structural identity tests also retain their existing
+Core placement.
 
 ## Fixture discipline
 
-All constitutional HTTP cases use `ParticipationHttpTestCase`. Even legitimate
-initial setup is performed through HTTP. The existing guard rejects structural
-database writes outside application requests. Observers arrive through actual
-contributions and remain parked; the tests do not move them directly.
+`ParticipationHttpTestCase` creates substrates, participants, topology, receipts,
+attestations and cycles through actual HTTP requests. Its guard rejects fixture
+writes outside application requests. Source equivalence additionally executes
+the real worker with three predefined inference responses. Only external
+inference and external evidence transport are deterministic substitutes.
 
-Constitutional lifecycle acceptance is being converted to predefined action
-scripts with deterministic expected state after every step. All selected HTTP lifecycle cases now use that runner; the synchronous worker
-case has an explicit three-action sequence and expected intermediate states. Inputs never come from an autonomous
-probe or a policy that keeps choosing actions until an outcome appears. The
-scripts preserve real measurements, Closure, receipt consumption, failure
-publication, recovery and Horizon projection. See the
+`ScriptedParticipationTestCase` expands fixed expected-state deltas before the
+first request, then checks before and after every scripted contribution. Identity
+bindings come from declared response paths, not an eligibility picker. Parent
+references are compared as an exact unordered collection because their model
+relation is unordered; ordered context populations remain strict. Expectations
+are never regenerated to make a failing test pass. See the
 [fixture contract](../tests/Fixtures/participation/README.md).
 
-Investigative probes may establish candidate sequences, and separate asynchronous
-liveness coverage remains useful. Their successful return is not constitutional
-acceptance. A candidate sequence must be frozen, reviewed for the intended laws,
-and replayed with exact expected state. Existing semantic assertions and Core/Full membership are preserved. Complete
-Stage 6 validation is still in progress.
+## Manual natural replay
 
-Service fixtures may still construct narrow numeric/structural conditions to
-test a primitive. The acceptance map makes those limits explicit. They do not
-stand in for the API lifecycle journeys.
+Both original natural captures remain byte-identical in `tests/Replay/Golden/`,
+with compressed and uncompressed hashes. Both complete fixed scripts were moved
+byte-for-byte into `tests/Replay/Fixtures/`. Their test bodies and lifecycle
+assertions remain in `tests/Replay/ParticipationDomainCycleTest.php`; only the
+namespace, fixture paths and selection labels changed.
 
-## Validation checkpoints
+Use `composer test:replay-domain` to run the optional 600-contribution solo and
+630-contribution collective replays. The actual operational round trip is
+Settlement → Emergence → Settlement. Origin bootstrap is not substituted for a
+working Horizon. These artifacts are available for reference, manual replay and
+performance investigation; mandatory PHPUnit discovery covers `tests/Unit` and
+`tests/Feature`, not `tests/Replay`.
 
-Stage 5's independent PostgreSQL Tragedy result is accepted semantic evidence;
-its cancelled Core/Full jobs are not complete suite passes. See
-[the recorded acceptance](stage-5-lifecycle-correctness.md#accepted-validation-evidence).
-Stage 6 results and timings are recorded on its review PR.
+Only the two Stage 6 long replay cases leave mandatory discovery under the revised
+acceptance decision. No Stage 1–5 correctness test, assertion or suite assignment
+is removed or weakened. Full Integration retains the broader existing
+`HorizonProofCycleTest` and `FullEvidenceFlowTest` service journeys. There is no
+replacement minimal-Domain test and no further minimization work.
 
-The initial local constitutional selection passed 13 tests / 3,149 assertions
-in 119.26 seconds on SQLite. This includes the new staggered-epoch journey and
-the strengthened Tragedy confinement assertions. It does not prove H/I or
-constitute complete Stage 6 or aggregate validation.
+## Validation evidence and limits
 
-The changed cases also passed independently on PostgreSQL 18 / PHP 8.5 at
-`f6fd87481cd6e17aa2460d564427086f866ec0b0`:
+- The Bias revisit is **resolved**, not an expected red regression. Its Stage 5
+  semantic fix remains unchanged. Fresh isolated SQLite replay passed 4,318
+  assertions in 10.58 seconds (10.65 seconds command duration).
+- The exact 13 focused cases previously passed on PostgreSQL 18 / PHP 8.5 at
+  `48a2f2f4ad379a26e53d1f1e5489cf834fbee9c0`: 36,958 assertions, 857.33 seconds
+  PHP, 15m31s complete job. [Run 35428949764, job 105859856314](https://github.com/miranovadev/commons/actions/runs/35428949764/job/105859856314),
+  artifact `10580925373`. The Tragedy case took 216.69 seconds; Bias revisit took
+  47.51 seconds. All selected test bodies, support code and JSON fixtures are
+  unchanged from that completed PostgreSQL pass. This is retained targeted
+  evidence, not a claim of a new PostgreSQL or aggregate run.
+- Fresh SQLite validation after the manual-replay split passed **13 tests / 36,958
+  assertions in 107.46 seconds**. Bias revisit took 11.18 seconds within the
+  selection; the complete Tragedy journey took 27.52 seconds. There were no
+  failures, skips or expected-red exceptions. Pint passed. This is focused
+  evidence, not a full Core/Full/Query/Load run.
+- Membership collection: **Core 617; Full Integration 619; Query 16; Load 22;
+  657 unique mandatory cases**. All 13 constitutional cases belong to Core.
+  The two manual replays are absent from every mandatory selection. Compared with
+  Stage 5, the only added mandatory case is the staggered epoch proof.
+- Both fixed replay fixture hashes match their pre-move originals. Both compressed
+  natural captures and their decompressed contents match the preservation manifest.
+- Stage 5's cancelled Core/Full runs still **do not count as complete suite
+  passes**. Its unchanged isolated PostgreSQL Tragedy pass remains accepted
+  evidence for the full Tragedy flow and backward Horizon-boundary recovery.
+  See [Stage 5's record](stage-5-lifecycle-correctness.md#accepted-validation-evidence).
 
-| Case | Assertions | PHP time | Complete job time |
-| --- | ---: | ---: | ---: |
-| Staggered epochs | 198 | 28.27 s | 1m42s |
-| Tragedy with per-step Horizon confinement | 612 | 75.51 s | 2m18s |
+There are no remaining expected-red focused lifecycle regressions. Focused passes
+are not a completed all-suite signal. The previously requested deliberate final
+Epic aggregate validation remains outstanding, now using mandatory suites without
+the manual Domain replays. Its timeout should be sized deliberately; this change
+does not alter the existing 30-minute Core/Full or 20-minute Query/Load ceilings.
+No new expensive Actions run is needed merely to repeat unchanged focused proofs.
 
-[Validation run](https://github.com/miranovadev/commons/actions/runs/35426948576).
-The workflow-only commit `a62d33f93cbc5d4033d9ce56815cf18a4e916723`
-explicitly pins the application/test checkout above; it does not change regular
-suite selection. These are targeted passes, not complete Core/Full passes.
+## Deferred work
 
-The final Epic checkpoint must validate one exact candidate across all suites
-with an appropriate timeout and retained results. It must account for every
-selected test, retain Query and Load, run the frontend build and action contracts,
-and distinguish completed passes from cancellations. Full Integration includes
-Core; overlap must not inflate the count of unique tests. No assertion, test,
-or suite membership may be weakened merely to fit a runtime target. Targeted
-Stage 5/6 results do not replace that final aggregate signal.
+The [runtime investigation](constitutional-runtime-investigation.md) and
+[measurements](evidence/constitutional-runtime.json) remain preserved. Repeated
+lineage/observable recalculation is the fastest-growing measured cost in the
+SQLite journey sample; PostgreSQL attribution is unmeasured. That optimization
+work is explicitly deferred to a separate performance effort. No production
+performance or lifecycle semantics change in this acceptance/suite update.
 
-Stage 7 implementation cleanup remains a separate review stage under these
-behavioural protections.
-
-## Fixed-script conversion (in progress)
-
-Local SQLite replay passed the 30-step staggered journey (1,980 assertions,
-5.05 seconds) and the 107-step Tragedy journey (8,684 assertions, 26.52 seconds).
-These results precede PostgreSQL validation of the converted tests; they do not
-replace the earlier pinned PostgreSQL results or constitute a Stage 6 checkpoint.
-No production semantics or existing Core/Full membership changed in this conversion.
-
-The complete converted selection (excluding the Domain journeys) passed locally:
-13 tests / 36,958 assertions in 100.38 seconds. The only remaining use of the
-exploratory helper in these API files is the separate, non-constitutional harness
-smoke test. Expected-state fixture deltas were checked against all original full
-expected states; the two Rest scripts also passed through the compact loader
-(525 assertions, 1.57 seconds). PostgreSQL replay remains pending.
-
-The frozen solo script also passed locally: 600 contributions plus entry,
-127,327 assertions, 728.51 seconds. Its first PostgreSQL replay at `73e2642`
-stopped at step 36 because SQLite and PostgreSQL returned the same two
-reconciliation parents in different order. `Proposition::parents()` has no ordering
-clause, and `InputPlanService` exposes those references without sorting. The
-script comparator now treats only `parent_ids` as an exact set, preserving all
-members and the ordered context populations. That failed run is not a pass;
-PostgreSQL replay of the corrected harness is required.
-
-The first scripted PostgreSQL run (`35428730610`, pinned `73e2642`) completed
-with the parent-order comparison failures: six failures/seven passes in the
-13-case job (223.65 seconds PHP), plus the solo failure (27.10 seconds PHP).
-Every failure was the same unordered `parent_ids` mismatch. The corrected
-comparator is pinned at `48a2f2f` in run `35428949764`; results remain pending.
-The collective script is now fixed at three entries plus 630 contributions; its
-investigative completion is not counted as a replay pass.
-
-## Completed fixed-script evidence
-
-The corrected 13-case constitutional selection passed on PostgreSQL 18 / PHP 8.5
-at `48a2f2f4ad379a26e53d1f1e5489cf834fbee9c0`: 36,958 assertions,
-857.33 seconds PHP, 15m31s complete job (07:18:13–07:33:44 UTC).
-[Run 35428949764](https://github.com/miranovadev/commons/actions/runs/35428949764),
-job `105859856314`, artifact `10580925373`. Its Tragedy case completed in
-216.69 seconds within that selection. This is a completed targeted pass,
-not a Core/Full aggregate pass.
-
-The collective script passed locally at `dafc167d66406e8dfbac02db1aa0a2e0a4411174`:
-three entries plus exactly 630 contributions, 137,419 assertions, 820.69 seconds.
-The solo local replay passed in 728.51 seconds with 127,327 assertions.
-PostgreSQL Domain results are still pending and will be recorded separately.
-
-Membership collection confirms 618 Core, 621 Full Integration, 16 Query and
-22 Load tests: 659 unique tests across Full/Query/Load. Constitutional selects
-15 cases in Full, 14 in Core. Compared with the Stage 5 inventory, Stage 6 adds
-the staggered case and two Domain journeys; no existing test changes suites.
-
-The proposed 90/120-minute regular runner increase was withdrawn before publication
-following the request to minimize the Core journey. Core and Full retain their
-30-minute ceilings for now. A deliberately sized final aggregate validation remains
-outstanding; cancelled and unfinished jobs are not complete suite passes.
-
-See [the runtime investigation](constitutional-runtime-investigation.md) for the
-measured growth and the status of causal minimization. The complete frozen scripts
-remain preserved; neither is accepted as the final minimal Core scenario.
+Stage 7 cleanup, final aggregate validation and fresh natural substrates are
+separate subsequent work. Nothing has been merged or deployed here.
