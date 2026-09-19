@@ -56,7 +56,7 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
         with:
-          ref: 73e26422b628f01edf6db402d13fe7a62face509
+          ref: 48a2f2f4ad379a26e53d1f1e5489cf834fbee9c0
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2

@@ -31,6 +31,21 @@ final class ParticipationScript
         return $result;
     }
 
+    /** Parent references are a set; the four context populations remain ordered. */
+    public static function canonicalizeParents(array $state): array
+    {
+        foreach (['lineage', 'read_options', 'gate_options', 'write_options', 'exhausted_alternatives'] as $population) {
+            foreach ($state['plan'][$population] ?? [] as $index => $card) {
+                if (isset($card['parent_ids'])) {
+                    sort($card['parent_ids'], SORT_STRING);
+                    $state['plan'][$population][$index]['parent_ids'] = $card['parent_ids'];
+                }
+            }
+        }
+
+        return $state;
+    }
+
     /** Resolve static fixture deltas without consulting the application. */
     public static function expand(array $steps): array
     {

@@ -94,7 +94,9 @@ abstract class ScriptedParticipationTestCase extends ParticipationHttpTestCase
 
     private function assertScriptState(array $expected, array $actual, string $label): void
     {
-        $this->assertSame($this->resolveScriptReferences($expected), ParticipationScript::state($actual), $label);
+        $this->assertSame(
+            ParticipationScript::canonicalizeParents($this->resolveScriptReferences($expected)),
+            ParticipationScript::canonicalizeParents(ParticipationScript::state($actual)), $label);
     }
 
     private function resolveScriptReferences(mixed $value): mixed
