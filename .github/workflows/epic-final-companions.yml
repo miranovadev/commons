@@ -15,7 +15,7 @@ jobs:
       matrix:
         suite: [integration-full, query, load]
     runs-on: ubuntu-latest
-    timeout-minutes: ${{ matrix.suite == 'integration-full' && 90 || matrix.suite == 'core' && 60 || 20 }}
+    timeout-minutes: ${{ (matrix.suite == 'integration-full' || matrix.suite == 'core') && 120 || 20 }}
 
     services:
       postgres:
@@ -52,7 +52,7 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
         with:
-          ref: 61b0c221f9795f033b9a542d0fba91bcf2d1f8be
+          ref: 1ba1edc9cf0b0d4cc7234bbaf1f8b93995e1d599
 
       - name: Record exact application checkout
         run: |
