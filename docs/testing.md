@@ -84,8 +84,12 @@ It does not endorse the existing recovery semantics or turn service-level cycle
 fixtures into HTTP lifecycle coverage. Those corrections need their own red
 regressions and review.
 
-New correctness-critical HTTP lifecycle tests should normally remain untagged
-in Core. Use method-level groups in mixed classes. Keep `integration-full`,
+New correctness-critical HTTP lifecycle tests should normally remain in Core
+without an expensive-suite group. Stage 2's seven tests use the
+`http-participation` group for focused runs; ordinary Core still includes them.
+See [participation-http-harness.md](participation-http-harness.md) for their
+expected red regressions and HTTP-only fixture discipline.
+Use method-level groups in mixed classes. Keep `integration-full`,
 `query`, and `load` mutually exclusive, and do not use runtime alone to choose.
 The Load suite currently proves bounded concurrency scenarios; it does not yet
 provide a sustained many-participant, memory, latency, or websocket-pressure soak.
