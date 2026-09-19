@@ -103,9 +103,12 @@ replacement minimal-Domain test and no further minimization work.
 There are no remaining expected-red focused lifecycle regressions. Focused passes
 are not a completed all-suite signal. The previously requested deliberate final
 Epic aggregate validation remains outstanding, now using mandatory suites without
-the manual Domain replays. Its timeout should be sized deliberately; this change
-does not alter the existing 30-minute Core/Full or 20-minute Query/Load ceilings.
-No new expensive Actions run is needed merely to repeat unchanged focused proofs.
+the manual Domain replays. Final aggregate validation is now authorized. Core has a 60-minute job ceiling,
+Full Integration has 90 minutes, and Query/Load retain 20 minutes. These are
+ceilings, not extra work: suite membership, assertions, statement timeout,
+frontend build and action contracts remain unchanged. The final checkpoint will
+record complete results for one candidate; targeted evidence is not substituted
+for those runs.
 
 ## Deferred work
 
