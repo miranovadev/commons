@@ -16,6 +16,7 @@ final class RestReasonService
         }
         $gate = $context?->propositions->get($phase->gate_proposition_id) ?? $phase->gate;
         if ($gate === null || app(ExhaustionService::class)->unavailable($gate)
+            || app(ExhaustedContinuationService::class)->ids($phase, $context)->has($gate->id)
             || $phase->cycle->contextHorizon->exhausted_at !== null) {
             return RestReason::NoAvailableMove;
         }

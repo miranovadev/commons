@@ -18,7 +18,9 @@ final readonly class ReconciliationOptionService
         if ($phase->write_register === null || $phase->kind !== PhaseKind::Mediate) {
             return collect();
         }
-        $gates = $this->mediation->gatesFor($phase, $context)->filter(fn ($node) => $this->availability->mutable($node, $context));
+        $exhausted = app(ExhaustedContinuationService::class)->ids($phase, $context);
+        $gates = $this->mediation->gatesFor($phase, $context)->filter(fn ($node) => $this->availability->mutable($node, $context)
+            && ! $exhausted->has($node->id));
 
         // The Phase Gate records dominance; parent ordering is not direction.
         $used = Supersession::query()->where('type', 'reconcile')

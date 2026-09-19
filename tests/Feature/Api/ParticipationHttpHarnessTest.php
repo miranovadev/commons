@@ -72,4 +72,25 @@ class ParticipationHttpHarnessTest extends ParticipationHttpTestCase
         }
         $this->getJson('/api/substrates/'.$this->substrateSlug)->assertOk()->assertJsonPath('data.title', 'HTTP lifecycle');
     }
+
+    public function test_rest_rejects_a_productive_phase_and_accepts_an_unread_informational_receipt(): void
+    {
+        $this->startSubstrate();
+        $actor = $this->joinParticipant('rest-reader');
+        $initial = $this->enterParticipant($actor, true);
+        $this->assertActionUnavailable($initial, 'participant.rest');
+        $this->postContribution($actor, $initial['plan']['phase']['id'], ['action' => 'participant.rest'])
+            ->assertUnprocessable();
+        $this->assertSame($initial['plan']['phase']['id'], $this->readParticipation($actor)['plan']['phase']['id']);
+        $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'A distinction.']);
+        $before = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'A persistent candidate.']);
+        $this->assertActionAvailable($before, 'receipt.read');
+        $this->assertActionAvailable($before, 'participant.rest');
+        $loads = DB::table('participant_receipt_contexts')->count();
+        $after = $this->contribute($actor, ['action' => 'participant.rest']);
+        $this->assertGreaterThan($before['cycle']['sequence'], $after['cycle']['sequence']);
+        $this->assertSame($loads, DB::table('participant_receipt_contexts')->count());
+        $this->assertDatabaseCount('horizon_tragedies', 0);
+        $this->assertSame('no_available_move', DB::table('cycles')->where('id', $before['cycle']['id'])->value('rest_reason'));
+    }
 }

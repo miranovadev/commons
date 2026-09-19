@@ -2,6 +2,7 @@
 
 namespace Tests\Support;
 
+use App\Jobs\WakeParticipant;
 use App\Services\Evidence\PublicResourceAddress;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\TestCase;
@@ -43,6 +44,17 @@ abstract class ParticipationHttpTestCase extends TestCase
         $this->httpRequestDepth++;
         try {
             return parent::call($method, $uri, $parameters, $cookies, $files, $server, $content);
+        } finally {
+            $this->httpRequestDepth--;
+        }
+    }
+
+    /** Source-equivalence tests may execute the real worker, never fixture writes. */
+    protected function wakeParticipant(string $participantConnectionId): void
+    {
+        $this->httpRequestDepth++;
+        try {
+            $this->app->call([new WakeParticipant($participantConnectionId), 'handle']);
         } finally {
             $this->httpRequestDepth--;
         }

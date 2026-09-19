@@ -227,13 +227,19 @@ rather than inferring semantics from current code behaviour.
 
 **Tragedy invariant:** Tragedy is the first no-Potential Rest within a Horizon. It creates exactly one Tragedy Receipt and opens the Horizon's final evidence-bearing attempt.
 
-**Exhaustion invariant:** A Horizon exhausts only after its Tragedy Receipt has been exercised and a subsequent no-Potential Rest proves the final attempt also failed.
+**Exhaustion invariant:** A Horizon exhausts only after its Tragedy Receipt has been exercised and a subsequent no-Potential Rest on that consumed classification's actual participant lineage proves the final attempt also failed. An unrelated later Rest is insufficient.
 
 **Receipt invariant:** Receipts exist at Horizon scope, are visible without cost, persist historically, and may be consumed exactly once. Generation costs an action; visibility is free; attachment costs an action and changes structure. Receipts belong to the Horizon, not their generating Participant.
 
 **Reclassification invariant:** Phase 3 and Phase 6 reclassification require an available Receipt. Reclassification atomically attaches/consumes the Receipt. No Receipt, no Reclassification. Tragedy is exceptional in generation, not in consumption.
 
 **Generation invariant:** Variant availability is controlled by structural viability, not Receipt lifecycle and not Participant count. A further Variant requires all current expressive routes at that structural position to be spent in its current exploration epoch, each with its own completed Instrument and effective Attestation, with positive remaining Horizon Potential Charge. A healthy route blocks redundant generation. Each new Variant repeats that sequence; no prior Rest or fixed sibling cap applies. See the [confirmed clarification](horizon-proof-variant-clarification.md).
+
+**Final-attempt allowance:** Stage 5 explicitly extends only the numerical requirement above: an open Horizon's unconsumed Tragedy authorizes one shared Distinguish/Disperse Variant at zero Potential. Existing structural and evidence prerequisites remain mandatory. The successful Variant atomically records that unique attempt and advances its own epoch. Receipt creation, loading and consumption do not change epochs. See [the lifecycle rationale](branch-tragedy.md#attainable-final-attempt).
+
+**Successful-route continuity:** Commitment freezes its direct expressive source against further mutation, but does not break traversal through that classification. Bias may traverse a frozen classification with an existing operational Commit in its exact Horizon and Commit Region; Order then traverses the existing Commit. Neither step creates content, votes or failure evidence.
+
+**Exhausted successful continuation:** After explicit child-Horizon Exhaustion, an incoming successful route remains contextual history without being falsified as failure. This propagates through an expressive source only when all its other outgoing continuations are exhausted or failed at their exact current epoch. Live alternatives and Committals stop propagation. Resolved routes are not action targets or viable generation options, and their historical gain does not supply exploration capacity.
 
 **Observation invariant:** Instrument generates evidence; Attestation becomes available only when evidence exists; Attestation becomes Traverse on the next Cycle under the existing rule.
 

@@ -22,12 +22,24 @@ class ParticipationLifecycleRegressionTest extends ParticipationHttpTestCase
         $biasGate = DB::table('supersessions')->where('type', 'reclassify')->where('target_proposition_id', $source)->sole()->source_proposition_id;
         $revisit = $this->driveUntil($revisitor, fn ($state) => ($state['plan']['phase']['kind'] ?? null) === 'bias'
             && $state['plan']['gate_id'] === $biasGate, maxActions: 60);
+        $history = DB::table('continuation_failures')->orderBy('proposition_id')->orderBy('exploration_epoch')->get()->toJson();
+        $snapshot = DB::table('commitment_snapshots')->where('proposition_id', $commit)->sole();
+        $propositions = DB::table('propositions')->count();
+        $attestations = DB::table('attestations')->count();
         $this->assertActionAvailable($revisit, 'proposition.traverse');
+        $this->assertActionUnavailable($revisit, 'participant.rest');
+        foreach (['attestation.create', 'instrument.execute', 'proposition.revise'] as $action) {
+            $this->assertStringNotContainsString($source, json_encode($this->actionDefinitions($revisit)[$action] ?? []));
+        }
         $order = $this->contribute($revisitor, ['action' => 'proposition.traverse', 'proposition_id' => $source]);
         $this->assertSame('order', $order['plan']['phase']['kind']);
         $next = $this->contribute($revisitor, ['action' => 'proposition.traverse', 'proposition_id' => $commit]);
         $this->assertSame('distinguish', $next['plan']['phase']['kind']);
         $this->assertSame($commit, $next['plan']['gate_id']);
+        $this->assertEquals($snapshot, DB::table('commitment_snapshots')->where('proposition_id', $commit)->sole());
+        $this->assertSame($propositions, DB::table('propositions')->count());
+        $this->assertSame($attestations, DB::table('attestations')->count());
+        $this->assertSame($history, DB::table('continuation_failures')->orderBy('proposition_id')->orderBy('exploration_epoch')->get()->toJson());
     }
 
     public function test_distinguish_under_another_committal_does_not_advance_origins_epoch(): void

@@ -191,6 +191,10 @@ final readonly class ContributionDispatcher
         Proposition $gate,
         array $input,
     ): Proposition {
+        // Capture the allowance before writing invalidates the field projection.
+        $finalAttempt = $input['action'] === 'proposition.variant'
+            && app(TragedyFinalAttemptService::class)->available($phase)
+            && ! app(PotentialChargeService::class)->hasRemainingInHorizon($phase);
         $target = $this->write(
             $phase,
             $input['statement'],
@@ -207,6 +211,9 @@ final readonly class ContributionDispatcher
 
         if ($input['action'] === 'proposition.variant') {
             app(ExplorationEpochService::class)->advance($phase);
+            if ($finalAttempt) {
+                app(TragedyFinalAttemptService::class)->record($phase, $target);
+            }
         }
 
         return $this->refreshMeasurement($target);

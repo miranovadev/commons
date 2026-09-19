@@ -74,11 +74,29 @@ final class ExhaustionService
         app(HorizonFailureService::class)->publish($phase, $proof);
     }
 
+    /** Read-only proof that this participant actually continued from the consumed evidence. */
+    public function consumedContinuationFor(Phase $phase): ?string
+    {
+        $target = ReceiptConsumption::query()->where('context_horizon_id', $phase->cycle->context_horizon_id)
+            ->where('legacy', false)->whereIn('receipt_id', Tragedy::where('context_horizon_id', $phase->cycle->context_horizon_id)->select('receipt_id'))
+            ->value('proposition_id');
+        if ($target === null) {
+            return null;
+        }
+        $path = app(BackwardRecoveryLineage::class)->distances($phase->gate, $phase->cycle->participant,
+            fn (string $id) => DB::table('supersessions')->where('target_proposition_id', $id)->pluck('source_proposition_id')->all());
+
+        return isset($path[$target]) ? $target : null;
+    }
+
     /** The caller holds the root and owns a fresh authoritative no-Potential Rest witness. */
     public function afterFailure(Phase $phase, Tragedy $tragedy, array $proof): bool
     {
         if ($tragedy->phase_id === $phase->id || $proof['rest_reason'] !== 'no_remaining_potential'
-            || ! ReceiptConsumption::whereKey($tragedy->receipt_id)->where('legacy', false)->exists()) {
+            || ($proof['consumed_continuation_id'] ?? null) === null
+            || ! ReceiptConsumption::whereKey($tragedy->receipt_id)->where('legacy', false)
+                ->where('context_horizon_id', $phase->cycle->context_horizon_id)
+                ->where('proposition_id', $proof['consumed_continuation_id'])->exists()) {
             return false;
         }
         $horizon = ContextHorizon::whereKey($tragedy->context_horizon_id)->lockForUpdate()->firstOrFail();
