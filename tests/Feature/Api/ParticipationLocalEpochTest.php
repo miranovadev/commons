@@ -5,37 +5,21 @@ namespace Tests\Feature\Api;
 use App\Enums\PhaseKind;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Group;
-use Tests\Support\ParticipationHttpTestCase;
+use Tests\Support\ScriptedParticipationTestCase;
 
 #[Group('http-participation')]
-class ParticipationLocalEpochTest extends ParticipationHttpTestCase
+#[Group('constitutional')]
+class ParticipationLocalEpochTest extends ScriptedParticipationTestCase
 {
     public function test_a_third_distinguish_variant_reopens_only_its_own_slot_through_http(): void
     {
-        $this->startSubstrate();
-        $actor = $this->joinParticipant('critical-explorer');
-        $origin = $this->enterParticipant($actor, true)['current_proposition_id'];
-        $observer = $this->joinParticipant('origin-observer');
-        $this->enterParticipant($observer);
+        $journey = $this->replayParticipationScript(__DIR__.'/../../Fixtures/participation/local-epochs.json', 2);
+        $actor = $journey['participants']['critical-explorer'];
+        $observer = $journey['participants']['origin-observer'];
+        $origin = $journey['responses'][0]['current_proposition_id'];
         $variants = 0;
-        for ($step = 0; $step < 140 && $variants < 3; $step++) {
-            $state = $this->readParticipation($actor);
-            $input = $this->chooseContribution($state);
-            if ($state['plan']['phase']['kind'] === 'mediate' && $input['action'] === 'attestation.create') {
-                $refute = collect($this->actionDefinitions($state)['attestation.create']['anyOf'])
-                    ->first(fn ($choice) => $choice['properties']['direction']['enum'][0] === 'refute');
-                if ($refute !== null) {
-                    $input['direction'] = 'refute';
-                    $input['proposition_id'] = $refute['properties']['proposition_id']['enum'][0];
-                } elseif (isset($this->actionDefinitions($state)['instrument.execute'])) {
-                    // Ground the refuted reconciliation itself before its natural Bias Rest.
-                    $input = ['action' => 'instrument.execute',
-                        'proposition_id' => $this->actionDefinitions($state)['instrument.execute']['properties']['proposition_id']['enum'][0],
-                        'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://evidence.example.test/reconciliation/'.$step]];
-                }
-            }
-            $opening = $state['plan']['phase']['kind'] === 'distinguish' && $state['plan']['gate_id'] === $origin
-                && $input['action'] === 'proposition.variant';
+        for ($step = 2; $step <= 83; $step++) {
+            $opening = in_array($step, [2, 20, 83], true);
             if ($opening) {
                 $before = $this->readParticipation($observer)['plan']['write_options'];
                 $history = $this->failures();
@@ -44,7 +28,7 @@ class ParticipationLocalEpochTest extends ParticipationHttpTestCase
                     $this->assertTrue($option['spent'], 'Every existing option must genuinely be spent before another Variant.');
                 }
             }
-            $this->contribute($actor, $input);
+            $this->continueParticipationScript(1);
             if ($opening) {
                 $variants++;
                 $after = $this->readParticipation($observer);
@@ -58,6 +42,7 @@ class ParticipationLocalEpochTest extends ParticipationHttpTestCase
                 $this->assertSame($disperse, $this->disperseEpochs(), 'Distinguish does not advance any Disperse slot.');
             }
         }
+        $this->assertParticipationScriptComplete();
         $this->assertSame(3, $variants, $this->traceMessage($this->readParticipation($actor)));
         $this->assertNotSame('[]', $this->failures());
         $this->assertCount(3, $this->readParticipation($observer)['plan']['write_options']);

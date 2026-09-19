@@ -6,24 +6,25 @@ use App\Models\Participant;
 use App\Services\PotentialChargeService;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Group;
-use Tests\Support\ParticipationHttpTestCase;
+use Tests\Support\ScriptedParticipationTestCase;
 
 #[Group('http-participation')]
-class ParticipationRecoveryTest extends ParticipationHttpTestCase
+#[Group('constitutional')]
+class ParticipationRecoveryTest extends ScriptedParticipationTestCase
 {
     public function test_successful_revisit_keeps_its_untraversed_commit_out_of_backward_recovery(): void
     {
-        $this->startSubstrate();
-        $author = $this->joinParticipant('route-author');
-        $origin = $this->enterParticipant($author, true)['current_proposition_id'];
-        $observer = $this->joinParticipant('route-observer');
-        $this->enterParticipant($observer);
-        $committed = $this->reachFirstCommit($author, $origin);
+        $journey = $this->replayParticipationScript(__DIR__.'/../../Fixtures/participation/recovery-revisit.json');
+        $this->assertParticipationScriptComplete();
+        $author = $journey['participants']['route-author'];
+        $observer = $journey['participants']['route-observer'];
+        $origin = $journey['responses'][0]['current_proposition_id'];
+        $committed = $journey['responses'][48];
         $commit = $committed['last_commitment']['proposition_id'];
         $source = DB::table('supersessions')->where('type', 'commit')->where('target_proposition_id', $commit)->sole()->source_proposition_id;
         $biasGate = DB::table('supersessions')->where('type', 'reclassify')->where('target_proposition_id', $source)->sole()->source_proposition_id;
-        $before = $this->driveUntil($observer, fn ($state) => $state['plan']['phase']['kind'] === 'bias'
-            && $state['plan']['gate_id'] === $biasGate, maxActions: 60);
+        $before = $journey['responses'][53];
+        $this->assertSame($biasGate, $before['plan']['gate_id']);
         // Stage 5 supersedes the Stage 4 expectation of Rest at this broken
         // Bias position: a successful route now has a valid forward Traverse.
         $this->assertActionUnavailable($before, 'participant.rest');
@@ -57,11 +58,11 @@ class ParticipationRecoveryTest extends ParticipationHttpTestCase
 
     public function test_actual_actionless_http_rest_recovers_by_the_traversed_edge_distance(): void
     {
-        $this->startSubstrate();
-        $actor = $this->joinParticipant('actionless-recovery');
-        $origin = $this->enterParticipant($actor, true)['current_proposition_id'];
-        $first = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'First edge.']);
-        $before = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Second edge.']);
+        $journey = $this->replayParticipationScript(__DIR__.'/../../Fixtures/participation/recovery-distance.json', 3);
+        $actor = $journey['participants']['actionless-recovery'];
+        $origin = $journey['responses'][0]['current_proposition_id'];
+        $first = $journey['responses'][1];
+        $before = $journey['responses'][2];
         foreach ([[$origin, $first['current_proposition_id']], [$first['current_proposition_id'], $before['current_proposition_id']]] as [$source, $target]) {
             $this->assertDatabaseHas('supersessions', ['source_proposition_id' => $source, 'target_proposition_id' => $target]);
         }
@@ -70,7 +71,8 @@ class ParticipationRecoveryTest extends ParticipationHttpTestCase
             $participant->cycles()->latest('sequence')->first()->contextHorizon, $participant);
         $this->assertSame([$origin], $inspection['eligible_candidate_ids']);
         $this->assertSame(2, $inspection['selection']['distance']);
-        $after = $this->contribute($actor, ['action' => 'participant.rest']);
+        $after = $this->continueParticipationScript(1)['responses'][3];
+        $this->assertParticipationScriptComplete();
         $this->assertSame('distinguish', $after['plan']['phase']['kind']);
         $this->assertSame($origin, $after['current_proposition_id']);
         $this->assertSame($before['context_horizon_id'], $after['context_horizon_id']);

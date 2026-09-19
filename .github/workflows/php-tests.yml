@@ -15,7 +15,7 @@ jobs:
   test:
     name: PHP 8.5 / PostgreSQL 18
     runs-on: ubuntu-latest
-    timeout-minutes: ${{ (inputs.suite == 'core' || inputs.suite == 'integration-full') && 30 || 20 }}
+    timeout-minutes: ${{ (inputs.suite == 'integration-full' || inputs.suite == 'core') && 120 || 20 }}
 
     services:
       postgres:

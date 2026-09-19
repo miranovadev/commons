@@ -1,0 +1,182 @@
+{
+  "head": "dafc167d66406e8dfbac02db1aa0a2e0a4411174",
+  "database": "SQLite :memory:",
+  "php": "8.5.10",
+  "steps": 205,
+  "requests": 412,
+  "assertions": 20820,
+  "test_seconds": 76.14,
+  "request_wall_ms": 75518.33338,
+  "sql_ms": 11136.100000000015,
+  "queries": 189795,
+  "windows": [
+    {
+      "requests": [
+        1,
+        100
+      ],
+      "wall_ms": 10098.017589000001,
+      "sql_ms": 1529.1099999999974,
+      "queries": 30612,
+      "services": {
+        "ClosureCalculator::localComponents": {
+          "inclusive_ms": 239.05722000000003,
+          "calls": 496
+        },
+        "LineageMeasurementService::calculate": {
+          "inclusive_ms": 1454.0813929999997,
+          "calls": 327
+        },
+        "PropositionMeasurementService::recalculate": {
+          "inclusive_ms": 1135.7841560000002,
+          "calls": 29
+        },
+        "ParticipationContext::__construct": {
+          "inclusive_ms": 1841.1301280000002,
+          "calls": 227
+        },
+        "PotentialProjectionService::maintain": {
+          "inclusive_ms": 1227.1298859999997,
+          "calls": 58
+        },
+        "AttestationEvidenceService::buildTimeline": {
+          "inclusive_ms": 571.3840220000002,
+          "calls": 932
+        },
+        "InputPlanService::build": {
+          "inclusive_ms": 3281.6403859999996,
+          "calls": 158
+        }
+      }
+    },
+    {
+      "requests": [
+        101,
+        200
+      ],
+      "wall_ms": 15070.419089,
+      "sql_ms": 2455.9800000000023,
+      "queries": 43090,
+      "services": {
+        "ParticipationContext::__construct": {
+          "inclusive_ms": 2982.431374000001,
+          "calls": 234
+        },
+        "AttestationEvidenceService::buildTimeline": {
+          "inclusive_ms": 1839.2645820000007,
+          "calls": 1332
+        },
+        "InputPlanService::build": {
+          "inclusive_ms": 3697.932615000001,
+          "calls": 164
+        },
+        "ClosureCalculator::localComponents": {
+          "inclusive_ms": 770.0343550000001,
+          "calls": 717
+        },
+        "LineageMeasurementService::calculate": {
+          "inclusive_ms": 4776.914384999999,
+          "calls": 493
+        },
+        "PropositionMeasurementService::recalculate": {
+          "inclusive_ms": 3265.0243539999997,
+          "calls": 30
+        },
+        "PotentialProjectionService::maintain": {
+          "inclusive_ms": 2582.5849380000004,
+          "calls": 60
+        }
+      }
+    },
+    {
+      "requests": [
+        201,
+        300
+      ],
+      "wall_ms": 20328.395777,
+      "sql_ms": 3065.400000000014,
+      "queries": 52034,
+      "services": {
+        "ParticipationContext::__construct": {
+          "inclusive_ms": 3406.760351000001,
+          "calls": 224
+        },
+        "AttestationEvidenceService::buildTimeline": {
+          "inclusive_ms": 3255.8374909999993,
+          "calls": 2046
+        },
+        "InputPlanService::build": {
+          "inclusive_ms": 4378.761775999999,
+          "calls": 161
+        },
+        "ClosureCalculator::localComponents": {
+          "inclusive_ms": 1440.8317589999997,
+          "calls": 1188
+        },
+        "LineageMeasurementService::calculate": {
+          "inclusive_ms": 8980.865932,
+          "calls": 847
+        },
+        "PotentialProjectionService::maintain": {
+          "inclusive_ms": 4513.815875999999,
+          "calls": 58
+        },
+        "PropositionMeasurementService::recalculate": {
+          "inclusive_ms": 5019.549086,
+          "calls": 29
+        }
+      }
+    },
+    {
+      "requests": [
+        301,
+        400
+      ],
+      "wall_ms": 26325.73534,
+      "sql_ms": 3610.0699999999983,
+      "queries": 57031,
+      "services": {
+        "ParticipationContext::__construct": {
+          "inclusive_ms": 3971.3142800000014,
+          "calls": 217
+        },
+        "AttestationEvidenceService::buildTimeline": {
+          "inclusive_ms": 4334.096303,
+          "calls": 2237
+        },
+        "InputPlanService::build": {
+          "inclusive_ms": 4835.881448000002,
+          "calls": 161
+        },
+        "ClosureCalculator::localComponents": {
+          "inclusive_ms": 2122.606387,
+          "calls": 1528
+        },
+        "LineageMeasurementService::calculate": {
+          "inclusive_ms": 14078.776519,
+          "calls": 1185
+        },
+        "PotentialProjectionService::maintain": {
+          "inclusive_ms": 7746.036758999998,
+          "calls": 59
+        },
+        "PropositionMeasurementService::recalculate": {
+          "inclusive_ms": 6582.356259,
+          "calls": 26
+        }
+      }
+    }
+  ],
+  "golden": {
+    "solo": {
+      "path": "tests/Fixtures/participation/solo-domain-cycle.json",
+      "sha256": "441843e95fb4f6b61b293685e3033278e6e9b6c228743acf584791c89e70b98b",
+      "steps": 601
+    },
+    "collective": {
+      "path": "tests/Fixtures/participation/collective-domain-cycle.json",
+      "sha256": "6ca275b52c9a56847dce35742e6162d337817682ea3f9a38be311bf2bdc0fd99",
+      "steps": 633
+    }
+  }
+}
