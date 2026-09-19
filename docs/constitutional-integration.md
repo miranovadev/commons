@@ -17,8 +17,8 @@ commands. No pre-existing test changes suite membership.
 | D: current-Horizon confinement | Every live step of the natural Tragedy consumer stays in the current Horizon until actual Exhaustion. | Controlled positive-capacity/multiple-ancestor recovery cases, plus authoritative numerical-capacity tests. |
 | E: backward boundary crossing | The natural Tragedy journey crosses its API-created Horizon boundary backward and inspects actual distance. | The controlled cross-Horizon fixture distinguishes an intermediate ancestral Committal from the previous Horizon's provenance node. |
 | F/G: full Tragedy and shared evidence | `ParticipationTragedyLifecycleTest` creates Tragedy naturally, admits another participant into its Horizon, claims the shared final attempt, reads and consumes the receipt, exhausts the failed continuation, recovers to Origin and takes live exploration. Foreign-Horizon access and duplicate claims are rejected. | Atomic claim/rollback, unrelated-lineage failure exclusion, immutable history and migration tests. |
-| H: one participant's Domain round trip | **Still under construction.** The HTTP journey must prove Settlement → Emergence → Settlement through actual boundary Commits and all seven phases. An investigative solo sequence has completed that route; fixed-script replay is still required before acceptance. | Existing service-level cycle tests remain; a single Commit is not described as a Domain round trip. |
-| I: collective Domain round trip | **Still under construction.** The interleaved HTTP journey must check position persistence, cross-owner attestations and shared receipt consumption along a real Horizon chain. | Existing `FullEvidenceFlowTest` is retained as separate service coverage. |
+| H: one participant's Domain round trip | The fixed 600-contribution HTTP script proves Settlement → Emergence → Settlement through actual boundary Commits and all seven phases in both working Horizons. SQLite replay passed; PostgreSQL validation is in progress. | Existing service-level cycle tests remain; a single Commit is not described as a Domain round trip. |
+| I: collective Domain round trip | A fixed 630-contribution, three-participant script now checks position persistence, cross-owner attestations and shared receipt consumption along a real Horizon chain. All three interleave Settlement work; one continues that shared route through Emergence and back while the others retain their positions. Replay validation is in progress. | Existing `FullEvidenceFlowTest` is retained as separate service coverage. |
 | J: structural Rest | The two constitutional Rest methods in `ParticipationHttpHarnessTest` cover both productive-action rejection and an unread informational receipt that leaves Rest available. | `AuthoritativeRestReasonTest` and action-contract tests. |
 | K: positive and negative visibility | `ParticipationVisibilityLifecycleTest`, the Bias revisit and the Tragedy journey pair expected context with forbidden targets/evidence. | Existing packet, exhausted-history, projection and query-budget cases remain. |
 | L: participant-source equivalence | `ParticipationSourceEquivalenceTest` compares HTTP state with a real worker's input and checks the complete seven-phase contribution contract with connection enablement toggled. | Worker locking/retry and concurrency coverage remain in their existing suites. |
@@ -107,3 +107,11 @@ clause, and `InputPlanService` exposes those references without sorting. The
 script comparator now treats only `parent_ids` as an exact set, preserving all
 members and the ordered context populations. That failed run is not a pass;
 PostgreSQL replay of the corrected harness is required.
+
+The first scripted PostgreSQL run (`35428730610`, pinned `73e2642`) completed
+with the parent-order comparison failures: six failures/seven passes in the
+13-case job (223.65 seconds PHP), plus the solo failure (27.10 seconds PHP).
+Every failure was the same unordered `parent_ids` mismatch. The corrected
+comparator is pinned at `48a2f2f` in run `35428949764`; results remain pending.
+The collective script is now fixed at three entries plus 630 contributions; its
+investigative completion is not counted as a replay pass.

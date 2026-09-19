@@ -42,6 +42,11 @@ frontier rank or action availability.
   Rest, with expected phase/position/lineage checks at each inference call.
 - `solo-domain-cycle.json`: entry plus exactly 600 contributions, ending with
   a real Emergence → Settlement Commit; no continuation beyond the last step.
+- `collective-domain-cycle.json`: three entries and exactly 630 contributions.
+  All three participants interleave Settlement work. One continues their shared
+  route through Emergence and back; the other two retain their actual positions.
+  The test checks multiple structural authors, cross-owner attestations and receipt
+  consumption, Rest/recovery for each participant, and both causal boundary Commits.
 - `staggered-epochs.json`: 30 steps. The same failed continuation spends A and B
   at step 27; A alone reopens at 28; B alone reopens at 29. Semantic assertions
   inspect parked observers between those final steps.
