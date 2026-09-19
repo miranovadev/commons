@@ -14,10 +14,12 @@ use App\Services\LedgerService;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\Process\Process;
 use Tests\Fixtures\ExhaustionFixture;
 use Tests\TestCase;
 
+#[Group('load')]
 class HorizonProofConcurrencyTest extends TestCase
 {
     use DatabaseMigrations, ExhaustionFixture;

@@ -53,7 +53,7 @@
         ],
         "test": [
             "@php artisan config:clear --ansi",
-            "@php artisan test"
+            "@test:core"
         ],
         "post-autoload-dump": [
             "@php scripts/patch-rfc6455.php",
@@ -73,6 +73,26 @@
         ],
         "pre-package-uninstall": [
             "Illuminate\\Foundation\\ComposerScripts::prePackageUninstall"
+        ],
+        "test:core": [
+            "Composer\\Config::disableProcessTimeout",
+            "@php artisan test --exclude-group=integration-full --exclude-group=query --exclude-group=load --display-warnings --fail-on-empty-test-suite"
+        ],
+        "test:integration-full": [
+            "Composer\\Config::disableProcessTimeout",
+            "@php artisan test --exclude-group=query --exclude-group=load --display-warnings --fail-on-empty-test-suite"
+        ],
+        "test:query": [
+            "Composer\\Config::disableProcessTimeout",
+            "@php artisan test --group=query --display-warnings --fail-on-empty-test-suite"
+        ],
+        "test:load": [
+            "Composer\\Config::disableProcessTimeout",
+            "@php artisan test --group=load --display-warnings --fail-on-empty-test-suite"
+        ],
+        "test:all": [
+            "Composer\\Config::disableProcessTimeout",
+            "@php artisan test --display-warnings --fail-on-empty-test-suite"
         ]
     },
     "extra": {

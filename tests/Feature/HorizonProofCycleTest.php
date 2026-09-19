@@ -3,9 +3,11 @@
 namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\HorizonCycleFixture;
 use Tests\TestCase;
 
+#[Group('integration-full')]
 class HorizonProofCycleTest extends TestCase
 {
     use HorizonCycleFixture, RefreshDatabase;

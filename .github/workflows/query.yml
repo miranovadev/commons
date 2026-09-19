@@ -1,0 +1,19 @@
+name: Query Regression
+
+on:
+  push:
+    branches: ['ci/query/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  query:
+    uses: ./.github/workflows/php-tests.yml
+    with:
+      suite: query
