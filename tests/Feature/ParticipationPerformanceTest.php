@@ -31,6 +31,7 @@ use Tests\Fixtures\ParticipationScaleFixture;
 use Tests\TestCase;
 
 #[\PHPUnit\Framework\Attributes\Group('performance')]
+#[\PHPUnit\Framework\Attributes\Group('query')]
 class ParticipationPerformanceTest extends TestCase
 {
     use RefreshDatabase;

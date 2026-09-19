@@ -28,9 +28,9 @@ class ExplorationEpochTest extends TestCase
     {
         [$signal, $activity, $terminal, $return] = $this->testedLineage();
         $horizon = $terminal->cycle->context_horizon_id;
-        foreach ([1 => 3, 4 => 7] as $position => $epoch) {
+        foreach ([[$signal, 3], [$activity, 7]] as [$node, $epoch]) {
             DB::table('horizon_exploration_states')->insert(['context_horizon_id' => $horizon,
-                'structural_position' => $position, 'epoch' => $epoch]);
+                'structural_position' => $node->phase->kind->value, 'structural_source_id' => $node->phase->gate_proposition_id, 'epoch' => $epoch]);
         }
         $proof = app(HorizonFailureService::class)->inspect($terminal);
         $this->assertSame('continuation_failed', $proof['reason']);
@@ -52,8 +52,8 @@ class ExplorationEpochTest extends TestCase
         app(ContributionDispatcher::class)->dispatch($return->cycle->participant, $return,
             ['action' => 'proposition.variant', 'statement' => 'A changed Distinguish field']);
         $epochs = app(ExplorationEpochService::class);
-        $this->assertSame(4, $epochs->current($horizon, PhaseKind::Distinguish));
-        $this->assertSame(7, $epochs->current($horizon, PhaseKind::Disperse));
+        $this->assertSame(4, $epochs->forProposition($signal));
+        $this->assertSame(7, $epochs->forProposition($activity));
         $this->assertFalse($epochs->spentNow($signal, $return));
         $this->assertTrue($epochs->spentNow($activity, $return));
         $this->assertSame($before, DB::table('continuation_failures')->orderBy('proposition_id')->get()->toJson());
@@ -66,26 +66,27 @@ class ExplorationEpochTest extends TestCase
         $horizon = $phase->cycle->context_horizon_id;
         $dispatch = fn () => app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
             ['action' => 'proposition.variant', 'statement' => 'One successful probe']);
-        $this->assertSame(0, $epochs->current($horizon, $phase->kind));
+        $this->assertSame(0, $epochs->forPhase($phase));
         DB::beginTransaction();
         $dispatch();
-        $this->assertSame(1, $epochs->current($horizon, $phase->kind));
+        $this->assertSame(1, $epochs->forPhase($phase));
         DB::rollBack();
-        $this->assertSame(0, $epochs->current($horizon, $phase->kind));
+        $this->assertSame(0, $epochs->forPhase($phase));
         $node = $dispatch();
         try {
             $dispatch();
             $this->fail('An untested existing Variant must reject the second write');
         } catch (\DomainException) {
-            $this->assertSame(1, $epochs->current($horizon, $phase->kind));
+            $this->assertSame(1, $epochs->forPhase($phase));
         }
         $instruments = app(InstrumentExecutionService::class);
         $receipt = $instruments->complete($instruments->start($phase, $node, 'citation', $this->origin->id), $node);
         app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
             ['action' => 'attestation.create', 'proposition_id' => $node->id, 'direction' => 'support']);
-        $this->assertSame(1, $epochs->current($horizon, $phase->kind), 'Instrument, Receipt and Attestation do not advance an epoch');
+        $this->assertSame(1, $epochs->forPhase($phase), 'Instrument, Receipt and Attestation do not advance an epoch');
         $this->assertNotNull($receipt->id);
-        $this->assertSame(0, $epochs->current($horizon, PhaseKind::Disperse));
+        $this->assertSame(0, $epochs->current(['context_horizon_id' => $horizon,
+            'structural_position' => PhaseKind::Disperse->value, 'structural_source_id' => $node->id]));
     }
 
     public function test_unobserved_actionless_mediate_is_not_spent_even_at_zero_potential(): void
@@ -111,13 +112,13 @@ class ExplorationEpochTest extends TestCase
 
     public function test_a_captured_failure_cannot_spend_a_new_epoch_even_if_field_version_matches(): void
     {
-        [, , $terminal] = $this->testedLineage();
+        [, $activity, $terminal] = $this->testedLineage();
         $proof = app(HorizonFailureService::class)->inspect($terminal);
         $terminal->forceFill(['completed_at' => now()])->save();
         $terminal->cycle->forceFill(['completed_at' => now(), 'rested_at' => now(), 'rest_reason' => $proof['rest_reason']])->save();
         // Isolate epoch validation from the additional field-version defense.
         DB::table('horizon_exploration_states')->insert(['context_horizon_id' => $terminal->cycle->context_horizon_id,
-            'structural_position' => 4, 'epoch' => 1]);
+            'structural_position' => 4, 'structural_source_id' => $activity->phase->gate_proposition_id, 'epoch' => 1]);
         app(HorizonFailureService::class)->publish($terminal, $proof);
         $this->assertDatabaseCount('continuation_failures', 0);
         $this->assertDatabaseCount('horizon_failure_witnesses', 0);

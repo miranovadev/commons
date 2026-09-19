@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Enums\PhaseKind;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Services\Participation\ParticipationContext;
@@ -10,18 +9,30 @@ use DomainException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
-/** Failure is historical; only a successful Variant changes its local epoch. */
-final class ExplorationEpochService
+/** The sole current-spentness predicate. Historical failure rows are never rewritten. */
+final readonly class ExplorationEpochService
 {
-    public function current(string $horizonId, PhaseKind $position, ?ParticipationContext $context = null): int
+    public function __construct(private ExplorationPositionService $positions) {}
+
+    public function current(array $position, ?ParticipationContext $context = null): int
     {
         if ($context !== null) {
-            return (int) $context->remember('exploration-epochs:'.$horizonId, fn () => DB::table('horizon_exploration_states')
-                ->where('context_horizon_id', $horizonId)->pluck('epoch', 'structural_position'))->get($position->value, 0);
+            return (int) $this->epochs(collect([$position]), $context)->get($this->positions->key($position), 0);
         }
 
-        return (int) DB::table('horizon_exploration_states')->where('context_horizon_id', $horizonId)
-            ->where('structural_position', $position->value)->value('epoch');
+        return (int) DB::table('horizon_exploration_states')->where($position)->value('epoch');
+    }
+
+    public function forPhase(Phase $phase): int
+    {
+        return $this->current($this->positions->forPhase($phase));
+    }
+
+    public function forProposition(Proposition $node, ?ParticipationContext $context = null): int
+    {
+        $position = $this->positions->forProposition($node, $context);
+
+        return $position === null ? 0 : $this->current($position, $context);
     }
 
     /** Called only by the successful Variant write, under the substrate lock. */
@@ -30,46 +41,73 @@ final class ExplorationEpochService
         if (DB::transactionLevel() === 0) {
             throw new DomainException('Epoch advancement belongs to the Variant transaction.');
         }
-        $key = ['context_horizon_id' => $phase->cycle->context_horizon_id, 'structural_position' => $phase->kind->value];
-        DB::table('horizon_exploration_states')->insertOrIgnore([...$key, 'epoch' => 0]);
-        DB::table('horizon_exploration_states')->where($key)->increment('epoch');
-        app(RealtimePublisher::class)->horizon($key['context_horizon_id'], $phase->cycle->participant->substrate_id,
-            ['type' => 'exploration.epoch_advanced', 'structural_position' => $phase->kind->value,
-                'exploration_epoch' => $this->current($key['context_horizon_id'], $phase->kind)]);
+        $position = $this->positions->forPhase($phase);
+        DB::table('horizon_exploration_states')->insertOrIgnore([...$position, 'epoch' => 0]);
+        DB::table('horizon_exploration_states')->where($position)->increment('epoch');
+        app(RealtimePublisher::class)->horizon($position['context_horizon_id'], $phase->cycle->participant->substrate_id,
+            ['type' => 'exploration.epoch_advanced', 'structural_position' => $position['structural_position'],
+                'structural_source_id' => $position['structural_source_id'], 'exploration_epoch' => $this->current($position)]);
     }
 
-    /** One indexed lookup for a bounded candidate set; old epochs never match. */
-    public function currentFailures(string $horizonId, Collection $ids): Collection
+    /** Match the failed proposition's actual position and that position's current epoch. */
+    public function currentFailures(string $horizonId, Collection $ids, ?ParticipationContext $context = null): Collection
     {
         if ($ids->isEmpty()) {
             return collect();
         }
 
-        return DB::table('continuation_failures as failure')
-            ->leftJoin('horizon_exploration_states as exploration', fn ($join) => $join
-                ->on('exploration.context_horizon_id', '=', 'failure.context_horizon_id')
-                ->on('exploration.structural_position', '=', 'failure.structural_position'))
-            ->where('failure.context_horizon_id', $horizonId)->whereIn('failure.proposition_id', $ids)
-            ->whereRaw('failure.exploration_epoch = COALESCE(exploration.epoch, 0)')
-            ->get(['failure.proposition_id', 'failure.structural_position', 'failure.exploration_epoch', 'failure.failed_at'])
-            ->keyBy('proposition_id');
+        $positions = $this->positions->forIds($ids, $context)->filter()
+            ->where('context_horizon_id', $horizonId);
+        if ($positions->isEmpty()) {
+            return collect();
+        }
+        $epochs = $this->epochs($positions, $context);
+
+        return DB::table('continuation_failures')->where('context_horizon_id', $horizonId)
+            ->whereIn('proposition_id', $positions->keys())->whereIn('exploration_epoch', $epochs->values()->unique())->get()
+            ->filter(function ($failure) use ($positions, $epochs): bool {
+                $position = $positions->get($failure->proposition_id);
+
+                return $position['context_horizon_id'] === $failure->context_horizon_id
+                    && $position['structural_position'] === (int) $failure->structural_position
+                    && (int) $failure->exploration_epoch === (int) $epochs->get($this->positions->key($position), 0);
+            })->keyBy('proposition_id');
     }
 
     public function failuresFor(Phase $phase, Collection $ids, ?ParticipationContext $context = null): Collection
     {
-        return $context === null ? $this->currentFailures($phase->cycle->context_horizon_id, $ids)
-            : $context->remember('current-continuation-failures', fn () => $this->currentFailures(
-                $phase->cycle->context_horizon_id, $context->propositions->keys(),
+        $horizon = $phase->cycle->context_horizon_id;
+
+        return $context === null ? $this->currentFailures($horizon, $ids)
+            : $context->remember('current-continuation-failures:'.$horizon, fn () => $this->currentFailures(
+                $horizon, $context->propositions->keys(), $context,
             ))->only($ids->all());
     }
 
     public function spentNow(Proposition $node, Phase $phase, ?ParticipationContext $context = null): bool
     {
-        if ($node->tier !== 'expressive' || $node->phase->cycle->context_horizon_id !== $phase->cycle->context_horizon_id) {
-            return false;
-        }
-        $failure = $this->failuresFor($phase, collect([$node->id]), $context)->get($node->id);
+        return $this->failuresFor($phase, collect([$node->id]), $context)->has($node->id);
+    }
 
-        return $failure !== null && (int) $failure->structural_position === $node->phase->kind->value;
+    private function epochs(Collection $positions, ?ParticipationContext $context): Collection
+    {
+        if ($context !== null) {
+            $cached = $context->remember('local-exploration-epochs', fn () => $this->epochs(
+                $this->positions->forIds($context->propositions->keys(), $context)->filter(), null,
+            ));
+            $missing = $positions->reject(fn ($position) => $cached->has($this->positions->key($position)));
+
+            return $missing->isEmpty() ? $cached : $cached->union($this->epochs($missing, null));
+        }
+        if ($positions->isEmpty()) {
+            return collect();
+        }
+
+        return DB::table('horizon_exploration_states')
+            ->whereIn('context_horizon_id', $positions->pluck('context_horizon_id')->unique())
+            ->whereIn('structural_position', $positions->pluck('structural_position')->unique())
+            ->whereIn('structural_source_id', $positions->pluck('structural_source_id')->unique())
+            ->get()->mapWithKeys(fn ($row) => [$this->positions->key((array) $row) => (int) $row->epoch])
+            ->union($positions->mapWithKeys(fn ($position) => [$this->positions->key($position) => 0]));
     }
 }

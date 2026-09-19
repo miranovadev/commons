@@ -4,7 +4,12 @@ Potential remains the greatest available reduction in absolute Tension before th
 
 `max(0, max(abs(committal tension) - abs(expressive tension)))`.
 
-It describes the strongest remaining viable continuation. It is not an additive resource. Removing a 0.7 continuation exposes a surviving 0.4 continuation; it does not consume the parent region's entire Potential.
+Numerical gain is read alongside structural eligibility and exact current failure
+epochs. Removing a 0.7 continuation exposes a surviving 0.4 continuation; this is
+a maximum rather than an additive resource. Stage 5 excludes successful routes
+into explicitly exhausted child Horizons from exploration capacity, while
+retaining their historical measurements. A live alternative stops that backward
+completion, and ordinary epoch-scoped failures remain a separate predicate.
 
 ## Why the old path stalled
 
@@ -35,17 +40,26 @@ The once-per-minute `commons:potential-refresh` sweep dispatches unique maintena
 
 ## Provenance summaries and early stopping
 
-A viable descendant shadows its parent, while sibling Domain frontiers remain peers. A region therefore cannot store just one globally best candidate: observer distance attenuation can reverse their ranking.
+These maintained summaries continue to serve initial entry and graph views. They do not define recovery candidates or Stage 5 numerical capacity. Capacity uses every local Committal region from the maintained local topology without shadowing, and does not import child-Horizon frontiers. Structural actionability is decided separately by the action schema and exact current spentness. Within the initial-entry summaries, a viable descendant shadows its parent, while sibling Domain frontiers remain peers. A region therefore cannot store just one globally best candidate: observer distance attenuation can reverse their ranking.
 
-Each upward summary retains the distance/value tradeoffs that can win for an observer entering through the region's boundary. A candidate is removed from that summary only when another candidate beats it for **every** possible upstream distance, including Charge and stable-ID ties. A dominated sibling can change without changing the summary, stopping propagation immediately. If a distance/value tradeoff changes, propagation must continue even when the numeric maximum stays equal; stopping at numeric equality alone would change recovery semantics.
+Each upward summary retains the distance/value tradeoffs that can win for an observer entering through the region's boundary. A candidate is removed from that summary only when another candidate beats it for **every** possible upstream distance, including Charge and stable-ID ties. A dominated sibling can change without changing the summary, stopping propagation immediately. If a distance/value tradeoff changes, propagation must continue even when the numeric maximum stays equal; stopping at numeric equality alone would change those maintained summaries.
 
 Local raw values continue to use all active expressive continuations, including alternative paths through reconciliation diamonds. Exhausted or legacy-held routes cannot contribute operational Potential; their edges remain available as historical distance geometry.
 
 ## Recovery
 
-Recovery starts with the participant's own durable Horizon and position. It reads the local projection, excludes the exhausted position from local continuation evidence, and uses child frontier summaries to inspect viable descendants. If none remain, it moves through the actual parent Horizon and checks sibling frontiers before retreating again. Distance offsets compose at the explicit Committal boundary; there is no substrate-wide distance reconstruction.
+Recovery starts with the participant's durable Horizon and terminal position.
+It walks raw incoming edges backward, resolving multi-input arrival Gates from
+durable participant Phases, and intersects that lineage with active local
+Committal entries. Ancestors do not shadow one another. Attenuation counts actual
+backward edges, including historical intermediate nodes and revisions. Only
+explicit Horizon exhaustion permits continuing along the same path into its
+parent; no descendant or sibling frontier supplies recovery candidates.
 
-Work is proportional to the upward provenance chain plus the visited regions' local topology and frontier summaries. This is not a claim of constant time for an arbitrarily large single region or an arbitrarily wide nondominated frontier. Unrelated historical Domains are not hydrated or measured.
+Work is proportional to the walked ancestry, its Phase arrival witnesses and
+the visited Horizons' local topology. This is not constant time for an arbitrarily
+large Horizon or deeply traversed history. Unrelated Horizons are not hydrated
+or measured. See [backward lineage recovery](recovery-basins.md).
 
 `stateFor()` and `workspaceFor()` no longer call `observeMissing()`. The old full-graph implementation is retained as `ReferencePotentialChargeService` for explicit diagnostics and tests. The legacy `selectFrom()` relative-ranking utility retains its old behavior for diagnostic callers; production entry and recovery use the projection.
 

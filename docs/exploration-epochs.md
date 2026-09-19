@@ -4,6 +4,11 @@ A tested expressive route can fail without exhausting its Horizon. Failure is an
 immutable witness, scoped by the creating Horizon, structural Phase position,
 and exploration epoch. Labels classify. Position governs.
 
+An exact structural position is **Context Horizon + producing Phase kind +
+structural source proposition ID**. It is not a Phase occurrence or a
+Horizon-wide kind counter. [Stage 3](local-exploration-epochs.md) records provenance
+resolution, migration constraints, and the HTTP acceptance evidence.
+
 ## Invariants
 
 - **Spent invariant:** An expressive proposition is spent only relative to a
@@ -63,7 +68,7 @@ its successful Variants also advance only the Persist epoch.
 
 | Event | Epoch effect |
 | --- | --- |
-| Successful `proposition.variant` | Advance only the creating Horizon + position |
+| Successful `proposition.variant` | Advance only the creating Horizon + kind + structural source |
 | Failed, rejected or rolled-back Variant | None |
 | Instrument, Receipt, Attestation, Traverse | None |
 | Reclassify, Reconcile, Revise, Commit | None |
@@ -76,7 +81,8 @@ advances 7 to 8 and only then reopens X.
 
 ## Persistence and rollout
 
-`horizon_exploration_states` has one row per Horizon + structural position.
+`horizon_exploration_states` has one row per Horizon + producing kind +
+`structural_source_id` (the actual source/Gate proposition).
 A missing row is epoch zero; reads do not create rows. A Variant creates or
 increments the row inside its existing substrate-locked contribution
 transaction, so epoch and authored proposition roll back together.
@@ -84,7 +90,9 @@ transaction, so epoch and authored proposition roll back together.
 `continuation_failures` is keyed by Horizon + position + epoch + proposition.
 `phase_id` identifies the failed downstream Phase, while `structural_position`
 comes from the failed proposition's creating Phase. Repeated publication is
-idempotent. The table retains historical epochs without clearing rows.
+idempotent. The table retains historical epochs without clearing rows. Its
+subject's immutable producing provenance supplies the structural source; the
+source is not redundantly copied into historical failure rows.
 
 Migration `2026_09_18_000600` copies every legacy failure's original ID references
 and timestamp unchanged, derives its producing position, and assigns epoch zero.
@@ -92,6 +100,12 @@ It rebuilds the primary key transactionally on PostgreSQL and SQLite. No old
 Variant count is inferred. Existing Horizons begin at epoch zero; the first
 post-rollout Variant advances its own position to one. No Horizon exhaustion
 marker or Tragedy history is moved or rewritten.
+
+Stage 3 migration `2026_09_19_000100` subsequently splits each coarse counter
+into the known local source slots, preserving its epoch label at cutover. Future
+Variant advances are local. This does not reconstruct pre-cutover chronology or
+retroactively repair historical false reopenings. Ambiguous failed provenance
+aborts the migration atomically. See the Stage 3 checkpoint for details.
 
 Pause contribution workers for the coordinated application/schema rollout,
 apply the migrations and deploy the complete integration. Migration

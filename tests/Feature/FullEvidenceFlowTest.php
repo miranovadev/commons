@@ -4,9 +4,11 @@ namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\HorizonCycleFixture;
 use Tests\TestCase;
 
+#[Group('integration-full')]
 class FullEvidenceFlowTest extends TestCase
 {
     use HorizonCycleFixture, RefreshDatabase;

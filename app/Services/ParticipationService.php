@@ -368,6 +368,7 @@ final readonly class ParticipationService
             $selection = $this->potential->recoverFrom(
                 $participant->position()->firstOrFail(),
                 $participant->cycles()->latest('sequence')->first()?->contextHorizon,
+                $participant,
             );
 
             return [

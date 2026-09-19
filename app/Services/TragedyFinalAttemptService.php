@@ -1,0 +1,46 @@
+<?php
+
+namespace App\Services;
+
+use App\Enums\PhaseKind;
+use App\Models\Phase;
+use App\Models\Proposition;
+use App\Models\Tragedy;
+use Illuminate\Support\Facades\DB;
+
+/** One shared final exploration attempt; receipt visibility never resets spentness. */
+final class TragedyFinalAttemptService
+{
+    public function available(Phase $phase): bool
+    {
+        return $this->tragedyFor($phase) !== null;
+    }
+
+    private function tragedyFor(Phase $phase): ?Tragedy
+    {
+        if (! in_array($phase->kind, [PhaseKind::Distinguish, PhaseKind::Disperse], true)
+            || $phase->cycle->contextHorizon->exhausted_at !== null) {
+            return null;
+        }
+
+        return Tragedy::where('context_horizon_id', $phase->cycle->context_horizon_id)
+            ->whereNotIn('id', DB::table('tragedy_final_attempts')->select('tragedy_id'))
+            ->whereNotIn('receipt_id', DB::table('receipt_consumptions')->select('receipt_id'))->first();
+    }
+
+    /** Called with the successful Variant under the same Substrate transaction. */
+    public function record(Phase $phase, Proposition $variant): void
+    {
+        if (DB::transactionLevel() === 0 || $variant->phase_id !== $phase->id) {
+            throw new \DomainException('Final attempts belong to the Variant transaction.');
+        }
+        $tragedy = $this->tragedyFor($phase);
+        if ($tragedy === null) {
+            throw new \DomainException('The shared final attempt has already been exercised.');
+        }
+        DB::table('tragedy_final_attempts')->insert([
+            'tragedy_id' => $tragedy->id, 'phase_id' => $phase->id,
+            'proposition_id' => $variant->id, 'started_at' => now(),
+        ]);
+    }
+}

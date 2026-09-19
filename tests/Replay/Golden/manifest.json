@@ -1,0 +1,16 @@
+[
+  {
+    "path": "tests/Replay/Golden/solo-domain-natural.jsonl.xz",
+    "bytes": 31463725,
+    "compressed_bytes": 83600,
+    "raw_sha256": "c3b9d65355735083df4db75fa1279bdab998cb92105c3ff25ec9e0e48e5b3e35",
+    "compressed_sha256": "33714a29353f3572006b2fcb0c57ce6b16b0b97de41ebc78d67d01ba5b3e3e69"
+  },
+  {
+    "path": "tests/Replay/Golden/collective-domain-natural.jsonl.xz",
+    "bytes": 33896123,
+    "compressed_bytes": 84084,
+    "raw_sha256": "3d0769fee80499ca58f1e97683b0a35ae60b60d695117c80d735c8444aeacea3",
+    "compressed_sha256": "e3d8e70415eea82e7fc27fb8a3ca132b717f572f15bfd0e265244f00a8e132ab"
+  }
+]

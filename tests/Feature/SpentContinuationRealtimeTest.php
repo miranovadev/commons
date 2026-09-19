@@ -70,6 +70,7 @@ class SpentContinuationRealtimeTest extends TestCase
         DB::commit();
         $advanced = collect($events)->where('type', 'exploration.epoch_advanced')->values()->all();
         $this->assertSame([['type' => 'exploration.epoch_advanced', 'structural_position' => 1,
+            'structural_source_id' => $return->gate_proposition_id,
             'exploration_epoch' => 1, 'context_horizon_id' => $return->cycle->context_horizon_id]], $advanced);
     }
 }

@@ -67,8 +67,16 @@ final readonly class ParticipantHistoricalContext
     }
 
     /** An unavailable current position is itself local context while awaiting Rest. */
-    public function position(Proposition $gate): array
+    public function position(Proposition $gate, bool $continuationExhausted = false): array
     {
+        if ($continuationExhausted) {
+            return [[...$gate->only(['id', 'tier', 'register']),
+                'role' => 'gate', 'phase_number' => $gate->phase->kind->value,
+                'statement' => str($gate->statement)->limit(240)->toString(),
+                'statement_truncated' => mb_strwidth($gate->statement, 'UTF-8') > 240,
+                'exhausted' => false, 'basin_exhausted' => false,
+                'continuation_exhausted' => true, 'actionable' => false]];
+        }
         $nodes = $this->withExhaustion(Proposition::whereKey($gate->id))->get();
 
         return $this->serialize($nodes, 'gate', $gate->phase->kind)->all();

@@ -88,10 +88,14 @@ Then run:
 php artisan migrate
 ```
 
+## Tests and CI
+
+See [test suites and Actions](docs/testing.md) for Core, Full Integration, Query Regression, and Load / Concurrency commands and triggers. Normal pull requests run Core, including the frontend build and action contracts.
+
 ## Useful commands
 
 ```bash
-# Run the PHP test suite
+# Run the default Core PHP suite
 composer test
 
 # Build the frontend for production

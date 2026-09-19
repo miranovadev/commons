@@ -14,10 +14,12 @@ use App\Services\LedgerService;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\Process\Process;
 use Tests\Fixtures\ExhaustionFixture;
 use Tests\TestCase;
 
+#[Group('load')]
 class HorizonProofConcurrencyTest extends TestCase
 {
     use DatabaseMigrations, ExhaustionFixture;
@@ -103,7 +105,7 @@ class HorizonProofConcurrencyTest extends TestCase
             app(ContributionDispatcher::class)->dispatch($firstPhase->cycle->participant, $firstPhase, $input);
         });
         $this->assertSame($before + 1, Proposition::count());
-        $this->assertSame(1, app(ExplorationEpochService::class)->current($firstPhase->cycle->context_horizon_id, PhaseKind::Distinguish));
+        $this->assertSame(1, app(ExplorationEpochService::class)->forPhase($firstPhase));
         $this->assertDatabaseCount('continuation_failures', 1);
     }
 

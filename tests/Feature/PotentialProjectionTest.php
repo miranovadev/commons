@@ -20,6 +20,7 @@ use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\ParticipationScaleFixture;
 use Tests\TestCase;
 
@@ -81,6 +82,7 @@ final class PotentialProjectionTest extends TestCase
         $this->assertFalse(app(PotentialProjectionService::class)->refresh($participant->substrate_id));
     }
 
+    #[Group('query')]
     public function test_rest_recovery_queries_do_not_grow_with_unrelated_historical_propositions(): void
     {
         [$participant, $origin] = $this->fixture();

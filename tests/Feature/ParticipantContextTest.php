@@ -20,6 +20,7 @@ use App\Services\PropositionMeasurementService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\ParticipantContextFixture;
 use Tests\TestCase;
 
@@ -146,6 +147,7 @@ class ParticipantContextTest extends TestCase
     }
 
     #[DataProvider('evidencePhases')]
+    #[Group('query')]
     public function test_dense_instrument_and_commitment_contexts_fit_the_same_budget(PhaseKind $kind): void
     {
         $this->freezeTime();
@@ -179,6 +181,7 @@ class ParticipantContextTest extends TestCase
         fwrite(STDERR, sprintf("CONTEXT %s: %d bytes, %d objects\n", $kind->name, strlen(json_encode($plan)), $this->fullObjectCount($plan)));
     }
 
+    #[Group('query')]
     public function test_ten_to_five_hundred_unrelated_horizon_nodes_cannot_grow_inference(): void
     {
         $started = hrtime(true);

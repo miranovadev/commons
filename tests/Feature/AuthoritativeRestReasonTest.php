@@ -7,6 +7,8 @@ use App\Enums\RestReason;
 use App\Services\ContributionService;
 use App\Services\ExhaustionService;
 use App\Services\InputPlanService;
+use App\Services\PotentialChargeService;
+use App\Services\PotentialProjectionService;
 use App\Services\RestReasonService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use InvalidArgumentException;
@@ -56,6 +58,18 @@ class AuthoritativeRestReasonTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         app(ContributionService::class)->validateSchema($plan['schema'],
             ['action' => 'participant.rest', 'reason' => 'no_remaining_potential']);
+    }
+
+    public function test_zero_recovery_frontier_cannot_hide_positive_capacity_at_an_earlier_committal(): void
+    {
+        [$root, $terminal] = $this->exhaustedBranch();
+        $this->measure($root, 0);
+        $region = app(PotentialProjectionService::class)->region($terminal->cycle->context_horizon_id);
+        $this->assertSame(0.0, $region['potential']);
+        $this->assertTrue(app(PotentialChargeService::class)->hasRemainingInHorizon($terminal));
+        $this->assertSame(RestReason::NoAvailableMove, app(RestReasonService::class)->derive($terminal));
+        $this->rest($terminal);
+        $this->assertDatabaseCount('horizon_tragedies', 0);
     }
 
     public function test_legacy_rest_without_an_authoritative_reason_cannot_be_reinterpreted(): void

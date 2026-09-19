@@ -24,6 +24,10 @@ final readonly class PhaseGenerationService
 
     public function available(Phase $phase, string $action, ?ParticipationContext $context = null, ?Proposition $position = null): bool
     {
+        $exhausted = app(ExhaustedContinuationService::class)->ids($phase, $context);
+        if ($exhausted->has($phase->gate_proposition_id) || ($position !== null && $exhausted->has($position->id))) {
+            return false;
+        }
         if ($phase->gate_proposition_id !== null
             && ($context !== null ? ! $context->activeIds->has($phase->gate_proposition_id) : app(ExhaustionService::class)->unavailable($phase->gate_proposition_id))) {
             return false;
@@ -73,6 +77,7 @@ final readonly class PhaseGenerationService
             ->whereIn('source_proposition_id', $sources)
             ->whereIn('type', ['variant', 'reclassify', 'commit']);
         $viable = Proposition::query()->active()
+            ->whereNotIn('id', $exhausted->keys())
             ->where('register', $phase->write_register)
             ->where('tier', $phase->kind === PhaseKind::Order ? 'committal' : 'expressive')
             ->whereHas('phase', fn ($query) => $query->where('kind', $phase->kind->value)
@@ -86,8 +91,7 @@ final readonly class PhaseGenerationService
             if ($action !== 'proposition.variant') {
                 return false;
             }
-            $spent = app(ExplorationEpochService::class)->failuresFor($phase, $existing, $context)
-                ->where('structural_position', $phase->kind->value)->keys();
+            $spent = app(ExplorationEpochService::class)->failuresFor($phase, $existing, $context)->keys();
             if ($existing->diff($spent)->isNotEmpty()) {
                 // Evidence alone does not prove downstream failure. Keep using
                 // healthy continuations; do not assign Variant a priority.
@@ -102,7 +106,8 @@ final readonly class PhaseGenerationService
                 }
             }
 
-            return app(PotentialChargeService::class)->hasRemainingInHorizon($phase);
+            return app(PotentialChargeService::class)->hasRemainingInHorizon($phase)
+                || app(TragedyFinalAttemptService::class)->available($phase);
         };
 
         // Reuse this calculation's structural query, never a cross-action cache.

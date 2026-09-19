@@ -64,13 +64,22 @@ final readonly class InputPlanService
 
     private function exhaustedPlan(Phase $phase, bool $workspace): ?array
     {
-        if ($phase->gate_proposition_id === null || ! app(ExhaustionService::class)->unavailable($phase->gate_proposition_id)) {
+        if ($phase->gate_proposition_id === null) {
+            return null;
+        }
+        $exhausted = app(ExhaustionService::class)->unavailable($phase->gate_proposition_id);
+        $continuationExhausted = ! $exhausted && app(ExhaustedContinuationService::class)->ids($phase)->has($phase->gate_proposition_id);
+        if (! $exhausted && ! $continuationExhausted) {
             return null;
         }
         $plan = $this->phases->plan($phase->kind);
         $description = $phase->gate->tier === 'committal'
             ? 'This exhausted Committal persists as context. Rest to recover.'
             : 'This continuation is historical. Rest to recover through persistent provenance.';
+        $history = $this->historicalContext->position($phase->gate, $continuationExhausted);
+        if ($continuationExhausted) {
+            $history = array_merge($history, $this->historicalContext->forPhase($phase));
+        }
 
         return [
             'phase' => ['id' => $phase->id, 'number' => $phase->kind->value, 'kind' => $plan['name'],
@@ -82,7 +91,7 @@ final readonly class InputPlanService
             'provenance_id' => null, 'lineage' => [], 'read_options' => [], 'write_options' => [],
             'gate_options' => [], 'revision_options' => [], 'traversal_options' => [],
             'attestation_options' => [], 'instrument_options' => [], 'receipts' => $this->receipts->forPhase($phase)->all(),
-            'exhausted_alternatives' => $this->historicalContext->position($phase->gate),
+            'exhausted_alternatives' => $history,
             'commitment' => null, 'commitment_options' => [], 'rest_available' => true, 'position_exhausted' => true,
             'rest_reason' => RestReason::NoAvailableMove->value,
             'schema' => $this->schemas->forPhase($phase->kind, ['participant.rest']),
@@ -361,9 +370,10 @@ final readonly class InputPlanService
                 'created_at',
             ]),
             'spent' => app(ExplorationEpochService::class)->spentNow($proposition, $context?->phase ?? $this->phases->currentFor($viewer), $context),
+            'continuation_exhausted' => app(ExhaustedContinuationService::class)->ids($context?->phase ?? $this->phases->currentFor($viewer), $context)->has($proposition->id),
             'structural_position' => $proposition->phase->kind->value,
-            'exploration_epoch' => app(ExplorationEpochService::class)->current(
-                $proposition->phase->cycle->context_horizon_id, $proposition->phase->kind, $context),
+            'structural_source_id' => app(ExplorationPositionService::class)->forProposition($proposition, $context)['structural_source_id'] ?? null,
+            'exploration_epoch' => app(ExplorationEpochService::class)->forProposition($proposition, $context),
             'parent_ids' => $proposition->parents->pluck('id')->all(),
             'title' => str($proposition->statement)
                 ->before("\n")

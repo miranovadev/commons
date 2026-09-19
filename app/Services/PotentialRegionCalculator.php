@@ -27,7 +27,7 @@ final class PotentialRegionCalculator
         return $distances;
     }
 
-    public function candidates(array $local, ?string $excluded = null, ?string $branch = null, ?string $retained = null): array
+    public function candidates(array $local, ?string $excluded = null, ?string $branch = null, ?string $retained = null, ?array $lineage = null, bool $shadowCompletedRegions = true): array
     {
         $children = [];
         $commits = [];
@@ -40,18 +40,18 @@ final class PotentialRegionCalculator
             }
         }
         $eligible = array_filter($local['entries'], fn ($entry, $id) => $id !== $excluded
+            && ($lineage === null || isset($lineage[$id]))
             && ($branch === null || $this->inBranch($local['nodes'][$id], $branch)), ARRAY_FILTER_USE_BOTH);
         $entryIds = array_fill_keys(array_keys($eligible), true);
         $result = [];
         foreach ($eligible as $id => $entry) {
-            // A successful Commit is the continuation of its provenance even
-            // when it stays inside the same Context Horizon. Keep only the
-            // downstream Commit frontier so a stronger ancestor cannot pull a
-            // resting Participant out of a fresh zero-Potential Commit Region.
+            // Initial-entry/numeric summaries retain their downstream frontier.
+            // Recovery supplies an exact lineage and compares every ancestral
+            // Committal; downstream Commits cannot shadow that candidate set.
             $search = [$id];
             $searched = [$id => true];
             $shadowed = false;
-            for ($i = 0; $i < count($search) && ! $shadowed; $i++) {
+            for ($i = 0; $shadowCompletedRegions && $lineage === null && $i < count($search) && ! $shadowed; $i++) {
                 foreach ($children[$search[$i]] ?? [] as $target) {
                     if (isset($searched[$target])) {
                         continue;

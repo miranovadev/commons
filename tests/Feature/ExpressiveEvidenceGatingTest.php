@@ -159,7 +159,7 @@ class ExpressiveEvidenceGatingTest extends TestCase
     {
         DB::table('continuation_failures')->insert(['proposition_id' => $node->id,
             'context_horizon_id' => $phase->cycle->context_horizon_id, 'structural_position' => $phase->kind->value,
-            'exploration_epoch' => app(ExplorationEpochService::class)->current($phase->cycle->context_horizon_id, $phase->kind),
+            'exploration_epoch' => app(ExplorationEpochService::class)->forPhase($phase),
             'phase_id' => $phase->id, 'failed_at' => now()]);
     }
 }

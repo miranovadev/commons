@@ -52,6 +52,7 @@ class CausalRecoveryTest extends TestCase
     {
         $far = $this->committal($this->root, .95);
         $near = $this->committal($this->root, .02, $far);
+        DB::table('supersessions')->where('target_proposition_id', $near->id)->update(['type' => 'commit']);
         $position = $this->expressive($this->root, $near);
         $this->opportunity($far);
         $this->opportunity($near);
@@ -66,6 +67,7 @@ class CausalRecoveryTest extends TestCase
     {
         $far = $this->committal($this->root, .95);
         $near = $this->committal($this->root, .5, $far);
+        DB::table('supersessions')->where('target_proposition_id', $near->id)->update(['type' => 'commit']);
         $position = $this->expressive($this->root, $near);
         $this->opportunity($far);
         $this->opportunity($near);
@@ -75,7 +77,7 @@ class CausalRecoveryTest extends TestCase
         $this->assertEqualsWithDelta(.125, $selection['potential_charge'], 1e-9);
     }
 
-    public function test_reconciliation_inspects_all_parent_paths_and_deduplicates_diamond_ancestors_at_minimum_distance(): void
+    public function test_reconciliation_follows_its_recorded_gate_without_a_shortcut_through_another_parent(): void
     {
         $shared = $this->committal($this->root, .9);
         $weak = $this->committal($this->root, .01, $shared);
@@ -87,13 +89,13 @@ class CausalRecoveryTest extends TestCase
         $this->opportunity($weak);
         $selection = $this->recover($rest);
         $this->assertSame($shared->id, $selection['proposition']->id);
-        $this->assertSame(2, $selection['distance']); // Other path is distance 3.
-        $this->assertEqualsWithDelta(.9 / 9, $selection['potential_charge'], 1e-9);
+        $this->assertSame(3, $selection['distance']); // The untraversed parent would shorten this to 2.
+        $this->assertEqualsWithDelta(.9 / 16, $selection['potential_charge'], 1e-9);
         // Shared ancestry is not accumulated or counted twice.
         $this->assertSame(.9, $selection['raw_potential_charge']);
     }
 
-    public function test_connected_descendants_and_siblings_compete_locally_but_disconnected_regions_do_not(): void
+    public function test_connected_descendants_siblings_and_unrelated_committals_are_all_ineligible(): void
     {
         $ancestor = $this->committal($this->root, .1);
         $position = $this->expressive($this->root, $ancestor);
@@ -104,9 +106,123 @@ class CausalRecoveryTest extends TestCase
             $this->opportunity($candidate);
         }
         $selection = $this->recover($position);
-        $this->assertSame($descendant->id, $selection['proposition']->id);
+        $this->assertSame($ancestor->id, $selection['proposition']->id);
         $this->assertSame(1, $selection['distance']);
         $this->assertNotSame($disconnected->id, $selection['proposition']->id);
+        $inspection = app(PotentialChargeService::class)->inspectRecoveryFrom($position);
+        $this->assertSame([$ancestor->id], $inspection['eligible_candidate_ids']);
+    }
+
+    public function test_shared_reconciliation_uses_the_observers_arrival_gate_instead_of_the_creators_gate(): void
+    {
+        $ancestor = $this->committal($this->root, .9);
+        $short = $this->expressive($this->root, $ancestor);
+        $long = $this->expressive($this->root, $this->expressive($this->root, $ancestor));
+        $result = $this->node($this->phase($this->root, $short, PhaseKind::Mediate), $short);
+        $this->edge($long, $result, 'reconcile');
+        $observer = $this->participant();
+        $mediate = $this->phase($this->root, $long, PhaseKind::Mediate, $observer);
+        $mediate->forceFill(['completed_at' => now()])->save();
+        (new Phase)->forceFill(['cycle_id' => $mediate->cycle_id, 'kind' => PhaseKind::Bias,
+            'gate_proposition_id' => $result->id, 'write_register' => $this->root->domain->registerFor(PhaseKind::Bias),
+            'started_at' => now()])->save();
+        $observer->forceFill(['current_proposition_id' => $result->id])->save();
+        $this->opportunity($ancestor);
+        $this->refreshMeasurements();
+        foreach ([PotentialChargeService::class, ReferencePotentialChargeService::class] as $service) {
+            $selection = app($service)->recoverFrom($result, $this->root, $observer);
+            $this->assertSame($ancestor->id, $selection['proposition']->id);
+            $this->assertSame(3, $selection['distance']);
+            $this->assertEqualsWithDelta(.9 / 16, $selection['potential_charge'], 1e-9);
+        }
+    }
+
+    public function test_a_later_revisit_cannot_rewrite_an_inherited_earlier_arrival(): void
+    {
+        $ancestor = $this->committal($this->root, .9);
+        $short = $this->expressive($this->root, $ancestor);
+        $long = $this->expressive($this->root, $this->expressive($this->root, $ancestor));
+        $result = $this->node($this->phase($this->root, $short, PhaseKind::Mediate), $short);
+        $this->edge($long, $result, 'reconcile');
+        $author = $this->participant();
+        $earlier = $this->phase($this->root, $long, PhaseKind::Mediate, $author);
+        $earlier->forceFill(['completed_at' => now()])->save();
+        $bias = (new Phase)->forceFill(['cycle_id' => $earlier->cycle_id, 'kind' => PhaseKind::Bias,
+            'gate_proposition_id' => $result->id, 'write_register' => $this->root->domain->registerFor(PhaseKind::Bias),
+            'started_at' => now()]);
+        $bias->save();
+        $position = $this->node($bias, $result);
+        $later = $this->phase($this->root, $short, PhaseKind::Mediate, $author);
+        $later->forceFill(['completed_at' => now()])->save();
+        (new Phase)->forceFill(['cycle_id' => $later->cycle_id, 'kind' => PhaseKind::Bias,
+            'gate_proposition_id' => $result->id, 'write_register' => $this->root->domain->registerFor(PhaseKind::Bias),
+            'started_at' => now()])->save();
+        $this->opportunity($ancestor);
+        $selection = $this->recover($position);
+        $this->assertSame($ancestor->id, $selection['proposition']->id);
+        $this->assertSame(4, $selection['distance']);
+        $this->assertEqualsWithDelta(.9 / 25, $selection['potential_charge'], 1e-9);
+    }
+
+    public function test_a_legacy_tragedy_override_cannot_select_an_unrelated_committal(): void
+    {
+        $ancestor = $this->committal($this->root, .5);
+        $position = $this->expressive($this->root, $ancestor);
+        $unrelated = $this->committal($this->root, .9);
+        $this->opportunity($ancestor);
+        $this->opportunity($unrelated);
+        $observer = $this->resting($this->root, $position);
+        $observer->cycles()->sole()->forceFill(['recovery_proposition_id' => $unrelated->id])->save();
+        $this->refreshMeasurements();
+        app(CycleEntryService::class)->prepare($observer);
+        $this->assertSame($ancestor->id, $observer->fresh()->current_proposition_id);
+    }
+
+    public function test_crossing_an_exhausted_horizon_retains_intermediate_ancestral_committals_and_true_distance(): void
+    {
+        $origin = $this->committal($this->root, -.9, boundary: true);
+        $parent = app(ContextHorizonProjector::class)->forEntry($origin);
+        $intermediate = $this->committal($parent, .9, $origin);
+        $bridge = $this->expressive($parent, $intermediate);
+        $boundary = $this->committal($parent, .01, $bridge, boundary: true);
+        $current = app(ContextHorizonProjector::class)->forEntry($boundary);
+        $position = $this->expressive($current, $boundary);
+        $this->opportunity($origin);
+        $this->opportunity($intermediate);
+        $this->exhaust($position);
+        $selection = $this->recover($position);
+        $this->assertSame($intermediate->id, $selection['proposition']->id);
+        $this->assertSame($parent->id, $selection['context_horizon_id']);
+        $this->assertSame(3, $selection['distance']);
+        $this->assertEqualsWithDelta(.9 / 16, $selection['potential_charge'], 1e-9);
+        $inspection = app(PotentialChargeService::class)->inspectRecoveryFrom($position, $current);
+        $this->assertEqualsCanonicalizing([$origin->id, $intermediate->id], $inspection['eligible_candidate_ids']);
+        $this->assertSame([$current->id, $parent->id], array_column($inspection['searched_basins'], 'context_horizon_id'));
+    }
+
+    public function test_revisions_and_historical_inputs_remain_real_backward_hops(): void
+    {
+        $ancestor = $this->committal($this->root, .8);
+        $original = $this->node($this->phase($this->root, $ancestor, PhaseKind::Distinguish), $ancestor);
+        $revision = $this->node($this->phase($this->root, $ancestor, PhaseKind::Distinguish));
+        $this->edge($original, $revision, 'revise');
+        $position = $this->expressive($this->root, $revision);
+        $this->opportunity($ancestor);
+        $selection = $this->recover($position);
+        $this->assertSame($ancestor->id, $selection['proposition']->id);
+        $this->assertSame(3, $selection['distance']);
+        $this->assertEqualsWithDelta(.8 / 16, $selection['potential_charge'], 1e-9);
+    }
+
+    public function test_cyclic_proposition_lineage_is_rejected_instead_of_shortened(): void
+    {
+        $ancestor = $this->committal($this->root, .5);
+        $position = $this->expressive($this->root, $ancestor);
+        $this->edge($position, $ancestor);
+        $this->refreshMeasurements();
+        $this->expectException(DomainException::class);
+        $this->expectExceptionMessage('acyclic proposition lineage');
+        app(PotentialChargeService::class)->recoverFrom($position);
     }
 
     public function test_an_unexplored_position_is_not_silently_excluded_from_potential(): void
@@ -365,7 +481,7 @@ class CausalRecoveryTest extends TestCase
         $this->assertSame($attributes, $node->fresh()->getAttributes());
     }
 
-    public function test_old_domain_rest_enters_viable_downstream_domain_despite_origins_greater_potential(): void
+    public function test_rest_in_an_earlier_horizon_cannot_enter_a_descendant_horizon(): void
     {
         [$origin, $h2, $commit, $h3] = $this->boundaryChain();
         $position = $this->expressive($h2, $origin);
@@ -373,18 +489,18 @@ class CausalRecoveryTest extends TestCase
         $this->opportunity($commit);
         $participant = $this->resting($h2, $position);
         $selection = $this->recover($position);
-        $this->assertSame($commit->id, $selection['proposition']->id);
-        $this->assertSame($h3->id, $selection['context_horizon_id']);
-        $this->assertSame(.01, $selection['raw_potential_charge']);
+        $this->assertSame($origin->id, $selection['proposition']->id);
+        $this->assertSame($h2->id, $selection['context_horizon_id']);
+        $this->assertSame(.9, $selection['raw_potential_charge']);
         $this->assertGreaterThan(.01, abs($origin->commitmentSnapshot->tension));
         app(CycleEntryService::class)->prepare($participant);
         $cycle = $participant->cycles()->whereNull('completed_at')->sole();
-        $this->assertSame($h3->id, $cycle->context_horizon_id);
-        $this->assertSame('activity', $cycle->currentPhase->write_register);
-        $this->assertSame($commit->id, $participant->fresh()->current_proposition_id);
+        $this->assertSame($h2->id, $cycle->context_horizon_id);
+        $this->assertSame('signal', $cycle->currentPhase->write_register);
+        $this->assertSame($origin->id, $participant->fresh()->current_proposition_id);
     }
 
-    public function test_real_rest_moves_downstream_without_changing_another_participants_active_cycle(): void
+    public function test_real_rest_stays_on_ancestral_lineage_without_changing_another_participants_active_cycle(): void
     {
         [$origin, $h2, $commit, $h3] = $this->boundaryChain();
         $position = $this->expressive($h2, $origin);
@@ -400,30 +516,30 @@ class CausalRecoveryTest extends TestCase
         $before = [$other->fresh()->getAttributes(), $otherPhase->fresh()->getAttributes(), $otherPhase->cycle->fresh()->getAttributes()];
         $result = app(ParticipationService::class)->contribute($participant, $phase->id, ['action' => 'participant.rest']);
         $this->assertSame('ready', $result['status']);
-        $this->assertSame($commit->id, $result['plan']['gate_id']);
-        $this->assertSame($h3->id, $result['cycle']['context_horizon_id']);
-        $this->assertSame('emergence', $result['domain']);
+        $this->assertSame($origin->id, $result['plan']['gate_id']);
+        $this->assertSame($h2->id, $result['cycle']['context_horizon_id']);
+        $this->assertSame('settlement', $result['domain']);
         $this->assertNotNull($phase->cycle->fresh()->rested_at);
         app(CycleEntryService::class)->prepare($other);
         $this->assertSame($before, [$other->fresh()->getAttributes(), $otherPhase->fresh()->getAttributes(), $otherPhase->cycle->fresh()->getAttributes()]);
     }
 
-    public function test_local_potential_selects_among_non_boundary_committals_within_the_downstream_basin(): void
+    public function test_local_potential_ranks_ancestral_non_boundary_committals_inside_the_current_horizon(): void
     {
         [$origin, $h2, $commit, $h3] = $this->boundaryChain();
-        $position = $this->expressive($h2, $origin);
         $local = $this->committal($h3, .9, $commit);
+        $position = $this->expressive($h3, $local);
         $this->opportunity($origin);
         $this->opportunity($commit);
         $this->opportunity($local);
         $selection = $this->recover($position);
         $this->assertSame($local->id, $selection['proposition']->id);
         $this->assertSame($h3->id, $selection['context_horizon_id']);
-        $this->assertSame(3, $selection['distance']);
-        $this->assertEqualsWithDelta(.9 / 16, $selection['potential_charge'], 1e-9);
+        $this->assertSame(1, $selection['distance']);
+        $this->assertEqualsWithDelta(.9 / 4, $selection['potential_charge'], 1e-9);
     }
 
-    public function test_same_domain_commit_shadows_its_stronger_ancestor_during_rest_recovery(): void
+    public function test_a_same_horizon_commit_does_not_shadow_a_stronger_ancestor_during_recovery(): void
     {
         $origin = $this->committal($this->root, -.9, boundary: true);
         $horizon = app(ContextHorizonProjector::class)->forEntry($origin);
@@ -440,13 +556,15 @@ class CausalRecoveryTest extends TestCase
         $selection = app(PotentialChargeService::class)->recoverFrom($position);
         $reference = app(ReferencePotentialChargeService::class)->recoverFrom($position);
 
-        $this->assertSame($commit->id, $selection['proposition']->id);
+        $this->assertSame($origin->id, $selection['proposition']->id);
         $this->assertSame($reference['proposition']->id, $selection['proposition']->id);
         $this->assertSame($horizon->id, $selection['context_horizon_id']);
-        $this->assertSame(0.0, (float) $selection['raw_potential_charge']);
+        $this->assertSame(.9, (float) $selection['raw_potential_charge']);
+        $this->assertSame(2, $selection['distance']);
+        $this->assertEqualsWithDelta(.9 / 9, $selection['potential_charge'], 1e-9);
     }
 
-    public function test_sibling_domains_compete_by_potential_without_a_latest_commit_bonus(): void
+    public function test_neither_potential_nor_recency_admits_a_sibling_horizon(): void
     {
         [$origin, $h2, $first, $h3] = $this->boundaryChain();
         $winner = $this->committal($h2, .8, $origin, boundary: true);
@@ -456,9 +574,9 @@ class CausalRecoveryTest extends TestCase
         }
         $position = $this->expressive($h2, $origin);
         $selection = $this->recover($position);
-        $this->assertSame($winner->id, $selection['proposition']->id);
-        $this->assertSame(2, $selection['distance']);
-        $this->assertEqualsWithDelta(.8 / 9, $selection['potential_charge'], 1e-9);
+        $this->assertSame($origin->id, $selection['proposition']->id);
+        $this->assertSame(1, $selection['distance']);
+        $this->assertEqualsWithDelta(.9 / 4, $selection['potential_charge'], 1e-9);
     }
 
     public function test_viable_current_domain_retains_its_participant_despite_stronger_sibling_and_origin(): void
@@ -472,7 +590,7 @@ class CausalRecoveryTest extends TestCase
         $this->assertSame($commit->id, $this->recover($position)['proposition']->id);
     }
 
-    public function test_exhausted_current_domain_can_reach_a_sibling_through_its_parent_before_returning_to_origin(): void
+    public function test_exhausted_current_horizon_continues_backward_and_cannot_recover_into_a_sibling(): void
     {
         [$origin, $h2, $commit, $h3] = $this->boundaryChain();
         $sibling = $this->committal($h2, .01, $origin, boundary: true);
@@ -482,12 +600,14 @@ class CausalRecoveryTest extends TestCase
         $this->exhaust($position);
         $this->refreshMeasurements();
         $inspection = app(PotentialChargeService::class)->inspectRecoveryFrom($position, $h3);
-        $this->assertSame($sibling->id, $inspection['selection']['proposition']->id);
+        $this->assertSame($origin->id, $inspection['selection']['proposition']->id);
         $this->assertSame(1, $inspection['fallback_depth']);
-        $this->assertSame([$sibling->id], $inspection['eligible_candidate_ids']);
+        $this->assertSame(2, $inspection['selection']['distance']);
+        $this->assertSame([$h3->id, $h2->id], array_column($inspection['searched_basins'], 'context_horizon_id'));
+        $this->assertSame([$origin->id], $inspection['eligible_candidate_ids']);
     }
 
-    public function test_viable_descendant_shadows_its_parent_even_with_very_small_positive_potential(): void
+    public function test_a_viable_descendant_never_shadows_an_ancestral_recovery_candidate(): void
     {
         [$origin, $h2, $commit, $h3] = $this->boundaryChain();
         $later = $this->committal($h3, -.00001, $commit, boundary: true);
@@ -497,11 +617,11 @@ class CausalRecoveryTest extends TestCase
         }
         $position = $this->expressive($h2, $origin);
         $selection = $this->recover($position);
-        $this->assertSame($later->id, $selection['proposition']->id);
-        $this->assertSame($h4->id, $selection['context_horizon_id']);
+        $this->assertSame($origin->id, $selection['proposition']->id);
+        $this->assertSame($h2->id, $selection['context_horizon_id']);
     }
 
-    public function test_a_deeper_sibling_does_not_receive_a_depth_bonus_over_another_viable_frontier(): void
+    public function test_neither_deep_nor_shallow_siblings_enter_the_recovery_candidate_set(): void
     {
         [$origin, $h2, $commit, $h3] = $this->boundaryChain();
         $deep = $this->committal($h3, -.001, $commit, boundary: true);
@@ -511,16 +631,17 @@ class CausalRecoveryTest extends TestCase
         }
         $position = $this->expressive($h2, $origin);
         $selection = $this->recover($position);
-        $this->assertSame($sibling->id, $selection['proposition']->id);
+        $this->assertSame($origin->id, $selection['proposition']->id);
+        $this->assertSame([$origin->id], app(PotentialChargeService::class)->inspectRecoveryFrom($position)['eligible_candidate_ids']);
     }
 
-    public function test_downstream_basin_cannot_borrow_potential_from_cross_domain_expressive_edges(): void
+    public function test_current_basin_cannot_borrow_potential_from_cross_domain_expressive_edges(): void
     {
         [$origin, $h2, $commit, $h3] = $this->boundaryChain();
         $historical = $this->expressive($h2, $origin);
         $this->measurements[$historical->id] = 0;
         $this->edge($commit, $historical); // Legacy cross-Domain edge cannot expand the scoring scope.
-        $position = $this->expressive($h2, $origin);
+        $position = $this->expressive($h3, $commit);
         $selection = $this->recover($position);
         $this->assertSame($commit->id, $selection['proposition']->id);
         $this->assertSame(0.0, (float) $selection['raw_potential_charge']);
@@ -539,7 +660,7 @@ class CausalRecoveryTest extends TestCase
         $this->assertSame($commit->id, $this->recover($position)['proposition']->id);
     }
 
-    public function test_retained_boundary_position_keeps_its_open_basin_eligible(): void
+    public function test_retained_boundary_is_distance_zero_and_does_not_admit_its_descendants(): void
     {
         [$origin, $h2, $commit, $h3] = $this->boundaryChain();
         $this->opportunity($origin);
@@ -549,8 +670,9 @@ class CausalRecoveryTest extends TestCase
         $this->refreshMeasurements();
         $inspection = app(PotentialChargeService::class)->inspectRecoveryFrom($commit);
         $this->assertSame($h3->id, $inspection['starting_context_horizon_id']);
-        $this->assertSame($local->id, $inspection['selection']['proposition']->id);
-        $this->assertContains($commit->id, $inspection['eligible_candidate_ids']);
+        $this->assertSame($commit->id, $inspection['selection']['proposition']->id);
+        $this->assertSame([$commit->id], $inspection['eligible_candidate_ids']);
+        $this->assertSame(0, $inspection['selection']['distance']);
     }
 
     public function test_recovery_diagnostics_and_selection_are_read_only(): void
@@ -568,13 +690,13 @@ class CausalRecoveryTest extends TestCase
             }
         });
         $inspection = app(PotentialChargeService::class)->inspectRecoveryFrom($position, $h2);
-        $this->assertSame($commit->id, $inspection['selection']['proposition']->id);
+        $this->assertSame($origin->id, $inspection['selection']['proposition']->id);
         $this->assertSame($h2->id, $inspection['starting_context_horizon_id']);
         $this->assertSame(0, $inspection['fallback_depth']);
-        $this->assertSame([$h3->id], array_column($inspection['searched_basins'], 'context_horizon_id'));
+        $this->assertSame([$h2->id], array_column($inspection['searched_basins'], 'context_horizon_id'));
         $this->assertSame($before, [Cycle::count(), Proposition::count(), $participant->fresh()->getAttributes()]);
         $this->artisan('commons:recovery-inspect', ['participant' => $participant->id])
-            ->expectsOutputToContain($commit->id)
+            ->expectsOutputToContain($origin->id)
             ->assertSuccessful();
         $this->assertSame([], $writes);
     }
