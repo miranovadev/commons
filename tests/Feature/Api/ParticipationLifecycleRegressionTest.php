@@ -7,6 +7,7 @@ use PHPUnit\Framework\Attributes\Group;
 use Tests\Support\ParticipationHttpTestCase;
 
 #[Group('http-participation')]
+#[Group('constitutional')]
 class ParticipationLifecycleRegressionTest extends ParticipationHttpTestCase
 {
     public function test_successful_route_revisit_can_advance_through_bias_to_its_existing_commit(): void

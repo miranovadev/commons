@@ -8,6 +8,7 @@ use PHPUnit\Framework\Attributes\Group;
 use Tests\Support\ParticipationHttpTestCase;
 
 #[Group('http-participation')]
+#[Group('constitutional')]
 class ParticipationLocalEpochTest extends ParticipationHttpTestCase
 {
     public function test_a_third_distinguish_variant_reopens_only_its_own_slot_through_http(): void

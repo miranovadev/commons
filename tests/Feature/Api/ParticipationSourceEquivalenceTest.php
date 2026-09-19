@@ -12,6 +12,7 @@ use PHPUnit\Framework\Attributes\Group;
 use Tests\Support\ParticipationHttpTestCase;
 
 #[Group('http-participation')]
+#[Group('constitutional')]
 class ParticipationSourceEquivalenceTest extends ParticipationHttpTestCase
 {
     public function test_the_real_worker_uses_the_http_action_plan_and_stops_after_rest_and_recovery(): void

@@ -82,6 +82,10 @@
             "Composer\\Config::disableProcessTimeout",
             "@php artisan test --exclude-group=query --exclude-group=load --display-warnings --fail-on-empty-test-suite"
         ],
+        "test:constitutional": [
+            "Composer\\Config::disableProcessTimeout",
+            "@php artisan test --group=constitutional --exclude-group=integration-full --exclude-group=query --exclude-group=load --display-warnings --fail-on-empty-test-suite"
+        ],
         "test:query": [
             "Composer\\Config::disableProcessTimeout",
             "@php artisan test --group=query --display-warnings --fail-on-empty-test-suite"

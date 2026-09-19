@@ -102,6 +102,21 @@ provide a sustained many-participant, memory, latency, or websocket-pressure soa
 
 ## Checking selection without running scenarios
 
+Stage 6 adds the `constitutional` selection over essential HTTP invariants.
+The single- and multiple-participant Domain round trips are still under
+construction; this selection is not yet complete Stage 6 evidence.
+Existing suite placement is unchanged.
+Use `composer test:constitutional` for the essential selection, or
+`composer test:integration-full -- --group=constitutional` for all constitutional
+cases. See [the acceptance map](constitutional-integration.md) for each Epic
+scenario, its API evidence and the limits of controlled primitive fixtures.
+
+Stage 5's cancelled Core/Full runs are incomplete; its unchanged Tragedy journey
+subsequently passed independently on PostgreSQL and was accepted as the missing
+semantic evidence. The final Epic checkpoint still requires a deliberate complete
+all-suite result with an appropriate timeout. Targeted passes do not imply that
+a cancelled aggregate run completed.
+
 Composer passes extra options through to PHPUnit:
 
 ```bash

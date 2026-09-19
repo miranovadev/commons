@@ -75,3 +75,27 @@ Rollback refuses to discard recorded attempts.
 PostgreSQL Core, Full Integration, Query and Load results, exact tested commit,
 counts and runtimes are recorded on the Stage 5 pull request. Core and Full
 retain their 30-minute ceiling and unchanged existing suite membership.
+
+### Accepted validation evidence
+
+The Stage 5 application/test commit is
+`2e64a79ccc8d84f9c9332a95e45ebeae8660eea3`. Its Core and Full Integration
+jobs reached the 30-minute ceiling and were cancelled after 30m16s including
+teardown. They **do not count as complete suite passes**. Query passed 16 tests;
+Load passed 22 tests. Local Core passed 613 tests with the same three
+PostgreSQL-only skips.
+
+The unchanged natural Tragedy HTTP test subsequently passed independently on
+PostgreSQL 18 / PHP 8.5: **one test, 589 assertions, 142.58 seconds of PHP test
+time and 3m34s total job time**. The isolated workflow explicitly checked out
+the exact Stage 5 commit. It proves the full Tragedy flow, legitimate shared
+receipt use, final-attempt Exhaustion, backward recovery across the Horizon
+boundary, and subsequent live exploration. See
+[the isolated run](https://github.com/miranovadev/commons/actions/runs/35424219190)
+and [PR 180](https://github.com/miranovadev/commons/pull/180).
+
+Claire accepted this targeted result as sufficient for the missing Stage 5
+semantic evidence and authorised Stage 6. The cancelled suites will not be
+repeated solely to re-prove that journey. At the final Epic checkpoint, one
+deliberate all-suite validation must use an appropriate timeout and produce a
+complete aggregate result. Targeted passes do not replace that final gate.

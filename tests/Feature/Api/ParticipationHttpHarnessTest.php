@@ -43,6 +43,7 @@ class ParticipationHttpHarnessTest extends ParticipationHttpTestCase
         $this->assertDatabaseCount('propositions', 2);
     }
 
+    #[Group('constitutional')]
     public function test_optional_receipt_read_leaves_rest_available_without_advancing_the_phase(): void
     {
         $this->startSubstrate();
@@ -73,6 +74,7 @@ class ParticipationHttpHarnessTest extends ParticipationHttpTestCase
         $this->getJson('/api/substrates/'.$this->substrateSlug)->assertOk()->assertJsonPath('data.title', 'HTTP lifecycle');
     }
 
+    #[Group('constitutional')]
     public function test_rest_rejects_a_productive_phase_and_accepts_an_unread_informational_receipt(): void
     {
         $this->startSubstrate();

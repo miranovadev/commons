@@ -7,6 +7,7 @@ use PHPUnit\Framework\Attributes\Group;
 use Tests\Support\ParticipationHttpTestCase;
 
 #[Group('http-participation')]
+#[Group('constitutional')]
 class ParticipationVisibilityLifecycleTest extends ParticipationHttpTestCase
 {
     public function test_http_context_exposes_local_evidence_and_edges_without_leaking_foreign_or_distant_structure(): void

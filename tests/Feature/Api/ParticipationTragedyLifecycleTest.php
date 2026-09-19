@@ -11,6 +11,7 @@ use PHPUnit\Framework\Attributes\Group;
 use Tests\Support\ParticipationHttpTestCase;
 
 #[Group('http-participation')]
+#[Group('constitutional')]
 class ParticipationTragedyLifecycleTest extends ParticipationHttpTestCase
 {
     public function test_natural_tragedy_supports_another_participants_final_attempt_and_lineage_exhaustion(): void
@@ -88,6 +89,10 @@ class ParticipationTragedyLifecycleTest extends ParticipationHttpTestCase
                 $consumed = true;
             }
             $after = $this->contribute($consumer, $input);
+            if (! DB::table('horizon_exhaustions')->exists()) {
+                $this->assertSame($tragedy->context_horizon_id, $after['context_horizon_id'],
+                    'Every live final-attempt step stays in its current Horizon until actual Exhaustion.');
+            }
             if ($input['action'] === 'proposition.reclassify' && $input['receipt_id'] === $receipt->id) {
                 $this->assertSame(0, DB::table('horizon_exhaustions')->count(), 'Consumption alone does not exhaust a Horizon.');
                 $shared = collect($this->readParticipation($actor)['plan']['receipts'])->firstWhere('id', $receipt->id);

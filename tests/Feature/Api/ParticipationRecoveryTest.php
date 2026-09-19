@@ -9,6 +9,7 @@ use PHPUnit\Framework\Attributes\Group;
 use Tests\Support\ParticipationHttpTestCase;
 
 #[Group('http-participation')]
+#[Group('constitutional')]
 class ParticipationRecoveryTest extends ParticipationHttpTestCase
 {
     public function test_successful_revisit_keeps_its_untraversed_commit_out_of_backward_recovery(): void
