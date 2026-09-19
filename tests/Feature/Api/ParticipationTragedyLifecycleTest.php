@@ -8,30 +8,19 @@ use App\Models\Proposition;
 use App\Services\PotentialChargeService;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Group;
-use Tests\Support\ParticipationHttpTestCase;
+use Tests\Support\ScriptedParticipationTestCase;
 
 #[Group('http-participation')]
 #[Group('constitutional')]
-class ParticipationTragedyLifecycleTest extends ParticipationHttpTestCase
+class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
 {
     public function test_natural_tragedy_supports_another_participants_final_attempt_and_lineage_exhaustion(): void
     {
-        $this->startSubstrate();
-        $actor = $this->joinParticipant('tragic-explorer');
-        $initial = $this->enterParticipant($actor, true);
-        $outside = $this->joinParticipant('previous-horizon-observer');
-        $this->enterParticipant($outside);
-        for ($step = 0; $step < 120; $step++) {
-            $state = $this->readParticipation($actor);
-            if (DB::table('horizon_tragedies')->exists()) {
-                break;
-            }
-            $input = $this->chooseContribution($state);
-            if ($state['plan']['phase']['kind'] === 'bias' && isset($this->actionDefinitions($state)['receipt.read'])) {
-                $input = ['action' => 'receipt.read', 'receipt_id' => $this->actionDefinitions($state)['receipt.read']['properties']['receipt_id']['enum'][0]];
-            }
-            $this->contribute($actor, $input);
-        }
+        $journey = $this->replayParticipationScript(__DIR__.'/../../Fixtures/participation/tragedy-lifecycle.json', 72);
+        $actor = $journey['participants']['tragic-explorer'];
+        $outside = $journey['participants']['previous-horizon-observer'];
+        $initial = $journey['responses'][0];
+        $state = $journey['responses'][71];
         $this->assertSame(1, DB::table('horizon_tragedies')->count(), $this->traceMessage($state));
         $this->assertDatabaseCount('horizon_exhaustions', 0);
         $tragedy = DB::table('horizon_tragedies')->sole();
@@ -48,9 +37,9 @@ class ParticipationTragedyLifecycleTest extends ParticipationHttpTestCase
         $this->assertActionUnavailable($outsideState, 'proposition.variant');
         $this->postContribution($outside, $outsideState['plan']['phase']['id'], ['action' => 'receipt.read', 'receipt_id' => $receipt->id])->assertUnprocessable();
 
-        $consumer = $this->joinParticipant('final-attempt-consumer');
-        $this->enterParticipant($consumer);
-        $before = $this->driveUntil($consumer, fn ($state) => $state['context_horizon_id'] === $tragedy->context_horizon_id, maxActions: 60);
+        $journey = $this->continueParticipationScript(8); // Enter and traverse the actual historical route.
+        $consumer = $journey['participants']['final-attempt-consumer'];
+        $before = $journey['responses'][79];
         $this->assertSame($tragedy->context_horizon_id, $before['context_horizon_id']);
         $visible = collect($before['plan']['receipts'])->firstWhere('id', $receipt->id);
         $this->assertSame('available', $visible['availability']);
@@ -59,48 +48,33 @@ class ParticipationTragedyLifecycleTest extends ParticipationHttpTestCase
         $history = DB::table('continuation_failures')->orderBy('proposition_id')->orderBy('exploration_epoch')->get()->toJson();
         $competing = $this->readParticipation($actor);
         $this->assertActionAvailable($competing, 'proposition.variant');
-        $afterVariant = $this->contribute($consumer, ['action' => 'proposition.variant', 'statement' => 'The final evidence-bearing attempt.']);
+        $afterVariant = $this->continueParticipationScript(1)['responses'][80];
         $attempt = DB::table('tragedy_final_attempts')->sole();
         $this->assertSame($tragedy->id, $attempt->tragedy_id);
         $this->assertSame($afterVariant['current_proposition_id'], $attempt->proposition_id);
         $this->postContribution($actor, $competing['plan']['phase']['id'], ['action' => 'proposition.variant', 'statement' => 'A duplicate final attempt.'])->assertUnprocessable();
         $this->assertDatabaseCount('tragedy_final_attempts', 1);
         $this->assertSame($history, DB::table('continuation_failures')->orderBy('proposition_id')->orderBy('exploration_epoch')->get()->toJson());
-        $read = $this->contribute($consumer, ['action' => 'receipt.read', 'receipt_id' => $receipt->id]);
+        $read = $this->continueParticipationScript(1)['responses'][81];
         $this->assertSame($afterVariant['plan']['phase']['id'], $read['plan']['phase']['id']);
         $this->assertDatabaseMissing('receipt_consumptions', ['receipt_id' => $receipt->id]);
-        $consumed = false;
-        for ($step = 0; $step < 70 && ! DB::table('horizon_exhaustions')->exists(); $step++) {
-            $state = $this->readParticipation($consumer);
-            $input = $this->chooseContribution($state);
-            $definition = $this->actionDefinitions($state)[$input['action']];
-            foreach (['proposition_id', 'other_proposition_id'] as $key) {
-                if (isset($definition['properties'][$key]['enum'])) {
-                    $input[$key] = collect($definition['properties'][$key]['enum'])->last();
-                }
-            }
-            if ($input['action'] === 'attestation.create') {
-                $choice = collect($definition['anyOf'])->first(fn ($choice) => $choice['properties']['direction']['enum'][0] === $input['direction']);
-                $input['proposition_id'] = collect($choice['properties']['proposition_id']['enum'])->last();
-            }
-            if ($input['action'] === 'proposition.reclassify' && ! $consumed) {
-                $this->assertContains($receipt->id, $definition['properties']['receipt_id']['enum']);
-                $input['receipt_id'] = $receipt->id;
-                $consumed = true;
-            }
-            $after = $this->contribute($consumer, $input);
-            if (! DB::table('horizon_exhaustions')->exists()) {
+        // These exact 24 contributions consume the receipt at step 88 and
+        // exhaust the Horizon at step 105. No eligibility-driven action picker.
+        for ($step = 82; $step <= 105; $step++) {
+            $after = $this->continueParticipationScript(1)['responses'][$step];
+            if ($step < 105) {
+                $this->assertDatabaseCount('horizon_exhaustions', 0);
                 $this->assertSame($tragedy->context_horizon_id, $after['context_horizon_id'],
                     'Every live final-attempt step stays in its current Horizon until actual Exhaustion.');
             }
-            if ($input['action'] === 'proposition.reclassify' && $input['receipt_id'] === $receipt->id) {
+            if ($step === 88) {
+                $this->assertDatabaseHas('receipt_consumptions', ['receipt_id' => $receipt->id]);
                 $this->assertSame(0, DB::table('horizon_exhaustions')->count(), 'Consumption alone does not exhaust a Horizon.');
                 $shared = collect($this->readParticipation($actor)['plan']['receipts'])->firstWhere('id', $receipt->id);
                 $this->assertSame('consumed', $shared['availability']);
                 $this->assertSame($after['current_proposition_id'], $shared['attached_proposition_id']);
             }
         }
-        $this->assertTrue($consumed, $this->traceMessage($state));
         $this->assertSame(1, DB::table('horizon_exhaustions')->count(), $this->traceMessage($state));
         $exhaustion = DB::table('horizon_exhaustions')->sole();
         $consumption = DB::table('receipt_consumptions')->where('receipt_id', $receipt->id)->sole();
@@ -132,9 +106,8 @@ class ParticipationTragedyLifecycleTest extends ParticipationHttpTestCase
                 ->get()->map(fn ($row) => (array) $row)->all();
             $this->assertSame($oldFailures, $currentFailures, 'Horizon Exhaustion must not rewrite successful history as failure.');
         }
-        $input = $this->chooseContribution($after);
-        $this->assertNotSame('participant.rest', $input['action']);
-        $continuation = $this->contribute($consumer, $input);
+        $continuation = $this->continueParticipationScript(1)['responses'][106];
+        $this->assertParticipationScriptComplete();
         $this->assertSame('persist', $continuation['plan']['phase']['kind']);
         $this->assertNotContains($continuation['current_proposition_id'], $closed->pluck('id')->all());
     }

@@ -4,31 +4,31 @@ namespace Tests\Feature\Api;
 
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Group;
-use Tests\Support\ParticipationHttpTestCase;
+use Tests\Support\ScriptedParticipationTestCase;
 
 #[Group('http-participation')]
 #[Group('constitutional')]
-class ParticipationVisibilityLifecycleTest extends ParticipationHttpTestCase
+class ParticipationVisibilityLifecycleTest extends ScriptedParticipationTestCase
 {
     public function test_http_context_exposes_local_evidence_and_edges_without_leaking_foreign_or_distant_structure(): void
     {
-        $this->startSubstrate();
+        $this->replayParticipationScript(__DIR__.'/../../Fixtures/participation/visibility.json', 0);
         $localSlug = $this->substrateSlug;
         $this->substrateSlug = 'foreign-evidence';
         $this->postJson('/api/substrates', ['slug' => $this->substrateSlug, 'title' => 'Foreign', 'visibility' => 'private'])->assertCreated();
-        $foreign = $this->joinParticipant('foreign');
-        $foreignOrigin = $this->enterParticipant($foreign, true)['current_proposition_id'];
-        $foreignChild = $this->contribute($foreign, ['action' => 'proposition.variant', 'statement' => 'Foreign branch content.'])['current_proposition_id'];
+        $journey = $this->continueParticipationScript(2);
+        $foreignOrigin = $journey['responses'][0]['current_proposition_id'];
+        $foreignChild = $journey['responses'][1]['current_proposition_id'];
         $foreignReceipts = DB::table('receipts')->pluck('id')->all();
         $foreignAttestations = DB::table('attestations')->pluck('id')->all();
         $foreignEdges = DB::table('supersessions')->pluck('id')->all();
         $this->substrateSlug = $localSlug;
-        $author = $this->joinParticipant('local-author');
-        $origin = $this->enterParticipant($author, true)['current_proposition_id'];
-        $observer = $this->joinParticipant('local-observer');
-        $this->enterParticipant($observer);
-        $signal = $this->contribute($author, ['action' => 'proposition.variant', 'statement' => 'Visible local distinction.'])['current_proposition_id'];
-        $distant = $this->contribute($author, ['action' => 'proposition.variant', 'statement' => 'Distant forward detail.'])['current_proposition_id'];
+        $journey = $this->continueParticipationScript(4);
+        $this->assertParticipationScriptComplete();
+        $observer = $journey['participants']['local-observer'];
+        $origin = $journey['responses'][2]['current_proposition_id'];
+        $signal = $journey['responses'][4]['current_proposition_id'];
+        $distant = $journey['responses'][5]['current_proposition_id'];
         $state = $this->readParticipation($observer);
         $originCard = $this->visibleProposition($state, $origin);
         $signalCard = $this->visibleProposition($state, $signal);

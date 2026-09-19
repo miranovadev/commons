@@ -130,9 +130,10 @@ abstract class ParticipationHttpTestCase extends TestCase
         $this->assertArrayNotHasKey($action, $this->actionDefinitions($state), $this->traceMessage($state));
     }
 
-    protected function contribute(string $participant, array $input): array
+    protected function contribute(string $participant, array $input, ?array $state = null): array
     {
-        $state = $this->readParticipation($participant);
+        // A driver may use the GET it just performed for this same request.
+        $state ??= $this->readParticipation($participant);
         $this->assertSame('ready', $state['status'], $this->traceMessage($state));
         $this->assertActionAvailable($state, $input['action']);
         $this->trace[] = [
@@ -141,6 +142,10 @@ abstract class ParticipationHttpTestCase extends TestCase
             'horizon' => $state['context_horizon_id'], 'gate' => $state['plan']['gate_id'],
             'available' => array_keys($this->actionDefinitions($state)), 'input' => $input,
         ];
+        if (getenv('COMMONS_TRACE_HTTP') === '1' && count($this->trace) % 25 === 0) {
+            fwrite(STDERR, json_encode(['contributions' => count($this->trace), 'domain' => $state['domain'],
+                'phase' => $state['plan']['phase']['kind'], 'last_commitment' => $state['last_commitment']]).PHP_EOL);
+        }
         $response = $this->postContribution($participant, $state['plan']['phase']['id'], $input);
         $this->assertSame(200, $response->status(), $response->getContent().$this->traceMessage($state));
 
