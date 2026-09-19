@@ -98,3 +98,12 @@ exploratory helper in these API files is the separate, non-constitutional harnes
 smoke test. Expected-state fixture deltas were checked against all original full
 expected states; the two Rest scripts also passed through the compact loader
 (525 assertions, 1.57 seconds). PostgreSQL replay remains pending.
+
+The frozen solo script also passed locally: 600 contributions plus entry,
+127,327 assertions, 728.51 seconds. Its first PostgreSQL replay at `73e2642`
+stopped at step 36 because SQLite and PostgreSQL returned the same two
+reconciliation parents in different order. `Proposition::parents()` has no ordering
+clause, and `InputPlanService` exposes those references without sorting. The
+script comparator now treats only `parent_ids` as an exact set, preserving all
+members and the ordered context populations. That failed run is not a pass;
+PostgreSQL replay of the corrected harness is required.

@@ -11,7 +11,9 @@ payload, the expected state before the POST, and the expected returned state.
 it never derives an expectation from the running application. `after_changes`
 contains fixed path/value replacements against that expected before-state. The
 loader expands these static deltas before issuing any request, and the runner
-still compares the complete projected state. This avoids repeating unchanged
+still compares the complete projected state. `parent_ids` is compared as an exact
+set (the model has no ordering clause); the four context populations retain their
+ordered comparisons. No parent is removed or added during normalization. This avoids repeating unchanged
 visibility and history in hundreds of steps.
 
 `$ref` identifies an entity already returned by an earlier API request. `bind`
