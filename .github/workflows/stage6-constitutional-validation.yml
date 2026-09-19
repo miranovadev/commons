@@ -1,0 +1,114 @@
+name: Stage 6 isolated constitutional validation
+
+on:
+  push:
+    branches: [ci/validation/stage-6-constitution]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: PHP 8.5 / PostgreSQL 18 / ${{ matrix.case }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - case: staggered
+            file: ParticipationStaggeredEpochTest.php
+          - case: tragedy
+            file: ParticipationTragedyLifecycleTest.php
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: testing
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -q -d testing -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      COMPOSER_PROCESS_TIMEOUT: 0
+      APP_ENV: testing
+      APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      APP_DEBUG: false
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: testing
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      CACHE_STORE: array
+      MAIL_MAILER: array
+      QUEUE_CONNECTION: sync
+      SESSION_DRIVER: array
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          ref: f6fd87481cd6e17aa2460d564427086f866ec0b0
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: mbstring, pdo_pgsql, curl, intl
+          coverage: none
+          tools: composer:v2
+
+      - name: Resolve Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-php-8.5-composer-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php-8.5-composer-
+
+      - name: Install PHP dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Prepare test environment
+        run: cp .env.example .env
+
+      - name: Run changed constitutional HTTP journey
+        env:
+          PGOPTIONS: '-c statement_timeout=30s'
+          COMMONS_PROFILE_SQL: '1'
+        run: |
+          php artisan config:clear
+          php artisan test tests/Feature/Api/${{ matrix.file }} --log-junit=test-results/stage6-${{ matrix.case }}.xml
+
+      - name: Upload PHP test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: php-stage6-${{ matrix.case }}-results
+          path: test-results/*.xml
+          if-no-files-found: warn
+          retention-days: 14
