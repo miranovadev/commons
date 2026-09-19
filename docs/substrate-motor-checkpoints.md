@@ -1,11 +1,16 @@
 # Substrate motor: review checkpoints
 
+Stage 4 is approved. Stage 5 lifecycle work is described in
+[the Stage 5 checkpoint](stage-5-lifecycle-correctness.md). Constitutional suite
+reorganisation and cleanup remain outside this checkpoint.
+
 Stage 0 investigated production exports and current implementation at
 `170668a027d4b2b8c29051c66eebaf7e3054defd`. Stage 1 only separates test execution
 and Actions; [testing.md](testing.md) records suite membership and invocation.
-Stages 1, 2 and 3 were reviewed and approved. Stage 4 is authorized for backward
-lineage-constrained recovery and true attenuation, including the Tragedy override.
-Broader lifecycle corrections remain a later review boundary.
+Stages 1 through 4 were reviewed and approved. Stage 5 is authorized for lifecycle
+correctness, including successful-route continuity, Rest, Tragedy, visibility
+and participant-source equivalence. Constitutional suite work and cleanup remain
+a later review boundary.
 
 The next approved design constraints are:
 

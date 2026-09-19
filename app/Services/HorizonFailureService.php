@@ -63,6 +63,8 @@ final class HorizonFailureService
                 }
             }
         }
+        $proof['consumed_continuation_id'] = $proof['reason'] === 'no_remaining_potential'
+            ? app(ExhaustionService::class)->consumedContinuationFor($phase) : null;
         $proof['stable'] = $version === (int) Substrate::whereKey($substrateId)->value('field_version');
 
         return $proof;

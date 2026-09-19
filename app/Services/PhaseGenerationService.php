@@ -101,7 +101,8 @@ final readonly class PhaseGenerationService
                 }
             }
 
-            return app(PotentialChargeService::class)->hasRemainingInHorizon($phase);
+            return app(PotentialChargeService::class)->hasRemainingInHorizon($phase)
+                || app(TragedyFinalAttemptService::class)->available($phase);
         };
 
         // Reuse this calculation's structural query, never a cross-action cache.

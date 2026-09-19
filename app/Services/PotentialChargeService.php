@@ -16,19 +16,17 @@ final readonly class PotentialChargeService
 {
     public function __construct(private PotentialProjectionService $projection, private ProjectedRecoveryService $recovery) {}
 
-    /** Maintained Horizon-local projection; never derive the whole substrate. */
+    /** Numerical capacity in this Horizon, independent of recovery/frontier ranking. */
     public function hasRemainingInHorizon(Phase $phase): bool
     {
         $this->projection->assertCurrent($phase->cycle->participant->substrate_id);
-        $horizonId = $phase->cycle->context_horizon_id;
-        if (DB::table('potential_entries')->where('context_horizon_id', $horizonId)
-            ->where('raw_potential_charge', '>', 0.00000005)->exists()) {
-            return true;
-        }
-        $frontier = json_decode(DB::table('potential_region_states')->where('context_horizon_id', $horizonId)
-            ->value('frontier') ?? '[]', true, flags: JSON_THROW_ON_ERROR);
+        $local = $this->projection->region($phase->cycle->context_horizon_id)['local'];
 
-        return collect($frontier)->contains(fn ($entry) => $entry['raw_potential_charge'] > 0.00000005);
+        // Include every local Committal: a later successful Commit cannot hide
+        // capacity at an earlier position. Child Horizons do not supply this
+        // Horizon's capacity. Spentness and action schemas remain separate.
+        return collect(app(PotentialRegionCalculator::class)->candidates($local, shadowCompletedRegions: false))
+            ->contains(fn ($entry) => $entry['raw_potential_charge'] > 0.00000005);
     }
 
     public function selectFor(Substrate $substrate): array

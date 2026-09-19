@@ -42,6 +42,18 @@ final class PropositionOptionService
             return $this->generation->committedWrites($phase, $context);
         }
 
+        if ($phase->kind === PhaseKind::Bias) {
+            // Commitment freezes its classification, but preserves the successful
+            // route through it. The snapshot supplies the completed judgment;
+            // another Participant must not mutate that source just to pass it.
+            $commits = $this->generation->committedWrites($phase, $context);
+            $sources = Supersession::query()->where('type', 'commit')
+                ->whereIn('target_proposition_id', $commits->pluck('id'))->pluck('source_proposition_id');
+            $committed = $this->resolveWrites($phase, $context)->whereIn('id', $sources);
+        } else {
+            $committed = collect();
+        }
+
         if (! in_array($phase->kind, [PhaseKind::Distinguish, PhaseKind::Persist, PhaseKind::Constrain, PhaseKind::Disperse, PhaseKind::Bias], true)) {
             return collect();
         }
@@ -54,13 +66,14 @@ final class PropositionOptionService
                     && $attestation->phase->cycle_id !== $phase->cycle_id)
                 ->pluck('proposition_id')->flip();
 
-            return $options->filter(fn ($node) => $attested->has($node->id))->sortBy('id')->values();
+            return $options->filter(fn ($node) => $attested->has($node->id))
+                ->concat($committed)->unique('id')->sortBy('id')->values();
         }
 
         return Proposition::query()->active()->whereKey($options->pluck('id'))
             ->whereHas('effectiveAttestations.phase.cycle', fn ($query) => $query
                 ->whereBelongsTo($phase->cycle->participant)->whereKeyNot($phase->cycle_id))
-            ->orderBy('id')->get();
+            ->orderBy('id')->get()->concat($committed)->unique('id')->sortBy('id')->values();
     }
 
     private function writeDescendants(Phase $phase, ?ParticipationContext $context = null): Builder

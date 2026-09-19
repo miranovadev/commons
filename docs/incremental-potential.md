@@ -35,7 +35,7 @@ The once-per-minute `commons:potential-refresh` sweep dispatches unique maintena
 
 ## Provenance summaries and early stopping
 
-These maintained summaries continue to serve initial entry, numeric availability and graph views. They do not define Stage 4 recovery candidates. Within the summaries, a viable descendant shadows its parent, while sibling Domain frontiers remain peers. A region therefore cannot store just one globally best candidate: observer distance attenuation can reverse their ranking.
+These maintained summaries continue to serve initial entry and graph views. They do not define recovery candidates or Stage 5 numerical capacity. Capacity uses every local Committal region from the maintained local topology without shadowing, and does not import child-Horizon frontiers. Structural actionability is decided separately by the action schema and exact current spentness. Within the initial-entry summaries, a viable descendant shadows its parent, while sibling Domain frontiers remain peers. A region therefore cannot store just one globally best candidate: observer distance attenuation can reverse their ranking.
 
 Each upward summary retains the distance/value tradeoffs that can win for an observer entering through the region's boundary. A candidate is removed from that summary only when another candidate beats it for **every** possible upstream distance, including Charge and stable-ID ties. A dominated sibling can change without changing the summary, stopping propagation immediately. If a distance/value tradeoff changes, propagation must continue even when the numeric maximum stays equal; stopping at numeric equality alone would change those maintained summaries.
 

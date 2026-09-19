@@ -27,7 +27,7 @@ final class PotentialRegionCalculator
         return $distances;
     }
 
-    public function candidates(array $local, ?string $excluded = null, ?string $branch = null, ?string $retained = null, ?array $lineage = null): array
+    public function candidates(array $local, ?string $excluded = null, ?string $branch = null, ?string $retained = null, ?array $lineage = null, bool $shadowCompletedRegions = true): array
     {
         $children = [];
         $commits = [];
@@ -51,7 +51,7 @@ final class PotentialRegionCalculator
             $search = [$id];
             $searched = [$id => true];
             $shadowed = false;
-            for ($i = 0; $lineage === null && $i < count($search) && ! $shadowed; $i++) {
+            for ($i = 0; $shadowCompletedRegions && $lineage === null && $i < count($search) && ! $shadowed; $i++) {
                 foreach ($children[$search[$i]] ?? [] as $target) {
                     if (isset($searched[$target])) {
                         continue;
