@@ -1,0 +1,127 @@
+name: Epic final aggregate companions
+
+on:
+  push:
+    branches: [ci/validation/epic-final]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: PHP 8.5 / PostgreSQL 18 / ${{ matrix.suite }}
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [integration-full, query, load]
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ matrix.suite == 'integration-full' && 90 || matrix.suite == 'core' && 60 || 20 }}
+
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: testing
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -q -d testing -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      COMPOSER_PROCESS_TIMEOUT: 0
+      APP_ENV: testing
+      APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      APP_DEBUG: false
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: testing
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      CACHE_STORE: array
+      MAIL_MAILER: array
+      QUEUE_CONNECTION: sync
+      SESSION_DRIVER: array
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          ref: 61b0c221f9795f033b9a542d0fba91bcf2d1f8be
+
+      - name: Record exact application checkout
+        run: |
+          git rev-parse HEAD
+          git rev-parse 'HEAD^{tree}' 
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: mbstring, pdo_pgsql, curl, intl
+          coverage: none
+          tools: composer:v2
+
+      - name: Resolve Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-php-8.5-composer-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php-8.5-composer-
+
+      - name: Install PHP dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Set up Node
+        if: ${{ matrix.suite == 'core' || matrix.suite == 'integration-full' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install frontend dependencies
+        if: ${{ matrix.suite == 'core' || matrix.suite == 'integration-full' }}
+        run: npm ci
+
+      - name: Build frontend
+        if: ${{ matrix.suite == 'core' || matrix.suite == 'integration-full' }}
+        run: npm run build
+
+      - name: Test frontend action contracts
+        if: ${{ matrix.suite == 'core' || matrix.suite == 'integration-full' }}
+        run: npm run test:ui
+
+      - name: Prepare test environment
+        run: cp .env.example .env
+
+      - name: Run selected PHP suite
+        env:
+          TEST_SUITE: ${{ matrix.suite }}
+          PGOPTIONS: '-c statement_timeout=30s'
+          COMMONS_PROFILE_SQL: '1'
+        run: |
+          case "$TEST_SUITE" in
+            core|integration-full|query|load) ;;
+            *) echo "Unknown test suite: $TEST_SUITE" >&2; exit 1 ;;
+          esac
+          php artisan config:clear
+          composer "test:$TEST_SUITE" -- --log-junit="test-results/$TEST_SUITE.xml"
+
+      - name: Upload PHP test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: php-${{ matrix.suite }}-results
+          path: test-results/*.xml
+          if-no-files-found: warn
+          retention-days: 14
