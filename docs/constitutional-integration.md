@@ -115,3 +115,32 @@ Every failure was the same unordered `parent_ids` mismatch. The corrected
 comparator is pinned at `48a2f2f` in run `35428949764`; results remain pending.
 The collective script is now fixed at three entries plus 630 contributions; its
 investigative completion is not counted as a replay pass.
+
+## Completed fixed-script evidence
+
+The corrected 13-case constitutional selection passed on PostgreSQL 18 / PHP 8.5
+at `48a2f2f4ad379a26e53d1f1e5489cf834fbee9c0`: 36,958 assertions,
+857.33 seconds PHP, 15m31s complete job (07:18:13–07:33:44 UTC).
+[Run 35428949764](https://github.com/miranovadev/commons/actions/runs/35428949764),
+job `105859856314`, artifact `10580925373`. Its Tragedy case completed in
+216.69 seconds within that selection. This is a completed targeted pass,
+not a Core/Full aggregate pass.
+
+The collective script passed locally at `dafc167d66406e8dfbac02db1aa0a2e0a4411174`:
+three entries plus exactly 630 contributions, 137,419 assertions, 820.69 seconds.
+The solo local replay passed in 728.51 seconds with 127,327 assertions.
+PostgreSQL Domain results are still pending and will be recorded separately.
+
+Membership collection confirms 618 Core, 621 Full Integration, 16 Query and
+22 Load tests: 659 unique tests across Full/Query/Load. Constitutional selects
+15 cases in Full, 14 in Core. Compared with the Stage 5 inventory, Stage 6 adds
+the staggered case and two Domain journeys; no existing test changes suites.
+
+The proposed 90/120-minute regular runner increase was withdrawn before publication
+following the request to minimize the Core journey. Core and Full retain their
+30-minute ceilings for now. A deliberately sized final aggregate validation remains
+outstanding; cancelled and unfinished jobs are not complete suite passes.
+
+See [the runtime investigation](constitutional-runtime-investigation.md) for the
+measured growth and the status of causal minimization. The complete frozen scripts
+remain preserved; neither is accepted as the final minimal Core scenario.
