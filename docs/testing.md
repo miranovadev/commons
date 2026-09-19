@@ -28,10 +28,11 @@ tests: unqualified `php artisan test` continues to run everything. The old
 Core and Full Integration also run `npm run build` (including TypeScript checks)
 and `npm run test:ui`. Query and Load do not install frontend dependencies.
 All four workflows share `php-tests.yml` for the same database, PHP extensions,
-dependency caching, SQL profiling, statement timeout, and 20-minute job ceiling.
+dependency caching, SQL profiling, and statement timeout. Core and Full Integration
+have a 30-minute job ceiling; Query and Load retain their 20-minute ceiling.
 Each uploads JUnit results even when PHP tests fail.
 The named Composer test commands disable Composer's five-minute process timeout
-locally as well; GitHub Actions still enforces its 20-minute job ceiling.
+locally as well; GitHub Actions still enforces the suite's job ceiling.
 
 Normal feature branches run Core when their PR opens or changes. There are no
 path filters. The dedicated `ci/*` namespaces are explicit requests for extra
@@ -89,6 +90,11 @@ without an expensive-suite group. Stage 2's seven tests use the
 `http-participation` group for focused runs; ordinary Core still includes them.
 See [participation-http-harness.md](participation-http-harness.md) for their
 expected red regressions and HTTP-only fixture discipline.
+Stage 3 adds one more HTTP case plus nine provenance/migration cases. Its
+expected discovery counts are Core 596, Full Integration 598, Query 16, Load 22,
+and All PHP 636. Only the successful-route Bias revisit is intentionally red;
+the two epoch collisions and the repeated local reopening journey must pass.
+See [local-exploration-epochs.md](local-exploration-epochs.md).
 Use method-level groups in mixed classes. Keep `integration-full`,
 `query`, and `load` mutually exclusive, and do not use runtime alone to choose.
 The Load suite currently proves bounded concurrency scenarios; it does not yet

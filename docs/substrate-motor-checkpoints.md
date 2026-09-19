@@ -3,8 +3,9 @@
 Stage 0 investigated production exports and current implementation at
 `170668a027d4b2b8c29051c66eebaf7e3054defd`. Stage 1 only separates test execution
 and Actions; [testing.md](testing.md) records suite membership and invocation.
-Stage 1 was reviewed and approved. Stage 2 is authorized for the HTTP harness and
-faithful red regressions only; semantic corrections require the next review.
+Stages 1 and 2 were reviewed and approved. Stage 3 is authorized for exact local
+exploration epochs and authoritative current spentness. Backward-lineage recovery
+and broader lifecycle corrections remain later review boundaries.
 
 The next approved design constraints are:
 
@@ -39,3 +40,18 @@ spentness, or recovery fixes. An expected red regression must fail on the
 reproduced behavior, not on fabricated setup, an unrelated exception, or an
 exhausted action budget. Do not manipulate intermediate structural state to make
 these tests pass.
+
+## Stage 3 checkpoint
+
+[local-exploration-epochs.md](local-exploration-epochs.md) records the exact
+three-part position identity, provenance rules, canonical current-failure
+predicate, immutable history, and safe-cutover limitations. The cross-Committal
+Distinguish and independent Disperse HTTP regressions must pass. A further HTTP
+journey proves a third Variant after genuinely spending the existing options;
+it checks local reopening without changing historical failures or Disperse epochs.
+
+The successful-route Bias revisit remains an ordinary red Core regression. No
+Variant prerequisites, recovery selection, Tragedy override, suite membership,
+or Actions workflows are loosened to obtain these results. Review the recorded
+PostgreSQL Core, Full Integration, Query, and Load results before proceeding to
+Stage 4. No Stage 3 deployment is implied by this checkpoint.

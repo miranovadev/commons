@@ -86,8 +86,7 @@ final readonly class PhaseGenerationService
             if ($action !== 'proposition.variant') {
                 return false;
             }
-            $spent = app(ExplorationEpochService::class)->failuresFor($phase, $existing, $context)
-                ->where('structural_position', $phase->kind->value)->keys();
+            $spent = app(ExplorationEpochService::class)->failuresFor($phase, $existing, $context)->keys();
             if ($existing->diff($spent)->isNotEmpty()) {
                 // Evidence alone does not prove downstream failure. Keep using
                 // healthy continuations; do not assign Variant a priority.

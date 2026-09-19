@@ -110,8 +110,7 @@ final class PropositionOptionService
         $writes = $this->writeOptionsFor($phase, $context);
         $spent = app(ExplorationEpochService::class)->failuresFor($phase, $writes->pluck('id'), $context);
 
-        return $writes->reject(fn (Proposition $node) => $spent->has($node->id)
-            && (int) $spent->get($node->id)->structural_position === $phase->kind->value)->values();
+        return $writes->reject(fn (Proposition $node) => $spent->has($node->id))->values();
     }
 
     private function resolveWrites(Phase $phase, ?ParticipationContext $context = null): Collection

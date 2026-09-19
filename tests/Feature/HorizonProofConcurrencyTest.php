@@ -105,7 +105,7 @@ class HorizonProofConcurrencyTest extends TestCase
             app(ContributionDispatcher::class)->dispatch($firstPhase->cycle->participant, $firstPhase, $input);
         });
         $this->assertSame($before + 1, Proposition::count());
-        $this->assertSame(1, app(ExplorationEpochService::class)->current($firstPhase->cycle->context_horizon_id, PhaseKind::Distinguish));
+        $this->assertSame(1, app(ExplorationEpochService::class)->forPhase($firstPhase));
         $this->assertDatabaseCount('continuation_failures', 1);
     }
 
