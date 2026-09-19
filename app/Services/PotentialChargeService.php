@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Exceptions\PotentialProjectionUnavailable;
 use App\Models\ContextHorizon;
+use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Substrate;
@@ -53,18 +54,18 @@ final readonly class PotentialChargeService
     public function selectFrom(Proposition $position): ?array
     {
         // Legacy relative-ranking diagnostic (no production callers). Recovery
-        // has a different contract: it excludes the exhausted observer path.
+        // has a different contract: only the actual backward lineage competes.
         return app(ReferencePotentialChargeService::class)->selectFrom($position);
     }
 
-    public function recoverFrom(Proposition $position, ?ContextHorizon $startingBasin = null): ?array
+    public function recoverFrom(Proposition $position, ?ContextHorizon $startingBasin = null, ?Participant $observer = null): ?array
     {
-        return $this->inspectRecoveryFrom($position, $startingBasin)['selection'];
+        return $this->inspectRecoveryFrom($position, $startingBasin, $observer)['selection'];
     }
 
-    public function inspectRecoveryFrom(Proposition $position, ?ContextHorizon $startingBasin = null): array
+    public function inspectRecoveryFrom(Proposition $position, ?ContextHorizon $startingBasin = null, ?Participant $observer = null): array
     {
-        return $this->recovery->inspect($position, $startingBasin);
+        return $this->recovery->inspect($position, $startingBasin, $observer);
     }
 
     /** Explicit reference calculation for maintenance tools and semantic comparisons. */

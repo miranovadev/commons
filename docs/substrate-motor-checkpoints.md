@@ -3,9 +3,9 @@
 Stage 0 investigated production exports and current implementation at
 `170668a027d4b2b8c29051c66eebaf7e3054defd`. Stage 1 only separates test execution
 and Actions; [testing.md](testing.md) records suite membership and invocation.
-Stages 1 and 2 were reviewed and approved. Stage 3 is authorized for exact local
-exploration epochs and authoritative current spentness. Backward-lineage recovery
-and broader lifecycle corrections remain later review boundaries.
+Stages 1, 2 and 3 were reviewed and approved. Stage 4 is authorized for backward
+lineage-constrained recovery and true attenuation, including the Tragedy override.
+Broader lifecycle corrections remain a later review boundary.
 
 The next approved design constraints are:
 
@@ -55,3 +55,13 @@ Variant prerequisites, recovery selection, Tragedy override, suite membership,
 or Actions workflows are loosened to obtain these results. Review the recorded
 PostgreSQL Core, Full Integration, Query, and Load results before proceeding to
 Stage 4. No Stage 3 deployment is implied by this checkpoint.
+
+## Stage 4 checkpoint
+
+[Backward lineage recovery](backward-lineage-recovery.md) records actual participant
+arrival provenance, ancestral-only candidate construction, raw edge attenuation,
+same-lineage Horizon crossing, removal of the Tragedy override, and the explicitly
+superseded sibling/descendant test contracts. Validate Core, Full Integration,
+Query and Load without changing suite selection or ceilings. Record final results
+and runtimes in the Stage 4 PR and stop. Bias remains a separate expected red
+eligibility regression; no Stage 5 lifecycle or visibility changes are included.

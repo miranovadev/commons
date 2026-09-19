@@ -10,23 +10,23 @@ use PHPUnit\Framework\TestCase;
 
 class RecoveryBasinResolverTest extends TestCase
 {
-    public function test_viable_downstream_domains_scope_out_historical_candidates(): void
+    public function test_current_horizon_candidates_exclude_viable_downstream_domains(): void
     {
         [$root, $settlement, $emergence] = $this->chain();
         $result = $this->resolve($settlement, [$root, $settlement, $emergence], ['settlement', 'emergence']);
-        $this->assertSame(['emergence'], $result['candidates']->all());
-        $this->assertSame(['emergence'], array_column($result['searched_basins'], 'context_horizon_id'));
+        $this->assertSame(['settlement'], $result['candidates']->all());
+        $this->assertSame(['settlement'], array_column($result['searched_basins'], 'context_horizon_id'));
         $this->assertSame(0, $result['fallback_depth']);
     }
 
-    public function test_sibling_frontiers_remain_peers_without_using_sequence_or_recency(): void
+    public function test_sibling_and_descendant_horizons_are_never_searched(): void
     {
         [$root, $settlement, $emergence] = $this->chain();
         $sibling = $this->basin('sibling', $settlement, 999);
         $deep = $this->basin('deep', $emergence, 4);
         $result = $this->resolve($settlement, [$root, $settlement, $emergence, $sibling, $deep],
             ['settlement', 'emergence', 'sibling', 'deep']);
-        $this->assertEqualsCanonicalizing(['deep', 'sibling'], $result['candidates']->all());
+        $this->assertSame(['settlement'], $result['candidates']->all());
         $this->assertNotContains('emergence', array_column($result['searched_basins'], 'context_horizon_id'));
     }
 
@@ -39,15 +39,15 @@ class RecoveryBasinResolverTest extends TestCase
         $this->assertSame(0, $result['fallback_depth']);
     }
 
-    public function test_exhaustion_retreats_to_provenance_and_can_discover_a_viable_sibling(): void
+    public function test_exhaustion_can_reach_the_parent_but_cannot_discover_a_sibling(): void
     {
         [$root, $settlement, $emergence] = $this->chain();
         $sibling = $this->basin('sibling', $settlement, 4);
         $emergence->setRawAttributes([...$emergence->getAttributes(), 'exhausted_at' => '2026-09-17 00:00:00']);
         $result = $this->resolve($emergence, [$root, $settlement, $emergence, $sibling], ['settlement', 'sibling']);
-        $this->assertSame(['sibling'], $result['candidates']->all());
+        $this->assertSame(['settlement'], $result['candidates']->all());
         $this->assertSame(1, $result['fallback_depth']);
-        $this->assertSame(['emergence', 'sibling'], array_column($result['searched_basins'], 'context_horizon_id'));
+        $this->assertSame(['emergence', 'settlement'], array_column($result['searched_basins'], 'context_horizon_id'));
     }
 
     public function test_exhaustion_reaches_historical_domains_and_the_root_without_revisiting_basins(): void
@@ -63,14 +63,26 @@ class RecoveryBasinResolverTest extends TestCase
         $this->assertTrue($empty['candidates']->isEmpty());
     }
 
-    public function test_an_exhausted_descendant_does_not_permanently_suppress_its_parent(): void
+    public function test_changes_in_a_descendant_cannot_change_current_horizon_scope(): void
     {
         [$root, $settlement, $emergence] = $this->chain();
         $result = $this->resolve($settlement, [$root, $settlement, $emergence], ['settlement']);
         $this->assertSame(['settlement'], $result['candidates']->all());
         $this->assertSame(0, $result['fallback_depth']);
         $changed = $this->resolve($settlement, [$root, $settlement, $emergence], ['settlement', 'emergence']);
-        $this->assertSame(['emergence'], $changed['candidates']->all());
+        $this->assertSame(['settlement'], $changed['candidates']->all());
+    }
+
+    public function test_exhaustion_does_not_authorize_crossing_a_boundary_absent_from_the_walked_lineage(): void
+    {
+        [$root, $settlement, $emergence] = $this->chain();
+        $emergence->setRawAttributes([...$emergence->getAttributes(), 'exhausted_at' => '2026-09-17 00:00:00']);
+        $result = (new RecoveryBasinResolver)->resolve($emergence, collect([$root, $settlement, $emergence]),
+            fn (ContextHorizon $basin): Collection => collect($basin->id === 'settlement' ? ['settlement'] : []),
+            fn (ContextHorizon $basin): bool => false);
+        $this->assertTrue($result['candidates']->isEmpty());
+        $this->assertSame(0, $result['fallback_depth']);
+        $this->assertSame(['emergence'], array_column($result['searched_basins'], 'context_horizon_id'));
     }
 
     public function test_missing_provenance_does_not_jump_to_an_unrelated_root(): void
@@ -92,7 +104,8 @@ class RecoveryBasinResolverTest extends TestCase
     private function resolve(ContextHorizon $start, array $basins, array $viable): array
     {
         return (new RecoveryBasinResolver)->resolve($start, collect($basins),
-            fn (ContextHorizon $basin): Collection => collect(in_array($basin->id, $viable, true) ? [$basin->id] : []));
+            fn (ContextHorizon $basin): Collection => collect(in_array($basin->id, $viable, true) ? [$basin->id] : []),
+            fn (ContextHorizon $basin): bool => true);
     }
 
     private function chain(): array

@@ -107,11 +107,8 @@ final class HorizonFailureService
             }
             if ($proof['rest_reason'] === 'no_remaining_potential') {
                 $tragedy = app(TragedyService::class)->record($phase, $proof);
-                $exhausted = app(ExhaustionService::class)->afterFailure($phase, $tragedy, $proof);
-                $phase->cycle->forceFill(['recovery_proposition_id' => $exhausted ? null : $tragedy->opening_proposition_id])->save();
-                if (! $exhausted) {
-                    $phase->cycle->participant->forceFill(['current_proposition_id' => $tragedy->opening_proposition_id])->save();
-                }
+                app(ExhaustionService::class)->afterFailure($phase, $tragedy, $proof);
+                // Rest retains its terminal position. Tragedy uses normal backward recovery.
             }
             app(FieldMutationService::class)->mark($substrate->id, [$proof['context_horizon_id']], $proof['transitions'], measurementsDirty: false);
             if ($proof['rest_reason'] === 'no_remaining_potential') {

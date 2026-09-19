@@ -4,15 +4,16 @@ namespace App\Services;
 
 use App\Exceptions\PotentialProjectionUnavailable;
 use App\Models\ContextHorizon;
+use App\Models\Participant;
 use App\Models\Proposition;
 use DomainException;
-use Illuminate\Support\Facades\DB;
 
 final readonly class ProjectedRecoveryService
 {
-    public function __construct(private PotentialProjectionService $projection, private PotentialRegionCalculator $calculator) {}
+    public function __construct(private PotentialProjectionService $projection, private PotentialRegionCalculator $calculator,
+        private BackwardRecoveryLineage $lineage, private RecoveryBasinResolver $basins) {}
 
-    public function inspect(Proposition $position, ?ContextHorizon $start = null): array
+    public function inspect(Proposition $position, ?ContextHorizon $start = null, ?Participant $observer = null): array
     {
         $substrateId = $position->phase->cycle->participant->substrate_id;
         $start ??= $position->tier === 'committal' && $position->commitmentSnapshot !== null
@@ -22,40 +23,36 @@ final readonly class ProjectedRecoveryService
         }
         app(CausalContextService::class)->assertGate($position, $start);
         $version = $this->projection->assertCurrent($substrateId);
+        $locals = $parents = [];
+        $localFor = function (string $id) use (&$locals): array {
+            return $locals[$id] ??= $this->projection->region($id)['local'];
+        };
+        $distances = $this->lineage->distances($position, $observer,
+            function (string $id, string $horizonId) use ($localFor, &$parents): array {
+                if (! isset($parents[$horizonId])) {
+                    $parents[$horizonId] = [];
+                    foreach ($localFor($horizonId)['edges'] as [$source, $target]) {
+                        $parents[$horizonId][$target][] = $source;
+                    }
+                }
+
+                return $parents[$horizonId][$id] ?? [];
+            });
+        $horizons = collect();
+        $horizon = $start;
+        while ($horizon !== null && ! $horizons->has($horizon->id)) {
+            $horizons->put($horizon->id, $horizon);
+            $horizon = $horizon->parent_context_horizon_id === null ? null : ContextHorizon::find($horizon->parent_context_horizon_id);
+        }
         $unavailable = app(ExhaustionService::class)->unavailable($position);
         $excluded = $unavailable ? $position->id : null;
-        $id = $start->id;
-        $from = $position->id;
-        $offset = $depth = 0;
-        $visited = $searched = [];
-        $ranked = [];
-        while (true) {
-            if (isset($visited[$id])) {
-                throw new DomainException('Recovery requires acyclic Context Horizon provenance.');
-            }
-            $region = $this->projection->region($id);
-            $local = $region['local'];
-            $distances = $this->calculator->distances($local, $from);
-            $ranked = $this->frontierFrom($local, $distances, $offset, $excluded,
-                $position->tier === 'committal' ? $position->id : null, $visited, $searched);
-            $visited[$id] = true;
-            if ($ranked !== [] || $local['parent'] === null) {
-                break;
-            }
-            // Empty numeric frontiers never authorize retreat. Only the explicit
-            // closure of the opening basin (or an isolated legacy hold) does.
-            if (($local['nodes'][$local['opener']]['active'] ?? true)) {
-                break;
-            }
-            if (! isset($distances[$local['opener']])) {
-                break; // Disconnected provenance is not an invented distance.
-            }
-            $offset += $distances[$local['opener']];
-            $from = $local['opener'];
-            $id = $local['parent'];
-            $depth++;
-        }
-        $ranked = $this->calculator->rank($ranked);
+        $result = $this->basins->resolve($start, $horizons,
+            function (ContextHorizon $basin) use ($localFor, $distances, $excluded) {
+                return collect($this->calculator->candidates($localFor($basin->id), $excluded, lineage: $distances))
+                    ->map(fn ($entry) => $this->calculator->attenuate($entry, $distances[$entry['proposition_id']]));
+            }, fn (ContextHorizon $basin) => isset($distances[$basin->opened_by_proposition_id]),
+            fn (ContextHorizon $basin) => ! ($localFor($basin->id)['nodes'][$basin->opened_by_proposition_id]['active'] ?? true));
+        $ranked = $this->calculator->rank($result['candidates']->all());
         $selection = $ranked[0] ?? null;
         if ($selection !== null) {
             $selection['proposition'] = Proposition::findOrFail($selection['proposition_id']);
@@ -66,49 +63,8 @@ final readonly class ProjectedRecoveryService
         }
 
         return ['selection' => $selection, 'starting_context_horizon_id' => $start->id,
-            'searched_basins' => $searched, 'fallback_depth' => $depth,
+            'searched_basins' => $result['searched_basins'], 'fallback_depth' => $result['fallback_depth'],
             'eligible_candidate_ids' => array_column($ranked, 'proposition_id'),
-            'projected_field_version' => $version, 'recovery_hops' => $depth];
-    }
-
-    private function frontierFrom(array $local, array $distances, int $offset, ?string $excluded, ?string $retained, array $visited, array &$searched): array
-    {
-        $ranked = [];
-        $children = DB::table('context_horizons as horizon')->leftJoin('potential_region_states as projection',
-            'projection.context_horizon_id', '=', 'horizon.id')->where('horizon.parent_context_horizon_id', $local['id'])
-            ->get(['horizon.id', 'horizon.opened_by_proposition_id', 'projection.frontier']);
-        foreach ($children as $child) {
-            if (isset($visited[$child->id]) || ! isset($distances[$child->opened_by_proposition_id])) {
-                continue;
-            }
-            if ($child->frontier === null) {
-                throw new PotentialProjectionUnavailable(ContextHorizon::findOrFail($local['id'])->substrate_id);
-            }
-            $distance = $offset + $distances[$child->opened_by_proposition_id];
-            if ($excluded === $child->opened_by_proposition_id) {
-                $state = $this->projection->region($child->id)['local'];
-                $ranked = array_merge($ranked, $this->frontierFrom($state,
-                    $this->calculator->distances($state, $excluded), $distance, $excluded, null, $visited, $searched));
-
-                continue;
-            }
-            $frontier = json_decode($child->frontier, true, flags: JSON_THROW_ON_ERROR);
-            foreach ($frontier as $entry) {
-                $ranked[] = $this->calculator->attenuate($entry, $distance + $entry['distance']);
-            }
-            foreach (collect($frontier)->groupBy('context_horizon_id') as $basinId => $entries) {
-                $searched[] = ['context_horizon_id' => $basinId, 'eligible_candidates' => $entries->count()];
-            }
-        }
-        if ($ranked === []) {
-            foreach ($this->calculator->candidates($local, $excluded, retained: $retained) as $entry) {
-                if (isset($distances[$entry['proposition_id']])) {
-                    $ranked[] = $this->calculator->attenuate($entry, $offset + $distances[$entry['proposition_id']]);
-                }
-            }
-            $searched[] = ['context_horizon_id' => $local['id'], 'domain' => $local['domain'], 'committal_proposition_id' => $local['opener'] ?? ($ranked[0]['proposition_id'] ?? null), 'eligible_candidates' => count($ranked)];
-        }
-
-        return $ranked;
+            'projected_field_version' => $version, 'recovery_hops' => $result['fallback_depth']];
     }
 }
