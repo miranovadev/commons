@@ -38,6 +38,16 @@ Tragedy retains the terminal position and uses [normal backward-lineage recovery
 
 Origin persists uniquely even if the Origin Horizon reaches Exhaustion. Its exhausted Committal children remain in the substrate and local context. No action deletes, prunes or forgets these records.
 
+An incoming successful route whose child Horizon has exhausted is contextual
+history, not a continuation failure. `ExhaustedContinuationService` propagates
+that state backward through expressive nodes only when every other outgoing
+continuation is also exhausted or failed in its exact current epoch. Any live
+alternative stops propagation, and Committals are hard boundaries. The resulting
+`continuation_exhausted` flag preserves the proposition and evidence in context
+while excluding it from action targets and viable generation populations.
+Historical gain on these resolved paths cannot supply numerical exploration
+capacity. No failure row is inserted or rewritten for this successful history.
+
 ## Receipt evidence
 
 Receipt JSON metadata contains reference IDs only: Tragedy, opening and terminal Proposition IDs, and exhausted Committal IDs from the same Horizon. It contains no statements or serialized descendants. The read service resolves statements, producing phase/register, owner and exhausted Horizon IDs, exhaustion state and terminal provenance. Receipt inspection resolves the full local statements by ID; ordinary participation history may use bounded excerpts. The flat local ID set is retained without an age cutoff and ordered newest creation first.

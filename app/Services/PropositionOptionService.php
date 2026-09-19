@@ -122,8 +122,9 @@ final class PropositionOptionService
     {
         $writes = $this->writeOptionsFor($phase, $context);
         $spent = app(ExplorationEpochService::class)->failuresFor($phase, $writes->pluck('id'), $context);
+        $exhausted = app(ExhaustedContinuationService::class)->ids($phase, $context);
 
-        return $writes->reject(fn (Proposition $node) => $spent->has($node->id))->values();
+        return $writes->reject(fn (Proposition $node) => $spent->has($node->id) || $exhausted->has($node->id))->values();
     }
 
     private function resolveWrites(Phase $phase, ?ParticipationContext $context = null): Collection
@@ -208,7 +209,8 @@ final class PropositionOptionService
 
         return $query->latest('created_at')
             ->limit($this->limit())
-            ->get()->reject(fn (Proposition $node) => app(ExplorationEpochService::class)->spentNow($node, $phase, $context))->values();
+            ->get()->reject(fn (Proposition $node) => app(ExplorationEpochService::class)->spentNow($node, $phase, $context)
+                || app(ExhaustedContinuationService::class)->ids($phase, $context)->has($node->id))->values();
     }
 
     /**

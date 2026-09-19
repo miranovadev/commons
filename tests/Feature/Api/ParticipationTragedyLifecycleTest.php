@@ -116,5 +116,21 @@ class ParticipationTragedyLifecycleTest extends ParticipationHttpTestCase
         $this->assertSame(1, $inspection['fallback_depth']);
         $this->assertSame([$initial['current_proposition_id']], $inspection['eligible_candidate_ids']);
         $this->assertGreaterThan(7, $inspection['selection']['distance'], 'Distance includes the actual path on both sides of the Horizon boundary.');
+        $closed = collect($after['plan']['write_options'])->where('continuation_exhausted', true);
+        $this->assertNotEmpty($closed, 'Successful paths into the exhausted Horizon remain contextual history.');
+        foreach ($closed as $node) {
+            foreach (['proposition.traverse', 'instrument.execute', 'attestation.create', 'proposition.revise'] as $action) {
+                $this->assertNotContains($node['id'], $this->actionDefinitions($after)[$action]['properties']['proposition_id']['enum'] ?? []);
+            }
+            $oldFailures = collect(json_decode($history, true))->where('proposition_id', $node['id'])->values()->all();
+            $currentFailures = DB::table('continuation_failures')->where('proposition_id', $node['id'])->orderBy('exploration_epoch')
+                ->get()->map(fn ($row) => (array) $row)->all();
+            $this->assertSame($oldFailures, $currentFailures, 'Horizon Exhaustion must not rewrite successful history as failure.');
+        }
+        $input = $this->chooseContribution($after);
+        $this->assertNotSame('participant.rest', $input['action']);
+        $continuation = $this->contribute($consumer, $input);
+        $this->assertSame('persist', $continuation['plan']['phase']['kind']);
+        $this->assertNotContains($continuation['current_proposition_id'], $closed->pluck('id')->all());
     }
 }

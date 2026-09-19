@@ -17,6 +17,7 @@ final class HorizonFailureService
         $substrateId = $phase->cycle->participant->substrate_id;
         $version = app(PotentialProjectionService::class)->assertCurrent($substrateId);
         $plan = app(InputPlanService::class)->forPhase($phase->cycle->participant, $phase);
+        $exhaustedContinuations = app(ExhaustedContinuationService::class)->ids($phase);
         $proof = ['substrate_id' => $substrateId, 'context_horizon_id' => $phase->cycle->context_horizon_id,
             'field_version' => $version, 'phase_id' => $phase->id, 'participant_id' => $phase->cycle->participant_id,
             'position_id' => $phase->gate_proposition_id, 'rest_reason' => $plan['rest_reason'] ?? 'no_available_move',
@@ -34,7 +35,8 @@ final class HorizonFailureService
                 $node = Proposition::with('phase.cycle')->findOrFail($id);
                 // Failed expressive opportunities can reopen generation locally.
                 // A Committal is a hard boundary, never recursively closed here.
-                if ($node->tier === 'committal' || $node->phase->cycle->context_horizon_id !== $proof['context_horizon_id']) {
+                if ($node->tier === 'committal' || $exhaustedContinuations->has($node->id)
+                    || $node->phase->cycle->context_horizon_id !== $proof['context_horizon_id']) {
                     continue;
                 }
                 // A failed descendant cannot condemn an untested generative source.

@@ -4,7 +4,12 @@ Potential remains the greatest available reduction in absolute Tension before th
 
 `max(0, max(abs(committal tension) - abs(expressive tension)))`.
 
-It describes the strongest remaining viable continuation. It is not an additive resource. Removing a 0.7 continuation exposes a surviving 0.4 continuation; it does not consume the parent region's entire Potential.
+Numerical gain is read alongside structural eligibility and exact current failure
+epochs. Removing a 0.7 continuation exposes a surviving 0.4 continuation; this is
+a maximum rather than an additive resource. Stage 5 excludes successful routes
+into explicitly exhausted child Horizons from exploration capacity, while
+retaining their historical measurements. A live alternative stops that backward
+completion, and ordinary epoch-scoped failures remain a separate predicate.
 
 ## Why the old path stalled
 

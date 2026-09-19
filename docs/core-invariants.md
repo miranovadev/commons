@@ -239,6 +239,8 @@ rather than inferring semantics from current code behaviour.
 
 **Successful-route continuity:** Commitment freezes its direct expressive source against further mutation, but does not break traversal through that classification. Bias may traverse a frozen classification with an existing operational Commit in its exact Horizon and Commit Region; Order then traverses the existing Commit. Neither step creates content, votes or failure evidence.
 
+**Exhausted successful continuation:** After explicit child-Horizon Exhaustion, an incoming successful route remains contextual history without being falsified as failure. This propagates through an expressive source only when all its other outgoing continuations are exhausted or failed at their exact current epoch. Live alternatives and Committals stop propagation. Resolved routes are not action targets or viable generation options, and their historical gain does not supply exploration capacity.
+
 **Observation invariant:** Instrument generates evidence; Attestation becomes available only when evidence exists; Attestation becomes Traverse on the next Cycle under the existing rule.
 
 **Persistence invariant:** Exhausted Committals persist permanently and remain contextually visible where structurally relevant. They expose no actions. Historical context is ordered newest-first by creation date. Exhausted means learned-from, not forgotten.

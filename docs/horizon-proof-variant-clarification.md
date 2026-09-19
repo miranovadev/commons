@@ -12,6 +12,13 @@ position's current exploration epoch, and positive Potential Charge remains in
 the Horizon does another Variant become an available option. A viable route
 blocks redundant Variant generation. See [exploration epochs](exploration-epochs.md).
 
+Successful paths into an explicitly exhausted child Horizon are resolved
+history, not failed options. They are excluded from the viable population
+without inventing failure rows. This propagates to a shared expressive source
+only while all other outgoing continuations are also resolved or currently
+failed; a live alternative prevents it. Their historical numerical gain does
+not establish remaining capacity. Ordinary epoch-scoped failures remain separate.
+
 Each new Variant repeats that sequence. A shared Receipt generated against a
 different Variant does not satisfy the new Variant's Instrument prerequisite.
 Any Participant may perform the Instrument or Attestation; neither is a

@@ -21,6 +21,11 @@ final readonly class PotentialChargeService
     {
         $this->projection->assertCurrent($phase->cycle->participant->substrate_id);
         $local = $this->projection->region($phase->cycle->context_horizon_id)['local'];
+        foreach (app(ExhaustedContinuationService::class)->ids($phase)->keys() as $id) {
+            if (isset($local['nodes'][$id])) {
+                $local['nodes'][$id]['active'] = false;
+            }
+        }
 
         // Include every local Committal: a later successful Commit cannot hide
         // capacity at an earlier position. Child Horizons do not supply this
