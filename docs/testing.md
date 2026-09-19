@@ -34,7 +34,7 @@ Core and Full Integration also run `npm run build` (including TypeScript checks)
 and `npm run test:ui`. Query and Load do not install frontend dependencies.
 All four workflows share `php-tests.yml` for the same database, PHP extensions,
 dependency caching, SQL profiling, and statement timeout. Core and Full Integration
-have 60-minute and 90-minute job ceilings respectively for complete aggregate
+have 120-minute job ceilings for complete aggregate
 validation; Query and Load retain their 20-minute ceiling.
 Each uploads JUnit results even when PHP tests fail.
 The named Composer test commands disable Composer's five-minute process timeout
