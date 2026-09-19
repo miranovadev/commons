@@ -28,10 +28,11 @@ tests: unqualified `php artisan test` continues to run everything. The old
 Core and Full Integration also run `npm run build` (including TypeScript checks)
 and `npm run test:ui`. Query and Load do not install frontend dependencies.
 All four workflows share `php-tests.yml` for the same database, PHP extensions,
-dependency caching, SQL profiling, statement timeout, and 20-minute job ceiling.
+dependency caching, SQL profiling, and statement timeout. Core and Full Integration
+have a 30-minute job ceiling; Query and Load retain their 20-minute ceiling.
 Each uploads JUnit results even when PHP tests fail.
 The named Composer test commands disable Composer's five-minute process timeout
-locally as well; GitHub Actions still enforces its 20-minute job ceiling.
+locally as well; GitHub Actions still enforces the suite's job ceiling.
 
 Normal feature branches run Core when their PR opens or changes. There are no
 path filters. The dedicated `ci/*` namespaces are explicit requests for extra

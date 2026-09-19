@@ -128,6 +128,14 @@ Full Integration are expected to be red only for Bias; any additional failure
 must be reported and investigated. Query and Load must pass. No workflow budget
 or coverage exclusion is changed to hide a failure.
 
+The initial PostgreSQL Core and Full Integration runs reached the original
+20-minute job ceiling before completing. Claire subsequently authorized a
+30-minute ceiling for those two suites and an unabridged rerun. Query and Load
+retain 20 minutes. No test, assertion, suite membership, SQL profiling setting,
+or statement timeout changes accompany that budget adjustment. The checkpoint
+PR records the completed rerun results and runtimes separately from the initial
+incomplete runs.
+
 Stop here for review. Later backward-lineage recovery work must include the
 Tragedy `recovery_proposition_id` jump to the Horizon opener; it remains unchanged
 and is not endorsed as a valid exception by this stage.
