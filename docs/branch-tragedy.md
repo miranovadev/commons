@@ -7,7 +7,7 @@ The [core invariants](core-invariants.md#persistence-exhaustion-recovery-and-obs
 | Current Horizon state | Authoritative event | Result |
 | --- | --- | --- |
 | Open, no Tragedy | Rest: `no_available_move` | Ordinary local recovery; no proof transition |
-| Open, no Tragedy | Rest: `no_remaining_potential` | One Tragedy and one shared Tragedy Receipt; recover to opening Committal |
+| Open, no Tragedy | Rest: `no_remaining_potential` | One Tragedy and one shared Tragedy Receipt; normal backward-lineage recovery |
 | Tragedy, Receipt unused | Another no-Potential Rest | Horizon remains open; no duplicate Receipt |
 | Tragedy, Receipt available | Reclassify with that Receipt | Atomically consume it and create the required classification |
 | Tragedy, Receipt consumed | Continuation has positive Potential | Horizon remains open |
@@ -25,7 +25,7 @@ Rest is admissible only after the specialized action schema contains no producti
 
 `horizon_tragedies` is unique per Horizon and Receipt. `horizon_failure_witnesses` is unique per terminal Phase. `receipt_consumptions` is authoritative for exercise. `horizon_exhaustions` is unique per Horizon, Tragedy, Receipt and opening Committal. Transactions and constraints back exact-once transitions.
 
-Tragedy records the recovery Committal on the completed Cycle. First recovery uses that exact opening Committal. After Exhaustion, the existing provenance-based recovery resolver considers the immediate parent and its viable frontiers. It does not move other Participants directly. A parent's Tragedy and Exhaustion each require their own local proof; child failure alone cannot exhaust the parent.
+Tragedy retains the terminal position and uses [normal backward-lineage recovery](recovery-basins.md), including intermediate ancestral Committals. It neither sets nor honors a direct opener override. After Exhaustion, recovery may continue into the immediate parent Horizon along the same path. It does not move other Participants directly. A parent's Tragedy and Exhaustion each require their own local proof; child failure alone cannot exhaust the parent.
 
 Origin persists uniquely even if the Origin Horizon reaches Exhaustion. Its exhausted Committal children remain in the substrate and local context. No action deletes, prunes or forgets these records.
 

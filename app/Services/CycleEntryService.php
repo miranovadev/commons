@@ -79,7 +79,7 @@ final readonly class CycleEntryService
         if ($positionId !== null) {
             $gate = $this->continuationFor($participant)
                 ?? ($this->potential->recoverFrom($participant->position()->firstOrFail(),
-                    $participant->cycles()->latest('sequence')->first()?->contextHorizon)['proposition'] ?? null);
+                    $participant->cycles()->latest('sequence')->first()?->contextHorizon, $participant)['proposition'] ?? null);
         } elseif ($this->hasPropositionHistory($participant->substrate)
             && CommitmentSnapshot::where('substrate_id', $participant->substrate_id)->exists()) {
             $gate = $this->potential->selectFor($participant->substrate)['proposition'];
@@ -191,11 +191,6 @@ final readonly class CycleEntryService
     public function continuationFor(Participant $participant): ?Proposition
     {
         $latest = $participant->cycles()->latest('sequence')->first();
-        if ($latest?->rested_at !== null && $latest->recovery_proposition_id !== null) {
-            $recovery = Proposition::find($latest->recovery_proposition_id);
-
-            return $recovery !== null && ! app(ExhaustionService::class)->unavailable($recovery) ? $recovery : null;
-        }
         if ($participant->current_proposition_id === null || $latest?->rested_at !== null) {
             return null;
         }

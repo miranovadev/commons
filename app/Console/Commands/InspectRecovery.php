@@ -28,6 +28,7 @@ class InspectRecovery extends Command
         $inspection = $potential->inspectRecoveryFrom(
             $participant->position()->firstOrFail(),
             $participant->cycles()->latest('sequence')->first()?->contextHorizon,
+            $participant,
         );
         $selection = $inspection['selection'];
         $inspection['selection'] = $selection === null ? null : [

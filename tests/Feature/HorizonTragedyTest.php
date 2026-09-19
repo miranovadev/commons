@@ -21,9 +21,9 @@ class HorizonTragedyTest extends TestCase
         $this->initializeExhaustionFixture();
     }
 
-    public function test_first_tragic_rest_creates_one_shared_receipt_and_recovers_without_exhaustion(): void
+    public function test_first_tragic_rest_creates_one_shared_receipt_and_uses_normal_ancestral_recovery(): void
     {
-        [, $phase] = $this->exhaustedBranch();
+        [, $phase, , $commit] = $this->exhaustedBranch();
         $proof = app(ExhaustionService::class)->inspect($phase);
         $this->rest($phase);
         $tragedy = Tragedy::sole();
@@ -33,9 +33,9 @@ class HorizonTragedyTest extends TestCase
         $this->assertNull($phase->cycle->contextHorizon->fresh()->exhausted_at);
         $this->assertNull($receipt->instrument_execution_id, 'Tragedy is not a fabricated Instrument execution');
         $this->assertSame('tragedy', $receipt->type);
-        $this->assertSame($this->origin->id, $phase->cycle->participant->fresh()->current_proposition_id);
+        $this->assertSame($commit->id, $phase->cycle->participant->fresh()->current_proposition_id);
         $this->assertTrue(app(HorizonReceiptService::class)->available($phase)->contains('id', $receipt->id));
-        $this->assertSame($this->origin->id, $phase->cycle->fresh()->recovery_proposition_id);
+        $this->assertNull($phase->cycle->fresh()->recovery_proposition_id, 'Tragedy cannot override lineage recovery.');
         app(ExhaustionService::class)->publish($phase, $proof);
         $this->assertSame(1, Tragedy::count());
         $this->assertSame(1, Receipt::where('type', 'tragedy')->count());

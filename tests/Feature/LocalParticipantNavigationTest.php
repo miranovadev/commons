@@ -124,7 +124,7 @@ class LocalParticipantNavigationTest extends TestCase
         $this->assertSame('committal', $this->state($right)['plan']['gate_options'][0]['tier']);
     }
 
-    public function test_recovery_can_rank_connected_alternatives_within_the_same_basin(): void
+    public function test_recovery_excludes_connected_descendants_even_when_the_relative_ranking_diagnostic_prefers_them(): void
     {
         $near = $this->region('Near small Potential', 0.05);
         $far = $this->region('Far large Potential', 0.9);
@@ -143,10 +143,10 @@ class LocalParticipantNavigationTest extends TestCase
         $this->edge($near, $other);
         $this->refreshFixtureMeasurements();
         $recovery = $potential->recoverFrom($position);
-        $this->assertSame($far->id, $recovery['proposition']->id);
-        $this->assertSame(2, $recovery['distance']);
-        $this->assertEqualsWithDelta(0.1, $recovery['potential_charge'], 1e-9);
-        $this->assertSame(0.9, $recovery['raw_potential_charge']);
+        $this->assertSame($near->id, $recovery['proposition']->id);
+        $this->assertSame(1, $recovery['distance']);
+        $this->assertEqualsWithDelta(0.05 / 4, $recovery['potential_charge'], 1e-9);
+        $this->assertSame(0.05, $recovery['raw_potential_charge']);
     }
 
     public function test_charge_fallback_is_attenuated_from_the_expressive_position(): void
@@ -353,7 +353,7 @@ class LocalParticipantNavigationTest extends TestCase
         app(CycleEntryService::class)->enter($participant);
     }
 
-    public function test_recovery_ranks_all_ancestors_by_attenuated_potential(): void
+    public function test_recovery_ranks_sequential_ancestors_by_actual_backward_distance(): void
     {
         $position = $this->node('Observer', 0.0);
         $low = $this->region('Near low', 0.03);
@@ -361,21 +361,21 @@ class LocalParticipantNavigationTest extends TestCase
         $bridge = $this->node('Empty bridge', 0.0);
         $far = $this->region('Distant maximum', 1.0);
         $this->edge($low, $position);
-        $this->edge($near, $position);
-        $this->edge($bridge, $position);
+        $this->edge($near, $low);
+        $this->edge($bridge, $near);
         $this->edge($far, $bridge);
         $participant = $this->participant('observer', $position);
         $phase = $this->phase($participant, $position);
         $this->refreshFixtureMeasurements();
         $selection = app(PotentialChargeService::class)->recoverFrom($position);
         $this->assertSame($far->id, $selection['proposition']->id);
-        $this->assertSame(2, $selection['distance']);
-        $this->assertEqualsWithDelta(1 / 9, $selection['potential_charge'], 0.0000001);
+        $this->assertSame(4, $selection['distance']);
+        $this->assertEqualsWithDelta(1 / 25, $selection['potential_charge'], 0.0000001);
         app(ParticipationService::class)->contribute($participant, $phase->id, ['action' => 'participant.rest']);
         $this->assertSame($far->id, $this->state($participant)['plan']['gate_id']);
     }
 
-    public function test_equal_distance_ranking_uses_upstream_potential_and_id_ties(): void
+    public function test_ambiguous_multi_input_without_recorded_arrival_provenance_fails_closed(): void
     {
         $position = $this->node('Observer', 0.0);
         $near = $this->region('Short continuation', 0.7);
@@ -386,11 +386,11 @@ class LocalParticipantNavigationTest extends TestCase
         $this->edge($long, $position);
         $this->edge($long, $middle);
         $this->edge($middle, $end);
-        $this->assertSame($near->id, app(PotentialChargeService::class)->recoverFrom($position)['proposition']->id);
         $tie = $this->region('Equal short continuation', 0.7);
         $this->edge($tie, $position);
-        $this->edge($position, $long); // Malformed legacy graph cycles must terminate.
-        $this->assertSame(min($near->id, $tie->id), app(PotentialChargeService::class)->recoverFrom($position)['proposition']->id);
+        $this->expectException(\DomainException::class);
+        $this->expectExceptionMessage('recorded arrival Gate');
+        app(PotentialChargeService::class)->recoverFrom($position);
     }
 
     public function test_repeated_local_rest_does_not_mark_a_still_open_region_exhausted(): void
@@ -421,8 +421,9 @@ class LocalParticipantNavigationTest extends TestCase
         $visited = $order->replicate();
         $visited->forceFill(['gate_proposition_id' => $target->id, 'completed_at' => now()])->save();
         // Grounding remains available in Order unless the local target is no longer an active head.
-        $this->edge($target, $second);
-        $target->children()->updateExistingPivot($second->id, ['type' => 'reclassify']);
+        $later = $this->node('Historical continuation', 0.0);
+        $this->edge($target, $later);
+        $target->children()->updateExistingPivot($later->id, ['type' => 'reclassify']);
         // A prior visit no longer exhausts a Commit Region. Divergent Closure
         // makes its Write pool empty for this recovery-only regression.
         $this->mock(ClosureGateService::class, function ($mock): void {

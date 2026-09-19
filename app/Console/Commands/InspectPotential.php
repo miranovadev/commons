@@ -22,7 +22,7 @@ final class InspectPotential extends Command
         $position = $participant->position()->firstOrFail();
         $cycle = $participant->cycles()->latest('sequence')->first();
         try {
-            $result = $potential->inspectRecoveryFrom($position, $cycle?->contextHorizon);
+            $result = $potential->inspectRecoveryFrom($position, $cycle?->contextHorizon, $participant);
         } catch (PotentialProjectionUnavailable $exception) {
             $this->error($exception->getMessage());
 
@@ -38,7 +38,7 @@ final class InspectPotential extends Command
         $phase = $cycle?->phases()->orderByDesc('kind')->first();
         $result['would_tragedy'] = $phase !== null && collect(app(ExhaustionService::class)->inspect($phase)['branches'])->contains('exhausted', true);
         if ($this->option('verify')) {
-            $reference = app(ReferencePotentialChargeService::class)->inspectRecoveryFrom($position, $cycle?->contextHorizon)['selection'];
+            $reference = app(ReferencePotentialChargeService::class)->inspectRecoveryFrom($position, $cycle?->contextHorizon, $participant)['selection'];
             $result['reference_matches'] = ($selection['proposition_id'] ?? null) === ($reference['proposition']->id ?? null)
                 && ($selection['raw_potential_charge'] ?? null) === ($reference['raw_potential_charge'] ?? null)
                 && ($selection['distance'] ?? null) === ($reference['distance'] ?? null)

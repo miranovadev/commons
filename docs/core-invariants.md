@@ -140,10 +140,12 @@ entry when a current position exists. Any entry fallback remains Committal and
 respects that observational position. A prospective Commitment is not eligible
 until the Committal Proposition exists.
 
-Rest recovery uses the persisted Cycle Horizon and its explicit parent topology.
-Open downstream frontiers remain eligible even at zero measured Potential.
-Only explicit exhaustion permits retreat through the opening Commit into the
-immediate parent basin. At each level, viable sibling routes stop further retreat.
+Rest recovery walks backward from the actual participant position, using recorded
+arrival provenance at multi-input Writes. Only ancestral Committals on that path
+may compete, at their actual backward edge distance. Sibling and descendant
+frontiers are excluded. The persisted Cycle Horizon constrains candidates until
+explicit exhaustion permits continuing backward across its opening boundary.
+Previous Horizons do not reset the position or distance to their provenance node.
 Potential ranks structurally eligible entries; numeric zero never proves closure.
 Origin remains unique and persistent. Its Horizon follows the same final-attempt proof. See the invariants below.
 
@@ -237,7 +239,7 @@ rather than inferring semantics from current code behaviour.
 
 **Persistence invariant:** Exhausted Committals persist permanently and remain contextually visible where structurally relevant. They expose no actions. Historical context is ordered newest-first by creation date. Exhausted means learned-from, not forgotten.
 
-**Recovery invariant:** Exhaustion proof propagates upward through provenance locally, without global graph-wide recomputation. Tragedy recovers the triggering Participant to the Committal that opened its Horizon. Exhaustion subsequently permits existing outward recovery. Other Participants move through their normal lifecycle.
+**Recovery invariant:** Exhaustion proof propagates upward through provenance locally, without global graph-wide recomputation. Tragedy uses normal backward-lineage recovery from the terminal position, without an opener override. Exhaustion subsequently permits continuing backward into the previous Horizon on the same lineage. Other Participants move through their normal lifecycle.
 
 **Observer invariant:** Active/exhausted filtering in the graph is presentation-only and must not alter Participant cognition or substrate dynamics.
 

@@ -18,14 +18,14 @@ and still rejects an already active Cycle.
 Order Commit and Committal Traverse prepare Phase 1 at the exact terminal
 Committal, including zero-Potential continuation. Rest still requires complete
 local action exhaustion, records `rested_at`, and selects an eligible Committal
-from the viable recovery basin frontier with the existing attenuated Potential ranking. Successful recovery
+from the actual backward lineage within the eligible Horizon with the existing attenuated Potential ranking. Successful recovery
 creates Phase 1 before the terminal response when its observation remains current.
 The contribution commits first; recovery is calculated without locks, followed by
 a short version-checked entry transaction. Optimistic readers may see this gap.
 The next Cycle owns the selected entry's causal Horizon; no historical Cycle or
 Horizon is relabelled. See [causal entry rules](participant-continuity-and-relocation.md).
 
-A first no-Potential Rest creates [Tragedy](branch-tragedy.md), one Horizon Receipt and recovery to the opening Committal. The Horizon remains open. Only a later no-Potential Rest after that Receipt has been exercised by Reclassify records Exhaustion and enables outward recovery. No Potential score is invented; other Participants move through their normal lifecycle.
+A first no-Potential Rest creates [Tragedy](branch-tragedy.md), one Horizon Receipt and normal backward-lineage recovery from the terminal position. The Horizon remains open. Only a later no-Potential Rest after that Receipt has been exercised by Reclassify records Exhaustion and enables outward recovery. No Potential score is invented; other Participants move through their normal lifecycle.
 `waiting / recovery_unavailable` describes a genuinely unavailable valid entry,
 such as missing Origin or invalid/unmeasurable provenance. A concurrent field
 change can defer entry and expose `recovery_pending`; the next prepare observes
