@@ -181,6 +181,9 @@ bounded diagnostic. LocalEpoch completes in 73.04s, SourceEquivalence's long cas
 in 64.43s, and the successful-route revisit in 49.03s.
 
 The [complete suite inventory](evidence/ci-suite-inventory.json) matches all **657
-baseline case identities exactly**, with no missing or duplicated owner. Final
-five-shard Core acceptance remains pending.
+baseline case identities exactly**, with no missing or duplicated owner. The final
+five-shard Core and current-head Integration acceptance record is maintained in
+[PR #184](https://github.com/miranovadev/commons/pull/184), with immutable run links,
+observed wall times and pass counts. This document preserves the investigation
+and first-candidate measurements; the PR is ready only after the final gates pass.
 No cross-lineage traversal repair is included or started.
