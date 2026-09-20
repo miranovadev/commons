@@ -174,14 +174,9 @@ class InputSchemaServiceTest extends TestCase
         $documentation = file_get_contents(base_path('docs/participation.md'))
             .file_get_contents(base_path('docs/operational-commitment.md'));
 
-        $this->assertStringContainsString(
-            'In Distinguish, Persist, Constrain, Disperse and Bias,',
-            $prompt,
-        );
-        $this->assertStringContainsString(
-            'Expressive Traverse is never admissible in Mediate or Order.',
-            $prompt,
-        );
+        $this->assertStringContainsString('proposition.traverse selects an authorized causal Write', $prompt);
+        $this->assertStringNotContainsString('Current Phase: 5 Mediate', $prompt);
+        $this->assertStringNotContainsString('Current Phase: 7 Order', $prompt);
         foreach ([
             'or traverse an existing local Expressive Proposition',
             'or use an admissible local Expressive continuation',

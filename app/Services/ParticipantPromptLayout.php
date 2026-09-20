@@ -7,7 +7,7 @@ use Illuminate\Support\Arr;
 /** Presentation only: never queries, selects, truncates or retains cognition. */
 final class ParticipantPromptLayout
 {
-    public const VERSION = 'commons-prefix-v1';
+    public const VERSION = 'commons-prefix-v2';
 
     public const FORMAT_INSTRUCTION = 'The JSON input is split into two parts of one participation state. loaded_receipts supplies immutable identity, provenance and evidence for loaded Receipts; join each record by id with its current state in plan.receipts. Other Receipts remain complete in plan.receipts. These parts together describe the same Receipts, not additional evidence.';
 

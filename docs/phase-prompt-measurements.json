@@ -1,0 +1,303 @@
+{
+    "baseline_commit": "5fc2fb9be8b096a22206fa639edb7fee61cce794",
+    "baseline_constitution_sha256": "02b6c08b3d5f7c7884aa3fd7c981a808dae17b5e4cf0692ee4d338e99d328ed3",
+    "baseline_constitution_bytes": 17200,
+    "core_bytes": 3186,
+    "layout_version": "commons-prefix-v2",
+    "model_for_shape_only": "gpt-5.6",
+    "equivalent_packets": 1230,
+    "method": "Bytes are measured; tokens are bytes/4 estimates over visible text plus response format, excluding hidden rendering. Historical inference calls are not production wakes. Prefixes are diagnostic, not cache hits. Model requires exact schema and complete message-prefix equality at eligible boundaries; minimum eligibility also uses estimated tokens. No TTL, eviction, routing loss or request concurrency. Participant scope is conservative; substrate scope assumes identical custom instructions. Read rate 0.1, write rate 1.25, ordinary rate 1 are illustrative relative units, not measured bills. Incremental writes count unique tokens through the longest boundary once. No provider calls or production telemetry are available.",
+    "recurrence": {
+        "calls": 1230,
+        "adjacent_pairs": 1226,
+        "adjacent_same_phase": 96,
+        "adjacent_cross_phase": 1130,
+        "adjacent_same_evidence": 1118,
+        "cross_phase_same_evidence": 1118,
+        "adjacent_same_schema": 19,
+        "returns_to_previously_seen_phase": 1108,
+        "calls_with_a_prior_same_phase_call": 1204,
+        "prior_same_phase_same_evidence": 629,
+        "phase_previously_seen_from_another_participant": 582,
+        "same_phase_evidence_previously_seen_from_another_participant": 38,
+        "participants": 4
+    },
+    "phases": {
+        "Distinguish": {
+            "calls": 202,
+            "contract_bytes": 4240,
+            "contract_with_rest_bytes": 5197,
+            "mean_system_bytes": 7821
+        },
+        "Persist": {
+            "calls": 201,
+            "contract_bytes": 4030,
+            "contract_with_rest_bytes": 4987,
+            "mean_system_bytes": 7611
+        },
+        "Constrain": {
+            "calls": 197,
+            "contract_bytes": 3982,
+            "contract_with_rest_bytes": 4939,
+            "mean_system_bytes": 7733.03
+        },
+        "Disperse": {
+            "calls": 164,
+            "contract_bytes": 4571,
+            "contract_with_rest_bytes": 5528,
+            "mean_system_bytes": 8152
+        },
+        "Mediate": {
+            "calls": 182,
+            "contract_bytes": 3774,
+            "contract_with_rest_bytes": 4731,
+            "mean_system_bytes": 7570.59
+        },
+        "Bias": {
+            "calls": 203,
+            "contract_bytes": 4752,
+            "contract_with_rest_bytes": 5709,
+            "mean_system_bytes": 8705.43
+        },
+        "Order": {
+            "calls": 81,
+            "contract_bytes": 2107,
+            "contract_with_rest_bytes": 3064,
+            "mean_system_bytes": 6503.22
+        }
+    },
+    "observed_cycle_instruction_totals": {
+        "cycles": 197,
+        "mean_before_bytes": 109844.62,
+        "mean_after_bytes": 48943.13,
+        "caveat": "Observed Cycle fragments, which may start/end mid-Cycle; not measured complete-wake totals."
+    },
+    "means": {
+        "all": {
+            "calls": 1230,
+            "187": {
+                "instruction_bytes": 17593,
+                "request_bytes": 48169.92,
+                "rough_input_tokens": 11282.3,
+                "shared_visible_prefix_bytes": 33242.48,
+                "same_phase_visible_prefix_bytes": 29296.98,
+                "cross_phase_visible_prefix_bytes": 33577.68,
+                "participant": {
+                    "read_rough_tokens": 3652.47,
+                    "write_rough_tokens": 4867.32,
+                    "modeled_hit": 601,
+                    "cold_cache_cost_units": 13412.25,
+                    "retained_cache_cost_units": 9211.91
+                },
+                "substrate": {
+                    "read_rough_tokens": 3724.39,
+                    "write_rough_tokens": 4795.4,
+                    "modeled_hit": 618,
+                    "cold_cache_cost_units": 13412.25,
+                    "retained_cache_cost_units": 9129.2
+                }
+            },
+            "phase_first": {
+                "instruction_bytes": 7838.86,
+                "request_bytes": 38400.13,
+                "rough_input_tokens": 8843.77,
+                "shared_visible_prefix_bytes": 4850.45,
+                "same_phase_visible_prefix_bytes": 20181.43,
+                "cross_phase_visible_prefix_bytes": 3548,
+                "participant": {
+                    "read_rough_tokens": 2292.84,
+                    "write_rough_tokens": 3788.42,
+                    "modeled_hit": 589,
+                    "cold_cache_cost_units": 10364.08,
+                    "retained_cache_cost_units": 7727.32
+                },
+                "substrate": {
+                    "read_rough_tokens": 2335.38,
+                    "write_rough_tokens": 3745.88,
+                    "modeled_hit": 608,
+                    "cold_cache_cost_units": 10364.08,
+                    "retained_cache_cost_units": 7678.4
+                }
+            },
+            "evidence_first_2": {
+                "instruction_bytes": 7838.86,
+                "request_bytes": 38427.13,
+                "rough_input_tokens": 8843.27,
+                "shared_visible_prefix_bytes": 18480.43,
+                "same_phase_visible_prefix_bytes": 15234.98,
+                "cross_phase_visible_prefix_bytes": 18756.15,
+                "participant": {
+                    "read_rough_tokens": 1853.52,
+                    "write_rough_tokens": 3150.77,
+                    "modeled_hit": 498,
+                    "cold_cache_cost_units": 10094.34,
+                    "retained_cache_cost_units": 7962.79
+                },
+                "substrate": {
+                    "read_rough_tokens": 1876.85,
+                    "write_rough_tokens": 3127.44,
+                    "modeled_hit": 515,
+                    "cold_cache_cost_units": 10094.34,
+                    "retained_cache_cost_units": 7935.96
+                }
+            },
+            "evidence_first_3": {
+                "instruction_bytes": 7838.86,
+                "request_bytes": 38504.13,
+                "rough_input_tokens": 8843.27,
+                "shared_visible_prefix_bytes": 18480.43,
+                "same_phase_visible_prefix_bytes": 15234.98,
+                "cross_phase_visible_prefix_bytes": 18756.15,
+                "participant": {
+                    "read_rough_tokens": 2126.64,
+                    "write_rough_tokens": 3954.12,
+                    "modeled_hit": 498,
+                    "cold_cache_cost_units": 10363.46,
+                    "retained_cache_cost_units": 7917.82
+                },
+                "substrate": {
+                    "read_rough_tokens": 2166.71,
+                    "write_rough_tokens": 3914.05,
+                    "modeled_hit": 515,
+                    "cold_cache_cost_units": 10363.46,
+                    "retained_cache_cost_units": 7871.74
+                }
+            },
+            "phase_first_phase_key": {
+                "instruction_bytes": 7838.86,
+                "request_bytes": 38400.13,
+                "rough_input_tokens": 8843.77,
+                "shared_visible_prefix_bytes": 4850.45,
+                "same_phase_visible_prefix_bytes": 20181.43,
+                "cross_phase_visible_prefix_bytes": 3548,
+                "participant": {
+                    "read_rough_tokens": 2292.84,
+                    "write_rough_tokens": 3788.42,
+                    "modeled_hit": 589,
+                    "cold_cache_cost_units": 10364.08,
+                    "retained_cache_cost_units": 7727.32
+                },
+                "substrate": {
+                    "read_rough_tokens": 2335.38,
+                    "write_rough_tokens": 3745.88,
+                    "modeled_hit": 608,
+                    "cold_cache_cost_units": 10364.08,
+                    "retained_cache_cost_units": 7678.4
+                }
+            }
+        },
+        "receipt_heavy_10_plus": {
+            "calls": 932,
+            "187": {
+                "instruction_bytes": 17593,
+                "request_bytes": 54047.29,
+                "rough_input_tokens": 12624.47,
+                "shared_visible_prefix_bytes": 36972.54,
+                "same_phase_visible_prefix_bytes": 34834.17,
+                "cross_phase_visible_prefix_bytes": 37119.68,
+                "participant": {
+                    "read_rough_tokens": 4262.22,
+                    "write_rough_tokens": 5210.34,
+                    "modeled_hit": 500,
+                    "cold_cache_cost_units": 14992.61,
+                    "retained_cache_cost_units": 10091.06
+                },
+                "substrate": {
+                    "read_rough_tokens": 4262.22,
+                    "write_rough_tokens": 5210.34,
+                    "modeled_hit": 500,
+                    "cold_cache_cost_units": 14992.61,
+                    "retained_cache_cost_units": 10091.06
+                }
+            },
+            "phase_first": {
+                "instruction_bytes": 7820.34,
+                "request_bytes": 44259.05,
+                "rough_input_tokens": 10181.31,
+                "shared_visible_prefix_bytes": 4982.29,
+                "same_phase_visible_prefix_bytes": 25827.27,
+                "cross_phase_visible_prefix_bytes": 3548,
+                "participant": {
+                    "read_rough_tokens": 2772.2,
+                    "write_rough_tokens": 4257.2,
+                    "modeled_hit": 500,
+                    "cold_cache_cost_units": 11938.66,
+                    "retained_cache_cost_units": 8750.63
+                },
+                "substrate": {
+                    "read_rough_tokens": 2772.2,
+                    "write_rough_tokens": 4257.2,
+                    "modeled_hit": 500,
+                    "cold_cache_cost_units": 11938.66,
+                    "retained_cache_cost_units": 8750.63
+                }
+            },
+            "evidence_first_2": {
+                "instruction_bytes": 7820.34,
+                "request_bytes": 44286.05,
+                "rough_input_tokens": 10180.81,
+                "shared_visible_prefix_bytes": 22184.45,
+                "same_phase_visible_prefix_bytes": 20772.17,
+                "cross_phase_visible_prefix_bytes": 22281.62,
+                "participant": {
+                    "read_rough_tokens": 2301.31,
+                    "write_rough_tokens": 3655.75,
+                    "modeled_hit": 428,
+                    "cold_cache_cost_units": 11670.07,
+                    "retained_cache_cost_units": 9023.56
+                },
+                "substrate": {
+                    "read_rough_tokens": 2301.31,
+                    "write_rough_tokens": 3655.75,
+                    "modeled_hit": 428,
+                    "cold_cache_cost_units": 11670.07,
+                    "retained_cache_cost_units": 9023.56
+                }
+            },
+            "evidence_first_3": {
+                "instruction_bytes": 7820.34,
+                "request_bytes": 44363.05,
+                "rough_input_tokens": 10180.81,
+                "shared_visible_prefix_bytes": 22184.45,
+                "same_phase_visible_prefix_bytes": 20772.17,
+                "cross_phase_visible_prefix_bytes": 22281.62,
+                "participant": {
+                    "read_rough_tokens": 2619.33,
+                    "write_rough_tokens": 4409.57,
+                    "modeled_hit": 428,
+                    "cold_cache_cost_units": 11938.03,
+                    "retained_cache_cost_units": 8925.81
+                },
+                "substrate": {
+                    "read_rough_tokens": 2619.33,
+                    "write_rough_tokens": 4409.57,
+                    "modeled_hit": 428,
+                    "cold_cache_cost_units": 11938.03,
+                    "retained_cache_cost_units": 8925.81
+                }
+            },
+            "phase_first_phase_key": {
+                "instruction_bytes": 7820.34,
+                "request_bytes": 44259.05,
+                "rough_input_tokens": 10181.31,
+                "shared_visible_prefix_bytes": 4982.29,
+                "same_phase_visible_prefix_bytes": 25827.27,
+                "cross_phase_visible_prefix_bytes": 3548,
+                "participant": {
+                    "read_rough_tokens": 2772.2,
+                    "write_rough_tokens": 4257.2,
+                    "modeled_hit": 500,
+                    "cold_cache_cost_units": 11938.66,
+                    "retained_cache_cost_units": 8750.63
+                },
+                "substrate": {
+                    "read_rough_tokens": 2772.2,
+                    "write_rough_tokens": 4257.2,
+                    "modeled_hit": 500,
+                    "cold_cache_cost_units": 11938.66,
+                    "retained_cache_cost_units": 8750.63
+                }
+            }
+        }
+    }
+}

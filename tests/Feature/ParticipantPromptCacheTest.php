@@ -9,6 +9,8 @@ use App\Services\OpenAIRequestFactory;
 use App\Services\OpenAIResponseSchema;
 use App\Services\OpenAIResponsesClient;
 use App\Services\ParticipantContextSerializer;
+use App\Services\ParticipantPhaseInstructions;
+use App\Services\ParticipantPromptCore;
 use App\Services\ParticipantPromptFactory;
 use App\Services\ParticipantPromptLayout;
 use Illuminate\Support\Facades\Http;
@@ -45,9 +47,14 @@ class ParticipantPromptCacheTest extends TestCase
         $this->assertSame(app(OpenAIResponseSchema::class)->fromCommons($state['plan']['schema']), $request['text']['format']['schema']);
         $this->assertSame(1, substr_count($prompt['evidence'].$prompt['user'], 'immutable observation'));
         $this->assertStringNotContainsString('DO-NOT-EXPOSE', json_encode($request));
-        $constitution = str_replace("\n\n".ParticipantPromptLayout::FORMAT_INSTRUCTION, '', $prompt['system']);
-        // Constitution intentionally aligned with the merged #185 lineage/Homeostatic rules.
-        $this->assertSame('02b6c08b3d5f7c7884aa3fd7c981a808dae17b5e4cf0692ee4d338e99d328ed3', hash('sha256', $constitution));
+        $this->assertStringContainsString(ParticipantPromptCore::TEXT, $prompt['system']);
+        $this->assertStringContainsString(app(ParticipantPhaseInstructions::class)->forPhase($phase), $prompt['system']);
+        // #187 evidence/state layers are byte-identical, not merely reconstructable.
+        $layers = (new ParticipantPromptLayout)->make($before);
+        $this->assertSame($layers['evidence'], $prompt['evidence']);
+        $this->assertSame($layers['user'], $prompt['user']);
+        $this->assertSame($layers['loaded_receipt_count'], $prompt['loaded_receipt_count']);
+        $this->assertStringNotContainsString($prompt['instruction_family'], json_encode($request['input']));
     }
 
     public function test_object_key_and_database_receipt_order_do_not_change_serialization(): void
@@ -152,9 +159,10 @@ class ParticipantPromptCacheTest extends TestCase
         $connection = $this->connection();
         $key = fn ($c, $s) => app(OpenAIRequestFactory::class)->make($c, app(ParticipantPromptFactory::class)->make($c, $s), $s['_inference'])['prompt_cache_key'];
         $before = $key($connection, $state);
-        // Same model/substrate/layout at #187's pre-correction head 405897e.
-        // Corrected stable instructions must not retain that warm cache family.
-        $this->assertNotSame('commons-prefix-v1:82c007a597c3859f5be53e679250a59ab242e3bc', $before);
+        $this->assertStringStartsWith('commons-prefix-v2:', $before);
+        foreach (PhaseKind::cases() as $phase) {
+            $this->assertSame($before, $key($connection, $this->state($phase)));
+        }
         $state['_inference']['participant_id'] = 'another-participant';
         $state['plan']['phase']['id'] = 'another-phase';
         $state['plan']['receipts'] = [];
@@ -165,6 +173,28 @@ class ParticipantPromptCacheTest extends TestCase
         $connection->configuration = ['model' => 'gpt-5.6', 'instructions' => 'Preserve uncertainty.'];
         $this->assertNotSame($before, $key($connection, $this->state()));
         $this->assertLessThanOrEqual(64, strlen($before));
+    }
+
+    public function test_all_contract_content_versions_the_family_without_entering_model_context(): void
+    {
+        $contracts = app(ParticipantPhaseInstructions::class);
+        $catalog = array_map(fn (PhaseKind $phase) => $contracts->forPhase($phase, restAvailable: true), PhaseKind::cases());
+        $this->assertSame(hash('sha256', json_encode($catalog, JSON_THROW_ON_ERROR)), $contracts->fingerprint());
+        $connection = $this->connection();
+        $prompt = app(ParticipantPromptFactory::class)->make($connection, $this->state());
+        $this->assertSame(hash('sha256', json_encode([
+            ParticipantPromptCore::TEXT, ParticipantPromptLayout::FORMAT_INSTRUCTION, $contracts->fingerprint(), '',
+        ], JSON_THROW_ON_ERROR)), $prompt['instruction_family']);
+        $before = app(OpenAIRequestFactory::class)->make($connection, $prompt);
+        $catalog[5] .= '\nA future Bias semantic correction.';
+        $prompt['instruction_family'] = hash('sha256', json_encode([
+            ParticipantPromptCore::TEXT, ParticipantPromptLayout::FORMAT_INSTRUCTION,
+            hash('sha256', json_encode($catalog, JSON_THROW_ON_ERROR)), '',
+        ], JSON_THROW_ON_ERROR));
+        $after = app(OpenAIRequestFactory::class)->make($connection, $prompt);
+        $this->assertNotSame($before['prompt_cache_key'], $after['prompt_cache_key']);
+        unset($before['prompt_cache_key'], $after['prompt_cache_key']);
+        $this->assertSame($before, $after);
     }
 
     public function test_usage_is_logged_even_on_refusal_without_prompt_content(): void
