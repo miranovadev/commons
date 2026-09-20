@@ -84,23 +84,40 @@ for (const effective of [null, 'support', 'refute']) {
     assert.equal(quickContribution(localPlan, 'proposition.revise', { proposition_id: archived.id }), null);
     assert.deepEqual(attestationDirections(localPlan, unavailable.id), []);
     assert.deepEqual(writePropositions(localPlan), [archived]);
-    assert.deepEqual(writePropositions({ ...localPlan, write_options: [], gate_options: [unavailable], instrument_options: [unavailable] }), []);
+    assert.deepEqual(writePropositions({ ...localPlan, write_options: [], gate_options: [unavailable], instrument_options: [unavailable] }), effective ? [archived] : []);
     assert.deepEqual(writePropositions({ ...localPlan, schema: {} }), []);
   });
 }
 
 
-test('Closure Gate cards and form select authorized cross-branch sources independently of the current Gate', () => {
-  const candidate = { ...archived, id: 'other-branch', register: 'canon' };
+test('Closure retains local expressive Writes independently of Commit eligibility and respects other schema actions', () => {
+  const admissible = { ...archived, id: 'local-aligned', register: 'canon' };
+  const divergent = { ...archived, id: 'local-divergent', register: 'canon' };
   const closure = {
     ...plan, phase: { kind: 'order', write_register: 'canon' },
-    gate_options: [candidate, unavailable], write_options: [],
+    gate_options: [], write_options: [admissible, divergent],
     schema: { $defs: { actions: {
-      'proposition.commit': { properties: { proposition_id: { enum: [candidate.id] } } },
+      'proposition.commit': { properties: { proposition_id: { enum: [admissible.id] } } },
     } } },
   };
-  assert.deepEqual(writePropositions(closure), []);
-  assert.deepEqual(actionPropositions(closure, 'proposition.commit'), [candidate]);
-  assert.equal(actionTargetIds(closure, 'proposition.commit').has(plan.gate.id), false);
-  assert.equal(quickContribution(closure, 'proposition.commit', { proposition_id: candidate.id }), null);
+  assert.deepEqual(writePropositions(closure), [admissible, divergent]);
+  assert.deepEqual(actionPropositions(closure, 'proposition.commit'), [admissible]);
+  assert.equal(actionTargetIds(closure, 'proposition.commit').has(divergent.id), false);
+  assert.equal(actionTargetIds(closure, 'proposition.traverse').has(divergent.id), false);
+  assert.deepEqual(writePropositions({ ...closure, schema: {} }), [admissible, divergent]);
+  assert.equal(quickContribution(closure, 'proposition.commit', { proposition_id: admissible.id }), null);
+});
+
+test('Bias successful-route traversal remains a visible Write after its source is frozen', () => {
+  const frozen = { ...archived, id: 'own-frozen-classification', register: 'canon' };
+  const revisit = {
+    ...plan, phase: { kind: 'bias', write_register: 'canon' }, write_options: [],
+    traversal_options: [frozen],
+    schema: { $defs: { actions: {
+      'proposition.traverse': { properties: { proposition_id: { enum: [frozen.id] } } },
+    } } },
+  };
+  assert.deepEqual(writePropositions(revisit), [frozen]);
+  assert.deepEqual(quickContribution(revisit, 'proposition.traverse', { proposition_id: frozen.id }),
+    { action: 'proposition.traverse', proposition_id: frozen.id });
 });

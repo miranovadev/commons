@@ -132,18 +132,18 @@ Attestation, then preserves content and proposition evidence while resetting the
 new classification's votes and touches. It promises no population-wide lean target.
 Mediate uses the previous Disperse Gate's retained Correspondence direction
 against Read-equivalent members of its Commit Region. Bias uses Gate-equivalent
-members of that same structural scope; Closure uses Write-equivalent members.
+members of that same structural scope. Closure evaluates each causally local
+Write's own lineage/history and participation independently.
 The Context Horizon remains comparison context. See
 [participation](participation.md#shared-commit-region-scope).
 
-These are the explicit Homeostatic exceptions: Mediate — Read, Bias — Gate and
-Closure / Order — Write may consider region-wide Propositions at their relevant
-structural position, including other expressive lineages. Commit Region
-membership defines calculation/context scope only where the operation requires
-it. Calculation, comparison or selection never creates a traversal edge or
-relocates the Participant. Other regional Bias-position Writes may inform that
-calculation or permitted context, but Traverse still requires the causal Write
-continuation of the current Gate.
+Mediate — Read and Bias — Gate may calculate over regional populations. Only
+Mediate exposes compatible foreign Gates operationally as reconciliation operands;
+Bias exposes only its current causal Gate. Closure, performed during Order —
+Write, is not a region-wide cross-lineage comparison. Calculation membership never
+creates operational options or traversal edges. Local expressive Writes remain
+visible independently of Closure; Commit requires full admissibility and only
+each Write's own direct Committal may be traversed.
 
 ## Local Closure
 
@@ -251,4 +251,5 @@ commitment time. New non-bootstrap commitments record receipt-context-lineage-v6
 
 See [Attestation polarity and direction history](attestation-polarity.md) for the
 normative distinction between measurement values, retained directions and labels.
+
 

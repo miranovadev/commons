@@ -25,7 +25,7 @@ test('Mediate counterparts and unary Bias choices use their own schema-authorize
           const child = { ...gate, id: 'child', register: writeRegister, statement: 'Forward child' };
           const gateAction = kind === 'bias' ? 'proposition.reclassify' : 'proposition.reconcile';
           const target = kind === 'bias' ? 'proposition_id' : 'other_proposition_id';
-          const choices = kind === 'bias' ? ['gate', 'sibling'] : ['sibling'];
+          const choices = kind === 'bias' ? ['gate'] : ['sibling'];
           const actions = {
             'attestation.create': { properties: { proposition_id: { enum: ['child'] }, direction: { enum: ['support', 'refute'] } } },
             ...(authorized ? { [gateAction]: { required: ['action', target], properties: { action: { const: gateAction }, [target]: { enum: choices } } } } : {}),
@@ -58,15 +58,16 @@ test('Mediate counterparts and unary Bias choices use their own schema-authorize
     assert.doesNotMatch(gate, /proposition-card--selected/);
     if (kind === 'mediate') assert.match(gate, /Current Gate · statement retained/);
     assert.match(gate, /Privileged Gate/);
-    assert.match(gate, /Sibling alternative/);
+    if (kind === 'mediate') assert.match(gate, /Sibling alternative/);
+    else assert.doesNotMatch(gate, /Sibling alternative/);
     if (kind === 'mediate') {
       assert.match(gate, /data-reconcile-candidate="sibling"/);
       assert.equal([...gate.matchAll(/>Reconcile<\/span>/g)].length, 1);
       assert.doesNotMatch(write, />Reconcile<\/span>/);
     } else {
       assert.match(gate, /data-bias-candidate="gate"/);
-      assert.match(gate, /data-bias-candidate="sibling"/);
-      assert.equal([...gate.matchAll(/>Reclassify<\/span>/g)].length, 2);
+      assert.doesNotMatch(gate, /data-bias-candidate="sibling"/);
+      assert.equal([...gate.matchAll(/>Reclassify<\/span>/g)].length, 1);
       assert.doesNotMatch(write, />Reclassify<\/span>/);
       assert.doesNotMatch(gate, /Reconcile/);
       assert.equal([...gate.matchAll(/Privileged Gate/g)].length, 1);
@@ -78,8 +79,8 @@ test('Mediate counterparts and unary Bias choices use their own schema-authorize
     assert.doesNotMatch(denied, /Sibling alternative|>Reconcile<\/span>|>Reclassify<\/span>/);
     if (kind === 'bias') {
       const deniedGate = denied.slice(denied.indexOf('data-role="gate"'), denied.indexOf('data-role="write"'));
-      assert.doesNotMatch(deniedGate, /Privileged Gate/);
-      assert.match(deniedGate, /No eligible Gate Proposition/);
+      assert.match(deniedGate, /Privileged Gate/);
+      assert.doesNotMatch(deniedGate, /Sibling alternative/);
     }
   }
 });

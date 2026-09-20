@@ -43,11 +43,15 @@ export function attestationDirections(plan: ParticipantPlan, propositionId?: str
 
 /** The backend's forward frontier is the only source of Write cards. */
 export function writePropositions(plan: ParticipantPlan): Proposition[] {
-  if (plan.phase.kind === 'order') return actionPropositions(plan, 'proposition.traverse').filter(node => node.tier === 'committal');
+  if (plan.phase.kind === 'order') return [...new Map([
+    ...(plan.write_options ?? []).filter(node => node.tier === 'expressive'),
+    ...actionPropositions(plan, 'proposition.traverse').filter(node => node.tier === 'committal'),
+  ].map(node => [node.id, node])).values()];
   const actionable = new Set(([
     'attestation.create', 'proposition.traverse', 'proposition.revise',
     'instrument.execute', 'proposition.commit',
   ] as ActionName[]).flatMap((action) => [...actionTargetIds(plan, action)]));
-  return [...new Map([...(plan.write_options ?? []), ...actionPropositions(plan, 'instrument.execute')].filter((item) => actionable.has(item.id) || item.spent === true)
+  return [...new Map([...(plan.write_options ?? []), ...actionPropositions(plan, 'instrument.execute'),
+    ...actionPropositions(plan, 'proposition.traverse')].filter((item) => actionable.has(item.id) || item.spent === true)
     .map((item) => [item.id, item])).values()];
 }

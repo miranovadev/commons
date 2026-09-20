@@ -100,27 +100,36 @@ statements or genuinely growing actionable populations fit a fixed byte budget.
 
 ## Operational populations and identity
 
-Read candidates come from the existing Mediate Read calculation. Gate contains
-the current Gate plus current counterpart/Bias candidates; the action schema
-identifies which IDs can actually be selected. The current Gate may be contextual
-without being an authorized Bias or reconciliation target.
+Read candidates come from the existing Mediate Read calculation. Mediate Gate
+contains the current Gate plus authorised reconciliation counterparts. Those
+counterparts are operands, not movement destinations; Reconcile creates the two
+causal edges. Bias Gate contains only the current causal Gate, including when it
+has no selectable action. Regional Bias calculation candidates are not serialized
+as operational Gates.
 
 Commit Region membership defines calculation/context scope only where a Commons
-operation explicitly requires it; it never creates a traversal edge. The only
-regional cross-lineage Homeostatic populations are Mediate — Read, Bias — Gate,
-and Closure / Order — Write. Calculation or comparison of another lineage's
-member does not move the Participant or make that member an action target.
+operation explicitly requires it; it never creates a traversal edge. Mediate —
+Read and Bias — Gate may calculate regionally. Closure, performed during Order —
+Write, independently evaluates each causally local Write's own lineage/history
+and participation, without a regional cross-lineage Write population.
 The schema must enforce structural authority from the current Gate independently
 of a candidate's measurement rank or serialized lane.
 
 Write is the union of actual schema-authorized Write, revision, traversal,
-Instrument and Attestation targets. Standalone copies under those secondary names
+Instrument and Attestation targets. At Order it additionally retains **all**
+causally local expressive Writes, regardless of Closure or grounding eligibility.
+Commit targets are an admissible subset; ordinary expressive eligibility remains
+separate from Closure, and only each Write's own direct Committal
+result may be traversed. `commitment_options` evaluates every local expressive
+Write, including inadmissible and frozen ones. Standalone copies under secondary names
 are not serialized. Read owns a shared object first, then Gate, then Write;
 additional action roles reference the same ID through the schema. All current
 operational IDs are excluded from Lineage. IDs for `gate_id` and `provenance_id`
 resolve within the four populations, without standalone full copies. At initial
 entry, provenance is the current Gate: it appears once in Gate Options and
-Lineage is empty.
+Lineage is empty. Order's recorded Gate is the selected Bias-produced Write and
+appears in Write, not as an alternate Gate selection. Its existing same-position
+revision paths remain causal; siblings sharing its Stance/Frontier parent do not.
 
 Expressive Traverse targets are immediate valid causal descendants of the current
 Gate, subject to phase, evidence and personal traversal prerequisites and the
@@ -279,3 +288,4 @@ participant view subscribes to its current Horizon through the shared Reverb
 transport, so another participant's proposition status update refreshes local
 context even while this viewer remains still. Events retain identifier-only
 payloads; no history is broadcast.
+

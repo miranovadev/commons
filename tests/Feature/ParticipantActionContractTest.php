@@ -283,13 +283,13 @@ class ParticipantActionContractTest extends TestCase
         $history->forceFill(['participant_id' => $participant->id, 'sequence' => 1, 'completed_at' => now()])->save();
         $past = new Phase;
         $past->forceFill(['cycle_id' => $history->id, 'kind' => PhaseKind::Order, 'write_register' => 'activity', 'started_at' => now(), 'completed_at' => now()])->save();
-        $node = function (string $register, ?Proposition $parent = null, PhaseKind $position = PhaseKind::Order) use ($past): Proposition {
+        $node = function (string $register, ?Proposition $parent = null, PhaseKind $position = PhaseKind::Order, string $edgeType = 'variant') use ($past): Proposition {
             $node = new Proposition;
             $node->forceFill(['phase_id' => $this->phaseAtPositionFixture($past, $position)->id, 'register' => $register, 'tier' => $parent ? 'expressive' : 'committal', 'statement' => 'Contract fixture'])->save();
             app(LedgerService::class)->record($node);
             if ($parent) {
                 $edge = new Supersession;
-                $edge->forceFill(['phase_id' => $past->id, 'source_proposition_id' => $parent->id, 'target_proposition_id' => $node->id, 'type' => 'variant'])->save();
+                $edge->forceFill(['phase_id' => $past->id, 'source_proposition_id' => $parent->id, 'target_proposition_id' => $node->id, 'type' => $edgeType])->save();
                 app(LedgerService::class)->record($edge);
             }
 
@@ -325,7 +325,7 @@ class ParticipantActionContractTest extends TestCase
             if ($kind === PhaseKind::Mediate) {
                 $node('activity', $anchor, PhaseKind::Disperse);
             }
-            $write = $node($writes[$kind->value - 1], $gate, $kind === PhaseKind::Order ? PhaseKind::Bias : $kind);
+            $write = $node($writes[$kind->value - 1], $gate, $kind === PhaseKind::Order ? PhaseKind::Bias : $kind, $kind === PhaseKind::Order ? 'revise' : 'variant');
             if (in_array('proposition.revise', config('phases.'.$kind->value.'.actions'), true)) {
                 // Keep the untouched Write for attestation coverage, and qualify
                 // a separate revision target with an earlier effective self-Refute.
@@ -352,7 +352,7 @@ class ParticipantActionContractTest extends TestCase
                     $mock->shouldReceive('preview')->andReturn($values);
                     $mock->shouldReceive('forCommitment')->andReturn($values);
                 });
-                $committedSource = $node('canon', $seed, PhaseKind::Bias);
+                $committedSource = $node('canon', $gate, PhaseKind::Bias, 'revise');
                 $this->groundFixture($committedSource);
                 $past->forceFill(['write_register' => 'canon', 'gate_proposition_id' => $committedSource->id])->save();
             }

@@ -135,6 +135,8 @@ class AttestationPolarityTest extends TestCase
         $evidence->populationDirection($seed, $register);
         $this->assertSame($counts, [Proposition::count(), $this->participant->substrate->ledgerEntries()->count()]);
         $this->receiptFixture($major);
+        // Reclassification is exercised from the candidate's own causal Gate.
+        $phase = $this->phase(PhaseKind::Bias, $write, $major);
         $target = app(ContributionDispatcher::class)->dispatch($this->participant, $phase,
             $this->reclassificationInputFixture($phase, $major));
         $this->assertSame($major->statement, $target->statement);

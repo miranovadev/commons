@@ -68,7 +68,8 @@ class PhasePositionInvariantTest extends TestCase
         $this->assertTrue(app(CommitmentAdmissibilityService::class)->evaluate($late, $order)['admissible']);
         $plan = app(InputPlanService::class)->forPhase($reader, $order, workspace: true);
         $this->assertSame([$late->id], $plan['schema']['$defs']['actions']['proposition.commit']['properties']['proposition_id']['enum']);
-        $this->assertSame([$late->id], array_column($plan['gate_options'], 'id'));
+        $this->assertSame([], $plan['gate_options']);
+        $this->assertSame([$late->id], array_column($plan['write_options'], 'id'));
         $count = Proposition::count();
         try {
             app(ContributionDispatcher::class)->dispatch($reader, $order, ['action' => 'proposition.commit', 'proposition_id' => $early->id]);
@@ -155,11 +156,11 @@ class PhasePositionInvariantTest extends TestCase
         $bias = $this->phase($reader, PhaseKind::Bias, $late);
         foreach ([null, new ParticipationContext($bias)] as $context) {
             $this->assertSame([$late->id], app(BiasGateService::class)->populationFor($bias, $context)->pluck('id')->all());
-            $this->assertSame([$nodes[6]->id], app(PropositionOptionService::class)->writeOptionsFor($bias, $context)->pluck('id')->all());
+            $this->assertSame([], app(PropositionOptionService::class)->writeOptionsFor($bias, $context)->pluck('id')->all());
         }
         $plan = app(InputPlanService::class)->forPhase($reader, $bias);
         $this->assertSame([$late->id], $plan['schema']['$defs']['actions']['proposition.reclassify']['properties']['proposition_id']['enum']);
-        $this->assertSame([$nodes[6]->id], array_column($plan['write_options'], 'id'));
+        $this->assertSame([], $plan['write_options']); // Correct position on another route is still not local.
         try {
             app(ContributionDispatcher::class)->dispatch($reader, $bias, $this->reclassificationInputFixture($bias, $early));
             $this->fail('Persist cannot bypass Mediate.');

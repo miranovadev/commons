@@ -1,11 +1,13 @@
 # Closure hysteresis and Domain transitions
 
-Closure / Order — Write evaluates its explicitly defined regional Homeostatic
-population. Commit Region membership defines calculation/context scope only;
-it never creates a traversal edge. The Participant remains on its own causal
-lineage. A measurement candidate or visible source is not automatically an
-action target. Order Traverse requires the Commit produced directly from the
-current classification Gate. No edge means no movement.
+Closure, performed during Order — Write, evaluates each causally local expressive
+Write independently from that Write's Depth/Cadence, lineage/history and
+participation. It is not a region-wide cross-lineage comparison or candidate
+enumeration. All local expressive Writes remain visible and retain valid
+expressive actions wherever the Phase rules permit them. Only Writes with
+all Commitment prerequisites expose Commit. A Write's own direct Committal child
+may expose Traverse; unrelated regional Writes and Commits cannot. No edge means
+no movement.
 
 Order evaluates the proposed Commit node and edge with the same post-Commit
 active-head state used by actual Commitment. The head inherits its Gate's Phase
@@ -26,7 +28,8 @@ Settlement can develop positive prospective components with only the Origin
 Commitment in history: matching development and touch variability are observable
 before the proposed Commit. Changed development and concentrated touch
 distributions can develop negative components in Emergence. The original
-cross-lineage comparison, independent directions and hysteresis remain in force.
+comparison of each Write's current and predecessor lineage, independent directions
+and hysteresis remain in force.
 
 Depth and Cadence are retained separately (seven-decimal precision). Each
 positive/negative value selects that direction; exactly zero retains the prior
@@ -56,8 +59,9 @@ evaluations inherit the newly recorded component directions.
 `requirements.closure` is an actual boolean and `closure_enforced` is true.
 Grounding remains mandatory. Divergence keeps Commit inadmissible while retaining other admissible Phase actions (Rest only on complete action exhaustion),
 even when receipts and attestations are present. Adding evidence is not a bypass
-for incompatible Closure structure. No new Order actions or phase skipping are
-introduced.
+for incompatible Closure structure. This scope correction does not add Phase
+actions: Order currently permits Commit and direct Committal Traverse. The
+expressive Write population is not filtered by either action's availability.
 
 After a successful Commit, existing projection and Tension rules decide whether
 the Domain changes. Alignment permits Commitment; it does not itself imply a
@@ -109,3 +113,4 @@ grounding, and successful Commit after real participation changes the touch
 distribution. Preview and the persisted snapshot agree, and only Commit carries
 the final earned history. No Closure calculation, threshold or hysteresis rule
 is changed to make this path succeed.
+

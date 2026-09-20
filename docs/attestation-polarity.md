@@ -79,11 +79,11 @@ whose retained Correspondence directions match the anchor, including numeric
 zeros. Gate options are the active immediate Gate-register children of those
 Reads. Their own Correspondence and Attestation values do not filter them.
 
-This is the Homeostatic Mediate — Read population. Bias — Gate and Closure /
-Order — Write likewise use their specified regional calculation populations.
-These are the only deliberate cross-lineage regional Homeostatic considerations;
-they do not relocate the Participant. An authorised Reconcile creates an edge
-from the current Gate to its new result, not a jump to the other Gate.
+Mediate — Read and Bias — Gate use their defined regional calculation populations.
+Only Mediate exposes compatible foreign Gates, as reconciliation operands;
+Reconcile creates a new result with causal edges from both inputs. Bias exposes
+only the current causal Gate. Closure, performed during Order — Write, evaluates
+each local expressive Write's own lineage and participation, not regional peers.
 
 Bias compares each active head with its own causal ancestry. The candidate's
 own votes and loaded contributions are excluded from the ancestry aggregate.
@@ -114,4 +114,5 @@ invalidates disposable numeric projections for the corrected evidence polarity.
 Older Correspondence signs already overwritten by zero cannot be recovered;
 those positions use lineage/default fallback. Immutable measurement snapshots
 are not rewritten. No fourth measurement or per-Proposition Lean state is added.
+
 

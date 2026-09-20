@@ -181,7 +181,7 @@ final readonly class InputPlanService
                 ? $this->admissibility->evaluate($gate, $phase, $context)
                 : null,
             'commitment_options' => $phase->kind === PhaseKind::Order
-                ? $gateOptions->mapWithKeys(fn (Proposition $candidate): array => [
+                ? $writeOptions->mapWithKeys(fn (Proposition $candidate): array => [
                     $candidate->id => $this->admissibility->evaluate($candidate, $phase, $context),
                 ])->all() : [],
             'gate' => $this->proposition($gate, $participant, $context),

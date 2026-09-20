@@ -38,11 +38,15 @@ reconciliation counterparts must be its corresponding Reads' immediate Disperse
 children. Direction, evidence, activity and consumption rules still apply within
 those pools. Order Read ancestry stops at Mediate-position material.
 
-Mediate — Read, Bias — Gate and Closure / Order — Write are the only regional
-cross-lineage Homeostatic considerations. They calculate, compare or select
-within their specified populations while the Participant remains on its own
-causal lineage. Context visibility and calculation membership are distinct from
-actionability; an action must independently be authorised from the current Gate.
+Mediate — Read and Bias — Gate may calculate across regional lineages. Mediate's
+compatible foreign Gates are reconciliation operands only; Reconcile creates
+both incoming causal edges. Bias exposes only the current causal Gate, never the
+other Gates in its calculation result. Closure, performed during Order — Write,
+evaluates each causally local Bias-produced Write independently using its own
+lineage and participation history. It does not enumerate regional Writes.
+Local expressive Writes remain visible, with their ordinary expressive actions;
+Commit requires that specific Write's full prerequisites. Only its own direct
+Committal child is a Traverse target.
 
 Writes, instruments, attestations, revisions and expressive Traverse preserve
 the current producing position. Revision chains cannot cross repeated register
@@ -53,7 +57,8 @@ from the current Bias classification Gate. Another Bias-position source or
 Committal in the same region is not a traversal target. Generation and progression check
 the source and resulting positions, so direct calls cannot bypass schemas.
 
-Commit admissibility separately reports `requirements.phase_position`. Region
+Commit admissibility separately reports `requirements.phase_position` and
+`requirements.causal_write`. Region
 membership, grounded evidence, aligned Closure and the unused direct source are
 also required. An attractive Constrain Canon or Concord remains ineligible.
 Even a matching Bias position does not supply a missing causal movement edge.
@@ -91,3 +96,4 @@ only the correct position reaches schemas, options and direct dispatch. The
 complete collaborative path remains covered by `FullEvidenceFlowTest` and
 `OperationalClosurePathTest`. Semantic fixtures specify their producing position
 explicitly rather than substituting a matching register label.
+

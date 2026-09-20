@@ -99,17 +99,18 @@ Read, Gate and Write rows. Mediate exposes the authoritative `read_options`
 population. Order shows the nearest Mediate-position ancestors along the current
 Gate paths; other phases retain their single Read card. Mediate Gate privileges
 the current Proposition and adds admissible reconciliation counterparts. Bias
-Gate shows only the field-admissible unary choices, including the current
-Proposition when eligible;
+Gate shows only the current causal Proposition, with Reclassify when eligible;
 Lineage is available on demand; and Write separates existing actionable
 Propositions from moves that create a new Proposition from the Gate. In phases 1–5,
 an existing Write card is a valid Expressive descendant of the current Gate in the
 phase's Write register, including structurally valid revisions. Bias Traverse
 offers only causal Write continuations of the current Gate. Other regional
 Writes may be calculation or permitted historical context; they are not
-Traverse cards. Order separates structurally authorised expressive Commit
-candidates in Gate from Committal results directly produced by the current
-classification in Write. All Instruments are offered before Order. `write_options` is authoritative; `workspace.registers` remains
+Traverse cards. Order retains every causally local expressive Write in Write,
+including inadmissible and frozen sources, alongside their own traversable direct
+Committal results. Commit is available per admissible expressive Write; Closure
+refusal does not remove that Write or override its ordinary expressive rules.
+All Instruments are offered before Order. `write_options` is authoritative; `workspace.registers` remains
 broader inspection context and must never be merged into selectable Write cards.
 Revise remains limited to owned, revisable descendants. Commit cards and the
 Commit form select an explicit authorized `proposition_id`.
@@ -369,19 +370,21 @@ Correspondence: Activity/Signal = First (R), Frontier/Stance = Second (G), and
 Canon/Concord = Third (B). These are vocabulary slots, not phase positions.
 [Invariant 16](core-invariants.md#16-register-identity-does-not-confer-phase-identity)
 requires an independent producing Phase check. Phase-position compatibility
-and region membership still do not confer traversal eligibility. Only these
-Homeostatic effects deliberately consider other expressive lineages region-wide:
+and region membership still do not confer traversal eligibility. The Homeostatic
+scopes are:
 
 | Homeostatic effect | Calculation population | Evaluation |
 | --- | --- | --- |
 | Mediate — Read | Constrain-produced Third / Read | Matches the Read anchor's retained Correspondence direction |
 | Bias — Gate | Mediate-produced Second / Gate | Retained direction agrees with each candidate's own causal ancestry excluding itself; receipt and attestation exist |
-| Closure / Order — Write | Bias-produced Third / Write-equivalent material, presented as Order Gate sources | Grounded, attested sources with aligned Depth/Cadence |
+| Closure, performed during Order — Write | Each causally local Bias-produced expressive Write | Its own Depth/Cadence, lineage/history and participation; grounded and attested for Commit |
 
-Mediate may inspect the regional Read population, Bias may evaluate the regional
-Gate population, and Closure may evaluate the regional Write population. These
-are calculation/comparison/selection scopes. The Participant remains on its own
-causal lineage; selection by a calculation cannot move it to another member.
+Mediate may inspect regional Reads and expose their compatible Disperse Gates as
+reconciliation counterparts only. Bias may evaluate regional Gates, but exposes
+only the current causal Gate operationally. Closure is not a regional cross-lineage
+comparison: it evaluates each causally local Write independently. The Participant
+remains on its own causal lineage; calculation membership supplies no operational
+target or movement authority.
 Any Phase-advancing operation must independently be authorised from the current
 Gate and follow or create its legitimate causal continuation.
 
@@ -392,30 +395,37 @@ remain active. A direct Commit edge consumes its source globally; other branches
 
 `BiasGateService` compares each active head's retained direction to its own causal ancestry, excluding the head's votes and loads. Shared ancestors and Attestations are counted once across both reconciliation parents. Traversal stops at the governing Committal boundary; unrelated branches do not set the comparison. Ledger replay retains the preceding nonzero direction at zero, starting from the governing Committal direction. Superseded ancestors supply historical judgments without becoming additional active reinforcement copies.
 
-Bias additionally requires a completed Receipt and an effective source Attestation. The action takes `action: proposition.reclassify`, `proposition_id` and `receipt_id`. It preserves exact content, attaches/consumes the selected Receipt, resets votes/touches, and creates one shared source/register classification. Regional Gate evaluation alone does not authorise movement: the operation must be structurally authorised from the current Gate.
+Bias additionally requires a completed Receipt and an effective source Attestation. The action takes `action: proposition.reclassify`, `proposition_id` and `receipt_id`. It preserves exact content, attaches/consumes the selected Receipt, resets votes/touches, and creates one shared source/register classification. `BiasGateService::forPhase()` is a regional calculation result; `operationalFor()` selects only the current causal Gate. Other calculated Gates never enter operational Gate or action collections.
 
 Existing causal Write continuations of the current Gate offer their permitted
 Instrument and Attestation actions and, after earlier-Cycle personal
-Attestation, Traverse to Order. Other Bias-position Writes in the Commit Region
-may participate in the Homeostatic Gate calculation or remain visible where
-context rules permit. They become independently actionable when reached through
-their own causal lineage; they are not Traverse destinations from this Gate.
+Attestation, Traverse to Order. Regional Mediate-produced Gates may participate
+in the Bias calculation, but unrelated Gates and their Bias-produced Writes do
+not enter this Participant's operational options. Historical material on the
+Participant's own lineage remains visible under the existing history rules.
 The same restriction applies to frozen successful classifications. No edge
 means no movement.
 
-## Order: Commit Gate and Committal Write
+## Order: local expressive Writes and direct Committal continuations
 
-Read contains nearest Mediate-produced Stance/Frontier ancestry. The Homeostatic
-Closure calculation evaluates its regional Write-equivalent population, while
-actionable Gate sources additionally require structural authority from the
-current Gate, receipt, effective Attestation and prospective Depth/Cadence
-checks. Traverse Writes are established Committal Concord/Canon results produced
-directly from the current classification Gate. Commit selects an authorised
-source `proposition_id`; Traverse selects that direct Committal Write
-`proposition_id`. A matching region, Horizon or producing position cannot admit
-another lineage's Commit. Consumed sources are not duplicate contribution cards.
+Read contains nearest Mediate-produced Stance/Frontier ancestry. Closure,
+performed during Order — Write, evaluates each local expressive Write's own
+Depth/Cadence, lineage/history and participation. Order's recorded Gate is the
+selected Bias Write. That Write and its existing same-position revision paths
+are local; another classification sharing its Stance/Frontier parent is not.
+`CausalWriteService` supplies this population without scanning regional Writes.
 
-Commit copies the selected source's exact statement and participation history by reference, creates an immutable snapshot, and consumes the direct source globally. Later evidence reads cannot rewrite that snapshot. Reinforcement is optional weight; Depth/Cadence remain the admissibility gate. `plan.commitment` describes the current position and `commitment_options` describes each eligible Gate source. The same rules govern schema, UI and execution.
+Every local expressive Write stays in `write_options`, even when Closure diverges
+or other Commit prerequisites are missing. Closure only gates Commit; it does
+not make a Write invisible or override its ordinary expressive action rules.
+The current Order contract permits Commit and direct Committal Traverse, without
+introducing Attestation, Instrument or revision at this Phase. Commit selects only
+a Write satisfying the full prerequisites. Traverse selects only a local Write's
+own direct Committal child with an existing snapshot. No unrelated regional Write
+or Committal enters these operational collections. Frozen sources remain visible
+but immutable; their successful direct routes remain available.
+
+Commit copies the selected source's exact statement and participation history by reference, creates an immutable snapshot, and consumes the direct source globally. Later evidence reads cannot rewrite that snapshot. Reinforcement is optional weight; Depth/Cadence remain the admissibility gate. `plan.commitment` describes the current position and `commitment_options` describes every local expressive Write, including inadmissible ones. The same rules govern schema, UI and execution.
 
 ## Binary Reconcile
 

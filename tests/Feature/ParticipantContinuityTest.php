@@ -95,7 +95,7 @@ class ParticipantContinuityTest extends TestCase
         app(PotentialProjectionService::class)->refresh($other->substrate_id);
         $order = $service->stateFor($other)['plan'];
         $this->assertNotContains($candidate->id, array_column($order['gate_options'], 'id'));
-        $this->assertSame([$commit->id], array_column($order['write_options'], 'id'));
+        $this->assertSame([$candidate->id, $commit->id], array_column($order['write_options'], 'id'));
         $this->assertSame(['proposition.traverse'], array_keys($order['schema']['$defs']['actions']), json_encode($order));
         $this->assertSame($order['schema'], app(ContributionService::class)->planFor($other->fresh())['schema']);
         $traversed = $service->contribute($other, $otherPhase->id,

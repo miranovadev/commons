@@ -35,8 +35,12 @@ wording was insufficient: those properties never create a movement edge.
   child-Horizon scores do not supply the current Horizon's capacity. Numerical
   gain remains distinct from structural eligibility and current spentness.
   Calculation/context scope never supplies a movement destination. Only the
-  explicit Homeostatic Read/Gate/Write populations compare regional expressive
-  lineages; recovery and Traverse keep their own causal topology.
+  Mediate Read and Bias Gate calculations consider regional expressive lineages.
+  Only Mediate exposes foreign Gates as reconciliation operands; Bias exposes
+  its current causal Gate. Closure, performed during Order — Write, evaluates
+  each local Write independently. Local expressive Writes retain valid actions,
+  Commit requires admissibility, and only their own direct Commits may be
+  traversed. Recovery and Traverse keep their own causal topology.
 - Tragedy now has one explicit shared allowance for a Distinguish/Disperse
   Variant at zero Potential. All existing current-option, evidence and spentness
   checks remain. This deliberately extends the former positive-Potential-only
@@ -72,8 +76,9 @@ live-alternative/current-epoch guards on backward continuation completion.
 
 The recorded successful-route evidence is a positive journey, not proof that
 same-region but causally unrelated targets were rejected. The normative negative
-boundary is explicit above; this documentation correction does not claim new
-application coverage or validation. No edge means no movement.
+boundary is explicit above. The subsequent scope correction adds both-Domain
+positive/negative coverage in `CausalOperationalScopeTest`, while retaining this
+successful HTTP revisit journey. No edge means no movement.
 
 The Stage 4 HTTP recovery test formerly expected Rest at the broken successful
 Bias revisit. That assertion is explicitly superseded: Rest is now rejected
@@ -118,3 +123,4 @@ semantic evidence and authorised Stage 6. The cancelled suites will not be
 repeated solely to re-prove that journey. At the final Epic checkpoint, one
 deliberate all-suite validation must use an appropriate timeout and produce a
 complete aggregate result. Targeted passes do not replace that final gate.
+

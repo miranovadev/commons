@@ -176,7 +176,7 @@ class InputPlanVisibilityTest extends TestCase
         }
         $plan = app(InputPlanService::class)->forParticipant($viewer);
         if ($kind === PhaseKind::Order) {
-            $this->assertSame([], $plan['write_options']);
+            $this->assertSame([$gate->id], array_column($plan['write_options'], 'id'));
             foreach ([$child, $untouched] as $target) {
                 $this->assertInput($plan['schema'], ['action' => 'attestation.create', 'proposition_id' => $target->id, 'direction' => 'support'], false);
                 $this->assertInput($plan['schema'], ['action' => 'proposition.traverse', 'proposition_id' => $target->id], false);

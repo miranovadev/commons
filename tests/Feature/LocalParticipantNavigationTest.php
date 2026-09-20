@@ -459,6 +459,8 @@ class LocalParticipantNavigationTest extends TestCase
         }
         $this->edge($this->node('Commit Region seed', 0.0), $gate);
         $this->edge($gate, $parent);
+        // A same-position continuation is local only through its revision edge.
+        $gate->children()->updateExistingPivot($parent->id, ['type' => 'revise']);
         $participant = $this->participant('order', $gate);
         $this->establishPath($participant, $parent);
         $phase = $this->phase($participant, $gate);

@@ -107,7 +107,8 @@ class BiasGateTest extends TestCase
         $negative = $this->attest($refute, 'refute');
         $service = app(BiasGateService::class);
         $this->assertEqualsWithDelta(1 / 3, $service->leanFor($this->phase), 0.00001);
-        $this->assertEqualsCanonicalizing([$this->gate->id, $support->id], $this->optionIds());
+        $this->assertEqualsCanonicalizing([$this->gate->id, $support->id], $service->forPhase($this->phase)->pluck('id')->all());
+        $this->assertSame([$this->gate->id], $this->optionIds());
         // The Settlement projection is distinct from the raw population lean.
         $this->assertNotEquals($service->leanFor($this->phase), (float) $this->gate->fresh()->measurement->chirality);
         $instruments = app(InstrumentExecutionService::class);
@@ -115,13 +116,13 @@ class BiasGateTest extends TestCase
             $this->loadedReceiptFixture($refute, $negative);
         }
         $this->assertLessThan(0, $service->leanFor($this->phase));
-        $this->assertEqualsCanonicalizing([$this->gate->id, $support->id], $this->optionIds()); // Unrelated loads do not set this lineage.
+        $this->assertEqualsCanonicalizing([$this->gate->id, $support->id], $service->forPhase($this->phase)->pluck('id')->all()); // Unrelated loads do not set this lineage.
         $replacement = new Attestation;
         $later = $this->newPhase($negative->phase->cycle->participant, PhaseKind::Persist, 'stance', true);
         $replacement->forceFill(['phase_id' => $later->id, 'proposition_id' => $refute->id,
             'direction' => 'support', 'supersedes_attestation_id' => $negative->id])->save();
         app(LedgerService::class)->record($replacement);
-        $this->assertEqualsCanonicalizing([$this->gate->id, $support->id, $refute->id], $this->optionIds());
+        $this->assertEqualsCanonicalizing([$this->gate->id, $support->id, $refute->id], $service->forPhase($this->phase)->pluck('id')->all());
     }
 
     public static function domains(): array
@@ -145,6 +146,10 @@ class BiasGateTest extends TestCase
             $touch = $this->newPhase($this->history->cycle->participant, PhaseKind::Persist, $register, true);
             $touch->forceFill(['gate_proposition_id' => $selected->id])->save();
         }
+        // Begin on this Gate; a regional calculation does not select it for us.
+        $this->phase->forceFill(['gate_proposition_id' => $selected->id])->save();
+        $this->phase->unsetRelation('gate');
+        $this->viewer->forceFill(['current_proposition_id' => $selected->id])->save();
         $plan = $this->plan();
         $input = $this->reclassificationInputFixture($this->phase, $selected);
         $this->assertSame(['action', 'proposition_id', 'receipt_id'], $plan['schema']['$defs']['actions']['proposition.reclassify']['required']);
@@ -190,7 +195,7 @@ class BiasGateTest extends TestCase
         $this->assertCount(0, $history->attestations(collect([$target])));
         $this->assertSame([$input['receipt_id']], $history->receipts($target)->pluck('id')->all());
         $this->assertSame(1, $history->touchCount($target)); // Only the newly opened Order Phase.
-        $this->assertSame(3, $history->touchCount($selected));
+        $this->assertSame(4, $history->touchCount($selected));
         $this->assertCount(2, $history->receipts($selected));
         $this->assertFalse($state['plan']['commitment']['requirements']['attestation']);
         $this->assertTrue($state['plan']['commitment']['requirements']['receipt']);
@@ -246,9 +251,11 @@ class BiasGateTest extends TestCase
         $negative = $this->sibling('Negative');
         $this->attest($positive, 'support');
         $this->attest($negative, 'refute');
-        $this->assertSame([$positive->id], $this->optionIds());
+        $this->assertContains($positive->id, app(BiasGateService::class)->forPhase($this->phase)->pluck('id'));
+        $this->assertSame([], $this->optionIds());
         $this->edge($negative, $this->node('Fresh Concord', 'concord', position: PhaseKind::Bias), 'reclassify');
-        $this->assertSame([$positive->id], $this->optionIds());
+        $this->assertContains($positive->id, app(BiasGateService::class)->forPhase($this->phase)->pluck('id'));
+        $this->assertSame([], $this->optionIds());
     }
 
     public function test_population_has_deeper_stances_but_excludes_other_registers_and_stops_at_boundaries(): void
@@ -275,8 +282,12 @@ class BiasGateTest extends TestCase
         $this->viewer->forceFill(['max_read_count' => 1])->save();
         $other = $this->sibling('Another supported Stance');
         $this->attest($other, 'support');
-        $this->assertEqualsCanonicalizing([$deep->id, $other->id], $this->optionIds());
+        $this->assertContains($deep->id, app(BiasGateService::class)->forPhase($this->phase)->pluck('id'));
+        $this->assertContains($other->id, app(BiasGateService::class)->forPhase($this->phase)->pluck('id'));
+        $this->assertSame([], $this->optionIds());
         $this->assertSame(1.0, app(BiasGateService::class)->leanFor($this->phase));
+        $this->phase->forceFill(['gate_proposition_id' => $deep->id])->save();
+        $this->phase->unsetRelation('gate');
         $target = app(ContributionDispatcher::class)->dispatch($this->viewer, $this->phase,
             $this->reclassificationInputFixture($this->phase, $deep));
         $this->assertSame([$deep->id], $target->parents()->pluck('propositions.id')->all());
@@ -295,9 +306,11 @@ class BiasGateTest extends TestCase
         $this->edge($second, $negative);
         $this->attest($negative, 'refute');
         $this->assertSame(0.0, app(BiasGateService::class)->leanFor($this->phase));
-        $this->assertSame([$positive->id], $this->optionIds());
+        $this->assertContains($positive->id, app(BiasGateService::class)->forPhase($this->phase)->pluck('id'));
+        $this->assertSame([], $this->optionIds());
         $this->attest($this->gate, 'support');
-        $this->assertEqualsCanonicalizing([$positive->id, $this->gate->id], $this->optionIds());
+        $this->assertEqualsCanonicalizing([$positive->id, $this->gate->id], app(BiasGateService::class)->forPhase($this->phase)->pluck('id')->all());
+        $this->assertSame([$this->gate->id], $this->optionIds());
     }
 
     public function test_region_votes_ignore_horizon_labels_but_preserve_substrate_isolation(): void
