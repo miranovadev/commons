@@ -89,7 +89,7 @@ class FinalAttemptExhaustionTest extends TestCase
         $this->assertDatabaseCount('horizon_exhaustions', 1);
         $historyPlan = app(InputPlanService::class)->forPhase($terminal->cycle->participant, $terminal);
         $historicalReceipt = collect($historyPlan['receipts'])->firstWhere('id', $tragedy->receipt_id);
-        $this->assertSame('consumed', $historicalReceipt['availability']);
+        $this->assertNull($historicalReceipt, 'Consumed unread evidence leaves the shared catalogue.');
         $this->assertSame(['participant.rest'], array_keys($historyPlan['schema']['$defs']['actions']));
         $parentSource = $opening->parents()->wherePivot('type', 'commit')->sole();
         $observer = $this->phase($parentSource, PhaseKind::Order);

@@ -1,4 +1,4 @@
-import type { ActionName, AttestationDirection, ContributionInitialValues, ContributionInput, ParticipantPlan, Proposition } from './types';
+import type { ActionName, AttestationDirection, ContributionInitialValues, ContributionInput, ParticipantPlan, Proposition, ReceiptReference } from './types';
 
 /** Only the workspace's fully specified, schema-authorized navigation actions bypass a form. */
 export function quickContribution(plan: ParticipantPlan, action: ActionName, values: ContributionInitialValues = {}): ContributionInput | null {
@@ -54,4 +54,16 @@ export function writePropositions(plan: ParticipantPlan): Proposition[] {
   return [...new Map([...(plan.write_options ?? []), ...actionPropositions(plan, 'instrument.execute'),
     ...actionPropositions(plan, 'proposition.traverse')].filter((item) => actionable.has(item.id) || item.spent === true)
     .map((item) => [item.id, item])).values()];
+}
+
+/** References carry identity only; the schema alone authorizes uptake. */
+export function propositionReceiptReferences(plan: ParticipantPlan): Array<ReceiptReference & { proposition_id: string }> {
+  const nodes = [plan.gate, ...(plan.lineage ?? []), ...(plan.read_options ?? []), ...(plan.gate_options ?? []), ...(plan.write_options ?? [])];
+  return [...new Map(nodes.filter(Boolean).flatMap(node => (node.receipts ?? []).map(receipt => ({
+    id: receipt.id, type: receipt.type, reference: receipt.reference, context_horizon_id: receipt.context_horizon_id, proposition_id: node.id,
+  }))).map(receipt => [receipt.id, receipt])).values()];
+}
+
+export function receiptChoices(plan: ParticipantPlan): ReceiptReference[] {
+  return [...new Map([...propositionReceiptReferences(plan), ...(plan.receipts ?? [])].map(receipt => [receipt.id, receipt])).values()];
 }

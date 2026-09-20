@@ -100,7 +100,7 @@ statements or genuinely growing actionable populations fit a fixed byte budget.
 
 ## Operational populations and identity
 
-Read candidates come from the existing Mediate Read calculation. Mediate Gate
+Mediate exposes only its causal Read anchor; regional compatible Reads remain internal calculation inputs. Mediate Gate
 contains the current Gate plus authorised reconciliation counterparts. Those
 counterparts are operands, not movement destinations; Reconcile creates the two
 causal edges. Bias Gate contains only the current causal Gate, including when it
@@ -212,8 +212,16 @@ this change does not claim database-memory independence from Substrate size.
 
 ## Persistent Receipt context
 
-The plan now includes `receipts`, a deduplicated list of encountered Receipt IDs,
-subjects, qualification/load status and loaded evidence. `receipt.read` is bound
+The plan includes `receipts`: shared available **unattached** Receipt metadata,
+plus the Participant's currently admitted loaded Receipt state. Unread entries
+never contain evidence, search results, excerpts or full statements. Attached or
+consumed observations leave the shared catalogue; exposed propositions carry
+lightweight `receipts` references (`id`, `type`, `reference`, `context_horizon_id`), including existing
+classification/Commit inheritance. Attachment does not load content.
+Loaded consumed entries remain personal loaded state, distinguished by `status`
+and `availability`; they are not available catalogue entries. In model requests,
+full loaded bodies occur once in the existing stable `loaded_receipts` section,
+joined to their dynamic state by ID. `receipt.read` is bound
 to the available IDs by the same schema used by the backend and human UI. Loaded
 Receipts expose their Cite content or verified retrieval metadata/excerpt and have
 no Read button. Read leaves the Phase open. Loads persist across Cycles and Horizon
@@ -248,7 +256,7 @@ register and tier, then the local structural relationship:
 | --- | --- |
 | Distinguish–Mediate Write | Direct Gate children and same-position revisions |
 | Mediate Read | Constrain alternatives in the governing Commit Region |
-| Mediate Gate | Disperse children of exposed Reads or local exhausted Reads, within that region |
+| Mediate Gate | Disperse children of internal comparison Reads or local exhausted Reads, within that region |
 | Bias Gate / Write | Mediate / Bias alternatives in the governing Commit Region |
 | Order Gate / Write | Bias alternatives and their Order-produced Committal results with exhausted outgoing basins |
 

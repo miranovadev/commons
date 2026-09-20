@@ -46,10 +46,11 @@ class ParticipantPromptCacheTest extends TestCase
         $request = app(OpenAIRequestFactory::class)->make($connection, $prompt);
         $this->assertSame(app(OpenAIResponseSchema::class)->fromCommons($state['plan']['schema']), $request['text']['format']['schema']);
         $this->assertSame(1, substr_count($prompt['evidence'].$prompt['user'], 'immutable observation'));
+        $this->assertStringNotContainsString('another observation', $prompt['evidence'].$prompt['user']);
         $this->assertStringNotContainsString('DO-NOT-EXPOSE', json_encode($request));
         $this->assertStringContainsString(ParticipantPromptCore::TEXT, $prompt['system']);
         $this->assertStringContainsString(app(ParticipantPhaseInstructions::class)->forPhase($phase), $prompt['system']);
-        // #187 evidence/state layers are byte-identical, not merely reconstructable.
+        // Corrected cognition uses the existing evidence/state layout unchanged.
         $layers = (new ParticipantPromptLayout)->make($before);
         $this->assertSame($layers['evidence'], $prompt['evidence']);
         $this->assertSame($layers['user'], $prompt['user']);

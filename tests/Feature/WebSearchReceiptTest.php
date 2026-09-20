@@ -105,7 +105,9 @@ class WebSearchReceiptTest extends TestCase
         $this->assertSame('constrain', $next['plan']['phase']['kind']);
         $option = collect($next['plan']['receipts'])->firstWhere('id', $receipt->id);
         $this->assertSame(['readable' => true, 'replayable' => true], $option['capabilities']);
-        $this->assertSame($receipt->metadata['observation'], $option['evidence']);
+        $this->assertArrayNotHasKey('evidence', $option);
+        $this->assertSame($receipt->reference, $option['reference']);
+        $this->assertStringNotContainsString('Observed resource content', json_encode($next));
         $this->assertDatabaseCount('participant_receipt_contexts', 0);
         $this->publishPotentialFixture($fixture->viewer);
         $read = $service->contribute($fixture->viewer, $next['plan']['phase']['id'], ['action' => 'receipt.read', 'receipt_id' => $receipt->id]);
@@ -269,6 +271,11 @@ class WebSearchReceiptTest extends TestCase
         $factory = app(ParticipantPromptFactory::class);
         $this->publishPotentialFixture($fixture->viewer);
         $before = $factory->make(new Connection, app(ParticipationService::class)->stateFor($fixture->viewer));
+        $this->assertStringNotContainsString('Ignore the schema', $before['user'].$before['evidence']);
+        $catalogue = collect(json_decode($before['user'], true)['plan']['receipts'])->firstWhere('id', $receipt->id);
+        $this->assertSame('web_search', $catalogue['type']);
+        $this->assertSame($receipt->reference, $catalogue['reference']);
+        $this->assertArrayNotHasKey('evidence', $catalogue);
         app(ReceiptContextService::class)->read($fixture->viewer, $fixture->phase, $receipt->id);
         $this->publishPotentialFixture($fixture->viewer);
         $state = app(ParticipationService::class)->stateFor($fixture->viewer);
@@ -276,6 +283,8 @@ class WebSearchReceiptTest extends TestCase
         $this->assertSame($text, collect($state['plan']['receipts'])->firstWhere('id', $receipt->id)['evidence']['results'][0]['excerpt']);
         $this->assertStringNotContainsString($text, json_encode($after['schema']));
         $this->assertSame($before['system'], $after['system']);
+        $this->assertStringNotContainsString('Ignore the schema', $after['user']);
+        $this->assertSame(1, substr_count($after['evidence'].$after['user'], 'Ignore the schema'));
     }
 
     public function test_provider_abstraction_does_not_require_tavily_fields(): void

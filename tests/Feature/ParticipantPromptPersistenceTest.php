@@ -3,10 +3,13 @@
 namespace Tests\Feature;
 
 use App\Domain\Evidence\VerifiedHyperlink;
+use App\Enums\PhaseKind;
 use App\Models\Connection;
+use App\Services\HorizonReceiptService;
 use App\Services\InstrumentExecutionService;
 use App\Services\ParticipantContextSerializer;
 use App\Services\ParticipantPromptFactory;
+use App\Services\ParticipantPromptLayout;
 use App\Services\ParticipationService;
 use App\Services\ReceiptContextService;
 use Carbon\CarbonImmutable;
@@ -49,6 +52,12 @@ class ParticipantPromptPersistenceTest extends TestCase
             $this->assertEquals($before, $after);
             $this->assertSame($before['plan']['schema'], $after['plan']['schema']);
 
+            foreach (['first', 'second'] as $name) {
+                $expected = collect($bodies)->contains(fn ($body) => ($body['evidence']['content_excerpt'] ?? null) === $name.' observed evidence') ? 1 : 0;
+                $this->assertSame($expected, substr_count($prompt['evidence'].$prompt['user'], $name.' observed evidence'));
+                $this->assertStringNotContainsString($name.' observed evidence', $prompt['user']);
+            }
+
             return array_keys($bodies);
         };
         $this->assertSame([], $packet());
@@ -63,5 +72,88 @@ class ParticipantPromptPersistenceTest extends TestCase
         $this->travel(1)->seconds();
         $context->read($fixture->viewer, $fixture->phase, $receipts[1]->id);
         $this->assertSame([$receipts[0]->id, $receipts[1]->id], $packet());
+    }
+
+    public function test_attachment_removes_catalogue_entry_and_exposes_only_a_reference_until_read(): void
+    {
+        $fixture = new ParticipantContextFixture(2, 0, false);
+        $executions = app(InstrumentExecutionService::class);
+        $receipt = $executions->complete(
+            $executions->start($fixture->phase, $fixture->gate, 'hyperlink', 'https://example.test/attached'),
+            $fixture->gate, verification: new VerifiedHyperlink('example.test/attached', hash('sha256', 'attached'),
+                CarbonImmutable::now(), contentExcerpt: 'PRIVATE-ATTACHED-OBSERVATION'),
+        );
+        $write = $fixture->node($fixture->gate, 'frontier', position: PhaseKind::Mediate);
+        $packet = function () use ($fixture): array {
+            $this->publishPotentialFixture($fixture->viewer);
+
+            return app(ParticipationService::class)->stateFor($fixture->viewer);
+        };
+        $before = $packet();
+        $catalogue = collect($before['plan']['receipts'])->firstWhere('id', $receipt->id);
+        $this->assertSame('available', $catalogue['availability']);
+        $this->assertArrayNotHasKey('evidence', $catalogue);
+        $this->assertStringNotContainsString('PRIVATE-ATTACHED-OBSERVATION', json_encode($before));
+        // Consumption requires the target's creating occurrence, not this viewer's Phase.
+        DB::transaction(fn () => app(HorizonReceiptService::class)->consume($write->phase, $fixture->gate, $write, $receipt->id));
+        $attached = $packet();
+        $this->assertNotContains($receipt->id, array_column($attached['plan']['receipts'], 'id'));
+        $node = collect($attached['plan']['write_options'])->firstWhere('id', $write->id);
+        $this->assertSame([['id' => $receipt->id, 'type' => 'hyperlink', 'reference' => $receipt->reference, 'context_horizon_id' => $receipt->context_horizon_id]], $node['receipts']);
+        $this->assertStringNotContainsString('PRIVATE-ATTACHED-OBSERVATION', json_encode($attached));
+        // Catalogue presentation must not silently remove an existing Read target.
+        $this->assertContains($receipt->id, $attached['plan']['schema']['$defs']['actions']['receipt.read']['properties']['receipt_id']['enum']);
+        app(ParticipationService::class)->contribute($fixture->viewer, $fixture->phase->id,
+            ['action' => 'receipt.read', 'receipt_id' => $receipt->id]);
+        $loaded = $packet();
+        $prompt = app(ParticipantPromptFactory::class)->make(new Connection, $loaded);
+        $this->assertSame(1, substr_count($prompt['evidence'].$prompt['user'], 'PRIVATE-ATTACHED-OBSERVATION'));
+        $this->assertStringNotContainsString('PRIVATE-ATTACHED-OBSERVATION', $prompt['user']);
+        $entry = collect(json_decode($prompt['user'], true)['plan']['receipts'])->firstWhere('id', $receipt->id);
+        $this->assertSame('loaded', $entry['status']);
+        $this->assertSame('consumed', $entry['availability']);
+        $this->assertSame($write->id, $entry['attached_proposition_id']);
+        $this->assertSame($fixture->phase->id, $loaded['plan']['phase']['id']);
+    }
+
+    public function test_receipt_heavy_packet_removes_unread_bodies_without_changing_loaded_evidence_or_schema(): void
+    {
+        $fixture = new ParticipantContextFixture(2, 3, false);
+        $executions = app(InstrumentExecutionService::class);
+        $context = app(ReceiptContextService::class);
+        for ($i = 0; $i < 12; $i++) {
+            $receipt = $executions->complete(
+                $executions->start($fixture->phase, $fixture->gate, 'hyperlink', 'https://example.test/measurement/'.$i),
+                $fixture->gate, verification: new VerifiedHyperlink('example.test/measurement/'.$i, hash('sha256', (string) $i),
+                    CarbonImmutable::now(), contentExcerpt: str_repeat('Observed evidence '.$i.'. ', 150)),
+            );
+            if ($i < 3) {
+                $context->read($fixture->viewer, $fixture->phase, $receipt->id);
+            }
+        }
+        $this->publishPotentialFixture($fixture->viewer);
+        $state = app(ParticipationService::class)->stateFor($fixture->viewer);
+        $after = app(ParticipantContextSerializer::class)->inference($state);
+        $before = $after;
+        $before['plan']['receipts'] = $context->forPhase($fixture->phase)->all();
+        $layout = app(ParticipantPromptLayout::class);
+        $old = $layout->make($before);
+        $new = $layout->make($after);
+        $this->assertSame($old['evidence'], $new['evidence']);
+        $this->assertSame($before['plan']['schema'], $after['plan']['schema']);
+        $this->assertSame(3, $new['loaded_receipt_count']);
+        foreach ($after['plan']['receipts'] as $receipt) {
+            if ($receipt['status'] !== 'loaded') {
+                $this->assertArrayNotHasKey('evidence', $receipt);
+            }
+        }
+        $bytes = fn ($value) => strlen(json_encode($value, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR));
+        $catalogue = fn ($packet) => array_values(array_filter($packet['plan']['receipts'], fn ($r) => $r['status'] !== 'loaded'));
+        $metrics = ['catalogue_before' => $bytes($catalogue($before)), 'catalogue_after' => $bytes($catalogue($after)),
+            'loaded_evidence' => strlen($new['evidence']), 'packet_before' => strlen($old['evidence'].$old['user']),
+            'packet_after' => strlen($new['evidence'].$new['user']), 'reads' => count($after['plan']['read_options']),
+            'counterparts' => count($after['plan']['schema']['$defs']['actions']['proposition.reconcile']['properties']['other_proposition_id']['enum'] ?? [])];
+        $this->assertLessThan($metrics['catalogue_before'], $metrics['catalogue_after']);
+        fwrite(STDERR, "\nSTAGE_A_FIXTURE ".json_encode($metrics)."\n");
     }
 }
