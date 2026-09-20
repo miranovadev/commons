@@ -90,7 +90,11 @@ class WakeParticipant implements ShouldQueue
                     break;
                 }
 
-                $contribution = $inference->contribute($participantConnection->connection, $state);
+                $contribution = $inference->contribute($participantConnection->connection, $state, [
+                    // Transport/logging metadata is separate from participant cognition.
+                    'participant_id' => $participantConnection->participant_id,
+                    'substrate_id' => $participantConnection->participant->substrate_id,
+                ]);
                 try {
                     $after = $participation->contribute(
                         $participantConnection->participant,

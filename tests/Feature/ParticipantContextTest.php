@@ -16,6 +16,7 @@ use App\Services\ParticipantContextSerializer;
 use App\Services\ParticipantPromptFactory;
 use App\Services\Participation\ParticipationContext;
 use App\Services\ParticipationService;
+use App\Services\PotentialProjectionService;
 use App\Services\PropositionMeasurementService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -39,7 +40,7 @@ class ParticipantContextTest extends TestCase
     {
         $this->freezeTime();
         $fixture = new ParticipantContextFixture;
-        app(\App\Services\PotentialProjectionService::class)->rebuild($fixture->substrate->id, false);
+        app(PotentialProjectionService::class)->rebuild($fixture->substrate->id, false);
         $plan = app(ParticipationService::class)->stateFor($fixture->viewer)['plan'];
         $this->assertSame(self::POPULATIONS, array_values(array_intersect(array_keys($plan), self::POPULATIONS)));
         $objects = $this->objects($plan);
@@ -71,7 +72,7 @@ class ParticipantContextTest extends TestCase
         $this->assertLessThanOrEqual(self::MAX_PROPOSITIONS, count($ids));
         $connection = new Connection;
         $connection->configuration = [];
-        app(\App\Services\PotentialProjectionService::class)->rebuild($fixture->substrate->id, false);
+        app(PotentialProjectionService::class)->rebuild($fixture->substrate->id, false);
         $state = app(ParticipationService::class)->stateFor($fixture->viewer);
         $prompt = app(ParticipantPromptFactory::class)->make($connection, $state);
         $this->assertSame(['status', 'plan'], array_keys(json_decode($prompt['user'], true)));
@@ -87,7 +88,8 @@ class ParticipantContextTest extends TestCase
         ])]);
         $connection->forceFill(['configuration' => ['model' => 'test-model'], 'credentials' => ['api_key' => 'test-key']]);
         app(OpenAIResponsesClient::class)->contribute($connection, $state);
-        Http::assertSent(fn ($request) => $request['input'][1]['content'] === $prompt['user']);
+        Http::assertSent(fn ($request) => $request['input'][2]['content'] === $prompt['user']
+            && $request['input'][1]['content'] === $prompt['evidence']);
         foreach (['workspace', 'gate', 'attestation_options', 'instrument_options', 'revision_options', 'traversal_options'] as $key) {
             $this->assertArrayNotHasKey($key, $plan);
         }
@@ -119,7 +121,7 @@ class ParticipantContextTest extends TestCase
             'kind' => 'citation', 'reference' => $fixture->seed->id,
         ]);
 
-        app(\App\Services\PotentialProjectionService::class)->rebuild($fixture->substrate->id, false);
+        app(PotentialProjectionService::class)->rebuild($fixture->substrate->id, false);
         $state = app(ParticipationService::class)->stateFor($fixture->viewer);
         $connection = new Connection;
         $connection->configuration = [];
@@ -163,7 +165,7 @@ class ParticipantContextTest extends TestCase
             $gate = $candidates[0];
         }
         $fixture->phase->forceFill(['kind' => $kind, 'gate_proposition_id' => $gate->id, 'write_register' => 'canon'])->save();
-        app(\App\Services\PotentialProjectionService::class)->rebuild($fixture->substrate->id, false);
+        app(PotentialProjectionService::class)->rebuild($fixture->substrate->id, false);
         $plan = app(ParticipationService::class)->stateFor($fixture->viewer)['plan'];
         if ($kind !== PhaseKind::Order) {
             $this->assertArrayHasKey('instrument.execute', $plan['schema']['$defs']['actions']);
@@ -199,13 +201,13 @@ class ParticipantContextTest extends TestCase
         app(PropositionMeasurementService::class)->recalculate($fixture->gate, context: new ParticipationContext($fixture->phase));
         $profile('projection');
         $service = app(ParticipationService::class);
-        app(\App\Services\PotentialProjectionService::class)->rebuild($fixture->substrate->id, false);
+        app(PotentialProjectionService::class)->rebuild($fixture->substrate->id, false);
         $before = $service->stateFor($fixture->viewer)['plan'];
         $profile('initial read');
         $fixture->growUnrelatedTo(500);
         $profile('500 candidates');
         $this->assertDatabaseHas('proposition_measurements', ['proposition_id' => $fixture->gate->id, 'calculator_version' => null]);
-        app(\App\Services\PotentialProjectionService::class)->rebuild($fixture->substrate->id, false);
+        app(PotentialProjectionService::class)->rebuild($fixture->substrate->id, false);
         $after = $service->stateFor($fixture->viewer)['plan'];
         $profile('expanded read');
         $this->assertSame($before, $after);
@@ -215,7 +217,7 @@ class ParticipantContextTest extends TestCase
         $this->assertLessThanOrEqual(self::MAX_BYTES, strlen(json_encode($after)));
         $this->assertSame(count($ids), count(array_unique($ids)));
         $this->assertSame($before['schema'], $after['schema']);
-        app(\App\Services\PotentialProjectionService::class)->rebuild($fixture->substrate->id, false);
+        app(PotentialProjectionService::class)->rebuild($fixture->substrate->id, false);
         $workspace = $service->workspaceFor($fixture->viewer)['plan'];
         $profile('workspace');
         $humanIds = collect($workspace['workspace']['registers'])->flatten(1)->pluck('id')->all();
@@ -271,7 +273,7 @@ class ParticipantContextTest extends TestCase
         $fixture->edge($right, $result, 'reconcile');
         $gate = $fixture->node($result, 'canon');
         $fixture->phase->forceFill(['kind' => PhaseKind::Persist, 'write_register' => 'frontier', 'gate_proposition_id' => $gate->id])->save();
-        app(\App\Services\PotentialProjectionService::class)->rebuild($fixture->substrate->id, false);
+        app(PotentialProjectionService::class)->rebuild($fixture->substrate->id, false);
         $plan = app(ParticipationService::class)->stateFor($fixture->viewer)['plan'];
         $this->assertSame([$fixture->seed->id, $leftHistory->id, $result->id], array_column($plan['lineage'], 'id'));
         $this->assertDatabaseHas('propositions', ['id' => $rightHistory->id]);
@@ -307,7 +309,7 @@ class ParticipantContextTest extends TestCase
         $user = User::firstOrFail();
         auth()->logout();
         $fixture->viewer->forceFill(['user_id' => $user->id])->save();
-        app(\App\Services\PotentialProjectionService::class)->rebuild($fixture->substrate->id, false);
+        app(PotentialProjectionService::class)->rebuild($fixture->substrate->id, false);
         $base = '/api/substrates/'.$fixture->substrate->slug.'/participants/'.$fixture->viewer->id;
         $this->getJson($base.'/workspace')->assertUnauthorized();
         $this->actingAs(User::factory()->create())->getJson($base.'/workspace')->assertForbidden();
