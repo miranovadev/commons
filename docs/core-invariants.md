@@ -235,15 +235,23 @@ These three contracts must remain distinct:
 | Contract | Authorised scope | Movement consequence |
 | --- | --- | --- |
 | Movement topology | Forward causal continuations of the current Gate; recorded causal ancestry backward for recovery | Only these edges permit a change of position, subject to the operation's other rules |
-| Homeostatic population | The explicitly defined Commit Region population at the relevant Read, Gate or Write position | Calculation, comparison or selection does not create edges or relocate the Participant |
+| Homeostatic population | Regional Reads for Mediate and Gates for Bias; each causally local Write's own lineage/participation history for Closure | Calculation, comparison or selection does not create edges or relocate the Participant |
 | Context visibility | Historical and evidentiary material admitted by the context contract | Visibility grants neither actionability nor movement |
 
-The only cross-lineage regional consideration is in the Homeostatic effects:
-Mediate — Read, Bias — Gate, and Closure / Order — Write. Their calculations
-may consider Propositions on different expressive lineages within the appropriate
-Commit Region and structural position. The Participant remains on its own causal
-lineage. Measurement ranking or selection is confined to that explicitly
-authorised calculation population; it never expands movement topology.
+Mediate — Read and Bias — Gate may calculate across the defined regional
+populations. Only Mediate exposes compatible foreign-lineage Gates operationally,
+as reconciliation operands, never movement destinations. Reconcile creates causal
+edges from both inputs to its new result. Bias exposes only the current causal
+Gate and that Gate's legitimate Write continuations; other calculated Gates are
+not operational options.
+
+Closure, performed during Order — Write, evaluates each causally local expressive
+Write independently from its own Depth/Cadence, lineage/history and participation.
+It is not a regional cross-lineage comparison. Every such Write remains visible
+and retains its ordinary expressive actions. Closure inadmissibility removes
+Commit eligibility, not the Write or its other valid actions. Only that Write's
+own direct Committal continuation may be traversed. Measurement selection never
+expands operational populations or movement topology.
 
 An unrelated population member must never appear as a Traverse target. Visibility
 does not imply actionability. Actionability does not imply movement unless the
@@ -334,3 +342,4 @@ and exploration epoch; Horizons become exhausted permanently. Failure history
 is immutable. Only a successful Variant advances its own position's epoch.
 Spent propositions remain contextual evidence without Traverse or Attestation
 targets; a later epoch restores normal eligibility without erasing history.
+

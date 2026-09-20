@@ -18,7 +18,7 @@ final class PropositionOptionService
         private readonly ReconciliationOptionService $reconciliation,
         private readonly BiasGateService $bias,
         private readonly ClosureOptionService $closure,
-        private readonly CommitRegionService $regions,
+        private readonly CausalWriteService $writes,
         private readonly PhaseGenerationService $generation,
         private readonly EvidenceEligibilityService $evidence,
         private readonly PropositionAvailabilityService $availability,
@@ -114,7 +114,10 @@ final class PropositionOptionService
      */
     public function writeOptionsFor(Phase $phase, ?ParticipationContext $context = null): Collection
     {
-        return $this->resolveWrites($phase, $context)->filter(fn (Proposition $node): bool => ($phase->kind === PhaseKind::Order && $node->tier === 'committal') || $this->availability->mutable($node, $context))->values();
+        $writes = $this->resolveWrites($phase, $context);
+
+        return $phase->kind === PhaseKind::Order ? $writes
+            : $writes->filter(fn (Proposition $node): bool => $this->availability->mutable($node, $context))->values();
     }
 
     /** Keep historical Writes visible while suppressing spent action targets. */
@@ -134,15 +137,10 @@ final class PropositionOptionService
         }
 
         if ($phase->kind === PhaseKind::Order) {
-            return $this->generation->committedWrites($phase, $context);
+            return $this->closure->forPhase($phase, $context);
         }
         if ($phase->kind === PhaseKind::Bias) {
-            // A Bias source can be any Gate in the region; its Write must stay
-            // discoverable when the next Cycle arrives through another source.
-            $gate = $context?->propositions->get($phase->gate_proposition_id) ?? $phase->gate;
-
-            return $this->positions->filter($this->regions->membersFor($gate, $context), $phase, PhaseKind::Bias)
-                ->concat($this->writeDescendants($phase, $context)->orderBy('id')->get())->unique('id')->values();
+            return $this->writes->forPhase($phase, $context);
         }
 
         return $this->writeDescendants($phase, $context)->orderBy('id')->get();
@@ -219,11 +217,12 @@ final class PropositionOptionService
     public function gateOptionsFor(Phase $phase, ?ParticipationContext $context = null): Collection
     {
         if ($phase->kind === PhaseKind::Order) {
-            return $this->closure->committableFor($phase, $context);
+            // Closure sources are expressive Write options, not alternate Gates.
+            return collect();
         }
 
         return $phase->kind === PhaseKind::Bias
-            ? $this->bias->forPhase($phase, $context)->filter(fn (Proposition $node): bool => $this->generation->available($phase, 'proposition.reclassify', $context, $node))->values()
+            ? $this->bias->operationalFor($phase, $context)->filter(fn (Proposition $node): bool => $this->generation->available($phase, 'proposition.reclassify', $context, $node))->values()
             : $this->reconciliation->forPhase($phase, $context);
     }
 

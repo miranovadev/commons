@@ -156,7 +156,7 @@ final class CommitRegionService
         return Proposition::query()->active()->whereKey(collect($members)->pluck('id'))->orderBy('id')->get();
     }
 
-    /** Operational pool in the Cycle's Domain: Mediate Read, Bias Gate, or Closure Write. */
+    /** Regional calculation population; membership alone never authorizes an operation. */
     public function forPhase(Phase $phase, ?Proposition $position = null, ?ParticipationContext $context = null): Collection
     {
         return $context === null ? $this->phaseCandidates($phase, $position)

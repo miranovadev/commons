@@ -227,7 +227,7 @@ final readonly class ContributionDispatcher
             throw new DomainException('Reclassify requires proposition_id and receipt_id; the statement is preserved.');
         }
         $source = $phase->kind === PhaseKind::Bias
-            ? $this->bias->forPhase($phase)->firstWhere('id', $input['proposition_id'])
+            ? $this->bias->operationalFor($phase)->firstWhere('id', $input['proposition_id'])
             : ($source->id === $input['proposition_id'] ? $source : null);
         if ($source === null || ! $this->generation->available($phase, 'proposition.reclassify', position: $source)
             || ! app(PhasePositionService::class)->acceptsGate($phase, $source)) {

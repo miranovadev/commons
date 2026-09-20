@@ -182,15 +182,15 @@ class CommitRegionTest extends TestCase
     }
 
     #[DataProvider('domains')]
-    public function test_closure_filters_each_cross_branch_write_and_revalidates_the_selected_source(string $first, string $second, string $third): void
+    public function test_closure_keeps_local_writes_and_revalidates_the_selected_source(string $first, string $second, string $third): void
     {
         $left = $this->node($second, $this->regionSeed, position: PhaseKind::Mediate);
         $right = $this->node($second, $this->regionSeed, position: PhaseKind::Mediate);
         $gate = $this->node($third, $left, position: PhaseKind::Bias);
-        $positive = $this->node($third, $right, position: PhaseKind::Bias);
-        $negative = $this->node($third, $right, position: PhaseKind::Bias);
-        $misaligned = $this->node($third, $right, position: PhaseKind::Bias);
-        $ungrounded = $this->node($third, $right, position: PhaseKind::Bias);
+        $positive = $this->node($third, $gate, edge: 'revise', position: PhaseKind::Bias);
+        $negative = $this->node($third, $gate, edge: 'revise', position: PhaseKind::Bias);
+        $misaligned = $this->node($third, $gate, edge: 'revise', position: PhaseKind::Bias);
+        $ungrounded = $this->node($third, $gate, edge: 'revise', position: PhaseKind::Bias);
         $wrongRegister = $this->node($first, $right, position: PhaseKind::Disperse);
         $boundary = $this->node($third, $right, 'committal', position: PhaseKind::Bias);
         $outside = $this->node($third, $boundary, position: PhaseKind::Bias);
@@ -212,10 +212,10 @@ class CommitRegionTest extends TestCase
             ]);
         });
         $options = app(ClosureOptionService::class);
-        $this->assertEqualsCanonicalizing([$positive->id, $negative->id, $ungrounded->id], $options->forPhase($phase)->pluck('id')->all());
+        $this->assertEqualsCanonicalizing([$gate->id, $positive->id, $negative->id, $misaligned->id, $ungrounded->id], $options->forPhase($phase)->pluck('id')->all());
         $plan = app(InputPlanService::class)->forParticipant($this->viewer);
-        $this->assertSame([], $plan['write_options']);
-        $this->assertEqualsCanonicalizing([$positive->id, $negative->id], array_column($plan['gate_options'], 'id'));
+        $this->assertEqualsCanonicalizing([$gate->id, $positive->id, $negative->id, $misaligned->id, $ungrounded->id], array_column($plan['write_options'], 'id'));
+        $this->assertSame([], $plan['gate_options']);
         $this->assertEqualsCanonicalizing([$positive->id, $negative->id], $plan['schema']['$defs']['actions']['proposition.commit']['properties']['proposition_id']['enum']);
         foreach ([$outside, $misaligned, $wrongRegister, $ungrounded] as $invalid) {
             $this->reject($phase, ['action' => 'proposition.commit', 'proposition_id' => $invalid->id]);

@@ -86,7 +86,7 @@ return [
     ],
     6 => [
         'name' => 'bias',
-        'description' => 'Select one active Commit Region Stance/Frontier whose retained direction agrees with its causal ancestry excluding itself and hard-supersede it into fresh Concord/Canon, execute an instrument, or attest an immediate Write descendant.',
+        'description' => 'Classify the current causal Stance/Frontier Gate when its retained direction agrees with its own ancestry, or act on its causal Write continuations. Regional Bias calculation candidates are not operational targets.',
         'gate' => 'previous-phase-position',
         'actions' => [
             'receipt.read',
@@ -107,12 +107,12 @@ return [
     ],
     7 => [
         'name' => 'order',
-        'description' => 'Commit an admissible expressive Gate, or Traverse an existing Committal Write. Either completes the Cycle at that Committal; the next Cycle continues there.',
+        'description' => 'Inspect local expressive Writes, Commit an admissible Write, or Traverse its own direct Committal continuation. Commit or Committal Traverse completes the Cycle.',
         'gate' => 'previous-phase-position',
         'actions' => ['proposition.commit', 'proposition.traverse'],
         'constraints' => [
             'proposition.commit' => ['effective-gate-attestation', 'completed-gate-or-effective-attestation-receipt', 'depth-cadence-and-hysteresis-admissible'],
-            'proposition.traverse' => ['committal-write-in-current-region'],
+            'proposition.traverse' => ['direct-committal-of-causal-write'],
         ],
     ],
 ];

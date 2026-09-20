@@ -35,7 +35,7 @@ function fixture(domain, phase = 7, continuity = false) {
   const write = node('write-' + domain, registers[position], phase === 7 ? 'committal' : 'expressive');
   return {
     phase: { id: domain + phase, number: phase, kind: ['distinguish', 'persist', 'constrain', 'disperse', 'mediate', 'bias', 'order'][phase - 1], write_register: registers[position] },
-    gate, lineage: [provenance, ...history], read_options: [history[phase === 7 ? 1 : (position + 1) % 3]], write_options: [write], gate_options: [gate],
+    gate, lineage: [provenance, ...history], read_options: [history[phase === 7 ? 1 : (position + 1) % 3]], write_options: phase === 7 ? [gate, write] : [write], gate_options: phase === 7 ? [] : [gate],
     workspace: { domain, horizon: { id: domain, domain, sequence: domain === 'emergence' ? 3 : 2, parent_context_horizon_id: 'parent', opened_by_proposition_id: opening.id, opening_proposition: opening },
       provenance, registers: Object.fromEntries(history.map(card => [card.register, [card]])) },
     schema: { $defs: { actions: {
@@ -99,7 +99,8 @@ for (const domain of Object.keys(domains)) {
     for (const role of ['gate', 'write']) {
       const group = document.querySelector(`[data-role="${role}"] .register-row`);
       assert.equal(group.dataset.register, domains[domain][2]);
-      assert.equal(group.querySelector('.proposition-card').dataset.register, domains[domain][2]);
+      if (role === 'write') assert.equal(group.querySelector('.proposition-card').dataset.register, domains[domain][2]);
+      else assert.equal(group.querySelector('.proposition-card'), null);
     }
     assert.equal(document.querySelector('[data-role="read"] .register-row').dataset.register, domains[domain][1]);
     assertRegisterGroups(document);
@@ -113,20 +114,23 @@ for (const domain of Object.keys(domains)) {
     }
   });
 }
-test('Order offers Commit only on Gate and one Traverse on each Committal Write', () => {
+test('Order retains local expressive Writes while Commit and direct Committal Traverse stay per-target', () => {
   const plan = fixture('settlement');
-  const consumed = node('consumed-source', 'concord');
-  plan.workspace.registers.concord.push(consumed);
-  plan.write_options.push(consumed); // Stale display data cannot invent an action.
+  const divergent = node('closure-divergent', 'concord');
+  const unrelated = node('unrelated-region-write', 'concord');
+  plan.workspace.registers.concord.push(unrelated);
+  plan.write_options.push(divergent);
   const document = documentFor(plan);
   const gate = document.querySelector('[data-role="gate"]');
   const write = document.querySelector('[data-role="write"]');
   const buttons = role => [...role.querySelectorAll('button')].map(button => button.textContent.trim());
-  assert.equal(buttons(gate).filter(label => label === 'Commit').length, 1);
+  assert.equal(buttons(gate).filter(label => label === 'Commit').length, 0);
+  assert.equal(buttons(write).filter(label => label === 'Commit').length, 1);
   assert.equal(buttons(write).filter(label => label === 'Traverse').length, 1);
-  assert.ok(!buttons(gate).includes('Traverse'));
-  assert.ok(!buttons(write).includes('Commit'));
-  assert.doesNotMatch(gate.textContent + write.textContent, /Support|Refute|Instrument|consumed-source/);
+  assert.ok(write.querySelector('[data-proposition-id="closure-divergent"]'));
+  assert.ok(!ui.actionPropositions(plan, 'proposition.commit').some(card => card.id === divergent.id));
+  assert.ok(!ui.actionPropositions(plan, 'proposition.traverse').some(card => card.id === divergent.id));
+  assert.doesNotMatch(gate.textContent + write.textContent, /unrelated-region-write/);
 });
 test('different Horizon boundary and provenance stay separate without entering structural lineage', () => {
   const plan = fixture('emergence');
@@ -139,6 +143,21 @@ test('different Horizon boundary and provenance stay separate without entering s
   assert.ok(ui.workspaceLanes(plan).flatMap(lane => lane.cards).every(card => card.id !== 'boundary-emergence'));
   assert.ok(document.querySelector('.tabler-icon-sun-high'));
   assert.ok(documentFor(fixture('settlement')).querySelector('.tabler-icon-sun-wind'));
+});
+
+test('Bias operational Read and Gate lanes do not borrow unrelated regional inspection cards', () => {
+  const plan = fixture('settlement', 6);
+  const unrelated = node('foreign-signal', 'signal');
+  const foreignGate = node('foreign-stance', 'stance');
+  plan.lineage = [];
+  plan.workspace.registers.signal = [unrelated];
+  plan.workspace.registers.stance = [foreignGate];
+  plan.gate_options = [foreignGate];
+  const lanes = ui.workspaceLanes(plan);
+  assert.deepEqual(lanes.find(lane => lane.role === 'read').cards, []);
+  assert.deepEqual(lanes.find(lane => lane.role === 'gate').cards, [plan.gate]);
+  assert.doesNotMatch(documentFor(plan).querySelector('.operational-lanes')?.textContent ||
+    lanes.flatMap(lane => lane.cards).map(card => card.id).join(' '), /foreign-signal|foreign-stance/);
 });
 test('post-Commit continuation naturally shares the boundary, provenance, and Gate IDs', () => {
   const plan = fixture('emergence', 1, true);
