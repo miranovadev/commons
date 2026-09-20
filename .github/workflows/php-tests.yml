@@ -4,18 +4,29 @@ on:
   workflow_call:
     inputs:
       suite:
-        description: Composer test suite (core, integration-full, query, load)
+        description: Composer test suite (core, integration, query, load)
         required: true
         type: string
+      shard:
+        type: number
+        default: 1
+      shards:
+        type: number
+        default: 1
+      profile_sql:
+        description: Optional EXPLAIN diagnostics for Query Regression
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 jobs:
   test:
-    name: PHP 8.5 / PostgreSQL 18
+    name: PHP / PostgreSQL (${{ inputs.shard }}/${{ inputs.shards }})
     runs-on: ubuntu-latest
-    timeout-minutes: ${{ (inputs.suite == 'integration-full' || inputs.suite == 'core') && 120 || 20 }}
+    # Core follows a frontend job capped at two minutes: 2 + 8 = 10.
+    timeout-minutes: ${{ inputs.suite == 'core' && 8 || inputs.suite == 'load' && 30 || 20 }}
 
     services:
       postgres:
@@ -75,24 +86,12 @@ jobs:
       - name: Install PHP dependencies
         run: composer install --prefer-dist --no-interaction --no-progress
 
-      - name: Set up Node
-        if: ${{ inputs.suite == 'core' || inputs.suite == 'integration-full' }}
-        uses: actions/setup-node@v4
+      - name: Download the Core frontend build
+        if: ${{ inputs.suite == 'core' }}
+        uses: actions/download-artifact@v4
         with:
-          node-version: 24
-          cache: npm
-
-      - name: Install frontend dependencies
-        if: ${{ inputs.suite == 'core' || inputs.suite == 'integration-full' }}
-        run: npm ci
-
-      - name: Build frontend
-        if: ${{ inputs.suite == 'core' || inputs.suite == 'integration-full' }}
-        run: npm run build
-
-      - name: Test frontend action contracts
-        if: ${{ inputs.suite == 'core' || inputs.suite == 'integration-full' }}
-        run: npm run test:ui
+          name: frontend-build
+          path: public/build
 
       - name: Prepare test environment
         run: cp .env.example .env
@@ -101,20 +100,26 @@ jobs:
         env:
           TEST_SUITE: ${{ inputs.suite }}
           PGOPTIONS: '-c statement_timeout=30s'
-          COMMONS_PROFILE_SQL: '1'
+          COMMONS_PROFILE_SQL: ${{ inputs.suite == 'query' && inputs.profile_sql && '1' || '0' }}
+          CI_SHARD: ${{ inputs.shard }}
+          CI_SHARDS: ${{ inputs.shards }}
         run: |
           case "$TEST_SUITE" in
-            core|integration-full|query|load) ;;
+            core|integration|query|load) ;;
             *) echo "Unknown test suite: $TEST_SUITE" >&2; exit 1 ;;
           esac
           php artisan config:clear
-          composer "test:$TEST_SUITE" -- --log-junit="test-results/$TEST_SUITE.xml"
+          audit=()
+          if [[ "$TEST_SUITE" == core && "$CI_SHARD" == 1 ]]; then
+            audit=(--audit)
+          fi
+          python3 scripts/ci/run-suite.py "$TEST_SUITE" --shard "$CI_SHARD" --shards "$CI_SHARDS" "${audit[@]}"
 
       - name: Upload PHP test results
-        if: ${{ !cancelled() }}
+        if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: php-${{ inputs.suite }}-results
-          path: test-results/*.xml
+          name: php-${{ inputs.suite }}-${{ inputs.shard }}-results
+          path: test-results/
           if-no-files-found: warn
           retention-days: 14

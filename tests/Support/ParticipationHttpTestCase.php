@@ -5,6 +5,7 @@ namespace Tests\Support;
 use App\Jobs\WakeParticipant;
 use App\Services\Evidence\PublicResourceAddress;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Foundation\Testing\TestCase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -24,6 +25,10 @@ abstract class ParticipationHttpTestCase extends TestCase
 
     protected function setUp(): void
     {
+        // Rolled-back journeys leave PostgreSQL physical/statistical state behind.
+        // A fresh schema keeps each complete HTTP scenario independent of that
+        // state; migrations still finish before the fixture-write guard is armed.
+        RefreshDatabaseState::$migrated = false;
         parent::setUp();
         Http::preventStrayRequests();
         $this->mock(PublicResourceAddress::class, fn ($mock) => $mock
@@ -199,7 +204,7 @@ abstract class ParticipationHttpTestCase extends TestCase
             }
             $this->assertSame('ready', $state['status'], $this->traceMessage($state));
             if ($step < $maxActions) {
-                $this->contribute($participant, $this->chooseContribution($state));
+                $this->contribute($participant, $this->chooseContribution($state), $state);
             }
         }
         $this->fail('HTTP action budget exhausted. '.$this->traceMessage($state));

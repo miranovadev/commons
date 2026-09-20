@@ -6,7 +6,9 @@ use App\Services\Observables\LineageMeasurementService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Fixtures\HorizonCycleFixture;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('integration')]
 class OperationalClosurePathTest extends TestCase
 {
     use HorizonCycleFixture, RefreshDatabase;

@@ -31,6 +31,7 @@ use InvalidArgumentException;
 use Opis\JsonSchema\Helper;
 use Opis\JsonSchema\Validator;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
 class ParticipantActionContractTest extends TestCase
@@ -47,6 +48,7 @@ class ParticipantActionContractTest extends TestCase
         return [...self::phases(), 'Persist foreign Gate' => [PhaseKind::Persist, true]];
     }
 
+    #[Group('integration')]
     #[DataProvider('executionPhases')]
     public function test_every_advertised_action_round_trips_through_inference_validation_and_execution(PhaseKind $kind, bool $foreignGate = false): void
     {
@@ -66,6 +68,32 @@ class ParticipantActionContractTest extends TestCase
         };
         $expected = array_values(array_diff($expected, $spent));
         $this->assertEqualsCanonicalizing($expected, array_keys($schema['$defs']['actions']), json_encode($state['plan']));
+        // A valid action in another phase/state must also be rejected here when
+        // it is absent from this participant's published contract.
+        $checked = [];
+        foreach (PhaseKind::cases() as $otherKind) {
+            $staticSchema = app(InputSchemaService::class)->forPhase($otherKind);
+            foreach ($staticSchema['$defs']['actions'] as $action => $definition) {
+                if (isset($schema['$defs']['actions'][$action]) || isset($checked[$action])) {
+                    continue;
+                }
+                $checked[$action] = true;
+                $input = $this->sample($definition, $staticSchema['$defs'], $seed->id);
+                if ($action === 'instrument.execute') {
+                    $input['instrument'] = ['kind' => 'hyperlink', 'reference' => 'https://example.test/forbidden'];
+                }
+                $this->assertValid($staticSchema, $input);
+                $this->assertValid($schema, $input, false);
+                $before = $phase->fresh()->getAttributes();
+                try {
+                    app(ParticipationService::class)->contribute($participant, $phase->id, $input);
+                    $this->fail('Backend accepted unavailable action '.$action.' in '.$kind->name);
+                } catch (InvalidArgumentException) {
+                    $this->addToAssertionCount(1);
+                }
+                $this->assertSame($before, $phase->fresh()->getAttributes(), $action.' changed the phase');
+            }
+        }
         $transport = app(OpenAIResponseSchema::class)->fromCommons($schema);
         $variants = $transport['properties']['contribution']['anyOf'] ?? [$transport['properties']['contribution']];
         $responses = Http::sequence();
@@ -182,6 +210,7 @@ class ParticipantActionContractTest extends TestCase
         $this->assertValid($transport, ['contribution' => [...$wire, 'direction' => null, 'rationale' => 'Not a direction']], false);
     }
 
+    #[Group('integration')]
     public function test_rest_round_trips_and_rejects_rationale(): void
     {
         [$participant, $phase] = $this->fixture(PhaseKind::Mediate, empty: true);

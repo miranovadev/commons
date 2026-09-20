@@ -11,6 +11,7 @@ use Tests\Support\ScriptedParticipationTestCase;
 #[Group('http-participation')]
 class ParticipationHttpHarnessTest extends ScriptedParticipationTestCase
 {
+    #[Group('integration')]
     public function test_real_http_actions_reach_an_operational_commit(): void
     {
         $this->startSubstrate();
