@@ -43,7 +43,7 @@ result without querying anything. The request has three messages:
 
 | Layer | Contents | Ordering |
 | --- | --- | --- |
-| System | Existing constitution, one receipt-layout sentence, existing connection instructions | Original instruction text is preserved byte-for-byte |
+| System | Constitution aligned with #185's lineage/Homeostatic rules, one receipt-layout sentence, existing connection instructions | Stable monolithic instructions first |
 | Loaded receipts | Already-visible loaded receipt identity, provenance, capabilities, observation and evidence | Load timestamp, then receipt ID |
 | Current state | Historical lineage first; remaining Read/Gate/Write and receipt state; current Phase; full action schema last | Fixed field order; original population order |
 
@@ -88,6 +88,8 @@ different instructions or substrates separate it. Direct calls without worker
 metadata fall back to connection identity. Phase, evidence, participant ID and
 schema never churn the key. System-text changes automatically change the hash;
 material layout semantics require incrementing `ParticipantPromptLayout::VERSION`.
+The #185 wording correction therefore gets a new cache family automatically;
+`commons-prefix-v1` remains appropriate because the layout and boundaries are unchanged.
 
 **The strict output schema is an independent cache limitation.** The documented
 rendered context includes output-format instructions; moving `text.format` later
@@ -96,6 +98,9 @@ matching and cache availability still govern reuse. We do not broaden schemas to
 make them stable. Cache keys and boundary settings cannot override a mismatch.
 
 ## Before/after measurements
+
+The figures below were captured at `405897e`, before the constitution correction.
+Re-running the script uses the current constitution for both layout comparisons.
 
 The reproducible offline comparison reconstructs every old packet from the new
 parts and verifies strict recursive value/type equality, all list order, and the
@@ -195,8 +200,8 @@ large immutable bodies with demonstrated repeated use and a measured benefit.
 
 ## Regression coverage
 
-Core adds focused cases for seven-phase information/schema equivalence, unchanged
-constitution, deterministic keys and receipt order, evidence append/clear/reload,
+Core adds focused cases for seven-phase information/schema equivalence, corrected
+constitution semantics and hash, deterministic keys and receipt order, evidence append/clear/reload,
 ranked evidence/parent order, provider compatibility, cache-family scoping and
 usage/refusal/logging failures. A small persisted fixture verifies real load,
 clear/reload behavior and zero layout queries. Existing request assertions now

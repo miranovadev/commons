@@ -46,8 +46,8 @@ class ParticipantPromptCacheTest extends TestCase
         $this->assertSame(1, substr_count($prompt['evidence'].$prompt['user'], 'immutable observation'));
         $this->assertStringNotContainsString('DO-NOT-EXPOSE', json_encode($request));
         $constitution = str_replace("\n\n".ParticipantPromptLayout::FORMAT_INSTRUCTION, '', $prompt['system']);
-        // Constitution at main 3f55314: only the documented layout sentence is new.
-        $this->assertSame('e847207c998c44f56ebd8f183bc9389dfa4ae37e596dabe6ea346ee34ef0b86a', hash('sha256', $constitution));
+        // Constitution intentionally aligned with the merged #185 lineage/Homeostatic rules.
+        $this->assertSame('02b6c08b3d5f7c7884aa3fd7c981a808dae17b5e4cf0692ee4d338e99d328ed3', hash('sha256', $constitution));
     }
 
     public function test_object_key_and_database_receipt_order_do_not_change_serialization(): void
@@ -152,6 +152,9 @@ class ParticipantPromptCacheTest extends TestCase
         $connection = $this->connection();
         $key = fn ($c, $s) => app(OpenAIRequestFactory::class)->make($c, app(ParticipantPromptFactory::class)->make($c, $s), $s['_inference'])['prompt_cache_key'];
         $before = $key($connection, $state);
+        // Same model/substrate/layout at #187's pre-correction head 405897e.
+        // Corrected stable instructions must not retain that warm cache family.
+        $this->assertNotSame('commons-prefix-v1:82c007a597c3859f5be53e679250a59ab242e3bc', $before);
         $state['_inference']['participant_id'] = 'another-participant';
         $state['plan']['phase']['id'] = 'another-phase';
         $state['plan']['receipts'] = [];
