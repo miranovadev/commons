@@ -22,15 +22,55 @@ abstract class ParticipationHttpTestCase extends TestCase
 
     private int $httpRequestDepth = 0;
 
+    private bool $diagnostic = false;
+    private int $diagnosticRequests = 0;
+    private int $diagnosticQueries = 0;
+    private float $diagnosticSqlMs = 0;
+    private float $diagnosticMaxMs = 200;
+    private int $diagnosticPlans = 0;
+    private bool $diagnosticExplaining = false;
+
+
     protected function setUp(): void
     {
+        $setupStarted = hrtime(true);
+        if (getenv('COMMONS_DIAGNOSE_FRESH') === '1') {
+            \Illuminate\Foundation\Testing\RefreshDatabaseState::$migrated = false;
+        }
         parent::setUp();
+        fwrite(STDERR, json_encode(['setup_class' => static::class, 'setup_ms' => (hrtime(true) - $setupStarted) / 1e6]).PHP_EOL);
         Http::preventStrayRequests();
         $this->mock(PublicResourceAddress::class, fn ($mock) => $mock
             ->shouldReceive('resolve')->with('evidence.example.test')->andReturn('93.184.216.34'));
         Http::fake(['https://evidence.example.test/*' => fn ($request) => Http::response(
             'Deterministic external observation for '.$request->url(), 200, ['Content-Type' => 'text/plain'],
         )]);
+        $this->diagnostic = getenv('COMMONS_DIAGNOSE_TRAGEDY_SQL') === '1'
+            && str_ends_with(static::class, 'ParticipationTragedyLifecycleTest');
+        if ($this->diagnostic) {
+            fwrite(STDERR, json_encode(['diagnostic_start' => static::class,
+                'settings' => DB::selectOne("select current_setting('jit') as jit, current_setting('jit_above_cost') as jit_above_cost"),
+                'table_stats' => DB::select('select relname, n_live_tup, n_dead_tup, last_analyze, last_autoanalyze from pg_stat_user_tables order by relname')]).PHP_EOL);
+            DB::listen(function ($query): void {
+                if ($this->diagnosticExplaining) return;
+                $this->diagnosticQueries++;
+                $this->diagnosticSqlMs += $query->time;
+                if ($this->httpRequestDepth > 0 && $query->time > $this->diagnosticMaxMs
+                    && $this->diagnosticPlans < 6 && preg_match('/^\s*select\b/i', $query->sql)) {
+                    $this->diagnosticMaxMs = $query->time * 1.4;
+                    $this->diagnosticPlans++;
+                    $this->diagnosticExplaining = true;
+                    try {
+                        $plan = DB::select('EXPLAIN (FORMAT JSON) '.$query->sql, $query->bindings);
+                        fwrite(STDERR, json_encode(['slow_query_ms' => $query->time,
+                            'contributions' => count($this->trace), 'sql' => $query->sql,
+                            'bindings' => $query->bindings, 'plan' => $plan]).PHP_EOL);
+                    } finally {
+                        $this->diagnosticExplaining = false;
+                    }
+                }
+            });
+        }
         // Migrations finish in parent::setUp(). Thereafter even setup goes through HTTP.
         DB::connection()->beforeExecuting(function (string $sql): void {
             if ($this->httpRequestDepth === 0 && ! preg_match('/^\s*select\b/i', $sql)) {
@@ -41,11 +81,21 @@ abstract class ParticipationHttpTestCase extends TestCase
 
     public function call($method, $uri, $parameters = [], $cookies = [], $files = [], $server = [], $content = null)
     {
+        $diagnosticStarted = hrtime(true);
+        $diagnosticQueries = $this->diagnosticQueries;
+        $diagnosticSqlMs = $this->diagnosticSqlMs;
         $this->httpRequestDepth++;
         try {
             return parent::call($method, $uri, $parameters, $cookies, $files, $server, $content);
         } finally {
             $this->httpRequestDepth--;
+            if ($this->diagnostic) {
+                fwrite(STDERR, json_encode(['diagnostic_request' => ++$this->diagnosticRequests,
+                    'method' => $method, 'contributions' => count($this->trace),
+                    'wall_ms' => (hrtime(true) - $diagnosticStarted) / 1e6,
+                    'queries' => $this->diagnosticQueries - $diagnosticQueries,
+                    'sql_ms' => $this->diagnosticSqlMs - $diagnosticSqlMs]).PHP_EOL);
+            }
         }
     }
 
