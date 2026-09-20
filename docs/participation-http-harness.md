@@ -116,8 +116,16 @@ workflow supplies PostgreSQL 18 validation plus the frontend build and UI tests;
 its JUnit artifact retains the failure traces. Check that only the three named
 regressions fail, rather than treating any red run as sufficient evidence.
 
-Stop at this Stage 2 checkpoint. Subsequent work needs authorization for local
+This stop records the historical Stage 2 checkpoint. Subsequent work needed authorization for local
 structural epochs and scoped spentness, followed by backward-lineage recovery.
 That recovery correction must include Tragedy's direct `recovery_proposition_id`
 jump to the Horizon opener. Remaining epic acceptance scenarios, including a
 natural third Variant and the complete Domain cycle, are not claimed here.
+
+Stages 3–6 subsequently changed the recorded red boundaries and recovery
+contracts; see [the checkpoints](substrate-motor-checkpoints.md). The current
+movement authority is [Invariant 17](core-invariants.md#17-lineage-constrained-participant-movement),
+not an action merely advertised by a historical harness run. Traverse requires
+the current Gate's existing causal continuation; recovery walks recorded
+ancestry backward. Context, region membership and Homeostatic calculations
+cannot create an edge. No edge means no movement.

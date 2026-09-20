@@ -9,6 +9,13 @@ structural source proposition ID**. It is not a Phase occurrence or a
 Horizon-wide kind counter. [Stage 3](local-exploration-epochs.md) records provenance
 resolution, migration constraints, and the HTTP acceptance evidence.
 
+An epoch advance removes only current spentness suppression. It never creates a
+movement edge or makes an unrelated same-position/region/Horizon Proposition a
+Traverse target. Forward movement requires the current Gate's causal
+continuation; recovery follows recorded ancestry backward. Homeostatic
+calculation scope and historical visibility do not confer actionability.
+No edge means no movement.
+
 ## Invariants
 
 - **Spent invariant:** An expressive proposition is spent only relative to a

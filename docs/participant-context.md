@@ -5,6 +5,12 @@ Autonomous cognitive context and human observational data are separate contracts
 Only current local history, operational options, evidence and the valid action
 schema belong in an inference packet.
 
+Movement topology, Homeostatic populations and context visibility are separate
+contracts under [Invariant 17](core-invariants.md#17-lineage-constrained-participant-movement).
+Forward movement follows an explicit causal edge from the current Gate; recovery
+follows recorded ancestry backward. Visible history and regional calculation
+members do not become movement targets. **No edge means no movement.**
+
 ## API boundaries
 
 | Endpoint | Contract |
@@ -61,7 +67,9 @@ same-Horizon Commit boundaries. It never uses the Horizon opener as a substitute
 for the current Commit Region's provenance.
 
 * A unary edge follows its actual source, including Revise and Bias selections
-  that differ from the operation's Phase Gate.
+  that differ from the operation's Phase Gate in stored history. Resolving that
+  history does not endorse movement from an unrelated Gate or create a missing
+  causal edge.
 * Multiple inputs follow the creating Phase's recorded Gate parent. Reconcile's
   other branch is not appended as another historical layer.
 * `SupersessionStrength::for()` classifies edges. All hard input IDs are omitted
@@ -82,7 +90,7 @@ traversals. `parent_ids` remain raw structural references, potentially outside t
 packet. Adjacent displayed history items may be connected through omitted hard
 inputs or current options; they are not asserted to be direct database edges.
 
-The complete active region is resolved before operational roles are removed.
+The complete active historical path is resolved before operational roles are removed.
 Silent count/token truncation cannot cut provenance off from the historical head.
 The old `max_read_count`/statement-token ancestry window therefore does not truncate
 this contract; `max_read_count` still bounds the human register browsing window.
@@ -97,6 +105,14 @@ the current Gate plus current counterpart/Bias candidates; the action schema
 identifies which IDs can actually be selected. The current Gate may be contextual
 without being an authorized Bias or reconciliation target.
 
+Commit Region membership defines calculation/context scope only where a Commons
+operation explicitly requires it; it never creates a traversal edge. The only
+regional cross-lineage Homeostatic populations are Mediate — Read, Bias — Gate,
+and Closure / Order — Write. Calculation or comparison of another lineage's
+member does not move the Participant or make that member an action target.
+The schema must enforce structural authority from the current Gate independently
+of a candidate's measurement rank or serialized lane.
+
 Write is the union of actual schema-authorized Write, revision, traversal,
 Instrument and Attestation targets. Standalone copies under those secondary names
 are not serialized. Read owns a shared object first, then Gate, then Write;
@@ -106,6 +122,15 @@ resolve within the four populations, without standalone full copies. At initial
 entry, provenance is the current Gate: it appears once in Gate Options and
 Lineage is empty.
 
+Expressive Traverse targets are immediate valid causal descendants of the current
+Gate, subject to phase, evidence and personal traversal prerequisites and the
+documented revision rules. Traversal never selects globally. Same-region and
+same-position Writes which are not causal descendants of the current Gate are
+not Traverse targets. At Bias, successful-route continuity preserves only the
+existing edge from that exact Gate to its frozen classification. At Order, it
+continues along the direct Commit edge from that classification. Neither regional
+membership nor visibility can substitute for either edge.
+
 The human plan preserves its presentation/action collections for existing cards
 and forms, and adds the separate Horizon browsing projection. Its historical
 Lineage uses the same resolved history and role exclusions as inference.
@@ -114,6 +139,22 @@ history directly. Historical preview never unions Horizon cards, the current
 Gate, provenance display, or current action populations. It is a read-only view
 of current resolved history grouped by register, not a reconstruction of past
 measurements or action schemas.
+
+## Recovery is a backward movement contract
+
+Recovery begins at the Participant's actual current position and walks backward
+through recorded arrival provenance. Only ancestral Committals on that path may
+compete, with attenuation based on actual backward edge distance, including
+revisions and historical intermediates. At a multi-input Write, the recorded
+arrival Gate determines the path; a display shortcut or the other input cannot
+replace it.
+
+The persisted Cycle Horizon confines recovery until exhaustion permits crossing
+its opening boundary. The same walk then continues backward into previous
+Horizons, retaining the original position as the distance origin. Recovery never
+resets to a Horizon provenance node, searches siblings or descendants, or searches
+unvisited branches. Context serialization can omit historical intermediates; the
+recovery walk cannot. See [backward lineage recovery](recovery-basins.md).
 
 ## Payload regression and measurement
 
@@ -209,6 +250,13 @@ ambiguous multi-Commit ancestry is excluded. Direct Write lookup follows revisio
 only, never later-phase descendants. Neither lookup hydrates historical evidence
 or serializes downstream subtrees. The normal validation plan returns before
 historical context is calculated.
+
+These are historical visibility populations, not movement candidates. Regional
+Read/Gate/Write history is exposed only where the documented Homeostatic/context
+contract requires it. No alternative enters Traverse merely because it has the
+same producing position, region or Horizon. Actionability requires the operation's
+structural authority; movement additionally requires the current Gate's causal
+continuation. No edge means no movement.
 
 Every return to Origin Distinguish exposes exhausted direct first-register
 excursions in the Cycle's Domain (Signal or Activity). Persist replaces those

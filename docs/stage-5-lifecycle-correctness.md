@@ -4,12 +4,23 @@ Stage 5 repairs the successful-route Bias revisit and makes Tragedy's final
 attempt attainable through the real participation lifecycle. Stage 6 suite
 reorganisation and Stage 7 cleanup are not part of this change.
 
+This checkpoint's intended semantics are subordinate to
+[Lineage-Constrained Participant Movement](core-invariants.md#17-lineage-constrained-participant-movement).
+Stage 5 intended to preserve a previously existing successful causal route, not
+widen traversal across a Commit Region. Its original same-Horizon/same-region
+wording was insufficient: those properties never create a movement edge.
+
 ## Semantics
 
-- A successful Commit freezes its source against mutation but preserves Bias
-  traversal through that classification. An operational snapshot, exact Horizon
-  and Commit Region constrain this route. Order then traverses the existing
-  Commit. No new content, Attestation, snapshot or failure is manufactured.
+- A successful Commit freezes its source against mutation but does not destroy
+  its existing causal route. Bias entered through the exact Gate whose causal
+  continuation produced the frozen classification may traverse that existing
+  edge, subject to ordinary traversal prerequisites. Order may then traverse
+  the Commit produced directly from that classification. A frozen classification
+  elsewhere in the same Horizon or Commit Region is not traversable unless it
+  is the actual causal continuation of the current Gate. Successful-route
+  continuity preserves an existing edge; it never manufactures one. No new
+  content, Attestation, snapshot or failure is manufactured.
 - When that Commit's child Horizon later exhausts, its successful incoming
   route remains visible as `continuation_exhausted` history without becoming a
   failure. This state propagates backward only when all other outgoing routes
@@ -23,6 +34,9 @@ reorganisation and Stage 7 cleanup are not part of this change.
   A later Commit cannot hide an earlier region through frontier shadowing, and
   child-Horizon scores do not supply the current Horizon's capacity. Numerical
   gain remains distinct from structural eligibility and current spentness.
+  Calculation/context scope never supplies a movement destination. Only the
+  explicit Homeostatic Read/Gate/Write populations compare regional expressive
+  lineages; recovery and Traverse keep their own causal topology.
 - Tragedy now has one explicit shared allowance for a Distinguish/Disperse
   Variant at zero Potential. All existing current-option, evidence and spentness
   checks remain. This deliberately extends the former positive-Potential-only
@@ -41,7 +55,7 @@ allowance and its limits. Ordinary Variant generation keeps its existing rules.
 
 | Journey | Positive and negative boundary |
 | --- | --- |
-| Successful Bias revisit | Traverses the frozen classification and existing Commit; excludes source mutation and Rest; preserves content, votes, snapshot and immutable failure history. |
+| Successful Bias revisit | From the original causal Gate, traverses its frozen classification and that classification's direct Commit; excludes source mutation and Rest; preserves content, votes, snapshot and immutable failure history. |
 | Rest with optional Read | Rejects premature Rest in Distinguish; accepts Rest before an unread informational receipt is loaded; optional Read leaves the Phase unchanged. |
 | Natural Tragedy and final attempt | Real contributions and optional Bias receipt loading open a new Horizon. Actual exploration reaches Tragedy. A second participant traverses into that Horizon, claims the final Variant, reads and consumes the receipt through Reclassify, and eventually fails that continuation. |
 | Shared evidence and isolation | The second participant sees the Tragedy receipt; a participant parked in the previous Horizon does not. Read does not consume it; consumption does not immediately exhaust the Horizon; duplicate allowance claims are rejected. |
@@ -55,6 +69,11 @@ equivalence; it accepts no arbitrary callback. Narrow service tests cover the
 allowance's rollback and uniqueness, existing-slot consumption, zero-frontier
 false negatives, unrelated-failure exclusion, historical success visibility and
 live-alternative/current-epoch guards on backward continuation completion.
+
+The recorded successful-route evidence is a positive journey, not proof that
+same-region but causally unrelated targets were rejected. The normative negative
+boundary is explicit above; this documentation correction does not claim new
+application coverage or validation. No edge means no movement.
 
 The Stage 4 HTTP recovery test formerly expected Rest at the broken successful
 Bias revisit. That assertion is explicitly superseded: Rest is now rejected

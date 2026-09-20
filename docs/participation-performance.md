@@ -95,15 +95,19 @@ after commit. This is a transaction-boundary assertion, not a latency guarantee.
 
 [Incremental Potential](incremental-potential.md) supersedes the former whole-substrate
 recovery and read-time measurement fallback. Initial selection reads indexed entries;
-Rest recovery walks maintained region frontiers upward. Writes dirty affected regions
+Rest recovery walks the Participant's recorded causal lineage backward and
+intersects it with eligible ancestral Committals. Maintained region frontiers
+do not supply recovery destinations. Writes dirty affected regions
 through reverse dependencies and publish prepared measurements after releasing the
 contribution lock. Ordinary reads never derive measurements.
 
 - Current-Horizon candidates and their actual ancestry can still grow. The context
   is bounded causally, not to a fixed row count; Horizon metadata is restricted to
   the hydrated working set. A very large single live Horizon still has a cost.
-- Recovery depends on provenance depth, local topology and nondominated frontier
-  width. It no longer hydrates unrelated historical Horizons.
+- Recovery depends on recorded backward-lineage depth, local topology and the
+  durable arrival history needed to resolve that path. It does not search sibling
+  or descendant frontiers or hydrate unrelated historical Horizons. Distances
+  count actual backward edges, with no Horizon-opener reset.
 - Writes retain existing target validation and immutable Commit snapshot work in
   the guarded transaction. New region-wide measurement and Potential calculation
   runs outside it; prepared rows publish in bounded batches under a version check.
@@ -111,6 +115,11 @@ contribution lock. Ordinary reads never derive measurements.
   Active graph cards consume maintained Potential.
 
 ### Recovery growth comparison
+
+These measurements describe the historical performance checkpoint. Current
+movement authority is the [backward-lineage contract](recovery-basins.md), not
+the old frontier-selection behaviour. Calculation or context membership never
+creates a traversal or recovery edge. No edge means no movement.
 
 The PostgreSQL 18 / PHP 8.5 recovery lane on 2026-09-16 measured the following
 on the same rested-participant fixture, before and after adding 1,000 historical

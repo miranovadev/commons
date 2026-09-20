@@ -2,6 +2,18 @@
 
 Order is terminal selection: Commit an admissible Bias-produced expressive Concord/Canon Gate or Traverse an established Committal Concord/Canon Write. Read contains Mediate-produced Stance/Frontier ancestry. Neither Instrument, Receipt Read, Replay nor Attestation is an Order action. Both productive actions finish the Cycle at the exact Committal; the next Cycle continues there under its applicable Context Horizon.
 
+Traverse follows only the Commit produced directly from the current
+classification Gate. At Bias, that frozen classification is traversable only
+through the exact Gate whose causal continuation produced it, subject to ordinary
+prerequisites. A classification or Commit elsewhere in the same Region/Horizon
+is not a destination. Successful-route continuity preserves an existing edge;
+it never manufactures one. No edge means no movement.
+
+Closure / Order — Write may evaluate the documented regional Write-equivalent
+population. Commit Region membership defines that calculation/context scope
+only; it does not define movement. Calculation selection, phase compatibility
+and visible context cannot replace structural authority from the current Gate.
+
 `CommitmentAdmissibilityService` first requires the selected source to occupy Phase 6 / Bias in the same Domain, Horizon and Commit Region, with an active, unconsumed expressive third-register classification. Register identity alone cannot confer this position: a Phase 3 / Constrain Canon or Concord remains contextual history. See [phase positions](phase-positions.md).
 
 It also requires a completed Receipt, an effective Attestation on the selected classification, and aligned Depth/Cadence with hysteresis. Reinforcement is an optional weight, never a hard minimum. Receipt existence does not assert that evidence is correct or that a Participant has read it.

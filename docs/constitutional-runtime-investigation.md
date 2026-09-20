@@ -83,10 +83,16 @@ changed the canonical script or production semantics.
 The golden trace also explains why simply truncating after an earlier Bias is not
 a round trip: at original Order step 243, effective attestation and receipt exist,
 but Depth is -0.2573768 and Cadence is +0.4825139. Commit is absent from the public
-action schema. The eventual step-600 Commit selects an earlier eligible Bias;
-the current Gate's own commitment summary is still inadmissible. Minimization
-must preserve candidate-specific admissibility and the actual history needed for
-that selection, not bypass Closure or mistake the current Gate for the only option.
+action schema. The eventual step-600 Commit selected an earlier Bias advertised
+as eligible by that historical implementation, while the current Gate's own
+commitment summary was still inadmissible. This records what the trace did; it
+does not establish causal authority for that selection. Under
+[Invariant 17](core-invariants.md#17-lineage-constrained-participant-movement),
+regional Homeostatic eligibility cannot authorise a sideways move. Each
+Phase-advancing operation must be structurally authorised from the current Gate;
+Order Traverse requires its direct Commit edge. The trace's conformity to that
+restriction is not certified by these runtime measurements. Preserve the raw
+historical capture without treating an advertised action as semantic authority.
 
 No shortened sequence was accepted. The subsequent acceptance decision explicitly
 stopped this work. The full natural captures and fixed scripts remain unchanged;

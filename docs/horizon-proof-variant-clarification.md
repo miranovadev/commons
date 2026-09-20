@@ -4,6 +4,13 @@ This clarification is normative for Distinguish (Phase 1) and Disperse (Phase 4)
 Mediate still requires a second proposition to reconcile. No new action or
 participant-count requirement is introduced.
 
+The structural position includes its actual source Gate, not all Propositions
+with the same phase/register or Commit Region. Further generation must create
+an authorised causal continuation from that Gate. Rest recovery returns through
+recorded ancestry backward; an epoch advance or greater Horizon Potential never
+permits a sideways move. Calculation populations, visibility and action targets
+remain distinct. No edge means no movement.
+
 An empty viable structural position exposes Variant. Once a Variant exists,
 it must receive its own completed Instrument execution, producing a Receipt
 in the Horizon, and at least one effective Attestation. Only when those

@@ -3,6 +3,14 @@
 The Phase view keeps the existing action schema and model rules. Its layout is
 organized around three stable regions: Read, Gate and Write.
 
+These display lanes do not define movement topology. A visible Proposition or
+member of a regional Homeostatic calculation is not thereby actionable. Forward
+movement requires the current Gate's explicit causal continuation; recovery
+follows recorded ancestry backward. Bias Traverse offers only that Gate's causal
+Write, including an otherwise eligible frozen successful classification; Order
+offers only its direct Committal result. Same-region, same-Horizon and
+same-position cards cannot become Traverse targets. No edge means no movement.
+
 ## Layout and navigation
 
 - At desktop widths, the operational board fills the available viewport height.

@@ -18,13 +18,20 @@ current spentness remain separate concepts.
 | --- | --- | --- |
 | Repeated Variant after genuine exhaustion | `ParticipationLocalEpochTest`: first, second and third Distinguish Variants through real failures and Rest | Before reopening all current options are spent; only the local epoch advances; old failures stay immutable |
 | Independent structural epochs | Two epoch regressions in `ParticipationLifecycleRegressionTest`, plus `ParticipationStaggeredEpochTest` | A later Committal cannot reopen Origin; different Disperse Gates advance independently; parked participants observe A reopening while B stays spent, then B reopening |
-| Successful-route forward navigation / Bias revisit | `ParticipationLifecycleRegressionTest::test_successful_route_revisit_can_advance_through_bias_to_its_existing_commit` | Traverse the frozen Bias classification and existing Commit; reject source mutation and inappropriate Rest; preserve content, attestations, commitment snapshot and failure history |
+| Successful-route forward navigation / Bias revisit | `ParticipationLifecycleRegressionTest::test_successful_route_revisit_can_advance_through_bias_to_its_existing_commit` | From the exact original causal Gate, traverse its frozen Bias classification and that classification's direct Commit; reject source mutation and inappropriate Rest; preserve content, attestations, commitment snapshot and failure history |
 | Rest availability | Two constitutional cases in `ParticipationHttpHarnessTest` | Productive actions exclude Rest; an unread informational receipt does not; reading it leaves the Phase unchanged |
 | Backward recovery and actual distance | Two cases in `ParticipationRecoveryTest` | API-produced phase Gates establish the traversed path; untraversed successful Commit is excluded; actual actionless Rest recovers two edges backward |
 | Current-Horizon confinement and boundary recovery | `ParticipationTragedyLifecycleTest` | Every live final-attempt step stays in its Horizon until Exhaustion; recovery then crosses the actual API-created boundary backward, counting distance across both Horizons; exploration resumes |
 | Tragedy lifecycle | The same fixed 107-step Tragedy journey | Natural creation, receipt availability, another participant's legitimate final Variant, Read, consumption, later Exhaustion; duplicate claims and foreign-Horizon receipt access rejected; original evidence unchanged |
 | Visibility, positive and negative | `ParticipationVisibilityLifecycleTest`, Bias revisit and Tragedy assertions | Expected propositions, attestation summaries, receipt evidence and parent references are visible; foreign/distant structure and forbidden action targets are absent/rejected; exhausted successful history stays visible without becoming failure |
 | Multi-participant evidence and action semantics | Tragedy's producer/consumer/outside observer; independent-epoch parked observers; visibility's separate author/observer; two `ParticipationSourceEquivalenceTest` cases | Shared receipt consumption is observed by another participant; outsiders cannot use it; one participant's local advance does not move or reopen another position; manual/connected state and worker contribution contract agree |
+
+The successful-route case records a positive causal journey. It does not prove
+rejection of an unrelated frozen classification in the same Region/Horizon.
+[Invariant 17](core-invariants.md#17-lineage-constrained-participant-movement)
+requires that negative boundary independently: calculation populations and
+visibility cannot become Traverse targets. No edge means no movement. This
+documentation correction adds no test or claim of new implementation validation.
 
 Recovery's controlled near/far fixtures remain in `CausalRecoveryTest`: they
 prove inverse-square attenuation can change the winning ancestral Committal,

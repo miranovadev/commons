@@ -8,6 +8,14 @@ already prepared, while the wake stops at the boundary.
 
 ## Entry, completion and recovery
 
+Entry preparation cannot widen movement scope. Forward movement follows the
+current Gate's explicit causal continuation; recovery follows recorded arrival
+provenance backward and ranks only ancestral Committals at actual backward
+distance. Same-region/Horizon membership, contextual visibility or a Homeostatic
+population grants no movement. Exhaustion permits crossing an opening boundary
+on that same lineage, never a reset to its provenance node or a sibling/descendant
+search. No edge means no movement.
+
 `CycleEntryService::prepare()` is idempotent infrastructure entry. Autonomous wakes
 call it before the first inference: an established substrate supplies its measured
 Committal Gate, applicable Context Horizon and Phase 1. An active Cycle is reused.
