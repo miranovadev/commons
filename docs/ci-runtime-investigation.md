@@ -9,9 +9,9 @@ All runtime evidence below uses PostgreSQL 18 and PHP 8.5 on GitHub Actions.
 | Suite / source run | PHP cases | PHP time | Job time |
 | --- | ---: | ---: | ---: |
 | [Core, main](https://github.com/miranovadev/commons/actions/runs/35466343419) | 617 | 5,061.88s | 86m01s |
-| [Full Integration](https://github.com/miranovadev/commons/actions/runs/35436695301) | 619 | 6,692.19s | See source job |
-| Query, same companion run | 16 | 150.89s | See source job |
-| Load, same companion run | 22 | 52.64s | See source job |
+| [Full Integration](https://github.com/miranovadev/commons/actions/runs/35436695301) | 619 | 6,692.19s | 113m26s |
+| Query, same companion run | 16 | 150.89s | 3m02s |
+| Load, same companion run | 22 | 52.64s | 1m38s |
 
 The Core run used `b05ff270`; Part 1's merge `c01b7a12` changes documentation only.
 The companion run is separately identified because runner conditions and its commit
@@ -73,7 +73,10 @@ the real production services and the direct-fixture-write guard. There are no
 planner hints, disabled indexes, application caches or altered calculations.
 The test-driven journey helper also reuses the GET it just performed when posting
 the next contribution, eliminating an identical consecutive GET with no intervening
-action. The fixed scripts already did this.
+action. The fixed scripts already did this. The complete-cycle harness test drops
+47 redundant GET/status assertions (294 to 247); every action still has its
+preceding successful GET, and all substantive assertions remain. The Tragedy
+script retains all 8,684 assertions.
 
 Fixtures are deliberately different by purpose: Core's positioned graphs exercise
 individual invariants; HTTP journeys build state through production requests.
@@ -82,6 +85,17 @@ state; exhaustive action contracts repeat these across phase/provider cases.
 Those costs remain visible in per-test timing rather than being hidden by sharing
 mutable state. Long 600/630-contribution replay captures remain unchanged under
 `tests/Replay`, outside default discovery as previously approved.
+
+The first architecture candidate adds PHPUnit event timings without instrumenting
+application services. Its 595 focused Core cases take 674.48 aggregate PHP seconds,
+including 81.18s in preparation hooks (12.0%). The largest aggregate preparation
+costs include `OperationalCommitmentTest` (5.78s) and `RealtimeTest` (5.43s), across
+their provider/migration cases. Individual Core cases top out at 10.95s, rather
+than multi-minute journeys. Fixture calls inside test bodies are included in case
+time, not falsely counted as hook time. Load preparation is 24.16s of its 65.33s
+PHP run: migrations are necessary because independent workers need committed
+fixtures. Query preparation is 1.88s; its larger inline population fixtures remain
+in its manual suite. See [the hook measurements](evidence/ci-setup-first-candidate.json).
 
 ## SQL profiling overhead
 
@@ -108,7 +122,8 @@ workflow input. SQL-count regression assertions remain enabled.
 | Load / Concurrency | Manual only | — | 30m | Contention, locks, concurrency and scale |
 
 Core builds and tests the frontend once, then shares the real build artifact with
-three PHP shards. Its frontend budget is 2m and each following PHP job is capped
+five PHP shards. Only the shard owning the real websocket smoke test additionally
+installs its locked Node client. Its frontend budget is 2m and each following PHP job is capped
 at 8m, so the dependent job budgets sum to 10m. Runner queue time is reported
 separately from execution. Integration does not repeat frontend work or Core tests.
 
@@ -141,8 +156,31 @@ execution and an identical frontend build, not presumed semantic redundancy.
 
 ## Acceptance evidence
 
-Validation pending. The dedicated PR must record completed PostgreSQL runs and
-actual case inventories for all four suites before acceptance. Query and Load can
-be deliberately validated through a temporary investigation caller while browser
-authentication is deferred; that caller must be absent from the final PR.
+The [first Core candidate](https://github.com/miranovadev/commons/actions/runs/35483121923)
+used three shards and took 6m11s from the first job starting to the last finishing.
+It did not meet the healthy gate, and its inventory check correctly failed because
+the websocket smoke test lacked Node dependencies and skipped. The other 594 cases
+passed; all 109 frontend tests passed. This is explicitly **not** an acceptance
+pass. The correction installs that dependency only in its owning shard and uses
+five shards balanced with this candidate's actual Core class times. No further
+tests change suites. The skipped client's scheduling weight comes from the
+successful baseline, not its skipped duration.
+
+[Query and Load validation](https://github.com/miranovadev/commons/actions/runs/35483121948)
+passes all 16/22 cases with 706/185 assertions. PHP durations are 366.50s/65.33s.
+These run the production reusable runner through a deliberately invoked temporary
+validation caller, rather than claiming a `workflow_dispatch` event. The temporary caller is removed from the final architecture; Query/Load entry
+points are manual-only. Job durations are 6m43s and 1m43s, within their ceilings.
+
+[Integration validation](https://github.com/miranovadev/commons/actions/runs/35483122972)
+passes all 24 cases and 37,896 assertions in **11m54s job time**, with 681.17s PHP.
+Tragedy completes inside that full aggregate suite in **122.32s**, retaining all
+8,684 assertions: a 33.9-fold reduction from the 4,142.63s Core baseline. This
+confirms the fresh-schema result in the complete suite, rather than relying on the
+bounded diagnostic. LocalEpoch completes in 73.04s, SourceEquivalence's long case
+in 64.43s, and the successful-route revisit in 49.03s.
+
+The [complete suite inventory](evidence/ci-suite-inventory.json) matches all **657
+baseline case identities exactly**, with no missing or duplicated owner. Final
+five-shard Core acceptance remains pending.
 No cross-lineage traversal repair is included or started.

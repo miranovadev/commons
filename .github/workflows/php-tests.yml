@@ -96,6 +96,25 @@ jobs:
       - name: Prepare test environment
         run: cp .env.example .env
 
+      - name: Discover shard runtime dependencies
+        id: selection
+        env:
+          TEST_SUITE: ${{ inputs.suite }}
+          CI_SHARD: ${{ inputs.shard }}
+          CI_SHARDS: ${{ inputs.shards }}
+        run: python3 scripts/ci/run-suite.py "$TEST_SUITE" --shard "$CI_SHARD" --shards "$CI_SHARDS" --plan
+
+      - name: Set up the websocket smoke client runtime
+        if: ${{ steps.selection.outputs.needs_node == 'true' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install the locked websocket smoke client
+        if: ${{ steps.selection.outputs.needs_node == 'true' }}
+        run: npm ci
+
       - name: Run selected PHP suite
         env:
           TEST_SUITE: ${{ inputs.suite }}

@@ -4,9 +4,9 @@ namespace Tests\Feature;
 
 use App\Services\Observables\LineageMeasurementService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\HorizonCycleFixture;
 use Tests\TestCase;
-use PHPUnit\Framework\Attributes\Group;
 
 #[Group('integration')]
 class OperationalClosurePathTest extends TestCase

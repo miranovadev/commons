@@ -37,9 +37,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3]
+        shard: [1, 2, 3, 4, 5]
     uses: ./.github/workflows/php-tests.yml
     with:
       suite: core
       shard: ${{ matrix.shard }}
-      shards: 3
+      shards: 5

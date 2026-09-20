@@ -1,139 +1,127 @@
 # Test suites and Actions
 
-Core is the normal merge gate. It includes unit tests, ordinary feature and API
-contracts, and essential substrate invariants. Tests are not moved out merely
-because they take several seconds. An untagged test in the discovered Unit/Feature directories belongs to Core by default.
+Core is the fast developer safety net on every branch push. Integration validates
+complete API/lifecycle journeys on PRs targeting `main`. Classification follows
+purpose: an untagged test in `tests/Unit` or `tests/Feature` belongs to Core by default.
+Seconds of runtime alone are not grounds for making correctness coverage manual.
 
-## Commands and workflows
+## Commands, triggers and budgets
 
-Use the existing testing database configuration. CI uses PHP 8.5, PostgreSQL 18,
-and Node 24. Run `npm ci` before Core or Full Integration so the real websocket
-delivery smoke test has its client dependencies. Clear cached configuration with
-`php artisan config:clear` when switching environments.
+Use the existing testing database configuration. CI uses PHP 8.5, PostgreSQL 18
+and Node 24. Locally, run `npm ci` and `npm run build` before Core so its real
+websocket smoke client and application asset checks have their dependencies.
+Clear cached configuration with `php artisan config:clear` when switching environments.
 
-| Suite | Command | Contents | GitHub Actions trigger |
-| --- | --- | --- | --- |
-| Core | `composer test` or `composer test:core` | All PHP tests except `integration-full`, `query`, and `load`; 617 cases at the focused Stage 6 checkpoint | Every PR, pushes to `main`/`production`, or manual **Core** run |
-| Full Integration | `composer test:integration-full` | Core plus broader deterministic cycle coverage; 619 cases at the focused Stage 6 checkpoint | Push to `nova/restore-substrate-motor` or `ci/integration/**`, or manual **Full Integration** run |
-| Query | `composer test:query` | Query, topology, and population-growth budgets; 16 cases | Manual **Query Regression** run or explicit push to `ci/query/**` |
-| Load | `composer test:load` | Independent PostgreSQL workers, lock ordering, competing writers; 22 cases | Manual **Load / Concurrency** run or explicit push to `ci/load/**` |
-| All PHP | `composer test:all` | Every mandatory PHP test, including Query/Load; 657 unique cases at focused Stage 6 | Run locally, or run Full Integration, Query Regression, and Load / Concurrency at the same commit |
-| Constitutional | `composer test:constitutional` | 13 focused production-path API invariant cases, all in Core | Selection over Core; no extra automatic job |
-| Manual Domain replay | `composer test:replay-domain` | Two preserved complete natural journeys, outside mandatory discovery | Explicit manual invocation only |
+| Suite | Command | Cases | GitHub Actions trigger | Healthy / hard runtime |
+| --- | --- | ---: | --- | --- |
+| Core | `composer test` or `composer test:core` | 595 | Every branch push | <5m / 10m |
+| Integration | `composer test:integration` | 24 | PRs targeting `main` only | <15m / 20m |
+| Query | `composer test:query` | 16 | Manual **Query Regression** | — / 20m |
+| Load | `composer test:load` | 22 | Manual **Load / Concurrency** | — / 30m |
+| All PHP | `composer test:all` | 657 | Explicit local invocation | No separate workflow |
+| Constitutional | `composer test:constitutional` | 13 | Optional selection across Core/Integration | No separate workflow |
+| Domain replay | `composer test:replay-domain` | 2 | Explicit manual invocation | Outside mandatory discovery |
 
-Counts include data-provider cases. Full Integration deliberately includes Core;
-Query and Load do not overlap with it. The underlying `phpunit.xml` discovers
-`tests/Unit` and `tests/Feature`: unqualified `php artisan test` runs every mandatory
-case. `tests/Replay` is deliberately outside discovery under the revised Stage 6
-acceptance strategy. Its two full Domain journeys retain their complete assertions
-and unchanged scripts for explicit manual/reference/performance use. The old
-`performance` group remains as a compatibility alias on
-`ParticipationPerformanceTest`; use `query` for the complete query suite.
+Counts include provider cases and describe the Part 2 checkpoint. The four main
+PHP selections are mutually exclusive and collectively equal default discovery.
+Integration no longer repeats Core. `test:integration-full` is a compatibility
+alias for `test:integration`, with the same disjoint selection.
 
-Core and Full Integration also run `npm run build` (including TypeScript checks)
-and `npm run test:ui`. Query and Load do not install frontend dependencies.
-All four workflows share `php-tests.yml` for the same database, PHP extensions,
-dependency caching, SQL profiling, and statement timeout. Core and Full Integration
-have 120-minute job ceilings for complete aggregate
-validation; Query and Load retain their 20-minute ceiling.
-Each uploads JUnit results even when PHP tests fail.
-The named Composer test commands disable Composer's five-minute process timeout
-locally as well; GitHub Actions still enforces the suite's job ceiling.
+`phpunit.xml` discovers `tests/Unit` and `tests/Feature`; unqualified
+`php artisan test` includes Query and Load. The complete 600/630-contribution
+natural captures, assertions and fixed scripts remain under `tests/Replay`,
+outside default discovery as previously approved. The `performance` group on
+`ParticipationPerformanceTest` remains an alias; use `query` for the complete suite.
 
-Normal feature branches run Core when their PR opens or changes. There are no
-path filters. The dedicated `ci/*` namespaces are explicit requests for extra
-validation, not ordinary development branches. For example, to validate an exact
-candidate before these new workflows exist on the default branch:
+Core runs TypeScript checks, one Vite build and all frontend contract tests once.
+Five PHP shards then share the real build artifact. Only the shard containing
+`ReverbTransportTest` installs the locked websocket client dependencies; it must
+deliver a real websocket notification. Integration, Query and Load have no
+frontend-build or frontend-test dependency.
+
+All four suites use `php-tests.yml` for the same PostgreSQL service, PHP extensions,
+Composer cache and 30-second SQL statement timeout. Core's frontend job is capped
+at 2m and each dependent PHP shard at 8m; the dependent execution budgets sum to
+10m. Integration/Query/Load jobs are capped at 20m/20m/30m. Runner queue time is
+separate from execution. Composer's process timeout is disabled for named local
+commands; Actions enforces the job budgets.
+
+Query's optional `profile_sql` dispatch input prints slow SQL/EXPLAIN diagnostics
+and defaults off. Query-count assertions remain enabled independently. Every PHP
+job retains JUnit, a selected-case inventory, event timings and process duration
+even after ordinary test failure. Empty selections, missing cases and skipped
+cases cannot silently produce a successful shard.
+
+## Manual validation
+
+Once the workflows are on the default branch, select **Run workflow** in Actions
+and choose the candidate branch, or use:
 
 ```bash
-git push origin HEAD:refs/heads/ci/integration/my-change
-git push origin HEAD:refs/heads/ci/query/my-change
-git push origin HEAD:refs/heads/ci/load/my-change
-```
-
-Once the workflows are on the default branch, select the workflow in Actions,
-choose **Run workflow**, and select the candidate branch. With GitHub CLI:
-
-```bash
-gh workflow run integration-full.yml --ref my-branch
 gh workflow run query.yml --ref my-branch
+gh workflow run query.yml --ref my-branch -f profile_sql=true
 gh workflow run load.yml --ref my-branch
 ```
 
-Run Full Integration for substantive substrate changes. Run Query when changing
-projections, working sets, queries, topology traversal, or context population
-growth. Run Load when changing transactions, locks, optimistic revalidation,
-worker coordination, receipts, or competing writes. Validate all three on a
-release/integration candidate. Expensive workflows are not scheduled implicitly.
-If repository rules require checks by name, the normal PR check is
-`core / PHP 8.5 / PostgreSQL 18`; rules referring to the old matrix job names need
-an explicit update when this CI change is adopted.
+Query and Load have no branch-push or PR trigger, including `ci/query/**` and
+`ci/load/**`. Run Query for query/context/topology or population-growth changes.
+Run Load for transactions, locks, worker coordination and competing writes.
+Integration runs automatically for PRs targeting `main`; it has no dispatch or
+special branch namespace. There are no path filters or duplicate Core PR runs.
 
-## Existing coverage placement
+If repository rules pin check names, configure the Core frontend check, all three
+Core PHP shards and the Integration check. Existing rules referring to
+`core / PHP 8.5 / PostgreSQL 18` or the old matrix names need an explicit update
+when this CI architecture is adopted; this PR does not change repository rules.
+
+## Coverage placement
 
 | Tests | Placement and reason |
 | --- | --- |
-| `HorizonProofCycleTest`, `FullEvidenceFlowTest` | `integration-full`: broader deterministic service-level cycle journeys, including shared evidence across three participants |
-| `ParticipationPerformanceTest` | `query`: reference comparisons, query budgets, branch growth, and 1,000-node historical population |
-| `PropositionReadTest::test_500_node_graph_has_a_bounded_read_only_query_budget` | `query`: 500-node read budget; other API/read contracts remain Core |
-| `PotentialProjectionTest::test_rest_recovery_queries_do_not_grow_with_unrelated_historical_propositions` | `query`: historical-population scaling; ordinary projection, retry, and durable-work contracts remain Core |
-| `ParticipantContextTest::test_dense_instrument_and_commitment_contexts_fit_the_same_budget`, `test_ten_to_five_hundred_unrelated_horizon_nodes_cannot_grow_inference` | `query`: dense packet budgets and 500-node context growth; packet/schema correctness remains Core |
-| `ExhaustionTest::test_horizon_proof_does_not_grow_with_unrelated_historical_terrain`, `HorizonFailureInvariantTest::test_failure_inspection_is_read_only_and_does_not_scan_unrelated_history` | `query`: 1,000-node historical-terrain checks; all other exhaustion/failure contracts remain Core |
-| `HorizonProofConcurrencyTest` | `load`: independent PostgreSQL processes competing for structural writes |
-| `TransactionLockOrderTest` except `test_fresh_admissibility_rejects_a_previously_valid_schema_as_a_retryable_conflict` | `load`: real lock waits and independent writers; the deterministic stale-schema rejection remains Core |
-| `OperationalClosurePathTest` | Core despite its cost: the real Closure calculation and commitment smoke path protect an essential invariant |
-| `ParticipantActionContractTest`, `ParticipantWakeTest`, `OptimisticParticipationTest`, deterministic recovery/epoch/receipt/exhaustion tests | Core: schema/dispatcher contracts, wake/retry/queue behavior, and substrate correctness |
-| `ReverbTransportTest` | Core: one real websocket delivery is a transport smoke test, not sustained websocket pressure |
-| `ReceiptContextMigrationTest` | Core: migration correctness; no longer redundantly repeated in the query job |
+| Phase-position, lineage, recovery, receipt, Closure, exhaustion, final-attempt and stale-schema invariants | Core: focused behavioral proofs and essential regressions |
+| `ParticipationHttpHarnessTest` except its complete-cycle method | Core: stale writes, receipt/rest safety and the direct-fixture-write guard |
+| `ParticipationLifecycleRegressionTest`, `ParticipationLocalEpochTest`, `ParticipationRecoveryTest`, `ParticipationSourceEquivalenceTest`, `ParticipationStaggeredEpochTest`, `ParticipationTragedyLifecycleTest`, `ParticipationVisibilityLifecycleTest` | Integration: complete authored HTTP journeys with before/after contracts and positive/negative participant actions |
+| `ParticipationHttpHarnessTest::test_real_http_actions_reach_an_operational_commit`, `OperationalClosurePathTest` | Integration: complete production journeys and real Closure calculations |
+| `HorizonProofCycleTest`, `FullEvidenceFlowTest` | Integration: deterministic service-level cycle composition, including shared evidence across three participants |
+| `ParticipantActionContractTest` exhaustive execution provider and Rest round-trip | Integration: all relevant phase/state transport/validation/execution combinations, including rejection of well-formed unavailable actions |
+| `ParticipantActionContractTest` static transport and reported union-error regression | Core: focused schema regression checks |
+| `ParticipantWakeTest`, `OptimisticParticipationTest`, `ReverbTransportTest` | Core: worker/retry contracts and one real websocket transport smoke test |
+| Migration tests | Core: schema/migration correctness |
+| `ParticipationPerformanceTest` and existing method-level `query` groups | Query: reference comparisons, bounded queries, hydration and 500/1,000-node historical growth |
+| `HorizonProofConcurrencyTest` and existing method-level `load` groups in `TransactionLockOrderTest` | Load: independent PostgreSQL workers, lock waits and competing structural writes |
 
-The original Stage 1 separation preserved the then-existing fixtures and assertions.
-Stages 2–5 subsequently corrected recovery and lifecycle contracts; their focused
-HTTP proofs remain Core. Service-level cycle fixtures remain separate evidence.
+Use method-level groups in mixed classes. Keep `integration`, `query` and `load`
+mutually exclusive. New short API/invariant checks default to Core; complete
+multi-phase lifecycle journeys belong to Integration and need focused Core
+regressions for their critical rules. Core must not acquire long setup journeys
+when a small positioned fixture proves the intended invariant. Integration's HTTP
+harness retains its real production requests and direct-fixture-write prohibition.
+It starts each independent scenario from a freshly migrated schema to avoid
+PostgreSQL physical/statistical state left by preceding rolled-back journeys.
 
-New correctness-critical HTTP lifecycle tests should normally remain in Core
-without an expensive-suite group. Stage 2's seven tests use the
-`http-participation` group for focused runs; ordinary Core still includes them.
-See [participation-http-harness.md](participation-http-harness.md) for their
-expected red regressions and HTTP-only fixture discipline.
-Historical Stage 3 checkpoint: it added one more HTTP case plus nine provenance/migration cases. Its
-expected discovery counts are Core 596, Full Integration 598, Query 16, Load 22,
-and All PHP 636. At that checkpoint only the successful-route Bias revisit was intentionally red;
-the two epoch collisions and the repeated local reopening journey passed.
-Stage 5 subsequently resolved Bias revisit; it is now green with no expected-red exception.
-See [local-exploration-epochs.md](local-exploration-epochs.md).
-Use method-level groups in mixed classes. Keep `integration-full`,
-`query`, and `load` mutually exclusive, and do not use runtime alone to choose.
-The Load suite currently proves bounded concurrency scenarios; it does not yet
-provide a sustained many-participant, memory, latency, or websocket-pressure soak.
+The Load suite proves bounded concurrency scenarios; it is not yet a sustained
+many-participant, memory, latency or websocket-pressure soak. Full Domain replay
+minimization remains stopped. See [constitutional-integration.md](constitutional-integration.md)
+for the historical acceptance map and [ci-runtime-investigation.md](ci-runtime-investigation.md)
+for the Part 2 measurements, coverage preservation and completed validation.
 
-## Checking selection without running scenarios
-
-Stage 6's `constitutional` selection contains focused production-path invariants.
-Full Domain-round-trip minimization is stopped. Both complete natural traces and
-fixed replays are preserved under `tests/Replay`, outside mandatory CI. Fresh
-substrates running naturally will validate the emergent whole lifecycle.
-Use `composer test:constitutional` for the 13 focused cases, or
-`composer test:replay-domain` for both optional long replays. See
-[the acceptance map](constitutional-integration.md) for the API proofs, completed
-validation and limits of controlled primitive fixtures. Runtime growth is documented
-and explicitly deferred to a separate performance effort.
-
-Stage 5's cancelled Core/Full runs are incomplete; its unchanged Tragedy journey
-subsequently passed independently on PostgreSQL and was accepted as the missing
-semantic evidence. The final Epic checkpoint still requires a deliberate complete
-all-suite result with an appropriate timeout. Targeted passes do not imply that
-a cancelled aggregate run completed.
-
-Composer passes extra options through to PHPUnit:
+## Inspecting selection and timing
 
 ```bash
 composer test:core -- --list-tests
-composer test:integration-full -- --list-tests
+composer test:integration -- --list-tests
 composer test:query -- --list-tests
 composer test:load -- --list-tests
 composer test:all -- --list-tests
+python3 scripts/ci/run-suite.py core --shards 5 --shard 1 --audit
 ```
 
-With PHPUnit 12, repeat `--exclude-group` for separate groups. A comma-separated
-value is one literal group name and would silently leave expensive tests in Core.
-The Composer scripts carry the selection flags so local runs and CI agree.
+The Python command executes the selected shard after auditing discovery. Shards
+are built from PHPUnit's current class inventory; historical class durations are
+scheduling weights, not a test allowlist. New classes are included automatically.
+The audit checks that the union of the four suites equals default discovery and
+that no case has multiple owners. Each runner verifies executed case counts and
+rejects skips. Normal Composer commands remain serial and support `--filter`.
+
+With PHPUnit 12, repeat `--exclude-group` for separate groups; the existing Composer
+commands carry the selection flags so local commands and CI agree.
