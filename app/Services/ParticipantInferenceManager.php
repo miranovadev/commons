@@ -13,12 +13,13 @@ final readonly class ParticipantInferenceManager implements ParticipantInference
         private OpenAIResponsesClient $openAI,
     ) {}
 
-    public function contribute(Connection $connection, array $state): array
+    public function contribute(Connection $connection, array $state, array $metadata = []): array
     {
         return match ($connection->provider) {
             ConnectionProvider::OpenAI => $this->openAI->contribute(
                 $connection,
                 $state,
+                $metadata,
             ),
             default => throw new RuntimeException(
                 "The {$connection->provider->value} provider is not implemented yet."

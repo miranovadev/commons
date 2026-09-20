@@ -4,6 +4,7 @@ namespace Tests\Feature\Api;
 
 use App\Contracts\ParticipantInference;
 use App\Models\Connection;
+use App\Models\Participant;
 use App\Services\OpenAIResponseSchema;
 use App\Services\ParticipantPromptFactory;
 use Opis\JsonSchema\Helper;
@@ -30,8 +31,10 @@ class ParticipationSourceEquivalenceTest extends ScriptedParticipationTestCase
         $phases = [];
         $positions = [];
         $this->mock(ParticipantInference::class)->shouldReceive('contribute')->times(3)
-            ->andReturnUsing(function ($connection, $state) use ($actor, $initial, &$phases, &$positions): array {
+            ->andReturnUsing(function ($connection, $state, $metadata) use ($actor, $initial, &$phases, &$positions): array {
                 $this->assertSame($this->readParticipation($actor), json_decode(json_encode($state), true));
+                $this->assertSame($actor, $metadata['participant_id']);
+                $this->assertSame(Participant::findOrFail($actor)->substrate_id, $metadata['substrate_id']);
                 $index = count($phases);
                 $this->assertSame(['distinguish', 'persist', 'constrain'][$index], $state['plan']['phase']['kind']);
                 $this->assertSame('settlement', $state['domain']);

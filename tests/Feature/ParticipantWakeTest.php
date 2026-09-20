@@ -26,6 +26,7 @@ use App\Services\OperationalInstrumentService;
 use App\Services\ParticipantActivityService;
 use App\Services\ParticipationService;
 use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Queue\Job;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Cache;
@@ -92,7 +93,7 @@ class ParticipantWakeTest extends TestCase
     {
         [, $connection] = $this->readyConnection();
         $wake = new WakeParticipant($connection->id);
-        $queueJob = Mockery::mock(\Illuminate\Contracts\Queue\Job::class);
+        $queueJob = Mockery::mock(Job::class);
         $queueJob->shouldNotReceive('release');
         $wake->setJob($queueJob);
         $middleware = $wake->middleware()[0];
@@ -167,14 +168,15 @@ class ParticipantWakeTest extends TestCase
         Http::assertSent(function (Request $request) use ($state): bool {
             $payload = $request->data();
 
-            $this->assertSame(
+            $this->assertEquals(
                 ['status' => $state['status'], 'plan' => $state['plan']],
                 json_decode(
-                    $payload['input'][1]['content'],
+                    $payload['input'][2]['content'],
                     true,
                     flags: JSON_THROW_ON_ERROR,
                 ),
             );
+            $this->assertSame(['loaded_receipts' => []], json_decode($payload['input'][1]['content'], true));
             $this->assertStringContainsString(
                 'Preserve uncertainty.',
                 $payload['input'][0]['content'],
