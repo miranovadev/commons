@@ -1,5 +1,9 @@
 # Participant prompt caching
 
+This document records the **#187 baseline**. The current Core + Phase composition,
+v2 family strategy and new measurements are in [Participant Phase instructions](participant-phase-instructions.md).
+Reproduce the historical benchmark at `5fc2fb9`; the current comparison has its own script.
+
 This change rearranges the already-allowlisted inference packet. It does not change
 the plan, action schema, Perspective, receipt visibility, or substrate mechanics.
 Existing participants use it on their next inference; no migration, reset, data

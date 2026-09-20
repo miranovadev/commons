@@ -15,9 +15,9 @@ final readonly class OpenAIRequestFactory
         $explicit = preg_match('/^gpt-(?:5\.6|6)(?:[-.]|$)/', $model) === 1;
         $content = fn (string $text): array => [['type' => 'input_text', 'text' => $text,
             ...($explicit ? ['prompt_cache_breakpoint' => ['mode' => 'explicit']] : [])]];
-        // Pool identical constitutions within a substrate, including shared connection
-        // instructions. Participant IDs, evidence, Phase and schema never churn this key.
-        $family = [$model, ParticipantPromptLayout::VERSION, $prompt['system'],
+        // Pool the complete instruction catalog and custom constitution within a substrate.
+        // The selected Phase changes the prefix, not its routing family. State and schema stay out.
+        $family = [$model, ParticipantPromptLayout::VERSION, $prompt['instruction_family'],
             $metadata['substrate_id'] ?? $connection->getKey()];
 
         return [

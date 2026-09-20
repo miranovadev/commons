@@ -10,6 +10,10 @@ use App\Services\ParticipantContextSerializer;
 use App\Services\ParticipantPromptFactory;
 use App\Services\ParticipantPromptLayout;
 
+if (ParticipantPromptLayout::VERSION !== 'commons-prefix-v1') {
+    throw new RuntimeException('This is the historical #187 layout benchmark. Run it at 5fc2fb9, or use scripts/measure-phase-prompts.php for #188.');
+}
+
 $connection = new Connection;
 $connection->configuration = ['model' => $argv[1] ?? 'gpt-5.4', 'instructions' => 'Preserve uncertainty.'];
 $serializer = new ParticipantContextSerializer;
