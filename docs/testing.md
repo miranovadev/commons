@@ -69,7 +69,7 @@ Run Load for transactions, locks, worker coordination and competing writes.
 Integration runs automatically for PRs targeting `main`; it has no dispatch or
 special branch namespace. There are no path filters or duplicate Core PR runs.
 
-If repository rules pin check names, configure the Core frontend check, all three
+If repository rules pin check names, configure the Core frontend check, all five
 Core PHP shards and the Integration check. Existing rules referring to
 `core / PHP 8.5 / PostgreSQL 18` or the old matrix names need an explicit update
 when this CI architecture is adopted; this PR does not change repository rules.
