@@ -1,8 +1,6 @@
 name: Load / Concurrency
 
 on:
-  push:
-    branches: ['ci/load/**']
   workflow_dispatch:
 
 permissions:

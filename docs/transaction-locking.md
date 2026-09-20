@@ -109,7 +109,16 @@ in [participation-performance.md](participation-performance.md).
 
 Reclassify takes the Substrate lock before the selected Receipt row, validates scope and structural position, and inserts the unique consumption together with the target, attachment, edge and ledger writes in one transaction. Tragedy and Exhaustion take the Horizon row after the Substrate lock. Unique keys back the application checks. All realtime proof/Receipt invalidations are emitted after commit.
 
-Recovery runs after contribution commit and outside the subsequent entry transaction. Entry checks the observed field version. First Tragedy uses its recorded opening Committal; Exhaustion enables the existing parent-provenance recovery. Other Participants retain their positions until their normal transition.
+Recovery runs after contribution commit and outside the subsequent entry
+transaction. Entry checks the observed field version. First Tragedy retains the
+actual terminal position and uses normal backward-lineage recovery, without an
+opening-Committal override. Only ancestral Committals on that path compete at
+actual backward edge distance. Exhaustion permits continuing across the opening
+boundary into the previous Horizon on the same lineage; recovery never resets
+to its provenance node or searches siblings or descendants. Other Participants
+retain their positions until their normal transition. Calculation populations,
+context visibility and region membership do not authorise relocation. No edge
+means no movement.
 
 ## Incremental Potential publication
 

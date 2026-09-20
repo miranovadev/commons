@@ -2,11 +2,22 @@
 
 Context Domain belongs to a causal Horizon lineage. A Substrate can contain concurrent Cycles in different historical Horizons, and multiple open branches. Advancing a branch never aborts another Participant's Cycle.
 
+Horizon ancestry is not a Participant movement map. A Participant progresses
+through explicit causal continuations of its current Gate or recovers along
+its recorded ancestry backward. Same-Horizon or same-Commit-Region membership,
+visibility and Homeostatic calculation scope never create traversal edges.
+No edge means no movement.
+
 ## Ownership and vocabulary
 
 `cycles.context_horizon_id` is a required foreign key. Cycle creation resolves a Horizon in the same Substrate and saves that association once. Eloquent guards and PostgreSQL/SQLite triggers reject ownership changes, including bulk SQL updates. Horizon parent, Domain and opening boundary are also immutable through the model.
 
 Potential selects a Committal; that Committal determines entry context. `forEntry()` returns the direct child explicitly opened by a boundary Committal, or the creating Cycle's own Horizon for a non-boundary Committal. It validates the immutable snapshot direction and direct parent/opener relationship. Missing boundary projection is an error. It never searches open descendants or uses Horizon sequence to reinterpret an old Gate.
+
+For recovery, that Committal must first be found on the Participant's actual
+backward lineage. Ordinary completion retains its exact causal Committal;
+initial entry without a position uses its separate selection contract. Resolving
+a selected Committal's Horizon never authorises a jump to another Proposition.
 
 Causal backtracking may enter a historical closed Horizon. `closed_at` remains a record of its first boundary; entry does not clear it, rewrite ownership, or reopen a global Domain. `currentFor()` supplies only the initial/default Horizon when there is no selected Gate. Operational entry always supplies the selected Committal's explicit Horizon.
 
@@ -35,6 +46,12 @@ Both database-backed and hydrated participant calculations resolve the previous 
 Prior Tension is the opening boundary snapshot's Tension in the immediate parent, never the newest Substrate snapshot. Closure hysteresis first retains the newest evaluated Proposition ancestor inside the current Horizon; otherwise it uses that Horizon's own opening boundary snapshot in its direct parent. This preserves within-region hysteresis while excluding sibling and more distant Domain regions from transition history. Nullable legacy boundary components retain the existing negative-direction defaults, with that specific boundary still identified in history metadata.
 
 Only the root Horizon uses the established Origin bootstrap measurements and zero prior Tension. A non-root missing its parent or parent provenance is an error, not a reason to search other Domains or fall back to bootstrap. Following each parent's own relation preserves the same rule recursively to Origin. Measurement attenuation, Reinforcement and raw Potential calculations are unchanged. Rest recovery derives Domain scope from this topology and applies existing observer-distance attenuation; see [participant continuity](participant-continuity-and-relocation.md).
+
+Rest recovery follows recorded backward edges, not shortest paths through the
+Horizon tree. Only exhaustion permits crossing the current Horizon's opening
+boundary, which must lie on that same path. Recovery retains the original
+distance origin across previous Horizons and never resets to a provenance node
+or searches siblings or descendants.
 
 ## Upgrade from the former global projection
 

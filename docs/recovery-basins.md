@@ -6,6 +6,12 @@ active ancestral Committals in that Horizon. A retained Committal may itself be 
 distance-zero candidate. Descendants, siblings and unrelated Committals cannot
 enter the candidate set, regardless of Potential.
 
+Movement topology, Homeostatic populations and contextual visibility remain
+separate. Commit Region membership defines calculation/context scope only where
+an operation explicitly requires it; it never creates a traversal or recovery
+edge. Neither the same Horizon/phase position nor a visible historical Commit
+can add a destination. **No edge means no movement.**
+
 Every raw edge counts once, including revisions and historical intermediate
 nodes. Display lineage is not used: it omits historical nodes and stops at the
 nearest Committal. At a multi-input Write, the participant's consecutive Phases

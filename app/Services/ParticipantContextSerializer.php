@@ -19,7 +19,8 @@ final class ParticipantContextSerializer
             ->concat($plan['traversal_options'] ?? [])
             ->concat($plan['instrument_options'] ?? [])
             ->concat($plan['attestation_options'] ?? [])
-            ->filter(fn ($node) => $targetIds->contains($node['id']) || ($node['spent'] ?? false)
+            ->filter(fn ($node) => ($plan['phase']['kind'] === 'order' && $node['tier'] === 'expressive')
+                || $targetIds->contains($node['id']) || ($node['spent'] ?? false)
                 || ($node['continuation_exhausted'] ?? false))->unique('id');
         // Current Gate is context even when it has no selectable Gate action.
         $gate = ($plan['phase']['kind'] === 'order' || ($plan['position_exhausted'] ?? false) ? collect() : collect([$plan['gate']]))

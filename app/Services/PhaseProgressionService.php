@@ -19,6 +19,14 @@ final class PhaseProgressionService
             $phase->kind === PhaseKind::Order ? 'committal' : 'expressive')) {
             throw new \DomainException('Progression requires a Write at the current producing Phase position.');
         }
+        $continuations = match ($phase->kind) {
+            PhaseKind::Bias => app(CausalWriteService::class)->forPhase($phase),
+            PhaseKind::Order => app(PhaseGenerationService::class)->committedWrites($phase),
+            default => null,
+        };
+        if ($continuations !== null && ! $continuations->contains('id', $gate->id)) {
+            throw new \DomainException('Progression requires a causal continuation of the current Gate.');
+        }
         $participant = $phase->cycle->participant;
         $participant->current_proposition_id = $gate->getKey();
         $participant->save();

@@ -31,6 +31,7 @@ use InvalidArgumentException;
 use Opis\JsonSchema\Helper;
 use Opis\JsonSchema\Validator;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
 class ParticipantActionContractTest extends TestCase
@@ -47,6 +48,7 @@ class ParticipantActionContractTest extends TestCase
         return [...self::phases(), 'Persist foreign Gate' => [PhaseKind::Persist, true]];
     }
 
+    #[Group('integration')]
     #[DataProvider('executionPhases')]
     public function test_every_advertised_action_round_trips_through_inference_validation_and_execution(PhaseKind $kind, bool $foreignGate = false): void
     {
@@ -66,6 +68,32 @@ class ParticipantActionContractTest extends TestCase
         };
         $expected = array_values(array_diff($expected, $spent));
         $this->assertEqualsCanonicalizing($expected, array_keys($schema['$defs']['actions']), json_encode($state['plan']));
+        // A valid action in another phase/state must also be rejected here when
+        // it is absent from this participant's published contract.
+        $checked = [];
+        foreach (PhaseKind::cases() as $otherKind) {
+            $staticSchema = app(InputSchemaService::class)->forPhase($otherKind);
+            foreach ($staticSchema['$defs']['actions'] as $action => $definition) {
+                if (isset($schema['$defs']['actions'][$action]) || isset($checked[$action])) {
+                    continue;
+                }
+                $checked[$action] = true;
+                $input = $this->sample($definition, $staticSchema['$defs'], $seed->id);
+                if ($action === 'instrument.execute') {
+                    $input['instrument'] = ['kind' => 'hyperlink', 'reference' => 'https://example.test/forbidden'];
+                }
+                $this->assertValid($staticSchema, $input);
+                $this->assertValid($schema, $input, false);
+                $before = $phase->fresh()->getAttributes();
+                try {
+                    app(ParticipationService::class)->contribute($participant, $phase->id, $input);
+                    $this->fail('Backend accepted unavailable action '.$action.' in '.$kind->name);
+                } catch (InvalidArgumentException) {
+                    $this->addToAssertionCount(1);
+                }
+                $this->assertSame($before, $phase->fresh()->getAttributes(), $action.' changed the phase');
+            }
+        }
         $transport = app(OpenAIResponseSchema::class)->fromCommons($schema);
         $variants = $transport['properties']['contribution']['anyOf'] ?? [$transport['properties']['contribution']];
         $responses = Http::sequence();
@@ -182,6 +210,7 @@ class ParticipantActionContractTest extends TestCase
         $this->assertValid($transport, ['contribution' => [...$wire, 'direction' => null, 'rationale' => 'Not a direction']], false);
     }
 
+    #[Group('integration')]
     public function test_rest_round_trips_and_rejects_rationale(): void
     {
         [$participant, $phase] = $this->fixture(PhaseKind::Mediate, empty: true);
@@ -254,13 +283,13 @@ class ParticipantActionContractTest extends TestCase
         $history->forceFill(['participant_id' => $participant->id, 'sequence' => 1, 'completed_at' => now()])->save();
         $past = new Phase;
         $past->forceFill(['cycle_id' => $history->id, 'kind' => PhaseKind::Order, 'write_register' => 'activity', 'started_at' => now(), 'completed_at' => now()])->save();
-        $node = function (string $register, ?Proposition $parent = null, PhaseKind $position = PhaseKind::Order) use ($past): Proposition {
+        $node = function (string $register, ?Proposition $parent = null, PhaseKind $position = PhaseKind::Order, string $edgeType = 'variant') use ($past): Proposition {
             $node = new Proposition;
             $node->forceFill(['phase_id' => $this->phaseAtPositionFixture($past, $position)->id, 'register' => $register, 'tier' => $parent ? 'expressive' : 'committal', 'statement' => 'Contract fixture'])->save();
             app(LedgerService::class)->record($node);
             if ($parent) {
                 $edge = new Supersession;
-                $edge->forceFill(['phase_id' => $past->id, 'source_proposition_id' => $parent->id, 'target_proposition_id' => $node->id, 'type' => 'variant'])->save();
+                $edge->forceFill(['phase_id' => $past->id, 'source_proposition_id' => $parent->id, 'target_proposition_id' => $node->id, 'type' => $edgeType])->save();
                 app(LedgerService::class)->record($edge);
             }
 
@@ -296,7 +325,7 @@ class ParticipantActionContractTest extends TestCase
             if ($kind === PhaseKind::Mediate) {
                 $node('activity', $anchor, PhaseKind::Disperse);
             }
-            $write = $node($writes[$kind->value - 1], $gate, $kind === PhaseKind::Order ? PhaseKind::Bias : $kind);
+            $write = $node($writes[$kind->value - 1], $gate, $kind === PhaseKind::Order ? PhaseKind::Bias : $kind, $kind === PhaseKind::Order ? 'revise' : 'variant');
             if (in_array('proposition.revise', config('phases.'.$kind->value.'.actions'), true)) {
                 // Keep the untouched Write for attestation coverage, and qualify
                 // a separate revision target with an earlier effective self-Refute.
@@ -323,7 +352,7 @@ class ParticipantActionContractTest extends TestCase
                     $mock->shouldReceive('preview')->andReturn($values);
                     $mock->shouldReceive('forCommitment')->andReturn($values);
                 });
-                $committedSource = $node('canon', $seed, PhaseKind::Bias);
+                $committedSource = $node('canon', $gate, PhaseKind::Bias, 'revise');
                 $this->groundFixture($committedSource);
                 $past->forceFill(['write_register' => 'canon', 'gate_proposition_id' => $committedSource->id])->save();
             }

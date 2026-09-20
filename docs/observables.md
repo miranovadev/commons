@@ -4,6 +4,13 @@ The [Core Invariants](core-invariants.md) govern these calculations. In
 particular, measurement independence (1), representation versus semantics (2),
 and distinct reference frames (7) constrain every projection described below.
 
+Movement is governed independently by
+[Invariant 17](core-invariants.md#17-lineage-constrained-participant-movement).
+Measurement ancestry, a calculation population and visible evidence do not
+define Participant movement. Forward movement follows the current Gate's causal
+continuation; recovery follows recorded ancestry backward. No edge means no
+movement.
+
 Each Proposition's **raw/local** evaluation compares the lineage ending at it with
 its provenance lineage in the immediately preceding, complementary Context
 Horizon. The three measurements share that comparison boundary but are
@@ -50,25 +57,34 @@ that observer-to-candidate distance.
 
 ### Potential observed from a Participant position
 
-Ordinary Cycle entry ranks eligible Committal Propositions by Potential Charge
-as observed from the Participant's retained position, including substrate
-attenuation. Raw global Potential Charge alone does not determine entry.
+Initial entry has no position and uses its documented Potential/Charge/ID
+selection. Ordinary completion continues at the exact Committal reached through
+the current Gate's causal continuation, without a new global ranking.
 
-For a candidate at shortest existing parent/child edge distance `d`, effective
-Potential Charge is `raw Potential Charge × a(d)`. Charge fallback uses
-`raw Charge × a(d)` with the same inverse-square weight defined above. This
-weights the destination score once; it neither recalculates the candidate's
-measurements from the observer nor changes immutable Commitment snapshots.
+Rest recovery first constructs the authorised candidate set by walking backward
+from the actual terminal position through recorded arrival provenance. Only
+ancestral Committals on that path may compete. For an eligible candidate at
+actual backward edge distance `d`, effective Potential is `raw Potential × a(d)`
+and effective Charge is `raw Charge × a(d)`. Rank by effective Potential, then
+effective Charge, shorter distance and stable Proposition ID, before rounding
+for presentation. This weights the destination once without recalculating its
+measurements or changing an immutable snapshot.
 
-Distance crosses Committal boundaries and counts historical Supersession edges,
-with each position visited once at its minimum distance. Only paths within the
-same Substrate count. Disconnected candidates cannot provide entry or fallback.
-The retained position has distance zero if it is itself Committal; an Expressive
-position informs distance but never becomes a candidate. Rank all reachable
-candidates by effective Potential, then effective Charge, then shorter distance
-and stable Proposition ID. Compare scores before rounding them for presentation.
+Every backward edge counts, including revisions and historical intermediate
+nodes. A multi-input Write follows the Participant's recorded arrival, not an
+unused parent shortcut. A retained eligible Committal has distance zero;
+Expressive positions inform distance but are not entry candidates. Current-Horizon
+scope holds until exhaustion permits crossing its opening boundary. The walk
+then continues on the same lineage into previous Horizons, retaining distance
+from the original terminal position. It never resets to a Horizon provenance
+node or searches siblings, descendants or unvisited branches.
 
-A Participant without a position uses initial Potential/Charge/ID selection; no observer distance is invented. Ordinary completion preserves its exact Committal continuation. Rest recovery derives its viable Domain frontier from explicit Horizon ancestry, searching descendants before their ancestors and retreating through provenance only after exhaustion. It compares connected candidates within that frontier using the same minimum parent/child distance and destination weight `a(d) = 1 / (1 + d)^2`, with effective Charge/distance/ID tie-breaks. Explicitly exhausted structure is excluded from operational Potential. Fresh open basins remain eligible at honest zero Potential; only explicit basin closure permits upward retreat. Generic `selectFrom()` remains a relative ranking utility over parent/child geometry, not the recovery algorithm.
+Fresh open basins are not exhausted merely because their Potential is zero.
+Explicitly exhausted structure is excluded from operational Potential; exhaustion
+of a child does not prove its parent exhausted. Generic `selectFrom()` remains a
+diagnostic ranking utility over shortest parent/child geometry. That broader
+geometric reachability grants no recovery or traversal eligibility. No edge
+means no movement. See [recovery basins](recovery-basins.md).
 
 For each raw comparison, the boundary Proposition remains a member of the closing Horizon. It acts as
 the provenance root for the next Horizon without being duplicated into its
@@ -116,9 +132,18 @@ Attestation, then preserves content and proposition evidence while resetting the
 new classification's votes and touches. It promises no population-wide lean target.
 Mediate uses the previous Disperse Gate's retained Correspondence direction
 against Read-equivalent members of its Commit Region. Bias uses Gate-equivalent
-members of that same structural scope; Closure uses Write-equivalent members.
+members of that same structural scope. Closure evaluates each causally local
+Write's own lineage/history and participation independently.
 The Context Horizon remains comparison context. See
 [participation](participation.md#shared-commit-region-scope).
+
+Mediate — Read and Bias — Gate may calculate over regional populations. Only
+Mediate exposes compatible foreign Gates operationally as reconciliation operands;
+Bias exposes only its current causal Gate. Closure, performed during Order —
+Write, is not a region-wide cross-lineage comparison. Calculation membership never
+creates operational options or traversal edges. Local expressive Writes remain
+visible independently of Closure; Commit requires full admissibility and only
+each Write's own direct Committal may be traversed.
 
 ## Local Closure
 
@@ -226,4 +251,5 @@ commitment time. New non-bootstrap commitments record receipt-context-lineage-v6
 
 See [Attestation polarity and direction history](attestation-polarity.md) for the
 normative distinction between measurement values, retained directions and labels.
+
 

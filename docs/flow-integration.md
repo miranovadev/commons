@@ -2,6 +2,21 @@
 
 [Core invariants](core-invariants.md#persistence-exhaustion-recovery-and-observation) govern this cycle. Domain mappings select registers; the producing phase position determines eligibility.
 
+Producing position is necessary but does not confer traversal eligibility.
+Forward movement additionally requires an explicit causal continuation from
+the current Gate; recovery follows recorded ancestry backward. Commit Region,
+Horizon, visible history and calculation membership never create movement edges.
+No edge means no movement.
+
+Mediate — Read and Bias — Gate may calculate regionally; only Mediate exposes
+foreign Gates as reconciliation operands, with both causal edges created by
+Reconcile. Bias exposes its current causal Gate. Closure, performed during
+Order — Write, evaluates each local expressive Write independently. These
+calculations do not relocate the Participant. Traverse means the current Gate's causal
+Write continuation; Order follows only the Commit directly produced from its
+current classification. Frozen successful routes retain their existing edge,
+not region-wide traversal eligibility.
+
 | Phase | Structural flow |
 | --- | --- |
 | 1 Distinguish | Empty viable position: Variant. Existing uninstrumented Proposition: Instrument, even with other shared Receipts. Own completed Instrument plus available Horizon Receipt: Attest. Personal earlier-Cycle Attestation: Traverse on that side. |
@@ -25,3 +40,4 @@ A no-Potential Rest opens Tragedy's final attempt. Reclassify may exercise the T
 The nine dependent stages are Receipt lifecycle, receipt-gated Reclassification, action gating, authoritative Rest reasons, Tragedy Receipt, final-attempt Exhaustion, recursive evidence references, participant/realtime context, and normative integration coverage. Each stage targets its predecessor. The final integration branch contains the complete stack and targets main for review; no stage or integration PR is merged automatically.
 
 See [full-cycle validation](operational-closure-path.md), [migration notes](horizon-proof-migration.md), and [invariant test map](horizon-proof-tests.md).
+

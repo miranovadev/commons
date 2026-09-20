@@ -4,6 +4,13 @@ The [Core Invariants](core-invariants.md) govern this shared contract for human
 and automated Participants, including participant prompts and UI behaviour.
 The operational rules below apply those normative semantic constraints.
 
+Participant movement is lineage-constrained: forward progression follows an
+explicit causal edge from the current Gate; recovery walks recorded causal
+ancestry backward. Sharing a Commit Region, Context Horizon, register, phase
+position, visible context or calculation population grants no movement.
+**No edge means no movement.** The Homeostatic populations below are calculation
+scopes, not alternative movement topologies.
+
 The participation endpoint is scoped to a Substrate and Participant:
 
 - GET /api/substrates/{substrate}/participants/{participant}/participate
@@ -42,8 +49,10 @@ receives HTTP 409 and cannot create a second Origin. For an established
 substrate, POST an empty JSON object to `/participate/enter`. Initial entry has
 no observer position and ranks eligible Committal Propositions by Potential
 Charge. Ordinary completion continues from the exact selected Committal.
-Rest recovery scopes eligible Committals to viable Domain basins before ranking
-Potential Charge from the retained position, including substrate attenuation. Expressive positions inform distance but are never entry candidates.
+Rest recovery considers only ancestral Committals on the recorded backward
+lineage within the permitted Horizon, ranked using actual backward-distance
+attenuation. Expressive positions count toward distance but are never entry
+candidates. Same-region or same-Horizon membership cannot add a destination.
 Successful entry persists the selected Committal Gate; contributions still
 persist their resulting Gate within the Cycle. Rest recovery follows the causal
 basin rules below.
@@ -52,11 +61,12 @@ Potential Charge is `max(0, max(|T| - |T_c|))`, where `T` is the Committal
 state's immutable Tension and `T_c` is the projected Tension of each measurable
 Expressive continuation reachable before the next Committal state. If no
 continuation reduces Tension, selection falls back to the highest current
-Charge, `1 - |T|`. Ordinary re-entry attenuates both Potential and Charge by
-`1 / (1 + d)^2`, where `d` is the shortest existing parent/child distance from
-the retained position. Effective-score ties prefer shorter distance and then
-stable Proposition ID; initial entry retains its Charge/ID tie-breaks.
-Disconnected candidates cannot supply ordinary entry, including fallback.
+Charge, `1 - |T|`, for initial entry. Recovery attenuates eligible ancestors'
+Potential and Charge by `1 / (1 + d)^2`, where `d` is the actual recorded
+backward edge distance from the retained position. Recovery ties use effective
+Charge, shorter distance and stable Proposition ID. Ordinary completion retains
+its exact Committal without ranking. Generic shortest-parent/child ranking is a
+diagnostic calculation, not movement authority or a recovery fallback.
 See [observer-relative Potential](observables.md#potential-observed-from-a-participant-position).
 
 POST applies exactly one contribution:
@@ -89,13 +99,18 @@ Read, Gate and Write rows. Mediate exposes the authoritative `read_options`
 population. Order shows the nearest Mediate-position ancestors along the current
 Gate paths; other phases retain their single Read card. Mediate Gate privileges
 the current Proposition and adds admissible reconciliation counterparts. Bias
-Gate shows only the field-admissible unary choices, including the current
-Proposition when eligible;
+Gate shows only the current causal Proposition, with Reclassify when eligible;
 Lineage is available on demand; and Write separates existing actionable
 Propositions from moves that create a new Proposition from the Gate. In phases 1–5,
 an existing Write card is a valid Expressive descendant of the current Gate in the
-phase's Write register, including same-register revisions. Bias also discovers
-existing Writes across its Commit Region. Order separates admissible expressive Commit candidates in Gate from Committal Traverse results in Write. All Instruments are offered before Order. `write_options` is authoritative; `workspace.registers` remains
+phase's Write register, including structurally valid revisions. Bias Traverse
+offers only causal Write continuations of the current Gate. Other regional
+Writes may be calculation or permitted historical context; they are not
+Traverse cards. Order retains every causally local expressive Write in Write,
+including inadmissible and frozen sources, alongside their own traversable direct
+Committal results. Commit is available per admissible expressive Write; Closure
+refusal does not remove that Write or override its ordinary expressive rules.
+All Instruments are offered before Order. `write_options` is authoritative; `workspace.registers` remains
 broader inspection context and must never be merged into selectable Write cards.
 Revise remains limited to owned, revisable descendants. Commit cards and the
 Commit form select an explicit authorized `proposition_id`.
@@ -186,10 +201,22 @@ the current Write register. Targets are immediate valid descendants of the Gate 
 existing supersession graph, including historical superseded Propositions, and
 require the viewing Participant's effective Attestation. Another Participant's
 Attestation does not establish this path.
+Same-region and same-position Writes which are not causal descendants of the
+current Gate are not Traverse targets. Context visibility, phase compatibility,
+Homeostatic selection and an existing Commit elsewhere cannot supply that edge.
 The current Gate and positions already visited as Gates in this Cycle are
 excluded; later Cycles may revisit them. Traversal creates no Proposition,
 Supersession or evidence and never selects globally. It advances the Phase as
-selection did. Mediate does not admit expressive Traverse. Order instead traverses an established Committal Write and ends the Cycle there.
+selection did. Mediate does not admit expressive Traverse. Order instead
+traverses the established Committal produced directly from its current
+classification Gate and ends the Cycle there. No edge means no movement.
+
+Commitment preserves successful routes: at Bias, a frozen classification remains
+traversable only from the exact Gate whose causal continuation produced it,
+subject to ordinary traversal prerequisites. Order can then follow its direct
+Commit edge. A frozen classification elsewhere in the same Horizon or Commit
+Region remains ineligible from this Gate. Continuity preserves an existing edge;
+it never manufactures one.
 
 In phases 1–4 and Bias, a receipted Write exposes the following direction slots:
 
@@ -229,8 +256,10 @@ traversal set alone says nothing about complete action exhaustion.
 
 The plan reports `traversal_options` and `instrument_options` separately from
 `rest_available`. Complete Write and traversal target sets are not truncated by the
-Horizon display limit. A successful Commit forms the downstream recovery frontier inside the same Context Horizon, including when its ancestor has greater numeric Potential. Recovery searches viable committed Domains before their
-provenance and compares local candidates after distance attenuation, as described below.
+Horizon display limit. A successful Commit is a recovery candidate only if it
+lies on the Participant's recorded backward lineage. It does not shadow an
+eligible ancestor; both compete at their actual backward distances. Regional
+measurement populations and maintained frontiers do not add recovery candidates.
 
 Only an actionless Phase exposes `participant.rest`:
 
@@ -246,18 +275,17 @@ Cycle, records `cycles.rested_at`, and immediately prepares the next Cycle when
 a viable recovery destination exists. Otherwise the current position is retained
 and the next wake or `/participate/enter` retries recovery:
 
-1. Start from the completed Cycle's persisted Context Horizon. Search explicit descendant Domains before their ancestors; viable descendant branches shadow their ancestors and sibling frontiers remain peers.
-2. In each searched basin, consider its opening boundary Committal and non-boundary Committals created there. Candidates require a snapshot, structural connectivity and positive remaining raw Potential. Exclude the exhausted position itself.
-3. Rank eligible frontier candidates by raw Potential times `1 / (1 + d)^2`, then attenuated Charge, shorter distance and stable Proposition ID. Scope grants no age, recency, or depth bonus.
-4. If the current subtree is exhausted, climb its explicit parent and search unvisited descendant branches before the parent's own candidates. Repeat through provenance; Origin remains eligible when it has positive Potential.
-5. The selected Committal determines the new Cycle's Horizon: its own creating Horizon for a non-boundary Commit, or its explicitly opened direct child for a boundary. Do not pair an old Gate with an arbitrary descendant Horizon.
+1. Begin at the Participant's actual terminal position and completed Cycle Horizon. Walk incoming causal edges backward through recorded arrival provenance. At a multi-input Write, follow the Participant's recorded arrival Gate, never an unused parent shortcut.
+2. Consider only eligible ancestral Committals encountered on that path within the current Horizon. The retained Committal may itself be a distance-zero candidate. Same-region members, siblings, descendants and unvisited branches never compete.
+3. Rank those candidates by raw Potential times `1 / (1 + d)^2`, then attenuated Charge, shorter distance and stable Proposition ID. Here `d` counts actual backward edges, including revisions and historical intermediate nodes. Potential ranks the authorised set; it cannot enlarge it.
+4. Remain within the current Horizon until exhaustion permits crossing its opening boundary, which must occur on the same recorded path. Continue backward through previous Horizons on that lineage, retaining the original distance origin. Never reset to a Horizon provenance node or search siblings or descendants. Each Horizon requires its own exhaustion proof; numeric zero alone is insufficient.
+5. The selected ancestral Committal determines the new Cycle's Horizon: its own creating Horizon for a non-boundary Commit, or its explicitly opened direct child for a boundary. Do not pair an old Gate with an arbitrary descendant Horizon.
 
-The retained position is excluded from a candidate's continuation search, so
-recovery does not borrow its signal by returning through the exhausted observer.
-Repeated Rest can progress downstream while committed Domains are viable, or
-retreat through provenance when those basins exhaust. See [recovery basins](recovery-basins.md).
-No viable candidate leaves the participant resting in place; there is no global
-or zero-Potential fallback. GET exposes `entry.selection: recovery`, availability,
+Fresh open basins are not exhausted merely because their Potential is zero.
+Tragedy uses this same backward recovery, without an opener override. When no
+eligible candidate exists, the Participant remains at its retained position;
+there is no global or sideways fallback. No edge means no movement. See
+[recovery basins](recovery-basins.md). GET exposes `entry.selection: recovery`, availability,
 prospective destination, distance and Potential Charge, but never moves anyone.
 The existing `entry.mode: potential` transport is retained for entry clients.
 
@@ -267,15 +295,19 @@ Proposition measurements are averaged with inverse-square weights
 Every visited position contributes denominator weight. Raw Potential uses these
 accumulated measurements without re-discounting continuation length. Another
 Committal still stops the outgoing continuation search. Immutable snapshot
-Tension remains the historical baseline. Ordinary re-entry additionally observes
+Tension remains the historical baseline. Recovery observes eligible ancestral
 candidate Potential and Charge from the retained Participant position using the
-same inverse-square geometry. Initial entry has no positional attenuation;
-recovery compares positive candidates within its viable basin frontier with that same destination attenuation. See
+same inverse-square weighting. Initial entry has no positional attenuation;
+recovery applies destination attenuation only to its recorded ancestral
+candidates, using actual backward edge distance. Calculation geometry does not
+grant movement. See
 [observables](observables.md) for the full calculation.
 
 Order returns an actionable `ready` plan even when Commit is inadmissible.
 `plan.commitment` and `commitment_preconditions_unsatisfied` preserve diagnostics
-for missing Attestation, Receipt and Closure alignment. An existing Committal Write can still offer Traverse when Commit is refused.
+for missing Attestation, Receipt and Closure alignment. An existing Committal
+produced directly from the current classification Gate can still offer Traverse
+when a new Commit is refused. A Committal elsewhere in the region cannot.
 If neither terminal action exists, the schema offers exclusive Rest. Automated wakes
 ask inference to choose from exactly the same action schema; they never traverse
 automatically. Stale phase tokens cannot apply another move.
@@ -301,10 +333,21 @@ Gate Correspondence and Chirality do not filter these children. The current
 Gate must belong to that population; `gate_options` contains its counterparts.
 Reconcile still copies the current Gate's statement and creates two hard edges.
 
+This is the Homeostatic **Mediate — Read** population, the explicit regional
+comparison exception. It does not relocate the Participant to another Read or
+Gate. Reconcile creates a new result with an explicit causal edge from the
+current Gate and a second edge from the authorised counterpart; it never treats
+the counterpart as a Traverse destination. No edge means no movement.
+
 ## Shared Commit Region scope
 
 This scope applies [Invariant 10: structural authority](core-invariants.md#10-operations-may-only-act-within-their-structural-authority):
 measurements select within eligible populations and must not redefine them.
+
+Commit Region membership defines calculation/context scope only where a Commons
+operation explicitly requires it. It does not define Participant movement and
+never creates a traversal edge. Context visibility, Homeostatic populations and
+movement topology are separate contracts. No edge means no movement.
 
 `CommitRegionService` resolves the nearest Committal ancestry, stopping the
 backward walk at each Committal node. That seed starts a region of expressive
@@ -315,8 +358,10 @@ position or conflicting committal ancestry supplies no inferred region. Legacy
 merges with conflicting seeds and their descendants are excluded from both
 regions, rather than connecting otherwise isolated pools.
 
-An immediate parent is one graph edge and is too narrow. A Context Horizon is
-measurement/comparison context and can contain multiple Commit Regions.
+An immediate parent alone is too narrow to define a Homeostatic calculation
+population; this does not widen movement beyond the current Gate's authorised
+causal continuations. A Context Horizon is measurement/comparison context and
+can contain multiple Commit Regions.
 Horizon membership does not define candidate membership, even if a branch's
 ledger entries have different Horizon labels. Substrate isolation remains.
 
@@ -324,13 +369,24 @@ The reusable `RegisterPosition` mapping is extracted unchanged from structural
 Correspondence: Activity/Signal = First (R), Frontier/Stance = Second (G), and
 Canon/Concord = Third (B). These are vocabulary slots, not phase positions.
 [Invariant 16](core-invariants.md#16-register-identity-does-not-confer-phase-identity)
-requires an independent producing Phase check. Late phases use this matrix:
+requires an independent producing Phase check. Phase-position compatibility
+and region membership still do not confer traversal eligibility. The Homeostatic
+scopes are:
 
-| Phase | Candidate position | Selection |
+| Homeostatic effect | Calculation population | Evaluation |
 | --- | --- | --- |
-| Mediate | Constrain-produced Third / Read | Matches the Read anchor's retained Correspondence direction |
-| Bias | Mediate-produced Second / Gate | Retained direction agrees with causal ancestry excluding itself; receipt and attestation exist |
-| Order | Bias-produced Third / Gate | Grounded, attested sources with aligned Depth/Cadence |
+| Mediate — Read | Constrain-produced Third / Read | Matches the Read anchor's retained Correspondence direction |
+| Bias — Gate | Mediate-produced Second / Gate | Retained direction agrees with each candidate's own causal ancestry excluding itself; receipt and attestation exist |
+| Closure, performed during Order — Write | Each causally local Bias-produced expressive Write | Its own Depth/Cadence, lineage/history and participation; grounded and attested for Commit |
+
+Mediate may inspect regional Reads and expose their compatible Disperse Gates as
+reconciliation counterparts only. Bias may evaluate regional Gates, but exposes
+only the current causal Gate operationally. Closure is not a regional cross-lineage
+comparison: it evaluates each causally local Write independently. The Participant
+remains on its own causal lineage; calculation membership supplies no operational
+target or movement authority.
+Any Phase-advancing operation must independently be authorised from the current
+Gate and follow or create its legitimate causal continuation.
 
 Active candidates exclude outgoing hard supersessions; soft Variant branches
 remain active. A direct Commit edge consumes its source globally; other branches remain available.
@@ -339,13 +395,37 @@ remain active. A direct Commit edge consumes its source globally; other branches
 
 `BiasGateService` compares each active head's retained direction to its own causal ancestry, excluding the head's votes and loads. Shared ancestors and Attestations are counted once across both reconciliation parents. Traversal stops at the governing Committal boundary; unrelated branches do not set the comparison. Ledger replay retains the preceding nonzero direction at zero, starting from the governing Committal direction. Superseded ancestors supply historical judgments without becoming additional active reinforcement copies.
 
-Bias additionally requires a completed Receipt and an effective source Attestation. The action takes `action: proposition.reclassify`, `proposition_id` and `receipt_id`. It preserves exact content, attaches/consumes the selected Receipt, resets votes/touches, and creates one shared source/register classification. Existing Writes offer Instrument, Attest and—after earlier-Cycle personal Attestation—Traverse to Order.
+Bias additionally requires a completed Receipt and an effective source Attestation. The action takes `action: proposition.reclassify`, `proposition_id` and `receipt_id`. It preserves exact content, attaches/consumes the selected Receipt, resets votes/touches, and creates one shared source/register classification. `BiasGateService::forPhase()` is a regional calculation result; `operationalFor()` selects only the current causal Gate. Other calculated Gates never enter operational Gate or action collections.
 
-## Order: Commit Gate and Committal Write
+Existing causal Write continuations of the current Gate offer their permitted
+Instrument and Attestation actions and, after earlier-Cycle personal
+Attestation, Traverse to Order. Regional Mediate-produced Gates may participate
+in the Bias calculation, but unrelated Gates and their Bias-produced Writes do
+not enter this Participant's operational options. Historical material on the
+Participant's own lineage remains visible under the existing history rules.
+The same restriction applies to frozen successful classifications. No edge
+means no movement.
 
-Read contains nearest Mediate-produced Stance/Frontier ancestry. Gate contains uncommitted Bias-produced Concord/Canon sources satisfying receipt, effective Attestation and prospective Depth/Cadence checks. Write contains established Committal Concord/Canon results. Commit selects an authorized Gate `proposition_id`; Traverse selects a Committal Write `proposition_id`. Consumed sources are not duplicate contribution cards.
+## Order: local expressive Writes and direct Committal continuations
 
-Commit copies the selected source's exact statement and participation history by reference, creates an immutable snapshot, and consumes the direct source globally. Later evidence reads cannot rewrite that snapshot. Reinforcement is optional weight; Depth/Cadence remain the admissibility gate. `plan.commitment` describes the current position and `commitment_options` describes each eligible Gate source. The same rules govern schema, UI and execution.
+Read contains nearest Mediate-produced Stance/Frontier ancestry. Closure,
+performed during Order — Write, evaluates each local expressive Write's own
+Depth/Cadence, lineage/history and participation. Order's recorded Gate is the
+selected Bias Write. That Write and its existing same-position revision paths
+are local; another classification sharing its Stance/Frontier parent is not.
+`CausalWriteService` supplies this population without scanning regional Writes.
+
+Every local expressive Write stays in `write_options`, even when Closure diverges
+or other Commit prerequisites are missing. Closure only gates Commit; it does
+not make a Write invisible or override its ordinary expressive action rules.
+The current Order contract permits Commit and direct Committal Traverse, without
+introducing Attestation, Instrument or revision at this Phase. Commit selects only
+a Write satisfying the full prerequisites. Traverse selects only a local Write's
+own direct Committal child with an existing snapshot. No unrelated regional Write
+or Committal enters these operational collections. Frozen sources remain visible
+but immutable; their successful direct routes remain available.
+
+Commit copies the selected source's exact statement and participation history by reference, creates an immutable snapshot, and consumes the direct source globally. Later evidence reads cannot rewrite that snapshot. Reinforcement is optional weight; Depth/Cadence remain the admissibility gate. `plan.commitment` describes the current position and `commitment_options` describes every local expressive Write, including inadmissible ones. The same rules govern schema, UI and execution.
 
 ## Binary Reconcile
 
@@ -389,7 +469,7 @@ preferences disable animation.
 
 Order admits only `proposition.commit` and `proposition.traverse`, or exclusive Rest when neither remains. Commit and Committal Traverse both complete the Cycle at the exact Committal result. Natural completion leaves `rested_at` unset. The next explicit entry begins Phase 1 at that same Proposition, respecting its applicable Context Horizon; no normal completion relocates the Participant.
 
-The waiting state has `plan: null`, entry availability and the completed Cycle identity. The workspace can retain completed cards as read-only context. Return to Participants opens the Substrate collection; Enter another Cycle uses the normal entry endpoint. Rest is the separate local recovery path and can trigger Domain-scoped Committal recovery by attenuated Potential.
+The waiting state has `plan: null`, entry availability and the completed Cycle identity. The workspace can retain completed cards as read-only context. Return to Participants opens the Substrate collection; Enter another Cycle uses the normal entry endpoint. Rest is the separate backward-lineage recovery path: only ancestral Committals within the permitted Horizon compete by attenuated Potential. Region-wide calculation or visibility cannot relocate the Participant.
 
 ### Receipt Reads
 

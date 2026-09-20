@@ -1,9 +1,12 @@
 name: Query Regression
 
 on:
-  push:
-    branches: ['ci/query/**']
   workflow_dispatch:
+    inputs:
+      profile_sql:
+        description: Include optional EXPLAIN diagnostics
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -17,3 +20,4 @@ jobs:
     uses: ./.github/workflows/php-tests.yml
     with:
       suite: query
+      profile_sql: ${{ inputs.profile_sql }}

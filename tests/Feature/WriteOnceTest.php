@@ -281,8 +281,13 @@ class WriteOnceTest extends TestCase
         $return = $this->phase($participant, PhaseKind::Bias, 'canon', $b);
         app(ContributionService::class)->validate($participant, $this->reclassificationInputFixture($return, $b));
         $plan = $this->plan($participant);
-        $this->assertContains($written->id, $this->targets($plan, 'attestation.create'));
-        $this->assertContains($written->id, $this->targets($plan, 'instrument.execute'));
+        $this->assertNotContains($written->id, $this->targets($plan, 'attestation.create'));
+        $this->assertNotContains($written->id, $this->targets($plan, 'instrument.execute'));
+        // Returning to A still exposes A's own expressive Write.
+        $this->phase($participant, PhaseKind::Bias, 'canon', $a);
+        $local = $this->plan($participant);
+        $this->assertContains($written->id, $this->targets($local, 'attestation.create'));
+        $this->assertContains($written->id, $this->targets($local, 'instrument.execute'));
         $other = $this->participant($participant->substrate, 'other');
         $otherPhase = $this->phase($other, PhaseKind::Bias, 'canon', $b);
         app(ContributionService::class)->validate($other, $this->reclassificationInputFixture($otherPhase, $b));

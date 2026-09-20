@@ -1,0 +1,692 @@
+{
+  "core": {
+    "run_id": 35466343419,
+    "test_count": 617,
+    "php_seconds": 5061.877445,
+    "class_seconds": {
+      "Tests\\Feature\\Api\\ParticipationTragedyLifecycleTest": 4142.633566,
+      "Tests\\Feature\\Api\\ParticipationLocalEpochTest": 195.097393,
+      "Tests\\Feature\\Api\\ParticipationLifecycleRegressionTest": 67.023119,
+      "Tests\\Feature\\Api\\ParticipationRecoveryTest": 62.238550000000004,
+      "Tests\\Feature\\Api\\ParticipationSourceEquivalenceTest": 49.971958,
+      "Tests\\Feature\\ParticipantActionContractTest": 41.41811899999999,
+      "Tests\\Feature\\OperationalClosurePathTest": 39.612737,
+      "Tests\\Feature\\Api\\ParticipationHttpHarnessTest": 33.61006,
+      "Tests\\Feature\\CausalRecoveryTest": 24.679705000000002,
+      "Tests\\Feature\\FinalAttemptExhaustionTest": 18.964620999999998,
+      "Tests\\Feature\\LocalParticipantNavigationTest": 14.180435,
+      "Tests\\Feature\\ExhaustedParticipantContextTest": 13.811088999999999,
+      "Tests\\Feature\\WebSearchReceiptTest": 13.762398000000001,
+      "Tests\\Feature\\OperationalCommitmentTest": 13.705231,
+      "Tests\\Feature\\ClosureHysteresisTest": 13.585361000000002,
+      "Tests\\Feature\\PersistInstrumentTest": 13.479056,
+      "Tests\\Feature\\PhasePositionInvariantTest": 13.234745,
+      "Tests\\Feature\\Api\\ParticipationStaggeredEpochTest": 12.976151,
+      "Tests\\Feature\\WriteOnceTest": 12.9426,
+      "Tests\\Feature\\BiasGateTest": 12.4522,
+      "Tests\\Feature\\ExhaustionTest": 11.922524000000001,
+      "Tests\\Feature\\AttestationPolarityTest": 11.381708,
+      "Tests\\Feature\\ReceiptContextTest": 11.131164000000002,
+      "Tests\\Feature\\ParticipantContextTest": 10.620753,
+      "Tests\\Feature\\InputPlanVisibilityTest": 9.261275,
+      "Tests\\Feature\\GraphActivityTest": 8.572339,
+      "Tests\\Feature\\CommitRegionTest": 8.443412,
+      "Tests\\Feature\\RealtimeTest": 7.510867,
+      "Tests\\Feature\\HorizonProofCompatibilityTest": 7.364628999999999,
+      "Tests\\Feature\\HorizonFailureInvariantTest": 7.2108099999999995,
+      "Tests\\Feature\\ParticipantWakeTest": 6.844065,
+      "Tests\\Feature\\ExhaustionRealtimeTest": 6.564234000000001,
+      "Tests\\Feature\\ReconciliationTest": 6.329889,
+      "Tests\\Feature\\ParticipantContinuityTest": 5.876446,
+      "Tests\\Feature\\SpentContinuationTest": 5.728209,
+      "Tests\\Feature\\ReceiptGatedReclassificationTest": 5.671709,
+      "Tests\\Feature\\CausalHorizonLineageTest": 5.616584,
+      "Tests\\Feature\\ExhaustedContinuationTest": 5.420936,
+      "Tests\\Feature\\TragedyTest": 5.348623,
+      "Tests\\Feature\\RevisionAdmissibilityTest": 5.2440929999999994,
+      "Tests\\Feature\\ExplorationEpochTest": 4.675033,
+      "Tests\\Feature\\ExpressiveEvidenceGatingTest": 4.566440999999999,
+      "Tests\\Feature\\RelevantInstrumentTest": 4.5625860000000005,
+      "Tests\\Feature\\HorizonProofMigrationTest": 4.356103,
+      "Tests\\Feature\\ExplorationEpochMigrationTest": 4.259443,
+      "Tests\\Feature\\AuthoritativeRestReasonTest": 3.987783,
+      "Tests\\Feature\\PropositionHistorySemanticsTest": 3.886565,
+      "Tests\\Feature\\EvidenceFirstInteractionTest": 3.8224530000000003,
+      "Tests\\Feature\\ParticipationSnapshotTest": 3.435709,
+      "Tests\\Feature\\LocalExplorationMigrationTest": 3.3252610000000002,
+      "Tests\\Feature\\DomainOperationalEligibilityTest": 3.2802740000000004,
+      "Tests\\Feature\\SpentContinuationRealtimeTest": 3.260329,
+      "Tests\\Feature\\ExplorationPositionTest": 2.913489,
+      "Tests\\Feature\\PotentialProjectionTest": 2.909352,
+      "Tests\\Feature\\TransactionLockOrderTest": 2.889763,
+      "Tests\\Feature\\ReinforcementTest": 2.859511,
+      "Tests\\Feature\\HorizonReceiptLifecycleTest": 2.8193469999999996,
+      "Tests\\Feature\\HorizonTragedyTest": 2.758235,
+      "Tests\\Feature\\CausalHorizonMigrationTest": 2.7483630000000003,
+      "Tests\\Feature\\BiasLineageTest": 2.64004,
+      "Tests\\Feature\\Api\\ParticipationVisibilityLifecycleTest": 2.293998,
+      "Tests\\Feature\\ObservableServiceTest": 2.2777290000000003,
+      "Tests\\Feature\\Api\\ParticipationApiTest": 2.2215089999999997,
+      "Tests\\Feature\\ReceiptCapabilitiesMigrationTest": 2.208935,
+      "Tests\\Feature\\SharedReclassificationTest": 2.11135,
+      "Tests\\Feature\\PreOrderInstrumentPathTest": 1.9463650000000001,
+      "Tests\\Feature\\ReceiptContextMigrationTest": 1.911452,
+      "Tests\\Feature\\PropositionPresentationTest": 1.809367,
+      "Tests\\Feature\\CommitParticipationStateTest": 1.723827,
+      "Tests\\Feature\\ContextHorizonProjectorTest": 1.591631,
+      "Tests\\Feature\\Api\\PropositionReadTest": 1.436876,
+      "Tests\\Feature\\ReclassificationEvidenceTest": 1.385005,
+      "Tests\\Feature\\OptimisticParticipationTest": 1.102516,
+      "Tests\\Feature\\Api\\CommonsUiApiTest": 0.9435180000000001,
+      "Tests\\Feature\\CommitBoundaryTest": 0.908014,
+      "Tests\\Feature\\LineageAttenuationTest": 0.864779,
+      "Tests\\Feature\\HorizonWorkspaceTest": 0.74147,
+      "Tests\\Feature\\InputSchemaServiceTest": 0.6164869999999999,
+      "Tests\\Feature\\PotentialChargeServiceTest": 0.420236,
+      "Tests\\Feature\\Api\\ParticipantConnectionApiTest": 0.41027600000000003,
+      "Tests\\Feature\\AttestationDirectionChangeTest": 0.385648,
+      "Tests\\Feature\\Api\\SubstrateApiTest": 0.30573100000000003,
+      "Tests\\Feature\\ReverbTransportTest": 0.239446,
+      "Tests\\Feature\\BootstrapOriginReinforcementTest": 0.172533,
+      "Tests\\Feature\\PropositionMeasurementServiceTest": 0.12686,
+      "Tests\\Feature\\HyperlinkVerificationTest": 0.11183400000000002,
+      "Tests\\Feature\\WebSearchProviderTest": 0.07864,
+      "Tests\\Feature\\Api\\ParticipantCollectionApiTest": 0.067511,
+      "Tests\\Unit\\RecoveryBasinResolverTest": 0.021611,
+      "Tests\\Unit\\ExampleTest": 0.019275,
+      "Tests\\Feature\\ExampleTest": 0.01751,
+      "Tests\\Unit\\PotentialRegionCalculatorTest": 0.003619,
+      "Tests\\Unit\\ProjectionServiceTest": 0.001984,
+      "Tests\\Unit\\ClosureValuesTest": 0.00046
+    },
+    "slowest_tests": [
+      {
+        "class": "Tests\\Feature\\Api\\ParticipationTragedyLifecycleTest",
+        "test": "test_natural_tragedy_supports_another_participants_final_attempt_and_lineage_exhaustion",
+        "seconds": 4142.633566,
+        "assertions": 8684
+      },
+      {
+        "class": "Tests\\Feature\\Api\\ParticipationLocalEpochTest",
+        "test": "test_a_third_distinguish_variant_reopens_only_its_own_slot_through_http",
+        "seconds": 195.097393,
+        "assertions": 7545
+      },
+      {
+        "class": "Tests\\Feature\\Api\\ParticipationRecoveryTest",
+        "test": "test_successful_revisit_keeps_its_untraversed_commit_out_of_backward_recovery",
+        "seconds": 60.766539,
+        "assertions": 4152
+      },
+      {
+        "class": "Tests\\Feature\\Api\\ParticipationSourceEquivalenceTest",
+        "test": "test_connection_driven_and_manual_participation_share_the_complete_action_contract",
+        "seconds": 48.341721,
+        "assertions": 4234
+      },
+      {
+        "class": "Tests\\Feature\\OperationalClosurePathTest",
+        "test": "test_receipt_backed_full_cycle_commits_with_real_hysteretic_closure_calculations",
+        "seconds": 39.612737,
+        "assertions": 58
+      },
+      {
+        "class": "Tests\\Feature\\Api\\ParticipationHttpHarnessTest",
+        "test": "test_real_http_actions_reach_an_operational_commit",
+        "seconds": 29.042193,
+        "assertions": 294
+      },
+      {
+        "class": "Tests\\Feature\\Api\\ParticipationLifecycleRegressionTest",
+        "test": "test_successful_route_revisit_can_advance_through_bias_to_its_existing_commit",
+        "seconds": 28.607301,
+        "assertions": 4318
+      },
+      {
+        "class": "Tests\\Feature\\Api\\ParticipationLifecycleRegressionTest",
+        "test": "test_distinguish_under_another_committal_does_not_advance_origins_epoch",
+        "seconds": 22.794874,
+        "assertions": 2352
+      },
+      {
+        "class": "Tests\\Feature\\Api\\ParticipationLifecycleRegressionTest",
+        "test": "test_disperse_under_another_constrain_gate_does_not_reopen_a_spent_slot",
+        "seconds": 15.620944,
+        "assertions": 2534
+      },
+      {
+        "class": "Tests\\Feature\\Api\\ParticipationStaggeredEpochTest",
+        "test": "test_one_natural_failure_spends_two_positions_that_reopen_only_on_their_own_variants",
+        "seconds": 12.976151,
+        "assertions": 1980
+      },
+      {
+        "class": "Tests\\Feature\\ClosureHysteresisTest",
+        "test": "test_emergence_can_develop_negative_prospective_components_after_a_settlement_boundary",
+        "seconds": 6.842081,
+        "assertions": 16
+      },
+      {
+        "class": "Tests\\Feature\\ParticipantActionContractTest",
+        "test": "test_every_advertised_action_round_trips_through_inference_validation_and_execution with data set #2",
+        "seconds": 6.393151,
+        "assertions": 147
+      },
+      {
+        "class": "Tests\\Feature\\ParticipantActionContractTest",
+        "test": "test_every_advertised_action_round_trips_through_inference_validation_and_execution with data set #5",
+        "seconds": 5.96982,
+        "assertions": 128
+      },
+      {
+        "class": "Tests\\Feature\\ParticipantActionContractTest",
+        "test": "test_every_advertised_action_round_trips_through_inference_validation_and_execution with data set \"Persist foreign Gate\"",
+        "seconds": 5.895807,
+        "assertions": 128
+      },
+      {
+        "class": "Tests\\Feature\\ParticipantActionContractTest",
+        "test": "test_every_advertised_action_round_trips_through_inference_validation_and_execution with data set #1",
+        "seconds": 5.721819,
+        "assertions": 128
+      },
+      {
+        "class": "Tests\\Feature\\ParticipantActionContractTest",
+        "test": "test_every_advertised_action_round_trips_through_inference_validation_and_execution with data set #4",
+        "seconds": 5.497241,
+        "assertions": 109
+      },
+      {
+        "class": "Tests\\Feature\\ParticipantActionContractTest",
+        "test": "test_every_advertised_action_round_trips_through_inference_validation_and_execution with data set #3",
+        "seconds": 4.778551,
+        "assertions": 103
+      },
+      {
+        "class": "Tests\\Feature\\FinalAttemptExhaustionTest",
+        "test": "test_child_exhaustion_enriches_parent_tragedy_with_ids_and_loads_statements_locally",
+        "seconds": 4.314445,
+        "assertions": 17
+      },
+      {
+        "class": "Tests\\Feature\\PersistInstrumentTest",
+        "test": "test_persist_instrument_receipt_survives_as_constrain_gate_and_unlocks_owner_reclassification",
+        "seconds": 4.146831,
+        "assertions": 36
+      },
+      {
+        "class": "Tests\\Feature\\ExhaustionRealtimeTest",
+        "test": "test_tragedy_and_receipt_consumption_then_exhaustion_publish_minimal_events_and_avatar_movement_after_commit",
+        "seconds": 4.119137,
+        "assertions": 158
+      }
+    ]
+  },
+  "integration": {
+    "run_id": 35436695301,
+    "test_count": 619,
+    "php_seconds": 6692.187491000001,
+    "class_seconds": {
+      "Tests\\Feature\\Api\\ParticipationTragedyLifecycleTest": 5321.077779,
+      "Tests\\Feature\\Api\\ParticipationLocalEpochTest": 133.672116,
+      "Tests\\Feature\\Api\\ParticipationLifecycleRegressionTest": 110.9632,
+      "Tests\\Feature\\Api\\ParticipationRecoveryTest": 101.874656,
+      "Tests\\Feature\\Api\\ParticipationSourceEquivalenceTest": 83.78581399999999,
+      "Tests\\Feature\\ParticipantActionContractTest": 69.10122500000001,
+      "Tests\\Feature\\Api\\ParticipationHttpHarnessTest": 55.492655000000006,
+      "Tests\\Feature\\FullEvidenceFlowTest": 47.387175,
+      "Tests\\Feature\\OperationalClosurePathTest": 41.484037,
+      "Tests\\Feature\\CausalRecoveryTest": 40.97603100000001,
+      "Tests\\Feature\\HorizonProofCycleTest": 38.810777,
+      "Tests\\Feature\\FinalAttemptExhaustionTest": 32.751841,
+      "Tests\\Feature\\OperationalCommitmentTest": 24.276742000000002,
+      "Tests\\Feature\\ExhaustedParticipantContextTest": 24.175885,
+      "Tests\\Feature\\WebSearchReceiptTest": 23.668239999999997,
+      "Tests\\Feature\\LocalParticipantNavigationTest": 23.363088,
+      "Tests\\Feature\\PhasePositionInvariantTest": 22.271412,
+      "Tests\\Feature\\ClosureHysteresisTest": 22.049864999999997,
+      "Tests\\Feature\\WriteOnceTest": 21.689505,
+      "Tests\\Feature\\Api\\ParticipationStaggeredEpochTest": 21.464922,
+      "Tests\\Feature\\BiasGateTest": 21.299768,
+      "Tests\\Feature\\PersistInstrumentTest": 21.196281,
+      "Tests\\Feature\\ExhaustionTest": 20.517494,
+      "Tests\\Feature\\AttestationPolarityTest": 19.840932,
+      "Tests\\Feature\\ParticipantContextTest": 18.745926,
+      "Tests\\Feature\\ReceiptContextTest": 18.461625,
+      "Tests\\Feature\\InputPlanVisibilityTest": 15.320401,
+      "Tests\\Feature\\CommitRegionTest": 14.398821000000002,
+      "Tests\\Feature\\HorizonFailureInvariantTest": 12.749878,
+      "Tests\\Feature\\ParticipantWakeTest": 11.824486,
+      "Tests\\Feature\\ReconciliationTest": 11.078799999999998,
+      "Tests\\Feature\\ParticipantContinuityTest": 10.323432,
+      "Tests\\Feature\\ReceiptGatedReclassificationTest": 9.890806,
+      "Tests\\Feature\\SpentContinuationTest": 9.834221,
+      "Tests\\Feature\\CausalHorizonLineageTest": 9.516993,
+      "Tests\\Feature\\ExhaustedContinuationTest": 9.491185999999999,
+      "Tests\\Feature\\TragedyTest": 8.75609,
+      "Tests\\Feature\\HorizonProofCompatibilityTest": 8.628261,
+      "Tests\\Feature\\RevisionAdmissibilityTest": 8.331265,
+      "Tests\\Feature\\RealtimeTest": 8.234691,
+      "Tests\\Feature\\ExhaustionRealtimeTest": 8.021269,
+      "Tests\\Feature\\ExpressiveEvidenceGatingTest": 7.925027,
+      "Tests\\Feature\\RelevantInstrumentTest": 7.922719,
+      "Tests\\Feature\\ExplorationEpochTest": 7.77831,
+      "Tests\\Feature\\GraphActivityTest": 7.534304,
+      "Tests\\Feature\\AuthoritativeRestReasonTest": 7.404452,
+      "Tests\\Feature\\EvidenceFirstInteractionTest": 6.441605,
+      "Tests\\Feature\\PropositionHistorySemanticsTest": 6.235482,
+      "Tests\\Feature\\DomainOperationalEligibilityTest": 5.8514029999999995,
+      "Tests\\Feature\\ExplorationPositionTest": 5.108288,
+      "Tests\\Feature\\PotentialProjectionTest": 4.940334,
+      "Tests\\Feature\\ReinforcementTest": 4.897547,
+      "Tests\\Feature\\HorizonTragedyTest": 4.8648810000000005,
+      "Tests\\Feature\\BiasLineageTest": 4.480167,
+      "Tests\\Feature\\HorizonReceiptLifecycleTest": 4.244717,
+      "Tests\\Feature\\SpentContinuationRealtimeTest": 3.956119,
+      "Tests\\Feature\\Api\\ParticipationVisibilityLifecycleTest": 3.908982,
+      "Tests\\Feature\\ObservableServiceTest": 3.8990969999999994,
+      "Tests\\Feature\\Api\\ParticipationApiTest": 3.8446520000000004,
+      "Tests\\Feature\\SharedReclassificationTest": 3.7634499999999997,
+      "Tests\\Feature\\HorizonProofMigrationTest": 3.701722,
+      "Tests\\Feature\\LocalExplorationMigrationTest": 3.666922,
+      "Tests\\Feature\\PreOrderInstrumentPathTest": 3.233092,
+      "Tests\\Feature\\TransactionLockOrderTest": 3.208975,
+      "Tests\\Feature\\ExplorationEpochMigrationTest": 3.151288,
+      "Tests\\Feature\\PropositionPresentationTest": 2.96057,
+      "Tests\\Feature\\CausalHorizonMigrationTest": 2.9428229999999997,
+      "Tests\\Feature\\ContextHorizonProjectorTest": 2.854792,
+      "Tests\\Feature\\CommitParticipationStateTest": 2.8405039999999997,
+      "Tests\\Feature\\ReclassificationEvidenceTest": 2.391535,
+      "Tests\\Feature\\ParticipationSnapshotTest": 1.995998,
+      "Tests\\Feature\\Api\\PropositionReadTest": 1.9705690000000002,
+      "Tests\\Feature\\ReceiptCapabilitiesMigrationTest": 1.832484,
+      "Tests\\Feature\\OptimisticParticipationTest": 1.821317,
+      "Tests\\Feature\\CommitBoundaryTest": 1.577001,
+      "Tests\\Feature\\LineageAttenuationTest": 1.464261,
+      "Tests\\Feature\\ReceiptContextMigrationTest": 1.438507,
+      "Tests\\Feature\\HorizonWorkspaceTest": 1.27889,
+      "Tests\\Feature\\Api\\CommonsUiApiTest": 1.166446,
+      "Tests\\Feature\\InputSchemaServiceTest": 1.013266,
+      "Tests\\Feature\\PotentialChargeServiceTest": 0.710577,
+      "Tests\\Feature\\Api\\ParticipantConnectionApiTest": 0.7061310000000001,
+      "Tests\\Feature\\AttestationDirectionChangeTest": 0.662991,
+      "Tests\\Feature\\Api\\SubstrateApiTest": 0.50221,
+      "Tests\\Feature\\ReverbTransportTest": 0.332669,
+      "Tests\\Feature\\BootstrapOriginReinforcementTest": 0.264034,
+      "Tests\\Feature\\PropositionMeasurementServiceTest": 0.216337,
+      "Tests\\Feature\\HyperlinkVerificationTest": 0.167611,
+      "Tests\\Feature\\WebSearchProviderTest": 0.12942700000000001,
+      "Tests\\Feature\\Api\\ParticipantCollectionApiTest": 0.114929,
+      "Tests\\Unit\\RecoveryBasinResolverTest": 0.031063,
+      "Tests\\Feature\\ExampleTest": 0.020506,
+      "Tests\\Unit\\ExampleTest": 0.00716,
+      "Tests\\Unit\\PotentialRegionCalculatorTest": 0.005293000000000001,
+      "Tests\\Unit\\ProjectionServiceTest": 0.00372,
+      "Tests\\Unit\\ClosureValuesTest": 0.0007440000000000001
+    },
+    "slowest_tests": [
+      {
+        "class": "Tests\\Feature\\Api\\ParticipationTragedyLifecycleTest",
+        "test": "test_natural_tragedy_supports_another_participants_final_attempt_and_lineage_exhaustion",
+        "seconds": 5321.077779,
+        "assertions": 8684
+      },
+      {
+        "class": "Tests\\Feature\\Api\\ParticipationLocalEpochTest",
+        "test": "test_a_third_distinguish_variant_reopens_only_its_own_slot_through_http",
+        "seconds": 133.672116,
+        "assertions": 7545
+      },
+      {
+        "class": "Tests\\Feature\\Api\\ParticipationRecoveryTest",
+        "test": "test_successful_revisit_keeps_its_untraversed_commit_out_of_backward_recovery",
+        "seconds": 99.374194,
+        "assertions": 4152
+      },
+      {
+        "class": "Tests\\Feature\\Api\\ParticipationSourceEquivalenceTest",
+        "test": "test_connection_driven_and_manual_participation_share_the_complete_action_contract",
+        "seconds": 81.086947,
+        "assertions": 4234
+      },
+      {
+        "class": "Tests\\Feature\\Api\\ParticipationHttpHarnessTest",
+        "test": "test_real_http_actions_reach_an_operational_commit",
+        "seconds": 47.86151,
+        "assertions": 294
+      },
+      {
+        "class": "Tests\\Feature\\FullEvidenceFlowTest",
+        "test": "test_three_participants_share_receipts_and_commit_without_redundant_healthy_lineages",
+        "seconds": 47.387175,
+        "assertions": 51
+      },
+      {
+        "class": "Tests\\Feature\\Api\\ParticipationLifecycleRegressionTest",
+        "test": "test_successful_route_revisit_can_advance_through_bias_to_its_existing_commit",
+        "seconds": 47.036639,
+        "assertions": 4318
+      },
+      {
+        "class": "Tests\\Feature\\OperationalClosurePathTest",
+        "test": "test_receipt_backed_full_cycle_commits_with_real_hysteretic_closure_calculations",
+        "seconds": 41.484037,
+        "assertions": 58
+      },
+      {
+        "class": "Tests\\Feature\\HorizonProofCycleTest",
+        "test": "test_one_participant_builds_and_commits_through_both_receipt_boundaries_over_cycles",
+        "seconds": 38.810777,
+        "assertions": 54
+      },
+      {
+        "class": "Tests\\Feature\\Api\\ParticipationLifecycleRegressionTest",
+        "test": "test_distinguish_under_another_committal_does_not_advance_origins_epoch",
+        "seconds": 37.428858,
+        "assertions": 2352
+      },
+      {
+        "class": "Tests\\Feature\\Api\\ParticipationLifecycleRegressionTest",
+        "test": "test_disperse_under_another_constrain_gate_does_not_reopen_a_spent_slot",
+        "seconds": 26.497703,
+        "assertions": 2534
+      },
+      {
+        "class": "Tests\\Feature\\Api\\ParticipationStaggeredEpochTest",
+        "test": "test_one_natural_failure_spends_two_positions_that_reopen_only_on_their_own_variants",
+        "seconds": 21.464922,
+        "assertions": 1980
+      },
+      {
+        "class": "Tests\\Feature\\ParticipantActionContractTest",
+        "test": "test_every_advertised_action_round_trips_through_inference_validation_and_execution with data set #2",
+        "seconds": 10.887344,
+        "assertions": 147
+      },
+      {
+        "class": "Tests\\Feature\\ClosureHysteresisTest",
+        "test": "test_emergence_can_develop_negative_prospective_components_after_a_settlement_boundary",
+        "seconds": 10.709257,
+        "assertions": 16
+      },
+      {
+        "class": "Tests\\Feature\\ParticipantActionContractTest",
+        "test": "test_every_advertised_action_round_trips_through_inference_validation_and_execution with data set #5",
+        "seconds": 9.88375,
+        "assertions": 128
+      },
+      {
+        "class": "Tests\\Feature\\ParticipantActionContractTest",
+        "test": "test_every_advertised_action_round_trips_through_inference_validation_and_execution with data set \"Persist foreign Gate\"",
+        "seconds": 9.802958,
+        "assertions": 128
+      },
+      {
+        "class": "Tests\\Feature\\ParticipantActionContractTest",
+        "test": "test_every_advertised_action_round_trips_through_inference_validation_and_execution with data set #1",
+        "seconds": 9.571689,
+        "assertions": 128
+      },
+      {
+        "class": "Tests\\Feature\\ParticipantActionContractTest",
+        "test": "test_every_advertised_action_round_trips_through_inference_validation_and_execution with data set #4",
+        "seconds": 8.857765,
+        "assertions": 109
+      },
+      {
+        "class": "Tests\\Feature\\ParticipantActionContractTest",
+        "test": "test_every_advertised_action_round_trips_through_inference_validation_and_execution with data set #3",
+        "seconds": 8.182853,
+        "assertions": 103
+      },
+      {
+        "class": "Tests\\Feature\\FinalAttemptExhaustionTest",
+        "test": "test_child_exhaustion_enriches_parent_tragedy_with_ids_and_loads_statements_locally",
+        "seconds": 7.390067,
+        "assertions": 17
+      }
+    ]
+  },
+  "query": {
+    "run_id": 35436695301,
+    "test_count": 16,
+    "php_seconds": 150.893882,
+    "class_seconds": {
+      "Tests\\Feature\\ParticipationPerformanceTest": 116.84594199999998,
+      "Tests\\Feature\\ParticipantContextTest": 18.140048,
+      "Tests\\Feature\\Api\\PropositionReadTest": 9.730029,
+      "Tests\\Feature\\ExhaustionTest": 2.459435,
+      "Tests\\Feature\\HorizonFailureInvariantTest": 2.015178,
+      "Tests\\Feature\\PotentialProjectionTest": 1.70325
+    },
+    "slowest_tests": [
+      {
+        "class": "Tests\\Feature\\ParticipationPerformanceTest",
+        "test": "test_participation_query_budget with data set #2",
+        "seconds": 24.8146,
+        "assertions": 5
+      },
+      {
+        "class": "Tests\\Feature\\ParticipationPerformanceTest",
+        "test": "test_adding_candidates_does_not_multiply_database_work with data set #2",
+        "seconds": 15.064893,
+        "assertions": 10
+      },
+      {
+        "class": "Tests\\Feature\\ParticipationPerformanceTest",
+        "test": "test_adding_candidates_does_not_multiply_database_work with data set #1",
+        "seconds": 14.8658,
+        "assertions": 10
+      },
+      {
+        "class": "Tests\\Feature\\ParticipationPerformanceTest",
+        "test": "test_scoped_history_and_evidence_match_and_a_new_calculation_sees_new_writes",
+        "seconds": 14.378546,
+        "assertions": 82
+      },
+      {
+        "class": "Tests\\Feature\\ParticipationPerformanceTest",
+        "test": "test_adding_candidates_does_not_multiply_database_work with data set #0",
+        "seconds": 14.342322,
+        "assertions": 10
+      },
+      {
+        "class": "Tests\\Feature\\ParticipationPerformanceTest",
+        "test": "test_participation_query_budget with data set #1",
+        "seconds": 13.166851,
+        "assertions": 5
+      },
+      {
+        "class": "Tests\\Feature\\ParticipationPerformanceTest",
+        "test": "test_participation_query_budget with data set #0",
+        "seconds": 10.797779,
+        "assertions": 5
+      },
+      {
+        "class": "Tests\\Feature\\Api\\PropositionReadTest",
+        "test": "test_500_node_graph_has_a_bounded_read_only_query_budget",
+        "seconds": 9.730029,
+        "assertions": 129
+      },
+      {
+        "class": "Tests\\Feature\\ParticipationPerformanceTest",
+        "test": "test_historical_population_does_not_expand_the_active_working_set",
+        "seconds": 9.415151,
+        "assertions": 6
+      },
+      {
+        "class": "Tests\\Feature\\ParticipantContextTest",
+        "test": "test_ten_to_five_hundred_unrelated_horizon_nodes_cannot_grow_inference",
+        "seconds": 4.894664,
+        "assertions": 11
+      },
+      {
+        "class": "Tests\\Feature\\ParticipantContextTest",
+        "test": "test_dense_instrument_and_commitment_contexts_fit_the_same_budget with data set #0",
+        "seconds": 4.486133,
+        "assertions": 6
+      },
+      {
+        "class": "Tests\\Feature\\ParticipantContextTest",
+        "test": "test_dense_instrument_and_commitment_contexts_fit_the_same_budget with data set #2",
+        "seconds": 4.425348,
+        "assertions": 9
+      },
+      {
+        "class": "Tests\\Feature\\ParticipantContextTest",
+        "test": "test_dense_instrument_and_commitment_contexts_fit_the_same_budget with data set #1",
+        "seconds": 4.333903,
+        "assertions": 6
+      },
+      {
+        "class": "Tests\\Feature\\ExhaustionTest",
+        "test": "test_horizon_proof_does_not_grow_with_unrelated_historical_terrain",
+        "seconds": 2.459435,
+        "assertions": 173
+      },
+      {
+        "class": "Tests\\Feature\\HorizonFailureInvariantTest",
+        "test": "test_failure_inspection_is_read_only_and_does_not_scan_unrelated_history",
+        "seconds": 2.015178,
+        "assertions": 171
+      },
+      {
+        "class": "Tests\\Feature\\PotentialProjectionTest",
+        "test": "test_rest_recovery_queries_do_not_grow_with_unrelated_historical_propositions",
+        "seconds": 1.70325,
+        "assertions": 68
+      }
+    ]
+  },
+  "load": {
+    "run_id": 35436695301,
+    "test_count": 22,
+    "php_seconds": 52.639281,
+    "class_seconds": {
+      "Tests\\Feature\\TransactionLockOrderTest": 48.99879099999999,
+      "Tests\\Feature\\HorizonProofConcurrencyTest": 3.64049
+    },
+    "slowest_tests": [
+      {
+        "class": "Tests\\Feature\\TransactionLockOrderTest",
+        "test": "test_concurrent_failed_final_attempt_records_one_exhaustion",
+        "seconds": 4.859063,
+        "assertions": 11
+      },
+      {
+        "class": "Tests\\Feature\\TransactionLockOrderTest",
+        "test": "test_external_instrument_observation_allows_another_writer_and_discards_a_stale_result with data set #0",
+        "seconds": 3.807074,
+        "assertions": 7
+      },
+      {
+        "class": "Tests\\Feature\\TransactionLockOrderTest",
+        "test": "test_concurrent_rests_record_one_tragedy_and_leave_both_participants_with_valid_entry",
+        "seconds": 3.653592,
+        "assertions": 11
+      },
+      {
+        "class": "Tests\\Feature\\TransactionLockOrderTest",
+        "test": "test_external_instrument_observation_allows_another_writer_and_discards_a_stale_result with data set #1",
+        "seconds": 3.571292,
+        "assertions": 7
+      },
+      {
+        "class": "Tests\\Feature\\TransactionLockOrderTest",
+        "test": "test_two_participants_can_contribute_to_the_same_substrate_without_a_lock_cycle",
+        "seconds": 3.203736,
+        "assertions": 15
+      },
+      {
+        "class": "Tests\\Feature\\TransactionLockOrderTest",
+        "test": "test_concurrent_fresh_sibling_invalidates_exhaustion_proof",
+        "seconds": 2.99444,
+        "assertions": 13
+      },
+      {
+        "class": "Tests\\Feature\\TransactionLockOrderTest",
+        "test": "test_another_participant_can_commit_an_action_during_inference_between_steps_of_one_wake",
+        "seconds": 2.961639,
+        "assertions": 14
+      },
+      {
+        "class": "Tests\\Feature\\TransactionLockOrderTest",
+        "test": "test_waiting_reclassification_reuses_the_first_participants_result",
+        "seconds": 2.533565,
+        "assertions": 6
+      },
+      {
+        "class": "Tests\\Feature\\TransactionLockOrderTest",
+        "test": "test_standalone_instrument_completion_does_not_hold_the_execution_while_waiting_for_the_root",
+        "seconds": 2.213864,
+        "assertions": 7
+      },
+      {
+        "class": "Tests\\Feature\\TransactionLockOrderTest",
+        "test": "test_plan_state_workspace_and_active_prepare_complete_concurrently_while_a_writer_holds_the_root",
+        "seconds": 2.17352,
+        "assertions": 11
+      },
+      {
+        "class": "Tests\\Feature\\TransactionLockOrderTest",
+        "test": "test_graph_and_detail_finish_while_measurement_update_holds_shared_write_locks with data set \"mutable expressive\"",
+        "seconds": 2.018593,
+        "assertions": 8
+      },
+      {
+        "class": "Tests\\Feature\\HorizonProofConcurrencyTest",
+        "test": "test_competing_variants_recheck_new_unobserved_opportunity_after_the_winner_commits",
+        "seconds": 1.980712,
+        "assertions": 7
+      },
+      {
+        "class": "Tests\\Feature\\TransactionLockOrderTest",
+        "test": "test_cycle_entry_can_lock_the_participant_while_a_contribution_waits_for_the_substrate",
+        "seconds": 1.90027,
+        "assertions": 7
+      },
+      {
+        "class": "Tests\\Feature\\TransactionLockOrderTest",
+        "test": "test_waiting_reconciliation_rechecks_the_directed_pair_across_participants",
+        "seconds": 1.843759,
+        "assertions": 6
+      },
+      {
+        "class": "Tests\\Feature\\TransactionLockOrderTest",
+        "test": "test_waiting_commit_rechecks_global_source_consumption",
+        "seconds": 1.797283,
+        "assertions": 6
+      },
+      {
+        "class": "Tests\\Feature\\TransactionLockOrderTest",
+        "test": "test_two_reclassifications_compete_for_one_receipt_with_one_winner_and_no_partial_target",
+        "seconds": 1.769833,
+        "assertions": 9
+      },
+      {
+        "class": "Tests\\Feature\\TransactionLockOrderTest",
+        "test": "test_competing_receipt_reads_keep_one_load_and_one_event",
+        "seconds": 1.748906,
+        "assertions": 5
+      },
+      {
+        "class": "Tests\\Feature\\TransactionLockOrderTest",
+        "test": "test_waiting_generation_rechecks_structural_viability_after_the_first_writer_commits",
+        "seconds": 1.74852,
+        "assertions": 5
+      },
+      {
+        "class": "Tests\\Feature\\HorizonProofConcurrencyTest",
+        "test": "test_two_sources_competing_for_one_receipt_produce_one_classification_and_one_attachment",
+        "seconds": 1.659778,
+        "assertions": 11
+      },
+      {
+        "class": "Tests\\Feature\\TransactionLockOrderTest",
+        "test": "test_graph_and_detail_finish_while_measurement_update_holds_shared_write_locks with data set \"frozen committal\"",
+        "seconds": 1.552845,
+        "assertions": 8
+      }
+    ]
+  }
+}

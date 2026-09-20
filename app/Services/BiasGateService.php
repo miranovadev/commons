@@ -29,7 +29,7 @@ final readonly class BiasGateService
         return $this->chirality->leanFor($this->populationFor($phase)->pluck('id'), $phase->cycle->participant->substrate);
     }
 
-    /** Compare each active head with its own ancestry, excluding the head's evidence. */
+    /** Regional calculation result; this collection does not authorize operational targets. */
     public function forPhase(Phase $phase, ?ParticipationContext $context = null): Collection
     {
         $population = $this->populationFor($phase, $context);
@@ -40,5 +40,11 @@ final readonly class BiasGateService
 
         return $population->filter(fn (Proposition $candidate): bool => $this->chirality->directionFor($candidate, $context)
             === $this->evidence->lineageDirectionFor($candidate, $context))->values();
+    }
+
+    /** Only the current causal Gate may be selected, when its calculation agrees. */
+    public function operationalFor(Phase $phase, ?ParticipationContext $context = null): Collection
+    {
+        return $this->forPhase($phase, $context)->where('id', $phase->gate_proposition_id)->values();
     }
 }

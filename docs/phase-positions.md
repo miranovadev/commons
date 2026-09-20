@@ -6,6 +6,13 @@ process. Ownership remains `Proposition → Phase → Cycle → Context Horizon 
 Another Participant, Cycle, receipt, attestation or measurement cannot promote
 that position. A producing Phase cannot be changed once it owns Propositions.
 
+**Phase-position compatibility and Commit Region membership do not confer
+traversal eligibility.** Traversal additionally requires the appropriate causal
+relationship to the Participant's current Gate. Forward movement follows that
+causal continuation; recovery follows recorded ancestry backward. A matching
+register, Horizon or visible card supplies neither relationship. **No edge means
+no movement.**
+
 | Producing phase | Emergence Write | Settlement Write | Operational role |
 | --- | --- | --- | --- |
 | 1 Distinguish | Activity | Signal | Persist Gate |
@@ -22,22 +29,39 @@ creating Horizon, tier and Domain register. No persisted late-phase flag or data
 migration is required. Its SQL scope and hydrated predicate have the same matrix.
 
 `CommitRegionService::membersFor` retains early material as contextual and causal
-history. Operational pools additionally select an explicit producing position:
+history. Commit Region membership defines calculation/context scope only where
+an operation explicitly requires it; it never creates a traversal edge. The
+Homeostatic populations select an explicit producing position:
 Mediate reads Constrain, Bias consumes Mediate, and Order consumes Bias. Mediate's
 anchor must be the preceding Disperse Gate in the same Cycle, at Constrain;
 reconciliation counterparts must be its corresponding Reads' immediate Disperse
 children. Direction, evidence, activity and consumption rules still apply within
 those pools. Order Read ancestry stops at Mediate-position material.
 
+Mediate — Read and Bias — Gate may calculate across regional lineages. Mediate's
+compatible foreign Gates are reconciliation operands only; Reconcile creates
+both incoming causal edges. Bias exposes only the current causal Gate, never the
+other Gates in its calculation result. Closure, performed during Order — Write,
+evaluates each causally local Bias-produced Write independently using its own
+lineage and participation history. It does not enumerate regional Writes.
+Local expressive Writes remain visible, with their ordinary expressive actions;
+Commit requires that specific Write's full prerequisites. Only its own direct
+Committal child is a Traverse target.
+
 Writes, instruments, attestations, revisions and expressive Traverse preserve
 the current producing position. Revision chains cannot cross repeated register
-positions. Order Traverse selects established Order Committals sourced from
-Bias-position material in the current region. Generation and progression check
+positions. Bias Traverse selects only the causal Write continuation of the
+current Gate, including its frozen successful classification when otherwise
+eligible. Order Traverse selects only the established Committal produced directly
+from the current Bias classification Gate. Another Bias-position source or
+Committal in the same region is not a traversal target. Generation and progression check
 the source and resulting positions, so direct calls cannot bypass schemas.
 
-Commit admissibility separately reports `requirements.phase_position`. Region
+Commit admissibility separately reports `requirements.phase_position` and
+`requirements.causal_write`. Region
 membership, grounded evidence, aligned Closure and the unused direct source are
 also required. An attractive Constrain Canon or Concord remains ineligible.
+Even a matching Bias position does not supply a missing causal movement edge.
 Calculation-local region pools are cached; direct admissibility checks inspect
 the selected source and its ancestry without rescanning the whole region.
 
@@ -72,3 +96,4 @@ only the correct position reaches schemas, options and direct dispatch. The
 complete collaborative path remains covered by `FullEvidenceFlowTest` and
 `OperationalClosurePathTest`. Semantic fixtures specify their producing position
 explicitly rather than substituting a matching register label.
+

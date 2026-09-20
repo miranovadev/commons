@@ -20,6 +20,7 @@ final readonly class PhaseGenerationService
         private PropositionOwnershipService $ownership,
         private PropositionAvailabilityService $availability,
         private PhasePositionService $positions,
+        private CausalWriteService $writes,
     ) {}
 
     public function available(Phase $phase, string $action, ?ParticipationContext $context = null, ?Proposition $position = null): bool
@@ -33,12 +34,12 @@ final readonly class PhaseGenerationService
             return false;
         }
         if ($action === 'proposition.commit') {
-            // A preview with no selected source must not suppress other eligible Gates.
+            // A preview with no selected source must not suppress other eligible local Writes.
             return $phase->kind === PhaseKind::Order && ($position === null
                 || ($this->positions->matches($position, $phase, PhaseKind::Bias) && $this->availability->mutable($position, $context)));
         }
         if ($action === 'proposition.reclassify' && $phase->kind === PhaseKind::Bias && $position === null) {
-            return app(BiasGateService::class)->forPhase($phase, $context)
+            return app(BiasGateService::class)->operationalFor($phase, $context)
                 ->contains(fn (Proposition $candidate) => $this->available($phase, $action, $context, $candidate));
         }
         if (! in_array($action, ['proposition.variant', 'proposition.reclassify', 'proposition.commit'], true)) {
@@ -49,6 +50,9 @@ final readonly class PhaseGenerationService
         // has a Gate. Operational plans always use the Phase's recorded Gate.
         $gate = $position ?? $context?->propositions->get($phase->gate_proposition_id) ?? $phase->gate()->first();
         if ($gate === null || ! $this->positions->acceptsGate($phase, $gate)) {
+            return false;
+        }
+        if ($phase->kind === PhaseKind::Bias && $gate->id !== $phase->gate_proposition_id) {
             return false;
         }
         if ($this->availability->committed($gate, $context)
@@ -117,10 +121,13 @@ final readonly class PhaseGenerationService
         );
     }
 
-    /** Commits end the region, so its Write row is just outside expressive membership. */
+    /** Only the direct Committal children of causally local Bias Writes preserve a route. */
     public function committedWrites(Phase $phase, ?ParticipationContext $context = null): Collection
     {
-        $sources = $this->positions->filter($this->regions->membersFor($context?->propositions->get($phase->gate_proposition_id) ?? $phase->gate, $context), $phase, PhaseKind::Bias)->pluck('id');
+        if (! in_array($phase->kind, [PhaseKind::Bias, PhaseKind::Order], true)) {
+            return collect();
+        }
+        $sources = $this->writes->forPhase($phase, $context)->pluck('id');
 
         return $this->positions->scope(Proposition::query()->active(), $phase, PhaseKind::Order, 'committal')->whereHas('commitmentSnapshot')
             ->whereHas('phase', fn ($query) => $query->where('kind', PhaseKind::Order->value)

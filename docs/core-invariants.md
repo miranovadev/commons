@@ -5,6 +5,10 @@ If an implementation detail conflicts with an invariant, the invariant takes
 precedence. These are normative constraints on The Commons model and govern the
 more specific operational rules documented beneath them.
 
+The authority order is: normative Commons invariants, then explicit phase and
+operation semantics, then implementation representation. Implementation history
+does not override the movement topology defined in Invariant 17.
+
 Persistence, final-attempt Exhaustion, recursive recovery, Horizon Tragedy, and observer
 separation are normative; see [the exhaustion invariants](#persistence-exhaustion-recovery-and-observation).
 
@@ -61,6 +65,10 @@ ancestry. This includes, where applicable:
 
 Expressive ancestry must not silently replace Committal ancestry where the model
 defines the Commit as the governing reference.
+
+Commit Region membership defines calculation/context scope only where a Commons
+operation explicitly requires it. It does not define Participant movement and
+never creates a traversal edge. No edge means no movement.
 
 ## 6. Local Change Does Not Rewrite the Frame
 
@@ -130,15 +138,20 @@ lineage, ancestry, ownership, provenance, gate semantics, and participant positi
 Measurements and derived values may select, compare, or rank candidates within
 a valid structural scope, but must not silently redefine that scope.
 
+A calculation candidate is not thereby a movement candidate. Visibility does
+not imply actionability, and actionability implies movement only when the
+operation is structurally authorised from the current Gate (Invariant 17).
+
 ## 11. Cycles Begin at Committal Propositions
 
 A Cycle begins from a Committal Proposition. Expressive Propositions cannot serve
-as Cycle entry points. After ordinary completion, the next Cycle continues at the exact selected Committal. First entry and recovery after Rest rank eligible Committal Propositions using
-Potential Charge as observed from the Participant's current position, including
-substrate attenuation. Raw global Potential Charge alone does not determine
-entry when a current position exists. Any entry fallback remains Committal and
-respects that observational position. A prospective Commitment is not eligible
-until the Committal Proposition exists.
+as Cycle entry points. After ordinary completion, the next Cycle continues at
+the exact Committal reached through the current Gate's causal continuation;
+there is no fresh global selection. First entry has no prior position and uses
+its documented Committal selection. Recovery after Rest ranks only Committals
+on the recorded backward lineage, with actual backward-distance attenuation.
+Neither Potential nor a fallback can admit a sibling, descendant or unrelated
+Committal. A prospective Commitment is not eligible until it exists.
 
 Rest recovery walks backward from the actual participant position, using recorded
 arrival provenance at multi-input Writes. Only ancestral Committals on that path
@@ -197,6 +210,63 @@ contextual region material; grounding and favourable Closure cannot promote it.
 Mediate reads Constrain and reconciles Disperse children; Bias consumes Mediate.
 See the [complete phase-role matrix](phase-positions.md).
 
+Phase-position compatibility and Commit Region membership do not confer
+traversal eligibility. Traversal additionally requires the appropriate causal
+relationship to the Participant's current Gate. No edge means no movement.
+
+## 17. Lineage-Constrained Participant Movement
+
+A positioned Participant may change structural position only by forward
+progression through an explicit causal edge from its current Gate into a
+legitimate continuation, or by recovery backward along its recorded causal
+lineage. A structurally authorised contribution may create that forward edge;
+Traverse follows an already-existing edge and never creates one.
+
+There is no sideways movement. A Proposition is not a movement destination
+merely because it shares a Commit Region, Context Horizon, register or producing
+Phase position; is visible in context or included in a measurement/Homeostatic
+population; has greater Potential; was previously committed; or is structurally
+nearby. None of these properties creates a causal movement edge.
+
+**No edge means no movement.**
+
+These three contracts must remain distinct:
+
+| Contract | Authorised scope | Movement consequence |
+| --- | --- | --- |
+| Movement topology | Forward causal continuations of the current Gate; recorded causal ancestry backward for recovery | Only these edges permit a change of position, subject to the operation's other rules |
+| Homeostatic population | Regional Reads for Mediate and Gates for Bias; each causally local Write's own lineage/participation history for Closure | Calculation, comparison or selection does not create edges or relocate the Participant |
+| Context visibility | Historical and evidentiary material admitted by the context contract | Visibility grants neither actionability nor movement |
+
+Mediate — Read and Bias — Gate may calculate across the defined regional
+populations. Only Mediate exposes compatible foreign-lineage Gates operationally,
+as reconciliation operands, never movement destinations. Reconcile creates causal
+edges from both inputs to its new result. Bias exposes only the current causal
+Gate and that Gate's legitimate Write continuations; other calculated Gates are
+not operational options.
+
+Closure, performed during Order — Write, evaluates each causally local expressive
+Write independently from its own Depth/Cadence, lineage/history and participation.
+It is not a regional cross-lineage comparison. Every such Write remains visible
+and retains its ordinary expressive actions. Closure inadmissibility removes
+Commit eligibility, not the Write or its other valid actions. Only that Write's
+own direct Committal continuation may be traversed. Measurement selection never
+expands operational populations or movement topology.
+
+An unrelated population member must never appear as a Traverse target. Visibility
+does not imply actionability. Actionability does not imply movement unless the
+operation itself is structurally authorised from the current Gate. Reconcile,
+for example, may use an authorised counterpart to create a new result with an
+explicit edge from the current Gate; it does not move the Participant to that
+counterpart.
+
+Recovery begins at the actual current position and walks recorded arrival
+provenance backward. Only ancestral Committals on that path may compete, using
+actual backward edge distance. The current Horizon confines the search until
+exhaustion permits crossing its opening boundary, after which the same lineage
+continues into previous Horizons. Recovery never resets to a Horizon provenance
+node, searches siblings or descendants, or takes an unused parent as a shortcut.
+
 ## Relationship to More Specific Rules
 
 These invariants govern more detailed operational rules; they do not replace
@@ -237,7 +307,16 @@ rather than inferring semantics from current code behaviour.
 
 **Final-attempt allowance:** Stage 5 explicitly extends only the numerical requirement above: an open Horizon's unconsumed Tragedy authorizes one shared Distinguish/Disperse Variant at zero Potential. Existing structural and evidence prerequisites remain mandatory. The successful Variant atomically records that unique attempt and advances its own epoch. Receipt creation, loading and consumption do not change epochs. See [the lifecycle rationale](branch-tragedy.md#attainable-final-attempt).
 
-**Successful-route continuity:** Commitment freezes its direct expressive source against further mutation, but does not break traversal through that classification. Bias may traverse a frozen classification with an existing operational Commit in its exact Horizon and Commit Region; Order then traverses the existing Commit. Neither step creates content, votes or failure evidence.
+**Successful-route continuity:** Commitment does not destroy an already-existing
+causal route. When Bias is entered through the exact Gate whose causal
+continuation produced a frozen classification, that classification remains
+traversable through its existing causal edge, subject to the ordinary traversal
+prerequisites. Order may then traverse the Commit produced directly from that
+classification. A frozen classification elsewhere in the same Commit Region or
+Context Horizon is not traversable unless it is the actual causal continuation
+of the current Gate. Successful-route continuity preserves an existing edge;
+it never manufactures one. Neither step creates content, votes or failure
+evidence, and the frozen source remains immutable.
 
 **Exhausted successful continuation:** After explicit child-Horizon Exhaustion, an incoming successful route remains contextual history without being falsified as failure. This propagates through an expressive source only when all its other outgoing continuations are exhausted or failed at their exact current epoch. Live alternatives and Committals stop propagation. Resolved routes are not action targets or viable generation options, and their historical gain does not supply exploration capacity.
 
@@ -263,3 +342,4 @@ and exploration epoch; Horizons become exhausted permanently. Failure history
 is immutable. Only a successful Variant advances its own position's epoch.
 Spent propositions remain contextual evidence without Traverse or Attestation
 targets; a later epoch restores normal eligibility without erasing history.
+

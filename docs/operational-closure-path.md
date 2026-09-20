@@ -6,4 +6,11 @@ The shared fixture chooses only actions in each fresh authoritative schema, supp
 
 The route spans multiple Cycles: creation, evidence, fresh judgment and traversal need not happen in a single seven-action pass. Order receives a fresh Bias classification that must earn its own Attestation before Commit. Loaded Reinforcement remains optional. Normal terminal completion prepares the next Cycle at the exact committed Proposition.
 
+The normative route is constrained by causal edges from each current Gate. Bias
+may traverse only its causal Write classification, and Order only that
+classification's direct Commit. Regional Homeostatic calculations and visible
+history do not add destinations; recovery walks recorded ancestry backward.
+No edge means no movement. These historical positive journeys alone do not
+certify rejection of unrelated same-region targets.
+
 See [phase flow](flow-integration.md) and [the complete test map](horizon-proof-tests.md). PostgreSQL contention tests additionally exercise independent connections, actual row-lock waits, one-winner Receipt consumption, exact-once Tragedy/Exhaustion and rollback-safe events.
