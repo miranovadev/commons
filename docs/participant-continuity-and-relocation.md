@@ -1,5 +1,11 @@
 # Participant continuity and relocation
 
+All movement is lineage-constrained. Forward progression follows an explicit
+causal continuation from the current Gate; recovery walks recorded ancestry
+backward. Commit Region membership, Context Horizon membership, matching
+phase/register position, visibility and greater Potential cannot relocate a
+Participant. No edge means no movement.
+
 A successful Commit creates local continuation. Phase 7 completes the current Cycle and stores the new Committal as the committing Participant's `current_proposition_id`. After the terminal write commits, preparation creates the next Cycle and Phase 1, using that Committal as both Gate and Provenance, even when it has no descendants and zero Potential.
 
 ## Entry paths
@@ -8,14 +14,19 @@ Previously, every positioned Participant's ordinary re-entry called `PotentialCh
 
 `CycleEntryService::continuationFor()` now distinguishes local continuity from relocation:
 
-- A retained Committal with a snapshot is already the next local seed. No Potential ranking runs during either the continuity preview or entry.
-- Ordinary completion at an expressive Proposition resumes its own unambiguous Committal region. The expressive position remains stored until the next Cycle begins.
+- The retained Committal reached at normal terminal completion is already the
+  next local seed. No Potential ranking runs during either continuity preview
+  or entry; a snapshot elsewhere does not authorise relocation.
+- Ordinary terminal completion is at the exact Committal reached through Commit
+  or its direct existing Commit edge. An anomalous retained expressive position
+  is not authority to jump to any Committal in its region; recovery must follow
+  its recorded backward lineage.
 - Rest ends the Cycle and supplies a possible exploration witness. Only the explicit structural proof can mark a path or basin exhausted; an empty fresh basin remains open. Recovery uses the maintained `recoverFrom()` search and may retain that basin. A positioned Participant with no valid local Committal seed also needs recovery.
 - Initial entry without a position still uses `selectFor()`. Origin creation keeps its existing bootstrap path.
 
 Recovery walks backward along the participant's actual lineage, starting in the completed Cycle Horizon. Only ancestral Committals encountered on that path compete. A multi-input Write uses the participant's recorded arrival Gate; inherited history follows creating provenance. After genuine Horizon exhaustion, the same walk can continue into the immediate parent. See [recovery basins](recovery-basins.md).
 
-Each basin contains its opening boundary Committal and non-boundary Committals created in that Horizon. Only those on the participant's backward path compete, using actual backward edge distance and `1 / (1 + d)^2` attenuation. Effective Potential ties use effective Charge, then shorter distance and stable ID. There is no age, sequence, or depth bonus. The exhausted position is excluded as both a destination and a source of continuation evidence.
+Each basin contains its opening boundary Committal and non-boundary Committals created in that Horizon. Only those on the participant's backward path compete, using actual backward edge distance and `1 / (1 + d)^2` attenuation. Effective Potential ties use effective Charge, then shorter distance and stable ID. There is no age, sequence, or depth bonus. An eligible retained Committal can be a distance-zero candidate; exhausted status is established by proof, not merely by being the current position.
 
 Raw Potential still uses measurable outgoing expressive continuations up to the next Committal, restricted to the candidate's Domain basin. Snapshots and measurements retain their existing definitions. Initial entry, ordinary continuity, and local Phase traversal remain unchanged. Origin remains eligible through provenance, including at zero Potential. A first no-Potential Rest records [Tragedy](branch-tragedy.md) and uses the same lineage-constrained recovery. Only a later failed attempt after its Receipt is exercised proves Exhaustion and permits outward recovery. Origin remains persistent even when its Horizon eventually exhausts.
 
@@ -28,6 +39,13 @@ If Commit X directly opens H3, selecting X enters H3 even after H3 has a recorde
 Recovery can move backward across any number of Domains. The selected Horizon supplies the new Cycle's vocabulary: Signal/Stance/Concord for Settlement, Activity/Frontier/Canon for Emergence. Historical Horizon closure markers, ownership and boundary snapshots remain intact. Later boundary-producing Commits can establish additional direct child Horizons of that historical owner.
 
 ## Operational registers
+
+Commit Region membership defines calculation/context scope only where a Commons
+operation explicitly requires it. It never creates a traversal edge. Mediate —
+Read, Bias — Gate and Closure / Order — Write may evaluate their specified
+regional populations; the Participant remains on its own causal lineage.
+Register/phase compatibility, contextual visibility and calculation membership
+do not replace structural authority from the current Gate.
 
 `RegisterPosition` describes structural roles for comparisons: Activity/Signal, Frontier/Stance and Canon/Concord remain analogous. Correspondence calculations retain that structural mapping.
 

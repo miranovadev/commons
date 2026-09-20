@@ -1,5 +1,12 @@
 # Closure hysteresis and Domain transitions
 
+Closure / Order — Write evaluates its explicitly defined regional Homeostatic
+population. Commit Region membership defines calculation/context scope only;
+it never creates a traversal edge. The Participant remains on its own causal
+lineage. A measurement candidate or visible source is not automatically an
+action target. Order Traverse requires the Commit produced directly from the
+current classification Gate. No edge means no movement.
+
 Order evaluates the proposed Commit node and edge with the same post-Commit
 active-head state used by actual Commitment. The head inherits its Gate's Phase
 touch history, effective Attestations and completed Receipts through the Commit

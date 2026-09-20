@@ -36,6 +36,12 @@ Exhaustion additionally checks that the consuming classification lies on the res
 
 Tragedy retains the terminal position and uses [normal backward-lineage recovery](recovery-basins.md), including intermediate ancestral Committals. It neither sets nor honors a direct opener override. After Exhaustion, recovery may continue into the immediate parent Horizon along the same path. It does not move other Participants directly. A parent's Tragedy and Exhaustion each require their own local proof; child failure alone cannot exhaust the parent.
 
+Only recorded ancestral Committals compete, at actual backward edge distance
+from the original terminal position. Recovery never resets to a Horizon
+provenance node or searches siblings or descendants. A shared Tragedy Receipt,
+regional calculation population or visible exhausted history creates no
+movement edge. No edge means no movement.
+
 Origin persists uniquely even if the Origin Horizon reaches Exhaustion. Its exhausted Committal children remain in the substrate and local context. No action deletes, prunes or forgets these records.
 
 An incoming successful route whose child Horizon has exhausted is contextual

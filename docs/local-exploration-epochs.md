@@ -5,6 +5,13 @@ It corrects epoch identity and current spentness only. It does not change Varian
 evidence/Potential prerequisites, recovery selection, Bias traversal visibility,
 the Tragedy recovery override, or suite/Actions selection.
 
+That boundary records historical Stage 3 scope, not present movement authority.
+[Invariant 17](core-invariants.md#17-lineage-constrained-participant-movement)
+requires a forward causal continuation from the current Gate or recorded ancestry
+backward. Position identity and restored epoch eligibility cannot create a
+movement edge. Historical selected-source provenance below describes the stored
+output's slot; it never authorises a jump from an unrelated Phase Gate.
+
 ## Exact position identity
 
 `ExplorationPositionService` owns the tuple:

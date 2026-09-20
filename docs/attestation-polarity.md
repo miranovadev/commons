@@ -4,6 +4,13 @@ These rules apply the [Core Invariants](core-invariants.md), particularly
 measurement independence (1), canonical meaning (3), Committal provenance (5),
 fixed frames (6), distinct reference frames (7), and evidence preservation (8–9).
 
+Commit Region membership defines calculation/context scope only where a Commons
+operation explicitly requires it. A shared polarity, matching position or visible
+Proposition never creates a movement edge. Participant movement follows the
+current Gate's explicit causal continuation or recorded ancestry backward;
+measurement ancestry and Participant arrival provenance remain distinct.
+No edge means no movement.
+
 Support and Refute label **Attestations**, never Propositions or Matrix
 measurement coordinates. Correspondence, Chirality and Closure remain the three
 measurements. Effective Attestation direction is evidence interpreted in a fixed
@@ -72,6 +79,12 @@ whose retained Correspondence directions match the anchor, including numeric
 zeros. Gate options are the active immediate Gate-register children of those
 Reads. Their own Correspondence and Attestation values do not filter them.
 
+This is the Homeostatic Mediate — Read population. Bias — Gate and Closure /
+Order — Write likewise use their specified regional calculation populations.
+These are the only deliberate cross-lineage regional Homeostatic considerations;
+they do not relocate the Participant. An authorised Reconcile creates an edge
+from the current Gate to its new result, not a jump to the other Gate.
+
 Bias compares each active head with its own causal ancestry. The candidate's
 own votes and loaded contributions are excluded from the ancestry aggregate.
 Both reconciliation paths participate, shared ancestors and Attestations are
@@ -87,7 +100,10 @@ have both a completed Receipt and an effective Attestation.
 Unary Bias copies one selected statement exactly into the next register and
 creates one shared hard reclassification result. Reclassify explicitly selects, attaches and consumes one available Horizon
 Receipt by reference, and resets Attestations and Phase touches. Another
-Participant uses that existing Write rather than creating a duplicate.
+Participant may use that existing Write only when independently authorised on
+its own causal lineage. At Bias, Traverse requires the Write continuation of
+the current Gate; a same-region classification elsewhere is not a destination.
+Commitment preserves an existing edge from that exact Gate, never creates one.
 
 ## Upgrade
 

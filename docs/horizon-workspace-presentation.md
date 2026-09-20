@@ -21,11 +21,19 @@ The workspace presents two independent references above Lineage:
 - **Provenance:** the actual structural Committal returned for this Participant.
 
 Neither reference is added to `plan.lineage`. Only the backend's resolved actual
-ancestry enters the Lineage panel. A Participant at Origin in H3 can therefore
-see H3's Concord opener separately from its Canon provenance. Following a real
+ancestry enters the Lineage panel. A Participant at a later non-boundary
+Committal can inspect the Horizon opener separately from its current region's
+provenance. This presentation never legitimises an Origin/Horizon pairing without
+the required ownership or direct opening relationship. Following a real
 boundary-producing Commit, the committing Participant's next Cycle naturally
 uses the same ID for opener, provenance and Gate. Earlier-Phase previews retain
 their existing history-only contract.
+
+An inspectable opener, provenance card or same-Horizon Proposition is not a
+movement destination. Commit Region membership defines calculation/context scope
+only where required; Homeostatic populations remain separate from movement.
+Forward progression needs the current Gate's causal continuation and recovery
+walks recorded ancestry backward. No edge means no movement.
 
 The autonomous `/plan` and inference contracts stay allowlisted and unchanged;
 the new presentation data is confined to `/workspace`.

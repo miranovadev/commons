@@ -2,6 +2,12 @@
 
 **Normative phase model:** [Horizon Tragedy, Receipts and final-attempt Exhaustion](docs/core-invariants.md#persistence-exhaustion-recovery-and-observation). See [the phase flow](docs/flow-integration.md) and [migration compatibility](docs/horizon-proof-migration.md) before rollout.
 
+**Normative movement:** [Lineage-Constrained Participant Movement](docs/core-invariants.md#17-lineage-constrained-participant-movement).
+Forward progression follows explicit causal edges from the current Gate;
+recovery follows recorded ancestry backward. Commit Region/Horizon membership,
+Homeostatic calculation populations and visible context never create movement
+edges. **No edge means no movement.**
+
 An emergent simulation where ideas are allowed to exist, but only if they can persist under constraint.
 
 The Commons provides a shared cognitive substrate in which propositions are distinguished, related, reinforced, and committed through participant-driven cycles. The implementation is built with Laravel, React, Mantine, and RTK Query.

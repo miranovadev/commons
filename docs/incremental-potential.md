@@ -1,5 +1,12 @@
 # Incremental Potential and recovery
 
+Potential projections and regional summaries are calculations, not movement
+authority. Commit Region membership defines calculation/context scope only where
+a Commons operation explicitly requires it. Forward movement requires the
+current Gate's causal continuation; recovery requires recorded ancestry backward.
+Neither greater Potential nor a visible/frontier candidate creates an edge.
+No edge means no movement.
+
 Potential remains the greatest available reduction in absolute Tension before the next Committal boundary:
 
 `max(0, max(abs(committal tension) - abs(expressive tension)))`.

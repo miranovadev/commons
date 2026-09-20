@@ -13,6 +13,14 @@ The graph composes independent visual channels:
 
 Selection follows every causal parent path in the loaded dataset, including reconciliation and historical Committal boundaries. Shared ancestors appear once; descendants are not ancestors. Missing graph history is never invented. Closing the inspector retains selection so the lineage remains available to study.
 
+Graph selection and arrow navigation move the observer's inspection focus only,
+never a Participant. Graph ancestry may display both reconciliation inputs;
+Participant recovery follows its own recorded arrival path. Commit Region
+membership defines calculation/context scope only where an operation requires
+it, and graph visibility, heatmaps or Homeostatic populations create no traversal
+edges. Participant movement requires a causal continuation from the current Gate
+or recorded ancestry backward. No edge means no movement.
+
 Domain remains available as accessible text; decorative silhouettes are omitted. Unrelated cards are faded and greyscale while ancestral paths stay saturated. Isolate Selected Lineage filters the loaded nodes and their connecting edges without changing selection, overlay scales or graph topology. Refute uses Blue 6 and Support Violet, independently of stored direction polarity. Participant identity colours remain independent. Default Tension readouts use dark/light Indigo for negative/positive values; only the explicit Tension lens switches readouts to Blue/Violet. A shared graph context also carries that choice into the inspector.
 
 Topology and parent indexes are memoized per dataset. Ancestry traverses the loaded nodes and edges once per selection, with cycle protection (O(V + E)). Lineage highlighting never rewrites topology or substitutes another inspector target.
