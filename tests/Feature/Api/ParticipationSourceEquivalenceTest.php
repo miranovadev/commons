@@ -12,6 +12,7 @@ use PHPUnit\Framework\Attributes\Group;
 use Tests\Support\ScriptedParticipationTestCase;
 
 #[Group('http-participation')]
+#[Group('integration')]
 #[Group('constitutional')]
 class ParticipationSourceEquivalenceTest extends ScriptedParticipationTestCase
 {

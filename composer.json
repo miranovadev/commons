@@ -76,15 +76,14 @@
         ],
         "test:core": [
             "Composer\\Config::disableProcessTimeout",
-            "@php artisan test --exclude-group=integration-full --exclude-group=query --exclude-group=load --display-warnings --fail-on-empty-test-suite"
+            "@php artisan test --exclude-group=integration --exclude-group=query --exclude-group=load --display-warnings --fail-on-empty-test-suite"
         ],
         "test:integration-full": [
-            "Composer\\Config::disableProcessTimeout",
-            "@php artisan test --exclude-group=query --exclude-group=load --display-warnings --fail-on-empty-test-suite"
+            "@test:integration"
         ],
         "test:constitutional": [
             "Composer\\Config::disableProcessTimeout",
-            "@php artisan test --group=constitutional --exclude-group=integration-full --exclude-group=query --exclude-group=load --display-warnings --fail-on-empty-test-suite"
+            "@php artisan test --group=constitutional --exclude-group=query --exclude-group=load --display-warnings --fail-on-empty-test-suite"
         ],
         "test:replay-domain": [
             "Composer\\Config::disableProcessTimeout",
@@ -101,6 +100,10 @@
         "test:all": [
             "Composer\\Config::disableProcessTimeout",
             "@php artisan test --display-warnings --fail-on-empty-test-suite"
+        ],
+        "test:integration": [
+            "Composer\\Config::disableProcessTimeout",
+            "@php artisan test --group=integration --exclude-group=query --exclude-group=load --display-warnings --fail-on-empty-test-suite"
         ]
     },
     "extra": {

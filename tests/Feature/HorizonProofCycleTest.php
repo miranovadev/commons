@@ -7,7 +7,7 @@ use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\HorizonCycleFixture;
 use Tests\TestCase;
 
-#[Group('integration-full')]
+#[Group('integration')]
 class HorizonProofCycleTest extends TestCase
 {
     use HorizonCycleFixture, RefreshDatabase;
