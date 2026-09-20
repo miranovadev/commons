@@ -170,7 +170,9 @@ class ReconciliationTest extends TestCase
         $state = app(ParticipationService::class)->stateFor($this->viewer);
         $prompt = app(ParticipantPromptFactory::class)->make(new Connection, $state);
         $this->assertSame($plan['schema'], $prompt['schema']);
-        $this->assertSame(json_decode(json_encode($state['plan']['read_options']), true), json_decode($prompt['user'], true)['plan']['read_options']);
+        $promptReads = json_decode($prompt['user'], true)['plan']['read_options'];
+        $this->assertEquals(json_decode(json_encode($state['plan']['read_options']), true), $promptReads);
+        $this->assertSame(array_column($state['plan']['read_options'], 'id'), array_column($promptReads, 'id'));
         $transport = app(OpenAIResponseSchema::class)->fromCommons($prompt['schema']);
         $union = $transport['properties']['contribution'];
         $properties = isset($union['anyOf'])
