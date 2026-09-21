@@ -33,7 +33,7 @@ Persistent state is not an ever-growing dump of all remembered evidence in every
 inference packet. Source text is data, never instructions.
 
 The domain `clear` operation deactivates a load and recalculates its contribution.
-Gate `receipt_options.unload` exposes that desired state alongside the normal contribution. `receipt_context_events`
+Gate `receipt_options.unload` exposes that desired state alongside a forward Phase contribution (never Rest). `receipt_context_events`
 preserves each load/clear transition with its Phase and substrate ledger sequence, even when the same state row
 is reloaded. No Receipt, historical allocation or commitment snapshot is deleted.
 All mutations acquire Substrate, Participant and Phase locks in that order.

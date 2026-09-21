@@ -2,65 +2,69 @@
 
 namespace App\Services;
 
-use App\Models\Participant;
+use App\Enums\PhaseKind;
+use App\Models\Cycle;
+use App\Models\Phase;
 use App\Models\Proposition;
+use App\Models\Tragedy;
 use App\Services\Participation\ParticipationContext;
 use Illuminate\Support\Facades\DB;
 
-/** Recovery entries already persist the carrier's route. Receipt/proof rows stay immutable. */
+/** Mutable basin projection only. Receipt and Tragedy provenance remain immutable. */
 final class TragedyReceiptScopeService
 {
     public function seeds(ParticipationContext $context): array
     {
-        return $context->remember('tragedy-receipt-scopes', function () use ($context): array {
-            $tragedies = DB::table('horizon_tragedies as tragedy')
-                ->join('phases as terminal', 'terminal.id', '=', 'tragedy.phase_id')
-                ->join('cycles as start', 'start.id', '=', 'terminal.cycle_id')
-                ->join('participants as carrier', 'carrier.id', '=', 'tragedy.participant_id')
-                ->where('carrier.substrate_id', $context->substrate->id)
-                ->whereNotExists(fn ($q) => $q->selectRaw('1')->from('receipt_consumptions as consumed')
-                    ->whereColumn('consumed.receipt_id', 'tragedy.receipt_id'))
-                ->get(['tragedy.*', 'start.sequence as start_sequence']);
-            if ($tragedies->isEmpty()) {
-                return [];
-            }
-            // Only entry after Rest is recovery; initial entry and post-Commit rollover never carry it.
-            $entries = DB::table('cycles as next')
-                ->join('cycles as previous', fn ($join) => $join->on('previous.participant_id', '=', 'next.participant_id')
-                    ->whereRaw('previous.sequence = next.sequence - 1'))
-                ->join('phases as entry', fn ($join) => $join->on('entry.cycle_id', '=', 'next.id')->where('entry.kind', 1))
-                ->whereIn('next.participant_id', $tragedies->pluck('participant_id'))
-                ->whereNotNull('previous.rested_at')->orderByDesc('next.sequence')
-                ->get(['next.participant_id', 'next.sequence', 'entry.gate_proposition_id']);
-            $seeds = app(ReceiptRegionService::class)->seeds($context);
-            $result = [];
-            foreach ($tragedies as $tragedy) {
-                $result[$tragedy->receipt_id] = $seeds[$tragedy->terminal_proposition_id] ?? null;
-                $entry = $entries->first(fn ($entry) => $entry->participant_id === $tragedy->participant_id
-                    && $entry->sequence > $tragedy->start_sequence);
-                if ($entry === null) {
-                    continue;
-                }
-                $terminal = $context->propositions->get($tragedy->terminal_proposition_id)
-                    ?? Proposition::find($tragedy->terminal_proposition_id);
-                $destination = $context->propositions->get($entry->gate_proposition_id)
-                    ?? Proposition::find($entry->gate_proposition_id);
-                if ($terminal === null || $destination?->tier !== 'committal') {
-                    $result[$tragedy->receipt_id] = null;
+        return $context->remember('tragedy-receipt-scopes', fn (): array => DB::table('tragedy_receipt_scopes as scope')
+            ->join('horizon_tragedies as tragedy', 'tragedy.id', '=', 'scope.tragedy_id')
+            ->join('context_horizons as horizon', 'horizon.id', '=', 'tragedy.context_horizon_id')
+            ->where('horizon.substrate_id', $context->substrate->id)
+            ->whereNotExists(fn ($q) => $q->selectRaw('1')->from('receipt_consumptions as consumed')
+                ->whereColumn('consumed.receipt_id', 'tragedy.receipt_id'))
+            ->pluck('scope.current_committal_id', 'tragedy.receipt_id')->all());
+    }
 
-                    continue;
-                }
-                try {
-                    $path = app(BackwardRecoveryLineage::class)->distances($terminal,
-                        Participant::find($tragedy->participant_id),
-                        fn (string $id) => DB::table('supersessions')->where('target_proposition_id', $id)->pluck('source_proposition_id')->all());
-                } catch (\DomainException) {
-                    $path = [];
-                }
-                $result[$tragedy->receipt_id] = isset($path[$destination->id]) ? $destination->id : null;
-            }
+    /** Called in the Tragedy creation transaction; ordinary Receipts have no projection. */
+    public function initialize(Tragedy $tragedy): void
+    {
+        $terminal = Proposition::findOrFail($tragedy->terminal_proposition_id);
+        DB::table('tragedy_receipt_scopes')->insertOrIgnore([
+            'tragedy_id' => $tragedy->id,
+            'current_committal_id' => app(CommitRegionService::class)->seedFor($terminal)?->id,
+        ]);
+    }
 
-            return $result;
-        });
+    /** CycleEntry owns the Substrate lock and has already selected this exact destination. */
+    public function followRecovery(Phase $entry): void
+    {
+        if (DB::transactionLevel() === 0) {
+            throw new \DomainException('Tragedy scope moves with the recovery transaction.');
+        }
+        if ($entry->kind !== PhaseKind::Distinguish) {
+            return;
+        }
+        $previous = Cycle::where('participant_id', $entry->cycle->participant_id)
+            ->where('sequence', $entry->cycle->sequence - 1)->whereNotNull('rested_at')
+            ->whereNotNull('completed_at')->first();
+        $terminal = $previous?->phases()->whereNotNull('completed_at')->latest('kind')->first();
+        if ($terminal?->gate === null || $entry->gate?->tier !== 'committal') {
+            return; // Initial entry and ordinary completion/Commit never transport it.
+        }
+        $source = app(CommitRegionService::class)->seedFor($terminal->gate);
+        if ($source === null || $source->id === $entry->gate_proposition_id) {
+            return;
+        }
+        $scopes = DB::table('tragedy_receipt_scopes')->where('current_committal_id', $source->id)
+            ->whereIn('tragedy_id', DB::table('horizon_tragedies')->whereNotIn('receipt_id',
+                DB::table('receipt_consumptions')->select('receipt_id'))->select('id'));
+        if (! (clone $scopes)->exists()) {
+            return;
+        }
+        $path = app(BackwardRecoveryLineage::class)->distances($terminal->gate, $entry->cycle->participant,
+            fn (string $id) => DB::table('supersessions')->where('target_proposition_id', $id)->pluck('source_proposition_id')->all());
+        if (! isset($path[$entry->gate_proposition_id])) {
+            return;
+        }
+        $scopes->update(['current_committal_id' => $entry->gate_proposition_id, 'recovery_phase_id' => $entry->id]);
     }
 }

@@ -40,6 +40,7 @@ final class TragedyService
             'observed_field_version' => $proof['field_version'], 'occurred_at' => now(),
         ]);
         $tragedy->save();
+        app(TragedyReceiptScopeService::class)->initialize($tragedy);
         app(LedgerService::class)->record($receipt);
         app(RealtimePublisher::class)->horizon($horizon->id, $horizon->substrate_id,
             ['type' => 'horizon.tragedy', 'tragedy_id' => $id, 'receipt_id' => $receipt->id]);

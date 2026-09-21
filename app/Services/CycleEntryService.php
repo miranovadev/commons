@@ -222,12 +222,13 @@ final readonly class CycleEntryService
         $cycle = $this->createCycle($participant, $horizon);
         $firstRegister = $cycle->contextHorizon->domain->registerFor(PhaseKind::Distinguish);
 
-        $this->createPhase(
+        $entry = $this->createPhase(
             $cycle,
             PhaseKind::Distinguish,
             $firstRegister,
             $gate,
         );
+        app(TragedyReceiptScopeService::class)->followRecovery($entry);
         $participant->current_proposition_id = $gate->getKey();
         $participant->save();
     }

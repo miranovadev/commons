@@ -218,7 +218,7 @@ Every dynamic Receipt reference is `id`, `type`, `reference`, `loaded`, includin
 
 Only persistently loaded Receipts grounding the current participant-facing Read appear, once each, in the stable `loaded_receipts` evidence layer. Loaded Gate, Write and historical evidence stays metadata. Mediate still exposes its single causal Read anchor; regional calculation inputs never activate evidence. This visibility rule does not change Reinforcement.
 
-Optional `receipt_options: {load: [...], unload: [...]}` accompanies the normal contribution. Both lists enumerate exact eligible current Gate IDs, exclude Tragedy and reject overlap. Idempotent changes commit in the same transaction and affect measurements and the next Phase's cognition. No second inference or cache-warming call occurs. Existing standalone `receipt.read` and Replay eligibility remain compatible.
+Optional `receipt_options: {load: [...], unload: [...]}` accompanies a forward Phase contribution (never Rest). Both lists enumerate exact eligible current Gate IDs, exclude Tragedy and reject overlap. Idempotent changes commit in the same transaction and affect measurements and the next Phase's cognition. No second inference or cache-warming call occurs. Existing standalone `receipt.read` and Replay eligibility remain compatible.
 
 The human transport retains capability and replay lifecycle metadata required by its controls; inactive bodies, signatures and payloads are omitted. Model requests reduce all dynamic Receipt entries to the simple reference shape above. See the normative [Receipt model](receipt-region-context.md).
 

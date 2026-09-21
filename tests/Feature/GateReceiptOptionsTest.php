@@ -3,12 +3,15 @@
 namespace Tests\Feature;
 
 use App\Domain\Evidence\VerifiedHyperlink;
+use App\Enums\PhaseKind;
+use App\Enums\RestReason;
 use App\Models\ParticipantReceiptContext;
 use App\Services\ContributionDispatcher;
 use App\Services\ContributionService;
 use App\Services\InputPlanService;
 use App\Services\InstrumentExecutionService;
 use App\Services\OpenAIResponseSchema;
+use App\Services\ParticipationService;
 use App\Services\ReceiptContextService;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -62,6 +65,46 @@ class GateReceiptOptionsTest extends TestCase
         $this->assertDatabaseCount('receipt_context_events', 2);
         DB::transaction(fn () => app(ReceiptContextService::class)->desired($f->viewer, $f->phase, ['unload' => [$r->id]]));
         $this->assertDatabaseCount('receipt_context_events', 2);
+    }
+
+    public function test_rest_rejects_receipt_options_and_preserves_load_context(): void
+    {
+        [$f] = $this->scenario();
+        $gate = $f->node($f->seed, 'canon', position: PhaseKind::Bias);
+        $f->phase->forceFill(['kind' => PhaseKind::Order, 'write_register' => 'canon', 'gate_proposition_id' => $gate->id])->save();
+        $f->viewer->forceFill(['current_proposition_id' => $gate->id])->save();
+        $instruments = app(InstrumentExecutionService::class);
+        $r = $instruments->complete($instruments->start($f->phase, $gate, 'hyperlink', 'https://example.test/rest'), $gate,
+            verification: new VerifiedHyperlink('example.test/rest', hash('sha256', 'rest'), CarbonImmutable::now()));
+        $this->assertSame([$r->id], app(ReceiptContextService::class)->gateOptions($f->phase)->pluck('id')->all());
+        DB::transaction(fn () => app(ReceiptContextService::class)->desired($f->viewer, $f->phase, ['load' => [$r->id]]));
+        $this->publishPotentialFixture($f->viewer);
+        $schema = app(InputPlanService::class)->forPhase($f->viewer, $f->phase)['schema'];
+        $this->assertArrayHasKey('participant.rest', $schema['$defs']['actions']);
+        $this->assertArrayNotHasKey('receipt_options', $schema['$defs']['actions']['participant.rest']['properties']);
+        if (isset($schema['$defs']['actions']['receipt.read'])) {
+            $this->assertArrayNotHasKey('receipt_options', $schema['$defs']['actions']['receipt.read']['properties']);
+        }
+        $before = ParticipantReceiptContext::get()->map->getAttributes()->all();
+        $events = DB::table('receipt_context_events')->count();
+        foreach ([['load' => [$r->id]], ['unload' => [$r->id]], []] as $options) {
+            try {
+                app(ParticipationService::class)->contribute($f->viewer, $f->phase->id,
+                    ['action' => 'participant.rest', 'receipt_options' => $options]);
+                $this->fail('Rest accepted Receipt options');
+            } catch (\InvalidArgumentException) {
+                $this->assertNull($f->phase->fresh()->completed_at);
+                $this->assertNull($f->phase->cycle->fresh()->rested_at);
+                $this->assertSame($before, ParticipantReceiptContext::get()->map->getAttributes()->all());
+                $this->assertDatabaseCount('receipt_context_events', $events);
+            }
+        }
+        app(ParticipationService::class)->contribute($f->viewer, $f->phase->id, ['action' => 'participant.rest']);
+        $this->assertNotNull($f->phase->cycle->fresh()->rested_at);
+        $this->assertSame(RestReason::NoAvailableMove, $f->phase->cycle->fresh()->rest_reason);
+        $this->assertSame($before, ParticipantReceiptContext::get()->map->getAttributes()->all());
+        $this->assertDatabaseCount('receipt_context_events', $events);
+        $this->assertDatabaseCount('horizon_tragedies', 0);
     }
 
     public function test_invalid_receipt_selection_rolls_back_the_normal_contribution(): void

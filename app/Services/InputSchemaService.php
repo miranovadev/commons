@@ -157,7 +157,7 @@ final readonly class InputSchemaService
         }
         $selection = ['type' => 'array', 'uniqueItems' => true, 'items' => ['type' => 'string', 'enum' => $ids]];
         foreach ($schema['$defs']['actions'] as $name => &$action) {
-            if ($name === 'receipt.read') {
+            if (in_array($name, ['receipt.read', 'participant.rest'], true)) {
                 continue;
             }
             $action['properties']['receipt_options'] = ['type' => 'object', 'additionalProperties' => false,

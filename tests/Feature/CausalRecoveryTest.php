@@ -19,6 +19,7 @@ use App\Services\ContextHorizonProjector;
 use App\Services\ContributionDispatcher;
 use App\Services\CycleEntryService;
 use App\Services\HorizonReceiptService;
+use App\Services\InstrumentExecutionService;
 use App\Services\LedgerService;
 use App\Services\Participation\ParticipationContext;
 use App\Services\ParticipationService;
@@ -27,6 +28,8 @@ use App\Services\PotentialChargeService;
 use App\Services\PotentialProjectionService;
 use App\Services\PropositionMeasurementService;
 use App\Services\ReferencePotentialChargeService;
+use App\Services\TragedyFinalAttemptService;
+use App\Services\TragedyReceiptScopeBackfill;
 use App\Services\TragedyReceiptScopeService;
 use App\Services\TragedyService;
 use DomainException;
@@ -62,7 +65,7 @@ class CausalRecoveryTest extends TestCase
             $a = $this->committal($horizon, .5);
             $b = $this->committal($horizon, .5);
             $source = $this->expressive($horizon, $a);
-            $instruments = app(\App\Services\InstrumentExecutionService::class);
+            $instruments = app(InstrumentExecutionService::class);
             $receipt = $instruments->complete($instruments->start($source->phase, $source, 'citation', $a->id), $source);
             $service = app(HorizonReceiptService::class);
             $this->assertContains($receipt->id, $service->available($this->phase($horizon, $a, PhaseKind::Distinguish))->pluck('id'));
@@ -114,40 +117,177 @@ class CausalRecoveryTest extends TestCase
         $this->assertSame($tragedy->participant_id, $carrier->id);
     }
 
-    public function test_unconsumed_tragedy_scope_follows_successive_recovery_entries_then_freezes(): void
+    public function test_real_recovery_by_a_second_participant_retreats_the_shared_basin(): void
     {
-        $far = $this->committal($this->root, .95);
+        $a = $this->committal($this->root, .2);
+        $b = $this->committal($this->root, .95, $a);
+        $c = $this->committal($this->root, .01, $b);
+        DB::table('supersessions')->whereIn('target_proposition_id', [$b->id, $c->id])->update(['type' => 'commit']);
+        $position = $this->expressive($this->root, $c);
+        $this->opportunity($a);
+        $opportunity = $this->expressive($this->root, $b);
+        $this->measurements[$opportunity->id] = 0;
+        $trigger = $this->resting($this->root, $position);
+        $terminal = $trigger->cycles()->latest('sequence')->first()->phases()->first();
+        $a->commitmentSnapshot->forceFill(['calculator_version' => 'origin-bootstrap-v1'])->save();
+        $tragedy = app(TragedyService::class)->record($terminal, ['field_version' => $this->substrate->fresh()->field_version]);
+        $this->refreshMeasurements();
+        $selection = app(PotentialChargeService::class)->recoverFrom($position, $this->root, $trigger);
+        $this->assertSame($b->id, $selection['proposition']->id);
+        try {
+            DB::transaction(function () use ($trigger): void {
+                app(CycleEntryService::class)->prepare($trigger);
+                throw new DomainException('Rollback recovery');
+            });
+        } catch (DomainException $e) {
+            $this->assertSame('Rollback recovery', $e->getMessage());
+        }
+        $this->assertSame($position->id, $trigger->fresh()->current_proposition_id);
+        $this->assertDatabaseHas('tragedy_receipt_scopes', ['tragedy_id' => $tragedy->id, 'current_committal_id' => $c->id]);
+        app(CycleEntryService::class)->prepare($trigger);
+        $this->assertSame($b->id, $trigger->fresh()->current_proposition_id);
+        $this->assertDatabaseHas('tragedy_receipt_scopes', ['tragedy_id' => $tragedy->id, 'current_committal_id' => $b->id]);
+        // Controlled routing values make the existing engine select A on the next real retreat.
+        $this->measurements[$opportunity->id] = .95;
+        $other = $this->resting($this->root, $opportunity);
+        $this->refreshMeasurements();
+        $selection = app(PotentialChargeService::class)->recoverFrom($opportunity, $this->root, $other);
+        $this->assertSame($a->id, $selection['proposition']->id);
+        app(CycleEntryService::class)->prepare($other);
+        $this->assertSame($a->id, $other->fresh()->current_proposition_id);
+        $this->assertDatabaseHas('tragedy_receipt_scopes', ['tragedy_id' => $tragedy->id, 'current_committal_id' => $a->id]);
+        $this->assertNotSame($trigger->id, $other->id);
+        $this->assertSame($trigger->id, $tragedy->fresh()->participant_id);
+        $this->assertSame($b->id, $trigger->fresh()->current_proposition_id);
+    }
+
+    public function test_scope_migration_replays_all_carriers_and_preserves_legacy_proof_rows(): void
+    {
+        $a = $this->committal($this->root, .9);
+        $b = $this->committal($this->root, .5, $a);
+        $c = $this->committal($this->root, .1, $b);
+        $trigger = $this->resting($this->root, $this->expressive($this->root, $c));
+        $terminal = $trigger->cycles()->latest('sequence')->first()->phases()->first();
+        $a->commitmentSnapshot->forceFill(['calculator_version' => 'origin-bootstrap-v1'])->save();
+        $tragedy = app(TragedyService::class)->record($terminal, ['field_version' => $this->substrate->fresh()->field_version]);
+        $this->phase($this->root, $b, PhaseKind::Distinguish, $trigger);
+        $other = $this->resting($this->root, $this->expressive($this->root, $b));
+        $entry = $this->phase($this->root, $a, PhaseKind::Distinguish, $other);
+        $receipt = Receipt::findOrFail($tragedy->receipt_id)->getAttributes();
+        $provenance = $tragedy->getAttributes();
+        $ledger = DB::table('substrate_ledger_entries')->orderBy('id')->get()->all();
+        $migration = require database_path('migrations/2026_09_21_000100_project_tragedy_receipt_basins.php');
+        $migration->down();
+        $migration->up();
+        $this->assertDatabaseHas('tragedy_receipt_scopes', ['tragedy_id' => $tragedy->id,
+            'current_committal_id' => $a->id, 'recovery_phase_id' => $entry->id]);
+        $this->assertSame($receipt, Receipt::findOrFail($tragedy->receipt_id)->getAttributes());
+        $this->assertSame($provenance, $tragedy->fresh()->getAttributes());
+        $this->assertEquals($ledger, DB::table('substrate_ledger_entries')->orderBy('id')->get()->all());
+        // Re-running backfill is idempotent, and packet reads do not replay history.
+        app(TragedyReceiptScopeBackfill::class)->run();
+        $context = new ParticipationContext($entry);
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        $scope = app(TragedyReceiptScopeService::class)->seeds($context);
+        $this->assertSame($scope, app(TragedyReceiptScopeService::class)->seeds($context));
+        $queries = DB::getQueryLog();
+        DB::disableQueryLog();
+        $this->assertCount(1, $queries);
+        $this->assertSame($a->id, $scope[$tragedy->receipt_id]);
+        $this->assertStringNotContainsString('cycles', $queries[0]['query']);
+    }
+
+    public function test_scope_backfill_withholds_ambiguous_legacy_recovery_order_without_rewriting_evidence(): void
+    {
+        $a = $this->committal($this->root, .9);
+        $b = $this->committal($this->root, .5, $a);
+        $trigger = $this->resting($this->root, $this->expressive($this->root, $b));
+        $terminal = $trigger->cycles()->latest('sequence')->first()->phases()->first();
+        $a->commitmentSnapshot->forceFill(['calculator_version' => 'origin-bootstrap-v1'])->save();
+        $tragedy = app(TragedyService::class)->record($terminal, ['field_version' => $this->substrate->fresh()->field_version]);
+        $cycle = (new Cycle)->forceFill(['participant_id' => $trigger->id, 'context_horizon_id' => $this->root->id, 'sequence' => 2]);
+        $cycle->save();
+        // Simulate a legacy recovery with no ordering witness finer than Tragedy's ULID millisecond.
+        $entry = (new Phase)->forceFill(['id' => substr($tragedy->id, 0, 10).'ZZZZZZZZZZZZZZZZ',
+            'cycle_id' => $cycle->id, 'gate_proposition_id' => $a->id, 'kind' => PhaseKind::Distinguish,
+            'write_register' => $this->root->domain->registerFor(PhaseKind::Distinguish), 'started_at' => now()]);
+        $entry->save();
+        $before = Receipt::findOrFail($tragedy->receipt_id)->getAttributes();
+        $migration = require database_path('migrations/2026_09_21_000100_project_tragedy_receipt_basins.php');
+        $migration->down();
+        $migration->up();
+        $this->assertDatabaseHas('tragedy_receipt_scopes', ['tragedy_id' => $tragedy->id, 'current_committal_id' => null]);
+        $this->assertNotContains($tragedy->receipt_id, app(HorizonReceiptService::class)->available($entry)->pluck('id'));
+        $this->assertSame($before, Receipt::findOrFail($tragedy->receipt_id)->getAttributes());
+    }
+
+    public function test_unconsumed_tragedy_follows_the_current_basin_via_another_participant_then_freezes(): void
+    {
+        $oldest = $this->committal($this->root, .95);
+        $far = $this->committal($this->root, .95, $oldest);
         $near = $this->committal($this->root, .5, $far);
-        $position = $this->expressive($this->root, $near);
-        $carrier = $this->resting($this->root, $position);
-        $terminal = $carrier->cycles()->latest('sequence')->first()->phases()->first();
+        $start = $this->committal($this->root, .1, $near);
+        $position = $this->expressive($this->root, $start);
+        $trigger = $this->resting($this->root, $position);
+        $terminal = $trigger->cycles()->latest('sequence')->first()->phases()->first();
         $far->commitmentSnapshot->forceFill(['calculator_version' => 'origin-bootstrap-v1'])->save();
         $tragedy = app(TragedyService::class)->record($terminal, ['field_version' => $this->substrate->fresh()->field_version]);
         $receipt = Receipt::findOrFail($tragedy->receipt_id);
         $original = $receipt->getAttributes();
-        $scope = fn (Phase $phase) => app(TragedyReceiptScopeService::class)->seeds(new ParticipationContext($phase));
-        // Persisted recovery-entry fixtures: each hop is backward on the same actual lineage.
-        $first = $this->phase($this->root, $near, PhaseKind::Distinguish, $carrier);
-        $this->assertSame($near->id, $scope($first)[$receipt->id]);
-        $unrelated = $this->committal($this->root, .8);
-        $otherCarrier = $this->resting($this->root, $position);
-        $other = $this->phase($this->root, $far, PhaseKind::Distinguish, $otherCarrier);
-        $this->assertSame($near->id, $scope($other)[$receipt->id]);
+        $provenance = $tragedy->getAttributes();
+        $scope = fn () => DB::table('tragedy_receipt_scopes')->where('tragedy_id', $tragedy->id)->value('current_committal_id');
+        $follow = fn (Phase $entry) => DB::transaction(fn () => app(TragedyReceiptScopeService::class)->followRecovery($entry));
+        $this->assertSame($start->id, $scope());
+        // Focused persisted recovery witnesses. The selection engine is exercised separately above.
+        $first = $this->phase($this->root, $near, PhaseKind::Distinguish, $trigger);
+        $follow($first);
+        $this->assertSame($near->id, $scope()); // Cannot overshoot the actual C -> B destination.
+        $viewer = $this->phase($this->root, $near, PhaseKind::Distinguish);
+        $this->assertNotSame($trigger->id, $viewer->cycle->participant_id);
+        $this->assertContains($receipt->id, app(HorizonReceiptService::class)->available($viewer)->pluck('id'));
+        $this->assertTrue(app(TragedyFinalAttemptService::class)->available($viewer));
+        $variant = $this->node($viewer, $near);
+        DB::transaction(fn () => app(TragedyFinalAttemptService::class)->record($viewer, $variant));
+        $this->assertDatabaseHas('tragedy_final_attempts', ['tragedy_id' => $tragedy->id, 'proposition_id' => $variant->id]);
+        // The original trigger's normal completion/entry does not carry shared scope.
         $first->forceFill(['completed_at' => now()])->save();
-        $first->cycle->forceFill(['completed_at' => now(), 'rested_at' => now()])->save();
-        $second = $this->phase($this->root, $far, PhaseKind::Distinguish, $carrier);
-        $this->assertSame($far->id, $scope($second)[$receipt->id]);
+        $first->cycle->forceFill(['completed_at' => now()])->save();
+        $normal = $this->phase($this->root, $far, PhaseKind::Distinguish, $trigger);
+        $follow($normal);
+        $this->assertSame($near->id, $scope());
+        // A valid recovery from another region cannot move the basin at B.
+        $elsewhere = $this->resting($this->root, $position);
+        $follow($this->phase($this->root, $far, PhaseKind::Distinguish, $elsewhere));
+        $this->assertSame($near->id, $scope());
+        // D recovers from B, independently of the trigger's current position.
+        $other = $this->resting($this->root, $this->expressive($this->root, $near));
+        $second = $this->phase($this->root, $far, PhaseKind::Distinguish, $other);
+        $this->assertNotSame($trigger->id, $other->id);
+        $follow($second);
+        $this->assertSame($far->id, $scope());
+        $this->assertNotContains($receipt->id, app(HorizonReceiptService::class)->available($viewer)->pluck('id'));
+        $this->assertContains($receipt->id, app(HorizonReceiptService::class)->available($second)->pluck('id'));
         $source = $this->expressive($this->root, $far);
         $classificationPhase = $this->phase($this->root, $source, PhaseKind::Constrain);
         $classification = $this->node($classificationPhase, $source);
         DB::transaction(fn () => app(HorizonReceiptService::class)->consume($classificationPhase, $source, $classification, $receipt->id));
         $consumption = $receipt->fresh()->consumption->getAttributes();
-        $second->forceFill(['completed_at' => now()])->save();
-        $second->cycle->forceFill(['completed_at' => now(), 'rested_at' => now()])->save();
-        $later = $this->phase($this->root, $unrelated, PhaseKind::Distinguish, $carrier);
-        $this->assertArrayNotHasKey($receipt->id, $scope($later));
+        $frozen = DB::table('tragedy_receipt_scopes')->where('tragedy_id', $tragedy->id)->first();
+        $later = $this->resting($this->root, $classification);
+        $follow($this->phase($this->root, $oldest, PhaseKind::Distinguish, $later));
+        $this->assertEquals($frozen, DB::table('tragedy_receipt_scopes')->where('tragedy_id', $tragedy->id)->first());
+        $this->assertArrayNotHasKey($receipt->id, app(TragedyReceiptScopeService::class)->seeds(new ParticipationContext($second)));
         $this->assertSame($consumption, $receipt->fresh()->consumption->getAttributes());
         $this->assertEquals($original, $receipt->fresh()->getAttributes());
+        $this->assertSame($provenance, $tragedy->fresh()->getAttributes());
+        // Rebuilding legacy consumed scope must ignore the later valid recovery to the oldest ancestor.
+        $migration = require database_path('migrations/2026_09_21_000100_project_tragedy_receipt_basins.php');
+        $migration->down();
+        $migration->up();
+        $this->assertDatabaseHas('tragedy_receipt_scopes', ['tragedy_id' => $tragedy->id, 'current_committal_id' => $far->id]);
+        $this->assertSame($consumption, $receipt->fresh()->consumption->getAttributes());
+        $this->assertSame($provenance, $tragedy->fresh()->getAttributes());
     }
 
     public function test_foreign_recovery_entry_cannot_transport_an_unconsumed_tragedy(): void
@@ -160,6 +300,8 @@ class CausalRecoveryTest extends TestCase
         $tragedy = app(TragedyService::class)->record($phase, ['field_version' => $this->substrate->fresh()->field_version]);
         $foreign = $this->committal($this->root, .9);
         $entry = $this->phase($this->root, $foreign, PhaseKind::Distinguish, $carrier);
+        DB::transaction(fn () => app(TragedyReceiptScopeService::class)->followRecovery($entry));
+        $this->assertSame($origin->id, DB::table('tragedy_receipt_scopes')->where('tragedy_id', $tragedy->id)->value('current_committal_id'));
         $this->assertNotContains($tragedy->receipt_id, app(HorizonReceiptService::class)->available($entry)->pluck('id'));
     }
 

@@ -16,8 +16,8 @@ Clear cached configuration with `php artisan config:clear` when switching enviro
 | --- | --- | ---: | --- | --- |
 | Core | `composer test` or `composer test:core` | 595 | Every branch push | <5m / 10m |
 | Integration | `composer test:integration` | 24 | PRs targeting `main` only | <15m / 20m |
-| Query | `composer test:query` | 16 | Manual **Query Regression** | — / 20m |
-| Load | `composer test:load` | 22 | Manual **Load / Concurrency** | — / 30m |
+| Query | `composer test:query` | 16 | Manual, or push to `query/**` / `validate/**` | — / 20m |
+| Load | `composer test:load` | 22 | Manual, or push to `load/**` / `validate/**` | — / 30m |
 | All PHP | `composer test:all` | 657 | Explicit local invocation | No separate workflow |
 | Constitutional | `composer test:constitutional` | 13 | Optional selection across Core/Integration | No separate workflow |
 | Domain replay | `composer test:replay-domain` | 2 | Explicit manual invocation | Outside mandatory discovery |
@@ -47,12 +47,13 @@ separate from execution. Composer's process timeout is disabled for named local
 commands; Actions enforces the job budgets.
 
 Query's optional `profile_sql` dispatch input prints slow SQL/EXPLAIN diagnostics
-and defaults off. Query-count assertions remain enabled independently. Every PHP
+and defaults off. Branch-triggered Query always disables SQL profiling; `profile_sql=true`
+is available only through explicit manual dispatch. Query-count assertions remain enabled independently. Every PHP
 job retains JUnit, a selected-case inventory, event timings and process duration
 even after ordinary test failure. Empty selections, missing cases and skipped
 cases cannot silently produce a successful shard.
 
-## Manual validation
+## Opt-in specialist validation
 
 Once the workflows are on the default branch, select **Run workflow** in Actions
 and choose the candidate branch, or use:
@@ -63,9 +64,21 @@ gh workflow run query.yml --ref my-branch -f profile_sql=true
 gh workflow run load.yml --ref my-branch
 ```
 
-Query and Load have no branch-push or PR trigger, including `ci/query/**` and
-`ci/load/**`. Run Query for query/context/topology or population-growth changes.
-Run Load for transactions, locks, worker coordination and competing writes.
+Query and Load remain exceptional, opt-in validation, not mandatory CI for every
+feature. The branch namespaces express explicit validation intent:
+
+- Use `query/**` only for material changes to query construction, graph/context
+  hydration, topology populations, historical growth, batching, candidate population
+  resolution or performance-sensitive context assembly.
+- Use `load/**` only for material changes to transactions, lock ordering,
+  concurrency, worker coordination, competing writes, idempotent concurrent
+  mutation or contention-sensitive paths.
+- Use `validate/**` when both genuinely apply.
+
+A normal `nova/my-feature` push runs Core only. `query/context-refactor` adds
+Query; `load/locking-refactor` adds Load; `validate/receipt-region-refactor` adds
+both. Do not routinely put feature branches in these opt-in namespaces. Neither
+specialist workflow runs on PR events. Manual dispatch remains available.
 Integration runs automatically for PRs targeting `main`; it has no dispatch or
 special branch namespace. There are no path filters or duplicate Core PR runs.
 

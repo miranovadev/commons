@@ -289,10 +289,6 @@ final readonly class ParticipationService
                 throw new ConflictHttpException('The active field changed during contribution validation. Retry from fresh state.');
             }
             if ($input['action'] === 'participant.rest') {
-                if (isset($input['receipt_options'])) {
-                    app(ReceiptContextService::class)->desired($lockedParticipant, $phase, $input['receipt_options']);
-                    $substrate->refresh();
-                }
                 // Rest changes lifecycle only; it adds no observation/measurement.
                 // A stale proof is discarded and can be retried after this Rest.
                 $validProof = $exhaustion !== null && $exhaustion['stable']
