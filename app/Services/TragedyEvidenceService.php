@@ -11,8 +11,8 @@ final class TragedyEvidenceService
 {
     private function localCommittals(string $horizonId): Builder
     {
-        return DB::table('horizon_exhaustions as exhaustion')
-            ->join('propositions as node', 'node.id', '=', 'exhaustion.opening_proposition_id')
+        return DB::table('commit_region_exhaustions as exhaustion')
+            ->join('propositions as node', 'node.id', '=', 'exhaustion.governing_committal_id')
             ->join('phases as phase', 'phase.id', '=', 'node.phase_id')
             ->join('cycles as cycle', 'cycle.id', '=', 'phase.cycle_id')
             ->where('cycle.context_horizon_id', $horizonId)->where('node.tier', 'committal')

@@ -11,9 +11,8 @@ use Illuminate\Support\Collection;
 final class RecoveryBasinResolver
 {
     public function resolve(ContextHorizon $start, Collection $horizons, Closure $candidatesFor,
-        Closure $canCross, ?Closure $isClosed = null): array
+        Closure $canCross, Closure $isClosed): array
     {
-        $isClosed ??= fn (ContextHorizon $basin): bool => $basin->exhausted_at !== null;
         $horizons = $horizons->where('substrate_id', $start->substrate_id)->keyBy('id');
         $ancestors = [];
         $basin = $horizons->get($start->id)

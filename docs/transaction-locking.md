@@ -105,7 +105,7 @@ in [participation-performance.md](participation-performance.md).
 
 ## Tragedy and recovery
 
-[Horizon failure](branch-tragedy.md) is observed before the Rest transaction. The locked contribution validates phase identity, completed Rest reason and field version, then publishes prepared local failure markers. First failure records one Tragedy/Receipt; a later failure after its Receipt is consumed records one Exhaustion. It never scans a branch under the lock.
+[Horizon failure](branch-tragedy.md) is observed before the Rest transaction. The locked contribution validates phase identity, completed Rest reason and field version, then publishes prepared local failure markers. First regional failure records one Tragedy/Receipt keyed by governing Committal; a later failure on its consumed continuation records one Commit Region Exhaustion. Governing seed, Horizon, field version and receipt lineage are revalidated. It never scans a branch under the lock.
 
 Reclassify takes the Substrate lock before the selected Receipt row, validates scope and structural position, and inserts the unique consumption together with the target, attachment, edge and ledger writes in one transaction. Tragedy and Exhaustion take the Horizon row after the Substrate lock. Unique keys back the application checks. All realtime proof/Receipt invalidations are emitted after commit.
 

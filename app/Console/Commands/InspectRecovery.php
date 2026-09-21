@@ -48,7 +48,7 @@ class InspectRecovery extends Command
                 ? $history->position($participant->position) : $history->forPhase($phase),
             'origin_lineages' => DB::table('origin_branch_memberships')->where('proposition_id', $participant->current_proposition_id)->pluck('root_proposition_id')->all(),
             'would_tragedy' => ($exhaustion['rest_reason'] ?? null) === 'no_remaining_potential'
-                && ! Tragedy::where('context_horizon_id', $phase?->cycle->context_horizon_id)->exists(),
+                && ! Tragedy::where('governing_committal_id', $exhaustion['governing_committal_id'] ?? null)->whereNotNull('governing_committal_id')->exists(),
             ...$inspection,
             'horizon_failure' => $exhaustion,
 

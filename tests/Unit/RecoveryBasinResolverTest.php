@@ -79,7 +79,8 @@ class RecoveryBasinResolverTest extends TestCase
         $emergence->setRawAttributes([...$emergence->getAttributes(), 'exhausted_at' => '2026-09-17 00:00:00']);
         $result = (new RecoveryBasinResolver)->resolve($emergence, collect([$root, $settlement, $emergence]),
             fn (ContextHorizon $basin): Collection => collect($basin->id === 'settlement' ? ['settlement'] : []),
-            fn (ContextHorizon $basin): bool => false);
+            fn (ContextHorizon $basin): bool => false,
+            fn (ContextHorizon $basin): bool => ($basin->getAttributes()['exhausted_at'] ?? null) !== null);
         $this->assertTrue($result['candidates']->isEmpty());
         $this->assertSame(0, $result['fallback_depth']);
         $this->assertSame(['emergence'], array_column($result['searched_basins'], 'context_horizon_id'));
@@ -105,7 +106,8 @@ class RecoveryBasinResolverTest extends TestCase
     {
         return (new RecoveryBasinResolver)->resolve($start, collect($basins),
             fn (ContextHorizon $basin): Collection => collect(in_array($basin->id, $viable, true) ? [$basin->id] : []),
-            fn (ContextHorizon $basin): bool => true);
+            fn (ContextHorizon $basin): bool => true,
+            fn (ContextHorizon $basin): bool => ($basin->getAttributes()['exhausted_at'] ?? null) !== null);
     }
 
     private function chain(): array

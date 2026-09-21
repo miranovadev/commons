@@ -19,21 +19,38 @@ final class ExhaustionService
         return $this->scopeActionable($query);
     }
 
-    /** Reuse a caller's joined Horizon column to keep scoped reads out of nested global subqueries. */
+    /** Correlated first-Commit ancestry; Horizon ownership alone never retires a position. */
     public function scopeActionable(Builder|QueryBuilder $query, ?string $horizonColumn = null): Builder|QueryBuilder
     {
-        return $query->whereNotExists(fn ($q) => $q->selectRaw('1')->from('horizon_exhaustions')
-            ->whereColumn('horizon_exhaustions.opening_proposition_id', 'propositions.id'))
-            ->whereNotExists(function ($closed) use ($horizonColumn): void {
-                $closed->selectRaw('1')->from('horizon_exhaustions as closed_horizon');
-                if ($horizonColumn !== null) {
-                    $closed->whereColumn('closed_horizon.context_horizon_id', $horizonColumn);
-                } else {
-                    $closed->join('cycles as closed_cycle', 'closed_cycle.context_horizon_id', '=', 'closed_horizon.context_horizon_id')
-                        ->join('phases as closed_phase', 'closed_phase.cycle_id', '=', 'closed_cycle.id')
-                        ->whereColumn('closed_phase.id', 'propositions.phase_id');
-                }
-            });
+        return $query->whereNotExists(fn ($q) => $q->selectRaw('1')->from('commit_region_exhaustions as exhaustion')
+            ->whereRaw('exhaustion.governing_committal_id = ('.$this->seedSql().')'));
+    }
+
+    /** Same first-Committal semantics as CommitRegionService, including ambiguous ancestry. */
+    private function seedSql(): string
+    {
+        return <<<'SQL'
+            WITH RECURSIVE ancestry (id, tier) AS (
+                SELECT origin.id, origin.tier FROM propositions origin WHERE origin.id = propositions.id
+                UNION
+                SELECT parent.id, parent.tier FROM propositions parent
+                JOIN supersessions edge ON edge.source_proposition_id = parent.id
+                JOIN ancestry child ON child.id = edge.target_proposition_id
+                WHERE child.tier = 'expressive'
+            ) SELECT MIN(id) FROM ancestry WHERE tier = 'committal' HAVING COUNT(DISTINCT id) = 1
+            SQL;
+    }
+
+    public function regionFor(Phase $phase): ?Proposition
+    {
+        return $phase->gate === null ? null : app(CommitRegionService::class)->seedFor($phase->gate);
+    }
+
+    public function boundaryExhausted(ContextHorizon $horizon): bool
+    {
+        return $horizon->opened_by_proposition_id !== null && DB::table('commit_region_exhaustions')
+            ->where('governing_committal_id', $horizon->opened_by_proposition_id)
+            ->where('context_horizon_id', $horizon->id)->exists();
     }
 
     /** Compatibility entry point: archived retirement markers have no semantic authority. */
@@ -54,14 +71,11 @@ final class ExhaustionService
     /** Presentation over a caller-scoped proposition query; never an action source. */
     public function withHistoricalState(Builder $query): Builder
     {
-        return $query->leftJoin('horizon_exhaustions as opened', 'opened.opening_proposition_id', '=', 'propositions.id')
-            ->join('phases as history_phase', 'history_phase.id', '=', 'propositions.phase_id')
-            ->join('cycles as history_cycle', 'history_cycle.id', '=', 'history_phase.cycle_id')
-            ->leftJoin('horizon_exhaustions as owner', 'owner.context_horizon_id', '=', 'history_cycle.context_horizon_id')
-            ->where(fn ($q) => $q->whereNotNull('opened.context_horizon_id')->orWhereNotNull('owner.context_horizon_id'))
-            ->select(['propositions.id', 'propositions.statement', 'propositions.register', 'propositions.tier', 'propositions.created_at'])
+        return $query->join('commit_region_exhaustions as exhaustion', function ($join): void {
+            $join->whereRaw('exhaustion.governing_committal_id = ('.$this->seedSql().')');
+        })->select(['propositions.id', 'propositions.statement', 'propositions.register', 'propositions.tier', 'propositions.created_at'])
             ->selectRaw("CASE WHEN propositions.tier = 'committal' THEN 'basin' ELSE 'excursion' END as exhaustion_kind")
-            ->selectRaw('COALESCE(opened.exhausted_at, owner.exhausted_at) as exhausted_at');
+            ->addSelect(['exhaustion.exhausted_at', 'exhaustion.governing_committal_id']);
     }
 
     public function inspect(Phase $phase): array
@@ -77,10 +91,14 @@ final class ExhaustionService
     /** Read-only proof that this participant actually continued from the consumed evidence. */
     public function consumedContinuationFor(Phase $phase): ?string
     {
+        $seed = $this->regionFor($phase);
+        if ($seed === null) {
+            return null;
+        }
         $target = ReceiptConsumption::query()->where('context_horizon_id', $phase->cycle->context_horizon_id)
-            ->where('legacy', false)->whereIn('receipt_id', Tragedy::where('context_horizon_id', $phase->cycle->context_horizon_id)->select('receipt_id'))
+            ->where('legacy', false)->whereIn('receipt_id', Tragedy::where('governing_committal_id', $seed->id)->select('receipt_id'))
             ->value('proposition_id');
-        if ($target === null) {
+        if ($target === null || app(CommitRegionService::class)->seedFor(Proposition::findOrFail($target))?->id !== $seed->id) {
             return null;
         }
         $path = app(BackwardRecoveryLineage::class)->distances($phase->gate, $phase->cycle->participant,
@@ -92,7 +110,12 @@ final class ExhaustionService
     /** The caller holds the root and owns a fresh authoritative no-Potential Rest witness. */
     public function afterFailure(Phase $phase, Tragedy $tragedy, array $proof): bool
     {
-        if ($tragedy->phase_id === $phase->id || $proof['rest_reason'] !== 'no_remaining_potential'
+        $seed = $this->regionFor($phase);
+        if ($seed === null || $seed->id !== $tragedy->governing_committal_id
+            || ($proof['governing_committal_id'] ?? null) !== $seed->id
+            || $tragedy->context_horizon_id !== $phase->cycle->context_horizon_id
+            || $this->consumedContinuationFor($phase) !== ($proof['consumed_continuation_id'] ?? null)
+            || $tragedy->phase_id === $phase->id || $proof['rest_reason'] !== 'no_remaining_potential'
             || ($proof['consumed_continuation_id'] ?? null) === null
             || ! ReceiptConsumption::whereKey($tragedy->receipt_id)->where('legacy', false)
                 ->where('context_horizon_id', $phase->cycle->context_horizon_id)
@@ -100,23 +123,28 @@ final class ExhaustionService
             return false;
         }
         $horizon = ContextHorizon::whereKey($tragedy->context_horizon_id)->lockForUpdate()->firstOrFail();
-        $changed = DB::table('horizon_exhaustions')->insertOrIgnore([
+        $changed = DB::table('commit_region_exhaustions')->insertOrIgnore([
+            'governing_committal_id' => $seed->id,
             'context_horizon_id' => $horizon->id, 'tragedy_id' => $tragedy->id, 'receipt_id' => $tragedy->receipt_id,
-            // Origin has no predecessor opening Committal. It remains unique forever.
-            'opening_proposition_id' => $horizon->opened_by_proposition_id,
             'phase_id' => $phase->id, 'terminal_proposition_id' => $phase->gate_proposition_id,
             'observed_field_version' => $proof['field_version'], 'exhausted_at' => now(),
         ]);
         if ($changed) {
-            $horizon->forceFill(['exhausted_at' => now()])->save();
-            $affected = array_values(array_filter([$horizon->id, $horizon->parent_context_horizon_id]));
-            app(FieldMutationService::class)->mark($horizon->substrate_id, $affected,
-                array_values(array_filter([$horizon->opened_by_proposition_id])), measurementsDirty: false);
-            if ($horizon->opened_by_proposition_id !== null) {
-                app(RealtimePublisher::class)->proposition($horizon->opened_by_proposition_id);
+            $boundary = $horizon->opened_by_proposition_id === $seed->id;
+            $origin = $horizon->parent_context_horizon_id === null
+                && $seed->commitmentSnapshot?->calculator_version === 'origin-bootstrap-v1';
+            if ($boundary || $origin) {
+                $horizon->forceFill(['exhausted_at' => now()])->save();
+            }
+            $affected = array_values(array_filter([$horizon->id, $boundary ? $horizon->parent_context_horizon_id : null]));
+            app(FieldMutationService::class)->mark($horizon->substrate_id, $affected, [$seed->id], measurementsDirty: false);
+            app(RealtimePublisher::class)->proposition($seed->id);
+            if ($boundary || $origin) {
+                app(RealtimePublisher::class)->horizon($horizon->id, $horizon->substrate_id,
+                    ['type' => 'horizon.exhausted', 'governing_committal_id' => $seed->id]);
             }
             app(RealtimePublisher::class)->horizon($horizon->id, $horizon->substrate_id,
-                ['type' => 'horizon.exhausted', 'opening_proposition_id' => $horizon->opened_by_proposition_id]);
+                ['type' => 'region.exhausted', 'governing_committal_id' => $seed->id, 'boundary_exhausted' => $boundary]);
         }
 
         return true;

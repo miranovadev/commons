@@ -16,8 +16,7 @@ final class RestReasonService
         }
         $gate = $context?->propositions->get($phase->gate_proposition_id) ?? $phase->gate;
         if ($gate === null || app(ExhaustionService::class)->unavailable($gate)
-            || app(ExhaustedContinuationService::class)->ids($phase, $context)->has($gate->id)
-            || $phase->cycle->contextHorizon->exhausted_at !== null) {
+            || app(ExhaustedContinuationService::class)->ids($phase, $context)->has($gate->id)) {
             return RestReason::NoAvailableMove;
         }
         $state = app(PropositionStateService::class);
@@ -32,7 +31,7 @@ final class RestReasonService
             return RestReason::NoAvailableMove;
         }
 
-        return app(PotentialChargeService::class)->hasRemainingInHorizon($phase)
+        return app(PotentialChargeService::class)->hasRemainingInRegion($phase)
             ? RestReason::NoAvailableMove : RestReason::NoRemainingPotential;
     }
 }

@@ -42,7 +42,7 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
         $this->assertEqualsWithDelta(-0.3436754, $boundary['depth'], 0.0000001);
         $this->assertEqualsWithDelta(-0.9753777, $boundary['cadence'], 0.0000001);
         $this->assertSame(1, DB::table('horizon_tragedies')->count(), $this->traceMessage($state));
-        $this->assertDatabaseCount('horizon_exhaustions', 0);
+        $this->assertDatabaseCount('commit_region_exhaustions', 0);
         $tragedy = DB::table('horizon_tragedies')->sole();
         $receipt = DB::table('receipts')->where('id', $tragedy->receipt_id)->sole();
         $this->assertNotSame($initial['context_horizon_id'], $tragedy->context_horizon_id);
@@ -82,7 +82,7 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
         for ($step = 76; $step <= 99; $step++) {
             $after = $this->continueParticipationScript(1)['responses'][$step];
             if ($step < 99) {
-                $this->assertDatabaseCount('horizon_exhaustions', 0);
+                $this->assertDatabaseCount('commit_region_exhaustions', 0);
                 $this->assertSame($tragedy->context_horizon_id, $after['context_horizon_id'],
                     'Every live final-attempt step stays in its current Horizon until actual Exhaustion.');
             }

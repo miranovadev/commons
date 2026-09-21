@@ -30,19 +30,26 @@ recovery destination. Higher Potential or Charge at an older ancestor cannot
 skip it, even when the nearer basin has zero Potential and zero Charge. An
 eligible retained Committal is itself the distance-zero boundary.
 
-Exhaustion is established by the existing Tragedy/final-attempt proof, never by
-ranking values or inferring that an empty basin is closed. A Participant can
-return to an open basin with no admissible continuation; its subsequent lifecycle
-must establish exhaustion before recovery may continue past it. Same-Horizon
-Commits do not acquire a new per-Commit exhaustion mechanism in this change.
-Existing authoritative Horizon exhaustion makes its owned positions and opening
-Committal unavailable.
+A Commit Region is the recovery basin governed by its Committal. Same-Horizon
+non-boundary Commits govern distinct basins. `commit_region_exhaustions` is the
+primitive proof authority, keyed by that governing Committal. Numerical zero,
+one actionless terminal, and ordinary Rest do not establish that proof. The
+region's shared Tragedy Receipt must be consumed, then an evidenced no-Potential
+Rest on its actual continuation must prove the final attempt failed.
 
-The current Horizon remains a boundary on the walk. Its explicit exhaustion
-permits crossing only when its opening Committal occurs on the recorded path.
-After crossing, recovery stops at the nearest eligible ancestral Committal in
-the parent Horizon, rather than substituting that Horizon's opener. Every parent
-requires its own proof; child exhaustion cannot close its parent.
+Only the exhausted region becomes unavailable. Older, sibling and descendant
+Commit Regions remain independent even inside the same Horizon. Recovery skips
+an exhausted governing Committal and stops at the next open one on the same
+recorded path. No values rank those destinations.
+
+The current Horizon remains a boundary on the walk. Its boundary-governing
+region's exhaustion permits crossing only when its opening Committal occurs on
+the recorded path. This is a consequence of the same regional proof, not another
+exhaustion ontology. After crossing, recovery stops at the nearest eligible
+ancestral Committal in the parent Horizon. No Horizon opener is substituted.
+`context_horizons.exhausted_at` summarizes opening-region exhaustion; it does not
+retire every region owned by the Horizon. A live descendant region can still
+operate there. Origin has no parent crossing, and persists uniquely.
 
 Potential, Charge, field calculations and inverse-square measurement attenuation
 are unchanged. Recovery selects its destination **before** calculating diagnostic
@@ -56,8 +63,8 @@ relative-ranking diagnostics and ordinary Commit continuity retain their semanti
 
 Tragedy uses this same recovery route. Publication retains the terminal position
 and creates no `recovery_proposition_id` override. Legacy override values are
-ignored, while retained historical values are not rewritten. Tragedy Receipt
-creation, consumption and exhaustion proofs are unchanged; see
+ignored, while retained historical values are not rewritten. Tragedy/final-attempt identity is regional; its consumption, subsequent-failure
+and causal/transactional safeguards remain required. See
 [Tragedy and final-attempt Exhaustion](branch-tragedy.md).
 
 The projected resolver reads maintained local topology and raw measurements plus

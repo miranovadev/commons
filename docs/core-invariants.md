@@ -9,7 +9,7 @@ The authority order is: normative Commons invariants, then explicit phase and
 operation semantics, then implementation representation. Implementation history
 does not override the movement topology defined in Invariant 17.
 
-Persistence, final-attempt Exhaustion, recursive recovery, Horizon Tragedy, and observer
+Persistence, final-attempt Exhaustion, recursive recovery, regional Tragedy, and observer
 separation are normative; see [the exhaustion invariants](#persistence-exhaustion-recovery-and-observation).
 
 ## 1. The Measurements Are Independent
@@ -157,13 +157,13 @@ Recovery proceeds backward through committed basins in causal order. A nearer
 committed basin must be resolved before an older committed basin becomes eligible.
 Recorded arrival provenance determines the path at multi-input Writes. Siblings,
 descendants and unrelated branches are excluded. The persisted Cycle Horizon
-constrains recovery until explicit exhaustion permits crossing its opening
+constrains recovery until its boundary-governing Commit Region's exhaustion permits crossing its opening
 boundary along that same path. Previous Horizons do not substitute their opener
 for the next qualifying Committal. Numeric zero never proves exhaustion; the
 existing Tragedy, shared final-attempt and Receipt-consumption proof remains
 required. Commitment creates a recovery boundary. Exhaustion permits recovery
 past it. Measurement attenuation, Potential and Charge formulas are unchanged.
-Origin remains unique and persistent. Its Horizon follows the same final-attempt proof. See the invariants below.
+Origin remains unique and persistent. Its Commit Region follows the same final-attempt proof. See the invariants below.
 
 Potential is the strongest remaining viable continuation under absolute-Tension-reduction semantics, never an additive budget. Writes maintain affected region projections and propagate changed routing summaries through provenance. Ordinary reads consume the published field version; they never repair measurements or reconstruct the whole substrate. A missing or inconsistent projection is an explicit recoverable maintenance condition. See [Incremental Potential](incremental-potential.md).
 
@@ -266,7 +266,7 @@ counterpart.
 Recovery begins at the actual current position and walks recorded arrival
 provenance backward and stops at the nearest eligible non-exhausted Committal.
 An older basin cannot compete until the nearer one is resolved. The current Horizon confines the search until
-exhaustion permits crossing its opening boundary, after which the same lineage
+its boundary-governing region's exhaustion permits crossing its opening boundary, after which the same lineage
 continues into previous Horizons. Recovery never resets to a Horizon provenance
 node, searches siblings or descendants, or takes an unused parent as a shortcut.
 
@@ -296,19 +296,19 @@ rather than inferring semantics from current code behaviour.
 
 ## Persistence, exhaustion, recovery, and observation
 
-**Potential invariant:** Potential measures currently instantiated opportunity. Zero Potential does not by itself prove a Horizon exhausted.
+**Potential invariant:** Potential measures currently instantiated opportunity. Zero Potential does not by itself prove a Commit Region exhausted.
 
-**Tragedy invariant:** Tragedy is the first no-Potential Rest within a Horizon. It creates exactly one Tragedy Receipt and opens the Horizon's final evidence-bearing attempt.
+**Tragedy invariant:** Tragedy is the first evidenced no-Potential Rest within a Commit Region. It creates exactly one shared Tragedy Receipt and opens that basin's final evidence-bearing attempt. Other Commit Regions in the same Horizon have independent authority.
 
-**Exhaustion invariant:** A Horizon exhausts only after its Tragedy Receipt has been exercised and a subsequent no-Potential Rest on that consumed classification's actual participant lineage proves the final attempt also failed. An unrelated later Rest is insufficient.
+**Exhaustion invariant:** A Commit Region exhausts only after its Tragedy Receipt has been exercised and a subsequent no-Potential Rest on that consumed classification's actual participant lineage proves the final attempt also failed. An unrelated later Rest is insufficient. The region's exhaustion permits recovery past its governing Committal. If that Committal opens a child Horizon, the same proof permits crossing that boundary along actual backward lineage; it does not exhaust the child's other regions.
 
 **Receipt invariant:** Ordinary Receipts are discovered and consumed within the Commit Region governed by the observed Proposition's first governing Committal, with existing qualification rules and no Horizon-wide fallback. They ground Propositions, persist historically and may be consumed exactly once. Attestations judge Propositions; historical Attestation-owned Receipts remain readable through their Proposition. Generation costs an action; metadata visibility is free; attachment costs an action and changes structure. Participant loads persist independently of prompt visibility and retain participant-specific Reinforcement. Full evidence enters cognition only for loaded Receipts grounding the current participant-facing Read. Eligible Gate load/unload desired states accompany a successful forward Phase contribution atomically without another wake; Rest and standalone Read cannot carry those options. An unconsumed Tragedy Receipt follows legitimate recovery from its current unresolved basin by any Participant and is shared throughout the destination Commit Region until exercised; it never changes recovery selection.
 
 **Reclassification invariant:** Phase 3 and Phase 6 reclassification require an available Receipt. Reclassification atomically attaches/consumes the Receipt. No Receipt, no Reclassification. Tragedy is exceptional in generation, not in consumption.
 
-**Generation invariant:** Variant availability is controlled by structural viability, not Receipt lifecycle and not Participant count. A further Variant requires all current expressive routes at that structural position to be spent in its current exploration epoch, each with its own completed Instrument and effective Attestation, with positive remaining Horizon Potential Charge. A healthy route blocks redundant generation. Each new Variant repeats that sequence; no prior Rest or fixed sibling cap applies. See the [confirmed clarification](horizon-proof-variant-clarification.md).
+**Generation invariant:** Variant availability is controlled by structural viability, not Receipt lifecycle and not Participant count. A further Variant requires all current expressive routes at that structural position to be spent in its current exploration epoch, each with its own completed Instrument and effective Attestation, with positive remaining Commit Region Potential Charge. A healthy route blocks redundant generation. Each new Variant repeats that sequence; no prior Rest or fixed sibling cap applies. See the [confirmed clarification](horizon-proof-variant-clarification.md).
 
-**Final-attempt allowance:** Stage 5 explicitly extends only the numerical requirement above: an open Horizon's unconsumed Tragedy authorizes one shared Distinguish/Disperse Variant at zero Potential. Existing structural and evidence prerequisites remain mandatory. The successful Variant atomically records that unique attempt and advances its own epoch. Receipt creation, loading and consumption do not change epochs. See [the lifecycle rationale](branch-tragedy.md#attainable-final-attempt).
+**Final-attempt allowance:** Stage 5 explicitly extends only the numerical requirement above: an open Commit Region's unconsumed Tragedy authorizes one shared Distinguish/Disperse Variant at zero Potential. Existing structural and evidence prerequisites remain mandatory. The successful Variant atomically records that unique attempt and advances its own epoch. Receipt creation, loading and consumption do not change epochs. See [the lifecycle rationale](branch-tragedy.md#attainable-final-attempt).
 
 **Successful-route continuity:** Commitment does not destroy an already-existing
 causal route. When Bias is entered through the exact Gate whose causal
@@ -321,13 +321,13 @@ of the current Gate. Successful-route continuity preserves an existing edge;
 it never manufactures one. Neither step creates content, votes or failure
 evidence, and the frozen source remains immutable.
 
-**Exhausted successful continuation:** After explicit child-Horizon Exhaustion, an incoming successful route remains contextual history without being falsified as failure. This propagates through an expressive source only when all its other outgoing continuations are exhausted or failed at their exact current epoch. Live alternatives and Committals stop propagation. Resolved routes are not action targets or viable generation options, and their historical gain does not supply exploration capacity.
+**Exhausted successful continuation:** After explicit outgoing Commit Region Exhaustion, an incoming successful route remains contextual history without being falsified as failure. This propagates through an expressive source only when all its other outgoing continuations are exhausted or failed at their exact current epoch. Live alternatives and Committals stop propagation. Resolved routes are not action targets or viable generation options, and their historical gain does not supply exploration capacity.
 
 **Observation invariant:** Instrument generates evidence; Attestation becomes available only when evidence exists; Attestation becomes Traverse on the next Cycle under the existing rule.
 
 **Persistence invariant:** Exhausted Committals persist permanently and remain contextually visible where structurally relevant. They expose no actions. Historical context is ordered newest-first by creation date. Exhausted means learned-from, not forgotten.
 
-**Recovery invariant:** Exhaustion proof propagates upward through provenance locally, without global graph-wide recomputation. Tragedy uses normal backward-lineage recovery from the terminal position, without an opener override. Exhaustion subsequently permits continuing backward into the previous Horizon on the same lineage. Other Participants move through their normal lifecycle.
+**Recovery invariant:** Exhaustion proof propagates upward through provenance locally, without global graph-wide recomputation. Tragedy uses normal backward-lineage recovery from the terminal position, without an opener override. Region exhaustion permits continuing backward to the previous ancestral Commitment; exhausting a boundary-governing region permits crossing into the parent Horizon on that same lineage. Other Participants move through their normal lifecycle.
 
 **Observer invariant:** Active/exhausted filtering in the graph is presentation-only and must not alter Participant cognition or substrate dynamics.
 
@@ -341,7 +341,7 @@ See [the proof lifecycle](branch-tragedy.md), [migration and compatibility](hori
 
 The [exploration epoch invariants](exploration-epochs.md#invariants) are normative.
 Expressive propositions become spent relative to a Horizon, structural position
-and exploration epoch; Horizons become exhausted permanently. Failure history
+and exploration epoch; Commit Regions become exhausted permanently. Failure history
 is immutable. Only a successful Variant advances its own position's epoch.
 Spent propositions remain contextual evidence without Traverse or Attestation
 targets; a later epoch restores normal eligibility without erasing history.

@@ -20,11 +20,12 @@ final class TragedyFinalAttemptService
     private function tragedyFor(Phase $phase): ?Tragedy
     {
         if (! in_array($phase->kind, [PhaseKind::Distinguish, PhaseKind::Disperse], true)
-            || $phase->cycle->contextHorizon->exhausted_at !== null) {
+            || app(ExhaustionService::class)->unavailable($phase->gate)) {
             return null;
         }
 
-        $tragedy = Tragedy::where('context_horizon_id', $phase->cycle->context_horizon_id)
+        $tragedy = Tragedy::where('governing_committal_id', app(ExhaustionService::class)->regionFor($phase)?->id)
+            ->whereNotNull('governing_committal_id')
             ->whereNotIn('id', DB::table('tragedy_final_attempts')->select('tragedy_id'))
             ->whereNotIn('receipt_id', DB::table('receipt_consumptions')->select('receipt_id'))->first();
         if ($tragedy === null) {

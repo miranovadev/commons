@@ -62,7 +62,7 @@ final readonly class ProjectedRecoveryService
 
                 return collect();
             }, fn (ContextHorizon $basin) => isset($distances[$basin->opened_by_proposition_id]),
-            fn (ContextHorizon $basin) => ! ($localFor($basin->id)['nodes'][$basin->opened_by_proposition_id]['active'] ?? true));
+            fn (ContextHorizon $basin) => app(ExhaustionService::class)->boundaryExhausted($basin));
         $candidates = $result['candidates']->all();
         $selection = $candidates[0] ?? null;
         if ($selection !== null) {

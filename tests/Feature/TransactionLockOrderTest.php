@@ -540,7 +540,7 @@ class TransactionLockOrderTest extends TestCase
                 app(ParticipationService::class)->contribute($first, $firstRest->id, ['action' => 'participant.rest']);
             });
         $this->assertSame(1, Tragedy::count());
-        $this->assertDatabaseCount('horizon_exhaustions', 0);
+        $this->assertDatabaseCount('commit_region_exhaustions', 0);
         $this->assertSame(1, Receipt::where('type', 'tragedy')->count());
         foreach ([$first, $second] as $participant) {
             $this->assertSame(1, $participant->cycles()->whereNull('completed_at')->count());
@@ -559,7 +559,7 @@ class TransactionLockOrderTest extends TestCase
             'participant_id' => $second->cycle->participant_id, 'phase_id' => $second->id],
             fn () => $this->rest($first));
         $this->assertDatabaseCount('horizon_tragedies', 1);
-        $this->assertDatabaseCount('horizon_exhaustions', 1);
+        $this->assertDatabaseCount('commit_region_exhaustions', 1);
         $this->assertDatabaseCount('receipt_consumptions', 1);
         $this->assertNotNull($horizon->fresh()->exhausted_at);
         $this->assertDatabaseHas('propositions', ['id' => $opening->id]);
@@ -606,7 +606,7 @@ class TransactionLockOrderTest extends TestCase
         $this->assertDatabaseMissing('exhaustion_states', ['proposition_id' => $newId]);
         $this->assertDatabaseMissing('exhaustion_states', ['proposition_id' => $commit->id]);
         $this->assertSame(1, Tragedy::count());
-        $this->assertDatabaseCount('horizon_exhaustions', 0);
+        $this->assertDatabaseCount('commit_region_exhaustions', 0);
         $actual = app(PotentialChargeService::class)->recoverFrom($terminal->gate);
         $expected = app(ReferencePotentialChargeService::class)->recoverFrom($terminal->gate);
         $this->assertSame($commit->id, $actual['proposition']->id);

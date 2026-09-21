@@ -34,6 +34,25 @@ final readonly class PotentialChargeService
             ->contains(fn ($entry) => $entry['raw_potential_charge'] > 0.00000005);
     }
 
+    /** Existing regional algebra; only the exhaustion/final-attempt qualification scope changes. */
+    public function hasRemainingInRegion(Phase $phase): bool
+    {
+        $seed = app(ExhaustionService::class)->regionFor($phase);
+        if ($seed === null) {
+            return true; // Ambiguous membership supplies no local exhaustion proof.
+        }
+        $this->projection->assertCurrent($phase->cycle->participant->substrate_id);
+        $local = $this->projection->region($phase->cycle->context_horizon_id)['local'];
+        foreach (app(ExhaustedContinuationService::class)->ids($phase)->keys() as $id) {
+            if (isset($local['nodes'][$id])) {
+                $local['nodes'][$id]['active'] = false;
+            }
+        }
+
+        return collect(app(PotentialRegionCalculator::class)->candidates($local, lineage: [$seed->id => 0]))
+            ->contains(fn ($entry) => $entry['raw_potential_charge'] > 0.00000005);
+    }
+
     public function selectFor(Substrate $substrate): array
     {
         $version = $this->projection->assertCurrent($substrate->id);

@@ -84,6 +84,6 @@ class ExhaustionRealtimeTest extends TestCase
         DB::rollBack();
         $this->assertSame([], $events);
         $this->assertDatabaseCount('horizon_tragedies', 0);
-        $this->assertDatabaseCount('horizon_exhaustions', 0);
+        $this->assertDatabaseCount('commit_region_exhaustions', 0);
     }
 }

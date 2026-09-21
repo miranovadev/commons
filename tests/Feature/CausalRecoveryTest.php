@@ -18,6 +18,7 @@ use App\Models\Tragedy;
 use App\Services\ContextHorizonProjector;
 use App\Services\ContributionDispatcher;
 use App\Services\CycleEntryService;
+use App\Services\ExhaustionService;
 use App\Services\HorizonReceiptService;
 use App\Services\InstrumentExecutionService;
 use App\Services\LedgerService;
@@ -309,10 +310,9 @@ class CausalRecoveryTest extends TestCase
         $viewer = $this->phase($this->root, $near, PhaseKind::Distinguish);
         $this->assertNotSame($trigger->id, $viewer->cycle->participant_id);
         $this->assertContains($receipt->id, app(HorizonReceiptService::class)->available($viewer)->pluck('id'));
-        $this->assertTrue(app(TragedyFinalAttemptService::class)->available($viewer));
-        $variant = $this->node($viewer, $near);
-        DB::transaction(fn () => app(TragedyFinalAttemptService::class)->record($viewer, $variant));
-        $this->assertDatabaseHas('tragedy_final_attempts', ['tragedy_id' => $tragedy->id, 'proposition_id' => $variant->id]);
+        // A historical transported Receipt remains readable, but cannot grant
+        // another governing basin the original region's final-attempt authority.
+        $this->assertFalse(app(TragedyFinalAttemptService::class)->available($viewer));
         // The original trigger's normal completion/entry does not carry shared scope.
         $first->forceFill(['completed_at' => now()])->save();
         $first->cycle->forceFill(['completed_at' => now()])->save();
@@ -1041,6 +1041,113 @@ class CausalRecoveryTest extends TestCase
         $incremental = $terrain();
         $this->assertTrue(app(PotentialProjectionService::class)->rebuild($this->substrate->id, false));
         $this->assertSame($incremental, $terrain());
+    }
+
+    public function test_same_horizon_regions_exhaust_independently_and_recovery_unwinds_c_b_a(): void
+    {
+        $a = $this->committal($this->root, .9);
+        $a->commitmentSnapshot->forceFill(['calculator_version' => 'origin-bootstrap-v1'])->save();
+        $b = $this->committal($this->root, .5, $this->expressive($this->root, $a));
+        $c = $this->committal($this->root, .1, $this->expressive($this->root, $b));
+        $sibling = $this->committal($this->root, .99, $this->expressive($this->root, $b));
+        DB::table('supersessions')->whereIn('target_proposition_id', [$b->id, $c->id, $sibling->id])->update(['type' => 'commit']);
+        $terminal = $this->expressive($this->root, $c);
+        $this->measurements[$terminal->id] = 1;
+        $this->opportunity($a);
+        $bOpportunity = $this->expressive($this->root, $b);
+        $this->measurements[$bOpportunity->id] = 0;
+        $this->opportunity($sibling);
+        $this->assertDatabaseCount('context_horizons', 1);
+        foreach ([$a, $b, $c, $sibling] as $commit) {
+            $this->assertSame($this->root->id, app(ContextHorizonProjector::class)->forEntry($commit)->id);
+        }
+        $selection = $this->recover($terminal);
+        $this->assertSame($c->id, $selection['proposition']->id);
+        $this->assertSame(0.0, $selection['raw_potential_charge']);
+        $this->assertDatabaseCount('commit_region_exhaustions', 0);
+        $failedC = $this->exhaustRegion($c, $terminal);
+        $this->assertNull($this->root->fresh()->exhausted_at);
+        $this->assertTrue(app(ExhaustionService::class)->unavailable($c));
+        foreach ([$a, $b, $sibling] as $live) {
+            $this->assertFalse(app(ExhaustionService::class)->unavailable($live));
+        }
+        $this->assertSame($b->id, $this->recover($failedC)['proposition']->id);
+        $this->assertDatabaseCount('commit_region_exhaustions', 1);
+        $this->measurements[$bOpportunity->id] = 1;
+        $failedB = $this->exhaustRegion($b, $bOpportunity);
+        $this->assertSame($a->id, $this->recover($failedB)['proposition']->id);
+        $this->assertSame($a->id, $this->recover($failedC)['proposition']->id);
+        $this->assertNull($this->root->fresh()->exhausted_at);
+        $this->assertFalse(app(ExhaustionService::class)->unavailable($a));
+        $this->assertFalse(app(ExhaustionService::class)->unavailable($sibling));
+        $this->assertDatabaseCount('commit_region_exhaustions', 2);
+        $this->assertDatabaseCount('horizon_tragedies', 2);
+        $this->assertDatabaseCount('tragedy_final_attempts', 2);
+        $this->assertDatabaseCount('horizon_exhaustions', 0);
+    }
+
+    public function test_boundary_region_exhaustion_permits_crossing_without_retiring_other_child_regions(): void
+    {
+        $far = $this->committal($this->root, .95);
+        $near = $this->committal($this->root, .01, $this->expressive($this->root, $far));
+        $boundary = $this->committal($this->root, .1, $this->expressive($this->root, $near), boundary: true);
+        $child = app(ContextHorizonProjector::class)->forEntry($boundary);
+        $live = $this->committal($child, .9, $this->expressive($child, $boundary));
+        $sibling = $this->committal($this->root, .99, $far);
+        $this->opportunity($far);
+        $this->opportunity($near);
+        $this->opportunity($sibling);
+        $this->opportunity($live);
+        $terminal = $this->expressive($child, $boundary);
+        $this->measurements[$terminal->id] = 1;
+        $this->assertSame($boundary->id, $this->recover($terminal)['proposition']->id);
+        $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($child));
+        $failed = $this->exhaustRegion($boundary, $terminal);
+        $this->assertTrue(app(ExhaustionService::class)->boundaryExhausted($child));
+        $this->assertNotNull($child->fresh()->exhausted_at);
+        $this->assertNull($this->root->fresh()->exhausted_at);
+        $this->assertSame($near->id, $this->recover($failed)['proposition']->id);
+        $this->assertFalse(app(ExhaustionService::class)->unavailable($live));
+        $liveTerminal = $this->expressive($child, $live);
+        $this->assertSame($live->id, $this->recover($liveTerminal)['proposition']->id);
+        $this->assertDatabaseCount('commit_region_exhaustions', 1);
+    }
+
+    private function exhaustRegion(Proposition $seed, Proposition $terminal): Proposition
+    {
+        $horizon = app(ContextHorizonProjector::class)->forEntry($seed);
+        $this->explore($terminal);
+        $phase = $this->phase($horizon, $terminal);
+        $this->refreshMeasurements();
+        app(ParticipationService::class)->contribute($phase->cycle->participant, $phase->id, ['action' => 'participant.rest']);
+        $this->assertSame('no_remaining_potential', $phase->cycle->fresh()->rest_reason->value);
+        $tragedy = Tragedy::where('governing_committal_id', $seed->id)->sole();
+        $this->assertFalse(app(ExhaustionService::class)->unavailable($seed));
+        app(CycleEntryService::class)->prepare($phase->cycle->participant);
+        $this->assertSame($seed->id, $phase->cycle->participant->fresh()->current_proposition_id);
+        $attempt = $this->phase($horizon, $seed, PhaseKind::Distinguish);
+        $this->refreshMeasurements();
+        $this->assertTrue(app(TragedyFinalAttemptService::class)->available($attempt));
+        $variant = DB::transaction(fn () => app(ContributionDispatcher::class)->dispatch($attempt->cycle->participant, $attempt,
+            ['action' => 'proposition.variant', 'statement' => 'Regional final attempt']));
+        $this->measurements[$variant->id] = 1;
+        $this->assertDatabaseHas('tragedy_final_attempts', ['tragedy_id' => $tragedy->id, 'proposition_id' => $variant->id]);
+        $this->assertFalse(app(TragedyFinalAttemptService::class)->available($attempt));
+        $source = $this->node($this->phase($horizon, $variant, PhaseKind::Persist), $variant);
+        $this->measurements[$source->id] = 1;
+        $this->classificationEvidenceFixture($source);
+        $classification = $this->phase($horizon, $source, PhaseKind::Constrain);
+        $target = app(ContributionDispatcher::class)->dispatch($classification->cycle->participant, $classification,
+            ['action' => 'proposition.reclassify', 'proposition_id' => $source->id, 'receipt_id' => $tragedy->receipt_id]);
+        $this->measurements[$target->id] = 1;
+        $this->explore($target);
+        $final = $this->phase($horizon, $target);
+        $this->refreshMeasurements();
+        app(ParticipationService::class)->contribute($final->cycle->participant, $final->id, ['action' => 'participant.rest']);
+        $this->assertDatabaseHas('commit_region_exhaustions', ['governing_committal_id' => $seed->id, 'receipt_id' => $tragedy->receipt_id]);
+        $this->refreshMeasurements();
+
+        return $target;
     }
 
     private function explore(Proposition $node): void

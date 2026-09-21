@@ -20,7 +20,7 @@ final class HorizonFailureService
         $exhaustedContinuations = app(ExhaustedContinuationService::class)->ids($phase);
         $proof = ['substrate_id' => $substrateId, 'context_horizon_id' => $phase->cycle->context_horizon_id,
             'field_version' => $version, 'phase_id' => $phase->id, 'participant_id' => $phase->cycle->participant_id,
-            'position_id' => $phase->gate_proposition_id, 'rest_reason' => $plan['rest_reason'] ?? 'no_available_move',
+            'position_id' => $phase->gate_proposition_id, 'governing_committal_id' => app(ExhaustionService::class)->regionFor($phase)?->id, 'rest_reason' => $plan['rest_reason'] ?? 'no_available_move',
             'transitions' => [], 'failures' => [], 'horizons' => [], 'branches' => [], 'reason' => 'no_available_move'];
         if (isset($plan['schema']['$defs']['actions']['participant.rest'])
             && ($proof['rest_reason'] === 'no_remaining_potential' || $this->testedDeadEnd($phase))) {
@@ -47,8 +47,8 @@ final class HorizonFailureService
                 $children = DB::table('supersessions')->where('source_proposition_id', $id)->pluck('target_proposition_id');
                 $epochs = app(ExplorationEpochService::class);
                 $failed = $epochs->currentFailures($proof['context_horizon_id'], $children);
-                $exhausted = DB::table('horizon_exhaustions')->whereIn('opening_proposition_id', $children)
-                    ->pluck('opening_proposition_id')->flip();
+                $exhausted = DB::table('commit_region_exhaustions')->whereIn('governing_committal_id', $children)
+                    ->pluck('governing_committal_id')->flip();
                 if ($children->contains(fn ($child) => ! $failed->has($child) && ! $exhausted->has($child) && ! isset($closed[$child]))) {
                     continue;
                 }
@@ -78,6 +78,7 @@ final class HorizonFailureService
             $substrate = Substrate::whereKey($phase->cycle->participant->substrate_id)->lockForUpdate()->firstOrFail();
             if (! in_array($proof['reason'], ['no_remaining_potential', 'continuation_failed'], true) || ! $proof['stable'] || $proof['field_version'] !== (int) $substrate->field_version
                 || $proof['phase_id'] !== $phase->id || $proof['position_id'] !== $phase->gate_proposition_id
+                || ($proof['governing_committal_id'] ?? null) !== app(ExhaustionService::class)->regionFor($phase)?->id
                 || $proof['participant_id'] !== $phase->cycle->participant_id
                 || $proof['substrate_id'] !== $substrate->id || $proof['context_horizon_id'] !== $phase->cycle->context_horizon_id
                 || $phase->fresh()->completed_at === null || $phase->cycle->fresh()->rested_at === null

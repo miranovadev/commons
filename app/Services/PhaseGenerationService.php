@@ -110,7 +110,7 @@ final readonly class PhaseGenerationService
                 }
             }
 
-            return app(PotentialChargeService::class)->hasRemainingInHorizon($phase)
+            return app(PotentialChargeService::class)->hasRemainingInRegion($phase)
                 || app(TragedyFinalAttemptService::class)->available($phase);
         };
 

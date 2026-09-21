@@ -79,7 +79,7 @@ class HorizonProofCompatibilityTest extends TestCase
         [$opening, , $tragedy] = $this->firstFailure();
         [$terminal] = $this->exercise($opening, $tragedy);
         $this->rest($terminal);
-        foreach (['000100_scope_receipts_to_horizons', '000300_record_horizon_tragedies', '000400_record_proven_horizon_exhaustion'] as $name) {
+        foreach (['000100_scope_receipts_to_horizons', '000300_record_horizon_tragedies'] as $name) {
             $migration = require database_path('migrations/2026_09_18_'.$name.'.php');
             try {
                 $migration->down();
@@ -88,7 +88,14 @@ class HorizonProofCompatibilityTest extends TestCase
                 $this->assertStringContainsString('Cannot discard', $error->getMessage());
             }
         }
-        $this->assertDatabaseCount('horizon_exhaustions', 1);
+        $regional = require database_path('migrations/2026_09_22_000000_scope_exhaustion_to_commit_regions.php');
+        try {
+            $regional->down();
+            $this->fail('Rollback discarded regional proof');
+        } catch (\RuntimeException $error) {
+            $this->assertStringContainsString('Cannot discard', $error->getMessage());
+        }
+        $this->assertDatabaseCount('commit_region_exhaustions', 1);
         $this->assertDatabaseCount('horizon_tragedies', 1);
         $this->assertDatabaseCount('receipt_consumptions', 1);
     }

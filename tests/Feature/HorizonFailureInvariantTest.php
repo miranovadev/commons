@@ -36,7 +36,7 @@ class HorizonFailureInvariantTest extends TestCase
         $this->measure($fresh, 1);
         $this->assertSame($commit->id, app(PotentialChargeService::class)->inspectRecoveryFrom($fresh)['selection']['proposition_id']);
         $this->assertArrayHasKey('proposition.variant', app(InputPlanService::class)->forPhase($phase->cycle->participant, $phase)['schema']['$defs']['actions']);
-        $this->assertDatabaseCount('horizon_exhaustions', 0);
+        $this->assertDatabaseCount('commit_region_exhaustions', 0);
         $this->assertSame(0, Tragedy::count());
     }
 
@@ -51,7 +51,7 @@ class HorizonFailureInvariantTest extends TestCase
         $this->assertDatabaseHas('continuation_failures', ['proposition_id' => $head->id]);
         $this->assertDatabaseMissing('continuation_failures', ['proposition_id' => $commit->id]);
         $this->assertDatabaseMissing('continuation_failures', ['proposition_id' => $root->id]);
-        $this->assertDatabaseCount('horizon_exhaustions', 0);
+        $this->assertDatabaseCount('commit_region_exhaustions', 0);
         $this->assertSame($before, $second->cycle->participant->fresh()->getAttributes());
         $this->assertNull($second->fresh()->completed_at);
         foreach (['propositions', 'supersessions', 'commitment_snapshots'] as $table) {
@@ -108,7 +108,7 @@ class HorizonFailureInvariantTest extends TestCase
         $this->artisan('commons:exhaustion-legacy-import', ['substrate' => $this->substrate->id, '--apply' => true])->assertSuccessful();
         $this->artisan('commons:exhaustion-legacy-import', ['substrate' => $this->substrate->id, '--apply' => true])->assertSuccessful();
         $this->assertFalse(app(ExhaustionService::class)->unavailable($root));
-        $this->assertDatabaseCount('horizon_exhaustions', 0);
+        $this->assertDatabaseCount('commit_region_exhaustions', 0);
         $this->assertSame(0, Tragedy::count());
         $this->assertNotNull(Proposition::find($root->id));
     }

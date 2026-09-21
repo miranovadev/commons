@@ -230,8 +230,7 @@ final readonly class ReferencePotentialChargeService
 
                 return $selected;
             }, fn (ContextHorizon $basin): bool => isset($distances[$basin->opened_by_proposition_id]),
-            fn (ContextHorizon $basin): bool => $basin->exhausted_at !== null
-                || ($basin->opened_by_proposition_id !== null && ! $propositions->has($basin->opened_by_proposition_id)));
+            fn (ContextHorizon $basin): bool => app(ExhaustionService::class)->boundaryExhausted($basin));
         $candidates = $result['candidates']->all();
 
         return [

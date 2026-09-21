@@ -75,7 +75,7 @@ class ExhaustionTest extends TestCase
         $selection = app(PotentialChargeService::class)->inspectRecoveryFrom($fresh);
         $this->assertSame($opening->id, $selection['selection']['proposition_id']);
         $this->assertSame(0, $selection['recovery_hops']);
-        $this->assertDatabaseCount('horizon_exhaustions', 0);
+        $this->assertDatabaseCount('commit_region_exhaustions', 0);
         $this->assertDatabaseCount('horizon_tragedies', 0);
     }
 
@@ -86,7 +86,7 @@ class ExhaustionTest extends TestCase
         $propositions = Proposition::count();
         $this->rest($first);
         $this->assertDatabaseCount('horizon_tragedies', 1);
-        $this->assertDatabaseCount('horizon_exhaustions', 0);
+        $this->assertDatabaseCount('commit_region_exhaustions', 0);
         $this->assertSame($propositions, Proposition::count());
         $this->assertFalse(app(ExhaustionService::class)->unavailable($commit));
         $this->assertSame($before, $other->cycle->participant->fresh()->getAttributes());
@@ -105,7 +105,7 @@ class ExhaustionTest extends TestCase
         $this->assertSame(1, $inspection['recovery_hops']);
         $this->assertSame($this->origin->id, $inspection['selection']['proposition_id']);
         $this->assertDatabaseHas('propositions', ['id' => $opening->id]);
-        $this->assertDatabaseCount('horizon_exhaustions', 1);
+        $this->assertDatabaseCount('commit_region_exhaustions', 1);
     }
 
     public function test_stale_witness_cannot_create_tragedy_or_exhaust_a_fresh_sibling(): void
@@ -149,7 +149,7 @@ class ExhaustionTest extends TestCase
         $audit = app(ExhaustionAuditService::class)->inspect($this->substrate->id);
         $this->assertTrue($audit['matches']);
         $this->assertSame(1, $audit['legacy_holds']);
-        $this->assertDatabaseCount('horizon_exhaustions', 0);
+        $this->assertDatabaseCount('commit_region_exhaustions', 0);
     }
 
     public function test_audit_accepts_first_tragedy_without_exhaustion(): void
@@ -157,7 +157,7 @@ class ExhaustionTest extends TestCase
         $this->tragicChild();
         $audit = app(ExhaustionAuditService::class)->inspect($this->substrate->id);
         $this->assertTrue($audit['matches'], json_encode($audit));
-        $this->assertDatabaseCount('horizon_exhaustions', 0);
+        $this->assertDatabaseCount('commit_region_exhaustions', 0);
     }
 
     public function test_audit_accepts_exercised_final_attempt_and_detects_missing_consumption(): void

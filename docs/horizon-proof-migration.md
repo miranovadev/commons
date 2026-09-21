@@ -24,3 +24,7 @@ The backfill performs bounded batches and local joins. It runs once during migra
 - Confirmed Variant clarification: each viable Variant needs its own completed Instrument and effective Attestation, and positive Horizon Potential Charge must remain before another Variant becomes an option. Every new Variant repeats this sequence. No prior Mediate Rest, Participant quorum or fixed sibling cap. Mediate still requires two Propositions.
 - The Origin Horizon may eventually exhaust under the same proof. Origin itself and its historical Committals persist permanently; no synthetic renewal branch is invented.
 - Tragedy Receipt metadata contains IDs only. Loaded context resolves full statements and flat local evidence by ID; no recursive subtree is embedded or historical age cutoff introduced.
+
+## Regional authority migration
+
+The later `2026_09_22_000000` migration supersedes Horizon-wide exhaustion authority. It retains the old proof rows as evidence and promotes only verifiable single-region proofs. See [Commit Region exhaustion and compatibility](commit-region-exhaustion.md) before deployment. Horizon opening-region summaries do not retire other live Commit Regions.
