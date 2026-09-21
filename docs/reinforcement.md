@@ -9,19 +9,18 @@ or verification flag never establishes qualification.
 
 Receipt capabilities (`readable`, `replayable`), Web Search, configuration and
 immutable replay provenance are defined in [Instruments](instruments.md). Replay
-is a new execution; Read loads the existing observation. Neither initial execution
+is a new Instrument execution; Gate options change Participant memory. Neither initial execution
 nor Replay automatically loads evidence.
 
 For discovery, ownership and prompt activation, see the normative [Receipt model](receipt-region-context.md). Receipts ground Propositions; Attestations judge Propositions.
 
 ## Persistent participant context
 
-`receipt.read` accepts only `action` and `receipt_id`. It loads qualifying evidence
-encountered through the current lineage, Read, Gate or Write, including evidence
-preserved through Reclassify and Commit sources. Read is available in phases
-1–6 and preserves the Phase and Gate. Each response selects one action. Order
-has no standalone receipt actions; Gate desired-state options accompany its normal contribution.
-Rest is unavailable while an admissible Read remains in an earlier Phase.
+Optional `receipt_options.load/unload` accompanies a successful forward contribution
+for the exact current Gate Receipt references. Changes are desired states,
+idempotent and atomic with that contribution. Rest accepts no memory changes.
+There are no standalone Receipt actions. Informational catalogue evidence cannot
+block Rest or independently advance a Phase.
 
 `participant_receipt_contexts` stores one row per Participant/Receipt, with the
 original evidence subject, evidence signature, `loaded_at` and nullable `cleared_at`.
@@ -72,7 +71,7 @@ and whitespace collapsed. Text/JSON collapse whitespace; other media hash bytes.
 New text/HTML/JSON Receipts retain a verifier-produced excerpt of at most 1,200
 characters, with a truncation flag, for context loading. Binary resources and older
 verified Receipts can expose retrieval metadata without a text excerpt. Loading
-never silently fetches changed content; refreshing is an Instrument execution or an admissible `receipt.replay` action.
+never silently fetches changed content; refreshing is an Instrument execution or an admissible Instrument replay.
 This is a conservative content identity, not a claim of semantic equivalence.
 HTML changes only to markup, scripts, styles or link destinations may be missed.
 

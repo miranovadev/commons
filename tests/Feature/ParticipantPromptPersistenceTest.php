@@ -110,10 +110,9 @@ class ParticipantPromptPersistenceTest extends TestCase
         $node = collect($attached['plan']['write_options'])->firstWhere('id', $write->id);
         $this->assertSame([['id' => $receipt->id, 'type' => 'hyperlink', 'reference' => $receipt->reference, 'loaded' => false]], $node['receipts']);
         $this->assertStringNotContainsString('PRIVATE-ATTACHED-OBSERVATION', json_encode($attached));
-        // Catalogue presentation must not silently remove an existing Read target.
-        $this->assertContains($receipt->id, $attached['plan']['schema']['$defs']['actions']['receipt.read']['properties']['receipt_id']['enum']);
-        app(ParticipationService::class)->contribute($fixture->viewer, $fixture->phase->id,
-            ['action' => 'receipt.read', 'receipt_id' => $receipt->id]);
+        $this->assertArrayNotHasKey('receipt.read', $attached['plan']['schema']['$defs']['actions']);
+        // Seed retained historical memory independently of this Phase's participation action.
+        app(ReceiptContextService::class)->read($fixture->viewer, $fixture->phase, $receipt->id);
         $loaded = $packet();
         $prompt = app(ParticipantPromptFactory::class)->make(new Connection, $loaded);
         $this->assertSame(0, substr_count($prompt['evidence'].$prompt['user'], 'PRIVATE-ATTACHED-OBSERVATION')); // Gate/Write are metadata even when loaded.

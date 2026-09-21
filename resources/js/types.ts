@@ -159,8 +159,6 @@ export interface ConnectionOptions {
 export type ActionName =
   | 'attestation.create'
   | 'instrument.execute'
-  | 'receipt.read'
-  | 'receipt.replay'
   | 'proposition.commit'
   | 'proposition.reclassify'
   | 'proposition.reconcile'
@@ -171,7 +169,8 @@ export type ActionName =
 
 export type InstrumentInput =
   | { kind: 'citation' | 'hyperlink'; reference: string }
-  | { kind: 'web_search'; query: string };
+  | { kind: 'web_search'; query: string }
+  | { replay_receipt_id: string };
 
 export interface ContributionInput {
   action: ActionName;
@@ -194,6 +193,7 @@ export interface OriginInput {
 export type ContributionInitialValues = Partial<Omit<ContributionInput, 'action'>>;
 
 export interface ActionSchemaProperty {
+  anyOf?: ActionSchemaProperty[];
   properties?: Record<string, ActionSchemaProperty>;
   items?: ActionSchemaProperty;
   const?: ActionName;

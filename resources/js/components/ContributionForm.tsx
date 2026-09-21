@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { messageFrom } from '../errors';
 import { actionPropositions, attestationDirections, receiptChoices } from '../participationOptions';
-import { duplicateInstrument } from '../instrumentInvocations';
+import { duplicateInstrument, replayReceiptIds } from '../instrumentInvocations';
 import { InstrumentFields } from './InstrumentFields';
 import { AttestationDirectionControl } from './AttestationDirectionControl';
 import type {
@@ -79,6 +79,9 @@ export function ContributionForm({
   const direction = directions.includes(values.direction) ? values.direction : directions[0];
   const duplicate = action === 'instrument.execute' ? duplicateInstrument(plan, values.proposition_id, values.instrument) : undefined;
 
+  const invalidReplay = action === 'instrument.execute' && 'replay_receipt_id' in values.instrument
+    && !replayReceiptIds(plan, values.proposition_id).includes(values.instrument.replay_receipt_id);
+
   if (!schema || !action) return null;
   const activeAction = action;
   const commitment = values.proposition_id ? plan.commitment_options?.[values.proposition_id] : undefined;
@@ -90,7 +93,7 @@ export function ContributionForm({
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (duplicate) return;
+    if (duplicate || invalidReplay) return;
     const contribution: ContributionInput = { action: properties.action?.const || activeAction };
 
     (Object.keys(properties) as Array<keyof ContributionInput>).forEach((name) => {
@@ -195,7 +198,7 @@ export function ContributionForm({
             />
           )}
 
-          {properties.instrument && <InstrumentFields error={duplicate ? `This resource already has relevant evidence (Receipt ${duplicate.receipt_id}). Use the existing Receipt or choose another resource.` : undefined} value={values.instrument} onChange={(instrument) => set('instrument', instrument)} />}
+          {properties.instrument && <InstrumentFields replayIds={replayReceiptIds(plan, values.proposition_id)} error={duplicate ? `This resource already has relevant evidence (Receipt ${duplicate.receipt_id}). Use the existing Receipt or choose another resource.` : undefined} value={values.instrument} onChange={(instrument) => set('instrument', instrument)} />}
 
           {action === 'proposition.reclassify' && <Text size="sm" c="dimmed">The statement is preserved. The selected Receipt attaches atomically and becomes consumed; the new classification begins without Attestations.</Text>}
           {action === 'proposition.reconcile' && <Text size="sm" c="dimmed">The new Proposition copies the current Gate statement exactly. The selected counterpart contributes a second hard parent edge.</Text>}
@@ -218,7 +221,7 @@ export function ContributionForm({
               type="submit"
               color={action === 'proposition.commit' ? 'indigo' : 'blue'}
               loading={loading}
-              disabled={Boolean(duplicate) || (action === 'attestation.create' && !direction)}
+              disabled={Boolean(duplicate) || invalidReplay || (action === 'attestation.create' && !direction)}
             >
               Apply contribution
             </Button>

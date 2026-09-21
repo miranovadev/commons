@@ -83,7 +83,7 @@ class ParticipantPromptConstitutionTest extends TestCase
                 'Order introduces no new Attestation, Instrument, Revision, Reclassification or Variant actions',
                 'All grounding and attestation happen before Order.',
                 'the next Cycle starts there under its applicable Horizon, without relocation',
-            ], ['instrument.execute', 'attestation.create requires', 'proposition.reclassify', 'proposition.revise', 'proposition.variant', 'receipt.read loads', 'receipt.replay uses']],
+            ], ['instrument.execute', 'attestation.create requires', 'proposition.reclassify', 'proposition.revise', 'proposition.variant', 'Instrument execution may perform', 'instrument.replay_receipt_id']],
         ];
     }
 
@@ -154,7 +154,7 @@ class ParticipantPromptConstitutionTest extends TestCase
     public function test_core_is_small_and_contains_no_phase_operation_catalog(): void
     {
         $this->assertLessThan(4000, strlen(ParticipantPromptCore::TEXT)); // #187: 17,200 bytes.
-        foreach (['proposition.reclassify', 'proposition.reconcile', 'proposition.variant', 'instrument.execute', 'receipt.read', 'receipt.replay', 'Tragedy', 'Closure, performed'] as $detail) {
+        foreach (['proposition.reclassify', 'proposition.reconcile', 'proposition.variant', 'instrument.execute', 'Instrument execution may perform', 'instrument.replay_receipt_id', 'Tragedy', 'Closure, performed'] as $detail) {
             $this->assertStringNotContainsString($detail, ParticipantPromptCore::TEXT);
         }
     }

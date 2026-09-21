@@ -45,19 +45,20 @@ class ParticipationHttpHarnessTest extends ScriptedParticipationTestCase
     }
 
     #[Group('constitutional')]
-    public function test_optional_receipt_read_leaves_rest_available_without_advancing_the_phase(): void
+    public function test_retired_receipt_actions_are_rejected_without_mutating_memory_or_blocking_rest(): void
     {
-        $journey = $this->replayParticipationScript(__DIR__.'/../../Fixtures/participation/rest-after-receipt.json', 3);
+        $journey = $this->replayParticipationScript(__DIR__.'/../../Fixtures/participation/rest-unread-receipt.json', 3);
+        $actor = $journey['participants']['rest-reader'];
         $before = $journey['responses'][2];
-        $this->assertSame('constrain', $before['plan']['phase']['kind']);
         $this->assertActionAvailable($before, 'participant.rest');
-        $this->assertActionAvailable($before, 'receipt.read');
-        $after = $this->continueParticipationScript(1)['responses'][3];
-        $this->assertSame($before['plan']['phase']['id'], $after['plan']['phase']['id']);
-        $this->assertActionAvailable($after, 'participant.rest');
-        $rested = $this->continueParticipationScript(1)['responses'][4];
+        foreach (['receipt.read', 'receipt.replay'] as $action) {
+            $this->assertActionUnavailable($before, $action);
+            $this->postContribution($actor, $before['plan']['phase']['id'], ['action' => $action, 'receipt_id' => (string) str()->ulid()])->assertUnprocessable();
+        }
+        $this->assertDatabaseCount('participant_receipt_contexts', 0);
+        $rested = $this->continueParticipationScript(1)['responses'][3];
         $this->assertParticipationScriptComplete();
-        $this->assertGreaterThan($after['cycle']['sequence'], $rested['cycle']['sequence']);
+        $this->assertGreaterThan($before['cycle']['sequence'], $rested['cycle']['sequence']);
     }
 
     public function test_harness_rejects_direct_fixture_writes_before_they_execute(): void
@@ -83,7 +84,7 @@ class ParticipationHttpHarnessTest extends ScriptedParticipationTestCase
             ->assertUnprocessable();
         $this->assertSame($initial['plan']['phase']['id'], $this->readParticipation($actor)['plan']['phase']['id']);
         $before = $this->continueParticipationScript(2)['responses'][2];
-        $this->assertActionAvailable($before, 'receipt.read');
+        $this->assertActionUnavailable($before, 'receipt.read');
         $this->assertActionAvailable($before, 'participant.rest');
         $loads = DB::table('participant_receipt_contexts')->count();
         $after = $this->continueParticipationScript(1)['responses'][3];

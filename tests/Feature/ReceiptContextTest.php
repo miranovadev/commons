@@ -57,7 +57,7 @@ class ReceiptContextTest extends TestCase
         return $fixture->viewer->cycles()->latest('sequence')->first()->phases()->whereNull('completed_at')->firstOrFail();
     }
 
-    public function test_cite_read_becomes_available_after_leaving_context_and_persists_across_cycles(): void
+    public function test_gate_load_accompanies_forward_contribution_and_persists_across_cycles(): void
     {
         [$fixture, $reference, $subject, $receipt] = $this->scenario();
         $service = app(ParticipationService::class);
@@ -71,14 +71,13 @@ class ReceiptContextTest extends TestCase
         $phase = $this->move($fixture, $subject);
         $this->publishPotentialFixture($fixture->viewer);
         $plan = $service->stateFor($fixture->viewer)['plan'];
-        $this->assertContains($receipt->id, $plan['schema']['$defs']['actions']['receipt.read']['properties']['receipt_id']['enum']);
+        $this->assertContains($receipt->id, $plan['schema']['$defs']['actions']['proposition.reclassify']['properties']['receipt_options']['properties']['load']['items']['enum']);
         $this->publishPotentialFixture($fixture->viewer);
-        $state = $service->contribute($fixture->viewer, $phase->id, ['action' => 'receipt.read', 'receipt_id' => $receipt->id]);
-        $this->assertSame($phase->id, $state['plan']['phase']['id']);
-        $this->assertSame($subject->id, $state['plan']['gate_id']);
-        $this->assertSame(1, collect($state['plan']['gate_options'])->firstWhere('id', $subject->id)['reinforcement_count']);
+        $state = $service->contribute($fixture->viewer, $phase->id, ['action' => 'proposition.reclassify', 'proposition_id' => $subject->id, 'receipt_id' => $receipt->id, 'receipt_options' => ['load' => [$receipt->id]]]);
+        $classification = $state['plan']['gate_id'];
+        $this->assertNotSame($phase->id, $state['plan']['phase']['id']);
         $this->assertPublicCount($fixture, $subject, 1);
-        $this->assertNull($phase->fresh()->completed_at);
+        $this->assertNotNull($phase->fresh()->completed_at);
         $loaded = collect($state['plan']['receipts'])->firstWhere('id', $receipt->id);
         $this->assertSame('loaded', $loaded['status']);
         $this->assertArrayNotHasKey('evidence', $loaded, 'A loaded Gate Receipt is metadata until its Proposition occupies Read.');
@@ -86,7 +85,6 @@ class ReceiptContextTest extends TestCase
         $this->assertArrayNotHasKey('receipt.read', $state['plan']['schema']['$defs']['actions']);
         $this->assertSame(1, app(ReinforcementService::class)->count($subject));
         $this->assertSame(1, app(ReinforcementService::class)->count($subject, new ParticipationContext($phase)));
-        app(ReceiptContextService::class)->read($fixture->viewer, $phase, $receipt->id);
         $this->assertSame(1, DB::table('receipt_context_events')->count());
 
         $phase->cycle->phases()->whereNull('completed_at')->update(['completed_at' => now()]);
@@ -115,7 +113,7 @@ class ReceiptContextTest extends TestCase
         $other->forceFill(['substrate_id' => $fixture->substrate->id, 'callsign' => 'Another reader'])->save();
         $otherPhase = $this->newPhase($other, $subject->id);
         $this->publishPotentialFixture($other);
-        $service->contribute($other, $otherPhase->id, ['action' => 'receipt.read', 'receipt_id' => $receipt->id]);
+        $service->contribute($other, $otherPhase->id, ['action' => 'attestation.create', 'proposition_id' => $classification, 'direction' => 'support', 'receipt_options' => ['load' => [$receipt->id]]]);
         $this->assertSame(2, app(ReinforcementService::class)->count($subject));
         $this->assertPublicCount($fixture, $subject, 2);
         $commit = $fixture->node($subject, 'canon', 'commit', 'committal');

@@ -48,7 +48,7 @@ export function ParticipantWorkspace({ plan, availableActions, onAction, onSubmi
       <Box component="fieldset" disabled={busy} className="operational-board" aria-busy={busy}>
         {!preview && <HorizonContext horizon={plan.workspace?.horizon} domain={domainName} provenance={provenance} onInspect={setInspection} />}
         <LineagePanel lineage={lineage} committalObservables={provenance.observables} onInspect={setInspection} />
-        {!preview && <ReceiptContextPanel plan={plan} canRead={allowed('receipt.read')} onRead={(receipt_id) => onAction('receipt.read', { receipt_id })} canReplay={allowed('receipt.replay')} onReplay={(receipt_id) => onAction('receipt.replay', { receipt_id })} />}
+        {!preview && <ReceiptContextPanel plan={plan} />}
         <Box className="operational-regions">
           {lanes.map((lane, index) => {
             const meta = metaForRegister(lane.register);

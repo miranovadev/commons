@@ -6,22 +6,19 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { quickContribution, receiptChoices } from '../../resources/js/participationOptions.ts';
 
-const schema = { $defs: { actions: { 'receipt.read': { properties: { receipt_id: { enum: ['available'] } } } } } };
-test('Receipt Read sends only the authorized Receipt ID', () => {
-  assert.deepEqual(quickContribution({ schema }, 'receipt.read', { receipt_id: 'available', proposition_id: 'injected', rationale: 'injected' }),
-    { action: 'receipt.read', receipt_id: 'available' });
-  assert.equal(quickContribution({ schema }, 'receipt.read', { receipt_id: 'loaded' }), null);
-  assert.equal(quickContribution({ schema: {} }, 'receipt.read', { receipt_id: 'available' }), null);
+const schema = { $defs: { actions: {} } };
+test('Receipt references do not offer standalone loading', () => {
+  assert.equal(quickContribution({ schema }, 'receipt.read', { receipt_id: 'available' }), null);
 });
 
-test('Receipt panel exposes only authorized Reads and preloads evidence without duplicate buttons', async () => {
+test('Receipt panel is metadata-only except for active loaded evidence', async () => {
   const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
   const result = await build({ stdin: { contents: `
     import React from 'react';
     import { renderToStaticMarkup } from 'react-dom/server';
     import { MantineProvider } from '@mantine/core';
     import { ReceiptContextPanel } from './resources/js/components/ReceiptContextPanel';
-    export const render = (plan, canRead = true) => renderToStaticMarkup(<MantineProvider env="test"><ReceiptContextPanel plan={plan} canRead={canRead} onRead={() => {}} /></MantineProvider>);
+    export const render = (plan, canRead = true) => renderToStaticMarkup(<MantineProvider env="test"><ReceiptContextPanel plan={plan} /></MantineProvider>);
   `, resolveDir: root, loader: 'tsx' }, bundle: true, platform: 'node', format: 'cjs', write: false, jsx: 'automatic' });
   const module = { exports: {} };
   new Function('require', 'module', 'exports', result.outputFiles[0].text)(createRequire(import.meta.url), module, module.exports);
@@ -32,7 +29,7 @@ test('Receipt panel exposes only authorized Reads and preloads evidence without 
     { id: 'failed', type: 'hyperlink', reference: 'Failed verification', status: 'unqualified' },
   ];
   const html = module.exports.render({ schema, receipts });
-  assert.equal([...html.matchAll(/>Read Receipt</g)].length, 1);
+  assert.equal([...html.matchAll(/>Read Receipt</g)].length, 0);
   assert.match(html, /Preloaded evidence body/);
   const inactive = receipts.map(item => ({ ...item, active: false }));
   assert.doesNotMatch(module.exports.render({ schema, receipts: inactive }), /Preloaded evidence body|Historical Committal loaded by reference/);
@@ -49,7 +46,7 @@ test('Receipt panel exposes only authorized Reads and preloads evidence without 
   const referenceHtml = module.exports.render(referenced);
   assert.match(referenceHtml, /Attached resource/);
   assert.match(referenceHtml, /Referenced by gate/);
-  assert.equal([...referenceHtml.matchAll(/>Read Receipt</g)].length, 1);
+  assert.equal([...referenceHtml.matchAll(/>Read Receipt</g)].length, 0);
   assert.doesNotMatch(referenceHtml, /UNREAD BODY/);
   assert.doesNotMatch(module.exports.render({ ...referenced, schema: {} }), />Read Receipt</);
   assert.equal(receiptChoices(referenced)[0].id, 'attached');

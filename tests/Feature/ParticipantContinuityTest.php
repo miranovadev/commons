@@ -137,9 +137,7 @@ class ParticipantContinuityTest extends TestCase
         app(PotentialProjectionService::class)->refresh($participant->substrate_id);
         $horizons = ContextHorizon::orderBy('sequence')->get()->map(fn ($h) => Arr::except($h->getAttributes(), ['exhausted_at', 'updated_at']))->all();
         $state = $service->stateFor($participant);
-        foreach ($state['plan']['schema']['$defs']['actions']['receipt.read']['properties']['receipt_id']['enum'] ?? [] as $receiptId) {
-            $state = $service->contribute($participant, $phase->id, ['action' => 'receipt.read', 'receipt_id' => $receiptId]);
-        }
+
         $this->assertSame(['participant.rest'], array_keys($state['plan']['schema']['$defs']['actions']));
         $rested = app(ParticipationService::class)->contribute($participant, $phase->id, ['action' => 'participant.rest']);
         $this->assertSame($commit->id, $participant->fresh()->current_proposition_id);

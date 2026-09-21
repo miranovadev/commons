@@ -55,7 +55,7 @@ contribution transaction; its result is revalidated during the short write.
 The wake remembers its starting Cycle ID and stops when that Cycle ends, including
 when another actor advances that Participant. It never infers a contribution for
 the prepared successor Cycle. A new scheduler wake resumes that exact occurrence.
-Legacy standalone Receipt Reads can add iterations without advancing the Phase. Gate desired-state load/unload options instead accompany the normal contribution, with no extra iteration.
+Gate desired-state load/unload options accompany the normal forward contribution, with no extra iteration. Standalone Receipt Read and Replay actions are retired; replay is an Instrument invocation mode.
 
 An autonomous contribution is validated against its original schema and fresh
 admissibility. A previously admissible action invalidated during inference yields

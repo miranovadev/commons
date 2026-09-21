@@ -244,8 +244,7 @@ interpretation of the rest_available flag or visible cards.
 The server first applies all phase-native, ownership, target and Commitment
 constraints, then specializes the complete action schema. When no Phase-advancing
 action remains it sets `rest_available: true` and injects `participant.rest`.
-An optional `receipt.read` may remain beside Rest because it changes context without
-advancing the Phase. Human controls and autonomous inference receive the same result.
+Informational Receipt metadata does not block Rest. Rest changes no Receipt load state.
 
 Rest is never a preference over a Phase-advancing action. An available
 Variant, Reclassify, Revise, Attestation, phase-admissible Traverse, Reconcile, Instrument or Commit
@@ -472,17 +471,19 @@ Order admits only `proposition.commit` and `proposition.traverse`, or exclusive 
 
 The waiting state has `plan: null`, entry availability and the completed Cycle identity. The workspace can retain completed cards as read-only context. Return to Participants opens the Substrate collection; Enter another Cycle uses the normal entry endpoint. Rest is the separate backward-lineage recovery path: only ancestral Committals within the permitted Horizon compete by attenuated Potential. Region-wide calculation or visibility cannot relocate the Participant.
 
-### Receipt Reads
+### Receipt memory and Instrument replay
 
-`receipt.read` is available in phases 1–6 when qualifying encountered evidence can add to context. It does not advance the Phase or Gate. Loaded state persists across Cycles and Horizons. Existing Cite references in context cannot be newly loaded; equivalent receipts do not multiply reinforcement. Order has no Read or Replay action, while historical observations remain inspectable.
+Gate `receipt_options.load/unload` changes persistent Participant memory only
+alongside a successful forward contribution. Loaded state survives Cycles and
+Horizons; bodies activate only when grounding the current Read. Catalogue and
+Proposition references remain metadata without standalone Load controls.
 
-## Receipt capabilities and discovery
-
-[Web Search and Receipt Replay](instruments.md) extend the existing Instrument
-contract. `receipt.read` loads existing evidence without advancing the Phase.
-`receipt.replay` uses the stored invocation, original eligible Instrument Write and
-normal Instrument progression to create a new immutable observation. Neither
-initial execution nor replay automatically loads a Receipt.
+[Instrument replay](instruments.md) uses `instrument.execute` with
+`instrument: {"replay_receipt_id": "R"}` and the exact schema-authorized
+`proposition_id`. It restores the stored invocation, preserves ordinary eligibility
+and equivalent-evidence exclusions, and creates a new Proposition-grounded Receipt
+with replay provenance. Neither fresh execution nor replay automatically loads
+source or result. There are no standalone Receipt Read or Replay action families.
 
 No-Potential failure is observed outside the Rest write lock and published with an exact field-version guard. First failure records Tragedy and its unique Receipt, keeping the Horizon open. A subsequent no-Potential Rest can record Exhaustion only after that Receipt has been consumed by Reclassify. Compact historical alternatives remain visible and non-actionable. See [Tragedy and final-attempt Exhaustion](branch-tragedy.md).
 

@@ -77,8 +77,6 @@ final readonly class InputSchemaService
             $traversalOptionIds,
             $instrumentOptionIds ?? $writeOptionIds,
             $commitOptionIds,
-            $this->receipts->forPhase($occurrence, $context)->where('capabilities.readable', true)->where('status', 'available')->pluck('id')->all(),
-            $this->receipts->forPhase($occurrence, $context)->where('can_replay', true)->pluck('id')->all(),
         );
 
         if (isset($schema['$defs']['actions']['proposition.reclassify'])) {
@@ -115,6 +113,23 @@ final readonly class InputSchemaService
             }
         }
 
+        if (isset($schema['$defs']['actions']['instrument.execute'])) {
+            $replays = $this->receipts->forPhase($occurrence, $context)->where('can_replay', true)->groupBy('proposition_id');
+            if ($replays->isNotEmpty()) {
+                $fresh = $schema['$defs']['instrument'];
+                $form = fn (array $ids): array => ['type' => 'object', 'additionalProperties' => false,
+                    'required' => ['replay_receipt_id'], 'properties' => ['replay_receipt_id' => ['type' => 'string', 'enum' => $ids]]];
+                $action = &$schema['$defs']['actions']['instrument.execute'];
+                $action['properties']['instrument'] = ['anyOf' => [...$fresh['anyOf'], $form($replays->flatten(1)->pluck('id')->all())]];
+                $action['anyOf'] = [['properties' => ['instrument' => $fresh]]];
+                foreach ($replays as $target => $receipts) {
+                    $action['anyOf'][] = ['properties' => ['proposition_id' => ['enum' => [$target]],
+                        'instrument' => ['anyOf' => [$form($receipts->pluck('id')->all())]]]];
+                }
+                unset($action);
+            }
+        }
+
         if (isset($schema['$defs']['actions']['attestation.create'])) {
             $ids = $attestationOptionIds ?? $writeOptionIds;
             $effective = Attestation::query()->effective()
@@ -134,16 +149,8 @@ final readonly class InputSchemaService
             $schema['$defs']['actions']['attestation.create']['anyOf'] = $choices;
         }
 
-        // Receipt Read only changes Participant context. It must not turn an
-        // otherwise actionless Phase into a mandatory read loop or suppress
-        // the structural Rest which ends the current probe.
-        $progressActions = array_diff(array_keys($schema['$defs']['actions']), ['receipt.read']);
-        if ($progressActions === []) {
-            if ($schema['$defs']['actions'] === []) {
-                return $this->withReceiptOptions($this->forPhase($kind, ['participant.rest']), $occurrence, $context);
-            }
-            $schema['$defs']['actions']['participant.rest'] = config('schemas.actions')['participant.rest'];
-            $schema['oneOf'][] = ['$ref' => '#/$defs/actions/participant.rest'];
+        if ($schema['$defs']['actions'] === []) {
+            return $this->withReceiptOptions($this->forPhase($kind, ['participant.rest']), $occurrence, $context);
         }
 
         return $this->withReceiptOptions($schema, $occurrence, $context);
@@ -157,7 +164,7 @@ final readonly class InputSchemaService
         }
         $selection = ['type' => 'array', 'uniqueItems' => true, 'items' => ['type' => 'string', 'enum' => $ids]];
         foreach ($schema['$defs']['actions'] as $name => &$action) {
-            if (in_array($name, ['receipt.read', 'participant.rest'], true)) {
+            if ($name === 'participant.rest') {
                 continue;
             }
             $action['properties']['receipt_options'] = ['type' => 'object', 'additionalProperties' => false,
@@ -223,7 +230,7 @@ final readonly class InputSchemaService
             '$schema' => 'https://json-schema.org/draft/2020-12/schema',
             '$id' => "https://miranova.dev/commons/schemas/phases/{$plan['name']}.json",
             'title' => ucfirst($plan['name']).' phase response',
-            'description' => 'Choose exactly one action per response. Receipt Reads update context without advancing the Phase.',
+            'description' => 'Choose exactly one action per response. Optional Gate Receipt desired states accompany successful forward contributions.',
             'oneOf' => array_map(
                 static fn (string $name): array => [
                     '$ref' => "#/\$defs/actions/{$name}",
@@ -270,12 +277,8 @@ final readonly class InputSchemaService
         array $traversalOptionIds,
         array $instrumentOptionIds,
         array $commitOptionIds,
-        array $receiptOptionIds,
-        array $replayOptionIds,
     ): array {
         $bindings = [
-            'receipt.read' => ['property' => 'receipt_id', 'values' => $receiptOptionIds],
-            'receipt.replay' => ['property' => 'receipt_id', 'values' => $replayOptionIds],
             'proposition.commit' => [
                 'property' => 'proposition_id',
                 'values' => $commitOptionIds,

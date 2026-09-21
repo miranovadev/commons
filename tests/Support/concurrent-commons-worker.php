@@ -64,7 +64,6 @@ try {
         'state' => app(ParticipationService::class)->stateFor(Participant::findOrFail($input['participant_id'])),
         'workspace' => app(ParticipationService::class)->workspaceFor(Participant::findOrFail($input['participant_id'])),
         'prepare' => app(ParticipationService::class)->prepare(Participant::findOrFail($input['participant_id'])),
-        'receipt-read' => app(ReceiptContextService::class)->read(Participant::findOrFail($input['participant_id']), Phase::findOrFail($input['phase_id']), $input['receipt_id']),
         'horizon' => app(ContextHorizonProjector::class)->apply(CommitmentSnapshot::findOrFail($input['proposition_id'])),
         'plan' => app(InputPlanService::class)->forParticipant(Participant::findOrFail($input['participant_id'])),
         'rest' => contributeWithRetry(

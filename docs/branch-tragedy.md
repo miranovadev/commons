@@ -18,7 +18,7 @@ A Tragedy Receipt uses `proposition.reclassify` with `proposition_id` and `recei
 
 ## Authoritative Rest
 
-Rest is admissible only after the specialized action schema contains no Phase-advancing action. Optional Receipt Read may remain beside Rest. The backend records `cycles.rest_reason`; the submitted action contains no reason. An unavailable Gate, missing effective Attestation, or absent evidence is `no_available_move`. A grounded, attested Gate with no positive local numerical capacity yields `no_remaining_potential`. Capacity examines every local Committal region without recovery-frontier shadowing or borrowing from child Horizons. Neither a positive historical gain nor a zero recovery frontier determines actionability: the schema and exact current failure epochs decide structural options separately.
+Rest is admissible only after the specialized action schema contains no Phase-advancing action. Informational Receipt metadata does not block Rest; Rest changes no Receipt load state. The backend records `cycles.rest_reason`; the submitted action contains no reason. An unavailable Gate, missing effective Attestation, or absent evidence is `no_available_move`. A grounded, attested Gate with no positive local numerical capacity yields `no_remaining_potential`. Capacity examines every local Committal region without recovery-frontier shadowing or borrowing from child Horizons. Neither a positive historical gain nor a zero recovery frontier determines actionability: the schema and exact current failure epochs decide structural options separately.
 
 ## Attainable final attempt
 

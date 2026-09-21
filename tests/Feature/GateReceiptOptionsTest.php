@@ -82,9 +82,7 @@ class GateReceiptOptionsTest extends TestCase
         $schema = app(InputPlanService::class)->forPhase($f->viewer, $f->phase)['schema'];
         $this->assertArrayHasKey('participant.rest', $schema['$defs']['actions']);
         $this->assertArrayNotHasKey('receipt_options', $schema['$defs']['actions']['participant.rest']['properties']);
-        if (isset($schema['$defs']['actions']['receipt.read'])) {
-            $this->assertArrayNotHasKey('receipt_options', $schema['$defs']['actions']['receipt.read']['properties']);
-        }
+        $this->assertArrayNotHasKey('receipt.read', $schema['$defs']['actions']);
         $before = ParticipantReceiptContext::get()->map->getAttributes()->all();
         $events = DB::table('receipt_context_events')->count();
         foreach ([['load' => [$r->id]], ['unload' => [$r->id]], []] as $options) {

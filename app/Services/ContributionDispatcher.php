@@ -87,31 +87,6 @@ final readonly class ContributionDispatcher
                     : 'Support requires an admissible Proposition in the current Write.');
             }
 
-            if ($action === 'receipt.replay') {
-                if (array_diff(array_keys($input), ['action', 'receipt_id']) !== []) {
-                    throw new DomainException('Replay takes only action and receipt_id.');
-                }
-
-                $result = $this->replays->replay($participant, $phase, $input['receipt_id'], $observed)->instrumentExecution->proposition;
-                if ($receiptOptions !== null) {
-                    $this->receipts->desired($participant, $phase, $receiptOptions);
-                }
-
-                return $result;
-            }
-
-            if ($action === 'receipt.read') {
-                if ($receiptOptions !== null) {
-                    throw new DomainException('Receipt options accompany a normal Phase contribution.');
-                }
-                if (array_diff(array_keys($input), ['action', 'receipt_id']) !== []) {
-                    throw new DomainException('Read takes only action and receipt_id.');
-                }
-                $this->receipts->read($participant, $phase, $input['receipt_id']);
-
-                return $gate;
-            }
-
             $result = match ($input['action']) {
                 'proposition.traverse' => Proposition::query()
                     ->findOrFail($input['proposition_id']),
@@ -158,7 +133,6 @@ final readonly class ContributionDispatcher
     {
         return match ($input['action'] ?? null) {
             'instrument.execute' => $this->observeExecution($participant, $phase, $input),
-            'receipt.replay' => $this->replays->observe($participant, $phase, $input['receipt_id']),
             default => null,
         };
     }
@@ -169,6 +143,12 @@ final readonly class ContributionDispatcher
             || ! in_array('instrument.execute', config("phases.{$phase->kind->value}.actions", []), true)
             || ! $this->options->instrumentOptionsFor($phase)->contains('id', $input['proposition_id'] ?? null)) {
             throw new DomainException('Support requires an admissible Proposition in the current Write.');
+        }
+
+        if (array_key_exists('replay_receipt_id', $input['instrument'])) {
+            $this->assertReplayInput($input['instrument']);
+
+            return $this->replays->observe($participant, $phase, $input['instrument']['replay_receipt_id'], $input['proposition_id']);
         }
 
         return $this->instruments->observeFor($phase, Proposition::findOrFail($input['proposition_id']), $input['instrument']);
@@ -344,9 +324,21 @@ final readonly class ContributionDispatcher
     ): Proposition {
         $proposition = Proposition::query()
             ->findOrFail($input['proposition_id']);
-        $this->instruments->execute($phase, $proposition, $input['instrument'], observed: $observed);
+        if (array_key_exists('replay_receipt_id', $input['instrument'])) {
+            $this->assertReplayInput($input['instrument']);
+            $this->replays->replay($phase->cycle->participant, $phase, $input['instrument']['replay_receipt_id'], $observed, $proposition->id);
+        } else {
+            $this->instruments->execute($phase, $proposition, $input['instrument'], observed: $observed);
+        }
 
         return $proposition;
+    }
+
+    private function assertReplayInput(array $instrument): void
+    {
+        if (array_keys($instrument) !== ['replay_receipt_id'] || ! is_string($instrument['replay_receipt_id'])) {
+            throw new DomainException('Replay selects only the stored Receipt invocation.');
+        }
     }
 
     private function commit(

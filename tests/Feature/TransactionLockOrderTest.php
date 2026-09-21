@@ -393,10 +393,7 @@ class TransactionLockOrderTest extends TestCase
             $this->assertStringContainsString('completed', $process->getOutput());
             $this->assertNotNull($secondPhase->fresh()->completed_at);
 
-            $receiptIds = $state['plan']['schema']['$defs']['actions']['receipt.read']['properties']['receipt_id']['enum'];
-            $this->assertNotEmpty($receiptIds);
-
-            return ['action' => 'receipt.read', 'receipt_id' => $receiptIds[0]];
+            return ['action' => 'proposition.variant', 'statement' => 'Second forward wake action'];
         });
         (new WakeParticipant($link->id))->handle($inference, app(ParticipationService::class), app(ParticipantConnectionTriggerService::class), app(ParticipantActivityService::class));
         $this->assertSame(2, $calls);
@@ -488,13 +485,13 @@ class TransactionLockOrderTest extends TestCase
     }
 
     #[Group('load')]
-    public function test_competing_receipt_reads_keep_one_load_and_one_event(): void
+    public function test_competing_gate_desired_states_keep_one_load_and_one_event(): void
     {
         [$substrate, $participant, $phase] = $this->fixture();
-        $receiptId = app(ParticipationService::class)->stateFor($participant)['plan']['schema']['$defs']['actions']['receipt.read']['properties']['receipt_id']['enum'][0];
-        $this->whileWorkerWaits($substrate, ['operation' => 'receipt-read', 'participant_id' => $participant->id,
-            'phase_id' => $phase->id, 'receipt_id' => $receiptId], function () use ($participant, $phase, $receiptId): void {
-                app(ReceiptContextService::class)->read($participant, $phase, $receiptId);
+        $receiptId = app(ReceiptContextService::class)->gateOptions($phase)->firstOrFail()['id'];
+        $this->whileWorkerWaits($substrate, ['operation' => 'receipt-desired', 'participant_id' => $participant->id,
+            'phase_id' => $phase->id, 'receipt_options' => ['load' => [$receiptId]]], function () use ($participant, $phase, $receiptId): void {
+                DB::transaction(fn () => app(ReceiptContextService::class)->desired($participant, $phase, ['load' => [$receiptId]]));
             });
         $load = ParticipantReceiptContext::where('participant_id', $participant->id)->where('receipt_id', $receiptId)->sole();
         $this->assertSame(1, ReceiptContextEvent::where('participant_receipt_context_id', $load->id)->count());

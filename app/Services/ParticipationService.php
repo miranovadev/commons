@@ -209,7 +209,7 @@ final readonly class ParticipationService
         // Validate before network I/O, then guard the prepared plan by version.
         // An observation is discarded when the Phase or admissibility changed.
         $observed = null;
-        if (in_array($input['action'] ?? null, ['instrument.execute', 'receipt.replay'], true)) {
+        if (($input['action'] ?? null) === 'instrument.execute') {
             $plan = $this->plans->forPhase($participant, $observedPhase);
             try {
                 $this->contributions->validateSchema($plan['schema'], $input);
@@ -306,9 +306,7 @@ final readonly class ParticipationService
                 $input,
                 $observed,
             );
-            if ($input['action'] !== 'receipt.read') {
-                $this->progression->advance($phase, $gate);
-            }
+            $this->progression->advance($phase, $gate);
 
         });
 
