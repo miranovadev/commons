@@ -33,16 +33,18 @@ longest path was 20 edges. This validates lineage derivation, not a replay of ol
 numeric Potential or a repair of earlier incorrect relocations.
 
 `ProjectedRecoveryService` reads maintained local topology and measurements. It
-intersects active Committal entries with the exact walked lineage before scoring.
+intersects active Committal entries with the exact walked lineage. The current
+resolver stops at the nearest eligible entry before computing diagnostic values.
 It does not read child frontiers to discover candidates. The reference evaluator
 loads its raw graph and measurements independently and shares the explicit path
 contract. Existing numeric projection/frontier maintenance remains for initial
 entry, availability and graph consumers; its broader removal is not Stage 4.
 
-Each candidate's distance is its actual backward edge count from the terminal
-position. Potential and Charge retain `1 / (1 + distance)^2` attenuation. Both
-nearer and farther ancestors can win; a successful Commit no longer shadows
-its stronger ancestor during Rest recovery. Current-Horizon scope holds until
+The selected destination's distance is its actual backward edge count from the
+terminal position. Potential and Charge retain `1 / (1 + distance)^2` diagnostic
+attenuation. Stage 4 formerly ranked all eligible ancestors by those values;
+that selection rule is superseded by [nearest-Committal recovery](recovery-basins.md).
+A nearer unresolved Committal now blocks older ancestors regardless of values. Current-Horizon scope holds until
 the existing exhaustion proof permits retreat. Crossing continues along the
 same path, retaining intermediate Committals and the original distance origin.
 

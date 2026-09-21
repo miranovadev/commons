@@ -294,12 +294,11 @@ Proposition measurements are averaged with inverse-square weights
 Every visited position contributes denominator weight. Raw Potential uses these
 accumulated measurements without re-discounting continuation length. Another
 Committal still stops the outgoing continuation search. Immutable snapshot
-Tension remains the historical baseline. Recovery observes eligible ancestral
-candidate Potential and Charge from the retained Participant position using the
-same inverse-square weighting. Initial entry has no positional attenuation;
-recovery applies destination attenuation only to its recorded ancestral
-candidates, using actual backward edge distance. Calculation geometry does not
-grant movement. See
+Tension remains the historical baseline. Recovery selects the nearest eligible non-exhausted ancestral Committal before
+computing its diagnostic Potential and Charge with the same inverse-square
+weighting and actual backward edge distance. These diagnostic values cannot skip
+a nearer unresolved basin. Initial entry has no positional attenuation.
+Calculation geometry does not grant movement. See
 [observables](observables.md) for the full calculation.
 
 Order returns an actionable `ready` plan even when Commit is inadmissible.
@@ -469,7 +468,7 @@ preferences disable animation.
 
 Order admits only `proposition.commit` and `proposition.traverse`, or exclusive Rest when neither remains. Commit and Committal Traverse both complete the Cycle at the exact Committal result. Natural completion leaves `rested_at` unset. The next explicit entry begins Phase 1 at that same Proposition, respecting its applicable Context Horizon; no normal completion relocates the Participant.
 
-The waiting state has `plan: null`, entry availability and the completed Cycle identity. The workspace can retain completed cards as read-only context. Return to Participants opens the Substrate collection; Enter another Cycle uses the normal entry endpoint. Rest is the separate backward-lineage recovery path: only ancestral Committals within the permitted Horizon compete by attenuated Potential. Region-wide calculation or visibility cannot relocate the Participant.
+The waiting state has `plan: null`, entry availability and the completed Cycle identity. The workspace can retain completed cards as read-only context. Return to Participants opens the Substrate collection; Enter another Cycle uses the normal entry endpoint. Rest is the separate backward-lineage recovery path: the nearest eligible non-exhausted ancestral Committal within the permitted Horizon is selected, regardless of older values. Region-wide calculation or visibility cannot relocate the Participant.
 
 ### Receipt memory and Instrument replay
 

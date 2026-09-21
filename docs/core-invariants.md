@@ -148,23 +148,26 @@ A Cycle begins from a Committal Proposition. Expressive Propositions cannot serv
 as Cycle entry points. After ordinary completion, the next Cycle continues at
 the exact Committal reached through the current Gate's causal continuation;
 there is no fresh global selection. First entry has no prior position and uses
-its documented Committal selection. Recovery after Rest ranks only Committals
-on the recorded backward lineage, with actual backward-distance attenuation.
-Neither Potential nor a fallback can admit a sibling, descendant or unrelated
-Committal. A prospective Commitment is not eligible until it exists.
+its documented Committal selection. Recovery after Rest selects the nearest
+eligible non-exhausted Committal on the recorded backward lineage. Neither
+Potential nor Charge can skip a nearer unresolved basin. A prospective Commitment
+is not eligible until it exists.
 
-Rest recovery walks backward from the actual participant position, using recorded
-arrival provenance at multi-input Writes. Only ancestral Committals on that path
-may compete, at their actual backward edge distance. Sibling and descendant
-frontiers are excluded. The persisted Cycle Horizon constrains candidates until
-explicit exhaustion permits continuing backward across its opening boundary.
-Previous Horizons do not reset the position or distance to their provenance node.
-Potential ranks structurally eligible entries; numeric zero never proves closure.
+Recovery proceeds backward through committed basins in causal order. A nearer
+committed basin must be resolved before an older committed basin becomes eligible.
+Recorded arrival provenance determines the path at multi-input Writes. Siblings,
+descendants and unrelated branches are excluded. The persisted Cycle Horizon
+constrains recovery until explicit exhaustion permits crossing its opening
+boundary along that same path. Previous Horizons do not substitute their opener
+for the next qualifying Committal. Numeric zero never proves exhaustion; the
+existing Tragedy, shared final-attempt and Receipt-consumption proof remains
+required. Commitment creates a recovery boundary. Exhaustion permits recovery
+past it. Measurement attenuation, Potential and Charge formulas are unchanged.
 Origin remains unique and persistent. Its Horizon follows the same final-attempt proof. See the invariants below.
 
 Potential is the strongest remaining viable continuation under absolute-Tension-reduction semantics, never an additive budget. Writes maintain affected region projections and propagate changed routing summaries through provenance. Ordinary reads consume the published field version; they never repair measurements or reconstruct the whole substrate. A missing or inconsistent projection is an explicit recoverable maintenance condition. See [Incremental Potential](incremental-potential.md).
 
-Potential selects a Committal. That Committal determines the entry Horizon: its own creating Horizon, or the direct child explicitly opened by its boundary. Closure markers do not prohibit causal backtracking. Entry must never search arbitrary open descendants to make an old Gate fit. Persisted ownership remains `Proposition → Phase → Cycle → Context Horizon → Domain`; Gates must belong to or explicitly open their Cycle Horizon, and writes must use that Domain's vocabulary.
+Initial entry uses Potential; Rest recovery uses causal order. The selected Committal determines the entry Horizon: its own creating Horizon, or the direct child explicitly opened by its boundary. Closure markers do not prohibit causal backtracking. Entry must never search arbitrary open descendants to make an old Gate fit. Persisted ownership remains `Proposition → Phase → Cycle → Context Horizon → Domain`; Gates must belong to or explicitly open their Cycle Horizon, and writes must use that Domain's vocabulary.
 
 Under normal Phase progression, there may be at most six consecutive Expressive
 Proposition tiers between Committal Propositions. A new Committal Proposition may
@@ -261,8 +264,8 @@ explicit edge from the current Gate; it does not move the Participant to that
 counterpart.
 
 Recovery begins at the actual current position and walks recorded arrival
-provenance backward. Only ancestral Committals on that path may compete, using
-actual backward edge distance. The current Horizon confines the search until
+provenance backward and stops at the nearest eligible non-exhausted Committal.
+An older basin cannot compete until the nearer one is resolved. The current Horizon confines the search until
 exhaustion permits crossing its opening boundary, after which the same lineage
 continues into previous Horizons. Recovery never resets to a Horizon provenance
 node, searches siblings or descendants, or takes an unused parent as a shortcut.

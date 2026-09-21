@@ -23,20 +23,36 @@ prevents a later revisit from changing an earlier hop. An ambiguous multi-input
 without a recorded Gate, a missing node, cross-substrate ancestry, or a causal
 cycle fails closed.
 
-Candidates retain the existing raw Potential and Charge definitions. Effective
-Potential is `raw Potential / (1 + backward distance)^2`; effective Charge,
-distance and stable ID break ties. A farther ancestral Committal may beat a
-nearer one. A successful Commit does not shadow stronger ancestors during Rest
-recovery. Initial global entry and ordinary Commit continuity retain their
-existing semantics.
+Recovery proceeds backward through committed basins in causal order. A nearer
+committed basin must be resolved before an older committed basin becomes eligible.
+The first eligible, non-exhausted Committal on the recorded path is the sole
+recovery destination. Higher Potential or Charge at an older ancestor cannot
+skip it, even when the nearer basin has zero Potential and zero Charge. An
+eligible retained Committal is itself the distance-zero boundary.
 
-The current Horizon is a boundary on the walk. Only its explicit exhaustion
-(or existing legacy unavailability) permits crossing, and its opening Committal
-must actually occur on the walked path. Numeric zero alone never closes a fresh
-basin. In a previous Horizon, candidates are ancestral Committals encountered
-along the same path, with distance still measured from the original terminal
-position. Recovery never resets the observer to that Horizon's opener. Every
-parent requires its own proof; child exhaustion cannot close its parent.
+Exhaustion is established by the existing Tragedy/final-attempt proof, never by
+ranking values or inferring that an empty basin is closed. A Participant can
+return to an open basin with no admissible continuation; its subsequent lifecycle
+must establish exhaustion before recovery may continue past it. Same-Horizon
+Commits do not acquire a new per-Commit exhaustion mechanism in this change.
+Existing authoritative Horizon exhaustion makes its owned positions and opening
+Committal unavailable.
+
+The current Horizon remains a boundary on the walk. Its explicit exhaustion
+permits crossing only when its opening Committal occurs on the recorded path.
+After crossing, recovery stops at the nearest eligible ancestral Committal in
+the parent Horizon, rather than substituting that Horizon's opener. Every parent
+requires its own proof; child exhaustion cannot close its parent.
+
+Potential, Charge, field calculations and inverse-square measurement attenuation
+are unchanged. Recovery selects its destination **before** calculating diagnostic
+values; `potential_charge` and `charge` still report the selected destination's
+raw values multiplied by `1 / (1 + backward distance)^2`. They do not rank recovery
+destinations. `eligible_candidate_ids` contains only the selected Committal (or
+is empty); older unresolved ancestors no longer compete. Initial global entry,
+relative-ranking diagnostics and ordinary Commit continuity retain their semantics.
+
+**Commitment creates a recovery boundary. Exhaustion permits recovery past it.**
 
 Tragedy uses this same recovery route. Publication retains the terminal position
 and creates no `recovery_proposition_id` override. Legacy override values are

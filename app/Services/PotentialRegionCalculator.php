@@ -46,8 +46,8 @@ final class PotentialRegionCalculator
         $result = [];
         foreach ($eligible as $id => $entry) {
             // Initial-entry/numeric summaries retain their downstream frontier.
-            // Recovery supplies an exact lineage and compares every ancestral
-            // Committal; downstream Commits cannot shadow that candidate set.
+            // Recovery supplies only the nearest eligible ancestral Committal;
+            // off-path downstream Commits cannot shadow that destination.
             $search = [$id];
             $searched = [$id => true];
             $shadowed = false;

@@ -48,12 +48,23 @@ final readonly class ProjectedRecoveryService
         $excluded = $unavailable ? $position->id : null;
         $result = $this->basins->resolve($start, $horizons,
             function (ContextHorizon $basin) use ($localFor, $distances, $excluded) {
-                return collect($this->calculator->candidates($localFor($basin->id), $excluded, lineage: $distances))
-                    ->map(fn ($entry) => $this->calculator->attenuate($entry, $distances[$entry['proposition_id']]));
+                $local = $localFor($basin->id);
+                // The backward walk is in causal order. An open Committal is a
+                // recovery boundary even at zero Potential; older values cannot
+                // compete. Entries already exclude explicitly exhausted basins.
+                foreach ($distances as $id => $distance) {
+                    if ($id !== $excluded && isset($local['entries'][$id])) {
+                        return collect($this->calculator->candidates($local, $excluded, lineage: [$id => $distance]))
+                            // Retain numerical diagnostics, never use them to select.
+                            ->map(fn ($entry) => $this->calculator->attenuate($entry, $distance));
+                    }
+                }
+
+                return collect();
             }, fn (ContextHorizon $basin) => isset($distances[$basin->opened_by_proposition_id]),
             fn (ContextHorizon $basin) => ! ($localFor($basin->id)['nodes'][$basin->opened_by_proposition_id]['active'] ?? true));
-        $ranked = $this->calculator->rank($result['candidates']->all());
-        $selection = $ranked[0] ?? null;
+        $candidates = $result['candidates']->all();
+        $selection = $candidates[0] ?? null;
         if ($selection !== null) {
             $selection['proposition'] = Proposition::findOrFail($selection['proposition_id']);
             $selection['reason'] = $selection['proposition']->commitmentSnapshot?->calculator_version === 'origin-bootstrap-v1' && $unavailable ? 'origin_renewal' : 'open_basin';
@@ -64,7 +75,7 @@ final readonly class ProjectedRecoveryService
 
         return ['selection' => $selection, 'starting_context_horizon_id' => $start->id,
             'searched_basins' => $result['searched_basins'], 'fallback_depth' => $result['fallback_depth'],
-            'eligible_candidate_ids' => array_column($ranked, 'proposition_id'),
+            'eligible_candidate_ids' => array_column($candidates, 'proposition_id'),
             'projected_field_version' => $version, 'recovery_hops' => $result['fallback_depth']];
     }
 }

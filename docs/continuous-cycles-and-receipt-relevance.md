@@ -26,7 +26,7 @@ and still rejects an already active Cycle.
 Order Commit and Committal Traverse prepare Phase 1 at the exact terminal
 Committal, including zero-Potential continuation. Rest still requires complete
 local action exhaustion, records `rested_at`, and selects an eligible Committal
-from the actual backward lineage within the eligible Horizon with the existing attenuated Potential ranking. Successful recovery
+by stopping at the nearest eligible non-exhausted Committal on the actual backward lineage within the permitted Horizon. Successful recovery
 creates Phase 1 before the terminal response when its observation remains current.
 The contribution commits first; recovery is calculated without locks, followed by
 a short version-checked entry transaction. Optimistic readers may see this gap.
