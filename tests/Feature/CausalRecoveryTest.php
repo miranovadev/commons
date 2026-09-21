@@ -575,7 +575,7 @@ class CausalRecoveryTest extends TestCase
         $this->assertSame($commit->id, $h2->fresh()->closed_by_proposition_id);
     }
 
-    public function test_recovery_can_cross_multiple_domain_boundaries_without_rewriting_historical_ownership(): void
+    public function test_recovery_skips_multiple_exhausted_committals_and_stops_at_the_first_open_basin(): void
     {
         [$origin, $h2, $commit, $h3] = $this->boundaryChain();
         $later = $this->committal($h3, -.01, $commit, boundary: true);
@@ -584,11 +584,16 @@ class CausalRecoveryTest extends TestCase
         $this->opportunity($origin);
         $this->exhaust($position);
         $this->assertNull($h3->fresh()->exhausted_at, 'Parent requires its own final attempt');
+        $this->assertSame($commit->id, $this->recover($position)['proposition']->id,
+            'The still-open intermediate basin blocks the stronger older ancestor.');
         $this->exhaust($this->expressive($h3, $commit));
         $participant = $this->resting($h4, $position);
         $selection = $this->recover($position);
         $this->assertSame($origin->id, $selection['proposition']->id);
         $this->assertSame(3, $selection['distance']);
+        $inspection = app(PotentialChargeService::class)->inspectRecoveryFrom($position);
+        $this->assertSame([$origin->id], $inspection['eligible_candidate_ids']);
+        $this->assertSame([$h4->id, $h3->id, $h2->id], array_column($inspection['searched_basins'], 'context_horizon_id'));
         app(CycleEntryService::class)->enter($participant);
         $cycle = $participant->cycles()->whereNull('completed_at')->sole();
         $this->assertSame($h2->id, $cycle->context_horizon_id);

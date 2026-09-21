@@ -61,10 +61,10 @@ Potential Charge is `max(0, max(|T| - |T_c|))`, where `T` is the Committal
 state's immutable Tension and `T_c` is the projected Tension of each measurable
 Expressive continuation reachable before the next Committal state. If no
 continuation reduces Tension, selection falls back to the highest current
-Charge, `1 - |T|`, for initial entry. Recovery attenuates eligible ancestors'
-Potential and Charge by `1 / (1 + d)^2`, where `d` is the actual recorded
-backward edge distance from the retained position. Recovery ties use effective
-Charge, shorter distance and stable Proposition ID. Ordinary completion retains
+Charge, `1 - |T|`, for initial entry. Recovery stops at the nearest eligible
+non-exhausted ancestral Committal before computing its diagnostic Potential and
+Charge with `1 / (1 + d)^2`, where `d` is actual recorded backward edge distance.
+Greater values at older ancestors cannot skip that unresolved basin. Ordinary completion retains
 its exact Committal without ranking. Generic shortest-parent/child ranking is a
 diagnostic calculation, not movement authority or a recovery fallback.
 See [observer-relative Potential](observables.md#potential-observed-from-a-participant-position).
@@ -256,8 +256,8 @@ traversal set alone says nothing about complete action exhaustion.
 The plan reports `traversal_options` and `instrument_options` separately from
 `rest_available`. Complete Write and traversal target sets are not truncated by the
 Horizon display limit. A successful Commit is a recovery candidate only if it
-lies on the Participant's recorded backward lineage. It does not shadow an
-eligible ancestor; both compete at their actual backward distances. Regional
+lies on the Participant's recorded backward lineage. A nearer unresolved
+Committal prevents recovery to an older ancestor regardless of numerical values. Regional
 measurement populations and maintained frontiers do not add recovery candidates.
 
 Only an actionless Phase exposes `participant.rest`:
@@ -275,8 +275,8 @@ a viable recovery destination exists. Otherwise the current position is retained
 and the next wake or `/participate/enter` retries recovery:
 
 1. Begin at the Participant's actual terminal position and completed Cycle Horizon. Walk incoming causal edges backward through recorded arrival provenance. At a multi-input Write, follow the Participant's recorded arrival Gate, never an unused parent shortcut.
-2. Consider only eligible ancestral Committals encountered on that path within the current Horizon. The retained Committal may itself be a distance-zero candidate. Same-region members, siblings, descendants and unvisited branches never compete.
-3. Rank those candidates by raw Potential times `1 / (1 + d)^2`, then attenuated Charge, shorter distance and stable Proposition ID. Here `d` counts actual backward edges, including revisions and historical intermediate nodes. Potential ranks the authorised set; it cannot enlarge it.
+2. Stop at the nearest eligible non-exhausted ancestral Committal within the current Horizon. The retained Committal may itself be the distance-zero boundary. Same-region members, siblings, descendants and unvisited branches are ineligible.
+3. Do not inspect older Potential or Charge to choose a destination. An unresolved nearer basin must receive its attempt even at zero numerical Potential. Explicit exhaustion permits continuing past it. Diagnostic values for the selected destination retain inverse-square weighting by actual backward edge distance, including revisions and historical intermediates.
 4. Remain within the current Horizon until exhaustion permits crossing its opening boundary, which must occur on the same recorded path. Continue backward through previous Horizons on that lineage, retaining the original distance origin. Never reset to a Horizon provenance node or search siblings or descendants. Each Horizon requires its own exhaustion proof; numeric zero alone is insufficient.
 5. The selected ancestral Committal determines the new Cycle's Horizon: its own creating Horizon for a non-boundary Commit, or its explicitly opened direct child for a boundary. Do not pair an old Gate with an arbitrary descendant Horizon.
 

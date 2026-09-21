@@ -112,8 +112,8 @@ Reclassify takes the Substrate lock before the selected Receipt row, validates s
 Recovery runs after contribution commit and outside the subsequent entry
 transaction. Entry checks the observed field version. First Tragedy retains the
 actual terminal position and uses normal backward-lineage recovery, without an
-opening-Committal override. Only ancestral Committals on that path compete at
-actual backward edge distance. Exhaustion permits continuing across the opening
+opening-Committal override. Selection stops at the nearest eligible non-exhausted
+ancestral Committal; older Potential or Charge cannot skip it. Exhaustion permits continuing across the opening
 boundary into the previous Horizon on the same lineage; recovery never resets
 to its provenance node or searches siblings or descendants. Other Participants
 retain their positions until their normal transition. Calculation populations,
