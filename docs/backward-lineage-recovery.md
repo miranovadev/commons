@@ -33,16 +33,18 @@ longest path was 20 edges. This validates lineage derivation, not a replay of ol
 numeric Potential or a repair of earlier incorrect relocations.
 
 `ProjectedRecoveryService` reads maintained local topology and measurements. It
-intersects active Committal entries with the exact walked lineage before scoring.
+intersects active Committal entries with the exact walked lineage. The current
+resolver stops at the nearest eligible entry before computing diagnostic values.
 It does not read child frontiers to discover candidates. The reference evaluator
 loads its raw graph and measurements independently and shares the explicit path
 contract. Existing numeric projection/frontier maintenance remains for initial
 entry, availability and graph consumers; its broader removal is not Stage 4.
 
-Each candidate's distance is its actual backward edge count from the terminal
-position. Potential and Charge retain `1 / (1 + distance)^2` attenuation. Both
-nearer and farther ancestors can win; a successful Commit no longer shadows
-its stronger ancestor during Rest recovery. Current-Horizon scope holds until
+The selected destination's distance is its actual backward edge count from the
+terminal position. Potential and Charge retain `1 / (1 + distance)^2` diagnostic
+attenuation. Stage 4 formerly ranked all eligible ancestors by those values;
+that selection rule is superseded by [nearest-Committal recovery](recovery-basins.md).
+A nearer unresolved Committal now blocks older ancestors regardless of values. Current-Horizon scope holds until
 the existing exhaustion proof permits retreat. Crossing continues along the
 same path, retaining intermediate Committals and the original distance origin.
 
@@ -65,15 +67,15 @@ lineage invariant. Test methods were renamed to describe the replacement.
 | `CausalRecoveryTest`: reconciliation diamond | Shortest distance over every parent | Recorded arrival branch; the unused shortcut cannot reduce distance |
 | Connected descendant/sibling/disconnected candidates | Connected descendant wins | Exact candidate set contains only the ancestral Committal |
 | Earlier-Domain entry and real Rest | Enter a viable downstream Horizon | Remain in the current Horizon on the ancestral path; other participants remain unchanged |
-| Local non-boundary ranking | Select a descendant basin's local Commit | Compare ancestral non-boundary Commits inside the current basin |
-| Same-Domain Commit shadowing | New Commit suppresses stronger ancestor | Both compete at true backward distances, including legacy projection edge shape |
+| Local non-boundary ranking | Select a descendant basin's local Commit | Stop at the nearest eligible non-boundary Commit inside the current basin |
+| Same-Domain Commit shadowing | New Commit suppresses stronger ancestor | Nearest unresolved Commit wins, including legacy projection edge shape |
 | Sibling Potential/recency and deep/shallow frontiers | Rank sibling or descendant Horizons | Neither branch enters the candidate set |
 | Exhausted current Domain | Discover a sibling through its parent | Continue backward into the parent; preserve exact distance and searched-Horizon order |
 | Cross-Domain expressive evidence | Recover forward, then check numeric scope | Start inside that basin and retain the same cross-Domain numeric exclusion |
 | Retained boundary and read-only diagnostics | Prefer a downstream Commit | Retain the distance-zero boundary or actual ancestor; diagnostics remain read-only |
 | `RecoveryBasinResolverTest`: downstream/sibling frontiers | Descendants shadow parents; siblings are peers | Search only the current Horizon, then permitted ancestors on the walked lineage |
 | `LocalParticipantNavigationTest`: connected alternatives | Relative-ranking diagnostic also defines recovery | Diagnostic retains its old behavior; recovery excludes connected descendants |
-| Ancestor ranking fixture | Several unrelated parents compete | Sequential ancestors compete at their actual distances |
+| Ancestor ranking fixture | Several unrelated parents compete | Sequential recovery stops at the nearest unresolved ancestor |
 | Equal-distance parent/ID ties | Unrecorded multi-input parents are interchangeable | Ambiguous arrival provenance fails closed; a single path cannot contain two nodes at one distance |
 | Repeated Rest fixture | Fabricated target-to-ancestor cycle | A distinct historical continuation preserves the open-region assertion without a causal cycle |
 | `HorizonTragedyTest`: first Tragedy | Force Origin via override | Normal recovery selects the intermediate ancestral Commit; no override is recorded |

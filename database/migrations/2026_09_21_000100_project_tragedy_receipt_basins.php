@@ -9,12 +9,13 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('tragedy_receipt_scopes', function (Blueprint $table): void {
-            $table->foreignUlid('tragedy_id')->primary()->constrained('horizon_tragedies')->restrictOnDelete();
+        $tragedyTable = Schema::hasTable('horizon_tragedies') ? 'horizon_tragedies' : 'tragedies';
+        Schema::create('tragedy_receipt_scopes', function (Blueprint $table) use ($tragedyTable): void {
+            $table->foreignUlid('tragedy_id')->primary()->constrained($tragedyTable)->restrictOnDelete();
             $table->foreignUlid('current_committal_id')->nullable()->index()->constrained('propositions')->restrictOnDelete();
             $table->foreignUlid('recovery_phase_id')->nullable()->constrained('phases')->restrictOnDelete();
         });
-        app(TragedyReceiptScopeBackfill::class)->run();
+        app(TragedyReceiptScopeBackfill::class)->run($tragedyTable);
     }
 
     public function down(): void

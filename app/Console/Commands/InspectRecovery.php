@@ -42,13 +42,13 @@ class InspectRecovery extends Command
             'position_id' => $participant->current_proposition_id,
             'current_path_spent' => $phase !== null && app(ExplorationEpochService::class)->spentNow($participant->position, $phase),
             'current_horizon_id' => $phase?->cycle->context_horizon_id,
-            'current_horizon_exhausted' => $phase?->cycle->contextHorizon->exhausted_at !== null,
+            'opening_region_exhausted' => $phase !== null && app(ExhaustionService::class)->boundaryExhausted($phase->cycle->contextHorizon),
             'parent_horizon_id' => $phase?->cycle->contextHorizon->parent_context_horizon_id,
             'exhausted_alternatives' => $phase === null || app(ExhaustionService::class)->unavailable($participant->position)
                 ? $history->position($participant->position) : $history->forPhase($phase),
             'origin_lineages' => DB::table('origin_branch_memberships')->where('proposition_id', $participant->current_proposition_id)->pluck('root_proposition_id')->all(),
             'would_tragedy' => ($exhaustion['rest_reason'] ?? null) === 'no_remaining_potential'
-                && ! Tragedy::where('context_horizon_id', $phase?->cycle->context_horizon_id)->exists(),
+                && ! Tragedy::where('governing_committal_id', $exhaustion['governing_committal_id'] ?? null)->whereNotNull('governing_committal_id')->exists(),
             ...$inspection,
             'horizon_failure' => $exhaustion,
 

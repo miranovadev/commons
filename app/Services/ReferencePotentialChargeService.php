@@ -200,22 +200,24 @@ final readonly class ReferencePotentialChargeService
         $result = $this->basins->resolve($startingBasin, $horizons,
             function (ContextHorizon $basin) use ($excluded, $members, $entries, $outgoing, $distances): Collection {
                 $candidates = $entries->get($basin->id, collect())
-                    ->filter(fn (Proposition $node) => $node->id !== $excluded && isset($distances[$node->id]));
+                    ->filter(fn (Proposition $node) => $node->id !== $excluded && isset($distances[$node->id]))
+                    ->sortBy(fn (Proposition $node) => $distances[$node->id])->take(1);
                 if ($candidates->isEmpty()) {
                     return collect();
                 }
-                // Scope before observation and scoring. A boundary seed is added
+                // Select the nearest eligible Committal before observing values.
+                // Attenuated values below are diagnostics only. A boundary seed is added
                 // as provenance; expressive evidence comes only from this Domain.
                 $local = $members->get($basin->id, collect())->keyBy('id')->union($candidates->keyBy('id'));
                 $this->measurements->observeMissing($local->filter(fn ($node) => $node->measurement !== null));
-                $ranked = collect();
+                $selected = collect();
                 foreach ($candidates as $candidate) {
                     $snapshot = $candidate->commitmentSnapshot;
                     $potential = $this->potentialFor($candidate->id, $snapshot->tension, $local, $outgoing, $excluded);
                     $charge = round(1 - abs($snapshot->tension), 7);
                     $distance = $distances[$candidate->id];
                     $weight = LineageMeasurementService::attenuation($distance);
-                    $ranked->push([
+                    $selected->push([
                         'proposition' => $candidate,
                         'potential_charge' => $potential * $weight,
                         'charge' => $charge * $weight,
@@ -226,22 +228,17 @@ final readonly class ReferencePotentialChargeService
                     ]);
                 }
 
-                return $ranked;
+                return $selected;
             }, fn (ContextHorizon $basin): bool => isset($distances[$basin->opened_by_proposition_id]),
-            fn (ContextHorizon $basin): bool => $basin->exhausted_at !== null
-                || ($basin->opened_by_proposition_id !== null && ! $propositions->has($basin->opened_by_proposition_id)));
-        $ranked = $result['candidates']->all();
-        usort($ranked, fn (array $left, array $right): int => ($right['potential_charge'] <=> $left['potential_charge'])
-            ?: ($right['charge'] <=> $left['charge'])
-            ?: ($left['distance'] <=> $right['distance'])
-            ?: strcmp($left['proposition']->getKey(), $right['proposition']->getKey()));
+            fn (ContextHorizon $basin): bool => app(ExhaustionService::class)->boundaryExhausted($basin));
+        $candidates = $result['candidates']->all();
 
         return [
-            'selection' => $ranked[0] ?? null,
+            'selection' => $candidates[0] ?? null,
             'starting_context_horizon_id' => $startingBasin->id,
             'searched_basins' => $result['searched_basins'],
             'fallback_depth' => $result['fallback_depth'],
-            'eligible_candidate_ids' => array_map(fn (array $candidate) => $candidate['proposition']->id, $ranked),
+            'eligible_candidate_ids' => array_map(fn (array $candidate) => $candidate['proposition']->id, $candidates),
         ];
     }
 

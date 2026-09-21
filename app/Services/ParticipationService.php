@@ -378,10 +378,10 @@ final readonly class ParticipationService
                 'distance' => $selection['distance'] ?? null,
                 'potential_charge' => $selection['potential_charge'] ?? 0.0,
                 'message' => $selection === null
-                    ? 'Resting until a reachable recovery basin has positive Potential Charge.'
+                    ? 'No eligible non-exhausted Committal is currently reachable along your backward causal lineage.'
                     : (($selection['reason'] ?? null) === 'origin_renewal'
                         ? 'The exhausted branch is historical. Begin a fresh Distinction at Origin.'
-                        : 'Begin the next Cycle at the Committal with greatest attenuated Potential Charge in the viable recovery basin.'),
+                        : 'Begin the next Cycle at the nearest non-exhausted eligible Committal on your backward causal lineage.'),
             ];
         }
 

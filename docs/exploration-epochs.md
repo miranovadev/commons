@@ -32,7 +32,7 @@ No edge means no movement.
 - **Traversal invariant:** A proposition spent in the current epoch is not
   eligible for Traverse or further Attestation.
 - **Generation invariant:** When all current expressive continuations at a
-  structural position are spent and Horizon Potential remains, Variant becomes
+  structural position are spent and Commit Region Potential remains, Variant becomes
   available, subject to the existing evidence prerequisites.
 - **Healthy-lineage invariant:** A viable existing continuation remains
   actionable and must not cause redundant Variant generation.
@@ -41,7 +41,7 @@ No edge means no movement.
   Horizon Exhaustion.
 - **Tragedy invariant:** Tragedy remains the first no-Potential Rest in a Horizon.
 - **Exhaustion invariant:** Horizon Exhaustion remains permanent and
-  Horizon-scoped via `context_horizons.exhausted_at`.
+  Commit-Region-scoped via `commit_region_exhaustions`; Horizon timestamps summarize boundary consequences only.
 - **Visibility invariant:** Spent expressive propositions remain contextual
   evidence even while non-actionable.
 - **Phase-position invariant:** Labels classify. Position governs.
@@ -67,7 +67,7 @@ Horizon.
 
 At Distinguish and Disperse, every existing opportunity must be spent, properly
 instrumented, evidenced and effectively attested before a further Variant is
-available, and positive Horizon Potential must remain. A healthy evidenced
+available, and positive Commit Region Potential must remain. A healthy evidenced
 route still blocks redundant generation. There is no action priority, sibling
 quota, participant-count quota, or receipt-consumption shortcut. The initial
 empty-position behavior is unchanged. Persist retains its structural rules;

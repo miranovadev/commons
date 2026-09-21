@@ -12,14 +12,14 @@ use Illuminate\Support\Facades\DB;
 /** One-time projection of legacy recovery history, never a packet-time history scan. */
 final class TragedyReceiptScopeBackfill
 {
-    public function run(): void
+    public function run(string $tragedyTable = 'tragedies'): void
     {
-        $substrates = DB::table('horizon_tragedies as tragedy')->join('context_horizons as horizon',
+        $substrates = DB::table($tragedyTable.' as tragedy')->join('context_horizons as horizon',
             'horizon.id', '=', 'tragedy.context_horizon_id')->distinct()->pluck('horizon.substrate_id');
         foreach ($substrates as $substrateId) {
-            DB::transaction(function () use ($substrateId): void {
+            DB::transaction(function () use ($substrateId, $tragedyTable): void {
                 Substrate::whereKey($substrateId)->lockForUpdate()->firstOrFail();
-                $tragedies = Tragedy::whereIn('context_horizon_id', DB::table('context_horizons')
+                $tragedies = Tragedy::from($tragedyTable)->whereIn('context_horizon_id', DB::table('context_horizons')
                     ->where('substrate_id', $substrateId)->select('id'))->get();
                 // Entries after Rest are durable recovery witnesses, irrespective of who triggered Tragedy.
                 $entries = DB::table('phases as entry')->join('cycles as next', 'next.id', '=', 'entry.cycle_id')

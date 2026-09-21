@@ -102,7 +102,7 @@ class GateReceiptOptionsTest extends TestCase
         $this->assertSame(RestReason::NoAvailableMove, $f->phase->cycle->fresh()->rest_reason);
         $this->assertSame($before, ParticipantReceiptContext::get()->map->getAttributes()->all());
         $this->assertDatabaseCount('receipt_context_events', $events);
-        $this->assertDatabaseCount('horizon_tragedies', 0);
+        $this->assertDatabaseCount('tragedies', 0);
     }
 
     public function test_invalid_receipt_selection_rolls_back_the_normal_contribution(): void

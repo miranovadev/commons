@@ -14,3 +14,7 @@
 | No historical-growth query explosion | `ExhaustionTest`, `CausalRecoveryTest`, `ParticipationPerformanceTest`, `PotentialProjectionTest` |
 
 PostgreSQL-only tests use independent worker processes and observe actual lock waits; SQLite cannot validate those guarantees. The [test workflows](testing.md) use PostgreSQL 18 and PHP 8.5. Core includes Node 24 frontend build/tests and deterministic recovery contracts; database races run in Load / Concurrency and performance profiles run in Query Regression. Report the exact integration commit's CI outcome when reviewing; intermediate stack stages intentionally precede later semantic fixture updates.
+
+## Regional authority refinement
+
+`CausalRecoveryTest::test_same_horizon_regions_exhaust_independently_and_recovery_unwinds_c_b_a` proves separate C/B Tragedies, actual final Variants and Receipt consumption, C → B → A recovery, and live sibling/ancestor preservation inside an open Horizon. `test_boundary_region_exhaustion_permits_crossing_without_retiring_other_child_regions` proves the boundary consequence and continued child-region operation. `RegionalExhaustionMigrationTest` proves conservative historical mapping, ambiguity retention, and no accidental Origin closure from a non-boundary proof. Existing concurrent Rest/final failure/Receipt races retain their locks and regional uniqueness checks.

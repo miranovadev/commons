@@ -10,6 +10,8 @@ use PHPUnit\Framework\TestCase;
 
 class RecoveryBasinResolverTest extends TestCase
 {
+    private array $exhaustedBoundaries = [];
+
     public function test_current_horizon_candidates_exclude_viable_downstream_domains(): void
     {
         [$root, $settlement, $emergence] = $this->chain();
@@ -43,7 +45,7 @@ class RecoveryBasinResolverTest extends TestCase
     {
         [$root, $settlement, $emergence] = $this->chain();
         $sibling = $this->basin('sibling', $settlement, 4);
-        $emergence->setRawAttributes([...$emergence->getAttributes(), 'exhausted_at' => '2026-09-17 00:00:00']);
+        $this->exhaustedBoundaries[$emergence->id] = true;
         $result = $this->resolve($emergence, [$root, $settlement, $emergence, $sibling], ['settlement', 'sibling']);
         $this->assertSame(['settlement'], $result['candidates']->all());
         $this->assertSame(1, $result['fallback_depth']);
@@ -53,8 +55,8 @@ class RecoveryBasinResolverTest extends TestCase
     public function test_exhaustion_reaches_historical_domains_and_the_root_without_revisiting_basins(): void
     {
         [$root, $settlement, $emergence] = $this->chain();
-        $emergence->setRawAttributes([...$emergence->getAttributes(), 'exhausted_at' => '2026-09-17 00:00:00']);
-        $settlement->setRawAttributes([...$settlement->getAttributes(), 'exhausted_at' => '2026-09-17 00:00:00']);
+        $this->exhaustedBoundaries[$emergence->id] = true;
+        $this->exhaustedBoundaries[$settlement->id] = true;
         $result = $this->resolve($emergence, [$root, $settlement, $emergence], ['root']);
         $this->assertSame(['root'], $result['candidates']->all());
         $this->assertSame(2, $result['fallback_depth']);
@@ -76,10 +78,11 @@ class RecoveryBasinResolverTest extends TestCase
     public function test_exhaustion_does_not_authorize_crossing_a_boundary_absent_from_the_walked_lineage(): void
     {
         [$root, $settlement, $emergence] = $this->chain();
-        $emergence->setRawAttributes([...$emergence->getAttributes(), 'exhausted_at' => '2026-09-17 00:00:00']);
+        $this->exhaustedBoundaries[$emergence->id] = true;
         $result = (new RecoveryBasinResolver)->resolve($emergence, collect([$root, $settlement, $emergence]),
             fn (ContextHorizon $basin): Collection => collect($basin->id === 'settlement' ? ['settlement'] : []),
-            fn (ContextHorizon $basin): bool => false);
+            fn (ContextHorizon $basin): bool => false,
+            fn (ContextHorizon $basin): bool => isset($this->exhaustedBoundaries[$basin->id]));
         $this->assertTrue($result['candidates']->isEmpty());
         $this->assertSame(0, $result['fallback_depth']);
         $this->assertSame(['emergence'], array_column($result['searched_basins'], 'context_horizon_id'));
@@ -89,7 +92,7 @@ class RecoveryBasinResolverTest extends TestCase
     {
         [$root, , $emergence] = $this->chain();
         $this->expectException(DomainException::class);
-        $emergence->setRawAttributes([...$emergence->getAttributes(), 'exhausted_at' => '2026-09-17 00:00:00']);
+        $this->exhaustedBoundaries[$emergence->id] = true;
         $this->resolve($emergence, [$root, $emergence], ['root']);
     }
 
@@ -105,7 +108,8 @@ class RecoveryBasinResolverTest extends TestCase
     {
         return (new RecoveryBasinResolver)->resolve($start, collect($basins),
             fn (ContextHorizon $basin): Collection => collect(in_array($basin->id, $viable, true) ? [$basin->id] : []),
-            fn (ContextHorizon $basin): bool => true);
+            fn (ContextHorizon $basin): bool => true,
+            fn (ContextHorizon $basin): bool => isset($this->exhaustedBoundaries[$basin->id]));
     }
 
     private function chain(): array

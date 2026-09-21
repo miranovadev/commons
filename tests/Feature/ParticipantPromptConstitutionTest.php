@@ -145,7 +145,8 @@ class ParticipantPromptConstitutionTest extends TestCase
         $with = $factory->make(new Connection, $state);
         $this->assertStringContainsString('no_available_move never creates Tragedy.', $with['system']);
         $this->assertStringContainsString("that classification's actual continuation", $with['system']);
-        $this->assertStringContainsString('only ancestral Committals on the recorded backward lineage', $with['system']);
+        $this->assertStringContainsString('nearest eligible non-exhausted Committal on the recorded backward lineage', $with['system']);
+        $this->assertStringContainsString('A nearer unresolved basin blocks older ancestors regardless of Potential or Charge', $with['system']);
         $this->assertStringContainsString('never jumping to a Horizon opener or unrelated branch', $with['system']);
         $this->assertSame($without['instruction_family'], $with['instruction_family']);
         $this->assertSame($state['plan']['schema'], $with['schema']);

@@ -1,6 +1,6 @@
 # The Commons
 
-**Normative phase model:** [Horizon Tragedy, Receipts and final-attempt Exhaustion](docs/core-invariants.md#persistence-exhaustion-recovery-and-observation). See [the phase flow](docs/flow-integration.md) and [migration compatibility](docs/horizon-proof-migration.md) before rollout.
+**Normative phase model:** [Commit Region Tragedy, Receipts and final-attempt Exhaustion](docs/core-invariants.md#persistence-exhaustion-recovery-and-observation). See [the phase flow](docs/flow-integration.md) and [migration compatibility](docs/horizon-proof-migration.md) before rollout.
 
 **Normative movement:** [Lineage-Constrained Participant Movement](docs/core-invariants.md#17-lineage-constrained-participant-movement).
 Forward progression follows explicit causal edges from the current Gate;

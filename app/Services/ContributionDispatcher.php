@@ -189,7 +189,7 @@ final readonly class ContributionDispatcher
         // Capture the allowance before writing invalidates the field projection.
         $finalAttempt = $input['action'] === 'proposition.variant'
             && app(TragedyFinalAttemptService::class)->available($phase)
-            && ! app(PotentialChargeService::class)->hasRemainingInHorizon($phase);
+            && ! app(PotentialChargeService::class)->hasRemainingInRegion($phase);
         $target = $this->write(
             $phase,
             $input['statement'],

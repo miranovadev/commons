@@ -379,7 +379,7 @@ class InputSchemaServiceTest extends TestCase
             Schema::hasColumn('receipts', 'instrument_execution_id'),
         );
         $this->assertTrue(Schema::hasColumn('receipts', 'phase_id'));
-        $this->assertTrue(Schema::hasTable('horizon_tragedies'));
+        $this->assertTrue(Schema::hasTable('tragedies'));
         $this->assertTrue(Schema::hasTable('receipt_consumptions'));
     }
 

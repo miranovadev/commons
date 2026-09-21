@@ -353,9 +353,9 @@ class LocalParticipantNavigationTest extends TestCase
         app(CycleEntryService::class)->enter($participant);
     }
 
-    public function test_recovery_ranks_sequential_ancestors_by_actual_backward_distance(): void
+    public function test_recovery_stops_at_the_nearest_sequential_ancestor(): void
     {
-        $position = $this->node('Observer', 0.0);
+        $position = $this->node('Observer', 0.0, 'expressive');
         $low = $this->region('Near low', 0.03);
         $near = $this->region('Near winner', 0.06);
         $bridge = $this->node('Empty bridge', 0.0);
@@ -368,11 +368,11 @@ class LocalParticipantNavigationTest extends TestCase
         $phase = $this->phase($participant, $position);
         $this->refreshFixtureMeasurements();
         $selection = app(PotentialChargeService::class)->recoverFrom($position);
-        $this->assertSame($far->id, $selection['proposition']->id);
-        $this->assertSame(4, $selection['distance']);
-        $this->assertEqualsWithDelta(1 / 25, $selection['potential_charge'], 0.0000001);
+        $this->assertSame($low->id, $selection['proposition']->id);
+        $this->assertSame(1, $selection['distance']);
+        $this->assertEqualsWithDelta(0.03 / 4, $selection['potential_charge'], 0.0000001);
         app(ParticipationService::class)->contribute($participant, $phase->id, ['action' => 'participant.rest']);
-        $this->assertSame($far->id, $this->state($participant)['plan']['gate_id']);
+        $this->assertSame($low->id, $this->state($participant)['plan']['gate_id']);
     }
 
     public function test_ambiguous_multi_input_without_recorded_arrival_provenance_fails_closed(): void
@@ -395,7 +395,7 @@ class LocalParticipantNavigationTest extends TestCase
 
     public function test_repeated_local_rest_does_not_mark_a_still_open_region_exhausted(): void
     {
-        $position = $this->node('Empty region', 0.0);
+        $position = $this->node('Empty region', 0.0, 'expressive');
         $first = $this->region('First viable', 0.6);
         $second = $this->region('Second viable', 0.9);
         $this->edge($first, $position);

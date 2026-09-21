@@ -3,11 +3,13 @@
 namespace App\Models;
 
 use App\Enums\ContextDomain;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 
 class ContextHorizon extends Model
 {
@@ -24,8 +26,21 @@ class ContextHorizon extends Model
             'sequence' => 'integer',
             'opened_at' => 'immutable_datetime',
             'closed_at' => 'immutable_datetime',
-            'exhausted_at' => 'immutable_datetime',
         ];
+    }
+
+    /** Read projection only: one indexed proof lookup per Horizon, including batched API reads. */
+    public function scopeWithOpeningRegionExhaustion(Builder $query): void
+    {
+        $query->addSelect(['opening_region_exhausted_at' => DB::table('commit_region_exhaustions as opening_proof')
+            ->whereColumn('opening_proof.context_horizon_id', 'context_horizons.id')
+            ->where(fn ($q) => $q->whereColumn('opening_proof.governing_committal_id', 'context_horizons.opened_by_proposition_id')
+                ->orWhere(fn ($origin) => $origin->whereNull('context_horizons.parent_context_horizon_id')
+                    ->whereNull('context_horizons.opened_by_proposition_id')
+                    ->whereIn('opening_proof.governing_committal_id', DB::table('commitment_snapshots')
+                        ->whereColumn('substrate_id', 'context_horizons.substrate_id')
+                        ->where('calculator_version', 'origin-bootstrap-v1')->select('proposition_id'))))
+            ->select('opening_proof.exhausted_at')->limit(1)]);
     }
 
     protected static function booted(): void

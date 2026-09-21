@@ -10,8 +10,8 @@ already prepared, while the wake stops at the boundary.
 
 Entry preparation cannot widen movement scope. Forward movement follows the
 current Gate's explicit causal continuation; recovery follows recorded arrival
-provenance backward and ranks only ancestral Committals at actual backward
-distance. Same-region/Horizon membership, contextual visibility or a Homeostatic
+provenance backward and stops at the nearest eligible non-exhausted ancestral
+Committal. Same-region/Horizon membership, contextual visibility or a Homeostatic
 population grants no movement. Exhaustion permits crossing an opening boundary
 on that same lineage, never a reset to its provenance node or a sibling/descendant
 search. No edge means no movement.
@@ -26,7 +26,7 @@ and still rejects an already active Cycle.
 Order Commit and Committal Traverse prepare Phase 1 at the exact terminal
 Committal, including zero-Potential continuation. Rest still requires complete
 local action exhaustion, records `rested_at`, and selects an eligible Committal
-from the actual backward lineage within the eligible Horizon with the existing attenuated Potential ranking. Successful recovery
+by stopping at the nearest eligible non-exhausted Committal on the actual backward lineage within the permitted Horizon. Successful recovery
 creates Phase 1 before the terminal response when its observation remains current.
 The contribution commits first; recovery is calculated without locks, followed by
 a short version-checked entry transaction. Optimistic readers may see this gap.

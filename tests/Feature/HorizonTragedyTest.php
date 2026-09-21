@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\PhaseKind;
 use App\Enums\RestReason;
 use App\Models\Receipt;
 use App\Models\Tragedy;
@@ -30,7 +31,7 @@ class HorizonTragedyTest extends TestCase
         $receipt = Receipt::findOrFail($tragedy->receipt_id);
         $this->assertSame($phase->cycle->context_horizon_id, $tragedy->context_horizon_id);
         $this->assertSame(RestReason::NoRemainingPotential, $phase->cycle->fresh()->rest_reason);
-        $this->assertNull($phase->cycle->contextHorizon->fresh()->exhausted_at);
+        $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($phase->cycle->contextHorizon));
         $this->assertNull($receipt->instrument_execution_id, 'Tragedy is not a fabricated Instrument execution');
         $this->assertSame('tragedy', $receipt->type);
         $this->assertSame($commit->id, $phase->cycle->participant->fresh()->current_proposition_id);
@@ -45,7 +46,7 @@ class HorizonTragedyTest extends TestCase
 
     public function test_actionless_rest_does_not_create_tragedy(): void
     {
-        $head = $this->node($this->phase($this->origin, \App\Enums\PhaseKind::Constrain), $this->origin);
+        $head = $this->node($this->phase($this->origin, PhaseKind::Constrain), $this->origin);
         $phase = $this->phase($head);
         $this->measure($head, 1);
         $this->rest($phase);
@@ -56,9 +57,9 @@ class HorizonTragedyTest extends TestCase
 
     public function test_nested_horizon_recovers_to_its_own_opening_committal(): void
     {
-        $root = $this->node($this->phase($this->origin, \App\Enums\PhaseKind::Distinguish), $this->origin);
+        $root = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
         $opening = $this->commitFrom($root, boundary: true);
-        $head = $this->node($this->phase($opening, \App\Enums\PhaseKind::Constrain), $opening);
+        $head = $this->node($this->phase($opening, PhaseKind::Constrain), $opening);
         $this->explore($head);
         $phase = $this->phase($head);
         $this->measure($root, 1);
@@ -66,7 +67,7 @@ class HorizonTragedyTest extends TestCase
         $this->rest($phase);
         $this->assertSame($opening->id, Tragedy::sole()->opening_proposition_id);
         $this->assertSame($opening->id, $phase->cycle->participant->fresh()->current_proposition_id);
-        $this->assertNull($phase->cycle->contextHorizon->fresh()->exhausted_at);
+        $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($phase->cycle->contextHorizon));
         $this->assertFalse(app(ExhaustionService::class)->unavailable($opening));
     }
 }

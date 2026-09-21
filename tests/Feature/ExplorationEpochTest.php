@@ -6,6 +6,7 @@ use App\Enums\PhaseKind;
 use App\Models\Tragedy;
 use App\Services\ContributionDispatcher;
 use App\Services\ExhaustionAuditService;
+use App\Services\ExhaustionService;
 use App\Services\ExplorationEpochService;
 use App\Services\HorizonFailureService;
 use App\Services\InstrumentExecutionService;
@@ -45,7 +46,7 @@ class ExplorationEpochTest extends TestCase
         app(HorizonFailureService::class)->publish($terminal, $proof);
         $this->assertSame($before, DB::table('continuation_failures')->orderBy('proposition_id')->get()->toJson());
         $this->assertSame(0, Tragedy::count());
-        $this->assertNull($terminal->cycle->contextHorizon->fresh()->exhausted_at);
+        $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($terminal->cycle->contextHorizon));
         $this->assertTrue(app(ExhaustionAuditService::class)->inspect($this->substrate->id)['matches']);
 
         $this->measure($activity, 0);
