@@ -3,7 +3,7 @@ import { IconAlertCircle } from '@tabler/icons-react';
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { messageFrom } from '../errors';
-import { actionPropositions, attestationDirections } from '../participationOptions';
+import { actionPropositions, attestationDirections, receiptChoices } from '../participationOptions';
 import { duplicateInstrument } from '../instrumentInvocations';
 import { InstrumentFields } from './InstrumentFields';
 import { AttestationDirectionControl } from './AttestationDirectionControl';
@@ -141,7 +141,7 @@ export function ContributionForm({
 
           {properties.receipt_id && (
             <Select label="Receipt" description="Shared Horizon evidence. Reclassification consumes this Receipt once."
-              data={(plan.receipts ?? []).filter(receipt => properties.receipt_id?.enum?.includes(receipt.id))
+              data={receiptChoices(plan).filter(receipt => properties.receipt_id?.enum?.includes(receipt.id))
                 .map(receipt => ({ value: receipt.id, label: `${receipt.type === 'tragedy' ? 'Tragedy Receipt' : receipt.type} · ${receipt.id}` }))}
               required={required.includes('receipt_id')} value={values.receipt_id || null}
               onChange={value => set('receipt_id', value ?? undefined)} />

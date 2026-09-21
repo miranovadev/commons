@@ -319,16 +319,17 @@ Phase in the **same Cycle**. It is not Mediate's Gate, the latest Horizon card,
 or a guessed ancestor. Missing Disperse history supplies no Read/counterpart
 options; the server does not invent an anchor.
 
-`read_options` exposes that anchor first, followed by Read-equivalent
-members of its Commit Region with the same retained hysteretic Correspondence direction.
+`read_options` exposes only that causal anchor. Internally, Read-equivalent
+members of its Commit Region with the same retained hysteretic Correspondence direction
+participate in counterpart discovery, without becoming visible Read alternatives.
 Parallel branches may have different immediate parents or expressive depths.
 Zero or unmeasured Correspondence retains established direction, with primary
 lineage fallback when none has been established and a positive root default.
 This applies equally to the Read anchor and other candidate Reads. Existing Correspondence calculation
 and attenuation are unchanged.
 
-Gate candidates remain active immediate Expressive children of the exposed
-Reads, produced at Disperse in the First register slot and within the same Commit Region.
+Gate candidates remain active immediate Expressive children of the internal
+Read comparison population, produced at Disperse in the First register slot and within the same Commit Region.
 Gate Correspondence and Chirality do not filter these children. The current
 Gate must belong to that population; `gate_options` contains its counterparts.
 Reconcile still copies the current Gate's statement and creates two hard edges.

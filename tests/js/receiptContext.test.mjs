@@ -4,7 +4,7 @@ import { build } from 'esbuild';
 import { createRequire } from 'node:module';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { quickContribution } from '../../resources/js/participationOptions.ts';
+import { quickContribution, receiptChoices } from '../../resources/js/participationOptions.ts';
 
 const schema = { $defs: { actions: { 'receipt.read': { properties: { receipt_id: { enum: ['available'] } } } } } };
 test('Receipt Read sends only the authorized Receipt ID', () => {
@@ -41,4 +41,17 @@ test('Receipt panel exposes only authorized Reads and preloads evidence without 
   assert.match(html, /Failed verification/);
   assert.doesNotMatch(module.exports.render({ receipts, schema: {} }), />Read Receipt</);
   assert.doesNotMatch(module.exports.render({ receipts, schema }, false), />Read Receipt</);
+  const reference = { id: 'attached', type: 'hyperlink', reference: 'Attached resource', evidence: { statement: 'UNREAD BODY' } };
+  const referenced = { receipts: [], gate: { id: 'gate', receipts: [reference] }, schema: { $defs: { actions: { 'receipt.read': { properties: { receipt_id: { enum: ['attached'] } } } } } } };
+  const referenceHtml = module.exports.render(referenced);
+  assert.match(referenceHtml, /Attached resource/);
+  assert.match(referenceHtml, /Referenced by gate/);
+  assert.equal([...referenceHtml.matchAll(/>Read Receipt</g)].length, 1);
+  assert.doesNotMatch(referenceHtml, /UNREAD BODY/);
+  assert.doesNotMatch(module.exports.render({ ...referenced, schema: {} }), />Read Receipt</);
+  assert.equal(receiptChoices(referenced)[0].id, 'attached');
+  assert.equal(receiptChoices(referenced)[0].evidence, undefined);
+  assert.equal(receiptChoices({ ...referenced, receipts: [{ ...reference, status: 'loaded' }] }).length, 1);
+  assert.doesNotMatch(module.exports.render({ receipts: [{ ...reference, status: 'available' }], schema: {} }), /UNREAD BODY/);
+
 });

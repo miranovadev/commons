@@ -31,6 +31,19 @@ final class ParticipationScript
         return $result;
     }
 
+    /** Explicit Stage A correction to archived cognition, never to authored actions. */
+    public static function stageA(array $state): array
+    {
+        $state['plan']['receipts'] = array_values(array_filter($state['plan']['receipts'] ?? [],
+            fn ($receipt) => $receipt['status'] === 'loaded'
+                || ($receipt['availability'] === 'available' && empty($receipt['attached_proposition_id']))));
+        if (($state['plan']['phase']['kind'] ?? null) === 'mediate') {
+            $state['plan']['read_options'] = array_slice($state['plan']['read_options'], 0, 1);
+        }
+
+        return $state;
+    }
+
     /** Parent references are a set; the four context populations remain ordered. */
     public static function canonicalizeParents(array $state): array
     {

@@ -9,7 +9,7 @@ final class ParticipantPromptLayout
 {
     public const VERSION = 'commons-prefix-v2';
 
-    public const FORMAT_INSTRUCTION = 'The JSON input is split into two parts of one participation state. loaded_receipts supplies immutable identity, provenance and evidence for loaded Receipts; join each record by id with its current state in plan.receipts. Other Receipts remain complete in plan.receipts. These parts together describe the same Receipts, not additional evidence.';
+    public const FORMAT_INSTRUCTION = 'The JSON input is split into two parts of one participation state. loaded_receipts supplies immutable identity, provenance and evidence for loaded Receipts; join each record by id with its current state in plan.receipts. Unloaded available unattached Receipts appear in plan.receipts as metadata only. Loaded entries there describe Participant loading state, including consumed observations; they are not shared available catalogue entries. Proposition receipts are lightweight attachment references, never evidence bodies. Only explicitly loaded Receipts expose full evidence. These parts together describe the same Receipts, not additional evidence.';
 
     private const RECEIPT_BODY = ['id', 'proposition_id', 'context_horizon_id', 'type', 'reference', 'signature',
         'capabilities', 'replayed_from_receipt_id', 'observation_error', 'evidence'];

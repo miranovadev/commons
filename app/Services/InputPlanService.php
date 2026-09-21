@@ -90,7 +90,7 @@ final readonly class InputPlanService
                 'parent_ids' => []],
             'provenance_id' => null, 'lineage' => [], 'read_options' => [], 'write_options' => [],
             'gate_options' => [], 'revision_options' => [], 'traversal_options' => [],
-            'attestation_options' => [], 'instrument_options' => [], 'receipts' => $this->receipts->forPhase($phase)->all(),
+            'attestation_options' => [], 'instrument_options' => [], 'receipts' => app(ParticipantContextSerializer::class)->receipts($this->receipts->forPhase($phase)->all()),
             'exhausted_alternatives' => $history,
             'commitment' => null, 'commitment_options' => [], 'rest_available' => true, 'position_exhausted' => true,
             'rest_reason' => RestReason::NoAvailableMove->value,
@@ -114,7 +114,7 @@ final readonly class InputPlanService
             $participant,
             $context,
         );
-        $readOptions = $phase->kind === PhaseKind::Order ? $this->options->orderReadsFor($phase, $context) : $this->mediation->readsFor($phase, $context);
+        $readOptions = $phase->kind === PhaseKind::Order ? $this->options->orderReadsFor($phase, $context) : $this->mediation->visibleReadsFor($phase, $context);
         $gateOptions = $this->options->gateOptionsFor($phase, $context);
         $traversalOptions = $this->options->traversalOptionsFor($phase, $context);
         $instrumentOptions = $this->options->instrumentOptionsFor($phase, $context);
@@ -188,8 +188,8 @@ final readonly class InputPlanService
             'provenance_id' => $lineage->firstWhere('tier', 'committal')?->id,
             'lineage' => $this->propositions($historical, $participant, $context),
             'read_options' => $this->propositions($readOptions, $participant, $context),
-            'receipts' => $this->receipts->forPhase($phase, $context)->all(),
-            'exhausted_alternatives' => $this->historicalContext->forPhase($phase, $context, $readOptions),
+            'receipts' => app(ParticipantContextSerializer::class)->receipts($this->receipts->forPhase($phase, $context)->all()),
+            'exhausted_alternatives' => $this->historicalContext->forPhase($phase, $context),
             'rest_available' => isset($schema['$defs']['actions']['participant.rest']),
             'rest_reason' => isset($schema['$defs']['actions']['participant.rest'])
                 ? app(RestReasonService::class)->derive($phase, $context)->value : null,
@@ -343,6 +343,13 @@ final readonly class InputPlanService
             ->all();
     }
 
+    private function receiptReferences(Proposition $proposition, ?ParticipationContext $context): array
+    {
+        $receipts = $this->state->receipts($proposition, $context);
+
+        return $receipts->sortBy('id')->map(fn ($receipt) => $receipt->only(['id', 'type', 'reference', 'context_horizon_id']))->values()->all();
+    }
+
     /** @return array<string, mixed> */
     private function proposition(
         Proposition $proposition,
@@ -402,6 +409,9 @@ final readonly class InputPlanService
                     'content_verified' => $execution->receipt?->metadata['content_verified'] ?? false,
                 ])->all()
                 : [],
+            // Existing direct and linked evidence includes classification/Commit provenance.
+            // Reuse the calculation's hydrated history; never fetch evidence for display.
+            'receipts' => $this->receiptReferences($proposition, $context),
             'transition' => $this->presentation->transition($proposition, $context),
             'observables' => [
                 'correspondence' => $measurement?->correspondence,

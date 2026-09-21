@@ -12,7 +12,10 @@ export interface Observables {
   closure?: number | string | null;
 }
 
+export type ReceiptReference = Pick<ReceiptContext, 'id' | 'type' | 'reference' | 'context_horizon_id'>;
+
 export interface Proposition {
+  receipts?: ReceiptReference[];
   spent?: boolean;
   structural_position?: number;
   structural_source_id?: Identifier | null;
@@ -228,7 +231,7 @@ export interface ReceiptContext {
   proposition_id: Identifier;
   type: string;
   reference: string;
-  signature: string | null;
+  signature?: string | null;
   status: 'available' | 'loaded' | 'already-in-context' | 'unqualified';
   loaded_at: string | null;
   capabilities: { readable: boolean; replayable: boolean };

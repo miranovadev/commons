@@ -95,7 +95,8 @@ class ReconciliationTest extends TestCase
             $readIds[] = $neutral->id;
             $gateIds[] = $neutralGate->id;
         }
-        $this->assertEqualsCanonicalizing($readIds, array_column($plan['read_options'], 'id'));
+        $this->assertEqualsCanonicalizing($readIds, app(MediationReadService::class)->readsFor($this->phase)->pluck('id')->all());
+        $this->assertSame([$this->parent->id], array_column($plan['read_options'], 'id'));
         $this->assertEqualsCanonicalizing($gateIds, array_column($plan['gate_options'], 'id'));
     }
 
@@ -218,7 +219,7 @@ class ReconciliationTest extends TestCase
         $first = $this->sibling('Negative Gate', -0.9);
         $second = $this->sibling('Neutral Gate', 0);
         $plan = $this->plan();
-        $this->assertSame([$this->parent->id, $read->id], array_column($plan['read_options'], 'id'));
+        $this->assertSame([$this->parent->id], array_column($plan['read_options'], 'id'));
         $this->assertEqualsCanonicalizing([$crossGate->id, $first->id, $second->id], array_column($plan['gate_options'], 'id'));
         $this->assertSame(array_column($plan['gate_options'], 'id'), $plan['schema']['$defs']['actions']['proposition.reconcile']['properties']['other_proposition_id']['enum']);
     }
@@ -257,7 +258,8 @@ class ReconciliationTest extends TestCase
         $unrelatedGate = $this->node('Unrelated Gate', 'activity', position: PhaseKind::Disperse);
         $this->edge($unrelatedRead, $unrelatedGate);
         $plan = $this->plan();
-        $this->assertEqualsCanonicalizing([$this->parent->id, $validRead->id, $foreignHorizon->id, $distantRead->id, $hardRead->id, $hardRead->children()->where('register', 'canon')->firstOrFail()->id], array_column($plan['read_options'], 'id'));
+        $this->assertEqualsCanonicalizing([$this->parent->id, $validRead->id, $foreignHorizon->id, $distantRead->id, $hardRead->id, $hardRead->children()->where('register', 'canon')->firstOrFail()->id], app(MediationReadService::class)->readsFor($this->phase)->pluck('id')->all());
+        $this->assertSame([$this->parent->id], array_column($plan['read_options'], 'id'));
         $this->assertEqualsCanonicalizing([$validGate->id, $foreignGate->id, $distantGate->id, $hardGate->id], array_column($plan['gate_options'], 'id'));
         foreach ([$oppositeGate, $wrongGate, $unrelatedGate] as $invalid) {
             $this->assertInput($plan['schema'], ['action' => 'proposition.reconcile', 'other_proposition_id' => $invalid->id], false);

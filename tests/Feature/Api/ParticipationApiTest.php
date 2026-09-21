@@ -49,7 +49,9 @@ class ParticipationApiTest extends TestCase
         $response = $this->postJson($this->endpoint($substrate, $participant).'/enter', $payload)->assertCreated();
         $this->assertSame('web_search', Receipt::sole()->type);
         $this->assertDatabaseCount('participant_receipt_contexts', 0);
-        $this->assertSame('available', $response->json('data.plan.receipts.0.status'));
+        $this->assertSame([], $response->json('data.plan.receipts'));
+        $this->assertSame(Receipt::sole()->id, $response->json('data.plan.gate_options.0.receipts.0.id'));
+        $this->assertArrayNotHasKey('evidence', $response->json('data.plan.gate_options.0.receipts.0'));
     }
 
     public function test_a_participant_can_establish_the_origin_and_enter_the_first_live_cycle(): void
@@ -379,6 +381,7 @@ class ParticipationApiTest extends TestCase
         app(LedgerService::class)->record($origin);
 
         $this->publishPotentialFixture($participant);
+
         return [$phase, $origin];
     }
 

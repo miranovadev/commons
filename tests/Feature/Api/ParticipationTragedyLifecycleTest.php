@@ -44,8 +44,8 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
         $this->assertSame($tragedy->context_horizon_id, $before['context_horizon_id']);
         $visible = collect($before['plan']['receipts'])->firstWhere('id', $receipt->id);
         $this->assertSame('available', $visible['availability']);
-        $this->assertSame($tragedy->id, $visible['evidence']['tragedy_id']);
-        $this->assertSame($tragedy->terminal_proposition_id, $visible['evidence']['terminal_proposition_id']);
+        $this->assertSame('tragedy', $visible['type']);
+        $this->assertArrayNotHasKey('evidence', $visible);
         $history = DB::table('continuation_failures')->orderBy('proposition_id')->orderBy('exploration_epoch')->get()->toJson();
         $competing = $this->readParticipation($actor);
         $this->assertActionAvailable($competing, 'proposition.variant');
@@ -58,6 +58,10 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
         $this->assertSame($history, DB::table('continuation_failures')->orderBy('proposition_id')->orderBy('exploration_epoch')->get()->toJson());
         $read = $this->continueParticipationScript(1)['responses'][81];
         $this->assertSame($afterVariant['plan']['phase']['id'], $read['plan']['phase']['id']);
+        $loaded = collect($read['plan']['receipts'])->firstWhere('id', $receipt->id);
+        $this->assertSame('loaded', $loaded['status']);
+        $this->assertSame($tragedy->id, $loaded['evidence']['tragedy_id']);
+        $this->assertSame($tragedy->terminal_proposition_id, $loaded['evidence']['terminal_proposition_id']);
         $this->assertDatabaseMissing('receipt_consumptions', ['receipt_id' => $receipt->id]);
         // These exact 24 contributions consume the receipt at step 88 and
         // exhaust the Horizon at step 105. No eligibility-driven action picker.
@@ -72,8 +76,11 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
                 $this->assertDatabaseHas('receipt_consumptions', ['receipt_id' => $receipt->id]);
                 $this->assertSame(0, DB::table('horizon_exhaustions')->count(), 'Consumption alone does not exhaust a Horizon.');
                 $shared = collect($this->readParticipation($actor)['plan']['receipts'])->firstWhere('id', $receipt->id);
-                $this->assertSame('consumed', $shared['availability']);
-                $this->assertSame($after['current_proposition_id'], $shared['attached_proposition_id']);
+                $this->assertNull($shared, 'Consumed unread Receipt leaves the other Participant’s shared catalogue.');
+                $personal = collect($after['plan']['receipts'])->firstWhere('id', $receipt->id);
+                $this->assertSame('loaded', $personal['status']);
+                $this->assertSame('consumed', $personal['availability']);
+                $this->assertSame($after['current_proposition_id'], $personal['attached_proposition_id']);
             }
         }
         $this->assertSame(1, DB::table('horizon_exhaustions')->count(), $this->traceMessage($state));
