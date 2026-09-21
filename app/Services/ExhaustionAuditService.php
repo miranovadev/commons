@@ -11,7 +11,7 @@ final class ExhaustionAuditService
     public function inspect(string $substrateId): array
     {
         $horizons = DB::table('context_horizons')->where('substrate_id', $substrateId)->get()->keyBy('id');
-        $tragedies = DB::table('horizon_tragedies')->whereNotNull('governing_committal_id')->whereIn('context_horizon_id', $horizons->keys())->get()->keyBy('id');
+        $tragedies = DB::table('tragedies')->whereNotNull('governing_committal_id')->whereIn('context_horizon_id', $horizons->keys())->get()->keyBy('id');
         $exhaustions = DB::table('commit_region_exhaustions')->whereIn('context_horizon_id', $horizons->keys())->get()->keyBy('governing_committal_id');
         $failures = DB::table('continuation_failures')->whereIn('context_horizon_id', $horizons->keys())->get();
         $phaseIds = $tragedies->pluck('phase_id')->merge($exhaustions->pluck('phase_id'))->merge($failures->pluck('phase_id'))->unique();
@@ -58,15 +58,6 @@ final class ExhaustionAuditService
                 $horizonMismatch[] = $id;
             }
         }
-        foreach ($horizons as $id => $horizon) {
-            if (($horizon->exhausted_at !== null) !== ($horizon->opened_by_proposition_id !== null
-                ? $exhaustions->has($horizon->opened_by_proposition_id)
-                : $exhaustions->contains(fn ($proof) => $proof->context_horizon_id === $id
-                    && DB::table('commitment_snapshots')->where('proposition_id', $proof->governing_committal_id)
-                        ->where('calculator_version', 'origin-bootstrap-v1')->exists()))) {
-                $horizonMismatch[] = $id;
-            }
-        }
         $invalidFailures = [];
         $subjects = DB::table('propositions as node')->join('phases as phase', 'phase.id', '=', 'node.phase_id')
             ->join('cycles as cycle', 'cycle.id', '=', 'phase.cycle_id')->whereIn('node.id', $failures->pluck('proposition_id'))
@@ -82,7 +73,9 @@ final class ExhaustionAuditService
         $invalidRest = array_values(array_unique($invalidRest));
 
         return ['substrate_id' => $substrateId,
-            'archived_horizon_tragedies' => DB::table('horizon_tragedies')->whereIn('context_horizon_id', $horizons->keys())->whereNull('governing_committal_id')->count(),
+            'archived_horizon_tragedies' => DB::table('tragedies')->whereIn('context_horizon_id', $horizons->keys())->whereNull('governing_committal_id')->count(),
+            'archived_origin_tragedies' => DB::table('legacy_origin_tragedies')->where('substrate_id', $substrateId)->count(),
+            'archived_horizon_exhaustion_markers' => DB::table('legacy_horizon_exhaustion_markers')->whereIn('context_horizon_id', $horizons->keys())->count(),
             'archived_horizon_exhaustions' => DB::table('horizon_exhaustions')->whereIn('context_horizon_id', $horizons->keys())->count(),
             'matches' => $invalidRest === [] && $invalidTragedy === [] && $invalidConsumption === [] && $horizonMismatch === [] && $invalidFailures === [],
             'missing' => $horizonMismatch, 'unexpected' => $invalidFailures,

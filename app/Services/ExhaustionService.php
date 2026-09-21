@@ -37,9 +37,13 @@ final class ExhaustionService
 
     public function boundaryExhausted(ContextHorizon $horizon): bool
     {
-        return $horizon->opened_by_proposition_id !== null && DB::table('commit_region_exhaustions')
-            ->where('governing_committal_id', $horizon->opened_by_proposition_id)
-            ->where('context_horizon_id', $horizon->id)->exists();
+        return $this->openingRegionExhaustedAt($horizon) !== null;
+    }
+
+    /** Boundary/Origin presentation derives directly from the opening Committal's proof. */
+    public function openingRegionExhaustedAt(ContextHorizon $horizon): ?string
+    {
+        return ContextHorizon::whereKey($horizon->id)->withOpeningRegionExhaustion()->first()?->opening_region_exhausted_at;
     }
 
     /** Compatibility entry point: archived retirement markers have no semantic authority. */
@@ -123,16 +127,14 @@ final class ExhaustionService
             $boundary = $horizon->opened_by_proposition_id === $seed->id;
             $origin = $horizon->parent_context_horizon_id === null
                 && $seed->commitmentSnapshot?->calculator_version === 'origin-bootstrap-v1';
-            if ($boundary || $origin) {
-                $horizon->forceFill(['exhausted_at' => now()])->save();
-            }
             $affected = array_values(array_filter([$horizon->id, $boundary ? $horizon->parent_context_horizon_id : null]));
             app(FieldMutationService::class)->mark($horizon->substrate_id, $affected, [$seed->id], measurementsDirty: false);
             app(RealtimePublisher::class)->proposition($seed->id);
             if ($boundary || $origin) {
                 app(RealtimePublisher::class)->horizon($horizon->id, $horizon->substrate_id,
                     ['type' => 'horizon.exhausted', 'opening_proposition_id' => $horizon->opened_by_proposition_id,
-                        'governing_committal_id' => $seed->id]);
+                        'governing_committal_id' => $seed->id, 'opening_region_exhausted' => true,
+                        'boundary_region_exhausted' => $boundary]);
             }
             app(RealtimePublisher::class)->horizon($horizon->id, $horizon->substrate_id,
                 ['type' => 'region.exhausted', 'governing_committal_id' => $seed->id, 'boundary_exhausted' => $boundary]);

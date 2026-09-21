@@ -41,9 +41,9 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
         $this->assertTrue($boundary['closure_boundary']);
         $this->assertEqualsWithDelta(-0.3436754, $boundary['depth'], 0.0000001);
         $this->assertEqualsWithDelta(-0.9753777, $boundary['cadence'], 0.0000001);
-        $this->assertSame(1, DB::table('horizon_tragedies')->count(), $this->traceMessage($state));
+        $this->assertSame(1, DB::table('tragedies')->count(), $this->traceMessage($state));
         $this->assertDatabaseCount('commit_region_exhaustions', 0);
-        $tragedy = DB::table('horizon_tragedies')->sole();
+        $tragedy = DB::table('tragedies')->sole();
         $receipt = DB::table('receipts')->where('id', $tragedy->receipt_id)->sole();
         $this->assertNotSame($initial['context_horizon_id'], $tragedy->context_horizon_id);
         $this->assertSame($actor, $tragedy->participant_id);
@@ -109,7 +109,7 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
         $this->assertSame($tragedy->governing_committal_id, $exhaustion->governing_committal_id);
         $this->assertEquals($receipt, DB::table('receipts')->where('id', $receipt->id)->sole());
         $this->assertDatabaseCount('tragedy_final_attempts', 1);
-        $this->assertDatabaseCount('horizon_tragedies', 1);
+        $this->assertDatabaseCount('tragedies', 1);
         $this->assertSame($initial['context_horizon_id'], $after['context_horizon_id']);
         $this->assertSame('distinguish', $after['plan']['phase']['kind']);
         $this->assertSame($initial['current_proposition_id'], $after['current_proposition_id']);

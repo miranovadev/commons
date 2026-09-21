@@ -11,7 +11,7 @@ final class RegionalExhaustionBackfill
 {
     public function run(): void
     {
-        foreach (DB::table('horizon_tragedies')->whereNull('governing_committal_id')->get() as $tragedy) {
+        foreach (DB::table('tragedies')->whereNull('governing_committal_id')->get() as $tragedy) {
             $terminal = Proposition::find($tragedy->terminal_proposition_id);
             $seed = $terminal === null ? null : app(CommitRegionService::class)->seedFor($terminal);
             try {
@@ -36,7 +36,7 @@ final class RegionalExhaustionBackfill
             if ($receipt === null || $receipt->type !== 'tragedy' || $receipt->phase_id !== $tragedy->phase_id
                 || $receipt->context_horizon_id !== $tragedy->context_horizon_id
                 || ($attempt !== null && app(CommitRegionService::class)->seedFor(Proposition::findOrFail($attempt->proposition_id))?->id !== $seed->id)
-                || DB::table('horizon_tragedies')->where('governing_committal_id', $seed->id)->exists()) {
+                || DB::table('tragedies')->where('governing_committal_id', $seed->id)->exists()) {
                 continue;
             }
             $exhaustion = DB::table('horizon_exhaustions')->where('tragedy_id', $tragedy->id)->first();
@@ -61,7 +61,7 @@ final class RegionalExhaustionBackfill
                 }
             }
             // New scope metadata only; original proof/Receipt fields remain byte-for-byte unchanged.
-            DB::table('horizon_tragedies')->where('id', $tragedy->id)->update(['governing_committal_id' => $seed->id]);
+            DB::table('tragedies')->where('id', $tragedy->id)->update(['governing_committal_id' => $seed->id]);
             if ($exhaustion !== null) {
                 DB::table('commit_region_exhaustions')->insertOrIgnore([
                     'governing_committal_id' => $seed->id, 'context_horizon_id' => $tragedy->context_horizon_id,

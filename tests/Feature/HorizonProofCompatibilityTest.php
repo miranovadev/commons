@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Enums\PhaseKind;
 use App\Models\Receipt;
-use App\Models\Tragedy;
 use App\Services\ContributionDispatcher;
 use App\Services\HorizonReceiptService;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
@@ -61,6 +60,8 @@ class HorizonProofCompatibilityTest extends TestCase
     {
         $horizon = $this->origin->phase->cycle->contextHorizon;
         $version = $this->substrate->fresh()->field_version;
+        $regional = require database_path('migrations/2026_09_22_000000_scope_exhaustion_to_commit_regions.php');
+        $regional->down();
         $migration = require database_path('migrations/2026_09_18_000400_record_proven_horizon_exhaustion.php');
         $migration->down();
         DB::table('context_horizons')->where('id', $horizon->id)->update(['exhausted_at' => '2026-09-01 00:00:00']);
@@ -70,7 +71,8 @@ class HorizonProofCompatibilityTest extends TestCase
         $this->assertDatabaseHas('potential_dirty_horizons', ['context_horizon_id' => $horizon->id]);
         $this->assertSame($version + 1, $this->substrate->fresh()->field_version);
         $this->assertDatabaseCount('horizon_exhaustions', 0);
-        $this->assertSame(0, Tragedy::count());
+        $this->assertDatabaseCount('horizon_tragedies', 0);
+        $regional->up();
         $this->assertDatabaseHas('propositions', ['id' => $this->origin->id]);
     }
 
@@ -96,7 +98,7 @@ class HorizonProofCompatibilityTest extends TestCase
             $this->assertStringContainsString('Cannot discard', $error->getMessage());
         }
         $this->assertDatabaseCount('commit_region_exhaustions', 1);
-        $this->assertDatabaseCount('horizon_tragedies', 1);
+        $this->assertDatabaseCount('tragedies', 1);
         $this->assertDatabaseCount('receipt_consumptions', 1);
     }
 }

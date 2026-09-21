@@ -45,7 +45,8 @@ final class TragedyService
         app(TragedyReceiptScopeService::class)->initialize($tragedy);
         app(LedgerService::class)->record($receipt);
         app(RealtimePublisher::class)->horizon($horizon->id, $horizon->substrate_id,
-            ['type' => 'horizon.tragedy', 'tragedy_id' => $id, 'receipt_id' => $receipt->id]);
+            ['type' => 'horizon.tragedy', 'tragedy_id' => $id, 'receipt_id' => $receipt->id,
+                'governing_committal_id' => $seed->id, 'scope' => 'commit_region']);
 
         return $tragedy;
     }

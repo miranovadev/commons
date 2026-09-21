@@ -100,7 +100,7 @@ class CausalRecoveryTest extends TestCase
         $this->assertSame($near->id, $selection['proposition']->id);
         $this->assertSame(0.0, $selection['raw_potential_charge']);
         $this->assertSame(0.0, $selection['raw_charge']);
-        $this->assertNull($this->root->fresh()->exhausted_at);
+        $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($this->root));
         $this->assertDatabaseCount('horizon_exhaustions', 0);
     }
 
@@ -115,7 +115,7 @@ class CausalRecoveryTest extends TestCase
         $this->opportunity($near);
         // Low/zero local capacity does not permit crossing an unresolved Horizon.
         $this->assertSame($boundary->id, $this->recover($position)['proposition']->id);
-        $this->assertNull($child->fresh()->exhausted_at);
+        $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($child));
         // Uses first Tragedy, actual Receipt consumption, and a later failure.
         $this->exhaust($position);
         $selection = $this->recover($position);
@@ -584,7 +584,7 @@ class CausalRecoveryTest extends TestCase
         $position = $this->expressive($h4, $later);
         $this->opportunity($origin);
         $this->exhaust($position);
-        $this->assertNull($h3->fresh()->exhausted_at, 'Parent requires its own final attempt');
+        $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($h3), 'Parent requires its own final attempt');
         $this->assertSame($commit->id, $this->recover($position)['proposition']->id,
             'The still-open intermediate basin blocks the stronger older ancestor.');
         $this->exhaust($this->expressive($h3, $commit));
@@ -1067,7 +1067,7 @@ class CausalRecoveryTest extends TestCase
         $this->assertSame(0.0, $selection['raw_potential_charge']);
         $this->assertDatabaseCount('commit_region_exhaustions', 0);
         $failedC = $this->exhaustRegion($c, $terminal);
-        $this->assertNull($this->root->fresh()->exhausted_at);
+        $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($this->root));
         $this->assertTrue(app(ExhaustionService::class)->unavailable($c));
         foreach ([$a, $b, $sibling] as $live) {
             $this->assertFalse(app(ExhaustionService::class)->unavailable($live));
@@ -1078,11 +1078,11 @@ class CausalRecoveryTest extends TestCase
         $failedB = $this->exhaustRegion($b, $bOpportunity);
         $this->assertSame($a->id, $this->recover($failedB)['proposition']->id);
         $this->assertSame($a->id, $this->recover($failedC)['proposition']->id);
-        $this->assertNull($this->root->fresh()->exhausted_at);
+        $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($this->root));
         $this->assertFalse(app(ExhaustionService::class)->unavailable($a));
         $this->assertFalse(app(ExhaustionService::class)->unavailable($sibling));
         $this->assertDatabaseCount('commit_region_exhaustions', 2);
-        $this->assertDatabaseCount('horizon_tragedies', 2);
+        $this->assertDatabaseCount('tragedies', 2);
         $this->assertDatabaseCount('tragedy_final_attempts', 2);
         $this->assertDatabaseCount('horizon_exhaustions', 0);
         $members = DB::table('exhausted_region_memberships')->orderBy('proposition_id')->get()->toJson();
@@ -1112,8 +1112,9 @@ class CausalRecoveryTest extends TestCase
         $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($child));
         $failed = $this->exhaustRegion($boundary, $terminal);
         $this->assertTrue(app(ExhaustionService::class)->boundaryExhausted($child));
-        $this->assertNotNull($child->fresh()->exhausted_at);
-        $this->assertNull($this->root->fresh()->exhausted_at);
+        $this->assertSame(DB::table('commit_region_exhaustions')->where('governing_committal_id', $boundary->id)->value('exhausted_at'),
+            app(ExhaustionService::class)->openingRegionExhaustedAt($child));
+        $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($this->root));
         $this->assertSame($near->id, $this->recover($failed)['proposition']->id);
         $this->assertFalse(app(ExhaustionService::class)->unavailable($live));
         $liveTerminal = $this->expressive($child, $live);
@@ -1184,7 +1185,7 @@ class CausalRecoveryTest extends TestCase
         $terminal = $this->phase($horizon, $target);
         $this->refreshMeasurements();
         app(ParticipationService::class)->contribute($terminal->cycle->participant, $terminal->id, ['action' => 'participant.rest']);
-        $this->assertNotNull($horizon->fresh()->exhausted_at);
+        $this->assertTrue(app(ExhaustionService::class)->boundaryExhausted($horizon));
         $this->refreshMeasurements();
     }
 

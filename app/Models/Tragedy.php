@@ -10,8 +10,6 @@ class Tragedy extends Model
 {
     use HasUlids;
 
-    protected $table = 'horizon_tragedies';
-
     public $timestamps = false;
 
     protected function casts(): array

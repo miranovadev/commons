@@ -32,7 +32,7 @@ Exhaustion additionally checks that the consuming classification lies on the res
 
 ## Persistent proof and recovery
 
-`horizon_tragedies` retains its historical table name but is now unique by
+`tragedies` names the event independently of its scope and is unique by
 `governing_committal_id`, not by Horizon. Its immutable origin remains distinct
 from the Tragedy Receipt's effective sharing scope. Null governing IDs identify
 archived Horizon-scoped evidence without regional final-attempt authority.

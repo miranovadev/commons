@@ -47,7 +47,8 @@ region's exhaustion permits crossing only when its opening Committal occurs on
 the recorded path. This is a consequence of the same regional proof, not another
 exhaustion ontology. After crossing, recovery stops at the nearest eligible
 ancestral Committal in the parent Horizon. No Horizon opener is substituted.
-`context_horizons.exhausted_at` summarizes opening-region exhaustion; it does not
+Opening-region exhaustion and its timestamp derive directly from the governing
+Committal proof; no duplicate Horizon timestamp is stored. This does not
 retire every region owned by the Horizon. A live descendant region can still
 operate there. Origin has no parent crossing, and persists uniquely.
 

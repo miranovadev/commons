@@ -8,6 +8,7 @@ use App\Services\InstrumentExecutionService;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Tests\Fixtures\ExhaustionFixture;
 use Tests\TestCase;
 
@@ -88,10 +89,10 @@ class HorizonProofMigrationTest extends TestCase
         $this->assertDatabaseCount('proposition_receipt_links', 2);
         $this->assertTrue(app(HorizonReceiptService::class)->available($source->phase)->isEmpty());
         $horizon = DB::table('context_horizons')->where('id', $after->context_horizon_id)->first();
-        $this->assertNull($horizon->exhausted_at);
+        $this->assertFalse(Schema::hasColumn('context_horizons', 'exhausted_at'));
         $this->assertNotNull($horizon->legacy_exhausted_at);
         $this->assertDatabaseCount('horizon_exhaustions', 0);
-        $this->assertDatabaseCount('horizon_tragedies', 0);
+        $this->assertDatabaseCount('tragedies', 0);
     }
 
     public function test_rollback_refuses_to_discard_a_new_receipt_consumption(): void

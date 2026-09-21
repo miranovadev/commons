@@ -76,7 +76,7 @@ class ExhaustionTest extends TestCase
         $this->assertSame($opening->id, $selection['selection']['proposition_id']);
         $this->assertSame(0, $selection['recovery_hops']);
         $this->assertDatabaseCount('commit_region_exhaustions', 0);
-        $this->assertDatabaseCount('horizon_tragedies', 0);
+        $this->assertDatabaseCount('tragedies', 0);
     }
 
     public function test_tragedy_does_not_close_the_opening_committal_or_move_other_participants(): void
@@ -85,7 +85,7 @@ class ExhaustionTest extends TestCase
         $before = $other->cycle->participant->fresh()->getAttributes();
         $propositions = Proposition::count();
         $this->rest($first);
-        $this->assertDatabaseCount('horizon_tragedies', 1);
+        $this->assertDatabaseCount('tragedies', 1);
         $this->assertDatabaseCount('commit_region_exhaustions', 0);
         $this->assertSame($propositions, Proposition::count());
         $this->assertFalse(app(ExhaustionService::class)->unavailable($commit));
@@ -99,8 +99,8 @@ class ExhaustionTest extends TestCase
     {
         [$opening, $terminal] = $this->exhaustFinalAttempt();
         $horizon = $terminal->cycle->contextHorizon;
-        $this->assertNotNull($horizon->fresh()->exhausted_at);
-        $this->assertNull($horizon->parent->fresh()->exhausted_at);
+        $this->assertTrue(app(ExhaustionService::class)->boundaryExhausted($horizon));
+        $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($horizon->parent));
         $inspection = app(PotentialChargeService::class)->inspectRecoveryFrom($terminal->gate);
         $this->assertSame(1, $inspection['recovery_hops']);
         $this->assertSame($this->origin->id, $inspection['selection']['proposition_id']);
@@ -116,7 +116,7 @@ class ExhaustionTest extends TestCase
         $phase->forceFill(['completed_at' => now()])->save();
         $phase->cycle->forceFill(['rested_at' => now(), 'completed_at' => now(), 'rest_reason' => 'no_remaining_potential'])->save();
         app(ExhaustionService::class)->publish($phase, $proof);
-        $this->assertDatabaseCount('horizon_tragedies', 0);
+        $this->assertDatabaseCount('tragedies', 0);
         $this->assertDatabaseCount('continuation_failures', 0);
         $this->assertFalse(app(ExhaustionService::class)->unavailable($fresh));
     }
@@ -126,7 +126,7 @@ class ExhaustionTest extends TestCase
         [, $phase] = $this->exhaustedBranch();
         app(ExhaustionService::class)->publish($phase, app(ExhaustionService::class)->inspect($phase));
         $this->assertDatabaseCount('horizon_failure_witnesses', 0);
-        $this->assertDatabaseCount('horizon_tragedies', 0);
+        $this->assertDatabaseCount('tragedies', 0);
     }
 
     public function test_diagnostics_do_not_mutate_or_exhaust_an_actionable_phase(): void
@@ -171,14 +171,13 @@ class ExhaustionTest extends TestCase
         $this->assertSame([$tragedy->context_horizon_id], $audit['invalid_receipt_consumptions']);
     }
 
-    public function test_audit_detects_exhaustion_marker_without_proof_and_incorrect_rest_reason(): void
+    public function test_audit_detects_incorrect_rest_reason_without_a_duplicate_horizon_marker(): void
     {
         [, $phase, $tragedy] = $this->tragicChild();
-        DB::table('context_horizons')->where('id', $tragedy->context_horizon_id)->update(['exhausted_at' => now()]);
         DB::table('cycles')->where('id', $phase->cycle_id)->update(['rest_reason' => 'no_available_move']);
         $audit = app(ExhaustionAuditService::class)->inspect($this->substrate->id);
         $this->assertFalse($audit['matches']);
-        $this->assertSame([$tragedy->context_horizon_id], $audit['horizon_mismatches']);
+        $this->assertSame([], $audit['horizon_mismatches']);
         $this->assertSame([$phase->id], $audit['invalid_rest_witnesses']);
     }
 

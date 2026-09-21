@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\PhaseKind;
+use App\Http\Resources\PropositionResource;
 use App\Models\Receipt;
 use App\Models\Tragedy;
 use App\Services\ExhaustionService;
@@ -10,7 +11,10 @@ use App\Services\PotentialProjectionService;
 use App\Services\TragedyEvidenceService;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\RefreshDatabaseState;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use Tests\Fixtures\HorizonProofFixture;
 use Tests\TestCase;
 
@@ -54,7 +58,18 @@ class RegionalExhaustionMigrationTest extends TestCase
         unset($after['governing_committal_id']);
         $this->assertSame($original, $after);
         $this->assertTrue(app(ExhaustionService::class)->boundaryExhausted($horizon));
-        $this->assertNotNull($horizon->fresh()->exhausted_at);
+        $this->assertSame($historical->exhausted_at, app(ExhaustionService::class)->openingRegionExhaustedAt($horizon));
+        $this->assertFalse(Schema::hasColumn('context_horizons', 'exhausted_at'));
+        $this->assertFalse(Schema::hasTable('horizon_tragedies'));
+        foreach (['horizon_exhaustions', 'tragedy_final_attempts', 'tragedy_receipt_scopes', 'commit_region_exhaustions'] as $table) {
+            $foreign = collect(Schema::getForeignKeys($table))->first(fn ($key) => $key['columns'] === ['tragedy_id']);
+            $this->assertSame('tragedies', $foreign['foreign_table'], $table);
+        }
+        $this->assertDatabaseCount('legacy_horizon_exhaustion_markers', 0);
+        $node = $terminal->gate->load(['contextHorizonMembership.horizon' => fn ($query) => $query->withOpeningRegionExhaustion()]);
+        $resource = (new PropositionResource($node))->toArray(Request::create('/'));
+        $this->assertSame($historical->exhausted_at, $resource['context_horizon']['opening_region_exhausted_at']);
+        $this->assertArrayNotHasKey('exhausted_at', $resource['context_horizon']);
         $this->assertFalse(app(ExhaustionService::class)->unavailable($this->origin));
     }
 
@@ -70,7 +85,7 @@ class RegionalExhaustionMigrationTest extends TestCase
         $migration->up();
         $this->assertDatabaseCount('commit_region_exhaustions', 0);
         $this->assertNull($tragedy->fresh()->governing_committal_id);
-        $this->assertNull($horizon->fresh()->exhausted_at);
+        $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($horizon));
         $this->assertEquals($historical, DB::table('horizon_exhaustions')->first());
         $this->assertEquals($consumption, DB::table('receipt_consumptions')->where('receipt_id', $tragedy->receipt_id)->first());
         $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($horizon));
@@ -92,7 +107,7 @@ class RegionalExhaustionMigrationTest extends TestCase
         DB::table('context_horizons')->where('id', $horizon->id)->update(['exhausted_at' => now()]);
         $migration->up();
         $this->assertDatabaseHas('commit_region_exhaustions', ['governing_committal_id' => $seed->id]);
-        $this->assertNull($horizon->fresh()->exhausted_at);
+        $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($horizon));
         $this->assertFalse(app(ExhaustionService::class)->unavailable($this->origin));
         $this->assertTrue(app(ExhaustionService::class)->unavailable($seed));
     }
@@ -127,6 +142,39 @@ class RegionalExhaustionMigrationTest extends TestCase
         $this->assertSame($before, $receipt->fresh()->getAttributes());
     }
 
+    public function test_unproven_timestamps_and_pre_horizon_tragedies_survive_as_archives_only(): void
+    {
+        $root = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
+        $horizon = $this->origin->phase->cycle->contextHorizon;
+        $migration = require database_path('migrations/2026_09_22_000000_scope_exhaustion_to_commit_regions.php');
+        $migration->down();
+        $this->assertTrue(Schema::hasTable('horizon_tragedies'));
+        $this->assertTrue(Schema::hasColumn('context_horizons', 'exhausted_at'));
+        $timestamp = '2026-09-01 00:00:00';
+        DB::table('context_horizons')->where('id', $horizon->id)->update(['exhausted_at' => $timestamp]);
+        DB::table('tragedies')->insert([
+            'id' => (string) Str::ulid(), 'root_proposition_id' => $root->id,
+            'substrate_id' => $this->substrate->id, 'participant_id' => $root->phase->cycle->participant_id,
+            'phase_id' => $root->phase_id, 'terminal_proposition_id' => $root->id,
+            'observed_field_version' => 1, 'occurred_at' => $timestamp, 'evidence' => '{"legacy":true}',
+        ]);
+        $history = DB::table('tragedies')->sole();
+        $migration->up();
+        $this->assertEquals($history, DB::table('legacy_origin_tragedies')->sole());
+        $this->assertDatabaseHas('legacy_horizon_exhaustion_markers', ['context_horizon_id' => $horizon->id, 'exhausted_at' => $timestamp]);
+        $this->assertFalse(Schema::hasColumn('context_horizons', 'exhausted_at'));
+        $this->assertDatabaseCount('tragedies', 0);
+        $this->assertDatabaseCount('commit_region_exhaustions', 0);
+        $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($horizon));
+        $this->assertFalse(app(ExhaustionService::class)->unavailable($root));
+        // Without regional events, down restores the original historical schema and bytes.
+        $migration->down();
+        $this->assertSame($timestamp, DB::table('context_horizons')->where('id', $horizon->id)->value('exhausted_at'));
+        $this->assertEquals($history, DB::table('tragedies')->sole());
+        $migration->up();
+        $this->assertEquals($history, DB::table('legacy_origin_tragedies')->sole());
+    }
+
     private function legacy(string $seed, string $horizon): object
     {
         $proof = (array) DB::table('commit_region_exhaustions')->where('governing_committal_id', $seed)->sole();
@@ -134,7 +182,7 @@ class RegionalExhaustionMigrationTest extends TestCase
         DB::table('horizon_exhaustions')->insert([...$proof, 'opening_proposition_id' => $seed]);
         DB::table('exhausted_region_memberships')->delete();
         DB::table('commit_region_exhaustions')->delete();
-        DB::table('horizon_tragedies')->update(['governing_committal_id' => null]);
+        DB::table('tragedies')->update(['governing_committal_id' => null]);
         $migration = require database_path('migrations/2026_09_22_000000_scope_exhaustion_to_commit_regions.php');
         $migration->down();
 

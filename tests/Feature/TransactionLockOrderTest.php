@@ -32,6 +32,7 @@ use App\Services\ContributionDispatcher;
 use App\Services\CycleEntryService;
 use App\Services\Evidence\HyperlinkVerifier;
 use App\Services\ExhaustionAuditService;
+use App\Services\ExhaustionService;
 use App\Services\InstrumentExecutionService;
 use App\Services\LedgerService;
 use App\Services\ParticipantActivityService;
@@ -558,10 +559,10 @@ class TransactionLockOrderTest extends TestCase
         $this->whileWorkerWaits($this->substrate, ['operation' => 'rest',
             'participant_id' => $second->cycle->participant_id, 'phase_id' => $second->id],
             fn () => $this->rest($first));
-        $this->assertDatabaseCount('horizon_tragedies', 1);
+        $this->assertDatabaseCount('tragedies', 1);
         $this->assertDatabaseCount('commit_region_exhaustions', 1);
         $this->assertDatabaseCount('receipt_consumptions', 1);
-        $this->assertNotNull($horizon->fresh()->exhausted_at);
+        $this->assertTrue(app(ExhaustionService::class)->boundaryExhausted($horizon));
         $this->assertDatabaseHas('propositions', ['id' => $opening->id]);
         $this->assertTrue(app(ExhaustionAuditService::class)->inspect($this->substrate->id)['matches']);
     }

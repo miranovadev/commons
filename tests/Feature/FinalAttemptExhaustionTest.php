@@ -34,7 +34,7 @@ class FinalAttemptExhaustionTest extends TestCase
         $phase = $this->phase($next);
         $this->measure($next, 1);
         $this->rest($phase);
-        $this->assertNull($horizon->fresh()->exhausted_at);
+        $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($horizon));
         $this->assertSame(1, Tragedy::count());
         $this->assertFalse(Receipt::findOrFail($tragedy->receipt_id)->consumption()->exists());
         $this->assertDatabaseCount('commit_region_exhaustions', 0);
@@ -82,7 +82,7 @@ class FinalAttemptExhaustionTest extends TestCase
         $proof = app(ExhaustionService::class)->inspect($terminal);
         $this->assertSame('no_remaining_potential', $proof['rest_reason']);
         $this->rest($terminal);
-        $this->assertNotNull($horizon->fresh()->exhausted_at);
+        $this->assertTrue(app(ExhaustionService::class)->boundaryExhausted($horizon));
         $this->assertTrue(app(ExhaustionService::class)->unavailable($opening));
         $this->assertDatabaseHas('propositions', ['id' => $opening->id]);
         $this->assertDatabaseHas('receipts', ['id' => $tragedy->receipt_id]);
@@ -101,7 +101,7 @@ class FinalAttemptExhaustionTest extends TestCase
         $this->assertSame('write', $retained['role']);
         app(ExhaustionService::class)->publish($terminal, $proof);
         $this->assertDatabaseCount('commit_region_exhaustions', 1);
-        $this->assertNull($horizon->parent->fresh()->exhausted_at, 'Parent failure needs its own evidence-bearing proof');
+        $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($horizon->parent), 'Parent failure needs its own evidence-bearing proof');
         $this->assertDatabaseHas('propositions', ['id' => $this->origin->id]);
         $this->assertFalse(DB::table('origin_branches')->whereNotNull('pruned_at')->exists());
     }
@@ -113,7 +113,7 @@ class FinalAttemptExhaustionTest extends TestCase
         $this->measure($result, 0);
         $this->assertSame('no_available_move', app(ExhaustionService::class)->inspect($terminal)['rest_reason']);
         $this->rest($terminal);
-        $this->assertNull($horizon->fresh()->exhausted_at);
+        $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($horizon));
         $this->assertDatabaseCount('commit_region_exhaustions', 0);
         $this->assertFalse(app(ExhaustionService::class)->unavailable($opening));
     }
@@ -130,7 +130,7 @@ class FinalAttemptExhaustionTest extends TestCase
         $this->assertSame('no_remaining_potential', $proof['rest_reason']);
         $this->assertNull($proof['consumed_continuation_id']);
         $this->rest($other);
-        $this->assertNull($horizon->fresh()->exhausted_at);
+        $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($horizon));
         $this->assertDatabaseCount('commit_region_exhaustions', 0);
         $this->assertSame($result->id, app(ExhaustionService::class)->consumedContinuationFor($terminal));
     }
@@ -148,7 +148,7 @@ class FinalAttemptExhaustionTest extends TestCase
         [$opening, $horizon, $childTragedy] = $this->firstFailure();
         [$terminal] = $this->exercise($opening, $childTragedy);
         $this->rest($terminal);
-        $this->assertNotNull($horizon->fresh()->exhausted_at);
+        $this->assertTrue(app(ExhaustionService::class)->boundaryExhausted($horizon));
         $parentHead = $this->node($this->phase($this->origin, PhaseKind::Constrain), $this->origin);
         $this->explore($parentHead);
         $parentRest = $this->phase($parentHead);
@@ -167,11 +167,11 @@ class FinalAttemptExhaustionTest extends TestCase
         $this->assertSame($opening->id, $context['evidence']['exhausted_committals'][0]['id']);
         $this->assertSame('available', $context['availability']);
         $this->assertDatabaseHas('propositions', ['id' => $opening->id]);
-        $this->assertNull($horizon->parent->fresh()->exhausted_at);
+        $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($horizon->parent));
         // The proof can continue to Origin, without deleting its exhausted child.
         [$originTerminal] = $this->exercise($this->origin, $parentTragedy);
         $this->rest($originTerminal);
-        $this->assertNotNull($horizon->parent->fresh()->exhausted_at);
+        $this->assertTrue(app(ExhaustionService::class)->boundaryExhausted($horizon->parent));
         $this->assertDatabaseCount('commit_region_exhaustions', 2);
         $this->assertDatabaseHas('propositions', ['id' => $this->origin->id]);
         $this->assertDatabaseHas('propositions', ['id' => $opening->id]);

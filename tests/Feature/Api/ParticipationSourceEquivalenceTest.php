@@ -65,7 +65,7 @@ class ParticipationSourceEquivalenceTest extends ScriptedParticipationTestCase
         $this->assertGreaterThan($initial['cycle']['sequence'], $after['cycle']['sequence']);
         $this->assertDatabaseHas('cycles', ['id' => $initial['cycle']['id'], 'rest_reason' => 'no_available_move']);
         $this->assertDatabaseHas('participant_connections', ['id' => $link, 'last_error' => null]);
-        $this->assertDatabaseCount('horizon_tragedies', 0);
+        $this->assertDatabaseCount('tragedies', 0);
     }
 
     public function test_connection_driven_and_manual_participation_share_the_complete_action_contract(): void

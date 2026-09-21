@@ -70,7 +70,7 @@ class AuthoritativeRestReasonTest extends TestCase
         $this->assertFalse(app(PotentialChargeService::class)->hasRemainingInRegion($terminal));
         $this->assertSame(RestReason::NoRemainingPotential, app(RestReasonService::class)->derive($terminal));
         $this->rest($terminal);
-        $this->assertDatabaseCount('horizon_tragedies', 1);
+        $this->assertDatabaseCount('tragedies', 1);
     }
 
     public function test_legacy_rest_without_an_authoritative_reason_cannot_be_reinterpreted(): void

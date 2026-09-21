@@ -59,7 +59,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        if (DB::table('horizon_tragedies')->exists()) {
+        if (Schema::hasColumn('tragedies', 'governing_committal_id') || DB::table('horizon_tragedies')->exists()) {
             throw new RuntimeException('Cannot discard Tragedy proof history. Restore a pre-rollout backup instead.');
         }
         Schema::dropIfExists('horizon_failure_witnesses');

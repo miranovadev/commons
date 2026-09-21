@@ -16,7 +16,7 @@ final class TragedyReceiptScopeService
     public function seeds(ParticipationContext $context): array
     {
         return $context->remember('tragedy-receipt-scopes', fn (): array => DB::table('tragedy_receipt_scopes as scope')
-            ->join('horizon_tragedies as tragedy', 'tragedy.id', '=', 'scope.tragedy_id')
+            ->join('tragedies as tragedy', 'tragedy.id', '=', 'scope.tragedy_id')
             ->join('context_horizons as horizon', 'horizon.id', '=', 'tragedy.context_horizon_id')
             ->where('horizon.substrate_id', $context->substrate->id)
             ->whereNotExists(fn ($q) => $q->selectRaw('1')->from('receipt_consumptions as consumed')
@@ -55,7 +55,7 @@ final class TragedyReceiptScopeService
             return;
         }
         $scopes = DB::table('tragedy_receipt_scopes')->where('current_committal_id', $source->id)
-            ->whereIn('tragedy_id', DB::table('horizon_tragedies')->whereNotIn('receipt_id',
+            ->whereIn('tragedy_id', DB::table('tragedies')->whereNotIn('receipt_id',
                 DB::table('receipt_consumptions')->select('receipt_id'))->select('id'));
         if (! (clone $scopes)->exists()) {
             return;

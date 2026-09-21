@@ -34,9 +34,8 @@ The graph may filter these views for observers. Participant actionability and hi
 
 See [rollout compatibility](horizon-proof-migration.md), [locking](transaction-locking.md), and [invariant coverage](horizon-proof-tests.md).
 
-The governing Committal is the basin identity. `horizon_tragedies` keeps its
-historical storage name, with a unique nullable `governing_committal_id` replacing
+The governing Committal is the basin identity. `tragedies` records the event with a unique nullable `governing_committal_id` replacing
 the Horizon uniqueness constraint. Null-scoped historical rows do not authorize
-regional final attempts. Boundary exhaustion summaries are derived from this
-same regional authority, and never globally retire a Horizon's other regions.
+regional final attempts. Boundary exhaustion state is read from this
+same regional authority without a duplicate Horizon timestamp, and never globally retire a Horizon's other regions.
 See [migration and authority](commit-region-exhaustion.md).
