@@ -20,7 +20,7 @@ final class TragedyFinalAttemptService
     private function tragedyFor(Phase $phase): ?Tragedy
     {
         if (! in_array($phase->kind, [PhaseKind::Distinguish, PhaseKind::Disperse], true)
-            || app(ExhaustionService::class)->unavailable($phase->gate)) {
+            || $phase->gate === null || app(ExhaustionService::class)->unavailable($phase->gate)) {
             return null;
         }
 

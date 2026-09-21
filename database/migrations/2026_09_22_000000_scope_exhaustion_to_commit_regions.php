@@ -12,6 +12,7 @@ return new class extends Migration
     {
         Schema::withoutForeignKeyConstraints(fn () => Schema::table('horizon_tragedies', function (Blueprint $table): void {
             $table->dropUnique(['context_horizon_id']);
+            $table->index('context_horizon_id');
             // Null means archived Horizon-scoped evidence, not a regional authority.
             $table->foreignUlid('governing_committal_id')->nullable()->unique()->constrained('propositions')->restrictOnDelete();
         }));
@@ -56,6 +57,7 @@ return new class extends Migration
         Schema::withoutForeignKeyConstraints(fn () => Schema::table('horizon_tragedies', function (Blueprint $table): void {
             $table->dropUnique(['governing_committal_id']);
             $table->dropConstrainedForeignId('governing_committal_id');
+            $table->dropIndex(['context_horizon_id']);
             $table->unique('context_horizon_id');
         }));
     }

@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Receipt;
 use App\Models\Tragedy;
 use App\Services\ExhaustionService;
+use App\Services\PotentialProjectionService;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Support\Facades\DB;
@@ -39,7 +40,10 @@ class RegionalExhaustionMigrationTest extends TestCase
         unset($original['governing_committal_id']);
         $migration = $this->legacy($opening->id, $horizon->id);
         $historical = DB::table('horizon_exhaustions')->first();
+        $measurements = DB::table('proposition_measurements')->orderBy('proposition_id')->get()->toJson();
         $migration->up();
+        $this->assertTrue(app(PotentialProjectionService::class)->refresh($this->substrate->id));
+        $this->assertSame($measurements, DB::table('proposition_measurements')->orderBy('proposition_id')->get()->toJson());
         $this->assertDatabaseHas('commit_region_exhaustions', ['governing_committal_id' => $opening->id,
             'tragedy_id' => $tragedy->id, 'receipt_id' => $tragedy->receipt_id]);
         $this->assertEquals($historical, DB::table('horizon_exhaustions')->first());

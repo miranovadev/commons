@@ -7,6 +7,7 @@ use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\ReceiptConsumption;
 use App\Models\Tragedy;
+use App\Services\Participation\ParticipationContext;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\DB;
@@ -41,9 +42,11 @@ final class ExhaustionService
             SQL;
     }
 
-    public function regionFor(Phase $phase): ?Proposition
+    public function regionFor(Phase $phase, ?ParticipationContext $context = null): ?Proposition
     {
-        return $phase->gate === null ? null : app(CommitRegionService::class)->seedFor($phase->gate);
+        $gate = $context?->propositions->get($phase->gate_proposition_id) ?? $phase->gate;
+
+        return $gate === null ? null : app(CommitRegionService::class)->seedFor($gate, $context);
     }
 
     public function boundaryExhausted(ContextHorizon $horizon): bool
@@ -141,7 +144,8 @@ final class ExhaustionService
             app(RealtimePublisher::class)->proposition($seed->id);
             if ($boundary || $origin) {
                 app(RealtimePublisher::class)->horizon($horizon->id, $horizon->substrate_id,
-                    ['type' => 'horizon.exhausted', 'governing_committal_id' => $seed->id]);
+                    ['type' => 'horizon.exhausted', 'opening_proposition_id' => $horizon->opened_by_proposition_id,
+                        'governing_committal_id' => $seed->id]);
             }
             app(RealtimePublisher::class)->horizon($horizon->id, $horizon->substrate_id,
                 ['type' => 'region.exhausted', 'governing_committal_id' => $seed->id, 'boundary_exhausted' => $boundary]);

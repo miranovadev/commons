@@ -8,6 +8,7 @@ use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Substrate;
+use App\Services\Participation\ParticipationContext;
 use DomainException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -35,22 +36,26 @@ final readonly class PotentialChargeService
     }
 
     /** Existing regional algebra; only the exhaustion/final-attempt qualification scope changes. */
-    public function hasRemainingInRegion(Phase $phase): bool
+    public function hasRemainingInRegion(Phase $phase, ?ParticipationContext $context = null): bool
     {
-        $seed = app(ExhaustionService::class)->regionFor($phase);
-        if ($seed === null) {
-            return true; // Ambiguous membership supplies no local exhaustion proof.
-        }
-        $this->projection->assertCurrent($phase->cycle->participant->substrate_id);
-        $local = $this->projection->region($phase->cycle->context_horizon_id)['local'];
-        foreach (app(ExhaustedContinuationService::class)->ids($phase)->keys() as $id) {
-            if (isset($local['nodes'][$id])) {
-                $local['nodes'][$id]['active'] = false;
+        $calculate = function () use ($phase, $context): bool {
+            $seed = app(ExhaustionService::class)->regionFor($phase, $context);
+            if ($seed === null) {
+                return true; // Ambiguous membership supplies no local exhaustion proof.
             }
-        }
+            $this->projection->assertCurrent($phase->cycle->participant->substrate_id);
+            $local = $this->projection->region($phase->cycle->context_horizon_id)['local'];
+            foreach (app(ExhaustedContinuationService::class)->ids($phase, $context)->keys() as $id) {
+                if (isset($local['nodes'][$id])) {
+                    $local['nodes'][$id]['active'] = false;
+                }
+            }
 
-        return collect(app(PotentialRegionCalculator::class)->candidates($local, lineage: [$seed->id => 0]))
-            ->contains(fn ($entry) => $entry['raw_potential_charge'] > 0.00000005);
+            return collect(app(PotentialRegionCalculator::class)->candidates($local, lineage: [$seed->id => 0]))
+                ->contains(fn ($entry) => $entry['raw_potential_charge'] > 0.00000005);
+        };
+
+        return $context === null ? $calculate() : $context->remember('remaining-region-potential', $calculate);
     }
 
     public function selectFor(Substrate $substrate): array

@@ -31,7 +31,7 @@ final class RestReasonService
             return RestReason::NoAvailableMove;
         }
 
-        return app(PotentialChargeService::class)->hasRemainingInRegion($phase)
+        return app(PotentialChargeService::class)->hasRemainingInRegion($phase, $context)
             ? RestReason::NoAvailableMove : RestReason::NoRemainingPotential;
     }
 }
