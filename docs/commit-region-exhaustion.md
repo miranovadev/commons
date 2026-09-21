@@ -33,6 +33,16 @@ expressive sources only when every remaining outgoing route is exhausted or
 currently failed. Live alternatives stop propagation; Committals remain hard
 boundaries. No historical proposition, edge, or Receipt is deleted.
 
+`exhausted_region_memberships` is an indexed, rebuildable membership projection
+referencing those proofs by foreign key. It carries no independent exhausted
+flag or lifecycle. Final failure captures the governed members from the existing
+version-checked regional projection before the write lock; the proof and its
+membership publish atomically after revalidation. New writes cannot extend an
+exhausted region. Historical migration derives membership from immutable raw
+Commit Region ancestry. Reads use this index rather than recursively walking
+ancestry once for every proposition; missing regional proof can never authorize
+an indexed member's exhaustion.
+
 ## Boundary consequence
 
 A boundary Commit seeds the child Horizon's opening Commit Region, although the

@@ -1,6 +1,7 @@
 <?php
 
 use App\Services\RegionalExhaustionBackfill;
+use App\Services\RegionalExhaustionMembership;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -26,7 +27,14 @@ return new class extends Migration
             $table->unsignedBigInteger('observed_field_version');
             $table->timestampTz('exhausted_at');
         });
+        Schema::create('exhausted_region_memberships', function (Blueprint $table): void {
+            $table->foreignUlid('proposition_id')->primary()->constrained('propositions')->restrictOnDelete();
+            $table->foreignUlid('governing_committal_id')->index();
+            $table->foreign('governing_committal_id')->references('governing_committal_id')
+                ->on('commit_region_exhaustions')->restrictOnDelete();
+        });
         app(RegionalExhaustionBackfill::class)->run();
+        app(RegionalExhaustionMembership::class)->rebuild();
         // Immutable old horizon_exhaustions rows retain the original timestamps.
         // This field now summarizes boundary-region exhaustion, never all owned nodes.
         DB::table('context_horizons')->update(['exhausted_at' => null]);
@@ -53,6 +61,7 @@ return new class extends Migration
             || DB::table('horizon_tragedies')->whereNotNull('governing_committal_id')->exists()) {
             throw new RuntimeException('Cannot discard regional proof or collapse it into Horizon authority. Restore a pre-rollout backup.');
         }
+        Schema::dropIfExists('exhausted_region_memberships');
         Schema::dropIfExists('commit_region_exhaustions');
         Schema::withoutForeignKeyConstraints(fn () => Schema::table('horizon_tragedies', function (Blueprint $table): void {
             $table->dropUnique(['governing_committal_id']);

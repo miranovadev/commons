@@ -29,6 +29,7 @@ use App\Services\PotentialChargeService;
 use App\Services\PotentialProjectionService;
 use App\Services\PropositionMeasurementService;
 use App\Services\ReferencePotentialChargeService;
+use App\Services\RegionalExhaustionMembership;
 use App\Services\TragedyFinalAttemptService;
 use App\Services\TragedyReceiptScopeBackfill;
 use App\Services\TragedyReceiptScopeService;
@@ -1084,6 +1085,13 @@ class CausalRecoveryTest extends TestCase
         $this->assertDatabaseCount('horizon_tragedies', 2);
         $this->assertDatabaseCount('tragedy_final_attempts', 2);
         $this->assertDatabaseCount('horizon_exhaustions', 0);
+        $members = DB::table('exhausted_region_memberships')->orderBy('proposition_id')->get()->toJson();
+        $proofs = DB::table('commit_region_exhaustions')->orderBy('governing_committal_id')->get()->toJson();
+        app(RegionalExhaustionMembership::class)->rebuild();
+        $this->assertSame($members, DB::table('exhausted_region_memberships')->orderBy('proposition_id')->get()->toJson());
+        $this->assertSame($proofs, DB::table('commit_region_exhaustions')->orderBy('governing_committal_id')->get()->toJson());
+        $this->assertTrue(app(ExhaustionService::class)->unavailable($failedC));
+        $this->assertTrue(app(ExhaustionService::class)->unavailable($failedB));
     }
 
     public function test_boundary_region_exhaustion_permits_crossing_without_retiring_other_child_regions(): void

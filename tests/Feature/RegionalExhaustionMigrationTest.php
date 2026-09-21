@@ -100,6 +100,7 @@ class RegionalExhaustionMigrationTest extends TestCase
         $proof = (array) DB::table('commit_region_exhaustions')->where('governing_committal_id', $seed)->sole();
         unset($proof['governing_committal_id']);
         DB::table('horizon_exhaustions')->insert([...$proof, 'opening_proposition_id' => $seed]);
+        DB::table('exhausted_region_memberships')->delete();
         DB::table('commit_region_exhaustions')->delete();
         DB::table('horizon_tragedies')->update(['governing_committal_id' => null]);
         $migration = require database_path('migrations/2026_09_22_000000_scope_exhaustion_to_commit_regions.php');

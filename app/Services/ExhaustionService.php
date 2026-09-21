@@ -20,26 +20,12 @@ final class ExhaustionService
         return $this->scopeActionable($query);
     }
 
-    /** Correlated first-Commit ancestry; Horizon ownership alone never retires a position. */
+    /** Indexed membership references regional proof; Horizon ownership never retires a position. */
     public function scopeActionable(Builder|QueryBuilder $query, ?string $horizonColumn = null): Builder|QueryBuilder
     {
-        return $query->whereNotExists(fn ($q) => $q->selectRaw('1')->from('commit_region_exhaustions as exhaustion')
-            ->whereRaw('exhaustion.governing_committal_id = ('.$this->seedSql().')'));
-    }
-
-    /** Same first-Committal semantics as CommitRegionService, including ambiguous ancestry. */
-    private function seedSql(): string
-    {
-        return <<<'SQL'
-            WITH RECURSIVE ancestry (id, tier) AS (
-                SELECT origin.id, origin.tier FROM propositions origin WHERE origin.id = propositions.id
-                UNION
-                SELECT parent.id, parent.tier FROM propositions parent
-                JOIN supersessions edge ON edge.source_proposition_id = parent.id
-                JOIN ancestry child ON child.id = edge.target_proposition_id
-                WHERE child.tier = 'expressive'
-            ) SELECT MIN(id) FROM ancestry WHERE tier = 'committal' HAVING COUNT(DISTINCT id) = 1
-            SQL;
+        return $query->whereNotExists(fn ($q) => $q->selectRaw('1')->from('exhausted_region_memberships as membership')
+            ->join('commit_region_exhaustions as proof', 'proof.governing_committal_id', '=', 'membership.governing_committal_id')
+            ->whereColumn('membership.proposition_id', 'propositions.id'));
     }
 
     public function regionFor(Phase $phase, ?ParticipationContext $context = null): ?Proposition
@@ -74,9 +60,9 @@ final class ExhaustionService
     /** Presentation over a caller-scoped proposition query; never an action source. */
     public function withHistoricalState(Builder $query): Builder
     {
-        return $query->join('commit_region_exhaustions as exhaustion', function ($join): void {
-            $join->whereRaw('exhaustion.governing_committal_id = ('.$this->seedSql().')');
-        })->select(['propositions.id', 'propositions.statement', 'propositions.register', 'propositions.tier', 'propositions.created_at'])
+        return $query->join('exhausted_region_memberships as membership', 'membership.proposition_id', '=', 'propositions.id')
+            ->join('commit_region_exhaustions as exhaustion', 'exhaustion.governing_committal_id', '=', 'membership.governing_committal_id')
+            ->select(['propositions.id', 'propositions.statement', 'propositions.register', 'propositions.tier', 'propositions.created_at'])
             ->selectRaw("CASE WHEN propositions.tier = 'committal' THEN 'basin' ELSE 'excursion' END as exhaustion_kind")
             ->addSelect(['exhaustion.exhausted_at', 'exhaustion.governing_committal_id']);
     }
@@ -133,6 +119,7 @@ final class ExhaustionService
             'observed_field_version' => $proof['field_version'], 'exhausted_at' => now(),
         ]);
         if ($changed) {
+            app(RegionalExhaustionMembership::class)->publish($seed->id, $proof['region_member_ids'] ?? []);
             $boundary = $horizon->opened_by_proposition_id === $seed->id;
             $origin = $horizon->parent_context_horizon_id === null
                 && $seed->commitmentSnapshot?->calculator_version === 'origin-bootstrap-v1';
