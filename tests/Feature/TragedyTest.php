@@ -153,6 +153,9 @@ class TragedyTest extends TestCase
         $phase->gate_proposition_id = $gate->id;
         $phase->save();
         if ($action === 'proposition.reclassify') {
+            $seed = $this->proposition($authorPhase, 'canon');
+            $seed->forceFill(['tier' => 'committal'])->save();
+            $seed->children()->attach($gate->id, ['id' => (string) str()->ulid(), 'phase_id' => $gatePhase->id, 'type' => 'variant']);
             $this->classificationEvidenceFixture($gate);
             $this->loadedReceiptFixture($gate);
         }

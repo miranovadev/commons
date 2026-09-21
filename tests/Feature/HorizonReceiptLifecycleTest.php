@@ -51,7 +51,7 @@ class HorizonReceiptLifecycleTest extends TestCase
     {
         $producerPhase = $this->phase($this->origin, PhaseKind::Distinguish);
         // A spent producer and its unconsumed Receipt remain contextual evidence.
-        $producer = $this->node($producerPhase, null);
+        $producer = $this->node($producerPhase, $this->origin);
         $service = app(InstrumentExecutionService::class);
         $receipt = $service->complete($service->start($producerPhase, $producer, 'citation', $this->origin->id), $producer);
         DB::table('continuation_failures')->insert(['proposition_id' => $producer->id,

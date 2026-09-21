@@ -55,7 +55,7 @@ contribution transaction; its result is revalidated during the short write.
 The wake remembers its starting Cycle ID and stops when that Cycle ends, including
 when another actor advances that Participant. It never infers a contribution for
 the prepared successor Cycle. A new scheduler wake resumes that exact occurrence.
-Receipt Reads can add iterations without advancing the Phase.
+Gate desired-state load/unload options accompany the normal forward contribution, with no extra iteration. Standalone Receipt Read and Replay actions are retired; replay is an Instrument invocation mode.
 
 An autonomous contribution is validated against its original schema and fresh
 admissibility. A previously admissible action invalidated during inference yields
@@ -79,7 +79,7 @@ but never compared the invocation with effective evidence. Replay could repeated
 observe the same subject even when the prior Receipt was still available.
 
 `RelevantInstrumentService` uses `PropositionStateService::receipts(target)`:
-completed direct proposition evidence, evidence on effective Attestations,
+completed direct Proposition evidence, legacy Attestation-owned evidence resolved to its Proposition,
 reclassification Receipt references, and Commit-only inherited history. The same
 projection is used by database and hydrated participation calculations. All such
 observations count, including unqualified/failed observations. Readability,
@@ -91,8 +91,7 @@ inherit arbitrary structural ancestry. Reclassification retains its selected Rec
 reference, so equivalent invocation remains suppressed there. Once the
 effective set no longer includes an equivalent observation, the same resource can
 be observed again. Historical Receipts and InstrumentExecution rows are not expired,
-updated, deleted or backfilled. Superseded Attestation evidence similarly ceases
-to suppress when it leaves the effective projection.
+updated, deleted or backfilled. Legacy Attestation-owned evidence remains Proposition grounding after judgment supersession; no new Attestation-owned Receipt is created.
 
 `InstrumentInvocation` computes a separate versioned invocation signature:
 

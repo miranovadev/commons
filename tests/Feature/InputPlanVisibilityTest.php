@@ -156,6 +156,10 @@ class InputPlanVisibilityTest extends TestCase
         $gateKind = $kind === PhaseKind::Distinguish ? PhaseKind::Order : PhaseKind::from($kind->value - 1);
         $gatePhase = $this->phaseAtPositionFixture($sourcePhase, $gateKind);
         $gate = $this->proposition($gatePhase, $gatePhase->write_register, $kind === PhaseKind::Distinguish ? 'committal' : 'expressive', 'Gate', 0);
+        if ($gate->tier === 'expressive') {
+            $seed = $this->proposition($gatePhase, $gatePhase->write_register, 'committal', 'Governing seed', 0);
+            $this->supersession($gatePhase, $seed, $gate, 'variant');
+        }
         $child = $this->proposition($sourcePhase, $register, 'expressive', 'Child', 0);
         $this->supersession($sourcePhase, $gate, $child, 'variant');
         $untouched = $this->proposition($sourcePhase, $register, 'expressive', 'Untouched neighbour', 0);

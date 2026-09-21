@@ -38,7 +38,8 @@ class ParticipationVisibilityLifecycleTest extends ScriptedParticipationTestCase
         $this->assertSame([$origin], $signalCard['parent_ids']);
         $this->assertDatabaseHas('supersessions', ['source_proposition_id' => $origin, 'target_proposition_id' => $signal]);
         $localReceipt = DB::table('receipts')->whereNotIn('id', $foreignReceipts)->sole()->id;
-        $this->assertContains($localReceipt, array_column($state['plan']['receipts'], 'id'));
+        $this->assertNotContains($localReceipt, array_column($state['plan']['receipts'], 'id'));
+        $this->assertContains($localReceipt, array_column($originCard['receipts'], 'id'));
         $json = json_encode($state);
         foreach ([$foreignOrigin, $foreignChild, $distant, ...$foreignReceipts, ...$foreignAttestations, ...$foreignEdges,
             'Foreign branch content.', 'Distant forward detail.'] as $excluded) {

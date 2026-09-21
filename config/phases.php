@@ -6,10 +6,8 @@ return [
         'description' => 'Create a distinction or traverse an existing local Expressive Proposition from the current Committal Gate.',
         'gate' => 'participant-position',
         'actions' => [
-            'receipt.read',
             'proposition.variant',
             'instrument.execute',
-            'receipt.replay',
             'attestation.create',
             'proposition.traverse',
         ],
@@ -19,11 +17,9 @@ return [
         'description' => 'Develop the selected distinction structurally, or support its existing viable Write.',
         'gate' => 'previous-phase-position',
         'actions' => [
-            'receipt.read',
             'proposition.variant',
             'proposition.revise',
             'instrument.execute',
-            'receipt.replay',
             'attestation.create',
             'proposition.traverse',
         ],
@@ -36,11 +32,9 @@ return [
         'description' => 'Strengthen or classify the selected Proposition. Grounding is a separate Instrument action.',
         'gate' => 'previous-phase-position',
         'actions' => [
-            'receipt.read',
             'proposition.revise',
             'proposition.reclassify',
             'instrument.execute',
-            'receipt.replay',
             'attestation.create',
             'proposition.traverse',
         ],
@@ -55,11 +49,9 @@ return [
         'description' => 'Open a structurally needed expressive opportunity, generate shared evidence, attest, or traverse an already-attested Write.',
         'gate' => 'previous-phase-position',
         'actions' => [
-            'receipt.read',
             'proposition.variant',
             'proposition.revise',
             'instrument.execute',
-            'receipt.replay',
             'attestation.create',
             'proposition.traverse',
         ],
@@ -72,10 +64,8 @@ return [
         'description' => 'Read Correspondence-aligned Propositions across the Commit Region; reconcile their immediate Gate children, or attest an immediate Write descendant.',
         'gate' => 'previous-phase-position',
         'actions' => [
-            'receipt.read',
             'proposition.reconcile',
             'instrument.execute',
-            'receipt.replay',
             'attestation.create',
         ],
         'constraints' => [
@@ -89,10 +79,8 @@ return [
         'description' => 'Classify the current causal Stance/Frontier Gate when its retained direction agrees with its own ancestry, or act on its causal Write continuations. Regional Bias calculation candidates are not operational targets.',
         'gate' => 'previous-phase-position',
         'actions' => [
-            'receipt.read',
             'proposition.reclassify',
             'instrument.execute',
-            'receipt.replay',
             'attestation.create',
             'proposition.traverse',
         ],

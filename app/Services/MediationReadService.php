@@ -33,7 +33,13 @@ final readonly class MediationReadService
             ? $anchor : null;
     }
 
-    /** Anchor first, then corresponding Reads across the Commit Region. */
+    /** Participant context exposes only the causal anchor; regional Reads stay internal. */
+    public function visibleReadsFor(Phase $phase, ?ParticipationContext $context = null): Collection
+    {
+        return $this->readsFor($phase, $context)->take(1)->values();
+    }
+
+    /** Internal comparison pool: anchor first, then corresponding regional Reads. */
     public function readsFor(Phase $phase, ?ParticipationContext $context = null): Collection
     {
         return $context !== null

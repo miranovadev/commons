@@ -222,6 +222,10 @@ continues to report actual cached, ordinary, written and output tokens for valid
 
 ## Reproduce and validate
 
+These are historical #189 measurements. After Stage A, run this guarded comparator
+at #189; see [Stage A context measurements](participant-context-stage-a.md) for the
+intentional packet corrections.
+
 [Machine-readable measurements](phase-prompt-measurements.json) include all ordering
 alternatives, both sharing scopes, Phase sizes and receipt-heavy results.
 

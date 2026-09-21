@@ -6,6 +6,7 @@ use App\Enums\ContextDomain;
 use App\Enums\PhaseKind;
 use App\Enums\RestReason;
 use App\Models\Participant;
+use App\Models\ParticipantReceiptContext;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Tragedy;
@@ -90,7 +91,7 @@ final readonly class InputPlanService
                 'parent_ids' => []],
             'provenance_id' => null, 'lineage' => [], 'read_options' => [], 'write_options' => [],
             'gate_options' => [], 'revision_options' => [], 'traversal_options' => [],
-            'attestation_options' => [], 'instrument_options' => [], 'receipts' => $this->receipts->forPhase($phase)->all(),
+            'attestation_options' => [], 'instrument_options' => [], 'receipts' => app(ParticipantContextSerializer::class)->receipts($this->receipts->forPhase($phase)->all()),
             'exhausted_alternatives' => $history,
             'commitment' => null, 'commitment_options' => [], 'rest_available' => true, 'position_exhausted' => true,
             'rest_reason' => RestReason::NoAvailableMove->value,
@@ -114,7 +115,7 @@ final readonly class InputPlanService
             $participant,
             $context,
         );
-        $readOptions = $phase->kind === PhaseKind::Order ? $this->options->orderReadsFor($phase, $context) : $this->mediation->readsFor($phase, $context);
+        $readOptions = $phase->kind === PhaseKind::Order ? $this->options->orderReadsFor($phase, $context) : $this->mediation->visibleReadsFor($phase, $context);
         $gateOptions = $this->options->gateOptionsFor($phase, $context);
         $traversalOptions = $this->options->traversalOptionsFor($phase, $context);
         $instrumentOptions = $this->options->instrumentOptionsFor($phase, $context);
@@ -188,8 +189,8 @@ final readonly class InputPlanService
             'provenance_id' => $lineage->firstWhere('tier', 'committal')?->id,
             'lineage' => $this->propositions($historical, $participant, $context),
             'read_options' => $this->propositions($readOptions, $participant, $context),
-            'receipts' => $this->receipts->forPhase($phase, $context)->all(),
-            'exhausted_alternatives' => $this->historicalContext->forPhase($phase, $context, $readOptions),
+            'receipts' => app(ParticipantContextSerializer::class)->receipts($this->receipts->forPhase($phase, $context)->all()),
+            'exhausted_alternatives' => $this->historicalContext->forPhase($phase, $context),
             'rest_available' => isset($schema['$defs']['actions']['participant.rest']),
             'rest_reason' => isset($schema['$defs']['actions']['participant.rest'])
                 ? app(RestReasonService::class)->derive($phase, $context)->value : null,
@@ -343,6 +344,16 @@ final readonly class InputPlanService
             ->all();
     }
 
+    private function receiptReferences(Proposition $proposition, Participant $participant, ?ParticipationContext $context): array
+    {
+        $receipts = $this->state->receipts($proposition, $context);
+
+        $loads = $context !== null ? $context->receiptContexts->where('participant_id', $participant->id)->whereNull('cleared_at')->pluck('receipt_id')
+           : ParticipantReceiptContext::active()->where('participant_id', $participant->id)->whereIn('receipt_id', $receipts->pluck('id'))->pluck('receipt_id');
+
+        return $receipts->sortBy('id')->map(fn ($receipt) => [...$receipt->only(['id', 'type', 'reference']), 'loaded' => $loads->contains($receipt->id)])->values()->all();
+    }
+
     /** @return array<string, mixed> */
     private function proposition(
         Proposition $proposition,
@@ -402,6 +413,9 @@ final readonly class InputPlanService
                     'content_verified' => $execution->receipt?->metadata['content_verified'] ?? false,
                 ])->all()
                 : [],
+            // Existing direct and linked evidence includes classification/Commit provenance.
+            // Reuse the calculation's hydrated history; never fetch evidence for display.
+            'receipts' => $this->receiptReferences($proposition, $viewer, $context),
             'transition' => $this->presentation->transition($proposition, $context),
             'observables' => [
                 'correspondence' => $measurement?->correspondence,

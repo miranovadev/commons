@@ -156,7 +156,7 @@ occurs in a subsequent Cycle rather than revising the current Gate in place.
 
 ## Proposition history
 
-Reclassify at Phase 3 Constrain and Phase 6 Bias preserves the exact source statement and requires explicit `proposition_id` and `receipt_id`. It atomically attaches the selected available Horizon Receipt, consumes it once, and creates the classification. Attestations and phase touches start fresh. Other historical source evidence remains in place.
+Reclassify at Phase 3 Constrain and Phase 6 Bias preserves the exact source statement and requires explicit `proposition_id` and `receipt_id`. It atomically attaches the selected available Commit Region Receipt, consumes it once, and creates the classification. Attestations and phase touches start fresh. Other historical source evidence remains in place.
 
 Variant, Revise and Reconcile create new content/structure with fresh votes and touches. Commit retains the selected source's participation history by reference and freezes its evaluation. Receipt visibility and consumption are separate from optional loading for Reinforcement.
 
@@ -166,7 +166,7 @@ Variant, Revise and Reconcile create new content/structure with fresh votes and 
 | --- | --- |
 | Empty Phase 1 or Phase 4 opportunity | Variant |
 | Existing Proposition without its own completed Instrument | Instrument, even if other shared Receipts exist; no Attest |
-| Own completed Instrument and available Horizon Receipt | Attest |
+| Own completed Instrument and available Commit Region Receipt | Attest |
 | Personal Attestation from an earlier Cycle | Same-side Traverse |
 | Phase 2 | Structural Variant, governed by viable existing results |
 | Phase 3 | Reclassify an attested Phase-2 source with an available Receipt |
@@ -244,8 +244,7 @@ interpretation of the rest_available flag or visible cards.
 The server first applies all phase-native, ownership, target and Commitment
 constraints, then specializes the complete action schema. When no Phase-advancing
 action remains it sets `rest_available: true` and injects `participant.rest`.
-An optional `receipt.read` may remain beside Rest because it changes context without
-advancing the Phase. Human controls and autonomous inference receive the same result.
+Informational Receipt metadata does not block Rest. Rest changes no Receipt load state.
 
 Rest is never a preference over a Phase-advancing action. An available
 Variant, Reclassify, Revise, Attestation, phase-admissible Traverse, Reconcile, Instrument or Commit
@@ -319,16 +318,17 @@ Phase in the **same Cycle**. It is not Mediate's Gate, the latest Horizon card,
 or a guessed ancestor. Missing Disperse history supplies no Read/counterpart
 options; the server does not invent an anchor.
 
-`read_options` exposes that anchor first, followed by Read-equivalent
-members of its Commit Region with the same retained hysteretic Correspondence direction.
+`read_options` exposes only that causal anchor. Internally, Read-equivalent
+members of its Commit Region with the same retained hysteretic Correspondence direction
+participate in counterpart discovery, without becoming visible Read alternatives.
 Parallel branches may have different immediate parents or expressive depths.
 Zero or unmeasured Correspondence retains established direction, with primary
 lineage fallback when none has been established and a positive root default.
 This applies equally to the Read anchor and other candidate Reads. Existing Correspondence calculation
 and attenuation are unchanged.
 
-Gate candidates remain active immediate Expressive children of the exposed
-Reads, produced at Disperse in the First register slot and within the same Commit Region.
+Gate candidates remain active immediate Expressive children of the internal
+Read comparison population, produced at Disperse in the First register slot and within the same Commit Region.
 Gate Correspondence and Chirality do not filter these children. The current
 Gate must belong to that population; `gate_options` contains its counterparts.
 Reconcile still copies the current Gate's statement and creates two hard edges.
@@ -446,7 +446,7 @@ unchanged.
 
 ## Bias grounding
 
-Reclassification is separate from Instrument execution. All phases before Order expose Instruments on eligible expressive Writes, including Distinguish and Mediate. Receipt existence permits Attestation; both Receipt and effective Attestation permit reclassification. Reclassify attaches the selected Horizon Receipt and resets judgments. Variant, Revise and Reconcile need new evidence for their new Writes.
+Reclassification is separate from Instrument execution. All phases before Order expose Instruments on eligible expressive Writes, including Distinguish and Mediate. Receipt existence permits Attestation; both Receipt and effective Attestation permit reclassification. Reclassify attaches the selected regional Receipt and resets judgments. Variant, Revise and Reconcile need new evidence for their new Writes.
 
 A fresh Bias classification may reach Order before anyone attests it. If neither a qualifying Commit Gate nor an established Committal Write exists, Rest is valid. Another Participant can later attest the classification through Bias or an earlier eligible Write encounter. Receipt loading remains optional before Order and never advances a Phase.
 
@@ -471,16 +471,20 @@ Order admits only `proposition.commit` and `proposition.traverse`, or exclusive 
 
 The waiting state has `plan: null`, entry availability and the completed Cycle identity. The workspace can retain completed cards as read-only context. Return to Participants opens the Substrate collection; Enter another Cycle uses the normal entry endpoint. Rest is the separate backward-lineage recovery path: only ancestral Committals within the permitted Horizon compete by attenuated Potential. Region-wide calculation or visibility cannot relocate the Participant.
 
-### Receipt Reads
+### Receipt memory and Instrument replay
 
-`receipt.read` is available in phases 1–6 when qualifying encountered evidence can add to context. It does not advance the Phase or Gate. Loaded state persists across Cycles and Horizons. Existing Cite references in context cannot be newly loaded; equivalent receipts do not multiply reinforcement. Order has no Read or Replay action, while historical observations remain inspectable.
+Gate `receipt_options.load/unload` changes persistent Participant memory only
+alongside a successful forward contribution. Loaded state survives Cycles and
+Horizons; bodies activate only when grounding the current Read. Catalogue and
+Proposition references remain metadata without standalone Load controls.
 
-## Receipt capabilities and discovery
-
-[Web Search and Receipt Replay](instruments.md) extend the existing Instrument
-contract. `receipt.read` loads existing evidence without advancing the Phase.
-`receipt.replay` uses the stored invocation, original eligible Instrument Write and
-normal Instrument progression to create a new immutable observation. Neither
-initial execution nor replay automatically loads a Receipt.
+[Instrument replay](instruments.md) uses `instrument.execute` with
+`instrument: {"replay_receipt_id": "R"}` and the exact schema-authorized
+`proposition_id`. It restores the stored invocation, preserves ordinary eligibility
+and equivalent-evidence exclusions, and creates a new Proposition-grounded Receipt
+with replay provenance. Neither fresh execution nor replay automatically loads
+source or result. There are no standalone Receipt Read or Replay action families.
 
 No-Potential failure is observed outside the Rest write lock and published with an exact field-version guard. First failure records Tragedy and its unique Receipt, keeping the Horizon open. A subsequent no-Potential Rest can record Exhaustion only after that Receipt has been consumed by Reclassify. Compact historical alternatives remain visible and non-actionable. See [Tragedy and final-attempt Exhaustion](branch-tragedy.md).
+
+Gate Receipt load/unload desired states accompany a forward Phase contribution (never Rest) and take cognitive effect in the next Phase. Only loaded evidence grounding the participant-facing Read activates a full body; other Receipt references are metadata. See the normative [Receipt model](receipt-region-context.md), including the shared recovery-scoped Tragedy exception.

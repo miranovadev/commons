@@ -43,7 +43,7 @@ final class ParticipantContextSerializer
             'write_options' => $write->map($this->proposition(...))->values()->all(),
             ...(! empty($plan['commitment']) ? ['commitment' => $plan['commitment']] : []),
             ...(! empty($plan['commitment_options']) ? ['commitment_options' => $plan['commitment_options']] : []),
-            'receipts' => array_map($this->receipt(...), $plan['receipts'] ?? []),
+            'receipts' => $this->receipts($plan['receipts'] ?? []),
             'rest_available' => $plan['rest_available'] ?? false,
             'rest_reason' => $plan['rest_reason'] ?? null,
             'schema' => $plan['schema'],
@@ -62,7 +62,7 @@ final class ParticipantContextSerializer
             }
         }
 
-        $plan['receipts'] = array_map($this->receipt(...), $plan['receipts'] ?? []);
+        $plan['receipts'] = $this->receipts($plan['receipts'] ?? []);
         if (isset($plan['exhausted_alternatives'])) {
             $plan['exhausted_alternatives'] = array_map($this->historical(...), $plan['exhausted_alternatives']);
         }
@@ -70,11 +70,24 @@ final class ParticipantContextSerializer
         return ['status' => $state['status'], 'plan' => $plan];
     }
 
+    /** Shared available catalogue plus the Participant's already-admitted loaded state.
+     * Loaded consumed observations remain joinable by the existing cache layout;
+     * they are personal loaded context, never shared available catalogue entries.
+     */
+    public function receipts(array $receipts): array
+    {
+        return array_values(array_map($this->receipt(...), array_filter($receipts,
+            fn (array $receipt): bool => ($receipt['status'] ?? null) === 'loaded'
+                || (($receipt['availability'] ?? null) === 'available'
+                    && empty($receipt['attached_proposition_id']) && empty($receipt['consumed_at'])))));
+    }
+
     private function receipt(array $receipt): array
     {
         return [
-            ...Arr::only($receipt, ['id', 'proposition_id', 'context_horizon_id', 'availability', 'consumed_at', 'attached_proposition_id', 'type', 'reference', 'signature', 'status', 'loaded_at', 'capabilities', 'can_replay', 'replayed_from_receipt_id', 'observation_error']),
-            ...(isset($receipt['evidence']) ? ['evidence' => Arr::only($receipt['evidence'], [
+            ...Arr::only($receipt, ['id', 'loaded', 'active', 'proposition_id', 'context_horizon_id', 'availability', 'consumed_at', 'attached_proposition_id', 'type', 'reference', 'status', 'loaded_at', 'capabilities', 'can_replay', 'replayed_from_receipt_id']),
+            ...(($receipt['active'] ?? false) ? Arr::only($receipt, ['signature', 'observation_error']) : []),
+            ...(($receipt['active'] ?? false) && isset($receipt['evidence']) ? ['evidence' => Arr::only($receipt['evidence'], [
                 'proposition_id', 'statement', 'attestation_id', 'direction', 'rationale',
                 'resource', 'fingerprint', 'observed_at', 'last_modified', 'content_excerpt', 'excerpt_truncated',
                 'query', 'executed_at', 'results', 'provider', 'request_id',
@@ -104,6 +117,10 @@ final class ParticipantContextSerializer
                 ...Arr::only($item, ['kind', 'reference', 'status', 'receipt_id', 'reinforcement_status', 'content_verified']),
                 ...(isset($item['failure_reason']) ? ['failure_reason' => $item['failure_reason']] : []),
             ], $node['instruments']);
+        }
+
+        if (! empty($node['receipts'])) {
+            $result['receipts'] = array_map(fn ($receipt) => Arr::only($receipt, ['id', 'type', 'reference', 'loaded']), $node['receipts']);
         }
 
         return $result;

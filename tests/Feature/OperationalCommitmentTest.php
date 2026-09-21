@@ -89,7 +89,7 @@ class OperationalCommitmentTest extends TestCase
         $this->assertSame('ready', app(ParticipationService::class)->stateFor($participant)['status']);
     }
 
-    public function test_ancestor_and_superseded_attestation_receipts_do_not_ground_the_gate(): void
+    public function test_ancestor_evidence_is_not_inherited_but_new_proposition_receipts_survive_attestation_supersession(): void
     {
         $gate = $this->candidate();
         $first = $this->attest($gate);
@@ -103,7 +103,7 @@ class OperationalCommitmentTest extends TestCase
         $this->loadedReceiptFixture($gate, $first);
         $this->assertTrue($service->grounding($gate)['admissible']);
         $this->attest($gate, $first);
-        $this->assertFalse($service->grounding($gate)['requirements']['receipt']);
+        $this->assertTrue($service->grounding($gate)['requirements']['receipt']);
     }
 
     public function test_citation_resolves_attestations_and_verified_hyperlinks_have_signatures(): void

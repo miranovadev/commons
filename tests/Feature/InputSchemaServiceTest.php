@@ -89,7 +89,6 @@ class InputSchemaServiceTest extends TestCase
             PhaseKind::Distinguish->value => [
                 'proposition.variant',
                 'instrument.execute',
-                'receipt.replay',
                 'attestation.create',
                 'proposition.traverse',
             ],
@@ -97,7 +96,6 @@ class InputSchemaServiceTest extends TestCase
                 'proposition.variant',
                 'proposition.revise',
                 'instrument.execute',
-                'receipt.replay',
                 'attestation.create',
                 'proposition.traverse',
             ],
@@ -105,7 +103,6 @@ class InputSchemaServiceTest extends TestCase
                 'proposition.revise',
                 'proposition.reclassify',
                 'instrument.execute',
-                'receipt.replay',
                 'attestation.create',
                 'proposition.traverse',
             ],
@@ -113,20 +110,17 @@ class InputSchemaServiceTest extends TestCase
                 'proposition.variant',
                 'proposition.revise',
                 'instrument.execute',
-                'receipt.replay',
                 'attestation.create',
                 'proposition.traverse',
             ],
             PhaseKind::Mediate->value => [
                 'proposition.reconcile',
                 'instrument.execute',
-                'receipt.replay',
                 'attestation.create',
             ],
             PhaseKind::Bias->value => [
                 'proposition.reclassify',
                 'instrument.execute',
-                'receipt.replay',
                 'attestation.create',
                 'proposition.traverse',
             ],
@@ -140,7 +134,7 @@ class InputSchemaServiceTest extends TestCase
             $schema = app(InputSchemaService::class)->forPhase($kind);
 
             $this->assertSame(
-                $kind === PhaseKind::Order ? $expected[$kind->value] : ['receipt.read', ...$expected[$kind->value]],
+                $expected[$kind->value],
                 array_keys($schema['$defs']['actions']),
             );
             $this->assertSame(

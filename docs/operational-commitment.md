@@ -1,6 +1,6 @@
 # Operational Commitment
 
-Order retains local Bias-produced expressive Concord/Canon Writes. Commit selects an admissible Write; Traverse selects its own direct Committal result. Read contains Mediate-produced Stance/Frontier ancestry. Neither Instrument, Receipt Read, Replay nor Attestation is currently an Order action. Both terminal actions finish the Cycle at the exact Committal; the next Cycle continues there under its applicable Context Horizon.
+Order retains local Bias-produced expressive Concord/Canon Writes. Commit selects an admissible Write; Traverse selects its own direct Committal result. Read contains Mediate-produced Stance/Frontier ancestry. Neither Instrument nor Attestation is an Order action. Both terminal actions finish the Cycle at the exact Committal; the next Cycle continues there under its applicable Context Horizon.
 
 Traverse follows only the Commit produced directly from the current
 classification Gate. At Bias, that frozen classification is traversable only

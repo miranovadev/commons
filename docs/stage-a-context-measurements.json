@@ -1,0 +1,32 @@
+{
+    "method": "Offline projection of canonical replay captures, not fresh production dumps. Catalogue excludes personal loaded state. Packet bytes are evidence+dynamic JSON, excluding system/schema transport overhead. Capture data cannot reconstruct new attachment references; database tests cover those.",
+    "packets": 1230,
+    "means_bytes": {
+        "catalogue_before": 123.25,
+        "catalogue_after": 58.78,
+        "loaded_evidence": 14994.15,
+        "packet_before": 26044.19,
+        "packet_after": 25785.81
+    },
+    "mediate_packets": 182,
+    "mediate_read_totals": {
+        "before": 665,
+        "after": 182
+    },
+    "loaded_evidence_identical": true,
+    "schemas_and_counterparts_identical": true,
+    "unread_evidence_present_after": false,
+    "representative_mediate": {
+        "capture": "solo-domain-natural.jsonl.xz",
+        "step": 66,
+        "phase": "mediate",
+        "catalogue_before": 1737,
+        "catalogue_after": 855,
+        "loaded_evidence": 1489,
+        "packet_before": 8828,
+        "packet_after": 7946,
+        "reads_before": 1,
+        "reads_after": 1,
+        "counterparts": 0
+    }
+}

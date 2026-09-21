@@ -168,6 +168,12 @@ class CausalOperationalScopeTest extends TestCase
             $this->assertSame([], $options->traversalOptionsFor($mediate, $context)->pluck('id')->all());
         }
         $plan = app(InputPlanService::class)->forPhase($this->reader, $mediate);
+        $this->assertSame([$readA->id], array_column($plan['read_options'], 'id'));
+        $packet = app(ParticipantContextSerializer::class)->plan($plan);
+        foreach (['lineage', 'read_options', 'gate_options', 'write_options'] as $population) {
+            $this->assertNotContains($readB->id, array_column($packet[$population], 'id'));
+        }
+        $this->assertSame([$gateB->id], array_column($plan['gate_options'], 'id'));
         $this->assertSame([$gateB->id], $plan['schema']['$defs']['actions']['proposition.reconcile']['properties']['other_proposition_id']['enum']);
         $this->assertArrayNotHasKey('proposition.traverse', $plan['schema']['$defs']['actions']);
         $this->reject(fn () => app(ContributionDispatcher::class)->dispatch($this->reader, $mediate,
@@ -178,6 +184,17 @@ class CausalOperationalScopeTest extends TestCase
         $this->assertSame($gateA->id, $this->reader->fresh()->current_proposition_id);
         app(PhaseProgressionService::class)->advance($mediate, $result);
         $this->assertSame($result->id, $this->reader->fresh()->current_proposition_id);
+        $again = app(PhaseProgressionService::class)->advance($this->phase($this->reader, PhaseKind::Disperse, $readA), $gateA);
+        $forward = app(InputPlanService::class)->forPhase($this->reader, $again);
+        $this->assertSame([$readA->id], array_column($forward['read_options'], 'id'));
+        $this->assertSame([], $forward['gate_options']);
+        $this->assertArrayNotHasKey('proposition.reconcile', $forward['schema']['$defs']['actions']);
+        $inverse = app(PhaseProgressionService::class)->advance($this->phase($this->reader, PhaseKind::Disperse, $readB), $gateB);
+        $reverse = app(InputPlanService::class)->forPhase($this->reader, $inverse);
+        $this->assertSame([$readB->id], array_column($reverse['read_options'], 'id'));
+        $this->assertSame([$gateA->id], array_column($reverse['gate_options'], 'id'));
+        $this->assertSame([$gateA->id], $reverse['schema']['$defs']['actions']['proposition.reconcile']['properties']['other_proposition_id']['enum']);
+
     }
 
     private function assertOperationallyAbsent(array $plan, array $nodes): void

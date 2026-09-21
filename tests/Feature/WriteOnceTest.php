@@ -204,7 +204,7 @@ class WriteOnceTest extends TestCase
         }
         $this->assertContains($written->id, $this->targets($this->plan($other), 'attestation.create'));
         // A new local Gate in the same substrate/Horizon is a fresh opportunity.
-        $newGate = $this->node($gate->phase, $gate->register, 'Another Gate', tier: $gate->tier);
+        $newGate = $this->node($gate->phase, $gate->register, 'Another Gate', parent: $gate->tier === 'expressive' ? $gate->parents()->first() : null, tier: $gate->tier);
         $newPhase = $this->phase($participant, $kind, $register, $newGate);
         if ($kind === PhaseKind::Constrain) {
             $this->loadedReceiptFixture($newGate);

@@ -56,7 +56,7 @@ class ParticipantActionContractTest extends TestCase
         $state = app(ParticipationService::class)->stateFor($participant);
         $schema = $state['plan']['schema'];
         // Coverage must not silently shrink when an action disappears from a fixture.
-        $expected = array_values(array_diff(config('phases.'.$kind->value.'.actions'), ['receipt.replay'])); // Effective observations suppress Replay.
+        $expected = config('phases.'.$kind->value.'.actions');
         // The explicitly positioned owned Writes have already spent this
         // participant's generative opportunity. Fresh generation is covered by
         // FullEvidenceFlowTest and SharedReclassificationTest.
@@ -132,17 +132,13 @@ class ParticipantActionContractTest extends TestCase
                     $this->assertValid($schema, $decoded);
                     app(ContributionService::class)->validate($participant, $decoded);
                     app(ParticipationService::class)->contribute($participant, $phase->id, $decoded);
-                    if ($action === 'receipt.read') {
-                        $this->assertNull($phase->fresh()->completed_at);
-                    } else {
-                        $this->assertNotNull($phase->fresh()->completed_at, $action);
-                    }
+                    $this->assertNotNull($phase->fresh()->completed_at, $action);
                     if ($action === 'attestation.create') {
                         $attestation = Attestation::where('phase_id', $phase->id)->sole();
                         $this->assertSame($decoded['direction'], $attestation->direction);
                         $this->assertSame($decoded['rationale'] ?? null, $attestation->rationale);
                     }
-                    if ($kind === PhaseKind::Order && $action !== 'receipt.read') {
+                    if ($kind === PhaseKind::Order) {
                         $this->assertNotNull($phase->cycle->fresh()->completed_at);
                     }
                 } finally {
@@ -221,6 +217,8 @@ class ParticipantActionContractTest extends TestCase
         $this->assertValid($transport, ['contribution' => $input]);
         $this->assertRejected($participant, [...$input, 'rationale' => 'No rationale for Rest']);
         $this->assertValid($transport, ['contribution' => [...$input, 'rationale' => 'No rationale for Rest']], false);
+        // The provider adapter removes nullable optional transport fields before Commons validation.
+        $input = array_filter($input, static fn ($value) => $value !== null);
         app(ContributionService::class)->validate($participant, $input);
         app(PotentialProjectionService::class)->rebuild($participant->substrate_id, false);
         app(ParticipationService::class)->contribute($participant, $phase->id, $input);

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\LedgerEntryKind;
 use App\Enums\PhaseKind;
+use App\Enums\RestReason;
 use App\Exceptions\PotentialProjectionUnavailable;
 use App\Models\CommitmentSnapshot;
 use App\Models\ContextHorizon;
@@ -208,7 +209,7 @@ final readonly class ParticipationService
         // Validate before network I/O, then guard the prepared plan by version.
         // An observation is discarded when the Phase or admissibility changed.
         $observed = null;
-        if (in_array($input['action'] ?? null, ['instrument.execute', 'receipt.replay'], true)) {
+        if (($input['action'] ?? null) === 'instrument.execute') {
             $plan = $this->plans->forPhase($participant, $observedPhase);
             try {
                 $this->contributions->validateSchema($plan['schema'], $input);
@@ -292,7 +293,7 @@ final readonly class ParticipationService
                 // A stale proof is discarded and can be retried after this Rest.
                 $validProof = $exhaustion !== null && $exhaustion['stable']
                     && $exhaustion['field_version'] === (int) $substrate->field_version;
-                $this->rest($lockedParticipant, $phase, \App\Enums\RestReason::from($exhaustion['rest_reason'] ?? 'no_available_move'));
+                $this->rest($lockedParticipant, $phase, RestReason::from($exhaustion['rest_reason'] ?? 'no_available_move'));
                 if ($validProof) {
                     app(ExhaustionService::class)->publish($phase, $exhaustion);
                 }
@@ -305,9 +306,7 @@ final readonly class ParticipationService
                 $input,
                 $observed,
             );
-            if ($input['action'] !== 'receipt.read') {
-                $this->progression->advance($phase, $gate);
-            }
+            $this->progression->advance($phase, $gate);
 
         });
 
@@ -318,7 +317,7 @@ final readonly class ParticipationService
     }
 
     /** The validated plan exposes Rest only in a Phase with no admissible non-Rest actions. */
-    private function rest(Participant $participant, Phase $phase, \App\Enums\RestReason $reason): void
+    private function rest(Participant $participant, Phase $phase, RestReason $reason): void
     {
         $participant->current_proposition_id = $phase->gate_proposition_id;
         $participant->save();
