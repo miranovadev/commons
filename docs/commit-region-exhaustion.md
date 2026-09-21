@@ -75,7 +75,10 @@ consequence; a different non-boundary seed supplies only its own local proof.
 Ambiguous or transported legacy proofs remain archived. They do not acquire
 regional authority or silently mint a replacement final allowance. A future
 legitimate regional no-Potential Rest can begin a new scoped Tragedy. Existing
-Receipts and consumption remain readable under their established rules.
+Receipts and consumption remain readable under their established rules. Old
+Receipt references that have no regional mapping still resolve their historical
+statements, marked `historical_horizon_exhaustion` and
+`regional_exhaustion_proven: false`; they do not imply current regional closure.
 `commons:exhaustion-audit` reports archived Horizon Tragedy and exhaustion counts;
 null-scoped Tragedies explain withheld migration. The old records are evidence,
 not a second live authority.

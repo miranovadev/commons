@@ -2,10 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Enums\PhaseKind;
 use App\Models\Receipt;
 use App\Models\Tragedy;
 use App\Services\ExhaustionService;
 use App\Services\PotentialProjectionService;
+use App\Services\TragedyEvidenceService;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Support\Facades\DB;
@@ -93,6 +95,36 @@ class RegionalExhaustionMigrationTest extends TestCase
         $this->assertNull($horizon->fresh()->exhausted_at);
         $this->assertFalse(app(ExhaustionService::class)->unavailable($this->origin));
         $this->assertTrue(app(ExhaustionService::class)->unavailable($seed));
+    }
+
+    public function test_archived_exhaustion_references_remain_readable_without_claiming_current_authority(): void
+    {
+        [$opening, $horizon, $childTragedy] = $this->firstFailure();
+        [$terminal] = $this->exercise($opening, $childTragedy);
+        $this->rest($terminal);
+        $head = $this->node($this->phase($this->origin, PhaseKind::Constrain), $this->origin);
+        $this->explore($head);
+        $rest = $this->phase($head);
+        $this->measure($head, 1);
+        $this->rest($rest);
+        $parentTragedy = Tragedy::where('governing_committal_id', $this->origin->id)->sole();
+        $receipt = Receipt::findOrFail($parentTragedy->receipt_id);
+        $metadata = $receipt->metadata;
+        unset($metadata['governing_committal_id']); // Exact pre-regional Receipt shape.
+        DB::table('receipts')->where('id', $receipt->id)->update(['metadata' => json_encode($metadata)]);
+        $before = $receipt->fresh()->getAttributes();
+        $migration = $this->legacy($opening->id, $horizon->id);
+        DB::table('tragedy_receipt_scopes')->where('tragedy_id', $childTragedy->id)->update(['current_committal_id' => $this->origin->id]);
+        $migration->up();
+        $evidence = app(TragedyEvidenceService::class)->describe($receipt->fresh());
+        $row = collect($evidence['exhausted_committals'])->sole();
+        $this->assertSame($opening->id, $row['id']);
+        $this->assertSame($opening->statement, $row['statement']);
+        $this->assertTrue($row['historical_horizon_exhaustion']);
+        $this->assertFalse($row['regional_exhaustion_proven']);
+        $this->assertFalse($row['exhausted']);
+        $this->assertFalse(app(ExhaustionService::class)->unavailable($opening));
+        $this->assertSame($before, $receipt->fresh()->getAttributes());
     }
 
     private function legacy(string $seed, string $horizon): object
