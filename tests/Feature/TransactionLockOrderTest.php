@@ -488,6 +488,13 @@ class TransactionLockOrderTest extends TestCase
     public function test_competing_gate_desired_states_keep_one_load_and_one_event(): void
     {
         [$substrate, $participant, $phase] = $this->fixture();
+        app(ParticipationService::class)->contribute($participant, $phase->id,
+            ['action' => 'proposition.variant', 'statement' => 'Gate with qualifying memory evidence']);
+        $phase = $this->activePhase($participant);
+        $instruments = app(InstrumentExecutionService::class);
+        $receipt = $instruments->complete($instruments->start($phase, $phase->gate, 'hyperlink', 'https://example.test/gate-memory'), $phase->gate,
+            verification: new VerifiedHyperlink('example.test/gate-memory', hash('sha256', 'gate memory'), CarbonImmutable::now()));
+        $this->assertSame([$receipt->id], app(ReceiptContextService::class)->gateOptions($phase)->pluck('id')->all());
         $receiptId = app(ReceiptContextService::class)->gateOptions($phase)->firstOrFail()['id'];
         $this->whileWorkerWaits($substrate, ['operation' => 'receipt-desired', 'participant_id' => $participant->id,
             'phase_id' => $phase->id, 'receipt_options' => ['load' => [$receiptId]]], function () use ($participant, $phase, $receiptId): void {
