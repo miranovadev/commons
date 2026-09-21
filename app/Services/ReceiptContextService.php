@@ -2,12 +2,12 @@
 
 namespace App\Services;
 
+use App\Enums\PhaseKind;
 use App\Enums\ReceiptCapability;
 use App\Models\Participant;
 use App\Models\ParticipantReceiptContext;
 use App\Models\Phase;
 use App\Models\Proposition;
-use App\Models\Receipt;
 use App\Models\ReceiptContextEvent;
 use App\Models\Substrate;
 use App\Services\Evidence\ReceiptEvidenceService;
@@ -27,7 +27,7 @@ final readonly class ReceiptContextService
         private PropositionMeasurementService $measurements,
     ) {}
 
-    /** Current Horizon evidence is shared; exposed ancestor evidence remains contextual. */
+    /** Current Commit Region evidence is shared; exposed ancestor evidence remains contextual. */
     public function forPhase(Phase $phase, ?ParticipationContext $context = null): Collection
     {
         $context ??= new ParticipationContext($phase);
@@ -35,25 +35,32 @@ final readonly class ReceiptContextService
         return $context->remember('receipt-context', function () use ($phase, $context): Collection {
             $gate = $context->propositions->get($phase->gate_proposition_id);
             $exposed = $gate === null ? collect() : $this->lineage->endingAt($gate, $context)->concat([$gate])
-                ->concat($this->mediation->readsFor($phase, $context))
+                ->concat($this->mediation->visibleReadsFor($phase, $context))
                 ->concat($this->options->gateOptionsFor($phase, $context))
                 ->concat($this->options->writeOptionsFor($phase, $context))
                 ->concat($this->options->instrumentOptionsFor($phase, $context))
                 ->unique('id')->filter(fn ($node) => $context->activeIds->has($node->id));
             $present = $exposed->pluck('id');
-            $receipts = Receipt::where('context_horizon_id', $phase->cycle->context_horizon_id)
-                ->with(['instrumentExecution', 'consumption', 'phase'])->get()
+            $available = app(HorizonReceiptService::class)->available($phase, $context);
+            $receipts = $available
+                ->concat($context->receipts->where('context_horizon_id', $phase->cycle->context_horizon_id)
+                    ->whereIn('id', $context->receiptContexts->where('participant_id', $phase->cycle->participant_id)->whereNull('cleared_at')->pluck('receipt_id')))
                 ->concat($exposed->flatMap(fn ($node) => $this->state->receipts($node, $context)))->unique('id');
+            (new \Illuminate\Database\Eloquent\Collection($receipts->all()))->loadMissing(['consumption', 'phase', 'instrumentExecution']);
             $loads = ParticipantReceiptContext::where('participant_id', $phase->cycle->participant_id)
                 ->whereIn('receipt_id', $receipts->pluck('id'))->get()->keyBy('receipt_id');
             if ($receipts->contains('type', 'citation')) {
                 $present = $present->merge($this->evidence->loadedCitationTargets($context));
             }
 
+            $reads = $phase->kind === PhaseKind::Order
+                ? $this->options->orderReadsFor($phase, $context) : $this->mediation->visibleReadsFor($phase, $context);
+            $activeIds = $reads->flatMap(fn ($node) => $this->state->receipts($node, $context)->pluck('id'))->unique();
+
             $replayTargets = $gate !== null && in_array('instrument.execute', config("phases.{$phase->kind->value}.actions", []), true)
                 ? $this->options->instrumentOptionsFor($phase, $context)->pluck('id') : collect();
 
-            return $receipts->map(function ($receipt) use ($context, $loads, $present, $replayTargets): array {
+            return $receipts->map(function ($receipt) use ($context, $loads, $present, $replayTargets, $available, $activeIds): array {
                 $verified = $this->evidence->describe($receipt, $context);
                 $load = $loads->get($receipt->id);
                 $loaded = $load !== null && $load->cleared_at === null;
@@ -64,7 +71,7 @@ final readonly class ReceiptContextService
                     'id' => $receipt->id, 'proposition_id' => $receipt->instrumentExecution?->proposition_id ?? $receipt->phase->gate_proposition_id,
                     'context_horizon_id' => $receipt->context_horizon_id,
                     'availability' => $receipt->consumption !== null ? 'consumed' :
-                        ($receipt->context_horizon_id === $context->phase->cycle->context_horizon_id && $receipt->observationComplete() ? 'available' : 'historical'),
+                        ($available->contains('id', $receipt->id) ? 'available' : 'historical'),
                     'consumed_at' => $receipt->consumption?->consumed_at?->toISOString(),
                     'attached_proposition_id' => $receipt->consumption?->proposition_id,
                     'type' => $receipt->type, 'reference' => $receipt->reference,
@@ -81,6 +88,7 @@ final readonly class ReceiptContextService
                     'replayed_from_receipt_id' => $receipt->instrumentExecution?->replayed_from_receipt_id,
                     'observation_error' => $receipt->metadata['observation_error'] ?? null,
                     'signature' => $verified['signature'] ?? null,
+                    'loaded' => $loaded, 'active' => $loaded && $activeIds->contains($receipt->id),
                     'status' => $status, 'loaded_at' => $loaded ? $load->loaded_at->toISOString() : null,
                     ...($verified !== null ? ['evidence' => $verified['evidence']] : []),
                 ];
@@ -114,7 +122,63 @@ final readonly class ReceiptContextService
         });
     }
 
-    /** Future unload boundary. No public clear action is exposed in this PR. */
+    /** Current causal Gate only; reconciliation operands are not this Gate. */
+    public function gateOptions(Phase $phase, ?ParticipationContext $context = null): Collection
+    {
+        $context ??= new ParticipationContext($phase);
+
+        return $context->remember('gate-receipt-options', function () use ($phase, $context): Collection {
+            $gate = $context->propositions->get($phase->gate_proposition_id);
+            if ($gate === null) {
+                return collect();
+            }
+            $references = $this->state->receipts($gate, $context)->filter(fn ($receipt) => $receipt->type !== 'tragedy'
+                && app(ReceiptRegionService::class)->contains($receipt, $phase, $context))->pluck('id');
+
+            return $this->forPhase($phase, $context)->whereIn('id', $references)
+                ->filter(fn ($item) => $item['capabilities']['readable'] && $item['signature'] !== null)->values();
+        });
+    }
+
+    /** Caller owns the same transaction as the accepted normal Phase contribution. */
+    public function desired(Participant $participant, Phase $phase, array $options): void
+    {
+        if (DB::transactionLevel() === 0) {
+            throw new DomainException('Receipt options require the Phase contribution transaction.');
+        }
+        $this->lock($participant, $phase);
+        if (array_diff(array_keys($options), ['load', 'unload']) !== []) {
+            throw new DomainException('Receipt options accept only load and unload.');
+        }
+        $loadIds = $options['load'] ?? [];
+        $unloadIds = $options['unload'] ?? [];
+        if (! is_array($loadIds) || ! array_is_list($loadIds) || ! is_array($unloadIds) || ! array_is_list($unloadIds)
+            || count(array_filter([...$loadIds, ...$unloadIds], 'is_string')) !== count($loadIds) + count($unloadIds)
+            || array_intersect($loadIds, $unloadIds) !== []) {
+            throw new DomainException('Receipt desired states must be disjoint lists of IDs.');
+        }
+        $eligible = $this->gateOptions($phase)->keyBy('id');
+        if (array_diff([...$loadIds, ...$unloadIds], $eligible->keys()->all()) !== []) {
+            throw new DomainException('Receipt options require qualifying references on the current Gate in this Commit Region.');
+        }
+        foreach (array_unique($loadIds) as $id) {
+            $option = $eligible[$id];
+            $load = ParticipantReceiptContext::where('participant_id', $participant->id)->where('receipt_id', $id)->first();
+            if ($load !== null && $load->cleared_at === null) {
+                continue;
+            }
+            $load ??= new ParticipantReceiptContext;
+            $load->forceFill(['participant_id' => $participant->id, 'receipt_id' => $id,
+                'proposition_id' => $option['proposition_id'], 'evidence_signature' => $option['signature'],
+                'loaded_at' => now(), 'cleared_at' => null])->save();
+            $this->changed($load, $phase, 'loaded');
+        }
+        foreach (array_unique($unloadIds) as $id) {
+            $this->clear($participant, $phase, $id);
+        }
+    }
+
+    /** Internal desired-state primitive; public options are Gate-validated above. */
     public function clear(Participant $participant, Phase $phase, string $receiptId): void
     {
         DB::transaction(function () use ($participant, $phase, $receiptId): void {
@@ -148,7 +212,12 @@ final readonly class ReceiptContextService
         $event->setRelation('phase', $phase);
         $event->setRelation('context', $load);
         app(LedgerService::class)->record($event);
-        $this->measurements->recalculateIfMeasurable(Proposition::findOrFail($load->proposition_id));
+        // Linked classifications consume the same load state. Invalidate through the existing field path.
+        $affected = DB::table('proposition_receipt_links')->where('receipt_id', $load->receipt_id)->pluck('proposition_id')->push($load->proposition_id)->unique();
+        app(FieldMutationService::class)->touch($phase, $affected->all());
+        foreach (Proposition::whereKey($affected)->get() as $proposition) {
+            $this->measurements->recalculateIfMeasurable($proposition);
+        }
         app(RealtimePublisher::class)->participant($load->participant_id);
         app(RealtimePublisher::class)->proposition($load->proposition_id);
     }

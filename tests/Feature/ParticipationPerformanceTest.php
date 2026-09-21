@@ -278,6 +278,8 @@ class ParticipationPerformanceTest extends TestCase
         $participants[0]->forceFill(['current_proposition_id' => $phase->gate_proposition_id])->save();
         $this->assertGreaterThanOrEqual(2, ContextHorizon::where('substrate_id', $substrate->id)->count());
 
+        $this->publishPotentialFixture($participants[0]);
+
         return [$participants[0], $nodes];
     }
 }

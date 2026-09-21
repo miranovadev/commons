@@ -212,28 +212,15 @@ this change does not claim database-memory independence from Substrate size.
 
 ## Persistent Receipt context
 
-The plan includes `receipts`: shared available **unattached** Receipt metadata,
-plus the Participant's currently admitted loaded Receipt state. Unread entries
-never contain evidence, search results, excerpts or full statements. Attached or
-consumed observations leave the shared catalogue; exposed propositions carry
-lightweight `receipts` references (`id`, `type`, `reference`, `context_horizon_id`), including existing
-classification/Commit inheritance. Attachment does not load content.
-Loaded consumed entries remain personal loaded state, distinguished by `status`
-and `availability`; they are not available catalogue entries. In model requests,
-full loaded bodies occur once in the existing stable `loaded_receipts` section,
-joined to their dynamic state by ID. `receipt.read` is bound
-to the available IDs by the same schema used by the backend and human UI. Loaded
-Receipts expose their Cite content or verified retrieval metadata/excerpt and have
-no Read button. Read leaves the Phase open. Loads persist across Cycles and Horizon
-boundaries; the packet does not include unrelated stored memory. No recursive
-citation expansion creates extra graph options. See [Reinforcement](reinforcement.md)
-for identity, clearing, history and migration behavior.
+Ordinary available Receipts are local to the governing Committal of their observed Proposition. The current Gate's governing Committal must match; unresolved or malformed ancestry fails closed. Existing qualification and Horizon ownership checks remain in force. No Horizon-wide fallback exists.
 
-Receipt entries expose independent `capabilities.readable` and
-`capabilities.replayable` flags, current `can_replay` eligibility and
-`replayed_from_receipt_id` provenance. Only explicitly loaded Web Search results
-appear under `evidence`; external text never enters system instructions or the
-action schema. See [Instrument semantics and setup](instruments.md).
+Every dynamic Receipt reference is `id`, `type`, `reference`, `loaded`, including catalogue, Read, Gate, Write and Lineage references. Attached Receipts leave the shared available catalogue. Attachment does not load evidence.
+
+Only persistently loaded Receipts grounding the current participant-facing Read appear, once each, in the stable `loaded_receipts` evidence layer. Loaded Gate, Write and historical evidence stays metadata. Mediate still exposes its single causal Read anchor; regional calculation inputs never activate evidence. This visibility rule does not change Reinforcement.
+
+Optional `receipt_options: {load: [...], unload: [...]}` accompanies the normal contribution. Both lists enumerate exact eligible current Gate IDs, exclude Tragedy and reject overlap. Idempotent changes commit in the same transaction and affect measurements and the next Phase's cognition. No second inference or cache-warming call occurs. Existing standalone `receipt.read` and Replay eligibility remain compatible.
+
+The human transport retains capability and replay lifecycle metadata required by its controls; inactive bodies, signatures and payloads are omitted. Model requests reduce all dynamic Receipt entries to the simple reference shape above. See the normative [Receipt model](receipt-region-context.md).
 
 ## Local exhausted context
 

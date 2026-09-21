@@ -156,7 +156,7 @@ occurs in a subsequent Cycle rather than revising the current Gate in place.
 
 ## Proposition history
 
-Reclassify at Phase 3 Constrain and Phase 6 Bias preserves the exact source statement and requires explicit `proposition_id` and `receipt_id`. It atomically attaches the selected available Horizon Receipt, consumes it once, and creates the classification. Attestations and phase touches start fresh. Other historical source evidence remains in place.
+Reclassify at Phase 3 Constrain and Phase 6 Bias preserves the exact source statement and requires explicit `proposition_id` and `receipt_id`. It atomically attaches the selected available Commit Region Receipt, consumes it once, and creates the classification. Attestations and phase touches start fresh. Other historical source evidence remains in place.
 
 Variant, Revise and Reconcile create new content/structure with fresh votes and touches. Commit retains the selected source's participation history by reference and freezes its evaluation. Receipt visibility and consumption are separate from optional loading for Reinforcement.
 
@@ -166,7 +166,7 @@ Variant, Revise and Reconcile create new content/structure with fresh votes and 
 | --- | --- |
 | Empty Phase 1 or Phase 4 opportunity | Variant |
 | Existing Proposition without its own completed Instrument | Instrument, even if other shared Receipts exist; no Attest |
-| Own completed Instrument and available Horizon Receipt | Attest |
+| Own completed Instrument and available Commit Region Receipt | Attest |
 | Personal Attestation from an earlier Cycle | Same-side Traverse |
 | Phase 2 | Structural Variant, governed by viable existing results |
 | Phase 3 | Reclassify an attested Phase-2 source with an available Receipt |
@@ -447,7 +447,7 @@ unchanged.
 
 ## Bias grounding
 
-Reclassification is separate from Instrument execution. All phases before Order expose Instruments on eligible expressive Writes, including Distinguish and Mediate. Receipt existence permits Attestation; both Receipt and effective Attestation permit reclassification. Reclassify attaches the selected Horizon Receipt and resets judgments. Variant, Revise and Reconcile need new evidence for their new Writes.
+Reclassification is separate from Instrument execution. All phases before Order expose Instruments on eligible expressive Writes, including Distinguish and Mediate. Receipt existence permits Attestation; both Receipt and effective Attestation permit reclassification. Reclassify attaches the selected regional Receipt and resets judgments. Variant, Revise and Reconcile need new evidence for their new Writes.
 
 A fresh Bias classification may reach Order before anyone attests it. If neither a qualifying Commit Gate nor an established Committal Write exists, Rest is valid. Another Participant can later attest the classification through Bias or an earlier eligible Write encounter. Receipt loading remains optional before Order and never advances a Phase.
 
@@ -485,3 +485,5 @@ normal Instrument progression to create a new immutable observation. Neither
 initial execution nor replay automatically loads a Receipt.
 
 No-Potential failure is observed outside the Rest write lock and published with an exact field-version guard. First failure records Tragedy and its unique Receipt, keeping the Horizon open. A subsequent no-Potential Rest can record Exhaustion only after that Receipt has been consumed by Reclassify. Compact historical alternatives remain visible and non-actionable. See [Tragedy and final-attempt Exhaustion](branch-tragedy.md).
+
+Gate Receipt load/unload desired states accompany a normal contribution and take cognitive effect in the next Phase. Only loaded evidence grounding the participant-facing Read activates a full body; other Receipt references are metadata. See the normative [Receipt model](receipt-region-context.md), including the shared recovery-scoped Tragedy exception.

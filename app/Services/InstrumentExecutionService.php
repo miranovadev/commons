@@ -9,7 +9,6 @@ use App\Models\Attestation;
 use App\Models\InstrumentExecution;
 use App\Models\Phase;
 use App\Models\Proposition;
-use App\Models\PropositionMeasurement;
 use App\Models\Receipt;
 use App\Models\Substrate;
 use App\Services\Evidence\ReinforcementSignatureService;
@@ -118,7 +117,7 @@ final readonly class InstrumentExecutionService
                 'signature' => $resolution['signature'],
                 'metadata' => $metadata,
             ]);
-            $receipt->receiptable()->associate($receiptable);
+            $receipt->receiptable()->associate($locked->proposition);
             $receipt->save();
 
             $this->ledger->record($receipt);

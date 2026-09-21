@@ -31,7 +31,7 @@ new Function('require', 'module', 'exports', result.outputFiles[0].text)(createR
 const receipts = [
   { id: 'search', type: 'web_search', reference: 'Discover resources', status: 'available' },
   { id: 'citation', type: 'citation', reference: 'Known source', status: 'available' },
-  { id: 'loaded', type: 'web_search', reference: 'Loaded query', status: 'loaded', evidence: { executed_at: '2026-09-14', results: [
+  { id: 'loaded', type: 'web_search', reference: 'Loaded query', status: 'loaded', loaded: true, active: true, evidence: { executed_at: '2026-09-14', results: [
     { rank: 1, title: '<script>external title</script>', url: 'https://example.com/paper?q=1', source: 'example.com', excerpt: '<img src=x onerror=alert(1)>', excerpt_truncated: false },
   ] } },
   { id: 'failed', type: 'web_search', reference: 'Failed query', status: 'unqualified', observation_error: 'Web Search is unavailable or unconfigured.' },

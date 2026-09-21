@@ -12,6 +12,7 @@ use App\Models\Connection;
 use App\Models\InstrumentExecution;
 use App\Models\Participant;
 use App\Models\ParticipantReceiptContext;
+use App\Models\Proposition;
 use App\Models\Receipt;
 use App\Models\ReceiptContextEvent;
 use App\Services\ContributionService;
@@ -112,7 +113,7 @@ class WebSearchReceiptTest extends TestCase
         $this->publishPotentialFixture($fixture->viewer);
         $read = $service->contribute($fixture->viewer, $next['plan']['phase']['id'], ['action' => 'receipt.read', 'receipt_id' => $receipt->id]);
         $this->assertSame($next['plan']['phase']['id'], $read['plan']['phase']['id']);
-        $this->assertSame($receipt->metadata['observation'], collect($read['plan']['receipts'])->firstWhere('id', $receipt->id)['evidence']);
+        $this->assertArrayNotHasKey('evidence', collect($read['plan']['receipts'])->firstWhere('id', $receipt->id));
         $this->assertSame(1, ParticipantReceiptContext::count());
         $this->assertSame(1, app(ReinforcementService::class)->count($subject));
         Http::assertSentCount(1); // Read never fetches again.
@@ -280,11 +281,11 @@ class WebSearchReceiptTest extends TestCase
         $this->publishPotentialFixture($fixture->viewer);
         $state = app(ParticipationService::class)->stateFor($fixture->viewer);
         $after = $factory->make(new Connection, $state);
-        $this->assertSame($text, collect($state['plan']['receipts'])->firstWhere('id', $receipt->id)['evidence']['results'][0]['excerpt']);
+        $this->assertArrayNotHasKey('evidence', collect($state['plan']['receipts'])->firstWhere('id', $receipt->id));
         $this->assertStringNotContainsString($text, json_encode($after['schema']));
         $this->assertSame($before['system'], $after['system']);
         $this->assertStringNotContainsString('Ignore the schema', $after['user']);
-        $this->assertSame(1, substr_count($after['evidence'].$after['user'], 'Ignore the schema'));
+        $this->assertSame(0, substr_count($after['evidence'].$after['user'], 'Ignore the schema')); // This loaded Write is not the current Read.
     }
 
     public function test_provider_abstraction_does_not_require_tavily_fields(): void
@@ -333,7 +334,8 @@ class WebSearchReceiptTest extends TestCase
         $pending = $record($first);
         $this->assertNull($pending->signature);
         $this->assertSame('version-awaiting-stability', $pending->metadata['reinforcement_version']);
-        $this->assertSame($attestation->id, $pending->receiptable_id);
+        $this->assertSame($subject->id, $pending->receiptable_id);
+        $this->assertSame((new Proposition)->getMorphClass(), $pending->receiptable_type);
         $this->travelTo($time->addDays(8));
         $accepted = $record($pending);
         $this->assertNotNull($accepted->signature);

@@ -60,6 +60,8 @@ final readonly class ContributionDispatcher
             if (app(ExhaustionService::class)->unavailable($gate)) {
                 throw new ConflictHttpException('This branch is historical. Refresh and Rest.');
             }
+            $receiptOptions = $input['receipt_options'] ?? null;
+            unset($input['receipt_options']);
             $action = $input['action'];
             if (! in_array($action, config("phases.{$phase->kind->value}.actions", []), true)
                 || $phase->cycle->participant_id !== $participant->id) {
@@ -90,10 +92,18 @@ final readonly class ContributionDispatcher
                     throw new DomainException('Replay takes only action and receipt_id.');
                 }
 
-                return $this->replays->replay($participant, $phase, $input['receipt_id'], $observed)->instrumentExecution->proposition;
+                $result = $this->replays->replay($participant, $phase, $input['receipt_id'], $observed)->instrumentExecution->proposition;
+                if ($receiptOptions !== null) {
+                    $this->receipts->desired($participant, $phase, $receiptOptions);
+                }
+
+                return $result;
             }
 
             if ($action === 'receipt.read') {
+                if ($receiptOptions !== null) {
+                    throw new DomainException('Receipt options accompany a normal Phase contribution.');
+                }
                 if (array_diff(array_keys($input), ['action', 'receipt_id']) !== []) {
                     throw new DomainException('Read takes only action and receipt_id.');
                 }
@@ -102,7 +112,7 @@ final readonly class ContributionDispatcher
                 return $gate;
             }
 
-            return match ($input['action']) {
+            $result = match ($input['action']) {
                 'proposition.traverse' => Proposition::query()
                     ->findOrFail($input['proposition_id']),
                 'proposition.reclassify' => $this->reclassify($phase, $gate, $input),
@@ -136,6 +146,11 @@ final readonly class ContributionDispatcher
                     'The selected contribution action is not supported.'
                 ),
             };
+            if ($receiptOptions !== null) {
+                $this->receipts->desired($participant, $phase, $receiptOptions);
+            }
+
+            return $result;
         });
     }
 

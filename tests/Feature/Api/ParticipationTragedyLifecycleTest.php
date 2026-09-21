@@ -60,8 +60,8 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
         $this->assertSame($afterVariant['plan']['phase']['id'], $read['plan']['phase']['id']);
         $loaded = collect($read['plan']['receipts'])->firstWhere('id', $receipt->id);
         $this->assertSame('loaded', $loaded['status']);
-        $this->assertSame($tragedy->id, $loaded['evidence']['tragedy_id']);
-        $this->assertSame($tragedy->terminal_proposition_id, $loaded['evidence']['terminal_proposition_id']);
+        $this->assertTrue($loaded['loaded']);
+        $this->assertArrayNotHasKey('evidence', $loaded, 'Persistent load does not activate a non-Read Tragedy body.');
         $this->assertDatabaseMissing('receipt_consumptions', ['receipt_id' => $receipt->id]);
         // These exact 24 contributions consume the receipt at step 88 and
         // exhaust the Horizon at step 105. No eligibility-driven action picker.

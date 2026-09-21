@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\PhaseKind;
 use App\Models\Attestation;
 use App\Models\Participant;
+use App\Models\Phase;
 use App\Services\Participation\ParticipationContext;
 use DomainException;
 use Illuminate\Support\Facades\Cache;
@@ -45,7 +46,7 @@ final readonly class InputSchemaService
         $plan = $this->phases->plan($kind);
         $gate = $context?->propositions->get($occurrence->gate_proposition_id) ?? $this->gates->forPhase($occurrence);
         if (app(ExhaustionService::class)->unavailable($gate)) {
-            return $this->forPhase($kind, ['participant.rest']);
+            return $this->withReceiptOptions($this->forPhase($kind, ['participant.rest']), $occurrence, $context);
         }
         $ownsGate = $this->ownership->ownedBy($gate, $participant);
 
@@ -139,11 +140,31 @@ final readonly class InputSchemaService
         $progressActions = array_diff(array_keys($schema['$defs']['actions']), ['receipt.read']);
         if ($progressActions === []) {
             if ($schema['$defs']['actions'] === []) {
-                return $this->forPhase($kind, ['participant.rest']);
+                return $this->withReceiptOptions($this->forPhase($kind, ['participant.rest']), $occurrence, $context);
             }
             $schema['$defs']['actions']['participant.rest'] = config('schemas.actions')['participant.rest'];
             $schema['oneOf'][] = ['$ref' => '#/$defs/actions/participant.rest'];
         }
+
+        return $this->withReceiptOptions($schema, $occurrence, $context);
+    }
+
+    private function withReceiptOptions(array $schema, Phase $phase, ?ParticipationContext $context): array
+    {
+        $ids = $this->receipts->gateOptions($phase, $context)->pluck('id')->sort()->values()->all();
+        if ($ids === []) {
+            return $schema;
+        }
+        $selection = ['type' => 'array', 'uniqueItems' => true, 'items' => ['type' => 'string', 'enum' => $ids]];
+        foreach ($schema['$defs']['actions'] as $name => &$action) {
+            if ($name === 'receipt.read') {
+                continue;
+            }
+            $action['properties']['receipt_options'] = ['type' => 'object', 'additionalProperties' => false,
+                'properties' => ['load' => $selection, 'unload' => $selection],
+                'description' => 'Optional desired state for current Gate Receipt references. Load and unload must be disjoint; already satisfied states are no-ops. Applied atomically with this action, visible next Phase.'];
+        }
+        unset($action);
 
         return $schema;
     }

@@ -85,9 +85,9 @@ final class ParticipantContextSerializer
     private function receipt(array $receipt): array
     {
         return [
-            ...Arr::only($receipt, ['id', 'proposition_id', 'context_horizon_id', 'availability', 'consumed_at', 'attached_proposition_id', 'type', 'reference', 'status', 'loaded_at', 'capabilities', 'can_replay', 'replayed_from_receipt_id']),
-            ...(($receipt['status'] ?? null) === 'loaded' ? Arr::only($receipt, ['signature', 'observation_error']) : []),
-            ...(($receipt['status'] ?? null) === 'loaded' && isset($receipt['evidence']) ? ['evidence' => Arr::only($receipt['evidence'], [
+            ...Arr::only($receipt, ['id', 'loaded', 'active', 'proposition_id', 'context_horizon_id', 'availability', 'consumed_at', 'attached_proposition_id', 'type', 'reference', 'status', 'loaded_at', 'capabilities', 'can_replay', 'replayed_from_receipt_id']),
+            ...(($receipt['active'] ?? false) ? Arr::only($receipt, ['signature', 'observation_error']) : []),
+            ...(($receipt['active'] ?? false) && isset($receipt['evidence']) ? ['evidence' => Arr::only($receipt['evidence'], [
                 'proposition_id', 'statement', 'attestation_id', 'direction', 'rationale',
                 'resource', 'fingerprint', 'observed_at', 'last_modified', 'content_excerpt', 'excerpt_truncated',
                 'query', 'executed_at', 'results', 'provider', 'request_id',
@@ -120,7 +120,7 @@ final class ParticipantContextSerializer
         }
 
         if (! empty($node['receipts'])) {
-            $result['receipts'] = array_map(fn ($receipt) => Arr::only($receipt, ['id', 'type', 'reference', 'context_horizon_id']), $node['receipts']);
+            $result['receipts'] = array_map(fn ($receipt) => Arr::only($receipt, ['id', 'type', 'reference', 'loaded']), $node['receipts']);
         }
 
         return $result;

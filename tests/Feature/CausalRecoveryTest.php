@@ -11,19 +11,24 @@ use App\Models\Cycle;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
+use App\Models\Receipt;
 use App\Models\Substrate;
 use App\Models\Supersession;
 use App\Models\Tragedy;
 use App\Services\ContextHorizonProjector;
 use App\Services\ContributionDispatcher;
 use App\Services\CycleEntryService;
+use App\Services\HorizonReceiptService;
 use App\Services\LedgerService;
+use App\Services\Participation\ParticipationContext;
 use App\Services\ParticipationService;
 use App\Services\PhaseProgressionService;
 use App\Services\PotentialChargeService;
 use App\Services\PotentialProjectionService;
 use App\Services\PropositionMeasurementService;
 use App\Services\ReferencePotentialChargeService;
+use App\Services\TragedyReceiptScopeService;
+use App\Services\TragedyService;
 use DomainException;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -48,6 +53,23 @@ class CausalRecoveryTest extends TestCase
         $this->root = app(ContextHorizonProjector::class)->currentFor($this->substrate);
     }
 
+    public function test_ordinary_receipt_regions_are_local_in_both_domains(): void
+    {
+        $boundary = $this->committal($this->root, .9, boundary: true);
+        $settlement = app(ContextHorizonProjector::class)->forEntry($boundary);
+        $this->assertNotSame($this->root->domain, $settlement->domain);
+        foreach ([$this->root, $settlement] as $horizon) {
+            $a = $this->committal($horizon, .5);
+            $b = $this->committal($horizon, .5);
+            $source = $this->expressive($horizon, $a);
+            $instruments = app(\App\Services\InstrumentExecutionService::class);
+            $receipt = $instruments->complete($instruments->start($source->phase, $source, 'citation', $a->id), $source);
+            $service = app(HorizonReceiptService::class);
+            $this->assertContains($receipt->id, $service->available($this->phase($horizon, $a, PhaseKind::Distinguish))->pluck('id'));
+            $this->assertNotContains($receipt->id, $service->available($this->phase($horizon, $b, PhaseKind::Distinguish))->pluck('id'));
+        }
+    }
+
     public function test_farther_ancestor_can_beat_a_positive_nearer_candidate_after_attenuation(): void
     {
         $far = $this->committal($this->root, .95);
@@ -61,6 +83,84 @@ class CausalRecoveryTest extends TestCase
         $this->assertSame(2, $selection['distance']);
         $this->assertEqualsWithDelta(.95 / 9, $selection['potential_charge'], 1e-9);
         $this->assertSame(.95, $selection['raw_potential_charge']);
+    }
+
+    public function test_tragedy_receipt_follows_the_real_non_nearest_recovery_and_is_shared_only_at_its_destination(): void
+    {
+        $far = $this->committal($this->root, .95);
+        $near = $this->committal($this->root, .02, $far);
+        DB::table('supersessions')->where('target_proposition_id', $near->id)->update(['type' => 'commit']);
+        $position = $this->expressive($this->root, $near);
+        $this->opportunity($far);
+        $this->opportunity($near);
+        $carrier = $this->resting($this->root, $position);
+        $terminal = $carrier->cycles()->latest('sequence')->first()->phases()->first();
+        $far->commitmentSnapshot->forceFill(['calculator_version' => 'origin-bootstrap-v1'])->save();
+        $tragedy = app(TragedyService::class)->record($terminal, ['field_version' => $this->substrate->fresh()->field_version]);
+        $receipt = Receipt::findOrFail($tragedy->receipt_id);
+        $original = $receipt->getAttributes();
+        $this->refreshMeasurements();
+        $selection = app(PotentialChargeService::class)->recoverFrom($position, $this->root, $carrier);
+        $this->assertSame($far->id, $selection['proposition']->id);
+        app(CycleEntryService::class)->prepare($carrier);
+        $this->assertSame($far->id, $carrier->fresh()->current_proposition_id);
+        $viewer = $this->phase($this->root, $far, PhaseKind::Distinguish);
+        $service = app(HorizonReceiptService::class);
+        $this->assertNotSame($carrier->id, $viewer->cycle->participant_id);
+        $this->assertContains($receipt->id, $service->available($viewer)->pluck('id'));
+        $elsewhere = $this->phase($this->root, $near, PhaseKind::Distinguish);
+        $this->assertNotContains($receipt->id, $service->available($elsewhere)->pluck('id'));
+        $this->assertEquals($original, $receipt->fresh()->getAttributes());
+        $this->assertSame($tragedy->participant_id, $carrier->id);
+    }
+
+    public function test_unconsumed_tragedy_scope_follows_successive_recovery_entries_then_freezes(): void
+    {
+        $far = $this->committal($this->root, .95);
+        $near = $this->committal($this->root, .5, $far);
+        $position = $this->expressive($this->root, $near);
+        $carrier = $this->resting($this->root, $position);
+        $terminal = $carrier->cycles()->latest('sequence')->first()->phases()->first();
+        $far->commitmentSnapshot->forceFill(['calculator_version' => 'origin-bootstrap-v1'])->save();
+        $tragedy = app(TragedyService::class)->record($terminal, ['field_version' => $this->substrate->fresh()->field_version]);
+        $receipt = Receipt::findOrFail($tragedy->receipt_id);
+        $original = $receipt->getAttributes();
+        $scope = fn (Phase $phase) => app(TragedyReceiptScopeService::class)->seeds(new ParticipationContext($phase));
+        // Persisted recovery-entry fixtures: each hop is backward on the same actual lineage.
+        $first = $this->phase($this->root, $near, PhaseKind::Distinguish, $carrier);
+        $this->assertSame($near->id, $scope($first)[$receipt->id]);
+        $unrelated = $this->committal($this->root, .8);
+        $otherCarrier = $this->resting($this->root, $position);
+        $other = $this->phase($this->root, $far, PhaseKind::Distinguish, $otherCarrier);
+        $this->assertSame($near->id, $scope($other)[$receipt->id]);
+        $first->forceFill(['completed_at' => now()])->save();
+        $first->cycle->forceFill(['completed_at' => now(), 'rested_at' => now()])->save();
+        $second = $this->phase($this->root, $far, PhaseKind::Distinguish, $carrier);
+        $this->assertSame($far->id, $scope($second)[$receipt->id]);
+        $source = $this->expressive($this->root, $far);
+        $classificationPhase = $this->phase($this->root, $source, PhaseKind::Constrain);
+        $classification = $this->node($classificationPhase, $source);
+        DB::transaction(fn () => app(HorizonReceiptService::class)->consume($classificationPhase, $source, $classification, $receipt->id));
+        $consumption = $receipt->fresh()->consumption->getAttributes();
+        $second->forceFill(['completed_at' => now()])->save();
+        $second->cycle->forceFill(['completed_at' => now(), 'rested_at' => now()])->save();
+        $later = $this->phase($this->root, $unrelated, PhaseKind::Distinguish, $carrier);
+        $this->assertArrayNotHasKey($receipt->id, $scope($later));
+        $this->assertSame($consumption, $receipt->fresh()->consumption->getAttributes());
+        $this->assertEquals($original, $receipt->fresh()->getAttributes());
+    }
+
+    public function test_foreign_recovery_entry_cannot_transport_an_unconsumed_tragedy(): void
+    {
+        $origin = $this->committal($this->root, .9);
+        $origin->commitmentSnapshot->forceFill(['calculator_version' => 'origin-bootstrap-v1'])->save();
+        $terminal = $this->expressive($this->root, $origin);
+        $carrier = $this->resting($this->root, $terminal);
+        $phase = $carrier->cycles()->latest('sequence')->first()->phases()->first();
+        $tragedy = app(TragedyService::class)->record($phase, ['field_version' => $this->substrate->fresh()->field_version]);
+        $foreign = $this->committal($this->root, .9);
+        $entry = $this->phase($this->root, $foreign, PhaseKind::Distinguish, $carrier);
+        $this->assertNotContains($tragedy->receipt_id, app(HorizonReceiptService::class)->available($entry)->pluck('id'));
     }
 
     public function test_attenuation_can_make_the_nearer_ancestor_win_despite_lower_raw_potential(): void

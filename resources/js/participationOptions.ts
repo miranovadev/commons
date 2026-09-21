@@ -60,7 +60,7 @@ export function writePropositions(plan: ParticipantPlan): Proposition[] {
 export function propositionReceiptReferences(plan: ParticipantPlan): Array<ReceiptReference & { proposition_id: string }> {
   const nodes = [plan.gate, ...(plan.lineage ?? []), ...(plan.read_options ?? []), ...(plan.gate_options ?? []), ...(plan.write_options ?? [])];
   return [...new Map(nodes.filter(Boolean).flatMap(node => (node.receipts ?? []).map(receipt => ({
-    id: receipt.id, type: receipt.type, reference: receipt.reference, context_horizon_id: receipt.context_horizon_id, proposition_id: node.id,
+    id: receipt.id, type: receipt.type, reference: receipt.reference, loaded: receipt.loaded, proposition_id: node.id,
   }))).map(receipt => [receipt.id, receipt])).values()];
 }
 

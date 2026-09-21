@@ -1,0 +1,18 @@
+name: Receipt validation
+on:
+  push:
+    branches: ['nova/receipt-region-read-context']
+permissions:
+  contents: read
+concurrency:
+  group: receipt-validation-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  query:
+    uses: ./.github/workflows/php-tests.yml
+    with:
+      suite: query
+  load:
+    uses: ./.github/workflows/php-tests.yml
+    with:
+      suite: load

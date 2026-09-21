@@ -12,7 +12,7 @@ export interface Observables {
   closure?: number | string | null;
 }
 
-export type ReceiptReference = Pick<ReceiptContext, 'id' | 'type' | 'reference' | 'context_horizon_id'>;
+export type ReceiptReference = Pick<ReceiptContext, 'id' | 'type' | 'reference' | 'loaded'>;
 
 export interface Proposition {
   receipts?: ReceiptReference[];
@@ -178,6 +178,7 @@ export interface ContributionInput {
   proposition_id?: Identifier;
   other_proposition_id?: Identifier;
   receipt_id?: Identifier;
+  receipt_options?: { load?: Identifier[]; unload?: Identifier[] };
   statement?: string;
   direction?: AttestationDirection;
   rationale?: string;
@@ -193,6 +194,8 @@ export interface OriginInput {
 export type ContributionInitialValues = Partial<Omit<ContributionInput, 'action'>>;
 
 export interface ActionSchemaProperty {
+  properties?: Record<string, ActionSchemaProperty>;
+  items?: ActionSchemaProperty;
   const?: ActionName;
   enum?: string[];
 }
@@ -223,6 +226,8 @@ export interface WorkspaceHorizon {
 }
 
 export interface ReceiptContext {
+  loaded?: boolean;
+  active?: boolean;
   context_horizon_id?: Identifier;
   availability?: 'available' | 'consumed' | 'historical';
   consumed_at?: string | null;

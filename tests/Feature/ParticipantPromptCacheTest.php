@@ -35,7 +35,7 @@ class ParticipantPromptCacheTest extends TestCase
         $connection = $this->connection();
         $prompt = app(ParticipantPromptFactory::class)->make($connection, $state);
         $after = $this->reconstruct($prompt);
-        $this->assertEquals($before, $after);
+        $this->assertEquals($this->visiblePacket($before), $after);
         // Assert ordered populations separately: recursive object-key equality must
         // never conceal a change to historical, ranked or action ordering.
         foreach (['lineage', 'read_options', 'gate_options', 'write_options', 'receipts'] as $key) {
@@ -101,11 +101,13 @@ class ParticipantPromptCacheTest extends TestCase
         $this->assertStringStartsWith(substr($before['evidence'], 0, -2), $appended['evidence']);
 
         $state['plan']['receipts'][0]['status'] = 'available';
+        $state['plan']['receipts'][0]['active'] = false;
+        $state['plan']['receipts'][0]['loaded'] = false;
         $state['plan']['receipts'][0]['loaded_at'] = null;
         $cleared = $factory->make($connection, $state);
         $this->assertSame([$new['id']], array_column(json_decode($cleared['evidence'], true)['loaded_receipts'], 'id'));
         usort($state['plan']['receipts'], fn ($a, $b) => strcmp($a['id'], $b['id']));
-        $this->assertEquals(app(ParticipantContextSerializer::class)->inference($state), $this->reconstruct($cleared));
+        $this->assertEquals($this->visiblePacket(app(ParticipantContextSerializer::class)->inference($state)), $this->reconstruct($cleared));
         // Leaving visibility removes evidence even when its load persists in storage.
         $state['plan']['receipts'] = [];
         $this->assertSame('{"loaded_receipts":[]}', $factory->make($connection, $state)['evidence']);
@@ -244,6 +246,16 @@ class ParticipantPromptCacheTest extends TestCase
         Http::assertSentCount(1);
     }
 
+    private function visiblePacket(array $packet): array
+    {
+        $packet['plan']['receipts'] = array_map(fn ($r) => array_intersect_key($r, array_flip(
+            ($r['active'] ?? false)
+                ? ['id', 'type', 'reference', 'loaded', 'proposition_id', 'context_horizon_id', 'signature', 'capabilities', 'replayed_from_receipt_id', 'observation_error', 'evidence']
+                : ['id', 'type', 'reference', 'loaded'])), $packet['plan']['receipts']);
+
+        return $packet;
+    }
+
     private function reconstruct(array $prompt): array
     {
         $packet = json_decode($prompt['user'], true, flags: JSON_THROW_ON_ERROR);
@@ -274,19 +286,19 @@ class ParticipantPromptCacheTest extends TestCase
             'parent_ids' => ['parent-z', 'parent-a'], 'observables' => ['correspondence' => 0.2, 'chirality' => -1, 'closure' => 0.5],
             'attestation' => ['direction' => 'refute', 'rationale' => 'Recorded judgment.'], 'reinforcement_count' => 3];
         $receipt = ['id' => 'r1', 'proposition_id' => 'history', 'context_horizon_id' => 'horizon', 'type' => 'hyperlink',
-            'reference' => 'https://example.test/evidence', 'signature' => 'signature', 'status' => 'loaded',
+            'reference' => 'https://example.test/evidence', 'signature' => 'signature', 'status' => 'loaded', 'loaded' => true, 'active' => true,
             'availability' => 'available', 'consumed_at' => null, 'attached_proposition_id' => null,
             'loaded_at' => '2026-09-20T00:00:00Z', 'capabilities' => ['readable' => true, 'replayable' => true],
             'can_replay' => true, 'replayed_from_receipt_id' => null, 'observation_error' => null,
             'evidence' => ['content_excerpt' => 'immutable observation', 'excerpt_truncated' => false, 'observed_at' => '2026-09-19T00:00:00Z']];
-        $unloaded = [...$receipt, 'id' => 'r2', 'status' => 'available', 'loaded_at' => null,
+        $unloaded = [...$receipt, 'id' => 'r2', 'status' => 'available', 'active' => false, 'loaded' => false, 'loaded_at' => null,
             'evidence' => ['content_excerpt' => 'another observation']];
 
         return ['status' => 'ready', 'domain' => 'emergence', 'perspective' => ['note' => 'DO-NOT-EXPOSE'],
             '_inference' => ['participant_id' => 'participant', 'substrate_id' => 'substrate'],
             'plan' => ['phase' => ['id' => 'phase', 'number' => $phase->value, 'kind' => strtolower($phase->name)],
                 'provenance_id' => 'history', 'gate_id' => 'gate', 'lineage' => [$node],
-                'read_options' => [], 'gate_options' => [[...$node, 'id' => 'gate']], 'write_options' => [],
+                'read_options' => [$node], 'gate_options' => [[...$node, 'id' => 'gate']], 'write_options' => [],
                 'receipts' => [$receipt, $unloaded], 'rest_available' => false, 'rest_reason' => null,
                 'schema' => app(InputSchemaService::class)->forPhase($phase)]];
     }

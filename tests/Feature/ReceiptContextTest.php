@@ -81,7 +81,8 @@ class ReceiptContextTest extends TestCase
         $this->assertNull($phase->fresh()->completed_at);
         $loaded = collect($state['plan']['receipts'])->firstWhere('id', $receipt->id);
         $this->assertSame('loaded', $loaded['status']);
-        $this->assertSame($reference->statement, $loaded['evidence']['statement']);
+        $this->assertArrayNotHasKey('evidence', $loaded, 'A loaded Gate Receipt is metadata until its Proposition occupies Read.');
+        $this->assertTrue($loaded['loaded']);
         $this->assertArrayNotHasKey('receipt.read', $state['plan']['schema']['$defs']['actions']);
         $this->assertSame(1, app(ReinforcementService::class)->count($subject));
         $this->assertSame(1, app(ReinforcementService::class)->count($subject, new ParticipationContext($phase)));
@@ -209,7 +210,7 @@ class ReceiptContextTest extends TestCase
         $this->assertSame(2, ParticipantReceiptContext::active()->count());
         $this->publishPotentialFixture($fixture->viewer);
         $packet = app(ParticipationService::class)->stateFor($fixture->viewer)['plan'];
-        $this->assertSame('verified body', collect($packet['receipts'])->firstWhere('id', $receipts[0]->id)['evidence']['content_excerpt']);
+        $this->assertArrayNotHasKey('evidence', collect($packet['receipts'])->firstWhere('id', $receipts[0]->id));
         $service->clear($fixture->viewer, $phase, $receipts[0]->id);
         $this->assertSame(1, app(ReinforcementService::class)->count($subject));
         $service->clear($fixture->viewer, $phase, $receipts[1]->id);
@@ -264,7 +265,10 @@ class ReceiptContextTest extends TestCase
         [$fixture, , $subject] = $this->scenario();
         $phase = $this->move($fixture, $subject);
         $negative = new Attestation;
-        $negative->forceFill(['phase_id' => $subject->phase_id, 'proposition_id' => $subject->id, 'direction' => 'refute'])->save();
+        $negativeAuthor = (new Participant)->forceFill(['substrate_id' => $fixture->substrate->id, 'callsign' => 'negative-author']);
+        $negativeAuthor->save();
+        $negativePhase = $this->newPhase($negativeAuthor, $subject->id);
+        $negative->forceFill(['phase_id' => $negativePhase->id, 'proposition_id' => $subject->id, 'direction' => 'refute'])->save();
         app(LedgerService::class)->record($negative);
         $evidence = app(AttestationEvidenceService::class);
         $this->assertSame(0.0, $evidence->valueFor(collect([$subject]), $fixture->substrate));

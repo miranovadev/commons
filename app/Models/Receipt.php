@@ -30,6 +30,9 @@ class Receipt extends Model
     protected static function booted(): void
     {
         static::creating(function (self $receipt): void {
+            if ($receipt->receiptable_type === (new Attestation)->getMorphClass()) {
+                $receipt->receiptable()->associate(Attestation::findOrFail($receipt->receiptable_id)->proposition);
+            }
             $receipt->phase_id ??= $receipt->instrumentExecution?->phase_id;
             $horizonId = $receipt->phase?->cycle->context_horizon_id;
             if ($horizonId === null || ($receipt->type !== 'tragedy' && $receipt->instrument_execution_id === null)) {

@@ -146,7 +146,7 @@ final class OpenAIResponseSchema
     {
         foreach ([
             '$schema', '$id', 'minLength', 'maxLength', 'pattern', 'format',
-            'minimum', 'maximum', 'multipleOf', 'minItems', 'maxItems',
+            'minimum', 'maximum', 'multipleOf', 'minItems', 'maxItems', 'uniqueItems',
         ] as $keyword) {
             unset($schema[$keyword]);
         }

@@ -1,4 +1,4 @@
-import { Alert, Button, Group, Modal, Select, Stack, Text, Textarea } from '@mantine/core';
+import { Alert, Button, Group, Modal, MultiSelect, Select, Stack, Text, Textarea } from '@mantine/core';
 import { IconAlertCircle } from '@tabler/icons-react';
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
@@ -116,6 +116,21 @@ export function ContributionForm({
             </Alert>
           )}
 
+          {properties.receipt_options && <Stack gap="xs">
+            <Text size="sm" fw={500}>Gate Receipt loading</Text>
+            <Text size="xs" c="dimmed">Apply these changes with your contribution. Loaded evidence appears when its Proposition occupies Read.</Text>
+            {(['load', 'unload'] as const).map(operation => {
+              const opposite = operation === 'load' ? 'unload' : 'load';
+              const refs = receiptChoices(plan);
+              return <MultiSelect key={operation} label={operation === 'load' ? 'Load Receipts' : 'Unload Receipts'}
+                data={(properties.receipt_options?.properties?.[operation]?.items?.enum ?? [])
+                  .filter(id => !values.receipt_options?.[opposite]?.includes(id))
+                  .map(id => { const ref = refs.find(item => item.id === id); return { value: id, label: ref ? `${ref.reference} · ${ref.loaded ? 'Loaded' : 'Unloaded'}` : id }; })}
+                value={values.receipt_options?.[operation] ?? []}
+                onChange={ids => set('receipt_options', { ...values.receipt_options, [operation]: ids })} />;
+            })}
+          </Stack>}
+
           {properties.statement && (
             <Textarea
               label="Statement"
@@ -140,7 +155,7 @@ export function ContributionForm({
           )}
 
           {properties.receipt_id && (
-            <Select label="Receipt" description="Shared Horizon evidence. Reclassification consumes this Receipt once."
+            <Select label="Receipt" description="Shared Commit Region evidence. Reclassification consumes this Receipt once."
               data={receiptChoices(plan).filter(receipt => properties.receipt_id?.enum?.includes(receipt.id))
                 .map(receipt => ({ value: receipt.id, label: `${receipt.type === 'tragedy' ? 'Tragedy Receipt' : receipt.type} · ${receipt.id}` }))}
               required={required.includes('receipt_id')} value={values.receipt_id || null}

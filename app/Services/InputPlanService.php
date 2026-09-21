@@ -6,6 +6,7 @@ use App\Enums\ContextDomain;
 use App\Enums\PhaseKind;
 use App\Enums\RestReason;
 use App\Models\Participant;
+use App\Models\ParticipantReceiptContext;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Tragedy;
@@ -343,11 +344,14 @@ final readonly class InputPlanService
             ->all();
     }
 
-    private function receiptReferences(Proposition $proposition, ?ParticipationContext $context): array
+    private function receiptReferences(Proposition $proposition, Participant $participant, ?ParticipationContext $context): array
     {
         $receipts = $this->state->receipts($proposition, $context);
 
-        return $receipts->sortBy('id')->map(fn ($receipt) => $receipt->only(['id', 'type', 'reference', 'context_horizon_id']))->values()->all();
+        $loads = $context !== null ? $context->receiptContexts->where('participant_id', $participant->id)->whereNull('cleared_at')->pluck('receipt_id')
+           : ParticipantReceiptContext::active()->where('participant_id', $participant->id)->whereIn('receipt_id', $receipts->pluck('id'))->pluck('receipt_id');
+
+        return $receipts->sortBy('id')->map(fn ($receipt) => [...$receipt->only(['id', 'type', 'reference']), 'loaded' => $loads->contains($receipt->id)])->values()->all();
     }
 
     /** @return array<string, mixed> */
@@ -411,7 +415,7 @@ final readonly class InputPlanService
                 : [],
             // Existing direct and linked evidence includes classification/Commit provenance.
             // Reuse the calculation's hydrated history; never fetch evidence for display.
-            'receipts' => $this->receiptReferences($proposition, $context),
+            'receipts' => $this->receiptReferences($proposition, $viewer, $context),
             'transition' => $this->presentation->transition($proposition, $context),
             'observables' => [
                 'correspondence' => $measurement?->correspondence,
