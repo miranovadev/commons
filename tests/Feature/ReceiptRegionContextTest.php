@@ -84,7 +84,7 @@ class ReceiptRegionContextTest extends TestCase
     {
         $f = new ParticipantContextFixture(1, 0, false);
         $r = $this->receipt($f, $f->gate);
-        $original = $r->getAttributes();
+        $original = $r->fresh()->getAttributes();
         $target = $f->node($f->gate, 'frontier');
         DB::transaction(fn () => app(HorizonReceiptService::class)->consume($target->phase, $f->gate, $target, $r->id));
         $this->assertEquals($original, $r->fresh()->getAttributes());
