@@ -152,6 +152,7 @@ class RegionalExhaustionMigrationTest extends TestCase
         $this->assertTrue(Schema::hasColumn('context_horizons', 'exhausted_at'));
         $timestamp = '2026-09-01 00:00:00';
         DB::table('context_horizons')->where('id', $horizon->id)->update(['exhausted_at' => $timestamp]);
+        $persistedTimestamp = DB::table('context_horizons')->where('id', $horizon->id)->value('exhausted_at');
         DB::table('tragedies')->insert([
             'id' => (string) Str::ulid(), 'root_proposition_id' => $root->id,
             'substrate_id' => $this->substrate->id, 'participant_id' => $root->phase->cycle->participant_id,
@@ -169,7 +170,7 @@ class RegionalExhaustionMigrationTest extends TestCase
         $this->assertFalse(app(ExhaustionService::class)->unavailable($root));
         // Without regional events, down restores the original historical schema and bytes.
         $migration->down();
-        $this->assertSame($timestamp, DB::table('context_horizons')->where('id', $horizon->id)->value('exhausted_at'));
+        $this->assertSame($persistedTimestamp, DB::table('context_horizons')->where('id', $horizon->id)->value('exhausted_at'));
         $this->assertEquals($history, DB::table('tragedies')->sole());
         $migration->up();
         $this->assertEquals($history, DB::table('legacy_origin_tragedies')->sole());
