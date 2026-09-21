@@ -174,7 +174,7 @@ class CausalRecoveryTest extends TestCase
         $other = $this->resting($this->root, $this->expressive($this->root, $b));
         $entry = $this->phase($this->root, $a, PhaseKind::Distinguish, $other);
         $receipt = Receipt::findOrFail($tragedy->receipt_id)->getAttributes();
-        $provenance = $tragedy->getAttributes();
+        $provenance = $tragedy->fresh()->getAttributes();
         $ledger = DB::table('substrate_ledger_entries')->orderBy('id')->get()->all();
         $migration = require database_path('migrations/2026_09_21_000100_project_tragedy_receipt_basins.php');
         $migration->down();
@@ -235,7 +235,7 @@ class CausalRecoveryTest extends TestCase
         $tragedy = app(TragedyService::class)->record($terminal, ['field_version' => $this->substrate->fresh()->field_version]);
         $receipt = Receipt::findOrFail($tragedy->receipt_id);
         $original = $receipt->getAttributes();
-        $provenance = $tragedy->getAttributes();
+        $provenance = $tragedy->fresh()->getAttributes();
         $scope = fn () => DB::table('tragedy_receipt_scopes')->where('tragedy_id', $tragedy->id)->value('current_committal_id');
         $follow = fn (Phase $entry) => DB::transaction(fn () => app(TragedyReceiptScopeService::class)->followRecovery($entry));
         $this->assertSame($start->id, $scope());
