@@ -221,6 +221,8 @@ class ParticipantActionContractTest extends TestCase
         $this->assertValid($transport, ['contribution' => $input]);
         $this->assertRejected($participant, [...$input, 'rationale' => 'No rationale for Rest']);
         $this->assertValid($transport, ['contribution' => [...$input, 'rationale' => 'No rationale for Rest']], false);
+        // The provider adapter removes nullable optional transport fields before Commons validation.
+        $input = array_filter($input, static fn ($value) => $value !== null);
         app(ContributionService::class)->validate($participant, $input);
         app(PotentialProjectionService::class)->rebuild($participant->substrate_id, false);
         app(ParticipationService::class)->contribute($participant, $phase->id, $input);

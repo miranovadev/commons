@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\PhaseKind;
 use App\Models\Attestation;
+use App\Models\ParticipantReceiptContext;
 use App\Models\Proposition;
 use App\Models\Receipt;
 use App\Models\Substrate;
@@ -11,6 +12,7 @@ use App\Services\ContributionDispatcher;
 use App\Services\ExplorationEpochService;
 use App\Services\InstrumentExecutionService;
 use App\Services\LedgerService;
+use App\Services\ReceiptContextService;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Support\Facades\DB;
@@ -107,6 +109,23 @@ class HorizonProofConcurrencyTest extends TestCase
         $this->assertSame($before + 1, Proposition::count());
         $this->assertSame(1, app(ExplorationEpochService::class)->forPhase($firstPhase));
         $this->assertDatabaseCount('continuation_failures', 1);
+    }
+
+    public function test_concurrent_identical_gate_desired_states_emit_only_one_transition(): void
+    {
+        $source = $this->node($this->phase($this->origin, PhaseKind::Persist), $this->origin);
+        $receipt = $this->observeAndAttest($source);
+        $phase = $this->phase($source, PhaseKind::Constrain);
+        foreach (['load', 'unload'] as $operation) {
+            $options = [$operation => [$receipt->id]];
+            $this->whileWorkerWaits($this->substrate, [
+                'operation' => 'receipt-desired', 'participant_id' => $phase->cycle->participant_id,
+                'phase_id' => $phase->id, 'receipt_options' => $options,
+            ], fn () => app(ReceiptContextService::class)->desired($phase->cycle->participant, $phase, $options));
+            $this->assertDatabaseCount('participant_receipt_contexts', 1);
+            $this->assertDatabaseCount('receipt_context_events', $operation === 'load' ? 1 : 2);
+            $this->assertSame($operation === 'load' ? 1 : 0, ParticipantReceiptContext::active()->count());
+        }
     }
 
     private function whileWorkerWaits(Substrate $substrate, array $input, callable $competing): void

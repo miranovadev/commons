@@ -33,6 +33,9 @@ flush();
 
 try {
     match ($input['operation']) {
+        'receipt-desired' => DB::transaction(fn () => app(ReceiptContextService::class)->desired(
+            Participant::findOrFail($input['participant_id']), Phase::findOrFail($input['phase_id']), $input['receipt_options'],
+        )),
         'dispatch-rejected' => (function () use ($input): void {
             try {
                 app(ContributionDispatcher::class)->dispatch(

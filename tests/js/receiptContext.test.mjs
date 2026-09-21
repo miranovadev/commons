@@ -34,6 +34,9 @@ test('Receipt panel exposes only authorized Reads and preloads evidence without 
   const html = module.exports.render({ schema, receipts });
   assert.equal([...html.matchAll(/>Read Receipt</g)].length, 1);
   assert.match(html, /Preloaded evidence body/);
+  const inactive = receipts.map(item => ({ ...item, active: false }));
+  assert.doesNotMatch(module.exports.render({ schema, receipts: inactive }), /Preloaded evidence body|Historical Committal loaded by reference/);
+  assert.match(module.exports.render({ schema, receipts: inactive }), />Loaded</);
   assert.match(html, />Loaded</);
   assert.match(html, />Consumed</);
   assert.match(html, /Historical Committal loaded by reference/);
