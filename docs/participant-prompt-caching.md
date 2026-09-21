@@ -48,26 +48,17 @@ result without querying anything. The request has three messages:
 | Layer | Contents | Ordering |
 | --- | --- | --- |
 | System | Constitution aligned with #185's lineage/Homeostatic rules, one receipt-layout sentence, existing connection instructions | Stable monolithic instructions first |
-| Loaded receipts | Already-visible loaded receipt identity, provenance, capabilities, observation and evidence | Load timestamp, then receipt ID |
+| Loaded receipts | Loaded receipt identity, provenance and evidence grounding the current participant-facing Read | Load timestamp, then receipt ID |
 | Current state | Historical lineage first; remaining Read/Gate/Write and receipt state; current Phase; full action schema last | Fixed field order; original population order |
 
-Loaded bodies and `plan.receipts` join on `id`; evidence is not duplicated. Dynamic
-availability, consumption, attachment, replay eligibility, loaded status and load
-timestamp stay in the final message. Newly loaded older receipts follow earlier
-loads. Equal load timestamps use ID as a deterministic tie-breaker; this is not
-a promise of append order within timestamp ties. Clear removes the loaded body on
-the next request; any evidence still visible as an ordinary receipt stays visible,
-exactly as before. Re-load uses its new load timestamp. Leaving the visible scope
-removes the body even if a load remains stored. There is no application cache that
-can resurrect an old body or obscure clearing.
+Loaded bodies and `plan.receipts` join on `id`; evidence is not duplicated. Dynamic references contain only `id`, `type`, `reference`, `loaded`. Newly loaded older Receipts follow earlier loads, with ID breaking timestamp ties. Clear removes an active body on the next request. Leaving Read removes the body without clearing persistent memory or changing Reinforcement. Re-load uses its new load timestamp. There is no application cache that can resurrect an old body or obscure clearing, and no additional inference warms this prefix.
 
 Object keys are recursively canonicalized in context. Existing nulls, empty
 collections, observation timestamps and stored provider request IDs are retained.
 No new clock, random ID, token counter or presentation field enters the prompt.
 Receipt identities sort deterministically. Lineage, parent IDs, ranked search
 results, instrument lists and other semantic lists keep their supplied order.
-Attestation summaries are object maps; their keys are canonicalized. Both action
-schemas, including property/enum/union ordering, remain exactly unchanged.
+Attestation summaries are object maps; their keys are canonicalized. Both action schemas retain their normal action choices and add exact Gate `receipt_options` enums. The provider schema represents optional fields as nullable, which its adapter removes before authoritative validation.
 
 Propositions already have disjoint owning populations; no additional proposition
 deduplication is introduced. Cite statements and target-specific instrument

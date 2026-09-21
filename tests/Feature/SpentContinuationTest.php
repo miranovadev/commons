@@ -26,7 +26,7 @@ class SpentContinuationTest extends TestCase
         $this->initializeExhaustionFixture();
         [, , $terminal] = $this->testedLineage();
         $plan = app(InputPlanService::class)->forPhase($terminal->cycle->participant, $terminal, true);
-        $this->assertArrayHasKey('receipt.read', $plan['schema']['$defs']['actions']);
+        $this->assertArrayNotHasKey('receipt.read', $plan['schema']['$defs']['actions']);
         $this->assertArrayHasKey('participant.rest', $plan['schema']['$defs']['actions']);
     }
 

@@ -1,6 +1,10 @@
 name: Query Regression
 
 on:
+  push:
+    branches:
+      - 'query/**'
+      - 'validate/**'
   workflow_dispatch:
     inputs:
       profile_sql:
@@ -20,4 +24,4 @@ jobs:
     uses: ./.github/workflows/php-tests.yml
     with:
       suite: query
-      profile_sql: ${{ inputs.profile_sql }}
+      profile_sql: ${{ github.event_name == 'workflow_dispatch' && inputs.profile_sql || false }}

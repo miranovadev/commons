@@ -47,7 +47,7 @@ $proposition = static function (string $action, string $title) use ($statement):
 };
 
 return [
-    'version' => 20,
+    'version' => 21,
 
     'cache' => [
         'store' => env('COMMONS_SCHEMA_CACHE_STORE'),
@@ -64,20 +64,6 @@ return [
     ],
 
     'actions' => [
-        'receipt.replay' => [
-            'title' => 'Replay an encountered Receipt’s Instrument',
-            'description' => 'Replay the original eligible Write invocation into a linked immutable Receipt. Advances the Phase; no automatic load.',
-            'type' => 'object', 'additionalProperties' => false,
-            'required' => ['action', 'receipt_id'],
-            'properties' => ['action' => ['const' => 'receipt.replay'], 'receipt_id' => $ulid],
-        ],
-        'receipt.read' => [
-            'title' => 'Load encountered Receipt evidence into persistent context',
-            'description' => 'Load qualifying evidence across Cycles without advancing. Equivalent evidence adds no extra Reinforcement.',
-            'type' => 'object', 'additionalProperties' => false,
-            'required' => ['action', 'receipt_id'],
-            'properties' => ['action' => ['const' => 'receipt.read'], 'receipt_id' => $ulid],
-        ],
         'proposition.traverse' => [
             'title' => 'Continue through an admissible Write',
             'type' => 'object',

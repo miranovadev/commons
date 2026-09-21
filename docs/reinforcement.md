@@ -9,29 +9,30 @@ or verification flag never establishes qualification.
 
 Receipt capabilities (`readable`, `replayable`), Web Search, configuration and
 immutable replay provenance are defined in [Instruments](instruments.md). Replay
-is a new execution; Read loads the existing observation. Neither initial execution
+is a new Instrument execution; Gate options change Participant memory. Neither initial execution
 nor Replay automatically loads evidence.
+
+For discovery, ownership and prompt activation, see the normative [Receipt model](receipt-region-context.md). Receipts ground Propositions; Attestations judge Propositions.
 
 ## Persistent participant context
 
-`receipt.read` accepts only `action` and `receipt_id`. It loads qualifying evidence
-encountered through the current lineage, Read, Gate or Write, including evidence
-preserved through Reclassify and Commit sources. Read is available in phases
-1–6 and preserves the Phase and Gate. Each response selects one action. Order
-has no receipt actions; qualifying loads acquired earlier remain additional weight.
-Rest is unavailable while an admissible Read remains in an earlier Phase.
+Optional `receipt_options.load/unload` accompanies a successful forward contribution
+for the exact current Gate Receipt references. Changes are desired states,
+idempotent and atomic with that contribution. Rest accepts no memory changes.
+There are no standalone Receipt actions. Informational catalogue evidence cannot
+block Rest or independently advance a Phase.
 
 `participant_receipt_contexts` stores one row per Participant/Receipt, with the
 original evidence subject, evidence signature, `loaded_at` and nullable `cleared_at`.
 Participants belong to one Substrate. Loads survive Cycles and Context Horizons;
 they have no Horizon expiry. The packet's `receipts` list includes only encountered
 evidence, with `available`, `already-in-context`, `loaded` or `unqualified` status.
-Loaded evidence is preloaded on subsequent encounters, without a duplicate Read.
+Loaded evidence is active only when its grounded Proposition occupies the participant-facing Read register. Other appearances are metadata with loaded state.
 Persistent state is not an ever-growing dump of all remembered evidence in every
 inference packet. Source text is data, never instructions.
 
 The domain `clear` operation deactivates a load and recalculates its contribution.
-It is deliberately absent from public schemas and UI. `receipt_context_events`
+Gate `receipt_options.unload` exposes that desired state alongside a forward Phase contribution (never Rest). `receipt_context_events`
 preserves each load/clear transition with its Phase and substrate ledger sequence, even when the same state row
 is reloaded. No Receipt, historical allocation or commitment snapshot is deleted.
 All mutations acquire Substrate, Participant and Phase locks in that order.
@@ -70,7 +71,7 @@ and whitespace collapsed. Text/JSON collapse whitespace; other media hash bytes.
 New text/HTML/JSON Receipts retain a verifier-produced excerpt of at most 1,200
 characters, with a truncation flag, for context loading. Binary resources and older
 verified Receipts can expose retrieval metadata without a text excerpt. Loading
-never silently fetches changed content; refreshing is an Instrument execution or an admissible `receipt.replay` action.
+never silently fetches changed content; refreshing is an Instrument execution or an admissible Instrument replay.
 This is a conservative content identity, not a claim of semantic equivalence.
 HTML changes only to markup, scripts, styles or link destinations may be missed.
 
@@ -116,12 +117,8 @@ contributions, but starts new Attestations and touches. A superseded classificat
 retains its historical reinforcement count; only the active classification
 contributes that application to measurements. Variant, Revise and Reconcile
 start fresh evidence state. A Receipt on
-an Attestation still reinforces its Instrument's exact Proposition; effective
-Attestation/Receipt grounding continues to respect Attestation supersession.
-Attestation lean replays load and clear events in ledger order. Where one reader
-has active loads on opposing Attestations of one Proposition, its earliest active
-load supplies that reader's single weighted observation. Clearing it permits the
-next active load to supply the weight; at zero, retained direction follows history.
+a historical Attestation resolves to that Attestation's Proposition and remains readable after supersession. New Receipts always belong to the observed Proposition.
+Attestation lean replays load and clear events in ledger order and weights each judgment only with its author's qualifying Proposition loads. Supersession changes the effective judgment, retaining that Participant's current load state. Other Participants' loads cannot weight it; at zero, retained direction follows history.
 
 Every valid Instrument attempt retains a Receipt. Failed retrieval and changed
 versions awaiting stability remain unqualified. Historical `reinforcement_status`
@@ -156,7 +153,7 @@ using active loaded contributions rather than raw signed Receipt counts.
 average reinforcement counts and apply the nonlinear Closure formula afterward.
 Depth/Cadence are propagated independently for their existing hysteresis gate.
 New evidence invalidates disposable substrate projections; immutable snapshots
-are preserved. Calculator version is `evidence-commitment-v8`.
+are preserved. Calculator version is `proposition-receipts-v9`; formulas and attenuation are unchanged.
 
 ## Commitment and branching
 
@@ -178,7 +175,10 @@ each expressive result earns its own subsequent reinforcement. Measurement activ
 head selection, compact lineage presentation and other phase constraints retain
 their existing meanings. No Sybil or coordination policing is introduced.
 
-## Upgrade
+## Original load-context upgrade
+
+The Receipt region refinement needs no data migration; its rollout instructions are in [Receipt model](receipt-region-context.md#compatibility-and-rollout). The following describes the earlier introduction of participant load contexts.
+
 
 Run the additive migration before serving the new code. It creates empty context
 and event tables and invalidates disposable measurement projections. Existing

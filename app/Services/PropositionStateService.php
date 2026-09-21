@@ -132,14 +132,14 @@ final class PropositionStateService
         if ($context !== null) {
             $ids = $context->sourceIds($proposition);
             $linked = $context->receiptLinks->whereIn('proposition_id', $ids)->pluck('receipt_id');
-            $attestations = $context->effectiveAttestations($ids)->pluck('id');
+            $attestations = $context->attestationsFor($ids)->pluck('id');
 
             return $context->receipts->filter(fn ($receipt) => $receipt->observationComplete()
                 && ($linked->contains($receipt->id) || ($receipt->receiptable_type === (new Proposition)->getMorphClass() && $ids->contains($receipt->receiptable_id))
                     || ($receipt->receiptable_type === (new Attestation)->getMorphClass() && $attestations->contains($receipt->receiptable_id))))->values();
         }
         $ids = $this->sourceIds($proposition);
-        $attestations = $this->attestations(collect([$proposition]))->pluck('id');
+        $attestations = Attestation::whereIn('proposition_id', $ids)->pluck('id');
         $linked = DB::table('proposition_receipt_links')->whereIn('proposition_id', $ids)->pluck('receipt_id');
 
         return Receipt::query()->with('instrumentExecution')

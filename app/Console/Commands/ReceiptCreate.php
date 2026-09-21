@@ -16,7 +16,7 @@ class ReceiptCreate extends Command
     protected $signature = 'commons:receipt-create
         {participant_id : ULID of the participant creating the receipt}
         {receiptable_type : proposition|attestation}
-        {receiptable_id : ULID of the proposition or attestation being receipted}
+        {receiptable_id : ULID of the proposition being receipted}
         {kind : dataset|storage|url}
         {reference : Receipt reference (URL, storage pointer, dataset)}
         {--meta= : Optional JSON string metadata payload}';
@@ -26,7 +26,7 @@ class ReceiptCreate extends Command
      *
      * @var string
      */
-    protected $description = 'Create a receipt attached to a proposition or attestation';
+    protected $description = 'Create a receipt attached to a proposition';
 
     /**
      * Execute the console command.
@@ -49,8 +49,8 @@ class ReceiptCreate extends Command
             return self::FAILURE;
         }
 
-        if (!in_array($receiptableType, ['proposition', 'attestation'], true)) {
-            $this->error("Invalid attach_type: {$receiptableType}. Must be proposition or attestation.");
+        if (!in_array($receiptableType, ['proposition'], true)) {
+            $this->error("Invalid attach_type: {$receiptableType}. New Receipts must ground a proposition.");
             return self::FAILURE;
         }
 

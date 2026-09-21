@@ -360,32 +360,28 @@ class ParticipantWakeTest extends TestCase
         $connection = $this->connectionFor($f->viewer);
         $cycleId = $f->phase->cycle_id;
         $calls = [];
-        $read = false;
         $inference = Mockery::mock(ParticipantInference::class);
-        $inference->shouldReceive('contribute')->times(8)->andReturnUsing(function (Connection $connection, array $state) use (&$calls, &$read, $receipt, $nodes, $cycleId, $f): array {
+        $inference->shouldReceive('contribute')->times(7)->andReturnUsing(function (Connection $connection, array $state) use (&$calls, $receipt, $nodes, $cycleId, $f): array {
             $activity = app(ParticipantActivityService::class)->snapshot(collect([$f->viewer->fresh()]))['participants'][0];
             $this->assertTrue($activity['is_active']);
             $this->assertNotNull($activity['current_proposition_id']);
             $this->assertSame($cycleId, $state['cycle']['id']);
             $kind = $state['plan']['phase']['number'];
             $calls[] = [$kind, $state['plan']['phase']['id']];
-            if (! $read) {
-                $this->assertSame('available', collect($state['plan']['receipts'])->firstWhere('id', $receipt->id)['status']);
-                $read = true;
-
-                return ['action' => 'receipt.read', 'receipt_id' => $receipt->id];
-            }
             if ($kind === 1) {
-                $this->assertSame('loaded', collect($state['plan']['receipts'])->firstWhere('id', $receipt->id)['status']);
+                $this->assertFalse(collect($state['plan']['receipts'])->firstWhere('id', $receipt->id)['loaded']);
+            }
+            if ($kind === 3) {
+                $this->assertTrue(collect($state['plan']['receipts'])->firstWhere('id', $receipt->id)['loaded']);
             }
 
             return $kind === 7 ? ['action' => 'proposition.commit', 'proposition_id' => $nodes[5]->id]
                 : ['action' => in_array($kind, [4, 5], true) ? 'attestation.create' : 'proposition.traverse',
-                    'proposition_id' => $nodes[$kind - 1]->id, ...(in_array($kind, [4, 5], true) ? ['direction' => 'refute'] : [])];
+                    'proposition_id' => $nodes[$kind - 1]->id, ...($kind === 2 ? ['receipt_options' => ['load' => [$receipt->id]]] : []), ...(in_array($kind, [4, 5], true) ? ['direction' => 'refute'] : [])];
         });
         $this->app->instance(ParticipantInference::class, $inference);
         $this->app->call([new WakeParticipant($connection->id), 'handle']);
-        $this->assertSame([1, 1, 2, 3, 4, 5, 6, 7], array_column($calls, 0));
+        $this->assertSame([1, 2, 3, 4, 5, 6, 7], array_column($calls, 0));
         $this->assertCount(7, array_unique(array_column($calls, 1)));
         $this->assertNotNull(Cycle::findOrFail($cycleId)->completed_at);
         $this->assertNull(Cycle::findOrFail($cycleId)->rested_at);

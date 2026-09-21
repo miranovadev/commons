@@ -2,7 +2,6 @@ import type { ActionName, AttestationDirection, ContributionInitialValues, Contr
 
 /** Only the workspace's fully specified, schema-authorized navigation actions bypass a form. */
 export function quickContribution(plan: ParticipantPlan, action: ActionName, values: ContributionInitialValues = {}): ContributionInput | null {
-  if ((action === 'receipt.read' || action === 'receipt.replay')) return values.receipt_id && actionTargetIds(plan, action).has(values.receipt_id) ? { action, receipt_id: values.receipt_id } : null;
   if (!values.proposition_id || !actionTargetIds(plan, action).has(values.proposition_id)) return null;
   if (action === 'proposition.traverse') return { action, proposition_id: values.proposition_id };
   if (action === 'attestation.create' && values.direction && attestationDirections(plan, values.proposition_id).includes(values.direction)) {
@@ -13,7 +12,7 @@ export function quickContribution(plan: ParticipantPlan, action: ActionName, val
 
 /** The schema is authoritative for both visible buttons and form choices. */
 export function actionTargetIds(plan: ParticipantPlan, action: ActionName): Set<string> {
-  const property = (action === 'receipt.read' || action === 'receipt.replay') ? 'receipt_id' : action === 'proposition.reconcile' ? 'other_proposition_id' : 'proposition_id';
+  const property = action === 'proposition.reconcile' ? 'other_proposition_id' : 'proposition_id';
   return new Set(plan.schema?.$defs?.actions?.[action]?.properties[property]?.enum ?? []);
 }
 
@@ -60,7 +59,7 @@ export function writePropositions(plan: ParticipantPlan): Proposition[] {
 export function propositionReceiptReferences(plan: ParticipantPlan): Array<ReceiptReference & { proposition_id: string }> {
   const nodes = [plan.gate, ...(plan.lineage ?? []), ...(plan.read_options ?? []), ...(plan.gate_options ?? []), ...(plan.write_options ?? [])];
   return [...new Map(nodes.filter(Boolean).flatMap(node => (node.receipts ?? []).map(receipt => ({
-    id: receipt.id, type: receipt.type, reference: receipt.reference, context_horizon_id: receipt.context_horizon_id, proposition_id: node.id,
+    id: receipt.id, type: receipt.type, reference: receipt.reference, loaded: receipt.loaded, proposition_id: node.id,
   }))).map(receipt => [receipt.id, receipt])).values()];
 }
 

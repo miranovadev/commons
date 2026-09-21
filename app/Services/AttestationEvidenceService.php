@@ -12,6 +12,7 @@ use App\Models\Supersession;
 use App\Services\Observables\ReinforcementService;
 use App\Services\Participation\ParticipationContext;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 final readonly class AttestationEvidenceService
 {
@@ -108,8 +109,10 @@ final readonly class AttestationEvidenceService
     private function buildTimeline(array $sourceIds, Substrate $substrate, ?ParticipationContext $context = null): AttestationTimeline
     {
         $attestations = $context !== null ? $context->attestationsFor($sourceIds) : Attestation::query()->whereIn('proposition_id', $sourceIds)
-            ->with(['ledgerEntry', 'supersededBy.ledgerEntry', 'proposition.phase.cycle.participant'])->get();
-        $events = $context !== null ? $context->receiptContextEvents : ReceiptContextEvent::whereHas('context', fn ($q) => $q->whereIn('proposition_id', $sourceIds))
+            ->with(['ledgerEntry', 'supersededBy.ledgerEntry', 'proposition.phase.cycle.participant', 'phase.cycle'])->get();
+        $links = $context !== null ? $context->receiptLinks->whereIn('proposition_id', $sourceIds)
+            : DB::table('proposition_receipt_links')->whereIn('proposition_id', $sourceIds)->get();
+        $events = $context !== null ? $context->receiptContextEvents : ReceiptContextEvent::whereHas('context', fn ($q) => $q->whereIn('proposition_id', $sourceIds)->orWhereIn('receipt_id', $links->pluck('receipt_id')))
             ->with(['ledgerEntry', 'context.receipt'])->get();
         $loads = [];
         $contexts = $context?->receiptContexts->keyBy('id');
@@ -117,13 +120,19 @@ final readonly class AttestationEvidenceService
         foreach ($events as $event) {
             $load = $context !== null ? $contexts->get($event->participant_receipt_context_id) : $event->context;
             $receipt = $context !== null ? $receipts->get($load->receipt_id) : $load->receipt;
-            if ($receipt?->receiptable_type === (new Attestation)->getMorphClass()) {
-                $loads[$receipt->receiptable_id][] = [
+            if ($receipt === null || $load->evidence_signature === null) {
+                continue;
+            }
+            // Context rows already resolve legacy Attestation subjects to their Proposition.
+            $targets = $links->where('receipt_id', $receipt->id)->pluck('proposition_id')->push($load->proposition_id)->unique();
+            foreach ($targets as $target) {
+                $loads[$target][$load->participant_id][] = [
                     'id' => $load->id, 'participant_id' => $load->participant_id,
                     'sequence' => $event->ledgerEntry?->sequence ?? 0, 'action' => $event->action,
                 ];
             }
         }
+
         $frames = [];
         $rows = [];
         foreach ($attestations as $attestation) {
@@ -140,7 +149,7 @@ final readonly class AttestationEvidenceService
                 'sequence' => $attestation->ledgerEntry?->sequence ?? 0,
                 'replaced_at' => $attestation->supersededBy === null ? null : ($attestation->supersededBy->ledgerEntry?->sequence ?? 0),
                 'sign' => $attestation->direction === 'support' ? $support : -$support,
-                'loads' => $loads[$attestation->id] ?? [],
+                'loads' => $loads[$attestation->proposition_id][$attestation->phase->cycle->participant_id] ?? [],
             ];
         }
 

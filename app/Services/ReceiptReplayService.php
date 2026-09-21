@@ -16,25 +16,26 @@ final readonly class ReceiptReplayService
 {
     public function __construct(private ReceiptContextService $context, private OperationalInstrumentService $instruments) {}
 
-    public function observe(Participant $participant, Phase $phase, string $receiptId): InstrumentObservation
+    public function observe(Participant $participant, Phase $phase, string $receiptId, ?string $propositionId = null): InstrumentObservation
     {
         $context = new ParticipationContext($phase);
         $receipt = $context->receipts->firstWhere('id', $receiptId);
         $option = $this->context->forPhase($phase, $context)->firstWhere('id', $receiptId);
         if ($phase->cycle->participant_id !== $participant->id || $phase->completed_at !== null
             || $phase->cycle->completed_at !== null || ! ($option['can_replay'] ?? false)
+            || ($propositionId !== null && ($option['proposition_id'] ?? null) !== $propositionId)
             || $receipt === null || ! $receipt->supports(ReceiptCapability::Replayable)) {
             throw new DomainException('Replay requires a replayable encountered Receipt on an Instrument-eligible Write.');
         }
 
-        return $this->instruments->observe($receipt->replayInvocation());
+        return $this->instruments->observeFor($phase, $context->propositions->get($option['proposition_id']), $receipt->replayInvocation());
     }
 
-    public function replay(Participant $participant, Phase $phase, string $receiptId, ?InstrumentObservation $observed = null): Receipt
+    public function replay(Participant $participant, Phase $phase, string $receiptId, ?InstrumentObservation $observed = null, ?string $propositionId = null): Receipt
     {
-        $observed ??= $this->observe($participant, $phase, $receiptId);
+        $observed ??= $this->observe($participant, $phase, $receiptId, $propositionId);
 
-        return DB::transaction(function () use ($participant, $phase, $receiptId, $observed): Receipt {
+        return DB::transaction(function () use ($participant, $phase, $receiptId, $observed, $propositionId): Receipt {
             Substrate::query()->lockForUpdate()->findOrFail($participant->substrate_id);
             Participant::query()->lockForUpdate()->findOrFail($participant->id);
             $phase = Phase::query()->lockForUpdate()->findOrFail($phase->id);
@@ -45,7 +46,8 @@ final readonly class ReceiptReplayService
             $context = new ParticipationContext($phase);
             $option = $this->context->forPhase($phase, $context)->firstWhere('id', $receiptId);
             $receipt = $context->receipts->firstWhere('id', $receiptId);
-            if (! ($option['can_replay'] ?? false) || $receipt === null || ! $receipt->supports(ReceiptCapability::Replayable)) {
+            if (! ($option['can_replay'] ?? false) || ($propositionId !== null && ($option['proposition_id'] ?? null) !== $propositionId)
+            || $receipt === null || ! $receipt->supports(ReceiptCapability::Replayable)) {
                 throw new DomainException('Replay requires a replayable encountered Receipt on an Instrument-eligible Write.');
             }
 

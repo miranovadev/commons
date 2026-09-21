@@ -16,26 +16,28 @@ without structured invocation input cannot be replayed; no invocation is inferre
 from prose or evidence content. Unsupported `artefact` Receipts grant neither.
 Capability support does not bypass operational eligibility or evidence qualification.
 
-## Read and Replay
+## Instrument replay and Participant memory
 
-`receipt.read` takes only `action` and `receipt_id`. It loads an existing qualifying,
-encountered observation through the established `participant_receipt_contexts`
-mechanism without fetching anything or advancing the Phase. Existing Cite context
-exclusions, persistent loads, clears and Participant/Proposition uniqueness remain
-in effect. See [Reinforcement](reinforcement.md).
+`instrument.execute` accepts a fresh Citation, Hyperlink or Web Search invocation,
+or `instrument: {"replay_receipt_id": "R"}` with the normal `proposition_id`.
+The forms are mutually exclusive. The schema enumerates replay IDs for each exact
+eligible Instrument target. Catalogue visibility or replay capability alone grants
+no execution authority. The server restores the immutable originating invocation;
+the Participant does not restate its URL or query. Replay follows ordinary Instrument
+eligibility and Phase progression. Order admits no Instrument execution.
 
-`receipt.replay` also takes only `action` and `receipt_id`. It is an Instrument
-execution: the Receipt must be encountered and its original Proposition must be
-an eligible Instrument Write in the current Phase. Replay uses the same Phase
-progression as `instrument.execute`, advancing to the next Phase. It is
-available in phases 1–6, including Distinguish and Mediate, when these target
-rules permit it. Order admits neither execution, Read nor Replay. Visibility of a historical Receipt alone grants no execution authority.
+Loading is separate: optional Gate `receipt_options.load/unload` accompanies a
+successful forward contribution atomically. There is no standalone Receipt Read
+or Replay action. Rest cannot change Receipt memory. Persistent load state survives
+Cycles and Horizons; full bodies activate only for loaded evidence grounding the
+current participant-facing Read. All other references remain lightweight metadata.
+See [Reinforcement](reinforcement.md).
 
 Replay additionally requires no equivalent Receipt in the target's effective
 evidence. Capability and current admissibility are distinct: an effective Receipt
 suppresses its own same-subject Replay, including failed observations. Loading or
-clearing does not change suppression. Read remains independently available. The
-UI follows the server's authorized action IDs. See
+clearing does not change suppression. Gate memory selection remains independent. The
+UI follows the server's target-bound Instrument schema. See
 [Receipt relevance and invocation exclusions](continuous-cycles-and-receipt-relevance.md).
 
 Replay stores a new `instrument_executions` row, copies the normalized structured
@@ -43,16 +45,16 @@ invocation from the source execution's `input`, and sets
 `replayed_from_receipt_id` on the **new execution**. Its new Receipt has the normal
 unique execution link and its own ledger entry. Replaying R2 links R3 to R2, so
 history is reconstructable through Receipt → execution → previous Receipt.
-The exact original Proposition or Attestation subject is preserved. No existing
+The original observed Proposition is preserved; new Receipts ground it. Legacy Attestation-owned Receipts resolve through their Proposition without rewriting historical rows. No existing
 Receipt, execution result, invocation or provenance is rewritten. Domain model
 updates reject changes to saved Receipts and originating invocation fields.
 
 Execution and Replay never load a Receipt or create active Reinforcement.
-Explicit Read is required. Even if multiple equivalent or changed observations
+Explicit participant loading through Gate desired-state options is required. Even if multiple equivalent or changed observations
 are loaded, each Participant still contributes at most one counted Reinforcement
 per active classification under the evidence inheritance rules. Reclassification
-attaches its selected Horizon Receipt; committed results remain frozen.
-Receipt inspection is free and shared. Read establishes optional personal loading
+attaches its selected Commit Region Receipt; committed results remain frozen.
+Receipt metadata is shared. Gate options establish optional personal loading
 for Reinforcement, independently of one-use consumption by Reclassify.
 
 ## Web Search: the first discovery Instrument

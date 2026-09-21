@@ -34,6 +34,8 @@ final class ParticipationScript
     /** Explicit Stage A correction to archived cognition, never to authored actions. */
     public static function stageA(array $state): array
     {
+        // Retired action families are removed from archived schema expectations only.
+        $state['plan']['actions'] = array_values(array_diff($state['plan']['actions'] ?? [], ['receipt.read', 'receipt.replay']));
         $state['plan']['receipts'] = array_values(array_filter($state['plan']['receipts'] ?? [],
             fn ($receipt) => $receipt['status'] === 'loaded'
                 || ($receipt['availability'] === 'available' && empty($receipt['attached_proposition_id']))));

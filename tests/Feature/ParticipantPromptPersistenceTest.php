@@ -5,8 +5,10 @@ namespace Tests\Feature;
 use App\Domain\Evidence\VerifiedHyperlink;
 use App\Enums\PhaseKind;
 use App\Models\Connection;
+use App\Models\ParticipantReceiptContext;
 use App\Services\HorizonReceiptService;
 use App\Services\InstrumentExecutionService;
+use App\Services\MediationReadService;
 use App\Services\ParticipantContextSerializer;
 use App\Services\ParticipantPromptFactory;
 use App\Services\ParticipantPromptLayout;
@@ -28,8 +30,9 @@ class ParticipantPromptPersistenceTest extends TestCase
         $executions = app(InstrumentExecutionService::class);
         $receipts = [];
         foreach (['first', 'second'] as $name) {
-            $execution = $executions->start($fixture->phase, $fixture->gate, 'hyperlink', 'https://example.test/'.$name);
-            $receipts[] = $executions->complete($execution, $fixture->gate, verification: new VerifiedHyperlink(
+            $read = app(MediationReadService::class)->anchorFor($fixture->phase);
+            $execution = $executions->start($fixture->phase, $read, 'hyperlink', 'https://example.test/'.$name);
+            $receipts[] = $executions->complete($execution, $read, verification: new VerifiedHyperlink(
                 'example.test/'.$name, hash('sha256', $name), CarbonImmutable::now(), contentExcerpt: $name.' observed evidence',
             ));
         }
@@ -49,6 +52,12 @@ class ParticipantPromptPersistenceTest extends TestCase
             foreach ($after['plan']['receipts'] as &$receipt) {
                 $receipt = [...($bodies[$receipt['id']] ?? []), ...$receipt];
             }
+            foreach ($before['plan']['receipts'] as &$ref) {
+                $ref = array_intersect_key($ref, array_flip(($ref['active'] ?? false)
+                    ? ['id', 'type', 'reference', 'loaded', 'proposition_id', 'context_horizon_id', 'signature', 'capabilities', 'replayed_from_receipt_id', 'observation_error', 'evidence']
+                    : ['id', 'type', 'reference', 'loaded']));
+            }
+            unset($ref);
             $this->assertEquals($before, $after);
             $this->assertSame($before['plan']['schema'], $after['plan']['schema']);
 
@@ -99,24 +108,22 @@ class ParticipantPromptPersistenceTest extends TestCase
         $attached = $packet();
         $this->assertNotContains($receipt->id, array_column($attached['plan']['receipts'], 'id'));
         $node = collect($attached['plan']['write_options'])->firstWhere('id', $write->id);
-        $this->assertSame([['id' => $receipt->id, 'type' => 'hyperlink', 'reference' => $receipt->reference, 'context_horizon_id' => $receipt->context_horizon_id]], $node['receipts']);
+        $this->assertSame([['id' => $receipt->id, 'type' => 'hyperlink', 'reference' => $receipt->reference, 'loaded' => false]], $node['receipts']);
         $this->assertStringNotContainsString('PRIVATE-ATTACHED-OBSERVATION', json_encode($attached));
-        // Catalogue presentation must not silently remove an existing Read target.
-        $this->assertContains($receipt->id, $attached['plan']['schema']['$defs']['actions']['receipt.read']['properties']['receipt_id']['enum']);
-        app(ParticipationService::class)->contribute($fixture->viewer, $fixture->phase->id,
-            ['action' => 'receipt.read', 'receipt_id' => $receipt->id]);
+        $this->assertArrayNotHasKey('receipt.read', $attached['plan']['schema']['$defs']['actions']);
+        // Seed retained historical memory independently of this Phase's participation action.
+        app(ReceiptContextService::class)->read($fixture->viewer, $fixture->phase, $receipt->id);
         $loaded = $packet();
         $prompt = app(ParticipantPromptFactory::class)->make(new Connection, $loaded);
-        $this->assertSame(1, substr_count($prompt['evidence'].$prompt['user'], 'PRIVATE-ATTACHED-OBSERVATION'));
+        $this->assertSame(0, substr_count($prompt['evidence'].$prompt['user'], 'PRIVATE-ATTACHED-OBSERVATION')); // Gate/Write are metadata even when loaded.
         $this->assertStringNotContainsString('PRIVATE-ATTACHED-OBSERVATION', $prompt['user']);
         $entry = collect(json_decode($prompt['user'], true)['plan']['receipts'])->firstWhere('id', $receipt->id);
-        $this->assertSame('loaded', $entry['status']);
-        $this->assertSame('consumed', $entry['availability']);
-        $this->assertSame($write->id, $entry['attached_proposition_id']);
+        $this->assertTrue($entry['loaded']);
+        $this->assertEqualsCanonicalizing(['id', 'type', 'reference', 'loaded'], array_keys($entry));
         $this->assertSame($fixture->phase->id, $loaded['plan']['phase']['id']);
     }
 
-    public function test_receipt_heavy_packet_removes_unread_bodies_without_changing_loaded_evidence_or_schema(): void
+    public function test_receipt_heavy_gate_packet_keeps_memory_but_activates_no_bodies(): void
     {
         $fixture = new ParticipantContextFixture(2, 3, false);
         $executions = app(InstrumentExecutionService::class);
@@ -141,7 +148,8 @@ class ParticipantPromptPersistenceTest extends TestCase
         $new = $layout->make($after);
         $this->assertSame($old['evidence'], $new['evidence']);
         $this->assertSame($before['plan']['schema'], $after['plan']['schema']);
-        $this->assertSame(3, $new['loaded_receipt_count']);
+        $this->assertSame(0, $new['loaded_receipt_count']);
+        $this->assertSame(3, ParticipantReceiptContext::active()->count());
         foreach ($after['plan']['receipts'] as $receipt) {
             if ($receipt['status'] !== 'loaded') {
                 $this->assertArrayNotHasKey('evidence', $receipt);
@@ -150,10 +158,10 @@ class ParticipantPromptPersistenceTest extends TestCase
         $bytes = fn ($value) => strlen(json_encode($value, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR));
         $catalogue = fn ($packet) => array_values(array_filter($packet['plan']['receipts'], fn ($r) => $r['status'] !== 'loaded'));
         $metrics = ['catalogue_before' => $bytes($catalogue($before)), 'catalogue_after' => $bytes($catalogue($after)),
-            'loaded_evidence' => strlen($new['evidence']), 'packet_before' => strlen($old['evidence'].$old['user']),
+            'loaded_evidence' => strlen($new['evidence']), 'internal_packet' => $bytes($before),
             'packet_after' => strlen($new['evidence'].$new['user']), 'reads' => count($after['plan']['read_options']),
             'counterparts' => count($after['plan']['schema']['$defs']['actions']['proposition.reconcile']['properties']['other_proposition_id']['enum'] ?? [])];
         $this->assertLessThan($metrics['catalogue_before'], $metrics['catalogue_after']);
-        fwrite(STDERR, "\nSTAGE_A_FIXTURE ".json_encode($metrics)."\n");
+        fwrite(STDERR, "\nRECEIPT_CONTEXT_FIXTURE ".json_encode($metrics)."\n");
     }
 }

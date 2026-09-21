@@ -56,6 +56,10 @@ final readonly class ContributionService
         );
 
         if ($result->isValid()) {
+            if (array_intersect($input['receipt_options']['load'] ?? [], $input['receipt_options']['unload'] ?? []) !== []) {
+                throw new InvalidArgumentException('A Receipt cannot be both loaded and unloaded in one contribution.');
+            }
+
             return;
         }
 

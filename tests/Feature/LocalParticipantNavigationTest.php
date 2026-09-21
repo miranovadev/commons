@@ -408,9 +408,7 @@ class LocalParticipantNavigationTest extends TestCase
         $phase = $this->phase($participant, $position);
         $this->refreshFixtureMeasurements();
         $state = $this->state($participant);
-        foreach ($state['plan']['schema']['$defs']['actions']['receipt.read']['properties']['receipt_id']['enum'] ?? [] as $receiptId) {
-            app(ParticipationService::class)->contribute($participant, $phase->id, ['action' => 'receipt.read', 'receipt_id' => $receiptId]);
-        }
+
         $this->refreshFixtureMeasurements();
         app(ParticipationService::class)->contribute($participant, $phase->id, ['action' => 'participant.rest']);
         $state = $this->state($participant);

@@ -44,7 +44,7 @@ trait HorizonCycleFixture
             $plan = $state['plan'];
             $actions = $plan['schema']['$defs']['actions'];
             $action = collect(['proposition.commit', 'proposition.reclassify', 'proposition.variant', 'proposition.reconcile',
-                'proposition.traverse', 'attestation.create', 'instrument.execute', 'participant.rest', 'receipt.read'])
+                'proposition.traverse', 'attestation.create', 'instrument.execute', 'participant.rest'])
                 ->first(fn ($candidate) => isset($actions[$candidate]));
             $definition = $actions[$action];
             $input = ['action' => $action];

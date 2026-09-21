@@ -2,6 +2,8 @@
 
 namespace Tests\Support;
 
+use App\Models\Receipt;
+
 /** Executes an authored transcript. Never chooses an action from runtime eligibility. */
 abstract class ScriptedParticipationTestCase extends ParticipationHttpTestCase
 {
@@ -99,7 +101,10 @@ abstract class ScriptedParticipationTestCase extends ParticipationHttpTestCase
                         ? $references->whereNotIn('id', array_values($this->scriptIds))->values()
                         : $references->where('id', $this->resolveScriptReferences($old['id']))->values();
                     $this->assertCount(1, $references, $label.' declared Receipt reference '.$alias);
-                    $projection['stage_a_reference'] = $references->first()[end($path)];
+                    // Origin Horizon identity is ledger provenance, no longer prompt Receipt metadata.
+                    $projection['stage_a_reference'] = end($path) === 'context_horizon_id'
+                        ? Receipt::findOrFail($references->first()['id'])->context_horizon_id
+                        : $references->first()[end($path)];
                     $path = ['stage_a_reference'];
                 }
             }

@@ -57,11 +57,13 @@ abstract class TestCase extends BaseTestCase
     /** Verified, explicitly loaded evidence for fixtures that exercise other semantic services. */
     protected function loadedReceiptFixture(Proposition $node, ?Attestation $subject = null): Receipt
     {
-        $participant = new Participant;
-        $participant->forceFill(['substrate_id' => $node->phase->cycle->participant->substrate_id,
-            'callsign' => 'verifier-'.str()->ulid()])->save();
+        $participant = $subject?->phase->cycle->participant ?? new Participant;
+        if (! $participant->exists) {
+            $participant->forceFill(['substrate_id' => $node->phase->cycle->participant->substrate_id,
+                'callsign' => 'verifier-'.str()->ulid()])->save();
+        }
         $cycle = new Cycle;
-        $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => 1,
+        $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => (int) $participant->cycles()->max('sequence') + 1,
             'context_horizon_id' => $node->phase->cycle->context_horizon_id])->save();
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Order,

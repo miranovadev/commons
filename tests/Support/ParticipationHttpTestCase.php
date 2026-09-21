@@ -167,7 +167,7 @@ abstract class ParticipationHttpTestCase extends TestCase
     {
         $actions = $this->actionDefinitions($state);
         foreach (['proposition.commit', 'proposition.reclassify', 'proposition.variant', 'proposition.reconcile',
-            'proposition.traverse', 'attestation.create', 'instrument.execute', 'participant.rest', 'receipt.read'] as $action) {
+            'proposition.traverse', 'attestation.create', 'instrument.execute', 'participant.rest'] as $action) {
             if (isset($actions[$action])) {
                 $input = ['action' => $action];
                 foreach (['proposition_id', 'other_proposition_id', 'receipt_id'] as $key) {

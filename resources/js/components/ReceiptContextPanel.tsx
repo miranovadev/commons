@@ -1,32 +1,27 @@
-import { Anchor, Badge, Box, Button, Group, Stack, Text } from '@mantine/core';
-import { IconAnchor, IconBook, IconRefresh } from '@tabler/icons-react';
-import { actionTargetIds, propositionReceiptReferences } from '../participationOptions';
+import { Anchor, Badge, Box, Group, Stack, Text } from '@mantine/core';
+import { IconAnchor } from '@tabler/icons-react';
+import { propositionReceiptReferences } from '../participationOptions';
 import type { ParticipantPlan } from '../types';
 
-/** Receipt uptake is a context action; it does not navigate Read/Gate/Write. */
-export function ReceiptContextPanel({ plan, onRead, canRead = true, onReplay, canReplay = true }: {
-  plan: ParticipantPlan; onRead: (id: string) => void; canRead?: boolean; onReplay?: (id: string) => void; canReplay?: boolean;
-}) {
-  const replays = canReplay && onReplay ? actionTargetIds(plan, 'receipt.replay') : new Set<string>();
+/** Metadata and active Read evidence; memory changes accompany the forward contribution. */
+export function ReceiptContextPanel({ plan }: { plan: ParticipantPlan }) {
   const receipts = (plan.receipts ?? []);
   const references = propositionReceiptReferences(plan).filter(ref => !receipts.some(receipt => receipt.id === ref.id));
   if (!receipts.length && !references.length) return null;
-  const allowed = canRead ? actionTargetIds(plan, 'receipt.read') : new Set<string>();
   return <Stack gap="xs" p="sm" aria-label="Receipt context">
     <Group gap="xs"><IconAnchor size={16} /><Text size="sm" fw={600}>Receipt context</Text></Group>
-    <Text size="xs" c="dimmed">Available Horizon Receipts show metadata. Read loads their evidence; proposition references preserve grounding after attachment.</Text>
+    <Text size="xs" c="dimmed">Commit Region Receipts show metadata. Loading persists; full evidence appears only while its Proposition occupies Read. Gate loading changes can accompany your normal contribution.</Text>
     {receipts.map(receipt => <Box key={receipt.id} p="xs" style={{ border: '1px solid var(--mantine-color-default-border)', borderRadius: 6 }}>
       <Group justify="space-between" gap="xs">
         <Text size="xs" style={{ overflowWrap: 'anywhere' }}>{receipt.type === 'tragedy' ? 'Tragedy Receipt' : receipt.type} · {receipt.reference}</Text>
         <Group gap="xs"><Badge size="xs" variant="light" color={receipt.availability === 'consumed' ? 'gray' : 'teal'}>{receipt.availability === 'consumed' ? 'Consumed' : receipt.availability === 'historical' ? 'Context only' : 'Available'}</Badge>{receipt.status === 'loaded' ? <Badge size="xs" variant="light" leftSection={<IconAnchor size={12} />}>Loaded</Badge>
-          : allowed.has(receipt.id) && <Button size="compact-xs" variant="light" leftSection={<IconBook size={13} />} onClick={() => onRead(receipt.id)}>Read Receipt</Button>}
-          {replays.has(receipt.id) && <Button size="compact-xs" variant="light" leftSection={<IconRefresh size={13} />} onClick={() => onReplay?.(receipt.id)}>Replay Receipt</Button>}
+          : null}
         </Group>
       </Group>
       {receipt.attached_proposition_id && <Text size="xs" c="dimmed">Attached to {receipt.attached_proposition_id}</Text>}
       {receipt.status === 'already-in-context' && <Text size="xs" c="dimmed">Referenced Proposition is already in this context.</Text>}
       {receipt.observation_error && <Text size="xs" c="dimmed">{receipt.observation_error}</Text>}
-      {receipt.status === 'loaded' && receipt.evidence && <Box mt={5}>
+      {receipt.active && receipt.evidence && <Box mt={5}>
         {receipt.evidence.exhausted_committals?.map(item => <Box key={item.id} mt="xs">
           <Text size="xs" fw={600}>Exhausted Committal · Phase {item.phase_number} · {item.register}</Text>
           <Text size="sm">{item.statement}</Text>
@@ -46,12 +41,9 @@ export function ReceiptContextPanel({ plan, onRead, canRead = true, onReplay, ca
     </Box>)}
     {references.length > 0 && <Text size="xs" fw={600}>Proposition Receipt references</Text>}
     {references.map(receipt => <Box key={receipt.id} p="xs">
-      <Text size="xs">{receipt.type} · {receipt.reference}</Text>
+      <Text size="xs">{receipt.type} · {receipt.reference} · {receipt.loaded ? 'Loaded' : 'Unloaded'}</Text>
       <Text size="xs" c="dimmed">Referenced by {receipt.proposition_id}</Text>
-      <Group gap="xs">
-        {allowed.has(receipt.id) && <Button size="compact-xs" variant="light" onClick={() => onRead(receipt.id)}>Read Receipt</Button>}
-        {replays.has(receipt.id) && <Button size="compact-xs" variant="light" onClick={() => onReplay?.(receipt.id)}>Replay Receipt</Button>}
-      </Group>
+
     </Box>)}
   </Stack>;
 }

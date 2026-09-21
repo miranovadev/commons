@@ -9,26 +9,31 @@ use App\Models\ReceiptConsumption;
 use App\Models\Substrate;
 use App\Services\Participation\ParticipationContext;
 use DomainException;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /** Shared evidence. The producing Participant grants no permission or priority. */
 final class HorizonReceiptService
 {
-    public function availableQuery(string $horizonId): Builder
-    {
-        return Receipt::where('context_horizon_id', $horizonId)->whereDoesntHave('consumption')
-            ->where(fn ($query) => $query->where('type', 'tragedy')
-                ->orWhereHas('instrumentExecution', fn ($query) => $query->where('status', 'completed')));
-    }
-
     public function available(Phase $phase, ?ParticipationContext $context = null): Collection
     {
-        $load = fn () => $this->availableQuery($phase->cycle->context_horizon_id)
-            ->with('instrumentExecution')->orderBy('created_at')->orderBy('id')->get();
+        $context ??= new ParticipationContext($phase);
 
-        return $context === null ? $load() : $context->remember('available-horizon-receipts', $load);
+        return $context->remember('available-region-receipts', function () use ($phase, $context): Collection {
+            $regions = app(ReceiptRegionService::class);
+            $seed = $regions->current($phase, $context);
+            if ($seed === null) {
+                return collect();
+            }
+            $subjects = array_keys(array_filter($regions->seeds($context), fn ($id) => $id === $seed));
+            $tragedies = array_keys(array_filter(app(TragedyReceiptScopeService::class)->seeds($context), fn ($id) => $id === $seed));
+
+            return Receipt::whereDoesntHave('consumption')->where(fn ($q) => $q
+                ->where(fn ($ordinary) => $ordinary->where('type', '!=', 'tragedy')->where('context_horizon_id', $phase->cycle->context_horizon_id)
+                    ->whereHas('instrumentExecution', fn ($execution) => $execution->where('status', 'completed')->whereIn('proposition_id', $subjects)))
+                ->orWhere(fn ($special) => $special->where('type', 'tragedy')->whereKey($tragedies)))
+                ->with(['instrumentExecution', 'consumption', 'phase'])->orderBy('created_at')->orderBy('id')->get();
+        });
     }
 
     /** Generating an observation is separate from attaching or consuming it. */
@@ -49,10 +54,10 @@ final class HorizonReceiptService
         }
         Substrate::whereKey($phase->cycle->participant->substrate_id)->lockForUpdate()->firstOrFail();
         $receipt = Receipt::whereKey($receiptId)->lockForUpdate()->first();
-        if ($receipt === null || $receipt->context_horizon_id !== $phase->cycle->context_horizon_id
+        if ($receipt === null || ! app(ReceiptRegionService::class)->contains($receipt, $phase, new ParticipationContext($phase))
             || ! $receipt->observationComplete()
             || $receipt->consumption()->exists()) {
-            throw new DomainException('Reclassification requires an unconsumed Receipt from this Horizon.');
+            throw new DomainException('Reclassification requires an unconsumed Receipt from this Commit Region.');
         }
         if ($target->phase_id !== $phase->id || $source->phase->cycle->context_horizon_id !== $receipt->context_horizon_id) {
             throw new DomainException('Receipt attachment cannot cross Horizons or Phase occurrences.');

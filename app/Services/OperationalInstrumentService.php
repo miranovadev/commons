@@ -59,7 +59,7 @@ final readonly class OperationalInstrumentService
             );
 
             return $this->executions->complete(
-                $execution, $replayedFrom?->receiptable ?? $proposition, metadata: [...$metadata, ...$observed->metadata], verification: $observed->verification, observation: $observed->search,
+                $execution, $proposition, metadata: [...$metadata, ...$observed->metadata], verification: $observed->verification, observation: $observed->search,
             );
         });
     }
