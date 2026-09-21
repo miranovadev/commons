@@ -58,7 +58,9 @@ capacity. No failure row is inserted or rewritten for this successful history.
 
 Receipt JSON metadata contains reference IDs only: Tragedy, opening and terminal Proposition IDs, and exhausted Committal IDs from the same Horizon. It contains no statements or serialized descendants. The read service resolves statements, producing phase/register, owner and exhausted Horizon IDs, exhaustion state and terminal provenance. Receipt inspection resolves the full local statements by ID; ordinary participation history may use bounded excerpts. The flat local ID set is retained without an age cutoff and ordered newest creation first.
 
-Receipts are visible throughout their Horizon regardless of who generated them or whether another Participant is present. Consumption changes availability, not existence. Explicit loading for Reinforcement is distinct from free visibility and from consumption.
+An unconsumed Tragedy Receipt follows the triggering Participant's legitimate recorded backward recovery. It is shared with every Participant in the destination Commit Region, including when attenuation selects a non-nearest ancestor. A later legitimate recovery hop moves its effective region again; unrelated Participants and foreign lineage cannot transport it. Consumption freezes its historical attachment. Ordinary Receipt regional origin remains immutable and does not constrain recovery selection.
+
+Catalogue and Proposition references expose metadata with participant loaded state. Full evidence activates only when loaded and grounding the participant-facing Read. Loading, visibility and one-use consumption remain distinct. See the normative [Receipt model](receipt-region-context.md).
 
 ## Realtime and diagnostics
 

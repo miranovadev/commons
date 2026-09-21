@@ -43,15 +43,15 @@ invocation from the source execution's `input`, and sets
 `replayed_from_receipt_id` on the **new execution**. Its new Receipt has the normal
 unique execution link and its own ledger entry. Replaying R2 links R3 to R2, so
 history is reconstructable through Receipt → execution → previous Receipt.
-The exact original Proposition or Attestation subject is preserved. No existing
+The original observed Proposition is preserved; new Receipts ground it. Legacy Attestation-owned Receipts resolve through their Proposition without rewriting historical rows. No existing
 Receipt, execution result, invocation or provenance is rewritten. Domain model
 updates reject changes to saved Receipts and originating invocation fields.
 
 Execution and Replay never load a Receipt or create active Reinforcement.
-Explicit Read is required. Even if multiple equivalent or changed observations
+Explicit participant loading, through Read or Gate desired-state options, is required. Even if multiple equivalent or changed observations
 are loaded, each Participant still contributes at most one counted Reinforcement
 per active classification under the evidence inheritance rules. Reclassification
-attaches its selected Horizon Receipt; committed results remain frozen.
+attaches its selected Commit Region Receipt; committed results remain frozen.
 Receipt inspection is free and shared. Read establishes optional personal loading
 for Reinforcement, independently of one-use consumption by Reclassify.
 
