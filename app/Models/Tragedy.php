@@ -5,12 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 
-/** First no-Potential Rest in a Horizon. Legacy Origin-lineage records remain archived separately. */
+/** First evidenced no-Potential Rest in a Commit Region. Null governing IDs retain archived Horizon proof. */
 class Tragedy extends Model
 {
     use HasUlids;
-
-    protected $table = 'horizon_tragedies';
 
     public $timestamps = false;
 

@@ -12,6 +12,7 @@ use App\Models\Supersession;
 use App\Models\Tragedy;
 use App\Services\ContributionService;
 use App\Services\CycleEntryService;
+use App\Services\ExhaustionService;
 use App\Services\LedgerService;
 use App\Services\Observables\LocalMeasurementService;
 use App\Services\ParticipationService;
@@ -135,7 +136,7 @@ class ParticipantContinuityTest extends TestCase
         $phase->forceFill(['kind' => PhaseKind::Order, 'write_register' => 'canon', 'gate_proposition_id' => $head->id])->save();
         $participant->forceFill(['current_proposition_id' => $head->id])->save();
         app(PotentialProjectionService::class)->refresh($participant->substrate_id);
-        $horizons = ContextHorizon::orderBy('sequence')->get()->map(fn ($h) => Arr::except($h->getAttributes(), ['exhausted_at', 'updated_at']))->all();
+        $horizons = ContextHorizon::orderBy('sequence')->get()->map(fn ($h) => Arr::except($h->getAttributes(), ['updated_at']))->all();
         $state = $service->stateFor($participant);
 
         $this->assertSame(['participant.rest'], array_keys($state['plan']['schema']['$defs']['actions']));
@@ -146,10 +147,10 @@ class ParticipantContinuityTest extends TestCase
         $this->assertSame($commit->id, $rested['plan']['gate_id']);
         $this->assertSame($commit->id, Tragedy::sole()->opening_proposition_id);
         $this->assertSame($next->context_horizon_id, $rested['cycle']['context_horizon_id']);
-        $this->assertNull($next->contextHorizon->fresh()->exhausted_at);
+        $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($next->contextHorizon));
         $this->assertSame('emergence', $rested['domain']);
         $this->assertSame('activity', $rested['plan']['phase']['write_register']);
-        $this->assertSame($horizons, ContextHorizon::orderBy('sequence')->get()->map(fn ($h) => Arr::except($h->getAttributes(), ['exhausted_at', 'updated_at']))->all());
+        $this->assertSame($horizons, ContextHorizon::orderBy('sequence')->get()->map(fn ($h) => Arr::except($h->getAttributes(), ['updated_at']))->all());
     }
 
     private function prepareCommit(float $value): array

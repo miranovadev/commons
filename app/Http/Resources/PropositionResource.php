@@ -87,7 +87,7 @@ class PropositionResource extends JsonResource
                 'parent_context_horizon_id' => $horizon->parent_context_horizon_id,
                 'opened_by_proposition_id' => $horizon->opened_by_proposition_id,
                 'domain' => $horizon->domain->value,
-                'exhausted_at' => $horizon->exhausted_at,
+                'opening_region_exhausted_at' => $horizon->opening_region_exhausted_at,
             ],
             'created_at' => $this->created_at,
         ];

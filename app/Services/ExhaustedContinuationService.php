@@ -16,10 +16,12 @@ final class ExhaustedContinuationService
     {
         $horizon = $phase->cycle->context_horizon_id;
         $calculate = function () use ($horizon, $context): Collection {
-            $closed = DB::table('horizon_exhaustions as exhaustion')
-                ->join('context_horizons as horizon', 'horizon.id', '=', 'exhaustion.context_horizon_id')
-                ->where('horizon.parent_context_horizon_id', $horizon)
-                ->pluck('exhaustion.opening_proposition_id')->filter()->flip()->map(fn () => true);
+            $closed = DB::table('commit_region_exhaustions as exhaustion')
+                ->join('propositions as seed', 'seed.id', '=', 'exhaustion.governing_committal_id')
+                ->join('phases as source_phase', 'source_phase.id', '=', 'seed.phase_id')
+                ->join('cycles as source_cycle', 'source_cycle.id', '=', 'source_phase.cycle_id')
+                ->where('source_cycle.context_horizon_id', $horizon)
+                ->pluck('exhaustion.governing_committal_id')->flip()->map(fn () => true);
             if ($closed->isEmpty()) {
                 return collect();
             }

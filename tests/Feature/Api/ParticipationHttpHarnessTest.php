@@ -91,7 +91,7 @@ class ParticipationHttpHarnessTest extends ScriptedParticipationTestCase
         $this->assertParticipationScriptComplete();
         $this->assertGreaterThan($before['cycle']['sequence'], $after['cycle']['sequence']);
         $this->assertSame($loads, DB::table('participant_receipt_contexts')->count());
-        $this->assertDatabaseCount('horizon_tragedies', 0);
+        $this->assertDatabaseCount('tragedies', 0);
         $this->assertSame('no_available_move', DB::table('cycles')->where('id', $before['cycle']['id'])->value('rest_reason'));
     }
 }

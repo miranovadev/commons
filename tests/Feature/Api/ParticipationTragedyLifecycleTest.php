@@ -41,9 +41,9 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
         $this->assertTrue($boundary['closure_boundary']);
         $this->assertEqualsWithDelta(-0.3436754, $boundary['depth'], 0.0000001);
         $this->assertEqualsWithDelta(-0.9753777, $boundary['cadence'], 0.0000001);
-        $this->assertSame(1, DB::table('horizon_tragedies')->count(), $this->traceMessage($state));
-        $this->assertDatabaseCount('horizon_exhaustions', 0);
-        $tragedy = DB::table('horizon_tragedies')->sole();
+        $this->assertSame(1, DB::table('tragedies')->count(), $this->traceMessage($state));
+        $this->assertDatabaseCount('commit_region_exhaustions', 0);
+        $tragedy = DB::table('tragedies')->sole();
         $receipt = DB::table('receipts')->where('id', $tragedy->receipt_id)->sole();
         $this->assertNotSame($initial['context_horizon_id'], $tragedy->context_horizon_id);
         $this->assertSame($actor, $tragedy->participant_id);
@@ -78,17 +78,17 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
         $this->assertDatabaseMissing('participant_receipt_contexts', ['receipt_id' => $receipt->id]);
         $this->assertDatabaseMissing('receipt_consumptions', ['receipt_id' => $receipt->id]);
         // These exact 24 contributions consume the receipt at step 82 and
-        // exhaust the Horizon at step 99. No eligibility-driven action picker.
+        // exhaust the boundary-governing Commit Region at step 99. No eligibility-driven action picker.
         for ($step = 76; $step <= 99; $step++) {
             $after = $this->continueParticipationScript(1)['responses'][$step];
             if ($step < 99) {
-                $this->assertDatabaseCount('horizon_exhaustions', 0);
+                $this->assertDatabaseCount('commit_region_exhaustions', 0);
                 $this->assertSame($tragedy->context_horizon_id, $after['context_horizon_id'],
                     'Every live final-attempt step stays in its current Horizon until actual Exhaustion.');
             }
             if ($step === 82) {
                 $this->assertDatabaseHas('receipt_consumptions', ['receipt_id' => $receipt->id]);
-                $this->assertSame(0, DB::table('horizon_exhaustions')->count(), 'Consumption alone does not exhaust a Horizon.');
+                $this->assertSame(0, DB::table('commit_region_exhaustions')->count(), 'Consumption alone does not exhaust a Commit Region.');
                 $shared = collect($this->readParticipation($actor)['plan']['receipts'])->firstWhere('id', $receipt->id);
                 $this->assertNull($shared, 'Consumed unread Receipt leaves the other Participant’s shared catalogue.');
                 $this->assertNotContains($receipt->id, array_column($after['plan']['receipts'], 'id'));
@@ -99,16 +99,17 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
 
             }
         }
-        $this->assertSame(1, DB::table('horizon_exhaustions')->count(), $this->traceMessage($state));
-        $exhaustion = DB::table('horizon_exhaustions')->sole();
+        $this->assertSame(1, DB::table('commit_region_exhaustions')->count(), $this->traceMessage($state));
+        $exhaustion = DB::table('commit_region_exhaustions')->sole();
         $consumption = DB::table('receipt_consumptions')->where('receipt_id', $receipt->id)->sole();
         $this->assertSame($tragedy->context_horizon_id, $consumption->context_horizon_id);
         $this->assertSame($consumer, DB::table('phases')->join('cycles', 'cycles.id', '=', 'phases.cycle_id')
             ->where('phases.id', $consumption->phase_id)->value('cycles.participant_id'));
         $this->assertSame($tragedy->id, $exhaustion->tragedy_id);
+        $this->assertSame($tragedy->governing_committal_id, $exhaustion->governing_committal_id);
         $this->assertEquals($receipt, DB::table('receipts')->where('id', $receipt->id)->sole());
         $this->assertDatabaseCount('tragedy_final_attempts', 1);
-        $this->assertDatabaseCount('horizon_tragedies', 1);
+        $this->assertDatabaseCount('tragedies', 1);
         $this->assertSame($initial['context_horizon_id'], $after['context_horizon_id']);
         $this->assertSame('distinguish', $after['plan']['phase']['kind']);
         $this->assertSame($initial['current_proposition_id'], $after['current_proposition_id']);

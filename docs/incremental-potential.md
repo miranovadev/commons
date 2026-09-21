@@ -58,7 +58,8 @@ Local raw values continue to use all active expressive continuations, including 
 Recovery starts with the participant's durable Horizon and terminal position.
 It walks raw incoming edges backward, resolving multi-input arrival Gates from
 durable participant Phases, and intersects that lineage with active local
-Committal entries. Ancestors do not shadow one another. Attenuation counts actual
+Committal entries. The nearest eligible non-exhausted Committal blocks older
+ancestors until its basin is resolved. Diagnostic attenuation still counts actual
 backward edges, including historical intermediate nodes and revisions. Only
 explicit Horizon exhaustion permits continuing along the same path into its
 parent; no descendant or sibling frontier supplies recovery candidates.

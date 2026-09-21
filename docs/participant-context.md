@@ -152,9 +152,9 @@ measurements or action schemas.
 ## Recovery is a backward movement contract
 
 Recovery begins at the Participant's actual current position and walks backward
-through recorded arrival provenance. Only ancestral Committals on that path may
-compete, with attenuation based on actual backward edge distance, including
-revisions and historical intermediates. At a multi-input Write, the recorded
+through recorded arrival provenance. Recovery stops at the nearest eligible non-exhausted ancestral Committal on
+that path. Diagnostic attenuation still uses actual backward edge distance,
+including revisions and historical intermediates; values cannot skip a basin. At a multi-input Write, the recorded
 arrival Gate determines the path; a display shortcut or the other input cannot
 replace it.
 
@@ -233,8 +233,9 @@ collection. The provider boundary explicitly allowlists its compact fields.
 Each alternative contains `id`, `role` (`read`, `gate`, or `write`), producing
 `phase_number`, `register`, `tier`, a statement excerpt (240 characters plus the
 ellipsis, with `statement_truncated`), `exhausted`, `basin_exhausted`,
-`exhausted_at`, and `actionable: false`. Only `exhaustion_states` establishes its
-status. An unavailable legacy hold is not relabelled as proven exhaustion.
+`exhausted_at`, and `actionable: false`. `commit_region_exhaustions` establishes
+regional exhaustion; `exhausted_region_memberships` is its indexed membership
+projection. Archived `exhaustion_states` and legacy holds grant no live authority.
 
 Selection uses the exact producing Phase, creating Horizon, Domain-derived
 register and tier, then the local structural relationship:

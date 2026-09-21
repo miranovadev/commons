@@ -272,8 +272,9 @@ final readonly class InputPlanService
                 'opened_by_proposition_id' => $horizon->opened_by_proposition_id,
                 'opening_proposition' => $opening === null ? null : $this->proposition($opening, $participant, $context),
                 'opened_at' => $horizon->opened_at,
-                'tragedy' => Tragedy::where('context_horizon_id', $horizon->id)->first()?->only(['id', 'receipt_id', 'occurred_at']),
-                'exhausted_at' => $horizon->exhausted_at,
+                'tragedy' => Tragedy::where('governing_committal_id', app(ExhaustionService::class)->regionFor($phase)?->id)
+                    ->whereNotNull('governing_committal_id')->first()?->only(['id', 'receipt_id', 'occurred_at', 'governing_committal_id']),
+                'opening_region_exhausted_at' => app(ExhaustionService::class)->openingRegionExhaustedAt($horizon),
             ],
             'provenance' => $this->proposition($provenance, $participant, $context),
             'registers' => collect($registers)

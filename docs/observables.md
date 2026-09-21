@@ -61,14 +61,13 @@ Initial entry has no position and uses its documented Potential/Charge/ID
 selection. Ordinary completion continues at the exact Committal reached through
 the current Gate's causal continuation, without a new global ranking.
 
-Rest recovery first constructs the authorised candidate set by walking backward
-from the actual terminal position through recorded arrival provenance. Only
-ancestral Committals on that path may compete. For an eligible candidate at
-actual backward edge distance `d`, effective Potential is `raw Potential × a(d)`
-and effective Charge is `raw Charge × a(d)`. Rank by effective Potential, then
-effective Charge, shorter distance and stable Proposition ID, before rounding
-for presentation. This weights the destination once without recalculating its
-measurements or changing an immutable snapshot.
+Rest recovery walks backward from the actual terminal position through recorded
+arrival provenance and stops at the nearest eligible non-exhausted Committal.
+Older ancestors cannot compete while that basin remains unresolved. After
+selection, its diagnostic effective Potential is `raw Potential × a(d)` and
+effective Charge is `raw Charge × a(d)`, where `d` is actual backward edge
+distance. These values do not select the destination. Measurements and immutable
+snapshots are unchanged.
 
 Every backward edge counts, including revisions and historical intermediate
 nodes. A multi-input Write follows the Participant's recorded arrival, not an

@@ -222,7 +222,7 @@ export interface WorkspaceHorizon {
   opening_proposition: Proposition | null;
   opened_at: string;
   tragedy?: { id: Identifier; receipt_id: Identifier; occurred_at: string } | null;
-  exhausted_at?: string | null;
+  opening_region_exhausted_at?: string | null;
 }
 
 export interface ReceiptContext {

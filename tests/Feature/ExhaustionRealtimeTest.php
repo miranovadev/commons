@@ -48,8 +48,11 @@ class ExhaustionRealtimeTest extends TestCase
         $this->assertSame([], $positions);
         DB::commit();
         $this->assertContains('horizon.tragedy', array_column($events, 'type'));
+        $event = collect($events)->firstWhere('type', 'horizon.tragedy');
+        $this->assertSame($opening->id, $event['governing_committal_id']);
+        $this->assertSame('commit_region', $event['scope']);
         $this->assertNotContains('horizon.exhausted', array_column($events, 'type'));
-        $this->assertNull($horizon->fresh()->exhausted_at);
+        $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($horizon));
         $events = $positions = [];
         DB::beginTransaction();
         [$terminal] = $this->exercise($opening, $tragedy);
@@ -60,6 +63,10 @@ class ExhaustionRealtimeTest extends TestCase
         foreach (['receipt.consumed', 'horizon.exhausted', 'context-horizons.changed', 'graph.metrics_changed', 'participant.state_changed'] as $type) {
             $this->assertContains($type, array_column($events, 'type'));
         }
+        $event = collect($events)->firstWhere('type', 'horizon.exhausted');
+        $this->assertSame($opening->id, $event['governing_committal_id']);
+        $this->assertTrue($event['opening_region_exhausted']);
+        $this->assertTrue($event['boundary_region_exhausted']);
         $this->assertContains($terminal->cycle->participant_id, array_column($positions, 'participant_id'));
         foreach (array_merge($events, $positions) as $event) {
             $this->assertLessThan(350, strlen(json_encode($event)));
@@ -80,10 +87,10 @@ class ExhaustionRealtimeTest extends TestCase
         $phase->forceFill(['completed_at' => now()])->save();
         $phase->cycle->forceFill(['rested_at' => now(), 'completed_at' => now(), 'rest_reason' => 'no_remaining_potential'])->save();
         app(ExhaustionService::class)->publish($phase, $proof);
-        $this->assertDatabaseCount('horizon_tragedies', 1);
+        $this->assertDatabaseCount('tragedies', 1);
         DB::rollBack();
         $this->assertSame([], $events);
-        $this->assertDatabaseCount('horizon_tragedies', 0);
-        $this->assertDatabaseCount('horizon_exhaustions', 0);
+        $this->assertDatabaseCount('tragedies', 0);
+        $this->assertDatabaseCount('commit_region_exhaustions', 0);
     }
 }

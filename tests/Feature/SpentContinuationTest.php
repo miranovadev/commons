@@ -6,6 +6,7 @@ use App\Enums\PhaseKind;
 use App\Models\Proposition;
 use App\Models\Tragedy;
 use App\Services\ContributionDispatcher;
+use App\Services\ExhaustionService;
 use App\Services\ExplorationEpochService;
 use App\Services\HorizonReceiptService;
 use App\Services\InputPlanService;
@@ -111,7 +112,7 @@ class SpentContinuationTest extends TestCase
         $this->assertSame('no_remaining_potential', $plan['rest_reason']);
         $this->rest($return);
         $this->assertSame(1, Tragedy::count());
-        $this->assertNull($return->cycle->contextHorizon->fresh()->exhausted_at);
+        $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($return->cycle->contextHorizon));
         $this->assertSame(0, app(ExplorationEpochService::class)->forPhase($return));
     }
 }

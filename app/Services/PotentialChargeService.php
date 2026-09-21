@@ -8,6 +8,7 @@ use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Substrate;
+use App\Services\Participation\ParticipationContext;
 use DomainException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -16,7 +17,7 @@ final readonly class PotentialChargeService
 {
     public function __construct(private PotentialProjectionService $projection, private ProjectedRecoveryService $recovery) {}
 
-    /** Numerical capacity in this Horizon, independent of recovery/frontier ranking. */
+    /** Numerical capacity in this Horizon, independent of recovery selection and frontier ranking. */
     public function hasRemainingInHorizon(Phase $phase): bool
     {
         $this->projection->assertCurrent($phase->cycle->participant->substrate_id);
@@ -32,6 +33,29 @@ final readonly class PotentialChargeService
         // Horizon's capacity. Spentness and action schemas remain separate.
         return collect(app(PotentialRegionCalculator::class)->candidates($local, shadowCompletedRegions: false))
             ->contains(fn ($entry) => $entry['raw_potential_charge'] > 0.00000005);
+    }
+
+    /** Existing regional algebra; only the exhaustion/final-attempt qualification scope changes. */
+    public function hasRemainingInRegion(Phase $phase, ?ParticipationContext $context = null): bool
+    {
+        $calculate = function () use ($phase, $context): bool {
+            $seed = app(ExhaustionService::class)->regionFor($phase, $context);
+            if ($seed === null) {
+                return true; // Ambiguous membership supplies no local exhaustion proof.
+            }
+            $this->projection->assertCurrent($phase->cycle->participant->substrate_id);
+            $local = $this->projection->region($phase->cycle->context_horizon_id)['local'];
+            foreach (app(ExhaustedContinuationService::class)->ids($phase, $context)->keys() as $id) {
+                if (isset($local['nodes'][$id])) {
+                    $local['nodes'][$id]['active'] = false;
+                }
+            }
+
+            return collect(app(PotentialRegionCalculator::class)->candidates($local, lineage: [$seed->id => 0]))
+                ->contains(fn ($entry) => $entry['raw_potential_charge'] > 0.00000005);
+        };
+
+        return $context === null ? $calculate() : $context->remember('remaining-region-potential', $calculate);
     }
 
     public function selectFor(Substrate $substrate): array
@@ -57,7 +81,7 @@ final readonly class PotentialChargeService
     public function selectFrom(Proposition $position): ?array
     {
         // Legacy relative-ranking diagnostic (no production callers). Recovery
-        // has a different contract: only the actual backward lineage competes.
+        // stops at the nearest eligible Committal on the actual backward lineage.
         return app(ReferencePotentialChargeService::class)->selectFrom($position);
     }
 
