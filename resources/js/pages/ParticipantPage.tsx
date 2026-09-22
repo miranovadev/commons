@@ -75,7 +75,7 @@ function ParticipantPositionPage({ slug, participantId }: { slug: string; partic
     if (previewKind || !plan || submitting.current || submittedPhase.current === plan.phase.id) return false;
     submitting.current = true;
     try {
-      const result = await contribute({ slug, participantId, phaseId: plan.phase.id, contribution: contributionInput, expectedClosure: plan.schema.$comment }).unwrap();
+      const result = await contribute({ slug, participantId, phaseId: plan.phase.id, contribution: contributionInput, expectedClosure: plan.schema?.$comment }).unwrap();
       if (result.status === 'waiting' && !result.plan && result.completion?.phase_id === plan.phase.id) {
         setCompletedWorkspace({ plan, phaseId: plan.phase.id });
       }
@@ -144,4 +144,3 @@ function isActionName(value?: string): value is ActionName {
     'proposition.variant',
   ].includes(value as ActionName);
 }
-
