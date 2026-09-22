@@ -22,6 +22,11 @@ class ParticipationHttpHarnessTest extends ScriptedParticipationTestCase
         $snapshot = DB::table('commitment_snapshots')->where('proposition_id', $state['last_commitment']['proposition_id'])->sole();
         $this->assertSame(LineageMeasurementService::VERSION, $snapshot->calculator_version);
         $this->assertSame($snapshot->depth_direction, $snapshot->cadence_direction);
+        $this->assertSame($snapshot->proposition_id, DB::table('cycles')->where('id', $state['cycle']['id'])->value('governing_committal_id'));
+        $producingCycle = DB::table('propositions as proposition')->join('phases as phase', 'phase.id', '=', 'proposition.phase_id')
+            ->join('cycles as cycle', 'cycle.id', '=', 'phase.cycle_id')
+            ->where('proposition.id', $snapshot->proposition_id)->first(['cycle.governing_committal_id']);
+        $this->assertSame($origin, $producingCycle->governing_committal_id);
         $this->assertGreaterThan(0, DB::table('continuation_failures')->count());
         $this->assertSame([3, 6], DB::table('receipt_consumptions')->join('phases', 'phases.id', '=', 'receipt_consumptions.phase_id')
             ->distinct()->orderBy('kind')->pluck('kind')->all());

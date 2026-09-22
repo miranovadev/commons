@@ -219,7 +219,7 @@ final readonly class CycleEntryService
         if ($horizon->substrate_id !== $substrate->id) {
             throw new DomainException('Cycle entry cannot cross substrates.');
         }
-        $cycle = $this->createCycle($participant, $horizon);
+        $cycle = $this->createCycle($participant, $horizon, $gate);
         $firstRegister = $cycle->contextHorizon->domain->registerFor(PhaseKind::Distinguish);
 
         $entry = $this->createPhase(
@@ -249,12 +249,18 @@ final readonly class CycleEntryService
             ->exists();
     }
 
-    private function createCycle(Participant $participant, ContextHorizon $horizon): Cycle
+    private function createCycle(Participant $participant, ContextHorizon $horizon, ?Proposition $governingCommittal = null): Cycle
     {
+        // The only ungoverned production Cycle is the initial Origin bootstrap.
+        // Recovery/continuity always enters with its explicitly selected Committal.
+        if ($governingCommittal === null && $this->hasPropositionHistory($participant->substrate)) {
+            throw new DomainException('An ordinary Cycle requires a governing Committal.');
+        }
         $cycle = new Cycle;
         $cycle->forceFill([
             'participant_id' => $participant->getKey(),
             'context_horizon_id' => $horizon->id,
+            'governing_committal_id' => $governingCommittal?->id,
             'sequence' => (int) Cycle::query()
                 ->whereBelongsTo($participant)
                 ->max('sequence') + 1,

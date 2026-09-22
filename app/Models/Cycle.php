@@ -30,10 +30,18 @@ class Cycle extends Model
             }
             $cycle->context_horizon_id = $horizon->id;
             $cycle->setRelation('contextHorizon', $horizon);
+            if ($cycle->governing_committal_id !== null) {
+                $governor = $cycle->governingCommittal()->firstOrFail();
+                app(ContextHorizonProjector::class)->forEntry($governor, $horizon);
+                $cycle->setRelation('governingCommittal', $governor);
+            }
         });
         static::updating(function (self $cycle): void {
             if ($cycle->isDirty('context_horizon_id')) {
                 throw new \DomainException('A Cycle cannot change its Context Horizon.');
+            }
+            if ($cycle->isDirty('governing_committal_id')) {
+                throw new \DomainException('A Cycle cannot change its governing Committal.');
             }
         });
     }
@@ -41,6 +49,11 @@ class Cycle extends Model
     public function contextHorizon(): BelongsTo
     {
         return $this->belongsTo(ContextHorizon::class);
+    }
+
+    public function governingCommittal(): BelongsTo
+    {
+        return $this->belongsTo(Proposition::class, 'governing_committal_id');
     }
 
     protected function casts(): array
