@@ -94,7 +94,12 @@ class HomologousPositionTest extends TestCase
         $service = app(HomologousPositionService::class);
         $this->assertFalse($service->areCommittedHomologous($a2, $b2));
         $readA = $this->position($a1);
-        $readB = $this->position($b1, register: 'canon');
+        $readB = $this->position($b1);
+        $this->assertFalse($service->arePositionsHomologous($readA, $readB));
+        // Persistence already rejects cross-Domain labels. Also reject a malformed
+        // hydrated model without weakening those production validation rules.
+        $readB->register = 'canon';
+        $readB->phase->write_register = 'canon';
         $this->assertFalse($service->arePositionsHomologous($readA, $readB));
         $this->assertTrue($service->candidatesFor($readA, PhaseKind::Constrain)->isEmpty());
     }
