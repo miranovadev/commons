@@ -54,6 +54,20 @@ return new class extends Migration
                 BEGIN SELECT RAISE(ABORT, 'A real Cadence interval must be positive'); END;
                 SQL);
         }
+
+        // Every existing terrain was calculated with the retired Closure object.
+        // Queue the existing projection machinery once at upgrade, so a later
+        // partial refresh cannot certify untouched old regions as current.
+        // This is disposable-cache invalidation, never a Cadence measurement.
+        DB::table('proposition_measurements')->update(['calculator_version' => null]);
+        DB::table('substrates')->whereIn('id', DB::table('context_horizons')->select('substrate_id'))
+            ->increment('field_version');
+        DB::table('context_horizons')->orderBy('id')->chunk(500, function ($horizons): void {
+            foreach ($horizons as $horizon) {
+                DB::table('potential_dirty_horizons')->updateOrInsert(['context_horizon_id' => $horizon->id],
+                    ['substrate_id' => $horizon->substrate_id, 'measurements_dirty' => true]);
+            }
+        });
     }
 
     public function down(): void
@@ -64,5 +78,6 @@ return new class extends Migration
             DB::unprepared('DROP TRIGGER IF EXISTS cadence_interval_immutable; DROP TRIGGER IF EXISTS cadence_interval_positive;');
         }
         Schema::table('commitment_snapshots', fn (Blueprint $table) => $table->dropColumn('cadence_interval'));
+        // Rollback must not restore a previously invalidated disposable cache.
     }
 };

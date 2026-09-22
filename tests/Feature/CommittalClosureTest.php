@@ -174,7 +174,12 @@ class CommittalClosureTest extends TestCase
         $governors = Cycle::orderBy('id')->pluck('governing_committal_id', 'id')->all();
         $migration = require database_path('migrations/2026_09_22_120000_freeze_committal_cadence_intervals.php');
         $migration->down();
+        DB::table('potential_dirty_horizons')->delete();
+        $version = (int) $this->actor->substrate->fresh()->field_version;
         $migration->up();
+        $this->assertSame($version + 1, (int) $this->actor->substrate->fresh()->field_version);
+        $this->assertEqualsCanonicalizing(DB::table('context_horizons')->pluck('id')->all(),
+            DB::table('potential_dirty_horizons')->where('measurements_dirty', true)->pluck('context_horizon_id')->all());
         $this->assertSame(4, $b->commitmentSnapshot->fresh()->cadence_interval);
         $this->assertNull($b2->commitmentSnapshot->fresh()->cadence_interval);
         $this->assertNull($a->commitmentSnapshot->fresh()->cadence_interval);

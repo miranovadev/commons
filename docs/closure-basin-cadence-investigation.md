@@ -12,7 +12,7 @@ recovering never relabels the old Cycle. A subsequent Cycle records its newly
 selected governor. The nullable storage supports Origin creation before the
 Origin proposition exists; ordinary production creation requires a Committal.
 
-The new migration resolves ownership from each Cycle's original Distinguish Gate,
+The #196 governance migration resolves ownership from each Cycle's original Distinguish Gate,
 validates committed provenance and substrate/Horizon compatibility, and rejects
 unresolved records. It does not infer an owner from the participant's current
 position, a Horizon's latest Commit, sibling creation order or timestamps.
@@ -133,7 +133,14 @@ existing expressive-lineage attenuation. Receipt qualification, participant caps
 Commit-source inheritance, reclassification effects and the contribution/Receipt
 ratio remain unchanged. Closure uses `(D + C + mass) / (2 + mass)` at the head.
 
-The new calculator version invalidates disposable measurement/Potential projections.
+At upgrade, the migration invalidates disposable measurements and queues every
+existing Horizon's terrain through `potential_dirty_horizons`, with the existing
+field-version guard. Every old terrain is affected by this calculator replacement;
+this one-time upgrade work is separate from basin-scoped completion invalidation.
+Run the existing projection maintenance before resuming participation (or explicitly
+run `php artisan commons:potential-rebuild <substrate-id>`). Substrates without an
+existing projection still require that explicit rebuild. No projection is declared
+current by changing its version label alone.
 Historical CommitmentSnapshot observables and directions remain unchanged; the
 migration adds only proven incoming intervals. Origin has no incoming interval.
 An ordinary predecessor with an ambiguous interval blocks its successor preview
@@ -147,8 +154,9 @@ Completion runs under the existing substrate contribution lock and increments th
 existing field version, dirtying Horizons containing Cycles governed by A rather
 than all substrate Horizons. This is invalidation, not a Cadence clock. Rest records
 its existing pre-completion failure proof before completing the Cycle, atomically
-under the same lock. This preserves the proof's version check. Autonomous responses
-also retain a Closure-observation fingerprint in the schema annotation, so a changed
+under the same lock. This preserves the proof's version check. The input schema
+retains a Closure-observation fingerprint. Autonomous responses retain it as their
+expected schema, and the human client sends it as `expected_closure`, so a changed
 preview retries even when its action remains admissible. Persistence checks the
 calculated components and interval against the guarded Commit preview.
 
@@ -210,4 +218,3 @@ These values do not predict a new natural trajectory or bypass direction alignme
 | `01m33at5mdrvp0r365jyqdvzzs` | -0.9161692 | -0.7142857 | -1.0 | 1.0 | -0.9580846 | 0.1428571 | -0.9580846 | 0.1428571 | -0.3095864 | 0.0573942 |
 | `01m33krxm8yydwtwbre6wb89bh` | -0.9397442 | -0.8 | -1.0 | 1.0 | -0.9698721 | 0.1 | -0.9596251 | 0.1 | -0.2969534 | 0.056255 |
 | `01m33s1heh38x5sje5qnwr0h0x` | -0.9458001 | -0.8181818 | -1.0 | 0.5384615 | -0.9729001 | -0.1398601 | -0.9694761 | -0.1398601 | -0.3037326 | -0.027194 |
-
