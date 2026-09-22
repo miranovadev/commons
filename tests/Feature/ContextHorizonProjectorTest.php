@@ -413,6 +413,19 @@ class ContextHorizonProjectorTest extends TestCase
             $supersession->save();
         }
 
+        if ($source?->commitmentSnapshot?->cadence_interval !== null) {
+            // This topology fixture asks for a later Commit with neutral Closure.
+            // Supply real basin participation for a 2:1 Cadence comparison, so
+            // zero Depth and zero Cadence retain aligned negative directions.
+            $targetInterval = 2 * $source->commitmentSnapshot->cadence_interval;
+            while (app(\App\Services\Observables\CommittalLineageService::class)->interval($proposition) < $targetInterval) {
+                $participation = new Cycle;
+                $participation->forceFill(['participant_id' => $this->phase->cycle->participant_id,
+                    'sequence' => $this->phase->cycle->participant->cycles()->max('sequence') + 1,
+                    'context_horizon_id' => $this->phase->cycle->context_horizon_id,
+                    'governing_committal_id' => $source->id, 'completed_at' => now(), 'rested_at' => now()])->save();
+            }
+        }
         $snapshot = app(CommitmentSnapshotService::class)->record(
             $proposition,
             $prominence,

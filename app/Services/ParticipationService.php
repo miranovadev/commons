@@ -193,6 +193,7 @@ final readonly class ParticipationService
         string $phaseId,
         array $input,
         ?array $expectedSchema = null,
+        ?string $expectedClosureObservation = null,
     ): array {
         // Invalid model output is still an error; only a formerly valid action
         // rejected by fresh admissibility is a retryable participation conflict.
@@ -228,8 +229,9 @@ final readonly class ParticipationService
         // guarded write without hydrating a graph while other writers wait.
         $validatedVersion = app(PotentialProjectionService::class)->assertCurrent($participant->substrate_id);
         $validationPlan = $this->plans->forValidation($participant);
-        if (($input['action'] ?? null) === 'proposition.commit' && $expectedSchema !== null
-            && ($expectedSchema['$comment'] ?? null) !== ($validationPlan['schema']['$comment'] ?? null)) {
+        $expectedClosureObservation ??= $expectedSchema['$comment'] ?? null;
+        if (($input['action'] ?? null) === 'proposition.commit' && $expectedClosureObservation !== null
+            && $expectedClosureObservation !== ($validationPlan['schema']['$comment'] ?? null)) {
             throw new ConflictHttpException('The observed Closure changed. Retry from fresh state.');
         }
         try {

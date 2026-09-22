@@ -136,6 +136,7 @@ abstract class TestCase extends BaseTestCase
         $horizon = $this->horizonForRegisterFixture($participant, $register);
         $cycle = new Cycle;
         $cycle->forceFill(['participant_id' => $participant->id, 'context_horizon_id' => $horizon->id,
+            'governing_committal_id' => $horizon->opened_by_proposition_id,
             'sequence' => (int) $participant->cycles()->max('sequence') + 1, 'completed_at' => now()])->save();
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => $base->kind, 'write_register' => $register,

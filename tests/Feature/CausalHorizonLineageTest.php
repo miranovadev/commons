@@ -241,8 +241,7 @@ class CausalHorizonLineageTest extends TestCase
         $participant->forceFill(['substrate_id' => $other->id, 'callsign' => 'foreign'])->save();
         $this->expectException(DomainException::class);
         $cycle = new Cycle;
-        $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => 1, 'context_horizon_id' => $horizon->id,
-            'governing_committal_id' => $gate?->tier === 'committal' ? $gate->id : ($gate?->phase->cycle->governing_committal_id ?? $horizon->opened_by_proposition_id)])->save();
+        $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => 1, 'context_horizon_id' => $horizon->id])->save();
     }
 
     public function test_a_horizon_cannot_be_reparented_after_cycles_begin(): void

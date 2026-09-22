@@ -172,7 +172,7 @@ class LineageAttenuationTest extends TestCase
         $this->assertSame(0.16, $values->fresh()->chirality); // No projection re-attenuation.
         $this->assertSame($rawPotential, $potential->selectFrom($source)['potential_charge']); // Distance zero.
         $this->assertSame($rawPotential, $recovery['raw_potential_charge']);
-        $this->assertSame(round($rawPotential / 4, 7), $recovery['potential_charge']);
+        $this->assertSame($rawPotential / 4, $recovery['potential_charge']);
         $this->assertSame(1, $recovery['distance']);
         $this->assertSame($history, $snapshot->fresh()->getAttributes());
     }

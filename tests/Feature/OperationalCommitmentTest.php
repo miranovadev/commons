@@ -373,6 +373,7 @@ class OperationalCommitmentTest extends TestCase
         $cycle->forceFill([
             'participant_id' => $participant->id,
             'context_horizon_id' => $this->horizonForRegisterFixture($participant, $register)->id,
+            'governing_committal_id' => $this->horizonForRegisterFixture($participant, $register)->opened_by_proposition_id,
             'sequence' => (int) $participant->cycles()->max('sequence') + 1,
         ])->save();
         $phase = new Phase;

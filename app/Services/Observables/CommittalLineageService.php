@@ -76,6 +76,13 @@ final class CommittalLineageService
 
     public function interval(Proposition $position, ?ParticipationContext $context = null): int
     {
+        $snapshot = $this->records($position, $context)->get($position->id);
+        if ($snapshot !== null) {
+            if ($snapshot->cadence_interval === null) {
+                throw new \App\Exceptions\ClosureHistoryUnavailable('This historical incoming interval is unavailable.');
+            }
+            return $snapshot->cadence_interval;
+        }
         $cycle = $position->phase->cycle;
         if ($cycle->governing_committal_id === null) {
             throw new DomainException('An ordinary Commit requires a governing Committal.');

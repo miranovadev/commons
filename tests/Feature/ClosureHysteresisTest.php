@@ -47,7 +47,7 @@ class ClosureHysteresisTest extends TestCase
         $this->participant->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'observer', 'max_read_count' => 25])->save();
     }
 
-    public function test_read_only_preview_matches_actual_commit_and_exposes_domain_crossing(): void
+    public function test_read_only_bootstrap_preview_matches_actual_commit_and_preserves_domain_hysteresis(): void
     {
         $this->bootstrap(2);
         [$phase, $gate] = $this->candidate([2]);
@@ -71,15 +71,41 @@ class ClosureHysteresisTest extends TestCase
         $this->assertSame($preview['depth_direction'], $snapshot->depth_direction->value);
         $this->assertSame($preview['history_proposition_id'], $snapshot->closure_history_proposition_id);
         $this->assertSame('settlement', $result['last_commitment']['domain_before']);
-        $this->assertSame('emergence', $result['last_commitment']['domain_after']);
+        $this->assertSame('settlement', $result['last_commitment']['domain_after']);
         $this->assertSame(-1.0, $result['last_commitment']['tension_before']);
-        $this->assertTrue($result['last_commitment']['closure_boundary']);
-        $this->assertSame(3, $result['horizon_sequence']); // Eager Phase 1 belongs to the new Horizon.
+        $this->assertFalse($result['last_commitment']['closure_boundary']);
+        $this->assertSame(2, $result['horizon_sequence']); // C1 does not force a Domain crossover.
         $this->assertSame(2, $phase->cycle->contextHorizon->sequence);
         $this->assertSame($snapshot->proposition_id, $this->participant->fresh()->current_proposition_id);
         $this->assertNotNull($phase->fresh()->completed_at);
         $this->publishPotentialFixture($this->participant);
         $this->assertSame($result['last_commitment'], app(ParticipationService::class)->stateFor($this->participant)['last_commitment']);
+    }
+
+    public function test_an_observed_commit_retries_after_completion_even_when_bootstrap_remains_admissible(): void
+    {
+        $this->bootstrap(1);
+        [$phase, $gate] = $this->candidate([2]);
+        $this->publishPotentialFixture($this->participant);
+        $observed = app(ParticipationService::class)->stateFor($this->participant)['plan']['schema'];
+        $other = (new Participant)->forceFill(['substrate_id' => $this->participant->substrate_id, 'callsign' => 'concurrent']);
+        $other->save();
+        $cycle = (new Cycle)->forceFill(['participant_id' => $other->id, 'sequence' => 1,
+            'context_horizon_id' => $phase->cycle->context_horizon_id, 'governing_committal_id' => $this->origin->id]);
+        $cycle->save();
+        $cycle->forceFill(['completed_at' => now(), 'rested_at' => now()])->save();
+        $this->publishPotentialFixture($this->participant);
+        $this->assertTrue(app(ClosureGateService::class)->preview($gate, $phase)['admissible']);
+        $before = CommitmentSnapshot::count();
+        try {
+            app(ParticipationService::class)->contribute($this->participant, $phase->id,
+                ['action' => 'proposition.commit', 'proposition_id' => $gate->id], $observed);
+            $this->fail('A changed observed interval must retry even if its direction still aligns.');
+        } catch (\Symfony\Component\HttpKernel\Exception\ConflictHttpException $error) {
+            $this->assertStringContainsString('Closure changed', $error->getMessage());
+        }
+        $this->assertSame($before, CommitmentSnapshot::count());
+        $this->assertNull($phase->fresh()->completed_at);
     }
 
     public function test_commit_freezes_source_attestation_direction_as_the_next_region_frame(): void

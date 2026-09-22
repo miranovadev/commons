@@ -74,6 +74,7 @@ class ParticipationController extends Controller
         $attributes = $request->validate([
             'phase_id' => ['required', 'string', 'size:26'],
             'contribution' => ['required', 'array'],
+            'expected_closure' => ['nullable', 'string', 'max:128'],
         ]);
 
         try {
@@ -81,6 +82,7 @@ class ParticipationController extends Controller
                 $participant,
                 $attributes['phase_id'],
                 $attributes['contribution'],
+                expectedClosureObservation: $attributes['expected_closure'] ?? null,
             );
         } catch (InvalidArgumentException $exception) {
             return response()->json([
@@ -99,3 +101,4 @@ class ParticipationController extends Controller
         return response()->json(['data' => $state]);
     }
 }
+

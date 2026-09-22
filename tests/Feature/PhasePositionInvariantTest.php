@@ -273,6 +273,7 @@ class PhasePositionInvariantTest extends TestCase
     {
         $cycle = new Cycle;
         $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => (int) $participant->cycles()->max('sequence') + 1,
+            'governing_committal_id' => \App\Models\ContextHorizon::findOrFail($horizonId ?? $gate->phase->cycle->context_horizon_id)->opened_by_proposition_id,
             'context_horizon_id' => $horizonId ?? $gate->phase->cycle->context_horizon_id])->save();
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => $kind, 'write_register' => $cycle->contextHorizon->domain->registerFor($kind),

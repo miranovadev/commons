@@ -186,6 +186,26 @@ class CommittalClosureTest extends TestCase
         $migration->up();
     }
 
+    public function test_governance_reads_are_bounded_as_committed_lineage_grows(): void
+    {
+        $governor = $this->origin();
+        $counts = [];
+        for ($i = 1; $i <= 12; $i++) {
+            $candidate = $this->candidate($governor);
+            $candidate->load('phase.cycle.participant', 'phase.cycle.contextHorizon');
+            if (in_array($i, [2, 12], true)) {
+                DB::flushQueryLog();
+                DB::enableQueryLog();
+                app(ClosureCalculator::class)->components($candidate);
+                $counts[] = count(DB::getQueryLog());
+                DB::disableQueryLog();
+            }
+            $governor = $this->freeze($candidate, 1, 'settlement');
+        }
+        $this->assertSame($counts[0], $counts[1]);
+        $this->assertLessThanOrEqual(3, $counts[1]);
+    }
+
     public function test_completion_versions_the_field_and_frozen_interval_cannot_be_updated(): void
     {
         $a = $this->origin();
