@@ -114,6 +114,7 @@ final readonly class CommitmentSnapshotService
                 'closure' => $measurement->closure,
                 'depth' => $closure['depth'],
                 'cadence' => $closure['cadence'],
+                'cadence_interval' => $closure['cadence_interval'],
                 'depth_direction' => $closure['depth_direction'],
                 'cadence_direction' => $closure['cadence_direction'],
                 'closure_history_proposition_id' => $closure['history_proposition_id'],

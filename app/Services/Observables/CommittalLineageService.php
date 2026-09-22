@@ -1,0 +1,96 @@
+<?php
+
+namespace App\Services\Observables;
+
+use App\Models\CommitmentSnapshot;
+use App\Models\Cycle;
+use App\Models\Proposition;
+use App\Services\Participation\ParticipationContext;
+use DomainException;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+
+/** Closure's read model: creating-Cycle governance is its only ancestry edge. */
+final class CommittalLineageService
+{
+    public function records(Proposition $position, ?ParticipationContext $context = null): Collection
+    {
+        $load = function () use ($position, $context): Collection {
+            $seeds = $context === null ? collect([$position->id, $position->phase->cycle->governing_committal_id])
+                : $context->propositions->keys()->merge($context->propositions->map(fn ($p) => $p->phase->cycle->governing_committal_id))
+                    ->push($context->phase->cycle->governing_committal_id);
+            $seeds = $seeds->filter()->unique()->values();
+            if ($seeds->isEmpty()) {
+                return collect();
+            }
+            $placeholders = implode(',', array_fill(0, $seeds->count(), '?'));
+            $rows = DB::select(<<<SQL
+                WITH RECURSIVE chain (id, governor) AS (
+                    SELECT p.id, c.governing_committal_id
+                    FROM commitment_snapshots s
+                    JOIN propositions p ON p.id = s.proposition_id
+                    JOIN phases ph ON ph.id = p.phase_id
+                    JOIN cycles c ON c.id = ph.cycle_id
+                    WHERE p.id IN ({$placeholders}) AND s.substrate_id = ?
+                    UNION
+                    SELECT p.id, c.governing_committal_id
+                    FROM chain child
+                    JOIN commitment_snapshots s ON s.proposition_id = child.governor
+                    JOIN propositions p ON p.id = s.proposition_id
+                    JOIN phases ph ON ph.id = p.phase_id
+                    JOIN cycles c ON c.id = ph.cycle_id
+                    WHERE s.substrate_id = ?
+                )
+                SELECT s.*, chain.governor, h.domain AS creating_domain
+                FROM chain
+                JOIN commitment_snapshots s ON s.proposition_id = chain.id
+                JOIN propositions p ON p.id = chain.id
+                JOIN phases ph ON ph.id = p.phase_id
+                JOIN cycles c ON c.id = ph.cycle_id
+                JOIN context_horizons h ON h.id = c.context_horizon_id
+                SQL, [...$seeds->all(), $position->phase->cycle->participant->substrate_id, $position->phase->cycle->participant->substrate_id]);
+
+            return CommitmentSnapshot::hydrate(array_map(fn ($row) => (array) $row, $rows))->keyBy('proposition_id');
+        };
+
+        return $context === null ? $load() : $context->remember('closure:committed-records', $load);
+    }
+
+    /** Direct predecessor first, Origin last. Siblings never enter this list. */
+    public function ancestors(Proposition $position, ?ParticipationContext $context = null): Collection
+    {
+        $records = $this->records($position, $context);
+        $id = $position->phase->cycle->governing_committal_id;
+        $chain = collect();
+        while ($id !== null) {
+            if ($chain->has($id) || ! $records->has($id)) {
+                throw new DomainException('Closure requires an acyclic, committed governing lineage in its substrate.');
+            }
+            $record = $records[$id];
+            $chain->put($id, $record);
+            $id = $record->governor;
+        }
+
+        return $chain->values();
+    }
+
+    public function interval(Proposition $position, ?ParticipationContext $context = null): int
+    {
+        $cycle = $position->phase->cycle;
+        if ($cycle->governing_committal_id === null) {
+            throw new DomainException('An ordinary Commit requires a governing Committal.');
+        }
+        $load = function () use ($cycle, $context): Collection {
+            $governors = $context === null ? collect([$cycle->governing_committal_id])
+                : $context->propositions->map(fn ($p) => $p->phase->cycle->governing_committal_id)->push($context->phase->cycle->governing_committal_id);
+
+            return Cycle::whereIn('governing_committal_id', $governors->filter()->unique())
+                ->whereNotNull('completed_at')->selectRaw('governing_committal_id, count(*) as aggregate')
+                ->groupBy('governing_committal_id')->pluck('aggregate', 'governing_committal_id');
+        };
+        $counts = $context === null ? $load() : $context->remember('closure:completed-basin-counts', $load);
+
+        // Count this producer once even for maintenance callers observing a completed Cycle.
+        return (int) $counts->get($cycle->governing_committal_id, 0) + ($cycle->completed_at === null ? 1 : 0);
+    }
+}

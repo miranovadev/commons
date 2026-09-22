@@ -37,7 +37,7 @@ final readonly class CommitmentAdmissibilityService
             'requirements' => [...$grounding['requirements'], 'phase_position' => $phasePosition, 'causal_write' => $causal, 'active_region_candidate' => $structural, 'closure' => $closure['admissible'], 'write_opportunity' => $opportunity],
             'closure_enforced' => true,
             'closure' => $closure,
-            'reasons' => [...($phasePosition ? [] : ['invalid_order_phase_position']), ...$grounding['reasons'], ...($closure['admissible'] ? [] : ['depth_cadence_directions_diverge']),
+            'reasons' => [...($phasePosition ? [] : ['invalid_order_phase_position']), ...$grounding['reasons'], ...($closure['admissible'] ? [] : [$closure['unavailable_reason'] ?? 'depth_cadence_directions_diverge']),
                 ...($phasePosition && ! $causal ? ['not_a_causal_write'] : []),
                 ...($phasePosition && ! $opportunity ? ['source_already_committed'] : []),
                 ...($phasePosition && $opportunity && ! $structural ? ['invalid_commit_region_candidate'] : [])],
