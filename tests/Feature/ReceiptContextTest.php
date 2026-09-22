@@ -286,10 +286,12 @@ class ReceiptContextTest extends TestCase
 
     private function newPhase(Participant $participant, string $gateId, ?ContextHorizon $horizon = null): Phase
     {
-        $horizon ??= Proposition::findOrFail($gateId)->phase->cycle->contextHorizon;
+        $gate = Proposition::findOrFail($gateId);
+        $horizon ??= $gate->phase->cycle->contextHorizon;
         $cycle = new Cycle;
         $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => $participant->cycles()->count() + 1,
-            'context_horizon_id' => $horizon->id])->save();
+            'context_horizon_id' => $horizon->id,
+            'governing_committal_id' => $gate->tier === 'committal' ? $gate->id : $gate->phase->cycle->governing_committal_id])->save();
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Constrain, 'gate_proposition_id' => $gateId,
             'write_register' => 'canon', 'started_at' => now()])->save();
@@ -297,3 +299,4 @@ class ReceiptContextTest extends TestCase
         return $phase;
     }
 }
+

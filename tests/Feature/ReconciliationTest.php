@@ -52,8 +52,10 @@ class ReconciliationTest extends TestCase
         $this->substrate = new Substrate;
         $this->substrate->forceFill(['slug' => 'reconcile', 'title' => 'Reconcile', 'visibility' => 'public', 'configuration' => []])->save();
         $this->history = $this->newPhase($this->participant('author'), PhaseKind::Distinguish, 'activity', true);
-        $this->parent = $this->node('Parent', 'canon', position: PhaseKind::Constrain);
         $root = $this->node('Shared provenance', 'frontier', tier: 'committal', position: PhaseKind::Mediate);
+        $this->freezeRegionFixture($root);
+        $this->history = $this->governedPhaseFixture($this->history, $root);
+        $this->parent = $this->node('Parent', 'canon', position: PhaseKind::Constrain);
         $this->edge($root, $this->parent);
         $this->gate = $this->node("  Gate statement\nwith exact whitespace.  \n", 'activity', $correspondence, position: PhaseKind::Disperse);
         $this->edge($this->parent, $this->gate);
@@ -406,7 +408,9 @@ class ReconciliationTest extends TestCase
     private function newPhase(Participant $participant, PhaseKind $kind, string $register, bool $completed = false): Phase
     {
         $cycle = new Cycle;
-        $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => (int) $participant->cycles()->max('sequence') + 1, 'completed_at' => $completed ? now() : null])->save();
+        $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => (int) $participant->cycles()->max('sequence') + 1, 'completed_at' => $completed ? now() : null,
+            'governing_committal_id' => isset($this->history) && $participant->substrate_id === $this->substrate->id
+                ? $this->history->cycle->governing_committal_id : null])->save();
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => $kind, 'write_register' => $register, 'started_at' => now(), 'completed_at' => $completed ? now() : null])->save();
 
@@ -423,3 +427,4 @@ class ReconciliationTest extends TestCase
         return $attestation;
     }
 }
+

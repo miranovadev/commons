@@ -113,6 +113,12 @@ class AttestationDirectionChangeTest extends TestCase
         ]);
         $origin->save();
         app(LedgerService::class)->record($origin);
+        $this->freezeRegionFixture($origin);
+        $phase->forceFill(['completed_at' => now()])->save();
+        $cycle->forceFill(['completed_at' => now()])->save();
+        $phase = $this->governedPhaseFixture($phase, $origin);
+        $phase->forceFill(['completed_at' => null])->save();
+        $cycle = $phase->cycle;
 
         $proposition = new Proposition;
         $proposition->forceFill([
@@ -162,3 +168,4 @@ class AttestationDirectionChangeTest extends TestCase
         return $phase;
     }
 }
+

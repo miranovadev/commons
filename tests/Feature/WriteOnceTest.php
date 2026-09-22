@@ -395,7 +395,8 @@ class WriteOnceTest extends TestCase
         $horizon = $this->horizonForRegisterFixture($participant, $register);
         $cycle = new Cycle;
         $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => (int) $participant->cycles()->max('sequence') + 1,
-            'context_horizon_id' => $horizon->id])->save();
+            'context_horizon_id' => $horizon->id,
+            'governing_committal_id' => $gate?->tier === 'committal' ? $gate->id : $gate?->phase->cycle->governing_committal_id])->save();
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => $kind, 'write_register' => $register,
             'gate_proposition_id' => $gate?->id, 'started_at' => now()])->save();
@@ -405,9 +406,18 @@ class WriteOnceTest extends TestCase
 
     private function node(Phase $phase, string $register, string $statement, string $tier = 'expressive', ?Proposition $parent = null): Proposition
     {
+        if ($parent !== null) {
+            $governor = $parent->tier === 'committal' ? $parent : $parent->phase->cycle->governingCommittal;
+            if ($governor !== null && $phase->cycle->governing_committal_id !== $governor->id) {
+                $phase = $this->governedPhaseFixture($phase, $governor, $parent);
+            }
+        }
         $node = new Proposition;
         $node->forceFill(['phase_id' => $phase->id, 'register' => $register, 'tier' => $tier, 'statement' => $statement])->save();
         app(LedgerService::class)->record($node);
+        if ($tier === 'committal') {
+            $this->freezeRegionFixture($node);
+        }
         if ($parent !== null) {
             $edge = new Supersession;
             $edge->forceFill(['phase_id' => $phase->id, 'source_proposition_id' => $parent->id, 'target_proposition_id' => $node->id, 'type' => 'variant'])->save();
@@ -429,3 +439,4 @@ class WriteOnceTest extends TestCase
         return $plan['schema']['$defs']['actions'][$action]['properties']['proposition_id']['enum'] ?? [];
     }
 }
+

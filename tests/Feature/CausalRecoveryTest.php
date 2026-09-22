@@ -1214,7 +1214,8 @@ class CausalRecoveryTest extends TestCase
         $participant ??= $this->participant();
         $cycle = new Cycle;
         $cycle->forceFill(['participant_id' => $participant->id, 'context_horizon_id' => $horizon->id,
-            'sequence' => (int) $participant->cycles()->max('sequence') + 1])->save();
+            'sequence' => (int) $participant->cycles()->max('sequence') + 1,
+            'governing_committal_id' => $gate?->tier === 'committal' ? $gate->id : $gate?->phase->cycle->governing_committal_id])->save();
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'gate_proposition_id' => $gate?->id, 'kind' => $kind,
             'write_register' => $horizon->domain->registerFor($kind), 'started_at' => now()])->save();
@@ -1306,3 +1307,4 @@ class CausalRecoveryTest extends TestCase
         $this->assertTrue(app(PotentialProjectionService::class)->refresh($this->substrate->id));
     }
 }
+

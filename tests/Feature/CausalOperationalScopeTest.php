@@ -233,6 +233,7 @@ class CausalOperationalScopeTest extends TestCase
         $seed = (new Proposition)->forceFill(['phase_id' => $phase->id, 'register' => $phase->write_register, 'tier' => 'committal', 'statement' => 'Origin']);
         $seed->save();
         app(LedgerService::class)->record($seed);
+        $this->freezeRegionFixture($seed);
         app(CommitRegionPolarityService::class)->establishOrigin($seed, 'support');
         $this->mock(ClosureGateService::class, function ($mock): void {
             $mock->shouldReceive('preview')->andReturnUsing(fn (Proposition $node) => [
@@ -251,7 +252,7 @@ class CausalOperationalScopeTest extends TestCase
     {
         $participant->cycles()->whereNull('completed_at')->update(['completed_at' => now()]);
         $cycle = (new Cycle)->forceFill(['participant_id' => $participant->id, 'sequence' => (int) $participant->cycles()->max('sequence') + 1,
-            'governing_committal_id' => \App\Models\ContextHorizon::findOrFail($horizonId ?? $gate->phase->cycle->context_horizon_id)->opened_by_proposition_id,
+            'governing_committal_id' => ($gate?->tier === 'committal' ? $gate->id : $gate?->phase->cycle->governing_committal_id),
             'context_horizon_id' => $horizonId ?? $gate->phase->cycle->context_horizon_id]);
         $cycle->save();
         $phase = (new Phase)->forceFill(['cycle_id' => $cycle->id, 'kind' => $kind, 'write_register' => $cycle->contextHorizon->domain->registerFor($kind),
@@ -285,3 +286,4 @@ class CausalOperationalScopeTest extends TestCase
             ['action' => 'proposition.commit', 'proposition_id' => $source->id]);
     }
 }
+

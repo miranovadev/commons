@@ -69,6 +69,9 @@ class ReinforcementTest extends TestCase
         $this->node = new Proposition;
         $this->node->forceFill(['phase_id' => $creation->id, 'register' => 'canon', 'tier' => 'expressive', 'statement' => 'Persistence must be earned.'])->save();
         app(LedgerService::class)->record($this->node);
+        $creation->forceFill(['gate_proposition_id' => $this->governor->id])->save();
+        (new \App\Models\Supersession)->forceFill(['phase_id' => $creation->id,
+            'source_proposition_id' => $this->governor->id, 'target_proposition_id' => $this->node->id, 'type' => 'variant'])->save();
         $this->later = $this->phase($substrate, $creation->cycle->participant);
         $attestation = new Attestation;
         $attestation->forceFill(['phase_id' => $this->later->id, 'proposition_id' => $this->node->id, 'direction' => 'support'])->save();
@@ -305,3 +308,4 @@ class ReinforcementTest extends TestCase
         return $phase;
     }
 }
+

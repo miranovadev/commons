@@ -54,7 +54,7 @@ class ReceiptRegionContextTest extends TestCase
         DB::transaction(fn () => $service->consume($target->phase, $commit, $target, $r->id));
     }
 
-    public function test_unresolved_and_ambiguous_origins_fail_closed_even_in_the_same_horizon(): void
+    public function test_missing_governance_stays_unresolved_despite_valid_causal_parents(): void
     {
         $f = new ParticipantContextFixture(1, 0, false);
         $orphan = $f->node(null, 'activity');
@@ -68,16 +68,16 @@ class ReceiptRegionContextTest extends TestCase
         $this->assertEmpty(app(HorizonReceiptService::class)->available($f->phase));
     }
 
-    public function test_a_valid_parent_cannot_rescue_an_orphan_path_or_cycle(): void
+    public function test_valid_governance_is_not_erased_by_malformed_secondary_provenance(): void
     {
         $f = new ParticipantContextFixture(1, 0, false);
         $orphan = $f->node(null, 'activity');
         $mixed = $f->node($f->seed, 'activity');
         $f->edge($orphan, $mixed, 'reconcile');
         $r = $this->receipt($f, $mixed);
-        $this->assertNotContains($r->id, app(HorizonReceiptService::class)->available($f->phase)->pluck('id'));
+        $this->assertContains($r->id, app(HorizonReceiptService::class)->available($f->phase)->pluck('id'));
         $f->edge($mixed, $orphan, 'reconcile');
-        $this->assertNotContains($r->id, app(HorizonReceiptService::class)->available($f->phase)->pluck('id'));
+        $this->assertContains($r->id, app(HorizonReceiptService::class)->available($f->phase)->pluck('id'));
     }
 
     public function test_consumption_preserves_origin_and_removes_shared_availability(): void
@@ -152,3 +152,4 @@ class ReceiptRegionContextTest extends TestCase
         $this->assertLessThanOrEqual(6, $after);
     }
 }
+

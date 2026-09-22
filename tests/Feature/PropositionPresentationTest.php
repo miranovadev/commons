@@ -140,9 +140,23 @@ class PropositionPresentationTest extends TestCase
 
     private function node(string $register, Proposition $parent, string $tier = 'expressive', string $type = 'variant'): Proposition
     {
+        $governor = $parent->tier === 'committal' ? $parent : $parent->phase->cycle->governingCommittal;
+        $horizon = app(\App\Services\ContextHorizonProjector::class)->forEntry($governor);
+        if ($horizon->domain->registerAt(\App\Enums\RegisterPosition::forRegister($register)) !== $register) {
+            $horizon = $this->laterHorizonFixture($horizon, 1);
+            $governor = Proposition::findOrFail($horizon->opened_by_proposition_id);
+            $parent = $governor;
+        }
+        $base = $this->history->replicate();
+        $base->kind = $this->history->kind;
+        $base->write_register = $register;
+        $base = $this->governedPhaseFixture($base, $governor, $parent);
         $node = new Proposition;
-        $node->forceFill(['phase_id' => $this->phaseForRegisterFixture($this->history, $register)->id, 'register' => $register, 'tier' => $tier, 'statement' => 'Node '.Proposition::count()])->save();
+        $node->forceFill(['phase_id' => $base->id, 'register' => $register, 'tier' => $tier, 'statement' => 'Node '.Proposition::count()])->save();
         app(LedgerService::class)->record($node);
+        if ($tier === 'committal') {
+            $this->freezeRegionFixture($node);
+        }
         $edge = new Supersession;
         $edge->forceFill(['phase_id' => $this->history->id, 'source_proposition_id' => $parent->id,
             'target_proposition_id' => $node->id, 'type' => $type])->save();
@@ -157,7 +171,8 @@ class PropositionPresentationTest extends TestCase
         $cycle = new Cycle;
         $cycle->context_horizon_id = $gate?->phase->cycle->context_horizon_id
             ?? $this->horizonForRegisterFixture($participant, $register)->id;
-        $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => (int) $participant->cycles()->max('sequence') + 1])->save();
+        $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => (int) $participant->cycles()->max('sequence') + 1,
+            'governing_committal_id' => $gate?->tier === 'committal' ? $gate->id : $gate?->phase->cycle->governing_committal_id])->save();
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => $kind, 'write_register' => $register,
             'gate_proposition_id' => $gate?->id, 'started_at' => now()])->save();
@@ -181,3 +196,4 @@ class PropositionPresentationTest extends TestCase
         return $attestation;
     }
 }
+

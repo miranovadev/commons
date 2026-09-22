@@ -250,8 +250,9 @@ register and tier, then the local structural relationship:
 
 Historical alternatives explain explored structure; directional/evidence
 admissibility remains solely in the action services. Region resolution batches
-candidate ancestry and stops at each Committal, including same-Horizon Commits;
-ambiguous multi-Commit ancestry is excluded. Direct Write lookup follows revisions
+candidates' immutable creating-Cycle governors; each Committal owns itself.
+Missing or invalid governance fails closed. Multi-parent causal provenance does
+not make valid operational ownership ambiguous. Direct Write lookup follows revisions
 only, never later-phase descendants. Neither lookup hydrates historical evidence
 or serializes downstream subtrees. The normal validation plan returns before
 historical context is calculated.
@@ -284,4 +285,5 @@ participant view subscribes to its current Horizon through the shared Reverb
 transport, so another participant's proposition status update refreshes local
 context even while this viewer remains still. Events retain identifier-only
 payloads; no history is broadcast.
+
 

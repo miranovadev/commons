@@ -86,8 +86,8 @@ final class PotentialRegionCalculatorTest extends TestCase
         $local = ['id' => 'region', 'parent' => 'parent', 'opener' => 'opening', 'nodes' => [], 'entries' => [], 'edges' => []];
         foreach (['a' => .7, 'b' => .4, 'c' => .2] as $id => $tension) {
             $local['entries'][$id] = ['tension' => $tension];
-            $local['nodes'][$id] = ['tier' => 'committal', 'active' => true, 'complete' => true, 'tension' => $tension, 'origin' => false, 'roots' => ['branch']];
-            $local['nodes'][$id.'-leaf'] = ['tier' => 'expressive', 'active' => true, 'complete' => true, 'tension' => 0, 'origin' => false, 'roots' => ['branch']];
+            $local['nodes'][$id] = ['seed_id' => $id, 'tier' => 'committal', 'active' => true, 'complete' => true, 'tension' => $tension, 'origin' => false, 'roots' => ['branch']];
+            $local['nodes'][$id.'-leaf'] = ['seed_id' => $id, 'tier' => 'expressive', 'active' => true, 'complete' => true, 'tension' => 0, 'origin' => false, 'roots' => ['branch']];
             $local['edges'][] = ['opening', $id];
             $local['edges'][] = [$id, $id.'-leaf'];
         }
@@ -95,3 +95,4 @@ final class PotentialRegionCalculatorTest extends TestCase
         return $local;
     }
 }
+

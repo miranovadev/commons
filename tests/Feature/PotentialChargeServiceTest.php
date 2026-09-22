@@ -159,6 +159,9 @@ class PotentialChargeServiceTest extends TestCase
         string $statement,
         float $tension,
     ): void {
+        if ($source->tier === 'committal') {
+            $phase = $this->governedPhaseFixture($phase, $source, $source);
+        }
         $target = $this->proposition(
             $phase,
             $statement,
@@ -202,4 +205,5 @@ class PotentialChargeServiceTest extends TestCase
         return $proposition;
     }
 }
+
 
