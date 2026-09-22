@@ -93,6 +93,9 @@ final class PotentialProjectionTest extends TestCase
         $cycle->currentPhase->forceFill(['completed_at' => now()])->save();
         $cycle->forceFill(['rested_at' => now(), 'completed_at' => now()])->save();
         $counts = [];
+        // Direct fixture completion now invalidates the basin interval. Production
+        // participation performs maintenance before serving a fresh projection.
+        app(PotentialProjectionService::class)->refresh($participant->substrate_id);
         foreach ([0, 1000] as $size) {
             if ($size) {
                 ParticipationScaleFixture::addHistory($origin, $size);
