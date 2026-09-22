@@ -19,41 +19,52 @@ final class CommittalLineageService
             $seeds = $context === null ? collect([$position->id, $position->phase->cycle->governing_committal_id])
                 : $context->propositions->keys()->merge($context->propositions->map(fn ($p) => $p->phase->cycle->governing_committal_id))
                     ->push($context->phase->cycle->governing_committal_id);
-            $seeds = $seeds->filter()->unique()->values();
-            if ($seeds->isEmpty()) {
-                return collect();
-            }
-            $placeholders = implode(',', array_fill(0, $seeds->count(), '?'));
-            $rows = DB::select(<<<SQL
-                WITH RECURSIVE chain (id, governor) AS (
-                    SELECT p.id, c.governing_committal_id
-                    FROM commitment_snapshots s
-                    JOIN propositions p ON p.id = s.proposition_id
-                    JOIN phases ph ON ph.id = p.phase_id
-                    JOIN cycles c ON c.id = ph.cycle_id
-                    WHERE p.id IN ({$placeholders}) AND s.substrate_id = ?
-                    UNION
-                    SELECT p.id, c.governing_committal_id
-                    FROM chain child
-                    JOIN commitment_snapshots s ON s.proposition_id = child.governor
-                    JOIN propositions p ON p.id = s.proposition_id
-                    JOIN phases ph ON ph.id = p.phase_id
-                    JOIN cycles c ON c.id = ph.cycle_id
-                    WHERE s.substrate_id = ?
-                )
-                SELECT s.*, chain.governor, h.domain AS creating_domain
-                FROM chain
-                JOIN commitment_snapshots s ON s.proposition_id = chain.id
-                JOIN propositions p ON p.id = chain.id
-                JOIN phases ph ON ph.id = p.phase_id
-                JOIN cycles c ON c.id = ph.cycle_id
-                JOIN context_horizons h ON h.id = c.context_horizon_id
-                SQL, [...$seeds->all(), $position->phase->cycle->participant->substrate_id, $position->phase->cycle->participant->substrate_id]);
-
-            return CommitmentSnapshot::hydrate(array_map(fn ($row) => (array) $row, $rows))->keyBy('proposition_id');
+            return $this->recordsForIds($position->phase->cycle->participant->substrate_id, $seeds);
         };
 
         return $context === null ? $load() : $context->remember('closure:committed-records', $load);
+    }
+
+    /** One governance expansion for a batch; callers share this canonical ancestry edge. */
+    public function recordsForIds(string $substrateId, Collection $seeds): Collection
+    {
+        $seeds = $seeds->filter()->unique()->values();
+        if ($seeds->isEmpty()) {
+            return collect();
+        }
+        $placeholders = implode(',', array_fill(0, $seeds->count(), '?'));
+        $rows = DB::select(<<<SQL
+            WITH RECURSIVE chain (id, governor) AS (
+                SELECT p.id, c.governing_committal_id
+                FROM commitment_snapshots s
+                JOIN propositions p ON p.id = s.proposition_id
+                JOIN phases ph ON ph.id = p.phase_id
+                JOIN cycles c ON c.id = ph.cycle_id
+                WHERE p.id IN ({$placeholders}) AND s.substrate_id = ?
+                UNION
+                SELECT p.id, c.governing_committal_id
+                FROM chain child
+                JOIN commitment_snapshots s ON s.proposition_id = child.governor
+                JOIN propositions p ON p.id = s.proposition_id
+                JOIN phases ph ON ph.id = p.phase_id
+                JOIN cycles c ON c.id = ph.cycle_id
+                WHERE s.substrate_id = ?
+            )
+            SELECT s.*, chain.governor, h.domain AS creating_domain,
+                p.tier AS committed_tier, participant.substrate_id AS creating_substrate_id,
+                h.substrate_id AS horizon_substrate_id, h.id AS creating_horizon_id,
+                opened.id AS opened_horizon_id
+            FROM chain
+            JOIN commitment_snapshots s ON s.proposition_id = chain.id
+            JOIN propositions p ON p.id = chain.id
+            JOIN phases ph ON ph.id = p.phase_id
+            JOIN cycles c ON c.id = ph.cycle_id
+            JOIN context_horizons h ON h.id = c.context_horizon_id
+            JOIN participants participant ON participant.id = c.participant_id
+            LEFT JOIN context_horizons opened ON opened.opened_by_proposition_id = p.id
+            SQL, [...$seeds->all(), $substrateId, $substrateId]);
+
+        return CommitmentSnapshot::hydrate(array_map(fn ($row) => (array) $row, $rows))->keyBy('proposition_id');
     }
 
     /** Direct predecessor first, Origin last. Siblings never enter this list. */
