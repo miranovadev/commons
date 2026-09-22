@@ -84,9 +84,10 @@ final class TragedyReceiptScopeBackfill
         }
         if (! array_key_exists($id, $seeds)) {
             $position = Proposition::find($id);
-            $seeds[$id] = $position === null ? null : app(CommitRegionService::class)->seedFor($position)?->id;
+            $seeds[$id] = $position === null ? null : app(\App\Services\Maintenance\LegacyCommitRegionOwnership::class)->seedFor($position)?->id;
         }
 
         return $seeds[$id];
     }
 }
+

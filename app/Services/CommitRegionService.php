@@ -13,110 +13,77 @@ final class CommitRegionService
 {
     public function __construct(private readonly PhasePositionService $positions) {}
 
-    /** Batched read-only equivalent of seedFor, using a substrate-scoped graph. */
-    public function seedIdsFor(Collection $positions, Collection $nodes, Collection $parents): array
+    /**
+     * Persisted Cycle governance is the only live ownership authority. Parents
+     * remain an accepted argument for callers carrying a graph, but are not read.
+     * One bounded join resolves all supplied positions, independently of topology.
+     */
+    public function seedIdsFor(Collection $positions, Collection $nodes, ?Collection $parents = null): array
     {
-        $children = $pendingParents = $seeds = [];
-        foreach ($nodes as $node) {
-            $incoming = $node->tier === 'committal' ? collect() : $parents->get($node->id, collect())
-                ->filter(fn ($edge) => $nodes->has($edge->source_proposition_id));
-            $pendingParents[$node->id] = $incoming->count();
-            $seeds[$node->id] = $node->tier === 'committal' ? $node->id : null;
-            foreach ($incoming as $edge) {
-                $children[$edge->source_proposition_id][] = $node->id;
-            }
+        $ids = $positions->filter(fn ($node) => $node->exists)->pluck('id');
+        $result = $positions->mapWithKeys(fn ($node) => [$node->id => null])->all();
+        if ($ids->isEmpty()) {
+            return $result;
         }
-        $ready = array_keys(array_filter($pendingParents, fn ($count) => $count === 0));
-        $processed = [];
-        while ($ready !== []) {
-            $id = array_pop($ready);
-            $processed[$id] = true;
-            foreach ($children[$id] ?? [] as $child) {
-                if ($seeds[$id] !== null) {
-                    // false means multiple governing seeds; that ambiguity
-                    // persists through expressive descendants, until a Commit.
-                    $seeds[$child] = $seeds[$child] === null ? $seeds[$id]
-                        : ($seeds[$child] === $seeds[$id] ? $seeds[$child] : false);
-                }
-                if (--$pendingParents[$child] === 0) {
-                    $ready[] = $child;
-                }
-            }
-        }
-        $result = [];
-        foreach ($positions as $position) {
-            if (isset($processed[$position->id])) {
-                $result[$position->id] = is_string($seeds[$position->id]) ? $seeds[$position->id] : null;
-
-                continue;
-            }
-            // Legacy malformed cycles still terminate and obey seedFor's UNION
-            // semantics; normal acyclic substrate graphs take the linear path.
-            $seen = $found = [];
-            $pending = [$position->id];
-            while ($pending !== []) {
-                $id = array_pop($pending);
-                if (isset($seen[$id]) || ! $nodes->has($id)) {
-                    continue;
-                }
-                $seen[$id] = true;
-                if ($nodes[$id]->tier === 'committal') {
-                    $found[$id] = true;
-                } else {
-                    foreach ($parents->get($id, collect()) as $edge) {
-                        $pending[] = $edge->source_proposition_id;
-                    }
-                }
-            }
-            $result[$position->id] = count($found) === 1 ? array_key_first($found) : null;
+        $rows = DB::table('propositions as p')
+            ->join('phases as ph', 'ph.id', '=', 'p.phase_id')
+            ->join('cycles as c', 'c.id', '=', 'ph.cycle_id')
+            ->join('participants as participant', 'participant.id', '=', 'c.participant_id')
+            ->leftJoin('context_horizons as h', 'h.id', '=', 'c.context_horizon_id')
+            ->leftJoin('propositions as g', 'g.id', '=', 'c.governing_committal_id')
+            ->leftJoin('phases as gp', 'gp.id', '=', 'g.phase_id')
+            ->leftJoin('cycles as gc', 'gc.id', '=', 'gp.cycle_id')
+            ->leftJoin('participants as governor_participant', 'governor_participant.id', '=', 'gc.participant_id')
+            ->leftJoin('context_horizons as gh', 'gh.id', '=', 'gc.context_horizon_id')
+            ->leftJoin('commitment_snapshots as snapshot', 'snapshot.proposition_id', '=', 'g.id')
+            ->leftJoin('context_horizons as child', 'child.opened_by_proposition_id', '=', 'g.id')
+            ->whereIn('p.id', $ids)
+            ->selectRaw(<<<'SQL'
+                p.id,
+                CASE
+                    WHEN p.tier = 'committal' THEN p.id
+                    WHEN p.tier = 'expressive' AND g.tier = 'committal'
+                        AND participant.substrate_id = governor_participant.substrate_id
+                        AND participant.substrate_id = h.substrate_id
+                        AND participant.substrate_id = gh.substrate_id
+                        AND participant.substrate_id = snapshot.substrate_id
+                        AND snapshot.direction_before = gh.domain
+                        AND (
+                            (snapshot.direction_before = snapshot.direction_after
+                                AND child.id IS NULL AND h.id = gh.id)
+                            OR (snapshot.direction_before <> snapshot.direction_after
+                                AND child.id = h.id AND child.parent_context_horizon_id = gh.id
+                                AND child.domain = snapshot.direction_after)
+                        )
+                    THEN g.id
+                    ELSE NULL
+                END AS seed_id
+                SQL)->get();
+        foreach ($rows as $row) {
+            $result[$row->id] = $row->seed_id;
         }
 
         return $result;
     }
 
-    /** Walk every parent path, stopping at its first Committal Proposition. */
+    /** Committals own themselves; expressive Propositions use their creating Cycle. */
     public function seedFor(Proposition $position, ?ParticipationContext $context = null): ?Proposition
     {
-        if ($context !== null) {
-            return $context->seed($position);
-        }
         if (! $position->exists) {
             return null;
         }
-        // Expand only indexed parent edges from the current frontier. PostgreSQL
-        // can choose a whole-relation recursive-CTE plan even for a short path.
-        $substrateId = $position->phase->cycle->participant->substrate_id;
-        $frontier = collect([$position]);
-        $seen = $seeds = [];
-        while ($frontier->isNotEmpty()) {
-            $expressive = [];
-            foreach ($frontier as $node) {
-                if (isset($seen[$node->id])) {
-                    continue;
-                }
-                $seen[$node->id] = true;
-                if ($node->tier === 'committal') {
-                    $seeds[$node->id] = $node;
-                } elseif ($node->tier === 'expressive') {
-                    $expressive[] = $node->id;
-                }
-            }
-            // Different first Commits are ambiguous; never union their regions.
-            if (count($seeds) > 1) {
-                return null;
-            }
-            if ($expressive === []) {
-                break;
-            }
-            $parents = DB::table('supersessions')->whereIn('target_proposition_id', $expressive)->select('source_proposition_id');
-            $frontier = Proposition::whereIn('id', $parents)->whereNotIn('id', array_keys($seen))
-                ->whereHas('phase.cycle.participant', fn ($q) => $q->where('substrate_id', $substrateId))->get();
+        if ($context !== null) {
+            return $context->seed($position);
         }
+        if ($position->tier === 'committal') {
+            return $position;
+        }
+        $seed = $this->seedIdsFor(collect([$position]), collect([$position]))[$position->id];
 
-        return count($seeds) === 1 ? reset($seeds) : null;
+        return $seed === null ? null : Proposition::find($seed);
     }
 
-    /** Structural membership includes superseded intermediates, but never crosses a Commit. */
+    /** Active expressive members, including superseded intermediates, owned by this governor. */
     public function membersFor(Proposition $position, ?ParticipationContext $context = null): Collection
     {
         $seed = $this->seedFor($position, $context);
@@ -126,34 +93,12 @@ final class CommitRegionService
         if ($context !== null) {
             return $context->members($seed);
         }
-        $members = DB::select(<<<'SQL'
-            WITH RECURSIVE region (id) AS (
-                SELECT id FROM propositions WHERE id = ?
-                UNION
-                SELECT p.id FROM propositions p
-                JOIN supersessions s ON s.target_proposition_id = p.id
-                JOIN region r ON r.id = s.source_proposition_id
-                JOIN phases ph ON ph.id = p.phase_id
-                JOIN cycles c ON c.id = ph.cycle_id
-                JOIN participants participant ON participant.id = c.participant_id
-                WHERE p.tier = 'expressive' AND participant.substrate_id = ?
-            ), ancestry (member_id, id, tier) AS (
-                SELECT r.id, p.id, p.tier FROM region r JOIN propositions p ON p.id = r.id
-                UNION
-                SELECT a.member_id, p.id, p.tier FROM ancestry a
-                JOIN supersessions s ON s.target_proposition_id = a.id
-                JOIN propositions p ON p.id = s.source_proposition_id
-                JOIN phases ph ON ph.id = p.phase_id
-                JOIN cycles c ON c.id = ph.cycle_id
-                JOIN participants participant ON participant.id = c.participant_id
-                WHERE a.tier = 'expressive' AND participant.substrate_id = ?
-            ) SELECT member_id AS id FROM ancestry
-                WHERE tier = 'committal' AND member_id != ?
-                GROUP BY member_id HAVING COUNT(DISTINCT id) = 1 AND MIN(id) = ?
-            SQL, [$seed->getKey(), $seed->phase->cycle->participant->substrate_id,
-            $seed->phase->cycle->participant->substrate_id, $seed->getKey(), $seed->getKey()]);
+        $members = Proposition::query()->active()->where('tier', 'expressive')
+            ->whereHas('phase.cycle', fn ($q) => $q->where('governing_committal_id', $seed->id))
+            ->orderBy('id')->get();
+        $seeds = $this->seedIdsFor($members, $members);
 
-        return Proposition::query()->active()->whereKey(collect($members)->pluck('id'))->orderBy('id')->get();
+        return $members->filter(fn ($node) => $seeds[$node->id] === $seed->id)->values();
     }
 
     /** Regional calculation population; membership alone never authorizes an operation. */
@@ -215,3 +160,4 @@ final class CommitRegionService
             ->orderBy('id')->get();
     }
 }
+

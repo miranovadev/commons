@@ -13,7 +13,7 @@ final class RegionalExhaustionBackfill
     {
         foreach (DB::table('tragedies')->whereNull('governing_committal_id')->get() as $tragedy) {
             $terminal = Proposition::find($tragedy->terminal_proposition_id);
-            $seed = $terminal === null ? null : app(CommitRegionService::class)->seedFor($terminal);
+            $seed = $terminal === null ? null : app(\App\Services\Maintenance\LegacyCommitRegionOwnership::class)->seedFor($terminal);
             try {
                 $owner = $seed === null ? null : app(ContextHorizonProjector::class)->forEntry($seed)->id;
             } catch (\DomainException) {
@@ -28,14 +28,14 @@ final class RegionalExhaustionBackfill
             }
             $consumed = DB::table('receipt_consumptions')->where('receipt_id', $tragedy->receipt_id)->first();
             if ($consumed !== null && ($consumed->legacy || $consumed->context_horizon_id !== $tragedy->context_horizon_id
-                || app(CommitRegionService::class)->seedFor(Proposition::findOrFail($consumed->proposition_id))?->id !== $seed->id)) {
+                || app(\App\Services\Maintenance\LegacyCommitRegionOwnership::class)->seedFor(Proposition::findOrFail($consumed->proposition_id))?->id !== $seed->id)) {
                 continue;
             }
             $receipt = DB::table('receipts')->where('id', $tragedy->receipt_id)->first();
             $attempt = DB::table('tragedy_final_attempts')->where('tragedy_id', $tragedy->id)->first();
             if ($receipt === null || $receipt->type !== 'tragedy' || $receipt->phase_id !== $tragedy->phase_id
                 || $receipt->context_horizon_id !== $tragedy->context_horizon_id
-                || ($attempt !== null && app(CommitRegionService::class)->seedFor(Proposition::findOrFail($attempt->proposition_id))?->id !== $seed->id)
+                || ($attempt !== null && app(\App\Services\Maintenance\LegacyCommitRegionOwnership::class)->seedFor(Proposition::findOrFail($attempt->proposition_id))?->id !== $seed->id)
                 || DB::table('tragedies')->where('governing_committal_id', $seed->id)->exists()) {
                 continue;
             }
@@ -47,7 +47,7 @@ final class RegionalExhaustionBackfill
                     || $exhaustion->phase_id === $tragedy->phase_id || $exhaustion->receipt_id !== $tragedy->receipt_id
                     || $exhaustion->context_horizon_id !== $tragedy->context_horizon_id
                     || $consumed->consumed_at > $exhaustion->exhausted_at
-                    || app(CommitRegionService::class)->seedFor($failed)?->id !== $seed->id) {
+                    || app(\App\Services\Maintenance\LegacyCommitRegionOwnership::class)->seedFor($failed)?->id !== $seed->id) {
                     continue;
                 }
                 try {
@@ -84,3 +84,4 @@ final class RegionalExhaustionBackfill
             ->where('witness.observed_field_version', $proof->observed_field_version)->exists();
     }
 }
+

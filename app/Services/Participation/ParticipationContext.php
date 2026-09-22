@@ -169,8 +169,13 @@ final class ParticipationContext
                 ->whereIn('propositions.id', $frontier)
                 ->whereNotNull('context_horizons.opened_by_proposition_id')
                 ->select('context_horizons.opened_by_proposition_id as id');
+            $governors = DB::table('propositions')
+                ->join('phases', 'phases.id', '=', 'propositions.phase_id')
+                ->join('cycles', 'cycles.id', '=', 'phases.cycle_id')
+                ->whereIn('propositions.id', $frontier)->whereNotNull('cycles.governing_committal_id')
+                ->select('cycles.governing_committal_id as id');
             $dependencies = DB::table('supersessions')->whereIn('target_proposition_id', $frontier)
-                ->select('source_proposition_id as id')->union($boundaries);
+                ->select('source_proposition_id as id')->union($boundaries)->union($governors);
             $frontier = DB::query()->fromSub($dependencies, 'dependencies')
                 ->join('propositions', 'propositions.id', '=', 'dependencies.id')
                 ->join('phases', 'phases.id', '=', 'propositions.phase_id')
@@ -246,56 +251,38 @@ final class ParticipationContext
         });
     }
 
-    /** Same UNION traversal as the ancestry CTE, stopping on each path's first Commit. */
+    /** One batched ownership map; Supersession parents never choose a governor. */
+    public function seedIds(): array
+    {
+        return $this->remember('governance-seeds', fn () => app(\App\Services\CommitRegionService::class)
+            ->seedIdsFor($this->propositions, $this->propositions));
+    }
+
     public function seed(Proposition $position): ?Proposition
     {
-        return $this->remember('seed:'.$position->id, function () use ($position) {
-            $seen = $seeds = [];
-            $queue = [$this->proposition($position)];
-            while ($queue !== []) {
-                $node = array_shift($queue);
-                if (isset($seen[$node->id])) {
-                    continue;
-                }
-                $seen[$node->id] = true;
-                if ($node->tier === 'committal') {
-                    $seeds[$node->id] = $node;
-                } elseif ($node->tier === 'expressive') {
-                    foreach ($this->parentNodes($node) as $parent) {
-                        $queue[] = $parent;
-                    }
-                }
-            }
+        if (! $position->exists) {
+            return null;
+        }
+        $node = $this->proposition($position);
+        if ($node->tier === 'committal') {
+            return $node;
+        }
+        if (! $this->propositions->has($node->id)) {
+            return app(\App\Services\CommitRegionService::class)->seedFor($node);
+        }
+        $id = $this->seedIds()[$node->id] ?? null;
 
-            return count($seeds) === 1 ? reset($seeds) : null;
-        });
+        return $id === null ? null : $this->propositions->get($id);
     }
 
     public function members(Proposition $seed): Collection
     {
         return $this->remember('members:'.$seed->id, function () use ($seed) {
-            $seen = [];
-            $queue = [$seed->id];
-            $members = collect();
-            while ($queue !== []) {
-                $id = array_shift($queue);
-                if (isset($seen[$id])) {
-                    continue;
-                }
-                $seen[$id] = true;
-                foreach ($this->children->get($id, collect()) as $edge) {
-                    $child = $this->propositions->get($edge->target_proposition_id);
-                    if ($child?->tier !== 'expressive') {
-                        continue;
-                    }
-                    $queue[] = $child->id;
-                    if ($this->seed($child)?->id === $seed->id) {
-                        $members->put($child->id, $child);
-                    }
-                }
-            }
+            $seeds = $this->seedIds();
 
-            return $members->filter(fn ($node) => $this->activeIds->has($node->id))->sortBy('id')->values();
+            return $this->propositions->filter(fn ($node) => $node->tier === 'expressive'
+                && ($seeds[$node->id] ?? null) === $seed->id && $this->activeIds->has($node->id))
+                ->sortBy('id')->values();
         });
     }
 
@@ -353,3 +340,4 @@ final class ParticipationContext
         return app(\App\Services\Observables\CommittalLineageService::class)->ancestors($position, $this)->first();
     }
 }
+
