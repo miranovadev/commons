@@ -383,7 +383,8 @@ class ContextHorizonProjectorTest extends TestCase
             $participant = $this->phase->cycle->participant;
             $cycle = new Cycle;
             $cycle->forceFill(['participant_id' => $participant->id,
-                'sequence' => $participant->cycles()->max('sequence') + 1])->save();
+                'sequence' => $participant->cycles()->max('sequence') + 1,
+                'governing_committal_id' => $source->id])->save();
             $this->phase = new Phase;
             $this->phase->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Order,
                 'write_register' => $cycle->contextHorizon->domain->registerFor(PhaseKind::Order), 'started_at' => now()])->save();

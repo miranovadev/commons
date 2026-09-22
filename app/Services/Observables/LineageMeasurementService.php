@@ -40,9 +40,9 @@ final readonly class LineageMeasurementService
         $mass = 0.0;
         foreach ($this->positions($position, $context) as [$proposition, $distance]) {
             $comparison = $distance === 0 ? $headComparison : null;
-            $calculate = fn () => $this->local->calculate($proposition, $comparison ?? ($context !== null ? $this->lineages->for($proposition, $context) : null));
+            $calculate = fn () => $this->local->calculate($proposition, $comparison ?? ($context !== null ? $this->lineages->for($proposition, $context) : null), $distance === 0);
             $local = $context !== null && $proposition->exists && $comparison === null
-                ? $context->remember('local:'.$proposition->id, $calculate) : $calculate();
+                ? $context->remember('local:'.($distance === 0 ? 'head:' : 'evidence:').$proposition->id, $calculate) : $calculate();
             $closure ??= $local->closure();
             $weight = self::attenuation($distance);
             // Every traversed position contributes denominator mass, including neutral values.

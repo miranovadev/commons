@@ -38,7 +38,7 @@ class LineageAttenuationTest extends TestCase
         $this->phase->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Order, 'write_register' => 'canon', 'started_at' => now()])->save();
     }
 
-    public function test_inverse_square_geometry_and_neutral_positions_apply_to_every_component(): void
+    public function test_inverse_square_geometry_applies_to_correspondence_and_chirality_only(): void
     {
         $provenance = $this->node('provenance', 'committal');
         $middle = $this->node('middle');
@@ -53,10 +53,10 @@ class LineageAttenuationTest extends TestCase
             $this->rawValues([$signal->id => 1]);
             $result = app(LineageMeasurementService::class)->calculate($head);
             $expected = round(LineageMeasurementService::attenuation($distance) / $mass, 7);
-            foreach (['correspondence', 'chirality', 'depth', 'cadence'] as $component) {
+            foreach (['correspondence', 'chirality'] as $component) {
                 $this->assertSame($expected, $result->{$component});
             }
-            $this->assertSame($expected, $result->observables()->closure);
+            $this->assertSame($distance === 0 ? 1.0 : 0.0, $result->observables()->closure);
         }
     }
 
@@ -121,7 +121,7 @@ class LineageAttenuationTest extends TestCase
         $target = $this->node('target', 'committal');
         $this->edge($gate, $target, 'commit');
         $this->assertEquals($preview, $service->calculate($target));
-        $this->assertSame(round((1 / 9) / (1 + 1 / 4 + 1 / 9), 7), $preview->depth);
+        $this->assertSame(0.0, $preview->depth);
     }
 
     public function test_obsolete_disposable_measurements_are_repaired_and_versioned(): void
@@ -164,14 +164,15 @@ class LineageAttenuationTest extends TestCase
         $entry = $potential->selectFor($this->phase->cycle->participant->substrate);
         $reentry = $potential->selectFrom($observer);
         $recovery = $potential->recoverFrom($observer);
-        $this->assertSame(0.64, $entry['potential_charge']);
-        $this->assertSame(0.64, $reentry['raw_potential_charge']);
-        $this->assertSame(0.16, $reentry['potential_charge']); // .64 observed one edge away.
+        $rawPotential = 0.6933334; // Direct head Closure is zero; C/C still attenuate to .16.
+        $this->assertSame($rawPotential, $entry['potential_charge']);
+        $this->assertSame($rawPotential, $reentry['raw_potential_charge']);
+        $this->assertSame(round($rawPotential / 4, 7), $reentry['potential_charge']); // .64 observed one edge away.
         $this->assertSame(0.05, $reentry['charge']);
         $this->assertSame(0.16, $values->fresh()->chirality); // No projection re-attenuation.
-        $this->assertSame(0.64, $potential->selectFrom($source)['potential_charge']); // Distance zero.
-        $this->assertSame(0.64, $recovery['raw_potential_charge']);
-        $this->assertSame(0.16, $recovery['potential_charge']);
+        $this->assertSame($rawPotential, $potential->selectFrom($source)['potential_charge']); // Distance zero.
+        $this->assertSame($rawPotential, $recovery['raw_potential_charge']);
+        $this->assertSame(round($rawPotential / 4, 7), $recovery['potential_charge']);
         $this->assertSame(1, $recovery['distance']);
         $this->assertSame($history, $snapshot->fresh()->getAttributes());
     }

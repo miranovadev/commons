@@ -56,11 +56,8 @@ class ClosureHysteresisTest extends TestCase
         $this->publishPotentialFixture($this->participant);
         $state = app(ParticipationService::class)->stateFor($this->participant);
         $this->assertSame($counts, $this->counts());
-        // Candidate/Gate/provenance raw Depth (1, 0, -1). Reinforcement
-        // contributes to Closure independently of structural Depth and Cadence.
-        $mass = 1 + 1 / 4 + 1 / 9;
-        $this->assertSame(round((1 - 1 / 9) / $mass, 7), $preview['depth']);
-        $this->assertSame(round((1 + 1 / 4 - 1 / 9) / $mass, 7), $preview['cadence']);
+        $this->assertSame(0.0, $preview['depth']);
+        $this->assertSame(0.0, $preview['cadence']);
         $this->assertSame('ready', $state['status']);
         $this->assertTrue($state['plan']['commitment']['closure_enforced']);
 
@@ -69,6 +66,8 @@ class ClosureHysteresisTest extends TestCase
         $snapshot = CommitmentSnapshot::findOrFail($result['current_proposition_id']);
         $this->assertSame($preview['depth'], $snapshot->depth);
         $this->assertSame($preview['cadence'], $snapshot->cadence);
+        $this->assertSame($preview['cadence_interval'], $snapshot->cadence_interval);
+        $this->assertSame($preview['closure'], $snapshot->closure);
         $this->assertSame($preview['depth_direction'], $snapshot->depth_direction->value);
         $this->assertSame($preview['history_proposition_id'], $snapshot->closure_history_proposition_id);
         $this->assertSame('settlement', $result['last_commitment']['domain_before']);
@@ -110,11 +109,10 @@ class ClosureHysteresisTest extends TestCase
                 'started_at' => now(), 'completed_at' => now()])->save();
         }
         $preview = app(ClosureGateService::class)->preview($gate, $phase);
-        $this->assertLessThan(0, $preview['depth']);
-        // Concentrated touches (1,1,9), inherited by the candidate, compared
-        // with provenance CV=0. Earlier two-head views remain distributed.
-        $this->assertSame(round((-1 - 1 / 4 + 1 / 9 + 1 / 16 - 1 / 25)
-            / (1 + 1 / 4 + 1 / 9 + 1 / 16 + 1 / 25), 7), $preview['cadence']);
+        $this->assertSame(0.0, $preview['depth']);
+        $this->assertSame(0.0, $preview['cadence']);
+        $this->assertSame('negative', $preview['depth_direction']);
+        $this->assertSame('negative', $preview['cadence_direction']);
         $this->assertTrue($preview['admissible']);
         $this->publishPotentialFixture($this->participant);
         $state = app(ParticipationService::class)->contribute($this->participant, $phase->id, ['action' => 'proposition.commit', 'proposition_id' => $phase->gate_proposition_id]);
@@ -124,54 +122,38 @@ class ClosureHysteresisTest extends TestCase
         $snapshot = CommitmentSnapshot::findOrFail($state['current_proposition_id']);
         $this->assertSame($preview['depth'], $snapshot->depth);
         $this->assertSame($preview['cadence'], $snapshot->cadence);
+        $this->assertSame($preview['cadence_interval'], $snapshot->cadence_interval);
+        $this->assertSame($preview['closure'], $snapshot->closure);
     }
 
-    public function test_single_origin_settlement_has_positive_components_before_its_first_non_origin_commit(): void
+    public function test_first_post_origin_commit_has_symmetric_unresolved_components(): void
     {
         $this->bootstrap(1);
         [$phase, $gate] = $this->candidate([2]);
         $this->assertSame(1, CommitmentSnapshot::count());
         $this->assertSame(ContextDomain::Settlement, ContextHorizon::whereNull('closed_at')->firstOrFail()->domain);
         $preview = app(ClosureGateService::class)->preview($gate, $phase);
-        $mass = 1 + 1 / 4 + 1 / 9;
-        // Raw Depth (0,1,-1), Cadence (1,1,-1), with exactly one attenuation pass.
-        $this->assertSame(round((1 / 4 - 1 / 9) / $mass, 7), $preview['depth']);
-        $this->assertSame(round((1 + 1 / 4 - 1 / 9) / $mass, 7), $preview['cadence']);
+        $this->assertSame(0.0, $preview['depth']);
+        $this->assertSame(0.0, $preview['cadence']);
         $this->assertTrue($preview['admissible']);
         $this->assertSame(1, CommitmentSnapshot::count());
     }
 
-    public function test_emergence_can_develop_negative_prospective_components_after_a_settlement_boundary(): void
+    public function test_expressive_depth_and_phase_touches_do_not_change_committed_bootstrap(): void
     {
-        $this->bootstrap(2);
-        [$phase] = $this->candidate([2]);
-        $this->publishPotentialFixture($this->participant);
-        $entered = app(ParticipationService::class)->contribute($this->participant, $phase->id, ['action' => 'proposition.commit', 'proposition_id' => $phase->gate_proposition_id]);
-        $this->assertSame('emergence', $entered['domain']);
-        $this->assertSame('emergence', $entered['last_commitment']['domain_after']);
-        $this->origin = Proposition::findOrFail($entered['current_proposition_id']);
-        // The prepared Cycle already owns sequence 3. Close this fixture-only
-        // occurrence before constructing later observation history.
-        $this->finish(Phase::findOrFail($entered['plan']['phase']['id']));
-        [$phase, $gate] = $this->candidate(range(4, 13), 'canon', 'activity', 'refute');
+        $this->bootstrap(1);
+        [$phase, $gate] = $this->candidate([2, 3, 4]);
+        $before = app(ClosureGateService::class)->preview($gate, $phase);
         for ($i = 0; $i < 9; $i++) {
             $touch = new Phase;
             $touch->forceFill(['cycle_id' => $phase->cycle_id, 'kind' => PhaseKind::Persist,
-                'write_register' => 'frontier', 'gate_proposition_id' => $gate->id,
+                'write_register' => 'stance', 'gate_proposition_id' => $gate->id,
                 'started_at' => now(), 'completed_at' => now()])->save();
         }
-        $preview = app(ClosureGateService::class)->preview($gate, $phase);
-        $this->assertLessThan(0, $preview['depth']);
-        $this->assertLessThan(0, $preview['cadence']);
-        $this->assertTrue($preview['admissible']);
-        $this->publishPotentialFixture($this->participant);
-        $state = app(ParticipationService::class)->contribute($this->participant, $phase->id, ['action' => 'proposition.commit', 'proposition_id' => $phase->gate_proposition_id]);
-        $snapshot = CommitmentSnapshot::findOrFail($state['current_proposition_id']);
-        $this->assertSame($preview['depth'], $snapshot->depth);
-        $this->assertSame($preview['cadence'], $snapshot->cadence);
-        $this->assertSame('settlement', $state['domain']);
-        $this->assertSame('settlement', $state['last_commitment']['domain_after']);
-        $this->assertTrue($state['last_commitment']['closure_boundary']);
+        $after = app(ClosureGateService::class)->preview($gate, $phase);
+        $this->assertSame($before, $after);
+        $this->assertSame(0.0, $after['depth']);
+        $this->assertSame(0.0, $after['cadence']);
     }
 
     public function test_zero_depth_retains_negative_history_and_blocks_a_positive_cadence(): void
@@ -224,7 +206,7 @@ class ClosureHysteresisTest extends TestCase
         $merged = $this->node($phase, 'expressive', 'concord');
         $this->edge($phase, $gate, $merged, 'reconcile');
         $this->edge($phase, $sibling, $merged, 'reconcile');
-        $this->assertSame($sibling->id, $service->historyFor($merged)->proposition_id);
+        $this->assertSame($this->origin->id, $service->historyFor($merged)->proposition_id);
     }
 
     public function test_actual_candidate_rejection_rolls_back_a_previously_admissible_preview(): void
@@ -333,7 +315,8 @@ class ClosureHysteresisTest extends TestCase
     private function phase(int $sequence, string $register): Phase
     {
         $cycle = new Cycle;
-        $cycle->forceFill(['participant_id' => $this->participant->id, 'sequence' => $sequence])->save();
+        $cycle->forceFill(['participant_id' => $this->participant->id, 'sequence' => $sequence,
+            'governing_committal_id' => isset($this->origin) ? $this->origin->id : null])->save();
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Order, 'write_register' => $register, 'started_at' => now()])->save();
 

@@ -255,7 +255,7 @@ class PhasePositionInvariantTest extends TestCase
                 1, 2, 4 => 'variant', 5 => 'reconcile', default => 'reclassify'
             });
         }
-        $closure = [...(new ClosureValues(1, 1))->resolve(), 'history_proposition_id' => null, 'history_source' => 'negative-default'];
+        $closure = [...(new ClosureValues(1, 1))->resolve(), 'history_proposition_id' => null, 'history_source' => 'negative-default', 'cadence_interval' => 1];
         $this->mock(ClosureGateService::class, fn ($mock) => $mock->shouldReceive('preview', 'forCommitment')->andReturn($closure));
 
         return [$author, $reader, $nodes];

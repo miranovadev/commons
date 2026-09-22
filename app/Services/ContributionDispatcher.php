@@ -391,6 +391,7 @@ final readonly class ContributionDispatcher
             $projections['turbulence'],
             LineageMeasurementService::VERSION,
             $supersession,
+            $eligibility['closure'],
         );
 
         return $target;

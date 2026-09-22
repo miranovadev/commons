@@ -208,7 +208,7 @@ class CommitRegionTest extends TestCase
             });
             $mock->shouldReceive('forCommitment')->andReturn([
                 ...(new ClosureValues(-1, -1))->resolve(),
-                'history_source' => 'negative-default', 'history_proposition_id' => null,
+                'history_source' => 'negative-default', 'cadence_interval' => 1, 'history_proposition_id' => null,
             ]);
         });
         $options = app(ClosureOptionService::class);

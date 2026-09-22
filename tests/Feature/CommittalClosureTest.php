@@ -146,6 +146,46 @@ class CommittalClosureTest extends TestCase
         $this->assertSame('negative', $values->resolve()['depth_direction']);
     }
 
+    public function test_ambiguous_legacy_interval_is_explicitly_unavailable_without_rewriting_observables(): void
+    {
+        $a = $this->origin();
+        $b = $this->freeze($this->candidate($a), null, 'settlement');
+        $c = $this->candidate($b);
+        $before = $b->commitmentSnapshot->getAttributes();
+        $preview = app(ClosureGateService::class)->preview($b, $c->phase);
+        $this->assertFalse($preview['admissible']);
+        $this->assertSame('cadence_history_unavailable', $preview['unavailable_reason']);
+        $this->assertNull($preview['cadence']);
+        $this->assertSame($before, $b->commitmentSnapshot->fresh()->getAttributes());
+    }
+
+    public function test_migration_backfills_only_proven_intervals_and_leaves_governance_and_observables_unchanged(): void
+    {
+        $this->travelTo(\Carbon\CarbonImmutable::parse('2026-09-01 00:00:00'));
+        $a = $this->origin();
+        $this->completed($a, 3);
+        $this->travel(1)->seconds();
+        $b = $this->freeze($this->candidate($a), 4, 'settlement');
+        $this->travel(1)->seconds();
+        $b2 = $this->freeze($this->candidate($a), 5, 'settlement');
+        $this->completed($a, 1); // Same-second other-Cycle completion makes B2 ambiguous.
+        $before = DB::table('commitment_snapshots')->orderBy('proposition_id')->get()
+            ->map(fn ($row) => \Illuminate\Support\Arr::except((array) $row, ['cadence_interval']))->all();
+        $governors = Cycle::orderBy('id')->pluck('governing_committal_id', 'id')->all();
+        $migration = require database_path('migrations/2026_09_22_120000_freeze_committal_cadence_intervals.php');
+        $migration->down();
+        $migration->up();
+        $this->assertSame(4, $b->commitmentSnapshot->fresh()->cadence_interval);
+        $this->assertNull($b2->commitmentSnapshot->fresh()->cadence_interval);
+        $this->assertNull($a->commitmentSnapshot->fresh()->cadence_interval);
+        $this->assertSame($governors, Cycle::orderBy('id')->pluck('governing_committal_id', 'id')->all());
+        $this->assertSame($before, DB::table('commitment_snapshots')->orderBy('proposition_id')->get()
+            ->map(fn ($row) => \Illuminate\Support\Arr::except((array) $row, ['cadence_interval']))->all());
+        $migration->down();
+        $this->assertSame($before, DB::table('commitment_snapshots')->orderBy('proposition_id')->get()->map(fn ($row) => (array) $row)->all());
+        $migration->up();
+    }
+
     public function test_completion_versions_the_field_and_frozen_interval_cannot_be_updated(): void
     {
         $a = $this->origin();

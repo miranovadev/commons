@@ -64,7 +64,8 @@ abstract class TestCase extends BaseTestCase
         }
         $cycle = new Cycle;
         $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => (int) $participant->cycles()->max('sequence') + 1,
-            'context_horizon_id' => $node->phase->cycle->context_horizon_id])->save();
+            'context_horizon_id' => $node->phase->cycle->context_horizon_id,
+            'governing_committal_id' => $node->phase->cycle->governing_committal_id])->save();
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Order,
             'gate_proposition_id' => $node->id, 'write_register' => $node->register, 'started_at' => now()])->save();

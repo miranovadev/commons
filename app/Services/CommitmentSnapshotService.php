@@ -26,6 +26,7 @@ final readonly class CommitmentSnapshotService
         float $turbulence,
         string $calculatorVersion,
         ?Supersession $supersession = null,
+        ?array $expectedClosure = null,
     ): CommitmentSnapshot {
         $this->assertCommitment(
             $proposition,
@@ -41,6 +42,7 @@ final readonly class CommitmentSnapshotService
             $turbulence,
             $calculatorVersion,
             $supersession,
+            $expectedClosure,
         ): CommitmentSnapshot {
             $entry = $this->ledger->record($proposition);
             $substrate = $entry->substrate;
@@ -93,6 +95,13 @@ final readonly class CommitmentSnapshotService
             $closure = $this->closureGate->forCommitment($proposition);
             if (! $closure['admissible']) {
                 throw new DomainException('Commitment requires aligned Depth/Cadence directions.');
+            }
+            if ($expectedClosure !== null) {
+                foreach (['depth', 'cadence', 'closure', 'depth_direction', 'cadence_direction', 'cadence_interval', 'history_proposition_id'] as $component) {
+                    if ($closure[$component] !== $expectedClosure[$component]) {
+                        throw new \Symfony\Component\HttpKernel\Exception\ConflictHttpException('Closure changed after preview. Retry from fresh state.');
+                    }
+                }
             }
             $previous = $horizon->predecessorCommitment();
             $tension = round($prominence - $turbulence, 7);

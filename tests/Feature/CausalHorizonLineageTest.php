@@ -241,7 +241,8 @@ class CausalHorizonLineageTest extends TestCase
         $participant->forceFill(['substrate_id' => $other->id, 'callsign' => 'foreign'])->save();
         $this->expectException(DomainException::class);
         $cycle = new Cycle;
-        $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => 1, 'context_horizon_id' => $horizon->id])->save();
+        $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => 1, 'context_horizon_id' => $horizon->id,
+            'governing_committal_id' => $gate?->tier === 'committal' ? $gate->id : ($gate?->phase->cycle->governing_committal_id ?? $horizon->opened_by_proposition_id)])->save();
     }
 
     public function test_a_horizon_cannot_be_reparented_after_cycles_begin(): void
@@ -285,7 +286,8 @@ class CausalHorizonLineageTest extends TestCase
     {
         $cycle = new Cycle;
         $cycle->forceFill(['participant_id' => $this->participant('fixture-'.str()->ulid())->id,
-            'sequence' => 1, 'context_horizon_id' => $horizon->id])->save();
+            'sequence' => 1, 'context_horizon_id' => $horizon->id,
+            'governing_committal_id' => $gate?->tier === 'committal' ? $gate->id : ($gate?->phase->cycle->governing_committal_id ?? $horizon->opened_by_proposition_id)])->save();
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Order,
             'write_register' => $horizon->domain->registerFor(PhaseKind::Order),
@@ -319,7 +321,7 @@ class CausalHorizonLineageTest extends TestCase
         $domain = $node->phase->cycle->contextHorizon->domain;
         $snapshot->forceFill(['proposition_id' => $node->id, 'substrate_id' => $this->substrate->id,
             'ledger_entry_id' => $node->ledgerEntry->id, 'correspondence' => 0, 'chirality' => 0, 'closure' => 0,
-            'depth' => 0, 'cadence' => 0, 'depth_direction' => 'negative', 'cadence_direction' => 'negative',
+            'depth' => 0, 'cadence' => 0, 'cadence_interval' => 1, 'depth_direction' => 'negative', 'cadence_direction' => 'negative',
             'prominence' => (1 + $tension) / 2, 'turbulence' => (1 - $tension) / 2, 'tension' => $tension,
             'tension_before' => 0, 'direction_before' => $domain, 'direction_after' => $domain->opposite(),
             'calculator_version' => 'topology-fixture', 'evaluated_at' => now()])->save();

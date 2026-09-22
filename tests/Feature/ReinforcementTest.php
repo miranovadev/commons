@@ -111,7 +111,7 @@ class ReinforcementTest extends TestCase
         $this->assertSame(1, Receipt::count());
     }
 
-    public function test_local_closure_forms_before_attenuation_and_duplicate_events_add_no_weight(): void
+    public function test_closure_reinforcement_is_local_and_duplicate_events_add_no_weight(): void
     {
         $local = app(LocalMeasurementService::class);
         $before = $local->calculate($this->node);
@@ -132,8 +132,7 @@ class ReinforcementTest extends TestCase
         app(LedgerService::class)->record($edge);
         $this->assertSame(0, app(ReinforcementService::class)->count($child));
         $childClosure = $local->calculate($child)->closure()->average();
-        $weight = LineageMeasurementService::attenuation(1);
-        $expected = round(($childClosure + $after->closure()->average() * $weight) / (1 + $weight), 7);
+        $expected = $childClosure; // Expressive ancestry cannot smear committed Closure or local reinforcement.
         $this->assertEqualsWithDelta($expected, app(LineageMeasurementService::class)->calculate($child)->closure()->average(), 1e-7);
         $this->assertEqualsWithDelta($expected, app(LineageMeasurementService::class)->calculate($child, context: new ParticipationContext($this->later))->closure()->average(), 1e-7);
     }

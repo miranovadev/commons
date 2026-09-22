@@ -55,7 +55,7 @@ class OperationalCommitmentTest extends TestCase
         $closure = [
             ...(new ClosureValues(1, 1))->resolve(),
             'history_proposition_id' => null,
-            'history_source' => 'negative-default',
+            'history_source' => 'negative-default', 'cadence_interval' => 1,
         ];
         $this->mock(ClosureGateService::class, function ($mock) use ($closure): void {
             $mock->shouldReceive('preview', 'forCommitment')->andReturn($closure);

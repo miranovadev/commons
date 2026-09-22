@@ -137,6 +137,15 @@ final readonly class InputPlanService
             $context,
         );
 
+        if ($phase->kind === PhaseKind::Order) {
+            $observations = [];
+            foreach ($writeOptions as $candidate) {
+                $observations[$candidate->id] = app(ClosureGateService::class)->preview($candidate, $phase, $context);
+            }
+            ksort($observations);
+            $schema['$comment'] = 'closure-observation:'.hash('sha256', json_encode($observations, JSON_THROW_ON_ERROR));
+        }
+
         if ($validation) {
             return ['schema' => $schema];
         }

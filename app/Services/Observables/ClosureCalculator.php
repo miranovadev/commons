@@ -65,7 +65,7 @@ final readonly class ClosureCalculator
             }
         }
         if (count($runs) < 2) {
-            throw new DomainException('Measured Depth requires a preceding opposite-Domain committed run.');
+            throw new ClosureHistoryUnavailable('Measured Depth requires a preceding opposite-Domain committed run.');
         }
         $previousInterval = $ancestors->first()->cadence_interval;
         if ($previousInterval === null) {

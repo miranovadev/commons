@@ -340,7 +340,7 @@ class TransactionLockOrderTest extends TestCase
         app(LedgerService::class)->record($edge);
         $this->classificationEvidenceFixture($source);
         app(PotentialProjectionService::class)->refresh($first->substrate_id);
-        $closure = [...(new ClosureValues(1, 1))->resolve(), 'history_proposition_id' => null, 'history_source' => 'negative-default'];
+        $closure = [...(new ClosureValues(1, 1))->resolve(), 'history_proposition_id' => null, 'history_source' => 'negative-default', 'cadence_interval' => 1];
         $this->mock(ClosureGateService::class, fn ($mock) => $mock->shouldReceive('preview', 'forCommitment')->andReturn($closure));
         $initial->forceFill(['kind' => PhaseKind::Order, 'write_register' => 'concord', 'gate_proposition_id' => $source->id])->save();
         $second = new Participant;

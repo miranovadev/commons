@@ -237,10 +237,10 @@ class CausalOperationalScopeTest extends TestCase
         $this->mock(ClosureGateService::class, function ($mock): void {
             $mock->shouldReceive('preview')->andReturnUsing(fn (Proposition $node) => [
                 ...(new ClosureValues(...($this->closureValues[$node->id] ?? [1, 1])))->resolve(),
-                'history_proposition_id' => null, 'history_source' => 'negative-default',
+                'history_proposition_id' => null, 'history_source' => 'negative-default', 'cadence_interval' => 1,
             ]);
             $mock->shouldReceive('forCommitment')->andReturn([
-                ...(new ClosureValues(1, 1))->resolve(), 'history_proposition_id' => null, 'history_source' => 'negative-default',
+                ...(new ClosureValues(1, 1))->resolve(), 'history_proposition_id' => null, 'history_source' => 'negative-default', 'cadence_interval' => 1,
             ]);
         });
 

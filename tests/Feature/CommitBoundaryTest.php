@@ -26,7 +26,7 @@ class CommitBoundaryTest extends TestCase
         $source = $f->node($f->gate, 'canon', position: PhaseKind::Bias);
         $alternative = $f->node($f->gate, 'canon', position: PhaseKind::Bias);
         $this->classificationEvidenceFixture($source);
-        $closure = [...(new ClosureValues(1, 1))->resolve(), 'history_proposition_id' => null, 'history_source' => 'negative-default'];
+        $closure = [...(new ClosureValues(1, 1))->resolve(), 'history_proposition_id' => null, 'history_source' => 'negative-default', 'cadence_interval' => 1];
         $this->mock(ClosureGateService::class, fn ($mock) => $mock->shouldReceive('preview', 'forCommitment')->andReturn($closure));
         $f->phase->forceFill(['kind' => PhaseKind::Order, 'gate_proposition_id' => $source->id, 'write_register' => 'canon'])->save();
         $admissibility = app(CommitmentAdmissibilityService::class)->evaluate($source, $f->phase->fresh());
