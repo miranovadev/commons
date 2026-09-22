@@ -13,6 +13,21 @@ import re
 from pathlib import Path
 
 
+def basin_interval(basin, producer, committed_at):
+    """Count completed participation before Commit, plus its producer once."""
+    if producer["governor"] is None:
+        raise ValueError("An ordinary transition requires a governing Committal")
+    completed = [
+        c for c in basin
+        if c["governor"] == producer["governor"]
+        and c["id"] != producer["id"] and c["completed_at"] is not None
+    ]
+    return {
+        "count": 1 + sum(c["completed_at"] < committed_at for c in completed),
+        "ambiguous_ties": sum(c["completed_at"] == committed_at for c in completed),
+    }
+
+
 def inspect(path):
     sql = Path(path).read_text()
 
@@ -65,15 +80,9 @@ def inspect(path):
         cycle = cycle_of(pid)
         if cycle["governor"] is None:
             continue
-        # Exclude the producing Cycle explicitly; its completion follows Commit.
-        completed = [
-            c for c in basins[cycle["governor"]]
-            if c["id"] != cycle["id"] and c["completed_at"] is not None
-        ]
-        intervals[pid] = {
-            "count": sum(c["completed_at"] < snapshot["evaluated_at"] for c in completed),
-            "ambiguous_ties": sum(c["completed_at"] == snapshot["evaluated_at"] for c in completed),
-        }
+        intervals[pid] = basin_interval(
+            basins[cycle["governor"]], cycle, snapshot["evaluated_at"]
+        )
 
     def similarity(a, b):
         return round(1 - 2 * abs(a - b) / max(a, b), 7) if max(a, b) else 1.0

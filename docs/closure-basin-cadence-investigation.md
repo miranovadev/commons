@@ -25,27 +25,29 @@ from updates. A foreign key protects the referenced proposition.
 For each ancestral pair A -> B, freeze at B's successful Commit:
 
 ```
-interval(A, B) = count of completed Cycles with governing_committal_id = A
-                before B is produced
+interval(A, B) = count of other completed Cycles governed by A before B commits
+                + 1 for B's producing Cycle (also governed by A)
 ```
 
 This counts all participants and expressive paths in A's basin. It excludes
 Cycles governed by other Committals, including A's descendants and siblings.
 Rest counts as completed participation in its original basin. Returning to A
 does not reset its history. If A later produces another successor B2, its interval
-includes the accumulated completed Cycles under A up to B2, while the earlier
+includes the accumulated other completed Cycles under A before B2 plus B2's
+producing Cycle, while the earlier
 A -> B interval remains frozen.
 
-The current write order creates the CommitmentSnapshot before completing the
-producing Cycle. Under the literal "completed before" definition, B's producing
-Cycle does not count. Cycles that remain open also do not count. Therefore an
-interval can be zero. The existing similarity helper returns +1 for (0, 0) and
--1 when exactly one operand is zero; those edge cases must be explicit in the
-new calculator's tests, rather than adding an implicit +1 to every interval.
+The producing Cycle counts exactly once, regardless of whether snapshot publication
+precedes its completion. Three previously completed A-governed Cycles plus the
+A-governed Cycle producing B give interval(A, B) = 4. Every real transition has
+an interval of at least 1. Other unresolved active Cycles do not count, even when
+governed by A. There is no zero-interval similarity edge case to introduce.
 
 For C0 -> C1 -> C2, compare interval(C0, C1) with interval(C1, C2).
-Follow each committed proposition's creating Cycle governor to obtain the actual
-Committal chain. No union of Supersession inputs or Horizon population is needed.
+For non-Origin B, follow B -> creating Phase -> creating Cycle ->
+`governing_committal_id` to obtain its direct preceding Committal A. The producing
+Cycle must be governed by A. No union of Supersession inputs or Horizon population
+is needed.
 The chain and the interval comparison continue across Domain boundaries.
 
 The accepted symmetric bootstrap remains:
@@ -65,7 +67,8 @@ though its displayed Cadence is bootstrap zero. Recounting an old basin when
 measuring a descendant would let later participation rewrite history.
 
 The preview and persisted candidate must read the same basin count from the same
-validated field state. Existing contribution locking serializes writes; Cycle
+validated field state, adding the producing Cycle exactly once in both paths.
+Existing contribution locking serializes writes; Cycle
 completion must also invalidate the affected measurement/admissibility state,
 including Rest without a new ledger contribution. A stale preview must retry
 before publication. A count change must not be hidden by request/projection caches.
@@ -86,17 +89,17 @@ reconstruction; it does not guarantee arbitrary legacy histories are unambiguous
 
 | Run | Operational Commits | Observed interval range |
 | --- | ---: | ---: |
-| Committal Recovery Primes | 20 | 7–14 completed Cycles |
-| Committal Recovery Offsets | 17 | 7–15 completed Cycles |
+| Committal Recovery Primes | 20 | 8–15 Cycles (including producer) |
+| Committal Recovery Offsets | 17 | 8–16 Cycles (including producer) |
 
 Representative fixed-history recalculations, without reinforcement:
 
 | Commit | Old Depth | Proposed Depth | Old Cadence | Proposed Cadence |
 | --- | ---: | ---: | ---: | ---: |
-| Primes `01m33zd3n52mt1g4anps1d9qvk` | -0.9346218 | -0.7777778 | -1 | +0.8571429 |
-| Primes `01m343nzq5by0613ca8m0rqkts` | -0.9415996 | -0.8 | -1 | +0.1428571 |
+| Primes `01m33zd3n52mt1g4anps1d9qvk` | -0.9346218 | -0.7777778 | -1 | +0.8666667 |
+| Primes `01m343nzq5by0613ca8m0rqkts` | -0.9415996 | -0.8 | -1 | +0.2 |
 | Offsets `01m33xfpdbtjmf9af3yfqb8ht8` | -0.941477 | -0.8 | -1 | +1 |
-| Offsets `01m3403b2spdqan2g3kvckczew` | -0.9544626 | -0.8461538 | -1 | +0.7777778 |
+| Offsets `01m3403b2spdqan2g3kvckczew` | -0.9544626 | -0.8461538 | -1 | +0.8 |
 
 The proposed Cadence recognises stable commitment spacing. Depth still becomes
 negative when a Settlement run grows longer than its preceding Emergence run,
