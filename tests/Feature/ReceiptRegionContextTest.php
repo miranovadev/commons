@@ -80,6 +80,22 @@ class ReceiptRegionContextTest extends TestCase
         $this->assertContains($r->id, app(HorizonReceiptService::class)->available($f->phase)->pluck('id'));
     }
 
+    public function test_a_foreign_region_parent_does_not_import_its_receipts(): void
+    {
+        $f = new ParticipantContextFixture(1, 0, false);
+        $other = $f->node(null, 'canon', 'variant', 'committal');
+        $foreign = $f->node($other, 'activity');
+        $localReceipt = $this->receipt($f, $f->gate, 'local-region');
+        $foreignReceipt = $this->receipt($f, $foreign, 'foreign-region');
+        $result = $f->node($f->gate, 'frontier', 'reconcile');
+        $f->edge($foreign, $result, 'reconcile');
+        $f->phase->forceFill(['gate_proposition_id' => $result->id])->save();
+        $available = app(HorizonReceiptService::class)->available($f->phase)->pluck('id');
+        $this->assertContains($localReceipt->id, $available);
+        $this->assertNotContains($foreignReceipt->id, $available);
+        $this->assertSame($localReceipt->context_horizon_id, $foreignReceipt->context_horizon_id);
+    }
+
     public function test_consumption_preserves_origin_and_removes_shared_availability(): void
     {
         $f = new ParticipantContextFixture(1, 0, false);

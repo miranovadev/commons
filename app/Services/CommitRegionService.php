@@ -83,7 +83,7 @@ final class CommitRegionService
         return $seed === null ? null : Proposition::find($seed);
     }
 
-    /** Active expressive members, including superseded intermediates, owned by this governor. */
+    /** Active expressive members owned by this governor; causal topology is independent. */
     public function membersFor(Proposition $position, ?ParticipationContext $context = null): Collection
     {
         $seed = $this->seedFor($position, $context);

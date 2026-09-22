@@ -54,6 +54,14 @@ history. This invariant applies wherever direction is explicitly hysteretic.
 
 ## 5. Committal Provenance Governs the Region
 
+Commit Region ownership is explicit Cycle governance: a Committal owns itself,
+and an expressive Proposition belongs to its creating Cycle's immutable
+`governing_committal_id`. Supersession records causal provenance, which may have
+multiple parents from different Regions without making ownership ambiguous.
+The creating Cycle independently determines `context_horizon_id`; neither
+Region nor Horizon membership grants participant movement. See
+[Commit Region ownership](commit-region-ownership.md).
+
 Every Commit Region is governed by its Committal Proposition. Region-level
 semantics derive from that Committal provenance rather than arbitrary Expressive
 ancestry. This includes, where applicable:
@@ -345,4 +353,5 @@ and exploration epoch; Commit Regions become exhausted permanently. Failure hist
 is immutable. Only a successful Variant advances its own position's epoch.
 Spent propositions remain contextual evidence without Traverse or Attestation
 targets; a later epoch restores normal eligibility without erasing history.
+
 

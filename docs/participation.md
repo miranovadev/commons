@@ -352,8 +352,9 @@ movement topology are separate contracts. No edge means no movement.
 Committal owns itself. An expressive Proposition belongs to its creating Cycle's
 `governing_committal_id`; Supersession records causal provenance independently.
 Multiple parent Regions do not erase a valid owner. Missing or invalid governance
-fails closed without ancestry inference. Region populations preserve superseded
-intermediates; movement and operational admissibility remain separate contracts.
+fails closed without ancestry inference. Causal history preserves superseded
+intermediates; active populations, movement and operational admissibility remain
+separate contracts.
 See [Commit Region ownership](commit-region-ownership.md).
 
 An immediate parent alone is too narrow to define a Homeostatic calculation

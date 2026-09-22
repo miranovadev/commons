@@ -216,8 +216,7 @@ class TragedyTest extends TestCase
         $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => (int) $participant->cycles()->max('sequence') + 1, 'completed_at' => $completed ? now() : null,
             'governing_committal_id' => $this->fixtureGovernor?->id])->save();
         $phase = new Phase;
-        $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => $kind, 'write_register' => $register, 'started_at' => now(), 'completed_at' => $completed ? now() : null,
-            'governing_committal_id' => $this->fixtureGovernor?->id])->save();
+        $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => $kind, 'write_register' => $register, 'started_at' => now(), 'completed_at' => $completed ? now() : null])->save();
 
         return $phase;
     }

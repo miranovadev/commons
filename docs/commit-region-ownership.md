@@ -24,7 +24,7 @@ There is no newest-Commit, participant-position, Horizon-sequence or parent fall
 `seedFor()`, `ParticipationContext::seed()`, and the context's memoized seed map
 share that resolver. The working set explicitly hydrates governors as dependencies.
 Region populations contain active expressive Propositions with that governor,
-including superseded intermediates. Operation-specific filters still determine
+including superseded intermediates for historical calculations. Operation-specific filters still determine
 Read, Gate and Write admissibility independently.
 
 ## Consumer audit
@@ -67,7 +67,9 @@ it never repairs missing governance by guessing. Live consumers do not use it.
 
 Potential's disposable projection version changes to identify the new ownership
 representation. Existing projections must be rebuilt through the established
-maintenance path before they can be certified current. Frozen Commitment
+maintenance path before they can be certified current. The refresh migration
+invalidates all Horizon projections together and rebuilds the disposable Exhaustion
+membership index, so a partial refresh cannot certify stale ownership. Frozen Commitment
 snapshots, Receipts, proof records and Supersession edges are not rewritten.
 
 ## Stage boundary

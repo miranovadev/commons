@@ -91,6 +91,11 @@ class CycleRegionOwnershipTest extends TestCase
         $this->assertSame($horizonA, $r->fresh()->contextHorizonMembership->context_horizon_id);
         $this->assertSame($horizonB, $right->fresh()->contextHorizonMembership->context_horizon_id);
         $before = Supersession::orderBy('id')->get()->map->getAttributes()->all();
+        $this->publishPotentialFixture($this->actor->substrate);
+        $local = app(\App\Services\PotentialProjectionService::class)->region($horizonA)['local'];
+        $this->assertSame($a->id, $local['nodes'][$r->id]['seed_id']);
+        $this->assertContains([$right->id, $r->id, 'variant'], $local['foreign_inputs']);
+        $this->assertNotContains([$right->id, $r->id, 'variant'], $local['edges']);
         app(GraphProjectionService::class)->load($this->actor->substrate, collect([$r]));
         $this->assertSame($a->id, $r->getAttribute('field')['committal_proposition_id']);
         $this->assertSame($before, Supersession::orderBy('id')->get()->map->getAttributes()->all());
@@ -174,7 +179,8 @@ class CycleRegionOwnershipTest extends TestCase
             $this->assertSame([$a->id, $result->id], app(ActiveParticipantLineage::class)->endingAt($result, $readModel)->pluck('id')->all());
         }
         $this->assertEqualsCanonicalizing([$left->id, $right->id], $result->parents()->pluck('propositions.id')->all());
-        $this->assertSame([$result->id], app(CommitRegionService::class)->membersFor($a)->pluck('id')->all());
+        $this->assertEqualsCanonicalizing([$left->id, $result->id], app(CommitRegionService::class)->membersFor($a)->pluck('id')->all());
+        $this->assertEqualsCanonicalizing([$left->id, $result->id], $context->members($a)->pluck('id')->all());
     }
 
     private function commit(?Proposition $governor, string $after): Proposition

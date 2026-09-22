@@ -41,6 +41,8 @@ class InputPlanVisibilityTest extends TestCase
             'The Origin.',
             -1.0,
         );
+        $this->freezeRegionFixture($origin, -1);
+        $authorPhase = $this->governedPhaseFixture($authorPhase, $origin);
         $source = $this->proposition(
             $authorPhase,
             'frontier',

@@ -212,7 +212,7 @@ this change does not claim database-memory independence from Substrate size.
 
 ## Persistent Receipt context
 
-Ordinary available Receipts are local to the governing Committal of their observed Proposition. The current Gate's governing Committal must match; unresolved or malformed ancestry fails closed. Existing qualification and Horizon ownership checks remain in force. No Horizon-wide fallback exists.
+Ordinary available Receipts are local to the governing Committal of their observed Proposition. The current Gate's governing Committal must match; missing or invalid Cycle governance fails closed. Existing qualification and Horizon ownership checks remain in force. No Horizon-wide fallback exists.
 
 Every dynamic Receipt reference is `id`, `type`, `reference`, `loaded`, including catalogue, Read, Gate, Write and Lineage references. Attached Receipts leave the shared available catalogue. Attachment does not load evidence.
 
