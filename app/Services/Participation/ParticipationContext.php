@@ -350,33 +350,6 @@ final class ParticipationContext
 
     public function history(Proposition $position, ContextHorizon $horizon): ?CommitmentSnapshot
     {
-        return $this->remember('history:'.$horizon->id.':'.$position->id, function () use ($position, $horizon) {
-            $seen = [];
-            $queue = [$position->id];
-            while ($queue !== []) {
-                $id = array_shift($queue);
-                if (isset($seen[$id])) {
-                    continue;
-                }
-                $seen[$id] = true;
-                foreach ($this->parents->get($id, collect()) as $edge) {
-                    $queue[] = $edge->source_proposition_id;
-                }
-            }
-
-            $local = $this->snapshots->whereIn('proposition_id', array_keys($seen))
-                ->whereIn('proposition_id', $this->horizonMemberIds($horizon->id))
-                ->whereNotNull('depth_direction')->whereNotNull('cadence_direction')
-                ->sortByDesc(fn ($snapshot) => $snapshot->ledgerEntry->sequence)->first();
-            if ($local !== null || $horizon->parent_context_horizon_id === null) {
-                return $local;
-            }
-            $boundary = $this->snapshots->firstWhere('proposition_id', $horizon->opened_by_proposition_id);
-            if ($boundary === null || $this->memberships->get($boundary->proposition_id)?->context_horizon_id !== $horizon->parent_context_horizon_id) {
-                throw new \DomainException('A Horizon requires its own parent boundary commitment.');
-            }
-
-            return $boundary;
-        });
+        return app(\App\Services\Observables\CommittalLineageService::class)->ancestors($position, $this)->first();
     }
 }

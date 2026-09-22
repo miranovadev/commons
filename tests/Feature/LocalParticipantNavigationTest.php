@@ -466,7 +466,7 @@ class LocalParticipantNavigationTest extends TestCase
         $phase->write_register = 'canon';
         $phase->save();
         $state = $this->state($participant);
-        $this->assertFalse($state['plan']['rest_available']);
+        $this->assertTrue($state['plan']['rest_available']); // No grounded, Closure-admissible continuation remains.
         $this->assertFalse($state['plan']['commitment']['admissible']);
         $this->assertArrayNotHasKey('reinforcement', $state['plan']['commitment']['requirements']);
         $actions = $state['plan']['schema']['$defs']['actions'];

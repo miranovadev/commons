@@ -204,11 +204,12 @@ class CommitRegionTest extends TestCase
         $values = [$positive->id => [1, 1], $negative->id => [-1, -1], $ungrounded->id => [-1, -1]];
         $this->mock(ClosureGateService::class, function ($mock) use (&$values): void {
             $mock->shouldReceive('preview')->andReturnUsing(function (Proposition $candidate) use (&$values): array {
-                return (new ClosureValues(...($values[$candidate->id] ?? [1, -1])))->resolve();
+                return [...(new ClosureValues(...($values[$candidate->id] ?? [1, -1])))->resolve(),
+                    'cadence_interval' => 1, 'history_proposition_id' => null];
             });
             $mock->shouldReceive('forCommitment')->andReturn([
                 ...(new ClosureValues(-1, -1))->resolve(),
-                'history_source' => 'negative-default', 'history_proposition_id' => null,
+                'history_source' => 'negative-default', 'cadence_interval' => 1, 'history_proposition_id' => null,
             ]);
         });
         $options = app(ClosureOptionService::class);
@@ -282,7 +283,7 @@ class CommitRegionTest extends TestCase
             $horizon = $gate->phase->cycle->contextHorizon;
             $cycle = new Cycle;
             $cycle->forceFill(['participant_id' => $this->viewer->id, 'sequence' => $this->viewer->cycles()->max('sequence') + 1,
-                'context_horizon_id' => $horizon->id])->save();
+                'context_horizon_id' => $horizon->id, 'governing_committal_id' => $horizon->opened_by_proposition_id])->save();
         }
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => $kind, 'gate_proposition_id' => $gate->id,

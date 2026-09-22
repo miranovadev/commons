@@ -208,6 +208,7 @@ export interface ActionSchema {
 }
 
 export interface InputSchema {
+  $comment?: string;
   'x-commons'?: { instrument_exclusions?: Record<Identifier, Array<{ receipt_id: Identifier; invocation: InstrumentInput }>> };
   oneOf?: Array<{ $ref?: string }>;
   $defs?: { actions?: Partial<Record<ActionName, ActionSchema>> };
@@ -398,3 +399,4 @@ export interface ParticipantContext {
 }
 
 export type AutonomousParticipation = Omit<Participation, 'plan'> & { plan?: ParticipantContext | null };
+

@@ -3,153 +3,84 @@
 namespace App\Services\Observables;
 
 use App\Domain\Observables\ClosureValues;
-use App\Domain\Observables\DomainLineage;
 use App\Domain\Observables\LineageComparison;
+use App\Exceptions\ClosureHistoryUnavailable;
 use App\Models\Proposition;
-use App\Services\PropositionStateService;
+use App\Services\Participation\ParticipationContext;
 use DomainException;
-use Illuminate\Support\Collection;
 
 final readonly class ClosureCalculator
 {
     public function __construct(
         private ReinforcementService $reinforcement,
-        private ChiralityCalculator $chirality,
-        private PropositionStateService $state,
+        private CommittalLineageService $lineage,
     ) {}
 
-    /** Form the Proposition's intrinsic Closure before any propagation distance exists. */
     public function localComponents(Proposition $proposition, LineageComparison $comparison): ClosureValues
     {
-        $structural = $this->components($comparison);
-
-        // The bootstrap Committal is an initialization invariant, not an
-        // ordinary live lineage. Evidence can be loaded against the already-
-        // committed Origin later, but it must not rewrite its seed Closure.
-        if ($comparison->isBootstrap() && $proposition->tier === 'committal') {
+        $context = $comparison->current->context;
+        $records = $this->lineage->records($proposition, $context);
+        $snapshot = $records->get($proposition->id);
+        if ($snapshot !== null) {
+            // Persisted measurements remain historical, including pre-upgrade snapshots.
+            return new ClosureValues($snapshot->depth ?? 0, $snapshot->cadence ?? 0, $snapshot->closure);
+        }
+        $structural = $this->components($proposition, $context);
+        if ($proposition->phase->cycle->governing_committal_id === null && $proposition->tier === 'committal') {
             return $structural;
         }
-
-        $mass = $this->reinforcement->measurementCount($proposition, $comparison->current->context)
+        $mass = $this->reinforcement->measurementCount($proposition, $context)
             * $this->reinforcement->receiptIncrement($comparison->current->horizon->substrate);
 
         return new ClosureValues($structural->depth, $structural->cadence,
             round(($structural->depth + $structural->cadence + $mass) / (2 + $mass), 7));
     }
 
-    public function calculate(LineageComparison $comparison): float
+    public function components(Proposition $position, ?ParticipationContext $context = null): ClosureValues
     {
-        return $this->components($comparison)->average();
-    }
-
-    public function components(LineageComparison $comparison): ClosureValues
-    {
-        if ($comparison->isBootstrap()) {
+        $cycle = $position->phase->cycle;
+        $ancestors = $this->lineage->ancestors($position, $context);
+        if ($position->tier !== 'committal') {
+            // Expressive work inherits its governing committed structure. It does
+            // not increment Domain-run depth or create a hypothetical interval.
+            $governor = $ancestors->first();
+            return new ClosureValues($governor?->depth ?? -1, $governor?->cadence ?? -1);
+        }
+        if ($ancestors->isEmpty()) {
+            if ($cycle->contextHorizon->parent_context_horizon_id !== null) {
+                throw new DomainException('Only Origin may have no governing Committal.');
+            }
             return new ClosureValues(-1, -1);
         }
-
-        $depth = $this->similarity(
-            $this->depth($comparison->current),
-            $this->depth($comparison->previous),
-        );
-        $cadence = $this->similarity(
-            $this->coefficientOfVariation($comparison->current),
-            $this->coefficientOfVariation($comparison->previous),
-        );
-
-        return new ClosureValues(round($depth, 7), round($cadence, 7));
-    }
-
-    /** Mean structural extension of active heads; history supplies paths, not observations. */
-    public function depth(DomainLineage $lineage): float
-    {
-        $heads = $this->activeHeads($lineage);
-        $parents = $lineage->supersessions->groupBy('target_proposition_id');
-        $memo = [];
-        $visiting = [];
-
-        $visit = function (string $id) use (
-            &$visit,
-            &$memo,
-            &$visiting,
-            $parents,
-        ): float {
-            if (isset($memo[$id])) {
-                return $memo[$id];
+        if ($ancestors->count() === 1) {
+            return new ClosureValues(0, 0);
+        }
+        $runs = [[$cycle->contextHorizon->domain->value, 1]];
+        foreach ($ancestors as $ancestor) {
+            $last = count($runs) - 1;
+            if ($runs[$last][0] === $ancestor->creating_domain) {
+                $runs[$last][1]++;
+            } else {
+                $runs[] = [$ancestor->creating_domain, 1];
             }
-
-            if (isset($visiting[$id])) {
-                throw new DomainException(
-                    'A cyclic Supersession graph cannot be measured.'
-                );
-            }
-
-            $visiting[$id] = true;
-            $longestParent = 0.0;
-
-            foreach ($parents->get($id, collect()) as $edge) {
-                $longestParent = max(
-                    $longestParent,
-                    $visit($edge->source_proposition_id),
-                );
-            }
-
-            unset($visiting[$id]);
-
-            return $memo[$id] = 1 + $longestParent;
-        };
-
-        return (float) $heads
-            ->map(
-                fn (Proposition $proposition) => $visit(
-                    $proposition->getKey()
-                ),
-            )
-            ->average();
-    }
-
-    /** Population CV of persisted Phase touches; no cycle sequence or clock inputs. */
-    public function coefficientOfVariation(
-        DomainLineage $lineage,
-    ): float {
-        $touches = $this->activeHeads($lineage)
-            ->map(fn (Proposition $proposition) => $this->state->touchCount($proposition, $lineage->context));
-
-        if ($touches->isEmpty()) {
-            return 0;
+        }
+        if (count($runs) < 2) {
+            throw new ClosureHistoryUnavailable('Measured Depth requires a preceding opposite-Domain committed run.');
+        }
+        $previousInterval = $ancestors->first()->cadence_interval;
+        if ($previousInterval === null) {
+            throw new ClosureHistoryUnavailable('The preceding frozen Cadence interval is unavailable.');
         }
 
-        $mean = (float) $touches->average();
-
-        if ($mean === 0.0) {
-            return 0;
-        }
-
-        $variance = (float) $touches
-            ->map(fn ($touchCount) => ($touchCount - $mean) ** 2)
-            ->average();
-
-        return sqrt($variance) / $mean;
+        return new ClosureValues(self::similarity($runs[0][1], $runs[1][1]),
+            self::similarity($this->lineage->interval($position, $context), $previousInterval));
     }
 
-    private function activeHeads(DomainLineage $lineage): Collection
+    public static function similarity(int $left, int $right): float
     {
-        return $lineage->propositions->whereIn('id', $this->chirality->activeIds(
-            $lineage->propositions, $lineage->supersessions,
-        ));
-    }
-
-    private function similarity(float $left, float $right): float
-    {
-        $maximum = max($left, $right);
-
-        if ($maximum === 0.0) {
-            return 1;
+        if ($left < 1 || $right < 1) {
+            throw new DomainException('Measured committed depths and intervals must be positive.');
         }
-
-        return max(
-            -1,
-            min(1, 1 - 2 * (abs($left - $right) / $maximum)),
-        );
+        return round(max(-1, min(1, 1 - 2 * abs($left - $right) / max($left, $right))), 7);
     }
 }

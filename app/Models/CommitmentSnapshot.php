@@ -24,6 +24,7 @@ class CommitmentSnapshot extends Model
             'closure' => 'float',
             'depth' => 'float',
             'cadence' => 'float',
+            'cadence_interval' => 'integer',
             'depth_direction' => \App\Enums\ObservableDirection::class,
             'cadence_direction' => \App\Enums\ObservableDirection::class,
             'tension_before' => 'float',
@@ -64,3 +65,4 @@ class CommitmentSnapshot extends Model
         return $this->direction_before !== $this->direction_after;
     }
 }
+

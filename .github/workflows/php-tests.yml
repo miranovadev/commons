@@ -67,7 +67,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.5'
-          extensions: mbstring, pdo_pgsql, curl, intl
+          extensions: mbstring, pdo_pgsql, pdo_sqlite, curl, intl
           coverage: none
           tools: composer:v2
 
@@ -114,6 +114,13 @@ jobs:
       - name: Install the locked websocket smoke client
         if: ${{ steps.selection.outputs.needs_node == 'true' }}
         run: npm ci
+
+      - name: Verify Closure migration and calculations on SQLite
+        if: ${{ inputs.suite == 'core' && inputs.shard == 1 }}
+        env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ':memory:'
+        run: php artisan test --filter=CommittalClosureTest
 
       - name: Run selected PHP suite
         env:

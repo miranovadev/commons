@@ -424,7 +424,9 @@ class BiasGateTest extends TestCase
     private function newPhase(Participant $participant, PhaseKind $kind, string $register, bool $completed = false): Phase
     {
         $cycle = new Cycle;
-        $cycle->context_horizon_id = $this->horizonForRegisterFixture($participant, $register)->id;
+        $horizon = $this->horizonForRegisterFixture($participant, $register);
+        $cycle->context_horizon_id = $horizon->id;
+        $cycle->governing_committal_id = $horizon->opened_by_proposition_id;
         $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => (int) $participant->cycles()->max('sequence') + 1, 'completed_at' => $completed ? now() : null])->save();
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => $kind, 'write_register' => $register, 'started_at' => now(), 'completed_at' => $completed ? now() : null])->save();

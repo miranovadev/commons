@@ -85,8 +85,9 @@ class ExhaustionRealtimeTest extends TestCase
         });
         DB::beginTransaction();
         $phase->forceFill(['completed_at' => now()])->save();
-        $phase->cycle->forceFill(['rested_at' => now(), 'completed_at' => now(), 'rest_reason' => 'no_remaining_potential'])->save();
+        $phase->cycle->forceFill(['rested_at' => now(), 'rest_reason' => 'no_remaining_potential'])->save();
         app(ExhaustionService::class)->publish($phase, $proof);
+        $phase->cycle->forceFill(['completed_at' => now()])->save();
         $this->assertDatabaseCount('tragedies', 1);
         DB::rollBack();
         $this->assertSame([], $events);

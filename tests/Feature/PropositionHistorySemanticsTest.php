@@ -48,10 +48,12 @@ class PropositionHistorySemanticsTest extends TestCase
         $this->participant->forceFill([
             'substrate_id' => $substrate->id, 'callsign' => 'author', 'max_read_count' => 25,
         ])->save();
+        $horizon = $this->horizonForRegisterFixture($this->participant, 'signal');
         $cycle = new Cycle;
         $cycle->forceFill([
             'participant_id' => $this->participant->id, 'sequence' => 1, 'completed_at' => now(),
-            'context_horizon_id' => $this->horizonForRegisterFixture($this->participant, 'signal')->id,
+            'context_horizon_id' => $horizon->id,
+            'governing_committal_id' => $horizon->opened_by_proposition_id,
         ])->save();
         $this->history = new Phase;
         $this->history->forceFill([

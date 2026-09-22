@@ -178,11 +178,11 @@ export const commonsApi = createApi({
       transformResponse: data,
       providesTags: (_result, _error, { participantId }) => [{ type: 'Participation', id: participantId }],
     }),
-    contribute: builder.mutation<AutonomousParticipation, ParticipantParameters & { phaseId: Identifier; contribution: ContributionInput }>({
-      query: ({ slug, participantId, phaseId, contribution }) => ({
+    contribute: builder.mutation<AutonomousParticipation, ParticipantParameters & { phaseId: Identifier; contribution: ContributionInput; expectedClosure?: string }>({
+      query: ({ slug, participantId, phaseId, contribution, expectedClosure }) => ({
         url: `/substrates/${slug}/participants/${participantId}/participate`,
         method: 'POST',
-        body: { phase_id: phaseId, contribution },
+        body: { phase_id: phaseId, contribution, expected_closure: expectedClosure },
       }),
       transformResponse: data,
       invalidatesTags: ['Participation', 'Proposition', 'Participant'],
@@ -310,3 +310,4 @@ export const {
   useUpdateConnectionMutation,
   useUpdateParticipantConnectionMutation,
 } = commonsApi;
+

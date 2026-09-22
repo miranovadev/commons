@@ -17,11 +17,11 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
 {
     public function test_natural_tragedy_supports_another_participants_final_attempt_and_lineage_exhaustion(): void
     {
-        $journey = $this->replayParticipationScript(__DIR__.'/../../Fixtures/participation/tragedy-lifecycle.json', 67);
+        $journey = $this->replayParticipationScript(__DIR__.'/../../Fixtures/participation/tragedy-lifecycle.json', 103);
         $actor = $journey['participants']['tragic-explorer'];
         $outside = $journey['participants']['previous-horizon-observer'];
         $initial = $journey['responses'][0];
-        $state = $journey['responses'][66];
+        $state = $journey['responses'][102];
 
         // Old Read steps 35/36 and 44 now ride with existing Gate contributions.
         foreach ([['3', 36], ['8', 36], ['40', 39]] as [$observation, $step]) {
@@ -39,8 +39,21 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
         $this->assertDatabaseHas('receipt_consumptions', ['receipt_id' => $selected->id, 'proposition_id' => $classification['current_proposition_id']]);
         $boundary = $journey['responses'][48]['last_commitment'];
         $this->assertTrue($boundary['closure_boundary']);
-        $this->assertEqualsWithDelta(-0.3436754, $boundary['depth'], 0.0000001);
-        $this->assertEqualsWithDelta(-0.9753777, $boundary['cadence'], 0.0000001);
+        $this->assertEqualsWithDelta(0, $boundary['depth'], 0.0000001);
+        $this->assertEqualsWithDelta(0, $boundary['cadence'], 0.0000001);
+        $this->assertSame(10, (int) DB::table('commitment_snapshots')
+            ->where('proposition_id', $boundary['proposition_id'])->value('cadence_interval'));
+        $this->assertSame(12, DB::table('instrument_executions as execution')
+            ->join('phases as phase', 'phase.id', '=', 'execution.phase_id')
+            ->join('cycles as cycle', 'cycle.id', '=', 'phase.cycle_id')
+            ->where('execution.reference', 'like', 'https://evidence.example.test/observation/rhythm-%')
+            ->where('cycle.governing_committal_id', $boundary['proposition_id'])
+            ->whereNotNull('cycle.completed_at')->whereNotNull('cycle.rested_at')->distinct()->count('cycle.id'));
+        foreach ([89, 95, 98, 101] as $step) {
+            $observed = $journey['responses'][$step];
+            $judged = $this->visibleProposition($observed, $observed['current_proposition_id']);
+            $this->assertSame(1, $judged['attestation_summary']['negative']);
+        }
         $this->assertSame(1, DB::table('tragedies')->count(), $this->traceMessage($state));
         $this->assertDatabaseCount('commit_region_exhaustions', 0);
         $tragedy = DB::table('tragedies')->sole();
@@ -59,7 +72,7 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
 
         $journey = $this->continueParticipationScript(8); // Enter and traverse the actual historical route.
         $consumer = $journey['participants']['final-attempt-consumer'];
-        $before = $journey['responses'][74];
+        $before = $journey['responses'][110];
         $this->assertSame($tragedy->context_horizon_id, $before['context_horizon_id']);
         $visible = collect($before['plan']['receipts'])->firstWhere('id', $receipt->id);
         $this->assertSame('available', $visible['availability']);
@@ -68,7 +81,7 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
         $history = DB::table('continuation_failures')->orderBy('proposition_id')->orderBy('exploration_epoch')->get()->toJson();
         $competing = $this->readParticipation($actor);
         $this->assertActionAvailable($competing, 'proposition.variant');
-        $afterVariant = $this->continueParticipationScript(1)['responses'][75];
+        $afterVariant = $this->continueParticipationScript(1)['responses'][111];
         $attempt = DB::table('tragedy_final_attempts')->sole();
         $this->assertSame($tragedy->id, $attempt->tragedy_id);
         $this->assertSame($afterVariant['current_proposition_id'], $attempt->proposition_id);
@@ -77,16 +90,28 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
         $this->assertSame($history, DB::table('continuation_failures')->orderBy('proposition_id')->orderBy('exploration_epoch')->get()->toJson());
         $this->assertDatabaseMissing('participant_receipt_contexts', ['receipt_id' => $receipt->id]);
         $this->assertDatabaseMissing('receipt_consumptions', ['receipt_id' => $receipt->id]);
-        // These exact 24 contributions consume the receipt at step 82 and
-        // exhaust the boundary-governing Commit Region at step 99. No eligibility-driven action picker.
-        for ($step = 76; $step <= 99; $step++) {
+        // These exact 22 contributions consume the receipt at step 116 and
+        // exhaust the boundary-governing Commit Region at step 133. No eligibility-driven action picker.
+        for ($step = 112; $step <= 133; $step++) {
             $after = $this->continueParticipationScript(1)['responses'][$step];
-            if ($step < 99) {
+            if ($step === 132) {
+                // The slower basin has a real 20-vs-10 rhythm. Neutral Cadence
+                // retains C1's negative direction; measured Depth is positive.
+                $closure = $after['plan']['commitment']['closure'];
+                $this->assertSame(20, $closure['cadence_interval']);
+                $this->assertEquals(1, $closure['depth']);
+                $this->assertEquals(0, $closure['cadence']);
+                $this->assertSame('positive', $closure['depth_direction']);
+                $this->assertSame('negative', $closure['cadence_direction']);
+                $this->assertFalse($closure['admissible']);
+                $this->assertSame('no_remaining_potential', $after['plan']['rest_reason']);
+            }
+            if ($step < 133) {
                 $this->assertDatabaseCount('commit_region_exhaustions', 0);
                 $this->assertSame($tragedy->context_horizon_id, $after['context_horizon_id'],
                     'Every live final-attempt step stays in its current Horizon until actual Exhaustion.');
             }
-            if ($step === 82) {
+            if ($step === 116) {
                 $this->assertDatabaseHas('receipt_consumptions', ['receipt_id' => $receipt->id]);
                 $this->assertSame(0, DB::table('commit_region_exhaustions')->count(), 'Consumption alone does not exhaust a Commit Region.');
                 $shared = collect($this->readParticipation($actor)['plan']['receipts'])->firstWhere('id', $receipt->id);
@@ -131,7 +156,7 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
                 ->get()->map(fn ($row) => (array) $row)->all();
             $this->assertSame($oldFailures, $currentFailures, 'Horizon Exhaustion must not rewrite successful history as failure.');
         }
-        $continuation = $this->continueParticipationScript(1)['responses'][100];
+        $continuation = $this->continueParticipationScript(1)['responses'][134];
         $this->assertParticipationScriptComplete();
         $this->assertSame('persist', $continuation['plan']['phase']['kind']);
         $this->assertNotContains($continuation['current_proposition_id'], $closed->pluck('id')->all());

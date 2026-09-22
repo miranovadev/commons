@@ -11,13 +11,10 @@ define Participant movement. Forward movement follows the current Gate's causal
 continuation; recovery follows recorded ancestry backward. No edge means no
 movement.
 
-Each Proposition's **raw/local** evaluation compares the lineage ending at it with
-its provenance lineage in the immediately preceding, complementary Context
-Horizon. The three measurements share that comparison boundary but are
-calculated independently by the existing calculators. "Local" identifies the
-Proposition being evaluated; it does not discard the graph context needed by
-WL, the cross-domain lean comparison, or Depth/Cadence. Raw evaluations never
-read another Proposition's accumulated measurement projection.
+Correspondence and Chirality compare each Proposition's raw/local lineage with its
+provenance in the preceding complementary Context Horizon. Closure has a distinct
+committed-lineage path: Horizons supply Domain labels, never comparison populations.
+Raw evidence evaluations never read accumulated measurement projections.
 
 ## Substrate-level structural attenuation
 
@@ -29,7 +26,7 @@ Shared ancestors count once, at their shortest structural distance. Unrelated
 branches and other substrates are excluded. Participant display/read limits do
 not change this geometry.
 
-For Correspondence, Chirality, locally formed Closure, Depth and Cadence independently:
+For Correspondence and Chirality independently:
 
 \[
 a(d)=\frac{1}{(1+d)^2},\qquad
@@ -41,14 +38,14 @@ values. Distances 0, 1, 2, 3 and 4 have weights 1, 1/4, 1/9, 1/16 and 1/25.
 There is no recursive attenuation of a running aggregate and no final clamp.
 For a two-position lineage, local values (head, parent) of (0, 1) yield 0.2;
 (1, 0) yield 0.8; (1, 1) yield 1. Thus unanimous lineages retain full magnitude,
-while distant signals amongst neutral positions are diminished. Closure propagates its already-formed local value; it is not recomputed from
-attenuated evidence counts or merely averaged from accumulated Depth/Cadence.
-Results are rounded to seven decimal places after accumulation.
+while distant signals amongst neutral positions are diminished. Results are rounded
+to seven decimal places. Closure uses the head's committed structure directly;
+expressive ancestry does not attenuation-average Depth, Cadence or Closure.
 
 The inverse-square historical mass converges along a single chain. Branching
 can add more mass; the shared denominator still keeps every result in [-1, 1].
 Preview and actual Commitment use the same geometry and denominator, including
-the prospective head. Hysteresis resolves the accumulated Depth/Cadence signs.
+the prospective head. Closure hysteresis instead resolves the direct committed components.
 
 Tension, raw Charge and raw Potential consume these accumulated results without
 re-discounting continuation length. This evidence accumulation is distinct from
@@ -144,60 +141,53 @@ creates operational options or traversal edges. Local expressive Writes remain
 visible independently of Closure; Commit requires full admissibility and only
 each Write's own direct Committal may be traversed.
 
-## Local Closure
+## Committed-lineage Closure
 
-Each local Closure evaluation observes the active heads in its relevant lineage
-comparison, using the same hard-supersession rule as Chirality. Soft Variant
-sources remain active; hard-superseded sources do not remain independent head
-observations. Unrelated Horizon heads are not included.
+Closure follows the direct chain from a Committal through its creating Phase and
+Cycle to `governing_committal_id`. No Supersession-parent union, latest-Horizon
+Commit, sibling or abandoned descendant supplies Closure history.
 
-Depth is the mean structural extension of these heads: each head's longest
-incoming Proposition path length (counting the head). Reinforcement does not
-change that structural length. Historical nodes establish path topology rather
-than extra active-head observations.
+Depth compares the current consecutive Domain-run length with the immediately
+preceding opposite-Domain run length, counting only ancestral Committals and the
+candidate. Recovery retains shared ancestors and excludes abandoned descendants.
 
-Cadence is the population coefficient of variation (standard deviation / mean)
-of **Phase touches per active head**. Each persisted Phase whose Gate is a
-Proposition contributes one touch, including the open Phase. Repeated Phases
-count separately; completing or rereading a Phase adds no touch. Neither cycle
-sequence, event spacing nor wall-clock duration enters the calculation. An empty
-population, all-zero counts or a single head has CV 0. Untouched active heads
-remain in the population with count 0.
+Cadence compares the latest two direct ancestral inter-Commit intervals. For A → B,
+freeze the number of other A-governed Cycles completed before B commits, plus B's
+producing Cycle exactly once. Rest counts. Other unresolved Cycles do not count.
+All expressive paths within A's basin count; other governors, including siblings
+and descendants, do not. Every real interval is at least one. Cadence continues
+across Domain boundaries. Later A → B2 may include more completed participation,
+without changing the earlier frozen A → B interval.
 
-For example, Gates A, B, B, C, B give counts A=1, B=3, C=1. Distributed counts
-(2,2,3,2) have CV approximately 0.19245, whereas concentrated counts (1,1,9,1)
-have CV approximately 1.15470. These observations exist before any non-Origin
-Commitment; Cadence never waits for an inter-Commit interval.
+Both similarities are `1 - 2 * abs(a - b) / max(a, b)`, bounded to [-1, +1]
+and rounded to seven decimal places. Origin sets Depth and Cadence to -1. C1
+explicitly sets both to 0 and retains Origin's negative directions through normal
+zero hysteresis. C2 onward is measured. Commitment always requires direction
+alignment; there is no bootstrap eligibility exception.
 
-Depth and Cadence are independently compared with:
+With structural components D and C, counted participants N and the existing
+contribution/receipt ratio q (default 3), Closure is `(D + C + N/q) / (2 + N/q)`.
+The participant cap, Receipt qualification, Commit-source inheritance and
+reclassification rules remain in ReinforcementService. This weight is applied at
+the measured head, without propagating Closure through expressive ancestors.
+Expressive propositions inherit their governing snapshot's structural components;
+they do not extend committed Domain runs or invent intervals. Persisted Committals
+retain their historical snapshot values.
 
-\[
-1 - 2\left(\frac{|A-B|}{\max(A,B)}\right)
-\]
-
-When both inputs are zero the result is persistent (1). With local component
-values D and C, counted participants N and contribution/receipt ratio q (default 3),
-local Closure is `(D + C + N/q) / (2 + N/q)`. This bounded persistence-weighted
-mean preserves the old two-component mean at N=0. See [Reinforcement](reinforcement.md)
-for qualification and why local Closure must form before attenuation.
-
-The comparison remains similarity to the complementary lineage, rather than a
-new absolute concentration threshold. Matching distributions resolve positive;
-different CVs can resolve negative. When the reference CV is zero and the current
-CV is nonzero, the existing comparison resolves -1.
-
-Both components still enter the shared measurement-layer weighted mean exactly
-once. Earlier positions have their own local active-head comparisons and remain
-present as distance-attenuated ancestry; no historical population is added as a
-second set of head observations or attenuated again in Closure.
+`cadence_interval` is immutable on the successor CommitmentSnapshot, including C1.
+Legacy backfill uses governance, producing identity and strict completion cutoffs;
+other-Cycle timestamp ties leave the interval unavailable. Existing observables
+are never rewritten. An unavailable predecessor interval blocks prospective
+Commitment explicitly; it is not replaced with an old formula or neutral guess.
+See [the implementation and transition report](closure-basin-cadence-investigation.md).
 
 ## Commit participation inheritance
 
 A prospective or persisted Committal head inherits its Gate's participation
 state through incoming **Commit edges only**. Its touch count combines its own
 Phases with the Gate's Phase history, transitively across consecutive Commits.
-There is no synthetic extra touch for the proposed Commit. Both components use
-the prospective post-Commit head set, and preview performs no writes.
+Touches remain participation history, but do not supply Closure. Preview performs
+no writes and includes its producing Cycle exactly once in the prospective interval.
 
 Effective Attestations and completed Receipts remain accessible through the same
 inheritance resolver. They retain their original IDs, authors, targets and
@@ -241,12 +231,12 @@ projection. The additive calculator_version migration marks old projections
 as obsolete; normal measurement repair and Potential reads refresh obsolete
 projections before use. A new or changed Phase Gate invalidates disposable
 projections in its substrate because touches can affect either side of a
-comparison. Completion without a Gate change does not invalidate them.
+comparison. A governed Cycle completing also invalidates affected basin previews, including Rest.
 Missing/unmeasurable Potential candidates remain ineligible. No persistent raw
-cache is introduced; prospective Closure always evaluates current Phase history.
+cache is introduced; prospective Closure uses current completed-basin participation plus its producing Cycle.
 
 Immutable commitment snapshots continue to preserve the values observed at
-commitment time. New non-bootstrap commitments record receipt-context-lineage-v6.
+commitment time. New non-bootstrap commitments record `committal-closure-v10`.
 
 See [Attestation polarity and direction history](attestation-polarity.md) for the
 normative distinction between measurement values, retained directions and labels.

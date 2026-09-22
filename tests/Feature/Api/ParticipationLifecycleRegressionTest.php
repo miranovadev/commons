@@ -56,7 +56,8 @@ class ParticipationLifecycleRegressionTest extends ScriptedParticipationTestCase
         $journey = $this->continueParticipationScript(11);
         $committer = $journey['participants']['relay-a'];
         $committed = $journey['responses'][33];
-        $this->assertSame($spent['context_horizon_id'], $committed['context_horizon_id']);
+        $this->assertNotSame($spent['context_horizon_id'], $committed['context_horizon_id']);
+        $this->assertSame('emergence', $committed['domain']);
         $this->assertSame('distinguish', $committed['plan']['phase']['kind']);
         $this->assertNotSame($origin, $committed['plan']['gate_id']);
         $this->assertTrue($this->visibleProposition($this->readParticipation($explorer), $signal)['spent']);

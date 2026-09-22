@@ -55,7 +55,7 @@ class OperationalCommitmentTest extends TestCase
         $closure = [
             ...(new ClosureValues(1, 1))->resolve(),
             'history_proposition_id' => null,
-            'history_source' => 'negative-default',
+            'history_source' => 'negative-default', 'cadence_interval' => 1,
         ];
         $this->mock(ClosureGateService::class, function ($mock) use ($closure): void {
             $mock->shouldReceive('preview', 'forCommitment')->andReturn($closure);
@@ -373,6 +373,7 @@ class OperationalCommitmentTest extends TestCase
         $cycle->forceFill([
             'participant_id' => $participant->id,
             'context_horizon_id' => $this->horizonForRegisterFixture($participant, $register)->id,
+            'governing_committal_id' => $this->horizonForRegisterFixture($participant, $register)->opened_by_proposition_id,
             'sequence' => (int) $participant->cycles()->max('sequence') + 1,
         ])->save();
         $phase = new Phase;
