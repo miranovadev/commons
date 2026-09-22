@@ -7,7 +7,7 @@ permissions:
 
 jobs:
   test:
-    name: Natural evidence replay
+    name: Natural final-attempt evidence
     runs-on: ubuntu-latest
     # Core follows a frontend job capped at two minutes: 2 + 8 = 10.
     timeout-minutes: 10
@@ -73,4 +73,4 @@ jobs:
       - name: Prepare test environment
         run: cp .env.example .env
       - name: Inspect natural replay
-        run: php artisan test --filter=ClosureEvidenceDiagnosticTest
+        run: php artisan test --filter=ClosureRefutationDiagnosticTest
