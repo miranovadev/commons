@@ -95,7 +95,7 @@ class LocalParticipantNavigationTest extends TestCase
     {
         $near = $this->region('Moderate nearby Potential', 0.4);
         $far = $this->region('Higher raw Potential', 0.9);
-        $bridge = $this->node('Bridge', 0.9, 'expressive');
+        $bridge = $this->node('Bridge', 0.9, 'expressive', governor: $near);
         $this->edge($near, $bridge);
         $this->edge($bridge, $far);
         $nearPosition = $near->children()->where('statement', 'Moderate nearby Potential continuation')->sole();
@@ -139,7 +139,7 @@ class LocalParticipantNavigationTest extends TestCase
         $this->assertSame(0.1, $ordinary['potential_charge']);
         // Recovery excludes the exhausted observer from continuation evidence.
         // Supply a separate viable continuation for the nearer region.
-        $other = $this->node('Other near continuation', 0.0, 'expressive');
+        $other = $this->node('Other near continuation', 0.0, 'expressive', governor: $near);
         $this->edge($near, $other);
         $this->refreshFixtureMeasurements();
         $recovery = $potential->recoverFrom($position);
@@ -153,9 +153,9 @@ class LocalParticipantNavigationTest extends TestCase
     {
         $near = $this->node('Lower raw Charge nearby', 0.8);
         $far = $this->node('Highest raw Charge farther away', 0.0);
-        $bridge = $this->node('Bridge', 0.8, 'expressive');
-        $middle = $this->node('Middle', 0.8, 'expressive');
-        $position = $this->node('Expressive observer', 0.8, 'expressive');
+        $bridge = $this->node('Bridge', 0.8, 'expressive', governor: $near);
+        $middle = $this->node('Middle', 0.8, 'expressive', governor: $near);
+        $position = $this->node('Expressive observer', 0.8, 'expressive', governor: $near);
         $this->edge($near, $bridge);
         $this->edge($bridge, $middle);
         $this->edge($middle, $far);
@@ -192,7 +192,7 @@ class LocalParticipantNavigationTest extends TestCase
     {
         $first = $this->node('First commitment', 0.0);
         $second = $this->node('Second commitment', 0.0);
-        $expressive = $this->node('Latest expressive position', 0.0, 'expressive');
+        $expressive = $this->node('Latest expressive position', 0.0, 'expressive', governor: $first);
         $this->edge($first, $expressive);
         $this->edge($expressive, $second); // Both commitments are one edge from the observer.
         $participant = $this->participant('returning', $expressive);
@@ -215,7 +215,7 @@ class LocalParticipantNavigationTest extends TestCase
     public function test_a_zero_potential_commitment_keeps_continuity_even_when_origin_wins_potential(): void
     {
         $origin = $this->region('Established commitment', 0.8);
-        $concord = $this->node('Expressive Concord', 0.8, 'expressive');
+        $concord = $this->node('Expressive Concord', 0.8, 'expressive', governor: $origin);
         $concord->forceFill(['register' => 'canon'])->save();
         $this->edge($origin, $concord);
         $committed = $this->node('New commitment', 0.0);
@@ -277,7 +277,7 @@ class LocalParticipantNavigationTest extends TestCase
     public function test_healthy_evidenced_traverse_prevents_redundant_variant_even_with_positive_potential(): void
     {
         $position = $this->node('Current', 0.8);
-        $target = $this->node('Existing distinction', 0.1, 'expressive');
+        $target = $this->node('Existing distinction', 0.1, 'expressive', governor: $position);
         $this->edge($position, $target);
         $participant = $this->participant('walker', $position);
         $this->establishPath($participant, $target);
@@ -302,7 +302,7 @@ class LocalParticipantNavigationTest extends TestCase
     public function test_invalid_traverse_targets_and_legacy_actions_are_rejected_without_movement(): void
     {
         $position = $this->node('Current', 0.8);
-        $target = $this->node('Existing', 0.1, 'expressive');
+        $target = $this->node('Existing', 0.1, 'expressive', governor: $position);
         $foreign = $this->node('Disconnected', 0.0, 'expressive');
         $this->edge($position, $target);
         $participant = $this->participant('walker', $position);
@@ -355,8 +355,8 @@ class LocalParticipantNavigationTest extends TestCase
 
     public function test_recovery_stops_at_the_nearest_sequential_ancestor(): void
     {
-        $position = $this->node('Observer', 0.0, 'expressive');
         $low = $this->region('Near low', 0.03);
+        $position = $this->node('Observer', 0.0, 'expressive', governor: $low);
         $near = $this->region('Near winner', 0.06);
         $bridge = $this->node('Empty bridge', 0.0);
         $far = $this->region('Distant maximum', 1.0);
@@ -380,8 +380,8 @@ class LocalParticipantNavigationTest extends TestCase
         $position = $this->node('Observer', 0.0);
         $near = $this->region('Short continuation', 0.7);
         $long = $this->node('Long continuation', 0.7);
-        $middle = $this->node('Middle', 0.7, 'expressive');
-        $end = $this->node('End', 0.0, 'expressive');
+        $middle = $this->node('Middle', 0.7, 'expressive', governor: $long);
+        $end = $this->node('End', 0.0, 'expressive', governor: $long);
         $this->edge($near, $position);
         $this->edge($long, $position);
         $this->edge($long, $middle);
@@ -395,8 +395,8 @@ class LocalParticipantNavigationTest extends TestCase
 
     public function test_repeated_local_rest_does_not_mark_a_still_open_region_exhausted(): void
     {
-        $position = $this->node('Empty region', 0.0, 'expressive');
         $first = $this->region('First viable', 0.6);
+        $position = $this->node('Empty region', 0.0, 'expressive', governor: $first);
         $second = $this->region('Second viable', 0.9);
         $this->edge($first, $position);
         $this->edge($second, $first);
@@ -488,7 +488,7 @@ class LocalParticipantNavigationTest extends TestCase
     {
         config()->set('participation.max_actions_per_wake', 1);
         $gate = $this->node('Current', 0.8);
-        $target = $this->node('Local', 0.0, 'expressive');
+        $target = $this->node('Local', 0.0, 'expressive', governor: $gate);
         $this->edge($gate, $target);
         $participant = $this->participant('automated', $gate);
         $this->establishPath($participant, $target);
@@ -574,6 +574,7 @@ class LocalParticipantNavigationTest extends TestCase
             $cycle->forceFill([
                 'participant_id' => $participant->id,
                 'sequence' => (int) $participant->cycles()->max('sequence') + 1,
+                'governing_committal_id' => $gate?->tier === 'committal' ? $gate->id : $gate?->phase->cycle->governing_committal_id,
             ])->save();
         }
         $phase = new Phase;
@@ -588,17 +589,21 @@ class LocalParticipantNavigationTest extends TestCase
     private function region(string $name, float $potential): Proposition
     {
         $source = $this->node($name, $potential);
-        $target = $this->node($name.' continuation', 0.0, 'expressive');
+        $target = $this->node($name.' continuation', 0.0, 'expressive', governor: $source);
         $this->edge($source, $target);
 
         return $source;
     }
 
-    private function node(string $name, float $tension, string $tier = 'committal', PhaseKind $position = PhaseKind::Distinguish): Proposition
+    private function node(string $name, float $tension, string $tier = 'committal', PhaseKind $position = PhaseKind::Distinguish, ?Proposition $governor = null): Proposition
     {
+        $phase = $this->phaseAtPositionFixture($this->authorPhase, $position);
+        if ($governor !== null) {
+            $phase = $this->governedPhaseFixture($phase, $governor);
+        }
         $node = new Proposition;
         $node->forceFill([
-            'phase_id' => $this->phaseAtPositionFixture($this->authorPhase, $position)->id, 'statement' => $name,
+            'phase_id' => $phase->id, 'statement' => $name,
             'register' => $tier === 'committal' ? 'canon' : ContextDomain::Emergence->registerFor($position), 'tier' => $tier,
         ])->save();
         $entry = app(LedgerService::class)->record($node);
@@ -648,3 +653,4 @@ class LocalParticipantNavigationTest extends TestCase
         return app(ParticipationService::class)->stateFor($participant);
     }
 }
+

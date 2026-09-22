@@ -45,7 +45,8 @@ class DomainOperationalEligibilityTest extends TestCase
     #[DataProvider('domains')]
     public function test_operational_pools_exclude_analogous_registers_in_both_query_paths(ContextDomain $domain): void
     {
-        [$cycles, $seed] = $this->regions();
+        [$cycles, $seeds] = $this->regions();
+        $seed = $seeds[$domain->value];
         $cycle = $cycles[$domain->value];
         $foreign = $cycles[$domain->opposite()->value];
         $first = $domain->registerAt(RegisterPosition::First);
@@ -131,6 +132,9 @@ class DomainOperationalEligibilityTest extends TestCase
         $substrate = new Substrate;
         $substrate->forceFill(['slug' => 'eligibility', 'title' => 'Eligibility', 'visibility' => 'public', 'configuration' => []])->save();
         $emergence = $this->cycle($substrate, 'emergence');
+        $origin = $this->node($emergence, 'canon', tier: 'committal', kind: PhaseKind::Order);
+        $this->freezeRegionFixture($origin);
+        $emergence = $this->cycle($substrate, 'emergence-governed', $origin);
         $seed = $this->node($emergence, 'canon', tier: 'committal', kind: PhaseKind::Constrain);
         app(CommitRegionPolarityService::class)->establishOrigin($seed, 'support');
         $snapshot = new CommitmentSnapshot;
@@ -139,17 +143,17 @@ class DomainOperationalEligibilityTest extends TestCase
             'direction_before' => 'emergence', 'direction_after' => 'settlement', 'calculator_version' => 'eligibility-fixture', 'evaluated_at' => now()])->save();
         app(ContextHorizonProjector::class)->apply($snapshot);
         // The old Emergence Cycle remains valid while Settlement operates too.
-        $settlement = $this->cycle($substrate, 'settlement');
+        $settlement = $this->cycle($substrate, 'settlement', $seed);
 
-        return [['emergence' => $emergence, 'settlement' => $settlement], $seed];
+        return [['emergence' => $emergence, 'settlement' => $settlement], ['emergence' => $origin, 'settlement' => $seed]];
     }
 
-    private function cycle(Substrate $substrate, string $callsign): Cycle
+    private function cycle(Substrate $substrate, string $callsign, ?Proposition $governor = null): Cycle
     {
         $participant = new Participant;
         $participant->forceFill(['substrate_id' => $substrate->id, 'callsign' => $callsign])->save();
         $cycle = new Cycle;
-        $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => 1])->save();
+        $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => 1, 'governing_committal_id' => $governor?->id])->save();
 
         return $cycle;
     }
@@ -192,3 +196,4 @@ class DomainOperationalEligibilityTest extends TestCase
         }
     }
 }
+

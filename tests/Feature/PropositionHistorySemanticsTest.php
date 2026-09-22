@@ -83,6 +83,8 @@ class PropositionHistorySemanticsTest extends TestCase
         string $gateTier,
     ): void {
         $parent = $this->node('Provenance', 'concord', 'committal');
+        $this->freezeRegionFixture($parent);
+        $this->history = $this->governedPhaseFixture($this->history, $parent);
         if ($operation === 'reconcile') {
             $read = $this->node('Expressive Read', 'concord', position: PhaseKind::Constrain);
             $this->edge($parent, $read);
@@ -116,7 +118,9 @@ class PropositionHistorySemanticsTest extends TestCase
             $this->giveHistory($item, $operation === 'revise' ? 'refute' : 'support');
         }
         $cycle = new Cycle;
-        $cycle->forceFill(['participant_id' => $this->participant->id, 'sequence' => 2])->save();
+        $cycle->forceFill(['participant_id' => $this->participant->id, 'sequence' => (int) $this->participant->cycles()->max('sequence') + 1,
+            'context_horizon_id' => $this->history->cycle->context_horizon_id,
+            'governing_committal_id' => $this->history->cycle->governing_committal_id])->save();
         if ($kind === PhaseKind::Mediate) {
             $disperse = new Phase;
             $disperse->forceFill([
@@ -237,3 +241,4 @@ class PropositionHistorySemanticsTest extends TestCase
         app(LedgerService::class)->record($edge);
     }
 }
+

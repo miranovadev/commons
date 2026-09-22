@@ -5,6 +5,7 @@ namespace Tests\Fixtures;
 use App\Enums\ObservableDirection;
 use App\Enums\PhaseKind;
 use App\Models\Attestation;
+use App\Models\CommitmentSnapshot;
 use App\Models\ContextHorizon;
 use App\Models\Cycle;
 use App\Models\Participant;
@@ -42,6 +43,8 @@ final class ParticipantContextFixture
     private ?Proposition $unrelatedSeed = null;
 
     public array $writes = [];
+
+    private array $governedCycles = [];
 
     public function __construct(int $depth = 25, int $branches = 6, bool $withEvidence = true)
     {
@@ -88,7 +91,8 @@ final class ParticipantContextFixture
             $this->writes[] = $write->id;
         }
         $cycle = new Cycle;
-        $cycle->forceFill(['participant_id' => $this->viewer->id, 'sequence' => 2])->save();
+        $cycle->forceFill(['participant_id' => $this->viewer->id, 'sequence' => (int) $this->viewer->cycles()->max('sequence') + 1,
+            'context_horizon_id' => $this->history->context_horizon_id, 'governing_committal_id' => $this->seed->id])->save();
         $disperse = new Phase;
         $disperse->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Disperse, 'write_register' => 'activity',
             'gate_proposition_id' => $anchor->id, 'started_at' => now(), 'completed_at' => now()])->save();
@@ -102,7 +106,9 @@ final class ParticipantContextFixture
     {
         $phase = new Phase;
         $kind = $position ?? ($type === 'reconcile' ? PhaseKind::Mediate : ($type === 'commit' ? PhaseKind::Order : PhaseKind::Distinguish));
-        $phase->forceFill(['cycle_id' => $this->history->id, 'kind' => $kind, 'write_register' => $register,
+        $governor = $parent?->tier === 'committal' ? $parent : $parent?->phase->cycle->governingCommittal;
+        $cycle = $governor === null ? $this->history : $this->governedCycle($governor);
+        $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => $kind, 'write_register' => $register,
             'gate_proposition_id' => $parent?->id, 'started_at' => now(), 'completed_at' => now()])->save();
         $node = new Proposition;
         $node->forceFill(['phase_id' => $phase->id, 'register' => $register, 'tier' => $tier,
@@ -110,11 +116,32 @@ final class ParticipantContextFixture
                 'A useful proposal states its assumptions and explains how the next observation could support or challenge them. '.
                 'We preserve earlier contributions while making the current decision and its governing provenance clear.'])->save();
         app(LedgerService::class)->record($node);
+        if ($tier === 'committal') {
+            $horizon = $node->phase->cycle->contextHorizon;
+            (new CommitmentSnapshot)->forceFill(['proposition_id' => $node->id, 'substrate_id' => $horizon->substrate_id,
+                'ledger_entry_id' => $node->ledgerEntry->id, 'correspondence' => 0, 'chirality' => 0, 'closure' => 0,
+                'prominence' => .5, 'turbulence' => .5, 'tension' => 0, 'direction_before' => $horizon->domain,
+                'direction_after' => $horizon->domain, 'calculator_version' => 'region-fixture', 'evaluated_at' => now()])->save();
+        }
         if ($parent !== null) {
             $this->edge($parent, $node, $type);
         }
 
         return $node;
+    }
+
+    private function governedCycle(Proposition $seed): Cycle
+    {
+        if (! isset($this->governedCycles[$seed->id])) {
+            $cycle = new Cycle;
+            $cycle->forceFill(['participant_id' => $this->viewer->id,
+                'sequence' => (int) $this->viewer->cycles()->max('sequence') + 1,
+                'context_horizon_id' => $seed->phase->cycle->context_horizon_id,
+                'governing_committal_id' => $seed->id, 'completed_at' => now()])->save();
+            $this->governedCycles[$seed->id] = $cycle;
+        }
+
+        return $this->governedCycles[$seed->id];
     }
 
     public function edge(Proposition $source, Proposition $target, string $type): void
@@ -146,6 +173,7 @@ final class ParticipantContextFixture
         // These nodes are intentionally outside the tested operation. Bulk-load
         // complete storage history rather than replaying thousands of unrelated
         // fixture setup queries. The real context/workspace services still run.
+        $unrelatedCycle = $this->governedCycle($this->unrelatedSeed);
         $phases = $nodes = $edges = $ledger = $memberships = [];
         $horizonId = ContextHorizon::where('substrate_id', $this->substrate->id)->whereNull('closed_at')->value('id');
         $sequence = (int) DB::table('substrate_ledger_entries')->where('substrate_id', $this->substrate->id)->max('sequence');
@@ -156,7 +184,7 @@ final class ParticipantContextFixture
             $entryId = strtolower((string) str()->ulid());
             $register = ['activity', 'frontier', 'canon'][count($this->unrelated) % 3];
             $timestamps = ['created_at' => now(), 'updated_at' => now()];
-            $phases[] = [...$timestamps, 'id' => $phaseId, 'cycle_id' => $this->history->id, 'kind' => PhaseKind::Distinguish->value,
+            $phases[] = [...$timestamps, 'id' => $phaseId, 'cycle_id' => $unrelatedCycle->id, 'kind' => PhaseKind::Distinguish->value,
                 'write_register' => $register, 'gate_proposition_id' => $this->unrelatedSeed->id, 'started_at' => now(), 'completed_at' => now()];
             $nodes[] = [...$timestamps, 'id' => $nodeId, 'phase_id' => $phaseId, 'register' => $register,
                 'tier' => 'expressive', 'statement' => $this->unrelatedSeed->statement];
@@ -182,3 +210,4 @@ final class ParticipantContextFixture
             ->update(['calculator_version' => null]);
     }
 }
+

@@ -212,6 +212,13 @@ class ParticipationPerformanceTest extends TestCase
         $node = function ($register, $parent = null, $tier = 'expressive', $type = 'variant', ?PhaseKind $position = null) use (&$nodes, $history) {
             $index = count($nodes) % 3;
             $history[$index] = $this->phaseForRegisterFixture($history[$index], $register, $position);
+            if ($parent !== null) {
+                if ($parent->tier === 'committal') {
+                    $this->freezeRegionFixture($parent);
+                }
+                $governor = $parent->tier === 'committal' ? $parent : $parent->phase->cycle->governingCommittal;
+                $history[$index] = $this->governedPhaseFixture($history[$index], $governor, $parent);
+            }
             $p = new Proposition;
             $p->forceFill(['phase_id' => $history[$index]->id, 'register' => $register, 'tier' => $tier, 'statement' => 'Fixture proposition '.count($nodes), 'created_at' => now()->subSeconds(1000 - count($nodes))])->save();
             app(LedgerService::class)->record($p);
@@ -270,7 +277,8 @@ class ParticipationPerformanceTest extends TestCase
 
         $cycle = new Cycle;
         $cycle->forceFill(['participant_id' => $participants[0]->id, 'sequence' => $participants[0]->cycles()->max('sequence') + 1,
-            'context_horizon_id' => $seed->phase->cycle->context_horizon_id])->save();
+            'context_horizon_id' => $seed->phase->cycle->context_horizon_id,
+            'governing_committal_id' => $seed->id])->save();
         $disperse = new Phase;
         $disperse->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Disperse, 'write_register' => 'signal', 'gate_proposition_id' => $reads[0]->id, 'started_at' => now(), 'completed_at' => now()])->save();
         $phase = new Phase;
@@ -283,3 +291,4 @@ class ParticipationPerformanceTest extends TestCase
         return [$participants[0], $nodes];
     }
 }
+

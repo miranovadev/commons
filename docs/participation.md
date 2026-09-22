@@ -348,14 +348,14 @@ operation explicitly requires it. It does not define Participant movement and
 never creates a traversal edge. Context visibility, Homeostatic populations and
 movement topology are separate contracts. No edge means no movement.
 
-`CommitRegionService` resolves the nearest Committal ancestry, stopping the
-backward walk at each Committal node. That seed starts a region of expressive
-descendants across all forward branches; another Committal node terminates that
-branch and seeds a new region. Superseded intermediates remain structural paths.
-No migration, chronology cutoff, or Domain transition is required. A rootless
-position or conflicting committal ancestry supplies no inferred region. Legacy
-merges with conflicting seeds and their descendants are excluded from both
-regions, rather than connecting otherwise isolated pools.
+`CommitRegionService` resolves ownership from immutable Cycle governance. A
+Committal owns itself. An expressive Proposition belongs to its creating Cycle's
+`governing_committal_id`; Supersession records causal provenance independently.
+Multiple parent Regions do not erase a valid owner. Missing or invalid governance
+fails closed without ancestry inference. Causal history preserves superseded
+intermediates; active populations, movement and operational admissibility remain
+separate contracts.
+See [Commit Region ownership](commit-region-ownership.md).
 
 An immediate parent alone is too narrow to define a Homeostatic calculation
 population; this does not widen movement beyond the current Gate's authorised
@@ -487,3 +487,4 @@ source or result. There are no standalone Receipt Read or Replay action families
 No-Potential failure is observed outside the Rest write lock and published with an exact field-version guard. First failure records Tragedy and its unique Receipt, keeping the Horizon open. A subsequent no-Potential Rest can record Exhaustion only after that Receipt has been consumed by Reclassify. Compact historical alternatives remain visible and non-actionable. See [Tragedy and final-attempt Exhaustion](branch-tragedy.md).
 
 Gate Receipt load/unload desired states accompany a forward Phase contribution (never Rest) and take cognitive effect in the next Phase. Only loaded evidence grounding the participant-facing Read activates a full body; other Receipt references are metadata. See the normative [Receipt model](receipt-region-context.md), including the shared recovery-scoped Tragedy exception.
+

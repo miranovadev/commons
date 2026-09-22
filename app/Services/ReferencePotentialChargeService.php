@@ -267,6 +267,7 @@ final readonly class ReferencePotentialChargeService
         Collection $edges,
         ?string $excludedPositionId = null,
     ): array {
+        $seeds = app(CommitRegionService::class)->seedIdsFor($propositions, $propositions);
         $frontier = collect([$positionId]);
         $visited = collect([$positionId => true]);
         if ($excludedPositionId !== null) {
@@ -289,7 +290,7 @@ final readonly class ReferencePotentialChargeService
                     $visited->put($targetId, true);
                     $target = $propositions->get($targetId);
 
-                    if ($target === null || $target->tier === 'committal') {
+                    if ($target === null || $target->tier === 'committal' || ($seeds[$targetId] ?? null) !== $positionId) {
                         continue;
                     }
 
@@ -332,3 +333,4 @@ final readonly class ReferencePotentialChargeService
         return round(max(0, abs($committalTension) - abs($expressiveTension)), 7);
     }
 }
+

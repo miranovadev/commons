@@ -38,14 +38,9 @@ final readonly class GraphProjectionService
         } catch (PotentialProjectionUnavailable) {
             $current = false;
         }
-        $horizonIds = $visible->map(fn ($node) => $node->phase->cycle->context_horizon_id)->unique();
-        $regions = DB::table('potential_region_states')->whereIn('context_horizon_id', $horizonIds)->pluck('local_state');
-        $nodes = [];
-        foreach ($regions as $json) {
-            $nodes += json_decode($json, true, flags: JSON_THROW_ON_ERROR)['nodes'];
-        }
-        $seeds = $visible->mapWithKeys(fn ($node) => [$node->id => $node->tier === 'committal' ? $node->id : ($nodes[$node->id]['seed_id'] ?? null)]);
-        $snapshots = CommitmentSnapshot::whereIn('proposition_id', $seeds->values()->filter()->merge($visible->pluck('id'))->unique())->get()->keyBy('proposition_id');
+        // Identity is immutable governance even when disposable terrain is stale.
+        $seeds = app(CommitRegionService::class)->seedIdsFor($visible, $visible);
+        $snapshots = CommitmentSnapshot::whereIn('proposition_id', collect($seeds)->values()->filter()->merge($visible->pluck('id'))->unique())->get()->keyBy('proposition_id');
         $entries = DB::table('potential_entries')->whereIn('proposition_id', $visible->pluck('id'))->get()->keyBy('proposition_id');
         $touches = Phase::whereIn('gate_proposition_id', $visible->pluck('id'))->selectRaw('gate_proposition_id, count(*) as aggregate')
             ->groupBy('gate_proposition_id')->pluck('aggregate', 'gate_proposition_id');
@@ -96,3 +91,4 @@ final readonly class GraphProjectionService
         }
     }
 }
+

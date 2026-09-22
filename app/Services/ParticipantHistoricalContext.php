@@ -9,7 +9,6 @@ use App\Models\Supersession;
 use App\Services\Participation\ParticipationContext;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 
 /** Observation only. Never feed these objects into options, evidence or schemas. */
 final readonly class ParticipantHistoricalContext
@@ -52,7 +51,7 @@ final readonly class ParticipantHistoricalContext
                 ->whereHas('commitmentSnapshot')->get();
             $sources = $this->positions->scope(Proposition::query(), $phase, PhaseKind::Bias)
                 ->whereIn('id', Supersession::whereIn('target_proposition_id', $writes->pluck('id'))
-                    ->where('type', 'commit')->select('source_proposition_id'))->get(['propositions.id', 'propositions.tier']);
+                    ->where('type', 'commit')->select('source_proposition_id'))->get(['propositions.*']);
             $local = Supersession::whereIn('source_proposition_id', $this->inRegion($sources, $seed)->pluck('id'))
                 ->where('type', 'commit')->pluck('target_proposition_id');
             $writes = $writes->whereIn('id', $local);
@@ -115,25 +114,13 @@ final readonly class ParticipantHistoricalContext
         return Supersession::whereIn('source_proposition_id', $ids)->select('target_proposition_id');
     }
 
-    /** Resolve only candidate ancestry, in batches, stopping at every Commit. */
+    /** Historical alternatives use the same immutable owner as live populations. */
     private function inRegion(Collection $candidates, ?Proposition $seed): Collection
     {
         if ($seed === null || $candidates->isEmpty()) {
             return collect();
         }
-        $nodes = $candidates->keyBy('id');
-        $frontier = $nodes->where('tier', 'expressive')->keys();
-        $edges = collect();
-        while ($frontier->isNotEmpty()) {
-            $incoming = DB::table('supersessions')->whereIn('target_proposition_id', $frontier)
-                ->get(['source_proposition_id', 'target_proposition_id']);
-            $edges = $edges->concat($incoming);
-            $parents = Proposition::whereIn('id', $incoming->pluck('source_proposition_id')->diff($nodes->keys()))
-                ->get(['id', 'tier'])->keyBy('id');
-            $nodes = $nodes->union($parents);
-            $frontier = $parents->where('tier', 'expressive')->keys();
-        }
-        $seeds = $this->regions->seedIdsFor($candidates, $nodes, $edges->groupBy('target_proposition_id'));
+        $seeds = $this->regions->seedIdsFor($candidates, $candidates);
 
         return $candidates->filter(fn ($node) => ($seeds[$node->id] ?? null) === $seed->id)->values();
     }
@@ -151,3 +138,4 @@ final readonly class ParticipantHistoricalContext
         ])->values();
     }
 }
+

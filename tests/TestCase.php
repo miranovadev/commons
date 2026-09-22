@@ -29,6 +29,38 @@ use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 
 abstract class TestCase extends BaseTestCase
 {
+    /** Explicit frozen non-boundary seed for isolated ownership fixtures. */
+    protected function freezeRegionFixture(Proposition $seed, float $correspondence = 0): void
+    {
+        if ($seed->commitmentSnapshot()->exists()) {
+            return;
+        }
+        $horizon = $seed->phase->cycle->contextHorizon;
+        $snapshot = new CommitmentSnapshot;
+        $snapshot->forceFill(['proposition_id' => $seed->id, 'substrate_id' => $horizon->substrate_id,
+            'ledger_entry_id' => $seed->ledgerEntry->id, 'correspondence' => $correspondence, 'chirality' => 0, 'closure' => 0,
+            'cadence_interval' => 1,
+            'prominence' => .5, 'turbulence' => .5, 'tension' => 0,
+            'direction_before' => $horizon->domain, 'direction_after' => $horizon->domain,
+            'calculator_version' => 'region-fixture', 'evaluated_at' => now()])->save();
+        $seed->unsetRelation('commitmentSnapshot');
+    }
+
+    /** Fixture authors supply the governor before creating immutable history. */
+    protected function governedPhaseFixture(Phase $base, Proposition $governor, ?Proposition $gate = null): Phase
+    {
+        $participant = $base->cycle->participant;
+        $horizon = app(ContextHorizonProjector::class)->forEntry($governor);
+        $cycle = new Cycle;
+        $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => (int) $participant->cycles()->max('sequence') + 1,
+            'context_horizon_id' => $horizon->id, 'governing_committal_id' => $governor->id])->save();
+        $phase = new Phase;
+        $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => $base->kind, 'write_register' => $base->write_register,
+            'gate_proposition_id' => $gate?->id, 'started_at' => now(), 'completed_at' => $base->completed_at])->save();
+
+        return $phase;
+    }
+
     /** Finish direct fixture writes before exercising an ordinary read or contribution. */
     protected function publishPotentialFixture(Participant|Substrate $subject, bool $recalculate = false): void
     {
@@ -199,3 +231,4 @@ abstract class TestCase extends BaseTestCase
         $this->loadedReceiptFixture($node);
     }
 }
+

@@ -55,6 +55,8 @@ class BiasGateTest extends TestCase
         $this->substrate->forceFill(['slug' => 'bias', 'title' => 'Bias', 'visibility' => 'public', 'configuration' => []])->save();
         $this->history = $this->newPhase($this->participant('author'), PhaseKind::Distinguish, $register === 'stance' ? 'signal' : 'activity', true);
         $this->parent = $this->node('Local provenance', $write, 'committal', position: PhaseKind::Mediate);
+        $this->freezeRegionFixture($this->parent);
+        $this->history = $this->governedPhaseFixture($this->history, $this->parent);
         $this->attest($this->parent, 'support');
         $this->gate = $this->node('Current Gate', $register, position: PhaseKind::Mediate);
         $this->edge($this->parent, $this->gate);
@@ -274,10 +276,11 @@ class BiasGateTest extends TestCase
         $this->edge($hard, $this->node('Hard successor', 'concord', position: PhaseKind::Bias), 'reclassify');
         $boundary = $this->node('Committal boundary', 'concord', 'committal', position: PhaseKind::Bias);
         $this->edge($deep, $boundary); // Soft edge leaves deep active.
-        $beyond = $this->node('Beyond boundary', 'stance', position: PhaseKind::Mediate);
+        $beyond = $this->node('Beyond boundary', 'stance', position: PhaseKind::Mediate, governor: $boundary);
         $this->edge($boundary, $beyond);
         $this->attest($beyond, 'refute');
-        $this->attest($this->node('Unrelated Stance', 'stance', position: PhaseKind::Mediate), 'refute');
+        $unrelatedSeed = $this->node('Unrelated region', 'concord', 'committal', position: PhaseKind::Bias);
+        $this->attest($this->node('Unrelated Stance', 'stance', position: PhaseKind::Mediate, governor: $unrelatedSeed), 'refute');
         config()->set('schemas.options.limit', 1);
         $this->viewer->forceFill(['max_read_count' => 1])->save();
         $other = $this->sibling('Another supported Stance');
@@ -397,11 +400,18 @@ class BiasGateTest extends TestCase
         return $node;
     }
 
-    private function node(string $statement, string $register, string $tier = 'expressive', PhaseKind $position = PhaseKind::Mediate): Proposition
+    private function node(string $statement, string $register, string $tier = 'expressive', PhaseKind $position = PhaseKind::Mediate, ?Proposition $governor = null): Proposition
     {
+        $phase = $this->phaseAtPositionFixture($this->history, $position);
+        if ($governor !== null) {
+            $phase = $this->governedPhaseFixture($phase, $governor);
+        }
         $node = new Proposition;
-        $node->forceFill(['phase_id' => $this->phaseAtPositionFixture($this->history, $position)->id, 'register' => $register, 'tier' => $tier, 'statement' => $statement])->save();
+        $node->forceFill(['phase_id' => $phase->id, 'register' => $register, 'tier' => $tier, 'statement' => $statement])->save();
         app(LedgerService::class)->record($node);
+        if ($tier === 'committal') {
+            $this->freezeRegionFixture($node);
+        }
 
         return $node;
     }
@@ -426,7 +436,9 @@ class BiasGateTest extends TestCase
         $cycle = new Cycle;
         $horizon = $this->horizonForRegisterFixture($participant, $register);
         $cycle->context_horizon_id = $horizon->id;
-        $cycle->governing_committal_id = $horizon->opened_by_proposition_id;
+        $cycle->governing_committal_id = isset($this->parent) && $this->parent->phase->cycle->participant->substrate_id === $participant->substrate_id
+            && $this->parent->phase->cycle->context_horizon_id === $horizon->id
+                ? $this->parent->id : $horizon->opened_by_proposition_id;
         $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => (int) $participant->cycles()->max('sequence') + 1, 'completed_at' => $completed ? now() : null])->save();
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => $kind, 'write_register' => $register, 'started_at' => now(), 'completed_at' => $completed ? now() : null])->save();
@@ -445,3 +457,4 @@ class BiasGateTest extends TestCase
         return $attestation;
     }
 }
+

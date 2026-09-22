@@ -281,7 +281,7 @@ class ParticipantActionContractTest extends TestCase
         $history->forceFill(['participant_id' => $participant->id, 'sequence' => 1, 'completed_at' => now()])->save();
         $past = new Phase;
         $past->forceFill(['cycle_id' => $history->id, 'kind' => PhaseKind::Order, 'write_register' => 'activity', 'started_at' => now(), 'completed_at' => now()])->save();
-        $node = function (string $register, ?Proposition $parent = null, PhaseKind $position = PhaseKind::Order, string $edgeType = 'variant') use ($past): Proposition {
+        $node = function (string $register, ?Proposition $parent = null, PhaseKind $position = PhaseKind::Order, string $edgeType = 'variant') use (&$past): Proposition {
             $node = new Proposition;
             $node->forceFill(['phase_id' => $this->phaseAtPositionFixture($past, $position)->id, 'register' => $register, 'tier' => $parent ? 'expressive' : 'committal', 'statement' => 'Contract fixture'])->save();
             app(LedgerService::class)->record($node);
@@ -296,6 +296,8 @@ class ParticipantActionContractTest extends TestCase
             return $node;
         };
         $seed = $node('canon');
+        $this->freezeRegionFixture($seed, -1);
+        $past = $this->governedPhaseFixture($past, $seed);
         app(CommitRegionPolarityService::class)->establishOrigin($seed, 'support');
         $registers = ['canon', 'activity', 'frontier', 'canon', 'activity', 'frontier', 'canon'];
         $writes = ['activity', 'frontier', 'canon', 'activity', 'frontier', 'canon', 'canon'];
@@ -306,6 +308,7 @@ class ParticipantActionContractTest extends TestCase
             $owner->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'gate-owner'])->save();
             $ownerCycle = $history->replicate();
             $ownerCycle->participant_id = $owner->id;
+            $ownerCycle->governing_committal_id = $seed->id;
             $ownerCycle->save();
             $ownerPhase = $gate->phase->replicate();
             $ownerPhase->cycle_id = $ownerCycle->id;
@@ -359,7 +362,8 @@ class ParticipantActionContractTest extends TestCase
             $this->loadedReceiptFixture($gate);
         }
         $cycle = new Cycle;
-        $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => 2, 'context_horizon_id' => $history->context_horizon_id])->save();
+        $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => (int) $participant->cycles()->max('sequence') + 1, 'context_horizon_id' => $history->context_horizon_id,
+            'governing_committal_id' => $seed->id])->save();
         if ($kind === PhaseKind::Mediate) {
             $disperse = new Phase;
             $disperse->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Disperse, 'write_register' => 'activity', 'gate_proposition_id' => $anchor->id, 'started_at' => now(), 'completed_at' => now()])->save();
@@ -376,3 +380,4 @@ class ParticipantActionContractTest extends TestCase
         return [$participant, $phase, $seed];
     }
 }
+
