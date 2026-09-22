@@ -9,6 +9,8 @@ abstract class ClosureDiagnosticParticipationCase extends ParticipationHttpTestC
 {
     private array $scriptIds = [];
 
+    private array $diagnosticPrintedIds = [];
+
     private array $script = [];
 
     private array $scriptParticipants = [];
@@ -80,6 +82,16 @@ abstract class ClosureDiagnosticParticipationCase extends ParticipationHttpTestC
         // identity where this script expects a new entity fails immediately.
         $projection = ParticipationScript::state($actual);
         foreach ($bindings as $alias => $path) {
+            if (array_slice($path, 0, 2) === ['plan', 'receipts'] && end($path) === 'id') {
+                $old = $expected['plan']['receipts'][$path[2]];
+                $subject = $this->resolveScriptReferences($old['proposition_id']);
+                $new = collect($actual['plan']['receipts'])->where('proposition_id', $subject)->where('type', $old['type'])
+                    ->whereNotIn('id', array_values($this->scriptIds))->values();
+                if ($new->count() === 1) {
+                    $projection['diagnostic_new_receipt'] = $new->first()['id'];
+                    $path = ['diagnostic_new_receipt'];
+                }
+            }
             // Archived transcripts bind new observations at their old catalogue index.
             // Stage A moves historical/attached identity to proposition references.
             // Resolve only that declared subject/type, never discover an action.
@@ -124,7 +136,9 @@ abstract class ClosureDiagnosticParticipationCase extends ParticipationHttpTestC
 
     private function assertScriptState(array $expected, array $actual, string $label): void
     {
-        fwrite(STDERR, "\nDIAGSTATE ".json_encode(['label'=>$label, 'state'=>ParticipationScript::state($actual), 'ids'=>$this->scriptIds])."\n");
+        $newIds = array_diff_key($this->scriptIds, $this->diagnosticPrintedIds);
+        $this->diagnosticPrintedIds = $this->scriptIds;
+        fwrite(STDERR, "\nDIAGSTATE ".json_encode(['label'=>$label, 'state'=>ParticipationScript::state($actual), 'ids'=>$newIds])."\n");
     }
 
     private function resolveScriptReferences(mixed $value): mixed
