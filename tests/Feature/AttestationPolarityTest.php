@@ -105,8 +105,9 @@ class AttestationPolarityTest extends TestCase
     {
         $this->bootstrap();
         $seed = $this->regionSeed($majority, $write);
-        $left = $this->node('signal', $seed);
-        $right = $this->node('activity', $seed);
+        $first = $seed->phase->cycle->contextHorizon->domain->registerAt(\App\Enums\RegisterPosition::First);
+        $left = $this->node($first, $seed);
+        $right = $this->node($first, $seed);
         $major = $this->node($register, $left, position: PhaseKind::Mediate);
         $gate = $this->node($register, $right, position: PhaseKind::Mediate);
         // The traversed Gate opposes the majority. No plan is read while history evolves.

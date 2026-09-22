@@ -30,7 +30,7 @@ use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 abstract class TestCase extends BaseTestCase
 {
     /** Explicit frozen non-boundary seed for isolated ownership fixtures. */
-    protected function freezeRegionFixture(Proposition $seed): void
+    protected function freezeRegionFixture(Proposition $seed, float $correspondence = 0): void
     {
         if ($seed->commitmentSnapshot()->exists()) {
             return;
@@ -38,7 +38,8 @@ abstract class TestCase extends BaseTestCase
         $horizon = $seed->phase->cycle->contextHorizon;
         $snapshot = new CommitmentSnapshot;
         $snapshot->forceFill(['proposition_id' => $seed->id, 'substrate_id' => $horizon->substrate_id,
-            'ledger_entry_id' => $seed->ledgerEntry->id, 'correspondence' => 0, 'chirality' => 0, 'closure' => 0,
+            'ledger_entry_id' => $seed->ledgerEntry->id, 'correspondence' => $correspondence, 'chirality' => 0, 'closure' => 0,
+            'cadence_interval' => 1,
             'prominence' => .5, 'turbulence' => .5, 'tension' => 0,
             'direction_before' => $horizon->domain, 'direction_after' => $horizon->domain,
             'calculator_version' => 'region-fixture', 'evaluated_at' => now()])->save();
@@ -132,7 +133,8 @@ abstract class TestCase extends BaseTestCase
             $entry = app(LedgerService::class)->record($node);
             $snapshot = new CommitmentSnapshot;
             $snapshot->forceFill(['proposition_id' => $node->id, 'substrate_id' => $horizon->substrate_id,
-                'ledger_entry_id' => $entry->id, 'correspondence' => 0, 'chirality' => 0, 'closure' => 0,
+                'ledger_entry_id' => $entry->id, 'correspondence' => $correspondence, 'chirality' => 0, 'closure' => 0,
+            'cadence_interval' => 1,
                 'prominence' => .5, 'turbulence' => .5, 'tension' => 0,
                 'direction_before' => $horizon->domain, 'direction_after' => $horizon->domain->opposite(),
                 'calculator_version' => 'scope-fixture', 'evaluated_at' => now()])->save();

@@ -131,6 +131,8 @@ final class ParticipationContext
             ->groupBy('gate_proposition_id')->pluck('aggregate', 'gate_proposition_id');
         $this->snapshots = CommitmentSnapshot::whereIn('proposition_id', $ids)
             ->with('ledgerEntry')->get();
+        // Resolve ownership during hydration; contextual reads remain query-free.
+        $this->seedIds();
         $this->nextSequence = (int) SubstrateLedgerEntry::where('substrate_id', $this->substrate->id)->max('sequence') + 1;
     }
 

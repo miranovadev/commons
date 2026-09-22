@@ -49,7 +49,7 @@ class EvidenceFirstInteractionTest extends TestCase
         $f->phase->forceFill(['completed_at' => now()])->save();
         $f->phase->cycle->forceFill(['completed_at' => now()])->save();
         $cycle = $f->phase->cycle->replicate();
-        $cycle->forceFill(['sequence' => 3, 'completed_at' => null])->save();
+        $cycle->forceFill(['sequence' => (int) $f->viewer->cycles()->max('sequence') + 1, 'completed_at' => null])->save();
         $later = $f->phase->replicate();
         $later->forceFill(['cycle_id' => $cycle->id, 'completed_at' => null])->save();
         $f->phase = $later;
@@ -59,3 +59,4 @@ class EvidenceFirstInteractionTest extends TestCase
         $this->assertSame($write->id, $next['plan']['gate_id']);
     }
 }
+

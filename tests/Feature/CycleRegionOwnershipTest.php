@@ -120,6 +120,63 @@ class CycleRegionOwnershipTest extends TestCase
         $this->assertNull(app(CommitRegionService::class)->seedIdsFor(collect([$r]), collect([$r]))[$r->id]);
     }
 
+    public function test_invalid_snapshot_horizon_and_foreign_substrate_governance_fail_closed(): void
+    {
+        $a = $this->commit(null, 'emergence');
+        $boundary = $this->commit($a, 'settlement');
+        $right = $this->expressive($boundary, $boundary);
+        $wrongHorizon = $this->expressive($a, $right, malformed: true);
+
+        $missingSnapshot = new Proposition;
+        $missingSnapshot->forceFill(['phase_id' => $a->phase_id, 'tier' => 'committal',
+            'register' => $a->register, 'statement' => 'Imported seed without a snapshot'])->save();
+        app(LedgerService::class)->record($missingSnapshot);
+        $withoutSnapshot = $this->expressive($missingSnapshot, $a, malformed: true);
+
+        $localActor = $this->actor;
+        $foreign = new Substrate;
+        $foreign->forceFill(['slug' => 'foreign-owner', 'title' => 'Foreign owner',
+            'visibility' => 'private', 'configuration' => []])->save();
+        $this->actor = new Participant;
+        $this->actor->forceFill(['substrate_id' => $foreign->id, 'callsign' => 'foreign'])->save();
+        $foreignSeed = $this->commit(null, 'emergence');
+        $this->actor = $localActor;
+        $foreignOwner = $this->expressive($foreignSeed, $a, malformed: true);
+
+        $regions = app(CommitRegionService::class);
+        foreach ([$wrongHorizon, $withoutSnapshot, $foreignOwner] as $invalid) {
+            $context = new ParticipationContext($invalid->phase);
+            $this->assertNull($regions->seedFor($invalid));
+            $this->assertNull($context->seed($invalid));
+            $this->assertNull($regions->seedIdsFor(collect([$invalid]), collect())[$invalid->id]);
+            $this->assertNull(app(ReceiptRegionService::class)->seeds($context)[$invalid->id]);
+        }
+        $this->assertSame($missingSnapshot->id, $regions->seedFor($missingSnapshot)?->id);
+    }
+
+    public function test_hard_mixed_region_inputs_retain_governance_and_gate_lineage(): void
+    {
+        $a = $this->commit(null, 'emergence');
+        $b = $this->commit($a, 'emergence');
+        $left = $this->expressive($a, $a);
+        $right = $this->expressive($b, $b);
+        $phase = $this->phase($a, $left, PhaseKind::Mediate);
+        $result = new Proposition;
+        $result->forceFill(['phase_id' => $phase->id, 'tier' => 'expressive',
+            'register' => $phase->write_register, 'statement' => 'Synthetic mixed-input result'])->save();
+        app(LedgerService::class)->record($result);
+        foreach ([$left, $right] as $input) {
+            $this->edge($input, $result, 'reconcile');
+        }
+        $context = new ParticipationContext($phase);
+        foreach ([null, $context] as $readModel) {
+            $this->assertSame($a->id, app(CommitRegionService::class)->seedFor($result, $readModel)?->id);
+            $this->assertSame([$a->id, $result->id], app(ActiveParticipantLineage::class)->endingAt($result, $readModel)->pluck('id')->all());
+        }
+        $this->assertEqualsCanonicalizing([$left->id, $right->id], $result->parents()->pluck('propositions.id')->all());
+        $this->assertSame([$result->id], app(CommitRegionService::class)->membersFor($a)->pluck('id')->all());
+    }
+
     private function commit(?Proposition $governor, string $after): Proposition
     {
         $phase = $this->phase($governor, $governor, PhaseKind::Order);
@@ -168,12 +225,12 @@ class CycleRegionOwnershipTest extends TestCase
         return $phase;
     }
 
-    private function edge(Proposition $source, Proposition $target): void
+    private function edge(Proposition $source, Proposition $target, string $type = 'variant'): void
     {
         // Representation fixture only: no Mediate candidate or write policy is widened.
         $edge = new Supersession;
         $edge->forceFill(['phase_id' => $target->phase_id, 'source_proposition_id' => $source->id,
-            'target_proposition_id' => $target->id, 'type' => 'variant'])->save();
+            'target_proposition_id' => $target->id, 'type' => $type])->save();
         app(LedgerService::class)->record($edge);
     }
 }

@@ -155,11 +155,16 @@ class InputPlanVisibilityTest extends TestCase
         $sourcePhase = $this->phase($author, $writeKind, $register);
         $gateKind = $kind === PhaseKind::Distinguish ? PhaseKind::Order : PhaseKind::from($kind->value - 1);
         $gatePhase = $this->phaseAtPositionFixture($sourcePhase, $gateKind);
-        $gate = $this->proposition($gatePhase, $gatePhase->write_register, $kind === PhaseKind::Distinguish ? 'committal' : 'expressive', 'Gate', 0);
-        if ($gate->tier === 'expressive') {
-            $seed = $this->proposition($gatePhase, $gatePhase->write_register, 'committal', 'Governing seed', 0);
+        $seed = $this->proposition($gatePhase, $gatePhase->write_register, 'committal', 'Governing seed', 0);
+        $this->freezeRegionFixture($seed);
+        if ($kind === PhaseKind::Distinguish) {
+            $gate = $seed;
+        } else {
+            $gatePhase = $this->governedPhaseFixture($gatePhase, $seed, $seed);
+            $gate = $this->proposition($gatePhase, $gatePhase->write_register, 'expressive', 'Gate', 0);
             $this->supersession($gatePhase, $seed, $gate, 'variant');
         }
+        $sourcePhase = $this->governedPhaseFixture($sourcePhase, $seed, $gate);
         $child = $this->proposition($sourcePhase, $register, 'expressive', 'Child', 0);
         $this->supersession($sourcePhase, $gate, $child, 'variant');
         $untouched = $this->proposition($sourcePhase, $register, 'expressive', 'Untouched neighbour', 0);
@@ -278,7 +283,8 @@ class InputPlanVisibilityTest extends TestCase
             'participant_id' => $participant->getKey(),
             'context_horizon_id' => $gate?->phase->cycle->context_horizon_id
                 ?? $this->horizonForRegisterFixture($participant, $writeRegister)->id,
-            'sequence' => 1,
+            'sequence' => (int) $participant->cycles()->max('sequence') + 1,
+            'governing_committal_id' => $gate?->tier === 'committal' ? $gate->id : $gate?->phase->cycle->governing_committal_id,
         ]);
         $cycle->save();
 
@@ -341,3 +347,4 @@ class InputPlanVisibilityTest extends TestCase
         app(LedgerService::class)->record($supersession);
     }
 }
+

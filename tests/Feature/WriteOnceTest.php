@@ -323,10 +323,11 @@ class WriteOnceTest extends TestCase
         $otherPhase = $this->phase($other, PhaseKind::Order, 'canon', $a);
         $this->assertUnavailable($other, $otherPhase, $input);
 
-        // A new Committal seed creates a new row even within the same Horizon.
-        $next = $this->node($this->phaseAtPositionFixture($seed->phase, PhaseKind::Bias), 'canon', 'Next region', parent: $commit);
+        // The next row uses the Committal's explicitly entered Horizon and Domain.
+        $nextRegister = app(\App\Services\ContextHorizonProjector::class)->forEntry($commit)->domain->registerFor(PhaseKind::Bias);
+        $next = $this->node($this->phaseAtPositionFixture($seed->phase, PhaseKind::Bias), $nextRegister, 'Next region', parent: $commit);
         $this->groundFixture($next);
-        $this->phase($participant, PhaseKind::Order, 'canon', $next);
+        $this->phase($participant, PhaseKind::Order, $nextRegister, $next);
         app(ContributionService::class)->validate($participant, ['action' => 'proposition.commit', 'proposition_id' => $next->id]);
     }
 
@@ -409,7 +410,9 @@ class WriteOnceTest extends TestCase
         if ($parent !== null) {
             $governor = $parent->tier === 'committal' ? $parent : $parent->phase->cycle->governingCommittal;
             if ($governor !== null && $phase->cycle->governing_committal_id !== $governor->id) {
-                $phase = $this->governedPhaseFixture($phase, $governor, $parent);
+                $base = $phase->replicate();
+                $base->write_register = $register;
+                $phase = $this->governedPhaseFixture($base, $governor, $parent);
             }
         }
         $node = new Proposition;

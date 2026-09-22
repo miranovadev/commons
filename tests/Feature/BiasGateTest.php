@@ -279,7 +279,8 @@ class BiasGateTest extends TestCase
         $beyond = $this->node('Beyond boundary', 'stance', position: PhaseKind::Mediate, governor: $boundary);
         $this->edge($boundary, $beyond);
         $this->attest($beyond, 'refute');
-        $this->attest($this->node('Unrelated Stance', 'stance', position: PhaseKind::Mediate), 'refute');
+        $unrelatedSeed = $this->node('Unrelated region', 'concord', 'committal', position: PhaseKind::Bias);
+        $this->attest($this->node('Unrelated Stance', 'stance', position: PhaseKind::Mediate, governor: $unrelatedSeed), 'refute');
         config()->set('schemas.options.limit', 1);
         $this->viewer->forceFill(['max_read_count' => 1])->save();
         $other = $this->sibling('Another supported Stance');

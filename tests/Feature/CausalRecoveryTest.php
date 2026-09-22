@@ -1131,6 +1131,8 @@ class CausalRecoveryTest extends TestCase
         app(ParticipationService::class)->contribute($phase->cycle->participant, $phase->id, ['action' => 'participant.rest']);
         $this->assertSame('no_remaining_potential', $phase->cycle->fresh()->rest_reason->value);
         $tragedy = Tragedy::where('governing_committal_id', $seed->id)->sole();
+        $this->assertSame($seed->id, $terminal->phase->cycle->governing_committal_id);
+        $this->assertSame($seed->id, app(\App\Services\CommitRegionService::class)->seedFor($terminal)?->id);
         $this->assertFalse(app(ExhaustionService::class)->unavailable($seed));
         app(CycleEntryService::class)->prepare($phase->cycle->participant);
         $this->assertSame($seed->id, $phase->cycle->participant->fresh()->current_proposition_id);
@@ -1154,6 +1156,8 @@ class CausalRecoveryTest extends TestCase
         $this->refreshMeasurements();
         app(ParticipationService::class)->contribute($final->cycle->participant, $final->id, ['action' => 'participant.rest']);
         $this->assertDatabaseHas('commit_region_exhaustions', ['governing_committal_id' => $seed->id, 'receipt_id' => $tragedy->receipt_id]);
+        $this->assertSame($seed->id, $target->phase->cycle->governing_committal_id);
+        $this->assertSame($seed->id, app(\App\Services\CommitRegionService::class)->seedFor($target)?->id);
         $this->refreshMeasurements();
 
         return $target;

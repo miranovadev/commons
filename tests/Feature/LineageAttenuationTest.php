@@ -140,10 +140,6 @@ class LineageAttenuationTest extends TestCase
     public function test_entry_observer_attenuation_is_separate_from_measurement_accumulation_and_recovery(): void
     {
         $source = $this->node('source', 'committal');
-        $continuation = $this->node('continuation');
-        $observer = $this->node('observer');
-        $this->edge($source, $continuation);
-        $this->edge($source, $observer);
         $snapshot = new CommitmentSnapshot;
         $snapshot->forceFill([
             'proposition_id' => $source->id,
@@ -154,6 +150,11 @@ class LineageAttenuationTest extends TestCase
             'direction_before' => 'emergence', 'direction_after' => 'emergence',
             'calculator_version' => 'historical-fixture', 'evaluated_at' => now(),
         ])->save();
+        $this->phase = $this->governedPhaseFixture($this->phase, $source);
+        $continuation = $this->node('continuation');
+        $observer = $this->node('observer');
+        $this->edge($source, $continuation);
+        $this->edge($source, $observer);
         $history = $snapshot->fresh()->getAttributes();
         $this->rawValues([$source->id => 0.8]);
         $values = app(PropositionMeasurementService::class)->recalculate($continuation);
@@ -204,3 +205,4 @@ class LineageAttenuationTest extends TestCase
         app(LedgerService::class)->record($edge);
     }
 }
+

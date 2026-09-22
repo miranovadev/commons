@@ -256,9 +256,14 @@ class ReconciliationTest extends TestCase
         $this->edge($validRead, $distantRead);
         $distantGate = $this->node('Distant Gate', 'activity', position: PhaseKind::Disperse);
         $this->edge($distantRead, $distantGate);
+        $originalHistory = $this->history;
+        $unrelatedSeed = $this->node('Unrelated region', 'canon', tier: 'committal');
+        $this->freezeRegionFixture($unrelatedSeed);
+        $this->history = $this->governedPhaseFixture($this->history, $unrelatedSeed);
         $unrelatedRead = $this->node('Unrelated matching Read', 'canon', position: PhaseKind::Constrain);
         $unrelatedGate = $this->node('Unrelated Gate', 'activity', position: PhaseKind::Disperse);
         $this->edge($unrelatedRead, $unrelatedGate);
+        $this->history = $originalHistory;
         $plan = $this->plan();
         $this->assertEqualsCanonicalizing([$this->parent->id, $validRead->id, $foreignHorizon->id, $distantRead->id, $hardRead->id, $hardRead->children()->where('register', 'canon')->firstOrFail()->id], app(MediationReadService::class)->readsFor($this->phase)->pluck('id')->all());
         $this->assertSame([$this->parent->id], array_column($plan['read_options'], 'id'));
