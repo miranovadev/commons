@@ -127,7 +127,7 @@ record `not-loaded`; participant packets derive the current status separately.
 Re-verification is still required after the stability interval; earlier Receipts
 are not retroactively promoted.
 
-## Local Closure, then propagation
+## Committed structure and local reinforcement
 
 Depth and Cadence keep their structural definitions, comparison normalization and
 hysteretic directions. Reinforcement no longer multiplies path length. Given
@@ -147,13 +147,13 @@ N and does not add an arbitrary fixed bonus. Reinforcement keeps the existing
 participant-weighted Correspondence feature and effective-Attestation lean roles,
 using active loaded contributions rather than raw signed Receipt counts.
 
-`LocalMeasurementService` forms this Closure with no distance argument.
-`LineageMeasurementService` then aggregates **that calculated Closure value** with
-`1 / (1 + distance)^2`, just as it aggregates the other measurements. It must not
-average reinforcement counts and apply the nonlinear Closure formula afterward.
-Depth/Cadence are propagated independently for their existing hysteresis gate.
-New evidence invalidates disposable substrate projections; immutable snapshots
-are preserved. Calculator version is `proposition-receipts-v9`; formulas and attenuation are unchanged.
+`LocalMeasurementService` applies this weight to the head's committed structural
+Depth and Cadence. `LineageMeasurementService` preserves the head's Closure directly;
+only Correspondence and Chirality continue through expressive-lineage attenuation.
+Counts are never attenuation-averaged before applying the nonlinear formula.
+The cap, qualification, ratio and reclassification effect above are unchanged.
+New evidence invalidates disposable projections; frozen snapshots stay historical.
+Calculator version is `committal-closure-v10`.
 
 ## Commitment and branching
 

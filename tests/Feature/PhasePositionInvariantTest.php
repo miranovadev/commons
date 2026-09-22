@@ -255,7 +255,7 @@ class PhasePositionInvariantTest extends TestCase
                 1, 2, 4 => 'variant', 5 => 'reconcile', default => 'reclassify'
             });
         }
-        $closure = [...(new ClosureValues(1, 1))->resolve(), 'history_proposition_id' => null, 'history_source' => 'negative-default'];
+        $closure = [...(new ClosureValues(1, 1))->resolve(), 'history_proposition_id' => null, 'history_source' => 'negative-default', 'cadence_interval' => 1];
         $this->mock(ClosureGateService::class, fn ($mock) => $mock->shouldReceive('preview', 'forCommitment')->andReturn($closure));
 
         return [$author, $reader, $nodes];
@@ -273,6 +273,7 @@ class PhasePositionInvariantTest extends TestCase
     {
         $cycle = new Cycle;
         $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => (int) $participant->cycles()->max('sequence') + 1,
+            'governing_committal_id' => \App\Models\ContextHorizon::findOrFail($horizonId ?? $gate->phase->cycle->context_horizon_id)->opened_by_proposition_id,
             'context_horizon_id' => $horizonId ?? $gate->phase->cycle->context_horizon_id])->save();
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => $kind, 'write_register' => $cycle->contextHorizon->domain->registerFor($kind),

@@ -43,12 +43,27 @@ frontier rank or action availability.
 - `staggered-epochs.json`: 30 steps. The same failed continuation spends A and B
   at step 27; A alone reopens at 28; B alone reopens at 29. Semantic assertions
   inspect parked observers between those final steps.
-- `tragedy-lifecycle.json`: 107 steps. Natural Tragedy exists after 71; another
-  participant reaches its actual Horizon at 79, claims the final attempt at 80,
-  reads its receipt at 81 and consumes it at 88. Horizon Exhaustion and backward
-  recovery occur at 105; step 106 proves exploration remains actionable afterward.
+- `tragedy-lifecycle.json`: 135 steps. Natural Tragedy exists after 102; another
+  participant reaches its actual Horizon at 110, claims the final attempt at 111,
+  and consumes its receipt at 116. Commit Region exhaustion and backward
+  recovery occur at 133; step 134 proves exploration remains actionable afterward.
   The test also retains explicit rejection of foreign-Horizon receipt access and
   a competing duplicate final attempt.
+
+The committed-lineage Closure replacement changes the natural C1 crossover in
+the revisit/epoch/source-equivalence scripts. Their expected topology follows that
+result. In the Tragedy journey, the former supporting judgments leave measured
+Potential in the new basin. The authored evidence path now refutes the four tested
+expressive positions before Rest. Twelve explicit instrument/Rest/judgment Cycles
+exercise a slower basin rhythm: the final prospective interval is 20, against
+C1's frozen 10. Depth is positive while zero Cadence retains its negative direction,
+so ordinary alignment blocks Commitment. The faster eight-Cycle version permits
+Commitment and cannot lawfully demand Rest. The final-attempt participant follows the new
+attempt directly after recovery, refutes its tested generative evidence, and
+instruments the final Mediate result before judging its classification.
+These are fixed HTTP contributions, not numerical overrides or runtime choices.
+The tests retain the Tragedy, receipt visibility/consumption, unique final attempt,
+no-premature-exhaustion, immutable history and backward-recovery assertions.
 
 An unexpected state fails at that step. Do not regenerate expected output to
 make a failing test pass: determine whether it exposes a regression or an explicitly

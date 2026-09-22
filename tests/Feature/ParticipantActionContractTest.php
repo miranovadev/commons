@@ -346,7 +346,7 @@ class ParticipantActionContractTest extends TestCase
                 // Contract coverage isolates numeric Closure eligibility; the real
                 // reinforcement, region, validator, dispatcher and lifecycle run.
                 $this->mock(ClosureGateService::class, function ($mock): void {
-                    $values = [...(new ClosureValues(-1, -1))->resolve(), 'history_source' => 'negative-default', 'history_proposition_id' => null];
+                    $values = [...(new ClosureValues(-1, -1))->resolve(), 'history_source' => 'negative-default', 'cadence_interval' => 1, 'history_proposition_id' => null];
                     $mock->shouldReceive('preview')->andReturn($values);
                     $mock->shouldReceive('forCommitment')->andReturn($values);
                 });

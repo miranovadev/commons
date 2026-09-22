@@ -193,6 +193,7 @@ final readonly class ParticipationService
         string $phaseId,
         array $input,
         ?array $expectedSchema = null,
+        ?string $expectedClosureObservation = null,
     ): array {
         // Invalid model output is still an error; only a formerly valid action
         // rejected by fresh admissibility is a retryable participation conflict.
@@ -228,6 +229,11 @@ final readonly class ParticipationService
         // guarded write without hydrating a graph while other writers wait.
         $validatedVersion = app(PotentialProjectionService::class)->assertCurrent($participant->substrate_id);
         $validationPlan = $this->plans->forValidation($participant);
+        $expectedClosureObservation ??= $expectedSchema['$comment'] ?? null;
+        if (($input['action'] ?? null) === 'proposition.commit' && $expectedClosureObservation !== null
+            && $expectedClosureObservation !== ($validationPlan['schema']['$comment'] ?? null)) {
+            throw new ConflictHttpException('The observed Closure changed. Retry from fresh state.');
+        }
         try {
             $this->contributions->validateSchema($validationPlan['schema'], $input);
         } catch (InvalidArgumentException $exception) {
@@ -289,7 +295,7 @@ final readonly class ParticipationService
                 throw new ConflictHttpException('The active field changed during contribution validation. Retry from fresh state.');
             }
             if ($input['action'] === 'participant.rest') {
-                // Rest changes lifecycle only; it adds no observation/measurement.
+                // The Rest witness describes the guarded pre-completion field.
                 // A stale proof is discarded and can be retried after this Rest.
                 $validProof = $exhaustion !== null && $exhaustion['stable']
                     && $exhaustion['field_version'] === (int) $substrate->field_version;
@@ -297,6 +303,9 @@ final readonly class ParticipationService
                 if ($validProof) {
                     app(ExhaustionService::class)->publish($phase, $exhaustion);
                 }
+                // Publish the existing Rest outcome before completion invalidates
+                // future Closure previews; both remain in this root-locked transaction.
+                $phase->cycle->forceFill(['completed_at' => now()])->save();
 
                 return;
             }
@@ -325,7 +334,6 @@ final readonly class ParticipationService
         $phase->save();
         $phase->cycle->rested_at = now();
         $phase->cycle->rest_reason = $reason;
-        $phase->cycle->completed_at = now();
         $phase->cycle->save();
     }
 

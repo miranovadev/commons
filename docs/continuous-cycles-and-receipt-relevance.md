@@ -40,8 +40,8 @@ change can defer entry and expose `recovery_pending`; the next prepare observes
 fresh state. Neither case rolls back the completed Rest.
 
 Ready API/workspace state points directly to the prepared Phase 1. Its creation
-is a real Phase touch, counted by the existing Cadence projection. Commitment
-snapshots were evaluated before this new observation and remain immutable.
+is a real Phase touch in participation history. Cadence counts completed governed
+Cycles plus the producing Cycle, not Phase touches. Commitment snapshots remain immutable.
 
 ## One Cycle per wake
 

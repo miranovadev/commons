@@ -237,10 +237,10 @@ class CausalOperationalScopeTest extends TestCase
         $this->mock(ClosureGateService::class, function ($mock): void {
             $mock->shouldReceive('preview')->andReturnUsing(fn (Proposition $node) => [
                 ...(new ClosureValues(...($this->closureValues[$node->id] ?? [1, 1])))->resolve(),
-                'history_proposition_id' => null, 'history_source' => 'negative-default',
+                'history_proposition_id' => null, 'history_source' => 'negative-default', 'cadence_interval' => 1,
             ]);
             $mock->shouldReceive('forCommitment')->andReturn([
-                ...(new ClosureValues(1, 1))->resolve(), 'history_proposition_id' => null, 'history_source' => 'negative-default',
+                ...(new ClosureValues(1, 1))->resolve(), 'history_proposition_id' => null, 'history_source' => 'negative-default', 'cadence_interval' => 1,
             ]);
         });
 
@@ -251,6 +251,7 @@ class CausalOperationalScopeTest extends TestCase
     {
         $participant->cycles()->whereNull('completed_at')->update(['completed_at' => now()]);
         $cycle = (new Cycle)->forceFill(['participant_id' => $participant->id, 'sequence' => (int) $participant->cycles()->max('sequence') + 1,
+            'governing_committal_id' => \App\Models\ContextHorizon::findOrFail($horizonId ?? $gate->phase->cycle->context_horizon_id)->opened_by_proposition_id,
             'context_horizon_id' => $horizonId ?? $gate->phase->cycle->context_horizon_id]);
         $cycle->save();
         $phase = (new Phase)->forceFill(['cycle_id' => $cycle->id, 'kind' => $kind, 'write_register' => $cycle->contextHorizon->domain->registerFor($kind),

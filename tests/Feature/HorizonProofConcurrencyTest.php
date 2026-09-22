@@ -128,6 +128,41 @@ class HorizonProofConcurrencyTest extends TestCase
         }
     }
 
+    public function test_basin_completion_rejects_a_stale_commit_and_retry_freezes_the_same_preview(): void
+    {
+        $gate = $this->node($this->phase($this->origin, PhaseKind::Bias), $this->origin);
+        $this->observeAndAttest($gate);
+        $producer = $this->phase($gate, PhaseKind::Order);
+        $other = $this->phase($this->origin);
+        $unresolved = $this->phase($this->origin);
+        $this->publishPotentialFixture($this->substrate);
+        $service = app(\App\Services\ClosureGateService::class);
+        $before = $service->preview($gate, $producer);
+        $this->assertTrue($before['admissible']);
+        $this->assertSame(1, $before['cadence_interval']);
+        $this->whileWorkerWaits($this->substrate, [
+            'operation' => 'closure-contribute-conflict', 'participant_id' => $producer->cycle->participant_id,
+            'phase_id' => $producer->id,
+            'contribution' => ['action' => 'proposition.commit', 'proposition_id' => $gate->id],
+        ], fn () => $other->cycle->forceFill(['rested_at' => now(), 'completed_at' => now()])->save());
+        $this->assertNull($producer->fresh()->completed_at);
+        $this->assertNull($unresolved->cycle->fresh()->completed_at);
+        $this->publishPotentialFixture($this->substrate);
+        $preview = $service->preview($gate, $producer);
+        $this->assertSame(2, $preview['cadence_interval']);
+        $commit = app(ContributionDispatcher::class)->dispatch($producer->cycle->participant, $producer,
+            ['action' => 'proposition.commit', 'proposition_id' => $gate->id]);
+        $snapshot = $commit->commitmentSnapshot;
+        foreach (['depth', 'cadence', 'closure', 'cadence_interval'] as $component) {
+            $this->assertSame($preview[$component], $snapshot->{$component});
+        }
+        $this->assertSame($preview['depth_direction'], $snapshot->depth_direction->value);
+        $this->assertSame($preview['cadence_direction'], $snapshot->cadence_direction->value);
+        $producer->cycle->forceFill(['completed_at' => now()])->save();
+        $unresolved->cycle->forceFill(['completed_at' => now()])->save();
+        $this->assertSame(2, $snapshot->fresh()->cadence_interval);
+    }
+
     private function whileWorkerWaits(Substrate $substrate, array $input, callable $competing): void
     {
         $process = new Process([PHP_BINARY, base_path('tests/Support/concurrent-commons-worker.php')], base_path(), null,

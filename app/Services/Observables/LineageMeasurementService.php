@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 
 final readonly class LineageMeasurementService
 {
-    public const string VERSION = 'proposition-receipts-v9';
+    public const string VERSION = 'committal-closure-v10';
 
     public function __construct(
         private LocalMeasurementService $local,
@@ -35,23 +35,26 @@ final readonly class LineageMeasurementService
 
     public function calculate(Proposition $position, ?LineageComparison $headComparison = null, ?ParticipationContext $context = null): LocalMeasurements
     {
-        $totals = ['correspondence' => 0.0, 'chirality' => 0.0, 'depth' => 0.0, 'cadence' => 0.0, 'closureValue' => 0.0];
+        $totals = ['correspondence' => 0.0, 'chirality' => 0.0];
+        $closure = null;
         $mass = 0.0;
         foreach ($this->positions($position, $context) as [$proposition, $distance]) {
             $comparison = $distance === 0 ? $headComparison : null;
-            $calculate = fn () => $this->local->calculate($proposition, $comparison ?? ($context !== null ? $this->lineages->for($proposition, $context) : null));
+            $calculate = fn () => $this->local->calculate($proposition, $comparison ?? ($context !== null ? $this->lineages->for($proposition, $context) : null), $distance === 0);
             $local = $context !== null && $proposition->exists && $comparison === null
-                ? $context->remember('local:'.$proposition->id, $calculate) : $calculate();
+                ? $context->remember('local:'.($distance === 0 ? 'head:' : 'evidence:').$proposition->id, $calculate) : $calculate();
+            $closure ??= $local->closure();
             $weight = self::attenuation($distance);
             // Every traversed position contributes denominator mass, including neutral values.
             $mass += $weight;
             foreach ($totals as $name => $total) {
-                $value = $name === 'closureValue' ? $local->closure()->average() : $local->{$name};
+                $value = $local->{$name};
                 $totals[$name] += $value * $weight;
             }
         }
 
-        return new LocalMeasurements(...array_map(fn (float $sum): float => round($sum / $mass, 7), $totals));
+        return new LocalMeasurements(round($totals['correspondence'] / $mass, 7),
+            round($totals['chirality'] / $mass, 7), $closure->depth, $closure->cadence, $closure->average());
     }
 
     /**

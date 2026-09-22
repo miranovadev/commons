@@ -55,6 +55,7 @@ final class ParticipantContextSerializer
     {
         $plan = Arr::only($state['plan'], ['phase', 'provenance_id', 'gate_id',
             'lineage', 'exhausted_alternatives', 'read_options', 'gate_options', 'write_options', 'commitment', 'commitment_options', 'rest_available', 'rest_reason', 'receipts', 'schema']);
+        unset($plan['schema']['$comment']); // Publication guard metadata is not participant cognition.
         $plan['phase'] = Arr::only($plan['phase'], ['id', 'number', 'kind', 'write_register']);
         foreach (['lineage', 'read_options', 'gate_options', 'write_options'] as $key) {
             if (isset($plan[$key])) {

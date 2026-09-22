@@ -16,10 +16,11 @@ class LocalMeasurementService
         private readonly ClosureCalculator $closure,
     ) {}
 
-    public function calculate(Proposition $proposition, ?LineageComparison $comparison = null): LocalMeasurements
+    public function calculate(Proposition $proposition, ?LineageComparison $comparison = null, bool $includeClosure = true): LocalMeasurements
     {
         $comparison ??= $this->lineages->for($proposition);
-        $closure = $this->closure->localComponents($proposition, $comparison);
+        $closure = $includeClosure ? $this->closure->localComponents($proposition, $comparison)
+            : new \App\Domain\Observables\ClosureValues(0, 0);
 
         return new LocalMeasurements(
             $this->correspondence->calculate($comparison),

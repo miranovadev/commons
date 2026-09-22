@@ -299,7 +299,7 @@ class WriteOnceTest extends TestCase
         $this->mock(ClosureGateService::class, function ($mock): void {
             $mock->shouldReceive('preview', 'forCommitment')->andReturn([
                 ...(new ClosureValues(1, 1))->resolve(),
-                'history_proposition_id' => null, 'history_source' => 'negative-default',
+                'history_proposition_id' => null, 'history_source' => 'negative-default', 'cadence_interval' => 1,
             ]);
         });
         $a = $this->node($this->phaseAtPositionFixture($seed->phase, PhaseKind::Bias), 'canon', 'A', parent: $seed);

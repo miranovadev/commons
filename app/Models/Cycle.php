@@ -46,6 +46,30 @@ class Cycle extends Model
         });
     }
 
+    /** Completion participates in the existing root lock/version protocol, including Rest. */
+    public function save(array $options = [])
+    {
+        $changesParticipation = $this->governing_committal_id !== null
+            && $this->isDirty('completed_at')
+            && (($this->getRawOriginal('completed_at') === null) !== ($this->completed_at === null));
+        if (! $changesParticipation) {
+            return parent::save($options);
+        }
+
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($options) {
+            Substrate::whereKey($this->participant->substrate_id)->lockForUpdate()->firstOrFail();
+            $saved = parent::save($options);
+            if ($saved) {
+                // Dirty only Horizons containing Cycles governed by this basin.
+                // The existing field version remains the publication guard.
+                $horizons = self::where('governing_committal_id', $this->governing_committal_id)
+                    ->distinct()->pluck('context_horizon_id')->all();
+                app(\App\Services\FieldMutationService::class)->mark($this->participant->substrate_id, $horizons);
+            }
+            return $saved;
+        });
+    }
+
     public function contextHorizon(): BelongsTo
     {
         return $this->belongsTo(ContextHorizon::class);

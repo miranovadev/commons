@@ -346,7 +346,7 @@ class ParticipantWakeTest extends TestCase
             $nodes[] = $node;
             $parent = $node;
         }
-        $closure = [...(new ClosureValues(1, 1))->resolve(), 'history_proposition_id' => null, 'history_source' => 'negative-default'];
+        $closure = [...(new ClosureValues(1, 1))->resolve(), 'history_proposition_id' => null, 'history_source' => 'negative-default', 'cadence_interval' => 1];
         $this->mock(ClosureGateService::class, fn ($mock) => $mock->shouldReceive('preview', 'forCommitment')->andReturn($closure));
         $this->app->instance(WebSearchProvider::class, new class implements WebSearchProvider
         {

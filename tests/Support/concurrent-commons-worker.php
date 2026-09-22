@@ -33,6 +33,20 @@ flush();
 
 try {
     match ($input['operation']) {
+        'closure-contribute-conflict' => (function () use ($input): void {
+            $participant = Participant::findOrFail($input['participant_id']);
+            $plan = app(InputPlanService::class)->forParticipant($participant);
+            try {
+                app(ParticipationService::class)->contribute($participant, $input['phase_id'],
+                    $input['contribution'], $plan['schema']);
+            } catch (ConflictHttpException $exception) {
+                if (str_contains($exception->getMessage(), 'field changed') || str_contains($exception->getMessage(), 'Closure changed')) {
+                    return;
+                }
+                throw $exception;
+            }
+            throw new RuntimeException('A concurrent completion did not reject the stale Commit.');
+        })(),
         'receipt-desired' => DB::transaction(fn () => app(ReceiptContextService::class)->desired(
             Participant::findOrFail($input['participant_id']), Phase::findOrFail($input['phase_id']), $input['receipt_options'],
         )),

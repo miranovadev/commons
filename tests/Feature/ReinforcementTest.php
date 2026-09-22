@@ -44,11 +44,26 @@ class ReinforcementTest extends TestCase
 
     private Phase $later;
 
+    private Proposition $governor;
+
     protected function setUp(): void
     {
         parent::setUp();
         $substrate = new Substrate;
         $substrate->forceFill(['slug' => 'reinforcement', 'title' => 'Reinforcement', 'visibility' => 'public', 'configuration' => []])->save();
+        // Explicit committed provenance for the ordinary evidence Cycles. Domain
+        // topology is fixed here so these tests isolate reinforcement semantics.
+        $seedPhase = $this->phase($substrate);
+        $this->governor = (new Proposition)->forceFill(['phase_id' => $seedPhase->id,
+            'tier' => 'committal', 'register' => 'canon', 'statement' => 'Committed provenance']);
+        $this->governor->save();
+        $entry = app(LedgerService::class)->record($this->governor);
+        (new \App\Models\CommitmentSnapshot)->forceFill(['proposition_id' => $this->governor->id,
+            'substrate_id' => $substrate->id, 'ledger_entry_id' => $entry->id,
+            'correspondence' => -1, 'chirality' => -1, 'closure' => -1, 'depth' => -1, 'cadence' => -1,
+            'depth_direction' => 'negative', 'cadence_direction' => 'negative', 'prominence' => 0, 'turbulence' => 1,
+            'tension' => -1, 'direction_before' => 'emergence', 'direction_after' => 'emergence',
+            'calculator_version' => 'reinforcement-fixture', 'evaluated_at' => now()])->save();
         $creation = $this->phase($substrate);
         $creation->forceFill(['kind' => PhaseKind::Bias])->save();
         $this->node = new Proposition;
@@ -111,7 +126,7 @@ class ReinforcementTest extends TestCase
         $this->assertSame(1, Receipt::count());
     }
 
-    public function test_local_closure_forms_before_attenuation_and_duplicate_events_add_no_weight(): void
+    public function test_closure_reinforcement_is_local_and_duplicate_events_add_no_weight(): void
     {
         $local = app(LocalMeasurementService::class);
         $before = $local->calculate($this->node);
@@ -132,8 +147,7 @@ class ReinforcementTest extends TestCase
         app(LedgerService::class)->record($edge);
         $this->assertSame(0, app(ReinforcementService::class)->count($child));
         $childClosure = $local->calculate($child)->closure()->average();
-        $weight = LineageMeasurementService::attenuation(1);
-        $expected = round(($childClosure + $after->closure()->average() * $weight) / (1 + $weight), 7);
+        $expected = $childClosure; // Expressive ancestry cannot smear committed Closure or local reinforcement.
         $this->assertEqualsWithDelta($expected, app(LineageMeasurementService::class)->calculate($child)->closure()->average(), 1e-7);
         $this->assertEqualsWithDelta($expected, app(LineageMeasurementService::class)->calculate($child, context: new ParticipationContext($this->later))->closure()->average(), 1e-7);
     }
@@ -283,7 +297,8 @@ class ReinforcementTest extends TestCase
             $participant->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'Observer '.Participant::count()])->save();
         }
         $cycle = new Cycle;
-        $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => $participant->cycles()->count() + 1])->save();
+        $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => $participant->cycles()->count() + 1,
+            'governing_committal_id' => isset($this->governor) ? $this->governor->id : null])->save();
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Order, 'write_register' => 'canon', 'gate_proposition_id' => isset($this->node) ? $this->node->id : null, 'started_at' => now()])->save();
 
