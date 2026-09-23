@@ -43,6 +43,16 @@ final readonly class HomologousMediationService
         return $context->remember('homologous-mediate-pool:'.$phase->id, fn () => $this->resolve($phase, $context));
     }
 
+    /** Homologous discovery also includes local members; only foreign Regions hide evidence. */
+    public function foreignGateIdsFor(Phase $phase, ParticipationContext $context): Collection
+    {
+        $seeds = $context->seedIds();
+
+        return $this->poolFor($phase, $context)['gates']
+            ->filter(fn ($gate) => ($seeds[$gate->id] ?? null) !== $phase->cycle->entry_committal_id)
+            ->pluck('id');
+    }
+
     /** Pre-hydration discovery never constructs a ParticipationContext. */
     public function structuralPoolFor(Phase $phase, ?ParticipationContext $context = null): array
     {

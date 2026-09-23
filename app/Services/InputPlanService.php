@@ -371,7 +371,7 @@ final readonly class InputPlanService
         ?ParticipationContext $context,
     ): array {
         $foreignOperand = $context?->phase->kind === PhaseKind::Mediate
-            && app(HomologousMediationService::class)->poolFor($context->phase, $context)['gates']->contains('id', $proposition->id);
+            && app(HomologousMediationService::class)->foreignGateIdsFor($context->phase, $context)->contains($proposition->id);
         $measurement = $proposition->relationLoaded('measurement')
             ? $proposition->measurement
             : null;

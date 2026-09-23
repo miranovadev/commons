@@ -72,8 +72,9 @@ Mediate Writes remain in the acting Cycle's Region, including when a foreign
 result in the same Horizon has the current Gate as its secondary causal parent.
 That edge does not authorize adopting the other Region's result mid-Cycle.
 ReceiptContextService excludes foreign operands from contextual evidence exposure,
-and their plan entries omit Receipt/instrument references. Ordinary local and
-ancestral evidence presentation remains unchanged.
+and their plan entries omit Receipt/instrument references. This masking uses
+actual Region ownership: a same-Region Gate discovered through homology keeps its
+ordinary local evidence presentation. Ancestral evidence presentation is unchanged.
 
 A successful Reconcile preserves both Supersession parents. Its owner and Horizon
 come from the acting Cycle; participant lineage follows the producing Phase Gate.

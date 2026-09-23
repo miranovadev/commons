@@ -156,6 +156,29 @@ class HomologousMediationTest extends TestCase
             app(ReconciliationOptionService::class)->forPhase($this->mediate)->pluck('id')->all());
     }
 
+    public function test_homologous_local_operands_keep_their_evidence_while_foreign_operands_do_not_import_it(): void
+    {
+        [$readC, $gateC] = $this->pair($this->a);
+        $localReceipt = $this->loadedReceiptFixture($gateC);
+        $foreignReceipt = $this->loadedReceiptFixture($this->gateB);
+        $this->measure($this->readA, .2);
+        $this->measure($this->readB, -.7);
+        $this->measure($readC, -.7);
+        $this->publishPotentialFixture($this->actor);
+        $context = new ParticipationContext($this->mediate);
+        $foreign = app(HomologousMediationService::class)->foreignGateIdsFor($this->mediate, $context);
+        $this->assertSame([$this->gateB->id], $foreign->all());
+        $receipts = app(\App\Services\ReceiptContextService::class)->forPhase($this->mediate, $context);
+        $this->assertTrue($receipts->contains('id', $localReceipt->id));
+        $this->assertFalse($receipts->contains('id', $foreignReceipt->id));
+        $plan = app(\App\Services\InputPlanService::class)->forPhase($this->actor, $this->mediate);
+        $gates = collect($plan['gate_options'])->keyBy('id');
+        $this->assertContains($localReceipt->id, array_column($gates[$gateC->id]['receipts'], 'id'));
+        $this->assertNotEmpty($gates[$gateC->id]['instruments']);
+        $this->assertSame([], $gates[$this->gateB->id]['receipts']);
+        $this->assertSame([], $gates[$this->gateB->id]['instruments']);
+    }
+
     public function test_a_read_without_an_available_gate_still_contributes_to_the_structural_population(): void
     {
         $origin = $this->a->phase->cycle->entryCommittal;
