@@ -408,7 +408,7 @@ class WriteOnceTest extends TestCase
     private function node(Phase $phase, string $register, string $statement, string $tier = 'expressive', ?Proposition $parent = null): Proposition
     {
         if ($parent !== null) {
-            $governor = $parent->tier === 'committal' ? $parent : $parent->phase->cycle->governingCommittal;
+            $governor = $parent->tier === 'committal' ? $parent : $parent->phase->cycle->entryCommittal;
             if ($governor !== null && $phase->cycle->entry_committal_id !== $governor->id) {
                 $base = $phase->replicate();
                 $base->write_register = $register;

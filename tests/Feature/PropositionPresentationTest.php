@@ -140,7 +140,7 @@ class PropositionPresentationTest extends TestCase
 
     private function node(string $register, Proposition $parent, string $tier = 'expressive', string $type = 'variant'): Proposition
     {
-        $governor = $parent->tier === 'committal' ? $parent : $parent->phase->cycle->governingCommittal;
+        $governor = $parent->tier === 'committal' ? $parent : $parent->phase->cycle->entryCommittal;
         $horizon = app(\App\Services\ContextHorizonProjector::class)->forEntry($governor);
         if ($horizon->domain->registerAt(\App\Enums\RegisterPosition::forRegister($register)) !== $register) {
             $horizon = $this->laterHorizonFixture($horizon, 1);

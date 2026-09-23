@@ -216,7 +216,7 @@ class ParticipationPerformanceTest extends TestCase
                 if ($parent->tier === 'committal') {
                     $this->freezeRegionFixture($parent);
                 }
-                $governor = $parent->tier === 'committal' ? $parent : $parent->phase->cycle->governingCommittal;
+                $governor = $parent->tier === 'committal' ? $parent : $parent->phase->cycle->entryCommittal;
                 $history[$index] = $this->governedPhaseFixture($history[$index], $governor, $parent);
             }
             $p = new Proposition;

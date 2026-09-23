@@ -106,7 +106,7 @@ final class ParticipantContextFixture
     {
         $phase = new Phase;
         $kind = $position ?? ($type === 'reconcile' ? PhaseKind::Mediate : ($type === 'commit' ? PhaseKind::Order : PhaseKind::Distinguish));
-        $governor = $parent?->tier === 'committal' ? $parent : $parent?->phase->cycle->governingCommittal;
+        $governor = $parent?->tier === 'committal' ? $parent : $parent?->phase->cycle->entryCommittal;
         $cycle = $governor === null ? $this->history : $this->governedCycle($governor);
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => $kind, 'write_register' => $register,
             'gate_proposition_id' => $parent?->id, 'started_at' => now(), 'completed_at' => now()])->save();

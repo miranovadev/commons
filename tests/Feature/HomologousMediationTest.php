@@ -323,7 +323,7 @@ class HomologousMediationTest extends TestCase
 
     public function test_cross_horizon_directed_pairs_are_independent_and_used_pairs_do_not_reopen(): void
     {
-        $origin = $this->a->phase->cycle->governingCommittal;
+        $origin = $this->a->phase->cycle->entryCommittal;
         $c = $this->commit($origin, 'settlement');
         [, $gateC] = $this->pair($c);
         $options = app(ReconciliationOptionService::class);
@@ -370,7 +370,7 @@ class HomologousMediationTest extends TestCase
     public function test_complete_plans_have_bounded_query_growth_across_foreign_horizons(): void
     {
         $counts = [];
-        $origin = $this->a->phase->cycle->governingCommittal;
+        $origin = $this->a->phase->cycle->entryCommittal;
         foreach ([1, 6] as $count) {
             if ($count === 6) {
                 foreach (range(1, 5) as $index) {
@@ -400,7 +400,7 @@ class HomologousMediationTest extends TestCase
     #[\PHPUnit\Framework\Attributes\Group('query')]
     public function test_exhausted_continuation_queries_are_batched_across_foreign_horizons(): void
     {
-        $origin = $this->a->phase->cycle->governingCommittal;
+        $origin = $this->a->phase->cycle->entryCommittal;
         $closed = collect([$this->gateB]);
         $live = collect([$this->expression($this->b, $this->readB, PhaseKind::Disperse)]);
         $this->exhaustContinuation($this->b, $this->gateB);
