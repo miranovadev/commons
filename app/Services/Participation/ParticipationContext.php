@@ -145,6 +145,12 @@ final class ParticipationContext
      */
     private function workingSetIds(?Collection $additionalPropositionIds = null): Collection
     {
+        if ($this->phase->kind === \App\Enums\PhaseKind::Mediate) {
+            // Comparison operands are hydrated, not granted evidence or movement scope.
+            $pool = app(\App\Services\HomologousMediationService::class)->structuralPoolFor($this->phase, $this);
+            $additionalPropositionIds = ($additionalPropositionIds ?? collect())
+                ->merge($pool['reads']->pluck('id'))->merge($pool['gates']->pluck('id'));
+        }
         // Walk only newly discovered IDs. A recursive UNION over the full dependency
         // relation can produce pathological PostgreSQL plans as table statistics grow.
         $owned = DB::table('propositions')
@@ -342,4 +348,3 @@ final class ParticipationContext
         return app(\App\Services\Observables\CommittalLineageService::class)->ancestors($position, $this)->first();
     }
 }
-

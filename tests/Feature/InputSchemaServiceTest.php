@@ -211,6 +211,14 @@ class InputSchemaServiceTest extends TestCase
             PhaseKind::Mediate,
             'frontier',
         );
+        $seed = Proposition::findOrFail($state['gate_id']);
+        app(\App\Services\LedgerService::class)->record($seed);
+        $this->freezeRegionFixture($seed);
+        $bootstrap = Phase::findOrFail($state['phase_id']);
+        $governed = $this->governedPhaseFixture($bootstrap, $seed, $seed);
+        $bootstrap->forceFill(['completed_at' => now()])->save();
+        $bootstrap->cycle->forceFill(['completed_at' => now()])->save();
+        $state['phase_id'] = $governed->id;
         $candidateId = '01ARZ3NDEKTSV4RRFFQ69G5FAQ';
 
         DB::table('propositions')->insert([

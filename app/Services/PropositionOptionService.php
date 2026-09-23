@@ -279,6 +279,14 @@ final class PropositionOptionService
 
     private function atWritePosition(Collection $ids, Phase $phase, ?ParticipationContext $context): Collection
     {
+        if ($phase->kind === PhaseKind::Mediate) {
+            // A foreign operand's edge is real provenance, not permission to adopt
+            // a result owned by another Region during the current Cycle.
+            $nodes = $context !== null ? $context->nodes($ids) : Proposition::whereKey($ids)->get();
+            $seeds = $context !== null ? $context->seedIds() : app(CommitRegionService::class)->seedIdsFor($nodes, $nodes);
+            $ids = $nodes->filter(fn ($node) => ($seeds[$node->id] ?? null) !== null
+                && $seeds[$node->id] === $phase->cycle->governing_committal_id)->pluck('id');
+        }
         return $context !== null
             ? $this->positions->filter($context->nodes($ids), $phase, $phase->kind)->pluck('id')
             : $this->positions->scope(Proposition::query()->active()->whereKey($ids), $phase, $phase->kind)
