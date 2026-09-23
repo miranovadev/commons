@@ -96,13 +96,26 @@ class HomologousOrderTest extends TestCase
         DB::table('phases')->where('id', $wrongPosition->phase_id)->update(['kind' => PhaseKind::Bias->value]);
         $missing = $this->frozen($this->b, 'negative');
         DB::table('commitment_snapshots')->where('proposition_id', $missing->id)->delete();
-        $brokenEntry = $this->commit($this->origin, 'settlement');
-        $malformed = $this->frozen($brokenEntry, 'negative');
-        DB::table('commitment_snapshots')->where('proposition_id', $brokenEntry->id)->delete();
-        foreach ([$wrongDepth, $wrongDomain, $wrongPosition, $missing, $malformed] as $node) {
+        foreach ([$wrongDepth, $wrongDomain, $wrongPosition, $missing] as $node) {
             $this->assertNotContains($node->id, $this->traverseIds());
             $this->reject($node);
         }
+    }
+
+    public function test_missing_ancestor_read_data_fails_closed_without_rewriting_immutable_storage(): void
+    {
+        $lineage = app(\App\Services\Observables\CommittalLineageService::class);
+        $records = $lineage->recordsForIds($this->actor->substrate_id,
+            collect([$this->a->id, $this->positive->id, $this->negative->id]));
+        $records->forget($this->b->id);
+        // The database correctly protects boundary snapshots. Inject malformed
+        // historical read data, as the shared ancestry tests do, without disabling guards.
+        $this->mock(\App\Services\Observables\CommittalLineageService::class, function ($mock) use ($records): void {
+            $mock->shouldReceive('recordsForIds')->andReturn($records);
+        });
+        $before = $this->snapshot();
+        $this->assertEmpty(app(HomologousOrderService::class)->populationFor($this->order));
+        $this->assertSame($before, $this->snapshot());
     }
 
     public function test_inadmissible_local_gate_keeps_homologous_traverse_without_gaining_commit_or_evidence(): void
