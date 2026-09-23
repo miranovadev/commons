@@ -128,12 +128,21 @@ class HomologousPositionTest extends TestCase
         $b = $this->commit($boundary, 'settlement');
         $service = app(HomologousPositionService::class);
         $this->assertTrue($service->areCommittedHomologous($a, $b));
-        // Corrupt only disposable projection metadata, not immutable Cycle owners.
-        $horizon = app(ContextHorizonProjector::class)->forEntry($boundary);
-        DB::table('context_horizons')->where('id', $horizon->id)->update([
-            'parent_context_horizon_id' => app(ContextHorizonProjector::class)->forEntry($otherBoundary)->id,
-        ]);
-        $this->assertFalse($service->areCommittedHomologous($a, $b));
+        // Database guards reject rewriting Horizon parentage. Exercise malformed
+        // historical read data without disabling those production protections.
+        $records = app(\App\Services\Observables\CommittalLineageService::class)
+            ->recordsForIds($this->actor->substrate_id, collect([$a->id, $b->id]));
+        $records[$boundary->id]->opened_parent_horizon_id = app(ContextHorizonProjector::class)->forEntry($otherBoundary)->id;
+        $rows = $records->map(fn ($record) => (object) $record->getAttributes())->values()->all();
+        $database = DB::getFacadeRoot();
+        $readBoundary = \Mockery::mock($database);
+        $readBoundary->shouldReceive('select')->once()->andReturn($rows);
+        DB::swap($readBoundary);
+        try {
+            $this->assertFalse($service->areCommittedHomologous($a, $b));
+        } finally {
+            DB::swap($database);
+        }
     }
 
     public function test_foreign_substrate_is_never_homologous(): void
