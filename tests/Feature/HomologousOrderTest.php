@@ -110,11 +110,17 @@ class HomologousOrderTest extends TestCase
         $records->forget($this->b->id);
         // The database correctly protects boundary snapshots. Inject malformed
         // historical read data, as the shared ancestry tests do, without disabling guards.
-        $this->mock(\App\Services\Observables\CommittalLineageService::class, function ($mock) use ($records): void {
-            $mock->shouldReceive('recordsForIds')->andReturn($records);
-        });
+        $rows = $records->map(fn ($record) => (object) $record->getAttributes())->values()->all();
         $before = $this->snapshot();
-        $this->assertEmpty(app(HomologousOrderService::class)->populationFor($this->order));
+        $database = DB::getFacadeRoot();
+        $readBoundary = \Mockery::mock($database);
+        $readBoundary->shouldReceive('select')->twice()->andReturn($rows);
+        DB::swap($readBoundary);
+        try {
+            $this->assertEmpty(app(HomologousOrderService::class)->populationFor($this->order));
+        } finally {
+            DB::swap($database);
+        }
         $this->assertSame($before, $this->snapshot());
     }
 
