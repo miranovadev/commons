@@ -96,8 +96,9 @@ class HomologousOrderTest extends TestCase
         DB::table('phases')->where('id', $wrongPosition->phase_id)->update(['kind' => PhaseKind::Bias->value]);
         $missing = $this->frozen($this->b, 'negative');
         DB::table('commitment_snapshots')->where('proposition_id', $missing->id)->delete();
-        $malformed = $this->frozen($this->b, 'negative');
-        DB::table('cycles')->where('id', $malformed->phase->cycle_id)->update(['entry_committal_id' => $malformed->id]);
+        $brokenEntry = $this->commit($this->origin, 'settlement');
+        $malformed = $this->frozen($brokenEntry, 'negative');
+        DB::table('commitment_snapshots')->where('proposition_id', $brokenEntry->id)->delete();
         foreach ([$wrongDepth, $wrongDomain, $wrongPosition, $missing, $malformed] as $node) {
             $this->assertNotContains($node->id, $this->traverseIds());
             $this->reject($node);
