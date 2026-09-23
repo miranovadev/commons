@@ -89,7 +89,8 @@ class HomologousOrderTest extends TestCase
     public function test_wrong_coordinates_and_broken_committed_history_cannot_supply_traverse(): void
     {
         $wrongDepth = $this->frozen($this->negative, 'negative');
-        $wrongDomain = $this->frozen($this->origin, 'negative');
+        $otherDomainEntry = $this->commit($this->origin, 'emergence');
+        $wrongDomain = $this->frozen($otherDomainEntry, 'negative');
         $wrongPosition = $this->frozen($this->b, 'negative');
         // Deliberately corrupt storage to exercise fail-closed legacy/malformed input.
         DB::table('phases')->where('id', $wrongPosition->phase_id)->update(['kind' => PhaseKind::Bias->value]);
