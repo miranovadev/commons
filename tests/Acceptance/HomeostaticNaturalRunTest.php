@@ -20,6 +20,15 @@ class HomeostaticNaturalRunTest extends ParticipationHttpTestCase
     private bool $measuring = false;
     private int $queries = 0;
     private float $sqlMs = 0;
+    private array $queryShapes = [];
+
+    public function beginDatabaseTransaction(): void
+    {
+        // The parent still migrates a fresh schema before arming its write guard.
+        // A sustained probe must commit each real HTTP request, not hold hundreds
+        // of requests inside RefreshDatabase's one rollback-only transaction.
+        // That artificial transaction prevents normal PostgreSQL tuple cleanup.
+    }
 
     public function test_schema_driven_multi_participant_trace(): void
     {
@@ -30,7 +39,7 @@ class HomeostaticNaturalRunTest extends ParticipationHttpTestCase
             mkdir($directory, 0777, true);
         }
         $stream = fopen($directory.'/trace.jsonl', 'w');
-        $summary = ['policy' => $policy, 'head' => getenv('GITHUB_SHA') ?: null,
+        $summary = ['policy' => $policy, 'head' => getenv('GITHUB_SHA') ?: null, 'completed' => false,
             'budget' => 600, 'actions' => [], 'additional_selected' => [], 'additional_offered' => [],
             'local_and_additional' => [], 'waiting' => [], 'rest_rollovers' => 0,
             'recovery_relocations' => 0, 'entry_attempts' => 0, 'windows' => [], 'participants' => []];
@@ -38,6 +47,12 @@ class HomeostaticNaturalRunTest extends ParticipationHttpTestCase
             if ($this->measuring) {
                 $this->queries++;
                 $this->sqlMs += $query->time;
+                $shape = preg_replace('/\?(?:,\s*\?)+/', '?', $query->sql);
+                $key = sha1($shape);
+                $this->queryShapes[$key] ??= ['sql' => $shape, 'queries' => 0, 'sql_ms' => 0, 'max_ms' => 0];
+                $this->queryShapes[$key]['queries']++;
+                $this->queryShapes[$key]['sql_ms'] += $query->time;
+                $this->queryShapes[$key]['max_ms'] = max($this->queryShapes[$key]['max_ms'], $query->time);
             }
         });
         $started = microtime(true);
@@ -57,6 +72,7 @@ class HomeostaticNaturalRunTest extends ParticipationHttpTestCase
                 $state = $this->readParticipation($actor);
                 $this->measuring = false;
                 $httpSeconds = microtime(true) - $requestStart;
+                $this->assertSame(0, DB::connection()->transactionLevel());
                 if ($state['status'] !== 'ready') {
                     $reason = $state['reason']['code'];
                     $summary['waiting'][$reason] = ($summary['waiting'][$reason] ?? 0) + 1;
@@ -107,6 +123,7 @@ class HomeostaticNaturalRunTest extends ParticipationHttpTestCase
                 $after = $this->contribute($actor, $input, $state);
                 $this->measuring = false;
                 $httpSeconds += microtime(true) - $requestStart;
+                $this->assertSame(0, DB::connection()->transactionLevel());
                 $this->assertSame($entry, $cycle->fresh()->entry_committal_id);
                 $this->assertNotNull($phase->fresh()->completed_at);
                 if ($before !== null) {
@@ -145,6 +162,15 @@ class HomeostaticNaturalRunTest extends ParticipationHttpTestCase
                     'input' => $input, 'additional_choices' => $additional, 'additional_selected' => $isAdditional,
                     'after' => $after, 'queries' => $this->queries, 'sql_ms' => $this->sqlMs, 'http_seconds' => $httpSeconds], JSON_THROW_ON_ERROR).PHP_EOL);
                 if (($step + 1) % 100 === 0) {
+                    $summary['windows'][$window]['top_sql'] = collect($this->queryShapes)->sortByDesc('sql_ms')->take(5)->values()->all();
+                    $this->queryShapes = [];
+                    $summary['checkpoint_step'] = $step + 1;
+                    $summary['elapsed_seconds'] = microtime(true) - $started;
+                    $summary['checkpoint_counts'] = [];
+                    foreach (['tragedies', 'commit_region_exhaustions', 'propositions', 'cycles', 'receipt_consumptions'] as $table) {
+                        $summary['checkpoint_counts'][$table] = DB::table($table)->count();
+                    }
+                    file_put_contents($directory.'/summary.json', json_encode($summary, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR).PHP_EOL);
                     fwrite(STDERR, 'NATURAL_PROGRESS '.json_encode(['step' => $step + 1, 'actions' => $summary['actions'], 'window' => $summary['windows'][$window]]).PHP_EOL);
                 }
             }
@@ -166,11 +192,14 @@ class HomeostaticNaturalRunTest extends ParticipationHttpTestCase
     private function additionalChoices(Phase $phase, array $state): array
     {
         $actions = $this->actionDefinitions($state);
-        $context = new ParticipationContext($phase);
         if ($phase->kind === PhaseKind::Bias) {
             return ['proposition.reclassify' => array_values(array_diff(
                 $actions['proposition.reclassify']['properties']['proposition_id']['enum'] ?? [], [$phase->gate_proposition_id]))];
         }
+        if (! in_array($phase->kind, [PhaseKind::Mediate, PhaseKind::Order], true)) {
+            return [];
+        }
+        $context = new ParticipationContext($phase);
         if ($phase->kind === PhaseKind::Order) {
             return ['proposition.traverse' => array_values(array_diff(
                 $actions['proposition.traverse']['properties']['proposition_id']['enum'] ?? [],

@@ -38,11 +38,14 @@ abstract class ParticipationHttpTestCase extends TestCase
         )]);
         // Migrations finish in parent::setUp(). Thereafter even setup goes through HTTP.
         DB::connection()->beforeExecuting(function (string $sql): void {
+            if ($this->httpRequestDepth !== 0) {
+                return;
+            }
             // Read-only observation also uses parenthesized UNIONs and recursive
             // committed-ancestry SELECTs. Never allow a data-modifying CTE here.
             $read = preg_match('/^\s*(?:\(*\s*select\b|with\s+recursive\b)/i', $sql)
                 && ! preg_match('/\b(?:insert|update|delete|merge|create|alter|drop|truncate|call|copy)\b|;/i', $sql);
-            if ($this->httpRequestDepth === 0 && ! $read) {
+            if (! $read) {
                 throw new LogicException('HTTP harness forbids fixture writes outside an application request.');
             }
         });

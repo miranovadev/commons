@@ -91,7 +91,7 @@ jobs:
           PGOPTIONS: '-c statement_timeout=30s'
         run: |
           php artisan config:clear
-          php artisan test --filter='HomologousOrderTest|HomologousBiasTest|HomologousMediationTest|HomeostaticDirectionTest|AuthoritativeRestReasonTest|FinalAttemptExhaustionTest'
+          php artisan test --filter='HomologousOrderTest|HomologousBiasTest|HomologousMediationTest|HomeostaticDirectionTest|AuthoritativeRestReasonTest|FinalAttemptExhaustionTest|ParticipationHttpReadGuardTest|ParticipantPromptConstitutionTest'
 
       - name: Run fresh multi-participant HTTP probe
         env:
