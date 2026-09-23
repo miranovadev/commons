@@ -76,7 +76,7 @@ return [
     ],
     6 => [
         'name' => 'bias',
-        'description' => 'Classify the current causal Stance/Frontier Gate when its retained direction agrees with its own ancestry, or act on its causal Write continuations. Regional Bias calculation candidates are not operational targets.',
+        'description' => 'Preserve the current causal Gate under its ordinary Bias rules. Dominant homologous Chirality may add Reclassify sources; use only the Cycle-entry Receipt catalogue. Existing causal Writes retain their ordinary actions and Traverse rules.',
         'gate' => 'previous-phase-position',
         'actions' => [
             'proposition.reclassify',
@@ -86,7 +86,7 @@ return [
         ],
         'constraints' => [
             'proposition.reclassify' => [
-                'lineage-direction-agreement',
+                'local-lineage-or-dominant-homologous-chirality',
                 'unary-selection-fresh-history',
                 'completed-receipt-and-effective-attestation',
             ],
@@ -104,3 +104,4 @@ return [
         ],
     ],
 ];
+

@@ -230,7 +230,10 @@ relationship to the Participant's current Gate. No edge means no movement.
 A positioned Participant may change structural position only by forward
 progression through an explicit causal edge from its current Gate into a
 legitimate continuation, or by recovery backward along its recorded causal
-lineage. A structurally authorised contribution may create that forward edge;
+lineage. Stage 4 Bias additionally permits an authorized homologous Reclassify:
+the selected source creates one real edge to the new acting-Phase classification,
+which becomes the forward position. There is no movement to the foreign Gate
+itself and no invented edge from the old Phase Gate. A structurally authorised contribution may create that forward edge;
 Traverse follows an already-existing edge and never creates one.
 
 There is no sideways movement. A Proposition is not a movement destination
@@ -246,15 +249,17 @@ These three contracts must remain distinct:
 | Contract | Authorised scope | Movement consequence |
 | --- | --- | --- |
 | Movement topology | Forward causal continuations of the current Gate; recorded causal ancestry backward for recovery | Only these edges permit a change of position, subject to the operation's other rules |
-| Homeostatic population | Homologous Reads for Mediate and regional Gates for Bias; each causally local Write's own lineage/participation history for Closure | Calculation, comparison or selection does not create edges or relocate the Participant |
+| Homeostatic population | Homologous Reads for Mediate and homologous Gates for additional Bias sources; each causally local Write's own lineage/participation history for Closure | Calculation, comparison or selection does not create edges or relocate the Participant |
 | Context visibility | Historical and evidentiary material admitted by the context contract | Visibility grants neither actionability nor movement |
 
 Mediate — Read aggregates independent measurements over homologous Reads;
-Bias — Gate retains its defined regional population. Only Mediate exposes compatible foreign-lineage Gates operationally,
-as reconciliation operands, never movement destinations. Reconcile creates causal
-edges from both inputs to its new result. Bias exposes only the current causal
-Gate and that Gate's legitimate Write continuations; other calculated Gates are
-not operational options.
+Bias — Gate aggregates independent numeric Chirality over homologous Gates.
+Mediate adds qualified Reconcile operands; Bias adds qualified Reclassify sources.
+Both preserve their ordinary local causal options. Reconcile creates causal edges
+from both inputs; Reclassify creates one edge from the selected source to the new
+acting-Cycle classification. Foreign Gates are not Read or Traverse destinations
+and never import Receipt stock. The Cycle entry continues to own the catalogue,
+Closure/Cadence history and result accounting.
 
 Closure, performed during Order — Write, evaluates each causally local expressive
 Write independently from its own Depth/Cadence, lineage/history and participation.
@@ -290,7 +295,7 @@ constraints:
 | Support/Refute label Attestations rather than Propositions or measurement axes. | 1, 3, 7, 9 | [Attestation polarity](attestation-polarity.md) |
 | Attestation-less Expressive Propositions default from the governing Committal Proposition; local divergence does not change the region's fixed polarity. | 5, 6, 7 | [Committal defaults and Origin's label choice](attestation-polarity.md) |
 | Mediate preserves ordinary local causal options and adds operands from homologous Reads expressing dominant population Correspondence. | 4, 7, 10 | [Mediate: Correspondence Read](participation.md#mediate-correspondence-read) |
-| Bias compares each head with its own causal lineage aggregate, excluding the head. | 4, 7, 10 | [Bias Chirality Gate](participation.md#bias-chirality-gate) |
+| Bias preserves the current Gate’s local evidence/ancestry rule and adds dominant-Chirality homologous Reclassify sources using only entry-Region Receipts. | 4, 7, 10 | [Bias Chirality Gate](participation.md#bias-chirality-gate) |
 | Zero-valued hysteretic observables retain direction according to their documented histories and transition conditions. | 4, 7 | [Value and retained direction](attestation-polarity.md#value-and-retained-direction); [Closure hysteresis](closure-hysteresis.md) |
 | Commit preserves original evidence and provenance when inheriting participation state. | 8, 9 | [Commit participation inheritance](observables.md#commit-participation-inheritance) |
 
@@ -353,3 +358,4 @@ and exploration epoch; Commit Regions become exhausted permanently. Failure hist
 is immutable. Only a successful Variant advances its own position's epoch.
 Spent propositions remain contextual evidence without Traverse or Attestation
 targets; a later epoch restores normal eligibility without erasing history.
+

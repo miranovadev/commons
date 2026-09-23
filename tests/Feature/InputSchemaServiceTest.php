@@ -64,6 +64,17 @@ class InputSchemaServiceTest extends TestCase
         $this->assertStringNotContainsString('Reads elsewhere in the same Commit Region whose retained Correspondence direction matches', $prompt);
     }
 
+    public function test_bias_retires_the_local_only_cached_guidance(): void
+    {
+        $actions = config('phases.6.actions');
+        $key = 'commons:input-schema:v22:phase:6:'.sha1(implode('|', $actions));
+        Cache::store('array')->forever($key, ['stale_local_only_bias' => true]);
+        $schema = app(InputSchemaService::class)->forPhase(PhaseKind::Bias);
+        $this->assertArrayNotHasKey('stale_local_only_bias', $schema);
+        $this->assertStringContainsString('Dominant homologous Chirality', $schema['x-commons']['description']);
+        $this->assertStringContainsString('Cycle-entry Receipt catalogue', $schema['x-commons']['description']);
+    }
+
     public function test_bias_retires_binary_reconciliation_schema_and_exposes_unary_selection(): void
     {
         $oldActions = ['proposition.reconcile', 'instrument.execute', 'attestation.create'];
@@ -73,7 +84,7 @@ class InputSchemaServiceTest extends TestCase
         $this->assertArrayNotHasKey('stale_binary_bias', $schema);
         $this->assertArrayNotHasKey('proposition.reconcile', $schema['$defs']['actions']);
         $this->assertSame(['action', 'proposition_id', 'receipt_id'], $schema['$defs']['actions']['proposition.reclassify']['required']);
-        $this->assertSame(['lineage-direction-agreement', 'unary-selection-fresh-history', 'completed-receipt-and-effective-attestation'],
+        $this->assertSame(['local-lineage-or-dominant-homologous-chirality', 'unary-selection-fresh-history', 'completed-receipt-and-effective-attestation'],
             $schema['x-commons']['constraints']['proposition.reclassify']);
     }
 
@@ -558,3 +569,4 @@ class InputSchemaServiceTest extends TestCase
         );
     }
 }
+

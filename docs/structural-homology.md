@@ -41,6 +41,23 @@ batching entry Committals. It does not independently query each candidate's ance
 The structural service deliberately leaves active/exhausted state, retained
 Correspondence, directed-pair uniqueness and other action policies to its consumer.
 
+## Bias integration (epic Stage 4)
+
+`HomologousBiasService` discovers homologous Mediate Gates and consumes their
+independent numeric Chirality through the shared population/direction services.
+It contributes only additional dominant-matching active, unexhausted sources;
+`BiasGateService` independently preserves the current Gate's old local rule.
+`PhaseGenerationService` and dispatch still require an effective source
+Attestation, entry-catalogue Receipt and unused source/register classification.
+
+The selected source can belong to another Region/Horizon. Receipt consumption is
+from the acting Cycle-entry catalogue, and the new classification belongs to the
+acting Phase, Horizon and accounting Region. Its sole reclassify edge starts at
+the selected source. `CausalWriteService` recognizes that exact Phase's recorded
+classification as its produced continuation, without adding a fictitious edge
+from the old Gate or adopting foreign results as local Writes. Generic Traverse,
+visible Read, foreign evidence and PhasePositionService are unchanged.
+
 ## Mediate integration (epic Stage 3)
 
 Mediate combines its established local/regional comparison pool with foreign
@@ -128,7 +145,8 @@ The reusable population and dominant-direction layers are documented in
 position, compare the propositions' own Domain and committed depth, and aggregate
 independently derived measurements without writing them. Stage 3 now consumes this aggregate for additional Mediate operands and removes
 the temporary entry-creating-Domain restriction. Proposition Domain and committed
-depth remain authoritative. Bias and Order integration remain deferred.
+depth remain authoritative. Stage 4 adds Bias sources as described above; Order
+population integration remains deferred to Stage 5.
 
 
 Stage 3 coverage includes both signs of disagreement between causal Read and field,
@@ -138,3 +156,18 @@ stale population rejection, and public non-dominant-causal-Read reconciliation.
 Existing graph, Receipt, directed-pair, foreign exhaustion and query-budget proofs
 remain in force. [Homeostatic populations](homeostatic-populations.md) documents
 the shared aggregation and hydration boundary.
+
+Stage 4 coverage in `HomologousBiasTest` proves additive local/dominant options,
+non-dominant and unattested rejection, zero defaults without state writes, public
+Reclassify in both Region directions, entry-only Receipt consumption and provenance,
+result ownership and forward progression, stale rejection, wrong coordinates and
+substrates, no generic Traverse, same-Horizon result isolation, complete foreign
+exhaustion and bounded plan queries across growing populations.
+
+A recorded unary Bias classification may resolve its causal provenance to the
+selected source's Region while retaining the acting Cycle's accounting entry.
+`ActiveParticipantLineage` recognizes that recorded bridge, including through
+later revisions; unrecorded foreign edges still fail the provenance check.
+Potential retains the edge as a foreign input and excludes it from local terrain,
+just as for existing foreign Reconcile inputs. No Potential formula changes.
+

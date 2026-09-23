@@ -151,6 +151,10 @@ final class ParticipationContext
             $additionalPropositionIds = ($additionalPropositionIds ?? collect())
                 ->merge($pool['reads']->pluck('id'))->merge($pool['gates']->pluck('id'));
         }
+        if ($this->phase->kind === \App\Enums\PhaseKind::Bias) {
+            $population = app(\App\Services\HomologousBiasService::class)->populationFor($this->phase, $this);
+            $additionalPropositionIds = ($additionalPropositionIds ?? collect())->merge($population->pluck('id'));
+        }
         // Walk only newly discovered IDs. A recursive UNION over the full dependency
         // relation can produce pathological PostgreSQL plans as table statistics grow.
         $owned = DB::table('propositions')
@@ -351,3 +355,4 @@ final class ParticipationContext
         return app(\App\Services\Observables\CommittalLineageService::class)->ancestors($position, $this)->first();
     }
 }
+

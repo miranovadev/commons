@@ -34,8 +34,11 @@ final readonly class ReceiptContextService
 
         return $context->remember('receipt-context', function () use ($phase, $context): Collection {
             $gate = $context->propositions->get($phase->gate_proposition_id);
-            $foreignOperands = $phase->kind === PhaseKind::Mediate
-                ? app(HomologousMediationService::class)->foreignGateIdsFor($phase, $context) : collect();
+            $foreignOperands = match ($phase->kind) {
+                PhaseKind::Mediate => app(HomologousMediationService::class)->foreignGateIdsFor($phase, $context),
+                PhaseKind::Bias => app(HomologousBiasService::class)->foreignGateIdsFor($phase, $context),
+                default => collect(),
+            };
             $exposed = $gate === null ? collect() : $this->lineage->endingAt($gate, $context)->concat([$gate])
                 ->concat($this->mediation->visibleReadsFor($phase, $context))
                 ->concat($this->options->gateOptionsFor($phase, $context)->whereNotIn('id', $foreignOperands))
@@ -224,3 +227,4 @@ final readonly class ReceiptContextService
         app(RealtimePublisher::class)->proposition($load->proposition_id);
     }
 }
+

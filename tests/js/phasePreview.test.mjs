@@ -38,6 +38,19 @@ function region(html, role) {
   const end = html.indexOf('data-role="', start + 10);
   return html.slice(start, end < 0 ? undefined : end);
 }
+test('Bias shows only schema-authorized homologous sources beside the current Gate', () => {
+  const plan = fixture();
+  const foreign = { ...plan.gate, id: 'foreign', statement: 'AUTHORIZED HOMOLOGUE', receipts: [], instruments: [] };
+  const excluded = { ...foreign, id: 'excluded', statement: 'STRUCTURAL ONLY' };
+  plan.gate_options = [plan.gate, foreign, excluded];
+  plan.schema.$defs.actions['proposition.reclassify'] = { properties: { proposition_id: { enum: [plan.gate.id, foreign.id] }, receipt_id: { enum: ['entry-receipt'] } } };
+  const html = ui.render(plan);
+  assert.match(region(html, 'gate'), /CARD stance/);
+  assert.match(region(html, 'gate'), /AUTHORIZED HOMOLOGUE/);
+  assert.doesNotMatch(html, /STRUCTURAL ONLY/);
+  assert.doesNotMatch(region(html, 'read'), /AUTHORIZED HOMOLOGUE/);
+  assert.doesNotMatch(region(html, 'write'), /AUTHORIZED HOMOLOGUE/);
+});
 for (const domain of ['emergence', 'settlement']) test(`register preview uses only active lineage for ${domain} cards without changing the plan`, () => {
   const plan = fixture(domain);
   const original = structuredClone(plan);
@@ -104,3 +117,4 @@ test('Horizon, provenance and every current action population are excluded from 
   assert.deepEqual(preview.provenance, []);
   assert.doesNotMatch(ui.render(plan, 'mediate'), /UNRELATED CURRENT/);
 });
+

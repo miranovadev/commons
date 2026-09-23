@@ -7,9 +7,10 @@ export const phaseMeta = {
   constrain: { number: 3, icon: IconFilter, description: 'Refine, reclassify or attest the available Propositions.' },
   disperse: { number: 4, icon: IconArrowsSplit, description: 'Open a new branch, add evidence or attest a continuation.' },
   mediate: { number: 5, icon: IconArrowsJoin, description: 'Reconcile the children of corresponding Reads, or attest a continuation.' },
-  bias: { number: 6, icon: IconAdjustmentsHorizontal, description: 'Carry forward a Proposition aligned with its own lineage, add evidence or attest a continuation.' },
+  bias: { number: 6, icon: IconAdjustmentsHorizontal, description: 'Reclassify the eligible local Gate or a dominant-Chirality homologous source using entry-Region evidence, or continue a local Write.' },
   order: { number: 7, icon: IconLock, description: 'Commit an admissible Gate or traverse an existing Committal Write. Continue the next cycle from that commitment.' },
 };
 
 export const phaseOrder = Object.keys(phaseMeta) as Array<keyof typeof phaseMeta>;
 export function phaseTitle(kind: keyof typeof phaseMeta) { return kind.charAt(0).toUpperCase() + kind.slice(1); }
+

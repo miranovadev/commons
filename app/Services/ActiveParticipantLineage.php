@@ -25,15 +25,22 @@ final readonly class ActiveParticipantLineage
     public function endingAt(Proposition $head, ?ParticipationContext $context = null): Collection
     {
         $seed = $this->regions->seedFor($head, $context);
-        $path = $this->pathFrom($head, $context);
-        if ($seed !== null && $path->first()?->id !== $seed->id) {
+        $bridges = collect();
+        $path = $this->pathFrom($head, $context, bridges: $bridges);
+        $boundary = $seed?->id;
+        foreach ($bridges as [$owner, $sourceOwner]) {
+            if ($boundary === $owner) {
+                $boundary = $sourceOwner;
+            }
+        }
+        if ($seed !== null && $path->first()?->id !== $boundary) {
             throw new DomainException('Participant lineage does not reach its governing provenance.');
         }
 
         return $path;
     }
 
-    private function pathFrom(Proposition $head, ?ParticipationContext $context, array $seen = [], array $excluded = []): Collection
+    private function pathFrom(Proposition $head, ?ParticipationContext $context, array $seen = [], array $excluded = [], ?Collection $bridges = null): Collection
     {
         $path = collect();
         $node = $head;
@@ -83,10 +90,18 @@ final readonly class ActiveParticipantLineage
 
                 return $shared->concat($path)->values();
             }
-            $node = $context !== null ? $context->propositions->get($edge->source_proposition_id)
+            $parent = $context !== null ? $context->propositions->get($edge->source_proposition_id)
                 : Proposition::find($edge->source_proposition_id);
+            if ($bridges !== null && $parent !== null && $node->phase->cycle->entry_committal_id !== $parent->phase->cycle->entry_committal_id
+                && app(HomologousBiasService::class)->recordedSourceFor($node, $edges, $context)?->id === $parent->id) {
+                // Accounting stays at the creating Cycle entry. A recorded unary
+                // Bias transition follows its actual selected source's provenance.
+                $bridges->push([$node->phase->cycle->entry_committal_id, $parent->phase->cycle->entry_committal_id]);
+            }
+            $node = $parent;
         }
 
         return $path->values();
     }
 }
+

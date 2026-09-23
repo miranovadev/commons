@@ -370,8 +370,11 @@ final readonly class InputPlanService
         Participant $viewer,
         ?ParticipationContext $context,
     ): array {
-        $foreignOperand = $context?->phase->kind === PhaseKind::Mediate
-            && app(HomologousMediationService::class)->foreignGateIdsFor($context->phase, $context)->contains($proposition->id);
+        $foreignOperand = match ($context?->phase->kind) {
+            PhaseKind::Mediate => app(HomologousMediationService::class)->foreignGateIdsFor($context->phase, $context)->contains($proposition->id),
+            PhaseKind::Bias => app(HomologousBiasService::class)->foreignGateIdsFor($context->phase, $context)->contains($proposition->id),
+            default => false,
+        };
         $measurement = $proposition->relationLoaded('measurement')
             ? $proposition->measurement
             : null;
@@ -438,3 +441,4 @@ final readonly class InputPlanService
         ];
     }
 }
+

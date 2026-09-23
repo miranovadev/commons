@@ -14,6 +14,9 @@ class ParticipationLocalEpochTest extends ScriptedParticipationTestCase
 {
     public function test_a_third_distinguish_variant_reopens_only_its_own_slot_through_http(): void
     {
+        // Observe the final Mediate Writes before Refuting them. With additive
+        // Bias, an attested, unspent homologue can use any entry Receipt; this
+        // epoch journey must not assume those legitimate options are absent.
         $journey = $this->replayParticipationScript(__DIR__.'/../../Fixtures/participation/local-epochs.json', 2);
         $actor = $journey['participants']['critical-explorer'];
         $observer = $journey['participants']['origin-observer'];
@@ -61,3 +64,4 @@ class ParticipationLocalEpochTest extends ScriptedParticipationTestCase
             ->orderBy('context_horizon_id')->orderBy('structural_source_id')->get()->toJson();
     }
 }
+

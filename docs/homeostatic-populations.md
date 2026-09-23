@@ -1,8 +1,9 @@
-# Homeostatic populations — epic Stages 2–3
+# Homeostatic populations — epic Stages 2–4
 
 Stage 2 introduced shared measurement machinery without changing actions.
-Stage 3 connects it only to additional Mediate Reconcile operands. Ordinary local
-causal options remain independently eligible. Bias, Order, movement, Receipt scope,
+Stages 3–4 connect it to additional Mediate Reconcile operands and Bias Reclassify sources. Ordinary local
+causal options remain independently eligible. Bias uses only acting-entry Receipts
+and creates a real selected-source classification edge. Generic movement, Order,
 Commit admissibility and recovery retain their existing behavior.
 
 ## Structural membership
@@ -90,4 +91,15 @@ the Correspondence default, allowing matching members to supply operands while
 leaving the ordinary local path intact. A fresh write authorization recomputes the field,
 so another member changing direction can invalidate a previously listed operand.
 
-Stage 4 and later action integration remain deferred.
+Stage 4 consumes numeric Chirality over homologous Mediate Gates. The current
+causal Gate keeps its independent local Bias evidence/ancestry rule. Other active,
+unexhausted matching members that are unspent in their own current exploration
+epoch may supply Reclassify sources only with the ordinary
+Receipt, effective-Attestation and source/register uniqueness prerequisites.
+Zero member Chirality uses its explicit negative measurement default; regional
+Attestation lean is not substituted for a numeric measurement. Population history
+is still observation-local and supplied explicitly, never invented or persisted.
+The action consumes only an acting Cycle-entry Receipt and creates its result in
+that Cycle, with one actual causal edge from the selected source. Homology grants
+no generic Traverse, Read or Receipt access. Order integration remains Stage 5.
+

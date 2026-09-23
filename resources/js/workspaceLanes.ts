@@ -36,7 +36,7 @@ export function workspaceLanes(plan: ParticipantPlan, previewKind?: PhaseKind): 
     : plan.lineage?.find(node => node.register === read && node.id !== plan.gate.id);
   const reads = ['mediate', 'order'].includes(plan.phase.kind) ? plan.read_options || [] : readCard ? [readCard] : [];
   const gates = plan.phase.kind === 'order' ? []
-    : plan.phase.kind === 'bias' ? [plan.gate]
+    : plan.phase.kind === 'bias' ? [plan.gate, ...actionPropositions(plan, 'proposition.reclassify')]
     : [plan.gate, ...(plan.phase.kind === 'mediate' ? actionPropositions(plan, 'proposition.reconcile') : [])];
   const lanes = [
     ...groupLane('read', reads, inheritedRead ? provenance.register : read),
@@ -60,3 +60,4 @@ function groupLane(role: LaneRole, cards: Proposition[], emptyRegister?: Registe
   return groups.size ? [...groups].map(([register, cards]) => ({ key: `${role}-${register}`, role, register, cards }))
     : [{ key: role, role, register: emptyRegister, cards: [] }];
 }
+
