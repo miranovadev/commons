@@ -41,13 +41,16 @@ batching entry Committals. It does not independently query each candidate's ance
 The structural service deliberately leaves active/exhausted state, retained
 Correspondence, directed-pair uniqueness and other action policies to its consumer.
 
-## Mediate integration checkpoint (#200, unchanged in epic Stage 2)
+## Mediate integration (epic Stage 3)
 
 Mediate combines its established local/regional comparison pool with foreign
 homologous Constrain Reads. The prior Disperse Phase's causal Gate remains the
-only participant-facing Read. Read retained Correspondence (including zero
-hysteresis) qualifies counterparts; Gate Correspondence and Attestation lean do
-not select them.
+only participant-facing Read. The full homologous Read population, including
+that anchor once, determines dominant Correspondence from independently measured
+values. Matching Reads contribute additional Gate operands; the ordinary local
+path is never vetoed by a contrary or unresolved population direction. Member
+zero hysteresis remains independent of population zero history. Gate Correspondence
+and Attestation lean do not select counterparts.
 
 HomologousMediationService separates structural discovery from hydrated comparison.
 ParticipationContext includes those candidate IDs and their dependencies only
@@ -121,6 +124,15 @@ the #200 checkpoint.
 The reusable population and dominant-direction layers are documented in
 [Homeostatic populations](homeostatic-populations.md). They include the current
 position, compare the propositions' own Domain and committed depth, and aggregate
-independently derived measurements without writing them. Existing Mediate candidate
-discovery retains its prior entry-Domain restriction and selected-Read direction
-rule for now. No action service consumes the new aggregate in this stage.
+independently derived measurements without writing them. Stage 3 now consumes this aggregate for additional Mediate operands and removes
+the temporary entry-creating-Domain restriction. Proposition Domain and committed
+depth remain authoritative. Bias and Order integration remain deferred.
+
+
+Stage 3 coverage includes both signs of disagreement between causal Read and field,
+the matching case, same-Region expansion, unresolved zero fields, Reads without
+Gate children contributing to the population, mixed entry creating Domains,
+stale population rejection, and public non-dominant-causal-Read reconciliation.
+Existing graph, Receipt, directed-pair, foreign exhaustion and query-budget proofs
+remain in force. [Homeostatic populations](homeostatic-populations.md) documents
+the shared aggregation and hydration boundary.

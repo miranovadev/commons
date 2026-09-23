@@ -6,6 +6,7 @@ use App\Domain\Observables\HomeostaticDirection;
 use App\Enums\ObservableDirection;
 use App\Models\Proposition;
 use App\Services\Participation\ParticipationContext;
+use Illuminate\Support\Collection;
 use InvalidArgumentException;
 
 /** Consumes lineage-local measurements; never feeds the aggregate back into them. */
@@ -21,13 +22,33 @@ final readonly class HomeostaticDirectionService
         if (! in_array($measurement, ['correspondence', 'chirality', 'closure'], true)) {
             throw new InvalidArgumentException('Unknown Homeostatic measurement.');
         }
-        $population = $this->populations->forPosition($position);
+
+        return $this->forPopulation($position, $this->populations->forPosition($position), $measurement, previous: $previous);
+    }
+
+    /** Reuse a complete hydrated comparison; membership is resolved by the structural layer. */
+    public function forPopulation(
+        Proposition $position,
+        Collection $population,
+        string $measurement,
+        ?ParticipationContext $context = null,
+        ?ObservableDirection $previous = null,
+    ): HomeostaticDirection
+    {
+        if (! in_array($measurement, ['correspondence', 'chirality', 'closure'], true)) {
+            throw new InvalidArgumentException('Unknown Homeostatic measurement.');
+        }
+        $population = $population->unique('id')->values();
         if ($population->isEmpty()) {
             return $this->aggregate([], $previous);
         }
-        // One dependency hydration for the entire population, including historical
-        // members. This context is private to measurement and cannot widen a plan.
-        $context = new ParticipationContext($position->phase, $population->pluck('id'), includeUnavailableAdditional: true);
+        // Reuse operational hydration only when it already contains every member.
+        // Missing/historical members require a private measurement context, never
+        // enlargement of the caller's operational or Receipt working set.
+        if ($context === null || $context->substrate->id !== $position->phase->cycle->participant->substrate_id
+            || $population->pluck('id')->diff($context->propositions->keys())->isNotEmpty()) {
+            $context = new ParticipationContext($position->phase, $population->pluck('id'), includeUnavailableAdditional: true);
+        }
         $members = $context->nodes($population->pluck('id'));
         $this->measurements->observeMissing($members, $context);
         $snapshots = $context->snapshots->keyBy('proposition_id');

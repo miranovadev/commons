@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\ObservableDirection;
 use App\Enums\PhaseKind;
 use App\Models\Phase;
 use App\Models\Proposition;
@@ -9,11 +10,12 @@ use App\Models\Supersession;
 use App\Services\Participation\ParticipationContext;
 use Illuminate\Support\Collection;
 
-/** Foreign Mediate comparison pool; final action policy stays with reconciliation. */
+/** Dominant homologous Mediate comparison pool; final action policy stays with reconciliation. */
 final readonly class HomologousMediationService
 {
     public function __construct(
-        private HomologousPositionService $homology,
+        private HomeostaticPopulationService $populations,
+        private HomeostaticDirectionService $directions,
         private MediationAnchorService $mediation,
         private PhasePositionService $positions,
         private CommitRegionService $regions,
@@ -22,7 +24,8 @@ final readonly class HomologousMediationService
     ) {}
 
     /**
-     * Retained direction belongs to the causal Constrain Read, never its Gate child.
+     * The causal Read identifies the coordinate; the full population sets direction.
+     * Member qualification uses each Read's own Correspondence, never its Gate child.
      * Context hydration includes structural operands and their measurement ancestry.
      * Receipt availability remains independently qualified by the acting Region.
      * Final action policy (including exhausted continuations and directed pairs) remains
@@ -49,7 +52,7 @@ final readonly class HomologousMediationService
 
     private function discover(Phase $phase): array
     {
-        $empty = ['reads' => collect(), 'gates' => collect(), 'anchor' => null];
+        $empty = ['reads' => collect(), 'gates' => collect(), 'population' => collect(), 'anchor' => null];
         $anchor = $this->mediation->anchorFor($phase);
         if ($anchor === null || ! $this->positions->matches($anchor, $phase, PhaseKind::Constrain)) {
             return $empty;
@@ -58,13 +61,8 @@ final readonly class HomologousMediationService
         if ($owner === null || $owner->id !== $phase->cycle->entry_committal_id) {
             return $empty;
         }
-        $reads = $this->homology->candidatesFor($anchor, PhaseKind::Constrain, foreignRegionsOnly: true);
-        $owners = $this->regions->seedIdsFor($reads, $reads);
-        $reads = $reads->filter(fn ($node) => ($owners[$node->id] ?? null) !== null
-            && $owners[$node->id] !== $owner->id)->values();
-        if ($reads->isEmpty()) {
-            return $empty;
-        }
+        $population = $this->populations->forPosition($anchor);
+        $reads = $population->where('id', '!=', $anchor->id)->values();
 
         $domain = $phase->cycle->contextHorizon->domain;
         $register = $domain->registerFor(PhaseKind::Disperse);
@@ -76,20 +74,33 @@ final readonly class HomologousMediationService
             ->whereHas('parents', fn ($q) => $q->whereKey($reads->pluck('id')))
             ->orderBy('id')->get();
 
-        return ['reads' => $reads, 'gates' => $gates, 'anchor' => $anchor];
+        return ['reads' => $reads, 'gates' => $gates, 'population' => $population, 'anchor' => $anchor];
     }
 
     private function resolve(Phase $phase, ParticipationContext $comparison): array
     {
-        ['reads' => $reads, 'gates' => $gates, 'anchor' => $anchor] = $this->structuralPoolFor($phase, $comparison);
+        ['reads' => $reads, 'gates' => $gates, 'population' => $population, 'anchor' => $anchor] = $this->structuralPoolFor($phase, $comparison);
         if ($anchor === null || $reads->isEmpty()) {
             return ['reads' => collect(), 'gates' => collect()];
         }
-        $direction = $this->measurements->correspondenceDirectionFor($anchor, $comparison);
+        $field = $this->directions->forPopulation($anchor, $population, 'correspondence', $comparison);
+        if ($field->direction === null) {
+            // No population history is persisted: a tied field adds no operands.
+            // MediationReadService independently preserves the ordinary local path.
+            return ['reads' => collect(), 'gates' => collect()];
+        }
         $reads = $comparison->nodes($reads->pluck('id'))
-            ->filter(fn ($node) => $comparison->activeIds->has($node->id)
-                && $this->measurements->correspondenceDirectionFor($node, $comparison) === $direction)
-            ->keyBy('id');
+            ->filter(function ($node) use ($comparison, $field): bool {
+                $value = $field->values[$node->id] ?? null;
+                if (! $comparison->activeIds->has($node->id) || $value === null) {
+                    return false;
+                }
+                $direction = $value === 0.0
+                    ? $this->measurements->correspondenceDirectionFor($node, $comparison)
+                    : ObservableDirection::after($value);
+
+                return $direction === $field->direction;
+            })->keyBy('id');
         $parents = Supersession::whereIn('source_proposition_id', $reads->keys())
             ->whereIn('target_proposition_id', $gates->pluck('id'))->get()->groupBy('target_proposition_id');
         $seeds = $comparison->seedIds();

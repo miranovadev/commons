@@ -246,11 +246,11 @@ These three contracts must remain distinct:
 | Contract | Authorised scope | Movement consequence |
 | --- | --- | --- |
 | Movement topology | Forward causal continuations of the current Gate; recorded causal ancestry backward for recovery | Only these edges permit a change of position, subject to the operation's other rules |
-| Homeostatic population | Regional Reads for Mediate and Gates for Bias; each causally local Write's own lineage/participation history for Closure | Calculation, comparison or selection does not create edges or relocate the Participant |
+| Homeostatic population | Homologous Reads for Mediate and regional Gates for Bias; each causally local Write's own lineage/participation history for Closure | Calculation, comparison or selection does not create edges or relocate the Participant |
 | Context visibility | Historical and evidentiary material admitted by the context contract | Visibility grants neither actionability nor movement |
 
-Mediate — Read and Bias — Gate may calculate across the defined regional
-populations. Only Mediate exposes compatible foreign-lineage Gates operationally,
+Mediate — Read aggregates independent measurements over homologous Reads;
+Bias — Gate retains its defined regional population. Only Mediate exposes compatible foreign-lineage Gates operationally,
 as reconciliation operands, never movement destinations. Reconcile creates causal
 edges from both inputs to its new result. Bias exposes only the current causal
 Gate and that Gate's legitimate Write continuations; other calculated Gates are
@@ -289,7 +289,7 @@ constraints:
 | --- | --- | --- |
 | Support/Refute label Attestations rather than Propositions or measurement axes. | 1, 3, 7, 9 | [Attestation polarity](attestation-polarity.md) |
 | Attestation-less Expressive Propositions default from the governing Committal Proposition; local divergence does not change the region's fixed polarity. | 5, 6, 7 | [Committal defaults and Origin's label choice](attestation-polarity.md) |
-| Mediate uses the traversed-to Read's retained Correspondence direction, within its eligible Commit Region and register position. | 4, 7, 10 | [Mediate: Correspondence Read](participation.md#mediate-correspondence-read) |
+| Mediate preserves ordinary local causal options and adds operands from homologous Reads expressing dominant population Correspondence. | 4, 7, 10 | [Mediate: Correspondence Read](participation.md#mediate-correspondence-read) |
 | Bias compares each head with its own causal lineage aggregate, excluding the head. | 4, 7, 10 | [Bias Chirality Gate](participation.md#bias-chirality-gate) |
 | Zero-valued hysteretic observables retain direction according to their documented histories and transition conditions. | 4, 7 | [Value and retained direction](attestation-polarity.md#value-and-retained-direction); [Closure hysteresis](closure-hysteresis.md) |
 | Commit preserves original evidence and provenance when inheriting participation state. | 8, 9 | [Commit participation inheritance](observables.md#commit-participation-inheritance) |
@@ -353,5 +353,3 @@ and exploration epoch; Commit Regions become exhausted permanently. Failure hist
 is immutable. Only a successful Variant advances its own position's epoch.
 Spent propositions remain contextual evidence without Traverse or Attestation
 targets; a later epoch restores normal eligibility without erasing history.
-
-

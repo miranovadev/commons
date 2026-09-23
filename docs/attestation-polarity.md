@@ -73,13 +73,18 @@ only; it does not supply Attestation polarity or effective Attestation defaults.
 
 ## Mediate and Bias have different anchors
 
-Mediate is relative to the participant's trajectory: the preceding Disperse Gate
-is its Read anchor. It exposes active equivalent Reads in that Commit Region
-whose retained Correspondence directions match the anchor, including numeric
-zeros. Gate options are the active immediate Gate-register children of those
-Reads. Their own Correspondence and Attestation values do not filter them.
+Mediate's preceding Disperse Gate remains its causal Read anchor and ordinary
+local eligibility remains independent. Additional operands use the dominant
+Correspondence of the full homologous Read population, including that anchor
+exactly once. A candidate Read's retained Correspondence must match the dominant
+field; its Gate's Correspondence and Attestation values do not select it.
+A zero-valued member retains its own established direction. A zero aggregate
+without explicit prior population history is unresolved and adds no operands;
+it cannot borrow the anchor's retained direction. Immediate active canonical
+Disperse children remain subject to their own Region/Horizon and action rules.
 
-Mediate — Read and Bias — Gate use their defined regional calculation populations.
+Mediate — Read uses its homologous population; Bias — Gate retains its regional
+calculation population.
 Only Mediate exposes compatible foreign Gates, as reconciliation operands;
 Reconcile creates a new result with causal edges from both inputs. Bias exposes
 only the current causal Gate. Closure, performed during Order — Write, evaluates
@@ -114,5 +119,3 @@ invalidates disposable numeric projections for the corrected evidence polarity.
 Older Correspondence signs already overwritten by zero cannot be recovered;
 those positions use lineage/default fallback. Immutable measurement snapshots
 are not rewritten. No fourth measurement or per-Proposition Lean state is added.
-
-

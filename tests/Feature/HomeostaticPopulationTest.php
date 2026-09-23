@@ -60,8 +60,8 @@ class HomeostaticPopulationTest extends TestCase
         $this->assertFalse($homology->areCommittedHomologous($a, $b));
         $this->assertEqualsCanonicalizing([$current->id, $peer->id],
             app(HomeostaticPopulationService::class)->forPosition($current)->pluck('id')->all());
-        // Stage 2 does not change the legacy Mediate discovery/selection contract.
-        $this->assertTrue($homology->candidatesFor($current, PhaseKind::Constrain)->isEmpty());
+        // Discovery now shares the proposition-Domain coordinate used by Mediate.
+        $this->assertSame([$peer->id], $homology->candidatesFor($current, PhaseKind::Constrain)->pluck('id')->all());
     }
 
     public function test_committed_population_is_canonical_order_and_never_mixed_with_expressive_positions(): void
@@ -190,5 +190,22 @@ class HomeostaticPopulationTest extends TestCase
             $this->assertLessThan(100, count($queries));
         }
         $this->assertSame($counts[0], $counts[1], 'Queries must not grow per member or per sibling Horizon.');
+    }
+
+    public function test_reusing_complete_hydration_matches_private_measurement_without_expanding_an_incomplete_context(): void
+    {
+        $origin = $this->commit(null, 'emergence');
+        $a = $this->position($this->commit($origin, 'settlement'));
+        $b = $this->position($this->commit($origin, 'settlement'));
+        $population = app(HomeostaticPopulationService::class)->forPosition($a);
+        $service = app(HomeostaticDirectionService::class);
+        $expected = $service->forPosition($a, 'correspondence');
+        $incomplete = new \App\Services\Participation\ParticipationContext($a->phase);
+        $before = $incomplete->propositions->keys()->all();
+        $this->assertFalse($incomplete->propositions->has($b->id));
+        $this->assertEquals($expected, $service->forPopulation($a, $population, 'correspondence', $incomplete));
+        $this->assertSame($before, $incomplete->propositions->keys()->all());
+        $complete = new \App\Services\Participation\ParticipationContext($a->phase, $population->pluck('id'));
+        $this->assertEquals($expected, $service->forPopulation($a, $population, 'correspondence', $complete));
     }
 }

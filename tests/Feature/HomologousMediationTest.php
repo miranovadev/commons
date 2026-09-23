@@ -95,6 +95,116 @@ class HomologousMediationTest extends TestCase
         $this->assertSame([$this->gateB->id], $service->poolFor($this->mediate)['gates']->pluck('id')->all());
     }
 
+    public function test_population_can_oppose_either_causal_read_direction_without_vetoing_the_local_operand(): void
+    {
+        $origin = $this->a->phase->cycle->entryCommittal;
+        $c = $this->commit($origin, 'settlement');
+        [$readC, $gateC] = $this->pair($c);
+        $local = $this->expression($this->a, $this->readA, PhaseKind::Disperse);
+        foreach ([1.0, -1.0] as $causalSign) {
+            $this->measure($this->readA, .8 * $causalSign);
+            $this->measure($this->readB, -.7 * $causalSign);
+            $this->measure($readC, -.7 * $causalSign);
+            $context = new ParticipationContext($this->mediate->fresh());
+            $pool = app(HomologousMediationService::class)->poolFor($this->mediate, $context);
+            $this->assertEqualsCanonicalizing([$this->gateB->id, $gateC->id], $pool['gates']->pluck('id')->all());
+            $this->assertEqualsCanonicalizing([$local->id, $this->gateB->id, $gateC->id],
+                app(ReconciliationOptionService::class)->forPhase($this->mediate, $context)->pluck('id')->all());
+            $this->assertSame([$this->readA->id], app(MediationReadService::class)
+                ->visibleReadsFor($this->mediate, $context)->pluck('id')->all());
+            $this->assertSame($this->gateA->id, $this->actor->fresh()->current_proposition_id);
+        }
+    }
+
+    public function test_matching_causal_read_is_one_member_and_non_dominant_homologues_are_not_added(): void
+    {
+        $origin = $this->a->phase->cycle->entryCommittal;
+        [$readC, $gateC] = $this->pair($this->commit($origin, 'settlement'));
+        $this->measure($this->readA, .6);
+        $this->measure($this->readB, .5);
+        $this->measure($readC, -.4);
+        $context = new ParticipationContext($this->mediate);
+        $structure = app(HomologousMediationService::class)->structuralPoolFor($this->mediate, $context);
+        $this->assertCount(3, $structure['population']);
+        $this->assertSame(1, $structure['population']->where('id', $this->readA->id)->count());
+        $this->assertSame([$this->gateB->id], app(ReconciliationOptionService::class)
+            ->forPhase($this->mediate, $context)->pluck('id')->all());
+        $this->assertFalse(app(ReconciliationOptionService::class)->forPhase($this->mediate, $context)->contains('id', $gateC->id));
+    }
+
+    public function test_tied_population_does_not_borrow_anchor_direction_or_veto_the_local_route(): void
+    {
+        $local = $this->expression($this->a, $this->readA, PhaseKind::Disperse);
+        $this->measure($this->readA, -.5);
+        $this->measure($this->readB, .5);
+        $this->assertTrue(app(HomologousMediationService::class)->poolFor($this->mediate)['gates']->isEmpty());
+        $this->assertSame([$local->id], app(ReconciliationOptionService::class)->forPhase($this->mediate)->pluck('id')->all());
+        $this->measure($this->readA, 0);
+        $this->measure($this->readB, 0);
+        $this->assertTrue(app(HomologousMediationService::class)->poolFor($this->mediate)['gates']->isEmpty());
+        $this->assertSame([$local->id], app(ReconciliationOptionService::class)->forPhase($this->mediate)->pluck('id')->all());
+    }
+
+    public function test_same_region_homologous_reads_can_add_dominant_operands_beside_the_local_causal_route(): void
+    {
+        [$readC, $gateC] = $this->pair($this->a);
+        $local = $this->expression($this->a, $this->readA, PhaseKind::Disperse);
+        $this->measure($this->readA, .2);
+        $this->measure($this->readB, -.7);
+        $this->measure($readC, -.7);
+        $this->assertEqualsCanonicalizing([$local->id, $this->gateB->id, $gateC->id],
+            app(ReconciliationOptionService::class)->forPhase($this->mediate)->pluck('id')->all());
+    }
+
+    public function test_a_read_without_an_available_gate_still_contributes_to_the_structural_population(): void
+    {
+        $origin = $this->a->phase->cycle->entryCommittal;
+        $c = $this->commit($origin, 'settlement');
+        $readOnly = $this->expression($c, $c, PhaseKind::Constrain);
+        $this->measure($this->readA, .2);
+        $this->measure($this->readB, .2);
+        $this->measure($readOnly, -.9);
+        $this->assertTrue(app(HomologousMediationService::class)->poolFor($this->mediate)['gates']->isEmpty());
+        $this->measure($readOnly, 0);
+        $this->assertSame([$this->gateB->id], app(HomologousMediationService::class)->poolFor($this->mediate)['gates']->pluck('id')->all());
+    }
+
+    public function test_mixed_entry_creating_domains_do_not_restrict_same_domain_same_depth_reads(): void
+    {
+        $origin = $this->a->phase->cycle->entryCommittal;
+        $a = $this->commit($this->a, 'settlement');
+        $b = $this->commit($this->commit($origin, 'emergence'), 'settlement');
+        [$readA, $gateA] = $this->pair($a);
+        [$readB, $gateB] = $this->pair($b);
+        $phase = $this->mediateAt($a, $readA, $gateA);
+        $this->measure($readA, -.4);
+        $this->measure($readB, -.6);
+        $this->assertNotSame($a->phase->cycle->contextHorizon->domain, $b->phase->cycle->contextHorizon->domain);
+        $this->assertSame($readA->phase->cycle->contextHorizon->domain, $readB->phase->cycle->contextHorizon->domain);
+        $this->assertSame([$gateB->id], app(ReconciliationOptionService::class)->forPhase($phase)->pluck('id')->all());
+    }
+
+    public function test_stale_population_change_rejects_a_previously_exposed_operand_even_when_its_read_is_unchanged(): void
+    {
+        $origin = $this->a->phase->cycle->entryCommittal;
+        [$readC] = $this->pair($this->commit($origin, 'settlement'));
+        $this->measure($this->readA, .2);
+        $this->measure($this->readB, .4);
+        $this->measure($readC, .2);
+        $this->assertTrue(app(ReconciliationOptionService::class)->forPhase($this->mediate)->contains('id', $this->gateB->id));
+        $this->measure($readC, -.9);
+        $this->assertFalse(app(ReconciliationOptionService::class)->forPhase($this->mediate)->contains('id', $this->gateB->id));
+        $before = Proposition::count();
+        try {
+            app(\App\Services\ContributionDispatcher::class)->dispatch($this->actor, $this->mediate,
+                ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateB->id]);
+            $this->fail('Population direction must be recomputed during write authorization.');
+        } catch (\DomainException) {
+            $this->assertSame($before, Proposition::count());
+            $this->assertSame($this->gateA->id, $this->actor->fresh()->current_proposition_id);
+        }
+    }
+
     public function test_distinct_homologous_regions_in_the_same_horizon_are_also_discovered(): void
     {
         $a = $this->commit($this->a, 'settlement');
@@ -181,7 +291,16 @@ class HomologousMediationTest extends TestCase
 
     public function test_public_cross_horizon_reconcile_preserves_ownership_gate_route_and_foreign_input_geometry(): void
     {
+        $origin = $this->a->phase->cycle->entryCommittal;
+        $c = $this->commit($origin, 'settlement');
+        $populationRead = $this->expression($c, $c, PhaseKind::Constrain);
         $receipt = $this->loadedReceiptFixture($this->gateB);
+        $this->measure($this->readA, .8);
+        $this->measure($this->readB, -.7);
+        $this->measure($populationRead, -.7);
+        // Additional measurement fixtures must not become the actor's live Phase.
+        Phase::where('id', '!=', $this->mediate->id)->update(['completed_at' => now()]);
+        Cycle::where('id', '!=', $this->mediate->cycle_id)->update(['completed_at' => now()]);
         $this->publishPotentialFixture($this->actor);
         $plan = app(\App\Services\InputPlanService::class)->forPhase($this->actor, $this->mediate);
         $this->assertSame([$this->readA->id], array_column($plan['read_options'], 'id'));

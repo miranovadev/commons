@@ -104,7 +104,7 @@ final readonly class HomologousPositionService
     }
 
     /** Batched canonical position comparison. Activity, exhaustion and action policy belong to consumers. */
-    public function homologousPositionsFor(Proposition $anchor, Collection $candidates, bool $sameEntryDomain = false): Collection
+    public function homologousPositionsFor(Proposition $anchor, Collection $candidates): Collection
     {
         if ($candidates->isEmpty()) {
             return collect();
@@ -131,7 +131,7 @@ final readonly class HomologousPositionService
         }
         // The positions' own Domain was checked above. An entry boundary may have
         // been created in the opposite Domain from expressions in its opened Horizon.
-        $coordinates = $this->committedCoordinates($entries[$ownerId], $entries, sameCreatingDomain: $sameEntryDomain);
+        $coordinates = $this->committedCoordinates($entries[$ownerId], $entries, sameCreatingDomain: false);
 
         return $candidates->filter(fn ($node) => $eligible->contains('id', $node->id)
             && isset($coordinates[$owners[$node->id] ?? '']))->unique('id')->values();
@@ -143,7 +143,7 @@ final readonly class HomologousPositionService
     }
 
     /** Filter by substrate, Domain and canonical position before expanding committed entries once. */
-    public function candidatesFor(Proposition $anchor, PhaseKind $position, bool $foreignRegionsOnly = false, bool $includeAnchor = false, bool $sameEntryDomain = true): Collection
+    public function candidatesFor(Proposition $anchor, PhaseKind $position, bool $foreignRegionsOnly = false, bool $includeAnchor = false): Collection
     {
         if (! $this->canonical($anchor) || $anchor->phase->kind !== $position) {
             return collect();
@@ -160,8 +160,7 @@ final readonly class HomologousPositionService
                     ->whereHas('contextHorizon', fn ($q) => $q->where('domain', $domain->value))))
             ->when(! $includeAnchor, fn ($q) => $q->where('id', '!=', $anchor->id))->orderBy('id')->get();
 
-        // Existing Mediate discovery retains its entry-Domain restriction until Stage 3.
-        return $this->homologousPositionsFor($anchor, $candidates, $sameEntryDomain);
+        return $this->homologousPositionsFor($anchor, $candidates);
     }
 
     private function canonical(Proposition $node): bool
