@@ -93,7 +93,8 @@ so another member changing direction can invalidate a previously listed operand.
 
 Stage 4 consumes numeric Chirality over homologous Mediate Gates. The current
 causal Gate keeps its independent local Bias evidence/ancestry rule. Other active,
-unexhausted matching members may supply Reclassify sources only with the ordinary
+unexhausted matching members that are unspent in their own current exploration
+epoch may supply Reclassify sources only with the ordinary
 Receipt, effective-Attestation and source/register uniqueness prerequisites.
 Zero member Chirality uses its explicit negative measurement default; regional
 Attestation lean is not substituted for a numeric measurement. Population history

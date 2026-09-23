@@ -69,7 +69,11 @@ final readonly class HomologousBiasService
             $exhausted = app(ExhaustedContinuationService::class)->ids($phase, $context)
                 ->union(app(ExhaustedContinuationService::class)->idsForHorizons($horizons));
 
-            return $candidates->reject(fn ($node) => $exhausted->has($node->id))->sortBy('id')->values();
+            $spent = app(ExplorationEpochService::class)->currentFailuresForHorizons(
+                $horizons->push($phase->cycle->context_horizon_id)->unique(), $candidates->pluck('id'), $context,
+            );
+
+            return $candidates->reject(fn ($node) => $exhausted->has($node->id) || $spent->has($node->id))->sortBy('id')->values();
         });
     }
 

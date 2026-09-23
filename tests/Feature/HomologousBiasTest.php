@@ -248,6 +248,37 @@ class HomologousBiasTest extends TestCase
         }
     }
 
+    #[DataProvider('directions')]
+    public function test_spent_additional_gates_require_their_own_current_epoch_to_reopen(bool $sameRegion): void
+    {
+        $candidate = $sameRegion ? $this->source($this->a) : $this->gateB;
+        foreach ([$this->gateA, $this->gateB, $this->gateC, $candidate] as $node) {
+            $this->measure($node, -.5);
+        }
+        $this->assertContains($candidate->id, $this->biasOptionIds());
+        $field = app(HomeostaticDirectionService::class)->forPosition($this->gateA, 'chirality');
+        $position = app(\App\Services\ExplorationPositionService::class)->forProposition($candidate);
+        DB::table('continuation_failures')->insert([
+            'proposition_id' => $candidate->id, 'context_horizon_id' => $position['context_horizon_id'],
+            'structural_position' => $position['structural_position'], 'exploration_epoch' => 0,
+            'phase_id' => $candidate->phase_id, 'failed_at' => now(),
+        ]);
+        $failures = DB::table('continuation_failures')->get()->toJson();
+        foreach ([null, new ParticipationContext($this->bias)] as $context) {
+            $this->assertNotContains($candidate->id, $this->biasOptionIds($context));
+            $this->assertContains($this->gateA->id, $this->biasOptionIds($context));
+        }
+        $this->assertSame($field->values, app(HomeostaticDirectionService::class)->forPosition($this->gateA, 'chirality')->values);
+        $this->reject($candidate);
+        $unrelated = app(\App\Services\ExplorationPositionService::class)->forProposition($this->gateC);
+        DB::table('horizon_exploration_states')->insert([...$unrelated, 'epoch' => 1]);
+        $this->assertNotContains($candidate->id, $this->biasOptionIds());
+        DB::table('horizon_exploration_states')->insert([...$position, 'epoch' => 1]);
+        $this->assertContains($candidate->id, $this->biasOptionIds());
+        $this->assertSame($failures, DB::table('continuation_failures')->get()->toJson());
+        $this->assertSame($this->gateA->id, $this->actor->fresh()->current_proposition_id);
+    }
+
     public function test_unrecorded_foreign_edges_cannot_impersonate_bias_transitions(): void
     {
         $target = $this->position($this->a, PhaseKind::Bias);
