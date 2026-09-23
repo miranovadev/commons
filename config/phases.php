@@ -61,7 +61,7 @@ return [
     ],
     5 => [
         'name' => 'mediate',
-        'description' => 'Read Correspondence-aligned Propositions across the Commit Region; reconcile their immediate Gate children, or attest an immediate Write descendant.',
+        'description' => 'Keep the causal Read and ordinary local Reconcile path. Dominant Correspondence across homologous Reads may add immediate Gate counterparts from other Regions or Horizons. Reconcile an offered counterpart with the current Gate, or attest an immediate Write descendant.',
         'gate' => 'previous-phase-position',
         'actions' => [
             'proposition.reconcile',
