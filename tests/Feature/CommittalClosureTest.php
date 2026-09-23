@@ -39,7 +39,7 @@ class CommittalClosureTest extends TestCase
             : app(ContextHorizonProjector::class)->forEntry($governor);
         $c = (new Cycle)->forceFill(['participant_id' => $this->actor->id,
             'sequence' => (int) $this->actor->cycles()->max('sequence') + 1,
-            'context_horizon_id' => $horizon->id, 'governing_committal_id' => $governor?->id]);
+            'context_horizon_id' => $horizon->id, 'entry_committal_id' => $governor?->id]);
         $c->save();
         $ph = (new Phase)->forceFill(['cycle_id' => $c->id, 'kind' => PhaseKind::Order,
             'write_register' => $horizon->domain->registerFor(PhaseKind::Order), 'started_at' => now()]);
@@ -61,7 +61,7 @@ class CommittalClosureTest extends TestCase
             'cadence_direction' => $cadence > 0 ? 'positive' : 'negative',
             'prominence' => 0, 'turbulence' => 1, 'tension' => -1, 'tension_before' => 0,
             'direction_before' => $h->domain, 'direction_after' => $after,
-            'calculator_version' => $interval === null && $p->phase->cycle->governing_committal_id === null ? 'origin-bootstrap-v1' : 'fixture',
+            'calculator_version' => $interval === null && $p->phase->cycle->entry_committal_id === null ? 'origin-bootstrap-v1' : 'fixture',
             'evaluated_at' => now()]);
         $s->save();
         app(ContextHorizonProjector::class)->apply($s);
@@ -82,7 +82,7 @@ class CommittalClosureTest extends TestCase
         }
     }
 
-    public function test_symmetric_bootstrap_and_domain_runs_follow_only_governance(): void
+    public function test_symmetric_bootstrap_and_domain_runs_follow_only_cycle_entry(): void
     {
         $calc = app(ClosureCalculator::class);
         $e0 = $this->origin();
@@ -159,7 +159,7 @@ class CommittalClosureTest extends TestCase
         $this->assertSame($before, $b->commitmentSnapshot->fresh()->getAttributes());
     }
 
-    public function test_migration_backfills_only_proven_intervals_and_leaves_governance_and_observables_unchanged(): void
+    public function test_migration_backfills_only_proven_intervals_and_leaves_entry_and_observables_unchanged(): void
     {
         $this->travelTo(\Carbon\CarbonImmutable::parse('2026-09-01 00:00:00'));
         $a = $this->origin();
@@ -171,27 +171,32 @@ class CommittalClosureTest extends TestCase
         $this->completed($a, 1); // Same-second other-Cycle completion makes B2 ambiguous.
         $before = DB::table('commitment_snapshots')->orderBy('proposition_id')->get()
             ->map(fn ($row) => \Illuminate\Support\Arr::except((array) $row, ['cadence_interval']))->all();
-        $governors = Cycle::orderBy('id')->pluck('governing_committal_id', 'id')->all();
+        $governors = Cycle::orderBy('id')->pluck('entry_committal_id', 'id')->all();
+        $rename = require database_path('migrations/2026_09_22_210000_rename_cycle_governance_to_entry.php');
+        $rename->down();
         $migration = require database_path('migrations/2026_09_22_120000_freeze_committal_cadence_intervals.php');
         $migration->down();
         DB::table('potential_dirty_horizons')->delete();
         $version = (int) $this->actor->substrate->fresh()->field_version;
         $migration->up();
+        $rename->up();
         $this->assertSame($version + 1, (int) $this->actor->substrate->fresh()->field_version);
         $this->assertEqualsCanonicalizing(DB::table('context_horizons')->pluck('id')->all(),
             DB::table('potential_dirty_horizons')->where('measurements_dirty', true)->pluck('context_horizon_id')->all());
         $this->assertSame(4, $b->commitmentSnapshot->fresh()->cadence_interval);
         $this->assertNull($b2->commitmentSnapshot->fresh()->cadence_interval);
         $this->assertNull($a->commitmentSnapshot->fresh()->cadence_interval);
-        $this->assertSame($governors, Cycle::orderBy('id')->pluck('governing_committal_id', 'id')->all());
+        $this->assertSame($governors, Cycle::orderBy('id')->pluck('entry_committal_id', 'id')->all());
         $this->assertSame($before, DB::table('commitment_snapshots')->orderBy('proposition_id')->get()
             ->map(fn ($row) => \Illuminate\Support\Arr::except((array) $row, ['cadence_interval']))->all());
+        $rename->down();
         $migration->down();
         $this->assertSame($before, DB::table('commitment_snapshots')->orderBy('proposition_id')->get()->map(fn ($row) => (array) $row)->all());
         $migration->up();
+        $rename->up();
     }
 
-    public function test_governance_reads_are_bounded_as_committed_lineage_grows(): void
+    public function test_entry_reads_are_bounded_as_committed_lineage_grows(): void
     {
         $governor = $this->origin();
         $counts = [];

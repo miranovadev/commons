@@ -81,18 +81,18 @@ final readonly class HomologousPositionService
             } elseif ($record->opened_horizon_id !== null) {
                 return null;
             }
-            if ($record->governor === null && $record->calculator_version !== 'origin-bootstrap-v1') {
+            if ($record->entry_committal_id === null && $record->calculator_version !== 'origin-bootstrap-v1') {
                 return null;
             }
-            if ($record->governor !== null) {
-                $parent = $records->get($record->governor);
+            if ($record->entry_committal_id !== null) {
+                $parent = $records->get($record->entry_committal_id);
                 $expectedHorizon = $parent?->isClosureBoundary() ? $parent->opened_horizon_id : $parent?->creating_horizon_id;
                 if ($parent === null || $expectedHorizon === null || $record->creating_horizon_id !== $expectedHorizon
                     || $record->creating_domain !== $parent->direction_after->value) {
                     return null;
                 }
             }
-            $id = $record->governor;
+            $id = $record->entry_committal_id;
         }
 
         return $distances;
@@ -142,7 +142,7 @@ final readonly class HomologousPositionService
         $register = $domain->registerFor($position);
         $candidates = Proposition::where('tier', 'expressive')->where('register', $register)
             ->when($foreignRegionsOnly, fn ($q) => $q->whereHas('phase.cycle', fn ($q) => $q
-                ->whereNotNull('governing_committal_id')->where('governing_committal_id', '!=', $cycle->governing_committal_id)))
+                ->whereNotNull('entry_committal_id')->where('entry_committal_id', '!=', $cycle->entry_committal_id)))
             ->whereHas('phase', fn ($q) => $q->where('kind', $position->value)->where('write_register', $register)
                 ->whereHas('cycle', fn ($q) => $q
                     ->whereHas('participant', fn ($q) => $q->where('substrate_id', $cycle->participant->substrate_id))

@@ -115,12 +115,12 @@ jobs:
         if: ${{ steps.selection.outputs.needs_node == 'true' }}
         run: npm ci
 
-      - name: Verify Closure migration and calculations on SQLite
+      - name: Verify Cycle entry and Closure migrations on SQLite
         if: ${{ inputs.suite == 'core' && inputs.shard == 1 }}
         env:
           DB_CONNECTION: sqlite
           DB_DATABASE: ':memory:'
-        run: php artisan test --filter=CommittalClosureTest
+        run: php artisan test --filter='CommittalClosureTest|CycleEntryIdentityTest'
 
       - name: Run selected PHP suite
         env:

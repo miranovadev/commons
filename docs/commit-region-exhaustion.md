@@ -26,7 +26,7 @@ terminal or numerical zero alone is insufficient. Unknown/ambiguous governing
 membership cannot supply a regional proof.
 
 `ExhaustionService` applies proof to the governing Committal and expressive nodes
-whose creating Cycle has that immutable governor. A Committal owns itself;
+whose creating Cycle has that immutable entry Committal. A Committal owns itself;
 multiple Supersession parents do not make valid governance ambiguous. Historical
 presentation uses the same authority.
 `continuation_exhausted` can propagate from an exhausted outgoing region through
@@ -39,7 +39,7 @@ referencing those proofs by foreign key. It carries no independent exhausted
 flag or lifecycle. Final failure captures the governed members from the existing
 version-checked regional projection before the write lock; the proof and its
 membership publish atomically after revalidation. New writes cannot extend an
-exhausted region. Current maintenance derives membership from immutable Cycle governance.
+exhausted region. Current maintenance derives membership from immutable Cycle entry.
 Only explicit migrations predating #196 use the isolated legacy ancestry resolver. Reads use this index rather than recursively walking
 ancestry once for every proposition; missing regional proof can never authorize
 an indexed member's exhaustion.

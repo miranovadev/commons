@@ -285,7 +285,7 @@ final class PropositionOptionService
             $nodes = $context !== null ? $context->nodes($ids) : Proposition::whereKey($ids)->get();
             $seeds = $context !== null ? $context->seedIds() : app(CommitRegionService::class)->seedIdsFor($nodes, $nodes);
             $ids = $nodes->filter(fn ($node) => ($seeds[$node->id] ?? null) !== null
-                && $seeds[$node->id] === $phase->cycle->governing_committal_id)->pluck('id');
+                && $seeds[$node->id] === $phase->cycle->entry_committal_id)->pluck('id');
         }
         return $context !== null
             ? $this->positions->filter($context->nodes($ids), $phase, $phase->kind)->pluck('id')

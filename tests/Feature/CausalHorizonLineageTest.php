@@ -286,7 +286,7 @@ class CausalHorizonLineageTest extends TestCase
         $cycle = new Cycle;
         $cycle->forceFill(['participant_id' => $this->participant('fixture-'.str()->ulid())->id,
             'sequence' => 1, 'context_horizon_id' => $horizon->id,
-            'governing_committal_id' => $gate?->tier === 'committal' ? $gate->id : ($gate?->phase->cycle->governing_committal_id ?? $horizon->opened_by_proposition_id)])->save();
+            'entry_committal_id' => $gate?->tier === 'committal' ? $gate->id : ($gate?->phase->cycle->entry_committal_id ?? $horizon->opened_by_proposition_id)])->save();
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Order,
             'write_register' => $horizon->domain->registerFor(PhaseKind::Order),

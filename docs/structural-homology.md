@@ -7,18 +7,18 @@ compares structural coordinates without authorizing any action or movement.
 ## Committed coordinate
 
 Committals must belong to the same substrate and have the same authoritative
-creating-Horizon Domain. Walk their immutable creating-Cycle governors to their
+creating-Horizon Domain. Walk their immutable creating-Cycle entry Committals to their
 nearest shared Committal, counting one edge per committed predecessor. They are
 homologous when both distances are equal. A shared seed has distance zero.
 The returned coordinate includes the nearest ancestor ID so callers and tests
 can distinguish it from an arbitrary Origin-based comparison.
 
 Only frozen committed history qualifies. Missing snapshots, disconnected roots,
-cycles, foreign substrates and invalid governance/Horizon links fail closed.
-An ungoverned root must be an explicit Origin bootstrap. Supersession distance,
+cycles, foreign substrates and invalid entry/Horizon links fail closed.
+A root without an entry Committal must be an explicit Origin bootstrap. Supersession distance,
 Horizon sequence, Closure Depth, Cadence, ledger order and time play no role.
 
-`CommittalLineageService::recordsForIds()` supplies the shared batched governance
+`CommittalLineageService::recordsForIds()` supplies the shared batched entry
 expansion. Existing Closure callers use the same loader and retain their existing
 calculation and error policies. Homology introduces no alternative ancestry edge.
 
@@ -27,7 +27,7 @@ calculation and error policies. Homology introduces no alternative ancestry edge
 Expressive positions must have the same substrate, actual creating-Horizon Domain,
 producing Phase kind and canonical register for that Domain/Phase. Both the
 Proposition register and producing Phase write register must be canonical.
-Their valid Cycle-owned governors must be homologous Committals.
+Their valid Cycle-entry Committals must be homologous Committals.
 
 A boundary Committal remains in its creating Domain; expressions it governs in
 its opened Horizon use that Horizon's Domain. Both comparisons are explicit.
@@ -35,7 +35,7 @@ Different Regions and Horizons are allowed. Same-Horizon positions remain valid.
 Malformed labels cannot override authoritative Domain identity.
 
 Candidate discovery filters substrate, Domain and canonical Phase/register before
-batching governors. It does not independently query each candidate's ancestry.
+batching entry Committals. It does not independently query each candidate's ancestry.
 The structural service deliberately leaves active/exhausted state, retained
 Correspondence, directed-pair uniqueness and other action policies to its consumer.
 

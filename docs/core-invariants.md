@@ -54,9 +54,9 @@ history. This invariant applies wherever direction is explicitly hysteretic.
 
 ## 5. Committal Provenance Governs the Region
 
-Commit Region ownership is explicit Cycle governance: a Committal owns itself,
+Commit Region ownership is determined by immutable Cycle entry: a Committal owns itself,
 and an expressive Proposition belongs to its creating Cycle's immutable
-`governing_committal_id`. Supersession records causal provenance, which may have
+`entry_committal_id`. Supersession records causal provenance, which may have
 multiple parents from different Regions without making ownership ambiguous.
 The creating Cycle independently determines `context_horizon_id`; neither
 Region nor Horizon membership grants participant movement. See

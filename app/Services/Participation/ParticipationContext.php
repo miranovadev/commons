@@ -177,13 +177,13 @@ final class ParticipationContext
                 ->whereIn('propositions.id', $frontier)
                 ->whereNotNull('context_horizons.opened_by_proposition_id')
                 ->select('context_horizons.opened_by_proposition_id as id');
-            $governors = DB::table('propositions')
+            $entries = DB::table('propositions')
                 ->join('phases', 'phases.id', '=', 'propositions.phase_id')
                 ->join('cycles', 'cycles.id', '=', 'phases.cycle_id')
-                ->whereIn('propositions.id', $frontier)->whereNotNull('cycles.governing_committal_id')
-                ->select('cycles.governing_committal_id as id');
+                ->whereIn('propositions.id', $frontier)->whereNotNull('cycles.entry_committal_id')
+                ->select('cycles.entry_committal_id as id');
             $dependencies = DB::table('supersessions')->whereIn('target_proposition_id', $frontier)
-                ->select('source_proposition_id as id')->union($boundaries)->union($governors);
+                ->select('source_proposition_id as id')->union($boundaries)->union($entries);
             $frontier = DB::query()->fromSub($dependencies, 'dependencies')
                 ->join('propositions', 'propositions.id', '=', 'dependencies.id')
                 ->join('phases', 'phases.id', '=', 'propositions.phase_id')
@@ -259,10 +259,10 @@ final class ParticipationContext
         });
     }
 
-    /** One batched ownership map; Supersession parents never choose a governor. */
+    /** One batched ownership map; Supersession parents never choose a Cycle entry. */
     public function seedIds(): array
     {
-        return $this->remember('governance-seeds', fn () => app(\App\Services\CommitRegionService::class)
+        return $this->remember('entry-seeds', fn () => app(\App\Services\CommitRegionService::class)
             ->seedIdsFor($this->propositions, $this->propositions));
     }
 

@@ -286,7 +286,7 @@ class InputPlanVisibilityTest extends TestCase
             'context_horizon_id' => $gate?->phase->cycle->context_horizon_id
                 ?? $this->horizonForRegisterFixture($participant, $writeRegister)->id,
             'sequence' => (int) $participant->cycles()->max('sequence') + 1,
-            'governing_committal_id' => $gate?->tier === 'committal' ? $gate->id : $gate?->phase->cycle->governing_committal_id,
+            'entry_committal_id' => $gate?->tier === 'committal' ? $gate->id : $gate?->phase->cycle->entry_committal_id,
         ]);
         $cycle->save();
 

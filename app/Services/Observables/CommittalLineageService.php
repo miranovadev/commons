@@ -10,22 +10,22 @@ use DomainException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
-/** Closure's read model: creating-Cycle governance is its only ancestry edge. */
+/** Closure's read model: creating-Cycle entry is its only ancestry edge. */
 final class CommittalLineageService
 {
     public function records(Proposition $position, ?ParticipationContext $context = null): Collection
     {
         $load = function () use ($position, $context): Collection {
-            $seeds = $context === null ? collect([$position->id, $position->phase->cycle->governing_committal_id])
-                : $context->propositions->keys()->merge($context->propositions->map(fn ($p) => $p->phase->cycle->governing_committal_id))
-                    ->push($context->phase->cycle->governing_committal_id);
+            $seeds = $context === null ? collect([$position->id, $position->phase->cycle->entry_committal_id])
+                : $context->propositions->keys()->merge($context->propositions->map(fn ($p) => $p->phase->cycle->entry_committal_id))
+                    ->push($context->phase->cycle->entry_committal_id);
             return $this->recordsForIds($position->phase->cycle->participant->substrate_id, $seeds);
         };
 
         return $context === null ? $load() : $context->remember('closure:committed-records', $load);
     }
 
-    /** One governance expansion for a batch; callers share this canonical ancestry edge. */
+    /** One committed-entry expansion for a batch; callers share this canonical ancestry edge. */
     public function recordsForIds(string $substrateId, Collection $seeds): Collection
     {
         $seeds = $seeds->filter()->unique()->values();
@@ -34,23 +34,23 @@ final class CommittalLineageService
         }
         $placeholders = implode(',', array_fill(0, $seeds->count(), '?'));
         $rows = DB::select(<<<SQL
-            WITH RECURSIVE chain (id, governor) AS (
-                SELECT p.id, c.governing_committal_id
+            WITH RECURSIVE chain (id, entry_committal_id) AS (
+                SELECT p.id, c.entry_committal_id
                 FROM commitment_snapshots s
                 JOIN propositions p ON p.id = s.proposition_id
                 JOIN phases ph ON ph.id = p.phase_id
                 JOIN cycles c ON c.id = ph.cycle_id
                 WHERE p.id IN ({$placeholders}) AND s.substrate_id = ?
                 UNION
-                SELECT p.id, c.governing_committal_id
+                SELECT p.id, c.entry_committal_id
                 FROM chain child
-                JOIN commitment_snapshots s ON s.proposition_id = child.governor
+                JOIN commitment_snapshots s ON s.proposition_id = child.entry_committal_id
                 JOIN propositions p ON p.id = s.proposition_id
                 JOIN phases ph ON ph.id = p.phase_id
                 JOIN cycles c ON c.id = ph.cycle_id
                 WHERE s.substrate_id = ?
             )
-            SELECT s.*, chain.governor, h.domain AS creating_domain,
+            SELECT s.*, chain.entry_committal_id, h.domain AS creating_domain,
                 p.tier AS committed_tier, participant.substrate_id AS creating_substrate_id,
                 h.substrate_id AS horizon_substrate_id, h.id AS creating_horizon_id,
                 opened.id AS opened_horizon_id, opened.parent_context_horizon_id AS opened_parent_horizon_id,
@@ -72,15 +72,15 @@ final class CommittalLineageService
     public function ancestors(Proposition $position, ?ParticipationContext $context = null): Collection
     {
         $records = $this->records($position, $context);
-        $id = $position->phase->cycle->governing_committal_id;
+        $id = $position->phase->cycle->entry_committal_id;
         $chain = collect();
         while ($id !== null) {
             if ($chain->has($id) || ! $records->has($id)) {
-                throw new DomainException('Closure requires an acyclic, committed governing lineage in its substrate.');
+                throw new DomainException('Closure requires an acyclic, committed entry lineage in its substrate.');
             }
             $record = $records[$id];
             $chain->put($id, $record);
-            $id = $record->governor;
+            $id = $record->entry_committal_id;
         }
 
         return $chain->values();
@@ -96,20 +96,20 @@ final class CommittalLineageService
             return $snapshot->cadence_interval;
         }
         $cycle = $position->phase->cycle;
-        if ($cycle->governing_committal_id === null) {
-            throw new DomainException('An ordinary Commit requires a governing Committal.');
+        if ($cycle->entry_committal_id === null) {
+            throw new DomainException('An ordinary Commit requires an entry Committal.');
         }
         $load = function () use ($cycle, $context): Collection {
-            $governors = $context === null ? collect([$cycle->governing_committal_id])
-                : $context->propositions->map(fn ($p) => $p->phase->cycle->governing_committal_id)->push($context->phase->cycle->governing_committal_id);
+            $entries = $context === null ? collect([$cycle->entry_committal_id])
+                : $context->propositions->map(fn ($p) => $p->phase->cycle->entry_committal_id)->push($context->phase->cycle->entry_committal_id);
 
-            return Cycle::whereIn('governing_committal_id', $governors->filter()->unique())
-                ->whereNotNull('completed_at')->selectRaw('governing_committal_id, count(*) as aggregate')
-                ->groupBy('governing_committal_id')->pluck('aggregate', 'governing_committal_id');
+            return Cycle::whereIn('entry_committal_id', $entries->filter()->unique())
+                ->whereNotNull('completed_at')->selectRaw('entry_committal_id, count(*) as aggregate')
+                ->groupBy('entry_committal_id')->pluck('aggregate', 'entry_committal_id');
         };
         $counts = $context === null ? $load() : $context->remember('closure:completed-basin-counts', $load);
 
         // Count this producer once even for maintenance callers observing a completed Cycle.
-        return (int) $counts->get($cycle->governing_committal_id, 0) + ($cycle->completed_at === null ? 1 : 0);
+        return (int) $counts->get($cycle->entry_committal_id, 0) + ($cycle->completed_at === null ? 1 : 0);
     }
 }

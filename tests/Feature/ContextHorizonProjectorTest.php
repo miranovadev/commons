@@ -384,7 +384,7 @@ class ContextHorizonProjectorTest extends TestCase
             $cycle = new Cycle;
             $cycle->forceFill(['participant_id' => $participant->id,
                 'sequence' => $participant->cycles()->max('sequence') + 1,
-                'governing_committal_id' => $source->id])->save();
+                'entry_committal_id' => $source->id])->save();
             $this->phase = new Phase;
             $this->phase->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Order,
                 'write_register' => $cycle->contextHorizon->domain->registerFor(PhaseKind::Order), 'started_at' => now()])->save();
@@ -423,7 +423,7 @@ class ContextHorizonProjectorTest extends TestCase
                 $participation->forceFill(['participant_id' => $this->phase->cycle->participant_id,
                     'sequence' => $this->phase->cycle->participant->cycles()->max('sequence') + 1,
                     'context_horizon_id' => $this->phase->cycle->context_horizon_id,
-                    'governing_committal_id' => $source->id, 'completed_at' => now(), 'rested_at' => now()])->save();
+                    'entry_committal_id' => $source->id, 'completed_at' => now(), 'rested_at' => now()])->save();
             }
         }
         $snapshot = app(CommitmentSnapshotService::class)->record(

@@ -218,7 +218,7 @@ class CycleRegionOwnershipTest extends TestCase
             : ($malformed ? $gate->phase->cycle->contextHorizon : app(ContextHorizonProjector::class)->forEntry($governor));
         $cycle = new Cycle;
         $cycle->forceFill(['participant_id' => $this->actor->id, 'sequence' => (int) $this->actor->cycles()->max('sequence') + 1,
-            'context_horizon_id' => $horizon->id, 'governing_committal_id' => $governor?->id]);
+            'context_horizon_id' => $horizon->id, 'entry_committal_id' => $governor?->id]);
         if ($malformed) {
             Cycle::withoutEvents(fn () => $cycle->save());
         } else {

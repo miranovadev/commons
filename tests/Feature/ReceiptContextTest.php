@@ -291,7 +291,7 @@ class ReceiptContextTest extends TestCase
         $cycle = new Cycle;
         $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => $participant->cycles()->count() + 1,
             'context_horizon_id' => $horizon->id,
-            'governing_committal_id' => $gate->tier === 'committal' ? $gate->id : $gate->phase->cycle->governing_committal_id])->save();
+            'entry_committal_id' => $gate->tier === 'committal' ? $gate->id : $gate->phase->cycle->entry_committal_id])->save();
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Constrain, 'gate_proposition_id' => $gateId,
             'write_register' => 'canon', 'started_at' => now()])->save();

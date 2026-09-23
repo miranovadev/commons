@@ -270,7 +270,7 @@ class CommitRegionTest extends TestCase
     {
         $phase = $this->phaseForRegisterFixture($this->history, $register, $position);
         if ($parent !== null) {
-            $governor = $parent->tier === 'committal' ? $parent : $parent->phase->cycle->governingCommittal;
+            $governor = $parent->tier === 'committal' ? $parent : $parent->phase->cycle->entryCommittal;
             $phase = $this->governedPhaseFixture($phase, $governor, $parent);
         }
         $node = new Proposition;
@@ -297,11 +297,11 @@ class CommitRegionTest extends TestCase
     private function phase(PhaseKind $kind, Proposition $gate, string $register): Phase
     {
         $this->viewer->cycles()->whereNull('completed_at')->get()->each(fn ($cycle) => $cycle->forceFill(['completed_at' => now()])->save());
-        $governor = $gate->tier === 'committal' ? $gate : $gate->phase->cycle->governingCommittal;
+        $governor = $gate->tier === 'committal' ? $gate : $gate->phase->cycle->entryCommittal;
         $horizon = app(\App\Services\ContextHorizonProjector::class)->forEntry($governor);
         $cycle = new Cycle;
         $cycle->forceFill(['participant_id' => $this->viewer->id, 'sequence' => $this->viewer->cycles()->max('sequence') + 1,
-            'context_horizon_id' => $horizon->id, 'governing_committal_id' => $governor->id])->save();
+            'context_horizon_id' => $horizon->id, 'entry_committal_id' => $governor->id])->save();
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => $kind, 'gate_proposition_id' => $gate->id,
             'write_register' => $register, 'started_at' => now()])->save();

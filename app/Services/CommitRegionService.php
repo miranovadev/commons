@@ -14,7 +14,7 @@ final class CommitRegionService
     public function __construct(private readonly PhasePositionService $positions) {}
 
     /**
-     * Persisted Cycle governance is the only live ownership authority. Parents
+     * Persisted Cycle entry is the only live ownership authority. Parents
      * remain an accepted argument for callers carrying a graph, but are not read.
      * One bounded join resolves all supplied positions, independently of topology.
      */
@@ -30,10 +30,10 @@ final class CommitRegionService
             ->join('cycles as c', 'c.id', '=', 'ph.cycle_id')
             ->join('participants as participant', 'participant.id', '=', 'c.participant_id')
             ->leftJoin('context_horizons as h', 'h.id', '=', 'c.context_horizon_id')
-            ->leftJoin('propositions as g', 'g.id', '=', 'c.governing_committal_id')
+            ->leftJoin('propositions as g', 'g.id', '=', 'c.entry_committal_id')
             ->leftJoin('phases as gp', 'gp.id', '=', 'g.phase_id')
             ->leftJoin('cycles as gc', 'gc.id', '=', 'gp.cycle_id')
-            ->leftJoin('participants as governor_participant', 'governor_participant.id', '=', 'gc.participant_id')
+            ->leftJoin('participants as entry_participant', 'entry_participant.id', '=', 'gc.participant_id')
             ->leftJoin('context_horizons as gh', 'gh.id', '=', 'gc.context_horizon_id')
             ->leftJoin('commitment_snapshots as snapshot', 'snapshot.proposition_id', '=', 'g.id')
             ->leftJoin('context_horizons as child', 'child.opened_by_proposition_id', '=', 'g.id')
@@ -43,7 +43,7 @@ final class CommitRegionService
                 CASE
                     WHEN p.tier = 'committal' THEN p.id
                     WHEN p.tier = 'expressive' AND g.tier = 'committal'
-                        AND participant.substrate_id = governor_participant.substrate_id
+                        AND participant.substrate_id = entry_participant.substrate_id
                         AND participant.substrate_id = h.substrate_id
                         AND participant.substrate_id = gh.substrate_id
                         AND participant.substrate_id = snapshot.substrate_id
@@ -83,7 +83,7 @@ final class CommitRegionService
         return $seed === null ? null : Proposition::find($seed);
     }
 
-    /** Active expressive members owned by this governor; causal topology is independent. */
+    /** Active expressive members in this Cycle-entry Region; causal topology is independent. */
     public function membersFor(Proposition $position, ?ParticipationContext $context = null): Collection
     {
         $seed = $this->seedFor($position, $context);
@@ -94,7 +94,7 @@ final class CommitRegionService
             return $context->members($seed);
         }
         $members = Proposition::query()->active()->where('tier', 'expressive')
-            ->whereHas('phase.cycle', fn ($q) => $q->where('governing_committal_id', $seed->id))
+            ->whereHas('phase.cycle', fn ($q) => $q->where('entry_committal_id', $seed->id))
             ->orderBy('id')->get();
         $seeds = $this->seedIdsFor($members, $members);
 

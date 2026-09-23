@@ -47,7 +47,7 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
             ->join('phases as phase', 'phase.id', '=', 'execution.phase_id')
             ->join('cycles as cycle', 'cycle.id', '=', 'phase.cycle_id')
             ->where('execution.reference', 'like', 'https://evidence.example.test/observation/rhythm-%')
-            ->where('cycle.governing_committal_id', $boundary['proposition_id'])
+            ->where('cycle.entry_committal_id', $boundary['proposition_id'])
             ->whereNotNull('cycle.completed_at')->whereNotNull('cycle.rested_at')->distinct()->count('cycle.id'));
         foreach ([89, 95, 98, 101] as $step) {
             $observed = $journey['responses'][$step];

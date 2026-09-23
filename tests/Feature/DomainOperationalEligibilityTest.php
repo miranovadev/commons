@@ -153,7 +153,7 @@ class DomainOperationalEligibilityTest extends TestCase
         $participant = new Participant;
         $participant->forceFill(['substrate_id' => $substrate->id, 'callsign' => $callsign])->save();
         $cycle = new Cycle;
-        $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => 1, 'governing_committal_id' => $governor?->id])->save();
+        $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => 1, 'entry_committal_id' => $governor?->id])->save();
 
         return $cycle;
     }

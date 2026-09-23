@@ -55,7 +55,7 @@ final readonly class HomologousMediationService
             return $empty;
         }
         $owner = $this->regions->seedFor($anchor);
-        if ($owner === null || $owner->id !== $phase->cycle->governing_committal_id) {
+        if ($owner === null || $owner->id !== $phase->cycle->entry_committal_id) {
             return $empty;
         }
         $reads = $this->homology->candidatesFor($anchor, PhaseKind::Constrain, foreignRegionsOnly: true);

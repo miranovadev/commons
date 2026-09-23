@@ -52,8 +52,8 @@ class ParticipationRecoveryTest extends ScriptedParticipationTestCase
         $after = $this->readParticipation($observer);
         $this->assertSame($biasGate, $after['plan']['gate_id']);
         $this->assertSame($before['context_horizon_id'], $after['context_horizon_id']);
-        $this->assertSame($origin, DB::table('cycles')->where('id', $before['cycle']['id'])->value('governing_committal_id'));
-        $this->assertSame($origin, DB::table('cycles')->where('id', $after['cycle']['id'])->value('governing_committal_id'));
+        $this->assertSame($origin, DB::table('cycles')->where('id', $before['cycle']['id'])->value('entry_committal_id'));
+        $this->assertSame($origin, DB::table('cycles')->where('id', $after['cycle']['id'])->value('entry_committal_id'));
         $this->assertSame('bias', $after['plan']['phase']['kind']);
         $this->assertSame($authorPosition, $this->readParticipation($author)['current_proposition_id']);
         $this->assertSame($owners, DB::table('cycles')->whereIn('id', array_keys($owners))->orderBy('id')->pluck('context_horizon_id', 'id')->all());
@@ -80,7 +80,7 @@ class ParticipationRecoveryTest extends ScriptedParticipationTestCase
         $this->assertSame($origin, $after['current_proposition_id']);
         $this->assertSame($before['context_horizon_id'], $after['context_horizon_id']);
         $this->assertNotSame($before['cycle']['id'], $after['cycle']['id']);
-        $this->assertSame($origin, DB::table('cycles')->where('id', $before['cycle']['id'])->value('governing_committal_id'));
-        $this->assertSame($origin, DB::table('cycles')->where('id', $after['cycle']['id'])->value('governing_committal_id'));
+        $this->assertSame($origin, DB::table('cycles')->where('id', $before['cycle']['id'])->value('entry_committal_id'));
+        $this->assertSame($origin, DB::table('cycles')->where('id', $after['cycle']['id'])->value('entry_committal_id'));
     }
 }

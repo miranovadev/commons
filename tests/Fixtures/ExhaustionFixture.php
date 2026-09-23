@@ -91,7 +91,7 @@ trait ExhaustionFixture
         $horizon = $gate === null ? app(ContextHorizonProjector::class)->currentFor($this->substrate)
             : ($gate->tier === 'committal' ? app(ContextHorizonProjector::class)->forEntry($gate) : $gate->phase->cycle->contextHorizon);
         $cycle = (new Cycle)->forceFill(['participant_id' => $participant->id, 'context_horizon_id' => $horizon->id, 'sequence' => 1,
-            'governing_committal_id' => $gate?->tier === 'committal' ? $gate->id : $gate?->phase->cycle->governing_committal_id]);
+            'entry_committal_id' => $gate?->tier === 'committal' ? $gate->id : $gate?->phase->cycle->entry_committal_id]);
         $cycle->save();
         $phase = (new Phase)->forceFill(['cycle_id' => $cycle->id, 'gate_proposition_id' => $gate?->id,
             'kind' => $kind, 'write_register' => $horizon->domain->registerFor($kind), 'started_at' => now()]);
@@ -124,7 +124,7 @@ trait ExhaustionFixture
             'prominence' => (1 + $tension) / 2, 'turbulence' => (1 - $tension) / 2, 'tension' => $tension,
             'direction_before' => $node->phase->cycle->contextHorizon->domain,
             'direction_after' => $node->phase->cycle->contextHorizon->domain,
-            'cadence_interval' => $node->phase->cycle->governing_committal_id === null ? null : 1,
+            'cadence_interval' => $node->phase->cycle->entry_committal_id === null ? null : 1,
             'calculator_version' => $version, 'evaluated_at' => now()])->save();
     }
 
