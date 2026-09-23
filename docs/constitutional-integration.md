@@ -3,8 +3,9 @@
 Constitutional acceptance is a collection of focused production-path invariant
 proofs. It no longer requires a deterministic full Domain round trip in Core or
 Full Integration. Minimizing the natural traces is explicitly stopped. Fresh
-substrates running naturally will validate the emergent whole lifecycle after
-these focused invariants are green; that live validation has not been run here.
+substrates running naturally validate emergent behavior separately from these
+fixed proofs. The later Homeostatic epic's Stage 6 adds fresh schema-driven HTTP
+probes; see [its validation report](homeostatic-stage-6-validation.md).
 
 `composer test:constitutional` selects 13 cases, all included in ordinary Core
 and Full Integration. They use predefined real API actions and deterministic
@@ -30,8 +31,9 @@ The successful-route case records a positive causal journey. It does not prove
 rejection of an unrelated frozen classification in the same Region/Horizon.
 [Invariant 17](core-invariants.md#17-lineage-constrained-participant-movement)
 requires that negative boundary independently: calculation populations and
-visibility cannot become Traverse targets. No edge means no movement. This
-documentation correction adds no test or claim of new implementation validation.
+visibility alone cannot become Traverse targets. The completed Homeostatic model
+has one explicit additional rule for Order Committals, independently validated
+by `HomologousOrderTest`; it does not broaden ordinary Traverse in other Phases.
 
 Recovery's controlled near/far fixtures remain in `CausalRecoveryTest`: they
 prove inverse-square attenuation can change the winning ancestral Committal,

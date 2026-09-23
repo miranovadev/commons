@@ -1,4 +1,4 @@
-# Homeostatic populations — epic Stages 2–5
+# Homeostatic populations — completed Phase 5–7 model
 
 Stage 2 introduced shared measurement machinery without changing actions.
 Stages 3–4 connect it to additional Mediate Reconcile operands and Bias Reclassify sources. Ordinary local
@@ -111,6 +111,32 @@ Order preserves local Commit admissibility and direct causal Committal Traverse 
 
 Active Committals matching that dominant resolved direction add Traverse choices. Exhausted candidates remain structural population members but cannot be selected. Local Commit, local direct Traverse, visible Reads, Receipt scope and ordinary Traverse outside Order retain their rules. Plan discovery changes no participant state, evidence or causal edges.
 
-Commit selects its created Committal; Traverse selects its existing Committal. Phase 7 completes the old Cycle and ordinary rollover enters that exact selection under its applicable Horizon. The old entry remains immutable. There is no post-Order selector. Stage 6 is not included.
+Commit selects its created Committal; Traverse selects its existing Committal. Phase 7 completes the old Cycle and ordinary rollover enters that exact selection under its applicable Horizon. The old entry remains immutable. There is no post-Order selector.
+
+## Downstream boundary (epic Stage 6)
+
+Measurements stay lineage-local. Homology recognizes the same structural coordinate
+and full committed depth across Regions and Horizons; it creates neither evidence
+scope nor causal edges. PhasePositionService remains Horizon-local. Phase 5 uses
+dominant Correspondence for additional Reconcile operands, Phase 6 uses dominant
+Chirality for additional Reclassify sources, and Phase 7 uses dominant resolved
+Closure for additional existing Committal Traverse. Every ordinary local causal
+option remains independently subject to its existing rules.
+
+The Cycle's immutable entry owns history, resources and accounting. The participant's
+causal route can advance through authorized actions without rewriting that entry.
+Order's actual Commit or Traverse determines the next Cycle entry. Aggregation never
+writes back to proposition measurements, snapshots or participant state.
+
+Rest depends on operational action availability, not population size or a desired
+frequency. An admissible homologous Traverse prevents Rest even when local Commit
+is unavailable. Structural members without an eligible continuation do not prevent
+Rest or establish movement. Genuine Tragedy, final attempts, exhaustion and recovery
+retain their existing proof and ownership rules. A numeric zero keeps supplied
+population history or the observable default; absent resolved Closure components
+are missing measurements, not a special directionless numeric zero.
+
+See [Stage 6 validation](homeostatic-stage-6-validation.md) for downstream coverage
+and fresh natural-run observations.
 
 

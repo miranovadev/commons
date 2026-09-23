@@ -8,8 +8,9 @@ Participant movement is lineage-constrained: forward progression follows an
 explicit causal edge from the current Gate; recovery walks recorded causal
 ancestry backward. Sharing a Commit Region, Context Horizon, register, phase
 position, visible context or calculation population grants no movement.
-**No edge means no movement.** The Homeostatic populations below are calculation
-scopes, not alternative movement topologies.
+The explicit exception is Order's authorized homologous Committal Traverse,
+which selects an existing committed continuation without creating an edge.
+Population comparison alone never moves a Participant.
 
 The participation endpoint is scoped to a Substrate and Participant:
 
@@ -355,7 +356,8 @@ measurements select within eligible populations and must not redefine them.
 Commit Region membership defines calculation/context scope only where a Commons
 operation explicitly requires it. It does not define Participant movement and
 never creates a traversal edge. Context visibility, Homeostatic populations and
-movement topology are separate contracts. No edge means no movement.
+movement topology are separate contracts. Order's explicit committed-position
+rule is required for its additional Traverse options.
 
 `CommitRegionService` resolves ownership from immutable Cycle entry. A
 Committal owns itself. An expressive Proposition belongs to its creating Cycle's
@@ -367,8 +369,7 @@ separate contracts.
 See [Commit Region ownership](commit-region-ownership.md).
 
 An immediate parent alone is too narrow to define a Homeostatic calculation
-population; this does not widen movement beyond the current Gate's authorised
-causal continuations. A Context Horizon is measurement/comparison context and
+population; this does not itself authorize movement. A Context Horizon is measurement/comparison context and
 can contain multiple Commit Regions.
 Horizon membership does not define candidate membership, even if a branch's
 ledger entries have different Horizon labels. Substrate isolation remains.
@@ -386,6 +387,7 @@ scopes are:
 | Mediate — Read | Homologous Constrain-produced Third / Reads, including the causal Read | Dominant population Correspondence adds operands; ordinary local causal options remain independently eligible |
 | Bias — Gate | Homologous Mediate-produced Second / Gates | Dominant numeric Chirality adds Reclassify sources; the current Gate keeps its local evidence/ancestry rule; all action prerequisites still apply |
 | Closure, performed during Order — Write | Each causally local Bias-produced expressive Write | Its own Depth/Cadence, lineage/history and participation; grounded and attested for Commit |
+| Order additional Traverse | Homologous existing Order Committals at the prospective committed Write depth | Dominant resolved frozen Depth/Cadence direction adds operationally available Committals; local Commit and direct Traverse remain independent |
 
 Mediate may inspect homologous Reads across Regions/Horizons and expose their
 compatible Disperse Gates as reconciliation counterparts only. Bias may expose
@@ -491,9 +493,9 @@ counts do not establish the current participant's traversal permissions.
 Violet Support spins clockwise and teal Refute counterclockwise; reduced-motion
 preferences disable animation.
 
-## Terminal Order and explicit next-Cycle entry
+## Terminal Order and next-Cycle entry
 
-Order admits only `proposition.commit` and `proposition.traverse`, or exclusive Rest when neither remains. Commit and Committal Traverse both complete the Cycle at the exact Committal result. Natural completion leaves `rested_at` unset. The next explicit entry begins Phase 1 at that same Proposition, respecting its applicable Context Horizon; no normal completion relocates the Participant.
+Order admits only `proposition.commit` and `proposition.traverse`, or exclusive Rest when neither remains. Commit and Committal Traverse both complete the Cycle at the exact Committal result. Natural completion leaves `rested_at` unset. Ordinary rollover prepares Phase 1 at that same Proposition, respecting its applicable Context Horizon. If entry is pending, the normal entry endpoint retains the same continuity rule. There is no post-Order field selector.
 
 The waiting state has `plan: null`, entry availability and the completed Cycle identity. The workspace can retain completed cards as read-only context. Return to Participants opens the Substrate collection; Enter another Cycle uses the normal entry endpoint. Rest is the separate backward-lineage recovery path: the nearest eligible non-exhausted ancestral Committal within the permitted Horizon is selected, regardless of older values. Region-wide calculation or visibility cannot relocate the Participant.
 

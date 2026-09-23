@@ -5,6 +5,8 @@ on:
     branches: ['validate/stage-6-homeostatic']
     paths:
       - 'tests/Acceptance/**'
+      - 'tests/Support/ParticipationHttpTestCase.php'
+      - 'tests/Feature/HomologousOrderTest.php'
       - '.github/workflows/homeostatic-natural.yml'
       - 'app/**'
       - 'config/**'
@@ -105,4 +107,3 @@ jobs:
           path: test-results/natural/
           if-no-files-found: warn
           retention-days: 14
-

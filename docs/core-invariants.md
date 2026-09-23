@@ -222,34 +222,36 @@ Mediate reads Constrain and reconciles Disperse children; Bias consumes Mediate.
 See the [complete phase-role matrix](phase-positions.md).
 
 Phase-position compatibility and Commit Region membership do not confer
-traversal eligibility. Traversal additionally requires the appropriate causal
-relationship to the Participant's current Gate. No edge means no movement.
+traversal eligibility. Ordinary Traverse additionally requires the appropriate causal
+relationship to the Participant's current Gate. Order alone also admits the
+explicit, operationally validated homologous Committal rule below.
 
 ## 17. Lineage-Constrained Participant Movement
 
-A positioned Participant may change structural position only by forward
-progression through an explicit causal edge from its current Gate into a
-legitimate continuation, or by recovery backward along its recorded causal
-lineage. Stage 4 Bias additionally permits an authorized homologous Reclassify:
+A positioned Participant changes structural position through an authorized
+operation: forward causal progression, recovery backward along recorded causal
+lineage, or Order's explicit homologous Committal Traverse. Bias additionally permits an authorized homologous Reclassify:
 the selected source creates one real edge to the new acting-Phase classification,
 which becomes the forward position. There is no movement to the foreign Gate
 itself and no invented edge from the old Phase Gate. A structurally authorised contribution may create that forward edge;
-Traverse follows an already-existing edge and never creates one.
+Ordinary Traverse follows an already-existing edge. Order's additional Traverse
+selects a qualified existing Committal without creating an edge.
 
-There is no sideways movement. A Proposition is not a movement destination
+There is no unrestricted sideways movement. A Proposition is not a movement destination
 merely because it shares a Commit Region, Context Horizon, register or producing
 Phase position; is visible in context or included in a measurement/Homeostatic
 population; has greater Potential; was previously committed; or is structurally
 nearby. None of these properties creates a causal movement edge.
 
-**No edge means no movement.**
+**Population comparison alone never creates movement.** The narrowly scoped Order
+rule authorizes an actual Traverse; structural visibility does not.
 
 These three contracts must remain distinct:
 
 | Contract | Authorised scope | Movement consequence |
 | --- | --- | --- |
-| Movement topology | Forward causal continuations of the current Gate; recorded causal ancestry backward for recovery | Only these edges permit a change of position, subject to the operation's other rules |
-| Homeostatic population | Homologous Reads for Mediate and homologous Gates for additional Bias sources; each causally local Write's own lineage/participation history for Closure | Calculation, comparison or selection does not create edges or relocate the Participant |
+| Movement topology | Forward causal continuations; recorded ancestry backward for recovery; explicit Order homologous Committal Traverse | Only authorized operations change position; Traverse never creates an edge |
+| Homeostatic population | Homologous Reads for Mediate, Gates for Bias, existing Committal Writes for Order | Comparison creates no edges or movement; each consumer separately authorizes actions |
 | Context visibility | Historical and evidentiary material admitted by the context contract | Visibility grants neither actionability nor movement |
 
 Mediate — Read aggregates independent measurements over homologous Reads;
