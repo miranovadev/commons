@@ -32,7 +32,7 @@ class ReceiptRegionContextTest extends TestCase
             verification: new VerifiedHyperlink('example.test/'.$name, hash('sha256', $name), CarbonImmutable::now(), contentExcerpt: 'BODY-'.$name));
     }
 
-    public function test_ordinary_catalogue_shares_branches_and_reconciliations_but_never_crosses_a_commit(): void
+    public function test_ordinary_catalogue_follows_cycle_entry_across_gate_changes_but_not_into_a_new_region(): void
     {
         $f = new ParticipantContextFixture(2, 0, false);
         $r = $this->receipt($f, $f->gate);
@@ -48,13 +48,16 @@ class ReceiptRegionContextTest extends TestCase
         $commit = $f->node($reconciled, 'canon', 'commit', 'committal');
         $f->phase->forceFill(['gate_proposition_id' => $commit->id])->save();
         $this->assertSame($r->context_horizon_id, $f->phase->cycle->context_horizon_id);
-        $this->assertNotContains($r->id, $service->available($f->phase)->pluck('id'));
-        $target = $f->node($commit, 'activity');
+        // Changing the Gate does not change this Cycle's immutable catalogue.
+        $this->assertContains($r->id, $service->available($f->phase)->pluck('id'));
+        $target = $f->node($commit, 'activity'); // A distinct Cycle entered at the new Commit.
+        $this->assertSame($commit->id, $target->phase->cycle->entry_committal_id);
+        $this->assertNotContains($r->id, $service->available($target->phase)->pluck('id'));
         $this->expectException(\DomainException::class);
         DB::transaction(fn () => $service->consume($target->phase, $commit, $target, $r->id));
     }
 
-    public function test_unresolved_and_ambiguous_origins_fail_closed_even_in_the_same_horizon(): void
+    public function test_missing_governance_stays_unresolved_despite_valid_causal_parents(): void
     {
         $f = new ParticipantContextFixture(1, 0, false);
         $orphan = $f->node(null, 'activity');
@@ -68,16 +71,32 @@ class ReceiptRegionContextTest extends TestCase
         $this->assertEmpty(app(HorizonReceiptService::class)->available($f->phase));
     }
 
-    public function test_a_valid_parent_cannot_rescue_an_orphan_path_or_cycle(): void
+    public function test_valid_governance_is_not_erased_by_malformed_secondary_provenance(): void
     {
         $f = new ParticipantContextFixture(1, 0, false);
         $orphan = $f->node(null, 'activity');
         $mixed = $f->node($f->seed, 'activity');
         $f->edge($orphan, $mixed, 'reconcile');
         $r = $this->receipt($f, $mixed);
-        $this->assertNotContains($r->id, app(HorizonReceiptService::class)->available($f->phase)->pluck('id'));
+        $this->assertContains($r->id, app(HorizonReceiptService::class)->available($f->phase)->pluck('id'));
         $f->edge($mixed, $orphan, 'reconcile');
-        $this->assertNotContains($r->id, app(HorizonReceiptService::class)->available($f->phase)->pluck('id'));
+        $this->assertContains($r->id, app(HorizonReceiptService::class)->available($f->phase)->pluck('id'));
+    }
+
+    public function test_a_foreign_region_parent_does_not_import_its_receipts(): void
+    {
+        $f = new ParticipantContextFixture(1, 0, false);
+        $other = $f->node(null, 'canon', 'variant', 'committal');
+        $foreign = $f->node($other, 'activity');
+        $localReceipt = $this->receipt($f, $f->gate, 'local-region');
+        $foreignReceipt = $this->receipt($f, $foreign, 'foreign-region');
+        $result = $f->node($f->gate, 'frontier', 'reconcile');
+        $f->edge($foreign, $result, 'reconcile');
+        $f->phase->forceFill(['gate_proposition_id' => $result->id])->save();
+        $available = app(HorizonReceiptService::class)->available($f->phase)->pluck('id');
+        $this->assertContains($localReceipt->id, $available);
+        $this->assertNotContains($foreignReceipt->id, $available);
+        $this->assertSame($localReceipt->context_horizon_id, $foreignReceipt->context_horizon_id);
     }
 
     public function test_consumption_preserves_origin_and_removes_shared_availability(): void
@@ -152,3 +171,5 @@ class ReceiptRegionContextTest extends TestCase
         $this->assertLessThanOrEqual(6, $after);
     }
 }
+
+

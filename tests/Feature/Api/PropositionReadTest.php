@@ -141,7 +141,7 @@ class PropositionReadTest extends TestCase
             'direction_before' => 'emergence', 'direction_after' => 'emergence',
             'calculator_version' => 'fixture', 'evaluated_at' => now(),
         ])->save();
-        $child = $this->node($origin->phase, 'expressive');
+        $child = $this->node($this->governedPhaseFixture($origin->phase, $origin), 'expressive');
         $edge = new Supersession;
         $edge->forceFill(['phase_id' => $origin->phase_id, 'source_proposition_id' => $origin->id,
             'target_proposition_id' => $child->id, 'type' => 'variant'])->save();
@@ -174,12 +174,14 @@ class PropositionReadTest extends TestCase
             ->assertJsonPath('data.field.potential_status', 'missing');
     }
 
-    public function test_batched_region_seeds_follow_reconciliation_and_reject_cross_region_ancestry(): void
+    public function test_batched_region_seeds_follow_cycle_governance_despite_cross_region_ancestry(): void
     {
         [$substrate, $origin] = $this->fixture();
-        $left = $this->node($origin->phase, 'expressive');
-        $right = $this->node($origin->phase, 'expressive');
-        $joined = $this->node($origin->phase, 'expressive');
+        $this->freezeRegionFixture($origin);
+        $owned = $this->governedPhaseFixture($origin->phase, $origin);
+        $left = $this->node($owned, 'expressive');
+        $right = $this->node($owned, 'expressive');
+        $joined = $this->node($owned, 'expressive');
         foreach ([[$origin, $left], [$origin, $right], [$left, $joined], [$right, $joined]] as [$from, $to]) {
             $edge = new Supersession;
             $edge->forceFill(['phase_id' => $origin->phase_id, 'source_proposition_id' => $from->id,
@@ -193,8 +195,8 @@ class PropositionReadTest extends TestCase
         $edge = new Supersession;
         $edge->forceFill(['phase_id' => $origin->phase_id, 'source_proposition_id' => $other->id,
             'target_proposition_id' => $joined->id, 'type' => 'variant'])->save();
-        $this->assertNull($regions->seedFor($joined));
-        $this->assertNull($batch());
+        $this->assertSame($origin->id, $regions->seedFor($joined)?->id);
+        $this->assertSame($origin->id, $batch());
     }
 
     private function graphQueries(Substrate $substrate, int $count): array
@@ -251,3 +253,4 @@ class PropositionReadTest extends TestCase
         return $node;
     }
 }
+

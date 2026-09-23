@@ -1,0 +1,2045 @@
+{
+  "run": 35920759282,
+  "head": "f9d57a741e3d67938b3760054b7b5bcbff8d2503",
+  "status": "incomplete: 30-minute job budget exceeded",
+  "outer_test_transaction": true,
+  "policies": {
+    "local-first": {
+      "completed_contributions": 282,
+      "trace_sha256": "fd5c6b599da4415271d4f876aeb2c32ab8adf0e14adbefea01bc94589fa7c0f5",
+      "actions": {
+        "proposition.variant": 37,
+        "instrument.execute": 21,
+        "attestation.create": 101,
+        "proposition.reclassify": 18,
+        "participant.rest": 45,
+        "proposition.traverse": 46,
+        "proposition.reconcile": 9,
+        "proposition.commit": 5
+      },
+      "additional_selected": {
+        "proposition.reclassify": 1
+      },
+      "rest_reasons": {
+        "no_available_move": 40,
+        "no_remaining_potential": 5
+      },
+      "representative_steps": [
+        {
+          "step": 42,
+          "participant": "01m381vctdssyth6fdk2sb9vk6",
+          "input": {
+            "action": "proposition.commit",
+            "proposition_id": "01m381wjjycbxekd3v5wm4ncxg"
+          },
+          "additional_choices": {
+            "proposition.traverse": []
+          },
+          "additional_selected": false,
+          "before": {
+            "status": "ready",
+            "cycle": {
+              "id": "01m381w0kdjhqzv5kxr14npmdb",
+              "sequence": 4,
+              "context_horizon_id": "01m381vd43h3fy171aqy7wpta5",
+              "created_at": "2026-09-23T21:13:42.000000Z"
+            },
+            "domain": "settlement",
+            "context_horizon_id": "01m381vd43h3fy171aqy7wpta5",
+            "current_proposition_id": "01m381wjjycbxekd3v5wm4ncxg",
+            "plan": {
+              "phase": {
+                "id": "01m381wkcjpeb9ppmzyb0t0bq7",
+                "number": 7,
+                "kind": "order",
+                "write_register": "concord"
+              },
+              "gate_id": "01m381wjjycbxekd3v5wm4ncxg",
+              "rest_available": false,
+              "rest_reason": null,
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "$id": "https://miranova.dev/commons/schemas/phases/order.json",
+                "title": "Order phase response",
+                "description": "Choose exactly one action per response. Optional Gate Receipt desired states accompany successful forward contributions.",
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/actions/proposition.commit"
+                  }
+                ],
+                "$defs": {
+                  "ulid": {
+                    "type": "string",
+                    "pattern": "^[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26}$"
+                  },
+                  "instrument": {
+                    "description": "Cite references a known substrate object. Creating a Cite Receipt does not itself grant Reinforcement. Hyperlink fetches a known public URL and verifies retrieval, not the truth of its claims. Web Search discovers resources from a query. Instrument execution records an immutable Receipt; it never loads context or grants Reinforcement automatically.",
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "kind",
+                          "reference"
+                        ],
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "citation",
+                              "hyperlink"
+                            ]
+                          },
+                          "reference": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "kind",
+                          "query"
+                        ],
+                        "properties": {
+                          "kind": {
+                            "const": "web_search"
+                          },
+                          "query": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 1000,
+                            "pattern": "^[^\\x00]*[^\\s\\x00][^\\x00]*$"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "actions": {
+                    "proposition.commit": {
+                      "title": "Commit a Closure candidate",
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "action",
+                        "proposition_id"
+                      ],
+                      "properties": {
+                        "action": {
+                          "const": "proposition.commit"
+                        },
+                        "proposition_id": {
+                          "type": "string",
+                          "pattern": "^[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26}$",
+                          "enum": [
+                            "01m381wjjycbxekd3v5wm4ncxg"
+                          ]
+                        },
+                        "receipt_options": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "load": {
+                              "type": "array",
+                              "uniqueItems": true,
+                              "items": {
+                                "type": "string",
+                                "enum": [
+                                  "01m381wbq4x5d81kzew9rsp02s"
+                                ]
+                              }
+                            },
+                            "unload": {
+                              "type": "array",
+                              "uniqueItems": true,
+                              "items": {
+                                "type": "string",
+                                "enum": [
+                                  "01m381wbq4x5d81kzew9rsp02s"
+                                ]
+                              }
+                            }
+                          },
+                          "description": "Optional desired state for current Gate Receipt references. Load and unload must be disjoint; already satisfied states are no-ops. Applied atomically with this action, visible next Phase."
+                        }
+                      }
+                    }
+                  }
+                },
+                "x-commons": {
+                  "kind": "order",
+                  "description": "Commit an admissible local Write, Traverse its direct Committal continuation, or Traverse a dominant-direction homologous Committal. The selected Committal becomes the next Cycle entry.",
+                  "one_action": true,
+                  "gate": "previous-phase-position",
+                  "constraints": {
+                    "proposition.commit": [
+                      "effective-gate-attestation",
+                      "completed-gate-or-effective-attestation-receipt",
+                      "depth-cadence-and-hysteresis-admissible"
+                    ]
+                  },
+                  "server_governed": [
+                    "gate_proposition_id",
+                    "domain",
+                    "write_register",
+                    "tier"
+                  ]
+                },
+                "$comment": "closure-observation:3ec215d8697aef39f76a30b5852256ad9a8617469b7df1c6360cdfab7ffb3d7f"
+              },
+              "write_options": [
+                {
+                  "id": "01m381wjjycbxekd3v5wm4ncxg",
+                  "register": "concord",
+                  "tier": "expressive",
+                  "statement": "Testable opportunity 33",
+                  "spent": false,
+                  "structural_position": 6,
+                  "exploration_epoch": 0,
+                  "parent_ids": [
+                    "01m381we0n2vd347g06r1vxza4"
+                  ],
+                  "reinforcement_count": 0,
+                  "attestation_summary": {
+                    "support_direction": "positive",
+                    "positive": 2,
+                    "negative": 0,
+                    "retained_direction": "positive"
+                  },
+                  "observables": {
+                    "correspondence": -0.6191203,
+                    "chirality": 0.976344,
+                    "closure": -1
+                  },
+                  "receipts": [
+                    {
+                      "id": "01m381wbq4x5d81kzew9rsp02s",
+                      "type": "hyperlink",
+                      "reference": "https://evidence.example.test/observation/34",
+                      "loaded": false
+                    }
+                  ]
+                }
+              ],
+              "commitment": {
+                "admissible": true,
+                "reinforcement_count": 0,
+                "requirements": {
+                  "attestation": true,
+                  "receipt": true,
+                  "closure": true,
+                  "phase_position": true,
+                  "causal_write": true,
+                  "active_region_candidate": true,
+                  "write_opportunity": true
+                },
+                "closure_enforced": true,
+                "reasons": [],
+                "closure": {
+                  "depth": 0,
+                  "cadence": 0,
+                  "closure": 0,
+                  "depth_direction": "negative",
+                  "cadence_direction": "negative",
+                  "admissible": true,
+                  "cadence_interval": 7,
+                  "history_proposition_id": "01m381vcxfn37q7p33hvmgxv0e",
+                  "history_source": "committed-ancestor"
+                }
+              }
+            }
+          },
+          "after": {
+            "status": "ready",
+            "cycle": {
+              "id": "01m381wspet8p9vcastq85r48g",
+              "sequence": 5,
+              "context_horizon_id": "01m381wse5nh0yf0h9em7h8bak",
+              "created_at": "2026-09-23T21:14:08.000000Z"
+            },
+            "domain": "emergence",
+            "context_horizon_id": "01m381wse5nh0yf0h9em7h8bak",
+            "current_proposition_id": "01m381wqsqmxtvj04kmnf638pr",
+            "plan": {
+              "phase": {
+                "id": "01m381wsqwz1nrbw6xf3dv0ewv",
+                "number": 1,
+                "kind": "distinguish",
+                "write_register": "activity"
+              },
+              "gate_id": "01m381wqsqmxtvj04kmnf638pr",
+              "rest_available": false,
+              "rest_reason": null
+            }
+          }
+        },
+        {
+          "step": 175,
+          "participant": "01m381vden5bp8gg7mhhnhd93v",
+          "input": {
+            "action": "participant.rest"
+          },
+          "additional_choices": {
+            "proposition.traverse": []
+          },
+          "additional_selected": false,
+          "before": {
+            "status": "ready",
+            "cycle": {
+              "id": "01m3825qb0vg4k1heqkpfkz6ke",
+              "sequence": 12,
+              "context_horizon_id": "01m381wse5nh0yf0h9em7h8bak",
+              "created_at": "2026-09-23T21:19:00.000000Z"
+            },
+            "domain": "emergence",
+            "context_horizon_id": "01m381wse5nh0yf0h9em7h8bak",
+            "current_proposition_id": "01m3828mzwemkegg8n5qzcxe8s",
+            "plan": {
+              "phase": {
+                "id": "01m3828rv68cap5qm5ehk5dqv4",
+                "number": 7,
+                "kind": "order",
+                "write_register": "canon"
+              },
+              "gate_id": "01m3828mzwemkegg8n5qzcxe8s",
+              "rest_available": true,
+              "rest_reason": "no_available_move",
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "$id": "https://miranova.dev/commons/schemas/phases/order.json",
+                "title": "Order phase response",
+                "description": "Choose exactly one action per response. Optional Gate Receipt desired states accompany successful forward contributions.",
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/actions/participant.rest"
+                  }
+                ],
+                "$defs": {
+                  "ulid": {
+                    "type": "string",
+                    "pattern": "^[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26}$"
+                  },
+                  "instrument": {
+                    "description": "Cite references a known substrate object. Creating a Cite Receipt does not itself grant Reinforcement. Hyperlink fetches a known public URL and verifies retrieval, not the truth of its claims. Web Search discovers resources from a query. Instrument execution records an immutable Receipt; it never loads context or grants Reinforcement automatically.",
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "kind",
+                          "reference"
+                        ],
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "citation",
+                              "hyperlink"
+                            ]
+                          },
+                          "reference": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "kind",
+                          "query"
+                        ],
+                        "properties": {
+                          "kind": {
+                            "const": "web_search"
+                          },
+                          "query": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 1000,
+                            "pattern": "^[^\\x00]*[^\\s\\x00][^\\x00]*$"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "actions": {
+                    "participant.rest": {
+                      "title": "Rest in a Tragic Region and end this Cycle",
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "action"
+                      ],
+                      "properties": {
+                        "action": {
+                          "const": "participant.rest"
+                        }
+                      }
+                    }
+                  }
+                },
+                "x-commons": {
+                  "kind": "order",
+                  "description": "Commit an admissible local Write, Traverse its direct Committal continuation, or Traverse a dominant-direction homologous Committal. The selected Committal becomes the next Cycle entry.",
+                  "one_action": true,
+                  "gate": "previous-phase-position",
+                  "constraints": [],
+                  "server_governed": [
+                    "gate_proposition_id",
+                    "domain",
+                    "write_register",
+                    "tier"
+                  ]
+                },
+                "$comment": "closure-observation:c700734b13fde33b4c210df2cfe815d0c5120482ad572954bc10ce4c7f61b7d5"
+              },
+              "write_options": [
+                {
+                  "id": "01m3828mzwemkegg8n5qzcxe8s",
+                  "register": "canon",
+                  "tier": "expressive",
+                  "statement": "Testable opportunity 166",
+                  "spent": false,
+                  "structural_position": 6,
+                  "exploration_epoch": 0,
+                  "parent_ids": [
+                    "01m3827xn510h5kd3q3kqa8pzy"
+                  ],
+                  "reinforcement_count": 0,
+                  "attestation_summary": {
+                    "support_direction": "positive",
+                    "positive": 2,
+                    "negative": 0,
+                    "retained_direction": "positive"
+                  },
+                  "observables": {
+                    "correspondence": 0.8468933,
+                    "chirality": 1,
+                    "closure": 0.5
+                  },
+                  "receipts": [
+                    {
+                      "id": "01m3827j3ctn34zn4p7d1ekhyc",
+                      "type": "hyperlink",
+                      "reference": "https://evidence.example.test/observation/167",
+                      "loaded": false
+                    }
+                  ]
+                }
+              ],
+              "commitment": {
+                "admissible": false,
+                "reinforcement_count": 0,
+                "requirements": {
+                  "attestation": true,
+                  "receipt": true,
+                  "closure": false,
+                  "phase_position": true,
+                  "causal_write": true,
+                  "active_region_candidate": true,
+                  "write_opportunity": true
+                },
+                "closure_enforced": true,
+                "reasons": [
+                  "depth_cadence_directions_diverge"
+                ],
+                "closure": {
+                  "depth": -0.3333333,
+                  "cadence": 1,
+                  "closure": 0.3333334,
+                  "depth_direction": "negative",
+                  "cadence_direction": "positive",
+                  "admissible": false,
+                  "cadence_interval": 7,
+                  "history_proposition_id": "01m3822v5cr7m2dxr76x0kadkr",
+                  "history_source": "committed-ancestor"
+                }
+              }
+            }
+          },
+          "after": {
+            "status": "ready",
+            "cycle": {
+              "id": "01m3829es1dv12z2cp80s5yrjs",
+              "sequence": 13,
+              "context_horizon_id": "01m381wse5nh0yf0h9em7h8bak",
+              "created_at": "2026-09-23T21:21:03.000000Z"
+            },
+            "domain": "emergence",
+            "context_horizon_id": "01m381wse5nh0yf0h9em7h8bak",
+            "current_proposition_id": "01m3822v5cr7m2dxr76x0kadkr",
+            "plan": {
+              "phase": {
+                "id": "01m3829esxbxz0n7dme85xda9r",
+                "number": 1,
+                "kind": "distinguish",
+                "write_register": "activity"
+              },
+              "gate_id": "01m3822v5cr7m2dxr76x0kadkr",
+              "rest_available": false,
+              "rest_reason": null
+            }
+          }
+        },
+        {
+          "step": 278,
+          "participant": "01m381vdsh6ag00j1a3t5dfdww",
+          "input": {
+            "action": "proposition.reclassify",
+            "proposition_id": "01m3830tet8w8qqzsjvcmebawf",
+            "receipt_id": "01m382zycqp89jfcv6f9sjadfx"
+          },
+          "additional_choices": {
+            "proposition.reclassify": [
+              "01m3830tet8w8qqzsjvcmebawf"
+            ]
+          },
+          "additional_selected": true,
+          "before": {
+            "status": "ready",
+            "cycle": {
+              "id": "01m38329z9kn4mjn2q3rnyhp28",
+              "sequence": 19,
+              "context_horizon_id": "01m381wse5nh0yf0h9em7h8bak",
+              "created_at": "2026-09-23T21:34:37.000000Z"
+            },
+            "domain": "emergence",
+            "context_horizon_id": "01m381wse5nh0yf0h9em7h8bak",
+            "current_proposition_id": "01m3838at72kzhebnfnqx2gkth",
+            "plan": {
+              "phase": {
+                "id": "01m3838fy7hp34cnwy9ah5vkx3",
+                "number": 6,
+                "kind": "bias",
+                "write_register": "canon"
+              },
+              "gate_id": "01m3838at72kzhebnfnqx2gkth",
+              "rest_available": false,
+              "rest_reason": null,
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "$id": "https://miranova.dev/commons/schemas/phases/bias.json",
+                "title": "Bias phase response",
+                "description": "Choose exactly one action per response. Optional Gate Receipt desired states accompany successful forward contributions.",
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/actions/proposition.reclassify"
+                  }
+                ],
+                "$defs": {
+                  "ulid": {
+                    "type": "string",
+                    "pattern": "^[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26}$"
+                  },
+                  "instrument": {
+                    "description": "Cite references a known substrate object. Creating a Cite Receipt does not itself grant Reinforcement. Hyperlink fetches a known public URL and verifies retrieval, not the truth of its claims. Web Search discovers resources from a query. Instrument execution records an immutable Receipt; it never loads context or grants Reinforcement automatically.",
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "kind",
+                          "reference"
+                        ],
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "citation",
+                              "hyperlink"
+                            ]
+                          },
+                          "reference": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "kind",
+                          "query"
+                        ],
+                        "properties": {
+                          "kind": {
+                            "const": "web_search"
+                          },
+                          "query": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 1000,
+                            "pattern": "^[^\\x00]*[^\\s\\x00][^\\x00]*$"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "actions": {
+                    "proposition.reclassify": {
+                      "type": "object",
+                      "title": "Reclassify the Gate without changing its statement",
+                      "additionalProperties": false,
+                      "required": [
+                        "action",
+                        "proposition_id",
+                        "receipt_id"
+                      ],
+                      "properties": {
+                        "action": {
+                          "const": "proposition.reclassify"
+                        },
+                        "proposition_id": {
+                          "type": "string",
+                          "pattern": "^[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26}$",
+                          "enum": [
+                            "01m3830tet8w8qqzsjvcmebawf"
+                          ]
+                        },
+                        "receipt_id": {
+                          "type": "string",
+                          "pattern": "^[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26}$",
+                          "enum": [
+                            "01m382zycqp89jfcv6f9sjadfx"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                },
+                "x-commons": {
+                  "kind": "bias",
+                  "description": "Preserve the current causal Gate under its ordinary Bias rules. Dominant homologous Chirality may add Reclassify sources; use only the Cycle-entry Receipt catalogue. Existing causal Writes retain their ordinary actions and Traverse rules.",
+                  "one_action": true,
+                  "gate": "previous-phase-position",
+                  "constraints": {
+                    "proposition.reclassify": [
+                      "local-lineage-or-dominant-homologous-chirality",
+                      "unary-selection-fresh-history",
+                      "completed-receipt-and-effective-attestation"
+                    ]
+                  },
+                  "server_governed": [
+                    "gate_proposition_id",
+                    "domain",
+                    "write_register",
+                    "tier"
+                  ]
+                }
+              },
+              "write_options": [],
+              "commitment": null
+            }
+          },
+          "after": {
+            "status": "ready",
+            "cycle": {
+              "id": "01m38329z9kn4mjn2q3rnyhp28",
+              "sequence": 19,
+              "context_horizon_id": "01m381wse5nh0yf0h9em7h8bak",
+              "created_at": "2026-09-23T21:34:37.000000Z"
+            },
+            "domain": "emergence",
+            "context_horizon_id": "01m381wse5nh0yf0h9em7h8bak",
+            "current_proposition_id": "01m383a7vy0t255k4ybbzmnqyt",
+            "plan": {
+              "phase": {
+                "id": "01m383ah45c3r9cv5xbner3gam",
+                "number": 7,
+                "kind": "order",
+                "write_register": "canon"
+              },
+              "gate_id": "01m383a7vy0t255k4ybbzmnqyt",
+              "rest_available": false,
+              "rest_reason": null
+            }
+          }
+        },
+        {
+          "step": 281,
+          "participant": "01m381vdsh6ag00j1a3t5dfdww",
+          "input": {
+            "action": "proposition.commit",
+            "proposition_id": "01m383a7vy0t255k4ybbzmnqyt"
+          },
+          "additional_choices": {
+            "proposition.traverse": [
+              "01m382kpcepjmvgwnmrxj16kcb"
+            ]
+          },
+          "additional_selected": false,
+          "before": {
+            "status": "ready",
+            "cycle": {
+              "id": "01m38329z9kn4mjn2q3rnyhp28",
+              "sequence": 19,
+              "context_horizon_id": "01m381wse5nh0yf0h9em7h8bak",
+              "created_at": "2026-09-23T21:34:37.000000Z"
+            },
+            "domain": "emergence",
+            "context_horizon_id": "01m381wse5nh0yf0h9em7h8bak",
+            "current_proposition_id": "01m383a7vy0t255k4ybbzmnqyt",
+            "plan": {
+              "phase": {
+                "id": "01m383ah45c3r9cv5xbner3gam",
+                "number": 7,
+                "kind": "order",
+                "write_register": "canon"
+              },
+              "gate_id": "01m383a7vy0t255k4ybbzmnqyt",
+              "rest_available": false,
+              "rest_reason": null,
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "$id": "https://miranova.dev/commons/schemas/phases/order.json",
+                "title": "Order phase response",
+                "description": "Choose exactly one action per response. Optional Gate Receipt desired states accompany successful forward contributions.",
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/actions/proposition.commit"
+                  },
+                  {
+                    "$ref": "#/$defs/actions/proposition.traverse"
+                  }
+                ],
+                "$defs": {
+                  "ulid": {
+                    "type": "string",
+                    "pattern": "^[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26}$"
+                  },
+                  "instrument": {
+                    "description": "Cite references a known substrate object. Creating a Cite Receipt does not itself grant Reinforcement. Hyperlink fetches a known public URL and verifies retrieval, not the truth of its claims. Web Search discovers resources from a query. Instrument execution records an immutable Receipt; it never loads context or grants Reinforcement automatically.",
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "kind",
+                          "reference"
+                        ],
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "citation",
+                              "hyperlink"
+                            ]
+                          },
+                          "reference": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "kind",
+                          "query"
+                        ],
+                        "properties": {
+                          "kind": {
+                            "const": "web_search"
+                          },
+                          "query": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 1000,
+                            "pattern": "^[^\\x00]*[^\\s\\x00][^\\x00]*$"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "actions": {
+                    "proposition.commit": {
+                      "title": "Commit a Closure candidate",
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "action",
+                        "proposition_id"
+                      ],
+                      "properties": {
+                        "action": {
+                          "const": "proposition.commit"
+                        },
+                        "proposition_id": {
+                          "type": "string",
+                          "pattern": "^[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26}$",
+                          "enum": [
+                            "01m383a7vy0t255k4ybbzmnqyt"
+                          ]
+                        },
+                        "receipt_options": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "load": {
+                              "type": "array",
+                              "uniqueItems": true,
+                              "items": {
+                                "type": "string",
+                                "enum": [
+                                  "01m382zycqp89jfcv6f9sjadfx"
+                                ]
+                              }
+                            },
+                            "unload": {
+                              "type": "array",
+                              "uniqueItems": true,
+                              "items": {
+                                "type": "string",
+                                "enum": [
+                                  "01m382zycqp89jfcv6f9sjadfx"
+                                ]
+                              }
+                            }
+                          },
+                          "description": "Optional desired state for current Gate Receipt references. Load and unload must be disjoint; already satisfied states are no-ops. Applied atomically with this action, visible next Phase."
+                        }
+                      }
+                    },
+                    "proposition.traverse": {
+                      "title": "Continue through an admissible Write",
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "action",
+                        "proposition_id"
+                      ],
+                      "properties": {
+                        "action": {
+                          "const": "proposition.traverse"
+                        },
+                        "proposition_id": {
+                          "type": "string",
+                          "pattern": "^[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26}$",
+                          "enum": [
+                            "01m382kpcepjmvgwnmrxj16kcb"
+                          ]
+                        },
+                        "receipt_options": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "load": {
+                              "type": "array",
+                              "uniqueItems": true,
+                              "items": {
+                                "type": "string",
+                                "enum": [
+                                  "01m382zycqp89jfcv6f9sjadfx"
+                                ]
+                              }
+                            },
+                            "unload": {
+                              "type": "array",
+                              "uniqueItems": true,
+                              "items": {
+                                "type": "string",
+                                "enum": [
+                                  "01m382zycqp89jfcv6f9sjadfx"
+                                ]
+                              }
+                            }
+                          },
+                          "description": "Optional desired state for current Gate Receipt references. Load and unload must be disjoint; already satisfied states are no-ops. Applied atomically with this action, visible next Phase."
+                        }
+                      }
+                    }
+                  }
+                },
+                "x-commons": {
+                  "kind": "order",
+                  "description": "Commit an admissible local Write, Traverse its direct Committal continuation, or Traverse a dominant-direction homologous Committal. The selected Committal becomes the next Cycle entry.",
+                  "one_action": true,
+                  "gate": "previous-phase-position",
+                  "constraints": {
+                    "proposition.commit": [
+                      "effective-gate-attestation",
+                      "completed-gate-or-effective-attestation-receipt",
+                      "depth-cadence-and-hysteresis-admissible"
+                    ],
+                    "proposition.traverse": [
+                      "direct-committal-of-causal-write-or-dominant-homologous-committal"
+                    ]
+                  },
+                  "server_governed": [
+                    "gate_proposition_id",
+                    "domain",
+                    "write_register",
+                    "tier"
+                  ]
+                },
+                "$comment": "closure-observation:682b95e4307b951ea4f7b915817062661aa79713302067ae93f8424c0b9425f8"
+              },
+              "write_options": [
+                {
+                  "id": "01m383a7vy0t255k4ybbzmnqyt",
+                  "register": "canon",
+                  "tier": "expressive",
+                  "statement": "Testable opportunity 254",
+                  "spent": false,
+                  "structural_position": 6,
+                  "exploration_epoch": 0,
+                  "parent_ids": [
+                    "01m3830tet8w8qqzsjvcmebawf"
+                  ],
+                  "reinforcement_count": 0,
+                  "attestation_summary": {
+                    "support_direction": "positive",
+                    "positive": 1,
+                    "negative": 0,
+                    "retained_direction": "positive"
+                  },
+                  "observables": {
+                    "correspondence": 0.8468933,
+                    "chirality": 1,
+                    "closure": 0.5
+                  },
+                  "receipts": [
+                    {
+                      "id": "01m382zycqp89jfcv6f9sjadfx",
+                      "type": "hyperlink",
+                      "reference": "https://evidence.example.test/observation/255",
+                      "loaded": false
+                    }
+                  ]
+                },
+                {
+                  "id": "01m382kpcepjmvgwnmrxj16kcb",
+                  "register": "canon",
+                  "tier": "committal",
+                  "statement": "Testable opportunity 187",
+                  "spent": false,
+                  "structural_position": 7,
+                  "exploration_epoch": 0,
+                  "parent_ids": [
+                    "01m382hw0wzqq75fx336gvny2z"
+                  ],
+                  "reinforcement_count": 0,
+                  "attestation_summary": {
+                    "support_direction": "positive",
+                    "positive": 1,
+                    "negative": 0,
+                    "retained_direction": "positive"
+                  },
+                  "observables": {
+                    "correspondence": 0.8250237,
+                    "chirality": 1,
+                    "closure": -0.2
+                  }
+                }
+              ],
+              "commitment": {
+                "admissible": true,
+                "reinforcement_count": 0,
+                "requirements": {
+                  "attestation": true,
+                  "receipt": true,
+                  "closure": true,
+                  "phase_position": true,
+                  "causal_write": true,
+                  "active_region_candidate": true,
+                  "write_opportunity": true
+                },
+                "closure_enforced": true,
+                "reasons": [],
+                "closure": {
+                  "depth": -0.3333333,
+                  "cadence": -0.4166667,
+                  "closure": -0.375,
+                  "depth_direction": "negative",
+                  "cadence_direction": "negative",
+                  "admissible": true,
+                  "cadence_interval": 24,
+                  "history_proposition_id": "01m3822v5cr7m2dxr76x0kadkr",
+                  "history_source": "committed-ancestor"
+                }
+              }
+            }
+          },
+          "after": {
+            "status": "ready",
+            "cycle": {
+              "id": "01m383crj9b05e4qff829f5ysm",
+              "sequence": 20,
+              "context_horizon_id": "01m381wse5nh0yf0h9em7h8bak",
+              "created_at": "2026-09-23T21:40:20.000000Z"
+            },
+            "domain": "emergence",
+            "context_horizon_id": "01m381wse5nh0yf0h9em7h8bak",
+            "current_proposition_id": "01m383c95vghvx97sm43p1ekf1",
+            "plan": {
+              "phase": {
+                "id": "01m383crk42c9nv7fz6bkpyr2m",
+                "number": 1,
+                "kind": "distinguish",
+                "write_register": "activity"
+              },
+              "gate_id": "01m383c95vghvx97sm43p1ekf1",
+              "rest_available": false,
+              "rest_reason": null
+            }
+          }
+        }
+      ],
+      "windows": [
+        {
+          "first_step": 0,
+          "contributions": 100,
+          "queries": 91147,
+          "sql_ms": 103628.50000000007,
+          "http_seconds": 138.6581254005432,
+          "max_queries": 4262
+        },
+        {
+          "first_step": 100,
+          "contributions": 100,
+          "queries": 131162,
+          "sql_ms": 370145.16999999987,
+          "http_seconds": 453.0020341873169,
+          "max_queries": 6125
+        },
+        {
+          "first_step": 200,
+          "contributions": 82,
+          "queries": 103830,
+          "sql_ms": 763117.7399999993,
+          "http_seconds": 874.70996260643,
+          "max_queries": 7889
+        }
+      ]
+    },
+    "field-first": {
+      "completed_contributions": 308,
+      "trace_sha256": "ab6c78569029d8d406fb4ac8c220aaae79a7c24d2099817440b095ed9ff1a4c2",
+      "actions": {
+        "proposition.variant": 39,
+        "instrument.execute": 22,
+        "attestation.create": 113,
+        "proposition.reclassify": 20,
+        "participant.rest": 48,
+        "proposition.traverse": 52,
+        "proposition.reconcile": 10,
+        "proposition.commit": 4
+      },
+      "additional_selected": {
+        "proposition.reclassify": 1,
+        "proposition.traverse": 2
+      },
+      "rest_reasons": {
+        "no_available_move": 43,
+        "no_remaining_potential": 5
+      },
+      "representative_steps": [
+        {
+          "step": 42,
+          "participant": "01m381t84nvawrz3vetrxjbfxg",
+          "input": {
+            "action": "proposition.commit",
+            "proposition_id": "01m381tz45f8ryer71rz35pjb4"
+          },
+          "additional_choices": {
+            "proposition.traverse": []
+          },
+          "additional_selected": false,
+          "before": {
+            "status": "ready",
+            "cycle": {
+              "id": "01m381tkt61zrjvhjnsne17a7b",
+              "sequence": 4,
+              "context_horizon_id": "01m381t8amekv5v6f10f8zjjpg",
+              "created_at": "2026-09-23T21:12:56.000000Z"
+            },
+            "domain": "settlement",
+            "context_horizon_id": "01m381t8amekv5v6f10f8zjjpg",
+            "current_proposition_id": "01m381tz45f8ryer71rz35pjb4",
+            "plan": {
+              "phase": {
+                "id": "01m381tzmht108g4m22p2m9nsc",
+                "number": 7,
+                "kind": "order",
+                "write_register": "concord"
+              },
+              "gate_id": "01m381tz45f8ryer71rz35pjb4",
+              "rest_available": false,
+              "rest_reason": null,
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "$id": "https://miranova.dev/commons/schemas/phases/order.json",
+                "title": "Order phase response",
+                "description": "Choose exactly one action per response. Optional Gate Receipt desired states accompany successful forward contributions.",
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/actions/proposition.commit"
+                  }
+                ],
+                "$defs": {
+                  "ulid": {
+                    "type": "string",
+                    "pattern": "^[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26}$"
+                  },
+                  "instrument": {
+                    "description": "Cite references a known substrate object. Creating a Cite Receipt does not itself grant Reinforcement. Hyperlink fetches a known public URL and verifies retrieval, not the truth of its claims. Web Search discovers resources from a query. Instrument execution records an immutable Receipt; it never loads context or grants Reinforcement automatically.",
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "kind",
+                          "reference"
+                        ],
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "citation",
+                              "hyperlink"
+                            ]
+                          },
+                          "reference": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "kind",
+                          "query"
+                        ],
+                        "properties": {
+                          "kind": {
+                            "const": "web_search"
+                          },
+                          "query": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 1000,
+                            "pattern": "^[^\\x00]*[^\\s\\x00][^\\x00]*$"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "actions": {
+                    "proposition.commit": {
+                      "title": "Commit a Closure candidate",
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "action",
+                        "proposition_id"
+                      ],
+                      "properties": {
+                        "action": {
+                          "const": "proposition.commit"
+                        },
+                        "proposition_id": {
+                          "type": "string",
+                          "pattern": "^[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26}$",
+                          "enum": [
+                            "01m381tz45f8ryer71rz35pjb4"
+                          ]
+                        },
+                        "receipt_options": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "load": {
+                              "type": "array",
+                              "uniqueItems": true,
+                              "items": {
+                                "type": "string",
+                                "enum": [
+                                  "01m381tttze4km5t54bargymfk"
+                                ]
+                              }
+                            },
+                            "unload": {
+                              "type": "array",
+                              "uniqueItems": true,
+                              "items": {
+                                "type": "string",
+                                "enum": [
+                                  "01m381tttze4km5t54bargymfk"
+                                ]
+                              }
+                            }
+                          },
+                          "description": "Optional desired state for current Gate Receipt references. Load and unload must be disjoint; already satisfied states are no-ops. Applied atomically with this action, visible next Phase."
+                        }
+                      }
+                    }
+                  }
+                },
+                "x-commons": {
+                  "kind": "order",
+                  "description": "Commit an admissible local Write, Traverse its direct Committal continuation, or Traverse a dominant-direction homologous Committal. The selected Committal becomes the next Cycle entry.",
+                  "one_action": true,
+                  "gate": "previous-phase-position",
+                  "constraints": {
+                    "proposition.commit": [
+                      "effective-gate-attestation",
+                      "completed-gate-or-effective-attestation-receipt",
+                      "depth-cadence-and-hysteresis-admissible"
+                    ]
+                  },
+                  "server_governed": [
+                    "gate_proposition_id",
+                    "domain",
+                    "write_register",
+                    "tier"
+                  ]
+                },
+                "$comment": "closure-observation:437511c89ddc3511bab86c2dc16ff32baba3d38378415ae07c36e88cadd903c0"
+              },
+              "write_options": [
+                {
+                  "id": "01m381tz45f8ryer71rz35pjb4",
+                  "register": "concord",
+                  "tier": "expressive",
+                  "statement": "Testable opportunity 33",
+                  "spent": false,
+                  "structural_position": 6,
+                  "exploration_epoch": 0,
+                  "parent_ids": [
+                    "01m381tw8kr8fzhfdf9mntfh2z"
+                  ],
+                  "reinforcement_count": 0,
+                  "attestation_summary": {
+                    "support_direction": "positive",
+                    "positive": 2,
+                    "negative": 0,
+                    "retained_direction": "positive"
+                  },
+                  "observables": {
+                    "correspondence": -0.6191203,
+                    "chirality": 0.976344,
+                    "closure": -1
+                  },
+                  "receipts": [
+                    {
+                      "id": "01m381tttze4km5t54bargymfk",
+                      "type": "hyperlink",
+                      "reference": "https://evidence.example.test/observation/34",
+                      "loaded": false
+                    }
+                  ]
+                }
+              ],
+              "commitment": {
+                "admissible": true,
+                "reinforcement_count": 0,
+                "requirements": {
+                  "attestation": true,
+                  "receipt": true,
+                  "closure": true,
+                  "phase_position": true,
+                  "causal_write": true,
+                  "active_region_candidate": true,
+                  "write_opportunity": true
+                },
+                "closure_enforced": true,
+                "reasons": [],
+                "closure": {
+                  "depth": 0,
+                  "cadence": 0,
+                  "closure": 0,
+                  "depth_direction": "negative",
+                  "cadence_direction": "negative",
+                  "admissible": true,
+                  "cadence_interval": 7,
+                  "history_proposition_id": "01m381t86nqxcfzkyeqa34r05v",
+                  "history_source": "committed-ancestor"
+                }
+              }
+            }
+          },
+          "after": {
+            "status": "ready",
+            "cycle": {
+              "id": "01m381v3j533dqjm9gbjmdcv91",
+              "sequence": 5,
+              "context_horizon_id": "01m381v3dbm60ts6b1bnj6q2sv",
+              "created_at": "2026-09-23T21:13:13.000000Z"
+            },
+            "domain": "emergence",
+            "context_horizon_id": "01m381v3dbm60ts6b1bnj6q2sv",
+            "current_proposition_id": "01m381v2e1qtar2ymm11jrepvg",
+            "plan": {
+              "phase": {
+                "id": "01m381v3k0wtk4r51h8jg2ggnp",
+                "number": 1,
+                "kind": "distinguish",
+                "write_register": "activity"
+              },
+              "gate_id": "01m381v2e1qtar2ymm11jrepvg",
+              "rest_available": false,
+              "rest_reason": null
+            }
+          }
+        },
+        {
+          "step": 175,
+          "participant": "01m381t8gt48fsdpc92w1y2a98",
+          "input": {
+            "action": "participant.rest"
+          },
+          "additional_choices": {
+            "proposition.traverse": []
+          },
+          "additional_selected": false,
+          "before": {
+            "status": "ready",
+            "cycle": {
+              "id": "01m3821cs1bkrm57yvs7sj3sbq",
+              "sequence": 12,
+              "context_horizon_id": "01m381v3dbm60ts6b1bnj6q2sv",
+              "created_at": "2026-09-23T21:16:39.000000Z"
+            },
+            "domain": "emergence",
+            "context_horizon_id": "01m381v3dbm60ts6b1bnj6q2sv",
+            "current_proposition_id": "01m3823paa2097bzehnjrdscb3",
+            "plan": {
+              "phase": {
+                "id": "01m3823s27hwchm6h2x3rqd3rc",
+                "number": 7,
+                "kind": "order",
+                "write_register": "canon"
+              },
+              "gate_id": "01m3823paa2097bzehnjrdscb3",
+              "rest_available": true,
+              "rest_reason": "no_available_move",
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "$id": "https://miranova.dev/commons/schemas/phases/order.json",
+                "title": "Order phase response",
+                "description": "Choose exactly one action per response. Optional Gate Receipt desired states accompany successful forward contributions.",
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/actions/participant.rest"
+                  }
+                ],
+                "$defs": {
+                  "ulid": {
+                    "type": "string",
+                    "pattern": "^[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26}$"
+                  },
+                  "instrument": {
+                    "description": "Cite references a known substrate object. Creating a Cite Receipt does not itself grant Reinforcement. Hyperlink fetches a known public URL and verifies retrieval, not the truth of its claims. Web Search discovers resources from a query. Instrument execution records an immutable Receipt; it never loads context or grants Reinforcement automatically.",
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "kind",
+                          "reference"
+                        ],
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "citation",
+                              "hyperlink"
+                            ]
+                          },
+                          "reference": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "kind",
+                          "query"
+                        ],
+                        "properties": {
+                          "kind": {
+                            "const": "web_search"
+                          },
+                          "query": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 1000,
+                            "pattern": "^[^\\x00]*[^\\s\\x00][^\\x00]*$"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "actions": {
+                    "participant.rest": {
+                      "title": "Rest in a Tragic Region and end this Cycle",
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "action"
+                      ],
+                      "properties": {
+                        "action": {
+                          "const": "participant.rest"
+                        }
+                      }
+                    }
+                  }
+                },
+                "x-commons": {
+                  "kind": "order",
+                  "description": "Commit an admissible local Write, Traverse its direct Committal continuation, or Traverse a dominant-direction homologous Committal. The selected Committal becomes the next Cycle entry.",
+                  "one_action": true,
+                  "gate": "previous-phase-position",
+                  "constraints": [],
+                  "server_governed": [
+                    "gate_proposition_id",
+                    "domain",
+                    "write_register",
+                    "tier"
+                  ]
+                },
+                "$comment": "closure-observation:0783315480eb31e159355553d152c59ebe0ad2019026f444f0f117ca8c75c748"
+              },
+              "write_options": [
+                {
+                  "id": "01m3823paa2097bzehnjrdscb3",
+                  "register": "canon",
+                  "tier": "expressive",
+                  "statement": "Testable opportunity 166",
+                  "spent": false,
+                  "structural_position": 6,
+                  "exploration_epoch": 0,
+                  "parent_ids": [
+                    "01m38234d176wkp924jms39cy6"
+                  ],
+                  "reinforcement_count": 0,
+                  "attestation_summary": {
+                    "support_direction": "positive",
+                    "positive": 2,
+                    "negative": 0,
+                    "retained_direction": "positive"
+                  },
+                  "observables": {
+                    "correspondence": 0.8468933,
+                    "chirality": 1,
+                    "closure": 0.5
+                  },
+                  "receipts": [
+                    {
+                      "id": "01m3822ve2w3435hervjs4as1r",
+                      "type": "hyperlink",
+                      "reference": "https://evidence.example.test/observation/167",
+                      "loaded": false
+                    }
+                  ]
+                }
+              ],
+              "commitment": {
+                "admissible": false,
+                "reinforcement_count": 0,
+                "requirements": {
+                  "attestation": true,
+                  "receipt": true,
+                  "closure": false,
+                  "phase_position": true,
+                  "causal_write": true,
+                  "active_region_candidate": true,
+                  "write_opportunity": true
+                },
+                "closure_enforced": true,
+                "reasons": [
+                  "depth_cadence_directions_diverge"
+                ],
+                "closure": {
+                  "depth": -0.3333333,
+                  "cadence": 1,
+                  "closure": 0.3333334,
+                  "depth_direction": "negative",
+                  "cadence_direction": "positive",
+                  "admissible": false,
+                  "cadence_interval": 7,
+                  "history_proposition_id": "01m381z6g0s9yfsnb06crkjm3k",
+                  "history_source": "committed-ancestor"
+                }
+              }
+            }
+          },
+          "after": {
+            "status": "ready",
+            "cycle": {
+              "id": "01m3824a6vj24kmp2gmj4meqz3",
+              "sequence": 13,
+              "context_horizon_id": "01m381v3dbm60ts6b1bnj6q2sv",
+              "created_at": "2026-09-23T21:18:14.000000Z"
+            },
+            "domain": "emergence",
+            "context_horizon_id": "01m381v3dbm60ts6b1bnj6q2sv",
+            "current_proposition_id": "01m381z6g0s9yfsnb06crkjm3k",
+            "plan": {
+              "phase": {
+                "id": "01m3824a7essbthfrgvpvyq5jb",
+                "number": 1,
+                "kind": "distinguish",
+                "write_register": "activity"
+              },
+              "gate_id": "01m381z6g0s9yfsnb06crkjm3k",
+              "rest_available": false,
+              "rest_reason": null
+            }
+          }
+        },
+        {
+          "step": 278,
+          "participant": "01m381t8q8jr10j7w63wqebmc4",
+          "input": {
+            "action": "proposition.reclassify",
+            "proposition_id": "01m382q5vnr3krdak18n7qm8ea",
+            "receipt_id": "01m382pfh36k7r2hxw732pbrdq"
+          },
+          "additional_choices": {
+            "proposition.reclassify": [
+              "01m382q5vnr3krdak18n7qm8ea"
+            ]
+          },
+          "additional_selected": true,
+          "before": {
+            "status": "ready",
+            "cycle": {
+              "id": "01m382rb2ts8z9nmc0e9wrastw",
+              "sequence": 19,
+              "context_horizon_id": "01m381v3dbm60ts6b1bnj6q2sv",
+              "created_at": "2026-09-23T21:29:11.000000Z"
+            },
+            "domain": "emergence",
+            "context_horizon_id": "01m381v3dbm60ts6b1bnj6q2sv",
+            "current_proposition_id": "01m382x3p4ry731r773v5z0am9",
+            "plan": {
+              "phase": {
+                "id": "01m382x7gsxxd0cy243zy5j78h",
+                "number": 6,
+                "kind": "bias",
+                "write_register": "canon"
+              },
+              "gate_id": "01m382x3p4ry731r773v5z0am9",
+              "rest_available": false,
+              "rest_reason": null,
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "$id": "https://miranova.dev/commons/schemas/phases/bias.json",
+                "title": "Bias phase response",
+                "description": "Choose exactly one action per response. Optional Gate Receipt desired states accompany successful forward contributions.",
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/actions/proposition.reclassify"
+                  }
+                ],
+                "$defs": {
+                  "ulid": {
+                    "type": "string",
+                    "pattern": "^[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26}$"
+                  },
+                  "instrument": {
+                    "description": "Cite references a known substrate object. Creating a Cite Receipt does not itself grant Reinforcement. Hyperlink fetches a known public URL and verifies retrieval, not the truth of its claims. Web Search discovers resources from a query. Instrument execution records an immutable Receipt; it never loads context or grants Reinforcement automatically.",
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "kind",
+                          "reference"
+                        ],
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "citation",
+                              "hyperlink"
+                            ]
+                          },
+                          "reference": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "kind",
+                          "query"
+                        ],
+                        "properties": {
+                          "kind": {
+                            "const": "web_search"
+                          },
+                          "query": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 1000,
+                            "pattern": "^[^\\x00]*[^\\s\\x00][^\\x00]*$"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "actions": {
+                    "proposition.reclassify": {
+                      "type": "object",
+                      "title": "Reclassify the Gate without changing its statement",
+                      "additionalProperties": false,
+                      "required": [
+                        "action",
+                        "proposition_id",
+                        "receipt_id"
+                      ],
+                      "properties": {
+                        "action": {
+                          "const": "proposition.reclassify"
+                        },
+                        "proposition_id": {
+                          "type": "string",
+                          "pattern": "^[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26}$",
+                          "enum": [
+                            "01m382q5vnr3krdak18n7qm8ea"
+                          ]
+                        },
+                        "receipt_id": {
+                          "type": "string",
+                          "pattern": "^[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26}$",
+                          "enum": [
+                            "01m382pfh36k7r2hxw732pbrdq"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                },
+                "x-commons": {
+                  "kind": "bias",
+                  "description": "Preserve the current causal Gate under its ordinary Bias rules. Dominant homologous Chirality may add Reclassify sources; use only the Cycle-entry Receipt catalogue. Existing causal Writes retain their ordinary actions and Traverse rules.",
+                  "one_action": true,
+                  "gate": "previous-phase-position",
+                  "constraints": {
+                    "proposition.reclassify": [
+                      "local-lineage-or-dominant-homologous-chirality",
+                      "unary-selection-fresh-history",
+                      "completed-receipt-and-effective-attestation"
+                    ]
+                  },
+                  "server_governed": [
+                    "gate_proposition_id",
+                    "domain",
+                    "write_register",
+                    "tier"
+                  ]
+                }
+              },
+              "write_options": [],
+              "commitment": null
+            }
+          },
+          "after": {
+            "status": "ready",
+            "cycle": {
+              "id": "01m382rb2ts8z9nmc0e9wrastw",
+              "sequence": 19,
+              "context_horizon_id": "01m381v3dbm60ts6b1bnj6q2sv",
+              "created_at": "2026-09-23T21:29:11.000000Z"
+            },
+            "domain": "emergence",
+            "context_horizon_id": "01m381v3dbm60ts6b1bnj6q2sv",
+            "current_proposition_id": "01m382ykdrqvtpzanb64wc1awj",
+            "plan": {
+              "phase": {
+                "id": "01m382yt7tr39kp2vksvs8ye7r",
+                "number": 7,
+                "kind": "order",
+                "write_register": "canon"
+              },
+              "gate_id": "01m382ykdrqvtpzanb64wc1awj",
+              "rest_available": false,
+              "rest_reason": null
+            }
+          }
+        },
+        {
+          "step": 281,
+          "participant": "01m381t8q8jr10j7w63wqebmc4",
+          "input": {
+            "action": "proposition.traverse",
+            "proposition_id": "01m382cjsnsea2p4s53v2wzq2t"
+          },
+          "additional_choices": {
+            "proposition.traverse": [
+              "01m382cjsnsea2p4s53v2wzq2t"
+            ]
+          },
+          "additional_selected": true,
+          "before": {
+            "status": "ready",
+            "cycle": {
+              "id": "01m382rb2ts8z9nmc0e9wrastw",
+              "sequence": 19,
+              "context_horizon_id": "01m381v3dbm60ts6b1bnj6q2sv",
+              "created_at": "2026-09-23T21:29:11.000000Z"
+            },
+            "domain": "emergence",
+            "context_horizon_id": "01m381v3dbm60ts6b1bnj6q2sv",
+            "current_proposition_id": "01m382ykdrqvtpzanb64wc1awj",
+            "plan": {
+              "phase": {
+                "id": "01m382yt7tr39kp2vksvs8ye7r",
+                "number": 7,
+                "kind": "order",
+                "write_register": "canon"
+              },
+              "gate_id": "01m382ykdrqvtpzanb64wc1awj",
+              "rest_available": false,
+              "rest_reason": null,
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "$id": "https://miranova.dev/commons/schemas/phases/order.json",
+                "title": "Order phase response",
+                "description": "Choose exactly one action per response. Optional Gate Receipt desired states accompany successful forward contributions.",
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/actions/proposition.commit"
+                  },
+                  {
+                    "$ref": "#/$defs/actions/proposition.traverse"
+                  }
+                ],
+                "$defs": {
+                  "ulid": {
+                    "type": "string",
+                    "pattern": "^[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26}$"
+                  },
+                  "instrument": {
+                    "description": "Cite references a known substrate object. Creating a Cite Receipt does not itself grant Reinforcement. Hyperlink fetches a known public URL and verifies retrieval, not the truth of its claims. Web Search discovers resources from a query. Instrument execution records an immutable Receipt; it never loads context or grants Reinforcement automatically.",
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "kind",
+                          "reference"
+                        ],
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "citation",
+                              "hyperlink"
+                            ]
+                          },
+                          "reference": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "kind",
+                          "query"
+                        ],
+                        "properties": {
+                          "kind": {
+                            "const": "web_search"
+                          },
+                          "query": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 1000,
+                            "pattern": "^[^\\x00]*[^\\s\\x00][^\\x00]*$"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "actions": {
+                    "proposition.commit": {
+                      "title": "Commit a Closure candidate",
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "action",
+                        "proposition_id"
+                      ],
+                      "properties": {
+                        "action": {
+                          "const": "proposition.commit"
+                        },
+                        "proposition_id": {
+                          "type": "string",
+                          "pattern": "^[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26}$",
+                          "enum": [
+                            "01m382ykdrqvtpzanb64wc1awj"
+                          ]
+                        },
+                        "receipt_options": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "load": {
+                              "type": "array",
+                              "uniqueItems": true,
+                              "items": {
+                                "type": "string",
+                                "enum": [
+                                  "01m382pfh36k7r2hxw732pbrdq"
+                                ]
+                              }
+                            },
+                            "unload": {
+                              "type": "array",
+                              "uniqueItems": true,
+                              "items": {
+                                "type": "string",
+                                "enum": [
+                                  "01m382pfh36k7r2hxw732pbrdq"
+                                ]
+                              }
+                            }
+                          },
+                          "description": "Optional desired state for current Gate Receipt references. Load and unload must be disjoint; already satisfied states are no-ops. Applied atomically with this action, visible next Phase."
+                        }
+                      }
+                    },
+                    "proposition.traverse": {
+                      "title": "Continue through an admissible Write",
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "action",
+                        "proposition_id"
+                      ],
+                      "properties": {
+                        "action": {
+                          "const": "proposition.traverse"
+                        },
+                        "proposition_id": {
+                          "type": "string",
+                          "pattern": "^[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26}$",
+                          "enum": [
+                            "01m382cjsnsea2p4s53v2wzq2t"
+                          ]
+                        },
+                        "receipt_options": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "load": {
+                              "type": "array",
+                              "uniqueItems": true,
+                              "items": {
+                                "type": "string",
+                                "enum": [
+                                  "01m382pfh36k7r2hxw732pbrdq"
+                                ]
+                              }
+                            },
+                            "unload": {
+                              "type": "array",
+                              "uniqueItems": true,
+                              "items": {
+                                "type": "string",
+                                "enum": [
+                                  "01m382pfh36k7r2hxw732pbrdq"
+                                ]
+                              }
+                            }
+                          },
+                          "description": "Optional desired state for current Gate Receipt references. Load and unload must be disjoint; already satisfied states are no-ops. Applied atomically with this action, visible next Phase."
+                        }
+                      }
+                    }
+                  }
+                },
+                "x-commons": {
+                  "kind": "order",
+                  "description": "Commit an admissible local Write, Traverse its direct Committal continuation, or Traverse a dominant-direction homologous Committal. The selected Committal becomes the next Cycle entry.",
+                  "one_action": true,
+                  "gate": "previous-phase-position",
+                  "constraints": {
+                    "proposition.commit": [
+                      "effective-gate-attestation",
+                      "completed-gate-or-effective-attestation-receipt",
+                      "depth-cadence-and-hysteresis-admissible"
+                    ],
+                    "proposition.traverse": [
+                      "direct-committal-of-causal-write-or-dominant-homologous-committal"
+                    ]
+                  },
+                  "server_governed": [
+                    "gate_proposition_id",
+                    "domain",
+                    "write_register",
+                    "tier"
+                  ]
+                },
+                "$comment": "closure-observation:4d4e0f3c5356565938e7f14ed1e7ddd1c1b5978aeaf45495c29747ca27dbbc4a"
+              },
+              "write_options": [
+                {
+                  "id": "01m382ykdrqvtpzanb64wc1awj",
+                  "register": "canon",
+                  "tier": "expressive",
+                  "statement": "Testable opportunity 254",
+                  "spent": false,
+                  "structural_position": 6,
+                  "exploration_epoch": 0,
+                  "parent_ids": [
+                    "01m382q5vnr3krdak18n7qm8ea"
+                  ],
+                  "reinforcement_count": 0,
+                  "attestation_summary": {
+                    "support_direction": "positive",
+                    "positive": 1,
+                    "negative": 0,
+                    "retained_direction": "positive"
+                  },
+                  "observables": {
+                    "correspondence": 0.8468933,
+                    "chirality": 1,
+                    "closure": 0.5
+                  },
+                  "receipts": [
+                    {
+                      "id": "01m382pfh36k7r2hxw732pbrdq",
+                      "type": "hyperlink",
+                      "reference": "https://evidence.example.test/observation/255",
+                      "loaded": false
+                    }
+                  ]
+                },
+                {
+                  "id": "01m382cjsnsea2p4s53v2wzq2t",
+                  "register": "canon",
+                  "tier": "committal",
+                  "statement": "Testable opportunity 187",
+                  "spent": false,
+                  "structural_position": 7,
+                  "exploration_epoch": 0,
+                  "parent_ids": [
+                    "01m382b58nxfsh41g35zy3n240"
+                  ],
+                  "reinforcement_count": 0,
+                  "attestation_summary": {
+                    "support_direction": "positive",
+                    "positive": 1,
+                    "negative": 0,
+                    "retained_direction": "positive"
+                  },
+                  "observables": {
+                    "correspondence": 0.8250237,
+                    "chirality": 1,
+                    "closure": -0.2
+                  }
+                }
+              ],
+              "commitment": {
+                "admissible": true,
+                "reinforcement_count": 0,
+                "requirements": {
+                  "attestation": true,
+                  "receipt": true,
+                  "closure": true,
+                  "phase_position": true,
+                  "causal_write": true,
+                  "active_region_candidate": true,
+                  "write_opportunity": true
+                },
+                "closure_enforced": true,
+                "reasons": [],
+                "closure": {
+                  "depth": -0.3333333,
+                  "cadence": -0.4166667,
+                  "closure": -0.375,
+                  "depth_direction": "negative",
+                  "cadence_direction": "negative",
+                  "admissible": true,
+                  "cadence_interval": 24,
+                  "history_proposition_id": "01m381z6g0s9yfsnb06crkjm3k",
+                  "history_source": "committed-ancestor"
+                }
+              }
+            }
+          },
+          "after": {
+            "status": "ready",
+            "cycle": {
+              "id": "01m3830438y89e4dw905vkn68x",
+              "sequence": 20,
+              "context_horizon_id": "01m381v3dbm60ts6b1bnj6q2sv",
+              "created_at": "2026-09-23T21:33:26.000000Z"
+            },
+            "domain": "emergence",
+            "context_horizon_id": "01m381v3dbm60ts6b1bnj6q2sv",
+            "current_proposition_id": "01m382cjsnsea2p4s53v2wzq2t",
+            "plan": {
+              "phase": {
+                "id": "01m383043t9jtm6pc9y1se35p7",
+                "number": 1,
+                "kind": "distinguish",
+                "write_register": "activity"
+              },
+              "gate_id": "01m382cjsnsea2p4s53v2wzq2t",
+              "rest_available": false,
+              "rest_reason": null
+            }
+          }
+        }
+      ],
+      "windows": [
+        {
+          "first_step": 0,
+          "contributions": 100,
+          "queries": 91147,
+          "sql_ms": 63343.42999999994,
+          "http_seconds": 88.22382688522339,
+          "max_queries": 4262
+        },
+        {
+          "first_step": 100,
+          "contributions": 100,
+          "queries": 131162,
+          "sql_ms": 291610.69999999995,
+          "http_seconds": 348.19325828552246,
+          "max_queries": 6125
+        },
+        {
+          "first_step": 200,
+          "contributions": 100,
+          "queries": 114238,
+          "sql_ms": 819985.2800000007,
+          "http_seconds": 906.4623568058014,
+          "max_queries": 7889
+        },
+        {
+          "first_step": 300,
+          "contributions": 8,
+          "queries": 18704,
+          "sql_ms": 131394.23999999987,
+          "http_seconds": 141.58834147453308,
+          "max_queries": 3271
+        }
+      ]
+    }
+  }
+}

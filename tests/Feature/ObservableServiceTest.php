@@ -187,7 +187,7 @@ class ObservableServiceTest extends TestCase
             $cycle->forceFill([
                 'participant_id' => $this->participant->getKey(),
                 'sequence' => $sequence,
-                'governing_committal_id' => CommitmentSnapshot::where('substrate_id', $this->substrate->id)->latest('evaluated_at')->first()?->proposition_id,
+                'entry_committal_id' => CommitmentSnapshot::where('substrate_id', $this->substrate->id)->latest('evaluated_at')->first()?->proposition_id,
             ]);
             $cycle->save();
         }

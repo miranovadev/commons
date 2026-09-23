@@ -620,6 +620,9 @@ class TransactionLockOrderTest extends TestCase
         $parent = $root;
         foreach ([PhaseKind::Bias, PhaseKind::Order, PhaseKind::Constrain] as $kind) {
             $phase = $this->phaseAtPositionFixture($root->phase, $kind);
+            if ($parent->tier === 'committal') {
+                $phase = $this->governedPhaseFixture($phase, $parent, $parent);
+            }
             $node = (new Proposition)->forceFill(['phase_id' => $phase->id, 'register' => $phase->write_register,
                 'tier' => $kind === PhaseKind::Order ? 'committal' : 'expressive', 'statement' => 'Mature exhausted trajectory']);
             $node->save();
@@ -653,6 +656,7 @@ class TransactionLockOrderTest extends TestCase
         }
         $cycle = (new Cycle)->forceFill(['participant_id' => $participant->id,
             'context_horizon_id' => $root->phase->cycle->context_horizon_id,
+            'entry_committal_id' => $root->tier === 'committal' ? $root->id : $root->phase->cycle->entry_committal_id,
             'sequence' => (int) $participant->cycles()->max('sequence') + 1]);
         $cycle->save();
         $phase = (new Phase)->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Order,
@@ -724,3 +728,4 @@ class TransactionLockOrderTest extends TestCase
         return Phase::where('cycle_id', $cycle->id)->whereNull('completed_at')->sole();
     }
 }
+

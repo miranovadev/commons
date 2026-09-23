@@ -212,7 +212,7 @@ this change does not claim database-memory independence from Substrate size.
 
 ## Persistent Receipt context
 
-Ordinary available Receipts are local to the governing Committal of their observed Proposition. The current Gate's governing Committal must match; unresolved or malformed ancestry fails closed. Existing qualification and Horizon ownership checks remain in force. No Horizon-wide fallback exists.
+Ordinary available Receipts are local to the governing Committal of their observed Proposition. The current Gate's governing Committal must match; missing or invalid Cycle entry fails closed. Existing qualification and Horizon ownership checks remain in force. No Horizon-wide fallback exists.
 
 Every dynamic Receipt reference is `id`, `type`, `reference`, `loaded`, including catalogue, Read, Gate, Write and Lineage references. Attached Receipts leave the shared available catalogue. Attachment does not load evidence.
 
@@ -250,8 +250,9 @@ register and tier, then the local structural relationship:
 
 Historical alternatives explain explored structure; directional/evidence
 admissibility remains solely in the action services. Region resolution batches
-candidate ancestry and stops at each Committal, including same-Horizon Commits;
-ambiguous multi-Commit ancestry is excluded. Direct Write lookup follows revisions
+candidates' immutable creating-Cycle entry Committals; each Committal owns itself.
+Missing or invalid Cycle entry fails closed. Multi-parent causal provenance does
+not make valid operational ownership ambiguous. Direct Write lookup follows revisions
 only, never later-phase descendants. Neither lookup hydrates historical evidence
 or serializes downstream subtrees. The normal validation plan returns before
 historical context is calculated.
@@ -284,4 +285,5 @@ participant view subscribes to its current Horizon through the shared Reverb
 transport, so another participant's proposition status update refreshes local
 context even while this viewer remains still. Events retain identifier-only
 payloads; no history is broadcast.
+
 

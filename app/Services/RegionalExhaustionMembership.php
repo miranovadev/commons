@@ -25,15 +25,16 @@ final class RegionalExhaustionMembership
         }
     }
 
-    /** Migration/explicit maintenance only: derive identity from the immutable graph, never legacy flags. */
+    /** Migration/explicit maintenance only: derive identity from Cycle entry, never legacy flags. */
     public function rebuild(): void
     {
         $proofs = DB::table('commit_region_exhaustions as proof')->join('context_horizons as horizon',
             'horizon.id', '=', 'proof.context_horizon_id')->get(['proof.governing_committal_id', 'horizon.substrate_id']);
         foreach ($proofs->groupBy('substrate_id') as $substrateId => $regional) {
             $nodes = Proposition::whereHas('phase.cycle.participant', fn ($q) => $q->where('substrate_id', $substrateId))->get()->keyBy('id');
-            $edges = DB::table('supersessions')->whereIn('target_proposition_id', $nodes->keys())->get()->groupBy('target_proposition_id');
-            $seeds = app(CommitRegionService::class)->seedIdsFor($nodes, $nodes, $edges);
+            $seeds = \Illuminate\Support\Facades\Schema::hasColumn('cycles', 'entry_committal_id')
+                ? app(CommitRegionService::class)->seedIdsFor($nodes, $nodes)
+                : $nodes->mapWithKeys(fn ($node) => [$node->id => app(\App\Services\Maintenance\LegacyCommitRegionOwnership::class)->seedFor($node)?->id])->all();
             DB::transaction(function () use ($regional, $seeds): void {
                 DB::table('exhausted_region_memberships')->whereIn('governing_committal_id', $regional->pluck('governing_committal_id'))->delete();
                 foreach ($regional as $proof) {
@@ -44,3 +45,4 @@ final class RegionalExhaustionMembership
         }
     }
 }
+

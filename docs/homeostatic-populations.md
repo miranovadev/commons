@@ -1,0 +1,142 @@
+# Homeostatic populations — completed Phase 5–7 model
+
+Stage 2 introduced shared measurement machinery without changing actions.
+Stages 3–4 connect it to additional Mediate Reconcile operands and Bias Reclassify sources. Ordinary local
+causal options remain independently eligible. Bias uses only acting-entry Receipts
+and creates a real selected-source classification edge. Generic movement,
+Commit admissibility and recovery retain their existing behavior.
+
+## Structural membership
+
+`HomeostaticPopulationService::forPosition()` asks the pure
+`HomologousPositionService` for propositions with the acting position's substrate,
+creating-Horizon Domain, canonical producing Phase/register and committed depth.
+Different Horizons and Commit Regions are allowed. The acting proposition is
+included exactly once when valid. Expressive and committed tiers are separate;
+committed Write positions must be canonical Order results.
+
+Committed depth counts immutable Cycle-entry predecessor edges from Origin,
+with Origin at depth zero. Expressive positions use their Cycle entry's committed
+depth; a committed position uses its own committed depth. Supersession distance,
+Horizon/Cycle sequence, Closure Depth, ledger order and time do not set it.
+Complete ancestry must validate to the same Origin; missing snapshots, cycles,
+disconnected roots, foreign substrates and invalid Horizon links fail closed.
+Nearest shared ancestor/distance remain diagnostic output only.
+
+The proposition's own Domain is authoritative. Two expressions can share a Domain
+and depth even when one entry Committal was created in that Domain and the other
+opened it from the opposite Domain. The general population includes both. Stage 3 removes
+the temporary entry-creating-Domain filter from Mediate discovery.
+
+Membership is structural, not actionability. Superseded or exhausted members are
+not silently removed from this definition. Operational consumers must apply their
+own availability rules before exposing an option. Recognition grants no action.
+
+## Independent measurements and aggregate
+
+`HomeostaticDirectionService::forPosition()` consumes Correspondence, Chirality or
+Closure values for those members. Current expressive projections are reused;
+missing/obsolete projections are derived through the existing lineage calculators
+in one shared dependency context. Committals supply frozen snapshot values.
+No projection, retained direction, snapshot or participant state is written.
+
+`ParticipationContext` has an explicit measurement-only opt-in for hydrating
+unavailable additional members. Its default operational working set is unchanged.
+The direction service reuses an existing comparison context only when it already
+contains the entire structural population in the same substrate. Otherwise it
+owns a private measurement context; it never expands the caller's operational
+context or returns that private context as an input plan.
+Hydrated Receipts remain calculation evidence, not an expanded Receipt catalogue.
+
+Each distinct measured proposition contributes its signed value once with equal
+weight. The arithmetic mean uses the existing seven-decimal measurement precision.
+Magnitude matters: two values of +0.1 and one of −0.9 produce a negative aggregate.
+Zero values contribute denominator mass; unavailable/null values do not. An empty
+or entirely unmeasured population has no mean or direction. The result preserves
+the per-member values, including nulls, so missing data stays explicit.
+
+Direction uses `ObservableDirection::after()` with the requested observable's
+explicit `ObservableDirection::defaultFor()` initialization. At aggregate zero,
+an explicitly supplied prior **population** direction is retained; without it,
+Correspondence starts positive and numeric Chirality/Closure start negative.
+Correspondence shares its positive root fallback with proposition direction;
+Chirality/Closure retain their negative measurement bootstrap, independent of
+regional Attestation polarity and Bias's evidence direction. The acting member's
+sign never supplies population history. This stage adds no persisted field
+history. Nonzero aggregates establish their own direction. This aggregate is not
+a new measurement of any proposition and is never fed back into its calculators.
+
+Closure here is the generic numeric measurement aggregation surface. Resolving
+Depth/Cadence agreement for Order candidates belongs to the separate Stage 5 consumer below. A generic numeric Closure aggregate is neither Commit admissibility nor a Traverse grant.
+
+## Validation boundary
+
+Focused coverage checks cross-Horizon/Region membership, self-inclusion, committed
+and expressive coordinates, Domain/Phase/register/depth/substrate isolation,
+disconnected/missing/cyclic ancestry, positive/negative aggregation, neutral and
+hysteretic behavior, frozen snapshots, observation-only fallback, and constant
+query counts across one and eight foreign Horizons with missing projections.
+The existing homology fixtures and assertions are retained through a shared test
+fixture. Existing Mediate and operational suites remain regression gates.
+
+Stage 3 uses the entire homologous Constrain Read population for the numeric
+Correspondence aggregate, including Reads without eligible Gate children.
+Active members with available measurements and matching retained direction supply
+additional immediate Disperse operands. Gate availability and complete foreign
+Horizon exhaustion remain operational checks after aggregation. No persisted
+population history is invented: a tie retains explicitly supplied history or uses
+the Correspondence default, allowing matching members to supply operands while
+leaving the ordinary local path intact. A fresh write authorization recomputes the field,
+so another member changing direction can invalidate a previously listed operand.
+
+Stage 4 consumes numeric Chirality over homologous Mediate Gates. The current
+causal Gate keeps its independent local Bias evidence/ancestry rule. Other active,
+unexhausted matching members that are unspent in their own current exploration
+epoch may supply Reclassify sources only with the ordinary
+Receipt, effective-Attestation and source/register uniqueness prerequisites.
+Zero member Chirality uses its explicit negative measurement default; regional
+Attestation lean is not substituted for a numeric measurement. Population history
+is still observation-local and supplied explicitly, never invented or persisted.
+The action consumes only an acting Cycle-entry Receipt and creates its result in
+that Cycle, with one actual causal edge from the selected source. Homology grants
+no generic Traverse, Read or Receipt access. Order has the separate committed-position consumer below.
+
+
+
+## Stage 5: Order committed continuations
+
+Order preserves local Commit admissibility and direct causal Committal Traverse independently of population direction. The additional population contains existing canonical Order Committals at the prospective Write depth: one committed step beyond the acting Cycle entry. Candidate creating Domain, substrate, Phase/register and tier must match. Every candidate and entry history is validated to the shared Origin; Horizons and Regions may differ. No synthetic proposition is written to establish the coordinate.
+
+`HomologousOrderService` consumes frozen Depth/Cadence directions. Agreement resolves positive or negative Closure; disagreement (or missing component direction) contributes no resolved value. Resolved directions contribute +1 or -1 to an equal-member directional lean through `HomeostaticDirectionService::aggregate`. This is a direction comparison, distinct from the generic numeric Closure mean: frozen numeric Closure and component hysteresis are never recalculated or overwritten. A tie retains explicitly supplied prior population direction, otherwise uses the canonical negative Closure default. No population history is persisted.
+
+Active Committals matching that dominant resolved direction add Traverse choices. Exhausted candidates remain structural population members but cannot be selected. Local Commit, local direct Traverse, visible Reads, Receipt scope and ordinary Traverse outside Order retain their rules. Plan discovery changes no participant state, evidence or causal edges.
+
+Commit selects its created Committal; Traverse selects its existing Committal. Phase 7 completes the old Cycle and ordinary rollover enters that exact selection under its applicable Horizon. The old entry remains immutable. There is no post-Order selector.
+
+## Downstream boundary (epic Stage 6)
+
+Measurements stay lineage-local. Homology recognizes the same structural coordinate
+and full committed depth across Regions and Horizons; it creates neither evidence
+scope nor causal edges. PhasePositionService remains Horizon-local. Phase 5 uses
+dominant Correspondence for additional Reconcile operands, Phase 6 uses dominant
+Chirality for additional Reclassify sources, and Phase 7 uses dominant resolved
+Closure for additional existing Committal Traverse. Every ordinary local causal
+option remains independently subject to its existing rules.
+
+The Cycle's immutable entry owns history, resources and accounting. The participant's
+causal route can advance through authorized actions without rewriting that entry.
+Order's actual Commit or Traverse determines the next Cycle entry. Aggregation never
+writes back to proposition measurements, snapshots or participant state.
+
+Rest depends on operational action availability, not population size or a desired
+frequency. An admissible homologous Traverse prevents Rest even when local Commit
+is unavailable. Structural members without an eligible continuation do not prevent
+Rest or establish movement. Genuine Tragedy, final attempts, exhaustion and recovery
+retain their existing proof and ownership rules. A numeric zero keeps supplied
+population history or the observable default; absent resolved Closure components
+are missing measurements, not a special directionless numeric zero.
+
+See [Stage 6 validation](homeostatic-stage-6-validation.md) for downstream coverage
+and fresh natural-run observations.
+
+

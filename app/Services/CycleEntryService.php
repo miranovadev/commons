@@ -249,18 +249,18 @@ final readonly class CycleEntryService
             ->exists();
     }
 
-    private function createCycle(Participant $participant, ContextHorizon $horizon, ?Proposition $governingCommittal = null): Cycle
+    private function createCycle(Participant $participant, ContextHorizon $horizon, ?Proposition $entryCommittal = null): Cycle
     {
-        // The only ungoverned production Cycle is the initial Origin bootstrap.
+        // The only production Cycle without an entry Committal is the initial Origin bootstrap.
         // Recovery/continuity always enters with its explicitly selected Committal.
-        if ($governingCommittal === null && $this->hasPropositionHistory($participant->substrate)) {
-            throw new DomainException('An ordinary Cycle requires a governing Committal.');
+        if ($entryCommittal === null && $this->hasPropositionHistory($participant->substrate)) {
+            throw new DomainException('An ordinary Cycle requires an entry Committal.');
         }
         $cycle = new Cycle;
         $cycle->forceFill([
             'participant_id' => $participant->getKey(),
             'context_horizon_id' => $horizon->id,
-            'governing_committal_id' => $governingCommittal?->id,
+            'entry_committal_id' => $entryCommittal?->id,
             'sequence' => (int) Cycle::query()
                 ->whereBelongsTo($participant)
                 ->max('sequence') + 1,

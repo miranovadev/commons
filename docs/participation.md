@@ -8,8 +8,9 @@ Participant movement is lineage-constrained: forward progression follows an
 explicit causal edge from the current Gate; recovery walks recorded causal
 ancestry backward. Sharing a Commit Region, Context Horizon, register, phase
 position, visible context or calculation population grants no movement.
-**No edge means no movement.** The Homeostatic populations below are calculation
-scopes, not alternative movement topologies.
+The explicit exception is Order's authorized homologous Committal Traverse,
+which selects an existing committed continuation without creating an edge.
+Population comparison alone never moves a Participant.
 
 The participation endpoint is scoped to a Substrate and Participant:
 
@@ -99,7 +100,7 @@ Read, Gate and Write rows. Mediate exposes the authoritative `read_options`
 population. Order shows the nearest Mediate-position ancestors along the current
 Gate paths; other phases retain their single Read card. Mediate Gate privileges
 the current Proposition and adds admissible reconciliation counterparts. Bias
-Gate shows only the current causal Proposition, with Reclassify when eligible;
+Gate preserves the current causal Proposition and adds authorized dominant-Chirality homologous Reclassify sources;
 Lineage is available on demand; and Write separates existing actionable
 Propositions from moves that create a new Proposition from the Gate. In phases 1–5,
 an existing Write card is a valid Expressive descendant of the current Gate in the
@@ -207,9 +208,7 @@ Homeostatic selection and an existing Commit elsewhere cannot supply that edge.
 The current Gate and positions already visited as Gates in this Cycle are
 excluded; later Cycles may revisit them. Traversal creates no Proposition,
 Supersession or evidence and never selects globally. It advances the Phase as
-selection did. Mediate does not admit expressive Traverse. Order instead
-traverses the established Committal produced directly from its current
-classification Gate and ends the Cycle there. No edge means no movement.
+selection did. Mediate does not admit expressive Traverse. Order preserves that direct Committal continuation and additionally permits dominant-direction homologous existing Committals under its strict committed Write rule below. Both complete the Cycle at the selected Committal; this narrow exception creates no synthetic edge and does not loosen Traverse in other Phases.
 
 Commitment preserves successful routes: at Bias, a frozen classification remains
 traversable only from the exact Gate whose causal continuation produced it,
@@ -317,26 +316,37 @@ Phase in the **same Cycle**. It is not Mediate's Gate, the latest Horizon card,
 or a guessed ancestor. Missing Disperse history supplies no Read/counterpart
 options; the server does not invent an anchor.
 
-`read_options` exposes only that causal anchor. Internally, Read-equivalent
-members of its Commit Region with the same retained hysteretic Correspondence direction
-participate in counterpart discovery, without becoming visible Read alternatives.
-Parallel branches may have different immediate parents or expressive depths.
-Zero or unmeasured Correspondence retains established direction, with primary
-lineage fallback when none has been established and a positive root default.
-This applies equally to the Read anchor and other candidate Reads. Existing Correspondence calculation
-and attenuation are unchanged.
+`read_options` exposes only that causal anchor. Its ordinary local comparison
+path is preserved: eligible regional Reads matching its retained Correspondence
+can still supply their immediate Disperse Gates, regardless of the population's
+dominant direction.
 
-Gate candidates remain active immediate Expressive children of the internal
-Read comparison population, produced at Disperse in the First register slot and within the same Commit Region.
-Gate Correspondence and Chirality do not filter these children. The current
-Gate must belong to that population; `gate_options` contains its counterparts.
-Reconcile still copies the current Gate's statement and creates two hard edges.
+Separately, `HomeostaticPopulationService` resolves every homologous Constrain
+Read at the same substrate, proposition Domain, canonical Phase/register, tier
+and committed depth. The anchor is counted once; Regions and Horizons may differ.
+Each Read retains its own lineage-derived Correspondence. Their equal-weight
+numeric mean determines the dominant population direction. The anchor identifies
+the coordinate, not the direction. The entries' creating Domains are not an
+additional restriction.
 
-This is the Homeostatic **Mediate — Read** population, the explicit regional
-comparison exception. It does not relocate the Participant to another Read or
-Gate. Reconcile creates a new result with an explicit causal edge from the
-current Gate and a second edge from the authorised counterpart; it never treats
-the counterpart as a Traverse destination. No edge means no movement.
+Active homologous Reads expressing that dominant direction supply additional
+active, canonical, immediate Disperse Gate children in each Read's own Region
+and Horizon. At numeric zero a member uses its retained Correspondence direction;
+unavailable measurements cannot qualify through homology. A zero population mean
+retains prior population direction when supplied, or starts from Correspondence's
+positive default; matching members may still supply operands. Ordinary local
+eligibility remains independently available. Measurements and attenuation do not
+change, and the aggregate is never written back into them.
+
+Gate Correspondence and Chirality do not select these children. The current
+causal Gate must remain in the ordinary eligible Gate pool; `gate_options`
+contains its counterparts. Availability, exhaustion and directed-pair uniqueness
+still apply. Reconcile copies the current Gate's statement and creates two hard
+causal edges. Its result uses the acting Cycle's Phase, entry Region and Horizon.
+
+Homologous Gates are Reconcile operands only. They do not become Read choices,
+Traverse destinations or Receipt catalogue sources. The acting Phase Gate remains
+traversed provenance; recognition alone never moves the Participant.
 
 ## Shared Commit Region scope
 
@@ -346,20 +356,20 @@ measurements select within eligible populations and must not redefine them.
 Commit Region membership defines calculation/context scope only where a Commons
 operation explicitly requires it. It does not define Participant movement and
 never creates a traversal edge. Context visibility, Homeostatic populations and
-movement topology are separate contracts. No edge means no movement.
+movement topology are separate contracts. Order's explicit committed-position
+rule is required for its additional Traverse options.
 
-`CommitRegionService` resolves the nearest Committal ancestry, stopping the
-backward walk at each Committal node. That seed starts a region of expressive
-descendants across all forward branches; another Committal node terminates that
-branch and seeds a new region. Superseded intermediates remain structural paths.
-No migration, chronology cutoff, or Domain transition is required. A rootless
-position or conflicting committal ancestry supplies no inferred region. Legacy
-merges with conflicting seeds and their descendants are excluded from both
-regions, rather than connecting otherwise isolated pools.
+`CommitRegionService` resolves ownership from immutable Cycle entry. A
+Committal owns itself. An expressive Proposition belongs to its creating Cycle's
+`entry_committal_id`; Supersession records causal provenance independently.
+Multiple parent Regions do not erase a valid owner. Missing or invalid Cycle entry
+fails closed without ancestry inference. Causal history preserves superseded
+intermediates; active populations, movement and operational admissibility remain
+separate contracts.
+See [Commit Region ownership](commit-region-ownership.md).
 
 An immediate parent alone is too narrow to define a Homeostatic calculation
-population; this does not widen movement beyond the current Gate's authorised
-causal continuations. A Context Horizon is measurement/comparison context and
+population; this does not itself authorize movement. A Context Horizon is measurement/comparison context and
 can contain multiple Commit Regions.
 Horizon membership does not define candidate membership, even if a branch's
 ledger entries have different Horizon labels. Substrate isolation remains.
@@ -374,13 +384,15 @@ scopes are:
 
 | Homeostatic effect | Calculation population | Evaluation |
 | --- | --- | --- |
-| Mediate — Read | Constrain-produced Third / Read | Matches the Read anchor's retained Correspondence direction |
-| Bias — Gate | Mediate-produced Second / Gate | Retained direction agrees with each candidate's own causal ancestry excluding itself; receipt and attestation exist |
+| Mediate — Read | Homologous Constrain-produced Third / Reads, including the causal Read | Dominant population Correspondence adds operands; ordinary local causal options remain independently eligible |
+| Bias — Gate | Homologous Mediate-produced Second / Gates | Dominant numeric Chirality adds Reclassify sources; the current Gate keeps its local evidence/ancestry rule; all action prerequisites still apply |
 | Closure, performed during Order — Write | Each causally local Bias-produced expressive Write | Its own Depth/Cadence, lineage/history and participation; grounded and attested for Commit |
+| Order additional Traverse | Homologous existing Order Committals at the prospective committed Write depth | Dominant resolved frozen Depth/Cadence direction adds operationally available Committals; local Commit and direct Traverse remain independent |
 
-Mediate may inspect regional Reads and expose their compatible Disperse Gates as
-reconciliation counterparts only. Bias may evaluate regional Gates, but exposes
-only the current causal Gate operationally. Closure is not a regional cross-lineage
+Mediate may inspect homologous Reads across Regions/Horizons and expose their
+compatible Disperse Gates as reconciliation counterparts only. Bias may expose
+dominant-matching homologous Gates as Reclassify sources, preserving the current
+Gate's local option. Closure is not a regional cross-lineage
 comparison: it evaluates each causally local Write independently. The Participant
 remains on its own causal lineage; calculation membership supplies no operational
 target or movement authority.
@@ -392,20 +404,40 @@ remain active. A direct Commit edge consumes its source globally; other branches
 
 ## Bias Chirality Gate
 
-`BiasGateService` compares each active head's retained direction to its own causal ancestry, excluding the head's votes and loads. Shared ancestors and Attestations are counted once across both reconciliation parents. Traversal stops at the governing Committal boundary; unrelated branches do not set the comparison. Ledger replay retains the preceding nonzero direction at zero, starting from the governing Committal direction. Superseded ancestors supply historical judgments without becoming additional active reinforcement copies.
+For ordinary local eligibility, `BiasGateService` compares the current head's retained direction to its own causal ancestry, excluding the head's votes and loads. Shared ancestors and Attestations are counted once across both reconciliation parents. Traversal stops at the governing Committal boundary; unrelated branches do not set the comparison. Ledger replay retains the preceding nonzero direction at zero, starting from the governing Committal direction. Superseded ancestors supply historical judgments without becoming additional active reinforcement copies.
 
-Bias additionally requires a completed Receipt and an effective source Attestation. The action takes `action: proposition.reclassify`, `proposition_id` and `receipt_id`. It preserves exact content, attaches/consumes the selected Receipt, resets votes/touches, and creates one shared source/register classification. `BiasGateService::forPhase()` is a regional calculation result; `operationalFor()` selects only the current causal Gate. Other calculated Gates never enter operational Gate or action collections.
+Bias additionally requires a completed Receipt and an effective source Attestation. The action takes `action: proposition.reclassify`, `proposition_id` and `receipt_id`. It preserves exact content, attaches/consumes the selected Receipt, resets votes/touches, and creates one shared source/register classification. `BiasGateService::forPhase()` remains the existing regional evidence calculation;
+`operationalFor()` preserves its eligible current Gate and adds qualified sources
+from `HomologousBiasService`. The latter uses the shared Homeostatic services to
+aggregate every homologous Gate's own numeric Chirality, including the current
+Gate once. Positive and negative means follow sign; zero retains supplied prior
+population direction or uses Chirality's negative default. No population state
+is persisted or written into proposition measurements.
+
+Additional sources must be active and unexhausted and pass ordinary reclassification
+prerequisites. They need not satisfy the local current Gate's evidence/ancestry
+comparison: their distinct qualifying comparison is dominant numeric Chirality.
+The selected Receipt must be completed, unconsumed and in the acting Cycle's
+immutable entry catalogue. Source and Receipt may originate in different Regions
+or Horizons. The selected source's Receipt stock stays untouched.
+
+The result belongs to the acting Bias Phase, Horizon and entry accounting Region.
+Its sole reclassify edge comes from the selected source, and the participant
+advances to that new classification. `CausalWriteService` recognizes this exact
+Phase's recorded result without inventing a second edge from its old Gate.
+No generic foreign Read, Traverse or Receipt catalogue is granted.
 
 Existing causal Write continuations of the current Gate offer their permitted
 Instrument and Attestation actions and, after earlier-Cycle personal
-Attestation, Traverse to Order. Regional Mediate-produced Gates may participate
-in the Bias calculation, but unrelated Gates and their Bias-produced Writes do
-not enter this Participant's operational options. Historical material on the
+Attestation, Traverse to Order. Homologous Gates are Reclassify sources only;
+their existing Bias-produced Writes do not become this Participant's Traverse
+options. A foreign-source classification owned by another Cycle-entry Region
+cannot be adopted as a local Write merely through its Supersession edge. Historical material on the
 Participant's own lineage remains visible under the existing history rules.
 The same restriction applies to frozen successful classifications. No edge
 means no movement.
 
-## Order: local expressive Writes and direct Committal continuations
+## Order: local Commit and additional homologous Committal Traverse
 
 Read contains nearest Mediate-produced Stance/Frontier ancestry. Closure,
 performed during Order — Write, evaluates each local expressive Write's own
@@ -417,12 +449,9 @@ are local; another classification sharing its Stance/Frontier parent is not.
 Every local expressive Write stays in `write_options`, even when Closure diverges
 or other Commit prerequisites are missing. Closure only gates Commit; it does
 not make a Write invisible or override its ordinary expressive action rules.
-The current Order contract permits Commit and direct Committal Traverse, without
-introducing Attestation, Instrument or revision at this Phase. Commit selects only
-a Write satisfying the full prerequisites. Traverse selects only a local Write's
-own direct Committal child with an existing snapshot. No unrelated regional Write
-or Committal enters these operational collections. Frozen sources remain visible
-but immutable; their successful direct routes remain available.
+Order permits local Commit and direct Committal Traverse under their ordinary rules, independently of population direction. It also offers active existing homologous Order Committals matching the population's dominant resolved Closure direction. The Write coordinate requires the same substrate, creating Domain, canonical Phase/register, tier and full committed depth from the validated shared Origin; different Horizons and Regions are permitted. Frozen Depth/Cadence disagreement is unresolved and contributes no directional lean. Agreement contributes its retained direction; a population tie uses explicit prior direction or Closure's negative default. See [Homeostatic populations](homeostatic-populations.md#stage-5-order-committed-continuations).
+
+This adds no Attestation, Instrument or revision at Order. Commit still requires every local prerequisite. Frozen sources remain immutable. Homologous comparison imports no Receipt stock or Read scope and writes no causal edge. The action chooses the next Cycle entry directly: created Committal for Commit, selected existing Committal for Traverse. The previous Cycle's entry never changes.
 
 Commit copies the selected source's exact statement and participation history by reference, creates an immutable snapshot, and consumes the direct source globally. Later evidence reads cannot rewrite that snapshot. Reinforcement is optional weight; Depth/Cadence remain the admissibility gate. `plan.commitment` describes the current position and `commitment_options` describes every local expressive Write, including inadmissible ones. The same rules govern schema, UI and execution.
 
@@ -464,9 +493,9 @@ counts do not establish the current participant's traversal permissions.
 Violet Support spins clockwise and teal Refute counterclockwise; reduced-motion
 preferences disable animation.
 
-## Terminal Order and explicit next-Cycle entry
+## Terminal Order and next-Cycle entry
 
-Order admits only `proposition.commit` and `proposition.traverse`, or exclusive Rest when neither remains. Commit and Committal Traverse both complete the Cycle at the exact Committal result. Natural completion leaves `rested_at` unset. The next explicit entry begins Phase 1 at that same Proposition, respecting its applicable Context Horizon; no normal completion relocates the Participant.
+Order admits only `proposition.commit` and `proposition.traverse`, or exclusive Rest when neither remains. Commit and Committal Traverse both complete the Cycle at the exact Committal result. Natural completion leaves `rested_at` unset. Ordinary rollover prepares Phase 1 at that same Proposition, respecting its applicable Context Horizon. If entry is pending, the normal entry endpoint retains the same continuity rule. There is no post-Order field selector.
 
 The waiting state has `plan: null`, entry availability and the completed Cycle identity. The workspace can retain completed cards as read-only context. Return to Participants opens the Substrate collection; Enter another Cycle uses the normal entry endpoint. Rest is the separate backward-lineage recovery path: the nearest eligible non-exhausted ancestral Committal within the permitted Horizon is selected, regardless of older values. Region-wide calculation or visibility cannot relocate the Participant.
 
@@ -487,3 +516,12 @@ source or result. There are no standalone Receipt Read or Replay action families
 No-Potential failure is observed outside the Rest write lock and published with an exact field-version guard. First failure records Tragedy and its unique Receipt, keeping the Horizon open. A subsequent no-Potential Rest can record Exhaustion only after that Receipt has been consumed by Reclassify. Compact historical alternatives remain visible and non-actionable. See [Tragedy and final-attempt Exhaustion](branch-tragedy.md).
 
 Gate Receipt load/unload desired states accompany a forward Phase contribution (never Rest) and take cognitive effect in the next Phase. Only loaded evidence grounding the participant-facing Read activates a full body; other Receipt references are metadata. See the normative [Receipt model](receipt-region-context.md), including the shared recovery-scoped Tragedy exception.
+
+A recorded unary Bias classification may resolve its causal provenance to the
+selected source's Region while retaining the acting Cycle's accounting entry.
+`ActiveParticipantLineage` recognizes that recorded bridge, including through
+later revisions; unrecorded foreign edges still fail the provenance check.
+Potential retains the edge as a foreign input and excludes it from local terrain,
+just as for existing foreign Reconcile inputs. No Potential formula changes.
+
+

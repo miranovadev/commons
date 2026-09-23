@@ -43,6 +43,38 @@ class InputSchemaServiceTest extends TestCase
         $this->assertArrayNotHasKey('stale_gate_correspondence_contract', $schema);
     }
 
+    public function test_mediate_retires_cached_regional_guidance_for_dominant_homologous_correspondence(): void
+    {
+        $actions = config('phases.5.actions');
+        $key = 'commons:input-schema:v21:phase:5:'.sha1(implode('|', $actions));
+        Cache::store('array')->forever($key, ['stale_regional_guidance' => true]);
+        $schema = app(InputSchemaService::class)->forPhase(PhaseKind::Mediate);
+        $this->assertArrayNotHasKey('stale_regional_guidance', $schema);
+        $this->assertStringContainsString('ordinary local Reconcile path', $schema['x-commons']['description']);
+        $this->assertStringContainsString('Dominant Correspondence across homologous Reads', $schema['x-commons']['description']);
+        $this->assertStringContainsString('other Regions or Horizons', $schema['x-commons']['description']);
+
+        $prompt = app(ParticipantPromptFactory::class)->make(
+            new Connection,
+            ['status' => 'ready', 'plan' => ['phase' => ['kind' => 'mediate'], 'schema' => $schema]],
+        )['system'];
+        $this->assertStringContainsString('ordinary local Reconcile path retains its existing eligibility', $prompt);
+        $this->assertStringContainsString('Dominant Correspondence across homologous Reads', $prompt);
+        $this->assertStringContainsString('Regions and Horizons may differ', $prompt);
+        $this->assertStringNotContainsString('Reads elsewhere in the same Commit Region whose retained Correspondence direction matches', $prompt);
+    }
+
+    public function test_bias_retires_the_local_only_cached_guidance(): void
+    {
+        $actions = config('phases.6.actions');
+        $key = 'commons:input-schema:v22:phase:6:'.sha1(implode('|', $actions));
+        Cache::store('array')->forever($key, ['stale_local_only_bias' => true]);
+        $schema = app(InputSchemaService::class)->forPhase(PhaseKind::Bias);
+        $this->assertArrayNotHasKey('stale_local_only_bias', $schema);
+        $this->assertStringContainsString('Dominant homologous Chirality', $schema['x-commons']['description']);
+        $this->assertStringContainsString('Cycle-entry Receipt catalogue', $schema['x-commons']['description']);
+    }
+
     public function test_bias_retires_binary_reconciliation_schema_and_exposes_unary_selection(): void
     {
         $oldActions = ['proposition.reconcile', 'instrument.execute', 'attestation.create'];
@@ -52,7 +84,7 @@ class InputSchemaServiceTest extends TestCase
         $this->assertArrayNotHasKey('stale_binary_bias', $schema);
         $this->assertArrayNotHasKey('proposition.reconcile', $schema['$defs']['actions']);
         $this->assertSame(['action', 'proposition_id', 'receipt_id'], $schema['$defs']['actions']['proposition.reclassify']['required']);
-        $this->assertSame(['lineage-direction-agreement', 'unary-selection-fresh-history', 'completed-receipt-and-effective-attestation'],
+        $this->assertSame(['local-lineage-or-dominant-homologous-chirality', 'unary-selection-fresh-history', 'completed-receipt-and-effective-attestation'],
             $schema['x-commons']['constraints']['proposition.reclassify']);
     }
 
@@ -211,6 +243,14 @@ class InputSchemaServiceTest extends TestCase
             PhaseKind::Mediate,
             'frontier',
         );
+        $seed = Proposition::findOrFail($state['gate_id']);
+        app(\App\Services\LedgerService::class)->record($seed);
+        $this->freezeRegionFixture($seed);
+        $bootstrap = Phase::findOrFail($state['phase_id']);
+        $governed = $this->governedPhaseFixture($bootstrap, $seed, $seed);
+        $bootstrap->forceFill(['completed_at' => now()])->save();
+        $bootstrap->cycle->forceFill(['completed_at' => now()])->save();
+        $state['phase_id'] = $governed->id;
         $candidateId = '01ARZ3NDEKTSV4RRFFQ69G5FAQ';
 
         DB::table('propositions')->insert([
@@ -529,3 +569,4 @@ class InputSchemaServiceTest extends TestCase
         );
     }
 }
+

@@ -27,6 +27,8 @@ class TragedyTest extends TestCase
 {
     use RefreshDatabase;
 
+    private ?Proposition $fixtureGovernor = null;
+
     public static function phaseActions(): array
     {
         return [
@@ -120,6 +122,14 @@ class TragedyTest extends TestCase
         $viewer = $this->participant($substrate, 'viewer');
         $authorPhase = $this->phase($author, PhaseKind::Distinguish, 'activity', true);
         $history = $this->phase($viewer, PhaseKind::Distinguish, 'activity', true);
+        if (in_array($action, ['proposition.reclassify', 'proposition.reconcile'], true)) {
+            $seed = $this->proposition($authorPhase, 'canon');
+            $seed->forceFill(['tier' => 'committal'])->save();
+            $this->freezeRegionFixture($seed);
+            $this->fixtureGovernor = $seed;
+            $authorPhase = $this->governedPhaseFixture($authorPhase, $seed);
+            $history = $this->governedPhaseFixture($history, $seed);
+        }
         $writeRegister = match ($kind) {
             PhaseKind::Distinguish, PhaseKind::Disperse => 'activity',
             PhaseKind::Persist, PhaseKind::Mediate => 'frontier',
@@ -135,7 +145,7 @@ class TragedyTest extends TestCase
         $viewer->save();
         if ($kind === PhaseKind::Mediate) {
             $parent = $this->proposition($this->phaseAtPositionFixture($authorPhase, PhaseKind::Constrain), 'canon');
-            $seed = $this->proposition($authorPhase, 'canon');
+            $seed ??= $this->proposition($authorPhase, 'canon');
             $seed->forceFill(['tier' => 'committal'])->save();
             $seed->children()->attach($parent->id, [
                 'id' => (string) str()->ulid(), 'phase_id' => $authorPhase->id, 'type' => 'variant',
@@ -153,7 +163,7 @@ class TragedyTest extends TestCase
         $phase->gate_proposition_id = $gate->id;
         $phase->save();
         if ($action === 'proposition.reclassify') {
-            $seed = $this->proposition($authorPhase, 'canon');
+            $seed ??= $this->proposition($authorPhase, 'canon');
             $seed->forceFill(['tier' => 'committal'])->save();
             $seed->children()->attach($gate->id, ['id' => (string) str()->ulid(), 'phase_id' => $gatePhase->id, 'type' => 'variant']);
             $this->classificationEvidenceFixture($gate);
@@ -203,7 +213,8 @@ class TragedyTest extends TestCase
     private function phase(Participant $participant, PhaseKind $kind, string $register, bool $completed = false): Phase
     {
         $cycle = new Cycle;
-        $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => (int) $participant->cycles()->max('sequence') + 1, 'completed_at' => $completed ? now() : null])->save();
+        $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => (int) $participant->cycles()->max('sequence') + 1, 'completed_at' => $completed ? now() : null,
+            'entry_committal_id' => $this->fixtureGovernor?->id])->save();
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => $kind, 'write_register' => $register, 'started_at' => now(), 'completed_at' => $completed ? now() : null])->save();
 
@@ -221,3 +232,4 @@ class TragedyTest extends TestCase
         return $proposition;
     }
 }
+

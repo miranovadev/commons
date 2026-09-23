@@ -74,12 +74,12 @@ final class ParticipationContext
 
     private readonly Collection $membershipsByHorizon;
 
-    public function __construct(public readonly Phase $phase, ?Collection $additionalPropositionIds = null)
+    public function __construct(public readonly Phase $phase, ?Collection $additionalPropositionIds = null, bool $includeUnavailableAdditional = false)
     {
         $phase->loadMissing('cycle.participant.substrate');
         $this->substrate = $phase->cycle->participant->substrate;
         $this->propositions = Proposition::query()
-            ->whereIn('id', $this->workingSetIds($additionalPropositionIds))
+            ->whereIn('id', $this->workingSetIds($additionalPropositionIds, $includeUnavailableAdditional))
             ->with(['phase.cycle.participant', 'measurement', 'ledgerEntry'])->get()->keyBy('id');
         foreach ($this->propositions as $proposition) {
             $proposition->phase->cycle->participant->setRelation('substrate', $this->substrate);
@@ -131,6 +131,8 @@ final class ParticipationContext
             ->groupBy('gate_proposition_id')->pluck('aggregate', 'gate_proposition_id');
         $this->snapshots = CommitmentSnapshot::whereIn('proposition_id', $ids)
             ->with('ledgerEntry')->get();
+        // Resolve ownership during hydration; contextual reads remain query-free.
+        $this->seedIds();
         $this->nextSequence = (int) SubstrateLedgerEntry::where('substrate_id', $this->substrate->id)->max('sequence') + 1;
     }
 
@@ -141,8 +143,22 @@ final class ParticipationContext
      * Parent traversal is complete (including Commit-only inherited history).
      * Outgoing edges are loaded separately so excluded hard successors still retire sources.
      */
-    private function workingSetIds(?Collection $additionalPropositionIds = null): Collection
+    private function workingSetIds(?Collection $additionalPropositionIds = null, bool $includeUnavailableAdditional = false): Collection
     {
+        if ($this->phase->kind === \App\Enums\PhaseKind::Mediate) {
+            // Comparison operands are hydrated, not granted evidence or movement scope.
+            $pool = app(\App\Services\HomologousMediationService::class)->structuralPoolFor($this->phase, $this);
+            $additionalPropositionIds = ($additionalPropositionIds ?? collect())
+                ->merge($pool['reads']->pluck('id'))->merge($pool['gates']->pluck('id'));
+        }
+        if ($this->phase->kind === \App\Enums\PhaseKind::Bias) {
+            $population = app(\App\Services\HomologousBiasService::class)->populationFor($this->phase, $this);
+            $additionalPropositionIds = ($additionalPropositionIds ?? collect())->merge($population->pluck('id'));
+        }
+        if ($this->phase->kind === \App\Enums\PhaseKind::Order) {
+            $population = app(\App\Services\HomologousOrderService::class)->populationFor($this->phase, $this);
+            $additionalPropositionIds = ($additionalPropositionIds ?? collect())->merge($population->pluck('id'));
+        }
         // Walk only newly discovered IDs. A recursive UNION over the full dependency
         // relation can produce pathological PostgreSQL plans as table statistics grow.
         $owned = DB::table('propositions')
@@ -150,12 +166,15 @@ final class ParticipationContext
             ->join('cycles', 'cycles.id', '=', 'phases.cycle_id')
             ->join('participants', 'participants.id', '=', 'cycles.participant_id')
             ->where('participants.substrate_id', $this->substrate->id);
+        // Opt-in measurement hydration can include historical population members.
+        // Existing operational callers retain their actionable working set.
+        $allOwned = clone $owned;
         app(ExhaustionService::class)->scopeActionable($owned, 'cycles.context_horizon_id');
         $gate = (clone $owned)->where('propositions.id', $this->phase->gate_proposition_id)->select('propositions.id');
         if ($additionalPropositionIds !== null) {
             // Branch exhaustion observes multiple causal Domains with one batched
             // read model. Ownership and active membership still constrain the seeds.
-            $gate->union((clone $owned)->whereIn('propositions.id', $additionalPropositionIds)->select('propositions.id'));
+            $gate->union((clone ($includeUnavailableAdditional ? $allOwned : $owned))->whereIn('propositions.id', $additionalPropositionIds)->select('propositions.id'));
         }
         $ids = $owned->where('cycles.context_horizon_id', $this->phase->cycle->context_horizon_id)
             ->selectRaw('propositions.id /* participation working set */')->union($gate)->pluck('id');
@@ -169,8 +188,13 @@ final class ParticipationContext
                 ->whereIn('propositions.id', $frontier)
                 ->whereNotNull('context_horizons.opened_by_proposition_id')
                 ->select('context_horizons.opened_by_proposition_id as id');
+            $entries = DB::table('propositions')
+                ->join('phases', 'phases.id', '=', 'propositions.phase_id')
+                ->join('cycles', 'cycles.id', '=', 'phases.cycle_id')
+                ->whereIn('propositions.id', $frontier)->whereNotNull('cycles.entry_committal_id')
+                ->select('cycles.entry_committal_id as id');
             $dependencies = DB::table('supersessions')->whereIn('target_proposition_id', $frontier)
-                ->select('source_proposition_id as id')->union($boundaries);
+                ->select('source_proposition_id as id')->union($boundaries)->union($entries);
             $frontier = DB::query()->fromSub($dependencies, 'dependencies')
                 ->join('propositions', 'propositions.id', '=', 'dependencies.id')
                 ->join('phases', 'phases.id', '=', 'propositions.phase_id')
@@ -246,56 +270,38 @@ final class ParticipationContext
         });
     }
 
-    /** Same UNION traversal as the ancestry CTE, stopping on each path's first Commit. */
+    /** One batched ownership map; Supersession parents never choose a Cycle entry. */
+    public function seedIds(): array
+    {
+        return $this->remember('entry-seeds', fn () => app(\App\Services\CommitRegionService::class)
+            ->seedIdsFor($this->propositions, $this->propositions));
+    }
+
     public function seed(Proposition $position): ?Proposition
     {
-        return $this->remember('seed:'.$position->id, function () use ($position) {
-            $seen = $seeds = [];
-            $queue = [$this->proposition($position)];
-            while ($queue !== []) {
-                $node = array_shift($queue);
-                if (isset($seen[$node->id])) {
-                    continue;
-                }
-                $seen[$node->id] = true;
-                if ($node->tier === 'committal') {
-                    $seeds[$node->id] = $node;
-                } elseif ($node->tier === 'expressive') {
-                    foreach ($this->parentNodes($node) as $parent) {
-                        $queue[] = $parent;
-                    }
-                }
-            }
+        if (! $position->exists) {
+            return null;
+        }
+        $node = $this->proposition($position);
+        if ($node->tier === 'committal') {
+            return $node;
+        }
+        if (! $this->propositions->has($node->id)) {
+            return app(\App\Services\CommitRegionService::class)->seedFor($node);
+        }
+        $id = $this->seedIds()[$node->id] ?? null;
 
-            return count($seeds) === 1 ? reset($seeds) : null;
-        });
+        return $id === null ? null : $this->propositions->get($id);
     }
 
     public function members(Proposition $seed): Collection
     {
         return $this->remember('members:'.$seed->id, function () use ($seed) {
-            $seen = [];
-            $queue = [$seed->id];
-            $members = collect();
-            while ($queue !== []) {
-                $id = array_shift($queue);
-                if (isset($seen[$id])) {
-                    continue;
-                }
-                $seen[$id] = true;
-                foreach ($this->children->get($id, collect()) as $edge) {
-                    $child = $this->propositions->get($edge->target_proposition_id);
-                    if ($child?->tier !== 'expressive') {
-                        continue;
-                    }
-                    $queue[] = $child->id;
-                    if ($this->seed($child)?->id === $seed->id) {
-                        $members->put($child->id, $child);
-                    }
-                }
-            }
+            $seeds = $this->seedIds();
 
-            return $members->filter(fn ($node) => $this->activeIds->has($node->id))->sortBy('id')->values();
+            return $this->propositions->filter(fn ($node) => $node->tier === 'expressive'
+                && ($seeds[$node->id] ?? null) === $seed->id && $this->activeIds->has($node->id))
+                ->sortBy('id')->values();
         });
     }
 
@@ -353,3 +359,5 @@ final class ParticipationContext
         return app(\App\Services\Observables\CommittalLineageService::class)->ancestors($position, $this)->first();
     }
 }
+
+

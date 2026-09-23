@@ -225,7 +225,7 @@ final readonly class ContributionDispatcher
             ? $this->bias->operationalFor($phase)->firstWhere('id', $input['proposition_id'])
             : ($source->id === $input['proposition_id'] ? $source : null);
         if ($source === null || ! $this->generation->available($phase, 'proposition.reclassify', position: $source)
-            || ! app(PhasePositionService::class)->acceptsGate($phase, $source)) {
+            || ($phase->kind !== PhaseKind::Bias && ! app(PhasePositionService::class)->acceptsGate($phase, $source))) {
             throw new DomainException('Reclassify requires an eligible Gate at the exact preceding Phase position.');
         }
 
@@ -447,3 +447,4 @@ final readonly class ContributionDispatcher
         return $proposition;
     }
 }
+

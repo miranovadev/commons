@@ -170,7 +170,9 @@ class PersistInstrumentTest extends TestCase
         $signalOwner = new Participant;
         $signalOwner->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'signal-owner', 'max_read_count' => 25])->save();
         $ownerCycle = new Cycle;
-        $ownerCycle->forceFill(['participant_id' => $signalOwner->id, 'sequence' => 1])->save();
+        $ownerCycle->forceFill(['participant_id' => $signalOwner->id, 'sequence' => 1,
+            'context_horizon_id' => $signal->phase->cycle->context_horizon_id,
+            'entry_committal_id' => $signal->phase->cycle->entry_committal_id])->save();
         $ownerPhase = $signal->phase->replicate();
         $ownerPhase->cycle_id = $ownerCycle->id;
         $ownerPhase->save();
@@ -210,3 +212,4 @@ class PersistInstrumentTest extends TestCase
             'instrument' => ['kind' => 'citation', 'reference' => $reference->id]];
     }
 }
+

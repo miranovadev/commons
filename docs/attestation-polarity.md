@@ -73,19 +73,24 @@ only; it does not supply Attestation polarity or effective Attestation defaults.
 
 ## Mediate and Bias have different anchors
 
-Mediate is relative to the participant's trajectory: the preceding Disperse Gate
-is its Read anchor. It exposes active equivalent Reads in that Commit Region
-whose retained Correspondence directions match the anchor, including numeric
-zeros. Gate options are the active immediate Gate-register children of those
-Reads. Their own Correspondence and Attestation values do not filter them.
+Mediate's preceding Disperse Gate remains its causal Read anchor and ordinary
+local eligibility remains independent. Additional operands use the dominant
+Correspondence of the full homologous Read population, including that anchor
+exactly once. A candidate Read's retained Correspondence must match the dominant
+field; its Gate's Correspondence and Attestation values do not select it.
+A zero-valued member retains its own established direction. A zero aggregate
+retains explicitly supplied prior population direction or initializes from the
+positive Correspondence default; matching members may still supply operands.
+It cannot borrow the anchor's retained direction. Immediate active canonical
+Disperse children remain subject to their own Region/Horizon and action rules.
 
-Mediate — Read and Bias — Gate use their defined regional calculation populations.
-Only Mediate exposes compatible foreign Gates, as reconciliation operands;
-Reconcile creates a new result with causal edges from both inputs. Bias exposes
-only the current causal Gate. Closure, performed during Order — Write, evaluates
+Mediate — Read and Bias — Gate use their respective homologous populations for
+additional Reconcile operands and Reclassify sources. Mediate creates causal edges
+from both inputs; Bias creates one edge from the selected source to its new
+acting-Cycle classification. The ordinary local paths remain independently eligible. Closure, performed during Order — Write, evaluates
 each local expressive Write's own lineage and participation, not regional peers.
 
-Bias compares each active head with its own causal ancestry. The candidate's
+For its ordinary local route, Bias compares the current head with its own causal ancestry. The candidate's
 own votes and loaded contributions are excluded from the ancestry aggregate.
 Both reconciliation paths participate, shared ancestors and Attestations are
 deduplicated, and traversal stops at the governing Committal boundary. Other
@@ -95,7 +100,11 @@ At aggregate zero, ledger replay retains the lineage's preceding nonzero
 direction, initialized from the governing Committal direction. Historical
 ancestor judgments remain context; they do not become additional active
 reinforcement copies. An eligible candidate must agree with that direction and
-have both a completed Receipt and an effective Attestation.
+have both a completed Receipt and an effective Attestation. Additional homologous
+Gates instead qualify by dominant numeric Chirality, with the same operational
+prerequisites. Population influence never vetoes the ordinary local Gate.
+Receipts always come from the acting Cycle-entry catalogue, even when the selected
+source belongs to another Region/Horizon; its own Receipt stock is not imported.
 
 Unary Bias copies one selected statement exactly into the next register and
 creates one shared hard reclassification result. Reclassify explicitly selects, attaches and consumes one available Horizon
@@ -114,5 +123,4 @@ invalidates disposable numeric projections for the corrected evidence polarity.
 Older Correspondence signs already overwritten by zero cannot be recovered;
 those positions use lineage/default fallback. Immutable measurement snapshots
 are not rewritten. No fourth measurement or per-Proposition Lean state is added.
-
 

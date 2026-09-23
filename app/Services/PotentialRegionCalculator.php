@@ -85,6 +85,7 @@ final class PotentialRegionCalculator
                     $seen[$target] = true;
                     $node = $local['nodes'][$target] ?? null;
                     if ($node === null || ! $node['active'] || $node['tier'] === 'committal'
+                        || ($node['seed_id'] ?? null) !== $id
                         || ($branch !== null && ! $this->inBranch($node, $branch))) {
                         continue;
                     }
@@ -176,3 +177,4 @@ final class PotentialRegionCalculator
             'charge' => $entry['raw_charge'] * $weight];
     }
 }
+

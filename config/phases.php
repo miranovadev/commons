@@ -61,7 +61,7 @@ return [
     ],
     5 => [
         'name' => 'mediate',
-        'description' => 'Read Correspondence-aligned Propositions across the Commit Region; reconcile their immediate Gate children, or attest an immediate Write descendant.',
+        'description' => 'Keep the causal Read and ordinary local Reconcile path. Dominant Correspondence across homologous Reads may add immediate Gate counterparts from other Regions or Horizons. Reconcile an offered counterpart with the current Gate, or attest an immediate Write descendant.',
         'gate' => 'previous-phase-position',
         'actions' => [
             'proposition.reconcile',
@@ -76,7 +76,7 @@ return [
     ],
     6 => [
         'name' => 'bias',
-        'description' => 'Classify the current causal Stance/Frontier Gate when its retained direction agrees with its own ancestry, or act on its causal Write continuations. Regional Bias calculation candidates are not operational targets.',
+        'description' => 'Preserve the current causal Gate under its ordinary Bias rules. Dominant homologous Chirality may add Reclassify sources; use only the Cycle-entry Receipt catalogue. Existing causal Writes retain their ordinary actions and Traverse rules.',
         'gate' => 'previous-phase-position',
         'actions' => [
             'proposition.reclassify',
@@ -86,7 +86,7 @@ return [
         ],
         'constraints' => [
             'proposition.reclassify' => [
-                'lineage-direction-agreement',
+                'local-lineage-or-dominant-homologous-chirality',
                 'unary-selection-fresh-history',
                 'completed-receipt-and-effective-attestation',
             ],
@@ -95,12 +95,14 @@ return [
     ],
     7 => [
         'name' => 'order',
-        'description' => 'Inspect local expressive Writes, Commit an admissible Write, or Traverse its own direct Committal continuation. Commit or Committal Traverse completes the Cycle.',
+        'description' => 'Commit an admissible local Write, Traverse its direct Committal continuation, or Traverse a dominant-direction homologous Committal. The selected Committal becomes the next Cycle entry.',
         'gate' => 'previous-phase-position',
         'actions' => ['proposition.commit', 'proposition.traverse'],
         'constraints' => [
             'proposition.commit' => ['effective-gate-attestation', 'completed-gate-or-effective-attestation-receipt', 'depth-cadence-and-hysteresis-admissible'],
-            'proposition.traverse' => ['direct-committal-of-causal-write'],
+            'proposition.traverse' => ['direct-committal-of-causal-write-or-dominant-homologous-committal'],
         ],
     ],
 ];
+
+

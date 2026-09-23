@@ -370,6 +370,15 @@ final readonly class InputPlanService
         Participant $viewer,
         ?ParticipationContext $context,
     ): array {
+        $foreignOperand = match ($context?->phase->kind) {
+            PhaseKind::Mediate => app(HomologousMediationService::class)->foreignGateIdsFor($context->phase, $context)->contains($proposition->id),
+            PhaseKind::Bias => app(HomologousBiasService::class)->foreignGateIdsFor($context->phase, $context)->contains($proposition->id),
+            PhaseKind::Order => $proposition->tier === 'committal'
+                && app(HomologousOrderService::class)->forPhase($context->phase, $context)->contains('id', $proposition->id)
+                && ! $context->remember('order-local-commits:'.$context->phase->id,
+                    fn () => app(PhaseGenerationService::class)->committedWrites($context->phase, $context)->pluck('id'))->contains($proposition->id),
+            default => false,
+        };
         $measurement = $proposition->relationLoaded('measurement')
             ? $proposition->measurement
             : null;
@@ -411,7 +420,7 @@ final readonly class InputPlanService
                 'rationale',
                 'created_at',
             ]),
-            'instruments' => $proposition->relationLoaded('instrumentExecutions')
+            'instruments' => ! $foreignOperand && $proposition->relationLoaded('instrumentExecutions')
                 ? $proposition->instrumentExecutions->map(fn ($execution): array => [
                     'id' => $execution->getKey(),
                     'kind' => $execution->kind,
@@ -425,7 +434,7 @@ final readonly class InputPlanService
                 : [],
             // Existing direct and linked evidence includes classification/Commit provenance.
             // Reuse the calculation's hydrated history; never fetch evidence for display.
-            'receipts' => $this->receiptReferences($proposition, $viewer, $context),
+            'receipts' => $foreignOperand ? [] : $this->receiptReferences($proposition, $viewer, $context),
             'transition' => $this->presentation->transition($proposition, $context),
             'observables' => [
                 'correspondence' => $measurement?->correspondence,
@@ -436,3 +445,5 @@ final readonly class InputPlanService
         ];
     }
 }
+
+

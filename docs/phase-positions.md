@@ -63,7 +63,7 @@ membership, grounded evidence, aligned Closure and the unused direct source are
 also required. An attractive Constrain Canon or Concord remains ineligible.
 Even a matching Bias position does not supply a missing causal movement edge.
 Calculation-local region pools are cached; direct admissibility checks inspect
-the selected source and its ancestry without rescanning the whole region.
+the selected source and its creating Cycle's entry Committal without rescanning the whole region.
 
 Workspace register browsing is contextual. Its broad register grouping grants no
 actions: `write_options`, `read_options`, `gate_options` and specialized schemas
@@ -96,4 +96,5 @@ only the correct position reaches schemas, options and direct dispatch. The
 complete collaborative path remains covered by `FullEvidenceFlowTest` and
 `OperationalClosurePathTest`. Semantic fixtures specify their producing position
 explicitly rather than substituting a matching register label.
+
 

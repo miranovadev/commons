@@ -73,6 +73,30 @@ class RegionalExhaustionMigrationTest extends TestCase
         $this->assertFalse(app(ExhaustionService::class)->unavailable($this->origin));
     }
 
+    public function test_cycle_entry_rename_preserves_regional_proof_evidence_and_published_state(): void
+    {
+        [$opening, $horizon, $tragedy] = $this->firstFailure();
+        [$terminal] = $this->exercise($opening, $tragedy);
+        $this->rest($terminal);
+        $tables = ['tragedies', 'commit_region_exhaustions', 'exhausted_region_memberships',
+            'tragedy_final_attempts', 'tragedy_receipt_scopes', 'receipts', 'receipt_consumptions',
+            'commitment_snapshots', 'context_horizons', 'participants', 'propositions', 'supersessions',
+            'proposition_measurements', 'substrates', 'potential_dirty_horizons'];
+        $snapshot = fn () => collect($tables)->mapWithKeys(fn ($table) => [$table => DB::table($table)->get()
+            ->map(fn ($row) => json_encode($row))->sort()->values()->all()])->all();
+        $before = $snapshot();
+        $rename = require database_path('migrations/2026_09_22_210000_rename_cycle_governance_to_entry.php');
+        $rename->down();
+        $rename->up();
+        $this->assertSame($before, $snapshot());
+        $this->assertTrue(Schema::hasColumn('tragedies', 'governing_committal_id'));
+        $this->assertTrue(Schema::hasColumn('commit_region_exhaustions', 'governing_committal_id'));
+        $this->assertFalse(Schema::hasColumn('tragedies', 'entry_committal_id'));
+        $this->assertFalse(Schema::hasColumn('commit_region_exhaustions', 'entry_committal_id'));
+        $this->assertTrue(app(ExhaustionService::class)->boundaryExhausted($horizon));
+        $this->assertSame($opening->id, $tragedy->fresh()->governing_committal_id);
+    }
+
     public function test_ambiguous_transported_legacy_proof_remains_history_without_regional_authority(): void
     {
         [$opening, $horizon, $tragedy] = $this->firstFailure();

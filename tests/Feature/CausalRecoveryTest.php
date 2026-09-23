@@ -1131,6 +1131,8 @@ class CausalRecoveryTest extends TestCase
         app(ParticipationService::class)->contribute($phase->cycle->participant, $phase->id, ['action' => 'participant.rest']);
         $this->assertSame('no_remaining_potential', $phase->cycle->fresh()->rest_reason->value);
         $tragedy = Tragedy::where('governing_committal_id', $seed->id)->sole();
+        $this->assertSame($seed->id, $terminal->phase->cycle->entry_committal_id);
+        $this->assertSame($seed->id, app(\App\Services\CommitRegionService::class)->seedFor($terminal)?->id);
         $this->assertFalse(app(ExhaustionService::class)->unavailable($seed));
         app(CycleEntryService::class)->prepare($phase->cycle->participant);
         $this->assertSame($seed->id, $phase->cycle->participant->fresh()->current_proposition_id);
@@ -1154,6 +1156,8 @@ class CausalRecoveryTest extends TestCase
         $this->refreshMeasurements();
         app(ParticipationService::class)->contribute($final->cycle->participant, $final->id, ['action' => 'participant.rest']);
         $this->assertDatabaseHas('commit_region_exhaustions', ['governing_committal_id' => $seed->id, 'receipt_id' => $tragedy->receipt_id]);
+        $this->assertSame($seed->id, $target->phase->cycle->entry_committal_id);
+        $this->assertSame($seed->id, app(\App\Services\CommitRegionService::class)->seedFor($target)?->id);
         $this->refreshMeasurements();
 
         return $target;
@@ -1214,7 +1218,8 @@ class CausalRecoveryTest extends TestCase
         $participant ??= $this->participant();
         $cycle = new Cycle;
         $cycle->forceFill(['participant_id' => $participant->id, 'context_horizon_id' => $horizon->id,
-            'sequence' => (int) $participant->cycles()->max('sequence') + 1])->save();
+            'sequence' => (int) $participant->cycles()->max('sequence') + 1,
+            'entry_committal_id' => $gate?->tier === 'committal' ? $gate->id : $gate?->phase->cycle->entry_committal_id])->save();
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'gate_proposition_id' => $gate?->id, 'kind' => $kind,
             'write_register' => $horizon->domain->registerFor($kind), 'started_at' => now()])->save();
@@ -1306,3 +1311,4 @@ class CausalRecoveryTest extends TestCase
         $this->assertTrue(app(PotentialProjectionService::class)->refresh($this->substrate->id));
     }
 }
+

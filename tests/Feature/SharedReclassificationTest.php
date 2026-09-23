@@ -72,10 +72,12 @@ class SharedReclassificationTest extends TestCase
         $actor = new Participant;
         $actor->forceFill(['substrate_id' => $f->substrate->id, 'callsign' => 'classifier-'.str()->ulid(), 'max_read_count' => 25])->save();
         $cycle = new Cycle;
-        $cycle->forceFill(['participant_id' => $actor->id, 'sequence' => 1])->save();
+        $cycle->forceFill(['participant_id' => $actor->id, 'sequence' => 1, 'context_horizon_id' => $source->phase->cycle->context_horizon_id,
+            'entry_committal_id' => $source->phase->cycle->entry_committal_id])->save();
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => $kind, 'gate_proposition_id' => $source->id, 'write_register' => $register, 'started_at' => now()])->save();
 
         return [$actor, $phase];
     }
 }
+

@@ -52,8 +52,10 @@ class ReconciliationTest extends TestCase
         $this->substrate = new Substrate;
         $this->substrate->forceFill(['slug' => 'reconcile', 'title' => 'Reconcile', 'visibility' => 'public', 'configuration' => []])->save();
         $this->history = $this->newPhase($this->participant('author'), PhaseKind::Distinguish, 'activity', true);
-        $this->parent = $this->node('Parent', 'canon', position: PhaseKind::Constrain);
         $root = $this->node('Shared provenance', 'frontier', tier: 'committal', position: PhaseKind::Mediate);
+        $this->freezeRegionFixture($root);
+        $this->history = $this->governedPhaseFixture($this->history, $root);
+        $this->parent = $this->node('Parent', 'canon', position: PhaseKind::Constrain);
         $this->edge($root, $this->parent);
         $this->gate = $this->node("  Gate statement\nwith exact whitespace.  \n", 'activity', $correspondence, position: PhaseKind::Disperse);
         $this->edge($this->parent, $this->gate);
@@ -254,9 +256,14 @@ class ReconciliationTest extends TestCase
         $this->edge($validRead, $distantRead);
         $distantGate = $this->node('Distant Gate', 'activity', position: PhaseKind::Disperse);
         $this->edge($distantRead, $distantGate);
+        $originalHistory = $this->history;
+        $unrelatedSeed = $this->node('Unrelated region', 'canon', tier: 'committal');
+        $this->freezeRegionFixture($unrelatedSeed);
+        $this->history = $this->governedPhaseFixture($this->history, $unrelatedSeed);
         $unrelatedRead = $this->node('Unrelated matching Read', 'canon', position: PhaseKind::Constrain);
         $unrelatedGate = $this->node('Unrelated Gate', 'activity', position: PhaseKind::Disperse);
         $this->edge($unrelatedRead, $unrelatedGate);
+        $this->history = $originalHistory;
         $plan = $this->plan();
         $this->assertEqualsCanonicalizing([$this->parent->id, $validRead->id, $foreignHorizon->id, $distantRead->id, $hardRead->id, $hardRead->children()->where('register', 'canon')->firstOrFail()->id], app(MediationReadService::class)->readsFor($this->phase)->pluck('id')->all());
         $this->assertSame([$this->parent->id], array_column($plan['read_options'], 'id'));
@@ -406,7 +413,9 @@ class ReconciliationTest extends TestCase
     private function newPhase(Participant $participant, PhaseKind $kind, string $register, bool $completed = false): Phase
     {
         $cycle = new Cycle;
-        $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => (int) $participant->cycles()->max('sequence') + 1, 'completed_at' => $completed ? now() : null])->save();
+        $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => (int) $participant->cycles()->max('sequence') + 1, 'completed_at' => $completed ? now() : null,
+            'entry_committal_id' => isset($this->history) && $participant->substrate_id === $this->substrate->id
+                ? $this->history->cycle->entry_committal_id : null])->save();
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => $kind, 'write_register' => $register, 'started_at' => now(), 'completed_at' => $completed ? now() : null])->save();
 
@@ -423,3 +432,4 @@ class ReconciliationTest extends TestCase
         return $attestation;
     }
 }
+

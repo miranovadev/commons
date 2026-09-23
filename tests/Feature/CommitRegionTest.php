@@ -69,7 +69,7 @@ class CommitRegionTest extends TestCase
         $this->edge($b, $merged, 'reconcile');
         $next = $this->node('concord', $merged, 'committal', 'commit');
         $nextChild = $this->node('signal', $next);
-        $unrelated = $this->node('canon', null, 'committal');
+        $unrelated = $this->node('concord', null, 'committal');
         $outsider = $this->node('stance', $unrelated);
         $regions = app(CommitRegionService::class);
         foreach ([$this->regionSeed, $left, $right, $a, $b, $merged] as $member) {
@@ -84,18 +84,18 @@ class CommitRegionTest extends TestCase
             $nextChild->contextHorizonMembership->context_horizon_id);
     }
 
-    public function test_conflicting_legacy_ancestry_does_not_join_two_regions(): void
+    public function test_cross_region_causal_inputs_do_not_change_the_cycle_owner(): void
     {
         $left = $this->node('stance', $this->regionSeed);
-        $other = $this->node('canon', null, 'committal');
+        $other = $this->node('concord', null, 'committal');
         $right = $this->node('stance', $other);
         $mixed = $this->node('concord', $left, edge: 'reconcile');
         $this->edge($right, $mixed, 'reconcile');
         $descendant = $this->node('concord', $mixed);
         $regions = app(CommitRegionService::class);
-        $this->assertNull($regions->seedFor($mixed));
-        $this->assertNull($regions->seedFor($descendant));
-        $this->assertSame([$left->id], $regions->membersFor($this->regionSeed)->pluck('id')->all());
+        $this->assertSame($this->regionSeed->id, $regions->seedFor($mixed)?->id);
+        $this->assertSame($this->regionSeed->id, $regions->seedFor($descendant)?->id);
+        $this->assertSame([$left->id, $mixed->id, $descendant->id], $regions->membersFor($this->regionSeed)->pluck('id')->all());
         $this->assertSame([$right->id], $regions->membersFor($other)->pluck('id')->all());
     }
 
@@ -107,6 +107,9 @@ class CommitRegionTest extends TestCase
     #[DataProvider('domains')]
     public function test_phase_positions_require_exact_registers_and_early_phases_stay_local(string $first, string $second, string $third): void
     {
+        if ($this->regionSeed->register !== $third) {
+            $this->regionSeed = $this->node($third, null, 'committal');
+        }
         $left = $this->node($first, $this->regionSeed, position: PhaseKind::Distinguish);
         $middle = $this->node($second, $left, position: PhaseKind::Mediate);
         $early = $this->node($third, $middle, position: PhaseKind::Constrain);
@@ -126,6 +129,9 @@ class CommitRegionTest extends TestCase
     #[DataProvider('domains')]
     public function test_mediate_reads_cross_parent_branches_before_filtering_correspondence(string $first, string $second, string $third): void
     {
+        if ($this->regionSeed->register !== $third) {
+            $this->regionSeed = $this->node($third, null, 'committal');
+        }
         $left = $this->node($second, $this->regionSeed, position: PhaseKind::Persist);
         $right = $this->node($second, $this->regionSeed, position: PhaseKind::Persist);
         $anchor = $this->node($third, $left, position: PhaseKind::Constrain);
@@ -160,6 +166,9 @@ class CommitRegionTest extends TestCase
     #[DataProvider('domains')]
     public function test_bias_filters_cross_branch_retained_directions_including_zero_attestations(string $first, string $second, string $third): void
     {
+        if ($this->regionSeed->register !== $third) {
+            $this->regionSeed = $this->node($third, null, 'committal');
+        }
         $left = $this->node($first, $this->regionSeed, position: PhaseKind::Disperse);
         $right = $this->node($first, $this->regionSeed, position: PhaseKind::Disperse);
         $gate = $this->node($second, $left, position: PhaseKind::Mediate);
@@ -184,6 +193,9 @@ class CommitRegionTest extends TestCase
     #[DataProvider('domains')]
     public function test_closure_keeps_local_writes_and_revalidates_the_selected_source(string $first, string $second, string $third): void
     {
+        if ($this->regionSeed->register !== $third) {
+            $this->regionSeed = $this->node($third, null, 'committal');
+        }
         $left = $this->node($second, $this->regionSeed, position: PhaseKind::Mediate);
         $right = $this->node($second, $this->regionSeed, position: PhaseKind::Mediate);
         $gate = $this->node($third, $left, position: PhaseKind::Bias);
@@ -256,9 +268,17 @@ class CommitRegionTest extends TestCase
 
     private function node(string $register, ?Proposition $parent, string $tier = 'expressive', string $edge = 'variant', PhaseKind $position = PhaseKind::Distinguish): Proposition
     {
+        $phase = $this->phaseForRegisterFixture($this->history, $register, $position);
+        if ($parent !== null) {
+            $governor = $parent->tier === 'committal' ? $parent : $parent->phase->cycle->entryCommittal;
+            $phase = $this->governedPhaseFixture($phase, $governor, $parent);
+        }
         $node = new Proposition;
-        $node->forceFill(['phase_id' => $this->phaseForRegisterFixture($this->history, $register, $position)->id, 'register' => $register, 'tier' => $tier, 'statement' => 'Region '.$register])->save();
+        $node->forceFill(['phase_id' => $phase->id, 'register' => $register, 'tier' => $tier, 'statement' => 'Region '.$register])->save();
         app(LedgerService::class)->record($node);
+        if ($tier === 'committal') {
+            $this->freezeRegionFixture($node);
+        }
         if ($parent) {
             $this->edge($parent, $node, $edge);
         }
@@ -276,15 +296,12 @@ class CommitRegionTest extends TestCase
 
     private function phase(PhaseKind $kind, Proposition $gate, string $register): Phase
     {
-        $cycle = $this->viewer->cycles()->whereNull('completed_at')->latest('sequence')->first();
-        $cycle?->phases()->whereNull('completed_at')->update(['completed_at' => now()]);
-        if ($cycle === null || $cycle->context_horizon_id !== $gate->phase->cycle->context_horizon_id) {
-            $cycle?->forceFill(['completed_at' => now()])->save();
-            $horizon = $gate->phase->cycle->contextHorizon;
-            $cycle = new Cycle;
-            $cycle->forceFill(['participant_id' => $this->viewer->id, 'sequence' => $this->viewer->cycles()->max('sequence') + 1,
-                'context_horizon_id' => $horizon->id, 'governing_committal_id' => $horizon->opened_by_proposition_id])->save();
-        }
+        $this->viewer->cycles()->whereNull('completed_at')->get()->each(fn ($cycle) => $cycle->forceFill(['completed_at' => now()])->save());
+        $governor = $gate->tier === 'committal' ? $gate : $gate->phase->cycle->entryCommittal;
+        $horizon = app(\App\Services\ContextHorizonProjector::class)->forEntry($governor);
+        $cycle = new Cycle;
+        $cycle->forceFill(['participant_id' => $this->viewer->id, 'sequence' => $this->viewer->cycles()->max('sequence') + 1,
+            'context_horizon_id' => $horizon->id, 'entry_committal_id' => $governor->id])->save();
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => $kind, 'gate_proposition_id' => $gate->id,
             'write_register' => $register, 'started_at' => now()])->save();
@@ -300,3 +317,4 @@ class CommitRegionTest extends TestCase
         app(LedgerService::class)->record($attestation);
     }
 }
+
