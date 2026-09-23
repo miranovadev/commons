@@ -53,6 +53,10 @@ three participants through HTTP. Participants take turns for 600 scheduled steps
 It uses published schema choices exclusively, with deterministic external evidence
 transport. No calculator, population, recovery or progression service is mocked.
 The inherited harness forbids database fixture writes outside application requests.
+The natural subclass deliberately omits the ordinary test's outer rollback-only
+transaction: each real application request commits normally, and the probe asserts
+transaction depth zero after GET and contribution. The fresh migrated schema and
+write guard remain. The long probe runs in its own disposable test database.
 
 Two policies explore different decisions: `local-first` prefers ordinary options
 when coavailable; `field-first` prefers additional schema-authorized options when
@@ -74,6 +78,8 @@ regional exhaustion are actual persisted row counts. Request metrics include the
 GET and contribution POST, excluding read-only diagnostic classification and
 assertion queries. Waiting observations are recorded separately; they are not
 invented contributions. Runtime includes diagnostics and setup.
+Each 100-step checkpoint preserves counts and the five SQL shapes with the most
+request time, so an interrupted run retains useful partial evidence.
 
 Every contribution checks immutable Cycle entry and completed Phase. Traverse
 checks no new proposition, edge, snapshot or Receipt consumption. Order checks
@@ -89,5 +95,36 @@ COMMONS_NATURAL_POLICY=field-first php artisan test tests/Acceptance/Homeostatic
 ```
 
 The opt-in `Homeostatic natural acceptance` workflow also supports manual dispatch.
-Full traces and summaries are uploaded as Actions artifacts for 14 days. Compact
-review evidence and observations follow below after the completed runs.
+Full traces and summaries are uploaded as Actions artifacts for 14 days. The final
+run links, measured results, representative-case inventory and acceptance conclusion
+are recorded in [Stage 6 PR #206](https://github.com/miranovadev/commons/pull/206).
+This document records the methodology, proof map and initial benchmark finding;
+green standard suites alone do not establish completed natural acceptance.
+
+## Initial probe finding: rollback-only transaction
+
+The first 600-step attempts at `f9d57a741e3d67938b3760054b7b5bcbff8d2503`
+hit the separate 30-minute acceptance-job budget. They retained 282 local-first
+and 308 field-first completed contributions, with no assertion failure before
+timeout. This is incomplete acceptance, not a successful 600-step run.
+
+The field-first HTTP time per 100 contributions rose from 88.22 seconds to 348.19
+and 906.46 seconds. SQL accounted for 63.34, 291.61 and 819.99 seconds respectively.
+Query totals were 91,147, 131,162 and 114,238, so the slowdown was not explained
+by query-count growth alone. The ordinary focused plan-query checks do not measure
+this sustained request workload.
+
+Inspection found that inherited RefreshDatabase wrapped the entire natural journey
+in one rollback-only transaction, preventing normal PostgreSQL cleanup across
+hundreds of logical requests. The natural-only transaction correction above tests
+that explanation without changing application logic or loosening existing CI limits.
+The initial traces remain available in [run 35920759282](https://github.com/miranovadev/commons/actions/runs/35920759282).
+They are retained as a benchmark limitation, not silently replaced by later results.
+The [durable partial evidence](evidence/homeostatic-stage-6/rollback-probe.json)
+contains exact contribution counts, request windows, source trace hashes and
+representative before/after states. At zero-based step 281, both policies offered
+local Commit plus additional homologous Traverse: local-first committed and
+field-first traversed. Earlier step 175 records exclusive legitimate Order Rest.
+The partial traces also reached additional Bias Reclassify, but did not yet show
+additional Mediate operands or local/additional Bias coexistence. Those absences
+are not relabeled as natural coverage; the focused semantic tests cover them.
