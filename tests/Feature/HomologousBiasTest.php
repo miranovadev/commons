@@ -134,7 +134,7 @@ class HomologousBiasTest extends TestCase
             $this->measure($node, -.5);
         }
         $receipt = app(HorizonReceiptService::class)->available($this->bias)->sole();
-        $foreignReceipt = $source->receipts()->firstOrFail();
+        $foreignReceipt = app(\App\Services\PropositionStateService::class)->receipts($source)->firstOrFail();
         $input = ['action' => 'proposition.reclassify', 'proposition_id' => $source->id, 'receipt_id' => $receipt->id];
         $this->reject($source, $foreignReceipt->id);
         $this->publishPotentialFixture($this->actor);
@@ -302,8 +302,10 @@ class HomologousBiasTest extends TestCase
 
     private function vote(Proposition $node, string $direction = 'support'): void
     {
+        $phase = $node->attestations()->where('phase_id', $node->phase_id)->exists()
+            ? $this->phase($node->phase->cycle->entryCommittal, $node, PhaseKind::Bias) : $node->phase;
         $vote = new Attestation;
-        $vote->forceFill(['phase_id' => $node->phase_id, 'proposition_id' => $node->id, 'direction' => $direction])->save();
+        $vote->forceFill(['phase_id' => $phase->id, 'proposition_id' => $node->id, 'direction' => $direction])->save();
         app(LedgerService::class)->record($vote);
     }
 
@@ -363,6 +365,6 @@ class HomologousBiasTest extends TestCase
     {
         return [DB::table('proposition_measurements')->orderBy('proposition_id')->get()->toJson(),
             DB::table('propositions')->orderBy('id')->get()->toJson(), DB::table('participants')->orderBy('id')->get()->toJson(),
-            DB::table('supersessions')->orderBy('id')->get()->toJson(), DB::table('receipt_consumptions')->orderBy('id')->get()->toJson()];
+            DB::table('supersessions')->orderBy('id')->get()->toJson(), DB::table('receipt_consumptions')->orderBy('receipt_id')->get()->toJson()];
     }
 }

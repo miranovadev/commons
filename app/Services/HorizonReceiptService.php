@@ -81,3 +81,4 @@ final class HorizonReceiptService
         return $receipt;
     }
 }
+

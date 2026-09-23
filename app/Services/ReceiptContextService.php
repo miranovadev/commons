@@ -227,3 +227,4 @@ final readonly class ReceiptContextService
         app(RealtimePublisher::class)->proposition($load->proposition_id);
     }
 }
+

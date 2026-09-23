@@ -56,3 +56,4 @@ final readonly class BiasGateService
             ->unique('id')->sortBy('id')->values());
     }
 }
+

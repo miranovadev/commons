@@ -145,7 +145,8 @@ The reusable population and dominant-direction layers are documented in
 position, compare the propositions' own Domain and committed depth, and aggregate
 independently derived measurements without writing them. Stage 3 now consumes this aggregate for additional Mediate operands and removes
 the temporary entry-creating-Domain restriction. Proposition Domain and committed
-depth remain authoritative. Bias and Order integration remain deferred.
+depth remain authoritative. Stage 4 adds Bias sources as described above; Order
+population integration remains deferred to Stage 5.
 
 
 Stage 3 coverage includes both signs of disagreement between causal Read and field,
@@ -155,4 +156,11 @@ stale population rejection, and public non-dominant-causal-Read reconciliation.
 Existing graph, Receipt, directed-pair, foreign exhaustion and query-budget proofs
 remain in force. [Homeostatic populations](homeostatic-populations.md) documents
 the shared aggregation and hydration boundary.
+
+Stage 4 coverage in `HomologousBiasTest` proves additive local/dominant options,
+non-dominant and unattested rejection, zero defaults without state writes, public
+Reclassify in both Region directions, entry-only Receipt consumption and provenance,
+result ownership and forward progression, stale rejection, wrong coordinates and
+substrates, no generic Traverse, same-Horizon result isolation, complete foreign
+exhaustion and bounded plan queries across growing populations.
 

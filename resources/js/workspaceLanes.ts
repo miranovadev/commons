@@ -60,3 +60,4 @@ function groupLane(role: LaneRole, cards: Proposition[], emptyRegister?: Registe
   return groups.size ? [...groups].map(([register, cards]) => ({ key: `${role}-${register}`, role, register, cards }))
     : [{ key: role, role, register: emptyRegister, cards: [] }];
 }
+

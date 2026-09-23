@@ -32,7 +32,7 @@ class ReceiptRegionContextTest extends TestCase
             verification: new VerifiedHyperlink('example.test/'.$name, hash('sha256', $name), CarbonImmutable::now(), contentExcerpt: 'BODY-'.$name));
     }
 
-    public function test_ordinary_catalogue_shares_branches_and_reconciliations_but_never_crosses_a_commit(): void
+    public function test_ordinary_catalogue_follows_cycle_entry_across_gate_changes_but_not_into_a_new_region(): void
     {
         $f = new ParticipantContextFixture(2, 0, false);
         $r = $this->receipt($f, $f->gate);
@@ -48,8 +48,11 @@ class ReceiptRegionContextTest extends TestCase
         $commit = $f->node($reconciled, 'canon', 'commit', 'committal');
         $f->phase->forceFill(['gate_proposition_id' => $commit->id])->save();
         $this->assertSame($r->context_horizon_id, $f->phase->cycle->context_horizon_id);
-        $this->assertNotContains($r->id, $service->available($f->phase)->pluck('id'));
-        $target = $f->node($commit, 'activity');
+        // Changing the Gate does not change this Cycle's immutable catalogue.
+        $this->assertContains($r->id, $service->available($f->phase)->pluck('id'));
+        $target = $f->node($commit, 'activity'); // A distinct Cycle entered at the new Commit.
+        $this->assertSame($commit->id, $target->phase->cycle->entry_committal_id);
+        $this->assertNotContains($r->id, $service->available($target->phase)->pluck('id'));
         $this->expectException(\DomainException::class);
         DB::transaction(fn () => $service->consume($target->phase, $commit, $target, $r->id));
     }
@@ -168,4 +171,5 @@ class ReceiptRegionContextTest extends TestCase
         $this->assertLessThanOrEqual(6, $after);
     }
 }
+
 

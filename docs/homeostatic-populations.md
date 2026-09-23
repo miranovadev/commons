@@ -1,8 +1,9 @@
-# Homeostatic populations — epic Stages 2–3
+# Homeostatic populations — epic Stages 2–4
 
 Stage 2 introduced shared measurement machinery without changing actions.
 Stages 3–4 connect it to additional Mediate Reconcile operands and Bias Reclassify sources. Ordinary local
-causal options remain independently eligible. Bias, Order, movement, Receipt scope,
+causal options remain independently eligible. Bias uses only acting-entry Receipts
+and creates a real selected-source classification edge. Generic movement, Order,
 Commit admissibility and recovery retain their existing behavior.
 
 ## Structural membership

@@ -117,3 +117,4 @@ test('Horizon, provenance and every current action population are excluded from 
   assert.deepEqual(preview.provenance, []);
   assert.doesNotMatch(ui.render(plan, 'mediate'), /UNRELATED CURRENT/);
 });
+
