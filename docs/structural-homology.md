@@ -41,18 +41,34 @@ Correspondence, directed-pair uniqueness and other action policies to its consum
 
 ## Implementation status and continuation
 
-This checkpoint implements the relation and its tests only. **Mediate does not yet
-consume it, and cross-Horizon reconciliation is not enabled.**
+This checkpoint implements the relation and an internal foreign Mediate discovery
+service. **Public Mediate options do not yet consume that discovery pool, and
+cross-Horizon reconciliation is not enabled.**
+
+`HomologousMediationService::poolFor()` uses the existing causal Constrain anchor,
+selects foreign homologous Regions, compares retained Read Correspondence with
+the existing hysteresis implementation, and collects immediate canonical Disperse
+children in each Read's own Region and Horizon. A separate batched comparison
+context supplies foreign ancestry and availability without extending the caller's
+operational/evidence context. Committed Gates are excluded; other hard replacements
+remain reusable under existing semantics. The method is discovery, not final action
+authorization: exhausted-continuation and directed-pair checks still belong to the
+operational integration. Tests explicitly prove the public options remain unchanged.
 
 Remaining Stage 2 work:
 
-1. Extend MediationReadService's internal pool with homologous Constrain Reads,
+1. Connect the discovered pool to MediationReadService's internal compatible Reads,
    preserving the causal anchor as the only participant-facing Read. Match retained
    Correspondence on the Read, including existing zero hysteresis.
-2. Admit only immediate active canonical Disperse children as foreign operands.
-   Preserve availability, exhaustion and directed-pair uniqueness. Keep local
-   counterpart discovery and deduplicate the combined population.
-3. Trace schema and contribution validation so foreign Gates are authorized only
+2. Connect the discovered immediate active canonical Disperse children as foreign
+   operands. Preserve availability, exhaustion and directed-pair uniqueness. In
+   particular, ExhaustedContinuationService is Horizon-scoped: evaluate foreign
+   continuations in their authoritative Horizon with complete supporting data.
+   Keep local counterpart discovery and deduplicate the combined population.
+3. Complete the hydration/presentation integration: a foreign candidate must not
+   disappear merely because the original ParticipationContext lacks its active ID,
+   and secondary comparison data must not become shared Receipt context. Trace
+   schema and contribution validation so foreign Gates are authorized only
    as `other_proposition_id` for Reconcile, never as Traverse/entry/recovery choices.
 4. Execute cross-Horizon Reconcile in tests. Prove both causal parents survive,
    owner and Horizon remain the acting Cycle's, and lineage follows its Phase Gate.
