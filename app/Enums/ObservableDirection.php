@@ -9,6 +9,18 @@ enum ObservableDirection: string
     case Positive = 'positive';
     case Negative = 'negative';
 
+    /** Initial measurement direction; independent of regional Attestation polarity. */
+    public static function defaultFor(string $measurement): self
+    {
+        return match ($measurement) {
+            // Correspondence's unestablished primary lineage has a positive root.
+            'correspondence' => self::Positive,
+            // Numeric Chirality and Closure begin from their negative bootstrap.
+            'chirality', 'closure' => self::Negative,
+            default => throw new InvalidArgumentException('Unknown observable measurement.'),
+        };
+    }
+
     public static function after(float $value, self $previous = self::Negative): self
     {
         if (! is_finite($value) || $value < -1 || $value > 1) {

@@ -43,6 +43,27 @@ class InputSchemaServiceTest extends TestCase
         $this->assertArrayNotHasKey('stale_gate_correspondence_contract', $schema);
     }
 
+    public function test_mediate_retires_cached_regional_guidance_for_dominant_homologous_correspondence(): void
+    {
+        $actions = config('phases.5.actions');
+        $key = 'commons:input-schema:v21:phase:5:'.sha1(implode('|', $actions));
+        Cache::store('array')->forever($key, ['stale_regional_guidance' => true]);
+        $schema = app(InputSchemaService::class)->forPhase(PhaseKind::Mediate);
+        $this->assertArrayNotHasKey('stale_regional_guidance', $schema);
+        $this->assertStringContainsString('ordinary local Reconcile path', $schema['x-commons']['description']);
+        $this->assertStringContainsString('Dominant Correspondence across homologous Reads', $schema['x-commons']['description']);
+        $this->assertStringContainsString('other Regions or Horizons', $schema['x-commons']['description']);
+
+        $prompt = app(ParticipantPromptFactory::class)->make(
+            new Connection,
+            ['status' => 'ready', 'plan' => ['phase' => ['kind' => 'mediate'], 'schema' => $schema]],
+        )['system'];
+        $this->assertStringContainsString('ordinary local Reconcile path retains its existing eligibility', $prompt);
+        $this->assertStringContainsString('Dominant Correspondence across homologous Reads', $prompt);
+        $this->assertStringContainsString('Regions and Horizons may differ', $prompt);
+        $this->assertStringNotContainsString('Reads elsewhere in the same Commit Region whose retained Correspondence direction matches', $prompt);
+    }
+
     public function test_bias_retires_binary_reconciliation_schema_and_exposes_unary_selection(): void
     {
         $oldActions = ['proposition.reconcile', 'instrument.execute', 'attestation.create'];

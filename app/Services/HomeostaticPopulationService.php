@@ -22,6 +22,6 @@ final readonly class HomeostaticPopulationService
         }
 
         return $this->homology->candidatesFor($position, $position->phase->kind,
-            includeAnchor: true, sameEntryDomain: false);
+            includeAnchor: true);
     }
 }

@@ -1,9 +1,9 @@
-# Homeostatic populations — epic Stage 2
+# Homeostatic populations — epic Stages 2–3
 
-This stage adds shared measurement machinery only. It does not connect that
-machinery to participant options, action authorization, movement, Receipt scope,
-Commit admissibility or recovery. Mediate retains its existing selected-Read
-direction rule; Bias and Order retain their existing local behavior.
+Stage 2 introduced shared measurement machinery without changing actions.
+Stage 3 connects it only to additional Mediate Reconcile operands. Ordinary local
+causal options remain independently eligible. Bias, Order, movement, Receipt scope,
+Commit admissibility and recovery retain their existing behavior.
 
 ## Structural membership
 
@@ -24,9 +24,8 @@ Nearest shared ancestor/distance remain diagnostic output only.
 
 The proposition's own Domain is authoritative. Two expressions can share a Domain
 and depth even when one entry Committal was created in that Domain and the other
-opened it from the opposite Domain. The general population includes both. Existing
-Mediate discovery retains its prior entry-creating-Domain filter through the
-default `sameEntryDomain` option until the separate Stage 3 selection change.
+opened it from the opposite Domain. The general population includes both. Stage 3 removes
+the temporary entry-creating-Domain filter from Mediate discovery.
 
 Membership is structural, not actionability. Superseded or exhausted members are
 not silently removed from this definition. Operational consumers must apply their
@@ -42,7 +41,10 @@ No projection, retained direction, snapshot or participant state is written.
 
 `ParticipationContext` has an explicit measurement-only opt-in for hydrating
 unavailable additional members. Its default operational working set is unchanged.
-The new service owns this context privately and never returns it as an input plan.
+The direction service reuses an existing comparison context only when it already
+contains the entire structural population in the same substrate. Otherwise it
+owns a private measurement context; it never expands the caller's operational
+context or returns that private context as an input plan.
 Hydrated Receipts remain calculation evidence, not an expanded Receipt catalogue.
 
 Each distinct measured proposition contributes its signed value once with equal
@@ -52,10 +54,14 @@ Zero values contribute denominator mass; unavailable/null values do not. An empt
 or entirely unmeasured population has no mean or direction. The result preserves
 the per-member values, including nulls, so missing data stays explicit.
 
-Direction uses `ObservableDirection::after()`. At aggregate zero, an explicitly
-supplied prior **population** direction is retained. Without prior population
-history the tie is unresolved (`null`); neither the acting member's sign nor the
-enum's default supplies a new field direction. This stage adds no persisted field
+Direction uses `ObservableDirection::after()` with the requested observable's
+explicit `ObservableDirection::defaultFor()` initialization. At aggregate zero,
+an explicitly supplied prior **population** direction is retained; without it,
+Correspondence starts positive and numeric Chirality/Closure start negative.
+Correspondence shares its positive root fallback with proposition direction;
+Chirality/Closure retain their negative measurement bootstrap, independent of
+regional Attestation polarity and Bias's evidence direction. The acting member's
+sign never supplies population history. This stage adds no persisted field
 history. Nonzero aggregates establish their own direction. This aggregate is not
 a new measurement of any proposition and is never fed back into its calculators.
 
@@ -74,4 +80,14 @@ query counts across one and eight foreign Horizons with missing projections.
 The existing homology fixtures and assertions are retained through a shared test
 fixture. Existing Mediate and operational suites remain regression gates.
 
-Stage 3 and later action integration are deliberately not implemented here.
+Stage 3 uses the entire homologous Constrain Read population for the numeric
+Correspondence aggregate, including Reads without eligible Gate children.
+Active members with available measurements and matching retained direction supply
+additional immediate Disperse operands. Gate availability and complete foreign
+Horizon exhaustion remain operational checks after aggregation. No persisted
+population history is invented: a tie retains explicitly supplied history or uses
+the Correspondence default, allowing matching members to supply operands while
+leaving the ordinary local path intact. A fresh write authorization recomputes the field,
+so another member changing direction can invalidate a previously listed operand.
+
+Stage 4 and later action integration remain deferred.

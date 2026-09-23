@@ -35,7 +35,7 @@ final readonly class ReceiptContextService
         return $context->remember('receipt-context', function () use ($phase, $context): Collection {
             $gate = $context->propositions->get($phase->gate_proposition_id);
             $foreignOperands = $phase->kind === PhaseKind::Mediate
-                ? app(HomologousMediationService::class)->poolFor($phase, $context)['gates']->pluck('id') : collect();
+                ? app(HomologousMediationService::class)->foreignGateIdsFor($phase, $context) : collect();
             $exposed = $gate === null ? collect() : $this->lineage->endingAt($gate, $context)->concat([$gate])
                 ->concat($this->mediation->visibleReadsFor($phase, $context))
                 ->concat($this->options->gateOptionsFor($phase, $context)->whereNotIn('id', $foreignOperands))

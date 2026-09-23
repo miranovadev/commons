@@ -47,17 +47,22 @@ class ParticipantPromptConstitutionTest extends TestCase
             ], ['proposition.reclassify', 'proposition.reconcile', 'proposition.commit', 'Homeostatic Read comparison']],
             'Mediate' => [PhaseKind::Mediate, [
                 "that Disperse Phase's recorded Constrain-produced Gate, not the current Mediate Gate or a guessed ancestor",
-                'compatible Constrain-produced Reads elsewhere in the same Commit Region whose retained Correspondence direction matches, including at numeric zero',
-                'intentional cross-lineage Homeostatic Read comparison',
+                'ordinary local Reconcile path retains its existing eligibility even when this Read opposes the population direction',
+                'full homologous Constrain Read population supplies independently lineage-derived Correspondence measurements, including the acting Read exactly once',
+                'Regions and Horizons may differ',
+                'Dominant Correspondence across homologous Reads qualifies additional active Reads by their own direction, retaining their own prior direction at numeric zero',
+                'A zero population mean retains prior population direction when supplied, or uses the positive Correspondence default; matching Reads may still supply counterparts',
                 'read_options contains only that one causal Read anchor.',
-                'Those regional Reads are calculation inputs only, never visible Read alternatives.',
-                'compatible foreign-lineage Disperse Gates',
+                'These population Reads are calculation inputs only, never visible Read alternatives.',
+                "active immediate children of dominant-matching Reads in each Read's own Region and Horizon",
                 'Only schema-authorized other_proposition_id values are reconciliation counterparts.',
-                'They are operands, never Traverse targets or movement destinations.',
+                'They are operands, never Traverse targets or movement destinations',
+                'foreign operands do not supply Receipt catalogue access',
+                "The result remains in the acting Cycle's Region and Horizon, with the acting Phase Gate as traversed provenance",
                 'Reconcile(current Gate, counterpart) copies the current Gate statement exactly and creates a new causal result with explicit hard parent edges from both inputs',
                 'Each directed pair may be generated once across all Participants; the inverse remains distinct',
                 'Mediate does not expose expressive Traverse, even after personal Attestation.',
-            ], ['proposition.traverse selects', 'proposition.reclassify', 'proposition.revise', 'proposition.variant', 'proposition.commit']],
+            ], ['proposition.traverse selects', 'proposition.reclassify', 'proposition.revise', 'proposition.variant', 'proposition.commit', 'Reads elsewhere in the same Commit Region whose retained Correspondence direction matches']],
             'Bias' => [PhaseKind::Bias, [
                 'Bias evaluates eligible Mediate-produced Stance/Frontier Gates across the Commit Region internally.',
                 "Each candidate's retained Chirality direction must agree with its own causal ancestry aggregate, excluding its own votes and loads.",
@@ -194,3 +199,4 @@ class ParticipantPromptConstitutionTest extends TestCase
         ]];
     }
 }
+
