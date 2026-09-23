@@ -152,7 +152,7 @@ preceding opposite-Domain run length, counting only ancestral Committals and the
 candidate. Recovery retains shared ancestors and excludes abandoned descendants.
 
 Cadence compares the latest two direct ancestral inter-Commit intervals. For A → B,
-freeze the number of other A-governed Cycles completed before B commits, plus B's
+freeze the number of other Cycles entered at A and completed before B commits, plus B's
 producing Cycle exactly once. Rest counts. Other unresolved Cycles do not count.
 All expressive paths within A's basin count; other entry Committals, including siblings
 and descendants, do not. Every real interval is at least one. Cadence continues
@@ -170,7 +170,7 @@ contribution/receipt ratio q (default 3), Closure is `(D + C + N/q) / (2 + N/q)`
 The participant cap, Receipt qualification, Commit-source inheritance and
 reclassification rules remain in ReinforcementService. This weight is applied at
 the measured head, without propagating Closure through expressive ancestors.
-Expressive propositions inherit their governing snapshot's structural components;
+Expressive propositions inherit their Cycle entry Committal snapshot's structural components;
 they do not extend committed Domain runs or invent intervals. Persisted Committals
 retain their historical snapshot values.
 
@@ -231,7 +231,7 @@ projection. The additive calculator_version migration marks old projections
 as obsolete; normal measurement repair and Potential reads refresh obsolete
 projections before use. A new or changed Phase Gate invalidates disposable
 projections in its substrate because touches can affect either side of a
-comparison. A governed Cycle completing also invalidates affected basin previews, including Rest.
+comparison. A Cycle with an entry Committal completing also invalidates affected basin previews, including Rest.
 Missing/unmeasurable Potential candidates remain ineligible. No persistent raw
 cache is introduced; prospective Closure uses current completed-basin participation plus its producing Cycle.
 

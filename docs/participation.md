@@ -351,7 +351,7 @@ movement topology are separate contracts. No edge means no movement.
 `CommitRegionService` resolves ownership from immutable Cycle entry. A
 Committal owns itself. An expressive Proposition belongs to its creating Cycle's
 `entry_committal_id`; Supersession records causal provenance independently.
-Multiple parent Regions do not erase a valid owner. Missing or invalid governance
+Multiple parent Regions do not erase a valid owner. Missing or invalid Cycle entry
 fails closed without ancestry inference. Causal history preserves superseded
 intermediates; active populations, movement and operational admissibility remain
 separate contracts.

@@ -3,13 +3,13 @@
 This report describes the committed-lineage Closure replacement built on #196.
 The dump comparison is counterfactual and read-only; it never rewrites snapshots.
 
-## Cycle ownership
+## Cycle entry
 
-Ordinary live entry records `cycles.governing_committal_id` from the selected
+Ordinary live entry records `cycles.entry_committal_id` from the selected
 Committal. `context_horizon_id` remains the immutable Domain/topology container.
-Origin bootstrap is the only ungoverned production entry. Completing, resting or
+Origin bootstrap is the only production entry without an entry Committal. Completing, resting or
 recovering never relabels the old Cycle. A subsequent Cycle records its newly
-selected governor. The nullable storage supports Origin creation before the
+selected entry Committal. The nullable storage supports Origin creation before the
 Origin proposition exists; ordinary production creation requires a Committal.
 
 The #196 governance migration resolves ownership from each Cycle's original Distinguish Gate,
@@ -24,28 +24,28 @@ from updates. A foreign key protects the referenced proposition.
 For each ancestral pair A -> B, freeze at B's successful Commit:
 
 ```
-interval(A, B) = count of other completed Cycles governed by A before B commits
-                + 1 for B's producing Cycle (also governed by A)
+interval(A, B) = count of other completed Cycles entered at A before B commits
+                + 1 for B's producing Cycle (also entered at A)
 ```
 
 This counts all participants and expressive paths in A's basin. It excludes
-Cycles governed by other Committals, including A's descendants and siblings.
+Cycles entered at other Committals, including A's descendants and siblings.
 Rest counts as completed participation in its original basin. Returning to A
 does not reset its history. If A later produces another successor B2, its interval
-includes the accumulated other completed Cycles under A before B2 plus B2's
+includes the accumulated other completed Cycles entered at A before B2 plus B2's
 producing Cycle, while the earlier
 A -> B interval remains frozen.
 
 The producing Cycle counts exactly once, regardless of whether snapshot publication
-precedes its completion. Three previously completed A-governed Cycles plus the
-A-governed Cycle producing B give interval(A, B) = 4. Every real transition has
+precedes its completion. Three previously completed Cycles entered at A plus the
+Cycle entered at A producing B give interval(A, B) = 4. Every real transition has
 an interval of at least 1. Other unresolved active Cycles do not count, even when
-governed by A. There is no zero-interval similarity edge case to introduce.
+entered at A. There is no zero-interval similarity edge case to introduce.
 
 For C0 -> C1 -> C2, compare interval(C0, C1) with interval(C1, C2).
 For non-Origin B, follow B -> creating Phase -> creating Cycle ->
-`governing_committal_id` to obtain its direct preceding Committal A. The producing
-Cycle must be governed by A. No union of Supersession inputs or Horizon population
+`entry_committal_id` to obtain its direct preceding Committal A. The producing
+Cycle must have entered at A. No union of Supersession inputs or Horizon population
 is needed.
 The chain and the interval comparison continue across Domain boundaries.
 
@@ -119,14 +119,14 @@ It flags ambiguous cutoff ties and performs no writes.
 
 ## Calculation architecture and deployed transition
 
-`CommittalLineageService` reads only creating-Cycle governors, using a recursive
+`CommittalLineageService` reads only creating-Cycle entry Committals, using a recursive
 query with UNION deduplication and a request-local record map. Calculation contexts
 reuse the committed records and grouped completed-Cycle counts. The live interval
 uses completed status under the existing root contribution lock; timestamps are
 only legacy backfill evidence, never a live clock.
 
 Closure is evaluated once at the measured head. Expressive propositions carry their
-governing snapshot's structural components and apply their own existing qualified
+Cycle entry Committal snapshot's structural components and apply their own existing qualified
 reinforcement. They do not extend Domain runs or create commitment intervals.
 Correspondence and Chirality retain their independent local comparisons and their
 existing expressive-lineage attenuation. Receipt qualification, participant caps,
@@ -151,7 +151,7 @@ no automatic repair or history rewrite is performed here. The supplied dump has
 92 reconstructible ordinary intervals and no cutoff ties.
 
 Completion runs under the existing substrate contribution lock and increments the
-existing field version, dirtying Horizons containing Cycles governed by A rather
+existing field version, dirtying Horizons containing Cycles entered at A rather
 than all substrate Horizons. This is invalidation, not a Cadence clock. Rest records
 its existing pre-completion failure proof before completing the Cycle, atomically
 under the same lock. This preserves the proof's version check. The input schema

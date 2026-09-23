@@ -48,7 +48,7 @@ class ClosureGateService
         return $this->evaluate($this->measurements->calculate($target)->closure(), $target);
     }
 
-    /** The creating Cycle's governor is the sole committed directional predecessor. */
+    /** The creating Cycle's entry Committal is the sole committed directional predecessor. */
     public function historyFor(Proposition $position, ?ParticipationContext $context = null, ?ContextHorizon $horizon = null): ?CommitmentSnapshot
     {
         return $this->lineage->ancestors($position, $context)->first();

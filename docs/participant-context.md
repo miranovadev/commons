@@ -251,7 +251,7 @@ register and tier, then the local structural relationship:
 Historical alternatives explain explored structure; directional/evidence
 admissibility remains solely in the action services. Region resolution batches
 candidates' immutable creating-Cycle entry Committals; each Committal owns itself.
-Missing or invalid governance fails closed. Multi-parent causal provenance does
+Missing or invalid Cycle entry fails closed. Multi-parent causal provenance does
 not make valid operational ownership ambiguous. Direct Write lookup follows revisions
 only, never later-phase descendants. Neither lookup hydrates historical evidence
 or serializes downstream subtrees. The normal validation plan returns before

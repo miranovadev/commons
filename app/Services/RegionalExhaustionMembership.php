@@ -25,7 +25,7 @@ final class RegionalExhaustionMembership
         }
     }
 
-    /** Migration/explicit maintenance only: derive identity from Cycle governance, never legacy flags. */
+    /** Migration/explicit maintenance only: derive identity from Cycle entry, never legacy flags. */
     public function rebuild(): void
     {
         $proofs = DB::table('commit_region_exhaustions as proof')->join('context_horizons as horizon',

@@ -83,7 +83,7 @@ final class CommitRegionService
         return $seed === null ? null : Proposition::find($seed);
     }
 
-    /** Active expressive members owned by this governor; causal topology is independent. */
+    /** Active expressive members in this Cycle-entry Region; causal topology is independent. */
     public function membersFor(Proposition $position, ?ParticipationContext $context = null): Collection
     {
         $seed = $this->seedFor($position, $context);

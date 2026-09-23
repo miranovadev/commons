@@ -41,10 +41,10 @@ final readonly class ClosureCalculator
         $cycle = $position->phase->cycle;
         $ancestors = $this->lineage->ancestors($position, $context);
         if ($position->tier !== 'committal') {
-            // Expressive work inherits its governing committed structure. It does
+            // Expressive work inherits its Cycle entry Committal's structure. It does
             // not increment Domain-run depth or create a hypothetical interval.
-            $governor = $ancestors->first();
-            return new ClosureValues($governor?->depth ?? -1, $governor?->cadence ?? -1);
+            $entrySnapshot = $ancestors->first();
+            return new ClosureValues($entrySnapshot?->depth ?? -1, $entrySnapshot?->cadence ?? -1);
         }
         if ($ancestors->isEmpty()) {
             if ($cycle->contextHorizon->parent_context_horizon_id !== null) {
