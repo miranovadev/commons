@@ -395,7 +395,8 @@ class HomologousMediationTest extends TestCase
         $local = $this->expression($this->a, $this->readA, PhaseKind::Disperse);
         $this->assertEqualsCanonicalizing([$local->id, $this->gateB->id],
             app(ReconciliationOptionService::class)->forPhase($this->mediate)->pluck('id')->all());
-        $this->measure($this->readB, 0.8);
+        // Keep the population negative: a tie now correctly defaults positive.
+        $this->measure($this->readB, 0.5);
         $this->assertSame([$local->id], app(ReconciliationOptionService::class)->forPhase($this->mediate)->pluck('id')->all());
         $before = Proposition::count();
         try {
