@@ -330,6 +330,10 @@ class HomologousMediationTest extends TestCase
         $dispatcher = app(\App\Services\ContributionDispatcher::class);
         $input = ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateB->id];
         $forward = $dispatcher->dispatch($this->actor, $this->mediate, $input);
+        $originalActor = $this->actor;
+        $this->actor = new Participant;
+        $this->actor->forceFill(['substrate_id' => $originalActor->substrate_id, 'callsign' => 'competitor',
+            'current_proposition_id' => $this->gateA->id])->save();
         // Fresh discovery still sees B structurally; authorization consumes only A→B.
         $freshA = $this->mediateAt($this->a, $this->readA, $this->gateA);
         $this->assertTrue(app(HomologousMediationService::class)->poolFor($freshA)['gates']->contains('id', $this->gateB->id));
@@ -343,6 +347,10 @@ class HomologousMediationTest extends TestCase
         }
         $distinct = $dispatcher->dispatch($this->actor, $freshA,
             ['action' => 'proposition.reconcile', 'other_proposition_id' => $gateC->id]);
+        // B has its own participant and governed Cycle; no movement/handoff API is added.
+        $this->actor = new Participant;
+        $this->actor->forceFill(['substrate_id' => $originalActor->substrate_id, 'callsign' => 'reverse',
+            'current_proposition_id' => $this->gateB->id])->save();
         $inversePhase = $this->mediateAt($this->b, $this->readB, $this->gateB);
         $this->assertTrue($options->forPhase($inversePhase)->contains('id', $this->gateA->id));
         $inverse = $dispatcher->dispatch($this->actor, $inversePhase,

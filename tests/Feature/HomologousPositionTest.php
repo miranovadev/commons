@@ -119,6 +119,23 @@ class HomologousPositionTest extends TestCase
         $this->assertFalse($service->arePositionsHomologous($this->position($a), $ungoverned));
     }
 
+    public function test_malformed_ancestral_horizon_link_fails_closed_even_below_a_shared_ancestor(): void
+    {
+        $origin = $this->commit(null, 'emergence');
+        $boundary = $this->commit($origin, 'settlement');
+        $otherBoundary = $this->commit($origin, 'settlement');
+        $a = $this->commit($boundary, 'settlement');
+        $b = $this->commit($boundary, 'settlement');
+        $service = app(HomologousPositionService::class);
+        $this->assertTrue($service->areCommittedHomologous($a, $b));
+        // Corrupt only disposable projection metadata, not immutable Cycle owners.
+        $horizon = app(ContextHorizonProjector::class)->forEntry($boundary);
+        DB::table('context_horizons')->where('id', $horizon->id)->update([
+            'parent_context_horizon_id' => app(ContextHorizonProjector::class)->forEntry($otherBoundary)->id,
+        ]);
+        $this->assertFalse($service->areCommittedHomologous($a, $b));
+    }
+
     public function test_foreign_substrate_is_never_homologous(): void
     {
         $a = $this->commit(null, 'emergence');

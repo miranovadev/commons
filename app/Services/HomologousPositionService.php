@@ -73,6 +73,14 @@ final readonly class HomologousPositionService
                 return null;
             }
             $distances[$id] = count($distances);
+            if ($record->isClosureBoundary()) {
+                if ($record->opened_horizon_id === null || $record->opened_parent_horizon_id !== $record->creating_horizon_id
+                    || $record->opened_substrate_id !== $substrate || $record->opened_domain !== $record->direction_after->value) {
+                    return null;
+                }
+            } elseif ($record->opened_horizon_id !== null) {
+                return null;
+            }
             if ($record->governor === null && $record->calculator_version !== 'origin-bootstrap-v1') {
                 return null;
             }

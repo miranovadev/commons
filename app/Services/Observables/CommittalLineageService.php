@@ -53,7 +53,8 @@ final class CommittalLineageService
             SELECT s.*, chain.governor, h.domain AS creating_domain,
                 p.tier AS committed_tier, participant.substrate_id AS creating_substrate_id,
                 h.substrate_id AS horizon_substrate_id, h.id AS creating_horizon_id,
-                opened.id AS opened_horizon_id
+                opened.id AS opened_horizon_id, opened.parent_context_horizon_id AS opened_parent_horizon_id,
+                opened.substrate_id AS opened_substrate_id, opened.domain AS opened_domain
             FROM chain
             JOIN commitment_snapshots s ON s.proposition_id = chain.id
             JOIN propositions p ON p.id = chain.id

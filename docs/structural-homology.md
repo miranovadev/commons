@@ -1,4 +1,4 @@
-# Structural homology — Stage 2 foundation checkpoint
+# Structural homology — Stage 2
 
 Operational locality and structural homology are separate relations.
 `PhasePositionService` remains Horizon-strict. `HomologousPositionService`
@@ -55,9 +55,11 @@ definition without a dependency cycle between local and foreign discovery.
 
 Immediate active canonical Disperse children in each eligible Read's own Region
 and Horizon become operands. ReconciliationOptionService still applies availability
-and directed-pair uniqueness. Foreign exhausted continuations are checked once
-per distinct foreign Horizon using its complete data, rather than treating the
-partial comparison working set as an entire Horizon.
+and directed-pair uniqueness. Foreign exhausted continuations are checked with
+one batched read of complete authoritative Horizon data. Backward completion
+and current failure epochs remain independent in each Horizon; a foreign causal
+edge cannot transport another Horizon's exhaustion or failure. The partial
+comparison working set is never treated as an entire foreign Horizon.
 
 Foreign operands are authorized only through Reconcile's other_proposition_id.
 They do not become Traverse, Bias, Order, recovery or Cycle-entry choices.
@@ -73,27 +75,38 @@ come from the acting Cycle; participant lineage follows the producing Phase Gate
 Foreign causal inputs remain separate from the acting Horizon's local Potential
 geometry. No formulas, attenuation or PhasePositionService locality rules change.
 
-## Validation and continuation
+## Acceptance coverage
 
-Public Mediate integration is implemented in this draft checkpoint. It must pass
-CI and the remaining acceptance work before Stage 2 is considered complete.
-The PR records exact tested SHAs and run results.
+Public Mediate integration is implemented. PR #200 records exact tested SHAs and
+Core, Integration, Query Regression, and Load/Concurrency results.
 
-New tests exercise schema exposure and public contribution execution, parent
-retention, Cycle owner/Horizon/Phase Gate, producing-Gate lineage, Receipt isolation,
-Potential foreign_inputs, and stale counterpart rejection. Existing local
-reconciliation tests remain intact.
+HomologousPositionTest covers nearest shared ancestry, equal/unequal committed
+distance, canonical Phase/register, Domain and substrate isolation, disconnected
+or missing history, invalid ancestral Horizon linkage, same/different Horizons,
+and a single ancestry query across candidate counts and chain depths.
 
-Remaining work:
-- Review the new CI results and fix failures without relaxing behavior assertions.
-- Add a focused foreign-Horizon exhausted-continuation regression and verify
-  directed-pair inverse/distinct behavior across Horizons.
-- Check the substrate graph response itself retains the foreign parent edge;
-  the current execution test checks persisted edges and graph ownership projection.
-- Extend growth/performance checks to multiple foreign Horizons, then run Query
-  Regression and Load/Concurrency and confirm aggregate validation.
-- Review the final diff against the complete Stage 2 task brief, including all
-  rejection and no-movement requirements, before marking ready.
+HomologousMediationTest covers:
+- Local/foreign union, the sole visible causal Read, retained Read direction and
+  zero hysteresis, canonical immediate Gate children, and unavailable Gates.
+- Public contribution execution, two causal parents, acting Cycle owner/Horizon/
+  Phase Gate, producing-Gate lineage, Receipt isolation, and stale rejection.
+- Foreign exhaustion outside the hydrated comparison context, a live alternative
+  keeping that Gate eligible, current-epoch failure closing it, and a later epoch
+  restoring eligibility. The existing exhaustion lifecycle tests remain the proof
+  of how regional exhaustion records are produced.
+- Independent A→B and B→A execution, distinct A→C eligibility, and used-pair
+  rejection across participants even when homologous discovery still returns B.
+- The real substrate graph API in active and history views: B→result survives,
+  while each node retains its own Region and Horizon. Potential records the edge
+  in foreign_inputs and excludes B from A's local terrain.
+- No foreign Traverse or mid-Cycle adoption of another Region's Mediate result,
+  including when both Regions share one Horizon.
+- Complete plan query budgets across one and six foreign Horizons, plus constant
+  query counts with exhausted continuations in all six. The batched exhaustion
+  result is checked against independent single-Horizon evaluation.
+
+Existing local reconciliation, ownership, operational scope, recovery, Closure,
+and performance assertions are preserved.
 
 Recognition is not movement. Reconcile creates the explicit causal bridge; the
 result remains owned by the acting Cycle's Region and Horizon. Bias, Order,
