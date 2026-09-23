@@ -240,6 +240,31 @@ class HomologousMediationTest extends TestCase
         }
     }
 
+    public function test_same_horizon_foreign_result_does_not_become_the_operand_regions_mediate_write(): void
+    {
+        $a = $this->commit($this->a, 'settlement');
+        $b = $this->commit($this->a, 'settlement');
+        [$readA, $gateA] = $this->pair($a);
+        [$readB, $gateB] = $this->pair($b);
+        // Isolate option scope with a real two-parent representation. Public
+        // contribution execution is covered by the cross-Horizon test above.
+        $foreignResult = $this->expression($a, $gateA, PhaseKind::Mediate, edgeType: 'reconcile');
+        $this->edge($gateB, $foreignResult, 'reconcile');
+        $localResult = $this->expression($b, $gateB, PhaseKind::Mediate, edgeType: 'reconcile');
+        $disperse = $this->phase($b, $readB, PhaseKind::Disperse);
+        $disperse->forceFill(['completed_at' => now()])->save();
+        $phase = new Phase;
+        $phase->forceFill(['cycle_id' => $disperse->cycle_id, 'kind' => PhaseKind::Mediate,
+            'gate_proposition_id' => $gateB->id, 'write_register' => 'stance', 'started_at' => now()])->save();
+        $this->assertSame($foreignResult->phase->cycle->context_horizon_id, $phase->cycle->context_horizon_id);
+        foreach ([null, new ParticipationContext($phase)] as $context) {
+            $writes = app(\App\Services\PropositionOptionService::class)->writeOptionsFor($phase, $context);
+            $this->assertSame([$localResult->id], $writes->pluck('id')->all());
+            $this->assertFalse($writes->contains('id', $foreignResult->id));
+        }
+        $this->assertEqualsCanonicalizing([$gateA->id, $gateB->id], $foreignResult->parents()->pluck('propositions.id')->all());
+    }
+
     private function pair(Proposition $governor): array
     {
         $read = $this->expression($governor, $governor, PhaseKind::Constrain);

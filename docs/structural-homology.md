@@ -61,6 +61,9 @@ partial comparison working set as an entire Horizon.
 
 Foreign operands are authorized only through Reconcile's other_proposition_id.
 They do not become Traverse, Bias, Order, recovery or Cycle-entry choices.
+Mediate Writes remain in the acting Cycle's Region, including when a foreign
+result in the same Horizon has the current Gate as its secondary causal parent.
+That edge does not authorize adopting the other Region's result mid-Cycle.
 ReceiptContextService excludes foreign operands from contextual evidence exposure,
 and their plan entries omit Receipt/instrument references. Ordinary local and
 ancestral evidence presentation remains unchanged.

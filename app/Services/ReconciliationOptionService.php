@@ -20,7 +20,8 @@ final readonly class ReconciliationOptionService
         }
         $context ??= new ParticipationContext($phase);
         $exhausted = app(ExhaustedContinuationService::class)->ids($phase, $context);
-        $gates = $this->mediation->gatesFor($phase, $context)->filter(fn ($node) => $this->availability->mutable($node, $context)
+        $gates = $this->mediation->gatesFor($phase, $context)->map(fn ($node) => $context->proposition($node))
+            ->filter(fn ($node) => $this->availability->mutable($node, $context)
             && ! $exhausted->has($node->id));
 
         // Foreign Horizon continuations need complete Horizon data, not merely the
