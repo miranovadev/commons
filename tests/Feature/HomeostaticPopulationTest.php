@@ -116,6 +116,34 @@ class HomeostaticPopulationTest extends TestCase
         }
     }
 
+    public function test_zero_population_directions_use_axis_defaults_or_history_without_any_writeback(): void
+    {
+        $position = $this->position($this->commit(null, 'emergence'));
+        app(PropositionMeasurementService::class)->project($position, 0, 0, 0);
+        $service = app(HomeostaticDirectionService::class);
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        try {
+            foreach (['correspondence' => ObservableDirection::Positive,
+                'chirality' => ObservableDirection::Negative, 'closure' => ObservableDirection::Negative] as $axis => $default) {
+                foreach ([null, ObservableDirection::Positive, ObservableDirection::Negative] as $previous) {
+                    $result = $service->forPosition($position, $axis, $previous);
+                    $this->assertSame(0.0, $result->mean);
+                    $this->assertSame($previous ?? $default, $result->direction);
+                    $this->assertSame([$position->id => 0.0], $result->values);
+                }
+            }
+            foreach (DB::getQueryLog() as $query) {
+                $this->assertDoesNotMatchRegularExpression('/\b(insert|update|delete|replace|merge)\b/i', $query['query']);
+            }
+        } finally {
+            DB::disableQueryLog();
+            DB::flushQueryLog();
+        }
+        $this->assertNull($position->fresh()->correspondence_direction);
+        $this->assertSame(0.0, $position->fresh()->measurement->correspondence);
+    }
+
     public function test_missing_and_obsolete_projections_are_derived_independently_without_writing(): void
     {
         $origin = $this->commit(null, 'emergence');

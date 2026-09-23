@@ -47,11 +47,11 @@ class ParticipantPromptConstitutionTest extends TestCase
             ], ['proposition.reclassify', 'proposition.reconcile', 'proposition.commit', 'Homeostatic Read comparison']],
             'Mediate' => [PhaseKind::Mediate, [
                 "that Disperse Phase's recorded Constrain-produced Gate, not the current Mediate Gate or a guessed ancestor",
-                'ordinary local Reconcile path retains its existing eligibility even when this Read opposes the population direction or that direction is unresolved',
+                'ordinary local Reconcile path retains its existing eligibility even when this Read opposes the population direction',
                 'full homologous Constrain Read population supplies independently lineage-derived Correspondence measurements, including the acting Read exactly once',
                 'Regions and Horizons may differ',
                 'Dominant Correspondence across homologous Reads qualifies additional active Reads by their own direction, retaining their own prior direction at numeric zero',
-                'An unresolved population direction supplies no additional counterparts',
+                'A zero population mean retains prior population direction when supplied, or uses the positive Correspondence default; matching Reads may still supply counterparts',
                 'read_options contains only that one causal Read anchor.',
                 'These population Reads are calculation inputs only, never visible Read alternatives.',
                 "active immediate children of dominant-matching Reads in each Read's own Region and Horizon",
@@ -199,3 +199,4 @@ class ParticipantPromptConstitutionTest extends TestCase
         ]];
     }
 }
+

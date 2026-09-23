@@ -48,8 +48,9 @@ homologous Constrain Reads. The prior Disperse Phase's causal Gate remains the
 only participant-facing Read. The full homologous Read population, including
 that anchor once, determines dominant Correspondence from independently measured
 values. Matching Reads contribute additional Gate operands; the ordinary local
-path is never vetoed by a contrary or unresolved population direction. Member
-zero hysteresis remains independent of population zero history. Gate Correspondence
+path is never vetoed by a contrary population direction. A zero population mean
+retains explicit population history or uses Correspondence's positive default.
+Member zero hysteresis remains independent of population history. Gate Correspondence
 and Attestation lean do not select counterparts.
 
 HomologousMediationService separates structural discovery from hydrated comparison.
@@ -131,7 +132,7 @@ depth remain authoritative. Bias and Order integration remain deferred.
 
 
 Stage 3 coverage includes both signs of disagreement between causal Read and field,
-the matching case, same-Region expansion, unresolved zero fields, Reads without
+the matching case, same-Region expansion, default-directed zero fields, Reads without
 Gate children contributing to the population, mixed entry creating Domains,
 stale population rejection, and public non-dominant-causal-Read reconciliation.
 Existing graph, Receipt, directed-pair, foreign exhaustion and query-budget proofs

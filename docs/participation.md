@@ -334,8 +334,9 @@ Active homologous Reads expressing that dominant direction supply additional
 active, canonical, immediate Disperse Gate children in each Read's own Region
 and Horizon. At numeric zero a member uses its retained Correspondence direction;
 unavailable measurements cannot qualify through homology. A zero population mean
-has no implicit anchor-derived history, so it adds no operands. Ordinary local
-eligibility remains available in that case. Measurements and attenuation do not
+retains prior population direction when supplied, or starts from Correspondence's
+positive default; matching members may still supply operands. Ordinary local
+eligibility remains independently available. Measurements and attenuation do not
 change, and the aggregate is never written back into them.
 
 Gate Correspondence and Chirality do not select these children. The current

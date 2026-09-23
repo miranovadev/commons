@@ -54,10 +54,14 @@ Zero values contribute denominator mass; unavailable/null values do not. An empt
 or entirely unmeasured population has no mean or direction. The result preserves
 the per-member values, including nulls, so missing data stays explicit.
 
-Direction uses `ObservableDirection::after()`. At aggregate zero, an explicitly
-supplied prior **population** direction is retained. Without prior population
-history the tie is unresolved (`null`); neither the acting member's sign nor the
-enum's default supplies a new field direction. This stage adds no persisted field
+Direction uses `ObservableDirection::after()` with the requested observable's
+explicit `ObservableDirection::defaultFor()` initialization. At aggregate zero,
+an explicitly supplied prior **population** direction is retained; without it,
+Correspondence starts positive and numeric Chirality/Closure start negative.
+Correspondence shares its positive root fallback with proposition direction;
+Chirality/Closure retain their negative measurement bootstrap, independent of
+regional Attestation polarity and Bias's evidence direction. The acting member's
+sign never supplies population history. This stage adds no persisted field
 history. Nonzero aggregates establish their own direction. This aggregate is not
 a new measurement of any proposition and is never fed back into its calculators.
 
@@ -81,8 +85,9 @@ Correspondence aggregate, including Reads without eligible Gate children.
 Active members with available measurements and matching retained direction supply
 additional immediate Disperse operands. Gate availability and complete foreign
 Horizon exhaustion remain operational checks after aggregation. No persisted
-population history is invented: an unresolved tie adds no operands while leaving
-the ordinary local path intact. A fresh write authorization recomputes the field,
+population history is invented: a tie retains explicitly supplied history or uses
+the Correspondence default, allowing matching members to supply operands while
+leaving the ordinary local path intact. A fresh write authorization recomputes the field,
 so another member changing direction can invalidate a previously listed operand.
 
 Stage 4 and later action integration remain deferred.

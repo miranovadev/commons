@@ -190,7 +190,7 @@ final class PropositionMeasurementService
                 : $position->parents()->orderBy('supersessions.created_at')->orderBy('supersessions.id')->first();
         }
 
-        return ObservableDirection::Positive;
+        return ObservableDirection::defaultFor('correspondence');
     }
 
     private function assertMeasurement(string $name, ?float $value): void

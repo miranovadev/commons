@@ -132,17 +132,29 @@ class HomologousMediationTest extends TestCase
         $this->assertFalse(app(ReconciliationOptionService::class)->forPhase($this->mediate, $context)->contains('id', $gateC->id));
     }
 
-    public function test_tied_population_does_not_borrow_anchor_direction_or_veto_the_local_route(): void
+    public function test_tied_population_uses_correspondence_default_and_preserves_the_local_route(): void
     {
         $local = $this->expression($this->a, $this->readA, PhaseKind::Disperse);
-        $this->measure($this->readA, -.5);
-        $this->measure($this->readB, .5);
-        $this->assertTrue(app(HomologousMediationService::class)->poolFor($this->mediate)['gates']->isEmpty());
-        $this->assertSame([$local->id], app(ReconciliationOptionService::class)->forPhase($this->mediate)->pluck('id')->all());
-        $this->measure($this->readA, 0);
-        $this->measure($this->readB, 0);
-        $this->assertTrue(app(HomologousMediationService::class)->poolFor($this->mediate)['gates']->isEmpty());
-        $this->assertSame([$local->id], app(ReconciliationOptionService::class)->forPhase($this->mediate)->pluck('id')->all());
+        foreach ([1.0, -1.0] as $memberSign) {
+            $this->measure($this->readA, -.5 * $memberSign);
+            $this->measure($this->readB, .5 * $memberSign);
+            // The second observation has all-zero values but retains member directions.
+            foreach ([false, true] as $zeroMembers) {
+                if ($zeroMembers) {
+                    $this->measure($this->readA, 0);
+                    $this->measure($this->readB, 0);
+                }
+                $context = new ParticipationContext($this->mediate);
+                $foreign = $memberSign > 0 ? [$this->gateB->id] : [];
+                $this->assertSame($foreign, app(HomologousMediationService::class)
+                    ->poolFor($this->mediate, $context)['gates']->pluck('id')->all());
+                $this->assertEqualsCanonicalizing([$local->id, ...$foreign], app(ReconciliationOptionService::class)
+                    ->forPhase($this->mediate, $context)->pluck('id')->all());
+                $this->assertSame([$this->readA->id], app(MediationReadService::class)
+                    ->visibleReadsFor($this->mediate, $context)->pluck('id')->all());
+                $this->assertSame($this->gateA->id, $this->actor->fresh()->current_proposition_id);
+            }
+        }
     }
 
     public function test_same_region_homologous_reads_can_add_dominant_operands_beside_the_local_causal_route(): void

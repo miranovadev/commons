@@ -95,7 +95,7 @@ final readonly class HomologousMediationService
         }
         $field = $this->directions->forPopulation($anchor, $population, 'correspondence', $comparison);
         if ($field->direction === null) {
-            // No population history is persisted: a tied field adds no operands.
+            // Only an entirely unmeasured field has no direction; zero uses hysteresis/default.
             // MediationReadService independently preserves the ordinary local path.
             return ['reads' => collect(), 'gates' => collect()];
         }

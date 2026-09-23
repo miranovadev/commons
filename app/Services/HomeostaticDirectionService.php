@@ -40,7 +40,7 @@ final readonly class HomeostaticDirectionService
         }
         $population = $population->unique('id')->values();
         if ($population->isEmpty()) {
-            return $this->aggregate([], $previous);
+            return $this->aggregate([], $measurement, $previous);
         }
         // Reuse operational hydration only when it already contains every member.
         // Missing/historical members require a private measurement context, never
@@ -61,18 +61,21 @@ final readonly class HomeostaticDirectionService
                     : $node->measurement?->{$measurement});
         }
 
-        return $this->aggregate($values, $previous);
+        return $this->aggregate($values, $measurement, $previous);
     }
 
     /**
      * Equal weight per distinct proposition; magnitude matters, not a vote on signs.
      * Zero retains explicitly supplied field history via the existing direction enum.
-     * Without field history a tie is unresolved; the acting member never breaks it.
+     * Without field history, zero uses the observable's constitutional default.
+     * The acting member never supplies population history.
      *
      * @param array<string, float|null> $values
      */
-    public function aggregate(array $values, ?ObservableDirection $previous = null): HomeostaticDirection
+    public function aggregate(array $values, string $measurement, ?ObservableDirection $previous = null): HomeostaticDirection
     {
+        $default = ObservableDirection::defaultFor($measurement);
+        $initial = $previous ?? $default;
         $sum = 0.0;
         $count = 0;
         foreach ($values as $value) {
@@ -86,8 +89,7 @@ final readonly class HomeostaticDirectionService
             $count++;
         }
         $mean = $count === 0 ? null : round($sum / $count, 7);
-        $direction = $mean === null ? null : ($mean === 0.0 && $previous === null ? null
-            : ObservableDirection::after($mean, $previous ?? ObservableDirection::Negative));
+        $direction = $mean === null ? null : ObservableDirection::after($mean, $initial);
 
         return new HomeostaticDirection($values, $mean, $direction);
     }

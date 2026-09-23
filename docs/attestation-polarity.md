@@ -79,8 +79,9 @@ Correspondence of the full homologous Read population, including that anchor
 exactly once. A candidate Read's retained Correspondence must match the dominant
 field; its Gate's Correspondence and Attestation values do not select it.
 A zero-valued member retains its own established direction. A zero aggregate
-without explicit prior population history is unresolved and adds no operands;
-it cannot borrow the anchor's retained direction. Immediate active canonical
+retains explicitly supplied prior population direction or initializes from the
+positive Correspondence default; matching members may still supply operands.
+It cannot borrow the anchor's retained direction. Immediate active canonical
 Disperse children remain subject to their own Region/Horizon and action rules.
 
 Mediate — Read uses its homologous population; Bias — Gate retains its regional
