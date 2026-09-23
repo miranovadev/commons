@@ -18,9 +18,21 @@ final readonly class ReconciliationOptionService
         if ($phase->write_register === null || $phase->kind !== PhaseKind::Mediate) {
             return collect();
         }
+        $context ??= new ParticipationContext($phase);
         $exhausted = app(ExhaustedContinuationService::class)->ids($phase, $context);
         $gates = $this->mediation->gatesFor($phase, $context)->filter(fn ($node) => $this->availability->mutable($node, $context)
             && ! $exhausted->has($node->id));
+
+        // Foreign Horizon continuations need complete Horizon data, not merely the
+        // operands hydrated for this comparison. Resolve once per distinct Horizon.
+        foreach ($gates->groupBy(fn ($node) => $node->phase->cycle->context_horizon_id) as $horizon => $nodes) {
+            if ($horizon === $phase->cycle->context_horizon_id) {
+                continue;
+            }
+            $foreignExhausted = $context->remember('mediate-foreign-exhausted:'.$horizon,
+                fn () => app(ExhaustedContinuationService::class)->ids($nodes->first()->phase));
+            $gates = $gates->reject(fn ($node) => $foreignExhausted->has($node->id));
+        }
 
         // The Phase Gate records dominance; parent ordering is not direction.
         $used = Supersession::query()->where('type', 'reconcile')

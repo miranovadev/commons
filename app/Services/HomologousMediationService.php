@@ -9,12 +9,12 @@ use App\Models\Supersession;
 use App\Services\Participation\ParticipationContext;
 use Illuminate\Support\Collection;
 
-/** Foreign structural comparison pool; does not publish or authorize participant actions. */
+/** Foreign Mediate comparison pool; final action policy stays with reconciliation. */
 final readonly class HomologousMediationService
 {
     public function __construct(
         private HomologousPositionService $homology,
-        private MediationReadService $mediation,
+        private MediationAnchorService $mediation,
         private PhasePositionService $positions,
         private CommitRegionService $regions,
         private PropositionMeasurementService $measurements,
@@ -23,22 +23,33 @@ final readonly class HomologousMediationService
 
     /**
      * Retained direction belongs to the causal Constrain Read, never its Gate child.
-     * A separate batched context supplies foreign measurement ancestry and availability.
-     * It is not substituted for the acting Participant's operational/evidence context.
+     * Context hydration includes structural operands and their measurement ancestry.
+     * Receipt availability remains independently qualified by the acting Region.
      * Final action policy (including exhausted continuations and directed pairs) remains
-     * the responsibility of ReconciliationOptionService when this pool is integrated.
+     * the responsibility of ReconciliationOptionService.
      *
      * @return array{reads: Collection, gates: Collection}
      */
     public function poolFor(Phase $phase, ?ParticipationContext $context = null): array
     {
-        return $context === null ? $this->resolve($phase)
-            : $context->remember('homologous-mediate-pool:'.$phase->id, fn () => $this->resolve($phase));
+        if ($phase->kind !== PhaseKind::Mediate) {
+            return ['reads' => collect(), 'gates' => collect()];
+        }
+        $context ??= new ParticipationContext($phase);
+
+        return $context->remember('homologous-mediate-pool:'.$phase->id, fn () => $this->resolve($phase, $context));
     }
 
-    private function resolve(Phase $phase): array
+    /** Pre-hydration discovery never constructs a ParticipationContext. */
+    public function structuralPoolFor(Phase $phase, ?ParticipationContext $context = null): array
     {
-        $empty = ['reads' => collect(), 'gates' => collect()];
+        return $context === null ? $this->discover($phase)
+            : $context->remember('homologous-mediate-structure:'.$phase->id, fn () => $this->discover($phase));
+    }
+
+    private function discover(Phase $phase): array
+    {
+        $empty = ['reads' => collect(), 'gates' => collect(), 'anchor' => null];
         $anchor = $this->mediation->anchorFor($phase);
         if ($anchor === null || ! $this->positions->matches($anchor, $phase, PhaseKind::Constrain)) {
             return $empty;
@@ -47,7 +58,7 @@ final readonly class HomologousMediationService
         if ($owner === null || $owner->id !== $phase->cycle->governing_committal_id) {
             return $empty;
         }
-        $reads = $this->homology->candidatesFor($anchor, PhaseKind::Constrain);
+        $reads = $this->homology->candidatesFor($anchor, PhaseKind::Constrain, foreignRegionsOnly: true);
         $owners = $this->regions->seedIdsFor($reads, $reads);
         $reads = $reads->filter(fn ($node) => ($owners[$node->id] ?? null) !== null
             && $owners[$node->id] !== $owner->id)->values();
@@ -64,7 +75,16 @@ final readonly class HomologousMediationService
                     ->whereHas('participant', fn ($q) => $q->where('substrate_id', $phase->cycle->participant->substrate_id))))
             ->whereHas('parents', fn ($q) => $q->whereKey($reads->pluck('id')))
             ->orderBy('id')->get();
-        $comparison = new ParticipationContext($phase, $reads->pluck('id')->merge($gates->pluck('id')));
+
+        return ['reads' => $reads, 'gates' => $gates, 'anchor' => $anchor];
+    }
+
+    private function resolve(Phase $phase, ParticipationContext $comparison): array
+    {
+        ['reads' => $reads, 'gates' => $gates, 'anchor' => $anchor] = $this->structuralPoolFor($phase, $comparison);
+        if ($anchor === null || $reads->isEmpty()) {
+            return ['reads' => collect(), 'gates' => collect()];
+        }
         $direction = $this->measurements->correspondenceDirectionFor($anchor, $comparison);
         $reads = $comparison->nodes($reads->pluck('id'))
             ->filter(fn ($node) => $comparison->activeIds->has($node->id)

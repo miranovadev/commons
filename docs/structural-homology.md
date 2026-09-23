@@ -39,46 +39,60 @@ batching governors. It does not independently query each candidate's ancestry.
 The structural service deliberately leaves active/exhausted state, retained
 Correspondence, directed-pair uniqueness and other action policies to its consumer.
 
-## Implementation status and continuation
+## Mediate integration checkpoint
 
-This checkpoint implements the relation and an internal foreign Mediate discovery
-service. **Public Mediate options do not yet consume that discovery pool, and
-cross-Horizon reconciliation is not enabled.**
+Mediate combines its established local/regional comparison pool with foreign
+homologous Constrain Reads. The prior Disperse Phase's causal Gate remains the
+only participant-facing Read. Read retained Correspondence (including zero
+hysteresis) qualifies counterparts; Gate Correspondence and Attestation lean do
+not select them.
 
-`HomologousMediationService::poolFor()` uses the existing causal Constrain anchor,
-selects foreign homologous Regions, compares retained Read Correspondence with
-the existing hysteresis implementation, and collects immediate canonical Disperse
-children in each Read's own Region and Horizon. A separate batched comparison
-context supplies foreign ancestry and availability without extending the caller's
-operational/evidence context. Committed Gates are excluded; other hard replacements
-remain reusable under existing semantics. The method is discovery, not final action
-authorization: exhausted-continuation and directed-pair checks still belong to the
-operational integration. Tests explicitly prove the public options remain unchanged.
+HomologousMediationService separates structural discovery from hydrated comparison.
+ParticipationContext includes those candidate IDs and their dependencies only
+during Mediate. Data hydration does not confer Region evidence scope, action
+eligibility or movement. MediationAnchorService shares the existing causal anchor
+definition without a dependency cycle between local and foreign discovery.
 
-Remaining Stage 2 work:
+Immediate active canonical Disperse children in each eligible Read's own Region
+and Horizon become operands. ReconciliationOptionService still applies availability
+and directed-pair uniqueness. Foreign exhausted continuations are checked once
+per distinct foreign Horizon using its complete data, rather than treating the
+partial comparison working set as an entire Horizon.
 
-1. Connect the discovered pool to MediationReadService's internal compatible Reads,
-   preserving the causal anchor as the only participant-facing Read. Match retained
-   Correspondence on the Read, including existing zero hysteresis.
-2. Connect the discovered immediate active canonical Disperse children as foreign
-   operands. Preserve availability, exhaustion and directed-pair uniqueness. In
-   particular, ExhaustedContinuationService is Horizon-scoped: evaluate foreign
-   continuations in their authoritative Horizon with complete supporting data.
-   Keep local counterpart discovery and deduplicate the combined population.
-3. Complete the hydration/presentation integration: a foreign candidate must not
-   disappear merely because the original ParticipationContext lacks its active ID,
-   and secondary comparison data must not become shared Receipt context. Trace
-   schema and contribution validation so foreign Gates are authorized only
-   as `other_proposition_id` for Reconcile, never as Traverse/entry/recovery choices.
-4. Execute cross-Horizon Reconcile in tests. Prove both causal parents survive,
-   owner and Horizon remain the acting Cycle's, and lineage follows its Phase Gate.
-   Prove foreign Receipts are not imported and Potential records foreign inputs
-   separately from local terrain. Check graph provenance and every rejection case
-   in the Stage 2 task brief.
-5. Run focused Mediate/Reconciliation, CycleRegionOwnership, PhasePositionInvariant,
-   CausalOperationalScope and CausalRecovery coverage, then Query Regression and
-   remaining aggregate suites as budget permits. Record exact results in the PR.
+Foreign operands are authorized only through Reconcile's other_proposition_id.
+They do not become Traverse, Bias, Order, recovery or Cycle-entry choices.
+ReceiptContextService excludes foreign operands from contextual evidence exposure,
+and their plan entries omit Receipt/instrument references. Ordinary local and
+ancestral evidence presentation remains unchanged.
 
-Recognition is not movement. Reconcile will create the explicit causal bridge;
-its result remains owned by the acting Cycle's Region and Horizon. Bias, Order,
-Closure cross-reference and next-Cycle lineage handoff are deferred beyond Stage 2.
+A successful Reconcile preserves both Supersession parents. Its owner and Horizon
+come from the acting Cycle; participant lineage follows the producing Phase Gate.
+Foreign causal inputs remain separate from the acting Horizon's local Potential
+geometry. No formulas, attenuation or PhasePositionService locality rules change.
+
+## Validation and continuation
+
+Public Mediate integration is implemented in this draft checkpoint. It must pass
+CI and the remaining acceptance work before Stage 2 is considered complete.
+The PR records exact tested SHAs and run results.
+
+New tests exercise schema exposure and public contribution execution, parent
+retention, Cycle owner/Horizon/Phase Gate, producing-Gate lineage, Receipt isolation,
+Potential foreign_inputs, and stale counterpart rejection. Existing local
+reconciliation tests remain intact.
+
+Remaining work:
+- Review the new CI results and fix failures without relaxing behavior assertions.
+- Add a focused foreign-Horizon exhausted-continuation regression and verify
+  directed-pair inverse/distinct behavior across Horizons.
+- Check the substrate graph response itself retains the foreign parent edge;
+  the current execution test checks persisted edges and graph ownership projection.
+- Extend growth/performance checks to multiple foreign Horizons, then run Query
+  Regression and Load/Concurrency and confirm aggregate validation.
+- Review the final diff against the complete Stage 2 task brief, including all
+  rejection and no-movement requirements, before marking ready.
+
+Recognition is not movement. Reconcile creates the explicit causal bridge; the
+result remains owned by the acting Cycle's Region and Horizon. Bias, Order,
+Closure cross-reference and next-Cycle lineage handoff remain deferred beyond
+Stage 2.

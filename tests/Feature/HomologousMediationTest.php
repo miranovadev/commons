@@ -46,6 +46,9 @@ class HomologousMediationTest extends TestCase
         $this->b = $this->commit($origin, 'settlement');
         [$this->readA, $this->gateA] = $this->pair($this->a);
         [$this->readB, $this->gateB] = $this->pair($this->b);
+        // Leave exactly the acting Cycle open for the public contribution path.
+        Phase::query()->update(['completed_at' => now()]);
+        Cycle::query()->update(['completed_at' => now()]);
         $disperse = $this->phase($this->a, $this->readA, PhaseKind::Disperse);
         $disperse->forceFill(['completed_at' => now()])->save();
         $this->mediate = new Phase;
@@ -58,24 +61,23 @@ class HomologousMediationTest extends TestCase
         $this->measure($this->gateB, 0.9);
     }
 
-    public function test_foreign_reads_and_immediate_gates_are_discovered_without_changing_public_options(): void
+    public function test_foreign_operands_are_exposed_without_importing_receipts_or_movement(): void
     {
         $receipt = $this->loadedReceiptFixture($this->gateB);
         $context = new ParticipationContext($this->mediate);
-        $this->assertFalse($context->propositions->has($this->gateB->id));
-        $this->assertFalse($context->receipts->contains('id', $receipt->id));
+        $this->assertTrue($context->propositions->has($this->gateB->id));
+        $this->assertFalse(app(\App\Services\ReceiptContextService::class)->forPhase($this->mediate, $context)->contains('id', $receipt->id));
         $service = app(HomologousMediationService::class);
         foreach ([null, $context] as $readModel) {
             $pool = $service->poolFor($this->mediate, $readModel);
             $this->assertSame([$this->readB->id], $pool['reads']->pluck('id')->all());
             $this->assertSame([$this->gateB->id], $pool['gates']->pluck('id')->all());
         }
-        $this->assertFalse($context->propositions->has($this->gateB->id));
-        $this->assertFalse($context->receipts->contains('id', $receipt->id));
+        $this->assertFalse(app(\App\Services\ReceiptContextService::class)->gateOptions($this->mediate, $context)->contains('id', $receipt->id));
         $this->assertNotSame($this->gateA->phase->cycle->context_horizon_id, $this->gateB->phase->cycle->context_horizon_id);
-        // This checkpoint deliberately does not publish the discovery pool yet.
         $this->assertSame([$this->readA->id], app(MediationReadService::class)->visibleReadsFor($this->mediate, $context)->pluck('id')->all());
-        $this->assertTrue(app(ReconciliationOptionService::class)->forPhase($this->mediate, $context)->isEmpty());
+        $this->assertSame([$this->gateB->id], app(ReconciliationOptionService::class)->forPhase($this->mediate, $context)->pluck('id')->all());
+        $this->assertFalse(app(\App\Services\PropositionOptionService::class)->traversalOptionsFor($this->mediate, $context)->contains('id', $this->gateB->id));
         $this->assertSame($this->gateA->id, $this->actor->fresh()->current_proposition_id);
     }
 
@@ -175,6 +177,67 @@ class HomologousMediationTest extends TestCase
             $this->assertCount($count, $pool['gates']);
         }
         $this->assertSame($counts[0], $counts[1], 'Adding independent foreign candidates must not add per-candidate queries.');
+    }
+
+    public function test_public_cross_horizon_reconcile_preserves_ownership_gate_route_and_foreign_input_geometry(): void
+    {
+        $receipt = $this->loadedReceiptFixture($this->gateB);
+        $this->publishPotentialFixture($this->actor);
+        $plan = app(\App\Services\InputPlanService::class)->forPhase($this->actor, $this->mediate);
+        $this->assertSame([$this->readA->id], array_column($plan['read_options'], 'id'));
+        $this->assertSame([$this->gateB->id], array_column($plan['gate_options'], 'id'));
+        $this->assertSame([$this->gateB->id], $plan['schema']['$defs']['actions']['proposition.reconcile']['properties']['other_proposition_id']['enum']);
+        $this->assertNotContains($receipt->id, array_column($plan['receipts'], 'id'));
+        $this->assertSame([], $plan['gate_options'][0]['receipts']);
+        $this->assertSame([], $plan['gate_options'][0]['instruments']);
+        $this->assertNotContains($this->gateB->id, array_column($plan['traversal_options'], 'id'));
+        $horizonA = $this->mediate->cycle->context_horizon_id;
+        $horizonB = $this->gateB->phase->cycle->context_horizon_id;
+        $foreignBefore = $this->gateB->fresh()->getAttributes();
+        $input = ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateB->id];
+        app(\App\Services\ParticipationService::class)->contribute($this->actor, $this->mediate->id, $input);
+        $result = Proposition::findOrFail($this->actor->fresh()->current_proposition_id);
+        $this->assertSame($this->mediate->id, $result->phase_id);
+        $this->assertSame($this->a->id, $result->phase->cycle->governing_committal_id);
+        $this->assertSame($this->gateA->id, $result->phase->gate_proposition_id);
+        $this->assertSame($horizonA, $result->phase->cycle->context_horizon_id);
+        $this->assertSame($this->a->id, app(\App\Services\CommitRegionService::class)->seedFor($result)->id);
+        $this->assertEqualsCanonicalizing([$this->gateA->id, $this->gateB->id], $result->parents()->pluck('propositions.id')->all());
+        $lineage = app(\App\Services\ActiveParticipantLineage::class)->endingAt($result)->pluck('id');
+        $this->assertContains($this->a->id, $lineage);
+        $this->assertNotContains($this->b->id, $lineage);
+        $this->assertNotContains($this->gateB->id, $lineage);
+        $this->assertSame($foreignBefore, $this->gateB->fresh()->getAttributes());
+        $this->assertSame($this->b->id, app(\App\Services\CommitRegionService::class)->seedFor($this->gateB)->id);
+        app(ContextHorizonProjector::class)->rebuild($this->actor->substrate);
+        $this->assertSame($horizonA, $result->fresh()->contextHorizonMembership->context_horizon_id);
+        $this->assertSame($horizonB, $this->gateB->fresh()->contextHorizonMembership->context_horizon_id);
+        $this->publishPotentialFixture($this->actor);
+        $local = app(\App\Services\PotentialProjectionService::class)->region($horizonA)['local'];
+        $this->assertContains([$this->gateB->id, $result->id, 'reconcile'], $local['foreign_inputs']);
+        $this->assertArrayNotHasKey($this->gateB->id, $local['nodes']);
+        $this->assertNotContains([$this->gateB->id, $result->id, 'reconcile'], $local['edges']);
+        app(\App\Services\GraphProjectionService::class)->load($this->actor->substrate, collect([$result]));
+        $this->assertSame($this->a->id, $result->getAttribute('field')['committal_proposition_id']);
+        $this->assertDatabaseHas('supersessions', ['source_proposition_id' => $this->gateB->id, 'target_proposition_id' => $result->id, 'type' => 'reconcile']);
+        $this->assertFalse(app(ReconciliationOptionService::class)->forPhase($this->mediate->fresh())->contains('id', $this->gateB->id));
+    }
+
+    public function test_local_and_foreign_counterparts_are_combined_and_stale_foreign_direction_is_rechecked(): void
+    {
+        $local = $this->expression($this->a, $this->readA, PhaseKind::Disperse);
+        $this->assertEqualsCanonicalizing([$local->id, $this->gateB->id],
+            app(ReconciliationOptionService::class)->forPhase($this->mediate)->pluck('id')->all());
+        $this->measure($this->readB, 0.8);
+        $this->assertSame([$local->id], app(ReconciliationOptionService::class)->forPhase($this->mediate)->pluck('id')->all());
+        $before = Proposition::count();
+        try {
+            app(\App\Services\ContributionDispatcher::class)->dispatch($this->actor, $this->mediate,
+                ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateB->id]);
+            $this->fail('A stale foreign Read direction must not authorize a write.');
+        } catch (\DomainException) {
+            $this->assertSame($before, Proposition::count());
+        }
     }
 
     private function pair(Proposition $governor): array

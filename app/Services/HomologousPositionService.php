@@ -93,6 +93,9 @@ final readonly class HomologousPositionService
     /** Batched expressive comparison. Activity, exhaustion and action policy belong to consumers. */
     public function homologousPositionsFor(Proposition $anchor, Collection $candidates): Collection
     {
+        if ($candidates->isEmpty()) {
+            return collect();
+        }
         $nodes = (new Proposition)->newCollection($candidates->concat([$anchor])->unique('id')->all());
         $nodes->loadMissing('phase.cycle.contextHorizon', 'phase.cycle.participant');
         if (! $this->canonical($anchor)) {
@@ -121,7 +124,7 @@ final readonly class HomologousPositionService
     }
 
     /** Filter by substrate, Domain and canonical position before expanding governors once. */
-    public function candidatesFor(Proposition $anchor, PhaseKind $position): Collection
+    public function candidatesFor(Proposition $anchor, PhaseKind $position, bool $foreignRegionsOnly = false): Collection
     {
         if (! $this->canonical($anchor) || $anchor->phase->kind !== $position) {
             return collect();
@@ -130,6 +133,8 @@ final readonly class HomologousPositionService
         $domain = $cycle->contextHorizon->domain;
         $register = $domain->registerFor($position);
         $candidates = Proposition::where('tier', 'expressive')->where('register', $register)
+            ->when($foreignRegionsOnly, fn ($q) => $q->whereHas('phase.cycle', fn ($q) => $q
+                ->whereNotNull('governing_committal_id')->where('governing_committal_id', '!=', $cycle->governing_committal_id)))
             ->whereHas('phase', fn ($q) => $q->where('kind', $position->value)->where('write_register', $register)
                 ->whereHas('cycle', fn ($q) => $q
                     ->whereHas('participant', fn ($q) => $q->where('substrate_id', $cycle->participant->substrate_id))
