@@ -13,13 +13,19 @@ final readonly class HomologousPositionService
     public function __construct(private CommittalLineageService $lineage, private CommitRegionService $regions) {}
 
     /**
-     * Nearest shared ancestor and equal committed distance, keyed by candidate ID.
+     * Equal committed depth from a validated shared Origin, keyed by candidate ID.
+     * Nearest shared ancestor/distance are diagnostic output, not eligibility rules.
      * A Committal's Domain is its creating Horizon's Domain, not its register label.
      * Missing, cyclic or disconnected committed histories fail closed.
      *
      * @return array<string, array{ancestor_id: string, distance: int}>
      */
     public function committedCoordinatesFor(Proposition $anchor, Collection $candidates): array
+    {
+        return $this->committedCoordinates($anchor, $candidates, sameCreatingDomain: true);
+    }
+
+    private function committedCoordinates(Proposition $anchor, Collection $candidates, bool $sameCreatingDomain): array
     {
         if (! $anchor->exists || $anchor->tier !== 'committal' || $candidates->isEmpty()) {
             return [];
@@ -37,17 +43,16 @@ final readonly class HomologousPositionService
                 continue;
             }
             $right = $this->distances($candidate->id, $records, $substrate);
-            if ($right === null || $records[$anchor->id]->creating_domain !== $records[$candidate->id]->creating_domain) {
+            if ($right === null || count($left) !== count($right) || array_key_last($left) !== array_key_last($right)
+                || ($sameCreatingDomain && $records[$anchor->id]->creating_domain !== $records[$candidate->id]->creating_domain)) {
                 continue;
             }
             foreach ($left as $ancestor => $distance) {
                 if (! array_key_exists($ancestor, $right)) {
                     continue;
                 }
-                if ($distance === $right[$ancestor]) {
-                    $result[$candidate->id] = ['ancestor_id' => $ancestor, 'distance' => $distance];
-                }
-                // The nearest intersection is authoritative, even when its distances disagree.
+                $result[$candidate->id] = ['ancestor_id' => $ancestor, 'distance' => $distance];
+                // Equal full depths are already established; this intersection is diagnostic.
                 break;
             }
         }
@@ -98,8 +103,8 @@ final readonly class HomologousPositionService
         return $distances;
     }
 
-    /** Batched expressive comparison. Activity, exhaustion and action policy belong to consumers. */
-    public function homologousPositionsFor(Proposition $anchor, Collection $candidates): Collection
+    /** Batched canonical position comparison. Activity, exhaustion and action policy belong to consumers. */
+    public function homologousPositionsFor(Proposition $anchor, Collection $candidates, bool $sameEntryDomain = false): Collection
     {
         if ($candidates->isEmpty()) {
             return collect();
@@ -111,6 +116,7 @@ final readonly class HomologousPositionService
         }
         $cycle = $anchor->phase->cycle;
         $eligible = $nodes->filter(fn ($node) => $this->canonical($node)
+            && $node->tier === $anchor->tier
             && $node->phase->kind === $anchor->phase->kind
             && $node->phase->cycle->participant->substrate_id === $cycle->participant->substrate_id
             && $node->phase->cycle->contextHorizon->domain === $cycle->contextHorizon->domain);
@@ -119,8 +125,13 @@ final readonly class HomologousPositionService
         if ($ownerId === null) {
             return collect();
         }
-        $governors = Proposition::whereKey(array_values(array_filter($owners)))->get()->keyBy('id');
-        $coordinates = $this->committedCoordinatesFor($governors[$ownerId], $governors);
+        $entries = Proposition::whereKey(array_values(array_filter($owners)))->get()->keyBy('id');
+        if (! $entries->has($ownerId)) {
+            return collect();
+        }
+        // The positions' own Domain was checked above. An entry boundary may have
+        // been created in the opposite Domain from expressions in its opened Horizon.
+        $coordinates = $this->committedCoordinates($entries[$ownerId], $entries, sameCreatingDomain: $sameEntryDomain);
 
         return $candidates->filter(fn ($node) => $eligible->contains('id', $node->id)
             && isset($coordinates[$owners[$node->id] ?? '']))->unique('id')->values();
@@ -131,8 +142,8 @@ final readonly class HomologousPositionService
         return $this->homologousPositionsFor($a, collect([$b]))->contains('id', $b->id);
     }
 
-    /** Filter by substrate, Domain and canonical position before expanding governors once. */
-    public function candidatesFor(Proposition $anchor, PhaseKind $position, bool $foreignRegionsOnly = false): Collection
+    /** Filter by substrate, Domain and canonical position before expanding committed entries once. */
+    public function candidatesFor(Proposition $anchor, PhaseKind $position, bool $foreignRegionsOnly = false, bool $includeAnchor = false, bool $sameEntryDomain = true): Collection
     {
         if (! $this->canonical($anchor) || $anchor->phase->kind !== $position) {
             return collect();
@@ -140,25 +151,32 @@ final readonly class HomologousPositionService
         $cycle = $anchor->phase->cycle;
         $domain = $cycle->contextHorizon->domain;
         $register = $domain->registerFor($position);
-        $candidates = Proposition::where('tier', 'expressive')->where('register', $register)
+        $candidates = Proposition::where('tier', $anchor->tier)->where('register', $register)
             ->when($foreignRegionsOnly, fn ($q) => $q->whereHas('phase.cycle', fn ($q) => $q
                 ->whereNotNull('entry_committal_id')->where('entry_committal_id', '!=', $cycle->entry_committal_id)))
             ->whereHas('phase', fn ($q) => $q->where('kind', $position->value)->where('write_register', $register)
                 ->whereHas('cycle', fn ($q) => $q
                     ->whereHas('participant', fn ($q) => $q->where('substrate_id', $cycle->participant->substrate_id))
                     ->whereHas('contextHorizon', fn ($q) => $q->where('domain', $domain->value))))
-            ->where('id', '!=', $anchor->id)->orderBy('id')->get();
+            ->when(! $includeAnchor, fn ($q) => $q->where('id', '!=', $anchor->id))->orderBy('id')->get();
 
-        return $this->homologousPositionsFor($anchor, $candidates);
+        // Existing Mediate discovery retains its entry-Domain restriction until Stage 3.
+        return $this->homologousPositionsFor($anchor, $candidates, $sameEntryDomain);
     }
 
     private function canonical(Proposition $node): bool
     {
-        if (! $node->exists || $node->tier !== 'expressive') {
+        if (! $node->exists || ! in_array($node->tier, ['expressive', 'committal'], true)) {
             return false;
         }
         $phase = $node->phase;
-        $register = $phase->cycle->contextHorizon->domain->registerFor($phase->kind);
+        $cycle = $phase?->cycle;
+        if ($cycle?->contextHorizon === null || $cycle->participant === null
+            || $cycle->contextHorizon->substrate_id !== $cycle->participant->substrate_id
+            || ($node->tier === 'committal' && $phase->kind !== PhaseKind::Order)) {
+            return false;
+        }
+        $register = $cycle->contextHorizon->domain->registerFor($phase->kind);
 
         return $node->register === $register && $phase->write_register === $register;
     }

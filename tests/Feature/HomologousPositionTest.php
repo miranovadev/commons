@@ -21,18 +21,15 @@ class HomologousPositionTest extends TestCase
 {
     use RefreshDatabase;
 
-    private Participant $actor;
+    use \Tests\Fixtures\CreatesHomologousPositions;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $substrate = new Substrate;
-        $substrate->forceFill(['slug' => 'homology', 'title' => 'Homology', 'visibility' => 'private', 'configuration' => []])->save();
-        $this->actor = new Participant;
-        $this->actor->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'observer'])->save();
+        $this->createHomologyActor();
     }
 
-    public function test_nearest_shared_commit_and_equal_edge_distance_define_the_coordinate(): void
+    public function test_equal_committed_depth_defines_homology_with_nearest_ancestor_as_diagnostics(): void
     {
         $c0 = $this->commit(null, 'emergence');
         $c1 = $this->commit($c0, 'emergence');
@@ -156,6 +153,27 @@ class HomologousPositionTest extends TestCase
         $this->assertFalse(app(HomologousPositionService::class)->areCommittedHomologous($a, $b));
     }
 
+    public function test_cyclic_committed_read_history_fails_closed_without_modifying_immutable_storage(): void
+    {
+        $origin = $this->commit(null, 'emergence');
+        $a = $this->commit($origin, 'emergence');
+        $b = $this->commit($origin, 'emergence');
+        $a->load('phase.cycle.participant');
+        $records = app(\App\Services\Observables\CommittalLineageService::class)
+            ->recordsForIds($this->actor->substrate_id, collect([$a->id, $b->id]));
+        $records[$origin->id]->entry_committal_id = $a->id;
+        $database = DB::getFacadeRoot();
+        $readBoundary = \Mockery::mock($database);
+        $readBoundary->shouldReceive('select')->once()
+            ->andReturn($records->map(fn ($record) => (object) $record->getAttributes())->values()->all());
+        DB::swap($readBoundary);
+        try {
+            $this->assertFalse(app(HomologousPositionService::class)->areCommittedHomologous($a, $b));
+        } finally {
+            DB::swap($database);
+        }
+    }
+
     public function test_batch_expansion_uses_one_query_independent_of_candidate_count_and_chain_length(): void
     {
         $origin = $this->commit(null, 'emergence');
@@ -181,57 +199,6 @@ class HomologousPositionTest extends TestCase
             $this->assertCount(1, $queries);
             $this->assertSame([$b->id => ['ancestor_id' => $origin->id, 'distance' => $depth]], $coordinates);
         }
-    }
-
-    private function position(?Proposition $governor, PhaseKind $kind = PhaseKind::Constrain, ?string $register = null): Proposition
-    {
-        $phase = $this->phase($governor, $governor, $kind);
-        if ($register !== null) {
-            $phase->forceFill(['write_register' => $register])->save();
-        }
-        $node = new Proposition;
-        $node->forceFill(['phase_id' => $phase->id, 'tier' => 'expressive',
-            'register' => $register ?? $phase->write_register, 'statement' => 'Structural position'])->save();
-        app(LedgerService::class)->record($node);
-
-        return $node;
-    }
-
-    private function commit(?Proposition $governor, string $after): Proposition
-    {
-        $phase = $this->phase($governor, $governor, PhaseKind::Order);
-        $node = new Proposition;
-        $node->forceFill(['phase_id' => $phase->id, 'tier' => 'committal', 'register' => $phase->write_register, 'statement' => 'Region seed'])->save();
-        $entry = app(LedgerService::class)->record($node);
-        $horizon = $phase->cycle->contextHorizon;
-        $snapshot = new CommitmentSnapshot;
-        $snapshot->forceFill(['proposition_id' => $node->id, 'substrate_id' => $this->actor->substrate_id,
-            'ledger_entry_id' => $entry->id, 'correspondence' => 0, 'chirality' => 0, 'closure' => 0,
-            'prominence' => .5, 'turbulence' => .5, 'tension' => 0,
-            'direction_before' => $horizon->domain, 'direction_after' => $after,
-            'calculator_version' => $governor === null ? 'origin-bootstrap-v1' : 'ownership-fixture', 'evaluated_at' => now()])->save();
-        app(ContextHorizonProjector::class)->apply($snapshot);
-
-        return $node;
-    }
-
-    private function phase(?Proposition $governor, ?Proposition $gate, PhaseKind $kind, bool $malformed = false): Phase
-    {
-        $horizon = $governor === null ? app(ContextHorizonProjector::class)->currentFor($this->actor->substrate)
-            : ($malformed ? $gate->phase->cycle->contextHorizon : app(ContextHorizonProjector::class)->forEntry($governor));
-        $cycle = new Cycle;
-        $cycle->forceFill(['participant_id' => $this->actor->id, 'sequence' => (int) $this->actor->cycles()->max('sequence') + 1,
-            'context_horizon_id' => $horizon->id, 'entry_committal_id' => $governor?->id]);
-        if ($malformed) {
-            Cycle::withoutEvents(fn () => $cycle->save());
-        } else {
-            $cycle->save();
-        }
-        $phase = new Phase;
-        $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => $kind, 'gate_proposition_id' => $gate?->id,
-            'write_register' => $horizon->domain->registerFor($kind), 'started_at' => now()])->save();
-
-        return $phase;
     }
 
 }

@@ -1,4 +1,4 @@
-# Structural homology — Stage 2
+# Structural homology
 
 Operational locality and structural homology are separate relations.
 `PhasePositionService` remains Horizon-strict. `HomologousPositionService`
@@ -7,11 +7,12 @@ compares structural coordinates without authorizing any action or movement.
 ## Committed coordinate
 
 Committals must belong to the same substrate and have the same authoritative
-creating-Horizon Domain. Walk their immutable creating-Cycle entry Committals to their
-nearest shared Committal, counting one edge per committed predecessor. They are
-homologous when both distances are equal. A shared seed has distance zero.
-The returned coordinate includes the nearest ancestor ID so callers and tests
-can distinguish it from an arbitrary Origin-based comparison.
+creating-Horizon Domain. Homology compares their committed depth: the number of
+immutable creating-Cycle entry edges back to Origin. Complete valid histories
+must terminate at the same Origin; disconnected roots fail closed. Nearest shared
+ancestor and distance remain diagnostic output, not an additional constitutional
+eligibility condition. Canonical position comparison also checks producing Phase,
+register and tier; committed Write positions are Order results.
 
 Only frozen committed history qualifies. Missing snapshots, disconnected roots,
 cycles, foreign substrates and invalid entry/Horizon links fail closed.
@@ -27,9 +28,10 @@ calculation and error policies. Homology introduces no alternative ancestry edge
 Expressive positions must have the same substrate, actual creating-Horizon Domain,
 producing Phase kind and canonical register for that Domain/Phase. Both the
 Proposition register and producing Phase write register must be canonical.
-Their valid Cycle-entry Committals must be homologous Committals.
+Their valid Cycle-entry Committals must have the same committed depth and Origin.
+The entries' creating Domains may differ: the expressions' own Domain is decisive.
 
-A boundary Committal remains in its creating Domain; expressions it governs in
+A boundary Committal remains in its creating Domain; expressions entered there in
 its opened Horizon use that Horizon's Domain. Both comparisons are explicit.
 Different Regions and Horizons are allowed. Same-Horizon positions remain valid.
 Malformed labels cannot override authoritative Domain identity.
@@ -39,7 +41,7 @@ batching entry Committals. It does not independently query each candidate's ance
 The structural service deliberately leaves active/exhausted state, retained
 Correspondence, directed-pair uniqueness and other action policies to its consumer.
 
-## Mediate integration checkpoint
+## Mediate integration checkpoint (#200, unchanged in epic Stage 2)
 
 Mediate combines its established local/regional comparison pool with foreign
 homologous Constrain Reads. The prior Disperse Phase's causal Gate remains the
@@ -80,8 +82,8 @@ geometry. No formulas, attenuation or PhasePositionService locality rules change
 Public Mediate integration is implemented. PR #200 records exact tested SHAs and
 Core, Integration, Query Regression, and Load/Concurrency results.
 
-HomologousPositionTest covers nearest shared ancestry, equal/unequal committed
-distance, canonical Phase/register, Domain and substrate isolation, disconnected
+HomologousPositionTest covers diagnostic shared ancestry, equal/unequal committed
+depth, canonical Phase/register, Domain and substrate isolation, disconnected
 or missing history, invalid ancestral Horizon linkage, same/different Horizons,
 and a single ancestry query across candidate counts and chain depths.
 
@@ -111,4 +113,14 @@ and performance assertions are preserved.
 Recognition is not movement. Reconcile creates the explicit causal bridge; the
 result remains owned by the acting Cycle's Region and Horizon. Bias, Order,
 Closure cross-reference and next-Cycle lineage handoff remain deferred beyond
-Stage 2.
+the #200 checkpoint.
+
+
+## General Homeostatic population (epic Stage 2)
+
+The reusable population and dominant-direction layers are documented in
+[Homeostatic populations](homeostatic-populations.md). They include the current
+position, compare the propositions' own Domain and committed depth, and aggregate
+independently derived measurements without writing them. Existing Mediate candidate
+discovery retains its prior entry-Domain restriction and selected-Read direction
+rule for now. No action service consumes the new aggregate in this stage.

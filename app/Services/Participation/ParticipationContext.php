@@ -74,12 +74,12 @@ final class ParticipationContext
 
     private readonly Collection $membershipsByHorizon;
 
-    public function __construct(public readonly Phase $phase, ?Collection $additionalPropositionIds = null)
+    public function __construct(public readonly Phase $phase, ?Collection $additionalPropositionIds = null, bool $includeUnavailableAdditional = false)
     {
         $phase->loadMissing('cycle.participant.substrate');
         $this->substrate = $phase->cycle->participant->substrate;
         $this->propositions = Proposition::query()
-            ->whereIn('id', $this->workingSetIds($additionalPropositionIds))
+            ->whereIn('id', $this->workingSetIds($additionalPropositionIds, $includeUnavailableAdditional))
             ->with(['phase.cycle.participant', 'measurement', 'ledgerEntry'])->get()->keyBy('id');
         foreach ($this->propositions as $proposition) {
             $proposition->phase->cycle->participant->setRelation('substrate', $this->substrate);
@@ -143,7 +143,7 @@ final class ParticipationContext
      * Parent traversal is complete (including Commit-only inherited history).
      * Outgoing edges are loaded separately so excluded hard successors still retire sources.
      */
-    private function workingSetIds(?Collection $additionalPropositionIds = null): Collection
+    private function workingSetIds(?Collection $additionalPropositionIds = null, bool $includeUnavailableAdditional = false): Collection
     {
         if ($this->phase->kind === \App\Enums\PhaseKind::Mediate) {
             // Comparison operands are hydrated, not granted evidence or movement scope.
@@ -158,12 +158,15 @@ final class ParticipationContext
             ->join('cycles', 'cycles.id', '=', 'phases.cycle_id')
             ->join('participants', 'participants.id', '=', 'cycles.participant_id')
             ->where('participants.substrate_id', $this->substrate->id);
+        // Opt-in measurement hydration can include historical population members.
+        // Existing operational callers retain their actionable working set.
+        $allOwned = clone $owned;
         app(ExhaustionService::class)->scopeActionable($owned, 'cycles.context_horizon_id');
         $gate = (clone $owned)->where('propositions.id', $this->phase->gate_proposition_id)->select('propositions.id');
         if ($additionalPropositionIds !== null) {
             // Branch exhaustion observes multiple causal Domains with one batched
             // read model. Ownership and active membership still constrain the seeds.
-            $gate->union((clone $owned)->whereIn('propositions.id', $additionalPropositionIds)->select('propositions.id'));
+            $gate->union((clone ($includeUnavailableAdditional ? $allOwned : $owned))->whereIn('propositions.id', $additionalPropositionIds)->select('propositions.id'));
         }
         $ids = $owned->where('cycles.context_horizon_id', $this->phase->cycle->context_horizon_id)
             ->selectRaw('propositions.id /* participation working set */')->union($gate)->pluck('id');
