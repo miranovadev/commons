@@ -159,6 +159,16 @@ class HomologousBiasTest extends TestCase
         $this->assertSame($entry->id, $target->phase->cycle->entry_committal_id);
         $this->assertSame($horizon, $target->contextHorizonMembership->context_horizon_id);
         $this->assertSame([$source->id], $target->parents()->pluck('propositions.id')->all());
+        foreach ([null, new ParticipationContext($target->phase)] as $context) {
+            $lineage = app(\App\Services\ActiveParticipantLineage::class)->endingAt($target, $context);
+            $this->assertSame($source->phase->cycle->entry_committal_id, $lineage->first()->id);
+            $this->assertNotContains($entry->id, $lineage->pluck('id'));
+        }
+        $local = app(\App\Services\PotentialProjectionService::class)->region($horizon)['local'];
+        $this->assertContains([$source->id, $target->id, 'reclassify'], $local['foreign_inputs']);
+        $this->assertArrayNotHasKey($source->id, $local['nodes']);
+        $this->assertNotContains([$source->id, $target->id, 'reclassify'], $local['edges']);
+        $this->assertSame($entry->id, $local['nodes'][$target->id]['seed_id']);
         $this->assertSame(0, $target->attestations()->count());
         $this->assertDatabaseHas('receipt_consumptions', ['receipt_id' => $receipt->id, 'source_proposition_id' => $source->id, 'proposition_id' => $target->id]);
         $this->assertDatabaseMissing('receipt_consumptions', ['receipt_id' => $foreignReceipt->id]);
@@ -230,6 +240,30 @@ class HomologousBiasTest extends TestCase
             $this->assertNotContains($target->id, app(CausalWriteService::class)->forPhase($other, $context)->pluck('id'));
             $this->assertNotContains($target->id, app(PropositionOptionService::class)->traversalOptionsFor($other, $context)->pluck('id'));
         }
+        $revision = $this->position($a, PhaseKind::Bias);
+        $this->edge($target, $revision, 'revise');
+        foreach ([null, new ParticipationContext($revision->phase)] as $context) {
+            $this->assertSame($b->id, app(\App\Services\ActiveParticipantLineage::class)->endingAt($revision, $context)->first()->id);
+            $this->assertSame($a->id, app(\App\Services\CommitRegionService::class)->seedFor($revision, $context)->id);
+        }
+    }
+
+    public function test_unrecorded_foreign_edges_cannot_impersonate_bias_transitions(): void
+    {
+        $target = $this->position($this->a, PhaseKind::Bias);
+        $target->phase->forceFill(['gate_proposition_id' => $this->gateA->id])->save();
+        $this->edge($this->gateB, $target, 'reclassify');
+        foreach ([null, new ParticipationContext($target->phase)] as $context) {
+            try {
+                app(\App\Services\ActiveParticipantLineage::class)->endingAt($target, $context);
+                $this->fail('An unrecorded foreign edge must not redirect resolved provenance.');
+            } catch (DomainException $exception) {
+                $this->assertStringContainsString('provenance', $exception->getMessage());
+            }
+        }
+        $this->expectException(DomainException::class);
+        $this->expectExceptionMessage('Potential projection requires causal Horizon edges');
+        $this->publishPotentialFixture($this->actor);
     }
 
     public function test_foreign_exhaustion_uses_complete_horizon_continuations(): void

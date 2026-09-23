@@ -520,3 +520,10 @@ No-Potential failure is observed outside the Rest write lock and published with 
 
 Gate Receipt load/unload desired states accompany a forward Phase contribution (never Rest) and take cognitive effect in the next Phase. Only loaded evidence grounding the participant-facing Read activates a full body; other Receipt references are metadata. See the normative [Receipt model](receipt-region-context.md), including the shared recovery-scoped Tragedy exception.
 
+A recorded unary Bias classification may resolve its causal provenance to the
+selected source's Region while retaining the acting Cycle's accounting entry.
+`ActiveParticipantLineage` recognizes that recorded bridge, including through
+later revisions; unrecorded foreign edges still fail the provenance check.
+Potential retains the edge as a foreign input and excludes it from local terrain,
+just as for existing foreign Reconcile inputs. No Potential formula changes.
+

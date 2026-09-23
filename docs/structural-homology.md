@@ -164,3 +164,10 @@ result ownership and forward progression, stale rejection, wrong coordinates and
 substrates, no generic Traverse, same-Horizon result isolation, complete foreign
 exhaustion and bounded plan queries across growing populations.
 
+A recorded unary Bias classification may resolve its causal provenance to the
+selected source's Region while retaining the acting Cycle's accounting entry.
+`ActiveParticipantLineage` recognizes that recorded bridge, including through
+later revisions; unrecorded foreign edges still fail the provenance check.
+Potential retains the edge as a foreign input and excludes it from local terrain,
+just as for existing foreign Reconcile inputs. No Potential formula changes.
+
