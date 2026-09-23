@@ -153,7 +153,7 @@ class HomologousBiasTest extends TestCase
         $state = app(ParticipationService::class)->contribute($this->actor, $this->bias->id, $input);
         $target = Proposition::findOrFail($this->actor->fresh()->current_proposition_id);
         $this->assertSame('order', $state['plan']['phase']['kind']);
-        $this->assertSame($target->id, $state['plan']['gate']['id']);
+        $this->assertSame($target->id, Phase::findOrFail($state['plan']['phase']['id'])->gate_proposition_id);
         $this->assertSame($source->statement, $target->statement);
         $this->assertSame($this->bias->id, $target->phase_id);
         $this->assertSame($entry->id, $target->phase->cycle->entry_committal_id);
