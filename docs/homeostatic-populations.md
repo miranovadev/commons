@@ -1,9 +1,9 @@
-# Homeostatic populations — epic Stages 2–4
+# Homeostatic populations — epic Stages 2–5
 
 Stage 2 introduced shared measurement machinery without changing actions.
 Stages 3–4 connect it to additional Mediate Reconcile operands and Bias Reclassify sources. Ordinary local
 causal options remain independently eligible. Bias uses only acting-entry Receipts
-and creates a real selected-source classification edge. Generic movement, Order,
+and creates a real selected-source classification edge. Generic movement,
 Commit admissibility and recovery retain their existing behavior.
 
 ## Structural membership
@@ -67,9 +67,7 @@ history. Nonzero aggregates establish their own direction. This aggregate is not
 a new measurement of any proposition and is never fed back into its calculators.
 
 Closure here is the generic numeric measurement aggregation surface. Resolving
-Depth/Cadence agreement for Order candidates and selecting operational members
-belong to Stage 5; this stage does not equate a numeric Closure aggregate with
-Commit admissibility or a Traverse grant.
+Depth/Cadence agreement for Order candidates belongs to the separate Stage 5 consumer below. A generic numeric Closure aggregate is neither Commit admissibility nor a Traverse grant.
 
 ## Validation boundary
 
@@ -101,5 +99,16 @@ Attestation lean is not substituted for a numeric measurement. Population histor
 is still observation-local and supplied explicitly, never invented or persisted.
 The action consumes only an acting Cycle-entry Receipt and creates its result in
 that Cycle, with one actual causal edge from the selected source. Homology grants
-no generic Traverse, Read or Receipt access. Order integration remains Stage 5.
+no generic Traverse, Read or Receipt access. Order has the separate committed-position consumer below.
 
+
+
+## Stage 5: Order committed continuations
+
+Order preserves local Commit admissibility and direct causal Committal Traverse independently of population direction. The additional population contains existing canonical Order Committals at the prospective Write depth: one committed step beyond the acting Cycle entry. Candidate creating Domain, substrate, Phase/register and tier must match. Every candidate and entry history is validated to the shared Origin; Horizons and Regions may differ. No synthetic proposition is written to establish the coordinate.
+
+`HomologousOrderService` consumes frozen Depth/Cadence directions. Agreement resolves positive or negative Closure; disagreement (or missing component direction) contributes no resolved value. Resolved directions contribute +1 or -1 to an equal-member directional lean through `HomeostaticDirectionService::aggregate`. This is a direction comparison, distinct from the generic numeric Closure mean: frozen numeric Closure and component hysteresis are never recalculated or overwritten. A tie retains explicitly supplied prior population direction, otherwise uses the canonical negative Closure default. No population history is persisted.
+
+Active Committals matching that dominant resolved direction add Traverse choices. Exhausted candidates remain structural population members but cannot be selected. Local Commit, local direct Traverse, visible Reads, Receipt scope and ordinary Traverse outside Order retain their rules. Plan discovery changes no participant state, evidence or causal edges.
+
+Commit selects its created Committal; Traverse selects its existing Committal. Phase 7 completes the old Cycle and ordinary rollover enters that exact selection under its applicable Horizon. The old entry remains immutable. There is no post-Order selector. Stage 6 is not included.

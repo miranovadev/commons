@@ -95,12 +95,12 @@ return [
     ],
     7 => [
         'name' => 'order',
-        'description' => 'Inspect local expressive Writes, Commit an admissible Write, or Traverse its own direct Committal continuation. Commit or Committal Traverse completes the Cycle.',
+        'description' => 'Commit an admissible local Write, Traverse its direct Committal continuation, or Traverse a dominant-direction homologous Committal. The selected Committal becomes the next Cycle entry.',
         'gate' => 'previous-phase-position',
         'actions' => ['proposition.commit', 'proposition.traverse'],
         'constraints' => [
             'proposition.commit' => ['effective-gate-attestation', 'completed-gate-or-effective-attestation-receipt', 'depth-cadence-and-hysteresis-admissible'],
-            'proposition.traverse' => ['direct-committal-of-causal-write'],
+            'proposition.traverse' => ['direct-committal-of-causal-write-or-dominant-homologous-committal'],
         ],
     ],
 ];

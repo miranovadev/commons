@@ -437,7 +437,7 @@ Participant's own lineage remains visible under the existing history rules.
 The same restriction applies to frozen successful classifications. No edge
 means no movement.
 
-## Order: local expressive Writes and direct Committal continuations
+## Order: local Commit and additional homologous Committal Traverse
 
 Read contains nearest Mediate-produced Stance/Frontier ancestry. Closure,
 performed during Order — Write, evaluates each local expressive Write's own
@@ -449,12 +449,9 @@ are local; another classification sharing its Stance/Frontier parent is not.
 Every local expressive Write stays in `write_options`, even when Closure diverges
 or other Commit prerequisites are missing. Closure only gates Commit; it does
 not make a Write invisible or override its ordinary expressive action rules.
-The current Order contract permits Commit and direct Committal Traverse, without
-introducing Attestation, Instrument or revision at this Phase. Commit selects only
-a Write satisfying the full prerequisites. Traverse selects only a local Write's
-own direct Committal child with an existing snapshot. No unrelated regional Write
-or Committal enters these operational collections. Frozen sources remain visible
-but immutable; their successful direct routes remain available.
+Order permits local Commit and direct Committal Traverse under their ordinary rules, independently of population direction. It also offers active existing homologous Order Committals matching the population's dominant resolved Closure direction. The Write coordinate requires the same substrate, creating Domain, canonical Phase/register, tier and full committed depth from the validated shared Origin; different Horizons and Regions are permitted. Frozen Depth/Cadence disagreement is unresolved and contributes no directional lean. Agreement contributes its retained direction; a population tie uses explicit prior direction or Closure's negative default. See [Homeostatic populations](homeostatic-populations.md#stage-5-order-committed-continuations).
+
+This adds no Attestation, Instrument or revision at Order. Commit still requires every local prerequisite. Frozen sources remain immutable. Homologous comparison imports no Receipt stock or Read scope and writes no causal edge. The action chooses the next Cycle entry directly: created Committal for Commit, selected existing Committal for Traverse. The previous Cycle's entry never changes.
 
 Commit copies the selected source's exact statement and participation history by reference, creates an immutable snapshot, and consumes the direct source globally. Later evidence reads cannot rewrite that snapshot. Reinforcement is optional weight; Depth/Cadence remain the admissibility gate. `plan.commitment` describes the current position and `commitment_options` describes every local expressive Write, including inadmissible ones. The same rules govern schema, UI and execution.
 
@@ -526,4 +523,5 @@ selected source's Region while retaining the acting Cycle's accounting entry.
 later revisions; unrecorded foreign edges still fail the provenance check.
 Potential retains the edge as a foreign input and excludes it from local terrain,
 just as for existing foreign Reconcile inputs. No Potential formula changes.
+
 

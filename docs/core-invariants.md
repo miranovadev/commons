@@ -265,11 +265,9 @@ Closure, performed during Order — Write, evaluates each causally local express
 Write independently from its own Depth/Cadence, lineage/history and participation.
 It is not a regional cross-lineage comparison. Every such Write remains visible
 and retains its ordinary expressive actions. Closure inadmissibility removes
-Commit eligibility, not the Write or its other valid actions. Only that Write's
-own direct Committal continuation may be traversed. Measurement selection never
-expands operational populations or movement topology.
+Commit eligibility, not the Write or its other valid actions. That Write's direct Committal continuation remains independently traversable. Stage 5 additionally permits an active homologous existing Order Committal whose frozen Depth/Cadence agree in the dominant resolved population direction. Strict committed Write coordinates and validated Origin ancestry are required; this exception does not broaden ordinary Traverse elsewhere. Neither population direction nor membership grants Commit eligibility or changes Closure measurement.
 
-An unrelated population member must never appear as a Traverse target. Visibility
+A population member outside the explicit Order homologous-Committal rule must never gain Traverse from comparison alone. Visibility
 does not imply actionability. Actionability does not imply movement unless the
 operation itself is structurally authorised from the current Gate. Reconcile,
 for example, may use an authorised counterpart to create a new result with an
@@ -358,4 +356,5 @@ and exploration epoch; Commit Regions become exhausted permanently. Failure hist
 is immutable. Only a successful Variant advances its own position's epoch.
 Spent propositions remain contextual evidence without Traverse or Attestation
 targets; a later epoch restores normal eligibility without erasing history.
+
 

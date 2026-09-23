@@ -14,8 +14,12 @@ final class PhaseProgressionService
     ): ?Phase {
         $causality = app(CausalContextService::class);
         $horizon = $causality->assertPhase($phase);
-        $causality->assertGate($gate, $horizon);
-        if (! app(PhasePositionService::class)->matches($gate, $phase, $phase->kind,
+        $homologousOrder = $phase->kind === PhaseKind::Order
+            && app(HomologousOrderService::class)->forPhase($phase)->contains('id', $gate->id);
+        if (! $homologousOrder) {
+            $causality->assertGate($gate, $horizon);
+        }
+        if (! $homologousOrder && ! app(PhasePositionService::class)->matches($gate, $phase, $phase->kind,
             $phase->kind === PhaseKind::Order ? 'committal' : 'expressive')) {
             throw new \DomainException('Progression requires a Write at the current producing Phase position.');
         }
@@ -24,7 +28,7 @@ final class PhaseProgressionService
             PhaseKind::Order => app(PhaseGenerationService::class)->committedWrites($phase),
             default => null,
         };
-        if ($continuations !== null && ! $continuations->contains('id', $gate->id)) {
+        if (! $homologousOrder && $continuations !== null && ! $continuations->contains('id', $gate->id)) {
             throw new \DomainException('Progression requires a causal continuation of the current Gate.');
         }
         $participant = $phase->cycle->participant;

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\PhaseKind;
 use App\Models\Proposition;
+use App\Models\Phase;
 use App\Services\Observables\CommittalLineageService;
 use Illuminate\Support\Collection;
 
@@ -63,6 +64,48 @@ final readonly class HomologousPositionService
     public function areCommittedHomologous(Proposition $a, Proposition $b): bool
     {
         return isset($this->committedCoordinatesFor($a, collect([$b]))[$b->id]);
+    }
+
+    /** Existing Writes at the next committed depth; no synthetic proposition is persisted. */
+    public function committedWritesFor(Phase $phase): Collection
+    {
+        if ($phase->kind !== PhaseKind::Order || $phase->cycle->entry_committal_id === null) {
+            return collect();
+        }
+        $entry = Proposition::find($phase->cycle->entry_committal_id);
+        if ($entry === null) {
+            return collect();
+        }
+        $cycle = $phase->cycle;
+        $substrate = $cycle->participant->substrate_id;
+        $domain = $cycle->contextHorizon->domain;
+        $register = $domain->registerFor(PhaseKind::Order);
+        if ($phase->write_register !== $register || $cycle->contextHorizon->substrate_id !== $substrate) {
+            return collect();
+        }
+        $candidates = Proposition::where('tier', 'committal')->where('register', $register)
+            ->whereHas('phase', fn ($q) => $q->where('kind', PhaseKind::Order->value)->where('write_register', $register)
+                ->whereHas('cycle', fn ($q) => $q->whereNotNull('entry_committal_id')
+                    ->whereHas('participant', fn ($q) => $q->where('substrate_id', $substrate))
+                    ->whereHas('contextHorizon', fn ($q) => $q->where('domain', $domain->value))))
+            ->with('phase.cycle.contextHorizon', 'phase.cycle.participant', 'commitmentSnapshot')->orderBy('id')->get();
+        $entries = Proposition::whereKey($candidates->map(fn ($node) => $node->phase->cycle->entry_committal_id)->unique())->get();
+        // The candidate's creating Domain matters; its entry may have opened that Domain.
+        $coordinates = $this->committedCoordinates($entry, $entries, sameCreatingDomain: false);
+        $records = $this->lineage->recordsForIds($substrate, $candidates->pluck('id')->push($entry->id));
+        $history = $this->distances($entry->id, $records, $substrate);
+        $record = $records->get($entry->id);
+        $entryHorizon = $record?->isClosureBoundary() ? $record->opened_horizon_id : $record?->creating_horizon_id;
+        if ($history === null || $entryHorizon !== $cycle->context_horizon_id || $record->direction_after !== $domain) {
+            return collect();
+        }
+
+        return $candidates->filter(function ($node) use ($coordinates, $records, $substrate, $history): bool {
+            $candidateHistory = $this->distances($node->id, $records, $substrate);
+
+            return isset($coordinates[$node->phase->cycle->entry_committal_id]) && $candidateHistory !== null
+                && count($candidateHistory) === count($history) + 1;
+        })->values();
     }
 
     /** Validate every edge to the bootstrap; never accept a shared but broken prefix. */
