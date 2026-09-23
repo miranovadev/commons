@@ -9,14 +9,26 @@ use App\Models\Substrate;
 use App\Services\CycleEntryService;
 use DomainException;
 use Illuminate\Database\QueryException;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class CycleEntryIdentityTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseMigrations;
+
+    public function runDatabaseMigrations(): void
+    {
+        // Historical SQLite column removal rebuilds a referenced table; it must
+        // run outside a test transaction, like a real migration. Each case starts
+        // from a fresh schema, including cases that deliberately reject backfill.
+        $this->beforeRefreshingDatabase();
+        $this->refreshTestDatabase();
+        $this->afterRefreshingDatabase();
+        $this->beforeApplicationDestroyed(fn () => RefreshDatabaseState::$migrated = false);
+    }
 
     public function test_origin_has_no_entry_and_live_cycles_keep_their_explicit_entry_committal(): void
     {

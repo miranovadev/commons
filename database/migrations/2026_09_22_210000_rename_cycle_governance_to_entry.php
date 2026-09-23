@@ -39,7 +39,7 @@ return new class extends Migration
         if (DB::getDriverName() === 'pgsql') {
             DB::statement("ALTER TABLE cycles RENAME CONSTRAINT cycles_{$from}_foreign TO cycles_{$to}_foreign");
             DB::unprepared(<<<SQL
-                CREATE FUNCTION commons_cycle_{$newName}_immutable() RETURNS trigger LANGUAGE plpgsql AS $$
+                CREATE OR REPLACE FUNCTION commons_cycle_{$newName}_immutable() RETURNS trigger LANGUAGE plpgsql AS $$
                 BEGIN
                     IF NEW.{$to} IS DISTINCT FROM OLD.{$to} THEN
                         RAISE EXCEPTION 'A Cycle cannot change its {$label} Committal';
