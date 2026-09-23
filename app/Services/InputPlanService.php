@@ -373,6 +373,10 @@ final readonly class InputPlanService
         $foreignOperand = match ($context?->phase->kind) {
             PhaseKind::Mediate => app(HomologousMediationService::class)->foreignGateIdsFor($context->phase, $context)->contains($proposition->id),
             PhaseKind::Bias => app(HomologousBiasService::class)->foreignGateIdsFor($context->phase, $context)->contains($proposition->id),
+            PhaseKind::Order => $proposition->tier === 'committal'
+                && app(HomologousOrderService::class)->forPhase($context->phase, $context)->contains('id', $proposition->id)
+                && ! $context->remember('order-local-commits:'.$context->phase->id,
+                    fn () => app(PhaseGenerationService::class)->committedWrites($context->phase, $context)->pluck('id'))->contains($proposition->id),
             default => false,
         };
         $measurement = $proposition->relationLoaded('measurement')
@@ -441,4 +445,5 @@ final readonly class InputPlanService
         ];
     }
 }
+
 

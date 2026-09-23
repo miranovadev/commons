@@ -145,8 +145,7 @@ The reusable population and dominant-direction layers are documented in
 position, compare the propositions' own Domain and committed depth, and aggregate
 independently derived measurements without writing them. Stage 3 now consumes this aggregate for additional Mediate operands and removes
 the temporary entry-creating-Domain restriction. Proposition Domain and committed
-depth remain authoritative. Stage 4 adds Bias sources as described above; Order
-population integration remains deferred to Stage 5.
+depth remain authoritative. Stage 4 adds Bias sources as described above. Stage 5 adds the strictly scoped Order Committal Traverse described in [Homeostatic populations](homeostatic-populations.md#stage-5-order-committed-continuations). The prospective Write coordinate is one committed step beyond the Cycle entry; it does not require creating a synthetic proposition.
 
 
 Stage 3 coverage includes both signs of disagreement between causal Read and field,
@@ -170,4 +169,5 @@ selected source's Region while retaining the acting Cycle's accounting entry.
 later revisions; unrecorded foreign edges still fail the provenance check.
 Potential retains the edge as a foreign input and excludes it from local terrain,
 just as for existing foreign Reconcile inputs. No Potential formula changes.
+
 

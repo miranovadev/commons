@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Proposition;
+use App\Models\Phase;
 use Illuminate\Support\Collection;
 
 /** Structural measurement population only; membership never authorizes an action. */
@@ -24,4 +25,10 @@ final readonly class HomeostaticPopulationService
         return $this->homology->candidatesFor($position, $position->phase->kind,
             includeAnchor: true);
     }
+
+    public function committedWritesFor(Phase $phase): Collection
+    {
+        return $this->homology->committedWritesFor($phase);
+    }
 }
+

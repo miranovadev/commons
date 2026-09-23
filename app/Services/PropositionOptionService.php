@@ -39,7 +39,9 @@ final class PropositionOptionService
     public function traversalOptionsFor(Phase $phase, ?ParticipationContext $context = null): Collection
     {
         if ($phase->kind === PhaseKind::Order) {
-            return $this->generation->committedWrites($phase, $context);
+            return $this->generation->committedWrites($phase, $context)
+                ->concat(app(HomologousOrderService::class)->forPhase($phase, $context))
+                ->unique('id')->sortBy('id')->values();
         }
 
         if ($phase->kind === PhaseKind::Bias) {
@@ -299,3 +301,4 @@ final class PropositionOptionService
         return max(1, (int) config('schemas.options.limit', 10));
     }
 }
+

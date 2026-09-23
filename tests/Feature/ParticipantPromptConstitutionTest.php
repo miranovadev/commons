@@ -84,8 +84,10 @@ class ParticipantPromptConstitutionTest extends TestCase
                 'Local expressive Writes remain visible regardless of Closure admissibility.',
                 'Closure inadmissibility removes Commit availability only; it does not erase the Write.',
                 'proposition.commit is available only where that local Write satisfies its full Commitment prerequisites',
-                'only that exact Committal may expose proposition.traverse',
-                "Another Write's or another lineage's Committal is never a Traverse target.",
+                'Local Commit and direct Committal Traverse remain independently available under their ordinary rules, regardless of population direction.',
+                'homologous existing Committals at the Order Write position may add proposition.traverse options',
+                'Frozen Depth and Cadence directions must agree; disagreement contributes no resolved direction.',
+                "A tied aggregate retains supplied prior population direction, otherwise uses Closure's negative default.",
                 'Order remains terminal',
                 'Order introduces no new Attestation, Instrument, Revision, Reclassification or Variant actions',
                 'All grounding and attestation happen before Order.',
@@ -201,5 +203,6 @@ class ParticipantPromptConstitutionTest extends TestCase
         ]];
     }
 }
+
 
 
