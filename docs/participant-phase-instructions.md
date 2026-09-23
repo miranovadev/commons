@@ -63,8 +63,9 @@ consolidation and conditional lifecycle detail, not just removal of other Phases
   historical provenance, shared evidence meaning, polarity and minimal Rest rules.
   It contains no action catalog or detailed Tragedy/recovery procedure.
 - `ParticipantPhaseInstructions::forPhase`: seven explicit cases. Mediate owns its
-  cross-lineage reconciliation exception; Bias owns its regional calculation/local
-  operational distinction; Order owns per-Write Closure and terminal actions.
+  additional homologous reconciliation operands; Bias owns additional homologous
+  Reclassify sources and local eligibility; Order owns per-Write Closure, additional
+  homologous Committal Traverse and terminal actions.
 - The same class owns private, fixed paragraphs for shared pre-Order evidence,
   expressive Traverse, revision, structural generation and reclassification.
   They are reused only by the enumerated Phases that admit those operations.
@@ -79,11 +80,16 @@ consolidation and conditional lifecycle detail, not just removal of other Phases
   Phase from register labels, inspect graph membership, or change options.
 
 Mediate counterparts are operands with two explicit result edges, never movement
-or Traverse destinations. Bias keeps other calculated Gates out of participant
-options and preserves only the exact Gate's existing successful edge. Order keeps
-local Writes visible through Closure refusal; full prerequisites gate Commit per
-Write, and only that Write's own direct Committal can be traversed. Order has no
-new mutation, evidence-loading or replay actions.
+or Traverse destinations. Bias preserves the current causal Gate's local option
+and adds qualified dominant-matching sources; its ordinary Traverse still requires
+the exact Gate's successful edge. Order keeps local Writes visible through Closure
+refusal and preserves local Commit/direct Traverse independently of the population.
+Its additional Traverse selects qualified existing homologous Committals without
+creating edges. The shared core defers these explicit exceptions to the current
+Phase contract: population comparison alone grants no movement. Order has no new
+mutation, evidence-loading or replay actions. The size and replay measurements in
+this document describe the original prompt split; they are not remeasurements of
+the later Homeostatic contracts.
 
 Custom connection instructions retain their existing text, existing outer `trim`
 normalization, `Connection instructions:` label and final position within the same

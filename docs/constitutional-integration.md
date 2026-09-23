@@ -1,4 +1,4 @@
-# Stage 6: focused constitutional participation coverage
+# Focused constitutional participation coverage
 
 Constitutional acceptance is a collection of focused production-path invariant
 proofs. It no longer requires a deterministic full Domain round trip in Core or

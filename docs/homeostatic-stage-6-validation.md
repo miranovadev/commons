@@ -1,7 +1,11 @@
 # Homeostatic Stage 6 validation
 
-Stage 6 validates the completed Phase 5–7 integration. It changes no runtime
-service, schema, measurement formula, authority or action semantics. Stage 5's
+Stage 6 validates the completed Phase 5–7 integration. It changes no action
+service logic, schema, measurement formula, authority or action semantics. Shared
+prompt wording now defers explicit homologous continuation rules to the current
+Phase contract instead of contradicting Order with an unconditional edge rule.
+Its existing content fingerprint automatically versions the instruction family.
+Stage 5's
 merged baseline is `e281cddd10ac9fe8b22fb0ea689b4a934d863672`.
 
 ## Constitutional boundaries
