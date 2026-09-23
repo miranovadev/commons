@@ -138,3 +138,13 @@ rejects skips. Normal Composer commands remain serial and support `--filter`.
 
 With PHPUnit 12, repeat `--exclude-group` for separate groups; the existing Composer
 commands carry the selection flags so local commands and CI agree.
+
+## Fresh Homeostatic natural acceptance
+
+The opt-in `Homeostatic natural acceptance` workflow runs focused checks before
+two fresh, three-participant HTTP probes of 600 scheduled steps each. These
+schema-driven probes live outside default discovery in `tests/Acceptance/` and
+do not replace Core, Integration, Query or Load. They are distinct from the
+unchanged historical Domain replays. See [Stage 6 validation](homeostatic-stage-6-validation.md)
+for policies, reproduction commands, trace artifacts, observed frequencies and
+performance limits. No target Rest or crossover distribution is asserted.

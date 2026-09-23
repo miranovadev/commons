@@ -261,6 +261,44 @@ class HomologousOrderTest extends TestCase
         $this->assertSame($counts[0], $counts[1], 'Discovery must not query once per Committal or Horizon.');
     }
 
+    public function test_operational_homologous_continuation_rejects_rest_without_publishing_failure(): void
+    {
+        $this->publishPotentialFixture($this->actor);
+        $before = [$this->snapshot(), DB::table('tragedies')->count(),
+            DB::table('commit_region_exhaustions')->count(), $this->order->cycle->fresh()->getAttributes()];
+        try {
+            app(ParticipationService::class)->contribute($this->actor, $this->order->id,
+                ['action' => 'participant.rest']);
+            $this->fail('A valid homologous Traverse prevents Rest.');
+        } catch (\InvalidArgumentException) {
+            $this->assertSame($before, [$this->snapshot(), DB::table('tragedies')->count(),
+                DB::table('commit_region_exhaustions')->count(), $this->order->cycle->fresh()->getAttributes()]);
+        }
+    }
+
+    public function test_structural_population_without_resolved_continuation_allows_legitimate_rest(): void
+    {
+        // Deliberately unresolved frozen components, not a directionless numeric zero.
+        $this->a = $this->positive;
+        $this->b = $this->negative;
+        $this->frozen($this->b, 'positive', 'negative');
+        $this->frozen($this->b, 'negative', 'positive');
+        $this->gate = $this->position($this->a, PhaseKind::Bias);
+        $this->edge($this->a, $this->gate, 'variant');
+        $this->activate();
+        $this->publishPotentialFixture($this->actor);
+        $population = app(HomologousOrderService::class)->populationFor($this->order);
+        $this->assertCount(2, $population);
+        $this->assertEmpty($this->traverseIds());
+        $plan = app(InputPlanService::class)->forPhase($this->actor, $this->order);
+        $this->assertSame(['participant.rest'], array_keys($plan['schema']['$defs']['actions']));
+        $before = [Proposition::count(), Supersession::count(), DB::table('receipt_consumptions')->count()];
+        app(ParticipationService::class)->contribute($this->actor, $this->order->id, ['action' => 'participant.rest']);
+        $this->assertNotNull($this->order->cycle->fresh()->rested_at);
+        $this->assertSame($this->a->id, $this->order->cycle->fresh()->entry_committal_id);
+        $this->assertSame($before, [Proposition::count(), Supersession::count(), DB::table('receipt_consumptions')->count()]);
+    }
+
     private function frozen(Proposition $entry, string $depth, ?string $cadence = null): Proposition
     {
         return $this->commit($entry, $entry->commitmentSnapshot->direction_after->value,

@@ -1,0 +1,109 @@
+name: Homeostatic natural acceptance
+
+on:
+  push:
+    branches: ['validate/stage-6-homeostatic']
+    paths:
+      - 'tests/Acceptance/**'
+      - 'tests/Support/ParticipationHttpTestCase.php'
+      - 'tests/Feature/HomologousOrderTest.php'
+      - '.github/workflows/homeostatic-natural.yml'
+      - 'app/**'
+      - 'config/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  natural:
+    name: Natural / ${{ matrix.policy }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        policy: [local-first, field-first]
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: testing
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -q -d testing -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      COMPOSER_PROCESS_TIMEOUT: 0
+      APP_ENV: testing
+      APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      APP_DEBUG: false
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: testing
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      CACHE_STORE: array
+      MAIL_MAILER: array
+      QUEUE_CONNECTION: sync
+      SESSION_DRIVER: array
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: mbstring, pdo_pgsql, pdo_sqlite, curl, intl
+          coverage: none
+          tools: composer:v2
+
+      - name: Resolve Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-php-8.5-composer-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php-8.5-composer-
+
+      - name: Install PHP dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+
+      - name: Prepare test environment
+        run: cp .env.example .env
+
+      - name: Run focused Homeostatic and downstream checks
+        env:
+          PGOPTIONS: '-c statement_timeout=30s'
+        run: |
+          php artisan config:clear
+          php artisan test --filter='HomologousOrderTest|HomologousBiasTest|HomologousMediationTest|HomeostaticDirectionTest|AuthoritativeRestReasonTest|FinalAttemptExhaustionTest|ParticipationHttpReadGuardTest|ParticipantPromptConstitutionTest'
+
+      - name: Run fresh multi-participant HTTP probe
+        env:
+          COMMONS_NATURAL_POLICY: ${{ matrix.policy }}
+          PGOPTIONS: '-c statement_timeout=30s'
+        run: php artisan test tests/Acceptance/HomeostaticNaturalRunTest.php
+
+      - name: Upload natural traces and summary
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: natural-${{ matrix.policy }}
+          path: test-results/natural/
+          if-no-files-found: warn
+          retention-days: 14
