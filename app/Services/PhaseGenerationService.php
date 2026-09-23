@@ -49,10 +49,16 @@ final readonly class PhaseGenerationService
         // Standalone evidence previews may supply a candidate before a Phase
         // has a Gate. Operational plans always use the Phase's recorded Gate.
         $gate = $position ?? $context?->propositions->get($phase->gate_proposition_id) ?? $phase->gate()->first();
-        if ($gate === null || ! $this->positions->acceptsGate($phase, $gate)) {
+        if ($gate === null) {
             return false;
         }
-        if ($phase->kind === PhaseKind::Bias && $gate->id !== $phase->gate_proposition_id) {
+        $homologous = $action === 'proposition.reclassify' && $phase->kind === PhaseKind::Bias
+            && $gate->id !== $phase->gate_proposition_id;
+        if ($phase->kind === PhaseKind::Bias && $gate->id !== $phase->gate_proposition_id && ! $homologous) {
+            return false;
+        }
+        if ($homologous ? ! app(HomologousBiasService::class)->forPhase($phase, $context)->contains('id', $gate->id)
+            : ! $this->positions->acceptsGate($phase, $gate)) {
             return false;
         }
         if ($this->availability->committed($gate, $context)

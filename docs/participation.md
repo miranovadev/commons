@@ -99,7 +99,7 @@ Read, Gate and Write rows. Mediate exposes the authoritative `read_options`
 population. Order shows the nearest Mediate-position ancestors along the current
 Gate paths; other phases retain their single Read card. Mediate Gate privileges
 the current Proposition and adds admissible reconciliation counterparts. Bias
-Gate shows only the current causal Proposition, with Reclassify when eligible;
+Gate preserves the current causal Proposition and adds authorized dominant-Chirality homologous Reclassify sources;
 Lineage is available on demand; and Write separates existing actionable
 Propositions from moves that create a new Proposition from the Gate. In phases 1–5,
 an existing Write card is a valid Expressive descendant of the current Gate in the
@@ -386,12 +386,13 @@ scopes are:
 | Homeostatic effect | Calculation population | Evaluation |
 | --- | --- | --- |
 | Mediate — Read | Homologous Constrain-produced Third / Reads, including the causal Read | Dominant population Correspondence adds operands; ordinary local causal options remain independently eligible |
-| Bias — Gate | Mediate-produced Second / Gate | Retained direction agrees with each candidate's own causal ancestry excluding itself; receipt and attestation exist |
+| Bias — Gate | Homologous Mediate-produced Second / Gates | Dominant numeric Chirality adds Reclassify sources; the current Gate keeps its local evidence/ancestry rule; all action prerequisites still apply |
 | Closure, performed during Order — Write | Each causally local Bias-produced expressive Write | Its own Depth/Cadence, lineage/history and participation; grounded and attested for Commit |
 
 Mediate may inspect homologous Reads across Regions/Horizons and expose their
-compatible Disperse Gates as reconciliation counterparts only. Bias may evaluate regional Gates, but exposes
-only the current causal Gate operationally. Closure is not a regional cross-lineage
+compatible Disperse Gates as reconciliation counterparts only. Bias may expose
+dominant-matching homologous Gates as Reclassify sources, preserving the current
+Gate's local option. Closure is not a regional cross-lineage
 comparison: it evaluates each causally local Write independently. The Participant
 remains on its own causal lineage; calculation membership supplies no operational
 target or movement authority.
@@ -403,15 +404,35 @@ remain active. A direct Commit edge consumes its source globally; other branches
 
 ## Bias Chirality Gate
 
-`BiasGateService` compares each active head's retained direction to its own causal ancestry, excluding the head's votes and loads. Shared ancestors and Attestations are counted once across both reconciliation parents. Traversal stops at the governing Committal boundary; unrelated branches do not set the comparison. Ledger replay retains the preceding nonzero direction at zero, starting from the governing Committal direction. Superseded ancestors supply historical judgments without becoming additional active reinforcement copies.
+For ordinary local eligibility, `BiasGateService` compares the current head's retained direction to its own causal ancestry, excluding the head's votes and loads. Shared ancestors and Attestations are counted once across both reconciliation parents. Traversal stops at the governing Committal boundary; unrelated branches do not set the comparison. Ledger replay retains the preceding nonzero direction at zero, starting from the governing Committal direction. Superseded ancestors supply historical judgments without becoming additional active reinforcement copies.
 
-Bias additionally requires a completed Receipt and an effective source Attestation. The action takes `action: proposition.reclassify`, `proposition_id` and `receipt_id`. It preserves exact content, attaches/consumes the selected Receipt, resets votes/touches, and creates one shared source/register classification. `BiasGateService::forPhase()` is a regional calculation result; `operationalFor()` selects only the current causal Gate. Other calculated Gates never enter operational Gate or action collections.
+Bias additionally requires a completed Receipt and an effective source Attestation. The action takes `action: proposition.reclassify`, `proposition_id` and `receipt_id`. It preserves exact content, attaches/consumes the selected Receipt, resets votes/touches, and creates one shared source/register classification. `BiasGateService::forPhase()` remains the existing regional evidence calculation;
+`operationalFor()` preserves its eligible current Gate and adds qualified sources
+from `HomologousBiasService`. The latter uses the shared Homeostatic services to
+aggregate every homologous Gate's own numeric Chirality, including the current
+Gate once. Positive and negative means follow sign; zero retains supplied prior
+population direction or uses Chirality's negative default. No population state
+is persisted or written into proposition measurements.
+
+Additional sources must be active and unexhausted and pass ordinary reclassification
+prerequisites. They need not satisfy the local current Gate's evidence/ancestry
+comparison: their distinct qualifying comparison is dominant numeric Chirality.
+The selected Receipt must be completed, unconsumed and in the acting Cycle's
+immutable entry catalogue. Source and Receipt may originate in different Regions
+or Horizons. The selected source's Receipt stock stays untouched.
+
+The result belongs to the acting Bias Phase, Horizon and entry accounting Region.
+Its sole reclassify edge comes from the selected source, and the participant
+advances to that new classification. `CausalWriteService` recognizes this exact
+Phase's recorded result without inventing a second edge from its old Gate.
+No generic foreign Read, Traverse or Receipt catalogue is granted.
 
 Existing causal Write continuations of the current Gate offer their permitted
 Instrument and Attestation actions and, after earlier-Cycle personal
-Attestation, Traverse to Order. Regional Mediate-produced Gates may participate
-in the Bias calculation, but unrelated Gates and their Bias-produced Writes do
-not enter this Participant's operational options. Historical material on the
+Attestation, Traverse to Order. Homologous Gates are Reclassify sources only;
+their existing Bias-produced Writes do not become this Participant's Traverse
+options. A foreign-source classification owned by another Cycle-entry Region
+cannot be adopted as a local Write merely through its Supersession edge. Historical material on the
 Participant's own lineage remains visible under the existing history rules.
 The same restriction applies to frozen successful classifications. No edge
 means no movement.
@@ -498,3 +519,4 @@ source or result. There are no standalone Receipt Read or Replay action families
 No-Potential failure is observed outside the Rest write lock and published with an exact field-version guard. First failure records Tragedy and its unique Receipt, keeping the Horizon open. A subsequent no-Potential Rest can record Exhaustion only after that Receipt has been consumed by Reclassify. Compact historical alternatives remain visible and non-actionable. See [Tragedy and final-attempt Exhaustion](branch-tragedy.md).
 
 Gate Receipt load/unload desired states accompany a forward Phase contribution (never Rest) and take cognitive effect in the next Phase. Only loaded evidence grounding the participant-facing Read activates a full body; other Receipt references are metadata. See the normative [Receipt model](receipt-region-context.md), including the shared recovery-scoped Tragedy exception.
+

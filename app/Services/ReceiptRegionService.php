@@ -6,7 +6,7 @@ use App\Models\Phase;
 use App\Models\Receipt;
 use App\Services\Participation\ParticipationContext;
 
-/** Discovery identity is the observed Proposition's Cycle-governed region. */
+/** The acting Cycle's immutable entry owns the catalogue; observations retain their provenance. */
 final class ReceiptRegionService
 {
     public function seeds(ParticipationContext $context): array
@@ -16,7 +16,8 @@ final class ReceiptRegionService
 
     public function current(Phase $phase, ParticipationContext $context): ?string
     {
-        return $this->seeds($context)[$phase->gate_proposition_id] ?? null;
+        return $phase->cycle->entry_committal_id
+            ?? ($this->seeds($context)[$phase->gate_proposition_id] ?? null); // Origin bootstrap has no prior entry.
     }
 
     public function contains(Receipt $receipt, Phase $phase, ParticipationContext $context): bool

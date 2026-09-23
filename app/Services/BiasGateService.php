@@ -42,9 +42,17 @@ final readonly class BiasGateService
             === $this->evidence->lineageDirectionFor($candidate, $context))->values();
     }
 
-    /** Only the current causal Gate may be selected, when its calculation agrees. */
+    /** Ordinary local eligibility plus additional dominant homologous sources. */
     public function operationalFor(Phase $phase, ?ParticipationContext $context = null): Collection
     {
-        return $this->forPhase($phase, $context)->where('id', $phase->gate_proposition_id)->values();
+        if ($phase->kind !== PhaseKind::Bias) {
+            return collect();
+        }
+        $context ??= new ParticipationContext($phase);
+
+        return $context->remember('bias-operational:'.$phase->id, fn () => $this->forPhase($phase, $context)
+            ->where('id', $phase->gate_proposition_id)
+            ->concat(app(HomologousBiasService::class)->forPhase($phase, $context))
+            ->unique('id')->sortBy('id')->values());
     }
 }

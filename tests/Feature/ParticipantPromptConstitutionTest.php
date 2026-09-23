@@ -64,13 +64,15 @@ class ParticipantPromptConstitutionTest extends TestCase
                 'Mediate does not expose expressive Traverse, even after personal Attestation.',
             ], ['proposition.traverse selects', 'proposition.reclassify', 'proposition.revise', 'proposition.variant', 'proposition.commit', 'Reads elsewhere in the same Commit Region whose retained Correspondence direction matches']],
             'Bias' => [PhaseKind::Bias, [
-                'Bias evaluates eligible Mediate-produced Stance/Frontier Gates across the Commit Region internally.',
-                "Each candidate's retained Chirality direction must agree with its own causal ancestry aggregate, excluding its own votes and loads.",
+                'current causal Gate retains its ordinary local Bias eligibility independently of the homologous population direction',
                 'Both reconciliation parent paths count once, stop at the governing Committal and exclude unrelated siblings.',
-                'The regional Homeostatic calculation population is not the operational Gate population.',
-                'The Participant operates from the current causal Gate only.',
-                'never participant-facing gate_options or operational alternatives',
-                'Bias Write and Traverse options are only causal continuations of the current Gate.',
+                'full homologous Mediate Gate population supplies independently lineage-derived numeric Chirality measurements',
+                'Dominant-matching active homologous Gates may add Reclassify options',
+                "Numeric zero retains explicit prior population direction or uses Chirality's negative default",
+                "Receipt catalogue belongs to the acting Cycle's immutable entry Region",
+                'selected source and Receipt may come from different Regions or Horizons',
+                'creates one hard causal edge from that selected source to a new classification in the acting Bias Phase',
+                'Homologous Gates are not visible Read or Traverse alternatives',
                 'only from the exact Gate whose existing causal continuation produced it',
                 'Same-region or same-Horizon classifications from another Gate are never Traverse targets.',
                 'Successful-route continuity preserves an edge; it does not create one.',
@@ -199,4 +201,5 @@ class ParticipantPromptConstitutionTest extends TestCase
         ]];
     }
 }
+
 

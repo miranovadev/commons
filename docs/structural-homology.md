@@ -41,6 +41,23 @@ batching entry Committals. It does not independently query each candidate's ance
 The structural service deliberately leaves active/exhausted state, retained
 Correspondence, directed-pair uniqueness and other action policies to its consumer.
 
+## Bias integration (epic Stage 4)
+
+`HomologousBiasService` discovers homologous Mediate Gates and consumes their
+independent numeric Chirality through the shared population/direction services.
+It contributes only additional dominant-matching active, unexhausted sources;
+`BiasGateService` independently preserves the current Gate's old local rule.
+`PhaseGenerationService` and dispatch still require an effective source
+Attestation, entry-catalogue Receipt and unused source/register classification.
+
+The selected source can belong to another Region/Horizon. Receipt consumption is
+from the acting Cycle-entry catalogue, and the new classification belongs to the
+acting Phase, Horizon and accounting Region. Its sole reclassify edge starts at
+the selected source. `CausalWriteService` recognizes that exact Phase's recorded
+classification as its produced continuation, without adding a fictitious edge
+from the old Gate or adopting foreign results as local Writes. Generic Traverse,
+visible Read, foreign evidence and PhasePositionService are unchanged.
+
 ## Mediate integration (epic Stage 3)
 
 Mediate combines its established local/regional comparison pool with foreign
@@ -138,3 +155,4 @@ stale population rejection, and public non-dominant-causal-Read reconciliation.
 Existing graph, Receipt, directed-pair, foreign exhaustion and query-budget proofs
 remain in force. [Homeostatic populations](homeostatic-populations.md) documents
 the shared aggregation and hydration boundary.
+
