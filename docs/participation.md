@@ -207,9 +207,7 @@ Homeostatic selection and an existing Commit elsewhere cannot supply that edge.
 The current Gate and positions already visited as Gates in this Cycle are
 excluded; later Cycles may revisit them. Traversal creates no Proposition,
 Supersession or evidence and never selects globally. It advances the Phase as
-selection did. Mediate does not admit expressive Traverse. Order instead
-traverses the established Committal produced directly from its current
-classification Gate and ends the Cycle there. No edge means no movement.
+selection did. Mediate does not admit expressive Traverse. Order preserves that direct Committal continuation and additionally permits dominant-direction homologous existing Committals under its strict committed Write rule below. Both complete the Cycle at the selected Committal; this narrow exception creates no synthetic edge and does not loosen Traverse in other Phases.
 
 Commitment preserves successful routes: at Bias, a frozen classification remains
 traversable only from the exact Gate whose causal continuation produced it,

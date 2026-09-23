@@ -61,3 +61,4 @@ final class PhaseProgressionService
         return $next;
     }
 }
+

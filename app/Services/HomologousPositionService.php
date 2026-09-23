@@ -89,6 +89,9 @@ final readonly class HomologousPositionService
                     ->whereHas('participant', fn ($q) => $q->where('substrate_id', $substrate))
                     ->whereHas('contextHorizon', fn ($q) => $q->where('domain', $domain->value))))
             ->with('phase.cycle.contextHorizon', 'phase.cycle.participant', 'commitmentSnapshot')->orderBy('id')->get();
+        if ($candidates->isEmpty()) {
+            return collect();
+        }
         $entries = Proposition::whereKey($candidates->map(fn ($node) => $node->phase->cycle->entry_committal_id)->unique())->get();
         // The candidate's creating Domain matters; its entry may have opened that Domain.
         $coordinates = $this->committedCoordinates($entry, $entries, sameCreatingDomain: false);
@@ -223,3 +226,4 @@ final readonly class HomologousPositionService
         return $node->register === $register && $phase->write_register === $register;
     }
 }
+

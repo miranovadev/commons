@@ -359,3 +359,5 @@ final class ParticipationContext
         return app(\App\Services\Observables\CommittalLineageService::class)->ancestors($position, $this)->first();
     }
 }
+
+

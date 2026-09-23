@@ -121,3 +121,25 @@ test('Bias successful-route traversal remains a visible Write after its source i
   assert.deepEqual(quickContribution(revisit, 'proposition.traverse', { proposition_id: frozen.id }),
     { action: 'proposition.traverse', proposition_id: frozen.id });
 });
+
+
+test('Order adds schema-authorized homologous Committals without hiding local Commit or authorizing other actions', () => {
+  const local = { ...archived, id: 'local-bias', register: 'canon' };
+  const foreign = { ...local, id: 'homologous-commit', tier: 'committal' };
+  const excluded = { ...foreign, id: 'opposite-commit' };
+  const order = {
+    ...plan, gate: local, phase: { kind: 'order', write_register: 'canon' },
+    write_options: [local], traversal_options: [foreign, excluded],
+    schema: { $defs: { actions: {
+      'proposition.commit': { properties: { proposition_id: { enum: [local.id] } } },
+      'proposition.traverse': { properties: { proposition_id: { enum: [foreign.id] } } },
+    } } },
+  };
+  assert.deepEqual(writePropositions(order), [local, foreign]);
+  assert.deepEqual(actionPropositions(order, 'proposition.commit'), [local]);
+  assert.deepEqual(quickContribution(order, 'proposition.traverse', { proposition_id: foreign.id }),
+    { action: 'proposition.traverse', proposition_id: foreign.id });
+  assert.equal(quickContribution(order, 'proposition.traverse', { proposition_id: excluded.id }), null);
+  assert.deepEqual(actionPropositions(order, 'attestation.create'), []);
+  assert.deepEqual(actionPropositions(order, 'instrument.execute'), []);
+});

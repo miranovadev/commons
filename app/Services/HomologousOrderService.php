@@ -20,7 +20,15 @@ final readonly class HomologousOrderService
 
     public function populationFor(Phase $phase, ?ParticipationContext $context = null): Collection
     {
-        $discover = fn () => $this->populations->committedWritesFor($phase);
+        $discover = function () use ($phase): Collection {
+            $gate = $phase->gate()->first();
+            if ($phase->kind !== PhaseKind::Order || $gate === null
+                || ! app(PhasePositionService::class)->acceptsGate($phase, $gate)) {
+                return collect();
+            }
+
+            return $this->populations->committedWritesFor($phase);
+        };
 
         return $context === null ? $discover() : $context->remember('homologous-order-structure:'.$phase->id, $discover);
     }

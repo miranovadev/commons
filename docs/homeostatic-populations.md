@@ -112,3 +112,5 @@ Order preserves local Commit admissibility and direct causal Committal Traverse 
 Active Committals matching that dominant resolved direction add Traverse choices. Exhausted candidates remain structural population members but cannot be selected. Local Commit, local direct Traverse, visible Reads, Receipt scope and ordinary Traverse outside Order retain their rules. Plan discovery changes no participant state, evidence or causal edges.
 
 Commit selects its created Committal; Traverse selects its existing Committal. Phase 7 completes the old Cycle and ordinary rollover enters that exact selection under its applicable Horizon. The old entry remains immutable. There is no post-Order selector. Stage 6 is not included.
+
+

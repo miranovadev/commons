@@ -42,9 +42,9 @@ class HomologousOrderTest extends TestCase
     {
         parent::setUp();
         $this->createHomologyActor();
-        $this->origin = $this->commit(null, 'emergence');
-        $this->a = $this->commit($this->origin, 'settlement');
-        $this->b = $this->commit($this->origin, 'settlement');
+        $this->origin = $this->commit(null, 'emergence', ['cadence_interval' => 1]);
+        $this->a = $this->commit($this->origin, 'settlement', ['cadence_interval' => 1]);
+        $this->b = $this->commit($this->origin, 'settlement', ['cadence_interval' => 1]);
         $this->positive = $this->frozen($this->b, 'positive');
         $this->negative = $this->frozen($this->b, 'negative');
         $this->gate = $this->position($this->a, PhaseKind::Bias);
@@ -57,6 +57,8 @@ class HomologousOrderTest extends TestCase
         $unresolved = $this->frozen($this->b, 'positive', 'negative');
         $service = app(HomologousOrderService::class);
         $population = $service->populationFor($this->order);
+        $this->assertNull($service->directionFor(collect([$unresolved]))->mean);
+        $this->assertNull($service->directionFor(collect([$unresolved]))->direction);
         $before = $this->snapshot();
         foreach ([null, ObservableDirection::Positive, ObservableDirection::Negative] as $previous) {
             $field = $service->directionFor($population, $previous);
@@ -89,7 +91,8 @@ class HomologousOrderTest extends TestCase
         $wrongDepth = $this->frozen($this->negative, 'negative');
         $wrongDomain = $this->frozen($this->origin, 'negative');
         $wrongPosition = $this->frozen($this->b, 'negative');
-        $wrongPosition->phase->forceFill(['kind' => PhaseKind::Bias])->save();
+        // Deliberately corrupt storage to exercise fail-closed legacy/malformed input.
+        DB::table('phases')->where('id', $wrongPosition->phase_id)->update(['kind' => PhaseKind::Bias->value]);
         $missing = $this->frozen($this->b, 'negative');
         DB::table('commitment_snapshots')->where('proposition_id', $missing->id)->delete();
         $malformed = $this->frozen($this->b, 'negative');
@@ -102,7 +105,8 @@ class HomologousOrderTest extends TestCase
 
     public function test_inadmissible_local_gate_keeps_homologous_traverse_without_gaining_commit_or_evidence(): void
     {
-        $receipt = $this->receiptFixture($this->negative);
+        $this->receiptFixture($this->negative);
+        $receipt = app(\App\Services\PropositionStateService::class)->receipts($this->negative)->firstOrFail();
         $this->activate();
         $this->publishPotentialFixture($this->actor);
         $before = $this->snapshot();
@@ -188,6 +192,31 @@ class HomologousOrderTest extends TestCase
         app(PhaseProgressionService::class)->advance($this->order, $this->positive);
     }
 
+    public function test_boundary_traverse_enters_the_selected_committals_opened_horizon(): void
+    {
+        $boundary = $this->commit($this->b, 'emergence',
+            ['depth' => -1, 'cadence' => -1, 'closure' => -1, 'depth_direction' => 'negative', 'cadence_direction' => 'negative']);
+        $this->activate();
+        $this->publishPotentialFixture($this->actor);
+        $state = app(ParticipationService::class)->contribute($this->actor, $this->order->id,
+            ['action' => 'proposition.traverse', 'proposition_id' => $boundary->id]);
+        $next = Phase::findOrFail($state['plan']['phase']['id']);
+        $this->assertSame($boundary->id, $next->cycle->entry_committal_id);
+        $this->assertSame($boundary->id, $next->cycle->contextHorizon->opened_by_proposition_id);
+        $this->assertSame('emergence', $next->cycle->contextHorizon->domain->value);
+        $this->assertSame($this->a->id, $this->order->cycle->fresh()->entry_committal_id);
+    }
+
+    public function test_same_horizon_homologues_are_distinct_and_included_once(): void
+    {
+        $sameHorizon = $this->frozen($this->a, 'negative');
+        $population = app(HomologousOrderService::class)->populationFor($this->order);
+        $this->assertCount(3, $population);
+        $this->assertCount(1, $population->where('id', $sameHorizon->id));
+        $this->assertContains($sameHorizon->id, $this->traverseIds());
+        $this->assertNotSame($sameHorizon->id, $this->order->cycle->entry_committal_id);
+    }
+
     #[Group('query')]
     public function test_order_population_discovery_and_selection_are_batched(): void
     {
@@ -214,7 +243,7 @@ class HomologousOrderTest extends TestCase
     private function frozen(Proposition $entry, string $depth, ?string $cadence = null): Proposition
     {
         return $this->commit($entry, $entry->commitmentSnapshot->direction_after->value,
-            ['depth' => 0, 'cadence' => 0, 'closure' => 0, 'depth_direction' => $depth, 'cadence_direction' => $cadence ?? $depth]);
+            ['cadence_interval' => 1, 'depth' => 0, 'cadence' => 0, 'closure' => 0, 'depth_direction' => $depth, 'cadence_direction' => $cadence ?? $depth]);
     }
 
     private function activate(): void

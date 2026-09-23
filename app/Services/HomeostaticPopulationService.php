@@ -31,3 +31,4 @@ final readonly class HomeostaticPopulationService
         return $this->homology->committedWritesFor($phase);
     }
 }
+

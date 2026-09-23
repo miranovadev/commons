@@ -301,3 +301,4 @@ final class PropositionOptionService
         return max(1, (int) config('schemas.options.limit', 10));
     }
 }
+
