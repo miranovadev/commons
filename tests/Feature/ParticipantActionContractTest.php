@@ -308,7 +308,7 @@ class ParticipantActionContractTest extends TestCase
             $owner->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'gate-owner'])->save();
             $ownerCycle = $history->replicate();
             $ownerCycle->participant_id = $owner->id;
-            $ownerCycle->governing_committal_id = $seed->id;
+            $ownerCycle->entry_committal_id = $seed->id;
             $ownerCycle->save();
             $ownerPhase = $gate->phase->replicate();
             $ownerPhase->cycle_id = $ownerCycle->id;
@@ -363,7 +363,7 @@ class ParticipantActionContractTest extends TestCase
         }
         $cycle = new Cycle;
         $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => (int) $participant->cycles()->max('sequence') + 1, 'context_horizon_id' => $history->context_horizon_id,
-            'governing_committal_id' => $seed->id])->save();
+            'entry_committal_id' => $seed->id])->save();
         if ($kind === PhaseKind::Mediate) {
             $disperse = new Phase;
             $disperse->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Disperse, 'write_register' => 'activity', 'gate_proposition_id' => $anchor->id, 'started_at' => now(), 'completed_at' => now()])->save();

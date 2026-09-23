@@ -436,7 +436,7 @@ class BiasGateTest extends TestCase
         $cycle = new Cycle;
         $horizon = $this->horizonForRegisterFixture($participant, $register);
         $cycle->context_horizon_id = $horizon->id;
-        $cycle->governing_committal_id = isset($this->parent) && $this->parent->phase->cycle->participant->substrate_id === $participant->substrate_id
+        $cycle->entry_committal_id = isset($this->parent) && $this->parent->phase->cycle->participant->substrate_id === $participant->substrate_id
             && $this->parent->phase->cycle->context_horizon_id === $horizon->id
                 ? $this->parent->id : $horizon->opened_by_proposition_id;
         $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => (int) $participant->cycles()->max('sequence') + 1, 'completed_at' => $completed ? now() : null])->save();

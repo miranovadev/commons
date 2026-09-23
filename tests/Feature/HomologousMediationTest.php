@@ -198,7 +198,7 @@ class HomologousMediationTest extends TestCase
         app(\App\Services\ParticipationService::class)->contribute($this->actor, $this->mediate->id, $input);
         $result = Proposition::findOrFail($this->actor->fresh()->current_proposition_id);
         $this->assertSame($this->mediate->id, $result->phase_id);
-        $this->assertSame($this->a->id, $result->phase->cycle->governing_committal_id);
+        $this->assertSame($this->a->id, $result->phase->cycle->entry_committal_id);
         $this->assertSame($this->gateA->id, $result->phase->gate_proposition_id);
         $this->assertSame($horizonA, $result->phase->cycle->context_horizon_id);
         $this->assertSame($this->a->id, app(\App\Services\CommitRegionService::class)->seedFor($result)->id);
@@ -358,8 +358,8 @@ class HomologousMediationTest extends TestCase
         $this->assertNotSame($forward->id, $inverse->id);
         $this->assertNotSame($forward->id, $distinct->id);
         $this->assertEqualsCanonicalizing($forward->parents->pluck('id')->all(), $inverse->parents->pluck('id')->all());
-        $this->assertSame($this->a->id, $forward->phase->cycle->governing_committal_id);
-        $this->assertSame($this->b->id, $inverse->phase->cycle->governing_committal_id);
+        $this->assertSame($this->a->id, $forward->phase->cycle->entry_committal_id);
+        $this->assertSame($this->b->id, $inverse->phase->cycle->entry_committal_id);
         $this->assertSame($this->gateA->id, $forward->phase->gate_proposition_id);
         $this->assertSame($this->gateB->id, $inverse->phase->gate_proposition_id);
         $this->assertFalse($options->forPhase($inversePhase->fresh())->contains('id', $this->gateA->id));
@@ -527,7 +527,7 @@ class HomologousMediationTest extends TestCase
             : ($malformed ? $gate->phase->cycle->contextHorizon : app(ContextHorizonProjector::class)->forEntry($governor));
         $cycle = new Cycle;
         $cycle->forceFill(['participant_id' => $this->actor->id, 'sequence' => (int) $this->actor->cycles()->max('sequence') + 1,
-            'context_horizon_id' => $horizon->id, 'governing_committal_id' => $governor?->id]);
+            'context_horizon_id' => $horizon->id, 'entry_committal_id' => $governor?->id]);
         if ($malformed) {
             Cycle::withoutEvents(fn () => $cycle->save());
         } else {

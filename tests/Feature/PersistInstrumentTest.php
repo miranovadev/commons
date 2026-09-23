@@ -172,7 +172,7 @@ class PersistInstrumentTest extends TestCase
         $ownerCycle = new Cycle;
         $ownerCycle->forceFill(['participant_id' => $signalOwner->id, 'sequence' => 1,
             'context_horizon_id' => $signal->phase->cycle->context_horizon_id,
-            'governing_committal_id' => $signal->phase->cycle->governing_committal_id])->save();
+            'entry_committal_id' => $signal->phase->cycle->entry_committal_id])->save();
         $ownerPhase = $signal->phase->replicate();
         $ownerPhase->cycle_id = $ownerCycle->id;
         $ownerPhase->save();

@@ -144,7 +144,7 @@ each Write's own direct Committal may be traversed.
 ## Committed-lineage Closure
 
 Closure follows the direct chain from a Committal through its creating Phase and
-Cycle to `governing_committal_id`. No Supersession-parent union, latest-Horizon
+Cycle to `entry_committal_id`. No Supersession-parent union, latest-Horizon
 Commit, sibling or abandoned descendant supplies Closure history.
 
 Depth compares the current consecutive Domain-run length with the immediately
@@ -154,7 +154,7 @@ candidate. Recovery retains shared ancestors and excludes abandoned descendants.
 Cadence compares the latest two direct ancestral inter-Commit intervals. For A → B,
 freeze the number of other A-governed Cycles completed before B commits, plus B's
 producing Cycle exactly once. Rest counts. Other unresolved Cycles do not count.
-All expressive paths within A's basin count; other governors, including siblings
+All expressive paths within A's basin count; other entry Committals, including siblings
 and descendants, do not. Every real interval is at least one. Cadence continues
 across Domain boundaries. Later A → B2 may include more completed participation,
 without changing the earlier frozen A → B interval.
@@ -175,7 +175,7 @@ they do not extend committed Domain runs or invent intervals. Persisted Committa
 retain their historical snapshot values.
 
 `cadence_interval` is immutable on the successor CommitmentSnapshot, including C1.
-Legacy backfill uses governance, producing identity and strict completion cutoffs;
+The historical backfill uses original Cycle entry, producing identity and strict completion cutoffs;
 other-Cycle timestamp ties leave the interval unavailable. Existing observables
 are never rewritten. An unavailable predecessor interval blocks prospective
 Commitment explicitly; it is not replaced with an old formula or neutral guess.

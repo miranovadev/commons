@@ -26,7 +26,7 @@ final readonly class ClosureCalculator
             return new ClosureValues($snapshot->depth ?? 0, $snapshot->cadence ?? 0, $snapshot->closure);
         }
         $structural = $this->components($proposition, $context);
-        if ($proposition->phase->cycle->governing_committal_id === null && $proposition->tier === 'committal') {
+        if ($proposition->phase->cycle->entry_committal_id === null && $proposition->tier === 'committal') {
             return $structural;
         }
         $mass = $this->reinforcement->measurementCount($proposition, $context)
@@ -48,7 +48,7 @@ final readonly class ClosureCalculator
         }
         if ($ancestors->isEmpty()) {
             if ($cycle->contextHorizon->parent_context_horizon_id !== null) {
-                throw new DomainException('Only Origin may have no governing Committal.');
+                throw new DomainException('Only Origin may have no entry Committal.');
             }
             return new ClosureValues(-1, -1);
         }

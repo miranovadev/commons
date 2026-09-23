@@ -91,7 +91,7 @@ class ClosureHysteresisTest extends TestCase
         $other = (new Participant)->forceFill(['substrate_id' => $this->participant->substrate_id, 'callsign' => 'concurrent']);
         $other->save();
         $cycle = (new Cycle)->forceFill(['participant_id' => $other->id, 'sequence' => 1,
-            'context_horizon_id' => $phase->cycle->context_horizon_id, 'governing_committal_id' => $this->origin->id]);
+            'context_horizon_id' => $phase->cycle->context_horizon_id, 'entry_committal_id' => $this->origin->id]);
         $cycle->save();
         $cycle->forceFill(['completed_at' => now(), 'rested_at' => now()])->save();
         $this->publishPotentialFixture($this->participant);
@@ -342,7 +342,7 @@ class ClosureHysteresisTest extends TestCase
     {
         $cycle = new Cycle;
         $cycle->forceFill(['participant_id' => $this->participant->id, 'sequence' => $sequence,
-            'governing_committal_id' => isset($this->origin) ? $this->origin->id : null])->save();
+            'entry_committal_id' => isset($this->origin) ? $this->origin->id : null])->save();
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Order, 'write_register' => $register, 'started_at' => now()])->save();
 

@@ -53,7 +53,7 @@ class PropositionHistorySemanticsTest extends TestCase
         $cycle->forceFill([
             'participant_id' => $this->participant->id, 'sequence' => 1, 'completed_at' => now(),
             'context_horizon_id' => $horizon->id,
-            'governing_committal_id' => $horizon->opened_by_proposition_id,
+            'entry_committal_id' => $horizon->opened_by_proposition_id,
         ])->save();
         $this->history = new Phase;
         $this->history->forceFill([
@@ -120,7 +120,7 @@ class PropositionHistorySemanticsTest extends TestCase
         $cycle = new Cycle;
         $cycle->forceFill(['participant_id' => $this->participant->id, 'sequence' => (int) $this->participant->cycles()->max('sequence') + 1,
             'context_horizon_id' => $this->history->cycle->context_horizon_id,
-            'governing_committal_id' => $this->history->cycle->governing_committal_id])->save();
+            'entry_committal_id' => $this->history->cycle->entry_committal_id])->save();
         if ($kind === PhaseKind::Mediate) {
             $disperse = new Phase;
             $disperse->forceFill([

@@ -1,7 +1,7 @@
-# Commit Region ownership: Stage 1
+# Commit Region ownership and Cycle entry
 
-Commit Region ownership is explicit Cycle governance. A persisted Committal owns
-itself. An expressive Proposition belongs to the immutable `governing_committal_id`
+Commit Region ownership is determined by immutable Cycle entry. A persisted Committal owns
+itself. An expressive Proposition belongs to the immutable `entry_committal_id`
 of its creating Phase's Cycle. Supersession ancestry records causal provenance
 and may be multi-parent. Multi-parent causal provenance does not imply ambiguous
 operational ownership.
@@ -15,15 +15,15 @@ movement shortcuts.
 ## Resolution and failure policy
 
 `CommitRegionService::seedIdsFor()` resolves persisted ownership with one bounded
-join, without walking Supersession parents. It validates the governor's existence,
+join, without walking Supersession parents. It validates the entry Committal's existence,
 Committal tier, substrate, frozen snapshot, and creating/entry Horizon relationship
 from #196. Boundaries govern the direct child they opened; ordinary Committals
-govern their own Horizon. Missing or malformed expressive governance yields null.
+govern their own Horizon. Missing or malformed expressive entry identity yields null.
 There is no newest-Commit, participant-position, Horizon-sequence or parent fallback.
 
 `seedFor()`, `ParticipationContext::seed()`, and the context's memoized seed map
-share that resolver. The working set explicitly hydrates governors as dependencies.
-Region populations contain active expressive Propositions with that governor,
+share that resolver. The working set explicitly hydrates entry Committals as dependencies.
+Region populations contain active expressive Propositions with that entry Committal,
 including superseded intermediates for historical calculations. Operation-specific filters still determine
 Read, Gate and Write admissibility independently.
 
@@ -31,7 +31,7 @@ Read, Gate and Write admissibility independently.
 
 | Consumer | Ownership authority and retained responsibility |
 | --- | --- |
-| CommitRegionService | Shared single/batched resolver and governed membership |
+| CommitRegionService | Shared single/batched resolver and entry-owned membership |
 | ParticipationContext | Shared memoized map; parent graph retained for provenance and measurements |
 | ReceiptRegionService | Shared map; observed Proposition identity and existing Horizon qualification |
 | ExhaustionService | Resolves terminal/Gate ownership through CommitRegionService; stored regional proof remains authoritative |
@@ -42,7 +42,7 @@ Read, Gate and Write admissibility independently.
 | ExhaustionAuditService | Compares stored regional identity with terminal's resolved owner |
 | CommitRegionPolarityService | Delegates ownership; retains Commit-source polarity inheritance |
 | AttestationEvidenceService | Shared region/polarity resolution; evidence rules unchanged |
-| BiasGateService | Shared governed population; register/phase/direction filters unchanged |
+| BiasGateService | Shared entry-owned population; register/phase/direction filters unchanged |
 | PhaseGenerationService | Existing option services; no expanded phase admissibility |
 | CommitmentAdmissibilityService | Existing regional options and evidence/Closure checks |
 | PotentialChargeService | Existing scoped projection and proof consumers |
@@ -52,18 +52,19 @@ Read, Gate and Write admissibility independently.
 | PropositionPresentationService | Existing region/evidence consumers; no new options |
 | GraphProjectionService | Batched authoritative ownership even when disposable terrain is stale |
 | CycleEntryService | Existing entry and recovery selection; no new destinations |
-| ParticipantHistoricalContext | Batched governance filter replaces candidate ancestry reconstruction |
+| ParticipantHistoricalContext | Batched entry filter replaces candidate ancestry reconstruction |
 | ActiveParticipantLineage | Unchanged producing-Gate provenance traversal |
 | ContextHorizonProjector | Unchanged Cycle-authoritative membership and rebuild |
 | CommittalLineageService | Already Cycle-authoritative for Closure; unchanged |
 
 ## Historical compatibility and projection refresh
 
-The Tragedy scope and regional Exhaustion migrations predate the governance
-migration. `Maintenance\LegacyCommitRegionOwnership` preserves their conservative
-historical ancestry resolution only while the governance column is absent. Once
-the column exists it delegates to live governance, including fail-closed nulls;
-it never repairs missing governance by guessing. Live consumers do not use it.
+The Tragedy scope and regional Exhaustion migrations predate the original Cycle
+entry backfill. `Maintenance\LegacyCommitRegionOwnership` preserves their
+conservative historical ancestry resolution before that backfill. After the
+entry rename it delegates to live entry ownership, including fail-closed nulls;
+it never repairs missing entry identity by guessing. Live consumers do not use it.
+See [Cycle entry identity](cycle-entry-identity.md) for migration order and rollback.
 
 Potential's disposable projection version changes to identify the new ownership
 representation. Existing projections must be rebuilt through the established
@@ -72,9 +73,12 @@ invalidates all Horizon projections together and rebuilds the disposable Exhaust
 membership index, so a partial refresh cannot certify stale ownership. Frozen Commitment
 snapshots, Receipts, proof records and Supersession edges are not rewritten.
 
-## Stage boundary
+## Original ownership checkpoint boundary
 
 This change does not enable cross-Horizon Mediate. Candidate scope, structural
 matching, Domain rules, phase admissibility, Bias, Traverse, recovery, Tragedy,
 Exhaustion, Receipt qualification and Closure remain under their existing rules.
 Synthetic foreign-parent tests exercise representation only.
+
+The subsequent Cycle-entry rename changes representation only. #200 Mediate
+behavior and all existing operational eligibility remain unchanged.

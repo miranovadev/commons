@@ -92,7 +92,7 @@ final class ParticipantContextFixture
         }
         $cycle = new Cycle;
         $cycle->forceFill(['participant_id' => $this->viewer->id, 'sequence' => (int) $this->viewer->cycles()->max('sequence') + 1,
-            'context_horizon_id' => $this->history->context_horizon_id, 'governing_committal_id' => $this->seed->id])->save();
+            'context_horizon_id' => $this->history->context_horizon_id, 'entry_committal_id' => $this->seed->id])->save();
         $disperse = new Phase;
         $disperse->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Disperse, 'write_register' => 'activity',
             'gate_proposition_id' => $anchor->id, 'started_at' => now(), 'completed_at' => now()])->save();
@@ -137,7 +137,7 @@ final class ParticipantContextFixture
             $cycle->forceFill(['participant_id' => $this->viewer->id,
                 'sequence' => (int) $this->viewer->cycles()->max('sequence') + 1,
                 'context_horizon_id' => $seed->phase->cycle->context_horizon_id,
-                'governing_committal_id' => $seed->id, 'completed_at' => now()])->save();
+                'entry_committal_id' => $seed->id, 'completed_at' => now()])->save();
             $this->governedCycles[$seed->id] = $cycle;
         }
 

@@ -273,7 +273,7 @@ class PhasePositionInvariantTest extends TestCase
     {
         $cycle = new Cycle;
         $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => (int) $participant->cycles()->max('sequence') + 1,
-            'governing_committal_id' => ($gate?->tier === 'committal' ? $gate->id : $gate?->phase->cycle->governing_committal_id),
+            'entry_committal_id' => ($gate?->tier === 'committal' ? $gate->id : $gate?->phase->cycle->entry_committal_id),
             'context_horizon_id' => $horizonId ?? $gate->phase->cycle->context_horizon_id])->save();
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => $kind, 'write_register' => $cycle->contextHorizon->domain->registerFor($kind),

@@ -397,7 +397,7 @@ class WriteOnceTest extends TestCase
         $cycle = new Cycle;
         $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => (int) $participant->cycles()->max('sequence') + 1,
             'context_horizon_id' => $horizon->id,
-            'governing_committal_id' => $gate?->tier === 'committal' ? $gate->id : $gate?->phase->cycle->governing_committal_id])->save();
+            'entry_committal_id' => $gate?->tier === 'committal' ? $gate->id : $gate?->phase->cycle->entry_committal_id])->save();
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => $kind, 'write_register' => $register,
             'gate_proposition_id' => $gate?->id, 'started_at' => now()])->save();
@@ -409,7 +409,7 @@ class WriteOnceTest extends TestCase
     {
         if ($parent !== null) {
             $governor = $parent->tier === 'committal' ? $parent : $parent->phase->cycle->governingCommittal;
-            if ($governor !== null && $phase->cycle->governing_committal_id !== $governor->id) {
+            if ($governor !== null && $phase->cycle->entry_committal_id !== $governor->id) {
                 $base = $phase->replicate();
                 $base->write_register = $register;
                 $phase = $this->governedPhaseFixture($base, $governor, $parent);

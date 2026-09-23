@@ -301,7 +301,7 @@ class ReinforcementTest extends TestCase
         }
         $cycle = new Cycle;
         $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => $participant->cycles()->count() + 1,
-            'governing_committal_id' => isset($this->governor) ? $this->governor->id : null])->save();
+            'entry_committal_id' => isset($this->governor) ? $this->governor->id : null])->save();
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Order, 'write_register' => 'canon', 'gate_proposition_id' => isset($this->node) ? $this->node->id : null, 'started_at' => now()])->save();
 

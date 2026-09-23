@@ -28,15 +28,15 @@ class ClosureGateService
             $candidate->forceFill(['tier' => 'committal']);
             $candidate->setRelation('phase', $phase);
             try {
-                if ($phase->cycle->governing_committal_id === null) {
-                    throw new ClosureHistoryUnavailable('A prospective Commit requires its producing Cycle governor.');
+                if ($phase->cycle->entry_committal_id === null) {
+                    throw new ClosureHistoryUnavailable('A prospective Commit requires its producing Cycle entry Committal.');
                 }
                 return $this->evaluate($this->measurements->prospectiveCommit($gate, $phase, $context)->closure(), $candidate, $context);
             } catch (ClosureHistoryUnavailable $exception) {
                 return ['depth' => null, 'cadence' => null, 'closure' => null,
                     'depth_direction' => null, 'cadence_direction' => null, 'admissible' => false,
-                    'cadence_interval' => $phase->cycle->governing_committal_id === null ? null : $this->lineage->interval($candidate, $context),
-                    'history_proposition_id' => $phase->cycle->governing_committal_id,
+                    'cadence_interval' => $phase->cycle->entry_committal_id === null ? null : $this->lineage->interval($candidate, $context),
+                    'history_proposition_id' => $phase->cycle->entry_committal_id,
                     'history_source' => 'committed-ancestor', 'unavailable_reason' => 'cadence_history_unavailable'];
             }
         };

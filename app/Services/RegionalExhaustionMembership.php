@@ -32,7 +32,7 @@ final class RegionalExhaustionMembership
             'horizon.id', '=', 'proof.context_horizon_id')->get(['proof.governing_committal_id', 'horizon.substrate_id']);
         foreach ($proofs->groupBy('substrate_id') as $substrateId => $regional) {
             $nodes = Proposition::whereHas('phase.cycle.participant', fn ($q) => $q->where('substrate_id', $substrateId))->get()->keyBy('id');
-            $seeds = \Illuminate\Support\Facades\Schema::hasColumn('cycles', 'governing_committal_id')
+            $seeds = \Illuminate\Support\Facades\Schema::hasColumn('cycles', 'entry_committal_id')
                 ? app(CommitRegionService::class)->seedIdsFor($nodes, $nodes)
                 : $nodes->mapWithKeys(fn ($node) => [$node->id => app(\App\Services\Maintenance\LegacyCommitRegionOwnership::class)->seedFor($node)?->id])->all();
             DB::transaction(function () use ($regional, $seeds): void {

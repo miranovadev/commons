@@ -301,7 +301,7 @@ class CommitRegionTest extends TestCase
         $horizon = app(\App\Services\ContextHorizonProjector::class)->forEntry($governor);
         $cycle = new Cycle;
         $cycle->forceFill(['participant_id' => $this->viewer->id, 'sequence' => $this->viewer->cycles()->max('sequence') + 1,
-            'context_horizon_id' => $horizon->id, 'governing_committal_id' => $governor->id])->save();
+            'context_horizon_id' => $horizon->id, 'entry_committal_id' => $governor->id])->save();
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => $kind, 'gate_proposition_id' => $gate->id,
             'write_register' => $register, 'started_at' => now()])->save();

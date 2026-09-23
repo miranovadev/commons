@@ -414,8 +414,8 @@ class ReconciliationTest extends TestCase
     {
         $cycle = new Cycle;
         $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => (int) $participant->cycles()->max('sequence') + 1, 'completed_at' => $completed ? now() : null,
-            'governing_committal_id' => isset($this->history) && $participant->substrate_id === $this->substrate->id
-                ? $this->history->cycle->governing_committal_id : null])->save();
+            'entry_committal_id' => isset($this->history) && $participant->substrate_id === $this->substrate->id
+                ? $this->history->cycle->entry_committal_id : null])->save();
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => $kind, 'write_register' => $register, 'started_at' => now(), 'completed_at' => $completed ? now() : null])->save();
 

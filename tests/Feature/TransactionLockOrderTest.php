@@ -656,7 +656,7 @@ class TransactionLockOrderTest extends TestCase
         }
         $cycle = (new Cycle)->forceFill(['participant_id' => $participant->id,
             'context_horizon_id' => $root->phase->cycle->context_horizon_id,
-            'governing_committal_id' => $root->tier === 'committal' ? $root->id : $root->phase->cycle->governing_committal_id,
+            'entry_committal_id' => $root->tier === 'committal' ? $root->id : $root->phase->cycle->entry_committal_id,
             'sequence' => (int) $participant->cycles()->max('sequence') + 1]);
         $cycle->save();
         $phase = (new Phase)->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Order,

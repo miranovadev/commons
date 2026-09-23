@@ -574,7 +574,7 @@ class LocalParticipantNavigationTest extends TestCase
             $cycle->forceFill([
                 'participant_id' => $participant->id,
                 'sequence' => (int) $participant->cycles()->max('sequence') + 1,
-                'governing_committal_id' => $gate?->tier === 'committal' ? $gate->id : $gate?->phase->cycle->governing_committal_id,
+                'entry_committal_id' => $gate?->tier === 'committal' ? $gate->id : $gate?->phase->cycle->entry_committal_id,
             ])->save();
         }
         $phase = new Phase;
