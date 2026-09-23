@@ -72,12 +72,12 @@ class HomologousBiasTest extends TestCase
             $this->assertCount(3, app(HomologousBiasService::class)->populationFor($this->bias, $context));
             $this->assertEqualsCanonicalizing([$this->gateB->id, $this->gateC->id],
                 app(HomologousBiasService::class)->forPhase($this->bias, $context)->pluck('id')->all());
-            $this->assertEqualsCanonicalizing([$this->gateA->id, $this->gateB->id, $this->gateC->id], $this->options($context));
+            $this->assertEqualsCanonicalizing([$this->gateA->id, $this->gateB->id, $this->gateC->id], $this->biasOptionIds($context));
             $this->assertFalse(app(PhasePositionService::class)->acceptsGate($this->bias, $this->gateB));
             $this->assertSame($this->gateA->id, $this->actor->fresh()->current_proposition_id);
         }
         $this->measure($this->gateA, -.8); // It may also naturally match the field.
-        $this->assertContains($this->gateA->id, $this->options());
+        $this->assertContains($this->gateA->id, $this->biasOptionIds());
     }
 
     public function test_non_dominant_homologues_and_unattested_members_do_not_gain_actions(): void
@@ -86,7 +86,7 @@ class HomologousBiasTest extends TestCase
         $this->measure($this->gateC, -1);
         $unattested = $this->source($this->c, attest: false);
         $this->measure($unattested, -1);
-        $this->assertEqualsCanonicalizing([$this->gateA->id, $this->gateC->id], $this->options());
+        $this->assertEqualsCanonicalizing([$this->gateA->id, $this->gateC->id], $this->biasOptionIds());
         $this->assertFalse(app(PhaseGenerationService::class)->available($this->bias, 'proposition.reclassify', position: $unattested));
         $this->reject($this->gateB);
         $this->reject($unattested);
@@ -100,8 +100,8 @@ class HomologousBiasTest extends TestCase
         $this->vote($this->gateA, 'refute');
         $this->measure($this->gateA, -.8);
         $this->assertNotContains($this->gateA->id, app(BiasGateService::class)->forPhase($this->bias)->pluck('id'));
-        $this->assertNotContains($this->gateA->id, $this->options());
-        $this->assertContains($this->gateB->id, $this->options());
+        $this->assertNotContains($this->gateA->id, $this->biasOptionIds());
+        $this->assertContains($this->gateB->id, $this->biasOptionIds());
         $this->reject($this->gateA);
     }
 
@@ -115,7 +115,7 @@ class HomologousBiasTest extends TestCase
             $field = app(HomeostaticDirectionService::class)->forPosition($this->gateA, 'chirality');
             $this->assertSame(0.0, $field->mean);
             $this->assertSame(\App\Enums\ObservableDirection::Negative, $field->direction);
-            $this->assertEqualsCanonicalizing([$this->gateA->id, $this->gateB->id, $this->gateC->id], $this->options());
+            $this->assertEqualsCanonicalizing([$this->gateA->id, $this->gateB->id, $this->gateC->id], $this->biasOptionIds());
             $this->assertSame($before, $this->stateSnapshot());
         }
     }
@@ -175,9 +175,9 @@ class HomologousBiasTest extends TestCase
 
     public function test_stale_population_direction_rejects_a_previously_offered_source_without_consumption(): void
     {
-        $this->assertContains($this->gateB->id, $this->options());
+        $this->assertContains($this->gateB->id, $this->biasOptionIds());
         $this->measure($this->gateC, 1);
-        $this->assertNotContains($this->gateB->id, $this->options());
+        $this->assertNotContains($this->gateB->id, $this->biasOptionIds());
         $this->reject($this->gateB);
     }
 
@@ -190,7 +190,7 @@ class HomologousBiasTest extends TestCase
         $this->vote($wrongPhase);
         foreach ([$wrongDepth, $wrongDomain, $wrongPhase] as $node) {
             $this->measure($node, -.9);
-            $this->assertNotContains($node->id, $this->options());
+            $this->assertNotContains($node->id, $this->biasOptionIds());
             $this->reject($node);
         }
         $originalActor = $this->actor;
@@ -201,7 +201,7 @@ class HomologousBiasTest extends TestCase
         $foreign = $this->source($this->commit(null, 'emergence'));
         $this->measure($foreign, -.9);
         $this->actor = $originalActor;
-        $this->assertNotContains($foreign->id, $this->options());
+        $this->assertNotContains($foreign->id, $this->biasOptionIds());
         $this->reject($foreign);
         $before = $this->stateSnapshot();
         try {
@@ -249,12 +249,12 @@ class HomologousBiasTest extends TestCase
         $this->measure($this->gateB, -.7);
         $context = new ParticipationContext($this->bias);
         $this->assertFalse($context->propositions->has($middle->id));
-        $this->assertNotContains($this->gateB->id, $this->options($context));
+        $this->assertNotContains($this->gateB->id, $this->biasOptionIds($context));
         $this->reject($this->gateB);
         $live = $this->position($this->b, PhaseKind::Bias);
         $this->edge($this->gateB, $live, 'variant');
         $this->measure($this->gateB, -.7);
-        $this->assertContains($this->gateB->id, $this->options());
+        $this->assertContains($this->gateB->id, $this->biasOptionIds());
     }
 
     #[Group('query')]
@@ -336,7 +336,7 @@ class HomologousBiasTest extends TestCase
         return $phase;
     }
 
-    private function options(?ParticipationContext $context = null): array
+    private function biasOptionIds(?ParticipationContext $context = null): array
     {
         return app(PropositionOptionService::class)->gateOptionsFor($this->bias, $context)->pluck('id')->all();
     }
