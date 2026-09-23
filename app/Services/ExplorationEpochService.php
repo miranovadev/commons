@@ -52,18 +52,24 @@ final readonly class ExplorationEpochService
     /** Match the failed proposition's actual position and that position's current epoch. */
     public function currentFailures(string $horizonId, Collection $ids, ?ParticipationContext $context = null): Collection
     {
+        return $this->currentFailuresForHorizons(collect([$horizonId]), $ids, $context);
+    }
+
+    /** Batch independent Horizons while retaining each position's own epoch identity. */
+    public function currentFailuresForHorizons(Collection $horizonIds, Collection $ids, ?ParticipationContext $context = null): Collection
+    {
         if ($ids->isEmpty()) {
             return collect();
         }
 
         $positions = $this->positions->forIds($ids, $context)->filter()
-            ->where('context_horizon_id', $horizonId);
+            ->whereIn('context_horizon_id', $horizonIds);
         if ($positions->isEmpty()) {
             return collect();
         }
         $epochs = $this->epochs($positions, $context);
 
-        return DB::table('continuation_failures')->where('context_horizon_id', $horizonId)
+        return DB::table('continuation_failures')->whereIn('context_horizon_id', $horizonIds)
             ->whereIn('proposition_id', $positions->keys())->whereIn('exploration_epoch', $epochs->values()->unique())->get()
             ->filter(function ($failure) use ($positions, $epochs): bool {
                 $position = $positions->get($failure->proposition_id);

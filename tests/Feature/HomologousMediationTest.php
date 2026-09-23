@@ -220,6 +220,19 @@ class HomologousMediationTest extends TestCase
         app(\App\Services\GraphProjectionService::class)->load($this->actor->substrate, collect([$result]));
         $this->assertSame($this->a->id, $result->getAttribute('field')['committal_proposition_id']);
         $this->assertDatabaseHas('supersessions', ['source_proposition_id' => $this->gateB->id, 'target_proposition_id' => $result->id, 'type' => 'reconcile']);
+        \App\Models\User::factory()->create(); // Bootstrap the real graph API.
+        $substrate = $this->actor->substrate;
+        $substrate->forceFill(['visibility' => 'public'])->save();
+        foreach (['active', 'history'] as $view) {
+            $nodes = collect($this->getJson("/api/substrates/{$substrate->slug}/propositions?view={$view}")
+                ->assertOk()->json('data'))->keyBy('id');
+            $this->assertContains($this->gateB->id, $nodes[$result->id]['parent_ids']);
+            $this->assertContains(['id' => $result->id, 'type' => 'reconcile'], $nodes[$this->gateB->id]['children']);
+            $this->assertSame($this->a->id, $nodes[$result->id]['field']['committal_proposition_id']);
+            $this->assertSame($horizonA, $nodes[$result->id]['context_horizon']['id']);
+            $this->assertSame($this->b->id, $nodes[$this->gateB->id]['field']['committal_proposition_id']);
+            $this->assertSame($horizonB, $nodes[$this->gateB->id]['context_horizon']['id']);
+        }
         $this->assertFalse(app(ReconciliationOptionService::class)->forPhase($this->mediate->fresh())->contains('id', $this->gateB->id));
     }
 
@@ -263,6 +276,186 @@ class HomologousMediationTest extends TestCase
             $this->assertFalse($writes->contains('id', $foreignResult->id));
         }
         $this->assertEqualsCanonicalizing([$gateA->id, $gateB->id], $foreignResult->parents()->pluck('propositions.id')->all());
+    }
+
+    public function test_foreign_exhaustion_uses_complete_authoritative_horizon_and_current_epochs(): void
+    {
+        $options = app(ReconciliationOptionService::class);
+        $this->assertTrue($options->forPhase($this->mediate)->contains('id', $this->gateB->id));
+        [$terminal, $middle, $tragedy] = $this->exhaustContinuation($this->b, $this->gateB);
+        $horizonB = $this->gateB->phase->cycle->context_horizon_id;
+        $this->assertNotSame($horizonB, app(ContextHorizonProjector::class)->forEntry($terminal)->id);
+        $context = new ParticipationContext($this->mediate->fresh());
+        $this->assertFalse($context->propositions->has($middle->id));
+        $this->assertFalse($context->propositions->has($terminal->id));
+        $this->assertTrue(app(HomologousMediationService::class)->poolFor($this->mediate, $context)['gates']->contains('id', $this->gateB->id));
+        $this->assertFalse(app(\App\Services\ExhaustedContinuationService::class)->ids($this->mediate)->has($this->gateB->id));
+        foreach ([null, $context] as $readModel) {
+            $this->assertFalse($options->forPhase($this->mediate, $readModel)->contains('id', $this->gateB->id));
+        }
+        $before = Proposition::count();
+        try {
+            app(\App\Services\ContributionDispatcher::class)->dispatch($this->actor, $this->mediate,
+                ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateB->id]);
+            $this->fail('A foreign exhausted continuation cannot be reconciled.');
+        } catch (\DomainException) {
+            $this->assertSame($before, Proposition::count());
+            $this->assertSame($this->gateA->id, $this->actor->fresh()->current_proposition_id);
+        }
+
+        // A live alternative in B, absent from A's comparison context, keeps B's
+        // Gate eligible. B's exhaustion proof must not retire the entire Horizon.
+        $live = $this->expression($this->b, $this->gateB, PhaseKind::Mediate);
+        $context = new ParticipationContext($this->mediate->fresh());
+        $this->assertFalse($context->propositions->has($live->id));
+        $this->assertTrue($options->forPhase($this->mediate, $context)->contains('id', $this->gateB->id));
+        $this->assertFalse(app(\App\Services\ReceiptContextService::class)->forPhase($this->mediate, $context)->contains('id', $tragedy->receipt_id));
+        $position = app(\App\Services\ExplorationPositionService::class)->forProposition($live);
+        DB::table('continuation_failures')->insert([
+            'proposition_id' => $live->id, 'context_horizon_id' => $horizonB,
+            'structural_position' => $position['structural_position'], 'exploration_epoch' => 0,
+            'phase_id' => $live->phase_id, 'failed_at' => now(),
+        ]);
+        $this->assertFalse($options->forPhase($this->mediate->fresh())->contains('id', $this->gateB->id));
+        DB::table('horizon_exploration_states')->insert([...$position, 'epoch' => 1]);
+        $this->assertTrue($options->forPhase($this->mediate->fresh())->contains('id', $this->gateB->id));
+    }
+
+    public function test_cross_horizon_directed_pairs_are_independent_and_used_pairs_do_not_reopen(): void
+    {
+        $origin = $this->a->phase->cycle->governingCommittal;
+        $c = $this->commit($origin, 'settlement');
+        [, $gateC] = $this->pair($c);
+        $options = app(ReconciliationOptionService::class);
+        $dispatcher = app(\App\Services\ContributionDispatcher::class);
+        $input = ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateB->id];
+        $forward = $dispatcher->dispatch($this->actor, $this->mediate, $input);
+        // Fresh discovery still sees B structurally; authorization consumes only A→B.
+        $freshA = $this->mediateAt($this->a, $this->readA, $this->gateA);
+        $this->assertTrue(app(HomologousMediationService::class)->poolFor($freshA)['gates']->contains('id', $this->gateB->id));
+        $this->assertSame([$gateC->id], $options->forPhase($freshA)->pluck('id')->all());
+        $before = Proposition::count();
+        try {
+            $dispatcher->dispatch($this->actor, $freshA, $input);
+            $this->fail('A used A→B pair must not reopen through foreign discovery.');
+        } catch (\DomainException) {
+            $this->assertSame($before, Proposition::count());
+        }
+        $distinct = $dispatcher->dispatch($this->actor, $freshA,
+            ['action' => 'proposition.reconcile', 'other_proposition_id' => $gateC->id]);
+        $inversePhase = $this->mediateAt($this->b, $this->readB, $this->gateB);
+        $this->assertTrue($options->forPhase($inversePhase)->contains('id', $this->gateA->id));
+        $inverse = $dispatcher->dispatch($this->actor, $inversePhase,
+            ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateA->id]);
+        $this->assertNotSame($forward->id, $inverse->id);
+        $this->assertNotSame($forward->id, $distinct->id);
+        $this->assertEqualsCanonicalizing($forward->parents->pluck('id')->all(), $inverse->parents->pluck('id')->all());
+        $this->assertSame($this->a->id, $forward->phase->cycle->governing_committal_id);
+        $this->assertSame($this->b->id, $inverse->phase->cycle->governing_committal_id);
+        $this->assertSame($this->gateA->id, $forward->phase->gate_proposition_id);
+        $this->assertSame($this->gateB->id, $inverse->phase->gate_proposition_id);
+        $this->assertFalse($options->forPhase($inversePhase->fresh())->contains('id', $this->gateA->id));
+        $this->assertFalse($options->forPhase($freshA->fresh())->contains('id', $this->gateB->id));
+    }
+
+    #[\PHPUnit\Framework\Attributes\Group('query')]
+    public function test_complete_plans_have_bounded_query_growth_across_foreign_horizons(): void
+    {
+        $counts = [];
+        $origin = $this->a->phase->cycle->governingCommittal;
+        foreach ([1, 6] as $count) {
+            if ($count === 6) {
+                foreach (range(1, 5) as $index) {
+                    $this->pair($this->commit($origin, 'settlement'));
+                }
+            }
+            $this->publishPotentialFixture($this->actor);
+            foreach (['cold', 'warm'] as $temperature) {
+                DB::enableQueryLog();
+                DB::flushQueryLog();
+                try {
+                    $plan = app(\App\Services\InputPlanService::class)->forPhase($this->actor->fresh(), $this->mediate->fresh());
+                    $counts[$count][$temperature] = count(DB::getQueryLog());
+                } finally {
+                    DB::disableQueryLog();
+                }
+                $this->assertCount($count, $plan['gate_options']);
+            }
+        }
+        fwrite(STDERR, sprintf("FOREIGN HORIZON GROWTH: cold %d -> %d; warm %d -> %d\n",
+            $counts[1]['cold'], $counts[6]['cold'], $counts[1]['warm'], $counts[6]['warm']));
+        $this->assertLessThan(500, $counts[6]['cold']);
+        $this->assertLessThan(200, $counts[6]['warm']);
+        $this->assertSame($counts[1], $counts[6], 'Additional foreign Horizons must not add plan queries.');
+    }
+
+    #[\PHPUnit\Framework\Attributes\Group('query')]
+    public function test_exhausted_continuation_queries_are_batched_across_foreign_horizons(): void
+    {
+        $origin = $this->a->phase->cycle->governingCommittal;
+        $closed = collect([$this->gateB]);
+        $live = collect([$this->expression($this->b, $this->readB, PhaseKind::Disperse)]);
+        $this->exhaustContinuation($this->b, $this->gateB);
+        $counts = [];
+        foreach ([1, 6] as $count) {
+            if ($count === 6) {
+                foreach (range(1, 5) as $index) {
+                    $owner = $this->commit($origin, 'settlement');
+                    [$read, $gate] = $this->pair($owner);
+                    $closed->push($gate);
+                    $live->push($this->expression($owner, $read, PhaseKind::Disperse));
+                    $this->exhaustContinuation($owner, $gate);
+                }
+            }
+            DB::enableQueryLog();
+            DB::flushQueryLog();
+            try {
+                $options = app(ReconciliationOptionService::class)->forPhase($this->mediate->fresh());
+                $counts[] = count(DB::getQueryLog());
+            } finally {
+                DB::disableQueryLog();
+            }
+            $this->assertEqualsCanonicalizing($live->pluck('id')->all(), $options->pluck('id')->all());
+            $horizons = $closed->map(fn ($gate) => $gate->phase->cycle->context_horizon_id);
+            $batch = app(\App\Services\ExhaustedContinuationService::class)->idsForHorizons($horizons);
+            foreach ($closed as $gate) {
+                $single = app(\App\Services\ExhaustedContinuationService::class)->ids($gate->phase);
+                $this->assertTrue($single->has($gate->id));
+                $this->assertEquals($single, $batch->only($single->keys()->all()));
+            }
+        }
+        fwrite(STDERR, sprintf("FOREIGN EXHAUSTION GROWTH: %d -> %d\n", ...$counts));
+        $this->assertSame($counts[0], $counts[1], 'Foreign exhaustion must not query once per Horizon.');
+    }
+
+    private function mediateAt(Proposition $owner, Proposition $read, Proposition $gate): Phase
+    {
+        $disperse = $this->phase($owner, $read, PhaseKind::Disperse);
+        $disperse->forceFill(['completed_at' => now()])->save();
+        $phase = new Phase;
+        $phase->forceFill(['cycle_id' => $disperse->cycle_id, 'kind' => PhaseKind::Mediate,
+            'gate_proposition_id' => $gate->id, 'write_register' => 'stance', 'started_at' => now()])->save();
+
+        return $phase;
+    }
+
+    /** Install immutable regional proof; the existing exhaustion lifecycle tests cover producing it. */
+    private function exhaustContinuation(Proposition $owner, Proposition $gate): array
+    {
+        $middle = $this->expression($owner, $gate, PhaseKind::Mediate);
+        $terminal = $this->commit($owner, 'emergence');
+        $this->edge($middle, $terminal, 'commit');
+        $phase = $this->phase($terminal, $terminal, PhaseKind::Distinguish);
+        $tragedy = app(\App\Services\TragedyService::class)->record($phase, ['field_version' => 1]);
+        DB::table('commit_region_exhaustions')->insert([
+            'governing_committal_id' => $terminal->id, 'context_horizon_id' => $phase->cycle->context_horizon_id,
+            'tragedy_id' => $tragedy->id, 'receipt_id' => $tragedy->receipt_id,
+            'phase_id' => $phase->id, 'terminal_proposition_id' => $terminal->id,
+            'observed_field_version' => 1, 'exhausted_at' => now(),
+        ]);
+        app(\App\Services\RegionalExhaustionMembership::class)->publish($terminal->id, [$terminal->id]);
+
+        return [$terminal, $middle, $tragedy];
     }
 
     private function pair(Proposition $governor): array

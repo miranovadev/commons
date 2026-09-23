@@ -24,16 +24,13 @@ final readonly class ReconciliationOptionService
             ->filter(fn ($node) => $this->availability->mutable($node, $context)
             && ! $exhausted->has($node->id));
 
-        // Foreign Horizon continuations need complete Horizon data, not merely the
-        // operands hydrated for this comparison. Resolve once per distinct Horizon.
-        foreach ($gates->groupBy(fn ($node) => $node->phase->cycle->context_horizon_id) as $horizon => $nodes) {
-            if ($horizon === $phase->cycle->context_horizon_id) {
-                continue;
-            }
-            $foreignExhausted = $context->remember('mediate-foreign-exhausted:'.$horizon,
-                fn () => app(ExhaustedContinuationService::class)->ids($nodes->first()->phase));
-            $gates = $gates->reject(fn ($node) => $foreignExhausted->has($node->id));
-        }
+        // Complete foreign Horizon data is queried in one batch; the comparison
+        // working set is not an authoritative inventory of foreign continuations.
+        $horizons = $gates->map(fn ($node) => $node->phase->cycle->context_horizon_id)
+            ->unique()->reject(fn ($horizon) => $horizon === $phase->cycle->context_horizon_id)->sort()->values();
+        $foreignExhausted = $context->remember('mediate-foreign-exhausted:'.$horizons->implode(','),
+            fn () => app(ExhaustedContinuationService::class)->idsForHorizons($horizons));
+        $gates = $gates->reject(fn ($node) => $foreignExhausted->has($node->id));
 
         // The Phase Gate records dominance; parent ordering is not direction.
         $used = Supersession::query()->where('type', 'reconcile')
