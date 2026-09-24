@@ -125,9 +125,9 @@ These are invalidations about that region, never proof that all Horizon regions
 are exhausted. No additional persisted Horizon summary is maintained. No badge or graph UI work is included.
 
 Focused fixtures prove C → B → A within one open Horizon, stronger sibling
-exclusion, per-region shared final attempts and consumption, crossing only an
+exclusion, per-region first/later boundary events, crossing only an
 exhausted boundary region, and survival of other live child-Horizon regions.
-Existing stale-proof, unrelated-consumption, rollback, concurrency and numerical
+Existing stale-proof, independent warrant consumption, rollback, concurrency and numerical
 projection regressions retain their safeguards. Migration fixtures distinguish
 provable boundary mapping from ambiguous historical transport.
 

@@ -478,8 +478,8 @@ The selected source's Receipt stock stays untouched.
 Mediate opens an incoming doorway. The homologous population identifies possible
 exits. A Tragedy Receipt authorizes leaving through one eligible homologous exit;
 it supplies no destination or permanent movement permission. Subsequent
-Attestation and Traverse follow ordinary contribution rules. Exhaustion and
-recovery skips the Region only after a later fresh zero-Charge catastrophe proves it exhausted. Warrant consumption alone does not exhaust it.
+Attestation and Traverse follow ordinary contribution rules. Recovery skips the
+Region only after a later fresh zero-Charge catastrophe proves it exhausted. Warrant consumption alone does not exhaust it.
 
 The result belongs to the acting Bias Phase, Horizon and entry accounting Region.
 Its sole reclassify edge comes from the selected source, and the participant
