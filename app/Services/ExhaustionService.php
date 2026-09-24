@@ -5,14 +5,14 @@ namespace App\Services;
 use App\Models\ContextHorizon;
 use App\Models\Phase;
 use App\Models\Proposition;
-use App\Models\ReceiptConsumption;
+use App\Models\Substrate;
 use App\Models\Tragedy;
 use App\Services\Participation\ParticipationContext;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\DB;
 
-/** Exhaustion requires a failed continuation after the unique Tragedy Receipt was exercised. */
+/** A later fresh expressive Charge boundary in the same Region proves exhaustion. */
 final class ExhaustionService
 {
     public function actionable(Builder $query): Builder
@@ -81,55 +81,39 @@ final class ExhaustionService
         app(HorizonFailureService::class)->publish($phase, $proof);
     }
 
-    /** Read-only proof that this participant actually continued from the consumed evidence. */
-    public function consumedContinuationFor(Phase $phase): ?string
+    /** Called only by the fresh-expression boundary observer under the Substrate lock. */
+    public function recordBoundary(Proposition $terminal, Tragedy $tragedy, array $field): bool
     {
-        $seed = $this->regionFor($phase);
-        if ($seed === null) {
-            return null;
+        if (DB::transactionLevel() === 0) {
+            throw new \DomainException('Exhaustion belongs to the expressive contribution transaction.');
         }
-        $target = ReceiptConsumption::query()->where('context_horizon_id', $phase->cycle->context_horizon_id)
-            ->where('legacy', false)->whereIn('receipt_id', Tragedy::where('governing_committal_id', $seed->id)->select('receipt_id'))
-            ->value('proposition_id');
-        if ($target === null || app(CommitRegionService::class)->seedFor(Proposition::findOrFail($target))?->id !== $seed->id) {
-            return null;
-        }
-        $path = app(BackwardRecoveryLineage::class)->distances($phase->gate, $phase->cycle->participant,
-            fn (string $id) => DB::table('supersessions')->where('target_proposition_id', $id)->pluck('source_proposition_id')->all());
-
-        return isset($path[$target]) ? $target : null;
-    }
-
-    /** The caller holds the root and owns a fresh authoritative no-Potential Rest witness. */
-    public function afterFailure(Phase $phase, Tragedy $tragedy, array $proof): bool
-    {
-        $seed = $this->regionFor($phase);
-        if ($seed === null || $seed->id !== $tragedy->governing_committal_id
-            || ($proof['governing_committal_id'] ?? null) !== $seed->id
-            || $tragedy->context_horizon_id !== $phase->cycle->context_horizon_id
-            || $this->consumedContinuationFor($phase) !== ($proof['consumed_continuation_id'] ?? null)
-            || $tragedy->phase_id === $phase->id || $proof['rest_reason'] !== 'no_remaining_potential'
-            || ($proof['consumed_continuation_id'] ?? null) === null
-            || ! ReceiptConsumption::whereKey($tragedy->receipt_id)->where('legacy', false)
-                ->where('context_horizon_id', $phase->cycle->context_horizon_id)
-                ->where('proposition_id', $proof['consumed_continuation_id'])->exists()) {
+        $phase = $terminal->phase;
+        $seed = app(CommitRegionService::class)->seedFor($terminal);
+        if (! $terminal->wasRecentlyCreated || $terminal->tier !== 'expressive' || $field['charge'] !== 0.0
+            || $seed?->id !== $tragedy->governing_committal_id
+            || $terminal->id === $tragedy->terminal_proposition_id
+            || $phase->cycle->context_horizon_id !== $tragedy->context_horizon_id) {
             return false;
         }
         $horizon = ContextHorizon::whereKey($tragedy->context_horizon_id)->lockForUpdate()->firstOrFail();
         $changed = DB::table('commit_region_exhaustions')->insertOrIgnore([
             'governing_committal_id' => $seed->id,
             'context_horizon_id' => $horizon->id, 'tragedy_id' => $tragedy->id, 'receipt_id' => $tragedy->receipt_id,
-            'phase_id' => $phase->id, 'terminal_proposition_id' => $phase->gate_proposition_id,
-            'observed_field_version' => $proof['field_version'], 'exhausted_at' => now(),
+            'phase_id' => $phase->id, 'terminal_proposition_id' => $terminal->id,
+            'observed_field_version' => Substrate::whereKey($horizon->substrate_id)->value('field_version'),
+            'boundary_field' => json_encode($field, JSON_THROW_ON_ERROR), 'exhausted_at' => now(),
         ]);
         if ($changed) {
-            app(RegionalExhaustionMembership::class)->publish($seed->id, $proof['region_member_ids'] ?? []);
+            app(RegionalExhaustionMembership::class)->publish($seed->id,
+                app(RegionalExhaustionMembership::class)->capture($horizon->id, $seed->id));
             $boundary = $horizon->opened_by_proposition_id === $seed->id;
             $origin = $horizon->parent_context_horizon_id === null
                 && $seed->commitmentSnapshot?->calculator_version === 'origin-bootstrap-v1';
             $affected = array_values(array_filter([$horizon->id, $boundary ? $horizon->parent_context_horizon_id : null]));
             app(FieldMutationService::class)->mark($horizon->substrate_id, $affected, [$seed->id], measurementsDirty: false);
             app(RealtimePublisher::class)->proposition($seed->id);
+            app(RealtimePublisher::class)->horizons($horizon->substrate_id);
+            app(RealtimePublisher::class)->graphMetrics($horizon->substrate_id);
             if ($boundary || $origin) {
                 app(RealtimePublisher::class)->horizon($horizon->id, $horizon->substrate_id,
                     ['type' => 'horizon.exhausted', 'opening_proposition_id' => $horizon->opened_by_proposition_id,
@@ -138,6 +122,12 @@ final class ExhaustionService
             }
             app(RealtimePublisher::class)->horizon($horizon->id, $horizon->substrate_id,
                 ['type' => 'region.exhausted', 'governing_committal_id' => $seed->id, 'boundary_exhausted' => $boundary]);
+        }
+
+        // A separately accepted concurrent birth remains historical even when
+        // another proposition won the unique proof. Never replace that witness.
+        if (! $changed) {
+            app(RegionalExhaustionMembership::class)->publish($seed->id, [$terminal->id]);
         }
 
         return true;

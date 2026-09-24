@@ -1,8 +1,5 @@
 # Commit Region exhaustion and compatibility
 
-> Stage 2: Tragedy is created by the first fresh expressive result at zero Charge,
-> never by Potential or Rest. The exhaustion/recovery lifecycle in this document
-> is retained pending Stage 6; repeated boundary contact has no new consequence yet.
 
 A Commit Region is the recovery basin governed by its Committal. Recovery walks
 backward through ancestral Commit Regions in causal order. The nearest
@@ -14,20 +11,17 @@ across its Context Horizon boundary, on the same actual recorded lineage.
 ## One authority
 
 `commit_region_exhaustions` is the primitive proof. It identifies the governing
-Committal, owning operational Horizon, Tragedy, consumed Receipt, subsequent
-terminal Phase and Proposition, observed field version and exhaustion time.
+Committal, owning operational Horizon, original Tragedy and Receipt, later fresh boundary Phase and Proposition,
+observed field version, immutable boundary field and exhaustion time.
 `tragedies.governing_committal_id` is unique. Tragedy names the event; columns
 record its scope and provenance. Renaming preserves event IDs and foreign keys. Horizon membership
 is no longer unique. One Horizon can contain multiple independent Tragedies and
 regional exhaustion proofs.
 
-Rest qualification and the final exploration allowance use the current region's
-existing Potential calculation. The numerical algorithm, measurement attenuation
-and projection mathematics are unchanged. The region's evidence-bearing Rest,
-shared final allowance, actual Receipt consumption and subsequent failure on the
-consumed classification's actual lineage remain necessary. A local actionless
-terminal or numerical zero alone is insufficient. Unknown/ambiguous governing
-membership cannot supply a regional proof.
+The first fresh expressive zero-Charge event creates Tragedy while leaving the
+Region open. A later distinct fresh zero-Charge event in the same Region proves
+exhaustion, independently of Receipt consumption, Potential or Rest. Ownership
+comes from the result’s creating Cycle, never foreign causal ancestry.
 
 `ExhaustionService` applies proof to the governing Committal and expressive nodes
 whose creating Cycle has that immutable entry Committal. A Committal owns itself;
@@ -40,10 +34,9 @@ boundaries. No historical proposition, edge, or Receipt is deleted.
 
 `exhausted_region_memberships` is an indexed, rebuildable membership projection
 referencing those proofs by foreign key. It carries no independent exhausted
-flag or lifecycle. Final failure captures the governed members from the existing
-version-checked regional projection before the write lock; the proof and its
-membership publish atomically after revalidation. New writes cannot extend an
-exhausted region. Current maintenance derives membership from immutable Cycle entry.
+flag or lifecycle. The successful second-boundary transaction captures immutable
+Cycle-owned expressive membership, including its own fresh result. Subsequent
+normal actions are rejected. Maintenance rebuilds the same ownership projection.
 Only explicit migrations predating #196 use the isolated legacy ancestry resolver. Reads use this index rather than recursively walking
 ancestry once for every proposition; missing regional proof can never authorize
 an indexed member's exhaustion.
@@ -60,7 +53,7 @@ expose `opening_region_exhausted`. Other live regions can continue there.
 The projected and reference recovery paths check the same regional proof. Neither a local non-boundary proof nor an inactive node
 is permission to cross an unrelated boundary.
 
-## Migration
+## Historical regional migration
 
 Migration `2026_09_22_000000_scope_exhaustion_to_commit_regions` adds the new proof
 relation and nullable unique Tragedy scope. It preserves every old
@@ -132,9 +125,13 @@ These are invalidations about that region, never proof that all Horizon regions
 are exhausted. No additional persisted Horizon summary is maintained. No badge or graph UI work is included.
 
 Focused fixtures prove C → B → A within one open Horizon, stronger sibling
-exclusion, per-region shared final attempts and consumption, crossing only an
+exclusion, per-region first/later boundary events, crossing only an
 exhausted boundary region, and survival of other live child-Horizon regions.
-Existing stale-proof, unrelated-consumption, rollback, concurrency and numerical
+Existing stale-proof, independent warrant consumption, rollback, concurrency and numerical
 projection regressions retain their safeguards. Migration fixtures distinguish
 provable boundary mapping from ambiguous historical transport.
 
+
+## Stage 6 witness migration
+
+`2026_09_24_000000_record_exhaustion_boundary_field` adds nullable JSON `boundary_field`. New rows store the canonical event Tension/Charge. Null denotes the archived Rest/consumption proof described above; no historical row is rewritten. Audit uses fresh expressive ownership, distinct ordered birth provenance and boundary values for new rows. Rollback refuses to erase new boundary witnesses.

@@ -57,9 +57,7 @@ The existing Substrate → Participant → Phase lock order and contribution tra
 
 ## Tragedy scope
 
-A Tragedy Receipt records the first zero-Charge expressive birth in its governing Commit Region. Its catalogue transport behavior remains transitional pending Stage 6; it does not confer Bias authority. When legitimate backward-lineage recovery retreats from that region, the Receipt follows the exact selected destination, regardless of which Participant recovered. `tragedies.participant_id` remains immutable provenance of the original trigger, never ownership or exclusive transport authority. Participants in that destination may still discover it through the legacy catalogue. For Bias, however, the Receipt must belong to that exact Region’s unresolved Tragedy as well as be scoped there; relocation does not make it a new Region’s escape warrant.
-
-`tragedy_receipt_scopes` stores only this mutable Tragedy basin and its latest recovery-entry Phase witness. Cycle entry updates it under the existing Substrate/Participant transaction after the recovery engine selects the destination. The source must be its current basin; the destination must lie on that recovery's backward lineage. Nearest-Committal recovery cannot skip an unresolved nearer basin. The Receipt cannot go farther than the actual destination and never influences selection. Historical recovery witnesses retain their recorded destinations. Initial entries, normal movement/Commit and recovery from unrelated regions cannot transport it. Consumption excludes it from all later movement; Receipt, Tragedy, consumption and historical final-attempt rows remain unchanged. Rest never creates Tragedy. The retained exhaustion/recovery lifecycle awaits Stage 6.
+A Tragedy Receipt records the first fresh zero-Charge expressive birth in its governing Commit Region. New `tragedy_receipt_scopes` rows initialize to that immutable owner. Recovery no longer moves them. Archived relocated scopes and recovery witnesses remain readable; catalogue visibility never supplies another Region’s escape authority. The owning Region’s exhaustion immediately removes live warrant authority. No historical scope, load or consumption row is deleted.
 
 ## Compatibility and rollout
 
@@ -71,11 +69,11 @@ The original ownership rollout used measurement version `proposition-receipts-v9
 
 ## Validation and boundedness
 
-Focused Core proofs cover locality, malformed origins, ownership/legacy interpretation, exact Gate enums, atomic rollback, idempotency, Read-only activation and participant-specific weighting. Integration covers load/unload across the normal Phase boundary and preserves the natural shared Tragedy journey's actors, actions and exhaustion outcome.
+Focused Core proofs cover locality, malformed origins, ownership/legacy interpretation, exact Gate enums, atomic rollback, idempotency, Read-only activation and participant-specific weighting. Integration covers load/unload across the normal Phase boundary and covers the fresh first/later boundary lifecycle and ordinary evidence behavior.
 
-Local SQLite measurement: catalogue growth from one to thirteen ordinary Receipts uses exactly five queries with a supplied ParticipationContext. Batched region derivation on the six-node fixture took 0.24–0.69 ms (illustrative local timings, not a production latency bound). Region derivation is once per context, not one ancestry walk per Receipt. Hydration still scales with substrate history, as before. Tragedy scope uses one memoized indexed projection query per context, with no recovery-history scan or per-Receipt ancestry walk. Recovery validates one actual route only when an unresolved scope occupies its departing region. A twelve-Receipt Gate fixture retains three persistent loads and twelve references, but zero active bodies: the evidence wrapper is 22 bytes and the evidence-plus-dynamic prompt is 20,188 bytes. The internal qualification packet is 66,458 bytes; its bodies do not enter cognition. Larger candidate-growth checks retain constant Mediate/Bias/Order query counts. Query Regression and Load/Concurrency remain required validation gates for this change.
+Local SQLite measurement: catalogue growth from one to thirteen ordinary Receipts uses exactly five queries with a supplied ParticipationContext. Batched region derivation on the six-node fixture took 0.24–0.69 ms (illustrative local timings, not a production latency bound). Region derivation is once per context, not one ancestry walk per Receipt. Hydration still scales with substrate history, as before. Tragedy scope uses one memoized indexed projection query per context, with no recovery-history scan or per-Receipt ancestry walk. Recovery does not scan or update Receipt scope. A twelve-Receipt Gate fixture retains three persistent loads and twelve references, but zero active bodies: the evidence wrapper is 22 bytes and the evidence-plus-dynamic prompt is 20,188 bytes. The internal qualification packet is 66,458 bytes; its bodies do not enter cognition. Larger candidate-growth checks retain constant Mediate/Bias/Order query counts. Query Regression and Load/Concurrency remain required validation gates for this change.
 
-The historical transcript uses legal forward Gate loading. It is now a regression that zero-Potential Rest does not create Tragedy. Its [load relocation record and boundary comparison](evidence/receipt-tragedy-transcript.md) document the retired interactions, the alternate pre-Tragedy evidence attachment, and the unchanged final-attempt/Exhaustion recovery proof.
+The historical transcript uses legal forward Gate loading. It is now a regression that zero-Potential Rest does not create Tragedy. Its [load relocation record and boundary comparison](evidence/receipt-tragedy-transcript.md) document the retired interactions, the alternate pre-Tragedy evidence attachment, and archived pre-correction proof. Current catastrophe acceptance is described in [the boundary lifecycle](branch-tragedy.md).
 
 
 ## Mediated incoming options
@@ -92,7 +90,7 @@ cannot consume Tragedy Receipts. Foreign homologous escape instead requires the 
 
 No migration deletes or reinterprets historical Receipt, load, consumption,
 Tragedy or scope records. Existing scope projection and exhaustion authority
-remain unchanged pending Stage 6. Pre-Stage-5 non-Bias Tragedy consumption is
+retain historical compatibility; recovery no longer relocates live scope. Pre-Stage-5 non-Bias Tragedy consumption is
 retained only as archived test/migration data via an explicitly named fixture;
 the current dispatcher cannot create it. Archived fixture insertion emits no
 live consumption event. New homologous Bias consumption uses the existing

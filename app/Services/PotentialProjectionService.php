@@ -208,7 +208,9 @@ final class PotentialProjectionService
         }
         $active = Proposition::active()->whereKey($nodes->keys())->pluck('id')->flip();
         $phase = Phase::whereHas('cycle', fn ($q) => $q->where('context_horizon_id', $horizon->id))->latest('id')->first();
-        $context = $phase === null ? null : new ParticipationContext($phase);
+        // Projection retains historical geometry after a fresh foreign-source boundary
+        // retires its Region. Operational working sets remain active-only.
+        $context = $phase === null ? null : new ParticipationContext($phase, $owned->keys(), includeUnavailableAdditional: true);
         $measurements = $directions = [];
         if ($recalculate && $context !== null) {
             foreach ($owned as $node) {

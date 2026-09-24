@@ -65,8 +65,9 @@ class RegionalExhaustionMigrationTest extends TestCase
     public function test_proven_same_region_legacy_boundary_maps_without_rewriting_evidence(): void
     {
         [$opening, $horizon, $tragedy] = $this->firstFailure();
-        [$terminal] = $this->exercise($opening, $tragedy);
+        [$terminal] = $this->legacyExercise($opening, $tragedy);
         $this->rest($terminal);
+        $this->archiveExhaustion($terminal, $tragedy);
         $receipt = Receipt::findOrFail($tragedy->receipt_id)->getAttributes();
         $original = $tragedy->getAttributes();
         unset($original['governing_committal_id']);
@@ -102,8 +103,9 @@ class RegionalExhaustionMigrationTest extends TestCase
     public function test_cycle_entry_rename_preserves_regional_proof_evidence_and_published_state(): void
     {
         [$opening, $horizon, $tragedy] = $this->firstFailure();
-        [$terminal] = $this->exercise($opening, $tragedy);
+        [$terminal] = $this->legacyExercise($opening, $tragedy);
         $this->rest($terminal);
+        $this->archiveExhaustion($terminal, $tragedy);
         $tables = ['tragedies', 'commit_region_exhaustions', 'exhausted_region_memberships',
             'tragedy_final_attempts', 'tragedy_receipt_scopes', 'receipts', 'receipt_consumptions',
             'commitment_snapshots', 'context_horizons', 'participants', 'propositions', 'supersessions',
@@ -126,8 +128,9 @@ class RegionalExhaustionMigrationTest extends TestCase
     public function test_ambiguous_transported_legacy_proof_remains_history_without_regional_authority(): void
     {
         [$opening, $horizon, $tragedy] = $this->firstFailure();
-        [$terminal] = $this->exercise($opening, $tragedy);
+        [$terminal] = $this->legacyExercise($opening, $tragedy);
         $this->rest($terminal);
+        $this->archiveExhaustion($terminal, $tragedy);
         $migration = $this->legacy($opening->id, $horizon->id);
         DB::table('tragedy_receipt_scopes')->where('tragedy_id', $tragedy->id)->update(['current_committal_id' => $this->origin->id]);
         $historical = DB::table('horizon_exhaustions')->first();
@@ -148,8 +151,9 @@ class RegionalExhaustionMigrationTest extends TestCase
         $tragedy = $this->boundaryTragedyFixture($first->gate);
         $this->rest($first);
         $this->legacyBirth($tragedy);
-        [$terminal] = $this->exercise($seed, $tragedy);
+        [$terminal] = $this->legacyExercise($seed, $tragedy);
         $this->rest($terminal);
+        $this->archiveExhaustion($terminal, $tragedy);
         $horizon = $terminal->cycle->contextHorizon;
         $migration = $this->legacy($seed->id, $horizon->id);
         // Old Horizon authority was broader than the proven terminal's region.
@@ -166,8 +170,9 @@ class RegionalExhaustionMigrationTest extends TestCase
     public function test_archived_exhaustion_references_remain_readable_without_claiming_current_authority(): void
     {
         [$opening, $horizon, $childTragedy] = $this->firstFailure();
-        [$terminal] = $this->exercise($opening, $childTragedy);
+        [$terminal] = $this->legacyExercise($opening, $childTragedy);
         $this->rest($terminal);
+        $this->archiveExhaustion($terminal, $childTragedy);
         $head = $this->node($this->phase($this->origin, PhaseKind::Constrain), $this->origin);
         $this->explore($head);
         $rest = $this->phase($head);
@@ -231,7 +236,7 @@ class RegionalExhaustionMigrationTest extends TestCase
     private function legacy(string $seed, string $horizon): object
     {
         $proof = (array) DB::table('commit_region_exhaustions')->where('governing_committal_id', $seed)->sole();
-        unset($proof['governing_committal_id']);
+        unset($proof['governing_committal_id'], $proof['boundary_field']);
         DB::table('horizon_exhaustions')->insert([...$proof, 'opening_proposition_id' => $seed]);
         DB::table('exhausted_region_memberships')->delete();
         DB::table('commit_region_exhaustions')->delete();

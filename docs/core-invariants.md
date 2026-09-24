@@ -9,7 +9,7 @@ The authority order is: normative Commons invariants, then explicit phase and
 operation semantics, then implementation representation. Implementation history
 does not override the movement topology defined in Invariant 17.
 
-Persistence, final-attempt Exhaustion, recursive recovery, regional Tragedy, and observer
+Persistence, repeated-boundary Exhaustion, recursive recovery, regional Tragedy, and observer
 separation are normative; see [the exhaustion invariants](#persistence-exhaustion-recovery-and-observation).
 
 ## 1. The Measurements Are Independent
@@ -167,11 +167,12 @@ Recorded arrival provenance determines the path at multi-input Writes. Siblings,
 descendants and unrelated branches are excluded. The persisted Cycle Horizon
 constrains recovery until its boundary-governing Commit Region's exhaustion permits crossing its opening
 boundary along that same path. Previous Horizons do not substitute their opener
-for the next qualifying Committal. Numeric zero never proves exhaustion; the
-existing Tragedy, shared final-attempt and Receipt-consumption proof remains
-required. Commitment creates a recovery boundary. Exhaustion permits recovery
-past it. Measurement attenuation, Potential and Charge formulas are unchanged.
-Origin remains unique and persistent. Its Commit Region follows the same final-attempt proof. See the invariants below.
+for the next qualifying Committal. The first fresh expressive zero-Charge event
+creates Tragedy; a later distinct fresh zero-Charge event in the same Region
+proves exhaustion. Commitment creates a recovery boundary; exhaustion permits
+recovery past it. Potential does not prove exhaustion or select recovery.
+Origin remains unique and persistent under the same regional proof.
+
 
 Potential is the strongest remaining viable continuation under absolute-Tension-reduction semantics, never an additive budget. Writes maintain affected region projections and propagate changed routing summaries through provenance. Ordinary reads consume the published field version; they never repair measurements or reconstruct the whole substrate. A missing or inconsistent projection is an explicit recoverable maintenance condition. See [Incremental Potential](incremental-potential.md).
 
@@ -323,13 +324,13 @@ rather than inferring semantics from current code behaviour.
 
 **Potential invariant:** Potential measures demonstrated tension-reducing capacity. It does not decide whether expression is possible. Zero Potential neither suppresses an otherwise structurally valid Variant nor by itself proves a Commit Region exhausted. Charge and Potential algebra remain unchanged.
 
-**Tragedy invariant:** Tragedy is the first fresh expressive proposition within a Commit Region whose resolved field state reaches zero Charge (`1 - |Tension|`, using the canonical projection precision). Potential Charge does not trigger Tragedy. The resulting proposition's creating Cycle determines Region ownership, including foreign-input writes. One Tragedy and one Receipt retain that first terminal identity; repeated boundary contact does not itself exhaust the Region. Committals, Rest and maintenance do not trigger it.
+**Tragedy invariant:** Tragedy is the first fresh expressive proposition within a Commit Region whose resolved field state reaches zero Charge (`1 - |Tension|`, using the canonical projection precision). Potential Charge does not trigger Tragedy. The resulting proposition's creating Cycle determines Region ownership, including foreign-input writes. One Tragedy and one Receipt retain that first terminal identity; a later distinct fresh boundary result exhausts that Region. Committals, Rest and maintenance do not trigger it.
 
-**Retained exhaustion invariant (pending Stage 6):** A Commit Region exhausts only after its Tragedy Receipt has been exercised and a subsequent no-Potential Rest on that consumed classification's actual participant lineage proves the final attempt also failed. An unrelated later Rest is insufficient. The region's exhaustion permits recovery past its governing Committal. If that Committal opens a child Horizon, the same proof permits crossing that boundary along actual backward lineage; it does not exhaust the child's other regions.
+**Exhaustion invariant:** A later distinct fresh expressive zero-Charge event in an already-tragic open Commit Region creates its unique `commit_region_exhaustions` proof. The original Tragedy remains the first catastrophe; the later proposition is the exhaustion witness. Receipt consumption, Potential and Rest are not prerequisites. Exhaustion permits backward recovery past that governing Committal, including its Horizon boundary where the actual lineage permits it. Sibling Regions remain independent.
 
-**Receipt invariant:** Ordinary Receipts are discovered and consumed within the Commit Region governed by the observed Proposition's first governing Committal, with existing qualification rules and no Horizon-wide fallback. They ground Propositions, persist historically and may be consumed exactly once. Attestations judge Propositions; historical Attestation-owned Receipts remain readable through their Proposition. Generation costs an action; metadata visibility is free; attachment costs an action and changes structure. Participant loads persist independently of prompt visibility and retain participant-specific Reinforcement. Full evidence enters cognition only for loaded Receipts grounding the current participant-facing Read. Eligible Gate load/unload desired states accompany a successful forward Phase contribution atomically without another wake; Rest and standalone Read cannot carry those options. An unconsumed Tragedy Receipt follows legitimate recovery from its current unresolved basin by any Participant and is shared throughout the destination Commit Region until exercised; it never changes recovery selection.
+**Receipt invariant:** Ordinary Receipts are discovered and consumed within the Commit Region governed by the observed Proposition's first governing Committal, with existing qualification rules and no Horizon-wide fallback. They ground Propositions, persist historically and may be consumed exactly once. Attestations judge Propositions; historical Attestation-owned Receipts remain readable through their Proposition. Generation costs an action; metadata visibility is free; attachment costs an action and changes structure. Participant loads persist independently of prompt visibility and retain participant-specific Reinforcement. Full evidence enters cognition only for loaded Receipts grounding the current participant-facing Read. Eligible Gate load/unload desired states accompany a successful forward Phase contribution atomically without another wake; Rest and standalone Read cannot carry those options. A Tragedy Receipt is a dedicated homologous boundary-exit warrant, not ordinary evidence. Recovery does not relocate it; archived scope visibility never grants foreign authority.
 
-**Reclassification invariant:** Phase 3 and Phase 6 reclassification require an available Receipt. Reclassification atomically attaches/consumes the Receipt. No Receipt, no Reclassification. Tragedy Receipt creation follows an expressive Charge-boundary birth; consumption rules are unchanged in Stage 2.
+**Reclassification invariant:** Phase 3 and Phase 6 reclassification require an available Receipt. Reclassification atomically attaches/consumes the Receipt. No Receipt, no Reclassification. Only foreign homologous Bias may consume the exact unresolved own-Region Tragedy Receipt; local, mediated, same-Region homologous and non-Bias Reclassification require ordinary evidence. Consumption alone does not exhaust the Region.
 
 **Generation invariant:** Variant availability is controlled by structural viability, independently of Potential Charge, Receipt lifecycle and Participant count. A further Variant requires all current expressive routes at that structural position to be spent in its current exploration epoch, each with its own completed Instrument and effective Attestation. Expression is allowed to increase Tension. A healthy route blocks redundant generation. Each new Variant repeats that sequence; no prior Rest or fixed sibling cap applies. See the [confirmed clarification](horizon-proof-variant-clarification.md).
 
@@ -358,7 +359,7 @@ evidence, and the frozen source remains immutable.
 
 **Phase-position invariant:** Labels classify. Position governs.
 
-The backend derives Rest reason. Neither Rest reason creates Tragedy. The legacy `no_remaining_potential` exhaustion witness still requires an existing Tragedy and consumed continuation, pending Stage 6. Neither is a Participant assertion.
+The backend derives Rest reason. Neither Rest reason creates Tragedy or exhaustion. `no_remaining_potential` is diagnostic only; tested continuation failure retains exact epoch/version validation. Participants cannot assert catastrophe.
 
 See [the proof lifecycle](branch-tragedy.md), [migration and compatibility](horizon-proof-migration.md), and [the integrated phase rules](flow-integration.md).
 

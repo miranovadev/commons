@@ -6,9 +6,12 @@ use App\Enums\PhaseKind;
 use App\Models\Attestation;
 use App\Models\Proposition;
 use App\Models\Tragedy;
+use App\Services\ContributionDispatcher;
 use App\Services\LedgerService;
+use App\Services\RegionalExhaustionMembership;
+use Illuminate\Support\Facades\DB;
 
-/** Real Rest transitions over archived pre-Stage-5 consumption; recovery/exhaustion compatibility only. */
+/** Regional catastrophe fixtures; archived consumption is isolated for migration tests only. */
 trait HorizonProofFixture
 {
     use ExhaustionFixture;
@@ -29,6 +32,34 @@ trait HorizonProofFixture
     }
 
     protected function exercise($opening, $tragedy): array
+    {
+        $gate = $this->node($this->phase($opening, PhaseKind::Constrain), $opening);
+        $phase = $this->phase($gate, PhaseKind::Disperse);
+        $this->resolveExpressiveFieldFixture(1);
+        $target = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
+            ['action' => 'proposition.variant', 'statement' => 'A later fresh regional catastrophe']);
+        $terminal = $this->phase($target);
+        $this->publishPotentialFixture($this->substrate);
+
+        return [$terminal, $target];
+    }
+
+    /** Archive-only construction of the retired exhaustion proof for migration/audit coverage. */
+    protected function archiveExhaustion($phase, $tragedy): void
+    {
+        $proof = DB::table('horizon_failure_witnesses')->where('phase_id', $phase->id)->sole();
+        DB::table('commit_region_exhaustions')->insert([
+            'governing_committal_id' => $tragedy->governing_committal_id,
+            'context_horizon_id' => $tragedy->context_horizon_id, 'tragedy_id' => $tragedy->id,
+            'receipt_id' => $tragedy->receipt_id, 'phase_id' => $phase->id,
+            'terminal_proposition_id' => $phase->gate_proposition_id,
+            'observed_field_version' => $proof->observed_field_version, 'exhausted_at' => now(),
+        ]);
+        app(RegionalExhaustionMembership::class)->publish($tragedy->governing_committal_id,
+            app(RegionalExhaustionMembership::class)->capture($tragedy->context_horizon_id, $tragedy->governing_committal_id));
+    }
+
+    protected function legacyExercise($opening, $tragedy): array
     {
         $source = $this->node($this->phase($opening, PhaseKind::Persist), $opening);
         $vote = (new Attestation)->forceFill(['phase_id' => $source->phase_id, 'proposition_id' => $source->id, 'direction' => 'support']);

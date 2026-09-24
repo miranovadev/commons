@@ -27,17 +27,17 @@ not region-wide traversal eligibility.
 | 6 Bias | Reclassify an eligible Mediate source with explicit `receipt_id`, preserving existing lineage agreement. |
 | 7 Order | Existing grounded, attested, Closure-aligned Commit or established Committal Traverse. |
 
-Receipt availability is Horizon-scoped and independent of authorship, age, loading and Participant presence. Completed ordinary Instruments create one persistent Receipt. Tragedy creates its one Receipt without a fake InstrumentExecution. Only Reclassify consumes; reading is free and does not advance the Phase. Commit may retain already attached evidence without consuming it again.
+Ordinary Receipt availability is Commit-Region-scoped and independent of authorship, age, loading and Participant presence. Completed ordinary Instruments create one persistent Receipt. Tragedy creates its one Receipt without a fake InstrumentExecution. Only Reclassify consumes; reading is free and does not advance the Phase. Commit may retain already attached evidence without consuming it again.
 
 Reclassification copies the exact statement and attaches only the selected Receipt. Effective Attestations and phase touches start fresh. It rejects missing, consumed, foreign-Horizon or structurally invalid inputs before publishing any new target. Other historical evidence remains on its original source. Shared classifications are unique per source/destination register.
 
 Another Variant is an option only after every current viable Variant at that position is spent in the current exploration epoch and has its own completed Instrument and effective Attestation. Potential Charge does not govern this permission. Each new Variant repeats this sequence; a Receipt from another Variant does not replace its Instrument prerequisite. Receipt consumption alone never reopens Variant. There is no Participant quota, fixed sibling cap or prior Mediate Rest requirement. Mediate still needs a second Proposition. This is the [confirmed Variant clarification](horizon-proof-variant-clarification.md).
 
-A fresh expressive write at zero resolved Charge creates its Region Tragedy; Potential and Rest do not. The following consumption/exhaustion behavior is retained pending Stage 6. Reclassify may exercise the Tragedy Receipt at either required boundary. A later no-Potential Rest alone can close the Horizon after that exercise. A successful continuation remains alive. No single failed probe, numeric zero, Participant count or graph filter proves Exhaustion.
+A first fresh expressive zero-Charge write creates its Region Tragedy; a later distinct fresh zero-Charge write in the same open Region proves exhaustion. Potential and Rest prove neither. Tragedy Receipt consumption authorizes foreign homologous Bias escape and alone does not exhaust the Region. Recovery skips only authoritative regional exhaustion on the recorded backward lineage.
 
 ## Review stack
 
-The nine dependent stages are Receipt lifecycle, receipt-gated Reclassification, action gating, authoritative Rest reasons, Tragedy Receipt, final-attempt Exhaustion, recursive evidence references, participant/realtime context, and normative integration coverage. Each stage targets its predecessor. The final integration branch contains the complete stack and targets main for review; no stage or integration PR is merged automatically.
+The historical nine-stage integration comprised Receipt lifecycle, receipt-gated Reclassification, action gating, authoritative Rest reasons, Tragedy Receipt, final-attempt Exhaustion, recursive evidence references, participant/realtime context, and normative integration coverage. Each stage targets its predecessor. The final integration branch contains the complete stack and targets main for review; no stage or integration PR is merged automatically.
 
 See [full-cycle validation](operational-closure-path.md), [migration notes](horizon-proof-migration.md), and [invariant test map](horizon-proof-tests.md).
 

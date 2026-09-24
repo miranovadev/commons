@@ -6,7 +6,6 @@ use App\Enums\PhaseKind;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Substrate;
-use App\Models\Tragedy;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
@@ -24,7 +23,7 @@ final class HorizonFailureService
             'position_id' => $phase->gate_proposition_id, 'governing_committal_id' => app(ExhaustionService::class)->regionFor($phase)?->id, 'rest_reason' => $plan['rest_reason'] ?? 'no_available_move',
             'transitions' => [], 'failures' => [], 'horizons' => [], 'branches' => [], 'reason' => 'no_available_move'];
         if (isset($plan['schema']['$defs']['actions']['participant.rest'])
-            && ($proof['rest_reason'] === 'no_remaining_potential' || $this->testedDeadEnd($phase))) {
+            && $this->testedDeadEnd($phase)) {
             $proof['reason'] = $proof['rest_reason'] === 'no_remaining_potential' ? 'no_remaining_potential' : 'continuation_failed';
             $pending = [$phase->gate_proposition_id];
             $closed = [];
@@ -66,10 +65,6 @@ final class HorizonFailureService
                 }
             }
         }
-        $proof['consumed_continuation_id'] = $proof['reason'] === 'no_remaining_potential'
-            ? app(ExhaustionService::class)->consumedContinuationFor($phase) : null;
-        $proof['region_member_ids'] = $proof['consumed_continuation_id'] === null || $proof['governing_committal_id'] === null ? []
-            : app(RegionalExhaustionMembership::class)->capture($proof['context_horizon_id'], $proof['governing_committal_id']);
         $proof['stable'] = $version === (int) Substrate::whereKey($substrateId)->value('field_version');
 
         return $proof;
@@ -111,15 +106,6 @@ final class HorizonFailureService
                 if (DB::table('continuation_failures')->insertOrIgnore([...Arr::except($failure, 'structural_source_id'),
                     'context_horizon_id' => $proof['context_horizon_id'], 'phase_id' => $phase->id, 'failed_at' => now()])) {
                     app(RealtimePublisher::class)->proposition($failure['proposition_id'], 'proposition.spent');
-                }
-            }
-            if ($proof['rest_reason'] === 'no_remaining_potential') {
-                // Legacy exhaustion witness, pending Stage 6. Rest can only
-                // refer to an existing Tragedy; it can never create one.
-                $tragedy = Tragedy::where('governing_committal_id', $proof['governing_committal_id'])
-                    ->whereNotNull('governing_committal_id')->first();
-                if ($tragedy !== null) {
-                    app(ExhaustionService::class)->afterFailure($phase, $tragedy, $proof);
                 }
             }
             app(FieldMutationService::class)->mark($substrate->id, [$proof['context_horizon_id']], $proof['transitions'], measurementsDirty: false);

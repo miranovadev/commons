@@ -73,7 +73,7 @@ consolidation and conditional lifecycle detail, not just removal of other Phases
 - Detailed Rest, Tragedy and backward recovery are appended only when the supplied
   schema exposes `participant.rest`, regardless of a conflicting rest flag. The
   core retains only the universal availability/topology constraints. Generation
-  contracts describe the schema-authorized zero-Potential final-attempt exception
+  contracts describe structural generation independently of Potential and fresh first/later Charge-boundary events
   without teaching the full Tragedy lifecycle at ordinary distinction positions.
 - `ParticipantPromptFactory` resolves the recorded Phase, rejects unknown or
   conflicting Phase metadata, and composes the instructions. It does not infer a

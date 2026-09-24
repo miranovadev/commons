@@ -8,7 +8,7 @@ use App\Services\Participation\ParticipationContext;
 
 /**
  * Called only after the action schema establishes Rest. The zero-Potential
- * reason is a numerical diagnostic/legacy exhaustion witness, never a Tragedy trigger.
+ * reason is a numerical diagnostic, never Tragedy or exhaustion authority.
  */
 final class RestReasonService
 {

@@ -11,7 +11,9 @@ use App\Models\Receipt;
 use App\Models\Tragedy;
 use App\Services\ContributionDispatcher;
 use App\Services\ExhaustionAuditService;
+use App\Services\ExhaustionService;
 use App\Services\ExplorationEpochService;
+use App\Services\HorizonReceiptService;
 use App\Services\PotentialChargeService;
 use App\Services\ProjectionService;
 use App\Services\TragedyService;
@@ -171,9 +173,17 @@ class ChargeBoundaryTragedyTest extends TestCase
         $this->assertSame(1, Tragedy::distinct()->count('context_horizon_id'));
         $this->assertDatabaseCount('tragedies', 2);
         $this->assertSame(2, Receipt::where('type', 'tragedy')->count());
+        $read = $this->node($this->phase($this->origin, PhaseKind::Constrain), $this->origin);
+        $later = $this->phase($read, PhaseKind::Disperse);
+        app(ContributionDispatcher::class)->dispatch($later->cycle->participant, $later,
+            ['action' => 'proposition.variant', 'statement' => 'Only the origin Region repeats catastrophe']);
+        $this->assertDatabaseHas('commit_region_exhaustions', ['governing_committal_id' => $this->origin->id]);
+        $this->assertDatabaseMissing('commit_region_exhaustions', ['governing_committal_id' => $seed->id]);
+        $this->assertFalse(app(ExhaustionService::class)->unavailable($seed));
+
     }
 
-    public function test_repeated_boundary_births_retain_the_first_identity_and_do_not_exhaust(): void
+    public function test_repeated_boundary_births_retain_the_first_identity_and_exhaust(): void
     {
         $firstPhase = $this->phase($this->origin, PhaseKind::Distinguish);
         $read = $this->node($this->phase($this->origin, PhaseKind::Constrain), $this->origin);
@@ -188,7 +198,60 @@ class ChargeBoundaryTragedyTest extends TestCase
         $this->assertNotSame($first->id, $second->id);
         $this->assertSame($tragedy, Tragedy::sole()->getAttributes());
         $this->assertSame($receipt, Receipt::where('type', 'tragedy')->sole()->getAttributes());
+        $this->assertDatabaseCount('commit_region_exhaustions', 1);
+        $this->assertDatabaseHas('commit_region_exhaustions', ['terminal_proposition_id' => $second->id,
+            'tragedy_id' => $tragedy['id'], 'governing_committal_id' => $this->origin->id]);
+        $this->assertTrue(app(ExhaustionAuditService::class)->inspect($this->substrate->id)['matches']);
+        $migration = require database_path('migrations/2026_09_24_000000_record_exhaustion_boundary_field.php');
+        try {
+            $migration->down();
+            $this->fail('Cannot discard a fresh boundary witness');
+        } catch (\RuntimeException $exception) {
+            $this->assertStringContainsString('Cannot discard', $exception->getMessage());
+        }
+        $this->assertDatabaseCount('commit_region_exhaustions', 1);
+    }
+
+    public function test_second_boundary_rollback_restores_open_region_and_warrant(): void
+    {
+        $firstPhase = $this->phase($this->origin, PhaseKind::Distinguish);
+        $read = $this->node($this->phase($this->origin, PhaseKind::Constrain), $this->origin);
+        $phase = $this->phase($read, PhaseKind::Disperse);
+        $this->resolveExpressiveFieldFixture(-1);
+        app(ContributionDispatcher::class)->dispatch($firstPhase->cycle->participant, $firstPhase,
+            ['action' => 'proposition.variant', 'statement' => 'First catastrophe']);
+        $tragedy = Tragedy::sole()->getAttributes();
+        $before = Proposition::count();
+        try {
+            DB::transaction(function () use ($phase): void {
+                app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
+                    ['action' => 'proposition.variant', 'statement' => 'Rolled back second catastrophe']);
+                $this->assertDatabaseCount('commit_region_exhaustions', 1);
+                throw new \DomainException('rollback second');
+            });
+        } catch (\DomainException $exception) {
+            $this->assertSame('rollback second', $exception->getMessage());
+        }
+        $this->assertSame($before, Proposition::count());
         $this->assertDatabaseCount('commit_region_exhaustions', 0);
+        $this->assertDatabaseCount('exhausted_region_memberships', 0);
+        $this->assertSame($tragedy, Tragedy::sole()->getAttributes());
+        $this->assertNotNull(app(HorizonReceiptService::class)->tragedyWarrant($phase));
+    }
+
+    public function test_historical_boundary_recalculation_and_repeat_observation_do_not_exhaust(): void
+    {
+        $phase = $this->phase($this->origin, PhaseKind::Distinguish);
+        $this->resolveExpressiveFieldFixture(1);
+        $first = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
+            ['action' => 'proposition.variant', 'statement' => 'Only one fresh event']);
+        DB::transaction(fn () => app(TragedyService::class)->record($first));
+        $historical = $first->fresh();
+        $this->measure($historical, -1);
+        $this->assertNull(app(TragedyService::class)->record($historical));
+        $this->publishPotentialFixture($this->substrate, true);
+        $this->assertDatabaseCount('commit_region_exhaustions', 0);
+        $this->assertDatabaseCount('tragedies', 1);
     }
 
     public function test_committal_and_maintenance_measurements_do_not_create_tragedy(): void
