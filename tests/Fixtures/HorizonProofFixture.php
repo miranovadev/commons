@@ -6,10 +6,9 @@ use App\Enums\PhaseKind;
 use App\Models\Attestation;
 use App\Models\Proposition;
 use App\Models\Tragedy;
-use App\Services\ContributionDispatcher;
 use App\Services\LedgerService;
 
-/** Real Rest and Reclassify transitions for nested Horizon proof integration tests. */
+/** Real Rest transitions over archived pre-Stage-5 consumption; recovery/exhaustion compatibility only. */
 trait HorizonProofFixture
 {
     use ExhaustionFixture;
@@ -36,8 +35,7 @@ trait HorizonProofFixture
         $vote->save();
         app(LedgerService::class)->record($vote);
         $phase = $this->phase($source, PhaseKind::Constrain);
-        $result = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
-            ['action' => 'proposition.reclassify', 'proposition_id' => $source->id, 'receipt_id' => $tragedy->receipt_id]);
+        $result = $this->legacyTragedyClassificationFixture($phase, $source, $tragedy->receipt_id);
         $this->explore($result);
         $terminal = $this->phase($result);
         // Spent history stays in the measured field. This fixture asserts a

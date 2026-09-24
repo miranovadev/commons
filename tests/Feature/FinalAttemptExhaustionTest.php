@@ -129,7 +129,7 @@ class FinalAttemptExhaustionTest extends TestCase
         $this->assertSame(7, $evidence['exhausted_committals'][0]['phase_number']);
         $viewer = $this->phase($this->origin, PhaseKind::Distinguish);
         $context = app(ReceiptContextService::class)->forPhase($viewer)->firstWhere('id', $receipt->id);
-        $this->assertSame($opening->id, $context['evidence']['exhausted_committals'][0]['id']);
+        $this->assertSame($opening->id, $context['warrant']['exhausted_committals'][0]['id']);
         $this->assertSame('available', $context['availability']);
         $this->assertDatabaseHas('propositions', ['id' => $opening->id]);
         $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($horizon->parent));

@@ -36,7 +36,7 @@ class HorizonTragedyTest extends TestCase
         $this->assertNull($receipt->instrument_execution_id, 'Tragedy is not a fabricated Instrument execution');
         $this->assertSame('tragedy', $receipt->type);
         $this->assertSame($commit->id, $phase->cycle->participant->fresh()->current_proposition_id);
-        $this->assertTrue(app(HorizonReceiptService::class)->available($phase)->contains('id', $receipt->id));
+        $this->assertTrue(app(HorizonReceiptService::class)->catalogue($phase)->contains('id', $receipt->id));
         $this->assertNull($phase->cycle->fresh()->recovery_proposition_id, 'Tragedy cannot override lineage recovery.');
         app(ExhaustionService::class)->publish($phase, $proof);
         $this->assertSame(1, Tragedy::count());

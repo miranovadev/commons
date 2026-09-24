@@ -138,7 +138,7 @@ class MediatedIncomingBiasTest extends TestCase
         $this->publishPotentialFixture($this->actor);
         $context = new ParticipationContext($this->bias);
         $this->assertSame([$this->result->id], $this->biasOptions($context)->pluck('id')->all());
-        $this->assertFalse(app(HorizonReceiptService::class)->available($this->bias, $context)->contains('id', $foreign->id));
+        $this->assertFalse(app(HorizonReceiptService::class)->ordinaryAvailable($this->bias, $context)->contains('id', $foreign->id));
         $this->assertFalse(app(ReceiptContextService::class)->forPhase($this->bias, $context)->contains('id', $foreign->id));
         $plan = app(InputPlanService::class)->forPhase($this->actor, $this->bias);
         $row = collect($plan['gate_options'])->firstWhere('id', $this->result->id);

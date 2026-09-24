@@ -53,7 +53,7 @@ class HorizonProofCompatibilityTest extends TestCase
         $this->assertSame($phase->cycle->context_horizon_id, $receipt->fresh()->context_horizon_id);
         $this->assertDatabaseHas('receipt_consumptions', ['receipt_id' => $receipt->id, 'legacy' => true, 'proposition_id' => $result->id]);
         $this->assertDatabaseHas('proposition_receipt_links', ['receipt_id' => $receipt->id, 'proposition_id' => $result->id]);
-        $this->assertFalse(app(HorizonReceiptService::class)->available($phase)->contains('id', $receipt->id));
+        $this->assertFalse(app(HorizonReceiptService::class)->catalogue($phase)->contains('id', $receipt->id));
     }
 
     public function test_legacy_horizon_closure_is_archived_and_projections_invalidated_without_new_proof(): void

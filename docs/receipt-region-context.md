@@ -10,6 +10,31 @@ Receipts ground Propositions. Attestations express Participant judgments over th
 | Participant-facing Read | Activation of full loaded evidence |
 | Tragedy recovery path | Tragedy Receipt's retained moving scope until consumption |
 
+## Evidence and boundary warrants
+
+A Tragedy Receipt is not ordinary evidence. It is a dedicated, un-loadable,
+non-replayable warrant authorizing one eligible foreign homologous Bias
+Reclassification out of its immutable owning Commit Region. It does not satisfy
+Instrument completion, Attestation, ordinary Reclassification, or generic
+shared-evidence requirements. It requires no participant load state.
+
+`HorizonReceiptService::ordinaryAvailable()` supplies ordinary evidence only.
+`tragedyWarrant()` resolves the exact current-Region, unresolved, unconsumed
+warrant, checking immutable ownership as well as current scope.
+`catalogue()` is a presentation union only; its visibility is never evidence
+or permission. `BiasReceiptAuthorityService` retains the Stage 4 source split,
+including ordinary precedence for recorded mediated sources and same-Region
+expressive variation. Constrain and every non-Bias Reclassify use ordinary
+Receipts only, enforced by both schema and transactional consumption.
+
+Proposition evidence excludes Tragedy in both hydrated and database paths.
+Tragedy has no evidence signature, active evidence body, replay invocation or
+Reinforcement. Participant context labels it
+`purpose: homologous_boundary_escape`; catastrophe details are separate warrant
+provenance. Historical load and consumption rows remain auditable, but cannot
+supply ordinary evidence or create a new live load. Normal evidence production,
+loading, replay, Attestation and measurement weighting are otherwise unchanged.
+
 ## Ordinary discovery and ownership
 
 An ordinary Receipt's regional identity is `Receipt → InstrumentExecution → observed Proposition → CommitRegionService → governing Committal`. Attachment never changes that origin. There is no new region table or persisted seed column. A packet reuses one hydrated graph and the same memoized batched entry map as the motor. A Committal owns itself; an expressive observed Proposition belongs to its creating Cycle's immutable entry Committal. Missing or invalid Cycle entry fails closed. Foreign causal inputs neither change this owner nor make their Receipts available.
@@ -32,7 +57,7 @@ The existing Substrate → Participant → Phase lock order and contribution tra
 
 ## Tragedy scope
 
-A Tragedy Receipt records the first zero-Charge expressive birth in its governing Commit Region. Its catalogue transport behavior remains transitional pending Stages 5/6; it does not confer Bias authority. When legitimate backward-lineage recovery retreats from that region, the Receipt follows the exact selected destination, regardless of which Participant recovered. `tragedies.participant_id` remains immutable provenance of the original trigger, never ownership or exclusive transport authority. Participants in that destination may still discover it through the legacy catalogue. For Bias, however, the Receipt must belong to that exact Region’s unresolved Tragedy as well as be scoped there; relocation does not make it a new Region’s escape warrant.
+A Tragedy Receipt records the first zero-Charge expressive birth in its governing Commit Region. Its catalogue transport behavior remains transitional pending Stage 6; it does not confer Bias authority. When legitimate backward-lineage recovery retreats from that region, the Receipt follows the exact selected destination, regardless of which Participant recovered. `tragedies.participant_id` remains immutable provenance of the original trigger, never ownership or exclusive transport authority. Participants in that destination may still discover it through the legacy catalogue. For Bias, however, the Receipt must belong to that exact Region’s unresolved Tragedy as well as be scoped there; relocation does not make it a new Region’s escape warrant.
 
 `tragedy_receipt_scopes` stores only this mutable Tragedy basin and its latest recovery-entry Phase witness. Cycle entry updates it under the existing Substrate/Participant transaction after the recovery engine selects the destination. The source must be its current basin; the destination must lie on that recovery's backward lineage. Nearest-Committal recovery cannot skip an unresolved nearer basin. The Receipt cannot go farther than the actual destination and never influences selection. Historical recovery witnesses retain their recorded destinations. Initial entries, normal movement/Commit and recovery from unrelated regions cannot transport it. Consumption excludes it from all later movement; Receipt, Tragedy, consumption and historical final-attempt rows remain unchanged. Rest never creates Tragedy. The retained exhaustion/recovery lifecycle awaits Stage 6.
 
@@ -42,7 +67,7 @@ Ordinary Receipt rows are interpreted in place without backfill. The additive `2
 
 Malformed ancestry or legacy entries with ambiguous equal-millisecond ordering leave `current_committal_id` null, withholding catalogue availability rather than guessing. Such rows are identifiable with `SELECT tragedy_id FROM tragedy_receipt_scopes WHERE current_committal_id IS NULL` and require review of the recorded recovery witnesses; historical evidence remains readable. Missing projections also fail closed. This mutable projection is exclusively for Tragedy; ordinary Receipt identity is derived from immutable Cycle entry. Ambiguous legacy origins remain readable through Proposition references and existing participant memory but cannot enter a shared available catalogue or Gate mutation set. Recovery scope also fails closed on invalid lineage. Production data has not been accessed or rewritten by this change.
 
-`LineageMeasurementService::VERSION` becomes `proposition-receipts-v9` because ownership lookup and participant attribution changed. Use the existing bounded `commons:measurements-repair <substrate> --limit=100` maintenance command until obsolete projections are repaired, then `commons:potential-rebuild <substrate>` before resuming participation. Existing lazy observation/mutation paths recognize obsolete versions; immutable Commitment snapshots remain frozen. No ad hoc Closure/Chirality update or ledger rewrite is introduced.
+The original ownership rollout used measurement version `proposition-receipts-v9`; the current Stage 5 version and refresh guidance are below. Use the existing bounded `commons:measurements-repair <substrate> --limit=100` maintenance command until obsolete projections are repaired, then `commons:potential-rebuild <substrate>` before resuming participation. Existing lazy observation/mutation paths recognize obsolete versions; immutable Commitment snapshots remain frozen. No ad hoc Closure/Chirality update or ledger rewrite is introduced.
 
 ## Validation and boundedness
 
@@ -62,3 +87,21 @@ catalogues and their Receipt metadata is not offered for loading or consumption.
 The selected Receipt still belongs to the acting Cycle's Commit Region. Ordinary
 same-Region evidence remains available. This adds no Tragedy requirement and
 cannot consume Tragedy Receipts. Foreign homologous escape instead requires the acting Region’s exact unresolved Tragedy Receipt. Source-specific schema branches and transactional server validation enforce the pairing.
+
+## Stage 5 compatibility and rollout
+
+No migration deletes or reinterprets historical Receipt, load, consumption,
+Tragedy or scope records. Existing scope projection and exhaustion authority
+remain unchanged pending Stage 6. Pre-Stage-5 non-Bias Tragedy consumption is
+retained only as archived test/migration data via an explicitly named fixture;
+the current dispatcher cannot create it. Archived fixture insertion emits no
+live consumption event. New homologous Bias consumption uses the existing
+transaction, locks, uniqueness and after-commit events.
+
+The measurement cache version is `ordinary-receipt-evidence-v11` so historical
+Tragedy load weights cannot survive as cached live evidence. Ordinary formulas,
+Charge, Potential and immutable Commitment snapshots are unchanged. Use the
+existing bounded `commons:measurements-repair <substrate> --limit=100` and then
+`commons:potential-rebuild <substrate>` maintenance workflow to refresh stored
+projections before resuming participation. No production data was modified by
+this implementation.

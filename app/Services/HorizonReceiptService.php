@@ -13,10 +13,10 @@ use DomainException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
-/** Shared evidence. The producing Participant grants no permission or priority. */
+/** Ordinary evidence and dedicated escape warrants share storage, never authority. */
 final class HorizonReceiptService
 {
-    public function available(Phase $phase, ?ParticipationContext $context = null): Collection
+    public function catalogue(Phase $phase, ?ParticipationContext $context = null): Collection
     {
         $context ??= new ParticipationContext($phase);
 
@@ -37,12 +37,35 @@ final class HorizonReceiptService
         });
     }
 
+    /** Presentation union only. Operational evidence callers must use this ordinary subset. */
+    public function ordinaryAvailable(Phase $phase, ?ParticipationContext $context = null): Collection
+    {
+        return $this->catalogue($phase, $context)->where('type', '!=', 'tragedy')->values();
+    }
+
+    /** Exact immutable owner plus current scope and unresolved/unconsumed state. No load required. */
+    public function tragedyWarrant(Phase $phase, ?ParticipationContext $context = null): ?Receipt
+    {
+        $context ??= new ParticipationContext($phase);
+        if ($phase->cycle->entry_committal_id === null) {
+            return null;
+        }
+        $id = $context->remember('bias-tragedy-warrant:'.$phase->id, fn () => DB::table('tragedies')
+            ->where('governing_committal_id', $phase->cycle->entry_committal_id)
+            ->where('context_horizon_id', $phase->cycle->context_horizon_id)
+            ->whereNotExists(fn ($q) => $q->selectRaw('1')->from('commit_region_exhaustions as exhausted')
+                ->whereColumn('exhausted.tragedy_id', 'tragedies.id'))
+            ->value('receipt_id'));
+
+        return $this->catalogue($phase, $context)->where('type', 'tragedy')->firstWhere('id', $id);
+    }
+
     /** Generating an observation is separate from attaching or consuming it. */
     public function instrumentedIds(Phase $phase, Collection $ids): Collection
     {
         return DB::table('instrument_executions as execution')
             ->join('receipts as receipt', 'receipt.instrument_execution_id', '=', 'execution.id')
-            ->where('execution.status', 'completed')
+            ->where('receipt.type', '!=', 'tragedy')->where('execution.status', 'completed')
             ->where('receipt.context_horizon_id', $phase->cycle->context_horizon_id)
             ->whereIn('execution.proposition_id', $ids)->distinct()->pluck('execution.proposition_id');
     }
@@ -55,17 +78,18 @@ final class HorizonReceiptService
         }
         Substrate::whereKey($phase->cycle->participant->substrate_id)->lockForUpdate()->firstOrFail();
         $receipt = Receipt::whereKey($receiptId)->lockForUpdate()->first();
-        if ($receipt === null || ! app(ReceiptRegionService::class)->contains($receipt, $phase, new ParticipationContext($phase))
-            || ! $receipt->observationComplete()
+        $context = new ParticipationContext($phase);
+        if ($receipt === null || ! app(ReceiptRegionService::class)->contains($receipt, $phase, $context)
             || $receipt->consumption()->exists()) {
             throw new DomainException('Reclassification requires an unconsumed Receipt from this Commit Region.');
         }
         if ($phase->kind === PhaseKind::Bias) {
             // Re-resolve under the contribution/Receipt locks; a cached plan is not authority.
-            if (! app(BiasReceiptAuthorityService::class)->receiptsFor($phase, $source, new ParticipationContext($phase))->contains('id', $receipt->id)) {
+            if (! app(BiasReceiptAuthorityService::class)->receiptsFor($phase, $source, $context)->contains('id', $receipt->id)) {
                 throw new DomainException('Bias requires an ordinary own-Region Receipt for local/mediated sources, or its exact unresolved Tragedy Receipt for homologous escape.');
             }
-        } elseif ($source->phase->cycle->context_horizon_id !== $receipt->context_horizon_id) {
+        } elseif (! $this->ordinaryAvailable($phase, $context)->contains('id', $receipt->id)
+            || $source->phase->cycle->context_horizon_id !== $receipt->context_horizon_id) {
             throw new DomainException('Receipt attachment requires an authorized source in this Horizon.');
         }
         if ($target->phase_id !== $phase->id) {

@@ -33,7 +33,7 @@ class ExhaustionRealtimeTest extends TestCase
         Queue::fake();
     }
 
-    public function test_tragedy_and_receipt_consumption_then_exhaustion_publish_minimal_events_and_avatar_movement_after_commit(): void
+    public function test_tragedy_and_exhaustion_over_archived_consumption_publish_minimal_events_after_commit(): void
     {
         $events = $positions = [];
         Event::listen(RealtimeInvalidation::class, function ($event) use (&$events): void {
@@ -60,7 +60,9 @@ class ExhaustionRealtimeTest extends TestCase
         $this->assertSame([], $events);
         $this->assertSame([], $positions);
         DB::commit();
-        foreach (['receipt.consumed', 'horizon.exhausted', 'context-horizons.changed', 'graph.metrics_changed', 'participant.state_changed'] as $type) {
+        // Archived consumption is fixture history, not a newly authorized live action.
+        $this->assertNotContains('receipt.consumed', array_column($events, 'type'));
+        foreach (['horizon.exhausted', 'context-horizons.changed', 'graph.metrics_changed', 'participant.state_changed'] as $type) {
             $this->assertContains($type, array_column($events, 'type'));
         }
         $event = collect($events)->firstWhere('type', 'horizon.exhausted');

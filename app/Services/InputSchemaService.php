@@ -83,7 +83,7 @@ final readonly class InputSchemaService
             $schema['$defs']['actions']['proposition.reclassify']['properties']['proposition_id']['enum'] =
                 $kind === PhaseKind::Bias ? $gateOptionIds : [$gate->id];
             $schema['$defs']['actions']['proposition.reclassify']['properties']['receipt_id']['enum'] =
-                app(HorizonReceiptService::class)->available($occurrence, $context)->pluck('id')->all();
+                app(HorizonReceiptService::class)->ordinaryAvailable($occurrence, $context)->pluck('id')->all();
             if ($kind === PhaseKind::Bias) {
                 $context ??= new ParticipationContext($occurrence);
                 $authority = app(BiasReceiptAuthorityService::class);

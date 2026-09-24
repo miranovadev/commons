@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 
 final readonly class LineageMeasurementService
 {
-    public const string VERSION = 'committal-closure-v10';
+    public const string VERSION = 'ordinary-receipt-evidence-v11';
 
     public function __construct(
         private LocalMeasurementService $local,

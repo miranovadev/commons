@@ -102,7 +102,7 @@ final class PropositionOptionService
         if (in_array($phase->kind, [PhaseKind::Distinguish, PhaseKind::Disperse], true)) {
             $receipts = app(HorizonReceiptService::class);
             $instrumented = $receipts->instrumentedIds($phase, $writes->pluck('id'));
-            $shared = $receipts->available($phase, $context)->isNotEmpty();
+            $shared = $receipts->ordinaryAvailable($phase, $context)->isNotEmpty();
 
             return $writes->whereNotIn('id', $this->traversalOptionsFor($phase, $context)->pluck('id'))
                 ->filter(fn ($node) => ! $shared || ! $instrumented->contains($node->id))->values();
@@ -155,7 +155,7 @@ final class PropositionOptionService
             return collect();
         }
 
-        $shared = app(HorizonReceiptService::class)->available($phase, $context)->isNotEmpty();
+        $shared = app(HorizonReceiptService::class)->ordinaryAvailable($phase, $context)->isNotEmpty();
         $expressive = in_array($phase->kind, [PhaseKind::Distinguish, PhaseKind::Disperse], true);
 
         $writes = $this->unspentWrites($phase, $context);
@@ -289,6 +289,7 @@ final class PropositionOptionService
             $ids = $nodes->filter(fn ($node) => ($seeds[$node->id] ?? null) !== null
                 && $seeds[$node->id] === $phase->cycle->entry_committal_id)->pluck('id');
         }
+
         return $context !== null
             ? $this->positions->filter($context->nodes($ids), $phase, $phase->kind)->pluck('id')
             : $this->positions->scope(Proposition::query()->active()->whereKey($ids), $phase, $phase->kind)
@@ -301,4 +302,3 @@ final class PropositionOptionService
         return max(1, (int) config('schemas.options.limit', 10));
     }
 }
-

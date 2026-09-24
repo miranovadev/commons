@@ -120,7 +120,7 @@ final readonly class AttestationEvidenceService
         foreach ($events as $event) {
             $load = $context !== null ? $contexts->get($event->participant_receipt_context_id) : $event->context;
             $receipt = $context !== null ? $receipts->get($load->receipt_id) : $load->receipt;
-            if ($receipt === null || $load->evidence_signature === null) {
+            if ($receipt === null || $receipt->type === 'tragedy' || $load->evidence_signature === null) {
                 continue;
             }
             // Context rows already resolve legacy Attestation subjects to their Proposition.

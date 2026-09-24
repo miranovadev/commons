@@ -69,8 +69,8 @@ class CausalRecoveryTest extends TestCase
             $instruments = app(InstrumentExecutionService::class);
             $receipt = $instruments->complete($instruments->start($source->phase, $source, 'citation', $a->id), $source);
             $service = app(HorizonReceiptService::class);
-            $this->assertContains($receipt->id, $service->available($this->phase($horizon, $a, PhaseKind::Distinguish))->pluck('id'));
-            $this->assertNotContains($receipt->id, $service->available($this->phase($horizon, $b, PhaseKind::Distinguish))->pluck('id'));
+            $this->assertContains($receipt->id, $service->ordinaryAvailable($this->phase($horizon, $a, PhaseKind::Distinguish))->pluck('id'));
+            $this->assertNotContains($receipt->id, $service->ordinaryAvailable($this->phase($horizon, $b, PhaseKind::Distinguish))->pluck('id'));
         }
     }
 
@@ -173,9 +173,9 @@ class CausalRecoveryTest extends TestCase
         $viewer = $this->phase($this->root, $near, PhaseKind::Distinguish);
         $service = app(HorizonReceiptService::class);
         $this->assertNotSame($carrier->id, $viewer->cycle->participant_id);
-        $this->assertContains($receipt->id, $service->available($viewer)->pluck('id'));
+        $this->assertContains($receipt->id, $service->catalogue($viewer)->pluck('id'));
         $elsewhere = $this->phase($this->root, $far, PhaseKind::Distinguish);
-        $this->assertNotContains($receipt->id, $service->available($elsewhere)->pluck('id'));
+        $this->assertNotContains($receipt->id, $service->catalogue($elsewhere)->pluck('id'));
         $this->assertEquals($original, $receipt->fresh()->getAttributes());
         $this->assertSame($position->phase->cycle->participant_id, $tragedy->participant_id);
     }
@@ -281,7 +281,7 @@ class CausalRecoveryTest extends TestCase
         $migration->down();
         $migration->up();
         $this->assertDatabaseHas('tragedy_receipt_scopes', ['tragedy_id' => $tragedy->id, 'current_committal_id' => null]);
-        $this->assertNotContains($tragedy->receipt_id, app(HorizonReceiptService::class)->available($entry)->pluck('id'));
+        $this->assertNotContains($tragedy->receipt_id, app(HorizonReceiptService::class)->catalogue($entry)->pluck('id'));
         $this->assertSame($before, Receipt::findOrFail($tragedy->receipt_id)->getAttributes());
     }
 
@@ -309,7 +309,7 @@ class CausalRecoveryTest extends TestCase
         $this->assertSame($near->id, $scope()); // Cannot overshoot the actual C -> B destination.
         $viewer = $this->phase($this->root, $near, PhaseKind::Distinguish);
         $this->assertNotSame($trigger->id, $viewer->cycle->participant_id);
-        $this->assertContains($receipt->id, app(HorizonReceiptService::class)->available($viewer)->pluck('id'));
+        $this->assertContains($receipt->id, app(HorizonReceiptService::class)->catalogue($viewer)->pluck('id'));
         // A historical transported Receipt remains readable, but cannot grant
         // another governing basin the original region's final-attempt authority.
         // The original trigger's normal completion/entry does not carry shared scope.
@@ -328,12 +328,11 @@ class CausalRecoveryTest extends TestCase
         $this->assertNotSame($trigger->id, $other->id);
         $follow($second);
         $this->assertSame($far->id, $scope());
-        $this->assertNotContains($receipt->id, app(HorizonReceiptService::class)->available($viewer)->pluck('id'));
-        $this->assertContains($receipt->id, app(HorizonReceiptService::class)->available($second)->pluck('id'));
+        $this->assertNotContains($receipt->id, app(HorizonReceiptService::class)->catalogue($viewer)->pluck('id'));
+        $this->assertContains($receipt->id, app(HorizonReceiptService::class)->catalogue($second)->pluck('id'));
         $source = $this->expressive($this->root, $far);
         $classificationPhase = $this->phase($this->root, $source, PhaseKind::Constrain);
-        $classification = $this->node($classificationPhase, $source);
-        DB::transaction(fn () => app(HorizonReceiptService::class)->consume($classificationPhase, $source, $classification, $receipt->id));
+        $classification = $this->legacyTragedyClassificationFixture($classificationPhase, $source, $receipt->id);
         $consumption = $receipt->fresh()->consumption->getAttributes();
         $frozen = DB::table('tragedy_receipt_scopes')->where('tragedy_id', $tragedy->id)->first();
         $later = $this->resting($this->root, $classification);
@@ -364,7 +363,7 @@ class CausalRecoveryTest extends TestCase
         $entry = $this->phase($this->root, $foreign, PhaseKind::Distinguish, $carrier);
         DB::transaction(fn () => app(TragedyReceiptScopeService::class)->followRecovery($entry));
         $this->assertSame($origin->id, DB::table('tragedy_receipt_scopes')->where('tragedy_id', $tragedy->id)->value('current_committal_id'));
-        $this->assertNotContains($tragedy->receipt_id, app(HorizonReceiptService::class)->available($entry)->pluck('id'));
+        $this->assertNotContains($tragedy->receipt_id, app(HorizonReceiptService::class)->catalogue($entry)->pluck('id'));
     }
 
     public function test_selected_destination_retains_unchanged_attenuated_diagnostic_values(): void
@@ -1145,8 +1144,7 @@ class CausalRecoveryTest extends TestCase
         $this->measurements[$source->id] = 1;
         $this->classificationEvidenceFixture($source);
         $classification = $this->phase($horizon, $source, PhaseKind::Constrain);
-        $target = app(ContributionDispatcher::class)->dispatch($classification->cycle->participant, $classification,
-            ['action' => 'proposition.reclassify', 'proposition_id' => $source->id, 'receipt_id' => $tragedy->receipt_id]);
+        $target = $this->legacyTragedyClassificationFixture($classification, $source, $tragedy->receipt_id);
         $this->measurements[$target->id] = 1;
         $this->explore($target);
         $final = $this->phase($horizon, $target);
@@ -1181,8 +1179,7 @@ class CausalRecoveryTest extends TestCase
         $source = $this->node($this->phase($horizon, $opening, PhaseKind::Persist), $opening);
         $this->classificationEvidenceFixture($source);
         $classification = $this->phase($horizon, $source, PhaseKind::Constrain);
-        $target = app(ContributionDispatcher::class)->dispatch($classification->cycle->participant, $classification,
-            ['action' => 'proposition.reclassify', 'proposition_id' => $source->id, 'receipt_id' => $tragedy->receipt_id]);
+        $target = $this->legacyTragedyClassificationFixture($classification, $source, $tragedy->receipt_id);
         $this->explore($target);
         $terminal = $this->phase($horizon, $target);
         $this->refreshMeasurements();

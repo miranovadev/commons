@@ -129,8 +129,11 @@ final class ParticipationContext
             ->orWhere(fn ($q) => $q->where('receiptable_type', (new Attestation)->getMorphClass())->whereIn('receiptable_id', $this->attestations->keys()))
             ->orWhereIn('id', $this->receiptLinks->pluck('receipt_id')))
             ->with(['ledgerEntry', 'instrumentExecution'])->get();
-        $this->receiptContexts = ParticipantReceiptContext::whereIn('proposition_id', $ids)->get();
-        $this->reinforcements = $this->receiptContexts->whereNull('cleared_at');
+        // Historical load subjects need not match their Receipt's observed subject.
+        // Resolve type in the existing batch even when that Receipt lies outside this graph.
+        $this->receiptContexts = ParticipantReceiptContext::whereIn('proposition_id', $ids)
+            ->withExists(['receipt as ordinary_evidence' => fn ($q) => $q->where('type', '!=', 'tragedy')])->get();
+        $this->reinforcements = $this->receiptContexts->whereNull('cleared_at')->where('ordinary_evidence', true);
         $this->receiptContextEvents = ReceiptContextEvent::whereIn('participant_receipt_context_id', $this->receiptContexts->pluck('id'))->with('ledgerEntry')->get();
         $this->receiptsBySubject = $this->receipts->groupBy(fn ($receipt) => $receipt->receiptable_type.':'.$receipt->receiptable_id);
         $this->touches = Phase::query()->whereIn('gate_proposition_id', $ids)

@@ -30,7 +30,7 @@ final class RestReasonService
         $testedWrites = $writes->isNotEmpty() && $writes->pluck('id')->diff($spent->keys())->isEmpty();
         if (! $testedWrites && ($state->attestations(collect([$gate]), $context)->isEmpty()
             || ($state->receipts($gate, $context)->isEmpty()
-                && app(HorizonReceiptService::class)->available($phase, $context)->isEmpty()))) {
+                && app(HorizonReceiptService::class)->ordinaryAvailable($phase, $context)->isEmpty()))) {
             return RestReason::NoAvailableMove;
         }
 

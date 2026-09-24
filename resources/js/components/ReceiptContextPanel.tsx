@@ -18,6 +18,7 @@ export function ReceiptContextPanel({ plan }: { plan: ParticipantPlan }) {
           : null}
         </Group>
       </Group>
+      {receipt.type === 'tragedy' && <Text size="xs" c="dimmed">Boundary-exit warrant for eligible homologous Bias in its owning Commit Region. Cannot be loaded or replayed; catalogue visibility alone grants no authority.</Text>}
       {receipt.attached_proposition_id && <Text size="xs" c="dimmed">Attached to {receipt.attached_proposition_id}</Text>}
       {receipt.status === 'already-in-context' && <Text size="xs" c="dimmed">Referenced Proposition is already in this context.</Text>}
       {receipt.observation_error && <Text size="xs" c="dimmed">{receipt.observation_error}</Text>}

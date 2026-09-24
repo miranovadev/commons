@@ -66,7 +66,7 @@ class ReceiptGatedReclassificationTest extends TestCase
         $this->assertSame($receipt->id, app(PropositionStateService::class)->receipts($result)->sole()->id);
         $this->assertSame($result->id, $receipt->fresh()->consumption->proposition_id);
         $this->assertSame(0, $result->attestations()->count());
-        $this->assertTrue(app(HorizonReceiptService::class)->available($phase)->isEmpty());
+        $this->assertTrue(app(HorizonReceiptService::class)->ordinaryAvailable($phase)->isEmpty());
         $this->assertDatabaseHas('receipts', ['id' => $receipt->id]);
     }
 

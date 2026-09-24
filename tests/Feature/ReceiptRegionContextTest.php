@@ -37,22 +37,22 @@ class ReceiptRegionContextTest extends TestCase
         $f = new ParticipantContextFixture(2, 0, false);
         $r = $this->receipt($f, $f->gate);
         $service = app(HorizonReceiptService::class);
-        $this->assertContains($r->id, $service->available($f->phase)->pluck('id'));
+        $this->assertContains($r->id, $service->ordinaryAvailable($f->phase)->pluck('id'));
         $sibling = $f->node($f->seed, 'activity');
         $reconciled = $f->node($f->gate, 'frontier', 'reconcile');
         $f->edge($sibling, $reconciled, 'reconcile');
         foreach ([$sibling, $reconciled] as $gate) {
             $f->phase->forceFill(['gate_proposition_id' => $gate->id])->save();
-            $this->assertContains($r->id, $service->available($f->phase)->pluck('id'));
+            $this->assertContains($r->id, $service->ordinaryAvailable($f->phase)->pluck('id'));
         }
         $commit = $f->node($reconciled, 'canon', 'commit', 'committal');
         $f->phase->forceFill(['gate_proposition_id' => $commit->id])->save();
         $this->assertSame($r->context_horizon_id, $f->phase->cycle->context_horizon_id);
         // Changing the Gate does not change this Cycle's immutable catalogue.
-        $this->assertContains($r->id, $service->available($f->phase)->pluck('id'));
+        $this->assertContains($r->id, $service->ordinaryAvailable($f->phase)->pluck('id'));
         $target = $f->node($commit, 'activity'); // A distinct Cycle entered at the new Commit.
         $this->assertSame($commit->id, $target->phase->cycle->entry_committal_id);
-        $this->assertNotContains($r->id, $service->available($target->phase)->pluck('id'));
+        $this->assertNotContains($r->id, $service->ordinaryAvailable($target->phase)->pluck('id'));
         $this->expectException(\DomainException::class);
         DB::transaction(fn () => $service->consume($target->phase, $commit, $target, $r->id));
     }
@@ -62,13 +62,13 @@ class ReceiptRegionContextTest extends TestCase
         $f = new ParticipantContextFixture(1, 0, false);
         $orphan = $f->node(null, 'activity');
         $r = $this->receipt($f, $orphan);
-        $this->assertNotContains($r->id, app(HorizonReceiptService::class)->available($f->phase)->pluck('id'));
+        $this->assertNotContains($r->id, app(HorizonReceiptService::class)->ordinaryAvailable($f->phase)->pluck('id'));
         $other = $f->node(null, 'canon', 'variant', 'committal');
         $f->edge($f->seed, $orphan, 'reconcile');
         $f->edge($other, $orphan, 'reconcile');
-        $this->assertNotContains($r->id, app(HorizonReceiptService::class)->available($f->phase)->pluck('id'));
+        $this->assertNotContains($r->id, app(HorizonReceiptService::class)->ordinaryAvailable($f->phase)->pluck('id'));
         $f->phase->forceFill(['gate_proposition_id' => $orphan->id])->save();
-        $this->assertEmpty(app(HorizonReceiptService::class)->available($f->phase));
+        $this->assertEmpty(app(HorizonReceiptService::class)->ordinaryAvailable($f->phase));
     }
 
     public function test_valid_governance_is_not_erased_by_malformed_secondary_provenance(): void
@@ -78,9 +78,9 @@ class ReceiptRegionContextTest extends TestCase
         $mixed = $f->node($f->seed, 'activity');
         $f->edge($orphan, $mixed, 'reconcile');
         $r = $this->receipt($f, $mixed);
-        $this->assertContains($r->id, app(HorizonReceiptService::class)->available($f->phase)->pluck('id'));
+        $this->assertContains($r->id, app(HorizonReceiptService::class)->ordinaryAvailable($f->phase)->pluck('id'));
         $f->edge($mixed, $orphan, 'reconcile');
-        $this->assertContains($r->id, app(HorizonReceiptService::class)->available($f->phase)->pluck('id'));
+        $this->assertContains($r->id, app(HorizonReceiptService::class)->ordinaryAvailable($f->phase)->pluck('id'));
     }
 
     public function test_a_foreign_region_parent_does_not_import_its_receipts(): void
@@ -93,7 +93,7 @@ class ReceiptRegionContextTest extends TestCase
         $result = $f->node($f->gate, 'frontier', 'reconcile');
         $f->edge($foreign, $result, 'reconcile');
         $f->phase->forceFill(['gate_proposition_id' => $result->id])->save();
-        $available = app(HorizonReceiptService::class)->available($f->phase)->pluck('id');
+        $available = app(HorizonReceiptService::class)->ordinaryAvailable($f->phase)->pluck('id');
         $this->assertContains($localReceipt->id, $available);
         $this->assertNotContains($foreignReceipt->id, $available);
         $this->assertSame($localReceipt->context_horizon_id, $foreignReceipt->context_horizon_id);
@@ -107,7 +107,7 @@ class ReceiptRegionContextTest extends TestCase
         $target = $f->node($f->gate, 'frontier');
         DB::transaction(fn () => app(HorizonReceiptService::class)->consume($target->phase, $f->gate, $target, $r->id));
         $this->assertEquals($original, $r->fresh()->getAttributes());
-        $this->assertNotContains($r->id, app(HorizonReceiptService::class)->available($f->phase)->pluck('id'));
+        $this->assertNotContains($r->id, app(HorizonReceiptService::class)->ordinaryAvailable($f->phase)->pluck('id'));
         $this->assertSame($target->id, $r->fresh()->consumption->proposition_id);
         $this->assertDatabaseCount('participant_receipt_contexts', 0);
     }
@@ -155,7 +155,7 @@ class ReceiptRegionContextTest extends TestCase
             $context = new ParticipationContext($f->phase);
             DB::enableQueryLog();
             DB::flushQueryLog();
-            $items = app(HorizonReceiptService::class)->available($f->phase, $context);
+            $items = app(HorizonReceiptService::class)->ordinaryAvailable($f->phase, $context);
             $queries = count(DB::getQueryLog());
             DB::disableQueryLog();
 
@@ -171,5 +171,3 @@ class ReceiptRegionContextTest extends TestCase
         $this->assertLessThanOrEqual(6, $after);
     }
 }
-
-
