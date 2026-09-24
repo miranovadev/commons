@@ -438,7 +438,9 @@ remain active. A direct Commit edge consumes its source globally; other branches
 
 A Tragedy Receipt is a dedicated boundary-exit warrant, never ordinary evidence.
 Ordinary Receipt APIs alone govern Instrument, Attestation and non-Bias
-Reclassification. Tragedy cannot be loaded, unloaded or replayed; catalogue
+Reclassification. Tragedy can be loaded/unloaded as condensed committed-lineage
+memory, never replayed. Memory supplies no Reinforcement or evidential authority;
+loading and boundary-warrant consumption are independent. Catalogue
 visibility and historical load rows supply no evidential authority. See the
 [Receipt categories and compatibility rules](receipt-region-context.md).
 
@@ -584,5 +586,4 @@ selected source's Region while retaining the acting Cycle's accounting entry.
 later revisions; unrecorded foreign edges still fail the provenance check.
 Potential retains the edge as a foreign input and excludes it from local terrain,
 just as for existing foreign Reconcile inputs. No Potential formula changes.
-
 

@@ -85,7 +85,10 @@ final readonly class LedgerService
                     default => [],
                 };
                 $phase = $ledgerable->phase;
-                app(FieldMutationService::class)->touch($phase, $affected);
+                // A memory transition is auditable cognition, not a field mutation.
+                if (! ($ledgerable instanceof ReceiptContextEvent && $ledgerable->context->receipt->type === 'tragedy')) {
+                    app(FieldMutationService::class)->touch($phase, $affected);
+                }
                 if ($ledgerable instanceof Supersession) {
                     app(OriginBranchService::class)->include($ledgerable);
                 }

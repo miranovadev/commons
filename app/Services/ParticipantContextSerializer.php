@@ -85,6 +85,17 @@ final class ParticipantContextSerializer
 
     private function receipt(array $receipt): array
     {
+        if ($receipt['type'] === 'tragedy') {
+            return [
+                ...Arr::only($receipt, ['id', 'loaded', 'proposition_id', 'context_horizon_id', 'availability', 'consumed_at',
+                    'attached_proposition_id', 'type', 'reference', 'status', 'loaded_at', 'capabilities', 'purpose', 'load_mode']),
+                'active' => false, 'can_replay' => false,
+                'memory_active' => ($receipt['loaded'] ?? false) && ($receipt['memory_active'] ?? false),
+                ...(($receipt['loaded'] ?? false) && ($receipt['memory_active'] ?? false) && isset($receipt['tragedy_memory'])
+                    ? ['tragedy_memory' => $this->memory($receipt['tragedy_memory'])] : []),
+            ];
+        }
+
         return [
             ...Arr::only($receipt, ['id', 'loaded', 'active', 'proposition_id', 'context_horizon_id', 'availability', 'consumed_at', 'attached_proposition_id', 'type', 'reference', 'status', 'loaded_at', 'capabilities', 'can_replay', 'replayed_from_receipt_id']),
             ...(($receipt['active'] ?? false) ? Arr::only($receipt, ['signature', 'observation_error']) : []),
@@ -94,6 +105,17 @@ final class ParticipantContextSerializer
                 'query', 'executed_at', 'results', 'provider', 'request_id',
                 'tragedy_id', 'terminal_proposition_id', 'opening_proposition_id', 'exhausted_committals',
             ])] : []),
+        ];
+    }
+
+    private function memory(array $memory): array
+    {
+        return [
+            ...Arr::only($memory, ['tragedy_id', 'receipt_id', 'governing_committal_id', 'chain_limit', 'earlier_history_omitted', 'starts_at_current_committal', 'chain_direction']),
+            'committed_chain' => array_map(fn ($node) => Arr::only($node,
+                ['proposition_id', 'statement', 'register', 'domain', 'depth', 'cadence', 'tension']), $memory['committed_chain']),
+            'catastrophe' => Arr::only($memory['catastrophe'], ['proposition_id', 'statement', 'phase', 'register',
+                'tension', 'charge', 'recorded_field_available', 'observed_at']),
         ];
     }
 

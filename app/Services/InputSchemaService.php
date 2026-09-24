@@ -180,7 +180,7 @@ final readonly class InputSchemaService
 
     private function withReceiptOptions(array $schema, Phase $phase, ?ParticipationContext $context): array
     {
-        $ids = $this->receipts->gateOptions($phase, $context)->pluck('id')->sort()->values()->all();
+        $ids = $this->receipts->loadOptions($phase, $context)->pluck('id')->sort()->values()->all();
         if ($ids === []) {
             return $schema;
         }
@@ -191,7 +191,7 @@ final readonly class InputSchemaService
             }
             $action['properties']['receipt_options'] = ['type' => 'object', 'additionalProperties' => false,
                 'properties' => ['load' => $selection, 'unload' => $selection],
-                'description' => 'Optional desired state for current Gate Receipt references. Load and unload must be disjoint; already satisfied states are no-ops. Applied atomically with this action, visible next Phase.'];
+                'description' => 'Optional desired state for current Gate evidence or scoped Tragedy memory. Tragedy loading remembers only: no evidence, Reinforcement or escape authority. Load and unload must be disjoint; already satisfied states are no-ops. Applied atomically with this action, visible next Phase.'];
         }
         unset($action);
 

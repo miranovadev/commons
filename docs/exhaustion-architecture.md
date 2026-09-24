@@ -11,6 +11,7 @@ The normative lifecycle is [Charge-boundary Tragedy and exhaustion](branch-trage
 | `HorizonReceiptService` | Shared availability and atomic one-use attachment under Substrate/Receipt locks |
 | `ExhaustionService` | Publish unique later-boundary proof and Cycle-owned historical membership; enforce regional actionability |
 | `TragedyEvidenceService` | Resolve historical exhausted Committal references for warrant presentation, never loading |
+| `TragedyMemoryService` | Bounded canonical committed-lineage memory, independent of evidence and warrant authority |
 | `RecoveryBasinResolver` | Constrain candidates to ancestral Committals on the recorded backward lineage; cross the opening boundary only when boundary-governing region exhaustion permits |
 | `ParticipantHistoricalContext` | Keep relevant exhausted positions visible, newest-first, without action targets |
 | `ExhaustionAuditService` | Read-only proof consistency diagnostics |
