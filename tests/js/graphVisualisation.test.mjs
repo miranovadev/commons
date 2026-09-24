@@ -10,6 +10,10 @@ const result = await build({ stdin: { contents: `
   import { renderToStaticMarkup } from 'react-dom/server';
   import { MantineProvider } from '@mantine/core';
   import { PropositionGraph } from './resources/js/components/PropositionGraph';
+  import { HorizonContext } from './resources/js/components/HorizonContext';
+  export function provenance(proposition) {
+    return renderToStaticMarkup(<MantineProvider env="test"><HorizonContext domain="emergence" provenance={proposition} onInspect={() => {}} /></MantineProvider>);
+  }
   export { buildGraphStructure, buildGraphLayout, graphDensities, isGraphDensity } from './resources/js/graphLayout';
   export { graphParents, causalAncestors, lineageVisibility, graphNavigation, nextInLineage, rememberLineagePath } from './resources/js/graphTopology';
   export { attestationColors } from './resources/js/directionalPresentation';
@@ -34,6 +38,29 @@ const node = (id, parent_ids = [], domain = 'emergence') => ({ id, title: id, st
   register: 'activity', tier: 'expressive', context_horizon: { domain } });
 const nodes = [node('origin'), node('left', ['origin'], 'settlement'), node('right', ['origin']),
   node('reconciled', ['left', 'right']), node('descendant', ['reconciled']), node('unrelated', ['origin'])];
+
+test('historical graph markers are explicit, independent and never inferred from Charge', () => {
+  const both = render([{ ...node('event'), tragedy: true, renewal: true }]);
+  assert.match(both, /aria-label="Tragedy" title="Tragedy"/);
+  assert.match(both, /aria-label="Renewal" title="Renewal"/);
+  assert.match(both, /tabler-icon-droplet-filled/);
+  assert.match(both, /tabler-icon-seedling/);
+  assert.doesNotMatch(both, /provenance-root-icon|data-event="provenance"/);
+  const zero = render([{ ...node('zero'), field: { charge: 0, tension: 1, potential_charge: 0, status: 'current', potential_status: 'current' } }]);
+  assert.doesNotMatch(zero, /graph-history-markers|aria-label="Tragedy"|aria-label="Renewal"/);
+  assert.doesNotMatch(render([{ ...node('first'), tragedy: true }]), /aria-label="Renewal"/);
+  assert.doesNotMatch(render([{ ...node('exit'), renewal: true }]), /aria-label="Tragedy"/);
+});
+
+test('Provenance retains its exact reference and title with only a root-node icon', () => {
+  const html = module.exports.provenance(node('same-context'));
+  assert.match(html, /provenance-root-icon/);
+  assert.match(html, /<circle cx="6" cy="12" r="3"/);
+  assert.match(html, /d="M9 12h12"/);
+  assert.match(html, />Provenance</);
+  assert.match(html, /data-proposition-id="same-context"/);
+  assert.doesNotMatch(html, /tabler-icon-seedling|graph-history-marker/);
+});
 
 test('selection follows all ancestral branches, deduplicates and excludes descendants and siblings', () => {
   const parents = graphParents(nodes);

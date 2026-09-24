@@ -1,5 +1,5 @@
 import { Box, Group, Text, UnstyledButton } from '@mantine/core';
-import { IconSeedling, IconSunHigh, IconSunWind } from '@tabler/icons-react';
+import { IconSunHigh, IconSunWind } from '@tabler/icons-react';
 import { metaForDomain, metaForRegister } from '../registers';
 import type { DomainName, Proposition, PropositionSelection, WorkspaceHorizon } from '../types';
 
@@ -31,7 +31,7 @@ export function HorizonContext({ horizon, domain, provenance, onInspect }: {
             ? 'Origin Horizon · no opening Committal' : 'Opening Committal details unavailable'}</Text>}
     </Box>
     <Box component="section" className="horizon-context__provenance" aria-label="Participant provenance">
-      <Group gap={6}><IconSeedling size={16} aria-hidden="true" /><Text size="xs" fw={600}>Provenance</Text></Group>
+      <Group gap={6}><svg className="provenance-root-icon" width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx={6} cy={12} r={3} /><path d="M9 12h12" /></svg><Text size="xs" fw={600}>Provenance</Text></Group>
       {reference(provenance, 'provenance')}
     </Box>
   </Box>;

@@ -2,7 +2,7 @@ import { InspectorContent } from './PropositionInspector';
 import { useGetPropositionQuery } from '../services/commonsApi';
 import { Alert, Box, Group, Paper, Text, ThemeIcon, Title } from '@mantine/core';
 import { useLocalStorage } from '@mantine/hooks';
-import { IconArrowsMove, IconSparkles } from '@tabler/icons-react';
+import { IconArrowsMove, IconDropletFilled, IconSeedling, IconSparkles } from '@tabler/icons-react';
 import { memo, useCallback, useLayoutEffect, useMemo, useReducer, useRef, useState } from 'react';
 import '../../css/substrate-graph.css';
 import { PropositionCard } from './PropositionCard';
@@ -194,6 +194,10 @@ const GraphNode = memo(function GraphNode({ proposition, x, y, lineage, overlay,
     style={{ left: x, top: y, width: nodeWidth, '--graph-node-height': `${nodeHeight}px` }}>
     <GraphParticipants participants={participants} compact={density === 'topology'} />
     <PropositionCard proposition={proposition} mini graph density={density} overlay={overlay} selected={lineage === 'selected'} onClick={() => onSelect(proposition.id)} />
+    {(proposition.tragedy || proposition.renewal) && <span className="graph-history-markers">
+      {proposition.tragedy && <span className="graph-history-marker" data-event="tragedy" role="img" aria-label="Tragedy" title="Tragedy"><IconDropletFilled size={14} aria-hidden="true" /></span>}
+      {proposition.renewal && <span className="graph-history-marker" data-event="renewal" role="img" aria-label="Renewal" title="Renewal"><IconSeedling size={14} aria-hidden="true" /></span>}
+    </span>}
     {proposition.is_origin && <Text className="substrate-graph-origin-label" size="10px" c="indigo" fw={700}>ORIGIN</Text>}
   </Box>;
 }, (previous, next) => previous.proposition === next.proposition && previous.x === next.x && previous.y === next.y
