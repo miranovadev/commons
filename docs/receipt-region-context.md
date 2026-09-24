@@ -6,13 +6,14 @@ Receipts ground Propositions. Attestations express Participant judgments over th
 | --- | --- |
 | Context Horizon | Existing structural and measurement boundary |
 | Commit Region | Ordinary shared discovery and one-use consumption |
-| Participant load | Persistent, participant-specific Reinforcement |
+| Ordinary evidence load | Persistent, participant-specific Reinforcement |
+| Tragedy memory load | Persistent cognitive context, never evidence or Reinforcement |
 | Participant-facing Read | Activation of full loaded evidence |
-| Tragedy recovery path | Tragedy Receipt's retained moving scope until consumption |
+| Tragedy scope | Owning Region; recovery does not transport authority |
 
 ## Evidence and boundary warrants
 
-A Tragedy Receipt is not ordinary evidence. It is a dedicated, un-loadable,
+A Tragedy Receipt is not ordinary evidence. It is a dedicated,
 non-replayable warrant authorizing one eligible foreign homologous Bias
 Reclassification out of its immutable owning Commit Region. It does not satisfy
 Instrument completion, Attestation, ordinary Reclassification, or generic
@@ -32,8 +33,57 @@ Tragedy has no evidence signature, active evidence body, replay invocation or
 Reinforcement. Participant context labels it
 `purpose: homologous_boundary_escape`; catastrophe details are separate warrant
 provenance. Historical load and consumption rows remain auditable, but cannot
-supply ordinary evidence or create a new live load. Normal evidence production,
+supply ordinary evidence. New loads are memory-only, with a null evidence signature. Normal evidence production,
 loading, replay, Attestation and measurement weighting are otherwise unchanged.
+
+## Tragedy memory (Stage 7)
+
+A Tragedy Receipt may be loaded as participant memory of the committed lineage
+that led to catastrophe. This memory is cognitive context only: it supplies no
+Reinforcement, ordinary evidence, replay authority or local classification
+authority. Its separate live authority remains the one-shot foreign homologous
+Bias boundary warrant of its owning Commit Region.
+
+Load means remember. Consume means cross an eligible boundary. Reinforce: never.
+
+`receipt_options.load` and `.unload` on a successful forward contribution accept
+ordinary qualifying Gate references **or** scoped Tragedy memory. Tragedy memory
+does not pretend to be a Gate reference. Initial admission uses the existing
+Region/substrate catalogue. Loading is neither required for nor sufficient for
+escape. Rest still accepts no Receipt options; no standalone action is added.
+
+Tragedy loads persist in `ParticipantReceiptContext` with `evidence_signature =
+null`. Type explicitly selects memory mode, including for archived non-null
+signatures, which remain untouched but never become evidence. The plan exposes
+`load_mode: memory`, `memory_active`, and `active: false`. Only loaded memories
+include `tragedy_memory`; this packet is separate from `loaded_receipts` evidence.
+Consumption, exhaustion and recovery retain already-loaded same-substrate
+memory until explicitly unloaded. They do not make a foreign warrant actionable.
+After unloading, a historical Receipt outside the current catalogue cannot be
+newly loaded by guessing its ID.
+
+`TragedyMemoryService` follows the canonical creating-Cycle entry Committal edge,
+as used by `CommittalLineageService`. It never follows Supersessions or foreign
+causal inputs. The ordered chain ends at the owning Committal and starts at the
+current committed ancestor when present. From a proven committed descendant it
+walks backward to the owner instead, explicitly marked `chain_direction:
+backward`; this recalls the prior catastrophe, not a new event. Otherwise it
+starts at the nearest canonical root available. Frozen snapshot Domain, Depth, Cadence and Tension are
+paired with immutable Committal statements. The explicit terminal catastrophe
+uses the Receipt's **recorded** field, never current measurements. Archived
+Receipts lacking that field return null values and `recorded_field_available:
+false`; no boundary is reconstructed.
+
+The projection performs two queries regardless of chain depth, examining at most
+32 committed states from each of the owner and current entry seeds. The packet
+contains at most 32 states, always ending at the owner. A fallback retains the
+nearest 32 to the owner in ancestral order.
+`earlier_history_omitted` explicitly marks a capped or incomplete earlier chain;
+`starts_at_current_committal` distinguishes a proven current-context start.
+It does not hydrate the expressive graph. Load/unload events remain ledgered but
+do not dirty field projections, recalculate observables or change calculator
+version. Both database and context-backed Reinforcement continue excluding
+Tragedy by type. Ordinary load events retain their existing behavior.
 
 ## Ordinary discovery and ownership
 
@@ -45,15 +95,15 @@ New Instrument Receipts always own the observed Proposition. Legacy Attestation-
 
 ## Memory, visibility and weighting
 
-Receipt metadata in inference is exactly `id`, `type`, `reference`, `loaded`. Type preserves existing schema/UI semantics. Full bodies appear once in the existing loaded evidence prefix only when the Receipt is loaded and grounds the current Read. No Gate, Write, catalogue or Lineage occurrence injects a body. Persistent loads remain true outside Read; visibility never enters a measurement formula. No new summarisation or truncation applies.
+Ordinary Receipt metadata in inference is exactly `id`, `type`, `reference`, `loaded`. Type preserves existing schema/UI semantics. Full bodies appear once in the existing loaded evidence prefix only when the Receipt is loaded and grounds the current Read. No Gate, Write, catalogue or Lineage occurrence injects a body. Persistent loads remain true outside Read; visibility never enters a measurement formula. No new summarisation or truncation applies.
 
 Reinforcement retains the existing participant-specific uniqueness and cap: multiple qualifying Receipts supporting the same Participant/Proposition do not multiply that Participant's existing weight. Unloading the last qualifying load removes that Participant's current contribution; another Participant is unaffected. An Attestation uses its author's qualifying Proposition loads. Supersession changes the effective judgment while retaining that author's memory; ownership never moves between judgments.
 
 ## Gate desired states
 
-A successful forward Phase contribution may include `receipt_options: {"load": ["id"], "unload": []}`. The authoritative schema enumerates the same exact eligible Gate reference IDs in both arrays, permitting already-satisfied desired states. The server rejects overlap, malformed IDs, non-Gate catalogue items, foreign regions and Tragedy Receipts. The causal Gate is authoritative even at Mediate; reconciliation counterparts cannot add choices.
+A successful forward Phase contribution may include `receipt_options: {"load": ["id"], "unload": []}`. The authoritative schema enumerates exact eligible ordinary Gate reference IDs plus scoped Tragedy memory IDs in both arrays, permitting already-satisfied desired states. The server rejects overlap, malformed IDs and unadmitted references. Ordinary evidence remains Gate/Region-restricted, including at Mediate; reconciliation counterparts cannot add evidence choices. Tragedy admission follows its separate memory rule above.
 
-The existing Substrate → Participant → Phase lock order and contribution transaction cover both operations. Invalid contribution or options rolls back both. Existing load/clear events and authoritative measurement invalidation/recalculation apply only to actual transitions. The accepted action still produces one normal Phase transition. Phase N+1 observes the new state; Phase N is not inferred again. `participant.rest` does not accept `receipt_options`. Rest retains its existing recovery/proof behavior and cannot alter Receipt load state. There are no standalone Receipt Read/Replay participation actions. Replay uses `instrument.execute` with `instrument.replay_receipt_id` and the exact eligible Proposition target; it restores the original invocation and creates a new Receipt with provenance, without loading either source or result. Equivalent evidence exclusions remain authoritative.
+The existing Substrate → Participant → Phase lock order and contribution transaction cover both operations. Invalid contribution or options rolls back both. Existing load/clear events apply only to actual transitions. Only ordinary evidence transitions invalidate/recalculate measurements; memory transitions never do. The accepted action still produces one normal Phase transition. Phase N+1 observes the new state; Phase N is not inferred again. `participant.rest` does not accept `receipt_options`. Rest retains its existing recovery/proof behavior and cannot alter Receipt load state. There are no standalone Receipt Read/Replay participation actions. Replay uses `instrument.execute` with `instrument.replay_receipt_id` and the exact eligible Proposition target; it restores the original invocation and creates a new Receipt with provenance, without loading either source or result. Equivalent evidence exclusions remain authoritative.
 
 ## Tragedy scope
 

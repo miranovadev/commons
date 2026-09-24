@@ -24,7 +24,7 @@ test('Receipt panel is metadata-only except for active loaded evidence', async (
   new Function('require', 'module', 'exports', result.outputFiles[0].text)(createRequire(import.meta.url), module, module.exports);
   const receipts = [
     { id: 'available', type: 'citation', reference: 'Outside context', status: 'available' },
-    { id: 'loaded', type: 'tragedy', reference: 'Remembered', status: 'loaded', loaded: true, active: true, availability: 'consumed', attached_proposition_id: 'classified', evidence: { statement: 'Preloaded evidence body', exhausted_committals: [{ id: 'old', statement: 'Historical Committal loaded by reference', register: 'canon', phase_number: 7 }] } },
+    { id: 'loaded', type: 'hyperlink', reference: 'Remembered', status: 'loaded', loaded: true, active: true, availability: 'consumed', attached_proposition_id: 'classified', evidence: { statement: 'Preloaded evidence body', exhausted_committals: [{ id: 'old', statement: 'Historical Committal loaded by reference', register: 'canon', phase_number: 7 }] } },
     { id: 'present', type: 'citation', reference: 'In lineage', status: 'already-in-context' },
     { id: 'failed', type: 'hyperlink', reference: 'Failed verification', status: 'unqualified' },
   ];
@@ -53,5 +53,17 @@ test('Receipt panel is metadata-only except for active loaded evidence', async (
   assert.equal(receiptChoices(referenced)[0].evidence, undefined);
   assert.equal(receiptChoices({ ...referenced, receipts: [{ ...reference, status: 'loaded' }] }).length, 1);
   assert.doesNotMatch(module.exports.render({ receipts: [{ ...reference, status: 'available' }], schema: {} }), /UNREAD BODY/);
+
+  const memory = { id: 'memory', type: 'tragedy', reference: 'Catastrophe', loaded: true, memory_active: true,
+    active: true, evidence: { statement: 'MUST NOT BE EVIDENCE' }, availability: 'consumed', status: 'loaded',
+    tragedy_memory: { earlier_history_omitted: true, committed_chain: [{ proposition_id: 'owner', statement: 'Committed failed path', register: 'canon', domain: 'emergence', tension: 0.5 }],
+      catastrophe: { phase: 2, statement: 'Historical catastrophe endpoint', tension: -1, charge: 0, recorded_field_available: true } } };
+  const remembered = module.exports.render({ receipts: [memory], schema });
+  assert.match(remembered, /Committed failed path/);
+  assert.match(remembered, /Historical catastrophe endpoint/);
+  assert.match(remembered, /Historical Tension -1/);
+  assert.match(remembered, /Earlier committed history omitted/);
+  assert.doesNotMatch(remembered, /MUST NOT BE EVIDENCE/);
+  assert.doesNotMatch(module.exports.render({ receipts: [{ ...memory, loaded: false, memory_active: false }], schema }), /Committed failed path|Historical catastrophe endpoint/);
 
 });

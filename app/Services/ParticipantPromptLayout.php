@@ -9,7 +9,7 @@ final class ParticipantPromptLayout
 {
     public const VERSION = 'commons-prefix-v2';
 
-    public const FORMAT_INSTRUCTION = 'The JSON input is split into two parts of one participation state. loaded_receipts supplies immutable identity, provenance and evidence for loaded Receipts; join each record by id with its current state in plan.receipts. Unloaded available unattached Receipts appear in plan.receipts as metadata only. Loaded entries there describe Participant loading state, including consumed observations; they are not shared available catalogue entries. Proposition receipts are lightweight attachment references, never evidence bodies. Only explicitly loaded Receipts grounding a current participant-facing Read expose full evidence. Loaded state persists and Reinforcement is independent of current visibility. All other Receipt references contain only id, reference, type and loaded state. Optional receipt_options load/unload IDs belong to the current Gate and take effect with a forward Phase contribution (never Rest) for subsequent phases. These parts together describe the same Receipts, not additional evidence.';
+    public const FORMAT_INSTRUCTION = 'The JSON input is split into two parts of one participation state. loaded_receipts supplies immutable identity, provenance and evidence for loaded Receipts; join each record by id with its current state in plan.receipts. Unloaded available unattached Receipts appear in plan.receipts as metadata only. Loaded entries there describe Participant loading state, including consumed observations; they are not shared available catalogue entries. Proposition receipts are lightweight attachment references, never evidence bodies. Only explicitly loaded Receipts grounding a current participant-facing Read expose full evidence. Loaded state persists and Reinforcement is independent of current visibility. All other Receipt references contain only id, reference, type and loaded state. Tragedy Receipts instead expose tragedy_memory in plan.receipts only while memory_active: canonical committed history and recorded catastrophe, never evidence or Reinforcement. Memory persists after consumption/exhaustion; loading grants no boundary authority. Optional receipt_options load/unload IDs identify current Gate evidence or available scoped Tragedy memory and take effect with a forward Phase contribution (never Rest) for subsequent phases. These parts together describe the same Receipts, not additional evidence.';
 
     private const RECEIPT_BODY = ['id', 'proposition_id', 'context_horizon_id', 'type', 'reference', 'signature',
         'capabilities', 'replayed_from_receipt_id', 'observation_error', 'evidence'];
@@ -29,7 +29,7 @@ final class ParticipantPromptLayout
         usort($loaded, fn (array $a, array $b): int => [$a['loaded_at'] ?? '', $a['id']] <=> [$b['loaded_at'] ?? '', $b['id']]);
         $bodies = array_map(fn (array $receipt): array => Arr::only($receipt, self::RECEIPT_BODY), $loaded);
         $packet['plan']['receipts'] = array_map(fn (array $receipt): array => Arr::only($receipt, $receipt['type'] === 'tragedy'
-            ? ['id', 'type', 'reference', 'loaded', 'purpose'] : ['id', 'type', 'reference', 'loaded']), $receipts);
+            ? ['id', 'type', 'reference', 'loaded', 'purpose', 'load_mode', 'memory_active', 'tragedy_memory'] : ['id', 'type', 'reference', 'loaded']), $receipts);
 
         // The historical path keeps its exact ordered objects, including measurements.
         // It can still change; it is deliberately outside the loaded-evidence boundary.

@@ -68,8 +68,15 @@ class TragedyWarrantSeparationTest extends TestCase
         $this->assertFalse($item['active']);
         $this->assertFalse($item['can_replay']);
         $plan = app(InputPlanService::class)->forPhase($phase->cycle->participant, $phase);
-        $this->assertStringNotContainsString($receipt->id, json_encode($plan['schema']));
+        $this->assertStringContainsString($receipt->id, json_encode($plan['schema']));
         $this->assertNotContains($receipt->id, app(ReceiptContextService::class)->gateOptions($phase)->pluck('id'));
+        DB::transaction(fn () => app(ReceiptContextService::class)->desired($phase->cycle->participant, $phase, ['load' => [$receipt->id]]));
+        foreach ([null, new ParticipationContext($phase)] as $context) {
+            $this->assertTrue($service->ordinaryAvailable($phase, $context)->isEmpty());
+            $this->assertContains($write->id, app(PropositionOptionService::class)->instrumentOptionsFor($phase, $context)->pluck('id'));
+            $this->assertNotContains($write->id, app(PropositionOptionService::class)->attestationOptionsFor($phase, $context)->pluck('id'));
+        }
+        $this->assertEmpty($service->instrumentedIds($phase, collect([$write->id])));
         $instruments = app(InstrumentExecutionService::class);
         $ordinary = $instruments->complete($instruments->start($phase, $write, 'citation', $this->origin->id), $write);
         $this->assertSame([$ordinary->id], $service->ordinaryAvailable($phase)->pluck('id')->all());
@@ -101,6 +108,7 @@ class TragedyWarrantSeparationTest extends TestCase
         $vote->save();
         app(LedgerService::class)->record($vote);
         $phase = $this->phase($source, PhaseKind::Constrain);
+        DB::transaction(fn () => app(ReceiptContextService::class)->desired($phase->cycle->participant, $phase, ['load' => [$tragedy->receipt_id]]));
         $plan = app(InputPlanService::class)->forPhase($phase->cycle->participant, $phase);
         $input = ['action' => 'proposition.reclassify', 'proposition_id' => $source->id, 'receipt_id' => $tragedy->receipt_id];
         $this->assertNotContains($tragedy->receipt_id, $plan['schema']['$defs']['actions']['proposition.reclassify']['properties']['receipt_id']['enum']);
@@ -125,7 +133,7 @@ class TragedyWarrantSeparationTest extends TestCase
     }
 
     #[DataProvider('loadOperations')]
-    public function test_warrant_cannot_be_loaded_unloaded_or_replayed(string $operation): void
+    public function test_warrant_memory_options_do_not_grant_evidence_read_or_replay(string $operation): void
     {
         $gate = $this->node($this->phase($this->origin, PhaseKind::Persist), $this->origin);
         $tragedy = $this->boundaryTragedyFixture($gate);
@@ -134,19 +142,18 @@ class TragedyWarrantSeparationTest extends TestCase
         $actor = $phase->cycle->participant;
         $plan = app(InputPlanService::class)->forPhase($actor, $phase);
         foreach ($plan['schema']['$defs']['actions'] as $action) {
-            $this->assertNotContains($tragedy->receipt_id, $action['properties']['receipt_options']['properties'][$operation]['items']['enum'] ?? []);
+            if (($action['properties']['action']['const'] ?? null) !== 'participant.rest') {
+                $this->assertContains($tragedy->receipt_id, $action['properties']['receipt_options']['properties'][$operation]['items']['enum']);
+            }
         }
-        try {
-            DB::transaction(fn () => app(ReceiptContextService::class)->desired($actor, $phase, [$operation => [$tragedy->receipt_id]]));
-            $this->fail('Gate desired states cannot carry a Tragedy warrant.');
-        } catch (DomainException) {
-            $this->assertDatabaseCount('participant_receipt_contexts', 0);
-        }
+        DB::transaction(fn () => app(ReceiptContextService::class)->desired($actor, $phase, [$operation => [$tragedy->receipt_id]]));
+        $expected = $operation === 'load' ? 1 : 0;
+        $this->assertDatabaseCount('participant_receipt_contexts', $expected);
         try {
             app(ReceiptContextService::class)->read($actor, $phase, $tragedy->receipt_id);
             $this->fail('Legacy read API cannot create a warrant load.');
         } catch (DomainException) {
-            $this->assertDatabaseCount('participant_receipt_contexts', 0);
+            $this->assertDatabaseCount('participant_receipt_contexts', $expected);
         }
         $this->assertNull(Receipt::findOrFail($tragedy->receipt_id)->replayInvocation());
         $this->expectException(DomainException::class);
@@ -177,12 +184,10 @@ class TragedyWarrantSeparationTest extends TestCase
             $this->assertSame(0, app(ReinforcementService::class)->count($node, $context));
         }
         $item = app(ReceiptContextService::class)->forPhase($phase)->firstWhere('id', $tragedy->receipt_id);
-        if ($foreign) {
-            $this->assertNull($item, 'Historical foreign loads cannot import a Receipt into this catalogue.');
-        } else {
-            $this->assertFalse($item['loaded']);
-            $this->assertFalse($item['active']);
-        }
+        $this->assertTrue($item['loaded']);
+        $this->assertTrue($item['memory_active']);
+        $this->assertFalse($item['active']);
+        $this->assertNull($item['signature']);
         $this->assertDatabaseHas('participant_receipt_contexts', ['id' => $load->id, 'cleared_at' => null]);
     }
 }
