@@ -13,6 +13,7 @@ use App\Services\ActiveParticipantLineage;
 use App\Services\BiasGateService;
 use App\Services\CommitRegionService;
 use App\Services\ContributionDispatcher;
+use App\Services\ContributionService;
 use App\Services\ExplorationPositionService;
 use App\Services\HomologousBiasService;
 use App\Services\HorizonReceiptService;
@@ -231,6 +232,34 @@ class MediatedIncomingBiasTest extends TestCase
         $edge = Supersession::where('target_proposition_id', $this->result->id)->where('source_proposition_id', $this->gateA->id)->sole();
         DB::table('supersessions')->where('id', $edge->id)->update(['type' => 'variant']);
         $this->assertTrue(app(MediatedIncomingBiasService::class)->populationFor($this->bias)->isEmpty());
+    }
+
+    public function test_mediated_authority_remains_ordinary_even_when_the_source_also_qualifies_by_homology(): void
+    {
+        $this->attestResult();
+        $own = $this->loadedReceiptFixture($this->gateB);
+        app(PropositionMeasurementService::class)->project($this->result, .8, -.9, .8);
+        $this->assertTrue(app(HomologousBiasService::class)->forPhase($this->bias)->contains('id', $this->result->id));
+        $this->assertCount(1, $this->biasOptions());
+        $tragedy = $this->boundaryTragedyFixture($this->bResult);
+        app(PropositionMeasurementService::class)->project($this->bResult, .8, -.9, .8);
+        $this->publishPotentialFixture($this->actor);
+        $schema = app(InputPlanService::class)->forPhase($this->actor, $this->bias)['schema'];
+        try {
+            app(ContributionService::class)->validateSchema($schema, $this->input($tragedy->receipt_id));
+            $this->fail('A doorway cannot use a Tragedy Receipt.');
+        } catch (\InvalidArgumentException) {
+            $this->assertDatabaseCount('receipt_consumptions', 0);
+        }
+        try {
+            app(ContributionDispatcher::class)->dispatch($this->actor, $this->bias, $this->input($tragedy->receipt_id));
+            $this->fail('Server authority must reject a Tragedy Receipt for a recorded doorway.');
+        } catch (\DomainException) {
+            $this->assertDatabaseCount('receipt_consumptions', 0);
+        }
+        app(ContributionDispatcher::class)->dispatch($this->actor, $this->bias, $this->input($own->id));
+        $this->assertDatabaseMissing('receipt_consumptions', ['receipt_id' => $tragedy->receipt_id]);
+        $this->assertNotNull($own->fresh()->consumption);
     }
 
     private function progressToBias(Proposition $owner, Proposition $read, Proposition $gate, Proposition $other): Phase

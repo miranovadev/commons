@@ -66,3 +66,11 @@ export function propositionReceiptReferences(plan: ParticipantPlan): Array<Recei
 export function receiptChoices(plan: ParticipantPlan): ReceiptReference[] {
   return [...new Map([...propositionReceiptReferences(plan), ...(plan.receipts ?? [])].map(receipt => [receipt.id, receipt])).values()];
 }
+
+/** Keep the source/Receipt binding from Bias's schema in the manual form too. */
+export function reclassificationReceiptRule(plan: ParticipantPlan, propositionId?: string) {
+  const schema = plan.schema?.$defs?.actions?.['proposition.reclassify'];
+  if (!schema?.anyOf) return schema?.properties.receipt_id;
+  return schema.anyOf.find(choice => choice.properties.proposition_id?.const === propositionId
+    || (propositionId && choice.properties.proposition_id?.enum?.includes(propositionId)))?.properties.receipt_id;
+}

@@ -43,7 +43,7 @@ class ParticipantPromptConstitutionTest extends TestCase
                 "This position's exploration epoch is independent of the earlier distinction position",
                 'other positions\' epochs remain independent',
                 'effective self-Refute from an earlier Cycle',
-                'only a successful Variant claims the shared allowance',
+                'Zero Potential does not remove structural expression authority',
             ], ['proposition.reclassify', 'proposition.reconcile', 'proposition.commit', 'Homeostatic Read comparison']],
             'Mediate' => [PhaseKind::Mediate, [
                 "that Disperse Phase's recorded Constrain-produced Gate, not the current Mediate Gate or a guessed ancestor",
@@ -154,7 +154,7 @@ class ParticipantPromptConstitutionTest extends TestCase
         $state['plan']['rest_available'] = false;
         $state['plan']['schema'] = app(InputSchemaService::class)->forPhase($phase, ['participant.rest']);
         $with = $factory->make(new Connection, $state);
-        $this->assertStringContainsString('no_available_move never creates Tragedy.', $with['system']);
+        $this->assertStringContainsString('Rest never creates Tragedy, including no_remaining_potential Rest.', $with['system']);
         $this->assertStringContainsString("that classification's actual continuation", $with['system']);
         $this->assertStringContainsString('nearest eligible non-exhausted Committal on the recorded backward lineage', $with['system']);
         $this->assertStringContainsString('A nearer unresolved basin blocks older ancestors regardless of Potential or Charge', $with['system']);

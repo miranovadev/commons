@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 
-/** First evidenced no-Potential Rest in a Commit Region. Null governing IDs retain archived Horizon proof. */
+/** First fresh expressive zero-Charge state in a Commit Region. Null governing IDs retain archived Horizon proof. */
 class Tragedy extends Model
 {
     use HasUlids;

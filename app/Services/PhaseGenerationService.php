@@ -74,7 +74,9 @@ final readonly class PhaseGenerationService
             $existing = $context !== null
                 ? $context->classifications->where('source_proposition_id', $gate->id)->where('register', $phase->write_register)->isNotEmpty()
                 : DB::table('reclassification_results')->where('source_proposition_id', $gate->id)->where('register', $phase->write_register)->exists();
-            if ($existing || app(HorizonReceiptService::class)->available($phase, $context)->isEmpty()
+            if ($existing || ($phase->kind === PhaseKind::Bias
+                ? app(BiasReceiptAuthorityService::class)->receiptsFor($phase, $gate, $context)
+                : app(HorizonReceiptService::class)->available($phase, $context))->isEmpty()
                 || $this->state->attestations(collect([$gate]), $context)->isEmpty()) {
                 return false;
             }
