@@ -6,13 +6,16 @@ use App\Enums\PhaseKind;
 use App\Models\Attestation;
 use App\Models\Cycle;
 use App\Models\Phase;
+use App\Models\Proposition;
 use App\Services\ContributionDispatcher;
 use App\Services\ExplorationEpochService;
 use App\Services\HorizonReceiptService;
 use App\Services\InputPlanService;
 use App\Services\InstrumentExecutionService;
 use App\Services\LedgerService;
+use App\Services\Participation\ParticipationContext;
 use App\Services\PhaseGenerationService;
+use App\Services\PotentialChargeService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -100,7 +103,7 @@ class ExpressiveEvidenceGatingTest extends TestCase
     }
 
     #[DataProvider('expressivePhases')]
-    public function test_another_variant_requires_spent_evidenced_routes_and_remaining_potential(PhaseKind $kind): void
+    public function test_another_variant_requires_spent_evidenced_routes_independently_of_potential(PhaseKind $kind): void
     {
         $phase = $this->position($kind);
         $first = $this->node($phase, $phase->gate);
@@ -112,12 +115,23 @@ class ExpressiveEvidenceGatingTest extends TestCase
         $vote = (new Attestation)->forceFill(['phase_id' => $phase->id, 'proposition_id' => $first->id, 'direction' => 'support']);
         $vote->save();
         app(LedgerService::class)->record($vote);
-        $this->measure($first, 1);
-        $this->assertFalse($generation->available($phase, 'proposition.variant'), 'Evidence cannot invent Potential');
+        foreach (Proposition::where('tier', 'expressive')->get() as $node) {
+            $this->measure($node, 1);
+        }
+        $this->assertFalse(app(PotentialChargeService::class)->hasRemainingInRegion($phase));
+        $this->assertFalse($generation->available($phase, 'proposition.variant'), 'An unspent route blocks generation even at zero Potential');
         $this->measure($first, 0);
         $this->assertFalse($generation->available($phase, 'proposition.variant'), 'A healthy evidenced route remains viable');
         $this->recordSpent($first, $phase);
+        $this->assertTrue(app(PotentialChargeService::class)->hasRemainingInRegion($phase));
         $this->assertTrue($generation->available($phase, 'proposition.variant'));
+        $this->assertTrue($generation->available($phase, 'proposition.variant', new ParticipationContext($phase)));
+        $this->assertArrayHasKey('proposition.variant', $this->actions($phase));
+        // Only the measured field changes: causal structure, evidence and epoch stay identical.
+        $this->measure($first, 1);
+        $this->assertFalse(app(PotentialChargeService::class)->hasRemainingInRegion($phase));
+        $this->assertTrue($generation->available($phase, 'proposition.variant'));
+        $this->assertTrue($generation->available($phase, 'proposition.variant', new ParticipationContext($phase)));
         $this->assertArrayHasKey('proposition.variant', $this->actions($phase));
         // Failure is a substrate fact, never an author-count or action-priority quota.
         $second = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
@@ -153,6 +167,43 @@ class ExpressiveEvidenceGatingTest extends TestCase
         $mediate->forceFill(['completed_at' => now()])->save();
         $mediate->cycle->forceFill(['rested_at' => now(), 'completed_at' => now()])->save();
         $this->assertFalse(app(PhaseGenerationService::class)->available($phase, 'proposition.variant'), 'Mediate Rest cannot bypass evidence');
+    }
+
+    #[DataProvider('expressivePhases')]
+    public function test_zero_potential_does_not_bypass_own_evidence_or_current_epoch(PhaseKind $kind): void
+    {
+        $phase = $this->position($kind);
+        $write = $this->node($phase, $phase->gate);
+        foreach (Proposition::where('tier', 'expressive')->get() as $node) {
+            $this->measure($node, 1);
+        }
+        $this->assertFalse(app(PotentialChargeService::class)->hasRemainingInRegion($phase));
+        $this->recordSpent($write, $phase);
+        $generation = app(PhaseGenerationService::class);
+        $this->assertFalse($generation->available($phase, 'proposition.variant'));
+
+        $vote = (new Attestation)->forceFill(['phase_id' => $phase->id, 'proposition_id' => $write->id, 'direction' => 'support']);
+        $vote->save();
+        app(LedgerService::class)->record($vote);
+        $this->assertFalse($generation->available($phase, 'proposition.variant'), 'A spent attested route still needs its own Instrument');
+        $vote->delete();
+        $instruments = app(InstrumentExecutionService::class);
+        $instruments->complete($instruments->start($phase, $write, 'citation', $this->origin->id), $write);
+        $this->assertFalse($generation->available($phase, 'proposition.variant'), 'A spent instrumented route still needs effective Attestation');
+        $vote = (new Attestation)->forceFill(['phase_id' => $phase->id, 'proposition_id' => $write->id, 'direction' => 'support']);
+        $vote->save();
+        app(LedgerService::class)->record($vote);
+        $this->publishPotentialFixture($this->substrate);
+        $this->assertFalse(app(PotentialChargeService::class)->hasRemainingInRegion($phase));
+        $this->assertTrue($generation->available($phase, 'proposition.variant'));
+
+        // A failure from a different epoch cannot satisfy current-epoch spentness.
+        DB::table('continuation_failures')->where('proposition_id', $write->id)->update(['exploration_epoch' => 99]);
+        $this->assertFalse($generation->available($phase, 'proposition.variant'));
+        $this->assertArrayNotHasKey('proposition.variant', $this->actions($phase));
+        $this->expectException(\DomainException::class);
+        app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
+            ['action' => 'proposition.variant', 'statement' => 'A stale plan must not bypass spentness']);
     }
 
     private function recordSpent($node, Phase $phase): void

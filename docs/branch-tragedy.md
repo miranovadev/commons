@@ -1,5 +1,11 @@
 # Tragedy and final-attempt Exhaustion
 
+> Stage 1 correction: the numerical Variant permission gate described historically
+> below has been removed. Structurally eligible Variants no longer require positive
+> Potential or a Tragedy final-attempt allowance. Final-attempt recording remains
+> legacy bookkeeping pending the later Tragedy stage; triggers, Receipt lifecycle,
+> exhaustion and recovery are otherwise unchanged.
+
 The [core invariants](core-invariants.md#persistence-exhaustion-recovery-and-observation) are normative. Potential projects currently instantiated reducible Tension. It does not measure the total possibility of generating new structure.
 
 ## State transitions

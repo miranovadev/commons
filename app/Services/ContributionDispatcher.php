@@ -186,7 +186,10 @@ final readonly class ContributionDispatcher
         Proposition $gate,
         array $input,
     ): Proposition {
-        // Capture the allowance before writing invalidates the field projection.
+        // Legacy final-attempt bookkeeping, retained until the Tragedy stage.
+        // This does not authorize or limit Variant generation; structural
+        // eligibility is checked independently by PhaseGenerationService.
+        // Capture it before writing invalidates the field projection.
         $finalAttempt = $input['action'] === 'proposition.variant'
             && app(TragedyFinalAttemptService::class)->available($phase)
             && ! app(PotentialChargeService::class)->hasRemainingInRegion($phase);
@@ -447,4 +450,3 @@ final readonly class ContributionDispatcher
         return $proposition;
     }
 }
-

@@ -6,11 +6,11 @@ use App\Enums\PhaseKind;
 use App\Models\Proposition;
 use App\Models\Tragedy;
 use App\Services\ContributionDispatcher;
-use App\Services\ExhaustionService;
 use App\Services\ExplorationEpochService;
 use App\Services\HorizonReceiptService;
 use App\Services\InputPlanService;
 use App\Services\PhaseGenerationService;
+use App\Services\PotentialChargeService;
 use App\Services\PropositionOptionService;
 use App\Services\ReceiptContextService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -96,7 +96,7 @@ class SpentContinuationTest extends TestCase
         $this->assertSame(0, Tragedy::count());
     }
 
-    public function test_all_spent_without_potential_uses_tragedy_without_advancing_an_epoch(): void
+    public function test_all_spent_without_potential_can_generate_and_advance_its_epoch(): void
     {
         $this->initializeExhaustionFixture();
         [$signal, , $terminal, $return] = $this->testedLineage();
@@ -108,11 +108,15 @@ class SpentContinuationTest extends TestCase
             $this->measure($node, 1);
         }
         $plan = app(InputPlanService::class)->forPhase($return->cycle->participant, $return);
-        $this->assertSame(['participant.rest'], array_keys($plan['schema']['$defs']['actions']));
-        $this->assertSame('no_remaining_potential', $plan['rest_reason']);
-        $this->rest($return);
-        $this->assertSame(1, Tragedy::count());
-        $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($return->cycle->contextHorizon));
-        $this->assertSame(0, app(ExplorationEpochService::class)->forPhase($return));
+        $this->assertFalse(app(PotentialChargeService::class)->hasRemainingInRegion($return));
+        $this->assertArrayHasKey('proposition.variant', $plan['schema']['$defs']['actions']);
+        $this->assertArrayNotHasKey('participant.rest', $plan['schema']['$defs']['actions']);
+        $epochs = app(ExplorationEpochService::class);
+        $before = $epochs->forPhase($return);
+        app(ContributionDispatcher::class)->dispatch($return->cycle->participant, $return,
+            ['action' => 'proposition.variant', 'statement' => 'Expression needs no prior tension reduction']);
+        $this->assertSame($before + 1, $epochs->forPhase($return));
+        $this->assertFalse($epochs->spentNow($signal, $return));
+        $this->assertSame(0, Tragedy::count());
     }
 }
