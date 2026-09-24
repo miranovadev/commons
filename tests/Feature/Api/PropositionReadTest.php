@@ -17,6 +17,7 @@ use App\Services\CommitRegionService;
 use App\Services\LedgerService;
 use App\Services\Observables\LineageMeasurementService;
 use App\Services\PotentialChargeService;
+use App\Services\PotentialProjectionService;
 use App\Services\PropositionMeasurementService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -43,7 +44,7 @@ class PropositionReadTest extends TestCase
                 $node->measurement()->update(['calculator_version' => $status === 'stale' ? 'obsolete' : null]);
             }
         }
-        app(\App\Services\PotentialProjectionService::class)->rebuild($substrate->id, false);
+        app(PotentialProjectionService::class)->rebuild($substrate->id, false);
         $before = $this->snapshot();
         foreach (["/api/substrates/{$substrate->slug}/propositions", "/api/substrates/{$substrate->slug}/propositions/{$node->id}"] as $index => $url) {
             DB::enableQueryLog();
@@ -100,7 +101,8 @@ class PropositionReadTest extends TestCase
         }
         $large = $this->graphQueries($substrate, 500);
         $this->assertLessThanOrEqual(count($small) + 2, count($large));
-        $this->assertLessThanOrEqual(20, count($large));
+        // Two fixed historical-marker batches, independent of visible node count.
+        $this->assertLessThanOrEqual(22, count($large));
         $this->assertDatabaseCount('proposition_measurements', 0);
     }
 
@@ -147,7 +149,7 @@ class PropositionReadTest extends TestCase
             'target_proposition_id' => $child->id, 'type' => 'variant'])->save();
         $origin->phase->forceFill(['gate_proposition_id' => $child->id])->save();
         app(PropositionMeasurementService::class)->project($child, -.2, -.2, -.2);
-        app(\App\Services\PotentialProjectionService::class)->rebuild($substrate->id, false);
+        app(PotentialProjectionService::class)->rebuild($substrate->id, false);
         $before = $this->snapshot();
         $url = "/api/substrates/{$substrate->slug}/propositions";
         $data = collect($this->getJson($url)->assertOk()->json('data'))->keyBy('id');
@@ -162,14 +164,14 @@ class PropositionReadTest extends TestCase
         $this->assertSame(1, $data[$child->id]['participation_count']);
         $this->assertSame(0, $data[$origin->id]['participation_count']);
         $this->assertSame($before, $this->snapshot());
-        app(\App\Services\PotentialProjectionService::class)->rebuild($substrate->id, false);
+        app(PotentialProjectionService::class)->rebuild($substrate->id, false);
         $canonical = app(PotentialChargeService::class)->selectFor($substrate);
         $this->assertSame($canonical['raw_potential_charge'], $data[$origin->id]['field']['potential_charge']);
         $this->getJson($url.'/'.$child->id)->assertOk()->assertJsonPath('data.field', $data[$child->id]['field']);
 
         // Absent continuation measurements are unknown, not an invented zero.
         $child->measurement()->delete();
-        app(\App\Services\PotentialProjectionService::class)->rebuild($substrate->id, false);
+        app(PotentialProjectionService::class)->rebuild($substrate->id, false);
         $this->getJson($url.'/'.$origin->id)->assertOk()->assertJsonPath('data.field.potential_charge', null)
             ->assertJsonPath('data.field.potential_status', 'missing');
     }
@@ -253,4 +255,3 @@ class PropositionReadTest extends TestCase
         return $node;
     }
 }
-

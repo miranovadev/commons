@@ -70,7 +70,7 @@ const { act, mount, mountNavigation } = module.exports;
 const node = (id, parent_ids = []) => ({ id, title: id, statement: `${id} full statement`, parent_ids,
   register: 'activity', tier: parent_ids.length ? 'expressive' : 'committal', is_origin: !parent_ids.length,
   participation_count: id.length * 2, instruments: [], field: { tension: -.75, charge: .25, potential_charge: .42, status: 'current', potential_status: 'current' } });
-const nodes = [node('origin'), node('a', ['origin']), node('b', ['origin']), node('c', ['a', 'b']), node('end', ['c'])];
+const nodes = [node('origin'), node('a', ['origin']), node('b', ['origin']), { ...node('c', ['a', 'b']), tragedy: true, renewal: true }, node('end', ['c'])];
 const card = id => document.querySelector(`.substrate-graph-node [data-proposition-id="${id}"]`);
 const ids = () => [...document.querySelectorAll('.substrate-graph-node [data-proposition-id]')].map(el => el.dataset.propositionId);
 const selected = () => document.querySelector('.substrate-graph-node [aria-pressed="true"]')?.dataset.propositionId;
@@ -212,6 +212,8 @@ test('Topology composes every lens, selection, inspector and isolation without c
     assert.match(card('c').getAttribute('aria-label'), /c full statement/);
     assert.equal(card('c').tagName, 'BUTTON');
     assert.equal(card('c').closest('.substrate-graph-node').dataset.lineage, 'selected');
+    assert.ok(card('c').closest('.substrate-graph-node').querySelector('[aria-label="Tragedy"]'));
+    assert.ok(card('c').closest('.substrate-graph-node').querySelector('[aria-label="Renewal"]'));
     assert.equal(card('end').closest('.substrate-graph-node').dataset.lineage, 'unrelated');
     assert.match(document.querySelector('.graph-workspace__inspector').textContent, /c full statement/);
     assert.match(document.querySelector('.graph-workspace__inspector').textContent, /0.42/);

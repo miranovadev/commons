@@ -21,6 +21,7 @@ use App\Services\CommitRegionService;
 use App\Services\ContributionDispatcher;
 use App\Services\ContributionService;
 use App\Services\ExplorationPositionService;
+use App\Services\GraphProjectionService;
 use App\Services\HomeostaticDirectionService;
 use App\Services\HomologousBiasService;
 use App\Services\HorizonReceiptService;
@@ -641,6 +642,38 @@ class HomologousBiasTest extends TestCase
     private function biasOptionIds(?ParticipationContext $context = null): array
     {
         return app(PropositionOptionService::class)->gateOptionsFor($this->bias, $context)->pluck('id')->all();
+    }
+
+    public function test_graph_renewal_marks_the_consumed_foreign_escape_target_only(): void
+    {
+        $tragedy = $this->warrant();
+        $this->resolveExpressiveFieldFixture(.8);
+        $target = app(ContributionDispatcher::class)->dispatch($this->actor, $this->bias, $this->input($this->gateB));
+        $this->assertDatabaseHas('receipt_consumptions', ['receipt_id' => $tragedy->receipt_id, 'proposition_id' => $target->id]);
+        // The warrant is spent and the source's current direction can change;
+        // presentation must retain the accepted historical crossover.
+        $this->measure($this->gateB, .9);
+        $nodes = Proposition::whereKey([$target->id, $this->gateB->id])->with(['measurement', 'phase.cycle'])->get()->keyBy('id');
+        app(GraphProjectionService::class)->load($this->actor->substrate, $nodes, historical: true);
+        $this->assertTrue($nodes[$target->id]->renewal);
+        $this->assertFalse($nodes[$this->gateB->id]->renewal);
+    }
+
+    public static function ordinaryGraphSources(): array
+    {
+        return [[false], [true]];
+    }
+
+    #[DataProvider('ordinaryGraphSources')]
+    public function test_local_and_same_region_homologous_classifications_are_not_renewal(bool $homologous): void
+    {
+        $source = $homologous ? $this->source($this->a) : $this->gateA;
+        if ($homologous) {
+            $this->measure($source, -.7);
+        }
+        $target = app(ContributionDispatcher::class)->dispatch($this->actor, $this->bias, $this->input($source));
+        app(GraphProjectionService::class)->load($this->actor->substrate, collect([$target]), historical: true);
+        $this->assertFalse($target->renewal);
     }
 
     private function input(Proposition $source, ?string $receipt = null): array

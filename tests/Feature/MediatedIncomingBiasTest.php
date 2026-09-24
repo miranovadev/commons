@@ -15,6 +15,7 @@ use App\Services\CommitRegionService;
 use App\Services\ContributionDispatcher;
 use App\Services\ContributionService;
 use App\Services\ExplorationPositionService;
+use App\Services\GraphProjectionService;
 use App\Services\HomologousBiasService;
 use App\Services\HorizonReceiptService;
 use App\Services\InputPlanService;
@@ -258,7 +259,9 @@ class MediatedIncomingBiasTest extends TestCase
         } catch (\DomainException) {
             $this->assertDatabaseCount('receipt_consumptions', 0);
         }
-        app(ContributionDispatcher::class)->dispatch($this->actor, $this->bias, $this->input($own->id));
+        $classified = app(ContributionDispatcher::class)->dispatch($this->actor, $this->bias, $this->input($own->id));
+        app(GraphProjectionService::class)->load($this->actor->substrate, collect([$classified]), historical: true);
+        $this->assertFalse($classified->renewal);
         $this->assertDatabaseMissing('receipt_consumptions', ['receipt_id' => $tragedy->receipt_id]);
         $this->assertNotNull($own->fresh()->consumption);
     }
