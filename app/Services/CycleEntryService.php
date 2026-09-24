@@ -228,7 +228,6 @@ final readonly class CycleEntryService
             $firstRegister,
             $gate,
         );
-        app(TragedyReceiptScopeService::class)->followRecovery($entry);
         $participant->current_proposition_id = $gate->getKey();
         $participant->save();
     }

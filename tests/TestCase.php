@@ -45,7 +45,7 @@ abstract class TestCase extends BaseTestCase
         });
     }
 
-    /** Explicit boundary birth for tests of the retained Receipt/recovery lifecycle. */
+    /** Explicit controlled birth fixture; natural acceptance uses real contributions instead. */
     protected function boundaryTragedyFixture(Proposition $terminal): Tragedy
     {
         if ($terminal->tier === 'committal') {
@@ -69,6 +69,7 @@ abstract class TestCase extends BaseTestCase
             $edge->save();
             app(LedgerService::class)->record($edge);
         }
+        $terminal->wasRecentlyCreated = true; // The fixture explicitly supplies the birth event.
         $tragedy = DB::transaction(function () use ($terminal) {
             app(PropositionMeasurementService::class)->project($terminal, 1, 1, 1);
 

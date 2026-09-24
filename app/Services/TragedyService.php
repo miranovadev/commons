@@ -18,7 +18,7 @@ final class TragedyService
     /** Caller owns the substrate contribution lock. Unique governing-Committal and Receipt keys back it. */
     public function record(Proposition $proposition): ?Tragedy
     {
-        if ($proposition->tier !== 'expressive') {
+        if ($proposition->tier !== 'expressive' || ! $proposition->wasRecentlyCreated) {
             return null;
         }
         if (DB::transactionLevel() === 0) {
@@ -41,6 +41,8 @@ final class TragedyService
             ?? throw new \DomainException('Tragedy requires an unambiguous governing Committal.');
         $existing = Tragedy::where('governing_committal_id', $seed->id)->first();
         if ($existing !== null) {
+            app(ExhaustionService::class)->recordBoundary($proposition, $existing, $field);
+
             return $existing;
         }
         $opener = $horizon->opened_by_proposition_id ?? CommitmentSnapshot::where('substrate_id', $horizon->substrate_id)

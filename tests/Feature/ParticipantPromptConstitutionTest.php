@@ -155,8 +155,8 @@ class ParticipantPromptConstitutionTest extends TestCase
         $state['plan']['rest_available'] = false;
         $state['plan']['schema'] = app(InputSchemaService::class)->forPhase($phase, ['participant.rest']);
         $with = $factory->make(new Connection, $state);
-        $this->assertStringContainsString('Rest never creates Tragedy, including no_remaining_potential Rest.', $with['system']);
-        $this->assertStringContainsString("that classification's actual continuation", $with['system']);
+        $this->assertStringContainsString('Rest never creates Tragedy or Commit Region exhaustion, including no_remaining_potential Rest.', $with['system']);
+        $this->assertStringContainsString('regardless of authorship or Receipt consumption', $with['system']);
         $this->assertStringContainsString('nearest eligible non-exhausted Committal on the recorded backward lineage', $with['system']);
         $this->assertStringContainsString('A nearer unresolved basin blocks older ancestors regardless of Potential or Charge', $with['system']);
         $this->assertStringContainsString('never jumping to a Horizon opener or unrelated branch', $with['system']);

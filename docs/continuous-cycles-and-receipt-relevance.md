@@ -33,7 +33,7 @@ a short version-checked entry transaction. Optimistic readers may see this gap.
 The next Cycle owns the selected entry's causal Horizon; no historical Cycle or
 Horizon is relabelled. See [causal entry rules](participant-continuity-and-relocation.md).
 
-A first no-Potential Rest creates [Tragedy](branch-tragedy.md), one Horizon Receipt and normal backward-lineage recovery from the terminal position. The Horizon remains open. Only a later no-Potential Rest after that Receipt has been exercised by Reclassify records Exhaustion and enables outward recovery. No Potential score is invented; other Participants move through their normal lifecycle.
+The first fresh expressive zero-Charge event creates [Tragedy](branch-tragedy.md) and its unique Region warrant while leaving the Region open. A later distinct fresh zero-Charge event in that same Region proves exhaustion. Potential, Rest and Receipt consumption do not prove catastrophe. Recovery skips only authoritatively exhausted Regions along recorded backward lineage; other Participants move through their normal lifecycle.
 `waiting / recovery_unavailable` describes a genuinely unavailable valid entry,
 such as missing Origin or invalid/unmeasurable provenance. A concurrent field
 change can defer entry and expose `recovery_pending`; the next prepare observes

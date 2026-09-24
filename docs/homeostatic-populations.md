@@ -136,7 +136,7 @@ writes back to proposition measurements, snapshots or participant state.
 Rest depends on operational action availability, not population size or a desired
 frequency. An admissible homologous Traverse prevents Rest even when local Commit
 is unavailable. Structural members without an eligible continuation do not prevent
-Rest or establish movement. Genuine Tragedy, final attempts, exhaustion and recovery
+Rest or establish movement. Charge-boundary Tragedy, repeated-boundary exhaustion and recovery
 retain their existing proof and ownership rules. A numeric zero keeps supplied
 population history or the observable default; absent resolved Closure components
 are missing measurements, not a special directionless numeric zero.

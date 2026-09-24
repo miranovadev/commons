@@ -1,8 +1,5 @@
 # Backward lineage recovery
 
-> Stage 2: Tragedy is created by the first fresh expressive result at zero Charge,
-> never by Potential or Rest. The exhaustion/recovery lifecycle in this document
-> is retained pending Stage 6; repeated boundary contact has no new consequence yet.
 
 The participant's terminal position and completed Cycle Horizon are the recovery
 starting point. Recovery walks incoming causal edges backward and collects only
@@ -36,10 +33,10 @@ eligible retained Committal is itself the distance-zero boundary.
 
 A Commit Region is the recovery basin governed by its Committal. Same-Horizon
 non-boundary Commits govern distinct basins. `commit_region_exhaustions` is the
-primitive proof authority, keyed by that governing Committal. Numerical zero,
-one actionless terminal, and ordinary Rest do not establish that proof. The
-region's shared Tragedy Receipt must be consumed, then an evidenced no-Potential
-Rest on its actual continuation must prove the final attempt failed.
+primitive proof authority, keyed by that governing Committal. The first fresh
+expressive Charge-zero event creates Tragedy; a later distinct fresh Charge-zero
+event in that same Region proves exhaustion. Potential, ordinary Rest, historical
+zero measurements and Tragedy Receipt consumption do not establish that proof.
 
 Only the exhausted region becomes unavailable. Older, sibling and descendant
 Commit Regions remain independent even inside the same Horizon. Recovery skips

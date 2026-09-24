@@ -7,10 +7,12 @@ use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Substrate;
+use App\Models\Supersession;
 use App\Services\ContextHorizonProjector;
 use App\Services\ContributionDispatcher;
 use App\Services\InputPlanService;
 use App\Services\InstrumentExecutionService;
+use App\Services\LedgerService;
 use App\Services\ParticipationService;
 use App\Services\PotentialProjectionService;
 use App\Services\PropositionMeasurementService;
@@ -35,9 +37,21 @@ flush();
 
 try {
     match ($input['operation']) {
-        'charge-boundary' => DB::transaction(function () use ($input): void {
+        'fresh-boundary' => DB::transaction(function () use ($input): void {
             Substrate::whereKey($input['substrate_id'])->lockForUpdate()->firstOrFail();
-            app(TragedyService::class)->record(Proposition::findOrFail($input['proposition_id']));
+            // Publication-level race: each accepted birth has its own real provenance.
+            // Dispatcher stale-plan rejection is exercised separately.
+            $phase = Phase::findOrFail($input['phase_id']);
+            $target = (new Proposition)->forceFill(['phase_id' => $phase->id, 'register' => $phase->write_register,
+                'tier' => 'expressive', 'statement' => 'Concurrent fresh catastrophe']);
+            $target->save();
+            app(LedgerService::class)->record($target);
+            $edge = (new Supersession)->forceFill(['phase_id' => $phase->id,
+                'source_proposition_id' => $phase->gate_proposition_id, 'target_proposition_id' => $target->id, 'type' => 'variant']);
+            $edge->save();
+            app(LedgerService::class)->record($edge);
+            app(PropositionMeasurementService::class)->project($target, -1, -1, -1);
+            app(TragedyService::class)->record($target);
         }),
         'closure-contribute-conflict' => (function () use ($input): void {
             $participant = Participant::findOrFail($input['participant_id']);

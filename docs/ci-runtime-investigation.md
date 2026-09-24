@@ -1,5 +1,7 @@
 # Part 2: CI runtime investigation and architecture
 
+> Historical checkpoint. Rest-born Tragedy, final-attempt permission, consumption-based exhaustion and recovery-following warrant scope described here are retired. Current authority is [first/later fresh Charge-boundary events](branch-tragedy.md); this document retains historical validation details.
+
 Scope: test infrastructure, classification and CI only. Application code, migrations,
 substrate semantics and the observed cross-lineage traversal bug are unchanged.
 All runtime evidence below uses PostgreSQL 18 and PHP 8.5 on GitHub Actions.

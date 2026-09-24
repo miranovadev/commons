@@ -1,5 +1,7 @@
 # Stage 5 lifecycle checkpoint
 
+> Historical checkpoint. Rest-born Tragedy, final-attempt permission, consumption-based exhaustion and recovery-following warrant scope described here are retired. Current authority is [first/later fresh Charge-boundary events](branch-tragedy.md); this document retains historical validation details.
+
 > Historical checkpoint: the Rest-born Tragedy and special final-attempt allowance
 > described below are superseded by [Charge-boundary Tragedy](branch-tragedy.md).
 > Legacy exhaustion/recovery remains pending its later correction stage.

@@ -1,16 +1,16 @@
 # Commit Region proof architecture
 
-The normative lifecycle is [Tragedy and final-attempt Exhaustion](branch-tragedy.md).
+The normative lifecycle is [Charge-boundary Tragedy and exhaustion](branch-tragedy.md).
 
 | Component | Responsibility |
 | --- | --- |
 | `RestReasonService` | Derive no-move versus evidenced no-Potential Rest from authoritative local state |
 | `HorizonFailureService` | Observe versioned local failure; publish only for a completed, matching Rest |
 | `ExplorationEpochService` | Derive current spent state and advance only the successful Variant's position epoch |
-| `TragedyService` | Record the first no-Potential Rest and unique Receipt; retain the terminal position for normal backward-lineage recovery, without an opener override |
+| `TragedyService` | Observe fresh expressive canonical Charge; create first Tragedy/Receipt or delegate later boundary exhaustion |
 | `HorizonReceiptService` | Shared availability and atomic one-use attachment under Substrate/Receipt locks |
-| `ExhaustionService` | Require exercised Tragedy Receipt and later no-Potential Rest; persist governing-region exhaustion and regional actionability |
-| `TragedyEvidenceService` | Store local exhausted Committal references; resolve evidence on load |
+| `ExhaustionService` | Publish unique later-boundary proof and Cycle-owned historical membership; enforce regional actionability |
+| `TragedyEvidenceService` | Resolve historical exhausted Committal references for warrant presentation, never loading |
 | `RecoveryBasinResolver` | Constrain candidates to ancestral Committals on the recorded backward lineage; cross the opening boundary only when boundary-governing region exhaustion permits |
 | `ParticipantHistoricalContext` | Keep relevant exhausted positions visible, newest-first, without action targets |
 | `ExhaustionAuditService` | Read-only proof consistency diagnostics |
@@ -36,6 +36,6 @@ See [rollout compatibility](horizon-proof-migration.md), [locking](transaction-l
 
 The governing Committal is the basin identity. `tragedies` records the event with a unique nullable `governing_committal_id` replacing
 the Horizon uniqueness constraint. Null-scoped historical rows do not authorize
-regional final attempts. Boundary exhaustion state is read from this
+regional warrants. Boundary exhaustion state is read from this
 same regional authority without a duplicate Horizon timestamp, and never globally retire a Horizon's other regions.
 See [migration and authority](commit-region-exhaustion.md).

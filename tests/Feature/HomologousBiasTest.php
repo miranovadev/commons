@@ -31,6 +31,7 @@ use App\Services\Participation\ParticipationContext;
 use App\Services\ParticipationService;
 use App\Services\PhaseGenerationService;
 use App\Services\PhasePositionService;
+use App\Services\PhaseProgressionService;
 use App\Services\PotentialProjectionService;
 use App\Services\PropositionMeasurementService;
 use App\Services\PropositionOptionService;
@@ -93,6 +94,14 @@ class HomologousBiasTest extends TestCase
         $this->assertSame($this->a->id, $tragedy->governing_committal_id);
         $this->assertSame($this->bias->cycle->context_horizon_id, $tragedy->context_horizon_id);
         $this->assertNotSame($this->b->id, $tragedy->governing_committal_id);
+        $this->assertDatabaseHas('commit_region_exhaustions', ['governing_committal_id' => $this->a->id,
+            'terminal_proposition_id' => $target->id, 'tragedy_id' => $tragedy->id]);
+        $this->assertDatabaseMissing('commit_region_exhaustions', ['governing_committal_id' => $this->b->id]);
+        // The accepted Bias write still completes into an Order/Rest position.
+        $next = app(PhaseProgressionService::class)->advance($this->bias, $target);
+        $this->assertSame(PhaseKind::Order, $next->kind);
+        $this->publishPotentialFixture($this->actor);
+        $this->assertSame(['participant.rest'], array_keys(app(InputPlanService::class)->forPhase($this->actor, $next)['schema']['$defs']['actions']));
     }
 
     public function test_dominant_homologues_add_options_without_vetoing_either_local_direction(): void
@@ -508,6 +517,24 @@ class HomologousBiasTest extends TestCase
         $this->assertSame('ordinary', app(BiasReceiptAuthorityService::class)->authority($this->bias, $other, new ParticipationContext($this->bias)));
         app(ContributionDispatcher::class)->dispatch($this->actor, $this->bias, $this->input($other));
         $this->assertDatabaseCount('receipt_consumptions', 1);
+    }
+
+    public function test_positive_charge_escape_leaves_region_open_but_later_local_boundary_exhausts_it(): void
+    {
+        $tragedy = $this->warrant();
+        $this->resolveExpressiveFieldFixture(.8);
+        $escape = app(ContributionDispatcher::class)->dispatch($this->actor, $this->bias, $this->input($this->gateB));
+        $this->assertDatabaseCount('commit_region_exhaustions', 0);
+        $this->assertDatabaseHas('receipt_consumptions', ['receipt_id' => $tragedy->receipt_id, 'proposition_id' => $escape->id]);
+        $gate = $this->position($this->a, PhaseKind::Constrain);
+        $phase = $this->phaseAtPositionFixture($gate->phase, PhaseKind::Disperse);
+        $phase->forceFill(['gate_proposition_id' => $gate->id])->save();
+        $this->resolveExpressiveFieldFixture(-1);
+        $later = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
+            ['action' => 'proposition.variant', 'statement' => 'A later catastrophe after escape']);
+        $this->assertDatabaseHas('commit_region_exhaustions', ['governing_committal_id' => $this->a->id,
+            'terminal_proposition_id' => $later->id, 'receipt_id' => $tragedy->receipt_id]);
+        $this->assertSame(1, ReceiptConsumption::where('receipt_id', $tragedy->receipt_id)->count());
     }
 
     private function warrant(): Tragedy

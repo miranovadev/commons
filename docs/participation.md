@@ -239,7 +239,7 @@ remain in place, and middle actions wrap without moving the directional slots.
 The UI renders Rest only from the authoritative schema, never from its own
 interpretation of the rest_available flag or visible cards.
 
-**No available move** means the current Phase has zero admissible Phase-advancing actions. The backend separately derives `no_remaining_potential` from an evidenced failure. That reason is now a numerical diagnostic and retained exhaustion witness only. Neither Rest reason creates Tragedy.
+**No available move** means the current Phase has zero admissible Phase-advancing actions. The backend separately derives `no_remaining_potential` from an evidenced failure. That reason is a numerical diagnostic only. Neither Rest reason creates Tragedy or exhaustion.
 The server first applies all phase-native, ownership, target and Commitment
 constraints, then specializes the complete action schema. When no Phase-advancing
 action remains it sets `rest_available: true` and injects `participant.rest`.
@@ -479,7 +479,7 @@ Mediate opens an incoming doorway. The homologous population identifies possible
 exits. A Tragedy Receipt authorizes leaving through one eligible homologous exit;
 it supplies no destination or permanent movement permission. Subsequent
 Attestation and Traverse follow ordinary contribution rules. Exhaustion and
-recovery consequences remain pending Stage 6.
+recovery skips the Region only after a later fresh zero-Charge catastrophe proves it exhausted. Warrant consumption alone does not exhaust it.
 
 The result belongs to the acting Bias Phase, Horizon and entry accounting Region.
 Its sole reclassify edge comes from the selected source, and the participant
@@ -574,7 +574,7 @@ and equivalent-evidence exclusions, and creates a new Proposition-grounded Recei
 with replay provenance. Neither fresh execution nor replay automatically loads
 source or result. There are no standalone Receipt Read or Replay action families.
 
-The first fresh expressive proposition whose resolved canonical Charge is zero records its Region Tragedy and unique Receipt inside the contribution transaction. Potential and Rest do not create Tragedy. No-Potential failure remains a version-guarded Rest witness for the retained exhaustion lifecycle, pending Stage 6. A subsequent no-Potential Rest can record Exhaustion only after that Receipt has been consumed by Reclassify. Compact historical alternatives remain visible and non-actionable. See [Tragedy and final-attempt Exhaustion](branch-tragedy.md).
+The first fresh expressive proposition whose resolved canonical Charge is zero records its Region Tragedy and unique Receipt inside the contribution transaction. A later distinct fresh zero-Charge proposition in that same open Region records exhaustion. Potential, Rest and Receipt consumption prove neither event. Historical alternatives remain visible and non-actionable. Recovery skips only authoritatively exhausted Regions. See [Charge-boundary lifecycle](branch-tragedy.md).
 
 Gate Receipt load/unload desired states accompany a forward Phase contribution (never Rest) and take cognitive effect in the next Phase. Only loaded evidence grounding the participant-facing Read activates a full body; other Receipt references are metadata. See the normative [Receipt model](receipt-region-context.md), including the shared recovery-scoped Tragedy exception.
 

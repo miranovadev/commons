@@ -1,5 +1,7 @@
 # Horizon proof invariant coverage
 
+> Historical checkpoint. Rest-born Tragedy, final-attempt permission, consumption-based exhaustion and recovery-following warrant scope described here are retired. Current authority is [first/later fresh Charge-boundary events](branch-tragedy.md); this document retains historical validation details.
+
 > Historical validation record: Stage 2 supersedes the Rest-born Tragedy and special
 > Variant final-attempt allowance described below. See [the current Tragedy invariant](branch-tragedy.md).
 > Exhaustion/recovery consequences await Stage 6.

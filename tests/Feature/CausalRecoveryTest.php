@@ -285,70 +285,24 @@ class CausalRecoveryTest extends TestCase
         $this->assertSame($before, Receipt::findOrFail($tragedy->receipt_id)->getAttributes());
     }
 
-    public function test_unconsumed_tragedy_follows_the_current_basin_via_another_participant_then_freezes(): void
+    public function test_recovery_keeps_tragedy_scope_with_its_owning_region(): void
     {
-        $oldest = $this->committal($this->root, .95);
-        $far = $this->committal($this->root, .95, $oldest);
+        $far = $this->committal($this->root, .95);
         $near = $this->committal($this->root, .5, $far);
-        $start = $this->committal($this->root, .1, $near);
-        $position = $this->expressive($this->root, $start);
-        $trigger = $this->resting($this->root, $position);
-        $terminal = $trigger->cycles()->latest('sequence')->first()->phases()->first();
+        $position = $this->expressive($this->root, $near);
         $far->commitmentSnapshot->forceFill(['calculator_version' => 'origin-bootstrap-v1'])->save();
-        $tragedy = $this->boundaryTragedyFixture($terminal->gate);
-        $receipt = Receipt::findOrFail($tragedy->receipt_id);
-        $original = $receipt->getAttributes();
-        $provenance = $tragedy->fresh()->getAttributes();
-        $scope = fn () => DB::table('tragedy_receipt_scopes')->where('tragedy_id', $tragedy->id)->value('current_committal_id');
-        $follow = fn (Phase $entry) => DB::transaction(fn () => app(TragedyReceiptScopeService::class)->followRecovery($entry));
-        $this->assertSame($start->id, $scope());
-        // Historical recovery witnesses from before nearest-first selection.
-        // Scope replay preserves those records; new destination selection is exercised above.
-        $first = $this->phase($this->root, $near, PhaseKind::Distinguish, $trigger);
-        $follow($first);
-        $this->assertSame($near->id, $scope()); // Cannot overshoot the actual C -> B destination.
-        $viewer = $this->phase($this->root, $near, PhaseKind::Distinguish);
-        $this->assertNotSame($trigger->id, $viewer->cycle->participant_id);
-        $this->assertContains($receipt->id, app(HorizonReceiptService::class)->catalogue($viewer)->pluck('id'));
-        // A historical transported Receipt remains readable, but cannot grant
-        // another governing basin the original region's final-attempt authority.
-        // The original trigger's normal completion/entry does not carry shared scope.
-        $first->forceFill(['completed_at' => now()])->save();
-        $first->cycle->forceFill(['completed_at' => now()])->save();
-        $normal = $this->phase($this->root, $far, PhaseKind::Distinguish, $trigger);
-        $follow($normal);
-        $this->assertSame($near->id, $scope());
-        // A valid recovery from another region cannot move the basin at B.
-        $elsewhere = $this->resting($this->root, $position);
-        $follow($this->phase($this->root, $far, PhaseKind::Distinguish, $elsewhere));
-        $this->assertSame($near->id, $scope());
-        // D recovers from B, independently of the trigger's current position.
-        $other = $this->resting($this->root, $this->expressive($this->root, $near));
-        $second = $this->phase($this->root, $far, PhaseKind::Distinguish, $other);
-        $this->assertNotSame($trigger->id, $other->id);
-        $follow($second);
-        $this->assertSame($far->id, $scope());
-        $this->assertNotContains($receipt->id, app(HorizonReceiptService::class)->catalogue($viewer)->pluck('id'));
-        $this->assertContains($receipt->id, app(HorizonReceiptService::class)->catalogue($second)->pluck('id'));
-        $source = $this->expressive($this->root, $far);
-        $classificationPhase = $this->phase($this->root, $source, PhaseKind::Constrain);
-        $classification = $this->legacyTragedyClassificationFixture($classificationPhase, $source, $receipt->id);
-        $consumption = $receipt->fresh()->consumption->getAttributes();
-        $frozen = DB::table('tragedy_receipt_scopes')->where('tragedy_id', $tragedy->id)->first();
-        $later = $this->resting($this->root, $classification);
-        $follow($this->phase($this->root, $oldest, PhaseKind::Distinguish, $later));
-        $this->assertEquals($frozen, DB::table('tragedy_receipt_scopes')->where('tragedy_id', $tragedy->id)->first());
-        $this->assertArrayNotHasKey($receipt->id, app(TragedyReceiptScopeService::class)->seeds(new ParticipationContext($second)));
-        $this->assertSame($consumption, $receipt->fresh()->consumption->getAttributes());
-        $this->assertEquals($original, $receipt->fresh()->getAttributes());
-        $this->assertSame($provenance, $tragedy->fresh()->getAttributes());
-        // Rebuilding legacy consumed scope must ignore the later historical recovery to the oldest ancestor.
-        $migration = require database_path('migrations/2026_09_21_000100_project_tragedy_receipt_basins.php');
-        $migration->down();
-        $migration->up();
-        $this->assertDatabaseHas('tragedy_receipt_scopes', ['tragedy_id' => $tragedy->id, 'current_committal_id' => $far->id]);
-        $this->assertSame($consumption, $receipt->fresh()->consumption->getAttributes());
-        $this->assertSame($provenance, $tragedy->fresh()->getAttributes());
+        $tragedy = $this->boundaryTragedyFixture($position);
+        $before = $tragedy->fresh()->getAttributes();
+        $receipt = Receipt::findOrFail($tragedy->receipt_id)->getAttributes();
+        $this->exhaustRegion($near, $position);
+        $participant = $this->resting($this->root, $position);
+        $this->refreshMeasurements();
+        app(CycleEntryService::class)->prepare($participant);
+        $this->assertSame($far->id, $participant->fresh()->current_proposition_id);
+        $this->assertDatabaseHas('tragedy_receipt_scopes', ['tragedy_id' => $tragedy->id,
+            'current_committal_id' => $near->id, 'recovery_phase_id' => null]);
+        $this->assertSame($before, $tragedy->fresh()->getAttributes());
+        $this->assertSame($receipt, Receipt::findOrFail($tragedy->receipt_id)->getAttributes());
     }
 
     public function test_foreign_recovery_entry_cannot_transport_an_unconsumed_tragedy(): void
@@ -361,7 +315,7 @@ class CausalRecoveryTest extends TestCase
         $tragedy = $this->boundaryTragedyFixture($phase->gate);
         $foreign = $this->committal($this->root, .9);
         $entry = $this->phase($this->root, $foreign, PhaseKind::Distinguish, $carrier);
-        DB::transaction(fn () => app(TragedyReceiptScopeService::class)->followRecovery($entry));
+        app(CycleEntryService::class)->prepare($entry->cycle->participant);
         $this->assertSame($origin->id, DB::table('tragedy_receipt_scopes')->where('tragedy_id', $tragedy->id)->value('current_committal_id'));
         $this->assertNotContains($tragedy->receipt_id, app(HorizonReceiptService::class)->catalogue($entry)->pluck('id'));
     }
@@ -1134,19 +1088,12 @@ class CausalRecoveryTest extends TestCase
         $this->assertFalse(app(ExhaustionService::class)->unavailable($seed));
         app(CycleEntryService::class)->prepare($phase->cycle->participant);
         $this->assertSame($seed->id, $phase->cycle->participant->fresh()->current_proposition_id);
-        $attempt = $this->phase($horizon, $seed, PhaseKind::Distinguish);
-        $this->refreshMeasurements();
-        $variant = DB::transaction(fn () => app(ContributionDispatcher::class)->dispatch($attempt->cycle->participant, $attempt,
-            ['action' => 'proposition.variant', 'statement' => 'Regional final attempt']));
-        $this->measurements[$variant->id] = 1;
-        $this->assertDatabaseCount('tragedy_final_attempts', 0);
-        $source = $this->node($this->phase($horizon, $variant, PhaseKind::Persist), $variant);
-        $this->measurements[$source->id] = 1;
-        $this->classificationEvidenceFixture($source);
-        $classification = $this->phase($horizon, $source, PhaseKind::Constrain);
-        $target = $this->legacyTragedyClassificationFixture($classification, $source, $tragedy->receipt_id);
+        $gate = $this->node($this->phase($horizon, $seed, PhaseKind::Constrain), $seed);
+        $attempt = $this->phase($horizon, $gate, PhaseKind::Disperse);
+        $this->resolveExpressiveFieldFixture(1);
+        $target = app(ContributionDispatcher::class)->dispatch($attempt->cycle->participant, $attempt,
+            ['action' => 'proposition.variant', 'statement' => 'Later regional catastrophe']);
         $this->measurements[$target->id] = 1;
-        $this->explore($target);
         $final = $this->phase($horizon, $target);
         $this->refreshMeasurements();
         app(ParticipationService::class)->contribute($final->cycle->participant, $final->id, ['action' => 'participant.rest']);
@@ -1168,24 +1115,7 @@ class CausalRecoveryTest extends TestCase
 
     private function exhaust(Proposition $node): void
     {
-        $horizon = $node->phase->cycle->contextHorizon;
-        $opening = Proposition::findOrFail($horizon->opened_by_proposition_id);
-        $this->explore($node);
-        $phase = $this->phase($horizon, $node);
-        $this->refreshMeasurements();
-        $this->boundaryTragedyFixture($phase->gate);
-        app(ParticipationService::class)->contribute($phase->cycle->participant, $phase->id, ['action' => 'participant.rest']);
-        $tragedy = Tragedy::where('context_horizon_id', $horizon->id)->sole();
-        $source = $this->node($this->phase($horizon, $opening, PhaseKind::Persist), $opening);
-        $this->classificationEvidenceFixture($source);
-        $classification = $this->phase($horizon, $source, PhaseKind::Constrain);
-        $target = $this->legacyTragedyClassificationFixture($classification, $source, $tragedy->receipt_id);
-        $this->explore($target);
-        $terminal = $this->phase($horizon, $target);
-        $this->refreshMeasurements();
-        app(ParticipationService::class)->contribute($terminal->cycle->participant, $terminal->id, ['action' => 'participant.rest']);
-        $this->assertTrue(app(ExhaustionService::class)->boundaryExhausted($horizon));
-        $this->refreshMeasurements();
+        $this->exhaustRegion(app(CommitRegionService::class)->seedFor($node), $node);
     }
 
     private function boundaryChain(): array
