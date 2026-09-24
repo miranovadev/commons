@@ -6,7 +6,10 @@ use App\Enums\RestReason;
 use App\Models\Phase;
 use App\Services\Participation\ParticipationContext;
 
-/** Called only after the authoritative action schema has established that Rest is admissible. */
+/**
+ * Called only after the action schema establishes Rest. The zero-Potential
+ * reason is a numerical diagnostic/legacy exhaustion witness, never a Tragedy trigger.
+ */
 final class RestReasonService
 {
     public function derive(Phase $phase, ?ParticipationContext $context = null): RestReason

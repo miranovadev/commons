@@ -2,16 +2,23 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ObservableDirection;
 use App\Enums\PhaseKind;
 use App\Models\Attestation;
 use App\Models\Cycle;
+use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\ReceiptConsumption;
+use App\Models\Substrate;
 use App\Models\Supersession;
+use App\Models\Tragedy;
+use App\Services\ActiveParticipantLineage;
 use App\Services\BiasGateService;
 use App\Services\CausalWriteService;
+use App\Services\CommitRegionService;
 use App\Services\ContributionDispatcher;
+use App\Services\ExplorationPositionService;
 use App\Services\HomeostaticDirectionService;
 use App\Services\HomologousBiasService;
 use App\Services\HorizonReceiptService;
@@ -21,8 +28,11 @@ use App\Services\Participation\ParticipationContext;
 use App\Services\ParticipationService;
 use App\Services\PhaseGenerationService;
 use App\Services\PhasePositionService;
+use App\Services\PotentialProjectionService;
 use App\Services\PropositionMeasurementService;
 use App\Services\PropositionOptionService;
+use App\Services\PropositionStateService;
+use App\Services\RegionalExhaustionMembership;
 use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -37,12 +47,19 @@ class HomologousBiasTest extends TestCase
     use RefreshDatabase;
 
     private Proposition $origin;
+
     private Proposition $a;
+
     private Proposition $b;
+
     private Proposition $c;
+
     private Proposition $gateA;
+
     private Proposition $gateB;
+
     private Proposition $gateC;
+
     private Phase $bias;
 
     protected function setUp(): void
@@ -60,6 +77,17 @@ class HomologousBiasTest extends TestCase
         $this->measure($this->gateA, .8);
         $this->measure($this->gateB, -.7);
         $this->measure($this->gateC, -.7);
+    }
+
+    public function test_boundary_reclassification_belongs_to_the_acting_region_not_its_foreign_source(): void
+    {
+        $this->resolveExpressiveFieldFixture(-1);
+        $target = app(ContributionDispatcher::class)->dispatch($this->actor, $this->bias, $this->input($this->gateB));
+        $tragedy = Tragedy::sole();
+        $this->assertSame($target->id, $tragedy->terminal_proposition_id);
+        $this->assertSame($this->a->id, $tragedy->governing_committal_id);
+        $this->assertSame($this->bias->cycle->context_horizon_id, $tragedy->context_horizon_id);
+        $this->assertNotSame($this->b->id, $tragedy->governing_committal_id);
     }
 
     public function test_dominant_homologues_add_options_without_vetoing_either_local_direction(): void
@@ -114,7 +142,7 @@ class HomologousBiasTest extends TestCase
             $before = $this->stateSnapshot();
             $field = app(HomeostaticDirectionService::class)->forPosition($this->gateA, 'chirality');
             $this->assertSame(0.0, $field->mean);
-            $this->assertSame(\App\Enums\ObservableDirection::Negative, $field->direction);
+            $this->assertSame(ObservableDirection::Negative, $field->direction);
             $this->assertEqualsCanonicalizing([$this->gateA->id, $this->gateB->id, $this->gateC->id], $this->biasOptionIds());
             $this->assertSame($before, $this->stateSnapshot());
         }
@@ -134,7 +162,7 @@ class HomologousBiasTest extends TestCase
             $this->measure($node, -.5);
         }
         $receipt = app(HorizonReceiptService::class)->available($this->bias)->sole();
-        $foreignReceipt = app(\App\Services\PropositionStateService::class)->receipts($source)->firstOrFail();
+        $foreignReceipt = app(PropositionStateService::class)->receipts($source)->firstOrFail();
         $input = ['action' => 'proposition.reclassify', 'proposition_id' => $source->id, 'receipt_id' => $receipt->id];
         $this->reject($source, $foreignReceipt->id);
         $this->publishPotentialFixture($this->actor);
@@ -160,11 +188,11 @@ class HomologousBiasTest extends TestCase
         $this->assertSame($horizon, $target->contextHorizonMembership->context_horizon_id);
         $this->assertSame([$source->id], $target->parents()->pluck('propositions.id')->all());
         foreach ([null, new ParticipationContext($target->phase)] as $context) {
-            $lineage = app(\App\Services\ActiveParticipantLineage::class)->endingAt($target, $context);
+            $lineage = app(ActiveParticipantLineage::class)->endingAt($target, $context);
             $this->assertSame($source->phase->cycle->entry_committal_id, $lineage->first()->id);
             $this->assertNotContains($entry->id, $lineage->pluck('id'));
         }
-        $local = app(\App\Services\PotentialProjectionService::class)->region($horizon)['local'];
+        $local = app(PotentialProjectionService::class)->region($horizon)['local'];
         $this->assertContains([$source->id, $target->id, 'reclassify'], $local['foreign_inputs']);
         $this->assertArrayNotHasKey($source->id, $local['nodes']);
         $this->assertNotContains([$source->id, $target->id, 'reclassify'], $local['edges']);
@@ -204,9 +232,9 @@ class HomologousBiasTest extends TestCase
             $this->reject($node);
         }
         $originalActor = $this->actor;
-        $substrate = new \App\Models\Substrate;
+        $substrate = new Substrate;
         $substrate->forceFill(['slug' => 'foreign-bias', 'title' => 'Foreign', 'visibility' => 'private', 'configuration' => []])->save();
-        $this->actor = new \App\Models\Participant;
+        $this->actor = new Participant;
         $this->actor->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'outsider'])->save();
         $foreign = $this->source($this->commit(null, 'emergence'));
         $this->measure($foreign, -.9);
@@ -243,8 +271,8 @@ class HomologousBiasTest extends TestCase
         $revision = $this->position($a, PhaseKind::Bias);
         $this->edge($target, $revision, 'revise');
         foreach ([null, new ParticipationContext($revision->phase)] as $context) {
-            $this->assertSame($b->id, app(\App\Services\ActiveParticipantLineage::class)->endingAt($revision, $context)->first()->id);
-            $this->assertSame($a->id, app(\App\Services\CommitRegionService::class)->seedFor($revision, $context)->id);
+            $this->assertSame($b->id, app(ActiveParticipantLineage::class)->endingAt($revision, $context)->first()->id);
+            $this->assertSame($a->id, app(CommitRegionService::class)->seedFor($revision, $context)->id);
         }
     }
 
@@ -257,7 +285,7 @@ class HomologousBiasTest extends TestCase
         }
         $this->assertContains($candidate->id, $this->biasOptionIds());
         $field = app(HomeostaticDirectionService::class)->forPosition($this->gateA, 'chirality');
-        $position = app(\App\Services\ExplorationPositionService::class)->forProposition($candidate);
+        $position = app(ExplorationPositionService::class)->forProposition($candidate);
         DB::table('continuation_failures')->insert([
             'proposition_id' => $candidate->id, 'context_horizon_id' => $position['context_horizon_id'],
             'structural_position' => $position['structural_position'], 'exploration_epoch' => 0,
@@ -270,7 +298,7 @@ class HomologousBiasTest extends TestCase
         }
         $this->assertSame($field->values, app(HomeostaticDirectionService::class)->forPosition($this->gateA, 'chirality')->values);
         $this->reject($candidate);
-        $unrelated = app(\App\Services\ExplorationPositionService::class)->forProposition($this->gateC);
+        $unrelated = app(ExplorationPositionService::class)->forProposition($this->gateC);
         DB::table('horizon_exploration_states')->insert([...$unrelated, 'epoch' => 1]);
         $this->assertNotContains($candidate->id, $this->biasOptionIds());
         DB::table('horizon_exploration_states')->insert([...$position, 'epoch' => 1]);
@@ -286,7 +314,7 @@ class HomologousBiasTest extends TestCase
         $this->edge($this->gateB, $target, 'reclassify');
         foreach ([null, new ParticipationContext($target->phase)] as $context) {
             try {
-                app(\App\Services\ActiveParticipantLineage::class)->endingAt($target, $context);
+                app(ActiveParticipantLineage::class)->endingAt($target, $context);
                 $this->fail('An unrecorded foreign edge must not redirect resolved provenance.');
             } catch (DomainException $exception) {
                 $this->assertStringContainsString('provenance', $exception->getMessage());
@@ -304,13 +332,13 @@ class HomologousBiasTest extends TestCase
         $terminal = $this->commit($this->b, 'emergence');
         $this->edge($middle, $terminal, 'commit');
         $phase = $this->phase($terminal, $terminal, PhaseKind::Distinguish);
-        $tragedy = app(\App\Services\TragedyService::class)->record($phase, ['field_version' => 1]);
+        $tragedy = $this->boundaryTragedyFixture($phase->gate);
         DB::table('commit_region_exhaustions')->insert([
             'governing_committal_id' => $terminal->id, 'context_horizon_id' => $phase->cycle->context_horizon_id,
             'tragedy_id' => $tragedy->id, 'receipt_id' => $tragedy->receipt_id, 'phase_id' => $phase->id,
             'terminal_proposition_id' => $terminal->id, 'observed_field_version' => 1, 'exhausted_at' => now(),
         ]);
-        app(\App\Services\RegionalExhaustionMembership::class)->publish($terminal->id, [$terminal->id]);
+        app(RegionalExhaustionMembership::class)->publish($terminal->id, [$terminal->id]);
         $this->measure($this->gateB, -.7);
         $context = new ParticipationContext($this->bias);
         $this->assertFalse($context->propositions->has($middle->id));

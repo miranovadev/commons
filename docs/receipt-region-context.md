@@ -8,7 +8,7 @@ Receipts ground Propositions. Attestations express Participant judgments over th
 | Commit Region | Ordinary shared discovery and one-use consumption |
 | Participant load | Persistent, participant-specific Reinforcement |
 | Participant-facing Read | Activation of full loaded evidence |
-| Tragedy recovery path | Shared final-attempt Receipt's moving scope until consumption |
+| Tragedy recovery path | Tragedy Receipt's retained moving scope until consumption |
 
 ## Ordinary discovery and ownership
 
@@ -32,9 +32,9 @@ The existing Substrate → Participant → Phase lock order and contribution tra
 
 ## Tragedy scope
 
-A Tragedy Receipt is a shared final-attempt allowance in one current unresolved Commit Region. When legitimate backward-lineage recovery retreats from that region, the Receipt follows the exact selected destination, regardless of which Participant recovered. `tragedies.participant_id` remains immutable provenance of the original trigger, never ownership or exclusive transport authority. Every Participant in the destination region can discover and exercise it under the existing final-attempt and Reclassification rules.
+A Tragedy Receipt records the first zero-Charge expressive birth in its governing Commit Region. Its existing shared consumption and transport behavior is retained pending Stages 4/5/6. When legitimate backward-lineage recovery retreats from that region, the Receipt follows the exact selected destination, regardless of which Participant recovered. `tragedies.participant_id` remains immutable provenance of the original trigger, never ownership or exclusive transport authority. Every Participant in the destination region can discover and exercise it under the retained Reclassification rules.
 
-`tragedy_receipt_scopes` stores only this mutable Tragedy basin and its latest recovery-entry Phase witness. Cycle entry updates it under the existing Substrate/Participant transaction after the recovery engine selects the destination. The source must be its current basin; the destination must lie on that recovery's backward lineage. Nearest-Committal recovery cannot skip an unresolved nearer basin. The Receipt cannot go farther than the actual destination and never influences selection. Historical recovery witnesses retain their recorded destinations. Initial entries, normal movement/Commit and recovery from unrelated regions cannot transport it. Consumption excludes it from all later movement; Receipt, Tragedy, consumption and final-attempt proof rows remain unchanged. Tragedy exact-once, later no-Potential Rest and Exhaustion rules are unchanged.
+`tragedy_receipt_scopes` stores only this mutable Tragedy basin and its latest recovery-entry Phase witness. Cycle entry updates it under the existing Substrate/Participant transaction after the recovery engine selects the destination. The source must be its current basin; the destination must lie on that recovery's backward lineage. Nearest-Committal recovery cannot skip an unresolved nearer basin. The Receipt cannot go farther than the actual destination and never influences selection. Historical recovery witnesses retain their recorded destinations. Initial entries, normal movement/Commit and recovery from unrelated regions cannot transport it. Consumption excludes it from all later movement; Receipt, Tragedy, consumption and historical final-attempt rows remain unchanged. Rest never creates Tragedy. The retained exhaustion/recovery lifecycle awaits Stage 6.
 
 ## Compatibility and rollout
 
@@ -50,5 +50,5 @@ Focused Core proofs cover locality, malformed origins, ownership/legacy interpre
 
 Local SQLite measurement: catalogue growth from one to thirteen ordinary Receipts uses exactly five queries with a supplied ParticipationContext. Batched region derivation on the six-node fixture took 0.24–0.69 ms (illustrative local timings, not a production latency bound). Region derivation is once per context, not one ancestry walk per Receipt. Hydration still scales with substrate history, as before. Tragedy scope uses one memoized indexed projection query per context, with no recovery-history scan or per-Receipt ancestry walk. Recovery validates one actual route only when an unresolved scope occupies its departing region. A twelve-Receipt Gate fixture retains three persistent loads and twelve references, but zero active bodies: the evidence wrapper is 22 bytes and the evidence-plus-dynamic prompt is 20,188 bytes. The internal qualification packet is 66,458 bytes; its bodies do not enter cognition. Larger candidate-growth checks retain constant Mediate/Bias/Order query counts. Query Regression and Load/Concurrency remain required validation gates for this change.
 
-The historical Tragedy transcript uses legal forward Gate loading. Its [load relocation record and boundary comparison](evidence/receipt-tragedy-transcript.md) document the retired interactions, the alternate pre-Tragedy evidence attachment, and the unchanged final-attempt/Exhaustion recovery proof.
+The historical transcript uses legal forward Gate loading. It is now a regression that zero-Potential Rest does not create Tragedy. Its [load relocation record and boundary comparison](evidence/receipt-tragedy-transcript.md) document the retired interactions, the alternate pre-Tragedy evidence attachment, and the unchanged final-attempt/Exhaustion recovery proof.
 

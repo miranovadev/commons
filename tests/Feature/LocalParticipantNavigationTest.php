@@ -214,6 +214,8 @@ class LocalParticipantNavigationTest extends TestCase
 
     public function test_a_zero_potential_commitment_keeps_continuity_even_when_origin_wins_potential(): void
     {
+        // Isolate structural rules from a new Charge-boundary event.
+        $this->resolveExpressiveFieldFixture(.8);
         $origin = $this->region('Established commitment', 0.8);
         $concord = $this->node('Expressive Concord', 0.8, 'expressive', governor: $origin);
         $concord->forceFill(['register' => 'canon'])->save();
@@ -256,6 +258,8 @@ class LocalParticipantNavigationTest extends TestCase
 
     public function test_normal_expressive_participation_updates_persisted_position_without_traversal(): void
     {
+        // Isolate structural rules from a new Charge-boundary event.
+        $this->resolveExpressiveFieldFixture(.8);
         $position = $this->node('Current', 0.0);
         $participant = $this->participant('writer', $position);
         app(CycleEntryService::class)->enter($participant);
@@ -653,4 +657,3 @@ class LocalParticipantNavigationTest extends TestCase
         return app(ParticipationService::class)->stateFor($participant);
     }
 }
-

@@ -23,6 +23,7 @@ trait HorizonProofFixture
         $phase = $this->phase($head);
         $this->measure($root, 1);
         $this->measure($head, 1);
+        $this->boundaryTragedyFixture($head);
         $this->rest($phase);
 
         return [$opening, $phase->cycle->contextHorizon, Tragedy::sole()];

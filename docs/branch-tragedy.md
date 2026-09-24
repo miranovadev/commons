@@ -1,37 +1,59 @@
-# Tragedy and final-attempt Exhaustion
+# Charge-boundary Tragedy and retained exhaustion
 
-> Stage 1 correction: the numerical Variant permission gate described historically
-> below has been removed. Structurally eligible Variants no longer require positive
-> Potential or a Tragedy final-attempt allowance. Final-attempt recording remains
-> legacy bookkeeping pending the later Tragedy stage; triggers, Receipt lifecycle,
-> exhaustion and recovery are otherwise unchanged.
+**Tragedy is the first expressive proposition within a Commit Region whose
+resolved field state reaches zero Charge. Potential Charge does not trigger Tragedy.**
 
-The [core invariants](core-invariants.md#persistence-exhaustion-recovery-and-observation) are normative. Potential projects currently instantiated reducible Tension. It does not measure the total possibility of generating new structure.
+A fresh Variant, Revise, Reconcile or Reclassify is validated and created normally.
+After its ordinary observable measurements (including the contribution's Receipt
+load/unload effects) resolve, `ProjectionService::field` supplies the authoritative
+Tension and Charge. Its existing seven-decimal rounding is the only precision
+rule: `Charge = 1 - |Tension|`. Positive Charge, including increasing Tension,
+does not create Tragedy. Either signed boundary (`Tension = +1` or `-1`) does.
+
+The contribution transaction records one Tragedy and its unique Receipt for the
+resulting proposition's owning Commit Region, resolved from its creating Cycle.
+Foreign causal operands do not transfer ownership. The resulting expressive
+proposition is the terminal subject; the prior Gate is not the catastrophe.
+Committals, existing-proposition Attestations/Instruments/Traverse, maintenance
+recalculation, and Rest do not create a new Tragedy. Failed/rolled-back writes
+leave no Tragedy or Receipt. Repeated boundary births preserve the first identity
+and do not themselves exhaust the Region.
+
+> Stage 2 boundary: Receipt visibility, consumption and recovery scope are retained.
+> Exhaustion and recovery rules below remain the legacy lifecycle, pending Stage 6.
+> They are not a definition of what repeated Charge-boundary contact will mean.
 
 ## State transitions
 
 | Current Commit Region state | Authoritative event | Result |
 | --- | --- | --- |
-| Open, no Tragedy | Rest: `no_available_move` | Ordinary local recovery; no proof transition |
-| Open, no Tragedy | Rest: `no_remaining_potential` | One Tragedy and one shared Tragedy Receipt; normal backward-lineage recovery |
-| Tragedy, Receipt unused | Another no-Potential Rest | Commit Region remains open; no duplicate Receipt |
-| Tragedy, Receipt available, final allowance unused | Eligible Distinguish/Disperse Variant at zero Potential | Atomically record one final attempt and advance only the Variant's own epoch |
-| Tragedy, Receipt available | Reclassify with that Receipt | Atomically consume it and create the required classification |
-| Tragedy, Receipt consumed | Continuation has positive Potential | Commit Region remains open |
-| Tragedy, Receipt consumed | Subsequent no-Potential Rest on the consumed classification's actual continuation | One Exhaustion; governing Committal and its expressive region become historical and non-actionable |
+| Open, no Tragedy | Fresh expressive write resolves at Charge zero | One Region Tragedy and one Tragedy Receipt |
+| Open, no Tragedy | Rest, including `no_remaining_potential` | Ordinary Rest/recovery; no Tragedy |
+| Any open Region | Fresh expressive write has positive Charge | No Tragedy |
+| Region with Tragedy | Another expressive birth at Charge zero | Retain the existing Tragedy and Receipt; no new exhaustion consequence |
+| Tragedy, Receipt available | Existing eligible Reclassify with that Receipt | Existing atomic consumption/attachment |
+| Tragedy, Receipt consumed | Subsequent evidenced no-Potential Rest on the consumed classification's actual continuation | Legacy exhaustion proof, retained pending Stage 6 |
 
 A Tragedy Receipt uses `proposition.reclassify` with `proposition_id` and `receipt_id`, exactly like an ordinary Receipt. No use-Tragedy action exists. A failed or rolled-back Reclassify does not exercise the Receipt.
 
 ## Authoritative Rest
 
-Rest is admissible only after the specialized action schema contains no Phase-advancing action. Informational Receipt metadata does not block Rest; Rest changes no Receipt load state. The backend records `cycles.rest_reason`; the submitted action contains no reason. An unavailable Gate, missing effective Attestation, or absent evidence is `no_available_move`. A grounded, attested Gate with no positive local numerical capacity yields `no_remaining_potential`. Capacity examines the current governing Commit Region, using unchanged regional Potential algebra. Other same-Horizon regions and child Horizons cannot supply its final-attempt capacity. Neither a positive historical gain nor a zero recovery frontier determines actionability: the schema and exact current failure epochs decide structural options separately.
+Rest is admissible only when the action schema has no available advancing action.
+The backend retains `no_remaining_potential` as a numerical diagnostic for an
+evidenced actionless Region and as the existing exhaustion witness. It no longer
+creates Tragedy. No reason is accepted from a participant. The separate
+`no_available_move` case and ordinary spentness/epoch protections are unchanged.
+Potential remains descriptive, with unchanged algebra; it cannot veto expression.
 
 ## Attainable final attempt
 
-Stage 5 makes the promised final attempt explicit. A unique `tragedy_final_attempts` row records the first Distinguish/Disperse Variant using the zero-Potential allowance. A Tragedy Receipt must still be unconsumed, the Commit Region open, and the shared allowance unused. Existing nonempty positions still require every current option to be spent and individually instrumented and attested. Healthy routes cannot be bypassed. The normal successful Variant advances its own epoch; Tragedy creation, Read and consumption do not advance epochs or erase failures. The shared Substrate lock and unique Tragedy key prevent competing claims.
+The old special Variant allowance is retired. `TragedyFinalAttemptService` and
+its dispatcher bookkeeping are removed. `tragedy_final_attempts` remains only
+as historical storage for existing migrations and archived provenance; live
+contributions neither read nor write it. No new use is assigned to that table.
+Structurally valid Variants need no numerical or Tragedy allowance.
 
-This is a deliberate extension of the previous positive-Potential-only rule. Without it, a naturally spent zero-Potential position could emit a Tragedy Receipt but never generate a fresh classification slot to consume it. The allowance is one final exploration attempt, not an exemption for ordinary further Variants. Fresh evidence and judgment are still required along the new route before Reclassify can consume the receipt. An already eligible classification can also consume Tragedy without using the allowance.
-
+The following consumption/exhaustion requirements are retained pending Stage 6.
 Exhaustion additionally checks that the consuming classification lies on the resting participant's actual backward lineage. An unrelated participant's later Rest cannot close another participant's final attempt. The proof is captured outside the contribution lock and revalidated with the field version and exact receipt consumption.
 
 `HorizonFailureService` observes the field version and local expressive provenance outside the contribution lock. Publication revalidates phase identity, Horizon, completed Rest, reason and version under the Substrate lock. A stale observation cannot close anything. Local failure markers stop at Committal/Horizon boundaries; they do not prove all possible descendants exhausted.
@@ -47,7 +69,7 @@ archived Horizon-scoped evidence without regional final-attempt authority.
 governing Committal, Tragedy, Receipt and terminal Phase. Substrate locking,
 field-version revalidation and database constraints protect exact-once transitions.
 
-Tragedy retains the terminal position and uses [normal backward-lineage recovery](recovery-basins.md).
+A Tragedy birth does not move participants. A later ordinary Rest uses [normal backward-lineage recovery](recovery-basins.md).
 The unresolved local Committal is the nearest recovery boundary. Once its region
 exhausts, recovery can reach the preceding ancestral region. Only exhausting a
 boundary-governing region permits leaving its child Horizon. This does not move
@@ -74,7 +96,7 @@ capacity. No failure row is inserted or rewritten for this successful history.
 
 ## Receipt evidence
 
-Receipt JSON metadata contains reference IDs only: Tragedy, opening and terminal Proposition IDs, and exhausted Committal IDs from the same Horizon. It contains no statements or serialized descendants. The read service resolves statements, producing phase/register, owner and exhausted Horizon IDs, exhaustion state and terminal provenance. Receipt inspection resolves the full local statements by ID; ordinary participation history may use bounded excerpts. The flat local ID set is retained without an age cutoff and ordered newest creation first.
+Receipt JSON metadata retains the birth trigger and canonical resolved Tension/Charge, plus reference IDs: Tragedy, opening and terminal Proposition IDs, and exhausted Committal IDs from the same Horizon. It contains no statements or serialized descendants. The read service resolves statements, producing phase/register, owner and exhausted Horizon IDs, exhaustion state and terminal provenance. Receipt inspection resolves the full local statements by ID; ordinary participation history may use bounded excerpts. The flat local ID set is retained without an age cutoff and ordered newest creation first.
 
 An unconsumed Tragedy Receipt follows legitimate backward recovery from its current unresolved Commit Region, regardless of which Participant performs that recovery. It is shared with every Participant in the destination Commit Region, with recovery stopping at the nearest eligible non-exhausted ancestral Committal. A later legitimate recovery from that basin moves its effective region again. Normal movement and recovery from another basin do not. The original trigger Participant remains historical provenance only. The Tragedy-only scope projection updates atomically with recovery entry; foreign lineage cannot transport it. Consumption freezes its historical attachment. Ordinary Receipt regional origin remains immutable and does not constrain recovery selection.
 

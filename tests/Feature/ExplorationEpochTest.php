@@ -27,6 +27,8 @@ class ExplorationEpochTest extends TestCase
 
     public function test_downstream_failure_records_each_positions_own_epoch_and_stops_at_committal(): void
     {
+        // Isolate structural rules from a new Charge-boundary event.
+        $this->resolveExpressiveFieldFixture(.8);
         [$signal, $activity, $terminal, $return] = $this->testedLineage();
         $horizon = $terminal->cycle->context_horizon_id;
         foreach ([[$signal, 3], [$activity, 7]] as [$node, $epoch]) {

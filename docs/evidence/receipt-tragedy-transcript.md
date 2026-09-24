@@ -1,5 +1,9 @@
 # Tragedy transcript after standalone Receipt action removal
 
+> Historical validation record: Stage 2 supersedes the Rest-born Tragedy and special
+> Variant final-attempt allowance described below. See [the current Tragedy invariant](../branch-tragedy.md).
+> Exhaustion/recovery consequences await Stage 6.
+
 The authored `tests/Fixtures/participation/tragedy-lifecycle.json` uses only real
 HTTP participation requests. No application behavior or calculation was changed
 for this adaptation. Its 101 retained steps preserve the original participants,

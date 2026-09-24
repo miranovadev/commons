@@ -136,6 +136,7 @@ class ParticipantContinuityTest extends TestCase
         $phase->forceFill(['kind' => PhaseKind::Order, 'write_register' => 'canon', 'gate_proposition_id' => $head->id])->save();
         $participant->forceFill(['current_proposition_id' => $head->id])->save();
         app(PotentialProjectionService::class)->refresh($participant->substrate_id);
+        $this->boundaryTragedyFixture($head);
         $horizons = ContextHorizon::orderBy('sequence')->get()->map(fn ($h) => Arr::except($h->getAttributes(), ['updated_at']))->all();
         $state = $service->stateFor($participant);
 

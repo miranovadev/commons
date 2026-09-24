@@ -33,6 +33,8 @@ class SpentContinuationTest extends TestCase
 
     public function test_mediate_failure_blocks_the_previously_attested_distinguish_route(): void
     {
+        // Isolate structural rules from a new Charge-boundary event.
+        $this->resolveExpressiveFieldFixture(.8);
         $this->initializeExhaustionFixture();
         [$signal, $activity, $terminal, $return] = $this->testedLineage();
         $plan = fn () => app(InputPlanService::class)->forPhase($return->cycle->participant, $return);
@@ -98,6 +100,8 @@ class SpentContinuationTest extends TestCase
 
     public function test_all_spent_without_potential_can_generate_and_advance_its_epoch(): void
     {
+        // Isolate structural rules from a new Charge-boundary event.
+        $this->resolveExpressiveFieldFixture(.8);
         $this->initializeExhaustionFixture();
         [$signal, , $terminal, $return] = $this->testedLineage();
         $this->rest($terminal);

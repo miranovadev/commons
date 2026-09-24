@@ -30,6 +30,8 @@ class RevisionAdmissibilityTest extends TestCase
 
     public function test_revision_targets_owned_heads_in_the_write_register_from_a_prior_cycle(): void
     {
+        // Isolate structural rules from a new Charge-boundary event.
+        $this->resolveExpressiveFieldFixture(.8);
         [$participant, $phase, $gate] = $this->currentPhase();
         $owned = $this->priorHead(
             $participant,
@@ -152,6 +154,8 @@ class RevisionAdmissibilityTest extends TestCase
 
     public function test_self_refute_unlocks_a_later_cycle_but_not_the_revised_child(): void
     {
+        // Isolate structural rules from a new Charge-boundary event.
+        $this->resolveExpressiveFieldFixture(.8);
         [$participant, $phase, $gate, $head] = $this->revisionFixture();
         $dispatch = app(ContributionDispatcher::class);
         $dispatch->dispatch($participant, $phase, [

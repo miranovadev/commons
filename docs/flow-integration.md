@@ -33,7 +33,7 @@ Reclassification copies the exact statement and attaches only the selected Recei
 
 Another Variant is an option only after every current viable Variant at that position is spent in the current exploration epoch and has its own completed Instrument and effective Attestation. Potential Charge does not govern this permission. Each new Variant repeats this sequence; a Receipt from another Variant does not replace its Instrument prerequisite. Receipt consumption alone never reopens Variant. There is no Participant quota, fixed sibling cap or prior Mediate Rest requirement. Mediate still needs a second Proposition. This is the [confirmed Variant clarification](horizon-proof-variant-clarification.md).
 
-A no-Potential Rest opens Tragedy's final attempt. Reclassify may exercise the Tragedy Receipt at either required boundary. A later no-Potential Rest alone can close the Horizon after that exercise. A successful continuation remains alive. No single failed probe, numeric zero, Participant count or graph filter proves Exhaustion.
+A fresh expressive write at zero resolved Charge creates its Region Tragedy; Potential and Rest do not. The following consumption/exhaustion behavior is retained pending Stage 6. Reclassify may exercise the Tragedy Receipt at either required boundary. A later no-Potential Rest alone can close the Horizon after that exercise. A successful continuation remains alive. No single failed probe, numeric zero, Participant count or graph filter proves Exhaustion.
 
 ## Review stack
 

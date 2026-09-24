@@ -28,9 +28,22 @@ final class ExhaustionAuditService
         $invalidRest = $invalidTragedy = $invalidConsumption = $horizonMismatch = [];
         foreach ($tragedies as $tragedy) {
             $receipt = $receipts->get($tragedy->receipt_id);
-            if (! $validRest($tragedy->phase_id, $tragedy->context_horizon_id)
+            $metadata = $receipt === null ? [] : json_decode($receipt->metadata, true);
+            if (($metadata['trigger'] ?? null) === 'expressive_charge_boundary') {
+                // Birth measurements are historical: later evidence can change
+                // the terminal's current measurement without erasing catastrophe.
+                $terminal = Proposition::find($tragedy->terminal_proposition_id);
+                if ($terminal?->tier !== 'expressive' || $terminal->phase_id !== $tragedy->phase_id
+                    || $terminal->phase->cycle->context_horizon_id !== $tragedy->context_horizon_id
+                    || app(CommitRegionService::class)->seedFor($terminal)?->id !== $tragedy->governing_committal_id
+                    || ! isset($metadata['field']['charge']) || $metadata['field']['charge'] != 0
+                    || abs($metadata['field']['tension'] ?? 0) != 1) {
+                    $invalidTragedy[] = $tragedy->id;
+                }
+            } elseif (! $validRest($tragedy->phase_id, $tragedy->context_horizon_id)
                 || $phases->get($tragedy->phase_id)?->gate_proposition_id !== $tragedy->terminal_proposition_id
                 || $witnesses->get($tragedy->phase_id)?->observed_field_version !== $tragedy->observed_field_version) {
+                // Historical Rest-born rows remain auditable, never recreated.
                 $invalidRest[] = $tragedy->phase_id;
             }
             if ($receipt === null || $receipt->type !== 'tragedy' || $receipt->instrument_execution_id !== null

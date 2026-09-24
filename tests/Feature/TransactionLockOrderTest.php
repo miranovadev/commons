@@ -44,6 +44,7 @@ use App\Services\PotentialProjectionService;
 use App\Services\PropositionMeasurementService;
 use App\Services\ReceiptContextService;
 use App\Services\ReferencePotentialChargeService;
+use App\Services\TragedyService;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\RefreshDatabaseState;
@@ -519,7 +520,24 @@ class TransactionLockOrderTest extends TestCase
     }
 
     #[Group('load')]
-    public function test_concurrent_rests_record_one_tragedy_and_leave_both_participants_with_valid_entry(): void
+    public function test_concurrent_boundary_publications_keep_one_tragedy_and_receipt(): void
+    {
+        $this->initializeExhaustionFixture();
+        $first = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
+        $second = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
+        $this->measure($first, 1);
+        $this->measure($second, -1);
+        $this->whileWorkerWaits($this->substrate, ['operation' => 'charge-boundary',
+            'substrate_id' => $this->substrate->id, 'proposition_id' => $second->id],
+            fn () => app(TragedyService::class)->record($first));
+        $this->assertSame($first->id, Tragedy::sole()->terminal_proposition_id);
+        $this->assertSame(1, Receipt::where('type', 'tragedy')->count());
+        $this->assertDatabaseCount('tragedy_final_attempts', 0);
+        $this->assertDatabaseCount('commit_region_exhaustions', 0);
+    }
+
+    #[Group('load')]
+    public function test_concurrent_rests_do_not_create_tragedy_and_leave_both_participants_with_valid_entry(): void
     {
         [$substrate, $first, $phase] = $this->fixture();
         app(ParticipationService::class)->contribute($first, $phase->id, ['action' => 'proposition.variant', 'statement' => 'A finite attempt']);
@@ -540,9 +558,9 @@ class TransactionLockOrderTest extends TestCase
             function () use ($first, $firstRest): void {
                 app(ParticipationService::class)->contribute($first, $firstRest->id, ['action' => 'participant.rest']);
             });
-        $this->assertSame(1, Tragedy::count());
+        $this->assertSame(0, Tragedy::count());
         $this->assertDatabaseCount('commit_region_exhaustions', 0);
-        $this->assertSame(1, Receipt::where('type', 'tragedy')->count());
+        $this->assertSame(0, Receipt::where('type', 'tragedy')->count());
         foreach ([$first, $second] as $participant) {
             $this->assertSame(1, $participant->cycles()->whereNull('completed_at')->count());
             $this->assertSame('ready', app(ParticipationService::class)->stateFor($participant)['status']);
@@ -607,6 +625,8 @@ class TransactionLockOrderTest extends TestCase
         $this->assertDatabaseMissing('exhaustion_states', ['proposition_id' => $newId]);
         $this->assertDatabaseMissing('exhaustion_states', ['proposition_id' => $commit->id]);
         $this->assertSame(1, Tragedy::count());
+        $this->assertSame($newId, Tragedy::sole()->terminal_proposition_id,
+            'The newly measured sibling reaches the boundary; the waiting Rest is not its cause');
         $this->assertDatabaseCount('commit_region_exhaustions', 0);
         $actual = app(PotentialChargeService::class)->recoverFrom($terminal->gate);
         $expected = app(ReferencePotentialChargeService::class)->recoverFrom($terminal->gate);
@@ -728,4 +748,3 @@ class TransactionLockOrderTest extends TestCase
         return Phase::where('cycle_id', $cycle->id)->whereNull('completed_at')->sole();
     }
 }
-

@@ -125,6 +125,14 @@ final readonly class ContributionDispatcher
                 $this->receipts->desired($participant, $phase, $receiptOptions);
             }
 
+            if ($result->wasRecentlyCreated && $result->tier === 'expressive') {
+                // Resolve the complete successful write, including selected Receipt
+                // loads, before observing its field boundary. Existing propositions
+                // (Traverse, Attestation, Instrument) and Committals are not births.
+                $this->measurements->recalculate($result);
+                app(TragedyService::class)->record($result);
+            }
+
             return $result;
         });
     }
@@ -186,13 +194,6 @@ final readonly class ContributionDispatcher
         Proposition $gate,
         array $input,
     ): Proposition {
-        // Legacy final-attempt bookkeeping, retained until the Tragedy stage.
-        // This does not authorize or limit Variant generation; structural
-        // eligibility is checked independently by PhaseGenerationService.
-        // Capture it before writing invalidates the field projection.
-        $finalAttempt = $input['action'] === 'proposition.variant'
-            && app(TragedyFinalAttemptService::class)->available($phase)
-            && ! app(PotentialChargeService::class)->hasRemainingInRegion($phase);
         $target = $this->write(
             $phase,
             $input['statement'],
@@ -209,12 +210,9 @@ final readonly class ContributionDispatcher
 
         if ($input['action'] === 'proposition.variant') {
             app(ExplorationEpochService::class)->advance($phase);
-            if ($finalAttempt) {
-                app(TragedyFinalAttemptService::class)->record($phase, $target);
-            }
         }
 
-        return $this->refreshMeasurement($target);
+        return $target;
     }
 
     /** Classification has no authored content and no inherited judgments. */
@@ -244,7 +242,7 @@ final readonly class ContributionDispatcher
         ]);
         $this->ledger->record($this->supersede($phase, $source, $target, 'reclassify'));
 
-        return $this->refreshMeasurement($target);
+        return $target;
     }
 
     /** @param array<string, mixed> $input */
@@ -278,7 +276,7 @@ final readonly class ContributionDispatcher
             );
         }
 
-        return $this->refreshMeasurement($target);
+        return $target;
     }
 
     /** @param array<string, mixed> $input */

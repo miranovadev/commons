@@ -6,6 +6,7 @@ use App\Enums\PhaseKind;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Substrate;
+use App\Models\Tragedy;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
@@ -113,9 +114,13 @@ final class HorizonFailureService
                 }
             }
             if ($proof['rest_reason'] === 'no_remaining_potential') {
-                $tragedy = app(TragedyService::class)->record($phase, $proof);
-                app(ExhaustionService::class)->afterFailure($phase, $tragedy, $proof);
-                // Rest retains its terminal position. Tragedy uses normal backward recovery.
+                // Legacy exhaustion witness, pending Stage 6. Rest can only
+                // refer to an existing Tragedy; it can never create one.
+                $tragedy = Tragedy::where('governing_committal_id', $proof['governing_committal_id'])
+                    ->whereNotNull('governing_committal_id')->first();
+                if ($tragedy !== null) {
+                    app(ExhaustionService::class)->afterFailure($phase, $tragedy, $proof);
+                }
             }
             app(FieldMutationService::class)->mark($substrate->id, [$proof['context_horizon_id']], $proof['transitions'], measurementsDirty: false);
             if ($proof['rest_reason'] === 'no_remaining_potential') {

@@ -40,7 +40,8 @@ No edge means no movement.
   Tension; it does not decide whether expression is possible. Zero Potential
   neither suppresses a structurally valid Variant nor marks paths spent or
   proves Horizon Exhaustion.
-- **Tragedy invariant:** Tragedy remains the first no-Potential Rest in a Horizon.
+- **Tragedy invariant:** The first fresh expressive proposition at zero resolved
+  Charge creates the unique Region Tragedy. Potential and Rest do not create it.
 - **Exhaustion invariant:** Horizon Exhaustion remains permanent and
   Commit-Region-scoped via `commit_region_exhaustions`; Horizon timestamps summarize boundary consequences only.
 - **Visibility invariant:** Spent expressive propositions remain contextual

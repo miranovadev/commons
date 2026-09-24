@@ -60,7 +60,7 @@ class AuthoritativeRestReasonTest extends TestCase
             ['action' => 'participant.rest', 'reason' => 'no_remaining_potential']);
     }
 
-    public function test_earlier_region_capacity_does_not_prevent_current_regions_tragedy(): void
+    public function test_zero_regional_potential_is_only_a_rest_diagnostic_not_a_tragedy_trigger(): void
     {
         [$root, $terminal] = $this->exhaustedBranch();
         $this->measure($root, 0);
@@ -70,7 +70,7 @@ class AuthoritativeRestReasonTest extends TestCase
         $this->assertFalse(app(PotentialChargeService::class)->hasRemainingInRegion($terminal));
         $this->assertSame(RestReason::NoRemainingPotential, app(RestReasonService::class)->derive($terminal));
         $this->rest($terminal);
-        $this->assertDatabaseCount('tragedies', 1);
+        $this->assertDatabaseCount('tragedies', 0);
     }
 
     public function test_legacy_rest_without_an_authoritative_reason_cannot_be_reinterpreted(): void

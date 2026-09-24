@@ -29,6 +29,8 @@ class SpentContinuationRealtimeTest extends TestCase
 
     public function test_spent_and_epoch_events_are_compact_commit_scoped_and_idempotent(): void
     {
+        // Isolate structural rules from a new Charge-boundary event.
+        $this->resolveExpressiveFieldFixture(.8);
         config(['broadcasting.default' => 'log']);
         Queue::fake();
         $events = [];

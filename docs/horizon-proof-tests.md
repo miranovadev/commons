@@ -1,5 +1,9 @@
 # Horizon proof invariant coverage
 
+> Historical validation record: Stage 2 supersedes the Rest-born Tragedy and special
+> Variant final-attempt allowance described below. See [the current Tragedy invariant](branch-tragedy.md).
+> Exhaustion/recovery consequences await Stage 6.
+
 | Required invariants | Tests |
 | --- | --- |
 | 1–7: one Instrument Receipt, shared Horizon availability, persistent one-use consumption, foreign scope, concurrent winner | `HorizonReceiptLifecycleTest`, `ReceiptGatedReclassificationTest`, `FullEvidenceFlowTest`, `TransactionLockOrderTest`, `HorizonProofConcurrencyTest` |

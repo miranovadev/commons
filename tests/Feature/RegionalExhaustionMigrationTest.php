@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\PhaseKind;
 use App\Http\Resources\PropositionResource;
+use App\Models\Phase;
 use App\Models\Receipt;
 use App\Models\Tragedy;
 use App\Services\ExhaustionService;
@@ -20,7 +21,32 @@ use Tests\TestCase;
 
 class RegionalExhaustionMigrationTest extends TestCase
 {
-    use DatabaseMigrations, HorizonProofFixture;
+    use DatabaseMigrations, HorizonProofFixture {
+        firstFailure as private boundaryFailure;
+    }
+
+    private function firstFailure(): array
+    {
+        $fixture = $this->boundaryFailure();
+        $this->legacyBirth($fixture[2]);
+
+        return $fixture;
+    }
+
+    /** Encode the historical Rest-born record this migration was written to preserve. */
+    private function legacyBirth(Tragedy $tragedy): void
+    {
+        $phase = Phase::where('gate_proposition_id', $tragedy->terminal_proposition_id)
+            ->whereHas('cycle', fn ($q) => $q->where('rest_reason', 'no_remaining_potential'))->sole();
+        $version = DB::table('horizon_failure_witnesses')->where('phase_id', $phase->id)->value('observed_field_version');
+        DB::table('tragedies')->where('id', $tragedy->id)->update(['phase_id' => $phase->id,
+            'participant_id' => $phase->cycle->participant_id, 'observed_field_version' => $version]);
+        $receipt = Receipt::findOrFail($tragedy->receipt_id);
+        $metadata = $receipt->metadata;
+        unset($metadata['trigger'], $metadata['field']);
+        DB::table('receipts')->where('id', $receipt->id)->update(['phase_id' => $phase->id, 'metadata' => json_encode($metadata)]);
+        $tragedy->refresh();
+    }
 
     public function runDatabaseMigrations(): void
     {
@@ -119,8 +145,9 @@ class RegionalExhaustionMigrationTest extends TestCase
     public function test_legacy_local_proof_does_not_exhaust_its_horizons_opening_region(): void
     {
         [, $first, , $seed] = $this->exhaustedBranch();
+        $tragedy = $this->boundaryTragedyFixture($first->gate);
         $this->rest($first);
-        $tragedy = Tragedy::sole();
+        $this->legacyBirth($tragedy);
         [$terminal] = $this->exercise($seed, $tragedy);
         $this->rest($terminal);
         $horizon = $terminal->cycle->contextHorizon;
@@ -145,6 +172,7 @@ class RegionalExhaustionMigrationTest extends TestCase
         $this->explore($head);
         $rest = $this->phase($head);
         $this->measure($head, 1);
+        $this->boundaryTragedyFixture($head);
         $this->rest($rest);
         $parentTragedy = Tragedy::where('governing_committal_id', $this->origin->id)->sole();
         $receipt = Receipt::findOrFail($parentTragedy->receipt_id);
