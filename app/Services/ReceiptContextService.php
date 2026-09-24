@@ -8,6 +8,7 @@ use App\Models\Participant;
 use App\Models\ParticipantReceiptContext;
 use App\Models\Phase;
 use App\Models\Proposition;
+use App\Models\Receipt;
 use App\Models\ReceiptContextEvent;
 use App\Models\Substrate;
 use App\Services\Evidence\ReceiptEvidenceService;
@@ -48,7 +49,16 @@ final readonly class ReceiptContextService
                 ->unique('id')->filter(fn ($node) => $context->activeIds->has($node->id));
             $present = $exposed->pluck('id');
             $available = app(HorizonReceiptService::class)->catalogue($phase, $context);
+            // Memory survives spent authority, exhaustion and recovery. Only this
+            // Participant's already loaded, same-substrate memories are retained.
+            $memories = Receipt::where('type', 'tragedy')
+                ->whereHas('horizon', fn ($q) => $q->where('substrate_id', $context->substrate->id))
+                ->where(fn ($q) => $q->whereIn('id', ParticipantReceiptContext::active()
+                    ->where('participant_id', $phase->cycle->participant_id)->select('receipt_id'))
+                    // Optional loading and escape can accompany the same atomic action.
+                    ->orWhereHas('consumption', fn ($q) => $q->where('phase_id', $phase->id)))->get();
             $receipts = $available
+                ->concat($memories)
                 ->concat($context->receipts->where('context_horizon_id', $phase->cycle->context_horizon_id)
                     ->whereIn('id', $context->receiptContexts->where('participant_id', $phase->cycle->participant_id)->whereNull('cleared_at')->pluck('receipt_id')))
                 ->concat($exposed->flatMap(fn ($node) => $this->state->receipts($node, $context)))->unique('id');
@@ -66,15 +76,17 @@ final readonly class ReceiptContextService
             $replayTargets = $gate !== null && in_array('instrument.execute', config("phases.{$phase->kind->value}.actions", []), true)
                 ? $this->options->instrumentOptionsFor($phase, $context)->pluck('id') : collect();
 
-            return $receipts->map(function ($receipt) use ($context, $loads, $present, $replayTargets, $available, $activeIds): array {
+            return $receipts->map(function ($receipt) use ($phase, $context, $loads, $present, $replayTargets, $available, $activeIds): array {
                 $verified = $this->evidence->describe($receipt, $context);
                 $load = $loads->get($receipt->id);
-                $loaded = $receipt->type !== 'tragedy' && $load !== null && $load->cleared_at === null;
+                $memory = $receipt->type === 'tragedy';
+                $loaded = $load !== null && $load->cleared_at === null;
                 $alreadyPresent = isset($verified['referenced_proposition_id']) && $present->contains($verified['referenced_proposition_id']);
-                $status = $loaded ? 'loaded' : ($verified === null ? 'unqualified' : ($alreadyPresent ? 'already-in-context' : 'available'));
+                $status = $loaded ? 'loaded' : ($memory ? 'available' : ($verified === null ? 'unqualified' : ($alreadyPresent ? 'already-in-context' : 'available')));
 
                 return [
-                    'id' => $receipt->id, 'proposition_id' => $receipt->instrumentExecution?->proposition_id ?? $receipt->phase->gate_proposition_id,
+                    'id' => $receipt->id, 'proposition_id' => $memory ? $receipt->metadata['terminal_proposition_id']
+                        : ($receipt->instrumentExecution?->proposition_id ?? $receipt->phase->gate_proposition_id),
                     'context_horizon_id' => $receipt->context_horizon_id,
                     'availability' => $receipt->consumption !== null ? 'consumed' :
                         ($available->contains('id', $receipt->id) ? 'available' : 'historical'),
@@ -95,7 +107,10 @@ final readonly class ReceiptContextService
                     'replayed_from_receipt_id' => $receipt->instrumentExecution?->replayed_from_receipt_id,
                     'observation_error' => $receipt->metadata['observation_error'] ?? null,
                     'signature' => $verified['signature'] ?? null,
-                    'loaded' => $loaded, 'active' => $loaded && $activeIds->contains($receipt->id),
+                    'loaded' => $loaded, 'active' => ! $memory && $loaded && $activeIds->contains($receipt->id),
+                    ...($memory ? ['load_mode' => 'memory', 'memory_active' => $loaded,
+                        'consumed_in_current_phase' => $receipt->consumption?->phase_id === $phase->id,
+                        ...($loaded ? ['tragedy_memory' => app(TragedyMemoryService::class)->describe($receipt, $phase)] : [])] : []),
                     'status' => $status, 'loaded_at' => $loaded ? $load->loaded_at->toISOString() : null,
                     ...($verified !== null ? ['evidence' => $verified['evidence']] : []),
                 ];
@@ -147,6 +162,17 @@ final readonly class ReceiptContextService
         });
     }
 
+    /** Ordinary Gate evidence plus scoped Tragedy memory; these are distinct authorities. */
+    public function loadOptions(Phase $phase, ?ParticipationContext $context = null): Collection
+    {
+        $context ??= new ParticipationContext($phase);
+
+        return $this->gateOptions($phase, $context)->concat(
+            $this->forPhase($phase, $context)->where('type', 'tragedy')
+                ->filter(fn ($item) => $item['loaded'] || $item['availability'] === 'available' || $item['consumed_in_current_phase'])
+        )->unique('id')->values();
+    }
+
     /** Caller owns the same transaction as the accepted normal Phase contribution. */
     public function desired(Participant $participant, Phase $phase, array $options): void
     {
@@ -164,9 +190,9 @@ final readonly class ReceiptContextService
             || array_intersect($loadIds, $unloadIds) !== []) {
             throw new DomainException('Receipt desired states must be disjoint lists of IDs.');
         }
-        $eligible = $this->gateOptions($phase)->keyBy('id');
+        $eligible = $this->loadOptions($phase)->keyBy('id');
         if (array_diff([...$loadIds, ...$unloadIds], $eligible->keys()->all()) !== []) {
-            throw new DomainException('Receipt options require qualifying references on the current Gate in this Commit Region.');
+            throw new DomainException('Receipt options require current Gate evidence or an available scoped Tragedy memory.');
         }
         foreach (array_unique($loadIds) as $id) {
             $option = $eligible[$id];
@@ -219,6 +245,12 @@ final readonly class ReceiptContextService
         $event->setRelation('phase', $phase);
         $event->setRelation('context', $load);
         app(LedgerService::class)->record($event);
+        if ($load->receipt->type === 'tragedy') {
+            // Cognition only: no field invalidation, recalculation or evidence signature.
+            app(RealtimePublisher::class)->participant($load->participant_id);
+
+            return;
+        }
         // Linked classifications consume the same load state. Invalidate through the existing field path.
         $affected = DB::table('proposition_receipt_links')->where('receipt_id', $load->receipt_id)->pluck('proposition_id')->push($load->proposition_id)->unique();
         app(FieldMutationService::class)->touch($phase, $affected->all());

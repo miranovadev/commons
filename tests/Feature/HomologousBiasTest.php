@@ -26,6 +26,7 @@ use App\Services\HomologousBiasService;
 use App\Services\HorizonReceiptService;
 use App\Services\InputPlanService;
 use App\Services\LedgerService;
+use App\Services\Observables\ReinforcementService;
 use App\Services\OpenAIResponseSchema;
 use App\Services\Participation\ParticipationContext;
 use App\Services\ParticipationService;
@@ -36,6 +37,7 @@ use App\Services\PotentialProjectionService;
 use App\Services\PropositionMeasurementService;
 use App\Services\PropositionOptionService;
 use App\Services\PropositionStateService;
+use App\Services\ReceiptContextService;
 use App\Services\RegionalExhaustionMembership;
 use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -453,10 +455,49 @@ class HomologousBiasTest extends TestCase
 
     public function test_a_tragedy_receipt_alone_never_advertises_the_local_gate(): void
     {
-        $this->warrant();
+        $tragedy = $this->warrant();
+        DB::transaction(fn () => app(ReceiptContextService::class)->desired($this->actor, $this->bias, ['load' => [$tragedy->receipt_id]]));
         DB::table('instrument_executions')->update(['status' => 'failed']);
         $this->assertNotContains($this->gateA->id, $this->biasOptionIds());
         $this->assertContains($this->gateB->id, $this->biasOptionIds());
+        $this->reject($this->gateA, $tragedy->receipt_id);
+    }
+
+    public function test_loaded_memory_survives_real_homologous_consumption_without_weight_or_authority(): void
+    {
+        $tragedy = $this->warrant();
+        $contexts = app(ReceiptContextService::class);
+        DB::transaction(fn () => $contexts->desired($this->actor, $this->bias, ['load' => [$tragedy->receipt_id]]));
+        $this->resolveExpressiveFieldFixture(.8);
+        $target = app(ContributionDispatcher::class)->dispatch($this->actor, $this->bias, $this->input($this->gateB));
+        $this->assertNull(app(HorizonReceiptService::class)->tragedyWarrant($this->bias));
+        $this->assertSame(1, ReceiptConsumption::where('receipt_id', $tragedy->receipt_id)->count());
+        $this->assertDatabaseCount('commit_region_exhaustions', 0);
+        $next = app(PhaseProgressionService::class)->advance($this->bias, $target);
+        $item = $contexts->forPhase($next)->firstWhere('id', $tragedy->receipt_id);
+        $this->assertSame('consumed', $item['availability']);
+        $this->assertTrue($item['memory_active']);
+        $this->assertFalse($item['active']);
+        $this->assertSame($this->gateA->id, $item['tragedy_memory']['catastrophe']['proposition_id']);
+        foreach ([null, new ParticipationContext($next)] as $context) {
+            $this->assertSame(0, app(ReinforcementService::class)->count($target, $context));
+        }
+        DB::transaction(fn () => $contexts->desired($this->actor, $next, ['unload' => [$tragedy->receipt_id]]));
+        $this->assertFalse($contexts->forPhase($next)->firstWhere('id', $tragedy->receipt_id)['memory_active'] ?? false);
+        $this->assertSame(1, ReceiptConsumption::where('receipt_id', $tragedy->receipt_id)->count());
+    }
+
+    public function test_escape_can_atomically_load_memory_without_requiring_a_prior_load(): void
+    {
+        $tragedy = $this->warrant();
+        $this->resolveExpressiveFieldFixture(.8);
+        $input = [...$this->input($this->gateB), 'receipt_options' => ['load' => [$tragedy->receipt_id]]];
+        $this->publishPotentialFixture($this->actor);
+        app(ContributionService::class)->validateSchema(app(InputPlanService::class)->forPhase($this->actor, $this->bias)['schema'], $input);
+        app(ContributionDispatcher::class)->dispatch($this->actor, $this->bias, $input);
+        $this->assertDatabaseHas('participant_receipt_contexts', ['participant_id' => $this->actor->id,
+            'receipt_id' => $tragedy->receipt_id, 'evidence_signature' => null, 'cleared_at' => null]);
+        $this->assertSame(1, ReceiptConsumption::where('receipt_id', $tragedy->receipt_id)->count());
     }
 
     public function test_foreign_or_recovery_relocated_tragedy_is_not_the_current_regions_warrant(): void

@@ -124,15 +124,15 @@ export function ContributionForm({
           )}
 
           {properties.receipt_options && <Stack gap="xs">
-            <Text size="sm" fw={500}>Gate Receipt loading</Text>
-            <Text size="xs" c="dimmed">Apply these changes with your contribution. Loaded evidence appears when its Proposition occupies Read.</Text>
+            <Text size="sm" fw={500}>Receipt context loading</Text>
+            <Text size="xs" c="dimmed">Apply these changes with your contribution. Ordinary evidence appears at Read; Tragedy memory recalls the failed lineage without Reinforcement.</Text>
             {(['load', 'unload'] as const).map(operation => {
               const opposite = operation === 'load' ? 'unload' : 'load';
               const refs = receiptChoices(plan);
               return <MultiSelect key={operation} label={operation === 'load' ? 'Load Receipts' : 'Unload Receipts'}
                 data={(properties.receipt_options?.properties?.[operation]?.items?.enum ?? [])
                   .filter(id => !values.receipt_options?.[opposite]?.includes(id))
-                  .map(id => { const ref = refs.find(item => item.id === id); return { value: id, label: ref ? `${ref.reference} · ${ref.loaded ? 'Loaded' : 'Unloaded'}` : id }; })}
+                  .map(id => { const ref = refs.find(item => item.id === id); return { value: id, label: ref ? `${ref.type === 'tragedy' ? 'Tragedy memory · ' : ''}${ref.reference} · ${ref.loaded ? 'Loaded' : 'Unloaded'}` : id }; })}
                 value={values.receipt_options?.[operation] ?? []}
                 onChange={ids => set('receipt_options', { ...values.receipt_options, [operation]: ids })} />;
             })}

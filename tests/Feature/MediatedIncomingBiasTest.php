@@ -242,6 +242,7 @@ class MediatedIncomingBiasTest extends TestCase
         $this->assertTrue(app(HomologousBiasService::class)->forPhase($this->bias)->contains('id', $this->result->id));
         $this->assertCount(1, $this->biasOptions());
         $tragedy = $this->boundaryTragedyFixture($this->bResult);
+        DB::transaction(fn () => app(ReceiptContextService::class)->desired($this->actor, $this->bias, ['load' => [$tragedy->receipt_id]]));
         app(PropositionMeasurementService::class)->project($this->bResult, .8, -.9, .8);
         $this->publishPotentialFixture($this->actor);
         $schema = app(InputPlanService::class)->forPhase($this->actor, $this->bias)['schema'];

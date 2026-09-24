@@ -59,7 +59,7 @@ does not exhaust a basin that other participants may still explore. Once the
 owning Region exhausts, its warrant immediately loses live escape authority.
 
 Local, mediated incoming and same-Region homologous Bias require ordinary
-own-Region Receipts. Tragedy warrants remain un-loadable, non-replayable and
+own-Region Receipts. Tragedy warrants may be loaded as cognitive memory only, remain non-replayable and
 excluded from ordinary evidence, Attestation, Instrument and Reinforcement.
 Mediate opens incoming doorways; homology identifies possible exits; the warrant
 permits one eligible exit. None of these creates synthetic traversal edges.

@@ -218,7 +218,9 @@ Every dynamic Receipt reference is `id`, `type`, `reference`, `loaded`, includin
 
 Only persistently loaded Receipts grounding the current participant-facing Read appear, once each, in the stable `loaded_receipts` evidence layer. Loaded Gate, Write and historical evidence stays metadata. Mediate still exposes its single causal Read anchor; regional calculation inputs never activate evidence. This visibility rule does not change Reinforcement.
 
-Optional `receipt_options: {load: [...], unload: [...]}` accompanies a forward Phase contribution (never Rest). Both lists enumerate exact eligible current Gate IDs, exclude Tragedy and reject overlap. Idempotent changes commit in the same transaction and affect measurements and the next Phase's cognition. No second inference or cache-warming call occurs. Loading has no standalone participation action. Replay is a target-bound `instrument.execute` invocation mode, using `instrument.replay_receipt_id`; it never changes loaded state.
+Optional `receipt_options: {load: [...], unload: [...]}` accompanies a forward Phase contribution (never Rest). Both lists enumerate exact eligible current Gate evidence IDs plus scoped Tragedy memory IDs, and reject overlap. Idempotent changes commit in the same transaction. Ordinary evidence affects measurements as before; Tragedy loading changes cognition only, with no field invalidation or Reinforcement. No second inference or cache-warming call occurs. Loading has no standalone participation action. Replay is a target-bound `instrument.execute` invocation mode, using `instrument.replay_receipt_id`; it never changes loaded state and never accepts Tragedy.
+
+Tragedy references additionally identify `purpose: homologous_boundary_escape`, `load_mode: memory` and `memory_active`. A loaded Tragedy exposes a bounded `tragedy_memory` in the dynamic plan, not the evidence prefix: canonical committed chain plus historical catastrophe field. Consumption and exhaustion retire authority, not loaded memory. See the Stage 7 projection and bounds in the [Receipt model](receipt-region-context.md).
 
 The human transport retains capability and replay lifecycle metadata required by its controls; inactive bodies, signatures and payloads are omitted. Model requests reduce all dynamic Receipt entries to the simple reference shape above. See the normative [Receipt model](receipt-region-context.md).
 
@@ -285,5 +287,4 @@ participant view subscribes to its current Horizon through the shared Reverb
 transport, so another participant's proposition status update refreshes local
 context even while this viewer remains still. Events retain identifier-only
 payloads; no history is broadcast.
-
 
