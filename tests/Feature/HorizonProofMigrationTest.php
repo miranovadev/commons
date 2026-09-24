@@ -87,7 +87,7 @@ class HorizonProofMigrationTest extends TestCase
         $this->assertDatabaseHas('receipt_consumptions', ['receipt_id' => $receipt->id,
             'proposition_id' => $targets[0], 'legacy' => true]);
         $this->assertDatabaseCount('proposition_receipt_links', 2);
-        $this->assertTrue(app(HorizonReceiptService::class)->available($source->phase)->isEmpty());
+        $this->assertTrue(app(HorizonReceiptService::class)->ordinaryAvailable($source->phase)->isEmpty());
         $horizon = DB::table('context_horizons')->where('id', $after->context_horizon_id)->first();
         $this->assertFalse(Schema::hasColumn('context_horizons', 'exhausted_at'));
         $this->assertNotNull($horizon->legacy_exhausted_at);

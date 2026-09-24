@@ -24,7 +24,8 @@ class ParticipantPromptConstitutionTest extends TestCase
                 'Variant is shared structural opportunity, never a Participant quota or fixed sibling cap.',
                 'Only a successful Variant advances its own Horizon/structural-position epoch.',
                 'Each new Variant needs its own completed Instrument and effective Attestation.',
-            ], ['proposition.reclassify', 'proposition.reconcile', 'proposition.commit', 'proposition.revise', 'Closure, performed', 'Tragedy']],
+                'A Tragedy Receipt is a dedicated homologous boundary-exit warrant, not ordinary evidence.',
+            ], ['proposition.reclassify', 'proposition.reconcile', 'proposition.commit', 'proposition.revise', 'Closure, performed', 'Rest ends the Cycle']],
             'Persist' => [PhaseKind::Persist, [
                 'Persist develops the selected distinction from its current causal Gate',
                 'A register label alone cannot supply producing-position identity',
@@ -205,7 +206,3 @@ class ParticipantPromptConstitutionTest extends TestCase
         ]];
     }
 }
-
-
-
-

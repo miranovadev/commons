@@ -41,7 +41,7 @@ class HorizonReceiptLifecycleTest extends TestCase
         $other = $this->phase($this->origin, PhaseKind::Distinguish);
         $this->assertNotSame($source->phase->cycle->participant_id, $other->cycle->participant_id);
         $this->assertSame($other->cycle->context_horizon_id, $receipt->context_horizon_id);
-        $this->assertSame([$receipt->id], app(HorizonReceiptService::class)->available($other)->modelKeys());
+        $this->assertSame([$receipt->id], app(HorizonReceiptService::class)->ordinaryAvailable($other)->modelKeys());
         $this->assertSame(1, Receipt::where('instrument_execution_id', $execution->id)->count());
         $this->expectException(DomainException::class);
         app(InstrumentExecutionService::class)->complete($execution, $source);
@@ -79,7 +79,7 @@ class HorizonReceiptLifecycleTest extends TestCase
         $original = $receipt->fresh()->getAttributes();
         DB::transaction(fn () => $service->consume($phase, $source, $target, $receipt->id));
         $this->assertEquals($original, $receipt->fresh()->getAttributes());
-        $this->assertTrue($service->available($source->phase)->isEmpty());
+        $this->assertTrue($service->ordinaryAvailable($source->phase)->isEmpty());
         $this->assertSame($target->id, $receipt->fresh()->consumption->proposition_id);
         $this->expectException(DomainException::class);
         DB::transaction(fn () => $service->consume($phase, $source, $target, $receipt->id));
@@ -101,7 +101,7 @@ class HorizonReceiptLifecycleTest extends TestCase
         }
         $this->assertFalse($receipt->consumption()->exists());
         $this->assertDatabaseMissing('proposition_receipt_links', ['receipt_id' => $receipt->id]);
-        $this->assertTrue(app(HorizonReceiptService::class)->available($phase)->contains('id', $receipt->id));
+        $this->assertTrue(app(HorizonReceiptService::class)->ordinaryAvailable($phase)->contains('id', $receipt->id));
     }
 
     public function test_receipt_from_another_horizon_is_not_available_or_consumable(): void
@@ -110,7 +110,7 @@ class HorizonReceiptLifecycleTest extends TestCase
         $boundary = $this->commitFrom($source, boundary: true);
         $phase = $this->phase($boundary, PhaseKind::Distinguish);
         $target = $this->node($phase, $boundary);
-        $this->assertTrue(app(HorizonReceiptService::class)->available($phase)->isEmpty());
+        $this->assertTrue(app(HorizonReceiptService::class)->ordinaryAvailable($phase)->isEmpty());
         $this->expectException(DomainException::class);
         DB::transaction(fn () => app(HorizonReceiptService::class)->consume($phase, $boundary, $target, $receipt->id));
     }

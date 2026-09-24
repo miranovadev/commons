@@ -14,6 +14,7 @@ use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Receipt;
+use App\Models\ReceiptConsumption;
 use App\Models\Substrate;
 use App\Models\Supersession;
 use App\Models\Tragedy;
@@ -136,7 +137,36 @@ abstract class TestCase extends BaseTestCase
         });
     }
 
-    /** Verified, explicitly loaded evidence for fixtures that exercise other semantic services. */
+    /** Archived pre-Stage-5 consumption only; never a live contribution allowance.
+     * Keep the Stage 6 recovery/exhaustion proofs readable without authorizing
+     * Constrain to consume a Tragedy in the current dispatcher.
+     */
+    protected function legacyTragedyClassificationFixture(Phase $phase, Proposition $source, string $receiptId): Proposition
+    {
+        return DB::transaction(function () use ($phase, $source, $receiptId): Proposition {
+            $receipt = Receipt::findOrFail($receiptId);
+            $this->assertSame('tragedy', $receipt->type);
+            $target = (new Proposition)->forceFill(['phase_id' => $phase->id, 'register' => $phase->write_register,
+                'tier' => 'expressive', 'statement' => $source->statement]);
+            $target->save();
+            app(LedgerService::class)->record($target);
+            $edge = (new Supersession)->forceFill(['phase_id' => $phase->id,
+                'source_proposition_id' => $source->id, 'target_proposition_id' => $target->id, 'type' => 'reclassify']);
+            $edge->save();
+            app(LedgerService::class)->record($edge);
+            DB::table('reclassification_results')->insert([
+                'source_proposition_id' => $source->id, 'register' => $phase->write_register, 'target_proposition_id' => $target->id]);
+            (new ReceiptConsumption)->forceFill(['receipt_id' => $receiptId,
+                'context_horizon_id' => $receipt->context_horizon_id, 'phase_id' => $phase->id,
+                'source_proposition_id' => $source->id, 'proposition_id' => $target->id, 'consumed_at' => now()])->save();
+            DB::table('proposition_receipt_links')->insert([
+                'proposition_id' => $target->id, 'receipt_id' => $receiptId, 'created_at' => now()]);
+
+            return $target;
+        });
+    }
+
+    /** Verified, explicitly loaded ordinary evidence for semantic fixtures. */
     protected function loadedReceiptFixture(Proposition $node, ?Attestation $subject = null): Receipt
     {
         $participant = $subject?->phase->cycle->participant ?? new Participant;
@@ -254,7 +284,7 @@ abstract class TestCase extends BaseTestCase
     protected function reclassificationInputFixture(Phase $phase, ?Proposition $source = null): array
     {
         $source ??= $phase->gate;
-        $available = app(HorizonReceiptService::class)->available($phase);
+        $available = app(HorizonReceiptService::class)->ordinaryAvailable($phase);
         $receipt = $available->first(fn ($item) => $item->instrumentExecution?->proposition_id === $source->id)
             ?? $available->firstOrFail();
 

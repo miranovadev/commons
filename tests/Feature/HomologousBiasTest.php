@@ -175,6 +175,7 @@ class HomologousBiasTest extends TestCase
         $receipt = app(BiasReceiptAuthorityService::class)->receiptsFor($this->bias, $source)->sole();
         $foreignReceipt = app(PropositionStateService::class)->receipts($source)->firstOrFail();
         $input = ['action' => 'proposition.reclassify', 'proposition_id' => $source->id, 'receipt_id' => $receipt->id];
+        $this->assertDatabaseMissing('participant_receipt_contexts', ['receipt_id' => $receipt->id]);
         $this->reject($source, $foreignReceipt->id);
         $this->publishPotentialFixture($this->actor);
         $before = $this->stateSnapshot();
@@ -220,7 +221,7 @@ class HomologousBiasTest extends TestCase
         // The source's Region retains its stock, but the shared classification
         // cannot be generated a second time from another participant occurrence.
         $other = $this->phase($source->phase->cycle->entryCommittal, $source, PhaseKind::Bias);
-        $this->assertContains($foreignReceipt->id, app(HorizonReceiptService::class)->available($other)->pluck('id'));
+        $this->assertContains($foreignReceipt->id, app(HorizonReceiptService::class)->ordinaryAvailable($other)->pluck('id'));
         $this->assertFalse(app(PhaseGenerationService::class)->available($other, 'proposition.reclassify', position: $source));
         $this->reject($this->gateC, $receipt->id); // Consumed evidence cannot be used again.
     }
@@ -419,7 +420,7 @@ class HomologousBiasTest extends TestCase
     public function test_schema_and_dispatcher_enforce_source_receipt_pairs_atomically(): void
     {
         $tragedy = $this->warrant();
-        $ordinary = app(HorizonReceiptService::class)->available($this->bias)->where('type', '!=', 'tragedy')->sole();
+        $ordinary = app(HorizonReceiptService::class)->ordinaryAvailable($this->bias)->where('type', '!=', 'tragedy')->sole();
         $this->publishPotentialFixture($this->actor);
         $schema = app(InputPlanService::class)->forPhase($this->actor, $this->bias)['schema'];
         $transport = app(OpenAIResponseSchema::class)->fromCommons($schema);
@@ -455,7 +456,9 @@ class HomologousBiasTest extends TestCase
         $this->measure($this->gateB, -.7);
         $this->reject($this->gateB, $foreign->receipt_id);
         DB::table('tragedy_receipt_scopes')->where('tragedy_id', $foreign->id)->update(['current_committal_id' => $this->a->id]);
-        $this->assertContains($foreign->receipt_id, app(HorizonReceiptService::class)->available($this->bias)->pluck('id'));
+        $this->assertContains($foreign->receipt_id, app(HorizonReceiptService::class)->catalogue($this->bias)->pluck('id'));
+        $this->assertNotContains($foreign->receipt_id, app(HorizonReceiptService::class)->ordinaryAvailable($this->bias)->pluck('id'));
+        $this->assertNull(app(HorizonReceiptService::class)->tragedyWarrant($this->bias));
         $this->assertNotContains($this->gateB->id, $this->biasOptionIds());
         $this->reject($this->gateB, $foreign->receipt_id);
     }
@@ -576,7 +579,7 @@ class HomologousBiasTest extends TestCase
     {
         return ['action' => 'proposition.reclassify', 'proposition_id' => $source->id,
             'receipt_id' => $receipt ?? (app(BiasReceiptAuthorityService::class)->receiptsFor($this->bias, $source)->first()
-                ?? app(HorizonReceiptService::class)->available($this->bias)->firstOrFail())->id];
+                ?? app(HorizonReceiptService::class)->ordinaryAvailable($this->bias)->firstOrFail())->id];
     }
 
     private function reject(Proposition $source, ?string $receipt = null): void

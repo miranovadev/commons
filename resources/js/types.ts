@@ -228,6 +228,7 @@ export interface WorkspaceHorizon {
 }
 
 export interface ReceiptContext {
+  purpose?: 'evidence' | 'homologous_boundary_escape';
   loaded?: boolean;
   active?: boolean;
   context_horizon_id?: Identifier;

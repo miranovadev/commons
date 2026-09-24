@@ -40,9 +40,12 @@ mediated sources require ordinary evidence and reject Tragedy Receipts, includin
 when a mediated source also belongs to the homologous population. Same-Region
 expressive paths are ordinary. Population supplies possible exits; the Receipt
 supplies permission to leave. Source-specific schema bindings and transactional
-revalidation enforce this distinction. Legacy non-Bias consumption and recovery
-catalogue transport remain transitional pending Stages 5/6, without granting
-Bias authority in a foreign or recovery destination Region.
+revalidation enforce this distinction. Historical non-Bias consumption remains auditable but is no longer a live
+action. Recovery catalogue transport remains transitional pending Stage 6,
+without granting Bias authority in a foreign or recovery destination Region.
+Tragedy Receipts are boundary warrants, not ordinary evidence: they cannot be
+loaded or replayed and satisfy no Instrument, Attestation, ordinary Reclassify
+or shared-evidence prerequisite.
 
 A Tragedy Receipt uses `proposition.reclassify` with `proposition_id` and `receipt_id`, exactly like an ordinary Receipt. No use-Tragedy action exists. A failed or rolled-back Reclassify does not exercise the Receipt.
 

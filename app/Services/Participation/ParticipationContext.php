@@ -130,7 +130,7 @@ final class ParticipationContext
             ->orWhereIn('id', $this->receiptLinks->pluck('receipt_id')))
             ->with(['ledgerEntry', 'instrumentExecution'])->get();
         $this->receiptContexts = ParticipantReceiptContext::whereIn('proposition_id', $ids)->get();
-        $this->reinforcements = $this->receiptContexts->whereNull('cleared_at');
+        $this->reinforcements = $this->receiptContexts->whereNull('cleared_at')->whereNotIn('receipt_id', $this->receipts->where('type', 'tragedy')->pluck('id'));
         $this->receiptContextEvents = ReceiptContextEvent::whereIn('participant_receipt_context_id', $this->receiptContexts->pluck('id'))->with('ledgerEntry')->get();
         $this->receiptsBySubject = $this->receipts->groupBy(fn ($receipt) => $receipt->receiptable_type.':'.$receipt->receiptable_id);
         $this->touches = Phase::query()->whereIn('gate_proposition_id', $ids)

@@ -85,7 +85,7 @@ class SpentContinuationTest extends TestCase
 
         // Testing the same route in the changed field appends a second fact.
         $again = $this->phase($activity, PhaseKind::Mediate);
-        foreach (app(HorizonReceiptService::class)->available($again) as $receipt) {
+        foreach (app(HorizonReceiptService::class)->ordinaryAvailable($again) as $receipt) {
             app(ReceiptContextService::class)->read($again->cycle->participant, $again, $receipt->id);
         }
         $this->measure($activity, 0);
@@ -105,7 +105,7 @@ class SpentContinuationTest extends TestCase
         $this->initializeExhaustionFixture();
         [$signal, , $terminal, $return] = $this->testedLineage();
         $this->rest($terminal);
-        foreach (app(HorizonReceiptService::class)->available($return) as $receipt) {
+        foreach (app(HorizonReceiptService::class)->ordinaryAvailable($return) as $receipt) {
             app(ReceiptContextService::class)->read($return->cycle->participant, $return, $receipt->id);
         }
         foreach (Proposition::where('tier', 'expressive')->get() as $node) {

@@ -47,7 +47,7 @@ final readonly class ReceiptContextService
                 ->concat($this->options->instrumentOptionsFor($phase, $context))
                 ->unique('id')->filter(fn ($node) => $context->activeIds->has($node->id));
             $present = $exposed->pluck('id');
-            $available = app(HorizonReceiptService::class)->available($phase, $context);
+            $available = app(HorizonReceiptService::class)->catalogue($phase, $context);
             $receipts = $available
                 ->concat($context->receipts->where('context_horizon_id', $phase->cycle->context_horizon_id)
                     ->whereIn('id', $context->receiptContexts->where('participant_id', $phase->cycle->participant_id)->whereNull('cleared_at')->pluck('receipt_id')))
@@ -69,7 +69,7 @@ final readonly class ReceiptContextService
             return $receipts->map(function ($receipt) use ($context, $loads, $present, $replayTargets, $available, $activeIds): array {
                 $verified = $this->evidence->describe($receipt, $context);
                 $load = $loads->get($receipt->id);
-                $loaded = $load !== null && $load->cleared_at === null;
+                $loaded = $receipt->type !== 'tragedy' && $load !== null && $load->cleared_at === null;
                 $alreadyPresent = isset($verified['referenced_proposition_id']) && $present->contains($verified['referenced_proposition_id']);
                 $status = $loaded ? 'loaded' : ($verified === null ? 'unqualified' : ($alreadyPresent ? 'already-in-context' : 'available'));
 
@@ -81,6 +81,7 @@ final readonly class ReceiptContextService
                     'consumed_at' => $receipt->consumption?->consumed_at?->toISOString(),
                     'attached_proposition_id' => $receipt->consumption?->proposition_id,
                     'type' => $receipt->type, 'reference' => $receipt->reference,
+                    ...($receipt->type === 'tragedy' ? ['purpose' => 'homologous_boundary_escape', 'warrant' => app(TragedyEvidenceService::class)->describe($receipt)] : []),
                     'capabilities' => [
                         'readable' => $receipt->supports(ReceiptCapability::Readable),
                         'replayable' => $receipt->supports(ReceiptCapability::Replayable),
@@ -109,7 +110,7 @@ final readonly class ReceiptContextService
             $phase = $this->lock($participant, $phase);
             $context = new ParticipationContext($phase->fresh());
             $option = $this->forPhase($phase, $context)->firstWhere('id', $receiptId);
-            if ($option === null || ! $option['capabilities']['readable'] || ! in_array($option['status'], ['available', 'loaded'], true)) {
+            if ($option === null || $option['type'] === 'tragedy' || ! $option['capabilities']['readable'] || ! in_array($option['status'], ['available', 'loaded'], true)) {
                 throw new DomainException('Read requires qualifying encountered evidence outside the current context.');
             }
             $load = ParticipantReceiptContext::where('participant_id', $participant->id)->where('receipt_id', $receiptId)->first();

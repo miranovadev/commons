@@ -6,7 +6,6 @@ use App\Enums\PhaseKind;
 use App\Models\Attestation;
 use App\Models\Proposition;
 use App\Models\Tragedy;
-use App\Services\ContributionDispatcher;
 use App\Services\ExhaustionAuditService;
 use App\Services\ExhaustionService;
 use App\Services\LedgerService;
@@ -52,8 +51,7 @@ class ExhaustionTest extends TestCase
         $vote->save();
         app(LedgerService::class)->record($vote);
         $phase = $this->phase($source, PhaseKind::Constrain);
-        $result = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
-            ['action' => 'proposition.reclassify', 'proposition_id' => $source->id, 'receipt_id' => $tragedy->receipt_id]);
+        $result = $this->legacyTragedyClassificationFixture($phase, $source, $tragedy->receipt_id);
         $this->explore($result);
         $terminal = $this->phase($result);
         foreach (Proposition::whereHas('phase.cycle', fn ($query) => $query

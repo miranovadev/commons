@@ -436,11 +436,17 @@ Gate and follow or create its legitimate causal continuation.
 Active candidates exclude outgoing hard supersessions; soft Variant branches
 remain active. A direct Commit edge consumes its source globally; other branches remain available.
 
+A Tragedy Receipt is a dedicated boundary-exit warrant, never ordinary evidence.
+Ordinary Receipt APIs alone govern Instrument, Attestation and non-Bias
+Reclassification. Tragedy cannot be loaded, unloaded or replayed; catalogue
+visibility and historical load rows supply no evidential authority. See the
+[Receipt categories and compatibility rules](receipt-region-context.md).
+
 ## Bias Chirality Gate
 
 For ordinary local eligibility, `BiasGateService` compares the current head's retained direction to its own causal ancestry, excluding the head's votes and loads. Shared ancestors and Attestations are counted once across both reconciliation parents. Traversal stops at the governing Committal boundary; unrelated branches do not set the comparison. Ledger replay retains the preceding nonzero direction at zero, starting from the governing Committal direction. Superseded ancestors supply historical judgments without becoming additional active reinforcement copies.
 
-Bias additionally requires a completed Receipt and an effective source Attestation. The action takes `action: proposition.reclassify`, `proposition_id` and `receipt_id`. It preserves exact content, attaches/consumes the selected Receipt, resets votes/touches, and creates one shared source/register classification. `BiasGateService::forPhase()` remains the existing regional evidence calculation;
+Bias additionally requires its source-specific Receipt authority and an effective source Attestation. The action takes `action: proposition.reclassify`, `proposition_id` and `receipt_id`. It preserves exact content, attaches/consumes the selected Receipt, resets votes/touches, and creates one shared source/register classification. `BiasGateService::forPhase()` remains the existing regional evidence calculation;
 `operationalFor()` preserves its eligible current Gate, adds recorded incoming
 sources from `MediatedIncomingBiasService`, and independently adds qualified
 sources from `HomologousBiasService`. The latter uses the shared Homeostatic services to
