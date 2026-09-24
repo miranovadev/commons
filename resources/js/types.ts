@@ -29,6 +29,8 @@ export interface Proposition {
   statement: string;
   is_origin?: boolean;
   participation_count?: number;
+  tragedy?: boolean;
+  renewal?: boolean;
   field?: GraphField;
   participant?: Pick<Participant, 'id' | 'callsign'>;
   participant_callsign?: string;

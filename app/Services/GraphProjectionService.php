@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Domain\Observables\ObservableValues;
+use App\Enums\PhaseKind;
 use App\Exceptions\PotentialProjectionUnavailable;
 use App\Models\CommitmentSnapshot;
 use App\Models\Phase;
@@ -27,6 +28,49 @@ final readonly class GraphProjectionService
         }
         // Observer mode changes visibility only. Every view reads the same field.
         $this->loadActive($substrate, $visible, $historical);
+        $this->loadHistoricalMarkers($substrate, $visible);
+    }
+
+    /** Accepted contribution history only; never re-run today's Bias population or field. */
+    private function loadHistoricalMarkers(Substrate $substrate, Collection $visible): void
+    {
+        $ids = $visible->pluck('id');
+        $tragedies = DB::table('tragedies as tragedy')
+            ->join('context_horizons as horizon', 'horizon.id', '=', 'tragedy.context_horizon_id')
+            ->where('horizon.substrate_id', $substrate->id)->whereIn('tragedy.terminal_proposition_id', $ids)
+            ->pluck('tragedy.terminal_proposition_id')->flip();
+        // A consumed owning-Region Tragedy warrant on a foreign Bias classification
+        // records the successful escape. Ordinary/local/mediated classifications
+        // use ordinary Receipts and therefore cannot satisfy this historical proof.
+        $renewals = DB::table('receipt_consumptions as consumption')
+            ->join('receipts as receipt', 'receipt.id', '=', 'consumption.receipt_id')
+            ->join('tragedies as tragedy', 'tragedy.receipt_id', '=', 'receipt.id')
+            ->join('propositions as target', 'target.id', '=', 'consumption.proposition_id')
+            ->join('phases as phase', 'phase.id', '=', 'target.phase_id')
+            ->join('cycles as cycle', 'cycle.id', '=', 'phase.cycle_id')
+            ->join('participants as actor', 'actor.id', '=', 'cycle.participant_id')
+            ->join('propositions as source', 'source.id', '=', 'consumption.source_proposition_id')
+            ->join('phases as producer', 'producer.id', '=', 'source.phase_id')
+            ->join('cycles as source_cycle', 'source_cycle.id', '=', 'producer.cycle_id')
+            ->join('supersessions as edge', fn ($join) => $join
+                ->on('edge.target_proposition_id', '=', 'target.id')->on('edge.source_proposition_id', '=', 'source.id')
+                ->on('edge.phase_id', '=', 'phase.id')->where('edge.type', 'reclassify'))
+            ->join('reclassification_results as result', fn ($join) => $join
+                ->on('result.target_proposition_id', '=', 'target.id')->on('result.source_proposition_id', '=', 'source.id')
+                ->on('result.register', '=', 'target.register'))
+            ->whereIn('target.id', $ids)->where('actor.substrate_id', $substrate->id)
+            ->where('receipt.type', 'tragedy')->where('phase.kind', PhaseKind::Bias->value)
+            ->where('producer.kind', PhaseKind::Mediate->value)
+            ->where('target.tier', 'expressive')->where('source.tier', 'expressive')
+            ->whereColumn('consumption.phase_id', 'phase.id')
+            ->whereColumn('tragedy.governing_committal_id', 'cycle.entry_committal_id')
+            ->whereColumn('tragedy.context_horizon_id', 'cycle.context_horizon_id')
+            ->whereColumn('source_cycle.entry_committal_id', '!=', 'cycle.entry_committal_id')
+            ->distinct()->pluck('target.id')->flip();
+        foreach ($visible as $node) {
+            $node->setAttribute('tragedy', $tragedies->has($node->id));
+            $node->setAttribute('renewal', $renewals->has($node->id));
+        }
     }
 
     /** Active cards read maintained region state, never the whole substrate. */
@@ -91,4 +135,3 @@ final readonly class GraphProjectionService
         }
     }
 }
-

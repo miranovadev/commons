@@ -25,6 +25,8 @@ class PropositionResource extends JsonResource
 
         return [
             'id' => $this->getKey(),
+            'tragedy' => $this->when($this->tragedy !== null, $this->tragedy),
+            'renewal' => $this->when($this->renewal !== null, $this->renewal),
             'exhaustion' => $this->when($this->exhaustion !== null, $this->exhaustion),
             'active' => $this->when($this->active !== null, $this->active),
             'participation_count' => $this->when($this->participation_count !== null, $this->participation_count),
