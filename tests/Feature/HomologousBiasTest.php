@@ -2,27 +2,41 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ObservableDirection;
 use App\Enums\PhaseKind;
 use App\Models\Attestation;
 use App\Models\Cycle;
+use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\ReceiptConsumption;
+use App\Models\Substrate;
 use App\Models\Supersession;
+use App\Models\Tragedy;
+use App\Services\ActiveParticipantLineage;
 use App\Services\BiasGateService;
+use App\Services\BiasReceiptAuthorityService;
 use App\Services\CausalWriteService;
+use App\Services\CommitRegionService;
 use App\Services\ContributionDispatcher;
+use App\Services\ContributionService;
+use App\Services\ExplorationPositionService;
 use App\Services\HomeostaticDirectionService;
 use App\Services\HomologousBiasService;
 use App\Services\HorizonReceiptService;
 use App\Services\InputPlanService;
 use App\Services\LedgerService;
+use App\Services\OpenAIResponseSchema;
 use App\Services\Participation\ParticipationContext;
 use App\Services\ParticipationService;
 use App\Services\PhaseGenerationService;
 use App\Services\PhasePositionService;
+use App\Services\PhaseProgressionService;
+use App\Services\PotentialProjectionService;
 use App\Services\PropositionMeasurementService;
 use App\Services\PropositionOptionService;
+use App\Services\PropositionStateService;
+use App\Services\RegionalExhaustionMembership;
 use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -37,12 +51,19 @@ class HomologousBiasTest extends TestCase
     use RefreshDatabase;
 
     private Proposition $origin;
+
     private Proposition $a;
+
     private Proposition $b;
+
     private Proposition $c;
+
     private Proposition $gateA;
+
     private Proposition $gateB;
+
     private Proposition $gateC;
+
     private Phase $bias;
 
     protected function setUp(): void
@@ -62,8 +83,30 @@ class HomologousBiasTest extends TestCase
         $this->measure($this->gateC, -.7);
     }
 
+    public function test_boundary_reclassification_belongs_to_the_acting_region_not_its_foreign_source(): void
+    {
+        $this->warrant();
+        $this->resolveExpressiveFieldFixture(-1);
+        $target = app(ContributionDispatcher::class)->dispatch($this->actor, $this->bias, $this->input($this->gateB));
+        $tragedy = Tragedy::sole();
+        $this->assertSame($this->gateA->id, $tragedy->terminal_proposition_id);
+        $this->assertDatabaseCount('tragedies', 1);
+        $this->assertSame($this->a->id, $tragedy->governing_committal_id);
+        $this->assertSame($this->bias->cycle->context_horizon_id, $tragedy->context_horizon_id);
+        $this->assertNotSame($this->b->id, $tragedy->governing_committal_id);
+        $this->assertDatabaseHas('commit_region_exhaustions', ['governing_committal_id' => $this->a->id,
+            'terminal_proposition_id' => $target->id, 'tragedy_id' => $tragedy->id]);
+        $this->assertDatabaseMissing('commit_region_exhaustions', ['governing_committal_id' => $this->b->id]);
+        // The accepted Bias write still completes into an Order/Rest position.
+        $next = app(PhaseProgressionService::class)->advance($this->bias, $target);
+        $this->assertSame(PhaseKind::Order, $next->kind);
+        $this->publishPotentialFixture($this->actor);
+        $this->assertSame(['participant.rest'], array_keys(app(InputPlanService::class)->forPhase($this->actor, $next)['schema']['$defs']['actions']));
+    }
+
     public function test_dominant_homologues_add_options_without_vetoing_either_local_direction(): void
     {
+        $this->warrant();
         foreach ([1.0, -1.0] as $sign) {
             $this->measure($this->gateA, .8 * $sign);
             $this->measure($this->gateB, -.7 * $sign);
@@ -82,6 +125,7 @@ class HomologousBiasTest extends TestCase
 
     public function test_non_dominant_homologues_and_unattested_members_do_not_gain_actions(): void
     {
+        $this->warrant();
         $this->measure($this->gateB, .1);
         $this->measure($this->gateC, -1);
         $unattested = $this->source($this->c, attest: false);
@@ -94,6 +138,7 @@ class HomologousBiasTest extends TestCase
 
     public function test_population_cannot_bypass_the_current_gates_local_bias_rule(): void
     {
+        $this->warrant();
         // Local evidence now opposes its positive ancestral frame. Numeric
         // population membership must not re-authorize the current Gate.
         $this->vote($this->gateA, 'refute');
@@ -107,6 +152,7 @@ class HomologousBiasTest extends TestCase
 
     public function test_zero_uses_chirality_default_and_does_not_mutate_measurements_or_state(): void
     {
+        $this->warrant();
         foreach ([[.5, -.5, 0.0], [0.0, 0.0, 0.0]] as $values) {
             foreach ([$this->gateA, $this->gateB, $this->gateC] as $index => $gate) {
                 $this->measure($gate, $values[$index]);
@@ -114,7 +160,7 @@ class HomologousBiasTest extends TestCase
             $before = $this->stateSnapshot();
             $field = app(HomeostaticDirectionService::class)->forPosition($this->gateA, 'chirality');
             $this->assertSame(0.0, $field->mean);
-            $this->assertSame(\App\Enums\ObservableDirection::Negative, $field->direction);
+            $this->assertSame(ObservableDirection::Negative, $field->direction);
             $this->assertEqualsCanonicalizing([$this->gateA->id, $this->gateB->id, $this->gateC->id], $this->biasOptionIds());
             $this->assertSame($before, $this->stateSnapshot());
         }
@@ -128,21 +174,27 @@ class HomologousBiasTest extends TestCase
     #[DataProvider('directions')]
     public function test_cross_region_reclassification_uses_only_entry_receipts_and_advances_to_its_owned_result(bool $reverse): void
     {
+        $this->warrant();
         [$entry, $gate, $source] = $reverse ? [$this->b, $this->gateB, $this->gateA] : [$this->a, $this->gateA, $this->gateB];
         $this->bias = $this->biasAt($entry, $gate);
         foreach ([$this->gateA, $this->gateB, $this->gateC] as $node) {
             $this->measure($node, -.5);
         }
-        $receipt = app(HorizonReceiptService::class)->available($this->bias)->sole();
-        $foreignReceipt = app(\App\Services\PropositionStateService::class)->receipts($source)->firstOrFail();
+        $this->warrant();
+        $receipt = app(BiasReceiptAuthorityService::class)->receiptsFor($this->bias, $source)->sole();
+        $foreignReceipt = app(PropositionStateService::class)->receipts($source)->firstOrFail();
         $input = ['action' => 'proposition.reclassify', 'proposition_id' => $source->id, 'receipt_id' => $receipt->id];
+        $this->assertDatabaseMissing('participant_receipt_contexts', ['receipt_id' => $receipt->id]);
         $this->reject($source, $foreignReceipt->id);
         $this->publishPotentialFixture($this->actor);
         $before = $this->stateSnapshot();
         $plan = app(InputPlanService::class)->forPhase($this->actor, $this->bias);
         $this->assertSame($before, $this->stateSnapshot());
         $this->assertContains($source->id, $plan['schema']['$defs']['actions']['proposition.reclassify']['properties']['proposition_id']['enum']);
-        $this->assertSame([$receipt->id], $plan['schema']['$defs']['actions']['proposition.reclassify']['properties']['receipt_id']['enum']);
+        app(ContributionService::class)->validateSchema($plan['schema'], $input);
+        $branch = collect($plan['schema']['$defs']['actions']['proposition.reclassify']['anyOf'])
+            ->first(fn ($branch) => $branch['properties']['proposition_id']['const'] === $source->id);
+        $this->assertSame($receipt->id, $branch['properties']['receipt_id']['const']);
         $option = collect($plan['gate_options'])->firstWhere('id', $source->id);
         $this->assertSame([], $option['receipts']);
         $this->assertSame([], $option['instruments']);
@@ -160,11 +212,11 @@ class HomologousBiasTest extends TestCase
         $this->assertSame($horizon, $target->contextHorizonMembership->context_horizon_id);
         $this->assertSame([$source->id], $target->parents()->pluck('propositions.id')->all());
         foreach ([null, new ParticipationContext($target->phase)] as $context) {
-            $lineage = app(\App\Services\ActiveParticipantLineage::class)->endingAt($target, $context);
+            $lineage = app(ActiveParticipantLineage::class)->endingAt($target, $context);
             $this->assertSame($source->phase->cycle->entry_committal_id, $lineage->first()->id);
             $this->assertNotContains($entry->id, $lineage->pluck('id'));
         }
-        $local = app(\App\Services\PotentialProjectionService::class)->region($horizon)['local'];
+        $local = app(PotentialProjectionService::class)->region($horizon)['local'];
         $this->assertContains([$source->id, $target->id, 'reclassify'], $local['foreign_inputs']);
         $this->assertArrayNotHasKey($source->id, $local['nodes']);
         $this->assertNotContains([$source->id, $target->id, 'reclassify'], $local['edges']);
@@ -178,13 +230,14 @@ class HomologousBiasTest extends TestCase
         // The source's Region retains its stock, but the shared classification
         // cannot be generated a second time from another participant occurrence.
         $other = $this->phase($source->phase->cycle->entryCommittal, $source, PhaseKind::Bias);
-        $this->assertContains($foreignReceipt->id, app(HorizonReceiptService::class)->available($other)->pluck('id'));
+        $this->assertContains($foreignReceipt->id, app(HorizonReceiptService::class)->ordinaryAvailable($other)->pluck('id'));
         $this->assertFalse(app(PhaseGenerationService::class)->available($other, 'proposition.reclassify', position: $source));
         $this->reject($this->gateC, $receipt->id); // Consumed evidence cannot be used again.
     }
 
     public function test_stale_population_direction_rejects_a_previously_offered_source_without_consumption(): void
     {
+        $this->warrant();
         $this->assertContains($this->gateB->id, $this->biasOptionIds());
         $this->measure($this->gateC, 1);
         $this->assertNotContains($this->gateB->id, $this->biasOptionIds());
@@ -193,6 +246,7 @@ class HomologousBiasTest extends TestCase
 
     public function test_wrong_coordinates_and_plain_traverse_cannot_cross_over(): void
     {
+        $this->warrant();
         $wrongDepth = $this->source($this->commit($this->b, 'settlement'));
         $wrongDomain = $this->source($this->commit($this->origin, 'emergence'));
         $wrongPhase = $this->position($this->b, PhaseKind::Persist);
@@ -204,9 +258,9 @@ class HomologousBiasTest extends TestCase
             $this->reject($node);
         }
         $originalActor = $this->actor;
-        $substrate = new \App\Models\Substrate;
+        $substrate = new Substrate;
         $substrate->forceFill(['slug' => 'foreign-bias', 'title' => 'Foreign', 'visibility' => 'private', 'configuration' => []])->save();
-        $this->actor = new \App\Models\Participant;
+        $this->actor = new Participant;
         $this->actor->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'outsider'])->save();
         $foreign = $this->source($this->commit(null, 'emergence'));
         $this->measure($foreign, -.9);
@@ -225,11 +279,13 @@ class HomologousBiasTest extends TestCase
 
     public function test_same_horizon_foreign_result_is_not_adopted_as_the_source_regions_write(): void
     {
+        $this->warrant();
         $a = $this->commit($this->a, 'settlement');
         $b = $this->commit($this->a, 'settlement');
         $left = $this->source($a);
         $right = $this->source($b);
         $this->bias = $this->biasAt($a, $left);
+        $this->warrant();
         $this->measure($left, -.5);
         $this->measure($right, -.5);
         $this->assertSame($left->phase->cycle->context_horizon_id, $right->phase->cycle->context_horizon_id);
@@ -243,21 +299,22 @@ class HomologousBiasTest extends TestCase
         $revision = $this->position($a, PhaseKind::Bias);
         $this->edge($target, $revision, 'revise');
         foreach ([null, new ParticipationContext($revision->phase)] as $context) {
-            $this->assertSame($b->id, app(\App\Services\ActiveParticipantLineage::class)->endingAt($revision, $context)->first()->id);
-            $this->assertSame($a->id, app(\App\Services\CommitRegionService::class)->seedFor($revision, $context)->id);
+            $this->assertSame($b->id, app(ActiveParticipantLineage::class)->endingAt($revision, $context)->first()->id);
+            $this->assertSame($a->id, app(CommitRegionService::class)->seedFor($revision, $context)->id);
         }
     }
 
     #[DataProvider('directions')]
     public function test_spent_additional_gates_require_their_own_current_epoch_to_reopen(bool $sameRegion): void
     {
+        $this->warrant();
         $candidate = $sameRegion ? $this->source($this->a) : $this->gateB;
         foreach ([$this->gateA, $this->gateB, $this->gateC, $candidate] as $node) {
             $this->measure($node, -.5);
         }
         $this->assertContains($candidate->id, $this->biasOptionIds());
         $field = app(HomeostaticDirectionService::class)->forPosition($this->gateA, 'chirality');
-        $position = app(\App\Services\ExplorationPositionService::class)->forProposition($candidate);
+        $position = app(ExplorationPositionService::class)->forProposition($candidate);
         DB::table('continuation_failures')->insert([
             'proposition_id' => $candidate->id, 'context_horizon_id' => $position['context_horizon_id'],
             'structural_position' => $position['structural_position'], 'exploration_epoch' => 0,
@@ -270,7 +327,7 @@ class HomologousBiasTest extends TestCase
         }
         $this->assertSame($field->values, app(HomeostaticDirectionService::class)->forPosition($this->gateA, 'chirality')->values);
         $this->reject($candidate);
-        $unrelated = app(\App\Services\ExplorationPositionService::class)->forProposition($this->gateC);
+        $unrelated = app(ExplorationPositionService::class)->forProposition($this->gateC);
         DB::table('horizon_exploration_states')->insert([...$unrelated, 'epoch' => 1]);
         $this->assertNotContains($candidate->id, $this->biasOptionIds());
         DB::table('horizon_exploration_states')->insert([...$position, 'epoch' => 1]);
@@ -281,12 +338,13 @@ class HomologousBiasTest extends TestCase
 
     public function test_unrecorded_foreign_edges_cannot_impersonate_bias_transitions(): void
     {
+        $this->warrant();
         $target = $this->position($this->a, PhaseKind::Bias);
         $target->phase->forceFill(['gate_proposition_id' => $this->gateA->id])->save();
         $this->edge($this->gateB, $target, 'reclassify');
         foreach ([null, new ParticipationContext($target->phase)] as $context) {
             try {
-                app(\App\Services\ActiveParticipantLineage::class)->endingAt($target, $context);
+                app(ActiveParticipantLineage::class)->endingAt($target, $context);
                 $this->fail('An unrecorded foreign edge must not redirect resolved provenance.');
             } catch (DomainException $exception) {
                 $this->assertStringContainsString('provenance', $exception->getMessage());
@@ -299,18 +357,19 @@ class HomologousBiasTest extends TestCase
 
     public function test_foreign_exhaustion_uses_complete_horizon_continuations(): void
     {
+        $this->warrant();
         $middle = $this->position($this->b, PhaseKind::Bias);
         $this->edge($this->gateB, $middle, 'variant');
         $terminal = $this->commit($this->b, 'emergence');
         $this->edge($middle, $terminal, 'commit');
         $phase = $this->phase($terminal, $terminal, PhaseKind::Distinguish);
-        $tragedy = app(\App\Services\TragedyService::class)->record($phase, ['field_version' => 1]);
+        $tragedy = $this->boundaryTragedyFixture($phase->gate);
         DB::table('commit_region_exhaustions')->insert([
             'governing_committal_id' => $terminal->id, 'context_horizon_id' => $phase->cycle->context_horizon_id,
             'tragedy_id' => $tragedy->id, 'receipt_id' => $tragedy->receipt_id, 'phase_id' => $phase->id,
             'terminal_proposition_id' => $terminal->id, 'observed_field_version' => 1, 'exhausted_at' => now(),
         ]);
-        app(\App\Services\RegionalExhaustionMembership::class)->publish($terminal->id, [$terminal->id]);
+        app(RegionalExhaustionMembership::class)->publish($terminal->id, [$terminal->id]);
         $this->measure($this->gateB, -.7);
         $context = new ParticipationContext($this->bias);
         $this->assertFalse($context->propositions->has($middle->id));
@@ -325,6 +384,7 @@ class HomologousBiasTest extends TestCase
     #[Group('query')]
     public function test_complete_bias_plans_are_bounded_across_foreign_horizons(): void
     {
+        $this->warrant();
         $counts = [];
         foreach ([2, 7] as $count) {
             if ($count === 7) {
@@ -351,6 +411,140 @@ class HomologousBiasTest extends TestCase
             $counts[2]['cold'], $counts[7]['cold'], $counts[2]['warm'], $counts[7]['warm']));
         $this->assertLessThan(220, $counts[7]['warm']);
         $this->assertSame($counts[2], $counts[7], 'Bias plans must not query once per member or foreign Horizon.');
+    }
+
+    public function test_population_is_observable_but_foreign_actions_require_a_tragedy_warrant(): void
+    {
+        $this->assertCount(3, app(HomologousBiasService::class)->populationFor($this->bias));
+        $this->assertEquals([$this->gateA->id], $this->biasOptionIds());
+        $this->publishPotentialFixture($this->actor);
+        $plan = app(InputPlanService::class)->forPhase($this->actor, $this->bias);
+        $this->assertSame([$this->gateA->id], $plan['schema']['$defs']['actions']['proposition.reclassify']['properties']['proposition_id']['enum']);
+        $this->reject($this->gateB);
+        $this->assertDatabaseCount('tragedies', 0);
+        $target = app(ContributionDispatcher::class)->dispatch($this->actor, $this->bias, $this->input($this->gateA));
+        $this->assertSame([$this->gateA->id], $target->parents()->pluck('propositions.id')->all());
+    }
+
+    public function test_schema_and_dispatcher_enforce_source_receipt_pairs_atomically(): void
+    {
+        $tragedy = $this->warrant();
+        $ordinary = app(HorizonReceiptService::class)->ordinaryAvailable($this->bias)->where('type', '!=', 'tragedy')->sole();
+        $this->publishPotentialFixture($this->actor);
+        $schema = app(InputPlanService::class)->forPhase($this->actor, $this->bias)['schema'];
+        $transport = app(OpenAIResponseSchema::class)->fromCommons($schema);
+        $branches = collect($transport['properties']['contribution']['anyOf'])
+            ->filter(fn ($branch) => $branch['properties']['action']['enum'] === ['proposition.reclassify']);
+        $this->assertSame([$ordinary->id], $branches->first(fn ($branch) => $branch['properties']['proposition_id']['enum'] === [$this->gateA->id])['properties']['receipt_id']['enum']);
+        $this->assertSame([$tragedy->receipt_id], $branches->first(fn ($branch) => $branch['properties']['proposition_id']['enum'] === [$this->gateB->id])['properties']['receipt_id']['enum']);
+        foreach ([[$this->gateA, $ordinary->id], [$this->gateB, $tragedy->receipt_id]] as [$source, $receipt]) {
+            app(ContributionService::class)->validateSchema($schema, $this->input($source, $receipt));
+        }
+        foreach ([[$this->gateA, $tragedy->receipt_id], [$this->gateB, $ordinary->id]] as [$source, $receipt]) {
+            try {
+                app(ContributionService::class)->validateSchema($schema, $this->input($source, $receipt));
+                $this->fail('The schema must reject the wrong source/Receipt pairing.');
+            } catch (\InvalidArgumentException) {
+                $this->reject($source, $receipt);
+            }
+        }
+        $this->assertDatabaseCount('receipt_consumptions', 0);
+    }
+
+    public function test_a_tragedy_receipt_alone_never_advertises_the_local_gate(): void
+    {
+        $this->warrant();
+        DB::table('instrument_executions')->update(['status' => 'failed']);
+        $this->assertNotContains($this->gateA->id, $this->biasOptionIds());
+        $this->assertContains($this->gateB->id, $this->biasOptionIds());
+    }
+
+    public function test_foreign_or_recovery_relocated_tragedy_is_not_the_current_regions_warrant(): void
+    {
+        $foreign = $this->boundaryTragedyFixture($this->gateB);
+        $this->measure($this->gateB, -.7);
+        $this->reject($this->gateB, $foreign->receipt_id);
+        DB::table('tragedy_receipt_scopes')->where('tragedy_id', $foreign->id)->update(['current_committal_id' => $this->a->id]);
+        $this->assertContains($foreign->receipt_id, app(HorizonReceiptService::class)->catalogue($this->bias)->pluck('id'));
+        $this->assertNotContains($foreign->receipt_id, app(HorizonReceiptService::class)->ordinaryAvailable($this->bias)->pluck('id'));
+        $this->assertNull(app(HorizonReceiptService::class)->tragedyWarrant($this->bias));
+        $this->assertNotContains($this->gateB->id, $this->biasOptionIds());
+        $this->reject($this->gateB, $foreign->receipt_id);
+    }
+
+    public function test_stale_scope_and_consumed_warrants_fail_without_another_target(): void
+    {
+        $tragedy = $this->warrant();
+        $this->publishPotentialFixture($this->actor);
+        $schema = app(InputPlanService::class)->forPhase($this->actor, $this->bias)['schema'];
+        $input = $this->input($this->gateB, $tragedy->receipt_id);
+        app(ContributionService::class)->validateSchema($schema, $input);
+        DB::table('tragedy_receipt_scopes')->where('tragedy_id', $tragedy->id)->update(['current_committal_id' => $this->b->id]);
+        $this->reject($this->gateB, $tragedy->receipt_id);
+        DB::table('tragedy_receipt_scopes')->where('tragedy_id', $tragedy->id)->update(['current_committal_id' => $this->a->id]);
+        $this->resolveExpressiveFieldFixture(.8);
+        app(ContributionDispatcher::class)->dispatch($this->actor, $this->bias, $input);
+        // Another foreign source still has no source/register result, but the warrant is spent.
+        $this->reject($this->gateC, $tragedy->receipt_id);
+        $this->assertNotContains($this->gateC->id, $this->biasOptionIds());
+        $this->assertSame(1, ReceiptConsumption::where('receipt_id', $tragedy->receipt_id)->count());
+    }
+
+    public function test_rollback_after_reclassification_restores_the_warrant_and_all_causal_writes(): void
+    {
+        $tragedy = $this->warrant();
+        $this->resolveExpressiveFieldFixture(.8);
+        $before = $this->stateSnapshot();
+        try {
+            DB::transaction(function () use ($tragedy): void {
+                app(ContributionDispatcher::class)->dispatch($this->actor, $this->bias, $this->input($this->gateB, $tragedy->receipt_id));
+                $this->assertSame(1, ReceiptConsumption::where('receipt_id', $tragedy->receipt_id)->count());
+                throw new DomainException('Roll back after consumption');
+            });
+        } catch (DomainException $exception) {
+            $this->assertSame('Roll back after consumption', $exception->getMessage());
+        }
+        $this->assertSame($before, $this->stateSnapshot());
+        $this->assertContains($this->gateB->id, $this->biasOptionIds());
+        $this->assertDatabaseCount('receipt_consumptions', 0);
+    }
+
+    public function test_another_same_region_expressive_path_uses_ordinary_evidence_without_tragedy(): void
+    {
+        $other = $this->source($this->a);
+        $this->measure($other, -.7);
+        $this->assertContains($other->id, $this->biasOptionIds());
+        $this->assertSame('ordinary', app(BiasReceiptAuthorityService::class)->authority($this->bias, $other, new ParticipationContext($this->bias)));
+        app(ContributionDispatcher::class)->dispatch($this->actor, $this->bias, $this->input($other));
+        $this->assertDatabaseCount('receipt_consumptions', 1);
+    }
+
+    public function test_positive_charge_escape_leaves_region_open_but_later_local_boundary_exhausts_it(): void
+    {
+        $tragedy = $this->warrant();
+        $this->resolveExpressiveFieldFixture(.8);
+        $escape = app(ContributionDispatcher::class)->dispatch($this->actor, $this->bias, $this->input($this->gateB));
+        $this->assertDatabaseCount('commit_region_exhaustions', 0);
+        $this->assertDatabaseHas('receipt_consumptions', ['receipt_id' => $tragedy->receipt_id, 'proposition_id' => $escape->id]);
+        $gate = $this->position($this->a, PhaseKind::Constrain);
+        $phase = $this->phaseAtPositionFixture($gate->phase, PhaseKind::Disperse);
+        $phase->forceFill(['gate_proposition_id' => $gate->id])->save();
+        $this->resolveExpressiveFieldFixture(-1);
+        $later = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
+            ['action' => 'proposition.variant', 'statement' => 'A later catastrophe after escape']);
+        $this->assertDatabaseHas('commit_region_exhaustions', ['governing_committal_id' => $this->a->id,
+            'terminal_proposition_id' => $later->id, 'receipt_id' => $tragedy->receipt_id]);
+        $this->assertSame(1, ReceiptConsumption::where('receipt_id', $tragedy->receipt_id)->count());
+    }
+
+    private function warrant(): Tragedy
+    {
+        $gate = $this->bias->gate;
+        $values = $gate->measurement;
+        $tragedy = $this->boundaryTragedyFixture($gate);
+        app(PropositionMeasurementService::class)->project($gate, $values->correspondence, $values->chirality, $values->closure);
+
+        return $tragedy;
     }
 
     private function source(Proposition $entry, bool $attest = true): Proposition
@@ -411,7 +605,8 @@ class HomologousBiasTest extends TestCase
     private function input(Proposition $source, ?string $receipt = null): array
     {
         return ['action' => 'proposition.reclassify', 'proposition_id' => $source->id,
-            'receipt_id' => $receipt ?? app(HorizonReceiptService::class)->available($this->bias)->firstOrFail()->id];
+            'receipt_id' => $receipt ?? (app(BiasReceiptAuthorityService::class)->receiptsFor($this->bias, $source)->first()
+                ?? app(HorizonReceiptService::class)->ordinaryAvailable($this->bias)->firstOrFail())->id];
     }
 
     private function reject(Proposition $source, ?string $receipt = null): void

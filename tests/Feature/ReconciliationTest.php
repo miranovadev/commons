@@ -153,6 +153,8 @@ class ReconciliationTest extends TestCase
 
     public function test_reconcile_is_structural_selection_with_exact_gate_content(): void
     {
+        // Isolate structural rules from a new Charge-boundary event.
+        $this->resolveExpressiveFieldFixture(.8);
         $this->fixture();
         $sibling = $this->readSibling('Different Read parent', -0.5, 1)[1];
         $this->attest($sibling, 'support');
@@ -317,6 +319,8 @@ class ReconciliationTest extends TestCase
 
     public function test_directed_reconciliation_is_unique_across_participants_but_inverse_and_distinct_pairs_remain_valid(): void
     {
+        // Isolate structural rules from a new Charge-boundary event.
+        $this->resolveExpressiveFieldFixture(.8);
         $this->fixture();
         $b = $this->sibling('B');
         $c = $this->sibling('C');
@@ -432,4 +436,3 @@ class ReconciliationTest extends TestCase
         return $attestation;
     }
 }
-

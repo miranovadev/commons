@@ -8,7 +8,32 @@ Receipts ground Propositions. Attestations express Participant judgments over th
 | Commit Region | Ordinary shared discovery and one-use consumption |
 | Participant load | Persistent, participant-specific Reinforcement |
 | Participant-facing Read | Activation of full loaded evidence |
-| Tragedy recovery path | Shared final-attempt Receipt's moving scope until consumption |
+| Tragedy recovery path | Tragedy Receipt's retained moving scope until consumption |
+
+## Evidence and boundary warrants
+
+A Tragedy Receipt is not ordinary evidence. It is a dedicated, un-loadable,
+non-replayable warrant authorizing one eligible foreign homologous Bias
+Reclassification out of its immutable owning Commit Region. It does not satisfy
+Instrument completion, Attestation, ordinary Reclassification, or generic
+shared-evidence requirements. It requires no participant load state.
+
+`HorizonReceiptService::ordinaryAvailable()` supplies ordinary evidence only.
+`tragedyWarrant()` resolves the exact current-Region, unresolved, unconsumed
+warrant, checking immutable ownership as well as current scope.
+`catalogue()` is a presentation union only; its visibility is never evidence
+or permission. `BiasReceiptAuthorityService` retains the Stage 4 source split,
+including ordinary precedence for recorded mediated sources and same-Region
+expressive variation. Constrain and every non-Bias Reclassify use ordinary
+Receipts only, enforced by both schema and transactional consumption.
+
+Proposition evidence excludes Tragedy in both hydrated and database paths.
+Tragedy has no evidence signature, active evidence body, replay invocation or
+Reinforcement. Participant context labels it
+`purpose: homologous_boundary_escape`; catastrophe details are separate warrant
+provenance. Historical load and consumption rows remain auditable, but cannot
+supply ordinary evidence or create a new live load. Normal evidence production,
+loading, replay, Attestation and measurement weighting are otherwise unchanged.
 
 ## Ordinary discovery and ownership
 
@@ -32,9 +57,7 @@ The existing Substrate → Participant → Phase lock order and contribution tra
 
 ## Tragedy scope
 
-A Tragedy Receipt is a shared final-attempt allowance in one current unresolved Commit Region. When legitimate backward-lineage recovery retreats from that region, the Receipt follows the exact selected destination, regardless of which Participant recovered. `tragedies.participant_id` remains immutable provenance of the original trigger, never ownership or exclusive transport authority. Every Participant in the destination region can discover and exercise it under the existing final-attempt and Reclassification rules.
-
-`tragedy_receipt_scopes` stores only this mutable Tragedy basin and its latest recovery-entry Phase witness. Cycle entry updates it under the existing Substrate/Participant transaction after the recovery engine selects the destination. The source must be its current basin; the destination must lie on that recovery's backward lineage. Nearest-Committal recovery cannot skip an unresolved nearer basin. The Receipt cannot go farther than the actual destination and never influences selection. Historical recovery witnesses retain their recorded destinations. Initial entries, normal movement/Commit and recovery from unrelated regions cannot transport it. Consumption excludes it from all later movement; Receipt, Tragedy, consumption and final-attempt proof rows remain unchanged. Tragedy exact-once, later no-Potential Rest and Exhaustion rules are unchanged.
+A Tragedy Receipt records the first fresh zero-Charge expressive birth in its governing Commit Region. New `tragedy_receipt_scopes` rows initialize to that immutable owner. Recovery no longer moves them. Archived relocated scopes and recovery witnesses remain readable; catalogue visibility never supplies another Region’s escape authority. The owning Region’s exhaustion immediately removes live warrant authority. No historical scope, load or consumption row is deleted.
 
 ## Compatibility and rollout
 
@@ -42,13 +65,41 @@ Ordinary Receipt rows are interpreted in place without backfill. The additive `2
 
 Malformed ancestry or legacy entries with ambiguous equal-millisecond ordering leave `current_committal_id` null, withholding catalogue availability rather than guessing. Such rows are identifiable with `SELECT tragedy_id FROM tragedy_receipt_scopes WHERE current_committal_id IS NULL` and require review of the recorded recovery witnesses; historical evidence remains readable. Missing projections also fail closed. This mutable projection is exclusively for Tragedy; ordinary Receipt identity is derived from immutable Cycle entry. Ambiguous legacy origins remain readable through Proposition references and existing participant memory but cannot enter a shared available catalogue or Gate mutation set. Recovery scope also fails closed on invalid lineage. Production data has not been accessed or rewritten by this change.
 
-`LineageMeasurementService::VERSION` becomes `proposition-receipts-v9` because ownership lookup and participant attribution changed. Use the existing bounded `commons:measurements-repair <substrate> --limit=100` maintenance command until obsolete projections are repaired, then `commons:potential-rebuild <substrate>` before resuming participation. Existing lazy observation/mutation paths recognize obsolete versions; immutable Commitment snapshots remain frozen. No ad hoc Closure/Chirality update or ledger rewrite is introduced.
+The original ownership rollout used measurement version `proposition-receipts-v9`; the current Stage 5 version and refresh guidance are below. Use the existing bounded `commons:measurements-repair <substrate> --limit=100` maintenance command until obsolete projections are repaired, then `commons:potential-rebuild <substrate>` before resuming participation. Existing lazy observation/mutation paths recognize obsolete versions; immutable Commitment snapshots remain frozen. No ad hoc Closure/Chirality update or ledger rewrite is introduced.
 
 ## Validation and boundedness
 
-Focused Core proofs cover locality, malformed origins, ownership/legacy interpretation, exact Gate enums, atomic rollback, idempotency, Read-only activation and participant-specific weighting. Integration covers load/unload across the normal Phase boundary and preserves the natural shared Tragedy journey's actors, actions and exhaustion outcome.
+Focused Core proofs cover locality, malformed origins, ownership/legacy interpretation, exact Gate enums, atomic rollback, idempotency, Read-only activation and participant-specific weighting. Integration covers load/unload across the normal Phase boundary and covers the fresh first/later boundary lifecycle and ordinary evidence behavior.
 
-Local SQLite measurement: catalogue growth from one to thirteen ordinary Receipts uses exactly five queries with a supplied ParticipationContext. Batched region derivation on the six-node fixture took 0.24–0.69 ms (illustrative local timings, not a production latency bound). Region derivation is once per context, not one ancestry walk per Receipt. Hydration still scales with substrate history, as before. Tragedy scope uses one memoized indexed projection query per context, with no recovery-history scan or per-Receipt ancestry walk. Recovery validates one actual route only when an unresolved scope occupies its departing region. A twelve-Receipt Gate fixture retains three persistent loads and twelve references, but zero active bodies: the evidence wrapper is 22 bytes and the evidence-plus-dynamic prompt is 20,188 bytes. The internal qualification packet is 66,458 bytes; its bodies do not enter cognition. Larger candidate-growth checks retain constant Mediate/Bias/Order query counts. Query Regression and Load/Concurrency remain required validation gates for this change.
+Local SQLite measurement: catalogue growth from one to thirteen ordinary Receipts uses exactly five queries with a supplied ParticipationContext. Batched region derivation on the six-node fixture took 0.24–0.69 ms (illustrative local timings, not a production latency bound). Region derivation is once per context, not one ancestry walk per Receipt. Hydration still scales with substrate history, as before. Tragedy scope uses one memoized indexed projection query per context, with no recovery-history scan or per-Receipt ancestry walk. Recovery does not scan or update Receipt scope. A twelve-Receipt Gate fixture retains three persistent loads and twelve references, but zero active bodies: the evidence wrapper is 22 bytes and the evidence-plus-dynamic prompt is 20,188 bytes. The internal qualification packet is 66,458 bytes; its bodies do not enter cognition. Larger candidate-growth checks retain constant Mediate/Bias/Order query counts. Query Regression and Load/Concurrency remain required validation gates for this change.
 
-The historical Tragedy transcript uses legal forward Gate loading. Its [load relocation record and boundary comparison](evidence/receipt-tragedy-transcript.md) document the retired interactions, the alternate pre-Tragedy evidence attachment, and the unchanged final-attempt/Exhaustion recovery proof.
+The historical transcript uses legal forward Gate loading. It is now a regression that zero-Potential Rest does not create Tragedy. Its [load relocation record and boundary comparison](evidence/receipt-tragedy-transcript.md) document the retired interactions, the alternate pre-Tragedy evidence attachment, and archived pre-correction proof. Current catastrophe acceptance is described in [the boundary lifecycle](branch-tragedy.md).
 
+
+## Mediated incoming options
+
+A Bias Gate's immediate Mediate provenance can identify the exact operand of a
+recorded incoming Reconcile. Exposing its result adds a Reclassify source, not
+Receipt scope. Foreign mediated sources are excluded from option evidence
+catalogues and their Receipt metadata is not offered for loading or consumption.
+The selected Receipt still belongs to the acting Cycle's Commit Region. Ordinary
+same-Region evidence remains available. This adds no Tragedy requirement and
+cannot consume Tragedy Receipts. Foreign homologous escape instead requires the acting Region’s exact unresolved Tragedy Receipt. Source-specific schema branches and transactional server validation enforce the pairing.
+
+## Stage 5 compatibility and rollout
+
+No migration deletes or reinterprets historical Receipt, load, consumption,
+Tragedy or scope records. Existing scope projection and exhaustion authority
+retain historical compatibility; recovery no longer relocates live scope. Pre-Stage-5 non-Bias Tragedy consumption is
+retained only as archived test/migration data via an explicitly named fixture;
+the current dispatcher cannot create it. Archived fixture insertion emits no
+live consumption event. New homologous Bias consumption uses the existing
+transaction, locks, uniqueness and after-commit events.
+
+The measurement cache version is `ordinary-receipt-evidence-v11` so historical
+Tragedy load weights cannot survive as cached live evidence. Ordinary formulas,
+Charge, Potential and immutable Commitment snapshots are unchanged. Use the
+existing bounded `commons:measurements-repair <substrate> --limit=100` and then
+`commons:potential-rebuild <substrate>` maintenance workflow to refresh stored
+projections before resuming participation. No production data was modified by
+this implementation.

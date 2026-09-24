@@ -24,7 +24,8 @@ class ParticipantPromptConstitutionTest extends TestCase
                 'Variant is shared structural opportunity, never a Participant quota or fixed sibling cap.',
                 'Only a successful Variant advances its own Horizon/structural-position epoch.',
                 'Each new Variant needs its own completed Instrument and effective Attestation.',
-            ], ['proposition.reclassify', 'proposition.reconcile', 'proposition.commit', 'proposition.revise', 'Closure, performed', 'Tragedy']],
+                'A Tragedy Receipt is a dedicated homologous boundary-exit warrant, not ordinary evidence.',
+            ], ['proposition.reclassify', 'proposition.reconcile', 'proposition.commit', 'proposition.revise', 'Closure, performed', 'Rest ends the Cycle']],
             'Persist' => [PhaseKind::Persist, [
                 'Persist develops the selected distinction from its current causal Gate',
                 'A register label alone cannot supply producing-position identity',
@@ -43,7 +44,7 @@ class ParticipantPromptConstitutionTest extends TestCase
                 "This position's exploration epoch is independent of the earlier distinction position",
                 'other positions\' epochs remain independent',
                 'effective self-Refute from an earlier Cycle',
-                'only a successful Variant claims the shared allowance',
+                'Zero Potential does not remove structural expression authority',
             ], ['proposition.reclassify', 'proposition.reconcile', 'proposition.commit', 'Homeostatic Read comparison']],
             'Mediate' => [PhaseKind::Mediate, [
                 "that Disperse Phase's recorded Constrain-produced Gate, not the current Mediate Gate or a guessed ancestor",
@@ -154,8 +155,8 @@ class ParticipantPromptConstitutionTest extends TestCase
         $state['plan']['rest_available'] = false;
         $state['plan']['schema'] = app(InputSchemaService::class)->forPhase($phase, ['participant.rest']);
         $with = $factory->make(new Connection, $state);
-        $this->assertStringContainsString('no_available_move never creates Tragedy.', $with['system']);
-        $this->assertStringContainsString("that classification's actual continuation", $with['system']);
+        $this->assertStringContainsString('Rest never creates Tragedy or Commit Region exhaustion, including no_remaining_potential Rest.', $with['system']);
+        $this->assertStringContainsString('regardless of authorship or Receipt consumption', $with['system']);
         $this->assertStringContainsString('nearest eligible non-exhausted Committal on the recorded backward lineage', $with['system']);
         $this->assertStringContainsString('A nearer unresolved basin blocks older ancestors regardless of Potential or Charge', $with['system']);
         $this->assertStringContainsString('never jumping to a Horizon opener or unrelated branch', $with['system']);
@@ -205,7 +206,3 @@ class ParticipantPromptConstitutionTest extends TestCase
         ]];
     }
 }
-
-
-
-

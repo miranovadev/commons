@@ -5,18 +5,18 @@ namespace Tests\Feature;
 use App\Enums\PhaseKind;
 use App\Models\Receipt;
 use App\Models\Tragedy;
+use App\Services\ContributionDispatcher;
 use App\Services\ExhaustionService;
 use App\Services\InputPlanService;
 use App\Services\ParticipantHistoricalContext;
 use App\Services\ReceiptContextService;
 use App\Services\TragedyEvidenceService;
-use App\Services\TragedyFinalAttemptService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\Fixtures\HorizonProofFixture;
 use Tests\TestCase;
 
-class FinalAttemptExhaustionTest extends TestCase
+class RegionalBoundaryLifecycleTest extends TestCase
 {
     use HorizonProofFixture, RefreshDatabase;
 
@@ -40,47 +40,12 @@ class FinalAttemptExhaustionTest extends TestCase
         $this->assertDatabaseCount('commit_region_exhaustions', 0);
     }
 
-    public function test_final_attempt_allowance_is_horizon_local_atomic_and_shared_once(): void
-    {
-        [$opening, , $tragedy] = $this->firstFailure();
-        $phase = $this->phase($opening, PhaseKind::Distinguish);
-        $service = app(TragedyFinalAttemptService::class);
-        $this->assertTrue($service->available($phase));
-        $this->assertFalse($service->available($this->phase($this->origin, PhaseKind::Distinguish)));
-        $variant = $this->node($phase, $opening);
-        try {
-            DB::transaction(function () use ($service, $phase, $variant): void {
-                $service->record($phase, $variant);
-                throw new \DomainException('Rollback the contribution.');
-            });
-            $this->fail('The contribution should roll back.');
-        } catch (\DomainException $exception) {
-            $this->assertSame('Rollback the contribution.', $exception->getMessage());
-        }
-        $this->assertDatabaseCount('tragedy_final_attempts', 0);
-        $this->assertTrue($service->available($phase));
-        DB::transaction(fn () => $service->record($phase, $variant));
-        $this->assertDatabaseHas('tragedy_final_attempts', ['tragedy_id' => $tragedy->id, 'proposition_id' => $variant->id]);
-        $this->assertFalse($service->available($phase));
-        $this->assertFalse($service->available($this->phase($opening, PhaseKind::Distinguish)));
-        $this->assertDatabaseMissing('receipt_consumptions', ['receipt_id' => $tragedy->receipt_id]);
-    }
-
-    public function test_consuming_tragedy_through_an_existing_slot_spends_the_unused_allowance(): void
-    {
-        [$opening, , $tragedy] = $this->firstFailure();
-        $this->exercise($opening, $tragedy);
-        $phase = $this->phase($opening, PhaseKind::Distinguish);
-        $this->assertFalse(app(TragedyFinalAttemptService::class)->available($phase));
-        $this->assertDatabaseCount('tragedy_final_attempts', 0);
-    }
-
-    public function test_exercised_tragedy_receipt_then_later_failure_exhausts_exactly_once(): void
+    public function test_second_fresh_boundary_exhausts_exactly_once_without_receipt_use(): void
     {
         [$opening, $horizon, $tragedy] = $this->firstFailure();
         [$terminal] = $this->exercise($opening, $tragedy);
         $proof = app(ExhaustionService::class)->inspect($terminal);
-        $this->assertSame('no_remaining_potential', $proof['rest_reason']);
+        $this->assertSame('no_available_move', $proof['rest_reason']);
         $this->rest($terminal);
         $this->assertTrue(app(ExhaustionService::class)->boundaryExhausted($horizon));
         $this->assertTrue(app(ExhaustionService::class)->unavailable($opening));
@@ -89,7 +54,7 @@ class FinalAttemptExhaustionTest extends TestCase
         $this->assertDatabaseCount('commit_region_exhaustions', 1);
         $historyPlan = app(InputPlanService::class)->forPhase($terminal->cycle->participant, $terminal);
         $historicalReceipt = collect($historyPlan['receipts'])->firstWhere('id', $tragedy->receipt_id);
-        $this->assertNull($historicalReceipt, 'Consumed unread evidence leaves the shared catalogue.');
+        $this->assertNotNull($historicalReceipt, 'The unused warrant remains visible as history, without authority.');
         $this->assertSame(['participant.rest'], array_keys($historyPlan['schema']['$defs']['actions']));
         $parentSource = $opening->parents()->wherePivot('type', 'commit')->sole();
         $observer = $this->phase($parentSource, PhaseKind::Order);
@@ -106,33 +71,20 @@ class FinalAttemptExhaustionTest extends TestCase
         $this->assertFalse(DB::table('origin_branches')->whereNotNull('pruned_at')->exists());
     }
 
-    public function test_receipt_use_with_successful_positive_potential_continuation_keeps_horizon_alive(): void
+    public function test_positive_charge_after_tragedy_and_later_rest_keep_region_open(): void
     {
         [$opening, $horizon, $tragedy] = $this->firstFailure();
-        [$terminal, $result] = $this->exercise($opening, $tragedy);
-        $this->measure($result, 0);
-        $this->assertSame('no_available_move', app(ExhaustionService::class)->inspect($terminal)['rest_reason']);
+        $gate = $this->node($this->phase($opening, PhaseKind::Constrain), $opening);
+        $phase = $this->phase($gate, PhaseKind::Disperse);
+        $this->resolveExpressiveFieldFixture(.8);
+        $result = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
+            ['action' => 'proposition.variant', 'statement' => 'Positive Charge after catastrophe']);
+        $this->explore($result);
+        $terminal = $this->phase($result);
         $this->rest($terminal);
         $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($horizon));
         $this->assertDatabaseCount('commit_region_exhaustions', 0);
-        $this->assertFalse(app(ExhaustionService::class)->unavailable($opening));
-    }
-
-    public function test_receipt_consumption_cannot_make_an_unrelated_later_failure_exhaust_the_horizon(): void
-    {
-        [$opening, $horizon, $tragedy] = $this->firstFailure();
-        [$terminal, $result] = $this->exercise($opening, $tragedy);
-        $unrelated = $this->node($this->phase($opening, PhaseKind::Constrain), $opening);
-        $this->explore($unrelated);
-        $other = $this->phase($unrelated);
-        $this->measure($unrelated, 1);
-        $proof = app(ExhaustionService::class)->inspect($other);
-        $this->assertSame('no_remaining_potential', $proof['rest_reason']);
-        $this->assertNull($proof['consumed_continuation_id']);
-        $this->rest($other);
-        $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($horizon));
-        $this->assertDatabaseCount('commit_region_exhaustions', 0);
-        $this->assertSame($result->id, app(ExhaustionService::class)->consumedContinuationFor($terminal));
+        $this->assertDatabaseMissing('receipt_consumptions', ['receipt_id' => $tragedy->receipt_id]);
     }
 
     public function test_legacy_pruning_and_old_exhaustion_do_not_control_new_semantics(): void
@@ -153,6 +105,7 @@ class FinalAttemptExhaustionTest extends TestCase
         $this->explore($parentHead);
         $parentRest = $this->phase($parentHead);
         $this->measure($parentHead, 1);
+        $this->boundaryTragedyFixture($parentHead);
         $this->rest($parentRest);
         $parentTragedy = Tragedy::where('context_horizon_id', $horizon->parent_context_horizon_id)->sole();
         $receipt = Receipt::findOrFail($parentTragedy->receipt_id);
@@ -164,7 +117,7 @@ class FinalAttemptExhaustionTest extends TestCase
         $this->assertSame(7, $evidence['exhausted_committals'][0]['phase_number']);
         $viewer = $this->phase($this->origin, PhaseKind::Distinguish);
         $context = app(ReceiptContextService::class)->forPhase($viewer)->firstWhere('id', $receipt->id);
-        $this->assertSame($opening->id, $context['evidence']['exhausted_committals'][0]['id']);
+        $this->assertSame($opening->id, $context['warrant']['exhausted_committals'][0]['id']);
         $this->assertSame('available', $context['availability']);
         $this->assertDatabaseHas('propositions', ['id' => $opening->id]);
         $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($horizon->parent));

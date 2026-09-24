@@ -196,7 +196,8 @@ export interface ActionSchemaProperty {
   anyOf?: ActionSchemaProperty[];
   properties?: Record<string, ActionSchemaProperty>;
   items?: ActionSchemaProperty;
-  const?: ActionName;
+  const?: string;
+  description?: string;
   enum?: string[];
 }
 
@@ -227,6 +228,7 @@ export interface WorkspaceHorizon {
 }
 
 export interface ReceiptContext {
+  purpose?: 'evidence' | 'homologous_boundary_escape';
   loaded?: boolean;
   active?: boolean;
   context_horizon_id?: Identifier;

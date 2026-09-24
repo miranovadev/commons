@@ -83,7 +83,29 @@ final readonly class InputSchemaService
             $schema['$defs']['actions']['proposition.reclassify']['properties']['proposition_id']['enum'] =
                 $kind === PhaseKind::Bias ? $gateOptionIds : [$gate->id];
             $schema['$defs']['actions']['proposition.reclassify']['properties']['receipt_id']['enum'] =
-                app(HorizonReceiptService::class)->available($occurrence, $context)->pluck('id')->all();
+                app(HorizonReceiptService::class)->ordinaryAvailable($occurrence, $context)->pluck('id')->all();
+            if ($kind === PhaseKind::Bias) {
+                $context ??= new ParticipationContext($occurrence);
+                $authority = app(BiasReceiptAuthorityService::class);
+                $branches = [];
+                $receiptIds = [];
+                foreach ($context->nodes($gateOptionIds) as $source) {
+                    $ids = $authority->receiptsFor($occurrence, $source, $context)->pluck('id')->all();
+                    if ($ids === []) {
+                        continue;
+                    }
+                    $escape = $authority->authority($occurrence, $source, $context) === 'tragedy';
+                    $branches[] = ['properties' => [
+                        'proposition_id' => ['const' => $source->id],
+                        'receipt_id' => $escape
+                            ? ['const' => $ids[0], 'description' => 'This current-Region Tragedy Receipt authorizes boundary-crossing Reclassification through this eligible homologous Bias source.']
+                            : ['enum' => $ids, 'description' => 'Ordinary evidence from the acting Commit Region; Tragedy Receipts cannot authorize local or mediated Bias.'],
+                    ]];
+                    $receiptIds = array_merge($receiptIds, $ids);
+                }
+                $schema['$defs']['actions']['proposition.reclassify']['anyOf'] = $branches;
+                $schema['$defs']['actions']['proposition.reclassify']['properties']['receipt_id']['enum'] = array_values(array_unique($receiptIds));
+            }
         }
 
         if (isset($schema['$defs']['actions']['instrument.execute'])) {

@@ -22,13 +22,14 @@ final class ParticipantPromptLayout
         usort($receipts, fn (array $a, array $b): int => strcmp($a['id'], $b['id']));
         $readIds = array_column($packet['plan']['read_options'] ?? [], 'id');
         $readReceipts = array_merge([], ...array_map(fn ($node) => array_column($node['receipts'] ?? [], 'id'), $packet['plan']['read_options'] ?? []));
-        $loaded = array_values(array_filter($receipts, fn (array $receipt): bool => ($receipt['active'] ?? false)
+        $loaded = array_values(array_filter($receipts, fn (array $receipt): bool => $receipt['type'] !== 'tragedy' && ($receipt['active'] ?? false)
             && ($receipt['loaded'] ?? false)
             && (in_array($receipt['id'], $readReceipts, true) || in_array($receipt['proposition_id'] ?? null, $readIds, true))));
         // Loading an old Receipt later must not insert it ahead of older loads.
         usort($loaded, fn (array $a, array $b): int => [$a['loaded_at'] ?? '', $a['id']] <=> [$b['loaded_at'] ?? '', $b['id']]);
         $bodies = array_map(fn (array $receipt): array => Arr::only($receipt, self::RECEIPT_BODY), $loaded);
-        $packet['plan']['receipts'] = array_map(fn (array $receipt): array => Arr::only($receipt, ['id', 'type', 'reference', 'loaded']), $receipts);
+        $packet['plan']['receipts'] = array_map(fn (array $receipt): array => Arr::only($receipt, $receipt['type'] === 'tragedy'
+            ? ['id', 'type', 'reference', 'loaded', 'purpose'] : ['id', 'type', 'reference', 'loaded']), $receipts);
 
         // The historical path keeps its exact ordered objects, including measurements.
         // It can still change; it is deliberately outside the loaded-evidence boundary.

@@ -23,7 +23,7 @@ final class HorizonFailureService
             'position_id' => $phase->gate_proposition_id, 'governing_committal_id' => app(ExhaustionService::class)->regionFor($phase)?->id, 'rest_reason' => $plan['rest_reason'] ?? 'no_available_move',
             'transitions' => [], 'failures' => [], 'horizons' => [], 'branches' => [], 'reason' => 'no_available_move'];
         if (isset($plan['schema']['$defs']['actions']['participant.rest'])
-            && ($proof['rest_reason'] === 'no_remaining_potential' || $this->testedDeadEnd($phase))) {
+            && $this->testedDeadEnd($phase)) {
             $proof['reason'] = $proof['rest_reason'] === 'no_remaining_potential' ? 'no_remaining_potential' : 'continuation_failed';
             $pending = [$phase->gate_proposition_id];
             $closed = [];
@@ -65,10 +65,6 @@ final class HorizonFailureService
                 }
             }
         }
-        $proof['consumed_continuation_id'] = $proof['reason'] === 'no_remaining_potential'
-            ? app(ExhaustionService::class)->consumedContinuationFor($phase) : null;
-        $proof['region_member_ids'] = $proof['consumed_continuation_id'] === null || $proof['governing_committal_id'] === null ? []
-            : app(RegionalExhaustionMembership::class)->capture($proof['context_horizon_id'], $proof['governing_committal_id']);
         $proof['stable'] = $version === (int) Substrate::whereKey($substrateId)->value('field_version');
 
         return $proof;
@@ -111,11 +107,6 @@ final class HorizonFailureService
                     'context_horizon_id' => $proof['context_horizon_id'], 'phase_id' => $phase->id, 'failed_at' => now()])) {
                     app(RealtimePublisher::class)->proposition($failure['proposition_id'], 'proposition.spent');
                 }
-            }
-            if ($proof['rest_reason'] === 'no_remaining_potential') {
-                $tragedy = app(TragedyService::class)->record($phase, $proof);
-                app(ExhaustionService::class)->afterFailure($phase, $tragedy, $proof);
-                // Rest retains its terminal position. Tragedy uses normal backward recovery.
             }
             app(FieldMutationService::class)->mark($substrate->id, [$proof['context_horizon_id']], $proof['transitions'], measurementsDirty: false);
             if ($proof['rest_reason'] === 'no_remaining_potential') {

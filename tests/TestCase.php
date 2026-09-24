@@ -3,6 +3,7 @@
 namespace Tests;
 
 use App\Domain\Evidence\VerifiedHyperlink;
+use App\Domain\Observables\LocalMeasurements;
 use App\Enums\PhaseKind;
 use App\Enums\RegisterPosition;
 use App\Models\Attestation;
@@ -13,7 +14,10 @@ use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Receipt;
+use App\Models\ReceiptConsumption;
 use App\Models\Substrate;
+use App\Models\Supersession;
+use App\Models\Tragedy;
 use App\Services\ContextHorizonProjector;
 use App\Services\Evidence\HyperlinkIdentity;
 use App\Services\Evidence\HyperlinkVerifier;
@@ -21,14 +25,62 @@ use App\Services\Evidence\PublicResourceAddress;
 use App\Services\HorizonReceiptService;
 use App\Services\InstrumentExecutionService;
 use App\Services\LedgerService;
+use App\Services\Observables\LocalMeasurementService;
 use App\Services\PotentialProjectionService;
+use App\Services\PropositionMeasurementService;
 use App\Services\PropositionStateService;
 use App\Services\ReceiptContextService;
+use App\Services\TragedyService;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Facades\DB;
 
 abstract class TestCase extends BaseTestCase
 {
+    /** Controlled observable output; persistence and canonical field projection stay real. */
+    protected function resolveExpressiveFieldFixture(float $value): void
+    {
+        $this->mock(LocalMeasurementService::class, function ($mock) use ($value): void {
+            $mock->shouldReceive('calculate')->andReturn(new LocalMeasurements($value, $value, $value, $value));
+        });
+    }
+
+    /** Explicit controlled birth fixture; natural acceptance uses real contributions instead. */
+    protected function boundaryTragedyFixture(Proposition $terminal): Tragedy
+    {
+        if ($terminal->tier === 'committal') {
+            $seed = $terminal;
+            $horizon = app(ContextHorizonProjector::class)->forEntry($seed);
+            $participant = $seed->phase->cycle->participant;
+            $cycle = (new Cycle)->forceFill(['participant_id' => $participant->id,
+                'sequence' => (int) $participant->cycles()->max('sequence') + 1,
+                'context_horizon_id' => $horizon->id, 'entry_committal_id' => $seed->id]);
+            $cycle->save();
+            $phase = (new Phase)->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Distinguish,
+                'gate_proposition_id' => $seed->id, 'started_at' => now(),
+                'write_register' => $horizon->domain->registerFor(PhaseKind::Distinguish)]);
+            $phase->save();
+            $terminal = (new Proposition)->forceFill(['phase_id' => $phase->id, 'register' => $phase->write_register,
+                'tier' => 'expressive', 'statement' => 'Explicit Charge boundary fixture']);
+            $terminal->save();
+            app(LedgerService::class)->record($terminal);
+            $edge = (new Supersession)->forceFill(['phase_id' => $phase->id,
+                'source_proposition_id' => $seed->id, 'target_proposition_id' => $terminal->id, 'type' => 'variant']);
+            $edge->save();
+            app(LedgerService::class)->record($edge);
+        }
+        $terminal->wasRecentlyCreated = true; // The fixture explicitly supplies the birth event.
+        $tragedy = DB::transaction(function () use ($terminal) {
+            app(PropositionMeasurementService::class)->project($terminal, 1, 1, 1);
+
+            return app(TragedyService::class)->record($terminal);
+        });
+        $this->assertNotNull($tragedy);
+        $this->publishPotentialFixture($terminal->phase->cycle->participant);
+
+        return $tragedy;
+    }
+
     /** Explicit frozen non-boundary seed for isolated ownership fixtures. */
     protected function freezeRegionFixture(Proposition $seed, float $correspondence = 0): void
     {
@@ -86,7 +138,36 @@ abstract class TestCase extends BaseTestCase
         });
     }
 
-    /** Verified, explicitly loaded evidence for fixtures that exercise other semantic services. */
+    /** Archived pre-Stage-5 consumption only; never a live contribution allowance.
+     * Keep the Stage 6 recovery/exhaustion proofs readable without authorizing
+     * Constrain to consume a Tragedy in the current dispatcher.
+     */
+    protected function legacyTragedyClassificationFixture(Phase $phase, Proposition $source, string $receiptId): Proposition
+    {
+        return DB::transaction(function () use ($phase, $source, $receiptId): Proposition {
+            $receipt = Receipt::findOrFail($receiptId);
+            $this->assertSame('tragedy', $receipt->type);
+            $target = (new Proposition)->forceFill(['phase_id' => $phase->id, 'register' => $phase->write_register,
+                'tier' => 'expressive', 'statement' => $source->statement]);
+            $target->save();
+            app(LedgerService::class)->record($target);
+            $edge = (new Supersession)->forceFill(['phase_id' => $phase->id,
+                'source_proposition_id' => $source->id, 'target_proposition_id' => $target->id, 'type' => 'reclassify']);
+            $edge->save();
+            app(LedgerService::class)->record($edge);
+            DB::table('reclassification_results')->insert([
+                'source_proposition_id' => $source->id, 'register' => $phase->write_register, 'target_proposition_id' => $target->id]);
+            (new ReceiptConsumption)->forceFill(['receipt_id' => $receiptId,
+                'context_horizon_id' => $receipt->context_horizon_id, 'phase_id' => $phase->id,
+                'source_proposition_id' => $source->id, 'proposition_id' => $target->id, 'consumed_at' => now()])->save();
+            DB::table('proposition_receipt_links')->insert([
+                'proposition_id' => $target->id, 'receipt_id' => $receiptId, 'created_at' => now()]);
+
+            return $target;
+        });
+    }
+
+    /** Verified, explicitly loaded ordinary evidence for semantic fixtures. */
     protected function loadedReceiptFixture(Proposition $node, ?Attestation $subject = null): Receipt
     {
         $participant = $subject?->phase->cycle->participant ?? new Participant;
@@ -204,7 +285,7 @@ abstract class TestCase extends BaseTestCase
     protected function reclassificationInputFixture(Phase $phase, ?Proposition $source = null): array
     {
         $source ??= $phase->gate;
-        $available = app(HorizonReceiptService::class)->available($phase);
+        $available = app(HorizonReceiptService::class)->ordinaryAvailable($phase);
         $receipt = $available->first(fn ($item) => $item->instrumentExecution?->proposition_id === $source->id)
             ?? $available->firstOrFail();
 
@@ -231,4 +312,3 @@ abstract class TestCase extends BaseTestCase
         $this->loadedReceiptFixture($node);
     }
 }
-

@@ -14,6 +14,7 @@ use App\Models\Substrate;
 use App\Models\Supersession;
 use App\Services\ActiveParticipantLineage;
 use App\Services\ClosureGateService;
+use App\Services\ContextHorizonProjector;
 use App\Services\ContributionDispatcher;
 use App\Services\ContributionService;
 use App\Services\InputPlanService;
@@ -55,6 +56,8 @@ class WriteOnceTest extends TestCase
     #[DataProvider('persistOwnership')]
     public function test_persist_variant_ownership_and_history_match_schema_and_backend(bool $foreign, bool $used, bool $available): void
     {
+        // Isolate structural rules from a new Charge-boundary event.
+        $this->resolveExpressiveFieldFixture(.8);
         [$participant, $seed] = $this->fixture($foreign);
         $gate = $this->node($seed->phase, 'activity', 'Phase 1 Gate', parent: $seed);
         if ($used) {
@@ -99,6 +102,8 @@ class WriteOnceTest extends TestCase
 
     public function test_owned_persist_gate_develops_structure_then_retains_support_without_redundant_variant(): void
     {
+        // Isolate structural rules from a new Charge-boundary event.
+        $this->resolveExpressiveFieldFixture(.8);
         [$participant, $seed] = $this->fixture();
         $gate = $this->node($seed->phase, 'activity', 'My distinction', parent: $seed);
         $phase = $this->phase($participant, PhaseKind::Persist, 'frontier', $gate);
@@ -125,6 +130,8 @@ class WriteOnceTest extends TestCase
 
     public function test_persist_revision_does_not_restore_the_foreign_gate_variant_opportunity(): void
     {
+        // Isolate structural rules from a new Charge-boundary event.
+        $this->resolveExpressiveFieldFixture(.8);
         [$participant, $seed] = $this->fixture(true);
         $gate = $this->node($seed->phase, 'activity', 'Another Participant’s distinction', parent: $seed);
         $phase = $this->phase($participant, PhaseKind::Persist, 'frontier', $gate);
@@ -150,6 +157,8 @@ class WriteOnceTest extends TestCase
 
     public function test_structural_viability_cannot_be_bypassed_by_another_domain(): void
     {
+        // Isolate structural rules from a new Charge-boundary event.
+        $this->resolveExpressiveFieldFixture(.8);
         [$participant, $seed] = $this->fixture(true);
         $gate = $this->node($seed->phase, 'activity', 'Another Participant’s Gate', parent: $seed);
         $phase = $this->phase($participant, PhaseKind::Persist, 'frontier', $gate);
@@ -168,6 +177,8 @@ class WriteOnceTest extends TestCase
     #[DataProvider('localPhases')]
     public function test_viable_generation_is_shared_across_participants_and_cycles_but_not_a_different_gate(PhaseKind $kind, string $register, string $action): void
     {
+        // Isolate structural rules from a new Charge-boundary event.
+        $this->resolveExpressiveFieldFixture(.8);
         [$participant, $gate] = $this->fixture($kind === PhaseKind::Persist && $action === 'proposition.variant');
         if ($kind !== PhaseKind::Distinguish) {
             $sourcePhase = $this->phaseAtPositionFixture($gate->phase, PhaseKind::from($kind->value - 1));
@@ -218,6 +229,8 @@ class WriteOnceTest extends TestCase
 
     public function test_disperse_revision_stays_in_write_and_does_not_reset_generation(): void
     {
+        // Isolate structural rules from a new Charge-boundary event.
+        $this->resolveExpressiveFieldFixture(.8);
         [$participant, $gate] = $this->fixture();
         $gate = $this->node($this->phaseAtPositionFixture($gate->phase, PhaseKind::Constrain), 'canon', 'Constrain Gate', parent: $gate);
         $phase = $this->phase($participant, PhaseKind::Disperse, 'activity', $gate);
@@ -251,6 +264,8 @@ class WriteOnceTest extends TestCase
 
     public function test_constrain_requires_receipt_but_not_reinforcement(): void
     {
+        // Isolate structural rules from a new Charge-boundary event.
+        $this->resolveExpressiveFieldFixture(.8);
         [$participant, $gate] = $this->fixture();
         $gate = $this->node($this->phaseAtPositionFixture($gate->phase, PhaseKind::Persist), 'frontier', 'Expressive Gate', parent: $gate);
         $phase = $this->phase($participant, PhaseKind::Constrain, 'canon', $gate);
@@ -268,6 +283,8 @@ class WriteOnceTest extends TestCase
 
     public function test_bias_is_once_per_source_and_does_not_impose_a_personal_quota(): void
     {
+        // Isolate structural rules from a new Charge-boundary event.
+        $this->resolveExpressiveFieldFixture(.8);
         [$participant, $seed] = $this->fixture();
         $a = $this->node($this->phaseAtPositionFixture($seed->phase, PhaseKind::Mediate), 'frontier', 'A', parent: $seed);
         $b = $this->node($this->phaseAtPositionFixture($seed->phase, PhaseKind::Mediate), 'frontier', 'B', parent: $seed);
@@ -324,7 +341,7 @@ class WriteOnceTest extends TestCase
         $this->assertUnavailable($other, $otherPhase, $input);
 
         // The next row uses the Committal's explicitly entered Horizon and Domain.
-        $nextRegister = app(\App\Services\ContextHorizonProjector::class)->forEntry($commit)->domain->registerFor(PhaseKind::Bias);
+        $nextRegister = app(ContextHorizonProjector::class)->forEntry($commit)->domain->registerFor(PhaseKind::Bias);
         $next = $this->node($this->phaseAtPositionFixture($seed->phase, PhaseKind::Bias), $nextRegister, 'Next region', parent: $commit);
         $this->groundFixture($next);
         $this->phase($participant, PhaseKind::Order, $nextRegister, $next);
@@ -442,4 +459,3 @@ class WriteOnceTest extends TestCase
         return $plan['schema']['$defs']['actions'][$action]['properties']['proposition_id']['enum'] ?? [];
     }
 }
-

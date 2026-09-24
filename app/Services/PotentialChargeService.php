@@ -35,7 +35,7 @@ final readonly class PotentialChargeService
             ->contains(fn ($entry) => $entry['raw_potential_charge'] > 0.00000005);
     }
 
-    /** Existing regional algebra; only the exhaustion/final-attempt qualification scope changes. */
+    /** Descriptive regional algebra; never Tragedy, exhaustion or expressive permission authority. */
     public function hasRemainingInRegion(Phase $phase, ?ParticipationContext $context = null): bool
     {
         $calculate = function () use ($phase, $context): bool {

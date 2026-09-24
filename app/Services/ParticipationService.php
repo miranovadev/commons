@@ -97,13 +97,11 @@ final readonly class ParticipationService
             $recovering = $completed?->rested_at !== null;
             $entry = $this->entryFor($participant);
             $recoveryReady = $recovering && ($entry['available'] ?? false);
-            $exhaustionPending = false; // Rest transitions are atomic; no legacy pruning repair is needed.
 
             return [...$this->waiting(
-                $recovering ? ($recoveryReady || $exhaustionPending ? 'recovery_pending' : 'recovery_unavailable') : 'cycle_not_started',
+                $recovering ? ($recoveryReady ? 'recovery_pending' : 'recovery_unavailable') : 'cycle_not_started',
                 $recovering ? ($recoveryReady ? 'Rest completed; recovery is ready for the next entry attempt.'
-                    : ($exhaustionPending ? 'Rest completed; branch exhaustion will be reconsidered from fresh state.'
-                        : 'Rest completed; no valid recovery basin entry can be established.')) : 'The Participant is waiting for a Cycle to begin.',
+                    : 'Rest completed; no valid recovery basin entry can be established.') : 'The Participant is waiting for a Cycle to begin.',
                 entry: $entry,
             ), 'completion' => $completed !== null && $completed->rested_at === null && $finalPhase?->kind === PhaseKind::Order ? [
                 'cycle_id' => $completed->id,
@@ -159,7 +157,7 @@ final readonly class ParticipationService
             ] : ($plan['rest_available'] ? [
                 'code' => $plan['rest_reason'],
                 'message' => $plan['rest_reason'] === 'no_remaining_potential'
-                    ? 'The current Horizon has no remaining measured Potential. Rest records this failure.'
+                    ? 'No admissible action remains in this Phase, and its Commit Region has zero measured Potential. Rest does not create Tragedy.'
                     : 'No admissible non-Rest action remains in this Phase. Rest does not prove Horizon failure.',
             ] : null),
             'entry' => null,
@@ -243,11 +241,11 @@ final readonly class ParticipationService
             throw $exception;
         }
 
-        $exhaustion = null;
+        $failureWitness = null;
         if (($input['action'] ?? null) === 'participant.rest') {
             $restPhase = Phase::with('cycle.participant')->find($phaseId);
             if ($restPhase !== null && $restPhase->cycle->participant_id === $participant->id) {
-                $exhaustion = app(ExhaustionService::class)->inspect($restPhase);
+                $failureWitness = app(HorizonFailureService::class)->inspect($restPhase);
             }
         }
 
@@ -256,7 +254,7 @@ final readonly class ParticipationService
             $phaseId,
             $input,
             $observed,
-            $exhaustion,
+            $failureWitness,
             $validatedVersion,
         ): void {
             // Acquire the shared root before any participant/phase or contribution lock.
@@ -297,11 +295,11 @@ final readonly class ParticipationService
             if ($input['action'] === 'participant.rest') {
                 // The Rest witness describes the guarded pre-completion field.
                 // A stale proof is discarded and can be retried after this Rest.
-                $validProof = $exhaustion !== null && $exhaustion['stable']
-                    && $exhaustion['field_version'] === (int) $substrate->field_version;
-                $this->rest($lockedParticipant, $phase, RestReason::from($exhaustion['rest_reason'] ?? 'no_available_move'));
+                $validProof = $failureWitness !== null && $failureWitness['stable']
+                    && $failureWitness['field_version'] === (int) $substrate->field_version;
+                $this->rest($lockedParticipant, $phase, RestReason::from($failureWitness['rest_reason'] ?? 'no_available_move'));
                 if ($validProof) {
-                    app(ExhaustionService::class)->publish($phase, $exhaustion);
+                    app(HorizonFailureService::class)->publish($phase, $failureWitness);
                 }
                 // Publish the existing Rest outcome before completion invalidates
                 // future Closure previews; both remain in this root-locked transaction.

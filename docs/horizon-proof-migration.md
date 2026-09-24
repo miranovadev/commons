@@ -1,5 +1,9 @@
 # Horizon proof migration and compatibility
 
+> Historical checkpoint: the Rest-born Tragedy and special final-attempt allowance
+> described below are superseded by [Charge-boundary Tragedy](branch-tragedy.md).
+> Legacy exhaustion/recovery remains pending its later correction stage.
+
 This is a semantic rollout requiring review of the complete integration PR. No migration deletes legacy Propositions, Receipts, attachments, snapshots, old Tragedies or pruning history.
 
 | Additive migration | Data treatment |

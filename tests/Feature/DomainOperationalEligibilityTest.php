@@ -45,6 +45,8 @@ class DomainOperationalEligibilityTest extends TestCase
     #[DataProvider('domains')]
     public function test_operational_pools_exclude_analogous_registers_in_both_query_paths(ContextDomain $domain): void
     {
+        // Isolate structural rules from a new Charge-boundary event.
+        $this->resolveExpressiveFieldFixture(.8);
         [$cycles, $seeds] = $this->regions();
         $seed = $seeds[$domain->value];
         $cycle = $cycles[$domain->value];
@@ -196,4 +198,3 @@ class DomainOperationalEligibilityTest extends TestCase
         }
     }
 }
-

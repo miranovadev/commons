@@ -175,7 +175,7 @@ Variant, Revise and Reconcile create new content/structure with fresh votes and 
 | Phase 6 | Reclassify an attested Phase-5 source with Receipt and lineage agreement |
 | Phase 7 | Existing grounded, freshly attested and Closure-aligned Commit or Committal Traverse |
 
-Variant eligibility does not depend on Receipt generation/consumption or Participant count. A further Variant requires all existing routes at its structural position to be spent in the current epoch, with their own completed Instrument and effective Attestation, plus positive remaining Horizon Potential Charge. A viable existing route blocks redundant generation. Only successful Variant advances that position's epoch; other positions remain unchanged. Spent routes remain visible without Traverse, Attestation or redundant Instrument targets. See [exploration epochs](exploration-epochs.md). Each new Variant repeats this sequence. No prior Mediate Rest or fixed sibling cap applies; see the [confirmed clarification](horizon-proof-variant-clarification.md).
+Variant eligibility does not depend on Potential Charge, Receipt generation/consumption or Participant count. A further Variant requires all existing routes at its structural position to be spent in the current epoch, with their own completed Instrument and effective Attestation. Zero Potential does not suppress an otherwise structurally valid Variant; expression may increase Tension. A viable existing route blocks redundant generation. Only successful Variant advances that position's epoch; other positions remain unchanged. Spent routes remain visible without Traverse, Attestation or redundant Instrument targets. See [exploration epochs](exploration-epochs.md). Each new Variant repeats this sequence. No prior Mediate Rest or fixed sibling cap applies; see the [confirmed clarification](horizon-proof-variant-clarification.md).
 
 Instruments target mutable expressive Writes in phases 1–6. Phase 1/4 offer Instrument when a Write lacks its own completed Instrument or no shared Receipt remains available. Existing evidence makes Attestation available without a transfer from its author or a paid visibility action. Transactional execution rechecks the same rules advertised in the schema.
 
@@ -239,7 +239,7 @@ remain in place, and middle actions wrap without moving the directional slots.
 The UI renders Rest only from the authoritative schema, never from its own
 interpretation of the rest_available flag or visible cards.
 
-**No available move** means the current Phase has zero admissible Phase-advancing actions. The backend separately derives `no_remaining_potential` from an evidenced failure. Only that reason can create Tragedy or Exhaustion.
+**No available move** means the current Phase has zero admissible Phase-advancing actions. The backend separately derives `no_remaining_potential` from an evidenced failure. That reason is a numerical diagnostic only. Neither Rest reason creates Tragedy or exhaustion.
 The server first applies all phase-native, ownership, target and Commitment
 constraints, then specializes the complete action schema. When no Phase-advancing
 action remains it sets `rest_available: true` and injects `participant.rest`.
@@ -348,6 +348,40 @@ Homologous Gates are Reconcile operands only. They do not become Read choices,
 Traverse destinations or Receipt catalogue sources. The acting Phase Gate remains
 traversed provenance; recognition alone never moves the Participant.
 
+## Mediate-created incoming Bias
+
+A completed Reconcile creates a directed incoming relationship from its exact
+selected other operand to its result. For `A_gate + B_operand → A_result`, the
+two recorded Reconcile inputs and the producing Phase's Gate distinguish the
+other operand from the acting Gate. No synthetic movement edge is added.
+
+Normal progression remains authoritative. `B_operand` is Disperse-produced and
+serves as B's Mediate Gate. B's Mediate contribution produces `B_mediate_result`,
+which becomes Bias's actual Gate. `MediatedIncomingBiasService` resolves the exact
+Gate on that result's producing Mediate Phase and verifies its recorded Reconcile
+input. Only an incoming relationship for that exact operand can expose `A_result`.
+It does not search arbitrary ancestors or substitute a structural homologue.
+An unrelated Mediate/Bias chain does not acquire this mediated authority.
+
+Mediate creates the doorway; Bias may later use it through ordinary Reclassify.
+A remains in its acting Cycle, Commit Region and Horizon during Reconcile. The
+operand grants no Traverse, no movement into B and no Receipt scope. Direction
+is asymmetric: A's use of B creates an incoming option from B's downstream
+Mediate/Bias path; it does not automatically create the reverse relationship.
+
+The relevant boundary is the Commit Region, not every expressive branch.
+Same-Region mediated paths remain ordinary expressive relationships. A real
+cross-Region Mediate operand establishes the incoming doorway across that
+boundary. Both use the ordinary Bias evidence/ancestry comparison, effective
+Attestation, completed unconsumed own-Region Receipt, source/register uniqueness,
+mutability, current-epoch spentness and exhaustion protections. No Tragedy is
+required. Foreign option visibility never imports its Region's Receipts.
+
+Mediated incoming discovery and homologous population discovery remain separate
+services and authorities. An option may independently qualify through either;
+absence of an exact doorway does not revoke an otherwise legitimate homologous
+option. Mediated authority uses ordinary own-Region Receipts even when the same source also qualifies through homology; it cannot consume a Tragedy Receipt.
+
 ## Shared Commit Region scope
 
 This scope applies [Invariant 10: structural authority](core-invariants.md#10-operations-may-only-act-within-their-structural-authority):
@@ -402,24 +436,50 @@ Gate and follow or create its legitimate causal continuation.
 Active candidates exclude outgoing hard supersessions; soft Variant branches
 remain active. A direct Commit edge consumes its source globally; other branches remain available.
 
+A Tragedy Receipt is a dedicated boundary-exit warrant, never ordinary evidence.
+Ordinary Receipt APIs alone govern Instrument, Attestation and non-Bias
+Reclassification. Tragedy cannot be loaded, unloaded or replayed; catalogue
+visibility and historical load rows supply no evidential authority. See the
+[Receipt categories and compatibility rules](receipt-region-context.md).
+
 ## Bias Chirality Gate
 
 For ordinary local eligibility, `BiasGateService` compares the current head's retained direction to its own causal ancestry, excluding the head's votes and loads. Shared ancestors and Attestations are counted once across both reconciliation parents. Traversal stops at the governing Committal boundary; unrelated branches do not set the comparison. Ledger replay retains the preceding nonzero direction at zero, starting from the governing Committal direction. Superseded ancestors supply historical judgments without becoming additional active reinforcement copies.
 
-Bias additionally requires a completed Receipt and an effective source Attestation. The action takes `action: proposition.reclassify`, `proposition_id` and `receipt_id`. It preserves exact content, attaches/consumes the selected Receipt, resets votes/touches, and creates one shared source/register classification. `BiasGateService::forPhase()` remains the existing regional evidence calculation;
-`operationalFor()` preserves its eligible current Gate and adds qualified sources
-from `HomologousBiasService`. The latter uses the shared Homeostatic services to
+Bias additionally requires its source-specific Receipt authority and an effective source Attestation. The action takes `action: proposition.reclassify`, `proposition_id` and `receipt_id`. It preserves exact content, attaches/consumes the selected Receipt, resets votes/touches, and creates one shared source/register classification. `BiasGateService::forPhase()` remains the existing regional evidence calculation;
+`operationalFor()` preserves its eligible current Gate, adds recorded incoming
+sources from `MediatedIncomingBiasService`, and independently adds qualified
+sources from `HomologousBiasService`. The latter uses the shared Homeostatic services to
 aggregate every homologous Gate's own numeric Chirality, including the current
 Gate once. Positive and negative means follow sign; zero retains supplied prior
 population direction or uses Chirality's negative default. No population state
 is persisted or written into proposition measurements.
 
-Additional sources must be active and unexhausted and pass ordinary reclassification
+Additional homologous sources must be active and unexhausted and pass the existing structural reclassification
 prerequisites. They need not satisfy the local current Gate's evidence/ancestry
 comparison: their distinct qualifying comparison is dominant numeric Chirality.
-The selected Receipt must be completed, unconsumed and in the acting Cycle's
-immutable entry catalogue. Source and Receipt may originate in different Regions
-or Horizons. The selected source's Receipt stock stays untouched.
+`BiasReceiptAuthorityService` resolves the source before choosing evidence.
+Ordinary local and mediated incoming Bias require an ordinary, completed,
+unconsumed Receipt from the acting Commit Region; they cannot consume Tragedy
+Receipts. Another expressive path in the same Region remains ordinary. A recorded
+Mediate doorway takes precedence even if its foreign source also matches homology.
+
+A foreign Homeostatic homologous source is a boundary escape. It requires the
+acting Region's exact unconsumed Tragedy Receipt, associated with that Region's
+unresolved Tragedy and still scoped there. An ordinary Receipt, another Region's
+Receipt, or a legacy recovery-relocated Tragedy cannot authorize this escape.
+Population observation remains independent; without this warrant the foreign
+source is not advertised as an actionable Reclassify option. Source-specific
+schema branches bind each source to its eligible Receipts (the escape branch uses
+an exact Receipt constant). Dispatch revalidates under the existing transaction
+and locks. Successful consumption is exact-once; failure rolls back all writes.
+The selected source's Receipt stock stays untouched.
+
+Mediate opens an incoming doorway. The homologous population identifies possible
+exits. A Tragedy Receipt authorizes leaving through one eligible homologous exit;
+it supplies no destination or permanent movement permission. Subsequent
+Attestation and Traverse follow ordinary contribution rules. Recovery skips the
+Region only after a later fresh zero-Charge catastrophe proves it exhausted. Warrant consumption alone does not exhaust it.
 
 The result belongs to the acting Bias Phase, Horizon and entry accounting Region.
 Its sole reclassify edge comes from the selected source, and the participant
@@ -429,7 +489,7 @@ No generic foreign Read, Traverse or Receipt catalogue is granted.
 
 Existing causal Write continuations of the current Gate offer their permitted
 Instrument and Attestation actions and, after earlier-Cycle personal
-Attestation, Traverse to Order. Homologous Gates are Reclassify sources only;
+Attestation, Traverse to Order. Mediated and homologous additional Gates are Reclassify sources only;
 their existing Bias-produced Writes do not become this Participant's Traverse
 options. A foreign-source classification owned by another Cycle-entry Region
 cannot be adopted as a local Write merely through its Supersession edge. Historical material on the
@@ -466,7 +526,8 @@ Commit copies the selected source's exact statement and participation history by
 
 Mediate alone exposes Reconcile. It accepts no `statement`. It creates one fresh Expressive Proposition in
 the Phase's Write register with the current Gate's statement copied exactly and
-two hard `reconcile` edges, one from each source. It inherits no Attestations,
+two hard `reconcile` edges, one from each source. These also record the directed
+incoming Bias relationship described above. It inherits no Attestations,
 Receipts or Phase touches. Normal progression earns a new target touch.
 The dispatcher rechecks admissibility before any writes. The Proposition/edge
 ledger records, source history ownership and measurement recalculation remain
@@ -513,7 +574,7 @@ and equivalent-evidence exclusions, and creates a new Proposition-grounded Recei
 with replay provenance. Neither fresh execution nor replay automatically loads
 source or result. There are no standalone Receipt Read or Replay action families.
 
-No-Potential failure is observed outside the Rest write lock and published with an exact field-version guard. First failure records Tragedy and its unique Receipt, keeping the Horizon open. A subsequent no-Potential Rest can record Exhaustion only after that Receipt has been consumed by Reclassify. Compact historical alternatives remain visible and non-actionable. See [Tragedy and final-attempt Exhaustion](branch-tragedy.md).
+The first fresh expressive proposition whose resolved canonical Charge is zero records its Region Tragedy and unique Receipt inside the contribution transaction. A later distinct fresh zero-Charge proposition in that same open Region records exhaustion. Potential, Rest and Receipt consumption prove neither event. Historical alternatives remain visible and non-actionable. Recovery skips only authoritatively exhausted Regions. See [Charge-boundary lifecycle](branch-tragedy.md).
 
 Gate Receipt load/unload desired states accompany a forward Phase contribution (never Rest) and take cognitive effect in the next Phase. Only loaded evidence grounding the participant-facing Read activates a full body; other Receipt references are metadata. See the normative [Receipt model](receipt-region-context.md), including the shared recovery-scoped Tragedy exception.
 

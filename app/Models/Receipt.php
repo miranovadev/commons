@@ -65,6 +65,9 @@ class Receipt extends Model
 
     public function replayInvocation(): ?array
     {
+        if ($this->type === 'tragedy') {
+            return null;
+        }
         $execution = $this->instrumentExecution;
         $input = $execution?->input;
         if ($execution?->status !== 'completed' || ! is_array($input)
@@ -98,7 +101,7 @@ class Receipt extends Model
 
     public function observationComplete(): bool
     {
-        return $this->type === 'tragedy' || $this->instrumentExecution?->status === 'completed';
+        return $this->type !== 'tragedy' && $this->instrumentExecution?->status === 'completed';
     }
 
     public function consumption(): HasOne

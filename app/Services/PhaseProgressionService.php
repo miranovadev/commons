@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\PhaseKind;
 use App\Models\Phase;
 use App\Models\Proposition;
+use App\Models\Supersession;
 
 final class PhaseProgressionService
 {
@@ -28,7 +29,14 @@ final class PhaseProgressionService
             PhaseKind::Order => app(PhaseGenerationService::class)->committedWrites($phase),
             default => null,
         };
-        if (! $homologousOrder && $continuations !== null && ! $continuations->contains('id', $gate->id)) {
+        // A successful fresh Bias write may have just exhausted its Region.
+        // Complete that immutable contribution into the next Rest-only position;
+        // historical reads and later Traverse never receive this exception.
+        $freshClassification = $phase->kind === PhaseKind::Bias && $gate->wasRecentlyCreated
+            && $gate->phase_id === $phase->id
+            && Supersession::where('phase_id', $phase->id)->where('target_proposition_id', $gate->id)
+                ->where('type', 'reclassify')->exists();
+        if (! $homologousOrder && ! $freshClassification && $continuations !== null && ! $continuations->contains('id', $gate->id)) {
             throw new \DomainException('Progression requires a causal continuation of the current Gate.');
         }
         $participant = $phase->cycle->participant;
@@ -61,4 +69,3 @@ final class PhaseProgressionService
         return $next;
     }
 }
-

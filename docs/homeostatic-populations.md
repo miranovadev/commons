@@ -92,8 +92,13 @@ so another member changing direction can invalidate a previously listed operand.
 Stage 4 consumes numeric Chirality over homologous Mediate Gates. The current
 causal Gate keeps its independent local Bias evidence/ancestry rule. Other active,
 unexhausted matching members that are unspent in their own current exploration
-epoch may supply Reclassify sources only with the ordinary
-Receipt, effective-Attestation and source/register uniqueness prerequisites.
+epoch retain the effective-Attestation and source/register uniqueness prerequisites.
+Foreign homologous Reclassify actions additionally require the exact current
+Commit Region’s unresolved, unconsumed Tragedy Receipt; ordinary Receipts cannot
+authorize that escape. Population observation does not itself advertise an action.
+Local, same-Region expressive paths and recorded mediated doorways instead use
+ordinary own-Region Receipts and cannot consume Tragedy Receipts. Recorded
+mediation takes precedence over overlapping population eligibility.
 Zero member Chirality uses its explicit negative measurement default; regional
 Attestation lean is not substituted for a numeric measurement. Population history
 is still observation-local and supplied explicitly, never invented or persisted.
@@ -131,7 +136,7 @@ writes back to proposition measurements, snapshots or participant state.
 Rest depends on operational action availability, not population size or a desired
 frequency. An admissible homologous Traverse prevents Rest even when local Commit
 is unavailable. Structural members without an eligible continuation do not prevent
-Rest or establish movement. Genuine Tragedy, final attempts, exhaustion and recovery
+Rest or establish movement. Charge-boundary Tragedy, repeated-boundary exhaustion and recovery
 retain their existing proof and ownership rules. A numeric zero keeps supplied
 population history or the observable default; absent resolved Closure components
 are missing measurements, not a special directionless numeric zero.

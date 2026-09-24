@@ -3,13 +3,11 @@
 namespace Tests\Feature;
 
 use App\Enums\PhaseKind;
-use App\Models\Attestation;
 use App\Models\Proposition;
 use App\Models\Tragedy;
 use App\Services\ContributionDispatcher;
 use App\Services\ExhaustionAuditService;
 use App\Services\ExhaustionService;
-use App\Services\LedgerService;
 use App\Services\PotentialChargeService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -18,7 +16,7 @@ use Tests\Fixtures\ExhaustionFixture;
 use Tests\Fixtures\ParticipationScaleFixture;
 use Tests\TestCase;
 
-/** Final-attempt proof replaces the retired immediate recursive-closure contract. */
+/** Repeated fresh Charge-boundary proof governs regional retirement. */
 class ExhaustionTest extends TestCase
 {
     use ExhaustionFixture, RefreshDatabase;
@@ -38,29 +36,21 @@ class ExhaustionTest extends TestCase
         $phase = $this->phase($head);
         $this->measure($root, 1);
         $this->measure($head, 1);
+        $this->boundaryTragedyFixture($head);
         $this->rest($phase);
 
         return [$opening, $phase, Tragedy::sole()];
     }
 
-    private function exhaustFinalAttempt(): array
+    private function exhaustSecondBoundary(): array
     {
         [$opening, $first, $tragedy] = $this->tragicChild();
-        $source = $this->node($this->phase($opening, PhaseKind::Persist), $opening);
-        $vote = (new Attestation)->forceFill(['phase_id' => $source->phase_id, 'proposition_id' => $source->id, 'direction' => 'support']);
-        $vote->save();
-        app(LedgerService::class)->record($vote);
-        $phase = $this->phase($source, PhaseKind::Constrain);
+        $gate = $this->node($this->phase($opening, PhaseKind::Constrain), $opening);
+        $phase = $this->phase($gate, PhaseKind::Disperse);
+        $this->resolveExpressiveFieldFixture(1);
         $result = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
-            ['action' => 'proposition.reclassify', 'proposition_id' => $source->id, 'receipt_id' => $tragedy->receipt_id]);
-        $this->explore($result);
+            ['action' => 'proposition.variant', 'statement' => 'Repeated Charge boundary']);
         $terminal = $this->phase($result);
-        foreach (Proposition::whereHas('phase.cycle', fn ($query) => $query
-            ->where('context_horizon_id', $terminal->cycle->context_horizon_id))->where('tier', 'expressive')->get() as $node) {
-            $this->measure($node, 1);
-        }
-        $this->measure($source, 1);
-        $this->measure($result, 1);
         $this->rest($terminal);
 
         return [$opening, $terminal, $tragedy];
@@ -84,6 +74,7 @@ class ExhaustionTest extends TestCase
         [, $first, $other, $commit] = $this->exhaustedBranch();
         $before = $other->cycle->participant->fresh()->getAttributes();
         $propositions = Proposition::count();
+        $this->boundaryTragedyFixture($first->gate);
         $this->rest($first);
         $this->assertDatabaseCount('tragedies', 1);
         $this->assertDatabaseCount('commit_region_exhaustions', 0);
@@ -97,7 +88,7 @@ class ExhaustionTest extends TestCase
 
     public function test_first_failure_stops_at_child_horizon_and_final_failure_recovers_to_parent(): void
     {
-        [$opening, $terminal] = $this->exhaustFinalAttempt();
+        [$opening, $terminal] = $this->exhaustSecondBoundary();
         $horizon = $terminal->cycle->contextHorizon;
         $this->assertTrue(app(ExhaustionService::class)->boundaryExhausted($horizon));
         $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($horizon->parent));
@@ -160,25 +151,18 @@ class ExhaustionTest extends TestCase
         $this->assertDatabaseCount('commit_region_exhaustions', 0);
     }
 
-    public function test_audit_accepts_exercised_final_attempt_and_detects_missing_consumption(): void
+    public function test_audit_accepts_second_boundary_without_consumption_or_rest_authority(): void
     {
-        [, , $tragedy] = $this->exhaustFinalAttempt();
+        [, $phase, $tragedy] = $this->exhaustSecondBoundary();
+        $this->assertDatabaseMissing('receipt_consumptions', ['receipt_id' => $tragedy->receipt_id]);
         $audit = app(ExhaustionAuditService::class)->inspect($this->substrate->id);
         $this->assertTrue($audit['matches'], json_encode($audit));
-        DB::table('receipt_consumptions')->where('receipt_id', $tragedy->receipt_id)->delete();
-        $audit = app(ExhaustionAuditService::class)->inspect($this->substrate->id);
-        $this->assertFalse($audit['matches']);
-        $this->assertSame([$tragedy->context_horizon_id], $audit['invalid_receipt_consumptions']);
-    }
-
-    public function test_audit_detects_incorrect_rest_reason_without_a_duplicate_horizon_marker(): void
-    {
-        [, $phase, $tragedy] = $this->tragicChild();
         DB::table('cycles')->where('id', $phase->cycle_id)->update(['rest_reason' => 'no_available_move']);
+        $this->assertTrue(app(ExhaustionAuditService::class)->inspect($this->substrate->id)['matches']);
+        DB::table('commit_region_exhaustions')->update(['boundary_field' => '{"charge":0.2,"tension":0.8}']);
         $audit = app(ExhaustionAuditService::class)->inspect($this->substrate->id);
         $this->assertFalse($audit['matches']);
-        $this->assertSame([], $audit['horizon_mismatches']);
-        $this->assertSame([$phase->id], $audit['invalid_rest_witnesses']);
+        $this->assertSame([$tragedy->governing_committal_id], $audit['invalid_boundary_witnesses']);
     }
 
     #[Group('query')]

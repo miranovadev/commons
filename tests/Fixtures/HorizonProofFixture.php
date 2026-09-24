@@ -8,8 +8,10 @@ use App\Models\Proposition;
 use App\Models\Tragedy;
 use App\Services\ContributionDispatcher;
 use App\Services\LedgerService;
+use App\Services\RegionalExhaustionMembership;
+use Illuminate\Support\Facades\DB;
 
-/** Real Rest and Reclassify transitions for nested Horizon proof integration tests. */
+/** Regional catastrophe fixtures; archived consumption is isolated for migration tests only. */
 trait HorizonProofFixture
 {
     use ExhaustionFixture;
@@ -23,6 +25,7 @@ trait HorizonProofFixture
         $phase = $this->phase($head);
         $this->measure($root, 1);
         $this->measure($head, 1);
+        $this->boundaryTragedyFixture($head);
         $this->rest($phase);
 
         return [$opening, $phase->cycle->contextHorizon, Tragedy::sole()];
@@ -30,13 +33,40 @@ trait HorizonProofFixture
 
     protected function exercise($opening, $tragedy): array
     {
+        $gate = $this->node($this->phase($opening, PhaseKind::Constrain), $opening);
+        $phase = $this->phase($gate, PhaseKind::Disperse);
+        $this->resolveExpressiveFieldFixture(1);
+        $target = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
+            ['action' => 'proposition.variant', 'statement' => 'A later fresh regional catastrophe']);
+        $terminal = $this->phase($target);
+        $this->publishPotentialFixture($this->substrate);
+
+        return [$terminal, $target];
+    }
+
+    /** Archive-only construction of the retired exhaustion proof for migration/audit coverage. */
+    protected function archiveExhaustion($phase, $tragedy): void
+    {
+        $proof = DB::table('horizon_failure_witnesses')->where('phase_id', $phase->id)->sole();
+        DB::table('commit_region_exhaustions')->insert([
+            'governing_committal_id' => $tragedy->governing_committal_id,
+            'context_horizon_id' => $tragedy->context_horizon_id, 'tragedy_id' => $tragedy->id,
+            'receipt_id' => $tragedy->receipt_id, 'phase_id' => $phase->id,
+            'terminal_proposition_id' => $phase->gate_proposition_id,
+            'observed_field_version' => $proof->observed_field_version, 'exhausted_at' => now(),
+        ]);
+        app(RegionalExhaustionMembership::class)->publish($tragedy->governing_committal_id,
+            app(RegionalExhaustionMembership::class)->capture($tragedy->context_horizon_id, $tragedy->governing_committal_id));
+    }
+
+    protected function legacyExercise($opening, $tragedy): array
+    {
         $source = $this->node($this->phase($opening, PhaseKind::Persist), $opening);
         $vote = (new Attestation)->forceFill(['phase_id' => $source->phase_id, 'proposition_id' => $source->id, 'direction' => 'support']);
         $vote->save();
         app(LedgerService::class)->record($vote);
         $phase = $this->phase($source, PhaseKind::Constrain);
-        $result = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
-            ['action' => 'proposition.reclassify', 'proposition_id' => $source->id, 'receipt_id' => $tragedy->receipt_id]);
+        $result = $this->legacyTragedyClassificationFixture($phase, $source, $tragedy->receipt_id);
         $this->explore($result);
         $terminal = $this->phase($result);
         // Spent history stays in the measured field. This fixture asserts a

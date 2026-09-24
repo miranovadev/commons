@@ -13,7 +13,9 @@ use App\Models\PropositionMeasurement;
 use App\Models\Substrate;
 use App\Models\Supersession;
 use App\Services\LedgerService;
+use App\Services\Observables\LineageMeasurementService;
 use App\Services\PotentialChargeService;
+use App\Services\PotentialProjectionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -28,7 +30,7 @@ class PotentialChargeServiceTest extends TestCase
         $this->committal($substrate, $phase, 'Second', 0.4);
         $this->continuation($phase, $first, 'A lower-tension continuation', 0.1);
 
-        app(\App\Services\PotentialProjectionService::class)->rebuild($substrate->id, false);
+        app(PotentialProjectionService::class)->rebuild($substrate->id, false);
         $selection = app(PotentialChargeService::class)
             ->selectFor($substrate);
 
@@ -48,13 +50,32 @@ class PotentialChargeServiceTest extends TestCase
             -0.25,
         );
 
-        app(\App\Services\PotentialProjectionService::class)->rebuild($substrate->id, false);
+        app(PotentialProjectionService::class)->rebuild($substrate->id, false);
         $selection = app(PotentialChargeService::class)
             ->selectFor($substrate);
 
         $this->assertTrue($selection['proposition']->is($higherCharge));
         $this->assertSame(0.0, $selection['potential_charge']);
         $this->assertSame(0.75, $selection['charge']);
+    }
+
+    public function test_increasing_absolute_tension_has_zero_potential_without_changing_charge(): void
+    {
+        [$substrate, $phase] = $this->substratePhase();
+        $commit = $this->committal($substrate, $phase, 'Committal', 0.4);
+        foreach ([0.5, -0.7, 0.8] as $tension) {
+            $this->continuation($phase, $commit, 'Higher absolute Tension', $tension);
+        }
+        $this->publishPotentialFixture($substrate);
+        $selection = app(PotentialChargeService::class)->selectFor($substrate);
+        $this->assertSame(0.0, $selection['potential_charge']);
+        $this->assertSame(0.6, $selection['charge']);
+
+        $this->continuation($phase, $commit, 'Demonstrated reduction', -0.1);
+        $this->publishPotentialFixture($substrate);
+        $selection = app(PotentialChargeService::class)->selectFor($substrate);
+        $this->assertEqualsWithDelta(0.3, $selection['potential_charge'], 1e-12);
+        $this->assertSame(0.6, $selection['charge']);
     }
 
     public function test_snapshot_presence_does_not_make_an_expressive_proposition_eligible(): void
@@ -66,7 +87,7 @@ class PotentialChargeServiceTest extends TestCase
         $expressive->forceFill(['tier' => 'expressive'])->save();
         $this->continuation($phase, $expressive, 'Attractive continuation', 0.0);
 
-        app(\App\Services\PotentialProjectionService::class)->rebuild($substrate->id, false);
+        app(PotentialProjectionService::class)->rebuild($substrate->id, false);
         $selection = app(PotentialChargeService::class)->selectFor($substrate);
 
         $this->assertTrue($selection['proposition']->is($eligible));
@@ -79,7 +100,7 @@ class PotentialChargeServiceTest extends TestCase
         $expressive = $this->committal($substrate, $phase, 'Invalid entry', 0.0);
         $expressive->forceFill(['tier' => 'expressive'])->save();
 
-        app(\App\Services\PotentialProjectionService::class)->rebuild($substrate->id, false);
+        app(PotentialProjectionService::class)->rebuild($substrate->id, false);
         $this->expectException(\DomainException::class);
         $this->expectExceptionMessage('without a Committal Proposition');
         app(PotentialChargeService::class)->selectFor($substrate);
@@ -175,7 +196,7 @@ class PotentialChargeServiceTest extends TestCase
             'chirality' => $tension,
             'closure' => $tension,
             'calculated_at' => now(),
-            'calculator_version' => \App\Services\Observables\LineageMeasurementService::VERSION,
+            'calculator_version' => LineageMeasurementService::VERSION,
         ]);
         $measurement->save();
         $supersession = new Supersession;
@@ -205,5 +226,3 @@ class PotentialChargeServiceTest extends TestCase
         return $proposition;
     }
 }
-
-

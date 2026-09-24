@@ -272,6 +272,8 @@ class ParticipantActionContractTest extends TestCase
 
     private function fixture(PhaseKind $kind, bool $empty = false, bool $foreignGate = false): array
     {
+        // This contract isolates ordinary actions from Charge-boundary Receipt creation.
+        $this->resolveExpressiveFieldFixture(.8);
         config()->set('schemas.cache.store', 'array');
         $substrate = new Substrate;
         $substrate->forceFill(['slug' => 'contracts', 'title' => 'Contracts', 'visibility' => 'public', 'configuration' => []])->save();
@@ -380,4 +382,3 @@ class ParticipantActionContractTest extends TestCase
         return [$participant, $phase, $seed];
     }
 }
-

@@ -1,5 +1,7 @@
 # Stage 4: backward lineage and true attenuation
 
+> Historical checkpoint. Rest-born Tragedy, final-attempt permission, consumption-based exhaustion and recovery-following warrant scope described here are retired. Current authority is [first/later fresh Charge-boundary events](branch-tragedy.md); this document retains historical validation details.
+
 Stage 3 was approved at `68ecffa361bb2068a9a0cf1eb8e3cc2d00f3eeb4`.
 Stage 4 replaces recovery only. The successful-route Bias revisit remains an
 ordinary red regression; lifecycle, Tragedy proof rules, visibility and cleanup

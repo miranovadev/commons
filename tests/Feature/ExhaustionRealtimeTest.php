@@ -33,7 +33,7 @@ class ExhaustionRealtimeTest extends TestCase
         Queue::fake();
     }
 
-    public function test_tragedy_and_receipt_consumption_then_exhaustion_publish_minimal_events_and_avatar_movement_after_commit(): void
+    public function test_first_and_second_boundary_publish_minimal_events_after_commit(): void
     {
         $events = $positions = [];
         Event::listen(RealtimeInvalidation::class, function ($event) use (&$events): void {
@@ -60,7 +60,9 @@ class ExhaustionRealtimeTest extends TestCase
         $this->assertSame([], $events);
         $this->assertSame([], $positions);
         DB::commit();
-        foreach (['receipt.consumed', 'horizon.exhausted', 'context-horizons.changed', 'graph.metrics_changed', 'participant.state_changed'] as $type) {
+        // The second catastrophe does not consume the warrant.
+        $this->assertNotContains('receipt.consumed', array_column($events, 'type'));
+        foreach (['horizon.exhausted', 'context-horizons.changed', 'graph.metrics_changed', 'participant.state_changed'] as $type) {
             $this->assertContains($type, array_column($events, 'type'));
         }
         $event = collect($events)->firstWhere('type', 'horizon.exhausted');
@@ -84,6 +86,7 @@ class ExhaustionRealtimeTest extends TestCase
             $events[] = $event;
         });
         DB::beginTransaction();
+        $this->boundaryTragedyFixture($phase->gate);
         $phase->forceFill(['completed_at' => now()])->save();
         $phase->cycle->forceFill(['rested_at' => now(), 'rest_reason' => 'no_remaining_potential'])->save();
         app(ExhaustionService::class)->publish($phase, $proof);

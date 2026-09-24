@@ -1,5 +1,7 @@
 # Focused constitutional participation coverage
 
+> Historical checkpoint. Rest-born Tragedy, final-attempt permission, consumption-based exhaustion and recovery-following warrant scope described here are retired. Current authority is [first/later fresh Charge-boundary events](branch-tragedy.md); this document retains historical validation details.
+
 Constitutional acceptance is a collection of focused production-path invariant
 proofs. It no longer requires a deterministic full Domain round trip in Core or
 Full Integration. Minimizing the natural traces is explicitly stopped. Fresh

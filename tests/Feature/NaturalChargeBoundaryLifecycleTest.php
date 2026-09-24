@@ -1,0 +1,68 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Enums\PhaseKind;
+use App\Models\Phase;
+use App\Models\Proposition;
+use App\Models\Tragedy;
+use App\Services\ExhaustionAuditService;
+use App\Services\HorizonReceiptService;
+use App\Services\ParticipationService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\Group;
+use Tests\Fixtures\ExhaustionFixture;
+use Tests\TestCase;
+
+#[Group('integration')]
+class NaturalChargeBoundaryLifecycleTest extends TestCase
+{
+    use ExhaustionFixture, RefreshDatabase;
+
+    public function test_two_participants_reproduce_catastrophe_then_recover_to_the_open_ancestor(): void
+    {
+        $this->initializeExhaustionFixture();
+        // Seed topology only. Every semantic event below is an ordinary contribution,
+        // with real observables, evidence, phase progression and recovery. No field mock.
+        $parent = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
+        $seed = $this->commitFrom($parent);
+        $a = $this->phase($seed, PhaseKind::Distinguish);
+        $b = $this->phase($seed, PhaseKind::Distinguish);
+        $service = app(ParticipationService::class);
+        $first = $service->contribute($a->cycle->participant, $a->id,
+            ['action' => 'proposition.variant', 'statement' => 'First untested trajectory']);
+        $tragedy = Tragedy::sole();
+        $this->assertSame($first['current_proposition_id'], $tragedy->terminal_proposition_id);
+        $this->assertSame($seed->id, $tragedy->governing_committal_id);
+        $this->assertDatabaseCount('commit_region_exhaustions', 0);
+        $this->assertNotNull(app(HorizonReceiptService::class)->tragedyWarrant($b));
+
+        // B actually progresses through the first Write by observing it, then
+        // creates its own Persist result from that legitimate current Gate.
+        $observed = $service->contribute($b->cycle->participant, $b->id,
+            ['action' => 'instrument.execute', 'proposition_id' => $first['current_proposition_id'],
+                'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/boundary-transcript']]);
+        $this->assertSame('persist', $observed['plan']['phase']['kind']);
+        $this->assertDatabaseCount('commit_region_exhaustions', 0);
+        $second = $service->contribute($b->cycle->participant, $observed['plan']['phase']['id'],
+            ['action' => 'proposition.variant', 'statement' => 'A distinct trajectory reproduces the boundary']);
+        $proof = DB::table('commit_region_exhaustions')->sole();
+        $this->assertSame($second['current_proposition_id'], $proof->terminal_proposition_id);
+        $this->assertNotSame($tragedy->terminal_proposition_id, $proof->terminal_proposition_id);
+        $this->assertNotSame($tragedy->participant_id, $b->cycle->participant_id);
+        $this->assertSame(0, json_decode($proof->boundary_field, true)['charge']);
+        $this->assertSame(['participant.rest'], array_keys($second['plan']['schema']['$defs']['actions']));
+        $this->assertNull(app(HorizonReceiptService::class)->tragedyWarrant(Phase::findOrFail($second['plan']['phase']['id'])));
+        $this->assertDatabaseMissing('receipt_consumptions', ['receipt_id' => $tragedy->receipt_id]);
+        $this->assertDatabaseCount('tragedies', 1);
+
+        $recovered = $service->contribute($b->cycle->participant, $second['plan']['phase']['id'], ['action' => 'participant.rest']);
+        $this->assertSame($this->origin->id, $recovered['current_proposition_id']);
+        $this->assertSame('distinguish', $recovered['plan']['phase']['kind']);
+        $this->assertDatabaseHas('propositions', ['id' => $proof->terminal_proposition_id]);
+        $this->assertSame($first['current_proposition_id'], $a->cycle->participant->fresh()->current_proposition_id);
+        $this->assertSame(1, Proposition::where('id', $proof->terminal_proposition_id)->count());
+        $this->assertTrue(app(ExhaustionAuditService::class)->inspect($this->substrate->id)['matches']);
+    }
+}

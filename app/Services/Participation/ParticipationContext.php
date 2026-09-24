@@ -2,6 +2,7 @@
 
 namespace App\Services\Participation;
 
+use App\Enums\PhaseKind;
 use App\Models\Attestation;
 use App\Models\CommitmentSnapshot;
 use App\Models\ContextHorizon;
@@ -14,7 +15,13 @@ use App\Models\ReceiptContextEvent;
 use App\Models\Substrate;
 use App\Models\SubstrateLedgerEntry;
 use App\Models\Supersession;
+use App\Services\CommitRegionService;
 use App\Services\ExhaustionService;
+use App\Services\HomologousBiasService;
+use App\Services\HomologousMediationService;
+use App\Services\HomologousOrderService;
+use App\Services\MediatedIncomingBiasService;
+use App\Services\Observables\CommittalLineageService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -122,8 +129,11 @@ final class ParticipationContext
             ->orWhere(fn ($q) => $q->where('receiptable_type', (new Attestation)->getMorphClass())->whereIn('receiptable_id', $this->attestations->keys()))
             ->orWhereIn('id', $this->receiptLinks->pluck('receipt_id')))
             ->with(['ledgerEntry', 'instrumentExecution'])->get();
-        $this->receiptContexts = ParticipantReceiptContext::whereIn('proposition_id', $ids)->get();
-        $this->reinforcements = $this->receiptContexts->whereNull('cleared_at');
+        // Historical load subjects need not match their Receipt's observed subject.
+        // Resolve type in the existing batch even when that Receipt lies outside this graph.
+        $this->receiptContexts = ParticipantReceiptContext::whereIn('proposition_id', $ids)
+            ->withExists(['receipt as ordinary_evidence' => fn ($q) => $q->where('type', '!=', 'tragedy')])->get();
+        $this->reinforcements = $this->receiptContexts->whereNull('cleared_at')->where('ordinary_evidence', true);
         $this->receiptContextEvents = ReceiptContextEvent::whereIn('participant_receipt_context_id', $this->receiptContexts->pluck('id'))->with('ledgerEntry')->get();
         $this->receiptsBySubject = $this->receipts->groupBy(fn ($receipt) => $receipt->receiptable_type.':'.$receipt->receiptable_id);
         $this->touches = Phase::query()->whereIn('gate_proposition_id', $ids)
@@ -145,18 +155,19 @@ final class ParticipationContext
      */
     private function workingSetIds(?Collection $additionalPropositionIds = null, bool $includeUnavailableAdditional = false): Collection
     {
-        if ($this->phase->kind === \App\Enums\PhaseKind::Mediate) {
+        if ($this->phase->kind === PhaseKind::Mediate) {
             // Comparison operands are hydrated, not granted evidence or movement scope.
-            $pool = app(\App\Services\HomologousMediationService::class)->structuralPoolFor($this->phase, $this);
+            $pool = app(HomologousMediationService::class)->structuralPoolFor($this->phase, $this);
             $additionalPropositionIds = ($additionalPropositionIds ?? collect())
                 ->merge($pool['reads']->pluck('id'))->merge($pool['gates']->pluck('id'));
         }
-        if ($this->phase->kind === \App\Enums\PhaseKind::Bias) {
-            $population = app(\App\Services\HomologousBiasService::class)->populationFor($this->phase, $this);
-            $additionalPropositionIds = ($additionalPropositionIds ?? collect())->merge($population->pluck('id'));
+        if ($this->phase->kind === PhaseKind::Bias) {
+            $population = app(HomologousBiasService::class)->populationFor($this->phase, $this);
+            $additionalPropositionIds = ($additionalPropositionIds ?? collect())->merge($population->pluck('id'))
+                ->merge(app(MediatedIncomingBiasService::class)->populationFor($this->phase, $this)->pluck('id'));
         }
-        if ($this->phase->kind === \App\Enums\PhaseKind::Order) {
-            $population = app(\App\Services\HomologousOrderService::class)->populationFor($this->phase, $this);
+        if ($this->phase->kind === PhaseKind::Order) {
+            $population = app(HomologousOrderService::class)->populationFor($this->phase, $this);
             $additionalPropositionIds = ($additionalPropositionIds ?? collect())->merge($population->pluck('id'));
         }
         // Walk only newly discovered IDs. A recursive UNION over the full dependency
@@ -273,7 +284,7 @@ final class ParticipationContext
     /** One batched ownership map; Supersession parents never choose a Cycle entry. */
     public function seedIds(): array
     {
-        return $this->remember('entry-seeds', fn () => app(\App\Services\CommitRegionService::class)
+        return $this->remember('entry-seeds', fn () => app(CommitRegionService::class)
             ->seedIdsFor($this->propositions, $this->propositions));
     }
 
@@ -287,7 +298,7 @@ final class ParticipationContext
             return $node;
         }
         if (! $this->propositions->has($node->id)) {
-            return app(\App\Services\CommitRegionService::class)->seedFor($node);
+            return app(CommitRegionService::class)->seedFor($node);
         }
         $id = $this->seedIds()[$node->id] ?? null;
 
@@ -356,8 +367,6 @@ final class ParticipationContext
 
     public function history(Proposition $position, ContextHorizon $horizon): ?CommitmentSnapshot
     {
-        return app(\App\Services\Observables\CommittalLineageService::class)->ancestors($position, $this)->first();
+        return app(CommittalLineageService::class)->ancestors($position, $this)->first();
     }
 }
-
-

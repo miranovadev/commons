@@ -6,11 +6,11 @@ use App\Enums\PhaseKind;
 use App\Models\Proposition;
 use App\Models\Tragedy;
 use App\Services\ContributionDispatcher;
-use App\Services\ExhaustionService;
 use App\Services\ExplorationEpochService;
 use App\Services\HorizonReceiptService;
 use App\Services\InputPlanService;
 use App\Services\PhaseGenerationService;
+use App\Services\PotentialChargeService;
 use App\Services\PropositionOptionService;
 use App\Services\ReceiptContextService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -33,6 +33,8 @@ class SpentContinuationTest extends TestCase
 
     public function test_mediate_failure_blocks_the_previously_attested_distinguish_route(): void
     {
+        // Isolate structural rules from a new Charge-boundary event.
+        $this->resolveExpressiveFieldFixture(.8);
         $this->initializeExhaustionFixture();
         [$signal, $activity, $terminal, $return] = $this->testedLineage();
         $plan = fn () => app(InputPlanService::class)->forPhase($return->cycle->participant, $return);
@@ -83,7 +85,7 @@ class SpentContinuationTest extends TestCase
 
         // Testing the same route in the changed field appends a second fact.
         $again = $this->phase($activity, PhaseKind::Mediate);
-        foreach (app(HorizonReceiptService::class)->available($again) as $receipt) {
+        foreach (app(HorizonReceiptService::class)->ordinaryAvailable($again) as $receipt) {
             app(ReceiptContextService::class)->read($again->cycle->participant, $again, $receipt->id);
         }
         $this->measure($activity, 0);
@@ -96,23 +98,29 @@ class SpentContinuationTest extends TestCase
         $this->assertSame(0, Tragedy::count());
     }
 
-    public function test_all_spent_without_potential_uses_tragedy_without_advancing_an_epoch(): void
+    public function test_all_spent_without_potential_can_generate_and_advance_its_epoch(): void
     {
+        // Isolate structural rules from a new Charge-boundary event.
+        $this->resolveExpressiveFieldFixture(.8);
         $this->initializeExhaustionFixture();
         [$signal, , $terminal, $return] = $this->testedLineage();
         $this->rest($terminal);
-        foreach (app(HorizonReceiptService::class)->available($return) as $receipt) {
+        foreach (app(HorizonReceiptService::class)->ordinaryAvailable($return) as $receipt) {
             app(ReceiptContextService::class)->read($return->cycle->participant, $return, $receipt->id);
         }
         foreach (Proposition::where('tier', 'expressive')->get() as $node) {
             $this->measure($node, 1);
         }
         $plan = app(InputPlanService::class)->forPhase($return->cycle->participant, $return);
-        $this->assertSame(['participant.rest'], array_keys($plan['schema']['$defs']['actions']));
-        $this->assertSame('no_remaining_potential', $plan['rest_reason']);
-        $this->rest($return);
-        $this->assertSame(1, Tragedy::count());
-        $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($return->cycle->contextHorizon));
-        $this->assertSame(0, app(ExplorationEpochService::class)->forPhase($return));
+        $this->assertFalse(app(PotentialChargeService::class)->hasRemainingInRegion($return));
+        $this->assertArrayHasKey('proposition.variant', $plan['schema']['$defs']['actions']);
+        $this->assertArrayNotHasKey('participant.rest', $plan['schema']['$defs']['actions']);
+        $epochs = app(ExplorationEpochService::class);
+        $before = $epochs->forPhase($return);
+        app(ContributionDispatcher::class)->dispatch($return->cycle->participant, $return,
+            ['action' => 'proposition.variant', 'statement' => 'Expression needs no prior tension reduction']);
+        $this->assertSame($before + 1, $epochs->forPhase($return));
+        $this->assertFalse($epochs->spentNow($signal, $return));
+        $this->assertSame(0, Tragedy::count());
     }
 }

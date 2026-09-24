@@ -6,7 +6,10 @@ use App\Enums\RestReason;
 use App\Models\Phase;
 use App\Services\Participation\ParticipationContext;
 
-/** Called only after the authoritative action schema has established that Rest is admissible. */
+/**
+ * Called only after the action schema establishes Rest. The zero-Potential
+ * reason is a numerical diagnostic, never Tragedy or exhaustion authority.
+ */
 final class RestReasonService
 {
     public function derive(Phase $phase, ?ParticipationContext $context = null): RestReason
@@ -27,7 +30,7 @@ final class RestReasonService
         $testedWrites = $writes->isNotEmpty() && $writes->pluck('id')->diff($spent->keys())->isEmpty();
         if (! $testedWrites && ($state->attestations(collect([$gate]), $context)->isEmpty()
             || ($state->receipts($gate, $context)->isEmpty()
-                && app(HorizonReceiptService::class)->available($phase, $context)->isEmpty()))) {
+                && app(HorizonReceiptService::class)->ordinaryAvailable($phase, $context)->isEmpty()))) {
             return RestReason::NoAvailableMove;
         }
 

@@ -1,5 +1,11 @@
 # Tragedy transcript after standalone Receipt action removal
 
+> Historical checkpoint. Rest-born Tragedy, final-attempt permission, consumption-based exhaustion and recovery-following warrant scope described here are retired. Current authority is [first/later fresh Charge-boundary events](../branch-tragedy.md); this document retains historical validation details.
+
+> Historical validation record: Stage 2 supersedes the Rest-born Tragedy and special
+> Variant final-attempt allowance described below. See [the current Tragedy invariant](../branch-tragedy.md).
+> Exhaustion/recovery consequences await Stage 6.
+
 The authored `tests/Fixtures/participation/tragedy-lifecycle.json` uses only real
 HTTP participation requests. No application behavior or calculation was changed
 for this adaptation. Its 101 retained steps preserve the original participants,

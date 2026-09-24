@@ -10,15 +10,30 @@ use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Substrate;
 use App\Models\Supersession;
+use App\Models\Tragedy;
+use App\Models\User;
+use App\Services\ActiveParticipantLineage;
+use App\Services\CommitRegionService;
 use App\Services\ContextHorizonProjector;
+use App\Services\ContributionDispatcher;
+use App\Services\ExhaustedContinuationService;
+use App\Services\ExplorationPositionService;
+use App\Services\GraphProjectionService;
 use App\Services\HomologousMediationService;
+use App\Services\InputPlanService;
 use App\Services\LedgerService;
 use App\Services\MediationReadService;
 use App\Services\Participation\ParticipationContext;
+use App\Services\ParticipationService;
+use App\Services\PotentialProjectionService;
 use App\Services\PropositionMeasurementService;
+use App\Services\PropositionOptionService;
+use App\Services\ReceiptContextService;
 use App\Services\ReconciliationOptionService;
+use App\Services\RegionalExhaustionMembership;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
 class HomologousMediationTest extends TestCase
@@ -26,12 +41,19 @@ class HomologousMediationTest extends TestCase
     use RefreshDatabase;
 
     private Participant $actor;
+
     private Proposition $a;
+
     private Proposition $b;
+
     private Proposition $readA;
+
     private Proposition $readB;
+
     private Proposition $gateA;
+
     private Proposition $gateB;
+
     private Phase $mediate;
 
     protected function setUp(): void
@@ -61,23 +83,36 @@ class HomologousMediationTest extends TestCase
         $this->measure($this->gateB, 0.9);
     }
 
+    public function test_boundary_reconcile_belongs_to_the_acting_region_not_its_foreign_operand(): void
+    {
+        $this->resolveExpressiveFieldFixture(1);
+        $target = app(ContributionDispatcher::class)->dispatch($this->actor, $this->mediate,
+            ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateB->id]);
+        $tragedy = Tragedy::sole();
+        $this->assertSame($target->id, $tragedy->terminal_proposition_id);
+        $this->assertSame($this->a->id, $tragedy->governing_committal_id);
+        $this->assertSame($this->mediate->cycle->context_horizon_id, $tragedy->context_horizon_id);
+        $this->assertNotSame($this->b->id, $tragedy->governing_committal_id);
+        $this->assertEqualsCanonicalizing([$this->gateA->id, $this->gateB->id], $target->parents()->pluck('propositions.id')->all());
+    }
+
     public function test_foreign_operands_are_exposed_without_importing_receipts_or_movement(): void
     {
         $receipt = $this->loadedReceiptFixture($this->gateB);
         $context = new ParticipationContext($this->mediate);
         $this->assertTrue($context->propositions->has($this->gateB->id));
-        $this->assertFalse(app(\App\Services\ReceiptContextService::class)->forPhase($this->mediate, $context)->contains('id', $receipt->id));
+        $this->assertFalse(app(ReceiptContextService::class)->forPhase($this->mediate, $context)->contains('id', $receipt->id));
         $service = app(HomologousMediationService::class);
         foreach ([null, $context] as $readModel) {
             $pool = $service->poolFor($this->mediate, $readModel);
             $this->assertSame([$this->readB->id], $pool['reads']->pluck('id')->all());
             $this->assertSame([$this->gateB->id], $pool['gates']->pluck('id')->all());
         }
-        $this->assertFalse(app(\App\Services\ReceiptContextService::class)->gateOptions($this->mediate, $context)->contains('id', $receipt->id));
+        $this->assertFalse(app(ReceiptContextService::class)->gateOptions($this->mediate, $context)->contains('id', $receipt->id));
         $this->assertNotSame($this->gateA->phase->cycle->context_horizon_id, $this->gateB->phase->cycle->context_horizon_id);
         $this->assertSame([$this->readA->id], app(MediationReadService::class)->visibleReadsFor($this->mediate, $context)->pluck('id')->all());
         $this->assertSame([$this->gateB->id], app(ReconciliationOptionService::class)->forPhase($this->mediate, $context)->pluck('id')->all());
-        $this->assertFalse(app(\App\Services\PropositionOptionService::class)->traversalOptionsFor($this->mediate, $context)->contains('id', $this->gateB->id));
+        $this->assertFalse(app(PropositionOptionService::class)->traversalOptionsFor($this->mediate, $context)->contains('id', $this->gateB->id));
         $this->assertSame($this->gateA->id, $this->actor->fresh()->current_proposition_id);
     }
 
@@ -180,10 +215,10 @@ class HomologousMediationTest extends TestCase
         $context = new ParticipationContext($this->mediate);
         $foreign = app(HomologousMediationService::class)->foreignGateIdsFor($this->mediate, $context);
         $this->assertSame([$this->gateB->id], $foreign->all());
-        $receipts = app(\App\Services\ReceiptContextService::class)->forPhase($this->mediate, $context);
+        $receipts = app(ReceiptContextService::class)->forPhase($this->mediate, $context);
         $this->assertTrue($receipts->contains('id', $localReceipt->id));
         $this->assertFalse($receipts->contains('id', $foreignReceipt->id));
-        $plan = app(\App\Services\InputPlanService::class)->forPhase($this->actor, $this->mediate);
+        $plan = app(InputPlanService::class)->forPhase($this->actor, $this->mediate);
         $gates = collect($plan['gate_options'])->keyBy('id');
         $this->assertContains($localReceipt->id, array_column($gates[$gateC->id]['receipts'], 'id'));
         $this->assertNotEmpty($gates[$gateC->id]['instruments']);
@@ -231,7 +266,7 @@ class HomologousMediationTest extends TestCase
         $this->assertFalse(app(ReconciliationOptionService::class)->forPhase($this->mediate)->contains('id', $this->gateB->id));
         $before = Proposition::count();
         try {
-            app(\App\Services\ContributionDispatcher::class)->dispatch($this->actor, $this->mediate,
+            app(ContributionDispatcher::class)->dispatch($this->actor, $this->mediate,
                 ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateB->id]);
             $this->fail('Population direction must be recomputed during write authorization.');
         } catch (\DomainException) {
@@ -337,7 +372,7 @@ class HomologousMediationTest extends TestCase
         Phase::where('id', '!=', $this->mediate->id)->update(['completed_at' => now()]);
         Cycle::where('id', '!=', $this->mediate->cycle_id)->update(['completed_at' => now()]);
         $this->publishPotentialFixture($this->actor);
-        $plan = app(\App\Services\InputPlanService::class)->forPhase($this->actor, $this->mediate);
+        $plan = app(InputPlanService::class)->forPhase($this->actor, $this->mediate);
         $this->assertSame([$this->readA->id], array_column($plan['read_options'], 'id'));
         $this->assertSame([$this->gateB->id], array_column($plan['gate_options'], 'id'));
         $this->assertSame([$this->gateB->id], $plan['schema']['$defs']['actions']['proposition.reconcile']['properties']['other_proposition_id']['enum']);
@@ -349,32 +384,32 @@ class HomologousMediationTest extends TestCase
         $horizonB = $this->gateB->phase->cycle->context_horizon_id;
         $foreignBefore = $this->gateB->fresh()->getAttributes();
         $input = ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateB->id];
-        app(\App\Services\ParticipationService::class)->contribute($this->actor, $this->mediate->id, $input);
+        app(ParticipationService::class)->contribute($this->actor, $this->mediate->id, $input);
         $result = Proposition::findOrFail($this->actor->fresh()->current_proposition_id);
         $this->assertSame($this->mediate->id, $result->phase_id);
         $this->assertSame($this->a->id, $result->phase->cycle->entry_committal_id);
         $this->assertSame($this->gateA->id, $result->phase->gate_proposition_id);
         $this->assertSame($horizonA, $result->phase->cycle->context_horizon_id);
-        $this->assertSame($this->a->id, app(\App\Services\CommitRegionService::class)->seedFor($result)->id);
+        $this->assertSame($this->a->id, app(CommitRegionService::class)->seedFor($result)->id);
         $this->assertEqualsCanonicalizing([$this->gateA->id, $this->gateB->id], $result->parents()->pluck('propositions.id')->all());
-        $lineage = app(\App\Services\ActiveParticipantLineage::class)->endingAt($result)->pluck('id');
+        $lineage = app(ActiveParticipantLineage::class)->endingAt($result)->pluck('id');
         $this->assertContains($this->a->id, $lineage);
         $this->assertNotContains($this->b->id, $lineage);
         $this->assertNotContains($this->gateB->id, $lineage);
         $this->assertSame($foreignBefore, $this->gateB->fresh()->getAttributes());
-        $this->assertSame($this->b->id, app(\App\Services\CommitRegionService::class)->seedFor($this->gateB)->id);
+        $this->assertSame($this->b->id, app(CommitRegionService::class)->seedFor($this->gateB)->id);
         app(ContextHorizonProjector::class)->rebuild($this->actor->substrate);
         $this->assertSame($horizonA, $result->fresh()->contextHorizonMembership->context_horizon_id);
         $this->assertSame($horizonB, $this->gateB->fresh()->contextHorizonMembership->context_horizon_id);
         $this->publishPotentialFixture($this->actor);
-        $local = app(\App\Services\PotentialProjectionService::class)->region($horizonA)['local'];
+        $local = app(PotentialProjectionService::class)->region($horizonA)['local'];
         $this->assertContains([$this->gateB->id, $result->id, 'reconcile'], $local['foreign_inputs']);
         $this->assertArrayNotHasKey($this->gateB->id, $local['nodes']);
         $this->assertNotContains([$this->gateB->id, $result->id, 'reconcile'], $local['edges']);
-        app(\App\Services\GraphProjectionService::class)->load($this->actor->substrate, collect([$result]));
+        app(GraphProjectionService::class)->load($this->actor->substrate, collect([$result]));
         $this->assertSame($this->a->id, $result->getAttribute('field')['committal_proposition_id']);
         $this->assertDatabaseHas('supersessions', ['source_proposition_id' => $this->gateB->id, 'target_proposition_id' => $result->id, 'type' => 'reconcile']);
-        \App\Models\User::factory()->create(); // Bootstrap the real graph API.
+        User::factory()->create(); // Bootstrap the real graph API.
         $substrate = $this->actor->substrate;
         $substrate->forceFill(['visibility' => 'public'])->save();
         foreach (['active', 'history'] as $view) {
@@ -400,7 +435,7 @@ class HomologousMediationTest extends TestCase
         $this->assertSame([$local->id], app(ReconciliationOptionService::class)->forPhase($this->mediate)->pluck('id')->all());
         $before = Proposition::count();
         try {
-            app(\App\Services\ContributionDispatcher::class)->dispatch($this->actor, $this->mediate,
+            app(ContributionDispatcher::class)->dispatch($this->actor, $this->mediate,
                 ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateB->id]);
             $this->fail('A stale foreign Read direction must not authorize a write.');
         } catch (\DomainException) {
@@ -426,7 +461,7 @@ class HomologousMediationTest extends TestCase
             'gate_proposition_id' => $gateB->id, 'write_register' => 'stance', 'started_at' => now()])->save();
         $this->assertSame($foreignResult->phase->cycle->context_horizon_id, $phase->cycle->context_horizon_id);
         foreach ([null, new ParticipationContext($phase)] as $context) {
-            $writes = app(\App\Services\PropositionOptionService::class)->writeOptionsFor($phase, $context);
+            $writes = app(PropositionOptionService::class)->writeOptionsFor($phase, $context);
             $this->assertSame([$localResult->id], $writes->pluck('id')->all());
             $this->assertFalse($writes->contains('id', $foreignResult->id));
         }
@@ -444,13 +479,13 @@ class HomologousMediationTest extends TestCase
         $this->assertFalse($context->propositions->has($middle->id));
         $this->assertFalse($context->propositions->has($terminal->id));
         $this->assertTrue(app(HomologousMediationService::class)->poolFor($this->mediate, $context)['gates']->contains('id', $this->gateB->id));
-        $this->assertFalse(app(\App\Services\ExhaustedContinuationService::class)->ids($this->mediate)->has($this->gateB->id));
+        $this->assertFalse(app(ExhaustedContinuationService::class)->ids($this->mediate)->has($this->gateB->id));
         foreach ([null, $context] as $readModel) {
             $this->assertFalse($options->forPhase($this->mediate, $readModel)->contains('id', $this->gateB->id));
         }
         $before = Proposition::count();
         try {
-            app(\App\Services\ContributionDispatcher::class)->dispatch($this->actor, $this->mediate,
+            app(ContributionDispatcher::class)->dispatch($this->actor, $this->mediate,
                 ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateB->id]);
             $this->fail('A foreign exhausted continuation cannot be reconciled.');
         } catch (\DomainException) {
@@ -464,8 +499,8 @@ class HomologousMediationTest extends TestCase
         $context = new ParticipationContext($this->mediate->fresh());
         $this->assertFalse($context->propositions->has($live->id));
         $this->assertTrue($options->forPhase($this->mediate, $context)->contains('id', $this->gateB->id));
-        $this->assertFalse(app(\App\Services\ReceiptContextService::class)->forPhase($this->mediate, $context)->contains('id', $tragedy->receipt_id));
-        $position = app(\App\Services\ExplorationPositionService::class)->forProposition($live);
+        $this->assertFalse(app(ReceiptContextService::class)->forPhase($this->mediate, $context)->contains('id', $tragedy->receipt_id));
+        $position = app(ExplorationPositionService::class)->forProposition($live);
         DB::table('continuation_failures')->insert([
             'proposition_id' => $live->id, 'context_horizon_id' => $horizonB,
             'structural_position' => $position['structural_position'], 'exploration_epoch' => 0,
@@ -482,7 +517,7 @@ class HomologousMediationTest extends TestCase
         $c = $this->commit($origin, 'settlement');
         [, $gateC] = $this->pair($c);
         $options = app(ReconciliationOptionService::class);
-        $dispatcher = app(\App\Services\ContributionDispatcher::class);
+        $dispatcher = app(ContributionDispatcher::class);
         $input = ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateB->id];
         $forward = $dispatcher->dispatch($this->actor, $this->mediate, $input);
         $originalActor = $this->actor;
@@ -521,7 +556,7 @@ class HomologousMediationTest extends TestCase
         $this->assertFalse($options->forPhase($freshA->fresh())->contains('id', $this->gateB->id));
     }
 
-    #[\PHPUnit\Framework\Attributes\Group('query')]
+    #[Group('query')]
     public function test_complete_plans_have_bounded_query_growth_across_foreign_horizons(): void
     {
         $counts = [];
@@ -537,7 +572,7 @@ class HomologousMediationTest extends TestCase
                 DB::enableQueryLog();
                 DB::flushQueryLog();
                 try {
-                    $plan = app(\App\Services\InputPlanService::class)->forPhase($this->actor->fresh(), $this->mediate->fresh());
+                    $plan = app(InputPlanService::class)->forPhase($this->actor->fresh(), $this->mediate->fresh());
                     $counts[$count][$temperature] = count(DB::getQueryLog());
                 } finally {
                     DB::disableQueryLog();
@@ -552,7 +587,7 @@ class HomologousMediationTest extends TestCase
         $this->assertSame($counts[1], $counts[6], 'Additional foreign Horizons must not add plan queries.');
     }
 
-    #[\PHPUnit\Framework\Attributes\Group('query')]
+    #[Group('query')]
     public function test_exhausted_continuation_queries_are_batched_across_foreign_horizons(): void
     {
         $origin = $this->a->phase->cycle->entryCommittal;
@@ -580,9 +615,9 @@ class HomologousMediationTest extends TestCase
             }
             $this->assertEqualsCanonicalizing($live->pluck('id')->all(), $options->pluck('id')->all());
             $horizons = $closed->map(fn ($gate) => $gate->phase->cycle->context_horizon_id);
-            $batch = app(\App\Services\ExhaustedContinuationService::class)->idsForHorizons($horizons);
+            $batch = app(ExhaustedContinuationService::class)->idsForHorizons($horizons);
             foreach ($closed as $gate) {
-                $single = app(\App\Services\ExhaustedContinuationService::class)->ids($gate->phase);
+                $single = app(ExhaustedContinuationService::class)->ids($gate->phase);
                 $this->assertTrue($single->has($gate->id));
                 $this->assertEquals($single, $batch->only($single->keys()->all()));
             }
@@ -609,14 +644,14 @@ class HomologousMediationTest extends TestCase
         $terminal = $this->commit($owner, 'emergence');
         $this->edge($middle, $terminal, 'commit');
         $phase = $this->phase($terminal, $terminal, PhaseKind::Distinguish);
-        $tragedy = app(\App\Services\TragedyService::class)->record($phase, ['field_version' => 1]);
+        $tragedy = $this->boundaryTragedyFixture($phase->gate);
         DB::table('commit_region_exhaustions')->insert([
             'governing_committal_id' => $terminal->id, 'context_horizon_id' => $phase->cycle->context_horizon_id,
             'tragedy_id' => $tragedy->id, 'receipt_id' => $tragedy->receipt_id,
             'phase_id' => $phase->id, 'terminal_proposition_id' => $terminal->id,
             'observed_field_version' => 1, 'exhausted_at' => now(),
         ]);
-        app(\App\Services\RegionalExhaustionMembership::class)->publish($terminal->id, [$terminal->id]);
+        app(RegionalExhaustionMembership::class)->publish($terminal->id, [$terminal->id]);
 
         return [$terminal, $middle, $tragedy];
     }
@@ -694,5 +729,4 @@ class HomologousMediationTest extends TestCase
 
         return $phase;
     }
-
 }

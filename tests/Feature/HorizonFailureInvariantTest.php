@@ -46,8 +46,7 @@ class HorizonFailureInvariantTest extends TestCase
         $before = $second->cycle->participant->fresh()->getAttributes();
         $history = $this->history();
         $this->rest($first);
-        $this->assertSame(1, Tragedy::count());
-        $this->assertSame($head->id, Tragedy::sole()->terminal_proposition_id);
+        $this->assertSame(0, Tragedy::count(), 'Rest does not discover a catastrophe');
         $this->assertDatabaseHas('continuation_failures', ['proposition_id' => $head->id]);
         $this->assertDatabaseMissing('continuation_failures', ['proposition_id' => $commit->id]);
         $this->assertDatabaseMissing('continuation_failures', ['proposition_id' => $root->id]);

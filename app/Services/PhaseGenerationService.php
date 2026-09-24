@@ -52,13 +52,18 @@ final readonly class PhaseGenerationService
         if ($gate === null) {
             return false;
         }
-        $homologous = $action === 'proposition.reclassify' && $phase->kind === PhaseKind::Bias
+        $additionalBias = $action === 'proposition.reclassify' && $phase->kind === PhaseKind::Bias
             && $gate->id !== $phase->gate_proposition_id;
-        if ($phase->kind === PhaseKind::Bias && $gate->id !== $phase->gate_proposition_id && ! $homologous) {
+        if ($phase->kind === PhaseKind::Bias && $gate->id !== $phase->gate_proposition_id && ! $additionalBias) {
             return false;
         }
-        if ($homologous ? ! app(HomologousBiasService::class)->forPhase($phase, $context)->contains('id', $gate->id)
-            : ! $this->positions->acceptsGate($phase, $gate)) {
+        if ($additionalBias) {
+            $mediated = app(MediatedIncomingBiasService::class)->forPhase($phase, $context)->contains('id', $gate->id);
+            $homologous = app(HomologousBiasService::class)->forPhase($phase, $context)->contains('id', $gate->id);
+            if (! $mediated && ! $homologous) {
+                return false;
+            }
+        } elseif (! $this->positions->acceptsGate($phase, $gate)) {
             return false;
         }
         if ($this->availability->committed($gate, $context)
@@ -69,7 +74,9 @@ final readonly class PhaseGenerationService
             $existing = $context !== null
                 ? $context->classifications->where('source_proposition_id', $gate->id)->where('register', $phase->write_register)->isNotEmpty()
                 : DB::table('reclassification_results')->where('source_proposition_id', $gate->id)->where('register', $phase->write_register)->exists();
-            if ($existing || app(HorizonReceiptService::class)->available($phase, $context)->isEmpty()
+            if ($existing || ($phase->kind === PhaseKind::Bias
+                ? app(BiasReceiptAuthorityService::class)->receiptsFor($phase, $gate, $context)
+                : app(HorizonReceiptService::class)->ordinaryAvailable($phase, $context))->isEmpty()
                 || $this->state->attestations(collect([$gate]), $context)->isEmpty()) {
                 return false;
             }
@@ -116,8 +123,9 @@ final readonly class PhaseGenerationService
                 }
             }
 
-            return app(PotentialChargeService::class)->hasRemainingInRegion($phase, $context)
-                || app(TragedyFinalAttemptService::class)->available($phase);
+            // Potential describes demonstrated tension reduction, not whether
+            // this structurally eligible position can express another Variant.
+            return true;
         };
 
         // Reuse this calculation's structural query, never a cross-action cache.
@@ -143,4 +151,3 @@ final readonly class PhaseGenerationService
             ->orderBy('id')->get();
     }
 }
-
