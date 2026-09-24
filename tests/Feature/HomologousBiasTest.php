@@ -26,6 +26,7 @@ use App\Services\HomologousBiasService;
 use App\Services\HorizonReceiptService;
 use App\Services\InputPlanService;
 use App\Services\LedgerService;
+use App\Services\OpenAIResponseSchema;
 use App\Services\Participation\ParticipationContext;
 use App\Services\ParticipationService;
 use App\Services\PhaseGenerationService;
@@ -421,6 +422,11 @@ class HomologousBiasTest extends TestCase
         $ordinary = app(HorizonReceiptService::class)->available($this->bias)->where('type', '!=', 'tragedy')->sole();
         $this->publishPotentialFixture($this->actor);
         $schema = app(InputPlanService::class)->forPhase($this->actor, $this->bias)['schema'];
+        $transport = app(OpenAIResponseSchema::class)->fromCommons($schema);
+        $branches = collect($transport['properties']['contribution']['anyOf'])
+            ->filter(fn ($branch) => $branch['properties']['action']['enum'] === ['proposition.reclassify']);
+        $this->assertSame([$ordinary->id], $branches->first(fn ($branch) => $branch['properties']['proposition_id']['enum'] === [$this->gateA->id])['properties']['receipt_id']['enum']);
+        $this->assertSame([$tragedy->receipt_id], $branches->first(fn ($branch) => $branch['properties']['proposition_id']['enum'] === [$this->gateB->id])['properties']['receipt_id']['enum']);
         foreach ([[$this->gateA, $ordinary->id], [$this->gateB, $tragedy->receipt_id]] as [$source, $receipt]) {
             app(ContributionService::class)->validateSchema($schema, $this->input($source, $receipt));
         }
@@ -433,6 +439,14 @@ class HomologousBiasTest extends TestCase
             }
         }
         $this->assertDatabaseCount('receipt_consumptions', 0);
+    }
+
+    public function test_a_tragedy_receipt_alone_never_advertises_the_local_gate(): void
+    {
+        $this->warrant();
+        DB::table('instrument_executions')->update(['status' => 'failed']);
+        $this->assertNotContains($this->gateA->id, $this->biasOptionIds());
+        $this->assertContains($this->gateB->id, $this->biasOptionIds());
     }
 
     public function test_foreign_or_recovery_relocated_tragedy_is_not_the_current_regions_warrant(): void
