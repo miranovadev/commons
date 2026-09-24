@@ -624,7 +624,9 @@ class TransactionLockOrderTest extends TestCase
         $this->assertNotNull($newId);
         $this->assertDatabaseMissing('exhaustion_states', ['proposition_id' => $newId]);
         $this->assertDatabaseMissing('exhaustion_states', ['proposition_id' => $commit->id]);
-        $this->assertSame(0, Tragedy::count());
+        $this->assertSame(1, Tragedy::count());
+        $this->assertSame($newId, Tragedy::sole()->terminal_proposition_id,
+            'The newly measured sibling reaches the boundary; the waiting Rest is not its cause');
         $this->assertDatabaseCount('commit_region_exhaustions', 0);
         $actual = app(PotentialChargeService::class)->recoverFrom($terminal->gate);
         $expected = app(ReferencePotentialChargeService::class)->recoverFrom($terminal->gate);

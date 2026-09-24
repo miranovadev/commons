@@ -139,6 +139,40 @@ class ChargeBoundaryTragedyTest extends TestCase
         $this->assertDatabaseCount('commit_region_exhaustions', 0);
     }
 
+    public function test_increasing_tension_from_point_four_to_point_eight_is_not_tragedy(): void
+    {
+        $root = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
+        $seed = $this->commitFrom($root, .4);
+        $phase = $this->phase($seed, PhaseKind::Distinguish);
+        $this->resolveExpressiveFieldFixture(.8);
+        $target = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
+            ['action' => 'proposition.variant', 'statement' => 'Increasing tension remains expressive']);
+        $measurement = $target->measurement;
+        $field = app(ProjectionService::class)->field(new ObservableValues(
+            $measurement->correspondence, $measurement->chirality, $measurement->closure));
+        $this->assertSame(.4, $seed->commitmentSnapshot->tension);
+        $this->assertSame(.8, $field['tension']);
+        $this->assertSame(.2, $field['charge']);
+        $this->assertDatabaseCount('tragedies', 0);
+    }
+
+    public function test_two_regions_in_one_horizon_record_their_own_boundary_events(): void
+    {
+        $root = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
+        $seed = $this->commitFrom($root, .4);
+        $this->resolveExpressiveFieldFixture(1);
+        foreach ([$this->origin, $seed] as $region) {
+            $gate = $this->node($this->phase($region, PhaseKind::Constrain), $region);
+            $phase = $this->phase($gate, PhaseKind::Disperse);
+            $target = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
+                ['action' => 'proposition.variant', 'statement' => 'A regional boundary']);
+            $this->assertSame($target->id, Tragedy::where('governing_committal_id', $region->id)->sole()->terminal_proposition_id);
+        }
+        $this->assertSame(1, Tragedy::distinct()->count('context_horizon_id'));
+        $this->assertDatabaseCount('tragedies', 2);
+        $this->assertSame(2, Receipt::where('type', 'tragedy')->count());
+    }
+
     public function test_repeated_boundary_births_retain_the_first_identity_and_do_not_exhaust(): void
     {
         $firstPhase = $this->phase($this->origin, PhaseKind::Distinguish);
