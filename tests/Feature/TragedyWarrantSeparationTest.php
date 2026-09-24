@@ -153,10 +153,21 @@ class TragedyWarrantSeparationTest extends TestCase
         app(ReceiptReplayService::class)->replay($actor, $phase, $tragedy->receipt_id);
     }
 
-    public function test_archived_load_remains_auditable_without_becoming_active_evidence(): void
+    public static function archivedSubjects(): array
+    {
+        return [[false], [true]];
+    }
+
+    #[DataProvider('archivedSubjects')]
+    public function test_archived_load_remains_auditable_without_becoming_active_evidence(bool $foreign): void
     {
         $node = $this->node($this->phase($this->origin, PhaseKind::Persist), $this->origin);
-        $tragedy = $this->boundaryTragedyFixture($node);
+        $terminal = $node;
+        if ($foreign) {
+            $entry = $this->commitFrom($node, boundary: true);
+            $terminal = $this->node($this->phase($entry, PhaseKind::Persist), $entry);
+        }
+        $tragedy = $this->boundaryTragedyFixture($terminal);
         $phase = $this->phase($node, PhaseKind::Constrain);
         $load = (new ParticipantReceiptContext)->forceFill(['participant_id' => $phase->cycle->participant_id,
             'receipt_id' => $tragedy->receipt_id,
@@ -166,8 +177,12 @@ class TragedyWarrantSeparationTest extends TestCase
             $this->assertSame(0, app(ReinforcementService::class)->count($node, $context));
         }
         $item = app(ReceiptContextService::class)->forPhase($phase)->firstWhere('id', $tragedy->receipt_id);
-        $this->assertFalse($item['loaded']);
-        $this->assertFalse($item['active']);
+        if ($foreign) {
+            $this->assertNull($item, 'Historical foreign loads cannot import a Receipt into this catalogue.');
+        } else {
+            $this->assertFalse($item['loaded']);
+            $this->assertFalse($item['active']);
+        }
         $this->assertDatabaseHas('participant_receipt_contexts', ['id' => $load->id, 'cleared_at' => null]);
     }
 }
