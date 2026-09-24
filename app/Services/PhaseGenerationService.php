@@ -52,13 +52,18 @@ final readonly class PhaseGenerationService
         if ($gate === null) {
             return false;
         }
-        $homologous = $action === 'proposition.reclassify' && $phase->kind === PhaseKind::Bias
+        $additionalBias = $action === 'proposition.reclassify' && $phase->kind === PhaseKind::Bias
             && $gate->id !== $phase->gate_proposition_id;
-        if ($phase->kind === PhaseKind::Bias && $gate->id !== $phase->gate_proposition_id && ! $homologous) {
+        if ($phase->kind === PhaseKind::Bias && $gate->id !== $phase->gate_proposition_id && ! $additionalBias) {
             return false;
         }
-        if ($homologous ? ! app(HomologousBiasService::class)->forPhase($phase, $context)->contains('id', $gate->id)
-            : ! $this->positions->acceptsGate($phase, $gate)) {
+        if ($additionalBias) {
+            $mediated = app(MediatedIncomingBiasService::class)->forPhase($phase, $context)->contains('id', $gate->id);
+            $homologous = app(HomologousBiasService::class)->forPhase($phase, $context)->contains('id', $gate->id);
+            if (! $mediated && ! $homologous) {
+                return false;
+            }
+        } elseif (! $this->positions->acceptsGate($phase, $gate)) {
             return false;
         }
         if ($this->availability->committed($gate, $context)

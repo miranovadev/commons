@@ -62,9 +62,11 @@ final class HorizonReceiptService
         }
         $homologous = $phase->kind === PhaseKind::Bias && $source->id !== $phase->gate_proposition_id
             && app(HomologousBiasService::class)->forPhase($phase)->contains('id', $source->id);
+        $mediated = $phase->kind === PhaseKind::Bias && $source->id !== $phase->gate_proposition_id
+            && app(MediatedIncomingBiasService::class)->forPhase($phase)->contains('id', $source->id);
         if ($target->phase_id !== $phase->id
-            || (! $homologous && $source->phase->cycle->context_horizon_id !== $receipt->context_horizon_id)) {
-            throw new DomainException('Receipt attachment requires this Phase and an authorized local or homologous source.');
+            || (! $homologous && ! $mediated && $source->phase->cycle->context_horizon_id !== $receipt->context_horizon_id)) {
+            throw new DomainException('Receipt attachment requires this Phase and an authorized local, mediated or homologous source.');
         }
         (new ReceiptConsumption)->forceFill([
             'receipt_id' => $receipt->id, 'context_horizon_id' => $receipt->context_horizon_id,
@@ -81,4 +83,3 @@ final class HorizonReceiptService
         return $receipt;
     }
 }
-

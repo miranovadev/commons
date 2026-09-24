@@ -372,7 +372,8 @@ final readonly class InputPlanService
     ): array {
         $foreignOperand = match ($context?->phase->kind) {
             PhaseKind::Mediate => app(HomologousMediationService::class)->foreignGateIdsFor($context->phase, $context)->contains($proposition->id),
-            PhaseKind::Bias => app(HomologousBiasService::class)->foreignGateIdsFor($context->phase, $context)->contains($proposition->id),
+            PhaseKind::Bias => app(HomologousBiasService::class)->foreignGateIdsFor($context->phase, $context)
+                ->merge(app(MediatedIncomingBiasService::class)->foreignGateIdsFor($context->phase, $context))->contains($proposition->id),
             PhaseKind::Order => $proposition->tier === 'committal'
                 && app(HomologousOrderService::class)->forPhase($context->phase, $context)->contains('id', $proposition->id)
                 && ! $context->remember('order-local-commits:'.$context->phase->id,
@@ -445,5 +446,3 @@ final readonly class InputPlanService
         ];
     }
 }
-
-
