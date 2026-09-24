@@ -130,6 +130,12 @@ class TragedyMemoryTest extends TestCase
         $this->assertFalse($unrelated['starts_at_current_committal']);
         $this->assertFalse($unrelated['earlier_history_omitted']);
         $this->assertDatabaseHas('supersessions', ['source_proposition_id' => $sibling->id, 'target_proposition_id' => $terminal->id]);
+        $descendant = $this->commitFrom($owner);
+        $backward = $service->describe($receipt, $this->phase($descendant));
+        $this->assertSame([$descendant->id, $owner->id], array_column($backward['committed_chain'], 'proposition_id'));
+        $this->assertTrue($backward['starts_at_current_committal']);
+        $this->assertSame('backward', $backward['chain_direction']);
+        $this->assertFalse($backward['earlier_history_omitted']);
     }
 
     public function test_foreign_unloaded_memory_cannot_be_imported_by_id(): void

@@ -21,6 +21,7 @@ export function ReceiptContextPanel({ plan }: { plan: ParticipantPlan }) {
       {receipt.type === 'tragedy' && <Text size="xs" c="dimmed">Load to remember the failed committed lineage, never to reinforce it. Separate one-shot boundary-exit warrant for eligible homologous Bias in its owning Commit Region. Not evidence or replayable; memory grants no action authority.</Text>}
       {receipt.memory_active && receipt.tragedy_memory && <Box mt={5}>
         <Text size="xs" fw={600}>Tragedy memory · no Reinforcement</Text>
+        {receipt.tragedy_memory.chain_direction === 'backward' && <Text size="xs">Looking backward from the current Committal to the catastrophe’s Region.</Text>}
         {receipt.tragedy_memory.earlier_history_omitted && <Text size="xs">Earlier committed history omitted.</Text>}
         {receipt.tragedy_memory.committed_chain.map(node => <Box key={node.proposition_id} mt="xs">
           <Text size="xs" c="dimmed">{node.register} · {node.domain} · Tension {node.tension}</Text>

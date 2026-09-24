@@ -65,15 +65,19 @@ newly loaded by guessing its ID.
 `TragedyMemoryService` follows the canonical creating-Cycle entry Committal edge,
 as used by `CommittalLineageService`. It never follows Supersessions or foreign
 causal inputs. The ordered chain ends at the owning Committal and starts at the
-current committed ancestor when present; otherwise it starts at the nearest
-canonical root available. Frozen snapshot Domain, Depth, Cadence and Tension are
+current committed ancestor when present. From a proven committed descendant it
+walks backward to the owner instead, explicitly marked `chain_direction:
+backward`; this recalls the prior catastrophe, not a new event. Otherwise it
+starts at the nearest canonical root available. Frozen snapshot Domain, Depth, Cadence and Tension are
 paired with immutable Committal statements. The explicit terminal catastrophe
 uses the Receipt's **recorded** field, never current measurements. Archived
 Receipts lacking that field return null values and `recorded_field_available:
 false`; no boundary is reconstructed.
 
-The projection performs two queries regardless of chain depth and visits at most
-32 committed states, retaining the nearest 32 to the owner in ancestral order.
+The projection performs two queries regardless of chain depth, examining at most
+32 committed states from each of the owner and current entry seeds. The packet
+contains at most 32 states, always ending at the owner. A fallback retains the
+nearest 32 to the owner in ancestral order.
 `earlier_history_omitted` explicitly marks a capped or incomplete earlier chain;
 `starts_at_current_committal` distinguishes a proven current-context start.
 It does not hydrate the expressive graph. Load/unload events remain ledgered but

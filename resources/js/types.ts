@@ -233,7 +233,7 @@ export interface ReceiptContext {
   tragedy_memory?: {
     tragedy_id: Identifier; receipt_id: Identifier; governing_committal_id: Identifier;
     committed_chain: Array<{ proposition_id: Identifier; statement: string; register: RegisterName; domain: string; depth: number | null; cadence: number | null; tension: number | null }>;
-    chain_limit: number; earlier_history_omitted: boolean; starts_at_current_committal: boolean;
+    chain_limit: number; earlier_history_omitted: boolean; starts_at_current_committal: boolean; chain_direction: 'forward' | 'backward';
     catastrophe: { proposition_id: Identifier; statement: string; phase: number; register: RegisterName; tension: number | null; charge: number | null; recorded_field_available: boolean; observed_at: string };
   } | null;
   purpose?: 'evidence' | 'homologous_boundary_escape';

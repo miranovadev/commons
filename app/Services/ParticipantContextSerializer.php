@@ -111,7 +111,7 @@ final class ParticipantContextSerializer
     private function memory(array $memory): array
     {
         return [
-            ...Arr::only($memory, ['tragedy_id', 'receipt_id', 'governing_committal_id', 'chain_limit', 'earlier_history_omitted', 'starts_at_current_committal']),
+            ...Arr::only($memory, ['tragedy_id', 'receipt_id', 'governing_committal_id', 'chain_limit', 'earlier_history_omitted', 'starts_at_current_committal', 'chain_direction']),
             'committed_chain' => array_map(fn ($node) => Arr::only($node,
                 ['proposition_id', 'statement', 'register', 'domain', 'depth', 'cadence', 'tension']), $memory['committed_chain']),
             'catastrophe' => Arr::only($memory['catastrophe'], ['proposition_id', 'statement', 'phase', 'register',
