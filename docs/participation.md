@@ -380,7 +380,7 @@ required. Foreign option visibility never imports its Region's Receipts.
 Mediated incoming discovery and homologous population discovery remain separate
 services and authorities. An option may independently qualify through either;
 absence of an exact doorway does not revoke an otherwise legitimate homologous
-option. This stage preserves existing homologous Bias and Tragedy Receipt rules.
+option. Mediated authority uses ordinary own-Region Receipts even when the same source also qualifies through homology; it cannot consume a Tragedy Receipt.
 
 ## Shared Commit Region scope
 
@@ -449,12 +449,31 @@ Gate once. Positive and negative means follow sign; zero retains supplied prior
 population direction or uses Chirality's negative default. No population state
 is persisted or written into proposition measurements.
 
-Additional homologous sources must be active and unexhausted and pass ordinary reclassification
+Additional homologous sources must be active and unexhausted and pass the existing structural reclassification
 prerequisites. They need not satisfy the local current Gate's evidence/ancestry
 comparison: their distinct qualifying comparison is dominant numeric Chirality.
-The selected Receipt must be completed, unconsumed and in the acting Cycle's
-immutable entry catalogue. Source and Receipt may originate in different Regions
-or Horizons. The selected source's Receipt stock stays untouched.
+`BiasReceiptAuthorityService` resolves the source before choosing evidence.
+Ordinary local and mediated incoming Bias require an ordinary, completed,
+unconsumed Receipt from the acting Commit Region; they cannot consume Tragedy
+Receipts. Another expressive path in the same Region remains ordinary. A recorded
+Mediate doorway takes precedence even if its foreign source also matches homology.
+
+A foreign Homeostatic homologous source is a boundary escape. It requires the
+acting Region's exact unconsumed Tragedy Receipt, associated with that Region's
+unresolved Tragedy and still scoped there. An ordinary Receipt, another Region's
+Receipt, or a legacy recovery-relocated Tragedy cannot authorize this escape.
+Population observation remains independent; without this warrant the foreign
+source is not advertised as an actionable Reclassify option. Source-specific
+schema branches bind each source to its eligible Receipts (the escape branch uses
+an exact Receipt constant). Dispatch revalidates under the existing transaction
+and locks. Successful consumption is exact-once; failure rolls back all writes.
+The selected source's Receipt stock stays untouched.
+
+Mediate opens an incoming doorway. The homologous population identifies possible
+exits. A Tragedy Receipt authorizes leaving through one eligible homologous exit;
+it supplies no destination or permanent movement permission. Subsequent
+Attestation and Traverse follow ordinary contribution rules. Exhaustion and
+recovery consequences remain pending Stage 6.
 
 The result belongs to the acting Bias Phase, Horizon and entry accounting Region.
 Its sole reclassify edge comes from the selected source, and the participant

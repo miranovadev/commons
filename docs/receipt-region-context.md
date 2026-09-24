@@ -32,7 +32,7 @@ The existing Substrate → Participant → Phase lock order and contribution tra
 
 ## Tragedy scope
 
-A Tragedy Receipt records the first zero-Charge expressive birth in its governing Commit Region. Its existing shared consumption and transport behavior is retained pending Stages 4/5/6. When legitimate backward-lineage recovery retreats from that region, the Receipt follows the exact selected destination, regardless of which Participant recovered. `tragedies.participant_id` remains immutable provenance of the original trigger, never ownership or exclusive transport authority. Every Participant in the destination region can discover and exercise it under the retained Reclassification rules.
+A Tragedy Receipt records the first zero-Charge expressive birth in its governing Commit Region. Its catalogue transport behavior remains transitional pending Stages 5/6; it does not confer Bias authority. When legitimate backward-lineage recovery retreats from that region, the Receipt follows the exact selected destination, regardless of which Participant recovered. `tragedies.participant_id` remains immutable provenance of the original trigger, never ownership or exclusive transport authority. Participants in that destination may still discover it through the legacy catalogue. For Bias, however, the Receipt must belong to that exact Region’s unresolved Tragedy as well as be scoped there; relocation does not make it a new Region’s escape warrant.
 
 `tragedy_receipt_scopes` stores only this mutable Tragedy basin and its latest recovery-entry Phase witness. Cycle entry updates it under the existing Substrate/Participant transaction after the recovery engine selects the destination. The source must be its current basin; the destination must lie on that recovery's backward lineage. Nearest-Committal recovery cannot skip an unresolved nearer basin. The Receipt cannot go farther than the actual destination and never influences selection. Historical recovery witnesses retain their recorded destinations. Initial entries, normal movement/Commit and recovery from unrelated regions cannot transport it. Consumption excludes it from all later movement; Receipt, Tragedy, consumption and historical final-attempt rows remain unchanged. Rest never creates Tragedy. The retained exhaustion/recovery lifecycle awaits Stage 6.
 
@@ -61,4 +61,4 @@ Receipt scope. Foreign mediated sources are excluded from option evidence
 catalogues and their Receipt metadata is not offered for loading or consumption.
 The selected Receipt still belongs to the acting Cycle's Commit Region. Ordinary
 same-Region evidence remains available. This adds no Tragedy requirement and
-changes neither Tragedy Receipt consumption nor homologous Bias authority.
+cannot consume Tragedy Receipts. Foreign homologous escape instead requires the acting Region’s exact unresolved Tragedy Receipt. Source-specific schema branches and transactional server validation enforce the pairing.

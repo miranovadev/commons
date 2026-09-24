@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { actionPropositions, actionTargetIds, quickContribution } from '../../resources/js/participationOptions.ts';
+import { actionPropositions, actionTargetIds, quickContribution, reclassificationReceiptRule } from '../../resources/js/participationOptions.ts';
 
 const archived = { id: 'historical', register: 'frontier', tier: 'expressive', statement: 'Still attestable' };
 const unavailable = { ...archived, id: 'unavailable' };
@@ -142,4 +142,22 @@ test('Order adds schema-authorized homologous Committals without hiding local Co
   assert.equal(quickContribution(order, 'proposition.traverse', { proposition_id: excluded.id }), null);
   assert.deepEqual(actionPropositions(order, 'attestation.create'), []);
   assert.deepEqual(actionPropositions(order, 'instrument.execute'), []);
+});
+
+test('Bias Receipt selector follows source-specific authority and fails closed for stale sources', () => {
+  const ordinary = { enum: ['ordinary'], description: 'Own Region evidence' };
+  const tragedy = { const: 'tragedy', description: 'Boundary escape' };
+  const bias = { ...plan, schema: { $defs: { actions: { 'proposition.reclassify': {
+    properties: { receipt_id: { enum: ['ordinary', 'tragedy'] } },
+    anyOf: [
+      { properties: { proposition_id: { const: 'local' }, receipt_id: ordinary } },
+      { properties: { proposition_id: { const: 'mediated' }, receipt_id: ordinary } },
+      { properties: { proposition_id: { const: 'homologous' }, receipt_id: tragedy } },
+    ],
+  } } } } };
+  assert.deepEqual(reclassificationReceiptRule(bias, 'local'), ordinary);
+  assert.deepEqual(reclassificationReceiptRule(bias, 'mediated'), ordinary);
+  assert.deepEqual(reclassificationReceiptRule(bias, 'homologous'), tragedy);
+  assert.equal(reclassificationReceiptRule(bias, 'stale'), undefined);
+  assert.equal(reclassificationReceiptRule(bias), undefined);
 });

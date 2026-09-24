@@ -3,7 +3,7 @@ import { IconAlertCircle } from '@tabler/icons-react';
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { messageFrom } from '../errors';
-import { actionPropositions, attestationDirections, receiptChoices } from '../participationOptions';
+import { actionPropositions, attestationDirections, receiptChoices, reclassificationReceiptRule } from '../participationOptions';
 import { duplicateInstrument, replayReceiptIds } from '../instrumentInvocations';
 import { InstrumentFields } from './InstrumentFields';
 import { AttestationDirectionControl } from './AttestationDirectionControl';
@@ -82,6 +82,10 @@ export function ContributionForm({
   const invalidReplay = action === 'instrument.execute' && 'replay_receipt_id' in values.instrument
     && !replayReceiptIds(plan, values.proposition_id).includes(values.instrument.replay_receipt_id);
 
+  const receiptRule = reclassificationReceiptRule(plan, values.proposition_id);
+  const receiptIds = receiptRule?.const ? [receiptRule.const] : receiptRule?.enum ?? [];
+  const invalidReceipt = action === 'proposition.reclassify' && !receiptIds.includes(values.receipt_id ?? '');
+
   if (!schema || !action) return null;
   const activeAction = action;
   const commitment = values.proposition_id ? plan.commitment_options?.[values.proposition_id] : undefined;
@@ -93,8 +97,8 @@ export function ContributionForm({
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (duplicate || invalidReplay) return;
-    const contribution: ContributionInput = { action: properties.action?.const || activeAction };
+    if (duplicate || invalidReplay || invalidReceipt) return;
+    const contribution: ContributionInput = { action: (properties.action?.const as ActionName) || activeAction };
 
     (Object.keys(properties) as Array<keyof ContributionInput>).forEach((name) => {
       if (name === 'action') return;
@@ -158,10 +162,10 @@ export function ContributionForm({
           )}
 
           {properties.receipt_id && (
-            <Select label="Receipt" description="Shared Commit Region evidence. Reclassification consumes this Receipt once."
-              data={receiptChoices(plan).filter(receipt => properties.receipt_id?.enum?.includes(receipt.id))
+            <Select label="Receipt" description={receiptRule?.description ?? "Shared Commit Region evidence. Reclassification consumes this Receipt once."}
+              data={receiptChoices(plan).filter(receipt => receiptIds.includes(receipt.id))
                 .map(receipt => ({ value: receipt.id, label: `${receipt.type === 'tragedy' ? 'Tragedy Receipt' : receipt.type} · ${receipt.id}` }))}
-              required={required.includes('receipt_id')} value={values.receipt_id || null}
+              required={required.includes('receipt_id')} value={receiptIds.includes(values.receipt_id ?? '') ? values.receipt_id : null}
               onChange={value => set('receipt_id', value ?? undefined)} />
           )}
 
@@ -221,7 +225,7 @@ export function ContributionForm({
               type="submit"
               color={action === 'proposition.commit' ? 'indigo' : 'blue'}
               loading={loading}
-              disabled={Boolean(duplicate) || invalidReplay || (action === 'attestation.create' && !direction)}
+              disabled={Boolean(duplicate) || invalidReplay || invalidReceipt || (action === 'attestation.create' && !direction)}
             >
               Apply contribution
             </Button>

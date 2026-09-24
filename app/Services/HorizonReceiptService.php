@@ -60,13 +60,16 @@ final class HorizonReceiptService
             || $receipt->consumption()->exists()) {
             throw new DomainException('Reclassification requires an unconsumed Receipt from this Commit Region.');
         }
-        $homologous = $phase->kind === PhaseKind::Bias && $source->id !== $phase->gate_proposition_id
-            && app(HomologousBiasService::class)->forPhase($phase)->contains('id', $source->id);
-        $mediated = $phase->kind === PhaseKind::Bias && $source->id !== $phase->gate_proposition_id
-            && app(MediatedIncomingBiasService::class)->forPhase($phase)->contains('id', $source->id);
-        if ($target->phase_id !== $phase->id
-            || (! $homologous && ! $mediated && $source->phase->cycle->context_horizon_id !== $receipt->context_horizon_id)) {
-            throw new DomainException('Receipt attachment requires this Phase and an authorized local, mediated or homologous source.');
+        if ($phase->kind === PhaseKind::Bias) {
+            // Re-resolve under the contribution/Receipt locks; a cached plan is not authority.
+            if (! app(BiasReceiptAuthorityService::class)->receiptsFor($phase, $source, new ParticipationContext($phase))->contains('id', $receipt->id)) {
+                throw new DomainException('Bias requires an ordinary own-Region Receipt for local/mediated sources, or its exact unresolved Tragedy Receipt for homologous escape.');
+            }
+        } elseif ($source->phase->cycle->context_horizon_id !== $receipt->context_horizon_id) {
+            throw new DomainException('Receipt attachment requires an authorized source in this Horizon.');
+        }
+        if ($target->phase_id !== $phase->id) {
+            throw new DomainException('Receipt attachment requires this Phase.');
         }
         (new ReceiptConsumption)->forceFill([
             'receipt_id' => $receipt->id, 'context_horizon_id' => $receipt->context_horizon_id,

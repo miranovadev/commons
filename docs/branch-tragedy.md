@@ -31,8 +31,18 @@ and do not themselves exhaust the Region.
 | Open, no Tragedy | Rest, including `no_remaining_potential` | Ordinary Rest/recovery; no Tragedy |
 | Any open Region | Fresh expressive write has positive Charge | No Tragedy |
 | Region with Tragedy | Another expressive birth at Charge zero | Retain the existing Tragedy and Receipt; no new exhaustion consequence |
-| Tragedy, Receipt available | Existing eligible Reclassify with that Receipt | Existing atomic consumption/attachment |
+| Tragedy, Receipt available | Eligible foreign homologous Bias Reclassify using that exact owning-Region Receipt | Atomic boundary-escape consumption/attachment |
 | Tragedy, Receipt consumed | Subsequent evidenced no-Potential Rest on the consumed classification's actual continuation | Legacy exhaustion proof, retained pending Stage 6 |
+
+For Bias, the exact unresolved Tragedy Receipt of the acting Commit Region
+only authorizes a qualified foreign homologous source. Local and recorded
+mediated sources require ordinary evidence and reject Tragedy Receipts, including
+when a mediated source also belongs to the homologous population. Same-Region
+expressive paths are ordinary. Population supplies possible exits; the Receipt
+supplies permission to leave. Source-specific schema bindings and transactional
+revalidation enforce this distinction. Legacy non-Bias consumption and recovery
+catalogue transport remain transitional pending Stages 5/6, without granting
+Bias authority in a foreign or recovery destination Region.
 
 A Tragedy Receipt uses `proposition.reclassify` with `proposition_id` and `receipt_id`, exactly like an ordinary Receipt. No use-Tragedy action exists. A failed or rolled-back Reclassify does not exercise the Receipt.
 

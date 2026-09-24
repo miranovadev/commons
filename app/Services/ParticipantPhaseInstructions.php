@@ -27,7 +27,7 @@ Variant is shared structural opportunity, never a Participant quota or fixed sib
 PROMPT;
 
     private const RECLASSIFY = <<<'PROMPT'
-proposition.reclassify takes proposition_id and receipt_id, preserves the exact source statement and creates one hard causal reclassify edge. It requires an effective source Attestation, a completed Receipt and the selected available same-Commit-Region Receipt under the schema's full prerequisites; Reinforcement is not a prerequisite. Attachment atomically consumes that shared Receipt once and retains it by reference. Votes and Phase touches start fresh; old Attestations are not copied. There is no second source or authored statement. Each source/destination classification is created once globally; existing local Writes keep their schema-authorized actions.
+proposition.reclassify takes proposition_id and receipt_id, preserves the exact source statement and creates one hard causal reclassify edge. It requires an effective source Attestation, a completed Receipt and the selected available same-Commit-Region Receipt under the schema's full prerequisites; Reinforcement is not a prerequisite. For Bias, local and recorded mediated sources require ordinary own-Region Receipts and reject Tragedy Receipts. Foreign homologous escape requires the exact current-Region unresolved Tragedy Receipt bound to that source by the schema; ordinary Receipts cannot authorize it. Attachment atomically consumes that shared Receipt once and retains it by reference. Votes and Phase touches start fresh; old Attestations are not copied. There is no second source or authored statement. Each source/destination classification is created once globally; existing local Writes keep their schema-authorized actions.
 PROMPT;
 
     private const FINAL_ATTEMPT = <<<'PROMPT'
@@ -94,6 +94,3 @@ PROMPT,
         ), JSON_THROW_ON_ERROR));
     }
 }
-
-
-
