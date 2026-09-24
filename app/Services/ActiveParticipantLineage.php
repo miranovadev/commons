@@ -93,7 +93,7 @@ final readonly class ActiveParticipantLineage
             $parent = $context !== null ? $context->propositions->get($edge->source_proposition_id)
                 : Proposition::find($edge->source_proposition_id);
             if ($bridges !== null && $parent !== null && $node->phase->cycle->entry_committal_id !== $parent->phase->cycle->entry_committal_id
-                && app(HomologousBiasService::class)->recordedSourceFor($node, $edges, $context)?->id === $parent->id) {
+                && app(RecordedBiasSourceService::class)->recordedSourceFor($node, $edges, $context)?->id === $parent->id) {
                 // Accounting stays at the creating Cycle entry. A recorded unary
                 // Bias transition follows its actual selected source's provenance.
                 $bridges->push([$node->phase->cycle->entry_committal_id, $parent->phase->cycle->entry_committal_id]);
@@ -104,4 +104,3 @@ final readonly class ActiveParticipantLineage
         return $path->values();
     }
 }
-

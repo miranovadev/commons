@@ -348,6 +348,40 @@ Homologous Gates are Reconcile operands only. They do not become Read choices,
 Traverse destinations or Receipt catalogue sources. The acting Phase Gate remains
 traversed provenance; recognition alone never moves the Participant.
 
+## Mediate-created incoming Bias
+
+A completed Reconcile creates a directed incoming relationship from its exact
+selected other operand to its result. For `A_gate + B_operand → A_result`, the
+two recorded Reconcile inputs and the producing Phase's Gate distinguish the
+other operand from the acting Gate. No synthetic movement edge is added.
+
+Normal progression remains authoritative. `B_operand` is Disperse-produced and
+serves as B's Mediate Gate. B's Mediate contribution produces `B_mediate_result`,
+which becomes Bias's actual Gate. `MediatedIncomingBiasService` resolves the exact
+Gate on that result's producing Mediate Phase and verifies its recorded Reconcile
+input. Only an incoming relationship for that exact operand can expose `A_result`.
+It does not search arbitrary ancestors or substitute a structural homologue.
+An unrelated Mediate/Bias chain does not acquire this mediated authority.
+
+Mediate creates the doorway; Bias may later use it through ordinary Reclassify.
+A remains in its acting Cycle, Commit Region and Horizon during Reconcile. The
+operand grants no Traverse, no movement into B and no Receipt scope. Direction
+is asymmetric: A's use of B creates an incoming option from B's downstream
+Mediate/Bias path; it does not automatically create the reverse relationship.
+
+The relevant boundary is the Commit Region, not every expressive branch.
+Same-Region mediated paths remain ordinary expressive relationships. A real
+cross-Region Mediate operand establishes the incoming doorway across that
+boundary. Both use the ordinary Bias evidence/ancestry comparison, effective
+Attestation, completed unconsumed own-Region Receipt, source/register uniqueness,
+mutability, current-epoch spentness and exhaustion protections. No Tragedy is
+required. Foreign option visibility never imports its Region's Receipts.
+
+Mediated incoming discovery and homologous population discovery remain separate
+services and authorities. An option may independently qualify through either;
+absence of an exact doorway does not revoke an otherwise legitimate homologous
+option. This stage preserves existing homologous Bias and Tragedy Receipt rules.
+
 ## Shared Commit Region scope
 
 This scope applies [Invariant 10: structural authority](core-invariants.md#10-operations-may-only-act-within-their-structural-authority):
@@ -407,14 +441,15 @@ remain active. A direct Commit edge consumes its source globally; other branches
 For ordinary local eligibility, `BiasGateService` compares the current head's retained direction to its own causal ancestry, excluding the head's votes and loads. Shared ancestors and Attestations are counted once across both reconciliation parents. Traversal stops at the governing Committal boundary; unrelated branches do not set the comparison. Ledger replay retains the preceding nonzero direction at zero, starting from the governing Committal direction. Superseded ancestors supply historical judgments without becoming additional active reinforcement copies.
 
 Bias additionally requires a completed Receipt and an effective source Attestation. The action takes `action: proposition.reclassify`, `proposition_id` and `receipt_id`. It preserves exact content, attaches/consumes the selected Receipt, resets votes/touches, and creates one shared source/register classification. `BiasGateService::forPhase()` remains the existing regional evidence calculation;
-`operationalFor()` preserves its eligible current Gate and adds qualified sources
-from `HomologousBiasService`. The latter uses the shared Homeostatic services to
+`operationalFor()` preserves its eligible current Gate, adds recorded incoming
+sources from `MediatedIncomingBiasService`, and independently adds qualified
+sources from `HomologousBiasService`. The latter uses the shared Homeostatic services to
 aggregate every homologous Gate's own numeric Chirality, including the current
 Gate once. Positive and negative means follow sign; zero retains supplied prior
 population direction or uses Chirality's negative default. No population state
 is persisted or written into proposition measurements.
 
-Additional sources must be active and unexhausted and pass ordinary reclassification
+Additional homologous sources must be active and unexhausted and pass ordinary reclassification
 prerequisites. They need not satisfy the local current Gate's evidence/ancestry
 comparison: their distinct qualifying comparison is dominant numeric Chirality.
 The selected Receipt must be completed, unconsumed and in the acting Cycle's
@@ -429,7 +464,7 @@ No generic foreign Read, Traverse or Receipt catalogue is granted.
 
 Existing causal Write continuations of the current Gate offer their permitted
 Instrument and Attestation actions and, after earlier-Cycle personal
-Attestation, Traverse to Order. Homologous Gates are Reclassify sources only;
+Attestation, Traverse to Order. Mediated and homologous additional Gates are Reclassify sources only;
 their existing Bias-produced Writes do not become this Participant's Traverse
 options. A foreign-source classification owned by another Cycle-entry Region
 cannot be adopted as a local Write merely through its Supersession edge. Historical material on the
@@ -466,7 +501,8 @@ Commit copies the selected source's exact statement and participation history by
 
 Mediate alone exposes Reconcile. It accepts no `statement`. It creates one fresh Expressive Proposition in
 the Phase's Write register with the current Gate's statement copied exactly and
-two hard `reconcile` edges, one from each source. It inherits no Attestations,
+two hard `reconcile` edges, one from each source. These also record the directed
+incoming Bias relationship described above. It inherits no Attestations,
 Receipts or Phase touches. Normal progression earns a new target touch.
 The dispatcher rechecks admissibility before any writes. The Proposition/edge
 ledger records, source history ownership and measurement recalculation remain

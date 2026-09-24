@@ -221,6 +221,18 @@ contextual region material; grounding and favourable Closure cannot promote it.
 Mediate reads Constrain and reconciles Disperse children; Bias consumes Mediate.
 See the [complete phase-role matrix](phase-positions.md).
 
+**Incoming mediation invariant:** A completed Reconcile records a directed
+other-operand → result relationship. Bias retains its Mediate-produced Gate and
+resolves the exact Gate of that proposition's producing Mediate Phase, backed by
+its Reconcile input. That exact operand may expose incoming results as additional
+Bias sources under ordinary evidence and structural protections. No arbitrary
+ancestor or homologue substitutes for the operand. Mediate creates the doorway;
+Bias may later use it. Reconcile itself preserves acting Cycle/Region/Horizon
+ownership and grants no movement, Traverse or Receipt transport. Same-Region
+expressive branches are ordinary relationships; the relevant boundary is the
+Commit Region. Mediated and homologous Bias authority remain separate.
+
+
 Phase-position compatibility and Commit Region membership do not confer
 traversal eligibility. Ordinary Traverse additionally requires the appropriate causal
 relationship to the Participant's current Gate. Order alone also admits the
@@ -230,7 +242,7 @@ explicit, operationally validated homologous Committal rule below.
 
 A positioned Participant changes structural position through an authorized
 operation: forward causal progression, recovery backward along recorded causal
-lineage, or Order's explicit homologous Committal Traverse. Bias additionally permits an authorized homologous Reclassify:
+lineage, or Order's explicit homologous Committal Traverse. Bias additionally permits an authorized mediated incoming or homologous Reclassify:
 the selected source creates one real edge to the new acting-Phase classification,
 which becomes the forward position. There is no movement to the foreign Gate
 itself and no invented edge from the old Phase Gate. A structurally authorised contribution may create that forward edge;

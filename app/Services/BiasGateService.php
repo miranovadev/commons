@@ -42,7 +42,7 @@ final readonly class BiasGateService
             === $this->evidence->lineageDirectionFor($candidate, $context))->values();
     }
 
-    /** Ordinary local eligibility plus additional dominant homologous sources. */
+    /** Ordinary local, recorded incoming mediation, and homologous sources retain separate authority. */
     public function operationalFor(Phase $phase, ?ParticipationContext $context = null): Collection
     {
         if ($phase->kind !== PhaseKind::Bias) {
@@ -52,8 +52,8 @@ final readonly class BiasGateService
 
         return $context->remember('bias-operational:'.$phase->id, fn () => $this->forPhase($phase, $context)
             ->where('id', $phase->gate_proposition_id)
+            ->concat(app(MediatedIncomingBiasService::class)->forPhase($phase, $context))
             ->concat(app(HomologousBiasService::class)->forPhase($phase, $context))
             ->unique('id')->sortBy('id')->values());
     }
 }
-

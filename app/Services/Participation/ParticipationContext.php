@@ -2,6 +2,7 @@
 
 namespace App\Services\Participation;
 
+use App\Enums\PhaseKind;
 use App\Models\Attestation;
 use App\Models\CommitmentSnapshot;
 use App\Models\ContextHorizon;
@@ -14,7 +15,13 @@ use App\Models\ReceiptContextEvent;
 use App\Models\Substrate;
 use App\Models\SubstrateLedgerEntry;
 use App\Models\Supersession;
+use App\Services\CommitRegionService;
 use App\Services\ExhaustionService;
+use App\Services\HomologousBiasService;
+use App\Services\HomologousMediationService;
+use App\Services\HomologousOrderService;
+use App\Services\MediatedIncomingBiasService;
+use App\Services\Observables\CommittalLineageService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -145,18 +152,19 @@ final class ParticipationContext
      */
     private function workingSetIds(?Collection $additionalPropositionIds = null, bool $includeUnavailableAdditional = false): Collection
     {
-        if ($this->phase->kind === \App\Enums\PhaseKind::Mediate) {
+        if ($this->phase->kind === PhaseKind::Mediate) {
             // Comparison operands are hydrated, not granted evidence or movement scope.
-            $pool = app(\App\Services\HomologousMediationService::class)->structuralPoolFor($this->phase, $this);
+            $pool = app(HomologousMediationService::class)->structuralPoolFor($this->phase, $this);
             $additionalPropositionIds = ($additionalPropositionIds ?? collect())
                 ->merge($pool['reads']->pluck('id'))->merge($pool['gates']->pluck('id'));
         }
-        if ($this->phase->kind === \App\Enums\PhaseKind::Bias) {
-            $population = app(\App\Services\HomologousBiasService::class)->populationFor($this->phase, $this);
-            $additionalPropositionIds = ($additionalPropositionIds ?? collect())->merge($population->pluck('id'));
+        if ($this->phase->kind === PhaseKind::Bias) {
+            $population = app(HomologousBiasService::class)->populationFor($this->phase, $this);
+            $additionalPropositionIds = ($additionalPropositionIds ?? collect())->merge($population->pluck('id'))
+                ->merge(app(MediatedIncomingBiasService::class)->populationFor($this->phase, $this)->pluck('id'));
         }
-        if ($this->phase->kind === \App\Enums\PhaseKind::Order) {
-            $population = app(\App\Services\HomologousOrderService::class)->populationFor($this->phase, $this);
+        if ($this->phase->kind === PhaseKind::Order) {
+            $population = app(HomologousOrderService::class)->populationFor($this->phase, $this);
             $additionalPropositionIds = ($additionalPropositionIds ?? collect())->merge($population->pluck('id'));
         }
         // Walk only newly discovered IDs. A recursive UNION over the full dependency
@@ -273,7 +281,7 @@ final class ParticipationContext
     /** One batched ownership map; Supersession parents never choose a Cycle entry. */
     public function seedIds(): array
     {
-        return $this->remember('entry-seeds', fn () => app(\App\Services\CommitRegionService::class)
+        return $this->remember('entry-seeds', fn () => app(CommitRegionService::class)
             ->seedIdsFor($this->propositions, $this->propositions));
     }
 
@@ -287,7 +295,7 @@ final class ParticipationContext
             return $node;
         }
         if (! $this->propositions->has($node->id)) {
-            return app(\App\Services\CommitRegionService::class)->seedFor($node);
+            return app(CommitRegionService::class)->seedFor($node);
         }
         $id = $this->seedIds()[$node->id] ?? null;
 
@@ -356,8 +364,6 @@ final class ParticipationContext
 
     public function history(Proposition $position, ContextHorizon $horizon): ?CommitmentSnapshot
     {
-        return app(\App\Services\Observables\CommittalLineageService::class)->ancestors($position, $this)->first();
+        return app(CommittalLineageService::class)->ancestors($position, $this)->first();
     }
 }
-
-

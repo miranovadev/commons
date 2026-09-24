@@ -259,11 +259,12 @@ final class PotentialProjectionService
                     && $nodes->has($gate) && $context?->propositions->has($edge->source_proposition_id)
                     && ($edges->contains(fn ($input) => $input->target_proposition_id === $target->id
                         && $input->source_proposition_id === $gate)
-                        || app(HomologousBiasService::class)->recordedSourceFor($target,
+                        || app(RecordedBiasSourceService::class)->recordedSourceFor($target,
                             $edges->where('target_proposition_id', $target->id), $context)?->id === $edge->source_proposition_id)) {
                     // Recorded Bias classifications have one foreign source, with
                     // no invented local-parent edge. Keep it outside local terrain.
                     $local['foreign_inputs'][] = [$edge->source_proposition_id, $edge->target_proposition_id, $edge->type];
+
                     continue;
                 }
                 throw new \DomainException('Potential projection requires causal Horizon edges. Run commons:causal-audit before rebuilding.');
@@ -290,5 +291,3 @@ final class PotentialProjectionService
             'dependencies' => array_map(fn ($id) => ['context_horizon_id' => $horizon->id, 'proposition_id' => $id], $dependencies)];
     }
 }
-
-

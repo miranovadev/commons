@@ -36,7 +36,8 @@ final readonly class ReceiptContextService
             $gate = $context->propositions->get($phase->gate_proposition_id);
             $foreignOperands = match ($phase->kind) {
                 PhaseKind::Mediate => app(HomologousMediationService::class)->foreignGateIdsFor($phase, $context),
-                PhaseKind::Bias => app(HomologousBiasService::class)->foreignGateIdsFor($phase, $context),
+                PhaseKind::Bias => app(HomologousBiasService::class)->foreignGateIdsFor($phase, $context)
+                    ->merge(app(MediatedIncomingBiasService::class)->foreignGateIdsFor($phase, $context)),
                 default => collect(),
             };
             $exposed = $gate === null ? collect() : $this->lineage->endingAt($gate, $context)->concat([$gate])
@@ -227,4 +228,3 @@ final readonly class ReceiptContextService
         app(RealtimePublisher::class)->proposition($load->proposition_id);
     }
 }
-

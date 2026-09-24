@@ -52,3 +52,13 @@ Local SQLite measurement: catalogue growth from one to thirteen ordinary Receipt
 
 The historical transcript uses legal forward Gate loading. It is now a regression that zero-Potential Rest does not create Tragedy. Its [load relocation record and boundary comparison](evidence/receipt-tragedy-transcript.md) document the retired interactions, the alternate pre-Tragedy evidence attachment, and the unchanged final-attempt/Exhaustion recovery proof.
 
+
+## Mediated incoming options
+
+A Bias Gate's immediate Mediate provenance can identify the exact operand of a
+recorded incoming Reconcile. Exposing its result adds a Reclassify source, not
+Receipt scope. Foreign mediated sources are excluded from option evidence
+catalogues and their Receipt metadata is not offered for loading or consumption.
+The selected Receipt still belongs to the acting Cycle's Commit Region. Ordinary
+same-Region evidence remains available. This adds no Tragedy requirement and
+changes neither Tragedy Receipt consumption nor homologous Bias authority.
