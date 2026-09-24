@@ -63,8 +63,9 @@ final class TragedyMemoryService
             'governing_committal_id' => $tragedy->governing_committal_id,
             'committed_chain' => $rows->reverse()->values()->map(fn ($row) => [
                 'proposition_id' => $row->id, 'statement' => $row->statement, 'register' => $row->register,
-                'domain' => $row->domain, 'depth' => (float) $row->depth,
-                'cadence' => (float) $row->cadence, 'tension' => (float) $row->tension,
+                'domain' => $row->domain, 'depth' => $row->depth === null ? null : (float) $row->depth,
+                'cadence' => $row->cadence === null ? null : (float) $row->cadence,
+                'tension' => $row->tension === null ? null : (float) $row->tension,
             ])->all(),
             'chain_limit' => self::CHAIN_LIMIT, 'earlier_history_omitted' => $truncated,
             'starts_at_current_committal' => $current !== false,

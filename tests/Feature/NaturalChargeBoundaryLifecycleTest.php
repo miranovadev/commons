@@ -42,8 +42,14 @@ class NaturalChargeBoundaryLifecycleTest extends TestCase
         // creates its own Persist result from that legitimate current Gate.
         $observed = $service->contribute($b->cycle->participant, $b->id,
             ['action' => 'instrument.execute', 'proposition_id' => $first['current_proposition_id'],
-                'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/boundary-transcript']]);
+                'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/boundary-transcript'],
+                'receipt_options' => ['load' => [$tragedy->receipt_id]]]);
         $this->assertSame('persist', $observed['plan']['phase']['kind']);
+        $memory = collect($observed['plan']['receipts'])->firstWhere('id', $tragedy->receipt_id);
+        $this->assertTrue($memory['memory_active']);
+        $this->assertFalse($memory['active']);
+        $this->assertDatabaseHas('participant_receipt_contexts', ['participant_id' => $b->cycle->participant_id,
+            'receipt_id' => $tragedy->receipt_id, 'evidence_signature' => null]);
         $this->assertDatabaseCount('commit_region_exhaustions', 0);
         $second = $service->contribute($b->cycle->participant, $observed['plan']['phase']['id'],
             ['action' => 'proposition.variant', 'statement' => 'A distinct trajectory reproduces the boundary']);
@@ -60,6 +66,11 @@ class NaturalChargeBoundaryLifecycleTest extends TestCase
         $recovered = $service->contribute($b->cycle->participant, $second['plan']['phase']['id'], ['action' => 'participant.rest']);
         $this->assertSame($this->origin->id, $recovered['current_proposition_id']);
         $this->assertSame('distinguish', $recovered['plan']['phase']['kind']);
+        $remembered = collect($recovered['plan']['receipts'])->firstWhere('id', $tragedy->receipt_id);
+        $this->assertTrue($remembered['memory_active']);
+        $this->assertSame([$this->origin->id, $seed->id], array_column($remembered['tragedy_memory']['committed_chain'], 'proposition_id'));
+        $this->assertSame($first['current_proposition_id'], $remembered['tragedy_memory']['catastrophe']['proposition_id']);
+        $this->assertNull(app(HorizonReceiptService::class)->tragedyWarrant(Phase::findOrFail($recovered['plan']['phase']['id'])));
         $this->assertDatabaseHas('propositions', ['id' => $proof->terminal_proposition_id]);
         $this->assertSame($first['current_proposition_id'], $a->cycle->participant->fresh()->current_proposition_id);
         $this->assertSame(1, Proposition::where('id', $proof->terminal_proposition_id)->count());

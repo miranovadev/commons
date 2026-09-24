@@ -232,7 +232,7 @@ export interface ReceiptContext {
   memory_active?: boolean;
   tragedy_memory?: {
     tragedy_id: Identifier; receipt_id: Identifier; governing_committal_id: Identifier;
-    committed_chain: Array<{ proposition_id: Identifier; statement: string; register: RegisterName; domain: string; depth: number; cadence: number; tension: number }>;
+    committed_chain: Array<{ proposition_id: Identifier; statement: string; register: RegisterName; domain: string; depth: number | null; cadence: number | null; tension: number | null }>;
     chain_limit: number; earlier_history_omitted: boolean; starts_at_current_committal: boolean;
     catastrophe: { proposition_id: Identifier; statement: string; phase: number; register: RegisterName; tension: number | null; charge: number | null; recorded_field_available: boolean; observed_at: string };
   } | null;
