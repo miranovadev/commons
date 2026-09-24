@@ -309,7 +309,7 @@ rather than inferring semantics from current code behaviour.
 
 ## Persistence, exhaustion, recovery, and observation
 
-**Potential invariant:** Potential measures currently instantiated opportunity. Zero Potential does not by itself prove a Commit Region exhausted.
+**Potential invariant:** Potential measures demonstrated tension-reducing capacity. It does not decide whether expression is possible. Zero Potential neither suppresses an otherwise structurally valid Variant nor by itself proves a Commit Region exhausted. Charge and Potential algebra remain unchanged.
 
 **Tragedy invariant:** Tragedy is the first evidenced no-Potential Rest within a Commit Region. It creates exactly one shared Tragedy Receipt and opens that basin's final evidence-bearing attempt. Other Commit Regions in the same Horizon have independent authority.
 
@@ -319,9 +319,9 @@ rather than inferring semantics from current code behaviour.
 
 **Reclassification invariant:** Phase 3 and Phase 6 reclassification require an available Receipt. Reclassification atomically attaches/consumes the Receipt. No Receipt, no Reclassification. Tragedy is exceptional in generation, not in consumption.
 
-**Generation invariant:** Variant availability is controlled by structural viability, not Receipt lifecycle and not Participant count. A further Variant requires all current expressive routes at that structural position to be spent in its current exploration epoch, each with its own completed Instrument and effective Attestation, with positive remaining Commit Region Potential Charge. A healthy route blocks redundant generation. Each new Variant repeats that sequence; no prior Rest or fixed sibling cap applies. See the [confirmed clarification](horizon-proof-variant-clarification.md).
+**Generation invariant:** Variant availability is controlled by structural viability, independently of Potential Charge, Receipt lifecycle and Participant count. A further Variant requires all current expressive routes at that structural position to be spent in its current exploration epoch, each with its own completed Instrument and effective Attestation. Expression is allowed to increase Tension. A healthy route blocks redundant generation. Each new Variant repeats that sequence; no prior Rest or fixed sibling cap applies. See the [confirmed clarification](horizon-proof-variant-clarification.md).
 
-**Final-attempt allowance:** Stage 5 explicitly extends only the numerical requirement above: an open Commit Region's unconsumed Tragedy authorizes one shared Distinguish/Disperse Variant at zero Potential. Existing structural and evidence prerequisites remain mandatory. The successful Variant atomically records that unique attempt and advances its own epoch. Receipt creation, loading and consumption do not change epochs. See [the lifecycle rationale](branch-tragedy.md#attainable-final-attempt).
+**Legacy final-attempt bookkeeping:** The existing Tragedy final-attempt record remains temporarily in place pending the later Tragedy correction. It no longer grants an exception to Variant permission: all otherwise structurally valid Variants are independent of Potential and of whether the final attempt has been recorded. Existing Tragedy triggers, Receipt lifecycle, exhaustion and recovery are unchanged in this stage. See [the lifecycle rationale](branch-tragedy.md#attainable-final-attempt).
 
 **Successful-route continuity:** Commitment does not destroy an already-existing
 causal route. When Bias is entered through the exact Gate whose causal

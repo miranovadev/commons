@@ -15,8 +15,8 @@ An empty viable structural position exposes Variant. Once a Variant exists,
 it must receive its own completed Instrument execution, producing a Receipt
 in the Horizon, and at least one effective Attestation. Only when those
 prerequisites have been met, every current route is proven spent in this
-position's current exploration epoch, and positive Potential Charge remains in
-the Horizon does another Variant become an available option. A viable route
+position's current exploration epoch does another Variant become an available
+option. Potential Charge is not a permission condition, including at zero. A viable route
 blocks redundant Variant generation. See [exploration epochs](exploration-epochs.md).
 
 Successful paths into an explicitly exhausted child Horizon are resolved
@@ -47,18 +47,16 @@ normal action rules without clearing them. An empty viable position can
 start an attempt even at zero currently instantiated Potential; this preserves
 the distinction between Potential and proof of Exhaustion.
 
-Potential Charge is read from the maintained Horizon-local topology and all
-local Committal regions, without recovery/frontier shadowing, using the same
-positivity threshold as authoritative Rest-reason derivation.
-No global graph reconstruction or participant count is used. The action schema
-and contribution dispatcher share the same eligibility service.
+Potential Charge describes demonstrated reduction in absolute Tension. It does
+not decide whether another expressive move is structurally possible, and an
+expressive move may increase Tension. Its algebra remains unchanged. The action
+schema and contribution dispatcher share the same structural eligibility service.
 
-Stage 5 adds one explicit lifecycle exception to the numerical requirement:
-an unconsumed Tragedy Receipt authorizes a single shared final Distinguish or
-Disperse attempt at zero Potential. All existing structural, current-spentness,
-Instrument and Attestation checks still apply. The successful Variant records
-the unique allowance claim and advances only its own epoch atomically. Receipt
-creation, Read and consumption themselves do not reopen epochs. See
+The former positive-Potential prerequisite and its Tragedy final-attempt
+exception no longer govern Variant permission. Existing final-attempt recording
+is retained as isolated legacy bookkeeping pending the later Tragedy correction;
+recording it cannot suppress subsequent structurally valid Variants. This stage
+does not redefine Tragedy triggers, Receipts, exhaustion or recovery. See
 [Tragedy and final attempts](branch-tragedy.md#attainable-final-attempt).
 
 Tests: `ExpressiveEvidenceGatingTest` covers both expressive phases, positive

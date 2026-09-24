@@ -116,8 +116,9 @@ final readonly class PhaseGenerationService
                 }
             }
 
-            return app(PotentialChargeService::class)->hasRemainingInRegion($phase, $context)
-                || app(TragedyFinalAttemptService::class)->available($phase);
+            // Potential describes demonstrated tension reduction, not whether
+            // this structurally eligible position can express another Variant.
+            return true;
         };
 
         // Reuse this calculation's structural query, never a cross-action cache.
@@ -143,4 +144,3 @@ final readonly class PhaseGenerationService
             ->orderBy('id')->get();
     }
 }
-
