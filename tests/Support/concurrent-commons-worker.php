@@ -6,6 +6,7 @@ use App\Models\InstrumentExecution;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
+use App\Models\Substrate;
 use App\Services\ContextHorizonProjector;
 use App\Services\ContributionDispatcher;
 use App\Services\InputPlanService;
@@ -14,6 +15,7 @@ use App\Services\ParticipationService;
 use App\Services\PotentialProjectionService;
 use App\Services\PropositionMeasurementService;
 use App\Services\ReceiptContextService;
+use App\Services\TragedyService;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -33,6 +35,10 @@ flush();
 
 try {
     match ($input['operation']) {
+        'charge-boundary' => DB::transaction(function () use ($input): void {
+            Substrate::whereKey($input['substrate_id'])->lockForUpdate()->firstOrFail();
+            app(TragedyService::class)->record(Proposition::findOrFail($input['proposition_id']));
+        }),
         'closure-contribute-conflict' => (function () use ($input): void {
             $participant = Participant::findOrFail($input['participant_id']);
             $plan = app(InputPlanService::class)->forParticipant($participant);

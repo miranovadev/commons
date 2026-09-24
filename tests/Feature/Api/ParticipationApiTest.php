@@ -230,6 +230,7 @@ class ParticipationApiTest extends TestCase
 
     public function test_a_contribution_atomically_advances_the_phase(): void
     {
+        $this->resolveExpressiveFieldFixture(.8);
         [$substrate, $participant] = $this->participant();
         [$phase, $origin] = $this->activePhase($participant);
         $endpoint = $this->endpoint($substrate, $participant);

@@ -38,6 +38,7 @@ class ExhaustionTest extends TestCase
         $phase = $this->phase($head);
         $this->measure($root, 1);
         $this->measure($head, 1);
+        $this->boundaryTragedyFixture($head);
         $this->rest($phase);
 
         return [$opening, $phase, Tragedy::sole()];
@@ -84,6 +85,7 @@ class ExhaustionTest extends TestCase
         [, $first, $other, $commit] = $this->exhaustedBranch();
         $before = $other->cycle->participant->fresh()->getAttributes();
         $propositions = Proposition::count();
+        $this->boundaryTragedyFixture($first->gate);
         $this->rest($first);
         $this->assertDatabaseCount('tragedies', 1);
         $this->assertDatabaseCount('commit_region_exhaustions', 0);
@@ -171,9 +173,9 @@ class ExhaustionTest extends TestCase
         $this->assertSame([$tragedy->context_horizon_id], $audit['invalid_receipt_consumptions']);
     }
 
-    public function test_audit_detects_incorrect_rest_reason_without_a_duplicate_horizon_marker(): void
+    public function test_audit_checks_the_retained_exhaustion_rest_witness(): void
     {
-        [, $phase, $tragedy] = $this->tragicChild();
+        [, $phase, $tragedy] = $this->exhaustFinalAttempt();
         DB::table('cycles')->where('id', $phase->cycle_id)->update(['rest_reason' => 'no_available_move']);
         $audit = app(ExhaustionAuditService::class)->inspect($this->substrate->id);
         $this->assertFalse($audit['matches']);

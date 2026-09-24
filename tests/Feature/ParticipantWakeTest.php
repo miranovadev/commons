@@ -227,6 +227,8 @@ class ParticipantWakeTest extends TestCase
 
     public function test_wake_job_action_ceiling_leaves_the_cycle_active(): void
     {
+        // Isolate structural rules from a new Charge-boundary event.
+        $this->resolveExpressiveFieldFixture(.8);
         config()->set('participation.max_actions_per_wake', 1);
         [$participant, $participantConnection] = $this->readyConnection();
         $inference = Mockery::mock(ParticipantInference::class);

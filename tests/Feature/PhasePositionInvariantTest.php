@@ -113,6 +113,8 @@ class PhasePositionInvariantTest extends TestCase
     #[DataProvider('domains')]
     public function test_mediate_reads_constrain_and_reconciles_only_disperse_children(string $domain): void
     {
+        // Isolate structural rules from a new Charge-boundary event.
+        $this->resolveExpressiveFieldFixture(.8);
         [$author, $reader, $nodes] = $this->fixture(ContextDomain::from($domain));
         $other = $this->node($this->phase($author, PhaseKind::Disperse, $nodes[3]));
         $this->edge($nodes[3], $other);
@@ -301,4 +303,3 @@ class PhasePositionInvariantTest extends TestCase
         app(LedgerService::class)->record($edge);
     }
 }
-

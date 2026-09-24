@@ -15,6 +15,7 @@ use App\Models\Receipt;
 use App\Models\Substrate;
 use App\Models\Supersession;
 use App\Models\Tragedy;
+use App\Services\CommitRegionService;
 use App\Services\ContextHorizonProjector;
 use App\Services\ContributionDispatcher;
 use App\Services\CycleEntryService;
@@ -30,10 +31,8 @@ use App\Services\PotentialProjectionService;
 use App\Services\PropositionMeasurementService;
 use App\Services\ReferencePotentialChargeService;
 use App\Services\RegionalExhaustionMembership;
-use App\Services\TragedyFinalAttemptService;
 use App\Services\TragedyReceiptScopeBackfill;
 use App\Services\TragedyReceiptScopeService;
-use App\Services\TragedyService;
 use DomainException;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -163,7 +162,7 @@ class CausalRecoveryTest extends TestCase
         $carrier = $this->resting($this->root, $position);
         $terminal = $carrier->cycles()->latest('sequence')->first()->phases()->first();
         $far->commitmentSnapshot->forceFill(['calculator_version' => 'origin-bootstrap-v1'])->save();
-        $tragedy = app(TragedyService::class)->record($terminal, ['field_version' => $this->substrate->fresh()->field_version]);
+        $tragedy = $this->boundaryTragedyFixture($terminal->gate);
         $receipt = Receipt::findOrFail($tragedy->receipt_id);
         $original = $receipt->getAttributes();
         $this->refreshMeasurements();
@@ -178,7 +177,7 @@ class CausalRecoveryTest extends TestCase
         $elsewhere = $this->phase($this->root, $far, PhaseKind::Distinguish);
         $this->assertNotContains($receipt->id, $service->available($elsewhere)->pluck('id'));
         $this->assertEquals($original, $receipt->fresh()->getAttributes());
-        $this->assertSame($tragedy->participant_id, $carrier->id);
+        $this->assertSame($position->phase->cycle->participant_id, $tragedy->participant_id);
     }
 
     public function test_repeated_recovery_by_another_participant_cannot_bypass_the_unresolved_shared_basin(): void
@@ -194,7 +193,7 @@ class CausalRecoveryTest extends TestCase
         $trigger = $this->resting($this->root, $position);
         $terminal = $trigger->cycles()->latest('sequence')->first()->phases()->first();
         $a->commitmentSnapshot->forceFill(['calculator_version' => 'origin-bootstrap-v1'])->save();
-        $tragedy = app(TragedyService::class)->record($terminal, ['field_version' => $this->substrate->fresh()->field_version]);
+        $tragedy = $this->boundaryTragedyFixture($terminal->gate);
         $this->refreshMeasurements();
         $selection = app(PotentialChargeService::class)->recoverFrom($position, $this->root, $trigger);
         $this->assertSame($c->id, $selection['proposition']->id);
@@ -221,7 +220,7 @@ class CausalRecoveryTest extends TestCase
         $this->assertSame($c->id, $other->fresh()->current_proposition_id);
         $this->assertDatabaseHas('tragedy_receipt_scopes', ['tragedy_id' => $tragedy->id, 'current_committal_id' => $c->id]);
         $this->assertNotSame($trigger->id, $other->id);
-        $this->assertSame($trigger->id, $tragedy->fresh()->participant_id);
+        $this->assertSame($position->phase->cycle->participant_id, $tragedy->fresh()->participant_id);
         $this->assertSame($c->id, $trigger->fresh()->current_proposition_id);
     }
 
@@ -233,7 +232,7 @@ class CausalRecoveryTest extends TestCase
         $trigger = $this->resting($this->root, $this->expressive($this->root, $c));
         $terminal = $trigger->cycles()->latest('sequence')->first()->phases()->first();
         $a->commitmentSnapshot->forceFill(['calculator_version' => 'origin-bootstrap-v1'])->save();
-        $tragedy = app(TragedyService::class)->record($terminal, ['field_version' => $this->substrate->fresh()->field_version]);
+        $tragedy = $this->boundaryTragedyFixture($terminal->gate);
         $this->phase($this->root, $b, PhaseKind::Distinguish, $trigger);
         $other = $this->resting($this->root, $this->expressive($this->root, $b));
         $entry = $this->phase($this->root, $a, PhaseKind::Distinguish, $other);
@@ -269,7 +268,7 @@ class CausalRecoveryTest extends TestCase
         $trigger = $this->resting($this->root, $this->expressive($this->root, $b));
         $terminal = $trigger->cycles()->latest('sequence')->first()->phases()->first();
         $a->commitmentSnapshot->forceFill(['calculator_version' => 'origin-bootstrap-v1'])->save();
-        $tragedy = app(TragedyService::class)->record($terminal, ['field_version' => $this->substrate->fresh()->field_version]);
+        $tragedy = $this->boundaryTragedyFixture($terminal->gate);
         $cycle = (new Cycle)->forceFill(['participant_id' => $trigger->id, 'context_horizon_id' => $this->root->id, 'sequence' => 2]);
         $cycle->save();
         // Simulate a legacy recovery with no ordering witness finer than Tragedy's ULID millisecond.
@@ -296,7 +295,7 @@ class CausalRecoveryTest extends TestCase
         $trigger = $this->resting($this->root, $position);
         $terminal = $trigger->cycles()->latest('sequence')->first()->phases()->first();
         $far->commitmentSnapshot->forceFill(['calculator_version' => 'origin-bootstrap-v1'])->save();
-        $tragedy = app(TragedyService::class)->record($terminal, ['field_version' => $this->substrate->fresh()->field_version]);
+        $tragedy = $this->boundaryTragedyFixture($terminal->gate);
         $receipt = Receipt::findOrFail($tragedy->receipt_id);
         $original = $receipt->getAttributes();
         $provenance = $tragedy->fresh()->getAttributes();
@@ -313,7 +312,6 @@ class CausalRecoveryTest extends TestCase
         $this->assertContains($receipt->id, app(HorizonReceiptService::class)->available($viewer)->pluck('id'));
         // A historical transported Receipt remains readable, but cannot grant
         // another governing basin the original region's final-attempt authority.
-        $this->assertFalse(app(TragedyFinalAttemptService::class)->available($viewer));
         // The original trigger's normal completion/entry does not carry shared scope.
         $first->forceFill(['completed_at' => now()])->save();
         $first->cycle->forceFill(['completed_at' => now()])->save();
@@ -361,7 +359,7 @@ class CausalRecoveryTest extends TestCase
         $terminal = $this->expressive($this->root, $origin);
         $carrier = $this->resting($this->root, $terminal);
         $phase = $carrier->cycles()->latest('sequence')->first()->phases()->first();
-        $tragedy = app(TragedyService::class)->record($phase, ['field_version' => $this->substrate->fresh()->field_version]);
+        $tragedy = $this->boundaryTragedyFixture($phase->gate);
         $foreign = $this->committal($this->root, .9);
         $entry = $this->phase($this->root, $foreign, PhaseKind::Distinguish, $carrier);
         DB::transaction(fn () => app(TragedyReceiptScopeService::class)->followRecovery($entry));
@@ -1083,7 +1081,7 @@ class CausalRecoveryTest extends TestCase
         $this->assertFalse(app(ExhaustionService::class)->unavailable($sibling));
         $this->assertDatabaseCount('commit_region_exhaustions', 2);
         $this->assertDatabaseCount('tragedies', 2);
-        $this->assertDatabaseCount('tragedy_final_attempts', 2);
+        $this->assertDatabaseCount('tragedy_final_attempts', 0);
         $this->assertDatabaseCount('horizon_exhaustions', 0);
         $members = DB::table('exhausted_region_memberships')->orderBy('proposition_id')->get()->toJson();
         $proofs = DB::table('commit_region_exhaustions')->orderBy('governing_committal_id')->get()->toJson();
@@ -1130,20 +1128,19 @@ class CausalRecoveryTest extends TestCase
         $this->refreshMeasurements();
         app(ParticipationService::class)->contribute($phase->cycle->participant, $phase->id, ['action' => 'participant.rest']);
         $this->assertSame('no_remaining_potential', $phase->cycle->fresh()->rest_reason->value);
+        $this->boundaryTragedyFixture($phase->gate);
         $tragedy = Tragedy::where('governing_committal_id', $seed->id)->sole();
         $this->assertSame($seed->id, $terminal->phase->cycle->entry_committal_id);
-        $this->assertSame($seed->id, app(\App\Services\CommitRegionService::class)->seedFor($terminal)?->id);
+        $this->assertSame($seed->id, app(CommitRegionService::class)->seedFor($terminal)?->id);
         $this->assertFalse(app(ExhaustionService::class)->unavailable($seed));
         app(CycleEntryService::class)->prepare($phase->cycle->participant);
         $this->assertSame($seed->id, $phase->cycle->participant->fresh()->current_proposition_id);
         $attempt = $this->phase($horizon, $seed, PhaseKind::Distinguish);
         $this->refreshMeasurements();
-        $this->assertTrue(app(TragedyFinalAttemptService::class)->available($attempt));
         $variant = DB::transaction(fn () => app(ContributionDispatcher::class)->dispatch($attempt->cycle->participant, $attempt,
             ['action' => 'proposition.variant', 'statement' => 'Regional final attempt']));
         $this->measurements[$variant->id] = 1;
-        $this->assertDatabaseHas('tragedy_final_attempts', ['tragedy_id' => $tragedy->id, 'proposition_id' => $variant->id]);
-        $this->assertFalse(app(TragedyFinalAttemptService::class)->available($attempt));
+        $this->assertDatabaseCount('tragedy_final_attempts', 0);
         $source = $this->node($this->phase($horizon, $variant, PhaseKind::Persist), $variant);
         $this->measurements[$source->id] = 1;
         $this->classificationEvidenceFixture($source);
@@ -1157,7 +1154,7 @@ class CausalRecoveryTest extends TestCase
         app(ParticipationService::class)->contribute($final->cycle->participant, $final->id, ['action' => 'participant.rest']);
         $this->assertDatabaseHas('commit_region_exhaustions', ['governing_committal_id' => $seed->id, 'receipt_id' => $tragedy->receipt_id]);
         $this->assertSame($seed->id, $target->phase->cycle->entry_committal_id);
-        $this->assertSame($seed->id, app(\App\Services\CommitRegionService::class)->seedFor($target)?->id);
+        $this->assertSame($seed->id, app(CommitRegionService::class)->seedFor($target)?->id);
         $this->refreshMeasurements();
 
         return $target;
@@ -1178,6 +1175,7 @@ class CausalRecoveryTest extends TestCase
         $this->explore($node);
         $phase = $this->phase($horizon, $node);
         $this->refreshMeasurements();
+        $this->boundaryTragedyFixture($phase->gate);
         app(ParticipationService::class)->contribute($phase->cycle->participant, $phase->id, ['action' => 'participant.rest']);
         $tragedy = Tragedy::where('context_horizon_id', $horizon->id)->sole();
         $source = $this->node($this->phase($horizon, $opening, PhaseKind::Persist), $opening);
@@ -1311,4 +1309,3 @@ class CausalRecoveryTest extends TestCase
         $this->assertTrue(app(PotentialProjectionService::class)->refresh($this->substrate->id));
     }
 }
-

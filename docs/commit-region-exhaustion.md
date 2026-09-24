@@ -1,5 +1,9 @@
 # Commit Region exhaustion and compatibility
 
+> Stage 2: Tragedy is created by the first fresh expressive result at zero Charge,
+> never by Potential or Rest. The exhaustion/recovery lifecycle in this document
+> is retained pending Stage 6; repeated boundary contact has no new consequence yet.
+
 A Commit Region is the recovery basin governed by its Committal. Recovery walks
 backward through ancestral Commit Regions in causal order. The nearest
 non-exhausted governing Committal is the recovery destination. Potential and
@@ -76,7 +80,7 @@ consequence; a different non-boundary seed supplies only its own local proof.
 
 Ambiguous or transported legacy proofs remain archived. They do not acquire
 regional authority or silently mint a replacement final allowance. A future
-legitimate regional no-Potential Rest can begin a new scoped Tragedy. Existing
+fresh expressive Charge-boundary birth can begin a new scoped Tragedy. Existing
 Receipts and consumption remain readable under their established rules. Old
 Receipt references that have no regional mapping still resolve their historical
 statements, marked `historical_horizon_exhaustion` and

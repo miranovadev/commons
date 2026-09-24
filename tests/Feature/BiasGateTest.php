@@ -135,6 +135,8 @@ class BiasGateTest extends TestCase
     #[DataProvider('domains')]
     public function test_participant_selects_one_gate_creating_one_fresh_target_and_reducing_the_lean(string $register, string $write): void
     {
+        // Isolate structural rules from a new Charge-boundary event.
+        $this->resolveExpressiveFieldFixture(.8);
         $this->fixture($register, $write);
         $selected = $this->sibling("  Selected statement\nexactly as written.  \n");
         $opposite = $this->sibling('Opposite');
@@ -457,4 +459,3 @@ class BiasGateTest extends TestCase
         return $attestation;
     }
 }
-

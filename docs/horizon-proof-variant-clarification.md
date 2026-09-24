@@ -52,12 +52,12 @@ not decide whether another expressive move is structurally possible, and an
 expressive move may increase Tension. Its algebra remains unchanged. The action
 schema and contribution dispatcher share the same structural eligibility service.
 
-The former positive-Potential prerequisite and its Tragedy final-attempt
-exception no longer govern Variant permission. Existing final-attempt recording
-is retained as isolated legacy bookkeeping pending the later Tragedy correction;
-recording it cannot suppress subsequent structurally valid Variants. This stage
-does not redefine Tragedy triggers, Receipts, exhaustion or recovery. See
-[Tragedy and final attempts](branch-tragedy.md#attainable-final-attempt).
+The former positive-Potential prerequisite and special Tragedy final-attempt
+allowance are retired. The allowance service and live bookkeeping are removed;
+its table remains historical storage only. Tragedy is now born from the first
+fresh expressive result at zero canonical Charge, never from Potential or Rest.
+Receipt scope and the legacy exhaustion/recovery rules are retained pending their
+later correction stages. See [Charge-boundary Tragedy](branch-tragedy.md).
 
 Tests: `ExpressiveEvidenceGatingTest` covers both expressive phases, positive
 and zero Potential, Instrument-only and Attestation-only failures, repetition

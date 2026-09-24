@@ -1,5 +1,9 @@
 # Homeostatic Stage 6 validation
 
+> Historical validation record: Stage 2 supersedes the Rest-born Tragedy and special
+> Variant final-attempt allowance described below. See [the current Tragedy invariant](branch-tragedy.md).
+> Exhaustion/recovery consequences await Stage 6.
+
 Stage 6 validates the completed Phase 5–7 integration. It changes no action
 service logic, schema, measurement formula, authority or action semantics. Shared
 prompt wording now defers explicit homologous continuation rules to the current

@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Enums\PhaseKind;
 use App\Models\Attestation;
 use App\Models\Proposition;
-use App\Models\Receipt;
 use App\Services\ContributionDispatcher;
 use App\Services\ContributionService;
 use App\Services\HorizonReceiptService;
@@ -55,6 +54,7 @@ class ReceiptGatedReclassificationTest extends TestCase
     #[DataProvider('boundaries')]
     public function test_reclassification_consumes_selected_shared_receipt_and_preserves_position(PhaseKind $kind): void
     {
+        $this->resolveExpressiveFieldFixture(.8);
         [$source, $receipt, $phase] = $this->boundary($kind);
         $input = ['action' => 'proposition.reclassify', 'proposition_id' => $source->id, 'receipt_id' => $receipt->id];
         $plan = app(InputPlanService::class)->forPhase($phase->cycle->participant, $phase);

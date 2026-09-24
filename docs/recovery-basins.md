@@ -1,5 +1,9 @@
 # Backward lineage recovery
 
+> Stage 2: Tragedy is created by the first fresh expressive result at zero Charge,
+> never by Potential or Rest. The exhaustion/recovery lifecycle in this document
+> is retained pending Stage 6; repeated boundary contact has no new consequence yet.
+
 The participant's terminal position and completed Cycle Horizon are the recovery
 starting point. Recovery walks incoming causal edges backward and collects only
 active ancestral Committals in that Horizon. A retained Committal may itself be a

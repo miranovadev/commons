@@ -84,6 +84,7 @@ class ExhaustionRealtimeTest extends TestCase
             $events[] = $event;
         });
         DB::beginTransaction();
+        $this->boundaryTragedyFixture($phase->gate);
         $phase->forceFill(['completed_at' => now()])->save();
         $phase->cycle->forceFill(['rested_at' => now(), 'rest_reason' => 'no_remaining_potential'])->save();
         app(ExhaustionService::class)->publish($phase, $proof);

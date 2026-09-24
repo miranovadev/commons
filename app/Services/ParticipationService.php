@@ -159,7 +159,7 @@ final readonly class ParticipationService
             ] : ($plan['rest_available'] ? [
                 'code' => $plan['rest_reason'],
                 'message' => $plan['rest_reason'] === 'no_remaining_potential'
-                    ? 'The current Horizon has no remaining measured Potential. Rest records this failure.'
+                    ? 'No admissible action remains in this Phase, and its Commit Region has zero measured Potential. Rest does not create Tragedy.'
                     : 'No admissible non-Rest action remains in this Phase. Rest does not prove Horizon failure.',
             ] : null),
             'entry' => null,

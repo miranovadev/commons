@@ -3,6 +3,7 @@
 namespace Tests;
 
 use App\Domain\Evidence\VerifiedHyperlink;
+use App\Domain\Observables\LocalMeasurements;
 use App\Enums\PhaseKind;
 use App\Enums\RegisterPosition;
 use App\Models\Attestation;
@@ -14,6 +15,8 @@ use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Receipt;
 use App\Models\Substrate;
+use App\Models\Supersession;
+use App\Models\Tragedy;
 use App\Services\ContextHorizonProjector;
 use App\Services\Evidence\HyperlinkIdentity;
 use App\Services\Evidence\HyperlinkVerifier;
@@ -21,14 +24,61 @@ use App\Services\Evidence\PublicResourceAddress;
 use App\Services\HorizonReceiptService;
 use App\Services\InstrumentExecutionService;
 use App\Services\LedgerService;
+use App\Services\Observables\LocalMeasurementService;
 use App\Services\PotentialProjectionService;
+use App\Services\PropositionMeasurementService;
 use App\Services\PropositionStateService;
 use App\Services\ReceiptContextService;
+use App\Services\TragedyService;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Facades\DB;
 
 abstract class TestCase extends BaseTestCase
 {
+    /** Controlled observable output; persistence and canonical field projection stay real. */
+    protected function resolveExpressiveFieldFixture(float $value): void
+    {
+        $this->mock(LocalMeasurementService::class, function ($mock) use ($value): void {
+            $mock->shouldReceive('calculate')->andReturn(new LocalMeasurements($value, $value, $value, $value));
+        });
+    }
+
+    /** Explicit boundary birth for tests of the retained Receipt/recovery lifecycle. */
+    protected function boundaryTragedyFixture(Proposition $terminal): Tragedy
+    {
+        if ($terminal->tier === 'committal') {
+            $seed = $terminal;
+            $horizon = app(ContextHorizonProjector::class)->forEntry($seed);
+            $participant = $seed->phase->cycle->participant;
+            $cycle = (new Cycle)->forceFill(['participant_id' => $participant->id,
+                'sequence' => (int) $participant->cycles()->max('sequence') + 1,
+                'context_horizon_id' => $horizon->id, 'entry_committal_id' => $seed->id]);
+            $cycle->save();
+            $phase = (new Phase)->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Distinguish,
+                'gate_proposition_id' => $seed->id, 'started_at' => now(),
+                'write_register' => $horizon->domain->registerFor(PhaseKind::Distinguish)]);
+            $phase->save();
+            $terminal = (new Proposition)->forceFill(['phase_id' => $phase->id, 'register' => $phase->write_register,
+                'tier' => 'expressive', 'statement' => 'Explicit Charge boundary fixture']);
+            $terminal->save();
+            app(LedgerService::class)->record($terminal);
+            $edge = (new Supersession)->forceFill(['phase_id' => $phase->id,
+                'source_proposition_id' => $seed->id, 'target_proposition_id' => $terminal->id, 'type' => 'variant']);
+            $edge->save();
+            app(LedgerService::class)->record($edge);
+        }
+        $tragedy = DB::transaction(function () use ($terminal) {
+            app(PropositionMeasurementService::class)->project($terminal, 1, 1, 1);
+
+            return app(TragedyService::class)->record($terminal);
+        });
+        $this->assertNotNull($tragedy);
+        $this->publishPotentialFixture($terminal->phase->cycle->participant);
+
+        return $tragedy;
+    }
+
     /** Explicit frozen non-boundary seed for isolated ownership fixtures. */
     protected function freezeRegionFixture(Proposition $seed, float $correspondence = 0): void
     {
@@ -231,4 +281,3 @@ abstract class TestCase extends BaseTestCase
         $this->loadedReceiptFixture($node);
     }
 }
-

@@ -10,7 +10,6 @@ use App\Services\InputPlanService;
 use App\Services\ParticipantHistoricalContext;
 use App\Services\ReceiptContextService;
 use App\Services\TragedyEvidenceService;
-use App\Services\TragedyFinalAttemptService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\Fixtures\HorizonProofFixture;
@@ -38,41 +37,6 @@ class FinalAttemptExhaustionTest extends TestCase
         $this->assertSame(1, Tragedy::count());
         $this->assertFalse(Receipt::findOrFail($tragedy->receipt_id)->consumption()->exists());
         $this->assertDatabaseCount('commit_region_exhaustions', 0);
-    }
-
-    public function test_final_attempt_allowance_is_horizon_local_atomic_and_shared_once(): void
-    {
-        [$opening, , $tragedy] = $this->firstFailure();
-        $phase = $this->phase($opening, PhaseKind::Distinguish);
-        $service = app(TragedyFinalAttemptService::class);
-        $this->assertTrue($service->available($phase));
-        $this->assertFalse($service->available($this->phase($this->origin, PhaseKind::Distinguish)));
-        $variant = $this->node($phase, $opening);
-        try {
-            DB::transaction(function () use ($service, $phase, $variant): void {
-                $service->record($phase, $variant);
-                throw new \DomainException('Rollback the contribution.');
-            });
-            $this->fail('The contribution should roll back.');
-        } catch (\DomainException $exception) {
-            $this->assertSame('Rollback the contribution.', $exception->getMessage());
-        }
-        $this->assertDatabaseCount('tragedy_final_attempts', 0);
-        $this->assertTrue($service->available($phase));
-        DB::transaction(fn () => $service->record($phase, $variant));
-        $this->assertDatabaseHas('tragedy_final_attempts', ['tragedy_id' => $tragedy->id, 'proposition_id' => $variant->id]);
-        $this->assertFalse($service->available($phase));
-        $this->assertFalse($service->available($this->phase($opening, PhaseKind::Distinguish)));
-        $this->assertDatabaseMissing('receipt_consumptions', ['receipt_id' => $tragedy->receipt_id]);
-    }
-
-    public function test_consuming_tragedy_through_an_existing_slot_spends_the_unused_allowance(): void
-    {
-        [$opening, , $tragedy] = $this->firstFailure();
-        $this->exercise($opening, $tragedy);
-        $phase = $this->phase($opening, PhaseKind::Distinguish);
-        $this->assertFalse(app(TragedyFinalAttemptService::class)->available($phase));
-        $this->assertDatabaseCount('tragedy_final_attempts', 0);
     }
 
     public function test_exercised_tragedy_receipt_then_later_failure_exhausts_exactly_once(): void
@@ -153,6 +117,7 @@ class FinalAttemptExhaustionTest extends TestCase
         $this->explore($parentHead);
         $parentRest = $this->phase($parentHead);
         $this->measure($parentHead, 1);
+        $this->boundaryTragedyFixture($parentHead);
         $this->rest($parentRest);
         $parentTragedy = Tragedy::where('context_horizon_id', $horizon->parent_context_horizon_id)->sole();
         $receipt = Receipt::findOrFail($parentTragedy->receipt_id);

@@ -155,6 +155,8 @@ class CausalOperationalScopeTest extends TestCase
     #[DataProvider('domains')]
     public function test_mediate_counterpart_is_an_operand_and_reconciliation_creates_both_causal_edges(string $domain): void
     {
+        // Isolate structural rules from a new Charge-boundary event.
+        $this->resolveExpressiveFieldFixture(.8);
         $seed = $this->fixture($domain);
         $readA = $this->node($seed, PhaseKind::Constrain);
         $readB = $this->node($seed, PhaseKind::Constrain);
@@ -286,4 +288,3 @@ class CausalOperationalScopeTest extends TestCase
             ['action' => 'proposition.commit', 'proposition_id' => $source->id]);
     }
 }
-
