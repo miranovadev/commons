@@ -32,8 +32,7 @@ final readonly class ClosureCalculator
         $mass = $this->reinforcement->measurementCount($proposition, $context)
             * $this->reinforcement->receiptIncrement($comparison->current->horizon->substrate);
 
-        return new ClosureValues($structural->depth, $structural->cadence,
-            round(($structural->depth + $structural->cadence + $mass) / (2 + $mass), 7));
+        return $structural->reinforced($mass);
     }
 
     public function components(Proposition $position, ?ParticipationContext $context = null): ClosureValues
@@ -44,12 +43,14 @@ final readonly class ClosureCalculator
             // Expressive work inherits its Cycle entry Committal's structure. It does
             // not increment Domain-run depth or create a hypothetical interval.
             $entrySnapshot = $ancestors->first();
+
             return new ClosureValues($entrySnapshot?->depth ?? -1, $entrySnapshot?->cadence ?? -1);
         }
         if ($ancestors->isEmpty()) {
             if ($cycle->contextHorizon->parent_context_horizon_id !== null) {
                 throw new DomainException('Only Origin may have no entry Committal.');
             }
+
             return new ClosureValues(-1, -1);
         }
         if ($ancestors->count() === 1) {
@@ -81,6 +82,7 @@ final readonly class ClosureCalculator
         if ($left < 1 || $right < 1) {
             throw new DomainException('Measured committed depths and intervals must be positive.');
         }
+
         return round(max(-1, min(1, 1 - 2 * abs($left - $right) / max($left, $right))), 7);
     }
 }
