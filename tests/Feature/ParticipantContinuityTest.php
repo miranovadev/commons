@@ -11,6 +11,7 @@ use App\Models\Substrate;
 use App\Models\Supersession;
 use App\Models\Tragedy;
 use App\Services\ContributionService;
+use App\Services\CrossoverMarginService;
 use App\Services\CycleEntryService;
 use App\Services\ExhaustionService;
 use App\Services\LedgerService;
@@ -112,7 +113,7 @@ class ParticipantContinuityTest extends TestCase
 
     }
 
-    public function test_tragedy_returns_to_the_opening_commit_without_reopening_or_exhausting_history(): void
+    public function test_rest_skips_closed_crossover_without_reopening_or_exhausting_tragedy_history(): void
     {
         [$participant, , $cycle, $origin, $candidate] = $this->prepareCommit(.6);
         $service = app(ParticipationService::class);
@@ -141,16 +142,18 @@ class ParticipantContinuityTest extends TestCase
         $state = $service->stateFor($participant);
 
         $this->assertSame(['participant.rest'], array_keys($state['plan']['schema']['$defs']['actions']));
+        $this->assertTrue(app(CrossoverMarginService::class)->inspect($next)['closed']);
         $rested = app(ParticipationService::class)->contribute($participant, $phase->id, ['action' => 'participant.rest']);
-        $this->assertSame($commit->id, $participant->fresh()->current_proposition_id);
+        $this->assertSame($origin->id, $participant->fresh()->current_proposition_id);
         $this->assertSame('ready', $rested['status']);
         $this->assertSame('distinguish', $rested['plan']['phase']['kind']);
-        $this->assertSame($commit->id, $rested['plan']['gate_id']);
+        $this->assertSame($origin->id, $rested['plan']['gate_id']);
         $this->assertSame($commit->id, Tragedy::sole()->opening_proposition_id);
-        $this->assertSame($next->context_horizon_id, $rested['cycle']['context_horizon_id']);
+        $this->assertSame($cycle->context_horizon_id, $rested['cycle']['context_horizon_id']);
         $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($next->contextHorizon));
-        $this->assertSame('emergence', $rested['domain']);
-        $this->assertSame('activity', $rested['plan']['phase']['write_register']);
+        $this->assertDatabaseCount('commit_region_exhaustions', 0);
+        $this->assertSame('settlement', $rested['domain']);
+        $this->assertSame('signal', $rested['plan']['phase']['write_register']);
         $this->assertSame($horizons, ContextHorizon::orderBy('sequence')->get()->map(fn ($h) => Arr::except($h->getAttributes(), ['updated_at']))->all());
     }
 
