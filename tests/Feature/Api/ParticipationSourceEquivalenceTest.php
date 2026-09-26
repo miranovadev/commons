@@ -27,7 +27,9 @@ class ParticipationSourceEquivalenceTest extends ScriptedParticipationTestCase
             'credentials' => ['api_key' => 'test-only'],
         ])->assertCreated()->json('data.id');
         $link = $this->postJson('/api/substrates/'.$this->substrateSlug.'/participants/'.$actor.'/connections',
-            ['connection_id' => $connection, 'is_enabled' => true])->assertCreated()->json('data.id');
+            ['connection_id' => $connection, 'is_enabled' => true,
+                'configuration' => ['wake' => ['termination' => 'cycle']],
+            ])->assertCreated()->json('data.id');
         $phases = [];
         $positions = [];
         $this->mock(ParticipantInference::class)->shouldReceive('contribute')->times(3)

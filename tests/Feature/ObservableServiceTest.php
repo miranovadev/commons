@@ -4,9 +4,9 @@ namespace Tests\Feature;
 
 use App\Domain\Observables\DomainLineage;
 use App\Domain\Observables\LineageComparison;
+use App\Enums\ContextDomain;
 use App\Enums\PhaseKind;
 use App\Models\Attestation;
-use App\Models\CommitmentSnapshot;
 use App\Models\Cycle;
 use App\Models\InstrumentExecution;
 use App\Models\Participant;
@@ -72,6 +72,10 @@ class ObservableServiceTest extends TestCase
 
     public function test_matching_lineages_in_complementary_horizons_align(): void
     {
+        // Snapshot timestamps intentionally tie; fixture ancestry must be explicit.
+        $this->freezeTime();
+        $this->assertNull($this->phase->cycle->entry_committal_id);
+
         // Bootstrap at the same depth as the two-node complementary lineages,
         // so the intermediate boundary is admissible under Closure hysteresis.
         $seed = $this->proposition('Origin activity.', 'activity');
@@ -79,7 +83,12 @@ class ObservableServiceTest extends TestCase
         $this->supersede($seed, $origin, 'revise');
         $this->closeHorizon($origin, prominence: 0, turbulence: 1);
 
-        $this->phase = $this->phase(2);
+        $this->phase = $this->phase(2, $origin);
+        $settlementCycle = $this->phase->cycle->fresh('contextHorizon');
+        $this->assertSame($origin->id, $settlementCycle->entry_committal_id);
+        $this->assertSame(ContextDomain::Settlement, $settlementCycle->contextHorizon->domain);
+        $this->assertSame($origin->id, $settlementCycle->contextHorizon->opened_by_proposition_id);
+        $this->assertSame($origin->phase->cycle->context_horizon_id, $settlementCycle->contextHorizon->parent_context_horizon_id);
         $first = $this->proposition('Settlement activity.', 'signal');
         $this->supersede($origin, $first, 'variant');
         $boundary = $this->proposition(
@@ -92,7 +101,14 @@ class ObservableServiceTest extends TestCase
         $this->attest($boundary, 'support');
         $this->closeHorizon($boundary, prominence: 1, turbulence: 0);
 
-        $this->phase = $this->phase(3);
+        $this->assertTrue($origin->fresh()->commitmentSnapshot->evaluated_at->equalTo($boundary->fresh()->commitmentSnapshot->evaluated_at));
+
+        $this->phase = $this->phase(3, $boundary);
+        $emergenceCycle = $this->phase->cycle->fresh('contextHorizon');
+        $this->assertSame($boundary->id, $emergenceCycle->entry_committal_id);
+        $this->assertSame(ContextDomain::Emergence, $emergenceCycle->contextHorizon->domain);
+        $this->assertSame($boundary->id, $emergenceCycle->contextHorizon->opened_by_proposition_id);
+        $this->assertSame($settlementCycle->context_horizon_id, $emergenceCycle->contextHorizon->parent_context_horizon_id);
         $next = $this->proposition('Emergence activity.', 'activity');
         $this->supersede($boundary, $next, 'variant');
         $target = $this->proposition('Emergence canon.', 'canon');
@@ -175,7 +191,7 @@ class ObservableServiceTest extends TestCase
         $this->assertSame(1.0, $weights->get($proposition->getKey()));
     }
 
-    private function phase(int $sequence): Phase
+    private function phase(int $sequence, ?Proposition $entryCommittal = null): Phase
     {
         $cycle = Cycle::query()
             ->whereBelongsTo($this->participant)
@@ -187,7 +203,7 @@ class ObservableServiceTest extends TestCase
             $cycle->forceFill([
                 'participant_id' => $this->participant->getKey(),
                 'sequence' => $sequence,
-                'entry_committal_id' => CommitmentSnapshot::where('substrate_id', $this->substrate->id)->latest('evaluated_at')->first()?->proposition_id,
+                'entry_committal_id' => $entryCommittal?->getKey(),
             ]);
             $cycle->save();
         }

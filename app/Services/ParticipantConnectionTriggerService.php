@@ -66,9 +66,12 @@ final class ParticipantConnectionTriggerService
     ): void {
         $at ??= now();
 
+        // Preserve the scheduled occurrence as the cadence origin, even when late.
+        $scheduledAt = $connection->next_trigger_at ?? $at;
+
         $connection->forceFill([
             'last_triggered_at' => $at,
-            'next_trigger_at' => $this->nextTriggerAt($connection, $at),
+            'next_trigger_at' => $this->nextTriggerAt($connection, $scheduledAt),
             'last_error' => null,
         ])->save();
     }

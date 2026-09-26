@@ -490,7 +490,6 @@ class LocalParticipantNavigationTest extends TestCase
 
     public function test_automated_wakes_ask_inference_to_choose_traversal(): void
     {
-        config()->set('participation.max_actions_per_wake', 1);
         $gate = $this->node('Current', 0.8);
         $target = $this->node('Local', 0.0, 'expressive', governor: $gate);
         $this->edge($gate, $target);
@@ -512,7 +511,7 @@ class LocalParticipantNavigationTest extends TestCase
             'action' => 'proposition.traverse', 'proposition_id' => $target->id,
         ]);
         (new WakeParticipant($link->id))->handle($inference, app(ParticipationService::class),
-            app(ParticipantConnectionTriggerService::class), app(ParticipantActivityService::class));
+            app(ParticipantConnectionTriggerService::class), app(ParticipantActivityService::class), app(\App\Services\WakeClock::class));
         $this->assertSame($target->id, $participant->fresh()->current_proposition_id);
     }
 
@@ -657,3 +656,4 @@ class LocalParticipantNavigationTest extends TestCase
         return app(ParticipationService::class)->stateFor($participant);
     }
 }
+

@@ -3,9 +3,11 @@
 namespace App\Http\Requests;
 
 use App\Enums\ConnectionTriggerMode;
+use App\Support\WakeConfiguration;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class StoreParticipantConnectionRequest extends FormRequest
 {
@@ -14,11 +16,22 @@ class StoreParticipantConnectionRequest extends FormRequest
         return Gate::allows('manageConnections', $this->route('participant'));
     }
 
+    public function after(): array
+    {
+        return [function (Validator $validator): void {
+            WakeConfiguration::validateRange($validator, array_replace_recursive(
+                [],
+                (array) $this->input('configuration', []),
+            ), 'configuration');
+        }];
+    }
+
     public function rules(): array
     {
         $participant = $this->route('participant');
 
         return [
+            ...WakeConfiguration::rules('configuration'),
             'connection_id' => [
                 'required',
                 Rule::exists('connections', 'id')->where('user_id', $this->user()->getKey()),
@@ -32,3 +45,4 @@ class StoreParticipantConnectionRequest extends FormRequest
         ];
     }
 }
+

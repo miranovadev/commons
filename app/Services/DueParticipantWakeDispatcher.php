@@ -10,6 +10,7 @@ final readonly class DueParticipantWakeDispatcher
 {
     public function __construct(
         private ParticipantConnectionTriggerService $triggers,
+        private WakeOffsetResolver $offsets,
     ) {}
 
     public function dispatch(int $limit = 100): int
@@ -17,29 +18,35 @@ final readonly class DueParticipantWakeDispatcher
         $dispatched = 0;
 
         foreach ($this->triggers->due(limit: $limit) as $candidate) {
-            $claimed = DB::transaction(function () use ($candidate): bool {
+            $claimed = DB::transaction(function () use ($candidate): ?array {
                 $participantConnection = ParticipantConnection::query()
                     ->lockForUpdate()
                     ->find($candidate->getKey());
 
                 if ($participantConnection === null
                     || ! $this->triggers->isDue($participantConnection)) {
-                    return false;
+                    return null;
                 }
 
-                $this->triggers->recordTriggered($participantConnection);
+                $scheduledAt = $participantConnection->next_trigger_at;
+                $claimedAt = now();
+                $availableAt = $scheduledAt->copy()->addSeconds(
+                    $this->offsets->seconds($participantConnection->configuration),
+                );
+                $this->triggers->recordTriggered($participantConnection, $claimedAt);
 
-                return true;
+                return [$participantConnection->getKey(), $availableAt];
             });
 
             if (! $claimed) {
                 continue;
             }
 
-            WakeParticipant::dispatch($candidate->getKey());
+            WakeParticipant::dispatch($claimed[0])->delay($claimed[1]);
             $dispatched++;
         }
 
         return $dispatched;
     }
 }
+
