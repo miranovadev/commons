@@ -2,6 +2,7 @@
 
 namespace App\Services\Evidence;
 
+use App\Domain\Evidence\PropositionCollection;
 use App\Domain\Evidence\SearchObservation;
 use App\Models\Receipt;
 use DomainException;
@@ -14,6 +15,9 @@ final class InstrumentInvocation
     public function normalize(array $input): array
     {
         $kind = $input['kind'] ?? null;
+        if ($kind === 'proposition_search') {
+            return PropositionCollection::normalizeInput($input);
+        }
         $field = $kind === 'web_search' ? 'query' : 'reference';
         if (! in_array($kind, ['hyperlink', 'citation', 'web_search'], true)
             || array_diff(array_keys($input), ['kind', $field]) !== [] || ! is_string($input[$field] ?? null)) {

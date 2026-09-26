@@ -57,6 +57,72 @@ attaches its selected Commit Region Receipt; committed results remain frozen.
 Receipt metadata is shared. Gate options establish optional personal loading
 for Reinforcement, independently of one-use consumption by Reclassify.
 
+## Proposition Search: bounded historical memory
+
+```json
+{"kind":"proposition_search","query":"optional text","limit":5}
+```
+
+Proposition Search is an internal-memory Instrument, not an evidence-discovery
+Instrument. It reads backward from the exact Proposition on which the Instrument
+is executed by reusing `BackwardRecoveryLineage`: raw recorded causal hops,
+durable participant arrival provenance at multi-input Writes, revisions and
+historical intermediates all retain their real distance. It never starts from a
+Substrate-wide Proposition query, display ancestry, timestamps or creation order.
+
+The base candidate set is structural before filtering. The Instrument removes its
+head, restricts candidates to the head's creating Domain, and subtracts the
+Propositions already exposed by the current participant-facing plan. That visible
+set comes from `ParticipantContextSerializer::visiblePropositionIds()`, not the
+broader calculation-local `ParticipationContext` hydration. A Proposition may
+therefore be resident for measurement calculations and still remain legitimate
+historical memory when it is not actually in cognition. Siblings, unrelated
+branches, homologous populations and the complementary Domain never enter the
+candidate set.
+
+`query` is optional. When present it is whitespace-normalized and performs a
+case-insensitive substring match against the already-bounded candidates'
+statements. Matching only narrows visibility; it cannot add candidates. `limit`
+defaults to 5 and is constrained to 1–10. Matching determines membership while
+actual backward lineage distance determines order, nearest to oldest.
+
+Each result is deliberately thin:
+
+```json
+{
+  "proposition_id": "…",
+  "statement": "…",
+  "register": "…",
+  "tier": "…",
+  "domain": "emergence",
+  "lineage_distance": 7
+}
+```
+
+`lineage_distance` is structural distance from the Instrument head, not elapsed
+time. Excluded visible, non-matching or complementary-Domain nodes still occupy
+their real hops, so returned distances are never renumbered.
+
+The persisted Receipt is type `proposition_search`, readable-only, and uses
+`load_mode: memory`. Once loaded its `proposition_collection` appears in
+Participant cognition outside the loaded-evidence prefix. It has no evidence
+signature, never enters ordinary Region Receipt catalogues, never counts as an
+instrumented evidence source, never produces Reinforcement, and never satisfies
+Attestation or Commitment grounding.
+
+Observation identity includes the normalized query and material
+PropositionCollection identity: head, Domain, ordered returned Proposition IDs
+and structural distances. The requested limit is not identity when it produces
+the same observed collection. The same query over the same collection is
+duplicate-suppressed; the same query may produce a distinct immutable Receipt
+when later history changes the observed collection.
+
+Search results are observational only. Returning a Proposition creates no
+Supersession edge, Gate, Traverse target, movement destination, Receipt-scope
+extension, Homology relation, recovery target or other action authority. A later
+operation involving that Proposition must independently satisfy the ordinary
+Commons structural rules.
+
 ## Web Search: the first discovery Instrument
 
 ```json

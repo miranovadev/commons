@@ -22,7 +22,7 @@ final class ReinforcementService
         $receipts = $context !== null ? $context->receiptLinks->whereIn('proposition_id', $ids)->pluck('receipt_id')
             : DB::table('proposition_receipt_links')->whereIn('proposition_id', $ids)->pluck('receipt_id');
         $rows = $context !== null ? $context->reinforcements->filter(fn ($row) => $ids->contains($row->proposition_id) || $receipts->contains($row->receipt_id))
-            : ParticipantReceiptContext::active()->whereHas('receipt', fn ($q) => $q->where('type', '!=', 'tragedy'))->where(fn ($q) => $q->whereIn('proposition_id', $ids)->orWhereIn('receipt_id', $receipts))->get();
+            : ParticipantReceiptContext::active()->whereHas('receipt', fn ($q) => $q->whereNotIn('type', \App\Models\Receipt::MEMORY_TYPES))->where(fn ($q) => $q->whereIn('proposition_id', $ids)->orWhereIn('receipt_id', $receipts))->get();
 
         return $rows->unique('participant_id')->count();
     }
@@ -44,7 +44,7 @@ final class ReinforcementService
             $node->id => $this->state->sourceIds($node),
         ]);
         $links = DB::table('proposition_receipt_links')->whereIn('proposition_id', $sources->flatten()->unique())->get();
-        $rows = ParticipantReceiptContext::active()->whereHas('receipt', fn ($q) => $q->where('type', '!=', 'tragedy'))
+        $rows = ParticipantReceiptContext::active()->whereHas('receipt', fn ($q) => $q->whereNotIn('type', \App\Models\Receipt::MEMORY_TYPES))
             ->where(fn ($q) => $q->whereIn('proposition_id', $sources->flatten()->unique())->orWhereIn('receipt_id', $links->pluck('receipt_id')))
             ->get(['proposition_id', 'participant_id', 'receipt_id']);
         foreach ($propositions as $node) {

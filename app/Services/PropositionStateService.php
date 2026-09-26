@@ -157,10 +157,17 @@ final class PropositionStateService
             })->get();
     }
 
+    /** Operational evidence only; readable cognitive memory never grants grounding authority. */
+    public function evidenceReceipts(Proposition $proposition, ?ParticipationContext $context = null): Collection
+    {
+        return $this->receipts($proposition, $context)
+            ->filter(fn (Receipt $receipt) => $receipt->isEvidence())->values();
+    }
+
     /** Snapshot evidence references only; never copy observations or old votes. */
     public function preserveReclassificationEvidence(Proposition $source, Proposition $target): void
     {
-        foreach ($this->receipts($source)->where('receiptable_type', (new Proposition)->getMorphClass()) as $receipt) {
+        foreach ($this->evidenceReceipts($source)->where('receiptable_type', (new Proposition)->getMorphClass()) as $receipt) {
             DB::table('proposition_receipt_links')->insertOrIgnore([
                 'proposition_id' => $target->id, 'receipt_id' => $receipt->id, 'created_at' => now(),
             ]);

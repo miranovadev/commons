@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 
 /** Allowlisted model/API contract. UI additions cannot enter inference implicitly. */
 final class ParticipantContextSerializer
@@ -50,6 +51,34 @@ final class ParticipantContextSerializer
         ];
     }
 
+    /**
+     * Proposition IDs actually exposed to cognition. Calculation-only hydration is
+     * deliberately absent, so bounded memory inherits the same visibility authority.
+     *
+     * @return Collection<int, string>
+     */
+    public function visiblePropositionIds(array $plan): Collection
+    {
+        $visible = $this->plan($plan);
+        $ids = collect([$visible['gate_id'] ?? null]);
+        foreach (['lineage', 'read_options', 'gate_options', 'write_options', 'exhausted_alternatives'] as $role) {
+            $ids = $ids->merge(collect($visible[$role] ?? [])->pluck('id'));
+        }
+        foreach ($visible['receipts'] ?? [] as $receipt) {
+            $ids->push($receipt['proposition_id'] ?? null);
+            $ids->push(data_get($receipt, 'evidence.proposition_id'));
+            foreach (data_get($receipt, 'tragedy_memory.committed_chain', []) as $node) {
+                $ids->push($node['proposition_id'] ?? null);
+            }
+            $ids->push(data_get($receipt, 'tragedy_memory.catastrophe.proposition_id'));
+            foreach (data_get($receipt, 'proposition_collection.results', []) as $node) {
+                $ids->push($node['proposition_id'] ?? null);
+            }
+        }
+
+        return $ids->filter(fn ($id) => is_string($id) && $id !== '')->unique()->values();
+    }
+
     /** Lifecycle details for human display do not belong in an inference prompt. */
     public function inference(array $state): array
     {
@@ -95,6 +124,16 @@ final class ParticipantContextSerializer
                     ? ['tragedy_memory' => $this->memory($receipt['tragedy_memory'])] : []),
             ];
         }
+        if ($receipt['type'] === 'proposition_search') {
+            return [
+                ...Arr::only($receipt, ['id', 'loaded', 'proposition_id', 'context_horizon_id', 'availability',
+                    'consumed_at', 'attached_proposition_id', 'type', 'reference', 'status', 'loaded_at', 'capabilities', 'load_mode']),
+                'active' => false, 'can_replay' => false,
+                'memory_active' => ($receipt['loaded'] ?? false) && ($receipt['memory_active'] ?? false),
+                ...(($receipt['loaded'] ?? false) && isset($receipt['proposition_collection'])
+                    ? ['proposition_collection' => $this->propositionCollection($receipt['proposition_collection'])] : []),
+            ];
+        }
 
         return [
             ...Arr::only($receipt, ['id', 'loaded', 'active', 'proposition_id', 'context_horizon_id', 'availability', 'consumed_at', 'attached_proposition_id', 'type', 'reference', 'status', 'loaded_at', 'capabilities', 'can_replay', 'replayed_from_receipt_id']),
@@ -105,6 +144,19 @@ final class ParticipantContextSerializer
                 'query', 'executed_at', 'results', 'provider', 'request_id',
                 'tragedy_id', 'terminal_proposition_id', 'opening_proposition_id', 'exhausted_committals',
             ])] : []),
+        ];
+    }
+
+    private function propositionCollection(array $collection): array
+    {
+        return [
+            'query' => $collection['query'] ?? null,
+            'limit' => $collection['limit'] ?? null,
+            'head_proposition_id' => $collection['head_proposition_id'] ?? null,
+            'domain' => $collection['domain'] ?? null,
+            'results' => array_map(fn ($node) => Arr::only($node,
+                ['proposition_id', 'statement', 'register', 'tier', 'domain', 'lineage_distance']),
+                $collection['results'] ?? []),
         ];
     }
 

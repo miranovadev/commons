@@ -66,6 +66,31 @@ class ParticipationHttpHarnessTest extends ScriptedParticipationTestCase
         $this->assertGreaterThan($before['cycle']['sequence'], $rested['cycle']['sequence']);
     }
 
+    public function test_proposition_search_limit_is_enforced_by_the_http_contract(): void
+    {
+        $journey = $this->replayParticipationScript(__DIR__.'/../../Fixtures/participation/rest-unread-receipt.json', 4);
+        $actor = $journey['participants']['rest-reader'];
+        $state = $journey['states']['rest-reader'];
+        $this->assertActionAvailable($state, 'instrument.execute');
+        $target = $state['plan']['write_options'][0]['id'];
+
+        foreach ([0, 11, 1.5, '5'] as $limit) {
+            $this->postContribution($actor, $state['plan']['phase']['id'], [
+                'action' => 'instrument.execute',
+                'proposition_id' => $target,
+                'instrument' => ['kind' => 'proposition_search', 'limit' => $limit],
+            ])->assertUnprocessable();
+        }
+        $this->assertSame(0, DB::table('instrument_executions')->where('kind', 'proposition_search')->count());
+
+        $this->postContribution($actor, $state['plan']['phase']['id'], [
+            'action' => 'instrument.execute',
+            'proposition_id' => $target,
+            'instrument' => ['kind' => 'proposition_search', 'limit' => 10],
+        ])->assertOk();
+        $this->assertSame(1, DB::table('instrument_executions')->where('kind', 'proposition_search')->count());
+    }
+
     public function test_harness_rejects_direct_fixture_writes_before_they_execute(): void
     {
         $this->startSubstrate();
