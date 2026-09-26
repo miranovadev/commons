@@ -175,6 +175,23 @@ class PropositionSearchTest extends TestCase
         $this->assertDatabaseCount('participant_receipt_contexts', 1);
     }
 
+    public function test_stale_internal_history_observation_is_rejected_before_persistence(): void
+    {
+        $s = $this->scenario();
+        $service = app(OperationalInstrumentService::class);
+        $input = ['kind' => 'proposition_search', 'query' => 'needle', 'limit' => 10];
+        $observed = $service->observeFor($s['phase'], $s['head'], $input);
+
+        $this->historyNode($s['fixture'], null, $s['root'], 'concurrent unrelated ledger change');
+
+        try {
+            $service->execute($s['phase'], $s['head'], $input, observed: $observed);
+            $this->fail('A stale Proposition Search collection was persisted.');
+        } catch (ConflictHttpException) {
+            $this->assertSame(0, Receipt::where('type', 'proposition_search')->count());
+        }
+    }
+
     public function test_duplicate_identity_uses_the_observed_collection_not_query_alone(): void
     {
         $s = $this->scenario();
