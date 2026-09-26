@@ -34,7 +34,7 @@ interface ParticipantConnectionReference extends ParticipantParameters {
 }
 interface CreateParticipantConnectionInput extends ParticipantParameters {
   connection_id: Identifier;
-  configuration: { trigger: ConnectionTrigger };
+  configuration: NonNullable<ParticipantConnection['configuration']>;
 }
 type UpdateParticipantConnectionInput = ParticipantConnectionReference & Partial<Pick<ParticipantConnection, 'is_enabled' | 'configuration'>>;
 
@@ -310,4 +310,5 @@ export const {
   useUpdateConnectionMutation,
   useUpdateParticipantConnectionMutation,
 } = commonsApi;
+
 

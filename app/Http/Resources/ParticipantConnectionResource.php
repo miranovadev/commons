@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Support\WakeConfiguration;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -18,7 +19,7 @@ class ParticipantConnectionResource extends JsonResource
                 fn () => new ConnectionResource($this->connection),
             ),
             'is_enabled' => $this->is_enabled,
-            'configuration' => $this->configuration,
+            'configuration' => WakeConfiguration::resolve($this->configuration),
             'next_trigger_at' => $this->next_trigger_at,
             'last_triggered_at' => $this->last_triggered_at,
             'last_error' => $this->last_error,
@@ -27,3 +28,4 @@ class ParticipantConnectionResource extends JsonResource
         ];
     }
 }
+

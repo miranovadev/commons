@@ -366,7 +366,8 @@ class TransactionLockOrderTest extends TestCase
     #[Group('load')]
     public function test_another_participant_can_commit_an_action_during_inference_between_steps_of_one_wake(): void
     {
-        config()->set('participation.max_actions_per_wake', 2);
+        $clock = \Mockery::mock(\App\Services\WakeClock::class);
+        $clock->shouldReceive('now')->andReturn(0, 0, 0, 0, 0, 0, 0, 601);
         [$substrate, $first, $phase] = $this->fixture();
         $second = new Participant;
         $second->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'between-actions'])->save();
@@ -377,7 +378,7 @@ class TransactionLockOrderTest extends TestCase
             'configuration' => ['model' => 'test'], 'credentials' => ['api_key' => 'test']])->save();
         $link = new ParticipantConnection;
         $link->forceFill(['participant_id' => $first->id, 'connection_id' => $connection->id,
-            'is_enabled' => true, 'configuration' => []])->save();
+            'is_enabled' => true, 'configuration' => ['wake' => ['termination' => 'cycle']]])->save();
         $calls = 0;
         $inference = \Mockery::mock(ParticipantInference::class);
         $inference->shouldReceive('contribute')->twice()->andReturnUsing(function ($connection, $state) use (&$calls, $phase, $second, $secondPhase): array {
@@ -397,7 +398,7 @@ class TransactionLockOrderTest extends TestCase
 
             return ['action' => 'proposition.variant', 'statement' => 'Second forward wake action'];
         });
-        (new WakeParticipant($link->id))->handle($inference, app(ParticipationService::class), app(ParticipantConnectionTriggerService::class), app(ParticipantActivityService::class));
+        (new WakeParticipant($link->id))->handle($inference, app(ParticipationService::class), app(ParticipantConnectionTriggerService::class), app(ParticipantActivityService::class), $clock);
         $this->assertSame(2, $calls);
         $this->assertNull($phase->cycle->fresh()->completed_at);
         $this->assertNull($phase->cycle->fresh()->rested_at);
@@ -751,3 +752,4 @@ class TransactionLockOrderTest extends TestCase
         return Phase::where('cycle_id', $cycle->id)->whereNull('completed_at')->sole();
     }
 }
+

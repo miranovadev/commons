@@ -6,6 +6,7 @@ use App\Enums\ConnectionTriggerMode;
 use App\Models\Connection;
 use App\Models\Participant;
 use App\Models\ParticipantConnection;
+use App\Support\WakeConfiguration;
 
 final class ParticipantConnectionService
 {
@@ -44,8 +45,8 @@ final class ParticipantConnectionService
         ParticipantConnection $participantConnection,
         array $attributes,
     ): ParticipantConnection {
-        $scheduleChanged = array_key_exists('is_enabled', $attributes)
-            || array_key_exists('configuration', $attributes);
+        $oldEnabled = $participantConnection->is_enabled;
+        $oldTrigger = WakeConfiguration::resolve($participantConnection->configuration)['trigger'];
 
         if (array_key_exists('configuration', $attributes)) {
             $attributes['configuration'] = $this->configuration(
@@ -59,7 +60,10 @@ final class ParticipantConnectionService
         $participantConnection->forceFill($attributes);
         $participantConnection->save();
 
-        if ($scheduleChanged) {
+        $newTrigger = WakeConfiguration::resolve($participantConnection->configuration)['trigger'];
+        if ($oldEnabled !== $participantConnection->is_enabled
+            || ($oldTrigger['mode'] ?? 'manual') !== $newTrigger['mode']
+            || (int) ($oldTrigger['interval_minutes'] ?? 0) !== (int) ($newTrigger['interval_minutes'] ?? 0)) {
             $this->triggers->reschedule($participantConnection);
         }
 
@@ -72,11 +76,7 @@ final class ParticipantConnectionService
      */
     private function configuration(array $configuration): array
     {
-        $configuration = array_replace_recursive([
-            'trigger' => [
-                'mode' => ConnectionTriggerMode::Manual->value,
-            ],
-        ], $configuration);
+        $configuration = WakeConfiguration::resolve($configuration);
 
         $mode = ConnectionTriggerMode::from(
             $configuration['trigger']['mode'],
@@ -86,8 +86,15 @@ final class ParticipantConnectionService
             unset($configuration['trigger']['interval_minutes']);
         }
 
+        $configuration['wake']['timeout_seconds'] = (int) $configuration['wake']['timeout_seconds'];
+        foreach (['seconds', 'random_from', 'random_to'] as $field) {
+            $configuration['trigger']['offset'][$field] = (int) $configuration['trigger']['offset'][$field];
+        }
+
         return [
             'trigger' => $configuration['trigger'],
+            'wake' => $configuration['wake'],
         ];
     }
 }
+

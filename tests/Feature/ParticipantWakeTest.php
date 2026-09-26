@@ -18,6 +18,7 @@ use App\Models\Receipt;
 use App\Models\Substrate;
 use App\Services\ClosureGateService;
 use App\Services\CycleEntryService;
+use App\Services\DueParticipantWakeDispatcher;
 use App\Services\InputSchemaService;
 use App\Services\LedgerService;
 use App\Services\OpenAIResponseSchema;
@@ -25,14 +26,18 @@ use App\Services\OpenAIResponsesClient;
 use App\Services\OperationalInstrumentService;
 use App\Services\ParticipantActivityService;
 use App\Services\ParticipationService;
+use App\Services\WakeClock;
+use App\Services\WakeOffsetResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Queue\Job;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Mockery;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\ParticipantContextFixture;
 use Tests\TestCase;
 
@@ -79,7 +84,7 @@ class ParticipantWakeTest extends TestCase
         $this->assertTrue($participantConnection->last_triggered_at->equalTo($now));
         $this->assertTrue(
             $participantConnection->next_trigger_at->equalTo(
-                $now->addMinutes(15),
+                $now->subMinute()->addMinutes(15),
             ),
         );
 
@@ -225,11 +230,10 @@ class ParticipantWakeTest extends TestCase
         );
     }
 
-    public function test_wake_job_action_ceiling_leaves_the_cycle_active(): void
+    public function test_default_phase_wake_completes_one_phase_and_leaves_the_cycle_active(): void
     {
         // Isolate structural rules from a new Charge-boundary event.
         $this->resolveExpressiveFieldFixture(.8);
-        config()->set('participation.max_actions_per_wake', 1);
         [$participant, $participantConnection] = $this->readyConnection();
         $inference = Mockery::mock(ParticipantInference::class);
         $inference->shouldReceive('contribute')
@@ -284,7 +288,6 @@ class ParticipantWakeTest extends TestCase
 
     public function test_wake_job_enters_an_established_substrate_via_potential(): void
     {
-        config()->set('participation.max_actions_per_wake', 1);
         $originParticipant = $this->participant();
         app(CycleEntryService::class)->enter($originParticipant, [
             'statement' => 'A measured Origin.',
@@ -336,7 +339,18 @@ class ParticipantWakeTest extends TestCase
         $this->assertNull($participantConnection->fresh()->last_error);
     }
 
-    public function test_one_wake_reads_fresh_state_through_a_whole_cycle_and_stops_at_prepared_phase_one(): void
+    public function test_cycle_wake_stops_at_prepared_phase_one(): void
+    {
+        $this->runCycleWake('cycle');
+    }
+
+    #[Group('integration')]
+    public function test_rest_wake_crosses_a_real_commit_and_stops_immediately_after_genuine_rest(): void
+    {
+        $this->runCycleWake('rest');
+    }
+
+    private function runCycleWake(string $mode): void
     {
         $f = new ParticipantContextFixture(1, 0);
         $f->phase->forceFill(['kind' => PhaseKind::Distinguish, 'gate_proposition_id' => $f->seed->id, 'write_register' => 'activity'])->save();
@@ -360,14 +374,23 @@ class ParticipantWakeTest extends TestCase
         $receipt = app(OperationalInstrumentService::class)->execute($f->phase, $nodes[0], ['kind' => 'web_search', 'query' => 'wake evidence']);
         $this->publishPotentialFixture($f->viewer);
         $connection = $this->connectionFor($f->viewer);
+        $connection->forceFill(['configuration' => array_replace_recursive($connection->configuration, ['wake' => ['termination' => $mode]])])->save();
         $cycleId = $f->phase->cycle_id;
         $calls = [];
         $inference = Mockery::mock(ParticipantInference::class);
-        $inference->shouldReceive('contribute')->times(7)->andReturnUsing(function (Connection $connection, array $state) use (&$calls, $receipt, $nodes, $cycleId, $f): array {
+        $inference->shouldReceive('contribute')->times($mode === 'rest' ? 10 : 7)->andReturnUsing(function (Connection $connection, array $state) use (&$calls, $receipt, $nodes, $cycleId, $f): array {
             $activity = app(ParticipantActivityService::class)->snapshot(collect([$f->viewer->fresh()]))['participants'][0];
             $this->assertTrue($activity['is_active']);
             $this->assertNotNull($activity['current_proposition_id']);
-            $this->assertSame($cycleId, $state['cycle']['id']);
+            if ($state['cycle']['id'] !== $cycleId) {
+                $calls[] = [$state['plan']['phase']['number'], $state['plan']['phase']['id']];
+                if ($state['plan']['phase']['number'] <= 2) {
+                    return ['action' => 'proposition.variant', 'statement' => 'The Rest wake continues into its second Cycle.'];
+                }
+                $this->assertArrayHasKey('participant.rest', $state['plan']['schema']['$defs']['actions']);
+
+                return ['action' => 'participant.rest'];
+            }
             $kind = $state['plan']['phase']['number'];
             $calls[] = [$kind, $state['plan']['phase']['id']];
             if ($kind === 1) {
@@ -383,6 +406,15 @@ class ParticipantWakeTest extends TestCase
         });
         $this->app->instance(ParticipantInference::class, $inference);
         $this->app->call([new WakeParticipant($connection->id), 'handle']);
+        if ($mode === 'rest') {
+            $this->assertSame([1, 2, 3, 4, 5, 6, 7, 1, 2, 3], array_column($calls, 0));
+            $this->assertCount(10, array_unique(array_column($calls, 1)));
+            $this->assertNotNull(Cycle::findOrFail($cycleId)->completed_at);
+            $this->assertNull(Cycle::findOrFail($cycleId)->rested_at);
+            $this->assertNotNull(Phase::findOrFail($calls[9][1])->cycle->rested_at);
+
+            return;
+        }
         $this->assertSame([1, 2, 3, 4, 5, 6, 7], array_column($calls, 0));
         $this->assertCount(7, array_unique(array_column($calls, 1)));
         $this->assertNotNull(Cycle::findOrFail($cycleId)->completed_at);
@@ -397,8 +429,8 @@ class ParticipantWakeTest extends TestCase
         $this->assertSame($next['plan']['gate_id'], $activity['current_proposition_id']);
         $this->assertSame(1, Phase::where('cycle_id', $next['cycle']['id'])->count());
 
-        // A separately scheduled wake resumes the exact prepared occurrence.
-        config()->set('participation.max_actions_per_wake', 1);
+        // A separately scheduled Phase wake resumes the exact prepared occurrence.
+        $connection->forceFill(['configuration' => array_replace_recursive($connection->configuration, ['wake' => ['termination' => 'phase']])])->save();
         $second = Mockery::mock(ParticipantInference::class);
         $second->shouldReceive('contribute')->once()->withArgs(fn ($connection, $state) => $state['plan']['phase']['id'] === $nextPhaseId)
             ->andReturn(['action' => 'proposition.variant', 'statement' => 'The next wake resumes Phase 1.']);
@@ -407,9 +439,8 @@ class ParticipantWakeTest extends TestCase
         $this->assertNotNull(Phase::findOrFail($nextPhaseId)->completed_at);
     }
 
-    public function test_stale_inference_rebuilds_state_and_counts_towards_the_operational_ceiling(): void
+    public function test_stale_inference_rebuilds_state_without_replaying_a_rejected_contribution(): void
     {
-        config()->set('participation.max_actions_per_wake', 2);
         $f = new ParticipantContextFixture(1, 0);
         $target = $f->node($f->gate, 'frontier', position: PhaseKind::Mediate);
         $this->publishPotentialFixture($f->viewer);
@@ -459,6 +490,176 @@ class ParticipantWakeTest extends TestCase
         $state = app(ParticipantActivityService::class)->snapshot(collect([$participant->fresh()]))['participants'][0];
         $this->assertFalse($state['is_active']);
         $this->assertSame($position, $state['current_proposition_id']);
+    }
+
+    public function test_cycle_mode_stops_when_the_current_cycle_rests(): void
+    {
+        $this->resolveExpressiveFieldFixture(.8);
+        [$participant, $connection] = $this->readyConnection();
+        $connection->forceFill(['configuration' => array_replace_recursive($connection->configuration, ['wake' => ['termination' => 'cycle']])])->save();
+        $cycle = $participant->cycles()->firstOrFail();
+        $inference = Mockery::mock(ParticipantInference::class);
+        $inference->shouldReceive('contribute')->times(3)->andReturn(
+            ['action' => 'proposition.variant', 'statement' => 'A fresh distinction.'],
+            ['action' => 'proposition.variant', 'statement' => 'A persisted source without classification evidence.'],
+            ['action' => 'participant.rest'],
+        );
+        $this->app->instance(ParticipantInference::class, $inference);
+        $this->app->call([new WakeParticipant($connection->id), 'handle']);
+        $this->assertNotNull($cycle->fresh()->rested_at);
+        $this->assertNotNull($cycle->fresh()->completed_at);
+    }
+
+    public function test_whole_job_deadline_preserves_completed_work_and_next_wake_resumes(): void
+    {
+        $this->resolveExpressiveFieldFixture(.8);
+        [$participant, $connection] = $this->readyConnection();
+        $connection->forceFill(['configuration' => array_replace_recursive($connection->configuration, ['wake' => ['termination' => 'rest', 'timeout_seconds' => 600]])])->save();
+        $cycle = $participant->cycles()->firstOrFail();
+        $tragedies = \App\Models\Tragedy::count();
+        $exhaustions = DB::table('commit_region_exhaustions')->count();
+        $clock = Mockery::mock(WakeClock::class);
+        $clock->shouldReceive('now')->andReturn(0, 0, 0, 0, 601);
+        $this->app->instance(WakeClock::class, $clock);
+        $inference = Mockery::mock(ParticipantInference::class);
+        $inference->shouldReceive('contribute')->once()->andReturn(['action' => 'proposition.variant', 'statement' => 'Completed before the wake deadline.']);
+        $this->app->instance(ParticipantInference::class, $inference);
+        $job = new WakeParticipant($connection->id);
+        $this->assertSame(600, $job->timeout);
+        $this->assertTrue($job->failOnTimeout);
+        $this->app->call([$job, 'handle']);
+        $this->assertDatabaseHas('propositions', ['statement' => 'Completed before the wake deadline.']);
+        $this->assertNull($cycle->fresh()->completed_at);
+        $this->assertNull($cycle->fresh()->rested_at);
+        $this->assertSame($tragedies, \App\Models\Tragedy::count());
+        $this->assertSame($exhaustions, DB::table('commit_region_exhaustions')->count());
+        $this->assertStringContainsString('timed out', $connection->fresh()->last_error);
+        $phase = $cycle->phases()->whereNull('completed_at')->firstOrFail();
+        $this->app->instance(WakeClock::class, new WakeClock);
+        $resume = Mockery::mock(ParticipantInference::class);
+        $resume->shouldReceive('contribute')->twice()->andReturnUsing(function ($connection, $state) use ($phase): array {
+            if ($state['plan']['phase']['id'] === $phase->id) {
+                return ['action' => 'proposition.variant', 'statement' => 'Resumed without replaying the distinction.'];
+            }
+            $this->assertArrayHasKey('participant.rest', $state['plan']['schema']['$defs']['actions']);
+
+            return ['action' => 'participant.rest'];
+        });
+        $this->app->instance(ParticipantInference::class, $resume);
+        $this->app->call([new WakeParticipant($connection->id), 'handle']);
+        $this->assertNotNull($cycle->fresh()->rested_at);
+        $this->assertNull($connection->fresh()->last_error);
+    }
+
+    public function test_expired_inference_is_not_contributed(): void
+    {
+        [$participant, $connection] = $this->readyConnection();
+        $clock = Mockery::mock(WakeClock::class);
+        $clock->shouldReceive('now')->andReturn(0, 0, 0, 601);
+        $this->app->instance(WakeClock::class, $clock);
+        $inference = Mockery::mock(ParticipantInference::class);
+        $inference->shouldReceive('contribute')->once()->andReturn(['action' => 'proposition.variant', 'statement' => 'Too late.']);
+        $this->app->instance(ParticipantInference::class, $inference);
+        $this->app->call([new WakeParticipant($connection->id), 'handle']);
+        $this->assertDatabaseMissing('propositions', ['statement' => 'Too late.']);
+        $this->assertNull($participant->cycles()->firstOrFail()->completed_at);
+    }
+
+    public function test_fixed_offsets_use_native_queue_availability_without_cadence_drift(): void
+    {
+        Queue::fake();
+        $at = CarbonImmutable::parse('2026-09-07 12:00:00 UTC');
+        CarbonImmutable::setTestNow($at);
+        [, $connection] = $this->readyConnection($at);
+        foreach ([0, 10, 60] as $seconds) {
+            $connection->forceFill(['configuration' => ['trigger' => ['mode' => 'interval', 'interval_minutes' => 1, 'offset' => ['mode' => 'seconds', 'seconds' => $seconds]]]])->save();
+            $this->assertSame(1, app(DueParticipantWakeDispatcher::class)->dispatch());
+            Queue::assertPushed(WakeParticipant::class, fn ($job) => $job->delay->equalTo($at->addSeconds($seconds)));
+            $this->assertTrue($connection->fresh()->next_trigger_at->equalTo($at->addMinute()));
+            $at = $at->addMinute();
+            CarbonImmutable::setTestNow($at);
+        }
+    }
+
+    public function test_late_scheduler_claims_preserve_scheduled_offsets_and_cadence(): void
+    {
+        $scheduledAt = CarbonImmutable::parse('2026-09-07 12:00:00 UTC');
+        CarbonImmutable::setTestNow($scheduledAt);
+        [, $connection] = $this->readyConnection($scheduledAt);
+        $connection->forceFill(['configuration' => ['trigger' => ['mode' => 'interval', 'interval_minutes' => 1,
+            'offset' => ['mode' => 'seconds', 'seconds' => 10]]]])->save();
+
+        // Cover claims before and after queue availability, without accumulating lateness.
+        foreach ([7, 40, 19] as $lateSeconds) {
+            Queue::fake();
+            $claimedAt = $scheduledAt->addSeconds($lateSeconds);
+            CarbonImmutable::setTestNow($claimedAt);
+
+            $this->assertSame(1, app(DueParticipantWakeDispatcher::class)->dispatch());
+            Queue::assertPushed(WakeParticipant::class, fn ($job) => $job->participantConnectionId === $connection->id
+                && $job->delay->equalTo($scheduledAt->addSeconds(10)));
+            $connection->refresh();
+            $this->assertTrue($connection->last_triggered_at->equalTo($claimedAt));
+            $this->assertTrue($connection->next_trigger_at->equalTo($scheduledAt->addMinute()));
+
+            $this->assertSame(0, app(DueParticipantWakeDispatcher::class)->dispatch());
+            Queue::assertPushed(WakeParticipant::class, 1);
+            $scheduledAt = $scheduledAt->addMinute();
+        }
+    }
+
+    public function test_random_offsets_are_sampled_per_trigger_and_never_move_the_schedule(): void
+    {
+        Queue::fake();
+        $at = CarbonImmutable::parse('2026-09-07 12:00:00 UTC');
+        CarbonImmutable::setTestNow($at);
+        [, $connection] = $this->readyConnection($at);
+        $connection->forceFill(['configuration' => ['trigger' => ['mode' => 'interval', 'interval_minutes' => 1, 'offset' => ['mode' => 'random', 'random_from' => 30, 'random_to' => 40]]]])->save();
+        $resolver = new class extends WakeOffsetResolver
+        {
+            public array $samples = [30, 40];
+
+            protected function sample(int $from, int $to): int
+            {
+                if ($from !== 30 || $to !== 40) {
+                    throw new \RuntimeException('Unexpected random offset bounds.');
+                }
+
+                return array_shift($this->samples);
+            }
+        };
+        $this->app->instance(WakeOffsetResolver::class, $resolver);
+        foreach ([30, 40] as $seconds) {
+            $this->assertSame(1, app(DueParticipantWakeDispatcher::class)->dispatch());
+            Queue::assertPushed(WakeParticipant::class, fn ($job) => $job->delay->equalTo($at->addSeconds($seconds)));
+            $this->assertTrue($connection->fresh()->next_trigger_at->equalTo($at->addMinute()));
+            $at = $at->addMinute();
+            CarbonImmutable::setTestNow($at);
+        }
+        $this->assertSame([], $resolver->samples);
+        $this->assertArrayNotHasKey('sample', $connection->fresh()->configuration['trigger']['offset']);
+    }
+
+    public function test_delayed_rest_wakes_share_a_participant_lock_but_other_participants_do_not(): void
+    {
+        [$participant, $connection] = $this->readyConnection();
+        $connection->forceFill(['configuration' => array_replace_recursive($connection->configuration, ['wake' => ['termination' => 'rest', 'timeout_seconds' => 1800]])])->save();
+        $first = new WakeParticipant($connection->id);
+        $sameParticipant = (new WakeParticipant($this->connectionFor($participant)->id))->delay(60);
+        [, $otherConnection] = $this->readyConnection();
+        $other = (new WakeParticipant($otherConnection->id))->delay(30);
+        $lock = Cache::lock($first->middleware()[0]->getLockKey($first), $first->timeout + 30);
+        $this->assertTrue($lock->get());
+        $sameRan = false;
+        $otherRan = false;
+        try {
+            $sameParticipant->middleware()[0]->handle($sameParticipant, function () use (&$sameRan): void { $sameRan = true; });
+            $other->middleware()[0]->handle($other, function () use (&$otherRan): void { $otherRan = true; });
+            $this->assertFalse($sameRan);
+            $this->assertTrue($otherRan);
+        } finally {
+            $lock->release();
+        }
     }
 
     /** @return array{Participant, ParticipantConnection} */
@@ -550,3 +751,4 @@ class ParticipantWakeTest extends TestCase
         return $participantConnection;
     }
 }
+

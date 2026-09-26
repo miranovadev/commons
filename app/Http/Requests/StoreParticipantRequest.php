@@ -4,9 +4,11 @@ namespace App\Http\Requests;
 
 use App\Enums\ConnectionTriggerMode;
 use App\Models\Substrate;
+use App\Support\WakeConfiguration;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class StoreParticipantRequest extends FormRequest
 {
@@ -15,12 +17,23 @@ class StoreParticipantRequest extends FormRequest
         return Gate::allows('join', $this->route('substrate'));
     }
 
+    public function after(): array
+    {
+        return [function (Validator $validator): void {
+            WakeConfiguration::validateRange($validator, array_replace_recursive(
+                [],
+                (array) $this->input('connection.configuration', []),
+            ), 'connection.configuration');
+        }];
+    }
+
     public function rules(): array
     {
         /** @var Substrate $substrate */
         $substrate = $this->route('substrate');
 
         return [
+            ...WakeConfiguration::rules('connection.configuration'),
             'callsign' => ['required', 'string', 'max:255', Rule::unique('participants', 'callsign')->where('substrate_id', $substrate->getKey())],
             'designation' => ['nullable', 'string', 'max:255'],
             'max_read_count' => ['sometimes', 'integer', 'min:1'],
@@ -35,3 +48,4 @@ class StoreParticipantRequest extends FormRequest
         ];
     }
 }
+

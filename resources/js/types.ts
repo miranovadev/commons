@@ -138,9 +138,23 @@ export interface Connection {
   participants_count?: number;
 }
 
+export type WakeTermination = 'phase' | 'cycle' | 'rest';
+export type WakeOffsetMode = 'seconds' | 'random';
+export interface WakeOffset {
+  mode: WakeOffsetMode;
+  seconds?: number;
+  random_from?: number;
+  random_to?: number;
+}
+export interface ParticipantWakeConfiguration {
+  trigger?: ConnectionTrigger;
+  wake?: { termination?: WakeTermination; timeout_seconds?: number };
+}
+
 export interface ConnectionTrigger {
   mode: TriggerMode;
   interval_minutes?: number;
+  offset?: WakeOffset;
 }
 
 export interface ParticipantConnection {
@@ -148,7 +162,7 @@ export interface ParticipantConnection {
   connection_id: Identifier;
   connection?: Connection;
   is_enabled: boolean;
-  configuration?: { trigger?: ConnectionTrigger };
+  configuration?: ParticipantWakeConfiguration;
   next_trigger_at?: string | null;
   last_error?: string | null;
 }
@@ -411,3 +425,4 @@ export interface ParticipantContext {
 }
 
 export type AutonomousParticipation = Omit<Participation, 'plan'> & { plan?: ParticipantContext | null };
+
