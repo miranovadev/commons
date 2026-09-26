@@ -68,9 +68,10 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
         $this->assertSame('no_available_move', $beforeRest['plan']['rest_reason']);
         $this->assertSame(['participant.rest'], array_keys($beforeRest['plan']['schema']['$defs']['actions']));
 
-        $history = fn () => collect(['tragedies', 'receipts', 'receipt_consumptions',
-            'commit_region_exhaustions', 'exhausted_region_memberships', 'commitment_snapshots', 'context_horizons'])
-            ->mapWithKeys(fn ($table) => [$table => DB::table($table)->orderBy($table === 'commitment_snapshots' ? 'proposition_id' : 'id')->get()->toJson()])->all();
+        $history = fn () => collect(['tragedies' => 'id', 'receipts' => 'id', 'receipt_consumptions' => 'receipt_id',
+            'commit_region_exhaustions' => 'governing_committal_id', 'exhausted_region_memberships' => 'proposition_id',
+            'commitment_snapshots' => 'proposition_id', 'context_horizons' => 'id'])
+            ->map(fn ($key, $table) => DB::table($table)->orderBy($key)->get()->toJson())->all();
         $beforeHistory = $history();
         $state = $this->contribute($actor, ['action' => 'participant.rest'], $beforeRest);
         $this->assertSame($beforeHistory, $history());
