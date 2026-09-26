@@ -10,6 +10,7 @@ import type { ContributionInput, Observables, ParticipantPlan, PropositionSelect
 
 interface PropositionInspectorProps {
   selection: PropositionSelection | null;
+  graph?: boolean;
   committalObservables?: Observables;
   onClose: () => void;
   plan?: ParticipantPlan;
@@ -34,7 +35,7 @@ export function PropositionInspector({ selection, committalObservables, onClose,
   );
 }
 
-export function InspectorContent({ selection, committalObservables }: Omit<PropositionInspectorProps, 'onClose'>) {
+export function InspectorContent({ selection, committalObservables, graph = false }: Omit<PropositionInspectorProps, 'onClose'>) {
   const [tab, setTab] = useState<string | null>('proposition');
   if (!selection) {
     return (
@@ -49,19 +50,14 @@ export function InspectorContent({ selection, committalObservables }: Omit<Propo
   const projected = selection.projectedObservables;
   const summary = structuralDeltaSummary(proposition.observables, projected);
 
-  return (
-    <Tabs value={tab === 'closure' && proposition.tier !== 'committal' ? 'proposition' : tab} onChange={setTab} keepMounted={false} className="inspector-tabs">
-      <Tabs.List grow><Tabs.Tab value="proposition">Proposition</Tabs.Tab><Tabs.Tab value="field">Field State</Tabs.Tab>{proposition.tier === 'committal' && <Tabs.Tab value="closure">Closure</Tabs.Tab>}</Tabs.List>
-      <Tabs.Panel value="field" p="md"><FieldStateChart proposition={proposition} /></Tabs.Panel>
-      {proposition.tier === 'committal' && <Tabs.Panel value="closure" p="md"><ClosureHistoryChart proposition={proposition} /></Tabs.Panel>}
-      <Tabs.Panel value="proposition"><Stack gap="md" p="md">
+  const content = <Stack gap="md" p="md">
       {selection.kind && <Badge size="xs" color="gray" variant="outline" style={{ alignSelf: 'flex-start' }}>{selection.kind}</Badge>}
 
       <Box className="inspector-section">
         <PropositionContent
           proposition={{ ...proposition, title: selection.title || proposition.title }}
           mode="detailed"
-          hideField
+          hideField={graph}
           projectedObservables={projected}
           committalObservables={committalObservables}
         />
@@ -97,8 +93,21 @@ export function InspectorContent({ selection, committalObservables }: Omit<Propo
       {!projected && (
         <Text size="xs" c="dimmed">This is the observed structural state. A projected position appears here only when an admissible move supplies one.</Text>
       )}
-    </Stack></Tabs.Panel></Tabs>
-  );
+    </Stack>;
+
+  // Participation previews keep their existing projected readout and action drawer.
+  if (!graph) return content;
+  return <Tabs value={tab === 'closure' && proposition.tier !== 'committal' ? 'proposition' : tab}
+    onChange={setTab} keepMounted={false} className="inspector-tabs">
+    <Tabs.List grow>
+      <Tabs.Tab value="proposition">Proposition</Tabs.Tab>
+      <Tabs.Tab value="field">Field State</Tabs.Tab>
+      {proposition.tier === 'committal' && <Tabs.Tab value="closure">Closure</Tabs.Tab>}
+    </Tabs.List>
+    <Tabs.Panel value="proposition">{content}</Tabs.Panel>
+    <Tabs.Panel value="field" p="md"><FieldStateChart proposition={proposition} /></Tabs.Panel>
+    {proposition.tier === 'committal' && <Tabs.Panel value="closure" p="md"><ClosureHistoryChart proposition={proposition} /></Tabs.Panel>}
+  </Tabs>;
 }
 
 

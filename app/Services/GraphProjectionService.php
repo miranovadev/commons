@@ -29,7 +29,6 @@ final readonly class GraphProjectionService
         // Observer mode changes visibility only. Every view reads the same field.
         $this->loadActive($substrate, $visible, $historical);
         $this->loadHistoricalMarkers($substrate, $visible);
-        app(PropositionInspectionService::class)->loadMarkers($substrate, $visible);
     }
 
     /** Accepted contribution history only; never re-run today's Bias population or field. */
@@ -39,7 +38,7 @@ final readonly class GraphProjectionService
         $tragedies = DB::table('tragedies as tragedy')
             ->join('context_horizons as horizon', 'horizon.id', '=', 'tragedy.context_horizon_id')
             ->where('horizon.substrate_id', $substrate->id)->whereIn('tragedy.terminal_proposition_id', $ids)
-            ->pluck('tragedy.terminal_proposition_id')->flip();
+            ->selectRaw('tragedy.terminal_proposition_id as id, NULL as before, NULL as after, ? as event_type', ['tragedy']);
         // A consumed owning-Region Tragedy warrant on a foreign Bias classification
         // records the successful escape. Ordinary/local/mediated classifications
         // use ordinary Receipts and therefore cannot satisfy this historical proof.
@@ -67,11 +66,8 @@ final readonly class GraphProjectionService
             ->whereColumn('tragedy.governing_committal_id', 'cycle.entry_committal_id')
             ->whereColumn('tragedy.context_horizon_id', 'cycle.context_horizon_id')
             ->whereColumn('source_cycle.entry_committal_id', '!=', 'cycle.entry_committal_id')
-            ->distinct()->pluck('target.id')->flip();
-        foreach ($visible as $node) {
-            $node->setAttribute('tragedy', $tragedies->has($node->id));
-            $node->setAttribute('renewal', $renewals->has($node->id));
-        }
+            ->distinct()->selectRaw('target.id, NULL as before, NULL as after, ? as event_type', ['renewal']);
+        app(PropositionInspectionService::class)->loadMarkers($substrate, $visible, $tragedies->unionAll($renewals));
     }
 
     /** Active cards read maintained region state, never the whole substrate. */

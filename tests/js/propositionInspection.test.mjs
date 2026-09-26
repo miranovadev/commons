@@ -9,11 +9,12 @@ const result = await build({ stdin: { contents: `
   import { renderToStaticMarkup } from 'react-dom/server';
   import { MantineProvider } from '@mantine/core';
   import { PropositionCard } from './resources/js/components/PropositionCard';
+  import { InspectorContent } from './resources/js/components/PropositionInspector';
   import { ClosureHistoryChart, FieldStateChart } from './resources/js/components/InspectorCharts';
   export { specialBadgesFor } from './resources/js/components/SpecialPropositionBadges';
   export { closureDirectionColor } from './resources/js/components/InspectorCharts';
   export function render(kind, proposition) {
-    return renderToStaticMarkup(<MantineProvider env="test">{kind === 'closure'
+    return renderToStaticMarkup(<MantineProvider env="test">{kind === 'participant' ? <InspectorContent selection={{ kind: 'write option', proposition, projectedObservables: { correspondence: -.6, chirality: -.6, closure: -.6 } }} /> : kind === 'closure'
       ? <ClosureHistoryChart proposition={proposition} /> : kind === 'field'
       ? <FieldStateChart proposition={proposition} /> : <PropositionCard proposition={proposition} density={kind} graph mini />}</MantineProvider>);
   }
@@ -80,4 +81,11 @@ test('responsive card and smooth navigation respect reduced motion, helper canno
   assert.match(css, /transition: transform 240ms ease-out/);
   assert.match(css, /@media \(max-width: 48em\)\s*\{\s*\.graph-inspector\s*\{[^}]*bottom: .5rem/s);
   assert.match(css, /prefers-reduced-motion: reduce[^}]*\.substrate-graph-canvas\[data-animating\][^}]*transition: none/s);
+});
+
+test('participant preview inspection retains its existing projected field readout', () => {
+  const html = render('participant', { ...node, observables: { correspondence: .2, chirality: .2, closure: .2 } });
+  assert.match(html, /Tension: -0.60/);
+  assert.match(html, /Structural delta/);
+  assert.doesNotMatch(html, /role="tablist"/);
 });

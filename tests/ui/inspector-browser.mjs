@@ -15,7 +15,7 @@ let browser;
 try {
   browser = await chromium.launch();
   for (const viewport of [{ width: 1440, height: 960 }, { width: 390, height: 844 }]) {
-    const page = await browser.newPage({ viewport });
+    const page = await browser.newPage({ viewport, isMobile: viewport.width < 768, hasTouch: viewport.width < 768 });
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     const layout = viewport.width < 768 ? 'mobile' : 'desktop';
@@ -28,6 +28,7 @@ try {
     await origin.click();
     assert.equal(await workspace.getAttribute('data-state'), 'collapsed');
     await inspector.waitFor();
+    assert.equal(await inspector.evaluate(element => Boolean(element.closest('.substrate-graph-viewport'))), false, 'scrollable Inspector is outside the touch-restricted drag surface');
     const box = await inspector.boundingBox();
     assert.ok(box.x >= 0 && box.y >= 0 && box.x + box.width <= viewport.width && box.y + box.height <= viewport.height);
     for (const theme of ['dark', 'light']) {
@@ -49,7 +50,7 @@ try {
     await page.getByRole('button', { name: 'Next proposition', exact: true }).click();
     assert.equal(await page.getByRole('tab', { name: 'Closure', exact: true }).count(), 0);
     await page.getByRole('button', { name: 'Previous proposition', exact: true }).click();
-    await page.getByRole('radio', { name: 'Topology', exact: true }).check();
+    await page.locator('label').filter({ hasText: /^Topology$/ }).click();
     assert.equal(await origin.getByRole('img', { name: 'Committal', exact: true }).count(), 1);
     await page.screenshot({ path: `${directory}/${layout}-topology.png` });
     assert.deepEqual(errors, []);

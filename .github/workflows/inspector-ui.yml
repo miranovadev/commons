@@ -9,6 +9,9 @@ on:
       - 'resources/js/components/PropositionGraph.tsx'
       - 'resources/js/components/GraphWorkspaceRail.tsx'
       - 'resources/css/substrate-graph.css'
+      - 'resources/css/workspace.css'
+      - 'resources/js/components/PropositionContent.tsx'
+      - 'resources/js/components/PropositionCard.tsx'
       - 'tests/ui/**'
       - '.github/workflows/inspector-ui.yml'
 

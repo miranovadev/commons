@@ -12,7 +12,7 @@ function node(id: string, title: string, register: RegisterName, domain: DomainN
   return { id, title, statement: title, register, tier: committal ? 'committal' : 'expressive', is_origin: parents.length === 0,
     parent_ids: parents, context_horizon: { id: domain, sequence: domain === 'emergence' ? 1 : 2, domain },
     observables: { correspondence: .6, chirality: -.3, closure: .2 },
-    ...(committal ? { domain_transition: 'emergence-settlement' as const, closure_history: { source: 'selected-committal' as const, points: [
+    ...(committal ? { ...(parents.length ? { domain_transition: 'emergence-settlement' as const } : {}), closure_history: { source: 'selected-committal' as const, points: [
       { proposition_id: 'older', depth: -.6, cadence: -.3, depth_direction: 'negative' as const, cadence_direction: 'negative' as const },
       { proposition_id: id, depth: .2, cadence: .5, depth_direction: 'positive' as const, cadence_direction: 'positive' as const }
     ], current: { proposition_id: id, depth: .2, cadence: .5, depth_direction: 'positive' as const, cadence_direction: 'positive' as const } } } : { confluence: id === 'c' }),

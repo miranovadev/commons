@@ -115,6 +115,7 @@ test('selection and deselection leave Workspace, viewport and lenses independent
   await click(card('a'));
   assert.match(document.querySelector('.graph-inspector').textContent, /a full statement/);
   assert.equal(rail().querySelector('.graph-inspector'), null);
+  assert.equal(viewport.querySelector('.graph-inspector'), null, 'Inspector does not inherit the drag surface touch-action');
   assert.equal(document.querySelector('.graph-workspace__inspector'), null);
   await lens('tension');
   await click(document.querySelector('input[type="checkbox"]'));
@@ -131,6 +132,7 @@ test('selection and deselection leave Workspace, viewport and lenses independent
   await click(button('Deselect proposition'));
   assert.equal(document.querySelector('.graph-inspector'), null);
   assert.equal(selected(), undefined);
+  assert.equal(document.activeElement, card('a'), 'deselect restores keyboard focus without scrolling');
   assert.equal(document.querySelector('.substrate-graph-canvas'), canvas, 'canvas is not replaced');
   assert.equal(canvas.style.transform, pan, 'deselect does not move camera to Origin');
   assert.equal(rail().dataset.state, 'collapsed');

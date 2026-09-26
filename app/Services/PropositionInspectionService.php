@@ -6,6 +6,7 @@ use App\Enums\PhaseKind;
 use App\Models\Proposition;
 use App\Models\Substrate;
 use App\Services\Observables\CommittalLineageService;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -15,7 +16,7 @@ final readonly class PropositionInspectionService
     public function __construct(private CommittalLineageService $lineage) {}
 
     /** Batch graph markers; independent of visible parents and active/exhausted filtering. */
-    public function loadMarkers(Substrate $substrate, Collection $nodes): void
+    public function loadMarkers(Substrate $substrate, Collection $nodes, ?Builder $historicalMarkers = null): void
     {
         if ($nodes->isEmpty()) {
             return;
@@ -34,7 +35,7 @@ final readonly class PropositionInspectionService
             ->whereColumn('snapshot.direction_before', 'owner.domain')
             ->whereColumn('snapshot.direction_after', 'opened.domain')
             ->whereColumn('owner.domain', '!=', 'opened.domain')
-            ->select('p.id', 'owner.domain as before', 'opened.domain as after')->get()->keyBy('id');
+            ->selectRaw('p.id, owner.domain as before, opened.domain as after, ? as event_type', ['domain-transition']);
 
         // An accepted Bias classification, not simply a node with two parents.
         $confluence = DB::table('reclassification_results as result')
@@ -76,12 +77,23 @@ final readonly class PropositionInspectionService
                             ->where('input_author.substrate_id', $substrate->id)->where('input.tier', 'expressive')
                             ->whereRaw('(select count(*) from supersessions inputs where inputs.target_proposition_id = source.id) = 2');
                     });
-            })->distinct()->pluck('target.id')->flip();
+            })->distinct()->selectRaw('target.id, NULL as before, NULL as after, ? as event_type', ['confluence']);
 
+        // Share one round trip with existing Tragedy/Renewal observation; no per-card reads.
+        $query = $transitions->unionAll($confluence);
+        if ($historicalMarkers !== null) {
+            $query->unionAll($historicalMarkers);
+        }
+        $markers = $query->get()->groupBy('id');
         foreach ($nodes as $node) {
-            $transition = $transitions->get($node->id);
-            $node->setAttribute('confluence', $confluence->has($node->id));
+            $events = $markers->get($node->id, collect());
+            $transition = $events->firstWhere('event_type', 'domain-transition');
+            $node->setAttribute('confluence', $events->contains('event_type', 'confluence'));
             $node->setAttribute('domain_transition', $transition === null ? null : $transition->before.'-'.$transition->after);
+            if ($historicalMarkers !== null) {
+                $node->setAttribute('tragedy', $events->contains('event_type', 'tragedy'));
+                $node->setAttribute('renewal', $events->contains('event_type', 'renewal'));
+            }
         }
     }
 

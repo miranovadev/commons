@@ -73,13 +73,21 @@ export function PropositionGraph({ propositions, substrateSlug, initialFocusId, 
     setSelectedId(id);
     // Arrow navigation preserves Workspace state and the active lens.
   };
-  const deselect = () => { setSelectedId(null); setForwardPath(new Map()); };
+  const deselect = () => {
+    viewportRef.current?.querySelector<HTMLButtonElement>('.proposition-card[aria-pressed="true"]')?.focus({ preventScroll: true });
+    setSelectedId(null);
+    setForwardPath(new Map());
+  };
   const showOrigin = () => {
     const viewport = viewportRef.current;
     const node = layout.nodes.find(item => item.proposition.id === layout.origin?.id);
     if (!viewport || !node) return;
+    const inspector = viewport.parentElement?.querySelector<HTMLElement>('.graph-inspector');
+    const mobile = window.matchMedia('(max-width: 48em)').matches;
+    const width = inspector && !mobile ? viewport.clientWidth - inspector.offsetWidth - 24 : viewport.clientWidth;
+    const height = inspector && mobile ? viewport.clientHeight - inspector.offsetHeight - 12 : viewport.clientHeight;
     setAnimating(true);
-    setOffset({ x: (viewport.clientWidth - nodeWidth) / 2 - node.x, y: Math.max(45, (viewport.clientHeight - nodeHeight) / 2) - node.y });
+    setOffset({ x: (width - nodeWidth) / 2 - node.x, y: Math.max(45, (height - nodeHeight) / 2) - node.y });
   };
   const lastReveal = useRef('');
   useLayoutEffect(() => {
@@ -93,7 +101,7 @@ export function PropositionGraph({ propositions, substrateSlug, initialFocusId, 
     const initial = lastReveal.current === '';
     lastReveal.current = key;
     // Only a new selection/density reveals a target; live refreshes preserve pan.
-    const inspector = viewport.querySelector<HTMLElement>('.graph-inspector');
+    const inspector = viewport.parentElement?.querySelector<HTMLElement>('.graph-inspector');
     const mobile = window.matchMedia('(max-width: 48em)').matches;
     const availableWidth = inspector && !mobile ? viewport.clientWidth - inspector.offsetWidth - 24 : viewport.clientWidth;
     const availableHeight = inspector && mobile ? viewport.clientHeight - inspector.offsetHeight - 12 : viewport.clientHeight;
@@ -152,6 +160,7 @@ export function PropositionGraph({ propositions, substrateSlug, initialFocusId, 
     <GraphTensionPalette value={overlayMode === 'tension' ? 'analytical' : 'default'}>
     <Box className="substrate-graph-shell" data-has-selection={hasSelection || undefined} data-rail-state={railState} data-density={density}>
 
+      <Box className="substrate-graph-stage">
       <Box
         ref={viewportRef}
         className={`substrate-graph-viewport ${dragging ? 'is-dragging' : ''}`}
@@ -187,12 +196,13 @@ export function PropositionGraph({ propositions, substrateSlug, initialFocusId, 
               overlay={overlays.get(proposition.id)} participants={positions.get(proposition.id) || NO_PARTICIPANTS} onSelect={select} />
           ))}
         </Box>
+      </Box>
         {hasSelection && <GraphInspectorShell onClose={deselect}
           onPrevious={previousId ? () => navigateLineage(previousId) : undefined}
           onNext={nextId ? () => navigateLineage(nextId) : undefined}>
           {selectedId && substrateSlug
             ? <GraphInspector slug={substrateSlug} propositionId={selectedId} fallback={selectedProposition} />
-            : <InspectorContent selection={selectedProposition ? { kind: 'graph', proposition: selectedProposition } : null} />}
+            : <InspectorContent graph selection={selectedProposition ? { kind: 'graph', proposition: selectedProposition } : null} />}
         </GraphInspectorShell>}
       </Box>
       <GraphWorkspaceRail state={railState} onState={dispatchRail} overlayMode={overlayMode} onOverlay={setOverlay}
@@ -230,7 +240,7 @@ function GraphInspector({ slug, propositionId, fallback }: {
   const proposition = data || fallback;
   return <Box aria-busy={isFetching}>
     {error && <Alert color="gray" m="md">Full details could not be refreshed. Showing available graph data.</Alert>}
-    <InspectorContent selection={proposition ? { kind: 'graph', proposition } : null} />
+    <InspectorContent graph selection={proposition ? { kind: 'graph', proposition } : null} />
   </Box>;
 }
 
