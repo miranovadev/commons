@@ -1,12 +1,6 @@
-export type GraphRailState = 'open' | 'collapsed' | 'locked';
-export type GraphRailAction = 'select' | 'collapse' | 'lock' | 'open' | 'unlock';
+export type GraphRailState = 'open' | 'collapsed';
+export type GraphRailAction = 'collapse' | 'open';
 
-export function graphRailReducer(state: GraphRailState, action: GraphRailAction): GraphRailState {
-  switch (action) {
-    case 'select': return state === 'locked' ? 'locked' : 'open';
-    case 'collapse': return 'collapsed';
-    case 'lock': return 'locked';
-    case 'unlock': return 'collapsed';
-    case 'open': return 'open';
-  }
+export function graphRailReducer(_state: GraphRailState, action: GraphRailAction): GraphRailState {
+  return action === 'open' ? 'open' : 'collapsed';
 }

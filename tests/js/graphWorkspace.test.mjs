@@ -104,38 +104,52 @@ test('isolation filters nodes and connecting edges in memory and restores select
   assert.equal(selected(), 'a');
 }));
 
-test('rail collapse, lock, reopen and deselect retain independent graph state', async () => withGraph(async () => {
-  assert.equal(document.querySelector('.graph-workspace').dataset.state, 'open');
-  assert.equal(document.querySelector('[role="dialog"]'), null);
+test('selection and deselection leave Workspace, viewport and lenses independent', async () => withGraph(async () => {
+  const rail = () => document.querySelector('.graph-workspace');
+  const canvas = document.querySelector('.substrate-graph-canvas');
+  const viewport = document.querySelector('.substrate-graph-viewport');
+  Object.defineProperties(viewport, { clientWidth: { configurable: true, value: 1000 }, clientHeight: { configurable: true, value: 700 } });
+  viewport.setPointerCapture = () => {};
+  assert.equal(rail().dataset.state, 'open');
+  assert.equal(document.querySelector('.graph-inspector'), null);
   await click(card('a'));
-  assert.match(document.querySelector('.graph-workspace__inspector').textContent, /a full statement/);
-  await click(button('Collapse graph workspace'));
-  assert.equal(selected(), 'a');
-  await click(card('b'));
-  assert.equal(document.querySelector('.graph-workspace').dataset.state, 'open');
-  assert.equal(selected(), 'b');
-  await click(button('Lock graph workspace closed'));
-  await click(card('c'));
-  assert.equal(selected(), 'c');
-  assert.equal(document.querySelector('.graph-workspace').dataset.state, 'locked');
+  assert.match(document.querySelector('.graph-inspector').textContent, /a full statement/);
+  assert.equal(rail().querySelector('.graph-inspector'), null);
+  assert.equal(viewport.querySelector('.graph-inspector'), null, 'Inspector does not inherit the drag surface touch-action');
   assert.equal(document.querySelector('.graph-workspace__inspector'), null);
-  await click(button('Unlock graph workspace'));
-  assert.equal(document.querySelector('.graph-workspace').dataset.state, 'collapsed');
-  await click(card('a'));
-  assert.equal(document.querySelector('.graph-workspace').dataset.state, 'open');
   await lens('tension');
-  assert.equal(document.querySelector('.graph-workspace__inspector [data-directional]').dataset.tensionPalette, 'analytical');
   await click(document.querySelector('input[type="checkbox"]'));
-  await click([...document.querySelectorAll('button')].find(el => el.textContent === 'Deselect'));
+  await click(button('Collapse graph workspace'));
+  await click(card('a'));
+  assert.equal(rail().dataset.state, 'collapsed');
+  assert.ok(document.querySelector('.graph-inspector'));
+  await act(async () => {
+    viewport.dispatchEvent(new window.PointerEvent('pointerdown', { bubbles: true, button: 0, clientX: 200, clientY: 200, pointerId: 1 }));
+    viewport.dispatchEvent(new window.PointerEvent('pointermove', { bubbles: true, clientX: 400, clientY: 320, pointerId: 1 }));
+    viewport.dispatchEvent(new window.PointerEvent('pointerup', { bubbles: true, pointerId: 1 }));
+  });
+  const pan = canvas.style.transform;
+  await click(button('Deselect proposition'));
+  assert.equal(document.querySelector('.graph-inspector'), null);
   assert.equal(selected(), undefined);
-  assert.equal(document.querySelector('.substrate-graph-shell').hasAttribute('data-has-selection'), false);
-  assert.equal(ids().length, 5);
+  assert.equal(document.activeElement, card('a'), 'deselect restores keyboard focus without scrolling');
+  assert.equal(document.querySelector('.substrate-graph-canvas'), canvas, 'canvas is not replaced');
+  assert.equal(canvas.style.transform, pan, 'deselect does not move camera to Origin');
+  assert.equal(rail().dataset.state, 'collapsed');
+  await click(button('Open graph workspace'));
   assert.equal(document.querySelector('.substrate-graph-controls select').value, 'tension');
+  assert.equal(document.querySelector('input[type="checkbox"]').checked, true);
   assert.equal(document.querySelector('input[type="checkbox"]').disabled, true);
-  assert.match(document.querySelector('.graph-workspace__inspector').textContent, /Inspect structural state/);
-  await click(button('Lock graph workspace closed'));
-  await click(button('Unlock and open graph workspace'));
-  assert.equal(document.querySelector('.graph-workspace').dataset.state, 'open');
+  assert.equal(ids().length, 5);
+  await click(card('c'));
+  const beforeOrigin = canvas.style.transform;
+  await click([...document.querySelectorAll('button')].find(el => el.textContent === 'Show Origin'));
+  assert.notEqual(canvas.style.transform, beforeOrigin);
+  assert.equal(canvas.dataset.animating, 'true');
+  assert.equal(selected(), 'c');
+  assert.equal(rail().dataset.state, 'open');
+  assert.equal(document.querySelector('.substrate-graph-controls select').value, 'tension');
+  assert.equal(document.querySelector('input[type="checkbox"]').checked, true);
 }));
 
 test('inspector arrows preserve the selected branch through isolation and live dataset reordering', async () => withGraph(async page => {
@@ -158,7 +172,7 @@ test('inspector arrows preserve the selected branch through isolation and live d
   assert.equal(button('Next proposition').disabled, true);
   assert.equal(document.querySelector('.substrate-graph-controls select').value, 'tension');
   assert.equal(document.querySelector('input[type="checkbox"]').checked, true);
-  assert.match(document.querySelector('.graph-workspace__inspector').textContent, /end full statement/);
+  assert.match(document.querySelector('.graph-inspector').textContent, /end full statement/);
 }));
 
 
@@ -215,8 +229,10 @@ test('Topology composes every lens, selection, inspector and isolation without c
     assert.ok(card('c').closest('.substrate-graph-node').querySelector('[aria-label="Tragedy"]'));
     assert.ok(card('c').closest('.substrate-graph-node').querySelector('[aria-label="Renewal"]'));
     assert.equal(card('end').closest('.substrate-graph-node').dataset.lineage, 'unrelated');
-    assert.match(document.querySelector('.graph-workspace__inspector').textContent, /c full statement/);
-    assert.match(document.querySelector('.graph-workspace__inspector').textContent, /0.42/);
+    assert.match(document.querySelector('.graph-inspector').textContent, /c full statement/);
+    await click([...document.querySelectorAll('[role="tab"]')].find(el => el.textContent === 'Field State'));
+    assert.match(document.querySelector('.graph-inspector').textContent, /0.42/);
+    await click([...document.querySelectorAll('[role="tab"]')].find(el => el.textContent === 'Proposition'));
     assert.equal(document.querySelector('.substrate-graph-controls select').value, mode);
     await click(document.querySelector('input[type="checkbox"]'));
     assert.equal(card('end'), null);
@@ -235,7 +251,7 @@ test('Topology composes every lens, selection, inspector and isolation without c
   assert.equal(document.querySelector('.substrate-graph-controls select').value, 'register');
 }));
 
-test('Topology retains stacked presence, live movement, activity and selection while locked', async () => withGraph(async page => {
+test('Topology retains stacked presence, live movement, activity and selection while collapsed', async () => withGraph(async page => {
   const positions = ['Nova', 'Vela', 'Luna', 'Sera', 'Claire'].map((callsign, i) => ({ id: String(i), callsign,
     current_proposition_id: 'a', is_active: i === 0 || i === 4, activity_expires_at: null }));
   await act(async () => page.render(nodes, positions));
@@ -248,16 +264,40 @@ test('Topology retains stacked presence, live movement, activity and selection w
   assert.equal(document.querySelectorAll('.graph-participant__activity').length, 2);
   await click(card('a'));
   await lens('potential-charge');
-  await click(button('Lock graph workspace closed'));
+  await click(button('Collapse graph workspace'));
   const moved = positions.map((p, i) => i === 0 ? { ...p, current_proposition_id: 'b', is_active: false } : p);
   await act(async () => page.render(nodes, moved));
   const nova = document.querySelector('[data-participant-id="0"]');
   assert.equal(nova.closest('.substrate-graph-node').querySelector('.proposition-card').dataset.propositionId, 'b');
   assert.equal(nova.hasAttribute('data-active'), false);
   await click(card('b'));
-  assert.equal(document.querySelector('.graph-workspace').dataset.state, 'locked');
+  assert.equal(document.querySelector('.graph-workspace').dataset.state, 'collapsed');
   assert.equal(selected(), 'b');
-  await click(button('Unlock and open graph workspace'));
+  await click(button('Open graph workspace'));
   assert.equal(document.querySelector('.substrate-graph-controls select').value, 'potential-charge');
   assert.equal(document.querySelector('input[value="topology"]').checked, true);
+}));
+
+
+test('Inspector tabs show observed measurements and structural history, with local tab state', async () => withGraph(async page => {
+  const point = { proposition_id: 'origin', depth: 0, cadence: 0, depth_direction: 'negative', cadence_direction: 'negative' };
+  await act(async () => page.render(nodes.map(p => ({ ...p, observables: { correspondence: .2, chirality: -.3, closure: 0 },
+    closure_history: { points: [point], current: point, source: 'selected-committal' } }))));
+  await click(card('origin'));
+  const tab = label => [...document.querySelectorAll('[role="tab"]')].find(el => el.textContent === label);
+  await click(tab('Field State'));
+  for (const label of ['Correspondence', 'Chirality', 'Closure', 'Tension']) assert.ok(document.querySelector(`.graph-inspector svg[aria-label^="${label}:"]`));
+  assert.ok(document.querySelector('.graph-inspector svg[aria-label^="Tension: -0.75"]'), 'uses authoritative tension, not a frontend mean');
+  await click(tab('Closure'));
+  assert.ok(document.querySelector('svg[aria-label^="Depth history"]'));
+  assert.ok(document.querySelector('svg[aria-label^="Cadence history"]'));
+  assert.equal(document.querySelectorAll('.closure-direction[data-direction="negative"][data-color="indigo.9"]').length, 2);
+  await click(card('b'));
+  assert.equal(tab('Closure'), undefined, 'expressive nodes have no Closure tab');
+  assert.equal(tab('Proposition').getAttribute('aria-selected'), 'true');
+  await click(tab('Field State'));
+  await click(card('a'));
+  assert.equal(tab('Field State').getAttribute('aria-selected'), 'true');
+  assert.equal(selected(), 'a');
+  assert.equal(document.querySelector('.graph-workspace').dataset.state, 'open');
 }));

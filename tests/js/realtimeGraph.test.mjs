@@ -149,7 +149,7 @@ async function until(condition) {
 function container() { const el = document.createElement('div'); document.body.append(el); return el; }
 
 // Each test owns a mounted page and disposes every query/subscription afterwards.
-test('Graph fetches new nodes incrementally and both original and realtime nodes fill the persistent inspector rail', { timeout: 30000 }, async () => {
+test('Graph fetches new nodes incrementally and both original and realtime nodes fill the independent inspector', { timeout: 30000 }, async () => {
   const requests = [];
   const origin = { ...proposition('Origin'), field: { tension: null, charge: null, potential_charge: null } };
   globalThis.fetch = async request => {
@@ -178,23 +178,26 @@ test('Graph fetches new nodes incrementally and both original and realtime nodes
     assert.equal(document.querySelectorAll('.substrate-graph-edges path').length, 1);
     for (const id of ['Origin', 'New']) {
       await act(async () => cards().find(card => card.textContent.includes(id)).click());
-      await until(() => document.querySelector('.graph-workspace__inspector')?.textContent.includes(`${id} authoritative detail`));
-      assert.match(document.querySelector('.graph-workspace__inspector').textContent, /Proposition inspector/);
-      assert.ok(document.querySelector('.graph-workspace__inspector [aria-label="Potential Charge: 0.42"]'), 'fresh detail is not hidden by an older unavailable graph field');
+      await until(() => document.querySelector('.graph-inspector')?.textContent.includes(`${id} authoritative detail`));
+      assert.match(document.querySelector('.graph-inspector').textContent, /Proposition inspector/);
+      await act(async () => [...document.querySelectorAll('[role="tab"]')].find(el => el.textContent === 'Field State').click());
+      assert.ok(document.querySelector('.graph-inspector [aria-label="Potential Charge: +0.42"]'), 'fresh detail is not hidden by an older unavailable graph field');
+      await act(async () => [...document.querySelectorAll('[role="tab"]')].find(el => el.textContent === 'Proposition').click());
       assert.equal(cards().length, 2);
       const edgesBefore = document.querySelector('.substrate-graph-edges').innerHTML;
       const select = document.querySelector('.substrate-graph-controls select');
       await act(async () => { select.value = 'register'; select.dispatchEvent(new window.Event('change', { bubbles: true })); });
       assert.equal(document.querySelector('.substrate-graph-edges').innerHTML, edgesBefore);
       assert.equal(cards().find(card => card.dataset.propositionId === id).getAttribute('aria-pressed'), 'true');
-      assert.ok(document.querySelector('.graph-workspace__inspector').textContent.includes(`${id} authoritative detail`));
+      assert.ok(document.querySelector('.graph-inspector').textContent.includes(`${id} authoritative detail`));
       const requestCount = requests.length;
       await act(async () => document.querySelector('input[value="topology"]').click());
       assert.equal(requests.length, requestCount, 'density uses existing batched graph data');
       assert.equal(cards().find(card => card.dataset.propositionId === id).getAttribute('aria-pressed'), 'true');
       await act(async () => document.querySelector('input[value="detailed"]').click());
       await act(async () => document.querySelector('[aria-label="Collapse graph workspace"]').click());
-      await until(() => !document.querySelector('.graph-workspace__inspector'));
+      assert.ok(document.querySelector('.graph-inspector'), 'collapsing Workspace keeps Inspector visible');
+      await act(async () => document.querySelector('[aria-label="Open graph workspace"]').click());
     }
     await act(async () => channel.callback(event));
     await settle();
@@ -645,3 +648,4 @@ test('a stationary workspace keeps spent context and reopens only after an epoch
   } finally { await act(async () => page.close()); el.remove(); }
   assert.equal(live().channels.size, 0);
 });
+
