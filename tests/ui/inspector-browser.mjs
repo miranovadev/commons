@@ -29,6 +29,7 @@ try {
     assert.equal(await workspace.getAttribute('data-state'), 'collapsed');
     await inspector.waitFor();
     assert.equal(await inspector.evaluate(element => Boolean(element.closest('.substrate-graph-viewport'))), false, 'scrollable Inspector is outside the touch-restricted drag surface');
+    await inspector.evaluate(element => Promise.all(element.getAnimations().map(animation => animation.finished)));
     const box = await inspector.boundingBox();
     assert.ok(box.x >= 0 && box.y >= 0 && box.x + box.width <= viewport.width && box.y + box.height <= viewport.height);
     for (const theme of ['dark', 'light']) {
