@@ -120,9 +120,11 @@ class PropositionSearchTest extends TestCase
     {
         $s = $this->scenario();
         $beforeEdges = Supersession::count();
+        $fieldVersion = $s['fixture']->substrate->fresh()->field_version;
         $input = ['kind' => 'proposition_search', 'query' => 'needle', 'limit' => 10];
         $receipt = app(OperationalInstrumentService::class)->execute($s['phase'], $s['head'], $input);
 
+        $this->assertSame($fieldVersion, $s['fixture']->substrate->fresh()->field_version);
         $this->assertSame('proposition_search', $receipt->type);
         $this->assertTrue($receipt->isMemory());
         $this->assertNull($receipt->signature);
@@ -146,6 +148,7 @@ class PropositionSearchTest extends TestCase
         $this->assertArrayNotHasKey('evidence', $available);
 
         $load = $context->read($s['fixture']->viewer, $s['phase'], $receipt->id);
+        $this->assertSame($fieldVersion, $s['fixture']->substrate->fresh()->field_version);
         $this->assertNull($load->evidence_signature);
         $this->assertSame($s['head']->id, $load->proposition_id);
         $loaded = $context->forPhase($s['phase'])->firstWhere('id', $receipt->id);
