@@ -90,11 +90,15 @@ final readonly class ReceiptContextService
                 $status = $loaded ? 'loaded' : ($memory ? 'available' : ($verified === null ? 'unqualified' : ($alreadyPresent ? 'already-in-context' : 'available')));
 
                 return [
-                    'id' => $receipt->id, 'proposition_id' => $memory ? $receipt->metadata['terminal_proposition_id']
+                    'id' => $receipt->id, 'proposition_id' => $receipt->type === 'tragedy'
+                        ? $receipt->metadata['terminal_proposition_id']
                         : ($receipt->instrumentExecution?->proposition_id ?? $receipt->phase->gate_proposition_id),
                     'context_horizon_id' => $receipt->context_horizon_id,
                     'availability' => $receipt->consumption !== null ? 'consumed' :
-                        ($available->contains('id', $receipt->id) ? 'available' : 'historical'),
+                        ($available->contains('id', $receipt->id)
+                            || ($receipt->type === 'proposition_search'
+                                && $present->contains($receipt->instrumentExecution?->proposition_id))
+                            ? 'available' : 'historical'),
                     'consumed_at' => $receipt->consumption?->consumed_at?->toISOString(),
                     'attached_proposition_id' => $receipt->consumption?->proposition_id,
                     'type' => $receipt->type, 'reference' => $receipt->reference,
@@ -136,7 +140,7 @@ final readonly class ReceiptContextService
             $context = new ParticipationContext($phase->fresh());
             $option = $this->forPhase($phase, $context)->firstWhere('id', $receiptId);
             if ($option === null || $option['type'] === 'tragedy' || ! $option['capabilities']['readable'] || ! in_array($option['status'], ['available', 'loaded'], true)) {
-                throw new DomainException('Read requires qualifying encountered evidence outside the current context.');
+                throw new DomainException('Read requires qualifying encountered evidence or cognitive memory outside the current context.');
             }
             $load = ParticipantReceiptContext::where('participant_id', $participant->id)->where('receipt_id', $receiptId)->first();
             if ($load !== null && $load->cleared_at === null) {
