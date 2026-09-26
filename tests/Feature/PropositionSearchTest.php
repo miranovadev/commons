@@ -181,11 +181,13 @@ class PropositionSearchTest extends TestCase
         $input = ['kind' => 'proposition_search', 'query' => 'needle', 'limit' => 10];
         $first = app(OperationalInstrumentService::class)->execute($s['phase'], $s['head'], $input);
 
-        try {
-            app(OperationalInstrumentService::class)->execute($s['phase'], $s['head'], $input);
-            $this->fail('The same query and same observed collection should be suppressed.');
-        } catch (ConflictHttpException) {
-            $this->assertSame(1, Receipt::where('type', 'proposition_search')->count());
+        foreach ([$input, [...$input, 'limit' => 5]] as $duplicate) {
+            try {
+                app(OperationalInstrumentService::class)->execute($s['phase'], $s['head'], $duplicate);
+                $this->fail('The same query and same observed collection should be suppressed.');
+            } catch (ConflictHttpException) {
+                $this->assertSame(1, Receipt::where('type', 'proposition_search')->count());
+            }
         }
 
         $older = $this->historyNode($s['fixture'], null, $s['root'], 'needle older history');
