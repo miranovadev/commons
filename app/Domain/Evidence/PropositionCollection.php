@@ -66,9 +66,14 @@ final readonly class PropositionCollection
 
     public function identity(): string
     {
-        return hash('sha256', 'proposition-search:v1:'.json_encode(
-            $this->payload(),
-            JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE,
-        ));
+        return hash('sha256', 'proposition-search:v1:'.json_encode([
+            'query' => $this->query,
+            'head_proposition_id' => $this->headPropositionId,
+            'domain' => $this->domain,
+            'results' => array_map(fn (array $result): array => [
+                'proposition_id' => $result['proposition_id'],
+                'lineage_distance' => $result['lineage_distance'],
+            ], $this->results),
+        ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
     }
 }
