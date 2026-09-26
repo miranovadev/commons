@@ -85,8 +85,10 @@ final readonly class LedgerService
                     default => [],
                 };
                 $phase = $ledgerable->phase;
-                // A memory transition is auditable cognition, not a field mutation.
-                if (! ($ledgerable instanceof ReceiptContextEvent && $ledgerable->context->receipt->type === 'tragedy')) {
+                // Cognitive memory is auditable history, not field/evidence mutation.
+                $memoryOnly = ($ledgerable instanceof ReceiptContextEvent && $ledgerable->context->receipt->isMemory())
+                    || ($ledgerable instanceof Receipt && $ledgerable->type === 'proposition_search');
+                if (! $memoryOnly) {
                     app(FieldMutationService::class)->touch($phase, $affected);
                 }
                 if ($ledgerable instanceof Supersession) {
