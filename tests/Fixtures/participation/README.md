@@ -43,27 +43,36 @@ frontier rank or action availability.
 - `staggered-epochs.json`: 30 steps. The same failed continuation spends A and B
   at step 27; A alone reopens at 28; B alone reopens at 29. Semantic assertions
   inspect parked observers between those final steps.
-- `tragedy-lifecycle.json`: 135 steps. Natural Tragedy exists after 102; another
-  participant reaches its actual Horizon at 110, claims the final attempt at 111,
-  and consumes its receipt at 116. Commit Region exhaustion and backward
-  recovery occur at 133; step 134 proves exploration remains actionable afterward.
-  The test also retains explicit rejection of foreign-Horizon receipt access and
-  a competing duplicate final attempt.
+- `tragedy-lifecycle.json`: the original first 51 steps, unchanged. The API test
+  then submits the authored step-51 Rest and checks its semantic recovery contract.
+  The entry Emergence Region is naturally crossover-closed (margin -0.3505622):
+  recovery passes its Committal at backward distance 2 and selects the ancestral
+  Settlement Origin at distance 9. Receipt loading/consumption, Reinforcement and
+  the boundary Commit's frozen interval 10 retain their explicit prefix assertions.
+  No geometry is overridden to keep this participant inside the Emergence Region.
 
 The committed-lineage Closure replacement changes the natural C1 crossover in
 the revisit/epoch/source-equivalence scripts. Their expected topology follows that
-result. In the Tragedy journey, the former supporting judgments leave measured
-Potential in the new basin. The authored evidence path now refutes the four tested
-expressive positions before Rest. Twelve explicit instrument/Rest/judgment Cycles
-exercise a slower basin rhythm: the final prospective interval is 20, against
-C1's frozen 10. Depth is positive while zero Cadence retains its negative direction,
-so ordinary alignment blocks Commitment. The faster eight-Cycle version permits
-Commitment and cannot lawfully demand Rest. The final-attempt participant follows the new
-attempt directly after recovery, refutes its tested generative evidence, and
-instruments the final Mediate result before judging its classification.
-These are fixed HTTP contributions, not numerical overrides or runtime choices.
-The tests retain the Tragedy, receipt visibility/consumption, unique final attempt,
-no-premature-exhaustion, immutable history and backward-recovery assertions.
+result. The former tragedy transcript's steps 52–102 depended on repeated local
+re-entry after the now-closed crossover Rest, including twelve rhythm-building
+Cycles. Those steps are retired rather than regenerated onto a different branch.
+The step-51 reason is `no_available_move`; it is not re-labelled as a no-Potential
+proof. The former 103-step test already asserted *no* Tragedy or exhaustion.
+
+Coverage is deliberately separated:
+
+- `ParticipationTragedyLifecycleTest`: natural closed-crossover Rest, exact backward
+  ancestry, and unchanged Tragedy/exhaustion/Receipt/Horizon history after recovery.
+- `NaturalChargeBoundaryLifecycleTest`: ordinary unmocked contributions by two
+  participants create first Tragedy, load non-evidential warrant memory, reproduce
+  the Charge boundary, exhaust the Region and recover while preserving history.
+- `ChargeBoundaryTragedyTest` and `AuthoritativeRestReasonTest`: zero Potential and
+  a no-Potential Rest cannot create Tragedy/exhaustion; fresh resolved zero Charge
+  remains the catastrophe authority. Bias/warrant suites independently cover
+  consumption authority and exact-once use.
+
+These are separate routing and catastrophe contracts. Crossover recovery is
+neither a catastrophe event nor a warrant-consumption or exhaustion condition.
 
 An unexpected state fails at that step. Do not regenerate expected output to
 make a failing test pass: determine whether it exposes a regression or an explicitly
