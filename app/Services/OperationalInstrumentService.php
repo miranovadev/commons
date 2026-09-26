@@ -12,12 +12,14 @@ use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Receipt;
 use App\Models\Substrate;
+use App\Models\SubstrateLedgerEntry;
 use App\Services\Evidence\HyperlinkIdentity;
 use App\Services\Evidence\HyperlinkVerifier;
 use DomainException;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
-/** Synchronous verified evidence; only the verifier can supply reinforcement identity. */
+/** Synchronous Instrument execution; evidence verification and cognitive memory remain distinct. */
 final readonly class OperationalInstrumentService
 {
     public function __construct(
@@ -46,6 +48,10 @@ final readonly class OperationalInstrumentService
                 throw new DomainException('An instrument cannot cross substrate boundaries.');
             }
             Substrate::query()->lockForUpdate()->findOrFail($substrateId);
+            if ($kind === 'proposition_search'
+                && ($observed->metadata['observed_ledger_sequence'] ?? null) !== $this->ledgerSequence($substrateId)) {
+                throw new ConflictHttpException('The Proposition Search history changed during observation. Retry from fresh state.');
+            }
             $origin = $bootstrap && $proposition->tier === 'committal'
                 && $proposition->ledgerEntry?->sequence === 1 && ! $proposition->parents()->exists()
                 && ! CommitmentSnapshot::where('substrate_id', $substrateId)->exists();
@@ -85,10 +91,16 @@ final readonly class OperationalInstrumentService
         app(RelevantInstrumentService::class)->assertAvailable($proposition, $input);
         $normalized = $this->normalize($input);
         if ($normalized['kind'] === 'proposition_search') {
+            $substrateId = $phase->cycle->participant->substrate_id;
+            $before = $this->ledgerSequence($substrateId);
             $collection = $this->propositionSearch->search($phase, $proposition, $normalized);
+            $after = $this->ledgerSequence($substrateId);
+            if ($before !== $after) {
+                throw new ConflictHttpException('The Proposition Search history changed during observation. Retry from fresh state.');
+            }
             app(RelevantInstrumentService::class)->assertAvailable($proposition, $normalized, $collection);
 
-            return new InstrumentObservation($normalized, propositions: $collection);
+            return new InstrumentObservation($normalized, ['observed_ledger_sequence' => $after], propositions: $collection);
         }
 
         return $this->observe($normalized);
@@ -145,6 +157,11 @@ final readonly class OperationalInstrumentService
         return $kind === 'web_search'
             ? ['kind' => $kind, 'query' => SearchObservation::normalizeQuery($input['query'])]
             : ['kind' => $kind, 'reference' => trim($input['reference'])];
+    }
+
+    private function ledgerSequence(string $substrateId): int
+    {
+        return (int) SubstrateLedgerEntry::where('substrate_id', $substrateId)->max('sequence');
     }
 
     private function reference(array $input): string
