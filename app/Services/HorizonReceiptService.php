@@ -30,7 +30,7 @@ final class HorizonReceiptService
             $tragedies = array_keys(array_filter(app(TragedyReceiptScopeService::class)->seeds($context), fn ($id) => $id === $seed));
 
             return Receipt::whereDoesntHave('consumption')->where(fn ($q) => $q
-                ->where(fn ($ordinary) => $ordinary->where('type', '!=', 'tragedy')->where('context_horizon_id', $phase->cycle->context_horizon_id)
+                ->where(fn ($ordinary) => $ordinary->whereNotIn('type', Receipt::MEMORY_TYPES)->where('context_horizon_id', $phase->cycle->context_horizon_id)
                     ->whereHas('instrumentExecution', fn ($execution) => $execution->where('status', 'completed')->whereIn('proposition_id', $subjects)))
                 ->orWhere(fn ($special) => $special->where('type', 'tragedy')->whereKey($tragedies)))
                 ->with(['instrumentExecution', 'consumption', 'phase'])->orderBy('created_at')->orderBy('id')->get();
@@ -40,7 +40,7 @@ final class HorizonReceiptService
     /** Presentation union only. Operational evidence callers must use this ordinary subset. */
     public function ordinaryAvailable(Phase $phase, ?ParticipationContext $context = null): Collection
     {
-        return $this->catalogue($phase, $context)->where('type', '!=', 'tragedy')->values();
+        return $this->catalogue($phase, $context)->filter(fn (Receipt $receipt) => $receipt->isEvidence())->values();
     }
 
     /** Exact immutable owner plus current scope and unresolved/unconsumed state. No load required. */
@@ -65,7 +65,7 @@ final class HorizonReceiptService
     {
         return DB::table('instrument_executions as execution')
             ->join('receipts as receipt', 'receipt.instrument_execution_id', '=', 'execution.id')
-            ->where('receipt.type', '!=', 'tragedy')->where('execution.status', 'completed')
+            ->whereNotIn('receipt.type', Receipt::MEMORY_TYPES)->where('execution.status', 'completed')
             ->where('receipt.context_horizon_id', $phase->cycle->context_horizon_id)
             ->whereIn('execution.proposition_id', $ids)->distinct()->pluck('execution.proposition_id');
     }
