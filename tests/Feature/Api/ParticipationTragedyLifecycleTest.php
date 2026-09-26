@@ -13,6 +13,22 @@ use Tests\Support\ScriptedParticipationTestCase;
 #[Group('constitutional')]
 class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
 {
+    public function test_probe_crossover_rest(): void
+    {
+        $journey = $this->replayParticipationScript(__DIR__.'/../../Fixtures/participation/tragedy-lifecycle.json', 51);
+        $actor = \App\Models\Participant::findOrFail($journey['participants']['tragic-explorer']);
+        $cycle = $actor->cycles()->latest('sequence')->firstOrFail();
+        $before = $journey['responses'][50];
+        $diagnostic = app(\App\Services\CrossoverMarginService::class)->inspect($cycle);
+        $path = app(\App\Services\BackwardRecoveryLineage::class)->distances($actor->position, $actor,
+            fn ($id, $horizon) => DB::table('supersessions')->where('target_proposition_id', $id)->pluck('source_proposition_id')->all());
+        $snapshots = DB::table('commitment_snapshots')->whereIn('proposition_id', array_keys($path))->get();
+        $after = $this->contribute($actor->id, ['action' => 'participant.rest'], $before);
+        fwrite(STDERR, json_encode(['diagnostic' => $diagnostic, 'path' => $path, 'snapshots' => $snapshots,
+            'rest_reason' => $before['plan']['rest_reason'], 'after' => $after['current_proposition_id'],
+            'tragedies' => DB::table('tragedies')->count(), 'exhaustions' => DB::table('commit_region_exhaustions')->count()], JSON_PRETTY_PRINT));
+    }
+
     public function test_natural_zero_potential_rest_preserves_recovery_without_creating_tragedy(): void
     {
         $journey = $this->replayParticipationScript(__DIR__.'/../../Fixtures/participation/tragedy-lifecycle.json', 103);

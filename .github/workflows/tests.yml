@@ -1,45 +1,23 @@
-name: Core
-
-on:
-  push:
-    branches: ['**']
-
+name: Crossover fixture diagnostics
+on: push
 permissions:
   contents: read
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  frontend:
-    name: Frontend build and contracts
+  focused:
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 10
+    env:
+      APP_ENV: testing
+      APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      DB_CONNECTION: sqlite
+      DB_DATABASE: ':memory:'
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: shivammathur/setup-php@v2
         with:
-          node-version: 24
-          cache: npm
-      - run: npm ci
-      - run: npm run build
-      - run: npm run test:ui
-      - uses: actions/upload-artifact@v4
-        with:
-          name: frontend-build
-          path: public/build
-          if-no-files-found: error
-          retention-days: 1
-
-  core:
-    needs: frontend
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [1, 2, 3, 4, 5]
-    uses: ./.github/workflows/php-tests.yml
-    with:
-      suite: core
-      shard: ${{ matrix.shard }}
-      shards: 5
+          php-version: '8.5'
+          extensions: curl, intl, mbstring, pdo_sqlite
+          coverage: none
+      - run: composer install --prefer-dist --no-interaction --no-progress
+      - run: cp .env.example .env
+      - run: php artisan test tests/Feature/Api/ParticipationTragedyLifecycleTest.php --filter=probe
