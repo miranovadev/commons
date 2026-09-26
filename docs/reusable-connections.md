@@ -97,11 +97,15 @@ queue availability is 12:00:10, 12:01:10, 12:02:10. Random offsets 30–40 might
 not added to configuration or used as the next cadence origin. Equal bounds are
 valid. Delays support controlled de-synchronisation, not guaranteed separation.
 
-The existing scheduler advances the interval schedule when it claims a due
-attachment. The same trigger timestamp anchors the queue offset. A late scheduler
-still applies the full offset; missed opportunities are not replayed. Offset, termination and timeout edits retain
-the existing next trigger; changing interval, trigger mode or enabled state reschedules
-as before. Worker completion never shifts the schedule.
+The scheduler captures the pre-claim `next_trigger_at` as the scheduled occurrence.
+Queue availability is that timestamp plus the sampled offset, and the next trigger
+is that timestamp plus the interval. Late claims therefore never shift the cadence.
+If queue availability has already passed, the job is immediately eligible.
+`last_triggered_at` separately records actual claim time for observability.
+Each claim advances one interval; if still overdue, a later scheduler pass can claim
+the next occurrence. Offset, termination and timeout edits retain the existing next
+trigger; changing interval, trigger mode or enabled state reschedules as before.
+Worker completion never shifts the schedule.
 
 The existing shared participant-level `WithoutOverlapping` lock covers all modes,
 all attached Connections for that Participant, and delayed dispatch. Redundant jobs

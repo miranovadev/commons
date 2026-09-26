@@ -84,7 +84,7 @@ class ParticipantWakeTest extends TestCase
         $this->assertTrue($participantConnection->last_triggered_at->equalTo($now));
         $this->assertTrue(
             $participantConnection->next_trigger_at->equalTo(
-                $now->addMinutes(15),
+                $now->subMinute()->addMinutes(15),
             ),
         );
 
@@ -581,17 +581,31 @@ class ParticipantWakeTest extends TestCase
         }
     }
 
-    public function test_late_scheduler_trigger_still_applies_the_full_offset(): void
+    public function test_late_scheduler_claims_preserve_scheduled_offsets_and_cadence(): void
     {
-        Queue::fake();
-        $at = CarbonImmutable::parse('2026-09-07 12:00:00 UTC');
-        CarbonImmutable::setTestNow($at);
-        [, $connection] = $this->readyConnection($at->subSeconds(40));
+        $scheduledAt = CarbonImmutable::parse('2026-09-07 12:00:00 UTC');
+        CarbonImmutable::setTestNow($scheduledAt);
+        [, $connection] = $this->readyConnection($scheduledAt);
         $connection->forceFill(['configuration' => ['trigger' => ['mode' => 'interval', 'interval_minutes' => 1,
             'offset' => ['mode' => 'seconds', 'seconds' => 10]]]])->save();
-        $this->assertSame(1, app(DueParticipantWakeDispatcher::class)->dispatch());
-        Queue::assertPushed(WakeParticipant::class, fn ($job) => $job->delay->equalTo($at->addSeconds(10)));
-        $this->assertTrue($connection->fresh()->next_trigger_at->equalTo($at->addMinute()));
+
+        // Cover claims before and after queue availability, without accumulating lateness.
+        foreach ([7, 40, 19] as $lateSeconds) {
+            Queue::fake();
+            $claimedAt = $scheduledAt->addSeconds($lateSeconds);
+            CarbonImmutable::setTestNow($claimedAt);
+
+            $this->assertSame(1, app(DueParticipantWakeDispatcher::class)->dispatch());
+            Queue::assertPushed(WakeParticipant::class, fn ($job) => $job->participantConnectionId === $connection->id
+                && $job->delay->equalTo($scheduledAt->addSeconds(10)));
+            $connection->refresh();
+            $this->assertTrue($connection->last_triggered_at->equalTo($claimedAt));
+            $this->assertTrue($connection->next_trigger_at->equalTo($scheduledAt->addMinute()));
+
+            $this->assertSame(0, app(DueParticipantWakeDispatcher::class)->dispatch());
+            Queue::assertPushed(WakeParticipant::class, 1);
+            $scheduledAt = $scheduledAt->addMinute();
+        }
     }
 
     public function test_random_offsets_are_sampled_per_trigger_and_never_move_the_schedule(): void
