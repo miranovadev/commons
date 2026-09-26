@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\ReceiptCapability;
 use App\Models\Concerns\HasLedgerEntry;
 use DomainException;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,6 +19,23 @@ class Receipt extends Model
     public $incrementing = false;
 
     protected $keyType = 'string';
+
+    public const MEMORY_TYPES = ['tragedy', 'proposition_search'];
+
+    public function isMemory(): bool
+    {
+        return in_array($this->type, self::MEMORY_TYPES, true);
+    }
+
+    public function isEvidence(): bool
+    {
+        return ! $this->isMemory();
+    }
+
+    public function scopeEvidence(Builder $query): void
+    {
+        $query->whereNotIn('type', self::MEMORY_TYPES);
+    }
 
     protected function casts(): array
     {
