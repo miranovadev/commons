@@ -4,7 +4,7 @@ A Participant's Cycle and an autonomous wake are separate lifecycles. Previously
 Order or Rest completed the Cycle and returned `waiting / cycle_not_started`.
 A later wake entered another Cycle and made only one contribution. The Participant
 now normally ends a terminal contribution with the next Cycle and Distinguish
-already prepared, while the wake stops at the boundary.
+already prepared. Wake stopping is separately configured on the Connection attachment.
 
 ## Entry, completion and recovery
 
@@ -43,7 +43,7 @@ Ready API/workspace state points directly to the prepared Phase 1. Its creation
 is a real Phase touch in participation history. Cadence counts completed governed
 Cycles plus the producing Cycle, not Phase touches. Commitment snapshots remain immutable.
 
-## One Cycle per wake
+## Configurable wake boundaries
 
 Each iteration builds fresh participation state, performs one inference, then
 validates and dispatches one contribution transactionally. No database/Substrate
@@ -52,9 +52,10 @@ is shared by a Participant's connections; other Participants may contribute
 between steps. Synchronous Instrument observation runs outside the
 contribution transaction; its result is revalidated during the short write.
 
-The wake remembers its starting Cycle ID and stops when that Cycle ends, including
-when another actor advances that Participant. It never infers a contribution for
-the prepared successor Cycle. A new scheduler wake resumes that exact occurrence.
+Phase mode (the default) stops after its starting Phase completes. Cycle mode
+remembers its starting Cycle ID and stops when that Cycle ends, including when
+another actor advances that Participant. Rest mode can infer in prepared successor
+Cycles until the acted Cycle records genuine Rest. No mode changes participation semantics.
 Gate desired-state load/unload options accompany the normal forward contribution, with no extra iteration. Standalone Receipt Read and Replay actions are retired; replay is an Instrument invocation mode.
 
 An autonomous contribution is validated against its original schema and fresh
@@ -63,14 +64,12 @@ a retryable conflict. The wake discards it and infers again from fresh state; it
 never replays the stale payload or weakens validation. Invalid original model
 output and other failures retain the existing queue failure/backoff behavior.
 
-`PARTICIPANT_MAX_ACTIONS_PER_WAKE` defaults to **64 inference attempts**, including
-stale conflicts. At the limit the job exits successfully with the existing Cycle
-and Phase active. No Rest or terminal action is manufactured.
-`PARTICIPANT_WAKE_TIMEOUT` defaults to **1800 seconds**, with a 300-second minimum. Database, Redis and
-Beanstalkd default retry/visibility intervals exceed it by 60 seconds; explicit
-queue overrides and externally managed/SQS visibility settings must also exceed
-the job timeout. The normal action ceiling and hard worker timeout are operational
-limits, independent of semantic Rest.
+The attachment's timeout defaults to **600 seconds**, with an integer range of
+1–1,800 seconds. A whole-execution monotonic deadline replaces the former action
+count ceiling. The native queue timeout bounds blocking calls. Neither timeout
+manufactures a contribution or Rest. Provider transport timeouts remain separate.
+For fixed/random offsets, non-drifting cadence, persistence defaults and worker
+visibility requirements, see [Connection wake controls](reusable-connections.md#wake-controls).
 
 ## Relevant evidence and invocation identity
 
@@ -134,3 +133,4 @@ including failed observations. Loading or clearing it does not bypass that rule.
 Read remains independently available when qualification and encounter rules allow
 it. No observation, rejected duplicate or rollover creates an automatic load or
 additional Reinforcement.
+

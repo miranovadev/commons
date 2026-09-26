@@ -46,7 +46,7 @@ final class ParticipantConnectionService
         array $attributes,
     ): ParticipantConnection {
         $oldEnabled = $participantConnection->is_enabled;
-        $oldTrigger = $participantConnection->configuration['trigger'] ?? ['mode' => 'manual'];
+        $oldTrigger = WakeConfiguration::resolve($participantConnection->configuration)['trigger'];
 
         if (array_key_exists('configuration', $attributes)) {
             $attributes['configuration'] = $this->configuration(
@@ -60,10 +60,10 @@ final class ParticipantConnectionService
         $participantConnection->forceFill($attributes);
         $participantConnection->save();
 
-        $newTrigger = $participantConnection->configuration['trigger'];
+        $newTrigger = WakeConfiguration::resolve($participantConnection->configuration)['trigger'];
         if ($oldEnabled !== $participantConnection->is_enabled
             || ($oldTrigger['mode'] ?? 'manual') !== $newTrigger['mode']
-            || ($oldTrigger['interval_minutes'] ?? null) !== ($newTrigger['interval_minutes'] ?? null)) {
+            || (int) ($oldTrigger['interval_minutes'] ?? 0) !== (int) ($newTrigger['interval_minutes'] ?? 0)) {
             $this->triggers->reschedule($participantConnection);
         }
 
@@ -84,6 +84,11 @@ final class ParticipantConnectionService
 
         if ($mode === ConnectionTriggerMode::Manual) {
             unset($configuration['trigger']['interval_minutes']);
+        }
+
+        $configuration['wake']['timeout_seconds'] = (int) $configuration['wake']['timeout_seconds'];
+        foreach (['seconds', 'random_from', 'random_to'] as $field) {
+            $configuration['trigger']['offset'][$field] = (int) $configuration['trigger']['offset'][$field];
         }
 
         return [
