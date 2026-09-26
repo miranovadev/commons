@@ -3,15 +3,15 @@
 namespace App\Jobs;
 
 use App\Contracts\ParticipantInference;
-use App\Models\ParticipantConnection;
-use App\Models\Cycle;
-use App\Models\Phase;
 use App\Enums\WakeTermination;
-use App\Support\WakeConfiguration;
-use App\Services\WakeClock;
+use App\Models\Cycle;
+use App\Models\ParticipantConnection;
+use App\Models\Phase;
 use App\Services\ParticipantActivityService;
 use App\Services\ParticipantConnectionTriggerService;
 use App\Services\ParticipationService;
+use App\Services\WakeClock;
+use App\Support\WakeConfiguration;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;

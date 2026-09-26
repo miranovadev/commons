@@ -4,10 +4,10 @@ namespace App\Http\Requests;
 
 use App\Enums\ConnectionTriggerMode;
 use App\Support\WakeConfiguration;
-use Illuminate\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class StoreParticipantConnectionRequest extends FormRequest
 {

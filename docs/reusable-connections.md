@@ -138,4 +138,6 @@ The supported maximum is centralized in `WakeConfiguration::MAX_TIMEOUT_SECONDS`
 Explicit retry-after overrides and SQS visibility timeouts must also exceed 1,830
 seconds. Use a shared lock-capable cache for all workers and PHP workers with PCNTL
 for the native hard timeout. Restart long-running workers after deployment. The
-worker's fallback CLI timeout does not override the job-specific timeout.
+worker's fallback CLI timeout does not override the job-specific timeout. The
+development queue listener's enclosing process timeout is 1,860 seconds so it
+does not terminate a valid long wake before the job-specific ceiling.

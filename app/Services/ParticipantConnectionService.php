@@ -3,10 +3,10 @@
 namespace App\Services;
 
 use App\Enums\ConnectionTriggerMode;
-use App\Support\WakeConfiguration;
 use App\Models\Connection;
 use App\Models\Participant;
 use App\Models\ParticipantConnection;
+use App\Support\WakeConfiguration;
 
 final class ParticipantConnectionService
 {

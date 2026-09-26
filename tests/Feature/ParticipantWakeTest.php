@@ -18,6 +18,7 @@ use App\Models\Receipt;
 use App\Models\Substrate;
 use App\Services\ClosureGateService;
 use App\Services\CycleEntryService;
+use App\Services\DueParticipantWakeDispatcher;
 use App\Services\InputSchemaService;
 use App\Services\LedgerService;
 use App\Services\OpenAIResponseSchema;
@@ -27,17 +28,16 @@ use App\Services\ParticipantActivityService;
 use App\Services\ParticipationService;
 use App\Services\WakeClock;
 use App\Services\WakeOffsetResolver;
-use App\Services\DueParticipantWakeDispatcher;
-use Illuminate\Support\Facades\DB;
-use PHPUnit\Framework\Attributes\Group;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Queue\Job;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Mockery;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\ParticipantContextFixture;
 use Tests\TestCase;
 
@@ -378,13 +378,13 @@ class ParticipantWakeTest extends TestCase
         $cycleId = $f->phase->cycle_id;
         $calls = [];
         $inference = Mockery::mock(ParticipantInference::class);
-        $inference->shouldReceive('contribute')->times($mode === 'rest' ? 9 : 7)->andReturnUsing(function (Connection $connection, array $state) use (&$calls, $receipt, $nodes, $cycleId, $f): array {
+        $inference->shouldReceive('contribute')->times($mode === 'rest' ? 10 : 7)->andReturnUsing(function (Connection $connection, array $state) use (&$calls, $receipt, $nodes, $cycleId, $f): array {
             $activity = app(ParticipantActivityService::class)->snapshot(collect([$f->viewer->fresh()]))['participants'][0];
             $this->assertTrue($activity['is_active']);
             $this->assertNotNull($activity['current_proposition_id']);
             if ($state['cycle']['id'] !== $cycleId) {
                 $calls[] = [$state['plan']['phase']['number'], $state['plan']['phase']['id']];
-                if ($state['plan']['phase']['number'] === 1) {
+                if ($state['plan']['phase']['number'] <= 2) {
                     return ['action' => 'proposition.variant', 'statement' => 'The Rest wake continues into its second Cycle.'];
                 }
                 $this->assertArrayHasKey('participant.rest', $state['plan']['schema']['$defs']['actions']);
@@ -407,11 +407,11 @@ class ParticipantWakeTest extends TestCase
         $this->app->instance(ParticipantInference::class, $inference);
         $this->app->call([new WakeParticipant($connection->id), 'handle']);
         if ($mode === 'rest') {
-            $this->assertSame([1, 2, 3, 4, 5, 6, 7, 1, 2], array_column($calls, 0));
-            $this->assertCount(9, array_unique(array_column($calls, 1)));
+            $this->assertSame([1, 2, 3, 4, 5, 6, 7, 1, 2, 3], array_column($calls, 0));
+            $this->assertCount(10, array_unique(array_column($calls, 1)));
             $this->assertNotNull(Cycle::findOrFail($cycleId)->completed_at);
             $this->assertNull(Cycle::findOrFail($cycleId)->rested_at);
-            $this->assertNotNull(Phase::findOrFail($calls[8][1])->cycle->rested_at);
+            $this->assertNotNull(Phase::findOrFail($calls[9][1])->cycle->rested_at);
 
             return;
         }
@@ -499,8 +499,9 @@ class ParticipantWakeTest extends TestCase
         $connection->forceFill(['configuration' => array_replace_recursive($connection->configuration, ['wake' => ['termination' => 'cycle']])])->save();
         $cycle = $participant->cycles()->firstOrFail();
         $inference = Mockery::mock(ParticipantInference::class);
-        $inference->shouldReceive('contribute')->twice()->andReturn(
-            ['action' => 'proposition.variant', 'statement' => 'A distinction without a foreign Persist Write.'],
+        $inference->shouldReceive('contribute')->times(3)->andReturn(
+            ['action' => 'proposition.variant', 'statement' => 'A fresh distinction.'],
+            ['action' => 'proposition.variant', 'statement' => 'A persisted source without classification evidence.'],
             ['action' => 'participant.rest'],
         );
         $this->app->instance(ParticipantInference::class, $inference);
@@ -536,8 +537,14 @@ class ParticipantWakeTest extends TestCase
         $phase = $cycle->phases()->whereNull('completed_at')->firstOrFail();
         $this->app->instance(WakeClock::class, new WakeClock);
         $resume = Mockery::mock(ParticipantInference::class);
-        $resume->shouldReceive('contribute')->once()->withArgs(fn ($connection, $state) => $state['plan']['phase']['id'] === $phase->id)
-            ->andReturn(['action' => 'participant.rest']);
+        $resume->shouldReceive('contribute')->twice()->andReturnUsing(function ($connection, $state) use ($phase): array {
+            if ($state['plan']['phase']['id'] === $phase->id) {
+                return ['action' => 'proposition.variant', 'statement' => 'Resumed without replaying the distinction.'];
+            }
+            $this->assertArrayHasKey('participant.rest', $state['plan']['schema']['$defs']['actions']);
+
+            return ['action' => 'participant.rest'];
+        });
         $this->app->instance(ParticipantInference::class, $resume);
         $this->app->call([new WakeParticipant($connection->id), 'handle']);
         $this->assertNotNull($cycle->fresh()->rested_at);
