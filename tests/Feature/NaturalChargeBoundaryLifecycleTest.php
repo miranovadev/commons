@@ -33,6 +33,9 @@ class NaturalChargeBoundaryLifecycleTest extends TestCase
         $first = $service->contribute($a->cycle->participant, $a->id,
             ['action' => 'proposition.variant', 'statement' => 'First untested trajectory']);
         $tragedy = Tragedy::sole();
+        $firstHistory = $tragedy->getAttributes();
+        $warrantHistory = DB::table('receipts')->where('id', $tragedy->receipt_id)->sole();
+        $this->assertEquals(0, json_decode($warrantHistory->metadata, true)['field']['charge']);
         $this->assertSame($first['current_proposition_id'], $tragedy->terminal_proposition_id);
         $this->assertSame($seed->id, $tragedy->governing_committal_id);
         $this->assertDatabaseCount('commit_region_exhaustions', 0);
@@ -72,6 +75,12 @@ class NaturalChargeBoundaryLifecycleTest extends TestCase
         $this->assertSame($first['current_proposition_id'], $remembered['tragedy_memory']['catastrophe']['proposition_id']);
         $this->assertNull(app(HorizonReceiptService::class)->tragedyWarrant(Phase::findOrFail($recovered['plan']['phase']['id'])));
         $this->assertDatabaseHas('propositions', ['id' => $proof->terminal_proposition_id]);
+        // Rest/recovery only routes the participant: both catastrophe events and
+        // their dedicated warrant remain the history recorded before that Rest.
+        $this->assertSame($firstHistory, $tragedy->fresh()->getAttributes());
+        $this->assertEquals($proof, DB::table('commit_region_exhaustions')->sole());
+        $this->assertEquals($warrantHistory, DB::table('receipts')->where('id', $tragedy->receipt_id)->sole());
+        $this->assertDatabaseMissing('receipt_consumptions', ['receipt_id' => $tragedy->receipt_id]);
         $this->assertSame($first['current_proposition_id'], $a->cycle->participant->fresh()->current_proposition_id);
         $this->assertSame(1, Proposition::where('id', $proof->terminal_proposition_id)->count());
         $this->assertTrue(app(ExhaustionAuditService::class)->inspect($this->substrate->id)['matches']);
