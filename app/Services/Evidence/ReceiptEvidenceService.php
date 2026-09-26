@@ -35,8 +35,8 @@ final class ReceiptEvidenceService
 
     public function describe(Receipt $receipt, ParticipationContext $context): ?array
     {
-        if ($receipt->type === 'tragedy') {
-            return null; // A readable catastrophe record is not evidential grounding.
+        if ($receipt->isMemory()) {
+            return null; // Readable internal memory is not evidential grounding.
         }
         $execution = $receipt->instrumentExecution;
         if (! $receipt->supports(ReceiptCapability::Readable) || $execution?->status !== 'completed'

@@ -12,7 +12,7 @@ final readonly class EvidenceEligibilityService
 
     public function hasReceipt(Proposition $proposition, ?ParticipationContext $context = null): bool
     {
-        return $this->state->receipts($proposition, $context)->isNotEmpty();
+        return $this->state->evidenceReceipts($proposition, $context)->isNotEmpty();
     }
 
     public function canAttest(Proposition $proposition, ?ParticipationContext $context = null): bool
