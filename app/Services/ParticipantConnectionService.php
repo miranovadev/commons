@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\ConnectionTriggerMode;
+use App\Support\WakeConfiguration;
 use App\Models\Connection;
 use App\Models\Participant;
 use App\Models\ParticipantConnection;
@@ -44,8 +45,8 @@ final class ParticipantConnectionService
         ParticipantConnection $participantConnection,
         array $attributes,
     ): ParticipantConnection {
-        $scheduleChanged = array_key_exists('is_enabled', $attributes)
-            || array_key_exists('configuration', $attributes);
+        $oldEnabled = $participantConnection->is_enabled;
+        $oldTrigger = $participantConnection->configuration['trigger'] ?? ['mode' => 'manual'];
 
         if (array_key_exists('configuration', $attributes)) {
             $attributes['configuration'] = $this->configuration(
@@ -59,7 +60,10 @@ final class ParticipantConnectionService
         $participantConnection->forceFill($attributes);
         $participantConnection->save();
 
-        if ($scheduleChanged) {
+        $newTrigger = $participantConnection->configuration['trigger'];
+        if ($oldEnabled !== $participantConnection->is_enabled
+            || ($oldTrigger['mode'] ?? 'manual') !== $newTrigger['mode']
+            || ($oldTrigger['interval_minutes'] ?? null) !== ($newTrigger['interval_minutes'] ?? null)) {
             $this->triggers->reschedule($participantConnection);
         }
 
@@ -72,11 +76,7 @@ final class ParticipantConnectionService
      */
     private function configuration(array $configuration): array
     {
-        $configuration = array_replace_recursive([
-            'trigger' => [
-                'mode' => ConnectionTriggerMode::Manual->value,
-            ],
-        ], $configuration);
+        $configuration = WakeConfiguration::resolve($configuration);
 
         $mode = ConnectionTriggerMode::from(
             $configuration['trigger']['mode'],
@@ -88,6 +88,8 @@ final class ParticipantConnectionService
 
         return [
             'trigger' => $configuration['trigger'],
+            'wake' => $configuration['wake'],
         ];
     }
 }
+

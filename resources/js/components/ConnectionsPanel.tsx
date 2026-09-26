@@ -1,10 +1,12 @@
-import { ActionIcon, Alert, Box, Button, Card, Divider, Drawer, Group, NumberInput, Select, Stack, Switch, Text, ThemeIcon } from '@mantine/core';
+import { ActionIcon, Alert, Box, Button, Card, Divider, Drawer, Group, Select, Stack, Switch, Text, ThemeIcon } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconAlertCircle, IconPlugConnected, IconPlus, IconTrash } from '@tabler/icons-react';
-import { connectionSelectData, triggerFor } from '../connections';
+import { connectionSelectData, wakeFormValues, wakeConfigurationFor, validateWakeValues } from '../connections';
+import type { WakeFormValues } from '../connections';
+import { ConnectionWakeForm, ConnectionWakeSettings } from './ConnectionWakeSettings';
 import { messageFrom } from '../errors';
 import { useCreateParticipantConnectionMutation, useDeleteParticipantConnectionMutation, useGetConnectionOptionsQuery, useGetConnectionsQuery, useGetParticipantConnectionsQuery, useUpdateParticipantConnectionMutation } from '../services/commonsApi';
-import type { ConnectionTrigger, Identifier, ParticipantConnection, ParticipantParameters, TriggerMode } from '../types';
+import type { Identifier, ParticipantConnection, ParticipantParameters } from '../types';
 
 interface ConnectionsPanelProps {
   slug?: string;
@@ -14,10 +16,8 @@ interface ConnectionsPanelProps {
   onClose: () => void;
 }
 
-interface AttachmentFormValues {
+interface AttachmentFormValues extends WakeFormValues {
   connection_id: Identifier;
-  trigger_mode: TriggerMode;
-  interval_minutes: number;
 }
 
 export function ConnectionsPanel({ slug, participantId, participantName, opened, onClose }: ConnectionsPanelProps) {
@@ -32,8 +32,8 @@ export function ConnectionsPanel({ slug, participantId, participantName, opened,
   const attachedConnectionIds = new Set(attachments.map((attachment) => attachment.connection?.id || attachment.connection_id));
   const availableConnections = connections.filter((connection) => !attachedConnectionIds.has(connection.id));
   const form = useForm<AttachmentFormValues>({
-    initialValues: { connection_id: '', trigger_mode: 'manual', interval_minutes: 60 },
-    validate: { connection_id: (value) => value ? null : 'Choose a connection.' },
+    initialValues: { connection_id: '', ...wakeFormValues() },
+    validate: (values) => ({ ...validateWakeValues(values), ...(!values.connection_id ? { connection_id: 'Choose a connection.' } : {}) }),
   });
 
   async function attach(values: AttachmentFormValues) {
@@ -42,20 +42,12 @@ export function ConnectionsPanel({ slug, participantId, participantName, opened,
       await createAttachment({
         ...parameters,
         connection_id: values.connection_id,
-        configuration: { trigger: triggerFor(values.trigger_mode, values.interval_minutes) },
+        configuration: wakeConfigurationFor(values),
       }).unwrap();
       form.reset();
     } catch (requestError) {
       form.setFieldError('connection_id', messageFrom(requestError, 'The connection could not be attached.'));
     }
-  }
-
-  async function updateSchedule(attachment: ParticipantConnection, mode: TriggerMode, intervalMinutes = 60) {
-    await updateAttachment({
-      ...parameters,
-      participantConnectionId: attachment.id,
-      configuration: { trigger: triggerFor(mode, intervalMinutes) },
-    }).unwrap();
   }
 
   async function remove(attachment: ParticipantConnection) {
@@ -70,7 +62,6 @@ export function ConnectionsPanel({ slug, participantId, participantName, opened,
 
         {attachments.map((attachment) => {
           const connection = attachment.connection;
-          const trigger: ConnectionTrigger = attachment.configuration?.trigger || { mode: 'manual' };
           return (
             <Card key={attachment.id} withBorder padding="md">
               <Stack gap="sm">
@@ -78,9 +69,8 @@ export function ConnectionsPanel({ slug, participantId, participantName, opened,
                   <Group wrap="nowrap"><ThemeIcon color="indigo" variant="light"><IconPlugConnected size={17} /></ThemeIcon><Box><Text fw={650}>{connection?.name || 'Connection'}</Text><Text size="xs" c="dimmed">{connection?.provider} · {connection?.configuration?.model}</Text></Box></Group>
                   <Group gap="xs"><Switch checked={attachment.is_enabled} onChange={(event) => updateAttachment({ ...parameters, participantConnectionId: attachment.id, is_enabled: event.currentTarget.checked })} aria-label={`Enable ${connection?.name || 'connection'}`} /><ActionIcon color="red" variant="subtle" onClick={() => remove(attachment)} aria-label={`Detach ${connection?.name || 'connection'}`}><IconTrash size={17} /></ActionIcon></Group>
                 </Group>
-                <Select label="Wake mode" value={trigger.mode} data={options.trigger_modes} onChange={(value) => value && updateSchedule(attachment, value as TriggerMode, trigger.interval_minutes || 60)} />
-                {trigger.mode === 'interval' && <NumberInput label="Interval in minutes" min={1} defaultValue={trigger.interval_minutes || 60} onBlur={(event) => updateSchedule(attachment, 'interval', Math.max(1, Number(event.currentTarget.value) || 60))} />}
-                {attachment.next_trigger_at && <Text size="xs" c="dimmed">Next wake: {new Date(attachment.next_trigger_at).toLocaleString()}</Text>}
+                <ConnectionWakeForm key={JSON.stringify(attachment.configuration)} configuration={attachment.configuration} onSave={(configuration) => updateAttachment({ ...parameters, participantConnectionId: attachment.id, configuration }).unwrap()} />
+                {attachment.next_trigger_at && <Text size="xs" c="dimmed">Next scheduled trigger: {new Date(attachment.next_trigger_at).toLocaleString()}</Text>}
                 {attachment.last_error && <Text size="xs" c="red">{attachment.last_error}</Text>}
               </Stack>
             </Card>
@@ -92,8 +82,7 @@ export function ConnectionsPanel({ slug, participantId, participantName, opened,
           <form onSubmit={form.onSubmit(attach)}>
             <Stack>
               <Select label="Connection" data={connectionSelectData(availableConnections)} {...form.getInputProps('connection_id')} />
-              <Select label="Wake mode" data={options.trigger_modes} {...form.getInputProps('trigger_mode')} />
-              {form.values.trigger_mode === 'interval' && <NumberInput label="Interval in minutes" min={1} {...form.getInputProps('interval_minutes')} />}
+              <ConnectionWakeSettings values={form.values} onChange={(key, value) => form.setValues((current) => ({ ...current, [key]: value }))} errors={form.errors} />
               <Button type="submit" loading={form.submitting} leftSection={<IconPlus size={17} />}>Attach connection</Button>
             </Stack>
           </form>
@@ -102,3 +91,4 @@ export function ConnectionsPanel({ slug, participantId, participantName, opened,
     </Drawer>
   );
 }
+

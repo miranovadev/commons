@@ -66,9 +66,19 @@ final class ParticipantConnectionTriggerService
     ): void {
         $at ??= now();
 
+        // Advance from the underlying scheduled occurrence, never worker start
+        // or the random offset. Skip missed opportunities without a catch-up burst.
+        $anchor = $connection->next_trigger_at ?? $at;
+        $next = $this->nextTriggerAt($connection, $anchor);
+        if ($next !== null && $next->lte($at)) {
+            $intervalSeconds = max(1, (int) data_get($connection->configuration, 'trigger.interval_minutes', 1)) * 60;
+            $missed = intdiv(max(0, $at->getTimestamp() - $next->getTimestamp()), $intervalSeconds) + 1;
+            $next = $next->addSeconds($missed * $intervalSeconds);
+        }
+
         $connection->forceFill([
             'last_triggered_at' => $at,
-            'next_trigger_at' => $this->nextTriggerAt($connection, $at),
+            'next_trigger_at' => $next,
             'last_error' => null,
         ])->save();
     }
@@ -121,3 +131,4 @@ final class ParticipantConnectionTriggerService
         return $from->copy()->addMinutes($interval);
     }
 }
+

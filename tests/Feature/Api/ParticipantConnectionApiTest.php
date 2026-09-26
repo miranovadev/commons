@@ -248,6 +248,68 @@ class ParticipantConnectionApiTest extends TestCase
             ->assertJsonPath('data.trigger_modes', ['interval', 'manual']);
     }
 
+    public function test_wake_defaults_are_persisted_and_legacy_rows_serialize_the_same_defaults(): void
+    {
+        $owner = $this->environment();
+        $this->actingAs($owner);
+        $connection = $this->createConnection();
+        [$substrate, $participant] = $this->createParticipant($owner, 'wake-defaults', 'mira');
+        $url = $this->connectionsUrl($substrate, $participant);
+        $response = $this->postJson($url, ['connection_id' => $connection->id])->assertCreated()
+            ->assertJsonPath('data.configuration.wake.termination', 'phase')
+            ->assertJsonPath('data.configuration.wake.timeout_seconds', 600)
+            ->assertJsonPath('data.configuration.trigger.offset.mode', 'seconds')
+            ->assertJsonPath('data.configuration.trigger.offset.seconds', 0);
+        $link = ParticipantConnection::findOrFail($response->json('data.id'));
+        $this->assertSame(600, $link->configuration['wake']['timeout_seconds']);
+        $link->forceFill(['configuration' => ['trigger' => ['mode' => 'manual']]])->save();
+        $this->getJson($url.'/'.$link->id)->assertOk()
+            ->assertJsonPath('data.configuration.wake.termination', 'phase')
+            ->assertJsonPath('data.configuration.wake.timeout_seconds', 600)
+            ->assertJsonPath('data.configuration.trigger.offset.seconds', 0);
+    }
+
+    public function test_wake_updates_preserve_schedule_and_validate_the_merged_random_range(): void
+    {
+        $owner = $this->environment();
+        $this->actingAs($owner);
+        $connection = $this->createConnection();
+        [$substrate, $participant] = $this->createParticipant($owner, 'wake-update', 'mira');
+        $url = $this->connectionsUrl($substrate, $participant);
+        $id = $this->postJson($url, ['connection_id' => $connection->id, 'configuration' => [
+            'trigger' => ['mode' => 'interval', 'interval_minutes' => 1],
+        ]])->assertCreated()->json('data.id');
+        $url .= '/'.$id;
+        $due = ParticipantConnection::findOrFail($id)->next_trigger_at;
+        foreach (['phase', 'cycle', 'rest'] as $mode) {
+            $this->patchJson($url, ['configuration' => ['wake' => ['termination' => $mode, 'timeout_seconds' => 1800]]])
+                ->assertOk()->assertJsonPath('data.configuration.wake.termination', $mode);
+            $this->assertTrue(ParticipantConnection::findOrFail($id)->next_trigger_at->equalTo($due));
+        }
+        $trigger = ['mode' => 'interval', 'interval_minutes' => 1];
+        $this->patchJson($url, ['configuration' => ['trigger' => [...$trigger, 'offset' => ['mode' => 'random', 'random_from' => 30, 'random_to' => 40]]]])
+            ->assertOk()->assertJsonPath('data.configuration.trigger.offset.random_from', 30);
+        $this->assertTrue(ParticipantConnection::findOrFail($id)->next_trigger_at->equalTo($due));
+        $this->patchJson($url, ['configuration' => ['trigger' => [...$trigger, 'offset' => ['random_to' => 20]]]])
+            ->assertUnprocessable()->assertJsonValidationErrors('configuration.trigger.offset.random_to');
+        $this->patchJson($url, ['configuration' => ['trigger' => [...$trigger, 'offset' => ['random_to' => 30]]]])->assertOk();
+        $this->patchJson($url, ['configuration' => ['wake' => ['termination' => 'invalid']]])->assertUnprocessable();
+        $this->patchJson($url, ['configuration' => ['wake' => ['timeout_seconds' => 0]]])->assertUnprocessable();
+        $this->patchJson($url, ['configuration' => ['trigger' => [...$trigger, 'offset' => ['seconds' => 1.5]]]])->assertUnprocessable();
+    }
+
+    public function test_join_rejects_invalid_wake_configuration(): void
+    {
+        $owner = $this->environment();
+        $this->actingAs($owner);
+        $connection = $this->createConnection();
+        $substrate = $this->createSubstrate('invalid-wake-join');
+        $this->postJson("/api/substrates/{$substrate->slug}/participants", [
+            'callsign' => 'mira',
+            'connection' => ['id' => $connection->id, 'configuration' => ['wake' => ['termination' => 'invalid']]],
+        ])->assertUnprocessable()->assertJsonValidationErrors('connection.configuration.wake.termination');
+    }
+
     private function environment(): User
     {
         $this->postJson('/api/bootstrap', [
@@ -317,3 +379,4 @@ class ParticipantConnectionApiTest extends TestCase
             ."/participants/{$participant->getKey()}/connections";
     }
 }
+
