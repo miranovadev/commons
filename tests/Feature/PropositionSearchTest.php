@@ -38,6 +38,27 @@ class PropositionSearchTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_postgresql_kind_constraints_preserve_tragedy_and_add_proposition_search(): void
+    {
+        if (DB::getDriverName() !== 'pgsql') {
+            $this->markTestSkipped('PostgreSQL CHECK constraint regression.');
+        }
+
+        $definition = function (string $name): string {
+            return (string) DB::table('pg_constraint')
+                ->where('conname', $name)
+                ->selectRaw('pg_get_constraintdef(oid) as definition')
+                ->value('definition');
+        };
+
+        $receipts = $definition('receipts_type_check');
+        $executions = $definition('instrument_executions_kind_check');
+
+        $this->assertStringContainsString('tragedy', $receipts);
+        $this->assertStringContainsString('proposition_search', $receipts);
+        $this->assertStringContainsString('proposition_search', $executions);
+    }
+
     public function test_search_is_bounded_to_unseen_same_domain_recorded_lineage_with_true_distances(): void
     {
         $s = $this->scenario();
