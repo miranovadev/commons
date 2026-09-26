@@ -110,11 +110,12 @@ signature, never enters ordinary Region Receipt catalogues, never counts as an
 instrumented evidence source, never produces Reinforcement, and never satisfies
 Attestation or Commitment grounding.
 
-Observation identity includes the normalized invocation and material
-PropositionCollection, including head/Domain/result ordering and structural
-distances. The same query over the same collection is duplicate-suppressed; the
-same query may produce a distinct immutable Receipt when later history changes the
-observed collection.
+Observation identity includes the normalized query and material
+PropositionCollection identity: head, Domain, ordered returned Proposition IDs
+and structural distances. The requested limit is not identity when it produces
+the same observed collection. The same query over the same collection is
+duplicate-suppressed; the same query may produce a distinct immutable Receipt
+when later history changes the observed collection.
 
 Search results are observational only. Returning a Proposition creates no
 Supersession edge, Gate, Traverse target, movement destination, Receipt-scope
