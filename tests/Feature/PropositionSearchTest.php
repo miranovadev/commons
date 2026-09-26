@@ -216,6 +216,19 @@ class PropositionSearchTest extends TestCase
         $this->assertSame(2, Receipt::where('type', 'proposition_search')->count());
     }
 
+    public function test_kind_migration_refuses_to_discard_recorded_proposition_search_history(): void
+    {
+        $s = $this->scenario();
+        app(OperationalInstrumentService::class)->execute($s['phase'], $s['head'], [
+            'kind' => 'proposition_search', 'query' => 'needle',
+        ]);
+
+        $migration = require database_path('migrations/2026_09_26_000000_add_proposition_search_instrument_kind.php');
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Cannot discard Proposition Search Instrument or Receipt history.');
+        $migration->down();
+    }
+
     private function scenario(): array
     {
         $fixture = new ParticipantContextFixture(2, 0, false);
