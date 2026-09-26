@@ -190,6 +190,10 @@ contribute at most one counted Reinforcement to a Proposition; repeated Receipts
 and shared signatures remain historical events rather than extra measurement weight.
 Loaded state persists across Cycles and Context Horizons until cleared. Clearing
 removes active Reinforcement without deleting the Receipt or its history.
+Readable cognitive-memory Receipts, including Tragedy memory and Proposition
+Search collections, are not qualifying evidence. Loading them changes cognition
+only: it grants no Reinforcement, grounding, Receipt-scope, movement or recovery
+authority.
 
 ## 13. Reinforcement Forms State Before Attenuation Propagates It
 
@@ -200,7 +204,7 @@ by distance before entering the Proposition's own calculation.
 
 ## 14. Commitment Requires Grounding, Attestation and Closure
 
-Commit requires a completed Receipt, an effective Attestation on the selected classification, and aligned Depth/Cadence with hysteresis. Loaded Reinforcement adds weight but is not an admissibility minimum. Origin initialization records its explicit evidence before freezing. Each direct expressive source is committed once globally; its Committal result is immutable and subsequent development takes place through Variants.
+Commit requires a completed qualifying evidence Receipt, an effective Attestation on the selected classification, and aligned Depth/Cadence with hysteresis. Loaded Reinforcement adds weight but is not an admissibility minimum. Origin initialization records its explicit evidence before freezing. Each direct expressive source is committed once globally; its Committal result is immutable and subsequent development takes place through Variants.
 
 ## 15. Reinforcement Does Not Suppress Branching
 
