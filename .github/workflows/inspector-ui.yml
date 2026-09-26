@@ -1,0 +1,40 @@
+name: Inspector browser review
+
+on:
+  pull_request:
+    paths:
+      - 'resources/js/components/*Inspector*'
+      - 'resources/js/components/InspectorCharts.tsx'
+      - 'resources/js/components/SpecialPropositionBadges.tsx'
+      - 'resources/js/components/PropositionGraph.tsx'
+      - 'resources/js/components/GraphWorkspaceRail.tsx'
+      - 'resources/css/substrate-graph.css'
+      - 'tests/ui/**'
+      - '.github/workflows/inspector-ui.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Install isolated browser test tooling
+        run: npm install --no-save --package-lock=false playwright@1.62.1
+      - run: npx playwright install --with-deps chromium
+      - name: Review synthetic graph on desktop and mobile
+        run: node tests/ui/inspector-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: inspector-browser-review
+          path: test-results/inspector/
+          if-no-files-found: warn
+          retention-days: 14

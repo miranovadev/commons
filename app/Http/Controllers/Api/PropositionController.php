@@ -10,6 +10,7 @@ use App\Services\ExhaustionService;
 use App\Services\GraphProjectionService;
 use App\Services\Observables\ReinforcementService;
 use App\Services\PropositionPresentationService;
+use App\Services\PropositionInspectionService;
 use App\Services\PropositionStateService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -34,6 +35,10 @@ class PropositionController extends Controller
         $reinforcement->loadCounts(collect([$proposition]));
         $proposition->setAttribute('attestation_summary', $presentation->attestations($proposition));
         $graph->load($substrate, collect([$proposition]), app(ExhaustionService::class)->unavailable($proposition));
+
+        if ($proposition->tier === 'committal') {
+            $proposition->setAttribute('closure_history', app(PropositionInspectionService::class)->history($proposition));
+        }
 
         return new PropositionResource($proposition);
     }
@@ -79,3 +84,4 @@ class PropositionController extends Controller
         return PropositionResource::collection($propositions);
     }
 }
+

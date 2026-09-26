@@ -1,3 +1,4 @@
+import { SpecialPropositionBadges } from './SpecialPropositionBadges';
 import { Card, VisuallyHidden } from '@mantine/core';
 import { metaForRegister } from '../registers';
 import { PropositionContent } from './PropositionContent';
@@ -78,6 +79,7 @@ export function PropositionCard({
       {domain && <>
         <VisuallyHidden>{domain === 'settlement' ? 'Settlement' : 'Emergence'} Domain.</VisuallyHidden>
       </>}
+      {density === 'topology' && <SpecialPropositionBadges proposition={proposition} compact />}
       {density !== 'topology' && <PropositionContent
         proposition={proposition}
         mode={mini ? 'minimal' : 'card'}
@@ -90,3 +92,4 @@ export function PropositionCard({
     </Card>
   );
 }
+

@@ -29,6 +29,7 @@ final readonly class GraphProjectionService
         // Observer mode changes visibility only. Every view reads the same field.
         $this->loadActive($substrate, $visible, $historical);
         $this->loadHistoricalMarkers($substrate, $visible);
+        app(PropositionInspectionService::class)->loadMarkers($substrate, $visible);
     }
 
     /** Accepted contribution history only; never re-run today's Bias population or field. */
@@ -135,3 +136,4 @@ final readonly class GraphProjectionService
         }
     }
 }
+

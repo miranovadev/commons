@@ -11,6 +11,11 @@ import type { DomainName, GraphParticipant, Proposition, RegisterName } from '..
 function node(id: string, title: string, register: RegisterName, domain: DomainName, tension: number, touches: number, parents: string[], committal = false): Proposition {
   return { id, title, statement: title, register, tier: committal ? 'committal' : 'expressive', is_origin: parents.length === 0,
     parent_ids: parents, context_horizon: { id: domain, sequence: domain === 'emergence' ? 1 : 2, domain },
+    observables: { correspondence: .6, chirality: -.3, closure: .2 },
+    ...(committal ? { domain_transition: 'emergence-settlement' as const, closure_history: { source: 'selected-committal' as const, points: [
+      { proposition_id: 'older', depth: -.6, cadence: -.3, depth_direction: 'negative' as const, cadence_direction: 'negative' as const },
+      { proposition_id: id, depth: .2, cadence: .5, depth_direction: 'positive' as const, cadence_direction: 'positive' as const }
+    ], current: { proposition_id: id, depth: .2, cadence: .5, depth_direction: 'positive' as const, cadence_direction: 'positive' as const } } } : { confluence: id === 'c' }),
     participation_count: touches, attestation_counts: { support: 7, refute: 3 },
     field: { tension, charge: 1 - Math.abs(tension), potential_charge: .6 - Math.abs(tension) / 2, status: 'current',
       potential_status: 'current', source: committal ? 'commitment_snapshot' : 'measurement',
@@ -42,3 +47,4 @@ function Preview() {
   </Box>;
 }
 createRoot(document.getElementById('root')!).render(<Provider store={store}><MantineProvider defaultColorScheme="dark"><Preview /></MantineProvider></Provider>);
+
