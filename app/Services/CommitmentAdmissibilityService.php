@@ -48,7 +48,7 @@ final readonly class CommitmentAdmissibilityService
     public function grounding(Proposition $gate, ?ParticipationContext $context = null): array
     {
         $attestations = $this->state->attestations(collect([$gate]), $context);
-        $hasReceipt = $this->state->receipts($gate, $context)->isNotEmpty();
+        $hasReceipt = $this->state->evidenceReceipts($gate, $context)->isNotEmpty();
         $count = $this->reinforcement->count($gate, $context);
         $hasAttestation = $attestations->isNotEmpty();
 

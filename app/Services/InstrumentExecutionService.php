@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Domain\Evidence\PropositionCollection;
 use App\Domain\Evidence\SearchObservation;
 use App\Domain\Evidence\VerifiedHyperlink;
 use App\Enums\ReceiptCapability;
@@ -66,6 +67,7 @@ final readonly class InstrumentExecutionService
         array $metadata = [],
         ?VerifiedHyperlink $verification = null,
         ?SearchObservation $observation = null,
+        ?PropositionCollection $propositionCollection = null,
     ): Receipt {
         return DB::transaction(function () use (
             $execution,
@@ -74,6 +76,7 @@ final readonly class InstrumentExecutionService
             $metadata,
             $verification,
             $observation,
+            $propositionCollection,
         ): Receipt {
             // Resolve ownership with a read; never lock the execution before its root.
             $substrateId = InstrumentExecution::query()->findOrFail($execution->getKey())->phase->cycle->participant->substrate_id;
@@ -99,6 +102,21 @@ final readonly class InstrumentExecutionService
                 : ['signature' => null, 'status' => 'non-reinforcing'];
             $metadata = [...$metadata, ...($signature !== null ? ['supplied_signature' => $signature] : []), ...($verification?->metadata() ?? ['content_verified' => false]),
                 'reinforcement_version' => $resolution['status']];
+            if ($locked->kind === 'proposition_search') {
+                if ($propositionCollection === null
+                    || $propositionCollection->headPropositionId !== $locked->proposition_id
+                    || $propositionCollection->query !== ($locked->input['query'] ?? null)
+                    || $propositionCollection->limit !== ($locked->input['limit'] ?? null)) {
+                    throw new DomainException('The Proposition Search collection must match its stored invocation and head.');
+                }
+                $metadata = [...$metadata,
+                    'proposition_collection' => $propositionCollection->payload(),
+                    'observation_identity' => $propositionCollection->identity(),
+                    'content_verified' => true,
+                    'reinforcement_version' => 'non-reinforcing-memory'];
+            } elseif ($propositionCollection !== null) {
+                throw new DomainException('Only Proposition Search may persist a PropositionCollection.');
+            }
             if ($locked->kind === 'web_search' && $observation !== null) {
                 if ($observation->query !== ($locked->input['query'] ?? null)) {
                     throw new DomainException('The Search observation must match its stored invocation.');
@@ -130,7 +148,7 @@ final readonly class InstrumentExecutionService
             $receipt->setRelation('instrumentExecution', $locked);
 
             $proposition = $locked->proposition()->first();
-            if ($proposition !== null) {
+            if ($proposition !== null && $receipt->isEvidence()) {
                 $this->measurements->recalculateIfMeasurable($proposition);
             }
 

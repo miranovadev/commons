@@ -12,7 +12,7 @@ $statement = [
 ];
 
 $instrument = [
-    'description' => 'Cite references a known substrate object. Creating a Cite Receipt does not itself grant Reinforcement. Hyperlink fetches a known public URL and verifies retrieval, not the truth of its claims. Web Search discovers resources from a query. Instrument execution records an immutable Receipt; it never loads context or grants Reinforcement automatically.',
+    'description' => 'Cite references a known substrate object. Creating a Cite Receipt does not itself grant Reinforcement. Hyperlink fetches a known public URL and verifies retrieval, not the truth of its claims. Web Search discovers external resources from a query. Proposition Search retrieves bounded same-Domain recorded-lineage history and creates cognitive memory, never evidence or movement authority. Instrument execution records an immutable Receipt; it never loads context or grants Reinforcement automatically.',
     'anyOf' => [
         [
             'type' => 'object', 'additionalProperties' => false,
@@ -28,6 +28,15 @@ $instrument = [
             'properties' => [
                 'kind' => ['const' => 'web_search'],
                 'query' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 1000, 'pattern' => '^[^\\x00]*[^\\s\\x00][^\\x00]*$'],
+            ],
+        ],
+        [
+            'type' => 'object', 'additionalProperties' => false,
+            'required' => ['kind'],
+            'properties' => [
+                'kind' => ['const' => 'proposition_search'],
+                'query' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 1000, 'pattern' => '^[^\\x00]*[^\\s\\x00][^\\x00]*$'],
+                'limit' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 10, 'default' => 5],
             ],
         ],
     ],
@@ -47,7 +56,7 @@ $proposition = static function (string $action, string $title) use ($statement):
 };
 
 return [
-    'version' => 24,
+    'version' => 25,
 
     'cache' => [
         'store' => env('COMMONS_SCHEMA_CACHE_STORE'),

@@ -147,6 +147,6 @@ final class HorizonFailureService
 
         return $instrumentRequired
             ? app(HorizonReceiptService::class)->instrumentedIds($node->phase, collect([$node->id]))->isNotEmpty()
-            : $state->receipts($node)->isNotEmpty();
+            : $state->evidenceReceipts($node)->isNotEmpty();
     }
 }

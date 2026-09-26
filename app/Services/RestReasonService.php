@@ -29,7 +29,7 @@ final class RestReasonService
         $spent = app(ExplorationEpochService::class)->failuresFor($phase, $writes->pluck('id'), $context);
         $testedWrites = $writes->isNotEmpty() && $writes->pluck('id')->diff($spent->keys())->isEmpty();
         if (! $testedWrites && ($state->attestations(collect([$gate]), $context)->isEmpty()
-            || ($state->receipts($gate, $context)->isEmpty()
+            || ($state->evidenceReceipts($gate, $context)->isEmpty()
                 && app(HorizonReceiptService::class)->ordinaryAvailable($phase, $context)->isEmpty()))) {
             return RestReason::NoAvailableMove;
         }

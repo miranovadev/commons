@@ -10,5 +10,6 @@ final readonly class InstrumentObservation
         public array $metadata = [],
         public ?VerifiedHyperlink $verification = null,
         public ?SearchObservation $search = null,
+        public ?PropositionCollection $propositions = null,
     ) {}
 }
