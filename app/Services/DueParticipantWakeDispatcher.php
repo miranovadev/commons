@@ -28,10 +28,11 @@ final readonly class DueParticipantWakeDispatcher
                     return null;
                 }
 
-                $availableAt = $participantConnection->next_trigger_at->addSeconds(
+                $triggeredAt = now();
+                $availableAt = $triggeredAt->copy()->addSeconds(
                     $this->offsets->seconds($participantConnection->configuration),
                 );
-                $this->triggers->recordTriggered($participantConnection);
+                $this->triggers->recordTriggered($participantConnection, $triggeredAt);
 
                 return [$participantConnection->getKey(), $availableAt];
             });

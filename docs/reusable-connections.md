@@ -97,9 +97,9 @@ queue availability is 12:00:10, 12:01:10, 12:02:10. Random offsets 30–40 might
 not added to configuration or used as the next cadence origin. Equal bounds are
 valid. Delays support controlled de-synchronisation, not guaranteed separation.
 
-The scheduler advances from the prior scheduled timestamp, skipping missed interval
-slots to the first future opportunity. A late trigger whose offset has already
-elapsed becomes immediately eligible. Offset, termination and timeout edits retain
+The existing scheduler advances the interval schedule when it claims a due
+attachment. The same trigger timestamp anchors the queue offset. A late scheduler
+still applies the full offset; missed opportunities are not replayed. Offset, termination and timeout edits retain
 the existing next trigger; changing interval, trigger mode or enabled state reschedules
 as before. Worker completion never shifts the schedule.
 

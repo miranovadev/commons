@@ -84,7 +84,7 @@ class ParticipantWakeTest extends TestCase
         $this->assertTrue($participantConnection->last_triggered_at->equalTo($now));
         $this->assertTrue(
             $participantConnection->next_trigger_at->equalTo(
-                $now->addMinutes(14),
+                $now->addMinutes(15),
             ),
         );
 
@@ -516,7 +516,7 @@ class ParticipantWakeTest extends TestCase
         [$participant, $connection] = $this->readyConnection();
         $connection->forceFill(['configuration' => array_replace_recursive($connection->configuration, ['wake' => ['termination' => 'rest', 'timeout_seconds' => 600]])])->save();
         $cycle = $participant->cycles()->firstOrFail();
-        $tragedies = DB::table('horizon_tragedies')->count();
+        $tragedies = \App\Models\Tragedy::count();
         $exhaustions = DB::table('commit_region_exhaustions')->count();
         $clock = Mockery::mock(WakeClock::class);
         $clock->shouldReceive('now')->andReturn(0, 0, 0, 0, 601);
@@ -531,7 +531,7 @@ class ParticipantWakeTest extends TestCase
         $this->assertDatabaseHas('propositions', ['statement' => 'Completed before the wake deadline.']);
         $this->assertNull($cycle->fresh()->completed_at);
         $this->assertNull($cycle->fresh()->rested_at);
-        $this->assertSame($tragedies, DB::table('horizon_tragedies')->count());
+        $this->assertSame($tragedies, \App\Models\Tragedy::count());
         $this->assertSame($exhaustions, DB::table('commit_region_exhaustions')->count());
         $this->assertStringContainsString('timed out', $connection->fresh()->last_error);
         $phase = $cycle->phases()->whereNull('completed_at')->firstOrFail();
@@ -579,6 +579,19 @@ class ParticipantWakeTest extends TestCase
             $at = $at->addMinute();
             CarbonImmutable::setTestNow($at);
         }
+    }
+
+    public function test_late_scheduler_trigger_still_applies_the_full_offset(): void
+    {
+        Queue::fake();
+        $at = CarbonImmutable::parse('2026-09-07 12:00:00 UTC');
+        CarbonImmutable::setTestNow($at);
+        [, $connection] = $this->readyConnection($at->subSeconds(40));
+        $connection->forceFill(['configuration' => ['trigger' => ['mode' => 'interval', 'interval_minutes' => 1,
+            'offset' => ['mode' => 'seconds', 'seconds' => 10]]]])->save();
+        $this->assertSame(1, app(DueParticipantWakeDispatcher::class)->dispatch());
+        Queue::assertPushed(WakeParticipant::class, fn ($job) => $job->delay->equalTo($at->addSeconds(10)));
+        $this->assertTrue($connection->fresh()->next_trigger_at->equalTo($at->addMinute()));
     }
 
     public function test_random_offsets_are_sampled_per_trigger_and_never_move_the_schedule(): void
