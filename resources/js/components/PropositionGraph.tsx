@@ -1,8 +1,8 @@
-import { InspectorContent } from './PropositionInspector';
+import { GraphInspectorShell, InspectorContent } from './PropositionInspector';
 import { useGetPropositionQuery } from '../services/commonsApi';
 import { Alert, Box, Group, Paper, Text, ThemeIcon, Title } from '@mantine/core';
 import { useLocalStorage } from '@mantine/hooks';
-import { IconArrowsMove, IconDropletFilled, IconSeedling, IconSparkles } from '@tabler/icons-react';
+import { IconArrowsMove, IconSparkles } from '@tabler/icons-react';
 import { memo, useCallback, useLayoutEffect, useMemo, useReducer, useRef, useState } from 'react';
 import '../../css/substrate-graph.css';
 import { PropositionCard } from './PropositionCard';
@@ -39,6 +39,7 @@ export function PropositionGraph({ propositions, substrateSlug, initialFocusId, 
   const viewportRef = useRef<HTMLDivElement>(null);
   const dragState = useRef<DragState | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [animating, setAnimating] = useState(false);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [selectedId, setSelectedId] = useState(initialFocusId || null);
   const [isolate, setIsolate] = useState(false);
@@ -66,32 +67,53 @@ export function PropositionGraph({ propositions, substrateSlug, initialFocusId, 
   const select = useCallback((id: Identifier) => {
     setSelectedId(id);
     setForwardPath(current => rememberLineagePath(navigation.previous, id, current));
-    dispatchRail('select');
   }, [navigation]);
   const navigateLineage = (id: Identifier) => {
     setForwardPath(remembered);
     setSelectedId(id);
-    // Arrow navigation preserves collapse/lock state as well as the active lens.
+    // Arrow navigation preserves Workspace state and the active lens.
   };
-  const deselect = () => { setSelectedId(null); setForwardPath(new Map()); };
+  const deselect = () => {
+    viewportRef.current?.querySelector<HTMLButtonElement>('.proposition-card[aria-pressed="true"]')?.focus({ preventScroll: true });
+    setSelectedId(null);
+    setForwardPath(new Map());
+  };
+  const showOrigin = () => {
+    const viewport = viewportRef.current;
+    const node = layout.nodes.find(item => item.proposition.id === layout.origin?.id);
+    if (!viewport || !node) return;
+    const inspector = viewport.parentElement?.querySelector<HTMLElement>('.graph-inspector');
+    const mobile = window.matchMedia('(max-width: 48em)').matches;
+    const width = inspector && !mobile ? viewport.clientWidth - inspector.offsetWidth - 24 : viewport.clientWidth;
+    const height = inspector && mobile ? viewport.clientHeight - inspector.offsetHeight - 12 : viewport.clientHeight;
+    setAnimating(true);
+    setOffset({ x: (width - nodeWidth) / 2 - node.x, y: Math.max(45, (height - nodeHeight) / 2) - node.y });
+  };
   const lastReveal = useRef('');
   useLayoutEffect(() => {
     const viewport = viewportRef.current;
+    // Deselect only clears selection; Origin is an explicit camera action.
+    if (!selectedId && lastReveal.current !== '') return;
     const focus = selectedId || layout.origin?.id;
-    const key = `${focus}/${railState}/${density}`;
+    const key = `${focus}/${density}`;
     const node = layout.nodes.find(item => item.proposition.id === focus);
     if (!viewport || !node || !viewport.clientWidth || lastReveal.current === key) return;
     const initial = lastReveal.current === '';
     lastReveal.current = key;
-    // Navigation and rail changes reveal the target; live refreshes never reset a pan.
+    // Only a new selection/density reveals a target; live refreshes preserve pan.
+    const inspector = viewport.parentElement?.querySelector<HTMLElement>('.graph-inspector');
+    const mobile = window.matchMedia('(max-width: 48em)').matches;
+    const availableWidth = inspector && !mobile ? viewport.clientWidth - inspector.offsetWidth - 24 : viewport.clientWidth;
+    const availableHeight = inspector && mobile ? viewport.clientHeight - inspector.offsetHeight - 12 : viewport.clientHeight;
+    setAnimating(false);
     setOffset(current => {
-      const x = initial || node.x + current.x < 20 || node.x + current.x + nodeWidth > viewport.clientWidth - 20
-        ? (viewport.clientWidth - nodeWidth) / 2 - node.x : current.x;
-      const y = node.y + current.y < 45 || node.y + current.y + nodeHeight > viewport.clientHeight - 20
-        ? Math.max(45, (viewport.clientHeight - nodeHeight) / 2) - node.y : current.y;
+      const x = initial || node.x + current.x < 20 || node.x + current.x + nodeWidth > availableWidth - 20
+        ? (availableWidth - nodeWidth) / 2 - node.x : current.x;
+      const y = node.y + current.y < 45 || node.y + current.y + nodeHeight > availableHeight - 20
+        ? Math.max(45, (availableHeight - nodeHeight) / 2) - node.y : current.y;
       return x === current.x && y === current.y ? current : { x, y };
     });
-  }, [selectedId, railState, layout, density, nodeWidth, nodeHeight]);
+  }, [selectedId, layout, density, nodeWidth, nodeHeight]);
 
   if (!layout.origin) {
     return (
@@ -104,9 +126,10 @@ export function PropositionGraph({ propositions, substrateSlug, initialFocusId, 
   }
 
   function beginDrag(event: React.PointerEvent<HTMLDivElement>) {
-    if (event.button !== 0 || (event.target as Element).closest('.proposition-card, .graph-participants')) return;
+    if (event.button !== 0 || (event.target as Element).closest('.proposition-card, .graph-participants, .graph-inspector')) return;
     const viewport = viewportRef.current;
     if (!viewport) return;
+    setAnimating(false);
     dragState.current = {
       x: event.clientX,
       y: event.clientY,
@@ -137,6 +160,7 @@ export function PropositionGraph({ propositions, substrateSlug, initialFocusId, 
     <GraphTensionPalette value={overlayMode === 'tension' ? 'analytical' : 'default'}>
     <Box className="substrate-graph-shell" data-has-selection={hasSelection || undefined} data-rail-state={railState} data-density={density}>
 
+      <Box className="substrate-graph-stage">
       <Box
         ref={viewportRef}
         className={`substrate-graph-viewport ${dragging ? 'is-dragging' : ''}`}
@@ -151,6 +175,8 @@ export function PropositionGraph({ propositions, substrateSlug, initialFocusId, 
         </Group>
         <Box
           className="substrate-graph-canvas"
+          data-animating={animating || undefined}
+          onTransitionEnd={() => setAnimating(false)}
           style={{
             width: layout.width,
             height: layout.height,
@@ -171,15 +197,17 @@ export function PropositionGraph({ propositions, substrateSlug, initialFocusId, 
           ))}
         </Box>
       </Box>
+        {hasSelection && <GraphInspectorShell onClose={deselect}
+          onPrevious={previousId ? () => navigateLineage(previousId) : undefined}
+          onNext={nextId ? () => navigateLineage(nextId) : undefined}>
+          {selectedId && substrateSlug
+            ? <GraphInspector slug={substrateSlug} propositionId={selectedId} fallback={selectedProposition} />
+            : <InspectorContent graph selection={selectedProposition ? { kind: 'graph', proposition: selectedProposition } : null} />}
+        </GraphInspectorShell>}
+      </Box>
       <GraphWorkspaceRail state={railState} onState={dispatchRail} overlayMode={overlayMode} onOverlay={setOverlay}
-        density={density} onDensity={setDensity} hasSelection={hasSelection} isolate={isolate} onIsolate={setIsolate} onDeselect={deselect}
-        onPrevious={previousId ? () => navigateLineage(previousId) : undefined}
-        onNext={nextId ? () => navigateLineage(nextId) : undefined}>
-        {selectedId && hasSelection && substrateSlug
-          ? <GraphInspector key={`${substrateSlug}/${selectedId}`} slug={substrateSlug} propositionId={selectedId}
-              fallback={selectedProposition} />
-          : <InspectorContent selection={selectedProposition ? { kind: 'graph', proposition: selectedProposition } : null} />}
-      </GraphWorkspaceRail>
+        density={density} onDensity={setDensity} hasSelection={hasSelection} isolate={isolate} onIsolate={setIsolate}
+        onShowOrigin={showOrigin} />
     </Box>
     </GraphTensionPalette>
   );
@@ -194,10 +222,6 @@ const GraphNode = memo(function GraphNode({ proposition, x, y, lineage, overlay,
     style={{ left: x, top: y, width: nodeWidth, '--graph-node-height': `${nodeHeight}px` }}>
     <GraphParticipants participants={participants} compact={density === 'topology'} />
     <PropositionCard proposition={proposition} mini graph density={density} overlay={overlay} selected={lineage === 'selected'} onClick={() => onSelect(proposition.id)} />
-    {(proposition.tragedy || proposition.renewal) && <span className="graph-history-markers">
-      {proposition.tragedy && <span className="graph-history-marker" data-event="tragedy" role="img" aria-label="Tragedy" title="Tragedy"><IconDropletFilled size={14} aria-hidden="true" /></span>}
-      {proposition.renewal && <span className="graph-history-marker" data-event="renewal" role="img" aria-label="Renewal" title="Renewal"><IconSeedling size={14} aria-hidden="true" /></span>}
-    </span>}
     {proposition.is_origin && <Text className="substrate-graph-origin-label" size="10px" c="indigo" fw={700}>ORIGIN</Text>}
   </Box>;
 }, (previous, next) => previous.proposition === next.proposition && previous.x === next.x && previous.y === next.y
@@ -216,6 +240,7 @@ function GraphInspector({ slug, propositionId, fallback }: {
   const proposition = data || fallback;
   return <Box aria-busy={isFetching}>
     {error && <Alert color="gray" m="md">Full details could not be refreshed. Showing available graph data.</Alert>}
-    <InspectorContent selection={proposition ? { kind: 'graph', proposition } : null} />
+    <InspectorContent graph selection={proposition ? { kind: 'graph', proposition } : null} />
   </Box>;
 }
+

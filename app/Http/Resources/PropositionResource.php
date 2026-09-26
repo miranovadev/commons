@@ -25,6 +25,9 @@ class PropositionResource extends JsonResource
 
         return [
             'id' => $this->getKey(),
+            'confluence' => $this->when($this->confluence !== null, $this->confluence),
+            'domain_transition' => $this->when(array_key_exists('domain_transition', $this->resource->getAttributes()), $this->domain_transition),
+            'closure_history' => $this->when($this->closure_history !== null, $this->closure_history),
             'tragedy' => $this->when($this->tragedy !== null, $this->tragedy),
             'renewal' => $this->when($this->renewal !== null, $this->renewal),
             'exhaustion' => $this->when($this->exhaustion !== null, $this->exhaustion),
@@ -95,3 +98,4 @@ class PropositionResource extends JsonResource
         ];
     }
 }
+

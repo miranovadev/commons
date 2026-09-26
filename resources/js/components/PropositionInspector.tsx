@@ -1,4 +1,7 @@
-import { Badge, Box, Drawer, Stack, Text } from '@mantine/core';
+import { IconChevronLeft, IconChevronRight, IconX } from '@tabler/icons-react';
+import { useState, type ReactNode } from 'react';
+import { ClosureHistoryChart, FieldStateChart } from './InspectorCharts';
+import { ActionIcon, Badge, Box, Drawer, Group, Paper, Stack, Tabs, Text, Tooltip } from '@mantine/core';
 import { structuralDeltaSummary } from './MeasurementRails';
 import { PropositionContent } from './PropositionContent';
 import { AttestationPanel } from './AttestationPanel';
@@ -7,6 +10,7 @@ import type { ContributionInput, Observables, ParticipantPlan, PropositionSelect
 
 interface PropositionInspectorProps {
   selection: PropositionSelection | null;
+  graph?: boolean;
   committalObservables?: Observables;
   onClose: () => void;
   plan?: ParticipantPlan;
@@ -31,7 +35,8 @@ export function PropositionInspector({ selection, committalObservables, onClose,
   );
 }
 
-export function InspectorContent({ selection, committalObservables }: Omit<PropositionInspectorProps, 'onClose'>) {
+export function InspectorContent({ selection, committalObservables, graph = false }: Omit<PropositionInspectorProps, 'onClose'>) {
+  const [tab, setTab] = useState<string | null>('proposition');
   if (!selection) {
     return (
       <Stack className="proposition-inspector__empty" align="center" justify="center" gap="xs">
@@ -45,14 +50,14 @@ export function InspectorContent({ selection, committalObservables }: Omit<Propo
   const projected = selection.projectedObservables;
   const summary = structuralDeltaSummary(proposition.observables, projected);
 
-  return (
-    <Stack gap="md" p="md">
+  const content = <Stack gap="md" p="md">
       {selection.kind && <Badge size="xs" color="gray" variant="outline" style={{ alignSelf: 'flex-start' }}>{selection.kind}</Badge>}
 
       <Box className="inspector-section">
         <PropositionContent
           proposition={{ ...proposition, title: selection.title || proposition.title }}
           mode="detailed"
+          hideField={graph}
           projectedObservables={projected}
           committalObservables={committalObservables}
         />
@@ -88,6 +93,40 @@ export function InspectorContent({ selection, committalObservables }: Omit<Propo
       {!projected && (
         <Text size="xs" c="dimmed">This is the observed structural state. A projected position appears here only when an admissible move supplies one.</Text>
       )}
-    </Stack>
-  );
+    </Stack>;
+
+  // Participation previews keep their existing projected readout and action drawer.
+  if (!graph) return content;
+  return <Tabs value={tab === 'closure' && proposition.tier !== 'committal' ? 'proposition' : tab}
+    onChange={setTab} keepMounted={false} className="inspector-tabs">
+    <Tabs.List grow>
+      <Tabs.Tab value="proposition">Proposition</Tabs.Tab>
+      <Tabs.Tab value="field">Field State</Tabs.Tab>
+      {proposition.tier === 'committal' && <Tabs.Tab value="closure">Closure</Tabs.Tab>}
+    </Tabs.List>
+    <Tabs.Panel value="proposition">{content}</Tabs.Panel>
+    <Tabs.Panel value="field" p="md"><FieldStateChart proposition={proposition} /></Tabs.Panel>
+    {proposition.tier === 'committal' && <Tabs.Panel value="closure" p="md"><ClosureHistoryChart proposition={proposition} /></Tabs.Panel>}
+  </Tabs>;
+}
+
+
+/** Non-modal viewport overlay. CSS turns this same shell into a bottom card on mobile. */
+export function GraphInspectorShell({ onClose, onPrevious, onNext, children }: {
+  onClose: () => void; onPrevious?: () => void; onNext?: () => void; children: ReactNode;
+}) {
+  return <Paper component="section" withBorder shadow="md" radius="md" className="graph-inspector"
+    aria-label="Selected Proposition inspector" onKeyDown={event => {
+      if (event.key === 'Escape') { event.stopPropagation(); onClose(); }
+    }}>
+    <Group className="graph-inspector__header" justify="space-between" wrap="nowrap" gap={4}>
+      <Text fw={700} size="sm">Proposition inspector</Text>
+      <Group gap={2} wrap="nowrap">
+        <Tooltip label="Previous proposition"><ActionIcon variant="subtle" aria-label="Previous proposition" disabled={!onPrevious} onClick={onPrevious}><IconChevronLeft size={16} /></ActionIcon></Tooltip>
+        <Tooltip label="Next proposition"><ActionIcon variant="subtle" aria-label="Next proposition" disabled={!onNext} onClick={onNext}><IconChevronRight size={16} /></ActionIcon></Tooltip>
+        <Tooltip label="Deselect proposition"><ActionIcon variant="subtle" aria-label="Deselect proposition" onClick={onClose}><IconX size={17} /></ActionIcon></Tooltip>
+      </Group>
+    </Group>
+    <Box className="graph-inspector__body">{children}</Box>
+  </Paper>;
 }

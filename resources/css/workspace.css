@@ -180,3 +180,10 @@ button.proposition-card:focus-visible,.proposition-navigator__viewport:focus-vis
 .horizon-context__reference:focus-visible { outline:2px solid currentColor; outline-offset:2px; }
 @media (max-width:74.99em) { .horizon-context { margin-left:5.6rem; } }
 @media (max-width:47.99em) { .horizon-context { margin-left:0; grid-template-columns:1fr; } }
+
+
+/* Shared structural event markers on graph and participation cards. */
+.special-proposition-badges { display: inline-flex; flex-wrap: wrap; gap: 3px; align-items: center; }
+.special-proposition-badge { display: inline-grid; place-items: center; width: 21px; height: 21px; flex: none; border-radius: 50%; border: 1px solid var(--mantine-color-gray-3); background: var(--mantine-color-gray-0); }
+.special-proposition-badges[data-compact] { padding: 3px; gap: 2px; }
+.special-proposition-badges[data-compact] .special-proposition-badge { width: 17px; height: 17px; }

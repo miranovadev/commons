@@ -38,17 +38,15 @@
 }
 
 /* The rail participates in layout: no overlay, focus trap or blocked canvas. */
-.graph-workspace { width: clamp(22rem, 35vw, 29rem); max-width: 48%; flex: none; min-height: 0; display: flex; flex-direction: column; border-inline-start: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-5)); background: light-dark(var(--mantine-color-white), var(--mantine-color-dark-7)); }
-.graph-workspace[data-state="collapsed"], .graph-workspace[data-state="locked"] { width: 40px; }
+.graph-workspace { width: clamp(15rem, 23vw, 19rem); max-width: 40%; flex: none; min-height: 0; display: flex; flex-direction: column; border-inline-start: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-5)); background: light-dark(var(--mantine-color-white), var(--mantine-color-dark-7)); }
+.graph-workspace[data-state="collapsed"] { width: 40px; }
 .graph-workspace__header { flex: none; padding: .25rem; border-bottom: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-5)); }
 .graph-workspace:not([data-state="open"]) .graph-workspace__header { flex-direction: column; padding-inline: 0; }
 .graph-workspace__content { min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
 .graph-workspace__section { padding: .85rem 1rem; border-bottom: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-5)); }
-.graph-workspace__inspector-header { padding: .75rem 1rem; position: sticky; top: 0; z-index: 2; background: light-dark(var(--mantine-color-white), var(--mantine-color-dark-7)); }
-.graph-workspace__inspector { overflow-wrap: anywhere; }
-.graph-workspace .proposition-inspector__empty { padding: 1.5rem 1rem; }
-.graph-workspace .proposition-field.mantine-SimpleGrid-root { grid-template-columns: 1fr; }
 .substrate-graph-hint { position: absolute; z-index: 4; top: .65rem; left: .8rem; pointer-events: none; color: var(--mantine-color-dimmed); background: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-8)); border-radius: var(--mantine-radius-sm); padding: .2rem .4rem; }
+
+.substrate-graph-stage { position: relative; flex: 1; min-width: 0; min-height: 0; height: 100%; }
 
 .substrate-graph-viewport {
   position: relative;
@@ -117,10 +115,6 @@
 .substrate-graph-edges path[data-lineage] { stroke: var(--mantine-color-indigo-5); stroke-width: 2.2; }
 .substrate-graph-node[data-lineage="selected"] { z-index: 3; }
 .graph-participants { position: absolute; z-index: 4; top: -17px; right: 9px; display: flex; align-items: center; }
-.graph-history-markers { position: absolute; z-index: 4; bottom: -8px; right: 6px; display: flex; gap: 3px; }
-.graph-history-marker { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: light-dark(var(--mantine-color-white), var(--mantine-color-dark-7)); border: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4)); }
-.graph-history-marker[data-event="tragedy"] { color: var(--mantine-color-red-6); }
-.graph-history-marker[data-event="renewal"] { color: var(--mantine-color-green-6); }
 .graph-participant { position: relative; border: 2px solid light-dark(var(--mantine-color-white), var(--mantine-color-dark-7)); border-radius: 50%; background: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6)); }
 .graph-participant + .graph-participant { margin-left: -5px; }
 .graph-participant:not([data-active]) .mantine-Avatar-root { filter: grayscale(1); opacity: .65; }
@@ -168,7 +162,7 @@
 
   .substrate-graph-shell[data-rail-state="open"] { flex-direction: column; }
   .graph-workspace[data-state="open"] { width: 100%; max-width: none; max-height: 50%; border-inline-start: 0; border-top: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-5)); }
-  .substrate-graph-shell[data-rail-state="open"] .substrate-graph-viewport { height: auto; }
+  .substrate-graph-shell[data-rail-state="open"] .substrate-graph-stage { height: auto; }
   .graph-workspace__header { padding-block: .1rem; }
   .graph-workspace__section { padding: .65rem .85rem; }
 }
@@ -178,3 +172,25 @@
 .graph-participants[data-compact] { top: -14px; right: 4px; }
 .graph-participants[data-compact] .graph-participant--overflow { width: 24px; height: 24px; }
 .substrate-graph-shell[data-density="topology"] .substrate-graph-origin-label { font-size: 8px; margin-top: .2rem; }
+
+
+/* Inspector is an overlay, never a source of canvas geometry or Workspace state. */
+.substrate-graph-hint { user-select: none; -webkit-user-select: none; }
+.substrate-graph-canvas[data-animating] { transition: transform 240ms ease-out; }
+.graph-inspector { position: absolute; z-index: 6; top: 2.8rem; right: .75rem; width: min(23rem, 44%); max-height: calc(100% - 3.6rem); display: flex; flex-direction: column; overflow: hidden; cursor: default; touch-action: auto; overflow-wrap: anywhere; }
+.graph-inspector__header { flex: none; padding: .6rem .7rem; border-bottom: 1px solid var(--mantine-color-default-border); }
+.graph-inspector__body { min-height: 0; overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+.inspector-tabs .mantine-Tabs-list { position: sticky; top: 0; z-index: 1; background: var(--mantine-color-body); }
+.inspector-tabs .mantine-Tabs-tab { padding: .65rem .35rem; font-size: .75rem; }
+.inspector-chart { display: block; width: 100%; }
+.closure-direction { border: 1px solid var(--mantine-color-default-border); border-radius: var(--mantine-radius-sm); padding: .5rem; }
+.closure-direction__icons { display: flex; align-items: center; gap: 3px; background: var(--mantine-color-indigo-0); border-radius: 4px; padding: 3px; }
+@keyframes inspector-slide-in { from { transform: translateY(1rem); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@media (max-width: 48em) {
+  .graph-inspector { top: auto; bottom: .5rem; left: .5rem; right: .5rem; width: auto; max-height: 56%; animation: inspector-slide-in 180ms ease-out; }
+  .graph-inspector__header { padding-block: .35rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .substrate-graph-canvas[data-animating] { transition: none; }
+  .graph-inspector { animation: none; }
+}

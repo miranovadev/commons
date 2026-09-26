@@ -1,7 +1,8 @@
+import { SpecialPropositionBadges } from './SpecialPropositionBadges';
 import { useContext } from 'react';
 import { GraphTensionPalette } from '../graphPresentation';
 import { Badge, Box, Group, SimpleGrid, Stack, Text, ThemeIcon, Tooltip } from '@mantine/core';
-import { IconArrowRight, IconBolt, IconHexagon, IconHexagonalPrism, IconLayersDifference } from '@tabler/icons-react';
+import { IconArrowRight, IconHexagon, IconHexagonalPrism, IconLayersDifference } from '@tabler/icons-react';
 import { ParticipantAvatar } from './ParticipantIdentity';
 import { OperationIcon } from './OperationIcon';
 import { operationHistoryLabel } from '../operationHistory';
@@ -13,6 +14,7 @@ import type { GraphField, Observables, Proposition } from '../types';
 interface PropositionContentProps {
   proposition?: Partial<Proposition>;
   mode?: 'minimal' | 'card' | 'detailed';
+  hideField?: boolean;
   actionLabel?: string;
   actionIcon?: React.ElementType;
   wireframe?: boolean;
@@ -23,6 +25,7 @@ interface PropositionContentProps {
 export function PropositionContent({
   proposition = {},
   mode = 'card',
+  hideField = false,
   actionLabel,
   actionIcon: ActionIcon,
   wireframe = false,
@@ -65,14 +68,15 @@ export function PropositionContent({
       {detailed && <TransitionReadout transition={proposition.transition} />}
 
       {wireframe && ActionIcon && <ThemeIcon color={register.color} variant="light" size="sm"><ActionIcon size={13} /></ThemeIcon>}
-      {!wireframe && proposition.tier === 'committal' && <Tooltip label="Committed structure"><ThemeIcon color="indigo" variant="light" size="sm"><IconBolt size={13} /></ThemeIcon></Tooltip>}
+
+      {hideField && <AttestationCounts proposition={proposition} />}
       {detailed && (description || proposition.statement) && (
         <Text size={detailed ? 'sm' : 'xs'} c="dimmed" lineClamp={detailed ? undefined : 3} style={{ whiteSpace: 'pre-line' }}>
           {detailed ? proposition.statement : description}
         </Text>
       )}
 
-      {!wireframe && (
+      {!wireframe && !hideField && (
         <Box className={detailed ? 'proposition-content__measurements' : undefined}>
           {detailed && <Text fw={700} size="sm" mb="sm">Field state</Text>}
           <Group gap="xs" justify="space-between" align="center">
@@ -94,6 +98,8 @@ export function PropositionContent({
 export function PropositionMetadata({ proposition, wireframe = false }: { proposition: Partial<Proposition>; wireframe?: boolean }) {
   const register = metaForRegister(proposition.register);
   return <Group gap={5} wrap="wrap" className="proposition-metadata">
+    {!wireframe && <SpecialPropositionBadges proposition={proposition} />}
+    {proposition.structural_position !== undefined && <Badge size="xs" color="gray" variant="outline">Position {proposition.structural_position}</Badge>}
     {(proposition.tier || wireframe) && <TierBadge tier={wireframe ? 'possible' : proposition.tier} />}
     {proposition.register && <Badge size="xs" color={register.color} variant="light">{register.label}</Badge>}
     {proposition.spent && <Badge size="xs" color="gray" variant="outline">Spent in current epoch</Badge>}
@@ -258,3 +264,4 @@ function label(value?: string) {
   const text = String(value || '');
   return text ? text.charAt(0).toUpperCase() + text.slice(1) : 'Unknown';
 }
+

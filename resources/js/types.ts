@@ -14,7 +14,18 @@ export interface Observables {
 
 export type ReceiptReference = Pick<ReceiptContext, 'id' | 'type' | 'reference' | 'loaded'>;
 
+export interface ClosureHistoryPoint {
+  proposition_id: Identifier;
+  depth: number | null;
+  cadence: number | null;
+  depth_direction: 'positive' | 'negative' | null;
+  cadence_direction: 'positive' | 'negative' | null;
+}
+
 export interface Proposition {
+  confluence?: boolean;
+  domain_transition?: 'settlement-emergence' | 'emergence-settlement' | null;
+  closure_history?: { points: ClosureHistoryPoint[]; current: ClosureHistoryPoint | null; source: 'selected-committal' };
   receipts?: ReceiptReference[];
   spent?: boolean;
   structural_position?: number;
@@ -425,4 +436,5 @@ export interface ParticipantContext {
 }
 
 export type AutonomousParticipation = Omit<Participation, 'plan'> & { plan?: ParticipantContext | null };
+
 
