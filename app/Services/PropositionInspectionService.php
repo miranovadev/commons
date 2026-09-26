@@ -84,7 +84,7 @@ final readonly class PropositionInspectionService
         if ($historicalMarkers !== null) {
             $query->unionAll($historicalMarkers);
         }
-        $markers = $query->get()->groupBy('id');
+        $markers = DB::query()->fromSub($query, 'proposition_markers')->get()->groupBy('id');
         foreach ($nodes as $node) {
             $events = $markers->get($node->id, collect());
             $transition = $events->firstWhere('event_type', 'domain-transition');
