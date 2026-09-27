@@ -172,8 +172,8 @@ final class DomainCardinalLayoutService
             return $entry;
         }
 
-        $memberIds = $context !== null ? $context->horizonMemberIds($horizon->id)
-            : DB::table('context_horizon_memberships')->where('context_horizon_id', $horizon->id)->pluck('proposition_id');
+        $memberIds = DB::table('context_horizon_memberships')
+            ->where('context_horizon_id', $horizon->id)->pluck('proposition_id');
         $query = Proposition::query()->whereIn('id', $memberIds)->where('tier', 'committal')
             ->with(['phase', 'ledgerEntry']);
         $entry = $query->get()->sortBy(fn ($node) => $this->nodeSequence($node))->first();
