@@ -12,7 +12,10 @@ final readonly class CorrespondenceCalculator
 {
     private const int ITERATIONS = 2;
 
-    public function __construct(private CardinalMorphologyService $morphologies) {}
+    public function __construct(
+        private CardinalMorphologyService $morphologies,
+        private DomainCardinalLayoutService $layouts,
+    ) {}
 
     public function calculate(LineageComparison $comparison): float
     {
@@ -29,7 +32,7 @@ final readonly class CorrespondenceCalculator
         }
 
         $topology = $this->topology($current, $previous);
-        $lateral = $this->lateral($current, $previous);
+        $lateral = $this->lateral($head, $comparison, $current);
 
         return $this->normalise(($topology + $lateral) / 2);
     }
@@ -102,47 +105,47 @@ final readonly class CorrespondenceCalculator
         return $features;
     }
 
-    private function lateral(CardinalMorphology $current, CardinalMorphology $previous): float
+    /**
+     * Lateral Position is one head-local coordinate comparison, not an average
+     * over the ancestry graph. Compare the measured proposition's ordinal with
+     * the previous completed Domain's terminal placement-lineage proposition at
+     * the same canonical Phase/register position.
+     */
+    private function lateral(Proposition $head, LineageComparison $comparison, CardinalMorphology $current): float
     {
-        $left = $this->lateralGroups($current);
-        $right = $this->lateralGroups($previous);
-        $keys = array_unique([...array_keys($left), ...array_keys($right)]);
-        $sum = 0.0;
-        $mass = 0;
-
-        foreach ($keys as $key) {
-            $a = $left[$key] ?? [];
-            $b = $right[$key] ?? [];
-            sort($a);
-            sort($b);
-            $count = max(count($a), count($b));
-            for ($i = 0; $i < $count; $i++) {
-                $sum += isset($a[$i], $b[$i]) ? self::positionSimilarity($a[$i], $b[$i]) : -1;
-                $mass++;
-            }
+        $currentPosition = $current->positions[$head->id] ?? null;
+        $previousHorizon = $comparison->previous?->horizon;
+        if ($currentPosition === null || $previousHorizon === null) {
+            return 0;
         }
 
-        return $mass === 0 ? -1 : $this->normalise($sum / $mass);
-    }
+        $previousLayout = $this->layouts->for($previousHorizon, $comparison->current->context);
+        $terminalId = $comparison->current->horizon->opened_by_proposition_id;
+        $node = $terminalId === null ? null : $previousLayout->propositions->get($terminalId);
+        $targetPhase = $head->phase->kind;
+        $targetRegister = RegisterPosition::forRegister($head->register);
 
-    /** @return array<string, list<int>> */
-    private function lateralGroups(CardinalMorphology $morphology): array
-    {
-        $groups = [];
-        foreach ($morphology->propositions as $id => $node) {
-            $position = $morphology->positions[$id] ?? null;
-            if ($position === null) {
-                continue;
+        while ($node !== null) {
+            if ($node->phase?->kind === $targetPhase
+                && RegisterPosition::forRegister($node->register) === $targetRegister) {
+                $previousPosition = $previousLayout->position($node->id);
+
+                return $previousPosition === null
+                    ? 0
+                    : self::positionSimilarity($previousPosition->lateral, $currentPosition->lateral);
             }
-            $key = implode(':', [
-                $position->depth,
-                RegisterPosition::forRegister($node->register)->value,
-                $node->tier,
-            ]);
-            $groups[$key][] = $position->lateral;
+
+            $gateId = $node->phase?->gate_proposition_id;
+            if ($gateId === null || $gateId === $node->id) {
+                break;
+            }
+            $node = $previousLayout->propositions->get($gateId);
         }
 
-        return $groups;
+        // The active Domain may extend to a canonical position absent from the
+        // completed previous terminal lineage. Absence is neutral positional
+        // evidence, never a wrapped/synthetic analogue.
+        return 0;
     }
 
     public static function positionSimilarity(int $a, int $b): float
