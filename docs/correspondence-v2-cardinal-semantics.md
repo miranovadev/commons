@@ -2,7 +2,7 @@
 
 > **Status:** normative semantics for the Correspondence v2 correction. This document supersedes earlier v2 wording that equated structural depth with Phase position or reduced Position Correspondence to a single head-to-head comparison.
 >
-> Production code must not fill an explicitly unresolved item by inference. Resolve the semantic question here first, then implement it.
+> Production code must implement these semantics directly. Do not substitute Phase Position, head-only comparison, UI geometry, or an optimization that changes the defined cardinal populations.
 
 ## 1. Purpose
 
@@ -256,17 +256,132 @@ Correspondence (attenuated)
 
 `Phase Position`, exploration `structural_position`, `Domain Depth`, `Lateral Position` and Closure `Committal Depth` must not share a generic `Position` or `Depth` diagnostic label without qualification.
 
-## 14. Explicitly unresolved before implementation
+## 14. Bootstrap and Cardinal Position aggregation
+
+These rules are normative for the first corrected implementation.
 
 ### Bootstrap after Origin
 
-Origin has no developed complementary morphology. We have **not** frozen the first developed Domain's raw structural Correspondence rule. Do not accidentally compare a developed Domain against Origin's one-node morphology. Resolve and document bootstrap semantics first.
+Origin has no developed complementary morphology and therefore cannot act as a one-node structural reference for the first developed Domain.
 
-### Exact aggregation of sparse/unequal cardinal populations
+```text
+Origin
+→ raw Correspondence = -1
 
-The semantics are frozen: compare occupied cardinal populations at equivalent Domain Depths; lateral displacement is metric; unmatched positions contribute disagreement; no head-only comparison; no Phase/Tier/Register gate may replace the cardinal coordinate relation; and no algorithm may search for the pairing that merely maximizes similarity.
+first developed Domain after Origin
+→ raw structural Correspondence = 0 at every proposition
+→ no Shape Topology/Cardinal Position comparison against Origin
+```
 
-The exact deterministic pairing/aggregation formula for sparse or unequal occupied lateral populations still requires explicit approval. Add worked examples here before coding it.
+The existing inverse-square attenuation remains unchanged. Origin's `-1` therefore influences early propositions in the first developed Domain only as historical attenuated mass. As structural distance grows, that influence fades normally. Once a later Committal with raw Correspondence `0` becomes the nearest ancestral Committal boundary for attenuation, Origin falls outside that bounded attenuation walk.
+
+When a subsequent Domain has an actually developed immediately preceding complementary Domain, ordinary structural Correspondence begins with that completed Domain as its reference.
+
+Bootstrap neutrality means **absence of a valid structural comparison**, not structural consonance. Do not synthesize Topology or Position component values for the first developed Domain merely to average them to zero.
+
+### Row score
+
+For one included Domain Depth `d`, take the occupied Lateral Positions from the selected reference morphology and selected current morphology, each in ascending cardinal order:
+
+```text
+A_d = [a1, a2, ... an]
+B_d = [b1, b2, ... bm]
+```
+
+Pair occupied positions left-to-right by ordinal within these selected populations:
+
+```text
+a1 ↔ b1
+a2 ↔ b2
+...
+```
+
+Do not search permutations for a higher similarity score.
+
+For a matched pair:
+
+```text
+L(a,b) = 1 - 2 × |a-b| / (a+b)
+```
+
+For an unmatched occupied position:
+
+```text
+L(a,∅) = L(∅,b) = -1
+```
+
+Let `k = max(n,m)`. The row score is the equal-weight mean of its `k` matched/unmatched pair scores:
+
+```text
+P_d = (Σ pair_score_i) / k
+```
+
+A depth occupied on only one side therefore has row score `-1`.
+
+#### Worked row examples
+
+Perfectly aligned four-wide populations:
+
+```text
+A D5: [1] [2] [3] [4]
+B D5: [1] [2] [3] [4]
+
+scores: +1, +1, +1, +1
+P_D5 = +1
+```
+
+One versus four:
+
+```text
+A D5: [1]
+B D5: [1] [2] [3] [4]
+
+scores: +1, -1, -1, -1
+P_D5 = -0.5
+```
+
+Sparse displacement:
+
+```text
+A D5: [1] [4]
+B D5: [1] [2]
+
+1 ↔ 1 = +1
+4 ↔ 2 = +0.333...
+P_D5 ≈ +0.667
+```
+
+The coordinate values remain the complete Domain's already-established Lateral Positions. Selecting a narrow causal morphology does **not** renumber `[1,4]` into `[1,2]`.
+
+### Row-balanced aggregation across Domain Depth
+
+Let `D` be the union of Domain Depths occupied by either selected morphology within the equivalent-depth comparison window. Calculate each `P_d` independently, then give every included Domain Depth equal weight:
+
+```text
+Cardinal Position Correspondence
+= (Σ P_d for d in D) / |D|
+```
+
+This is intentionally **row-balanced**, not proposition-count weighted. Population width already affects `P_d` through matched and unmatched occupancy; wide historical rows do not receive a second source of weight merely because they contain more propositions.
+
+Example:
+
+```text
+D1  +1.0
+D2  +0.5
+D3  -0.5
+D4  +0.2
+
+Position = (+1.0 + 0.5 - 0.5 + 0.2) / 4
+         = +0.3
+```
+
+If the current Domain extends beyond the completed reference, each newly occupied unmatched Domain Depth contributes `-1` for that row. Consequently sustained structural development beyond the reference can progressively move Position toward and through zero instead of being drowned out by wide earlier rows.
+
+### Scope reminder
+
+Row populations come from the **selected causal morphologies**, while their `(Domain Depth, Lateral Position)` coordinates come from the **complete independently constructed Domain cardinal layouts**. Unrelated propositions in the same complete Domain row do not enter a measurement unless the measured head's causal morphology selects them.
+
 
 ## 15. Future hypothesis — Correspondence alignment
 
@@ -306,4 +421,4 @@ Before replacing production Correspondence, tests must prove:
 - raw 50/50 Correspondence remains separate from inverse-square attenuation;
 - Phase Position, exploration `structural_position`, Domain Depth and Committal Depth cannot be substituted for one another.
 
-Only after these semantics and the two unresolved items are frozen should production code be changed.
+These semantics are now frozen for the first corrected implementation. Production changes should begin with red semantic regressions derived from this document before replacing the existing calculator.
