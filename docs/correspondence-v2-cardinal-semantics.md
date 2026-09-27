@@ -243,7 +243,30 @@ The semantics are frozen: compare occupied cardinal populations at equivalent Do
 
 The exact deterministic pairing/aggregation formula for sparse or unequal occupied lateral populations still requires explicit approval. Add worked examples here before coding it.
 
-## 14. Required implementation evidence
+## 14. Future hypothesis — Correspondence alignment
+
+> **Non-normative. Do not implement as part of the v2 correction.** Record component values/directions first and evaluate this hypothesis against live substrate behavior.
+
+Shape Topology and Cardinal Position may eventually supply a Correspondence admissibility relation analogous in form, but not necessarily in operational meaning, to Closure component alignment.
+
+The hypothesis is that **directional agreement between the two Correspondence components represents structurally coherent correspondence**, regardless of whether that shared direction is consonant or dissonant:
+
+```text
+Topology +   Position +   → aligned consonance   → potentially admissible
+Topology -   Position -   → aligned dissonance   → potentially admissible
+Topology +   Position -   → opposed structure    → potentially inadmissible
+Topology -   Position +   → opposed structure    → potentially inadmissible
+```
+
+Under this hypothesis, two parents that are consonant in both topology and cardinal position may be joined because both structural dimensions agree. Two parents that are dissonant in both may also be joined: reconciliation can coherently combine two structures that disagree completely with the reference in the same direction. A topology/position disagreement instead means the structural dimensions themselves do not agree about the relation.
+
+This is **not** a positivity gate. Negative/negative alignment is as coherent as positive/positive alignment.
+
+Do not yet add an admissibility Gate, zero-direction hysteresis, Reconcile filtering or movement/authority change. The corrected v2 implementation should expose enough read-only diagnostics to observe Shape Topology and Cardinal Position independently so later runs can test whether aligned/opposed component states actually correspond to meaningful Mediate/Reconcile behavior.
+
+Chirality remains an independent observable. This hypothesis does not imply that Chirality requires decomposition or an analogous gate.
+
+## 15. Required implementation evidence
 
 Before replacing production Correspondence, tests must prove:
 
