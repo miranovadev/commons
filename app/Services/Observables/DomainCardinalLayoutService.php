@@ -113,51 +113,64 @@ final class DomainCardinalLayoutService
         Collection $realEdges,
     ): CardinalLayout {
         $positions = [$entry->id => new CardinalPosition($horizon->id, 0, 1)];
-        $rows = [];
-        foreach ($nodes as $node) {
-            if ($node->id === $entry->id) {
-                continue;
-            }
-            $rows[$this->canonicalDepth($node)][] = $node;
-        }
-        ksort($rows);
 
-        foreach ($rows as $depth => $row) {
-            usort($row, function (Proposition $a, Proposition $b) use ($positions, $entry): int {
-                $parentA = $this->placementParentId($a, $entry);
-                $parentB = $this->placementParentId($b, $entry);
-                $parentOrderA = $positions[$parentA]->lateral ?? PHP_INT_MAX;
-                $parentOrderB = $positions[$parentB]->lateral ?? PHP_INT_MAX;
+        $children = $realEdges
+            ->filter(fn (Supersession $edge) => $nodes->has($edge->source_proposition_id)
+                && $nodes->has($edge->target_proposition_id))
+            ->groupBy('source_proposition_id')
+            ->map(function (Collection $edges) use ($nodes): Collection {
+                return $edges->sort(function (Supersession $a, Supersession $b) use ($nodes): int {
+                    $aNode = $nodes->get($a->target_proposition_id);
+                    $bNode = $nodes->get($b->target_proposition_id);
 
-                return [$parentOrderA, $this->nodeSequence($a), $a->id]
-                    <=> [$parentOrderB, $this->nodeSequence($b), $b->id];
+                    return [$this->nodeSequence($aNode), $a->target_proposition_id]
+                        <=> [$this->nodeSequence($bNode), $b->target_proposition_id];
+                })->values();
             });
 
-            foreach ($row as $index => $node) {
-                $positions[$node->id] = new CardinalPosition($horizon->id, (int) $depth, $index + 1);
+        $row = [$entry->id];
+        $depth = 0;
+
+        while ($row !== []) {
+            $next = [];
+            $queued = [];
+
+            foreach ($row as $parentId) {
+                foreach ($children->get($parentId, collect()) as $edge) {
+                    $childId = $edge->target_proposition_id;
+                    if (isset($positions[$childId]) || isset($queued[$childId])) {
+                        continue;
+                    }
+
+                    $queued[$childId] = true;
+                    $next[] = $childId;
+                }
             }
+
+            if ($next === []) {
+                break;
+            }
+
+            $depth++;
+            foreach ($next as $index => $childId) {
+                $positions[$childId] = new CardinalPosition($horizon->id, $depth, $index + 1);
+            }
+
+            $row = $next;
+        }
+
+        $unplaced = $nodes->keys()
+            ->reject(fn (string $id) => $id === $entry->id || isset($positions[$id]))
+            ->values();
+
+        if ($unplaced->isNotEmpty()) {
+            throw new DomainException(
+                'Every locally-owned Domain proposition must be causally reachable from Domain provenance; '
+                .'cardinal placement cannot invent a path: '.$unplaced->implode(', ')
+            );
         }
 
         return new CardinalLayout($horizon, $entry->id, $nodes, $realEdges, $positions);
-    }
-
-    private function canonicalDepth(Proposition $node): int
-    {
-        $kind = $node->phase?->kind;
-
-        return $kind instanceof PhaseKind ? $kind->value : (int) $kind;
-    }
-
-    /**
-     * Producing Phase Gate is a placement relation only. For Distinguish, the
-     * Cycle entry Committal is the placement parent. Neither relation creates a
-     * Supersession or changes causal/movement authority.
-     */
-    private function placementParentId(Proposition $node, Proposition $entry): string
-    {
-        return $node->phase?->gate_proposition_id
-            ?? $node->phase?->cycle?->entry_committal_id
-            ?? $entry->id;
     }
 
     private function entryFrom(ContextHorizon $horizon, Collection $memberIds, Collection $nodes): Proposition
