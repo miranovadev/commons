@@ -103,7 +103,9 @@ Shape Topology compares the selected all-parent causal morphology. Cardinal Posi
 
 Each Domain constructs its cardinal layout independently. Measurement ancestry then selects already-positioned propositions, including genuine foreign parents with coordinates from their own Domains. No synthetic causal or placement edge is introduced.
 
-The completed immediately preceding complementary Domain is the structural reference and is revealed only through the current head's Domain Depth. Position is morphology-wide rather than a single head-to-head ordinal comparison. Exact sparse/unequal population aggregation and first-developed-Domain bootstrap semantics remain explicitly unresolved in the canonical document and must be settled there before production implementation.
+The completed immediately preceding complementary Domain is the structural reference and is revealed only through the current head's Domain Depth. Position is morphology-wide rather than a single head-to-head ordinal comparison. Within each included Domain Depth, selected occupied Lateral Positions are paired left-to-right; unmatched occupancy contributes `-1`; that row's pair scores are averaged. Cardinal Position Correspondence then equally averages the row scores across included Domain Depths. Wide rows therefore affect their own row score without receiving extra historical weight.
+
+Origin retains its documented raw Correspondence of `-1`. The first developed Domain after Origin has raw structural Correspondence `0` because no developed complementary morphology exists; it is not compared against Origin's one-node structure. Existing inverse-square attenuation alone carries and fades Origin's historical influence. Once a subsequent Domain has a developed complementary predecessor, ordinary structural comparison begins.
 
 After each proposition's raw/local Correspondence is calculated, the existing inverse-square structural attenuation described above remains unchanged.
 ## Local Chirality
