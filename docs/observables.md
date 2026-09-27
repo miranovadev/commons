@@ -126,9 +126,13 @@ Shape Topology preserves the existing two-iteration Weisfeiler-Leman kernel:
   Domain reference.
 - cosine similarity is mapped from [0, 1] to [-1, 1].
 
-Lateral Position is a metric coordinate, not a categorical ordinal. Structurally
-compatible nodes at the same causal depth are paired in lateral order; unmatched
-nodes contribute dissonance. For one-based positions `a` and `b`:
+Lateral Position is a metric coordinate, not a categorical ordinal. It is
+compared once for the measured head: take the head's ordinal in its complete
+canonical Phase/register row, then follow the completed previous Domain's
+terminal placement lineage and take that proposition's ordinal at the same
+canonical Phase/register position. Earlier rows are not averaged into this
+component. If the previous terminal lineage has no counterpart at that canonical
+position, lateral evidence is neutral (0). For one-based positions `a` and `b`:
 
 ```text
 L(a,b) = 1 - 2 × |a-b| / (a+b)
