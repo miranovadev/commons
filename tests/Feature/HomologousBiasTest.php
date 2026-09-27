@@ -28,6 +28,8 @@ use App\Services\HorizonReceiptService;
 use App\Services\InputPlanService;
 use App\Services\LedgerService;
 use App\Services\Observables\ReinforcementService;
+use App\Services\Observables\CardinalMorphologyService;
+use App\Services\Observables\DomainCardinalLayoutService;
 use App\Services\OpenAIResponseSchema;
 use App\Services\Participation\ParticipationContext;
 use App\Services\ParticipationService;
@@ -214,6 +216,30 @@ class HomologousBiasTest extends TestCase
         $this->assertSame($entry->id, $target->phase->cycle->entry_committal_id);
         $this->assertSame($horizon, $target->contextHorizonMembership->context_horizon_id);
         $this->assertSame([$source->id], $target->parents()->pluck('propositions.id')->all());
+
+        // Correspondence cardinal placement is independent of causal ancestry.
+        // The locally-owned result has only the real foreign Reclassify parent,
+        // yet it still occupies the acting Domain's deterministic cardinal grid.
+        $localHorizon = $target->phase->cycle->contextHorizon;
+        $foreignHorizon = $source->phase->cycle->contextHorizon;
+        $localLayout = app(DomainCardinalLayoutService::class)->for($localHorizon);
+        $foreignLayout = app(DomainCardinalLayoutService::class)->for($foreignHorizon);
+        $this->assertSame($localHorizon->id, $localLayout->position($target->id)->horizonId);
+        $this->assertSame($foreignHorizon->id, $foreignLayout->position($source->id)->horizonId);
+        $this->assertDatabaseMissing('supersessions', [
+            'source_proposition_id' => $gate->id,
+            'target_proposition_id' => $target->id,
+        ]);
+        $morphology = app(CardinalMorphologyService::class)->current($target, $localHorizon);
+        $this->assertArrayHasKey($source->id, $morphology->positions);
+        $this->assertSame($foreignHorizon->id, $morphology->positions[$source->id]->horizonId);
+        $this->assertTrue($morphology->supersessions->contains(fn ($edge) =>
+            $edge->source_proposition_id === $source->id
+            && $edge->target_proposition_id === $target->id
+            && $edge->type === 'reclassify'));
+        $this->assertFalse($morphology->supersessions->contains(fn ($edge) =>
+            $edge->source_proposition_id === $gate->id
+            && $edge->target_proposition_id === $target->id));
         foreach ([null, new ParticipationContext($target->phase)] as $context) {
             $lineage = app(ActiveParticipantLineage::class)->endingAt($target, $context);
             $this->assertSame($source->phase->cycle->entry_committal_id, $lineage->first()->id);
