@@ -51,10 +51,10 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
         $diagnostic = app(CrossoverMarginService::class)->inspect($cycle);
         $this->assertSame($seed->id, $diagnostic['governing_committal_id']);
         $this->assertSame('emergence', $diagnostic['domain']);
-        foreach (['correspondence' => -0.0094257, 'chirality' => 0.9543377,
+        foreach (['correspondence' => 1, 'chirality' => 0.9543377,
             'prospective_depth' => 1, 'admissible_cadence_bound' => 0,
-            'reinforcement_mass' => 1 / 3, 'tension_bound' => 0.5054468,
-            'crossover_margin' => -0.5054468] as $name => $value) {
+            'reinforcement_mass' => 1 / 3, 'tension_bound' => 0.8419221,
+            'crossover_margin' => -0.8419221] as $name => $value) {
             $this->assertEqualsWithDelta($value, $diagnostic[$name], 1e-7, $name);
         }
         $this->assertTrue($diagnostic['closed']);

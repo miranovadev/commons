@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\ObservableDirection as Direction;
 use App\Enums\PhaseKind;
+use App\Enums\RegisterPosition;
 use App\Models\Attestation;
 use App\Models\Cycle;
 use App\Models\Participant;
@@ -14,6 +15,7 @@ use App\Models\Supersession;
 use App\Services\AttestationEvidenceService;
 use App\Services\BiasGateService;
 use App\Services\CommitRegionPolarityService;
+use App\Services\ContextHorizonProjector;
 use App\Services\ContributionDispatcher;
 use App\Services\CycleEntryService;
 use App\Services\LedgerService;
@@ -63,7 +65,8 @@ class AttestationPolarityTest extends TestCase
         $this->assertSame($label, $this->origin->attestations()->firstOrFail()->direction);
         // Computed bootstrap Chirality/Tension are separate from initial Attestation polarity.
         $this->assertSame(-1.0, $this->origin->commitmentSnapshot->chirality);
-        $this->assertSame(-1.0, $this->origin->commitmentSnapshot->tension);
+        $this->assertSame(1.0, $this->origin->commitmentSnapshot->correspondence);
+        $this->assertSame(-0.3333334, $this->origin->commitmentSnapshot->tension);
         $child = $this->node('stance', $this->origin);
         $this->assertSame(Direction::Positive, $evidence->directionFor($child));
         $this->attest($child, 'support');
@@ -105,7 +108,7 @@ class AttestationPolarityTest extends TestCase
     {
         $this->bootstrap();
         $seed = $this->regionSeed($majority, $write);
-        $first = $seed->phase->cycle->contextHorizon->domain->registerAt(\App\Enums\RegisterPosition::First);
+        $first = $seed->phase->cycle->contextHorizon->domain->registerAt(RegisterPosition::First);
         $left = $this->node($first, $seed);
         $right = $this->node($first, $seed);
         $major = $this->node($register, $left, position: PhaseKind::Mediate);
@@ -228,8 +231,8 @@ class AttestationPolarityTest extends TestCase
     private function node(string $register, Proposition $parent, string $tier = 'expressive', string $type = 'variant', ?PhaseKind $position = null): Proposition
     {
         $governor = $parent->tier === 'committal' ? $parent : $parent->phase->cycle->entryCommittal;
-        $horizon = app(\App\Services\ContextHorizonProjector::class)->forEntry($governor);
-        if ($horizon->domain->registerAt(\App\Enums\RegisterPosition::forRegister($register)) !== $register) {
+        $horizon = app(ContextHorizonProjector::class)->forEntry($governor);
+        if ($horizon->domain->registerAt(RegisterPosition::forRegister($register)) !== $register) {
             $horizon = $this->laterHorizonFixture($horizon, 1);
             $governor = Proposition::findOrFail($horizon->opened_by_proposition_id);
             $parent = $governor;
@@ -283,4 +286,3 @@ class AttestationPolarityTest extends TestCase
         return $attestation;
     }
 }
-

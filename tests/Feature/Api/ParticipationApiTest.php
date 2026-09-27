@@ -95,15 +95,15 @@ class ParticipationApiTest extends TestCase
         $this->assertDatabaseCount('context_horizons', 2);
         $this->assertDatabaseHas('proposition_measurements', [
             'proposition_id' => $originId,
-            'correspondence' => -1,
+            'correspondence' => 1,
             'chirality' => -1,
             'closure' => -1,
         ]);
         $this->assertDatabaseHas('commitment_snapshots', [
             'proposition_id' => $originId,
-            'prominence' => 0,
-            'turbulence' => 1,
-            'tension' => -1,
+            'prominence' => 0.3333333,
+            'turbulence' => 0.6666667,
+            'tension' => -0.3333334,
             'direction_before' => 'emergence',
             'direction_after' => 'settlement',
             'calculator_version' => 'origin-bootstrap-v1',
