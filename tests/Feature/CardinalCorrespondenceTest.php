@@ -12,6 +12,7 @@ use App\Models\Supersession;
 use App\Services\ContextHorizonProjector;
 use App\Services\LedgerService;
 use App\Services\Observables\CorrespondenceCalculator;
+use App\Services\Observables\CardinalPositionCorrespondenceCalculator;
 use App\Services\Observables\DomainCardinalLayoutService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -32,7 +33,7 @@ class CardinalCorrespondenceTest extends TestCase
         );
     }
 
-    public function test_domain_layout_assigns_canonical_row_and_creation_order(): void
+    public function test_domain_layout_assigns_breadth_first_depth_and_parent_relative_lateral_order(): void
     {
         [$horizon, $phase, $origin] = $this->fixture();
 
@@ -57,10 +58,22 @@ class CardinalCorrespondenceTest extends TestCase
         $this->assertSame([0, 1], [$layout->position($origin->id)->depth, $layout->position($origin->id)->lateral]);
         $this->assertSame([1, 1], [$layout->position($a->id)->depth, $layout->position($a->id)->lateral]);
         $this->assertSame([1, 2], [$layout->position($b->id)->depth, $layout->position($b->id)->lateral]);
-        $this->assertSame([1, 3], [$layout->position($a1->id)->depth, $layout->position($a1->id)->lateral]);
-        $this->assertSame([1, 4], [$layout->position($a2->id)->depth, $layout->position($a2->id)->lateral]);
-        $this->assertSame([1, 5], [$layout->position($b1->id)->depth, $layout->position($b1->id)->lateral]);
-        $this->assertSame([1, 6], [$layout->position($shared->id)->depth, $layout->position($shared->id)->lateral]);
+        $this->assertSame([2, 1], [$layout->position($a1->id)->depth, $layout->position($a1->id)->lateral]);
+        $this->assertSame([2, 2], [$layout->position($a2->id)->depth, $layout->position($a2->id)->lateral]);
+        $this->assertSame([2, 3], [$layout->position($b1->id)->depth, $layout->position($b1->id)->lateral]);
+        $this->assertSame([3, 1], [$layout->position($shared->id)->depth, $layout->position($shared->id)->lateral]);
+    }
+
+    public function test_row_balanced_position_scores_population_and_metric_displacement(): void
+    {
+        $this->assertSame(1.0, CardinalPositionCorrespondenceCalculator::rowScore([1, 2, 3, 4], [1, 2, 3, 4]));
+        $this->assertSame(-0.5, CardinalPositionCorrespondenceCalculator::rowScore([1], [1, 2, 3, 4]));
+        $this->assertEqualsWithDelta(
+            0.6666667,
+            CardinalPositionCorrespondenceCalculator::rowScore([1, 4], [1, 2]),
+            1e-7,
+        );
+        $this->assertSame(-1.0, CardinalPositionCorrespondenceCalculator::rowScore([], [1, 2]));
     }
 
     public function test_domain_depth_continues_across_cycle_phase_repetition(): void
