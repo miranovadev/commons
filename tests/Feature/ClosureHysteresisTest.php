@@ -47,7 +47,7 @@ class ClosureHysteresisTest extends TestCase
         $this->participant->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'observer', 'max_read_count' => 25])->save();
     }
 
-    public function test_read_only_bootstrap_preview_matches_actual_commit_and_preserves_domain_hysteresis(): void
+    public function test_read_only_bootstrap_preview_matches_actual_commit_while_field_can_cross_domain(): void
     {
         $this->bootstrap(2);
         [$phase, $gate] = $this->candidate([2]);
@@ -71,10 +71,12 @@ class ClosureHysteresisTest extends TestCase
         $this->assertSame($preview['depth_direction'], $snapshot->depth_direction->value);
         $this->assertSame($preview['history_proposition_id'], $snapshot->closure_history_proposition_id);
         $this->assertSame('settlement', $result['last_commitment']['domain_before']);
-        $this->assertSame('settlement', $result['last_commitment']['domain_after']);
+        // Closure preview remains identical to the persisted Commit. Correspondence
+        // v2 may independently move the combined field across the Domain boundary.
+        $this->assertSame('emergence', $result['last_commitment']['domain_after']);
         $this->assertSame(-1.0, $result['last_commitment']['tension_before']);
-        $this->assertFalse($result['last_commitment']['closure_boundary']);
-        $this->assertSame(2, $result['horizon_sequence']); // C1 does not force a Domain crossover.
+        $this->assertTrue($result['last_commitment']['closure_boundary']);
+        $this->assertSame(3, $result['horizon_sequence']);
         $this->assertSame(2, $phase->cycle->contextHorizon->sequence);
         $this->assertSame($snapshot->proposition_id, $this->participant->fresh()->current_proposition_id);
         $this->assertNotNull($phase->fresh()->completed_at);
@@ -124,7 +126,7 @@ class ClosureHysteresisTest extends TestCase
         $this->assertSame($gate->statement, $commit->statement);
     }
 
-    public function test_negative_alignment_can_commit_without_changing_domain(): void
+    public function test_negative_closure_alignment_can_commit_while_field_crosses_domain(): void
     {
         $this->bootstrap(1);
         [$phase, $gate] = $this->candidate([2, 3, 6]);
@@ -142,9 +144,11 @@ class ClosureHysteresisTest extends TestCase
         $this->assertTrue($preview['admissible']);
         $this->publishPotentialFixture($this->participant);
         $state = app(ParticipationService::class)->contribute($this->participant, $phase->id, ['action' => 'proposition.commit', 'proposition_id' => $phase->gate_proposition_id]);
-        $this->assertFalse($state['last_commitment']['closure_boundary']);
-        $this->assertSame('settlement', $state['domain']);
-        $this->assertSame(2, $state['horizon_sequence']);
+        // Negative Closure alignment remains admissible; Domain direction belongs
+        // to the combined field and may cross under the new Correspondence value.
+        $this->assertTrue($state['last_commitment']['closure_boundary']);
+        $this->assertSame('emergence', $state['domain']);
+        $this->assertSame(3, $state['horizon_sequence']);
         $snapshot = CommitmentSnapshot::findOrFail($state['current_proposition_id']);
         $this->assertSame($preview['depth'], $snapshot->depth);
         $this->assertSame($preview['cadence'], $snapshot->cadence);
