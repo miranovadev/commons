@@ -40,14 +40,15 @@ final class DomainCardinalLayoutService
     private function build(ContextHorizon $horizon, ?ParticipationContext $context, ?Proposition $synthetic): CardinalLayout
     {
         $entry = $this->entry($horizon, $context);
-        $memberIds = $context !== null
-            ? $context->horizonMemberIds($horizon->id)
-            : DB::table('context_horizon_memberships')->where('context_horizon_id', $horizon->id)->pluck('proposition_id');
+        // Cardinal coordinates are Domain-wide structural facts. A ParticipationContext
+        // is deliberately a bounded operational working set, so it must never define
+        // row membership or lateral position.
+        $memberIds = DB::table('context_horizon_memberships')
+            ->where('context_horizon_id', $horizon->id)->pluck('proposition_id');
 
         $ids = $memberIds->push($entry->id)->unique()->values();
-        $nodes = $context !== null
-            ? $context->nodes($ids)->keyBy('id')
-            : Proposition::query()->whereIn('id', $ids)->with(['phase', 'ledgerEntry'])->get()->keyBy('id');
+        $nodes = Proposition::query()->whereIn('id', $ids)
+            ->with(['phase.cycle', 'ledgerEntry'])->get()->keyBy('id');
 
         if (! $nodes->has($entry->id)) {
             $entry->loadMissing(['phase', 'ledgerEntry']);
@@ -58,11 +59,9 @@ final class DomainCardinalLayoutService
             $nodes->put($synthetic->id, $synthetic);
         }
 
-        $realEdges = $context !== null
-            ? $context->edges->whereIn('source_proposition_id', $nodes->keys())
-                ->whereIn('target_proposition_id', $memberIds->when($synthetic !== null, fn ($ids) => $ids->push($synthetic->id)))->values()
-            : Supersession::query()->whereIn('source_proposition_id', $nodes->keys())
-                ->whereIn('target_proposition_id', $memberIds)->with('ledgerEntry')->get();
+        $realTargetIds = $memberIds->values();
+        $realEdges = Supersession::query()->whereIn('source_proposition_id', $nodes->keys())
+            ->whereIn('target_proposition_id', $realTargetIds)->with('ledgerEntry')->get();
 
         if ($synthetic !== null) {
             foreach ($synthetic->parents as $parent) {
