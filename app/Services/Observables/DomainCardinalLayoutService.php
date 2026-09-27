@@ -4,25 +4,21 @@ namespace App\Services\Observables;
 
 use App\Domain\Observables\CardinalLayout;
 use App\Domain\Observables\CardinalPosition;
+use App\Enums\PhaseKind;
 use App\Models\ContextHorizon;
 use App\Models\Proposition;
 use App\Models\Supersession;
 use App\Services\Participation\ParticipationContext;
 use DomainException;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Read-only cardinal projection of one Context Horizon.
+ * Read-only cardinal projection of one complete Context Horizon.
  *
- * Coordinates belong to the Domain morphology, not to a measurement ancestry
- * walk. The Horizon opener is depth 0 / lateral 1. Each following row preserves
- * the previous row's left-to-right parent order; each parent's children are
- * appended in immutable ledger order and shared children are emitted once.
- *
- * Real Supersessions remain the only topology. A producing Phase Gate is used
- * only as a placement relation when a locally-owned result has no local causal
- * parent (for example a foreign-source Bias result).
+ * Row/depth is canonical producing Phase position, not causal-path length.
+ * Lateral position is the one-based ordinal in that complete row. Rows preserve
+ * the previous row's parent order; siblings of the same placement parent use
+ * immutable ledger creation order. Placement is independent of causal topology.
  */
 final class DomainCardinalLayoutService
 {
@@ -30,44 +26,36 @@ final class DomainCardinalLayoutService
     {
         $key = 'cardinal-layout:'.$horizon->id.':'.($synthetic?->id ?? 'persisted');
 
-        if ($context !== null) {
-            return $context->remember($key, fn () => $this->build($horizon, $context, $synthetic));
-        }
-
-        return $this->build($horizon, null, $synthetic);
+        return $context !== null
+            ? $context->remember($key, fn () => $this->build($horizon, $synthetic))
+            : $this->build($horizon, $synthetic);
     }
 
-    private function build(ContextHorizon $horizon, ?ParticipationContext $context, ?Proposition $synthetic): CardinalLayout
+    private function build(ContextHorizon $horizon, ?Proposition $synthetic): CardinalLayout
     {
-        $entry = $this->entry($horizon, $context);
-        // Cardinal coordinates are Domain-wide structural facts. A ParticipationContext
-        // is deliberately a bounded operational working set, so it must never define
-        // row membership or lateral position.
+        $entry = $this->entry($horizon);
         $memberIds = DB::table('context_horizon_memberships')
             ->where('context_horizon_id', $horizon->id)->pluck('proposition_id');
 
         $ids = $memberIds->push($entry->id)->unique()->values();
         $nodes = Proposition::query()->whereIn('id', $ids)
             ->with(['phase.cycle', 'ledgerEntry'])->get()->keyBy('id');
-
         if (! $nodes->has($entry->id)) {
-            $entry->loadMissing(['phase', 'ledgerEntry']);
+            $entry->loadMissing(['phase.cycle', 'ledgerEntry']);
             $nodes->put($entry->id, $entry);
         }
-
         if ($synthetic !== null) {
             $nodes->put($synthetic->id, $synthetic);
         }
 
-        $realTargetIds = $memberIds->values();
-        $realEdges = Supersession::query()->whereIn('source_proposition_id', $nodes->keys())
-            ->whereIn('target_proposition_id', $realTargetIds)->with('ledgerEntry')->get();
-
+        // Real edges are retained solely for Shape Topology. They do not assign
+        // cardinal rows or columns.
+        $realEdges = Supersession::query()
+            ->whereIn('source_proposition_id', $nodes->keys())
+            ->whereIn('target_proposition_id', $memberIds)
+            ->with('ledgerEntry')->get();
         if ($synthetic !== null) {
             foreach ($synthetic->parents as $parent) {
-                if (! $nodes->has($parent->id)) {
-                    continue;
-                }
                 $edge = new Supersession;
                 $edge->forceFill([
                     'source_proposition_id' => $parent->id,
@@ -78,93 +66,71 @@ final class DomainCardinalLayoutService
             }
         }
 
-        $localParents = $realEdges->groupBy('target_proposition_id');
-        $placementChildren = [];
-
-        foreach ($realEdges as $edge) {
-            $placementChildren[$edge->source_proposition_id][] = [
-                'id' => $edge->target_proposition_id,
-                'sequence' => $this->nodeSequence($nodes[$edge->target_proposition_id] ?? null),
-            ];
-        }
-
-        // A locally-owned proposition can be causally sourced only from a foreign
-        // branch. Its producing Gate still determines where it was written in the
-        // local Domain morphology; this relation is never persisted or exposed as
-        // causal topology.
-        foreach ($nodes as $node) {
-            if ($node->id === $entry->id || ! $memberIds->contains($node->id) && $synthetic?->id !== $node->id) {
-                continue;
-            }
-            $hasLocalParent = ($localParents->get($node->id, collect()))
-                ->contains(fn ($edge) => $nodes->has($edge->source_proposition_id));
-            if ($hasLocalParent) {
-                continue;
-            }
-
-            $gateId = $node->phase?->gate_proposition_id;
-            if ($gateId === null && $node->exists) {
-                $gateId = $node->phase()->value('gate_proposition_id');
-            }
-            if ($gateId === null) {
-                $gateId = $node->phase?->cycle?->entry_committal_id;
-            }
-            if ($gateId !== null && $nodes->has($gateId)) {
-                $placementChildren[$gateId][] = [
-                    'id' => $node->id,
-                    'sequence' => $this->nodeSequence($node),
-                ];
-            }
-        }
-
-        foreach ($placementChildren as &$children) {
-            usort($children, fn ($a, $b) => [$a['sequence'], $a['id']] <=> [$b['sequence'], $b['id']]);
-        }
-        unset($children);
-
         $positions = [$entry->id => new CardinalPosition($horizon->id, 0, 1)];
-        $row = [$entry->id];
-        $depth = 0;
-
-        while ($row !== []) {
-            $next = [];
-            $queued = [];
-            foreach ($row as $parentId) {
-                foreach ($placementChildren[$parentId] ?? [] as $child) {
-                    $id = $child['id'];
-                    if (isset($positions[$id]) || isset($queued[$id])) {
-                        continue;
-                    }
-                    $queued[$id] = true;
-                    $next[] = $id;
-                }
+        $rows = [];
+        foreach ($nodes as $node) {
+            if ($node->id === $entry->id) {
+                continue;
             }
-            if ($next === []) {
-                break;
-            }
-            $depth++;
-            foreach ($next as $index => $id) {
-                $positions[$id] = new CardinalPosition($horizon->id, $depth, $index + 1);
-            }
-            $row = $next;
+            $depth = $this->canonicalDepth($node);
+            $rows[$depth][] = $node;
         }
+        ksort($rows);
 
-        $unplaced = $memberIds->reject(fn ($id) => isset($positions[$id]));
-        if ($synthetic !== null && ! isset($positions[$synthetic->id])) {
-            $unplaced->push($synthetic->id);
-        }
-        if ($unplaced->isNotEmpty()) {
-            throw new DomainException('Every Domain proposition requires a deterministic cardinal position: '.$unplaced->implode(', '));
+        foreach ($rows as $depth => $row) {
+            usort($row, function (Proposition $a, Proposition $b) use ($positions, $entry): int {
+                $parentA = $this->placementParentId($a, $entry);
+                $parentB = $this->placementParentId($b, $entry);
+                $positionA = $positions[$parentA] ?? null;
+                $positionB = $positions[$parentB] ?? null;
+
+                // A parent already placed in the preceding structural rows owns
+                // the primary left-to-right ordering. Fixtures or bootstrap rows
+                // without such a parent remain deterministic by creation order.
+                $parentOrderA = $positionA?->lateral ?? PHP_INT_MAX;
+                $parentOrderB = $positionB?->lateral ?? PHP_INT_MAX;
+
+                return [$parentOrderA, $this->nodeSequence($a), $a->id]
+                    <=> [$parentOrderB, $this->nodeSequence($b), $b->id];
+            });
+
+            foreach ($row as $index => $node) {
+                $positions[$node->id] = new CardinalPosition($horizon->id, (int) $depth, $index + 1);
+            }
         }
 
         return new CardinalLayout($horizon, $entry->id, $nodes, $realEdges, $positions);
     }
 
-    private function entry(ContextHorizon $horizon, ?ParticipationContext $context): Proposition
+    private function canonicalDepth(Proposition $node): int
+    {
+        $kind = $node->phase?->kind;
+        if ($kind instanceof PhaseKind) {
+            return $kind->value;
+        }
+
+        return (int) $kind;
+    }
+
+    /**
+     * Producing Phase Gate is a placement relation only. For Distinguish, the
+     * Cycle entry Committal is the placement parent. Neither relation creates a
+     * Supersession or changes causal/movement authority.
+     */
+    private function placementParentId(Proposition $node, Proposition $entry): string
+    {
+        $gate = $node->phase?->gate_proposition_id;
+        if ($gate !== null) {
+            return $gate;
+        }
+
+        return $node->phase?->cycle?->entry_committal_id ?? $entry->id;
+    }
+
+    private function entry(ContextHorizon $horizon): Proposition
     {
         if ($horizon->opened_by_proposition_id !== null) {
-            $entry = $context?->propositions->get($horizon->opened_by_proposition_id)
-                ?? Proposition::with(['phase', 'ledgerEntry'])->find($horizon->opened_by_proposition_id);
+            $entry = Proposition::with(['phase.cycle', 'ledgerEntry'])->find($horizon->opened_by_proposition_id);
             if ($entry === null) {
                 throw new DomainException('A non-root Horizon requires its opening Committal.');
             }
@@ -174,9 +140,9 @@ final class DomainCardinalLayoutService
 
         $memberIds = DB::table('context_horizon_memberships')
             ->where('context_horizon_id', $horizon->id)->pluck('proposition_id');
-        $query = Proposition::query()->whereIn('id', $memberIds)->where('tier', 'committal')
-            ->with(['phase', 'ledgerEntry']);
-        $entry = $query->get()->sortBy(fn ($node) => $this->nodeSequence($node))->first();
+        $entry = Proposition::query()->whereIn('id', $memberIds)->where('tier', 'committal')
+            ->with(['phase.cycle', 'ledgerEntry'])->get()
+            ->sortBy(fn ($node) => $this->nodeSequence($node))->first();
         if ($entry === null) {
             throw new DomainException('The Origin Horizon requires a governing Committal.');
         }
@@ -184,11 +150,8 @@ final class DomainCardinalLayoutService
         return $entry;
     }
 
-    private function nodeSequence(?Proposition $node): int
+    private function nodeSequence(Proposition $node): int
     {
-        if ($node === null) {
-            return PHP_INT_MAX;
-        }
         if (! $node->relationLoaded('ledgerEntry')) {
             $node->load('ledgerEntry');
         }
