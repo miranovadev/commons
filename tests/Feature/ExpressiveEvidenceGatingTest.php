@@ -172,6 +172,9 @@ class ExpressiveEvidenceGatingTest extends TestCase
     #[DataProvider('expressivePhases')]
     public function test_zero_potential_does_not_bypass_own_evidence_or_current_epoch(PhaseKind $kind): void
     {
+        // This is a controlled zero-Potential eligibility test. Keep its field
+        // premise stable when evidence writes recalculate the projections too.
+        $this->resolveExpressiveFieldFixture(1);
         $phase = $this->position($kind);
         $write = $this->node($phase, $phase->gate);
         foreach (Proposition::where('tier', 'expressive')->get() as $node) {

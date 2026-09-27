@@ -200,21 +200,39 @@ abstract class TestCase extends BaseTestCase
     {
         // By default, two causal boundaries return to the original vocabulary.
         foreach (range(1, $steps) as $step) {
+            // Select the actual provenance of this fixture branch. A later
+            // boundary is a Commit of that Gate, never a parentless new Origin.
+            $gate = $horizon->opened_by_proposition_id !== null
+                ? Proposition::findOrFail($horizon->opened_by_proposition_id)
+                : Proposition::whereHas('contextHorizonMembership', fn ($q) => $q->where('context_horizon_id', $horizon->id))
+                    ->where('tier', 'committal')->oldest('id')->first();
             $participant = new Participant;
             $participant->forceFill(['substrate_id' => $horizon->substrate_id, 'callsign' => 'boundary-'.str()->ulid()])->save();
             $cycle = new Cycle;
             $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => 1,
-                'context_horizon_id' => $horizon->id, 'completed_at' => now()])->save();
+                'context_horizon_id' => $horizon->id, 'entry_committal_id' => $gate?->id,
+                'completed_at' => now()])->save();
             $phase = new Phase;
             $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Order,
+                'gate_proposition_id' => $gate?->id,
                 'write_register' => $horizon->domain->registerFor(PhaseKind::Order), 'completed_at' => now()])->save();
             $node = new Proposition;
             $node->forceFill(['phase_id' => $phase->id, 'register' => $phase->write_register,
                 'tier' => 'committal', 'statement' => 'Boundary fixture'])->save();
             $entry = app(LedgerService::class)->record($node);
+            $commit = null;
+            if ($gate !== null) {
+                $commit = new Supersession;
+                $commit->forceFill(['phase_id' => $phase->id, 'source_proposition_id' => $gate->id,
+                    'target_proposition_id' => $node->id, 'type' => 'commit'])->save();
+                app(LedgerService::class)->record($commit);
+            } else {
+                $this->assertNull($horizon->parent_context_horizon_id, 'Only Origin may lack a Commit source.');
+            }
             $snapshot = new CommitmentSnapshot;
             $snapshot->forceFill(['proposition_id' => $node->id, 'substrate_id' => $horizon->substrate_id,
-                'ledger_entry_id' => $entry->id, 'correspondence' => 0, 'chirality' => 0, 'closure' => 0,
+                'ledger_entry_id' => $entry->id, 'supersession_id' => $commit?->id,
+                'correspondence' => 0, 'chirality' => 0, 'closure' => 0,
                 'prominence' => .5, 'turbulence' => .5, 'tension' => 0,
                 'direction_before' => $horizon->domain, 'direction_after' => $horizon->domain->opposite(),
                 'calculator_version' => 'scope-fixture', 'evaluated_at' => now()])->save();

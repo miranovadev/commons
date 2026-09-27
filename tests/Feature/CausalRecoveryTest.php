@@ -1079,8 +1079,12 @@ class CausalRecoveryTest extends TestCase
         $this->explore($terminal);
         $phase = $this->phase($horizon, $terminal);
         $this->refreshMeasurements();
+        $catastrophes = [Tragedy::count(), DB::table('commit_region_exhaustions')->count()];
         app(ParticipationService::class)->contribute($phase->cycle->participant, $phase->id, ['action' => 'participant.rest']);
-        $this->assertSame('no_remaining_potential', $phase->cycle->fresh()->rest_reason->value);
+        // Exhaustion below is caused by repeated catastrophe, not by this
+        // preparatory Rest or its incidental zero/positive Potential diagnostic.
+        $this->assertNotNull($phase->cycle->fresh()->rested_at);
+        $this->assertSame($catastrophes, [Tragedy::count(), DB::table('commit_region_exhaustions')->count()]);
         $this->boundaryTragedyFixture($phase->gate);
         $tragedy = Tragedy::where('governing_committal_id', $seed->id)->sole();
         $this->assertSame($seed->id, $terminal->phase->cycle->entry_committal_id);

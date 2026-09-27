@@ -9,6 +9,7 @@ use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Substrate;
+use App\Models\Supersession;
 use App\Services\ContextHorizonProjector;
 use App\Services\LedgerService;
 
@@ -44,10 +45,18 @@ trait CreatesHomologousPositions
         $node = new Proposition;
         $node->forceFill(['phase_id' => $phase->id, 'tier' => 'committal', 'register' => $phase->write_register, 'statement' => 'Region seed'])->save();
         $ledgerEntry = app(LedgerService::class)->record($node);
+        $commit = null;
+        if ($entry !== null) {
+            $commit = new Supersession;
+            $commit->forceFill(['phase_id' => $phase->id, 'source_proposition_id' => $phase->gate_proposition_id,
+                'target_proposition_id' => $node->id, 'type' => 'commit'])->save();
+            app(LedgerService::class)->record($commit);
+        }
         $horizon = $phase->cycle->contextHorizon;
         $snapshot = new CommitmentSnapshot;
         $snapshot->forceFill(['proposition_id' => $node->id, 'substrate_id' => $this->actor->substrate_id,
-            'ledger_entry_id' => $ledgerEntry->id, 'correspondence' => 0, 'chirality' => 0, 'closure' => 0,
+            'ledger_entry_id' => $ledgerEntry->id, 'supersession_id' => $commit?->id,
+            'correspondence' => 0, 'chirality' => 0, 'closure' => 0,
             'prominence' => .5, 'turbulence' => .5, 'tension' => 0,
             'direction_before' => $horizon->domain, 'direction_after' => $after,
             'calculator_version' => $entry === null ? 'origin-bootstrap-v1' : 'ownership-fixture', 'evaluated_at' => now(), ...$measurements])->save();
@@ -74,5 +83,4 @@ trait CreatesHomologousPositions
 
         return $phase;
     }
-
 }

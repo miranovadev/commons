@@ -14,13 +14,20 @@ final readonly class CorrespondenceCalculator
 
     public function __construct(
         private CardinalMorphologyService $morphologies,
-        private DomainCardinalLayoutService $layouts,
+        private CardinalPositionCorrespondenceCalculator $positions,
     ) {}
 
     public function calculate(LineageComparison $comparison): float
     {
         if ($comparison->isBootstrap()) {
-            return -1;
+            return 1;
+        }
+
+        // Origin is the exact provenance/terminal boundary identity by axiom.
+        // There is no developed predecessor to compare at this unique boundary;
+        // do not fabricate a one-node morphology or Topology/Position components.
+        if ($comparison->previous?->horizon->parent_context_horizon_id === null) {
+            return 1;
         }
 
         /** @var Proposition $head */
@@ -32,9 +39,9 @@ final readonly class CorrespondenceCalculator
         }
 
         $topology = $this->topology($current, $previous);
-        $lateral = $this->lateral($head, $comparison, $current);
+        $position = $this->positions->calculate($current, $previous);
 
-        return $this->normalise(($topology + $lateral) / 2);
+        return $this->normalise(($topology + $position) / 2);
     }
 
     private function topology(CardinalMorphology $current, CardinalMorphology $previous): float
@@ -105,56 +112,9 @@ final readonly class CorrespondenceCalculator
         return $features;
     }
 
-    /**
-     * Lateral Position is one head-local coordinate comparison, not an average
-     * over the ancestry graph. Compare the measured proposition's ordinal with
-     * the previous completed Domain's terminal placement-lineage proposition at
-     * the same canonical Phase/register position.
-     */
-    private function lateral(Proposition $head, LineageComparison $comparison, CardinalMorphology $current): float
-    {
-        $currentPosition = $current->positions[$head->id] ?? null;
-        $previousHorizon = $comparison->previous?->horizon;
-        if ($currentPosition === null || $previousHorizon === null) {
-            return 0;
-        }
-
-        $previousLayout = $this->layouts->for($previousHorizon, $comparison->current->context);
-        $terminalId = $comparison->current->horizon->opened_by_proposition_id;
-        $node = $terminalId === null ? null : $previousLayout->propositions->get($terminalId);
-        $targetPhase = $head->phase->kind;
-        $targetRegister = RegisterPosition::forRegister($head->register);
-
-        while ($node !== null) {
-            if ($node->phase?->kind === $targetPhase
-                && RegisterPosition::forRegister($node->register) === $targetRegister) {
-                $previousPosition = $previousLayout->position($node->id);
-
-                return $previousPosition === null
-                    ? 0
-                    : self::positionSimilarity($previousPosition->lateral, $currentPosition->lateral);
-            }
-
-            $gateId = $node->phase?->gate_proposition_id;
-            if ($gateId === null || $gateId === $node->id) {
-                break;
-            }
-            $node = $previousLayout->propositions->get($gateId);
-        }
-
-        // The active Domain may extend to a canonical position absent from the
-        // completed previous terminal lineage. Absence is neutral positional
-        // evidence, never a wrapped/synthetic analogue.
-        return 0;
-    }
-
     public static function positionSimilarity(int $a, int $b): float
     {
-        if ($a < 1 || $b < 1) {
-            throw new \InvalidArgumentException('Lateral positions are one-based.');
-        }
-
-        return max(-1, min(1, 1 - (2 * abs($a - $b) / ($a + $b))));
+        return CardinalPositionCorrespondenceCalculator::positionSimilarity($a, $b);
     }
 
     private function normalise(float $value): float

@@ -13,20 +13,19 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\ExhaustionFixture;
+use Tests\Fixtures\NaturalBoundaryHistory;
 use Tests\TestCase;
 
 #[Group('integration')]
 class NaturalChargeBoundaryLifecycleTest extends TestCase
 {
-    use ExhaustionFixture, RefreshDatabase;
+    use ExhaustionFixture, NaturalBoundaryHistory, RefreshDatabase;
 
     public function test_two_participants_reproduce_catastrophe_then_recover_to_the_open_ancestor(): void
     {
-        $this->initializeExhaustionFixture();
+        [$this->substrate, $this->origin, $ancestor, $seed] = $this->naturalBoundaryHistory();
         // Seed topology only. Every semantic event below is an ordinary contribution,
         // with real observables, evidence, phase progression and recovery. No field mock.
-        $parent = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
-        $seed = $this->commitFrom($parent);
         $a = $this->phase($seed, PhaseKind::Distinguish);
         $b = $this->phase($seed, PhaseKind::Distinguish);
         $service = app(ParticipationService::class);
@@ -67,11 +66,11 @@ class NaturalChargeBoundaryLifecycleTest extends TestCase
         $this->assertDatabaseCount('tragedies', 1);
 
         $recovered = $service->contribute($b->cycle->participant, $second['plan']['phase']['id'], ['action' => 'participant.rest']);
-        $this->assertSame($this->origin->id, $recovered['current_proposition_id']);
+        $this->assertSame($ancestor->id, $recovered['current_proposition_id']);
         $this->assertSame('distinguish', $recovered['plan']['phase']['kind']);
         $remembered = collect($recovered['plan']['receipts'])->firstWhere('id', $tragedy->receipt_id);
         $this->assertTrue($remembered['memory_active']);
-        $this->assertSame([$this->origin->id, $seed->id], array_column($remembered['tragedy_memory']['committed_chain'], 'proposition_id'));
+        $this->assertSame([$ancestor->id, $seed->id], array_column($remembered['tragedy_memory']['committed_chain'], 'proposition_id'));
         $this->assertSame($first['current_proposition_id'], $remembered['tragedy_memory']['catastrophe']['proposition_id']);
         $this->assertNull(app(HorizonReceiptService::class)->tragedyWarrant(Phase::findOrFail($recovered['plan']['phase']['id'])));
         $this->assertDatabaseHas('propositions', ['id' => $proof->terminal_proposition_id]);
