@@ -231,7 +231,32 @@ operand ─────┘
 
 Both genuine parents belong to selected causal morphology when tracing backward. Each parent uses the Cardinal Position from its own Domain layout.
 
-## 13. Explicitly unresolved before implementation
+## 13. Measurement selection versus coordinate construction
+
+This distinction is normative and must remain explicit:
+
+> **The complete Domain cardinal layout establishes coordinates. The selected causal morphology determines which of those already-established coordinates participate in a particular Correspondence measurement.**
+
+A Domain may be globally wide while a particular head has only a narrow causal ancestry. Position Correspondence sees only the coordinates selected by that head's all-parent causal morphology. If a later Reconcile/Confluence brings additional branches into the head, those additional propositions enter the selected morphology using the Cardinal Positions they already possess in their owning Domains.
+
+Do not rebuild or renumber cardinal coordinates relative to the measured head. Do not include unrelated Domain propositions merely because they occupy the same Domain Depth row.
+
+### Diagnostic vocabulary
+
+The corrected implementation should expose these concepts read-only, using these unambiguous names:
+
+```text
+Domain Depth
+Lateral Position
+Shape Topology
+Cardinal Position Correspondence
+Raw Correspondence
+Correspondence (attenuated)
+```
+
+`Phase Position`, exploration `structural_position`, `Domain Depth`, `Lateral Position` and Closure `Committal Depth` must not share a generic `Position` or `Depth` diagnostic label without qualification.
+
+## 14. Explicitly unresolved before implementation
 
 ### Bootstrap after Origin
 
@@ -243,7 +268,7 @@ The semantics are frozen: compare occupied cardinal populations at equivalent Do
 
 The exact deterministic pairing/aggregation formula for sparse or unequal occupied lateral populations still requires explicit approval. Add worked examples here before coding it.
 
-## 14. Future hypothesis — Correspondence alignment
+## 15. Future hypothesis — Correspondence alignment
 
 > **Non-normative. Do not implement as part of the v2 correction.** Record component values/directions first and evaluate this hypothesis against live substrate behavior.
 
@@ -266,7 +291,7 @@ Do not yet add an admissibility Gate, zero-direction hysteresis, Reconcile filte
 
 Chirality remains an independent observable. This hypothesis does not imply that Chirality requires decomposition or an analogous gate.
 
-## 15. Required implementation evidence
+## 16. Required implementation evidence
 
 Before replacing production Correspondence, tests must prove:
 
