@@ -2,7 +2,7 @@
 
 namespace App\Services\Observables;
 
-use App\Domain\Observables\DomainLineage;
+use App\Domain\Observables\CardinalMorphology;
 use App\Domain\Observables\LineageComparison;
 use App\Enums\RegisterPosition;
 use App\Enums\SupersessionStrength;
@@ -12,9 +12,7 @@ final readonly class CorrespondenceCalculator
 {
     private const int ITERATIONS = 2;
 
-    public function __construct(
-        private ReinforcementService $reinforcement,
-    ) {}
+    public function __construct(private CardinalMorphologyService $morphologies) {}
 
     public function calculate(LineageComparison $comparison): float
     {
@@ -22,60 +20,61 @@ final readonly class CorrespondenceCalculator
             return -1;
         }
 
-        $current = $this->features($comparison->current);
-        $previous = $this->features($comparison->previous);
-        $keys = array_unique([
-            ...array_keys($current),
-            ...array_keys($previous),
-        ]);
-        $dotProduct = 0.0;
-        $currentMagnitude = 0.0;
-        $previousMagnitude = 0.0;
-
-        foreach ($keys as $key) {
-            $left = $current[$key] ?? 0.0;
-            $right = $previous[$key] ?? 0.0;
-            $dotProduct += $left * $right;
-            $currentMagnitude += $left ** 2;
-            $previousMagnitude += $right ** 2;
-        }
-
-        if ($currentMagnitude === 0.0 || $previousMagnitude === 0.0) {
+        /** @var Proposition $head */
+        $head = $comparison->current->propositions->last();
+        $current = $this->morphologies->current($head, $comparison->current->horizon, $comparison->current->context);
+        $previous = $this->morphologies->reference($comparison->current->horizon, $current->primaryDepth, $comparison->current->context);
+        if ($previous === null || $previous->propositions->isEmpty()) {
             return -1;
         }
 
-        $similarity = $dotProduct
-            / (sqrt($currentMagnitude) * sqrt($previousMagnitude));
+        $topology = $this->topology($current, $previous);
+        $lateral = $this->lateral($current, $previous);
 
-        return $this->normalise(2 * $similarity - 1);
+        return $this->normalise(($topology + $lateral) / 2);
+    }
+
+    private function topology(CardinalMorphology $current, CardinalMorphology $previous): float
+    {
+        $left = $this->features($current);
+        $right = $this->features($previous);
+        $keys = array_unique([...array_keys($left), ...array_keys($right)]);
+        $dotProduct = 0.0;
+        $leftMagnitude = 0.0;
+        $rightMagnitude = 0.0;
+
+        foreach ($keys as $key) {
+            $a = $left[$key] ?? 0.0;
+            $b = $right[$key] ?? 0.0;
+            $dotProduct += $a * $b;
+            $leftMagnitude += $a ** 2;
+            $rightMagnitude += $b ** 2;
+        }
+
+        if ($leftMagnitude === 0.0 || $rightMagnitude === 0.0) {
+            return -1;
+        }
+
+        return $this->normalise(2 * ($dotProduct / (sqrt($leftMagnitude) * sqrt($rightMagnitude))) - 1);
     }
 
     /**
-     * Build a continuously receipt-weighted Weisfeiler-Leman feature vector.
+     * Unit-weight structural WL features. Receipt state must not mutate a
+     * completed Domain's topology after it has become a reference.
      *
      * @return array<string, float>
      */
-    private function features(DomainLineage $lineage): array
+    private function features(CardinalMorphology $morphology): array
     {
-        $labels = $lineage->propositions->mapWithKeys(
-            fn (Proposition $proposition) => [
-                (string) $proposition->getKey() => $this->nodeLabel(
-                    $proposition->register
-                ),
-            ],
-        )->all();
-        $weights = $this->reinforcement->weights(
-            $lineage->propositions,
-            $lineage->horizon->substrate,
-            $lineage->context,
-        );
+        $labels = $morphology->propositions->mapWithKeys(fn (Proposition $proposition) => [
+            (string) $proposition->getKey() => RegisterPosition::forRegister($proposition->register)->value,
+        ])->all();
         $features = [];
 
         for ($iteration = 0; $iteration <= self::ITERATIONS; $iteration++) {
-            foreach ($labels as $id => $label) {
+            foreach ($labels as $label) {
                 $key = $iteration.':'.$label;
-                $features[$key] = ($features[$key] ?? 0)
-                    + $weights->get($id, 1);
+                $features[$key] = ($features[$key] ?? 0) + 1;
             }
 
             if ($iteration === self::ITERATIONS) {
@@ -83,42 +82,76 @@ final readonly class CorrespondenceCalculator
             }
 
             $next = [];
-
             foreach ($labels as $id => $label) {
                 $neighbours = [];
-
-                foreach ($lineage->supersessions as $supersession) {
-                    $edge = SupersessionStrength::for(
-                        $supersession->type
-                    )->value;
-
-                    if ($supersession->source_proposition_id === $id) {
-                        $neighbours[] = 'out:'.$edge.':'
-                            .$labels[$supersession->target_proposition_id];
+                foreach ($morphology->supersessions as $supersession) {
+                    $edge = SupersessionStrength::for($supersession->type)->value;
+                    if ($supersession->source_proposition_id === $id && isset($labels[$supersession->target_proposition_id])) {
+                        $neighbours[] = 'out:'.$edge.':'.$labels[$supersession->target_proposition_id];
                     }
-
-                    if ($supersession->target_proposition_id === $id) {
-                        $neighbours[] = 'in:'.$edge.':'
-                            .$labels[$supersession->source_proposition_id];
+                    if ($supersession->target_proposition_id === $id && isset($labels[$supersession->source_proposition_id])) {
+                        $neighbours[] = 'in:'.$edge.':'.$labels[$supersession->source_proposition_id];
                     }
                 }
-
                 sort($neighbours);
-                $next[$id] = hash(
-                    'sha256',
-                    implode('|', [$label, ...$neighbours]),
-                );
+                $next[$id] = hash('sha256', implode('|', [$label, ...$neighbours]));
             }
-
             $labels = $next;
         }
 
         return $features;
     }
 
-    private function nodeLabel(string $register): string
+    private function lateral(CardinalMorphology $current, CardinalMorphology $previous): float
     {
-        return RegisterPosition::forRegister($register)->value;
+        $left = $this->lateralGroups($current);
+        $right = $this->lateralGroups($previous);
+        $keys = array_unique([...array_keys($left), ...array_keys($right)]);
+        $sum = 0.0;
+        $mass = 0;
+
+        foreach ($keys as $key) {
+            $a = $left[$key] ?? [];
+            $b = $right[$key] ?? [];
+            sort($a);
+            sort($b);
+            $count = max(count($a), count($b));
+            for ($i = 0; $i < $count; $i++) {
+                $sum += isset($a[$i], $b[$i]) ? self::positionSimilarity($a[$i], $b[$i]) : -1;
+                $mass++;
+            }
+        }
+
+        return $mass === 0 ? -1 : $this->normalise($sum / $mass);
+    }
+
+    /** @return array<string, list<int>> */
+    private function lateralGroups(CardinalMorphology $morphology): array
+    {
+        $groups = [];
+        foreach ($morphology->propositions as $id => $node) {
+            $position = $morphology->positions[$id] ?? null;
+            if ($position === null) {
+                continue;
+            }
+            $key = implode(':', [
+                $position->depth,
+                RegisterPosition::forRegister($node->register)->value,
+                $node->tier,
+            ]);
+            $groups[$key][] = $position->lateral;
+        }
+
+        return $groups;
+    }
+
+    public static function positionSimilarity(int $a, int $b): float
+    {
+        if ($a < 1 || $b < 1) {
+            throw new \InvalidArgumentException('Lateral positions are one-based.');
+        }
+
+        return max(-1, min(1, 1 - (2 * abs($a - $b) / ($a + $b))));
     }
 
     private function normalise(float $value): float
