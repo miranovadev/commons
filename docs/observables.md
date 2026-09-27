@@ -88,20 +88,64 @@ measurement population.
 
 ## Local Correspondence
 
-Correspondence is a reinforcement-weighted, two-iteration Weisfeiler-Leman graph
-kernel:
+Correspondence v2 is a structural comparison with two equally weighted raw components:
+
+```text
+raw Correspondence
+= 0.5 × Shape Topology
++ 0.5 × Lateral Position
+```
+
+Each Context Horizon first receives an independent, deterministic cardinal layout.
+Its opening/governing Committal is `(depth 0, lateral 1)`. Structural depth is the canonical producing Phase position (Distinguish 1 through Order 7), not causal-path length. Subsequent rows preserve
+the previous row's left-to-right parent order; each parent's children are appended
+in immutable ledger creation order and a shared child appears once. These coordinates
+belong to the Domain morphology. They are not participant movement, UI x/y geometry,
+or ancestry invented for a particular measurement.
+
+The active proposition selects an all-parent causal morphology through genuine
+Supersession edges. A contributing foreign parent keeps its real edge and reads its
+cardinal coordinate from its own Domain layout; no path from the local entry is
+invented. A locally-owned result with only foreign causal ancestry is placed in its
+local cardinal layout by its producing Phase Gate as a read-only placement relation.
+That relation never becomes Shape Topology, movement, provenance or Receipt authority.
+
+The completed immediately preceding complementary Domain is the fixed structural
+reference. For a current head at primary causal depth `d`, the reference's primary
+morphology is revealed only through `depth <= d`; if the current Domain grows beyond
+the reference's maximum depth, the completed reference remains fixed.
+
+Shape Topology preserves the existing two-iteration Weisfeiler-Leman kernel:
 
 - Activity and Signal are labelled R.
 - Frontier and Stance are labelled G.
 - Canon and Concord are labelled B.
-- Variant Supersessions are soft (S); all replacing Supersessions are hard
-  (H).
-- Incoming and outgoing directions are retained in the neighbourhood label.
-- Cosine similarity is mapped from [0, 1] to [-1, 1].
+- Variant Supersessions are soft (S); replacing Supersessions are hard (H).
+- Incoming and outgoing directions are retained.
+- Nodes have unit structural weight so later Receipt state cannot mutate a completed
+  Domain reference.
+- cosine similarity is mapped from [0, 1] to [-1, 1].
 
-This gives 1 to structurally consonant lineages and -1 to lineages with no
-shared structural features.
+Lateral Position is a metric coordinate, not a categorical ordinal. It is
+compared once for the measured head: take the head's ordinal in its complete
+canonical Phase/register row, then follow the completed previous Domain's
+terminal placement lineage and take that proposition's ordinal at the same
+canonical Phase/register position. Earlier rows are not averaged into this
+component. If the previous terminal lineage has no counterpart at that canonical
+position, lateral evidence is neutral (0). For one-based positions `a` and `b`:
 
+```text
+L(a,b) = 1 - 2 × |a-b| / (a+b)
+```
+
+Thus `1↔1` is maximally consonant, `1↔2` is nearby, and `1↔20` is strongly
+dissonant. Frame/Horizon identity establishes a coordinate origin but is not itself
+a similarity label.
+
+The raw 50/50 result remains an independent local observation. Existing inverse-square
+structural attenuation then accumulates raw Correspondence over the measured head's
+causal ancestry exactly as documented above. Chirality retains its own reinforcement
+and attenuation semantics; Closure remains direct committed structure.
 ## Local Chirality
 
 Chirality first removes Propositions that have been hard superseded inside
