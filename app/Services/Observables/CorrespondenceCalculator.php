@@ -20,15 +20,14 @@ final readonly class CorrespondenceCalculator
     public function calculate(LineageComparison $comparison): float
     {
         if ($comparison->isBootstrap()) {
-            return -1;
+            return 1;
         }
 
-        // The root Horizon is the Origin bootstrap morphology, not a developed
-        // complementary Domain. Its first ordinary child therefore has neutral
-        // raw structural Correspondence; Origin's -1 persists only via the
-        // existing attenuation layer.
+        // Origin is the exact provenance/terminal boundary identity by axiom.
+        // There is no developed predecessor to compare at this unique boundary;
+        // do not fabricate a one-node morphology or Topology/Position components.
         if ($comparison->previous?->horizon->parent_context_horizon_id === null) {
-            return 0;
+            return 1;
         }
 
         /** @var Proposition $head */

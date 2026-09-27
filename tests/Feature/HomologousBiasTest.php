@@ -109,6 +109,32 @@ class HomologousBiasTest extends TestCase
         $this->assertSame(['participant.rest'], array_keys(app(InputPlanService::class)->forPhase($this->actor, $next)['schema']['$defs']['actions']));
     }
 
+    public function test_cardinal_lookup_uses_ownership_without_local_causal_reachability(): void
+    {
+        // Construct the geometry directly, independently of the action planner.
+        $target = new Proposition;
+        $target->forceFill(['phase_id' => $this->bias->id, 'tier' => 'expressive',
+            'register' => $this->bias->write_register, 'statement' => 'Foreign-input local result'])->save();
+        app(LedgerService::class)->record($target);
+        $this->edge($this->gateB, $target, 'reclassify');
+        $before = Supersession::orderBy('id')->get()->map->getAttributes()->all();
+        $local = $this->bias->cycle->contextHorizon;
+        $foreign = $this->gateB->phase->cycle->contextHorizon;
+
+        foreach ([null, new ParticipationContext($this->bias)] as $context) {
+            $layout = app(DomainCardinalLayoutService::class)->for($local, $context);
+            $this->assertSame($local->id, $layout->position($target->id)->horizonId);
+            $this->assertSame($layout->position($this->gateA->id)->depth + 1, $layout->position($target->id)->depth);
+            $this->assertNull(app(DomainCardinalLayoutService::class)->for($foreign, $context)->position($target->id));
+            $morphology = app(CardinalMorphologyService::class)->current($target, $local, $context);
+            $this->assertSame($foreign->id, $morphology->positions[$this->gateB->id]->horizonId);
+            $this->assertArrayNotHasKey($this->gateA->id, $morphology->positions);
+        }
+
+        $this->assertSame([$this->gateB->id], $target->parents()->pluck('propositions.id')->all());
+        $this->assertSame($before, Supersession::orderBy('id')->get()->map->getAttributes()->all());
+    }
+
     public function test_dominant_homologues_add_options_without_vetoing_either_local_direction(): void
     {
         $this->warrant();
@@ -226,6 +252,8 @@ class HomologousBiasTest extends TestCase
         $foreignLayout = app(DomainCardinalLayoutService::class)->for($foreignHorizon);
         $this->assertSame($localHorizon->id, $localLayout->position($target->id)->horizonId);
         $this->assertSame($foreignHorizon->id, $foreignLayout->position($source->id)->horizonId);
+        $this->assertNull($foreignLayout->position($target->id));
+        $this->assertSame($localLayout->position($gate->id)->depth + 1, $localLayout->position($target->id)->depth);
         $this->assertDatabaseMissing('supersessions', [
             'source_proposition_id' => $gate->id,
             'target_proposition_id' => $target->id,

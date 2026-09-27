@@ -15,9 +15,9 @@ use Illuminate\Support\Facades\DB;
 /**
  * Read-only cardinal projection of a complete Context Horizon.
  *
- * Row/depth is canonical producing Phase position. Lateral position is the
- * one-based ordinal in that complete row. Placement is independent of causal
- * topology; genuine Supersessions are retained separately for Shape Topology.
+ * Membership follows Domain ownership. Rows use breadth-first local structure,
+ * including explicit non-causal placement for foreign-input results. Genuine
+ * Supersessions remain separate from that read-only placement relation.
  */
 final class DomainCardinalLayoutService
 {
@@ -57,7 +57,6 @@ final class DomainCardinalLayoutService
         $nodes = Proposition::query()->whereIn('id', $allIds)
             ->with(['phase.cycle', 'ledgerEntry'])->get()->keyBy('id');
         $edges = Supersession::query()
-            ->whereIn('source_proposition_id', $allIds)
             ->whereIn('target_proposition_id', $memberships->pluck('proposition_id'))
             ->with('ledgerEntry')->get();
 
@@ -70,7 +69,6 @@ final class DomainCardinalLayoutService
                 $domainNodes->put($entry->id, $entry);
             }
             $domainEdges = $edges
-                ->whereIn('source_proposition_id', $domainNodes->keys())
                 ->whereIn('target_proposition_id', $memberIds)->values();
 
             return [$horizon->id => $this->assemble($horizon, $entry, $domainNodes, $domainEdges)];
@@ -113,19 +111,24 @@ final class DomainCardinalLayoutService
     ): CardinalLayout {
         $positions = [$entry->id => new CardinalPosition($horizon->id, 0, 1)];
 
-        $children = $realEdges
+        $causalChildren = $realEdges
             ->filter(fn (Supersession $edge) => $nodes->has($edge->source_proposition_id)
                 && $nodes->has($edge->target_proposition_id))
             ->groupBy('source_proposition_id')
-            ->map(function (Collection $edges) use ($nodes): Collection {
-                return $edges->sort(function (Supersession $a, Supersession $b) use ($nodes): int {
-                    $aNode = $nodes->get($a->target_proposition_id);
-                    $bNode = $nodes->get($b->target_proposition_id);
+            ->map(fn (Collection $edges) => $edges->pluck('target_proposition_id'));
 
-                    return [$this->nodeSequence($aNode), $a->target_proposition_id]
-                        <=> [$this->nodeSequence($bNode), $b->target_proposition_id];
-                })->values();
-            });
+        // This is a coordinate relation, never a Supersession. Use it only when
+        // the owning Domain has no causal parent for a foreign-input result.
+        // Ordinary local causal morphology always supplies its own placement.
+        $placementChildren = $this->foreignInputPlacementChildren($horizon, $entry, $nodes, $realEdges);
+        $children = $nodes->keys()->mapWithKeys(function (string $id) use ($causalChildren, $placementChildren, $nodes) {
+            $ids = $causalChildren->get($id, collect())
+                ->merge($placementChildren->get($id, collect()))->unique();
+
+            return [$id => $ids->sort(fn (string $a, string $b) =>
+                [$this->nodeSequence($nodes->get($a)), $a]
+                    <=> [$this->nodeSequence($nodes->get($b)), $b])->values()];
+        });
 
         $row = [$entry->id];
         $depth = 0;
@@ -135,8 +138,7 @@ final class DomainCardinalLayoutService
             $queued = [];
 
             foreach ($row as $parentId) {
-                foreach ($children->get($parentId, collect()) as $edge) {
-                    $childId = $edge->target_proposition_id;
+                foreach ($children->get($parentId, collect()) as $childId) {
                     if (isset($positions[$childId]) || isset($queued[$childId])) {
                         continue;
                     }
@@ -164,12 +166,42 @@ final class DomainCardinalLayoutService
 
         if ($unplaced->isNotEmpty()) {
             throw new DomainException(
-                'Every locally-owned Domain proposition must be causally reachable from Domain provenance; '
-                .'cardinal placement cannot invent a path: '.$unplaced->implode(', ')
+                'Owned Domain propositions require local causal structure or an explicit foreign-input '
+                .'placement relation from their producing Phase Gate: '.$unplaced->implode(', ')
             );
         }
 
         return new CardinalLayout($horizon, $entry->id, $nodes, $realEdges, $positions);
+    }
+
+    /** @return Collection<string, Collection<int, string>> */
+    private function foreignInputPlacementChildren(
+        ContextHorizon $horizon,
+        Proposition $entry,
+        Collection $nodes,
+        Collection $realEdges,
+    ): Collection {
+        $placements = collect();
+        $parents = $realEdges->groupBy('target_proposition_id');
+        foreach ($nodes as $node) {
+            if ($node->id === $entry->id) {
+                continue;
+            }
+            $inputs = $parents->get($node->id, collect());
+            if ($inputs->isEmpty() || $inputs->contains(fn ($edge) => $nodes->has($edge->source_proposition_id))) {
+                continue;
+            }
+
+            $phase = $node->phase;
+            $gateId = $phase?->gate_proposition_id;
+            if ($phase?->cycle?->context_horizon_id !== $horizon->id
+                || $gateId === null || $gateId === $node->id || ! $nodes->has($gateId)) {
+                throw new DomainException('A foreign-input result requires an acting Gate in its owning Domain: '.$node->id);
+            }
+            $placements->put($gateId, $placements->get($gateId, collect())->push($node->id));
+        }
+
+        return $placements;
     }
 
     private function entryFrom(ContextHorizon $horizon, Collection $memberIds, Collection $nodes): Proposition
