@@ -63,6 +63,108 @@ class CardinalCorrespondenceTest extends TestCase
         $this->assertSame([1, 6], [$layout->position($shared->id)->depth, $layout->position($shared->id)->lateral]);
     }
 
+    public function test_domain_depth_continues_across_cycle_phase_repetition(): void
+    {
+        [$horizon, , $origin] = $this->fixture();
+
+        $participant = Participant::where('substrate_id', $horizon->substrate_id)->firstOrFail();
+        $previous = $origin;
+        $nodes = [];
+
+        foreach ([1, 2] as $cycleSequence) {
+            $cycle = new Cycle;
+            $cycle->forceFill([
+                'participant_id' => $participant->id,
+                'sequence' => $cycleSequence + 1,
+                'context_horizon_id' => $horizon->id,
+            ])->save();
+
+            foreach (PhaseKind::cases() as $kind) {
+                $phase = new Phase;
+                $phase->forceFill([
+                    'cycle_id' => $cycle->id,
+                    'kind' => $kind,
+                    'gate_proposition_id' => $previous->id,
+                    'write_register' => $horizon->domain->registerFor($kind),
+                    'started_at' => now(),
+                ])->save();
+
+                $node = $this->node(
+                    $phase,
+                    'Cycle '.$cycleSequence.' '.$kind->name,
+                    $horizon->domain->registerFor($kind),
+                    $kind === PhaseKind::Order ? 'committal' : 'expressive',
+                );
+                $this->edge($phase, $previous, $node, $kind === PhaseKind::Order ? 'commit' : 'variant');
+                $nodes[] = $node;
+                $previous = $node;
+            }
+        }
+
+        $layout = app(DomainCardinalLayoutService::class)->for($horizon->fresh());
+
+        foreach ($nodes as $index => $node) {
+            $this->assertSame($index + 1, $layout->position($node->id)->depth);
+            $this->assertSame(1, $layout->position($node->id)->lateral);
+        }
+        $this->assertSame(14, $layout->position($nodes[13]->id)->depth);
+    }
+
+    public function test_lateral_order_follows_causal_parent_order_not_phase_gate_or_global_creation_order(): void
+    {
+        [$horizon, $phase, $origin] = $this->fixture();
+        $participant = $phase->cycle->participant;
+
+        $parents = [];
+        foreach (['Luna parent', 'Vela parent A', 'Vela parent B', 'Nova parent'] as $label) {
+            $node = $this->node($phase, $label, 'activity');
+            $this->edge($phase, $origin, $node);
+            $parents[] = $node;
+        }
+
+        $cycle = new Cycle;
+        $cycle->forceFill([
+            'participant_id' => $participant->id,
+            'sequence' => 2,
+            'context_horizon_id' => $horizon->id,
+        ])->save();
+        $childPhase = new Phase;
+        $childPhase->forceFill([
+            'cycle_id' => $cycle->id,
+            'kind' => PhaseKind::Persist,
+            // Deliberately one shared producing Gate: cardinal ordering belongs to
+            // the real causal parents below, not this Phase placement metadata.
+            'gate_proposition_id' => $parents[0]->id,
+            'write_register' => 'frontier',
+            'started_at' => now(),
+        ])->save();
+
+        // Global creation order is Luna, Nova, Vela, Vela. Parent-relative
+        // cardinal order must instead be Luna, Vela, Vela, Nova.
+        $luna = $this->node($childPhase, 'Luna', 'frontier');
+        $nova = $this->node($childPhase, 'Nova', 'frontier');
+        $velaA = $this->node($childPhase, 'Vela A', 'frontier');
+        $velaB = $this->node($childPhase, 'Vela B', 'frontier');
+
+        $this->edge($childPhase, $parents[0], $luna);
+        $this->edge($childPhase, $parents[3], $nova);
+        $this->edge($childPhase, $parents[1], $velaA);
+        $this->edge($childPhase, $parents[2], $velaB);
+
+        $layout = app(DomainCardinalLayoutService::class)->for($horizon->fresh());
+
+        $this->assertSame(
+            [1, 2, 3, 4],
+            collect([$luna, $velaA, $velaB, $nova])
+                ->map(fn ($node) => $layout->position($node->id)->lateral)->all(),
+        );
+        $this->assertSame(
+            [2, 2, 2, 2],
+            collect([$luna, $velaA, $velaB, $nova])
+                ->map(fn ($node) => $layout->position($node->id)->depth)->all(),
+        );
+    }
+
     private function fixture(): array
     {
         $substrate = new Substrate;
