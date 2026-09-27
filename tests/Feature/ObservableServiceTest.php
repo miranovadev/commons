@@ -70,6 +70,23 @@ class ObservableServiceTest extends TestCase
         $this->assertSame(-1.0, $measurement->closure);
     }
 
+    public function test_first_developed_domain_has_neutral_raw_correspondence_without_origin_morphology_comparison(): void
+    {
+        $origin = $this->proposition('Origin.', 'canon', 'committal');
+        $this->closeHorizon($origin, prominence: 0, turbulence: 1);
+
+        $this->phase = $this->phase(2, $origin);
+        $first = $this->proposition('First developed Domain.', 'signal');
+        $this->supersede($origin, $first, 'variant');
+
+        $raw = app(LocalMeasurementService::class)->calculate($first);
+        $this->assertSame(0.0, $raw->correspondence);
+
+        $measurement = app(PropositionMeasurementService::class)->recalculate($first);
+        $this->assertLessThan(0, $measurement->correspondence);
+        $this->assertGreaterThan(-1, $measurement->correspondence);
+    }
+
     public function test_matching_lineages_in_complementary_horizons_align(): void
     {
         // Snapshot timestamps intentionally tie; fixture ancestry must be explicit.
