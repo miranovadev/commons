@@ -66,7 +66,7 @@ final class DomainCardinalLayoutService
             $memberIds = $memberIdsByHorizon->get($horizon->id, collect());
             $entry = $this->entryFrom($horizon, $memberIds, $nodes);
             $ids = $memberIds->push($entry->id)->unique();
-            $domainNodes = $nodes->only($ids)->keyBy('id');
+            $domainNodes = $nodes->only($ids->all())->keyBy('id');
             if (! $domainNodes->has($entry->id)) {
                 $domainNodes->put($entry->id, $entry);
             }
@@ -171,7 +171,7 @@ final class DomainCardinalLayoutService
             return $entry;
         }
 
-        $entry = $nodes->only($memberIds)->filter(fn ($node) => $node->tier === 'committal')
+        $entry = $nodes->only($memberIds->all())->filter(fn ($node) => $node->tier === 'committal')
             ->sortBy(fn ($node) => $this->nodeSequence($node))->first();
         if ($entry === null) {
             throw new DomainException('The Origin Horizon requires a governing Committal.');
