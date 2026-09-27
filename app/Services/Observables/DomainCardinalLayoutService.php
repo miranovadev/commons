@@ -4,7 +4,6 @@ namespace App\Services\Observables;
 
 use App\Domain\Observables\CardinalLayout;
 use App\Domain\Observables\CardinalPosition;
-use App\Enums\PhaseKind;
 use App\Models\ContextHorizon;
 use App\Models\Proposition;
 use App\Models\Supersession;
