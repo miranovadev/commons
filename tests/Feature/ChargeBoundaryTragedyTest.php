@@ -21,11 +21,12 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Fixtures\ExhaustionFixture;
+use Tests\Fixtures\NaturalBoundaryHistory;
 use Tests\TestCase;
 
 class ChargeBoundaryTragedyTest extends TestCase
 {
-    use ExhaustionFixture, RefreshDatabase;
+    use ExhaustionFixture, NaturalBoundaryHistory, RefreshDatabase;
 
     protected function setUp(): void
     {
@@ -75,7 +76,8 @@ class ChargeBoundaryTragedyTest extends TestCase
 
     public function test_ordinary_unmocked_observables_can_reach_the_boundary(): void
     {
-        $phase = $this->phase($this->origin, PhaseKind::Distinguish);
+        [$this->substrate, $this->origin, , $seed] = $this->naturalBoundaryHistory();
+        $phase = $this->phase($seed, PhaseKind::Distinguish);
         $target = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
             ['action' => 'proposition.variant', 'statement' => 'An untested expressive continuation']);
         $measurement = $target->measurement;

@@ -44,8 +44,18 @@ class HomologousPositionTest extends TestCase
         $this->assertTrue($service->areCommittedHomologous($b3, $a3));
         $this->assertSame([$a3->id => ['ancestor_id' => $a3->id, 'distance' => 0]],
             $service->committedCoordinatesFor($a3, collect([$a3])));
-        // These fixtures deliberately have no Supersession edges at all.
-        $this->assertSame(0, DB::table('supersessions')->count());
+        // Homology retains the same committed-depth diagnostics when each
+        // ordinary Committal carries its genuine selected-source history.
+        $this->assertSame(5, DB::table('supersessions')->count());
+        $this->assertFalse($c0->parents()->exists());
+        foreach ([[$c0, $c1], [$c1, $a2], [$a2, $a3], [$c1, $b2], [$b2, $b3]] as [$source, $commit]) {
+            $this->assertDatabaseHas('supersessions', [
+                'id' => $commit->commitmentSnapshot->supersession_id,
+                'phase_id' => $commit->phase_id, 'source_proposition_id' => $source->id,
+                'target_proposition_id' => $commit->id, 'type' => 'commit',
+            ]);
+            $this->assertSame($source->id, $commit->phase->gate_proposition_id);
+        }
     }
 
     public function test_same_horizon_phase_homology_preserves_canonical_phase_and_register(): void

@@ -194,7 +194,7 @@ class CausalHorizonLineageTest extends TestCase
         $compare = app(ContextLineageComparisonService::class);
         $this->assertTrue($compare->for($origin)->isBootstrap());
         $values = app(LocalMeasurementService::class)->calculate($origin);
-        $this->assertSame(-1.0, $values->correspondence);
+        $this->assertSame(1.0, $values->correspondence);
         $this->assertSame(-1.0, $values->depth);
         $this->assertSame(-1.0, $values->cadence);
         $h2 = $this->boundary($origin, -.8);

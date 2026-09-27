@@ -5,7 +5,9 @@ namespace Tests\Feature;
 use App\Domain\Observables\LocalMeasurements;
 use App\Enums\PhaseKind;
 use App\Models\ContextHorizon;
+use App\Models\Cycle;
 use App\Models\Participant;
+use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Substrate;
 use App\Models\Supersession;
@@ -174,8 +176,29 @@ class ParticipantContinuityTest extends TestCase
         // Hold numeric thresholds fixed; Commit validation, snapshots, ownership,
         // completion, entry and subsequent contributions use their real services.
         $this->mock(LocalMeasurementService::class, function ($mock) use ($value): void {
-            $mock->shouldReceive('calculate')->andReturn(new LocalMeasurements($value, $value, $value, $value));
+            $mock->shouldReceive('calculate')->andReturnUsing(fn (Proposition $node) => $node->statement === 'Independent continuing opportunity'
+                    ? new LocalMeasurements(0, 0, 0, 0)
+                    : new LocalMeasurements($value, $value, $value, $value));
         });
+        // Keep a genuine uncommitted branch in Origin's Region. Its neutral
+        // field supplies Potential even with the corrected |Origin Tension|=1/3.
+        $branchAuthor = new Participant;
+        $branchAuthor->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'continuing branch'])->save();
+        $branchCycle = new Cycle;
+        $branchCycle->forceFill(['participant_id' => $branchAuthor->id, 'sequence' => 1,
+            'entry_committal_id' => $origin->id, 'completed_at' => now()])->save();
+        $opportunityPhase = new Phase;
+        $opportunityPhase->forceFill(['cycle_id' => $branchCycle->id, 'kind' => PhaseKind::Distinguish,
+            'write_register' => 'signal', 'gate_proposition_id' => $origin->id,
+            'started_at' => now(), 'completed_at' => now()])->save();
+        $opportunity = new Proposition;
+        $opportunity->forceFill(['phase_id' => $opportunityPhase->id, 'register' => 'signal',
+            'tier' => 'expressive', 'statement' => 'Independent continuing opportunity'])->save();
+        app(LedgerService::class)->record($opportunity);
+        $opportunityEdge = new Supersession;
+        $opportunityEdge->forceFill(['phase_id' => $opportunityPhase->id, 'source_proposition_id' => $origin->id,
+            'target_proposition_id' => $opportunity->id, 'type' => 'variant'])->save();
+        app(LedgerService::class)->record($opportunityEdge);
         $phase = $cycle->currentPhase;
         $phase->forceFill(['kind' => PhaseKind::Order, 'write_register' => 'concord'])->save();
         $candidate = new Proposition;

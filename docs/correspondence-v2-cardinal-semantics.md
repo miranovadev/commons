@@ -27,13 +27,13 @@ The cyclic Phase position within a Cycle: Distinguish 1, Persist 2, Constrain 3,
 
 ### Domain Depth
 
-The breadth-first causal depth of a proposition within its Domain morphology, rooted at that Domain's provenance Committal.
+The breadth-first structural depth of a proposition within its owning Domain, rooted at that Domain's provenance Committal. Domain ownership determines coordinate membership; genuine Supersessions determine causal ancestry.
 
 ```text
 Domain provenance Committal = Domain Depth 0
 ```
 
-Domain Depth begins at 0, follows the real causal graph outward from provenance, uses minimum/breadth-first distance when multiple causal paths exist, includes expressive and Committal propositions, and **never resets at a Cycle or Committal boundary**.
+Domain Depth begins at 0 and follows local causal structure wherever available, using minimum/breadth-first distance when multiple paths exist. A foreign-input result without a local causal parent uses the separate acting-Gate placement relation defined below. Depth includes expressive and Committal propositions and **never resets at a Cycle or Committal boundary**.
 
 ```text
 provenance Commit    D0
@@ -52,7 +52,7 @@ Commit               D14
 
 ### Lateral Position
 
-The deterministic one-based ordinal of a proposition within one Domain Depth row. It is derived from causal morphology, not timestamps, UI geometry, Phase number, participant identity or exploration state.
+The deterministic one-based ordinal of a proposition within one Domain Depth row. It follows parent-relative local structure and explicit foreign-input placement, with immutable ledger creation order within each parent. It is not a timestamp, UI coordinate, Phase number, participant identity or exploration state.
 
 ### Cardinal Position
 
@@ -77,6 +77,7 @@ exploration structural_position ≠ Lateral Position
 UI x/y                          ≠ Lateral Position
 participant movement            ≠ measurement ancestry
 measurement ancestry            ≠ cardinal coordinate construction
+Domain membership / Cardinal Position ≠ causal ancestry / Supersession
 ```
 
 ## 4. Domain cardinal layout
@@ -92,7 +93,7 @@ The Domain provenance Committal is `(Domain Depth 0, Lateral Position 1)`.
 Given Domain Depth row `d`:
 
 1. visit parents in current left-to-right Lateral Position order;
-2. for each parent, visit its real causal children that belong to this Domain in immutable creation/ledger order;
+2. for each parent, visit its real local causal children plus any explicitly placed foreign-input results in immutable creation/ledger order;
 3. append each unseen child once;
 4. that ordered population becomes Domain Depth `d + 1`;
 5. assign Lateral Positions `1..N`.
@@ -103,7 +104,7 @@ row[0] = [provenance]
 for each depth d:
     next = []
     for parent in row[d], left → right:
-        for child in local causal children(parent), creation order:
+        for child in local causal children(parent) + non-causal placements(parent), creation order:
             if child has not already been placed:
                 append child to next
     row[d + 1] = next
@@ -130,7 +131,15 @@ Each Domain constructs its cardinal layout independently. A foreign proposition 
 
 A Reconcile result produced in Mediate naturally has its main Gate and operand as genuine parents. If that result later becomes the Bias Gate, tracing all parents backward naturally includes both ancestral branches.
 
-**No synthetic placement or causal edge may be introduced to make coordination easier.** If a valid operation creates a locally-owned proposition that is not causally reachable from its Domain provenance at all, stop and resolve that topology semantic explicitly.
+### Foreign-input ownership placement
+
+A locally-owned result receives a Cardinal Position even when its only genuine causal inputs are foreign. The foreign parents retain their own Domain coordinates; the local result receives no coordinate in those foreign Domains merely because of ancestry.
+
+When a result has no same-Domain causal parent, its producing Phase's acting local Gate supplies a **read-only, non-causal placement relation**. The result joins that Gate's children for breadth-first row construction and immutable creation ordering. This relation is used only for foreign-input results; ordinary local causal parents retain placement authority. Descendants continue from the resulting coordinate without resetting at Cycle/Commit boundaries.
+
+The acting Gate must belong to the owning Domain layout (including its provenance). Missing or cyclic local placement remains an explicit error. Phase number is never a depth shortcut.
+
+This placement relation is not a Supersession and is never persisted as a causal edge. It does not enter Shape Topology or measurement ancestry, confer movement or action authority, or alter recovery, Region ownership or Receipt scope. Complete layout establishes coordinates first; all-parent genuine Supersession ancestry subsequently selects contributors.
 
 ## 7. Cardinal layout versus measurement morphology
 
@@ -262,22 +271,16 @@ These rules are normative for the first corrected implementation.
 
 ### Bootstrap after Origin
 
-Origin has no developed complementary morphology and therefore cannot act as a one-node structural reference for the first developed Domain.
+Origin has no actual preceding Domain. It is the provenance Proposition of the first developed Domain, so the normal provenance/terminal identity is taken as exact at this unique bootstrap boundary:
 
 ```text
-Origin
-→ raw Correspondence = -1
-
-first developed Domain after Origin
-→ raw structural Correspondence = 0 at every proposition
-→ no Shape Topology/Cardinal Position comparison against Origin
+Origin bootstrap raw Correspondence = +1
+first developed Domain after Origin: raw Correspondence = +1
 ```
 
-The existing inverse-square attenuation remains unchanged. Origin's `-1` therefore influences early propositions in the first developed Domain only as historical attenuated mass. As structural distance grows, that influence fades normally. Once a later Committal with raw Correspondence `0` becomes the nearest ancestral Committal boundary for attenuation, Origin falls outside that bounded attenuation walk.
+This is an explicit boundary axiom. It does not fabricate a predecessor Domain, a one-node previous morphology, or Shape Topology / Cardinal Position component values. Ordinary structural comparison begins when an actually developed predecessor Domain exists.
 
-When a subsequent Domain has an actually developed immediately preceding complementary Domain, ordinary structural Correspondence begins with that completed Domain as its reference.
-
-Bootstrap neutrality means **absence of a valid structural comparison**, not structural consonance. Do not synthesize Topology or Position component values for the first developed Domain merely to average them to zero.
+Existing inverse-square attenuation remains unchanged and operates on these independently calculated raw values. Chirality, Depth, Cadence and Closure semantics remain unchanged. The intended first writable field retains positive Correspondence and Chirality with negative Depth/Cadence directions.
 
 ### Row score
 
@@ -414,7 +417,8 @@ Before replacing production Correspondence, tests must prove:
 - the September 27 Luna/Vela/Vela/Nova parent-relative ordering;
 - shared children are placed once while all genuine edges remain;
 - cross-Domain parents retain their own Domain coordinates;
-- no synthetic placement edge is created;
+- foreign-input local results receive owned coordinates through explicit non-causal placement, without a synthetic Supersession;
+- Origin bootstrap raw Correspondence is +1 without invoking a fabricated predecessor morphology;
 - Position is morphology-wide rather than head-only;
 - one-versus-four row occupancy is more dissonant than four-versus-four aligned occupancy;
 - Topology and Position can disagree independently;
