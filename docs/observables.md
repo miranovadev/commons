@@ -97,7 +97,7 @@ raw Correspondence
 ```
 
 Each Context Horizon first receives an independent, deterministic cardinal layout.
-Its opening/governing Committal is `(depth 0, lateral 1)`. Subsequent rows preserve
+Its opening/governing Committal is `(depth 0, lateral 1)`. Structural depth is the canonical producing Phase position (Distinguish 1 through Order 7), not causal-path length. Subsequent rows preserve
 the previous row's left-to-right parent order; each parent's children are appended
 in immutable ledger creation order and a shared child appears once. These coordinates
 belong to the Domain morphology. They are not participant movement, UI x/y geometry,
