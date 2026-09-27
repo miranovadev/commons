@@ -32,7 +32,7 @@ class CardinalCorrespondenceTest extends TestCase
         );
     }
 
-    public function test_domain_layout_assigns_rows_by_parent_order_and_creation_order(): void
+    public function test_domain_layout_assigns_canonical_row_and_creation_order(): void
     {
         [$horizon, $phase, $origin] = $this->fixture();
 
@@ -57,10 +57,10 @@ class CardinalCorrespondenceTest extends TestCase
         $this->assertSame([0, 1], [$layout->position($origin->id)->depth, $layout->position($origin->id)->lateral]);
         $this->assertSame([1, 1], [$layout->position($a->id)->depth, $layout->position($a->id)->lateral]);
         $this->assertSame([1, 2], [$layout->position($b->id)->depth, $layout->position($b->id)->lateral]);
-        $this->assertSame([2, 1], [$layout->position($a1->id)->depth, $layout->position($a1->id)->lateral]);
-        $this->assertSame([2, 2], [$layout->position($a2->id)->depth, $layout->position($a2->id)->lateral]);
-        $this->assertSame([2, 3], [$layout->position($b1->id)->depth, $layout->position($b1->id)->lateral]);
-        $this->assertSame([3, 1], [$layout->position($shared->id)->depth, $layout->position($shared->id)->lateral]);
+        $this->assertSame([1, 3], [$layout->position($a1->id)->depth, $layout->position($a1->id)->lateral]);
+        $this->assertSame([1, 4], [$layout->position($a2->id)->depth, $layout->position($a2->id)->lateral]);
+        $this->assertSame([1, 5], [$layout->position($b1->id)->depth, $layout->position($b1->id)->lateral]);
+        $this->assertSame([1, 6], [$layout->position($shared->id)->depth, $layout->position($shared->id)->lateral]);
     }
 
     private function fixture(): array
