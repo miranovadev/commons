@@ -6,7 +6,6 @@ use App\Domain\Observables\AttestationTimeline;
 use App\Enums\ObservableDirection as Direction;
 use App\Models\Attestation;
 use App\Models\Proposition;
-use App\Models\Substrate;
 use App\Models\Supersession;
 use App\Services\Participation\ParticipationContext;
 use Illuminate\Support\Collection;
@@ -19,7 +18,7 @@ final readonly class AttestationEvidenceService
         private CommitRegionPolarityService $polarity,
     ) {}
 
-    public function valueFor(Collection $positions, Substrate $substrate, ?ParticipationContext $context = null): float
+    public function valueFor(Collection $positions, ?ParticipationContext $context = null): float
     {
         $ids = $positions->flatMap(fn ($position) => $this->state->sourceIds($position, $context))->unique()->all();
 

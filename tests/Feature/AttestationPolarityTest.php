@@ -61,7 +61,7 @@ class AttestationPolarityTest extends TestCase
         $polarity = app(CommitRegionPolarityService::class);
         $this->assertSame(['governing' => Direction::Positive, 'support' => $support], $polarity->forSeed($this->origin));
         $this->assertSame(Direction::Positive, $evidence->directionFor($this->origin));
-        $this->assertSame(1.0, $evidence->valueFor(collect([$this->origin]), $this->participant->substrate));
+        $this->assertSame(1.0, $evidence->valueFor(collect([$this->origin])));
         $this->assertSame($label, $this->origin->attestations()->firstOrFail()->direction);
         // Computed bootstrap Chirality/Tension are separate from initial Attestation polarity.
         $this->assertSame(-1.0, $this->origin->commitmentSnapshot->chirality);
@@ -96,7 +96,7 @@ class AttestationPolarityTest extends TestCase
         $this->attest($child, 'support');
         $this->assertSame($governing, $evidence->directionFor($child));
         $this->attest($a, 'support');
-        $this->assertSame(0.0, $evidence->valueFor(collect([$a]), $this->participant->substrate));
+        $this->assertSame(0.0, $evidence->valueFor(collect([$a])));
         $this->assertSame($opposite, $evidence->directionFor($a));
         $this->assertSame($governing, app(CommitRegionPolarityService::class)->forSeed($seed)['support']);
         $this->attest($a, 'support');
@@ -158,7 +158,7 @@ class AttestationPolarityTest extends TestCase
         $this->attest($position, 'refute');
         $this->attest($position, 'support');
         $evidence = app(AttestationEvidenceService::class);
-        $this->assertSame(0.0, $evidence->valueFor(collect([$position]), $this->participant->substrate));
+        $this->assertSame(0.0, $evidence->valueFor(collect([$position])));
         $this->assertNotSame($governing, $evidence->directionFor($position));
         $this->assertNotSame($governing, $evidence->populationDirection($seed, $register));
     }
@@ -174,7 +174,7 @@ class AttestationPolarityTest extends TestCase
         $polarity = app(CommitRegionPolarityService::class);
         $polarity->backfill($commit);
         $this->assertSame(Direction::Negative, $polarity->forSeed($commit)['support']);
-        $this->assertSame(1.0, app(AttestationEvidenceService::class)->valueFor(collect([$commit]), $this->participant->substrate));
+        $this->assertSame(1.0, app(AttestationEvidenceService::class)->valueFor(collect([$commit])));
         $child = $this->node('stance', $commit);
         $this->assertSame(Direction::Negative, app(AttestationEvidenceService::class)->directionFor($child));
         $this->assertSame(Direction::Positive, $polarity->forSeed($this->origin)['support']);
@@ -191,7 +191,7 @@ class AttestationPolarityTest extends TestCase
         $evidence = app(AttestationEvidenceService::class);
         $count = app(\App\Services\Observables\ReinforcementService::class);
         $assertNeutral = function () use ($evidence, $position, $seed, $register, $governing): void {
-            $this->assertSame(0.0, $evidence->valueFor(collect([$position]), $this->participant->substrate));
+            $this->assertSame(0.0, $evidence->valueFor(collect([$position])));
             $this->assertSame($governing, $evidence->directionFor($position));
             $this->assertSame($governing, $evidence->populationDirection($seed, $register));
         };
@@ -201,7 +201,7 @@ class AttestationPolarityTest extends TestCase
         $receipt = $this->loadedReceiptFixture($position, $refute);
         $this->assertSame(1, $count->count($position));
         $assertNeutral();
-        $phase = $receipt->phase;
+        $phase = $this->phase(PhaseKind::Order, $register, $position, $refute->phase->cycle->participant);
         app(\App\Services\ReceiptContextService::class)->clear($phase->cycle->participant, $phase, $receipt->id);
         $this->assertSame(0, $count->count($position));
         $assertNeutral();

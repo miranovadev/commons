@@ -77,7 +77,7 @@ class BiasGateTest extends TestCase
         $this->assertSame(ObservableDirection::Positive, $chirality->directionFor($this->parent));
         $measurement = app(PropositionMeasurementService::class)->project($this->gate, 0, 0, 0);
         $this->assertSame(0.0, (float) $measurement->chirality);
-        $this->assertSame(0.0, $chirality->leanFor(collect([$this->gate->id]), $this->substrate));
+        $this->assertSame(0.0, $chirality->leanFor(collect([$this->gate->id])));
         $this->assertSame(ObservableDirection::Positive, $chirality->directionFor($this->gate));
         $plan = $this->plan();
         $this->assertTrue($plan['rest_available']);
@@ -86,7 +86,7 @@ class BiasGateTest extends TestCase
 
         $descendant = $this->node('Neutral descendant', $this->gate->register, position: PhaseKind::Mediate);
         $this->edge($this->gate, $descendant);
-        $this->assertSame(0.0, $chirality->leanFor(collect([$descendant->id]), $this->substrate));
+        $this->assertSame(0.0, $chirality->leanFor(collect([$descendant->id])));
         $this->assertSame(ObservableDirection::Positive, $chirality->directionFor($descendant));
         $this->assertSame([], $this->optionIds());
 
@@ -97,7 +97,7 @@ class BiasGateTest extends TestCase
         $this->edge($flipped, $afterFlip);
 
         $this->assertSame(ObservableDirection::Negative, $chirality->directionFor($flipped));
-        $this->assertSame(0.0, $chirality->leanFor(collect([$afterFlip->id]), $this->substrate));
+        $this->assertSame(0.0, $chirality->leanFor(collect([$afterFlip->id])));
         $this->assertSame(ObservableDirection::Positive, $chirality->directionFor($afterFlip));
         $this->assertSame([], $this->optionIds());
     }

@@ -7,7 +7,6 @@ use App\Domain\Observables\LineageComparison;
 use App\Enums\ObservableDirection;
 use App\Enums\SupersessionStrength;
 use App\Models\Proposition;
-use App\Models\Substrate;
 use App\Services\AttestationEvidenceService;
 use App\Services\Participation\ParticipationContext;
 use Illuminate\Support\Collection;
@@ -35,7 +34,7 @@ final readonly class ChiralityCalculator
     {
         $ids = $this->activeIds($lineage->propositions, $lineage->supersessions);
 
-        return $this->evidence->valueFor($lineage->propositions->whereIn('id', $ids), $lineage->horizon->substrate, $lineage->context);
+        return $this->evidence->valueFor($lineage->propositions->whereIn('id', $ids), $lineage->context);
     }
 
     /** Shared hard-supersession semantics for active propositions in a lineage. */
@@ -53,9 +52,9 @@ final readonly class ChiralityCalculator
     }
 
     /** Receipt-neutral effective Attestation lean, before cross-domain comparison. */
-    public function leanFor(Collection $activeIds, Substrate $substrate, ?ParticipationContext $context = null): float
+    public function leanFor(Collection $activeIds, ?ParticipationContext $context = null): float
     {
-        return $this->evidence->valueFor($context !== null ? $context->nodes($activeIds) : Proposition::query()->whereIn('id', $activeIds)->get(), $substrate, $context);
+        return $this->evidence->valueFor($context !== null ? $context->nodes($activeIds) : Proposition::query()->whereIn('id', $activeIds)->get(), $context);
     }
 
     /** Effective Attestation direction reconstructed from evidence in its fixed region frame. */

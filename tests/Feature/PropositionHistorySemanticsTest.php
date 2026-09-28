@@ -183,7 +183,7 @@ class PropositionHistorySemanticsTest extends TestCase
         $this->assertSame(['missing_effective_attestation', ...(in_array($operation, ['reclassify', 'bias'], true) ? [] : ['missing_completed_receipt'])],
             app(CommitmentAdmissibilityService::class)->grounding($target)['reasons']);
         $this->assertSame(0, app(ReinforcementService::class)->count($target));
-        $this->assertSame(0.0, app(ChiralityCalculator::class)->leanFor(collect([$target->id]), $this->participant->substrate));
+        $this->assertSame(0.0, app(ChiralityCalculator::class)->leanFor(collect([$target->id])));
 
         // Progression earns a new touch; it must not transfer the sources' touches.
         $next = app(PhaseProgressionService::class)->advance($phase, $target);

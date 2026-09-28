@@ -122,7 +122,7 @@ class ParticipationPerformanceTest extends TestCase
             $this->assertEqualsCanonicalizing($state->sourceIds($node)->all(), $state->sourceIds($node, $context)->all());
             $this->assertSame($state->touchCount($node), $state->touchCount($node, $context));
             $this->assertSame($evidence->directionFor($node), $evidence->directionFor($node, context: $context));
-            $this->assertSame($evidence->valueFor(collect([$node]), $viewer->substrate), $evidence->valueFor(collect([$node]), $viewer->substrate, $context));
+            $this->assertSame($evidence->valueFor(collect([$node])), $evidence->valueFor(collect([$node]), $context));
             $this->assertSame($regions->seedFor($node)?->id, $regions->seedFor($node, $context)?->id);
             $this->assertEqualsCanonicalizing($regions->membersFor($node)->pluck('id')->all(), $regions->membersFor($node, $context)->pluck('id')->all());
             $this->assertSame($measurements->correspondenceDirectionFor($node), $measurements->correspondenceDirectionFor($node, $context));
@@ -291,4 +291,3 @@ class ParticipationPerformanceTest extends TestCase
         return [$participants[0], $nodes];
     }
 }
-
