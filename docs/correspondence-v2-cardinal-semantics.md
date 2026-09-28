@@ -275,10 +275,10 @@ Origin has no actual preceding Domain. It is the provenance Proposition of the f
 
 ```text
 Origin bootstrap raw Correspondence = +1
-first developed Domain after Origin: raw Correspondence = +1
+first developed Domain after Origin: ordinary structural comparison begins immediately
 ```
 
-This is an explicit boundary axiom. It does not fabricate a predecessor Domain, a one-node previous morphology, or Shape Topology / Cardinal Position component values. Ordinary structural comparison begins when an actually developed predecessor Domain exists.
+The +1 value is an explicit boundary axiom for Origin itself. It does not pin the first developed Domain to +1. Once that Domain adds structure beyond its provenance Committal, ordinary Shape Topology and Cardinal Position comparison begins immediately against the completed Origin Domain. The shared provenance row may remain perfectly consonant while newly occupied current-only Domain Depth rows contribute unmatched structural development.
 
 Existing inverse-square attenuation remains unchanged and operates on these independently calculated raw values. Chirality, Depth, Cadence and Closure semantics remain unchanged. The intended first writable field retains positive Correspondence and Chirality with negative Depth/Cadence directions.
 
@@ -418,7 +418,7 @@ Before replacing production Correspondence, tests must prove:
 - shared children are placed once while all genuine edges remain;
 - cross-Domain parents retain their own Domain coordinates;
 - foreign-input local results receive owned coordinates through explicit non-causal placement, without a synthetic Supersession;
-- Origin bootstrap raw Correspondence is +1 without invoking a fabricated predecessor morphology;
+- Origin bootstrap raw Correspondence is +1, while the first developed Domain immediately departs from +1 as unmatched structure grows beyond Origin;
 - Position is morphology-wide rather than head-only;
 - one-versus-four row occupancy is more dissonant than four-versus-four aligned occupancy;
 - Topology and Position can disagree independently;

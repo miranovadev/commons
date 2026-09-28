@@ -60,7 +60,14 @@ trait NaturalBoundaryHistory
         $seed = $parent;
         $this->assertSame(1.0, $seed->commitmentSnapshot->depth);
         $this->assertSame(1.0, $seed->commitmentSnapshot->cadence);
-        $this->assertSame(1.0, $seed->commitmentSnapshot->correspondence);
+        // The seed matches its reference locally; attenuation also includes the
+        // preceding boundary's independently calculated first-Domain value.
+        $raw = app(\App\Services\Observables\LocalMeasurementService::class);
+        $this->assertSame(1.0, $raw->calculate($seed)->correspondence);
+        $this->assertSame(-0.5130659, $raw->calculate($ancestor)->correspondence);
+        $mass = 1 + 1 / 4 + 1 / 9 + 1 / 16 + 1 / 25;
+        $expected = round((1 + 1 / 4 + 1 / 9 + 1 / 16 - 0.5130659 / 25) / $mass, 7);
+        $this->assertSame($expected, $seed->commitmentSnapshot->correspondence);
         $this->assertSame(1.0, $seed->commitmentSnapshot->chirality);
         $this->assertDatabaseCount('tragedies', 0);
 

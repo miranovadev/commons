@@ -82,8 +82,11 @@ class PropositionHistorySemanticsTest extends TestCase
         string $writeRegister,
         string $gateTier,
     ): void {
-        $parent = $this->node('Provenance', 'concord', 'committal');
-        $this->freezeRegionFixture($parent);
+        $parent = $this->node('Provenance', 'concord', 'committal', position: PhaseKind::Order);
+        if ($parent->phase->cycle->contextHorizon->opened_by_proposition_id !== null) {
+            $this->commitAncestryFixture($parent, Proposition::findOrFail($parent->phase->cycle->contextHorizon->opened_by_proposition_id));
+        }
+        $this->freezeCommittedRegionFixture($parent);
         $this->history = $this->governedPhaseFixture($this->history, $parent);
         if ($operation === 'reconcile') {
             $read = $this->node('Expressive Read', 'concord', position: PhaseKind::Constrain);

@@ -47,9 +47,9 @@ class ClosureHysteresisTest extends TestCase
         $this->participant->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'observer', 'max_read_count' => 25])->save();
     }
 
-    public function test_read_only_bootstrap_preview_matches_actual_commit_while_field_can_cross_domain(): void
+    public function test_read_only_bootstrap_preview_matches_actual_commit_while_field_remains_in_settlement(): void
     {
-        $this->bootstrap(2);
+        $this->bootstrap();
         [$phase, $gate] = $this->candidate([2]);
         $counts = $this->counts();
         $preview = app(ClosureGateService::class)->preview($gate, $phase);
@@ -71,12 +71,15 @@ class ClosureHysteresisTest extends TestCase
         $this->assertSame($preview['depth_direction'], $snapshot->depth_direction->value);
         $this->assertSame($preview['history_proposition_id'], $snapshot->closure_history_proposition_id);
         $this->assertSame('settlement', $result['last_commitment']['domain_before']);
-        // Closure preview remains identical to the persisted Commit. Correspondence
-        // v2 may independently move the combined field across the Domain boundary.
-        $this->assertSame('emergence', $result['last_commitment']['domain_after']);
+        // The corrected comparison lowers Correspondence; Closure is unchanged.
+        $this->assertSame(-0.0964505, $snapshot->correspondence);
+        $this->assertSame(-0.0816327, $snapshot->chirality);
+        $this->assertSame(0.1428571, $snapshot->closure);
+        $this->assertSame(-0.011742, $snapshot->tension);
+        $this->assertSame('settlement', $result['last_commitment']['domain_after']);
         $this->assertSame(-1.0, $result['last_commitment']['tension_before']);
-        $this->assertTrue($result['last_commitment']['closure_boundary']);
-        $this->assertSame(3, $result['horizon_sequence']);
+        $this->assertFalse($result['last_commitment']['closure_boundary']);
+        $this->assertSame(2, $result['horizon_sequence']);
         $this->assertSame(2, $phase->cycle->contextHorizon->sequence);
         $this->assertSame($snapshot->proposition_id, $this->participant->fresh()->current_proposition_id);
         $this->assertNotNull($phase->fresh()->completed_at);
@@ -86,7 +89,7 @@ class ClosureHysteresisTest extends TestCase
 
     public function test_an_observed_commit_retries_after_completion_even_when_bootstrap_remains_admissible(): void
     {
-        $this->bootstrap(1);
+        $this->bootstrap();
         [$phase, $gate] = $this->candidate([2]);
         $this->publishPotentialFixture($this->participant);
         $observed = app(ParticipationService::class)->stateFor($this->participant)['plan']['schema'];
@@ -112,7 +115,7 @@ class ClosureHysteresisTest extends TestCase
 
     public function test_commit_freezes_source_attestation_direction_as_the_next_region_frame(): void
     {
-        $this->bootstrap(1);
+        $this->bootstrap();
         [$phase, $gate] = $this->candidate([2], direction: 'refute');
         $this->assertSame(ObservableDirection::Negative, app(AttestationEvidenceService::class)->directionFor($gate));
         $this->publishPotentialFixture($this->participant);
@@ -126,9 +129,9 @@ class ClosureHysteresisTest extends TestCase
         $this->assertSame($gate->statement, $commit->statement);
     }
 
-    public function test_negative_closure_alignment_can_commit_while_field_crosses_domain(): void
+    public function test_negative_closure_alignment_can_commit_while_corrected_field_remains_in_settlement(): void
     {
-        $this->bootstrap(1);
+        $this->bootstrap();
         [$phase, $gate] = $this->candidate([2, 3, 6]);
         for ($i = 0; $i < 8; $i++) {
             $touch = new Phase;
@@ -144,12 +147,16 @@ class ClosureHysteresisTest extends TestCase
         $this->assertTrue($preview['admissible']);
         $this->publishPotentialFixture($this->participant);
         $state = app(ParticipationService::class)->contribute($this->participant, $phase->id, ['action' => 'proposition.commit', 'proposition_id' => $phase->gate_proposition_id]);
-        // Negative Closure alignment remains admissible; Domain direction belongs
-        // to the combined field and may cross under the new Correspondence value.
-        $this->assertTrue($state['last_commitment']['closure_boundary']);
-        $this->assertSame('emergence', $state['domain']);
-        $this->assertSame(3, $state['horizon_sequence']);
+        // Negative retained directions still align. The ordinary structural
+        // comparison changes the combined field, not Closure admissibility.
+        $this->assertFalse($state['last_commitment']['closure_boundary']);
+        $this->assertSame('settlement', $state['domain']);
+        $this->assertSame(2, $state['horizon_sequence']);
         $snapshot = CommitmentSnapshot::findOrFail($state['current_proposition_id']);
+        $this->assertSame(-0.3999863, $snapshot->correspondence);
+        $this->assertSame(-0.0273297, $snapshot->chirality);
+        $this->assertSame(0.1428571, $snapshot->closure);
+        $this->assertSame(-0.0948196, $snapshot->tension);
         $this->assertSame($preview['depth'], $snapshot->depth);
         $this->assertSame($preview['cadence'], $snapshot->cadence);
         $this->assertSame($preview['cadence_interval'], $snapshot->cadence_interval);
@@ -158,7 +165,7 @@ class ClosureHysteresisTest extends TestCase
 
     public function test_first_post_origin_commit_has_symmetric_unresolved_components(): void
     {
-        $this->bootstrap(1);
+        $this->bootstrap();
         [$phase, $gate] = $this->candidate([2]);
         $this->assertSame(1, CommitmentSnapshot::count());
         $this->assertSame(ContextDomain::Settlement, ContextHorizon::whereNull('closed_at')->firstOrFail()->domain);
@@ -171,7 +178,7 @@ class ClosureHysteresisTest extends TestCase
 
     public function test_expressive_depth_and_phase_touches_do_not_change_committed_bootstrap(): void
     {
-        $this->bootstrap(1);
+        $this->bootstrap();
         [$phase, $gate] = $this->candidate([2, 3, 4]);
         $before = app(ClosureGateService::class)->preview($gate, $phase);
         for ($i = 0; $i < 9; $i++) {
@@ -188,7 +195,7 @@ class ClosureHysteresisTest extends TestCase
 
     public function test_zero_depth_retains_negative_history_and_blocks_a_positive_cadence(): void
     {
-        $this->bootstrap(1);
+        $this->bootstrap();
         $this->zeroDepthLocalValues();
         [$phase, $gate] = $this->candidate([2]);
         $counts = $this->counts();
@@ -216,7 +223,7 @@ class ClosureHysteresisTest extends TestCase
 
     public function test_unrelated_newer_snapshot_does_not_supply_lineage_history(): void
     {
-        $this->bootstrap(1);
+        $this->bootstrap();
         $this->zeroDepthLocalValues();
         [$phase, $gate] = $this->candidate([2]);
         $sibling = $this->node($phase, 'committal', 'concord');
@@ -241,7 +248,7 @@ class ClosureHysteresisTest extends TestCase
 
     public function test_actual_candidate_rejection_rolls_back_a_previously_admissible_preview(): void
     {
-        $this->bootstrap(2);
+        $this->bootstrap();
         [$phase, $gate] = $this->candidate([2]);
         $preview = app(ClosureGateService::class)->preview($gate, $phase);
         $counts = $this->counts();
@@ -267,7 +274,7 @@ class ClosureHysteresisTest extends TestCase
 
     public function test_legacy_missing_components_use_explicit_default_without_rewriting_history(): void
     {
-        $this->bootstrap(1);
+        $this->bootstrap();
         $snapshot = $this->origin->commitmentSnapshot;
         // Simulate the nullable columns on a pre-migration snapshot.
         $snapshot->forceFill(['depth' => null, 'cadence' => null, 'depth_direction' => null, 'cadence_direction' => null])->save();
@@ -288,18 +295,11 @@ class ClosureHysteresisTest extends TestCase
         });
     }
 
-    private function bootstrap(int $depth): void
+    private function bootstrap(): void
     {
         $phase = $this->phase(1, 'canon');
-        $previous = null;
-        for ($i = 0; $i < $depth; $i++) {
-            $node = $this->node($phase, $i === $depth - 1 ? 'committal' : 'expressive', $i === $depth - 1 ? 'canon' : 'activity');
-            if ($previous !== null) {
-                $this->edge($phase, $previous, $node, 'commit');
-            }
-            $previous = $node;
-        }
-        $this->origin = $previous;
+        // Origin is the unique parentless Committal; no expressive pre-Origin history.
+        $this->origin = $this->node($phase, 'committal', 'canon');
         app(PropositionMeasurementService::class)->recalculate($this->origin);
         // Pre-upgrade immutable history is intentionally not retroactively reinforced.
         $snapshot = new CommitmentSnapshot;

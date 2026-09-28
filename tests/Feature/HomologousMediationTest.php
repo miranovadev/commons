@@ -699,10 +699,11 @@ class HomologousMediationTest extends TestCase
         $node = new Proposition;
         $node->forceFill(['phase_id' => $phase->id, 'tier' => 'committal', 'register' => $phase->write_register, 'statement' => 'Region seed'])->save();
         $entry = app(LedgerService::class)->record($node);
+        $commit = $governor === null ? null : $this->commitAncestryFixture($node, $governor);
         $horizon = $phase->cycle->contextHorizon;
         $snapshot = new CommitmentSnapshot;
         $snapshot->forceFill(['proposition_id' => $node->id, 'substrate_id' => $this->actor->substrate_id,
-            'ledger_entry_id' => $entry->id, 'correspondence' => 0, 'chirality' => 0, 'closure' => 0,
+            'ledger_entry_id' => $entry->id, 'supersession_id' => $commit?->id, 'correspondence' => 0, 'chirality' => 0, 'closure' => 0,
             'prominence' => .5, 'turbulence' => .5, 'tension' => 0,
             'direction_before' => $horizon->domain, 'direction_after' => $after,
             'calculator_version' => $governor === null ? 'origin-bootstrap-v1' : 'ownership-fixture', 'evaluated_at' => now()])->save();

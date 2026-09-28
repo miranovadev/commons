@@ -59,12 +59,19 @@ class CausalRecoveryTest extends TestCase
 
     public function test_ordinary_receipt_regions_are_local_in_both_domains(): void
     {
-        $boundary = $this->committal($this->root, .9, boundary: true);
+        $rootSeed = $this->committal($this->root, .5);
+        $boundary = $this->committal($this->root, .9, $rootSeed, boundary: true, edgeType: 'commit');
+        $this->assertNull($rootSeed->commitmentSnapshot->supersession_id);
+        $this->assertSame($this->commitSupersessionFixture($boundary)->id, $boundary->commitmentSnapshot->supersession_id);
         $settlement = app(ContextHorizonProjector::class)->forEntry($boundary);
         $this->assertNotSame($this->root->domain, $settlement->domain);
         foreach ([$this->root, $settlement] as $horizon) {
-            $a = $this->committal($horizon, .5);
-            $b = $this->committal($horizon, .5);
+            $sourceSeed = $horizon->is($this->root) ? $rootSeed : $boundary;
+            $a = $this->committal($horizon, .5, $sourceSeed, edgeType: 'commit');
+            $b = $this->committal($horizon, .5, $sourceSeed, edgeType: 'commit');
+            foreach ([$a, $b] as $committal) {
+                $this->assertSame($this->commitSupersessionFixture($committal)->id, $committal->commitmentSnapshot->supersession_id);
+            }
             $source = $this->expressive($horizon, $a);
             $instruments = app(InstrumentExecutionService::class);
             $receipt = $instruments->complete($instruments->start($source->phase, $source, 'citation', $a->id), $source);
@@ -1161,25 +1168,30 @@ class CausalRecoveryTest extends TestCase
         return $this->node($this->phase($horizon, $parent), $parent);
     }
 
-    private function node(Phase $phase, ?Proposition $parent = null, string $tier = 'expressive'): Proposition
+    private function node(Phase $phase, ?Proposition $parent = null, string $tier = 'expressive', string $edgeType = 'variant'): Proposition
     {
         $node = new Proposition;
         $node->forceFill(['phase_id' => $phase->id, 'register' => $phase->write_register,
             'tier' => $tier, 'statement' => 'Causal recovery fixture'])->save();
         app(LedgerService::class)->record($node);
         if ($parent !== null) {
-            $this->edge($parent, $node);
+            if ($edgeType === 'commit') {
+                $this->commitAncestryFixture($node, $parent);
+            } else {
+                $this->edge($parent, $node, $edgeType);
+            }
         }
 
         return $node;
     }
 
-    private function committal(ContextHorizon $horizon, float $tension, ?Proposition $parent = null, bool $boundary = false, bool $projectBoundary = true): Proposition
+    private function committal(ContextHorizon $horizon, float $tension, ?Proposition $parent = null, bool $boundary = false, bool $projectBoundary = true, string $edgeType = 'variant'): Proposition
     {
-        $node = $this->node($this->phase($horizon, $parent), $parent, 'committal');
+        $node = $this->node($this->phase($horizon, $parent), $parent, 'committal', $edgeType);
+        $commit = $edgeType === 'commit' ? $this->commitSupersessionFixture($node) : null;
         $snapshot = new CommitmentSnapshot;
         $snapshot->forceFill(['proposition_id' => $node->id, 'substrate_id' => $this->substrate->id,
-            'ledger_entry_id' => $node->ledgerEntry->id, 'correspondence' => $tension, 'chirality' => $tension, 'closure' => $tension,
+            'ledger_entry_id' => $node->ledgerEntry->id, 'supersession_id' => $commit?->id, 'correspondence' => $tension, 'chirality' => $tension, 'closure' => $tension,
             'prominence' => (1 + $tension) / 2, 'turbulence' => (1 - $tension) / 2, 'tension' => $tension,
             'direction_before' => $horizon->domain, 'direction_after' => $boundary ? $horizon->domain->opposite() : $horizon->domain,
             'calculator_version' => 'controlled-routing-fixture', 'evaluated_at' => now()])->save();

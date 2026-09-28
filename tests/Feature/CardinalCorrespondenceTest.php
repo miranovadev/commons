@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\PhaseKind;
+use App\Models\CommitmentSnapshot;
 use App\Models\Cycle;
 use App\Models\Participant;
 use App\Models\Phase;
@@ -11,6 +12,7 @@ use App\Models\Substrate;
 use App\Models\Supersession;
 use App\Services\ContextHorizonProjector;
 use App\Services\LedgerService;
+use App\Services\Observables\ContextLineageComparisonService;
 use App\Services\Observables\CorrespondenceCalculator;
 use App\Services\Observables\CardinalPositionCorrespondenceCalculator;
 use App\Services\Observables\DomainCardinalLayoutService;
@@ -74,6 +76,80 @@ class CardinalCorrespondenceTest extends TestCase
             1e-7,
         );
         $this->assertSame(-1.0, CardinalPositionCorrespondenceCalculator::rowScore([], [1, 2]));
+    }
+
+    public function test_first_developed_domain_immediately_compares_against_origin_reference(): void
+    {
+        [$root, , $origin] = $this->fixture();
+        $origin = $origin->fresh('ledgerEntry');
+
+        $snapshot = new CommitmentSnapshot;
+        $snapshot->forceFill([
+            'proposition_id' => $origin->id,
+            'substrate_id' => $root->substrate_id,
+            'ledger_entry_id' => $origin->ledgerEntry->id,
+            'correspondence' => 1,
+            'chirality' => -1,
+            'closure' => -1,
+            'prominence' => 0,
+            'turbulence' => 1,
+            'tension' => -1,
+            'direction_before' => $root->domain,
+            'direction_after' => $root->domain->opposite(),
+            'calculator_version' => 'origin-bootstrap-v1',
+            'evaluated_at' => now(),
+            'depth' => -1,
+            'cadence' => -1,
+            'depth_direction' => 'negative',
+            'cadence_direction' => 'negative',
+            'tension_before' => 0,
+        ])->save();
+
+        $settlement = app(ContextHorizonProjector::class)->apply($snapshot);
+
+        $participant = Participant::where('substrate_id', $root->substrate_id)->firstOrFail();
+        $cycle = new Cycle;
+        $cycle->forceFill([
+            'participant_id' => $participant->id,
+            'sequence' => 2,
+            'context_horizon_id' => $settlement->id,
+            'entry_committal_id' => $origin->id,
+        ])->save();
+        $phase = new Phase;
+        $phase->forceFill([
+            'cycle_id' => $cycle->id,
+            'kind' => PhaseKind::Distinguish,
+            'gate_proposition_id' => $origin->id,
+            'write_register' => $settlement->domain->registerFor(PhaseKind::Distinguish),
+            'started_at' => now(),
+        ])->save();
+
+        $signal = $this->node($phase, 'First Settlement proposition', $phase->write_register);
+        $this->edge($phase, $origin, $signal);
+
+        $comparison = app(ContextLineageComparisonService::class)->for($signal);
+        $this->assertSame($settlement->id, $comparison->current->horizon->id);
+        $this->assertSame($root->id, $comparison->previous?->horizon->id);
+
+        $morphologies = app(\App\Services\Observables\CardinalMorphologyService::class);
+        $current = $morphologies->current($signal, $settlement);
+        $reference = $morphologies->reference($settlement, $current->primaryDepth);
+        $this->assertSame(1, $current->primaryDepth);
+        $this->assertCount(2, $current->propositions);
+        $this->assertCount(1, $reference->propositions);
+        // D0 matches; current-only D1 scores -1, giving Position = 0.
+        $position = app(CardinalPositionCorrespondenceCalculator::class)->calculate($current, $reference);
+        $this->assertSame(0.0, $position);
+        // Unit-weight WL features: one shared initial label, no shared refined
+        // labels, with feature masses 6 and 3. Keep diagnostics test-local.
+        $calculator = app(CorrespondenceCalculator::class);
+        $topology = (new \ReflectionMethod($calculator, 'topology'))->invoke($calculator, $current, $reference);
+        $this->assertSame(round(2 / sqrt(18) - 1, 7), $topology);
+        $correspondence = $calculator->calculate($comparison);
+        $this->assertSame(round(($topology + $position) / 2, 7), $correspondence);
+
+        $this->assertLessThan(1.0, $correspondence);
+        $this->assertGreaterThan(-1.0, $correspondence);
     }
 
     public function test_domain_depth_continues_across_cycle_phase_repetition(): void
