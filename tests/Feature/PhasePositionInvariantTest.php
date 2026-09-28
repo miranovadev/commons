@@ -247,8 +247,11 @@ class PhasePositionInvariantTest extends TestCase
         $author = $this->participant($substrate, 'author');
         $reader = $this->participant($substrate, 'reader');
         $horizon = $this->horizonForRegisterFixture($author, $domain->registerFor(PhaseKind::Distinguish));
-        $originPhase = $this->phase($author, PhaseKind::Distinguish, horizonId: $horizon->id);
+        $originPhase = $this->phase($author, PhaseKind::Order, horizonId: $horizon->id);
         $origin = $this->node($originPhase, 'committal');
+        if ($horizon->opened_by_proposition_id !== null) {
+            $this->commitAncestryFixture($origin, Proposition::findOrFail($horizon->opened_by_proposition_id));
+        }
         $nodes = [0 => $origin];
         foreach (range(1, 6) as $kind) {
             $phase = $this->phase($author, PhaseKind::from($kind), $nodes[$kind - 1]);

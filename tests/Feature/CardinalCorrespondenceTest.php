@@ -131,7 +131,22 @@ class CardinalCorrespondenceTest extends TestCase
         $this->assertSame($settlement->id, $comparison->current->horizon->id);
         $this->assertSame($root->id, $comparison->previous?->horizon->id);
 
-        $correspondence = app(CorrespondenceCalculator::class)->calculate($comparison);
+        $morphologies = app(\App\Services\Observables\CardinalMorphologyService::class);
+        $current = $morphologies->current($signal, $settlement);
+        $reference = $morphologies->reference($settlement, $current->primaryDepth);
+        $this->assertSame(1, $current->primaryDepth);
+        $this->assertCount(2, $current->propositions);
+        $this->assertCount(1, $reference->propositions);
+        // D0 matches; current-only D1 scores -1, giving Position = 0.
+        $position = app(CardinalPositionCorrespondenceCalculator::class)->calculate($current, $reference);
+        $this->assertSame(0.0, $position);
+        // Unit-weight WL features: one shared initial label, no shared refined
+        // labels, with feature masses 6 and 3. Keep diagnostics test-local.
+        $calculator = app(CorrespondenceCalculator::class);
+        $topology = (new \ReflectionMethod($calculator, 'topology'))->invoke($calculator, $current, $reference);
+        $this->assertSame(round(2 / sqrt(18) - 1, 7), $topology);
+        $correspondence = $calculator->calculate($comparison);
+        $this->assertSame(round(($topology + $position) / 2, 7), $correspondence);
 
         $this->assertLessThan(1.0, $correspondence);
         $this->assertGreaterThan(-1.0, $correspondence);

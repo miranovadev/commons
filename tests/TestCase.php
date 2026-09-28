@@ -98,6 +98,18 @@ abstract class TestCase extends BaseTestCase
         $seed->unsetRelation('commitmentSnapshot');
     }
 
+    /** Record the real selected source when a fixture authors an ordinary Commit. */
+    protected function commitAncestryFixture(Proposition $seed, Proposition $source): Supersession
+    {
+        $seed->phase->forceFill(['gate_proposition_id' => $source->id])->save();
+        $edge = new Supersession;
+        $edge->forceFill(['phase_id' => $seed->phase_id, 'source_proposition_id' => $source->id,
+            'target_proposition_id' => $seed->id, 'type' => 'commit'])->save();
+        app(LedgerService::class)->record($edge);
+
+        return $edge;
+    }
+
     /** Fixture authors supply the governor before creating immutable history. */
     protected function governedPhaseFixture(Phase $base, Proposition $governor, ?Proposition $gate = null): Phase
     {

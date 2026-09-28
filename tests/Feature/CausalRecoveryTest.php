@@ -59,12 +59,16 @@ class CausalRecoveryTest extends TestCase
 
     public function test_ordinary_receipt_regions_are_local_in_both_domains(): void
     {
-        $boundary = $this->committal($this->root, .9, boundary: true);
+        $rootSeed = $this->committal($this->root, .5);
+        $boundary = $this->committal($this->root, .9, $rootSeed, boundary: true);
+        Supersession::where('target_proposition_id', $boundary->id)->update(['type' => 'commit']);
         $settlement = app(ContextHorizonProjector::class)->forEntry($boundary);
         $this->assertNotSame($this->root->domain, $settlement->domain);
         foreach ([$this->root, $settlement] as $horizon) {
-            $a = $this->committal($horizon, .5);
-            $b = $this->committal($horizon, .5);
+            $sourceSeed = $horizon->is($this->root) ? $rootSeed : $boundary;
+            $a = $this->committal($horizon, .5, $sourceSeed);
+            $b = $this->committal($horizon, .5, $sourceSeed);
+            Supersession::whereIn('target_proposition_id', [$a->id, $b->id])->update(['type' => 'commit']);
             $source = $this->expressive($horizon, $a);
             $instruments = app(InstrumentExecutionService::class);
             $receipt = $instruments->complete($instruments->start($source->phase, $source, 'citation', $a->id), $source);

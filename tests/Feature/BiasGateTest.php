@@ -54,7 +54,10 @@ class BiasGateTest extends TestCase
         $this->substrate = new Substrate;
         $this->substrate->forceFill(['slug' => 'bias', 'title' => 'Bias', 'visibility' => 'public', 'configuration' => []])->save();
         $this->history = $this->newPhase($this->participant('author'), PhaseKind::Distinguish, $register === 'stance' ? 'signal' : 'activity', true);
-        $this->parent = $this->node('Local provenance', $write, 'committal', position: PhaseKind::Mediate);
+        $this->parent = $this->node('Local provenance', $write, 'committal', position: PhaseKind::Order);
+        if ($this->parent->phase->cycle->contextHorizon->opened_by_proposition_id !== null) {
+            $this->commitAncestryFixture($this->parent, Proposition::findOrFail($this->parent->phase->cycle->contextHorizon->opened_by_proposition_id));
+        }
         $this->freezeRegionFixture($this->parent);
         $this->history = $this->governedPhaseFixture($this->history, $this->parent);
         $this->attest($this->parent, 'support');
@@ -281,8 +284,12 @@ class BiasGateTest extends TestCase
         $beyond = $this->node('Beyond boundary', 'stance', position: PhaseKind::Mediate, governor: $boundary);
         $this->edge($boundary, $beyond);
         $this->attest($beyond, 'refute');
-        $unrelatedSeed = $this->node('Unrelated region', 'concord', 'committal', position: PhaseKind::Bias);
-        $this->attest($this->node('Unrelated Stance', 'stance', position: PhaseKind::Mediate, governor: $unrelatedSeed), 'refute');
+        $unrelatedSeed = $this->node('Unrelated region', 'concord', 'committal', position: PhaseKind::Order);
+        // A sibling Region shares genuine ancestry without belonging to this Region.
+        $this->commitAncestryFixture($unrelatedSeed, $this->parent);
+        $unrelated = $this->node('Unrelated Stance', 'stance', position: PhaseKind::Mediate, governor: $unrelatedSeed);
+        $this->edge($unrelatedSeed, $unrelated);
+        $this->attest($unrelated, 'refute');
         config()->set('schemas.options.limit', 1);
         $this->viewer->forceFill(['max_read_count' => 1])->save();
         $other = $this->sibling('Another supported Stance');

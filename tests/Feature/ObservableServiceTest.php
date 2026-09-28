@@ -70,7 +70,7 @@ class ObservableServiceTest extends TestCase
         $this->assertSame(-1.0, $measurement->closure);
     }
 
-    public function test_first_developed_domain_has_positive_bootstrap_correspondence_without_predecessor_morphology(): void
+    public function test_first_developed_domain_compares_against_origin_with_inverse_square_attenuation(): void
     {
         $origin = $this->proposition('Origin.', 'canon', 'committal');
         $this->closeHorizon($origin, prominence: 0, turbulence: 1);
@@ -80,10 +80,10 @@ class ObservableServiceTest extends TestCase
         $this->supersede($origin, $first, 'variant');
 
         $raw = app(LocalMeasurementService::class)->calculate($first);
-        $this->assertSame(1.0, $raw->correspondence);
+        $this->assertSame(-0.2642978, $raw->correspondence);
 
         $measurement = app(PropositionMeasurementService::class)->recalculate($first);
-        $this->assertSame(1.0, $measurement->correspondence);
+        $this->assertSame(round(($raw->correspondence + 1 / 4) / (1 + 1 / 4), 7), $measurement->correspondence);
     }
 
     public function test_matching_lineages_in_complementary_horizons_align(): void
@@ -92,11 +92,8 @@ class ObservableServiceTest extends TestCase
         $this->freezeTime();
         $this->assertNull($this->phase->cycle->entry_committal_id);
 
-        // Bootstrap at the same depth as the two-node complementary lineages,
-        // so the intermediate boundary is admissible under Closure hysteresis.
-        $seed = $this->proposition('Origin activity.', 'activity');
+        // Origin is the unique parentless provenance, not an expressive child.
         $origin = $this->proposition('Origin.', 'canon', 'committal');
-        $this->supersede($seed, $origin, 'revise');
         $this->closeHorizon($origin, prominence: 0, turbulence: 1);
 
         $this->phase = $this->phase(2, $origin);
@@ -112,8 +109,9 @@ class ObservableServiceTest extends TestCase
             'concord',
             'committal',
         );
-        $this->supersede($first, $boundary, 'revise');
-        $this->attest($first, 'refute');
+        $this->supersede($first, $boundary, 'commit');
+        // A genuine Commit retains its selected source's evidence.
+        $this->attest($first, 'support');
         $this->attest($boundary, 'support');
         $this->closeHorizon($boundary, prominence: 1, turbulence: 0);
 

@@ -268,8 +268,20 @@ class CommitRegionTest extends TestCase
 
     private function node(string $register, ?Proposition $parent, string $tier = 'expressive', string $edge = 'variant', PhaseKind $position = PhaseKind::Distinguish): Proposition
     {
-        $phase = $this->phaseForRegisterFixture($this->history, $register, $position);
-        if ($parent !== null) {
+        $hasExplicitParent = $parent !== null;
+        $phase = $this->phaseForRegisterFixture($this->history, $register,
+            $tier === 'committal' && $parent === null ? PhaseKind::Order : $position);
+        if ($tier === 'committal' && $parent === null) {
+            $horizon = $phase->cycle->contextHorizon;
+            $parent = $horizon->opened_by_proposition_id === null
+                ? Proposition::whereHas('contextHorizonMembership', fn ($q) => $q->where('context_horizon_id', $horizon->id))
+                    ->where('tier', 'committal')->oldest('id')->first()
+                : Proposition::findOrFail($horizon->opened_by_proposition_id);
+            $edge = 'commit';
+            $phase->forceFill(['gate_proposition_id' => $parent?->id])->save();
+        }
+
+        if ($hasExplicitParent) {
             $governor = $parent->tier === 'committal' ? $parent : $parent->phase->cycle->entryCommittal;
             $phase = $this->governedPhaseFixture($phase, $governor, $parent);
         }

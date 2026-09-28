@@ -307,6 +307,7 @@ class HomologousBiasTest extends TestCase
         $wrongDepth = $this->source($this->commit($this->b, 'settlement'));
         $wrongDomain = $this->source($this->commit($this->origin, 'emergence'));
         $wrongPhase = $this->position($this->b, PhaseKind::Persist);
+        $this->edge($this->b, $wrongPhase, 'variant');
         $this->receiptFixture($wrongPhase);
         $this->vote($wrongPhase);
         foreach ([$wrongDepth, $wrongDomain, $wrongPhase] as $node) {

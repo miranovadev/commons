@@ -95,9 +95,9 @@ class HomeostaticPopulationTest extends TestCase
     public function test_each_axis_aggregates_its_own_values_and_never_uses_the_acting_members_sign_as_authority(): void
     {
         $origin = $this->commit(null, 'emergence');
-        $current = $this->position($this->commit($origin, 'settlement'));
-        $b = $this->position($this->commit($origin, 'settlement'));
-        $c = $this->position($this->commit($origin, 'settlement'));
+        $current = $this->causalPosition($this->commit($origin, 'settlement'));
+        $b = $this->causalPosition($this->commit($origin, 'settlement'));
+        $c = $this->causalPosition($this->commit($origin, 'settlement'));
         $projector = app(PropositionMeasurementService::class);
         $service = app(HomeostaticDirectionService::class);
         foreach ([1.0, -1.0] as $sign) {
@@ -195,10 +195,10 @@ class HomeostaticPopulationTest extends TestCase
     public function test_population_and_missing_measurement_hydration_are_bounded_across_foreign_horizons(): void
     {
         $origin = $this->commit(null, 'emergence');
-        $current = $this->position($this->commit($origin, 'settlement'));
+        $current = $this->causalPosition($this->commit($origin, 'settlement'));
         $counts = [];
         foreach (range(1, 8) as $index) {
-            $this->position($this->commit($origin, 'settlement'));
+            $this->causalPosition($this->commit($origin, 'settlement'));
             if (! in_array($index, [1, 8], true)) {
                 continue;
             }
@@ -223,8 +223,8 @@ class HomeostaticPopulationTest extends TestCase
     public function test_reusing_complete_hydration_matches_private_measurement_without_expanding_an_incomplete_context(): void
     {
         $origin = $this->commit(null, 'emergence');
-        $a = $this->position($this->commit($origin, 'settlement'));
-        $b = $this->position($this->commit($origin, 'settlement'));
+        $a = $this->causalPosition($this->commit($origin, 'settlement'));
+        $b = $this->causalPosition($this->commit($origin, 'settlement'));
         $population = app(HomeostaticPopulationService::class)->forPosition($a);
         $service = app(HomeostaticDirectionService::class);
         $expected = $service->forPosition($a, 'correspondence');
@@ -235,5 +235,16 @@ class HomeostaticPopulationTest extends TestCase
         $this->assertSame($before, $incomplete->propositions->keys()->all());
         $complete = new \App\Services\Participation\ParticipationContext($a->phase, $population->pluck('id'));
         $this->assertEquals($expected, $service->forPopulation($a, $population, 'correspondence', $complete));
+    }
+
+    private function causalPosition(Proposition $entry): Proposition
+    {
+        $node = $this->position($entry);
+        $edge = new \App\Models\Supersession;
+        $edge->forceFill(['phase_id' => $node->phase_id, 'source_proposition_id' => $entry->id,
+            'target_proposition_id' => $node->id, 'type' => 'variant'])->save();
+        app(\App\Services\LedgerService::class)->record($edge);
+
+        return $node;
     }
 }
