@@ -119,7 +119,6 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
                 'lean' => $count === 0 ? 0.0 : ($positive - $negative) / $count];
         };
         $total = $mass = 0.0;
-        $trace = [];
         foreach ($measurements->positions($seed) as [$position, $distance]) {
             $comparison = $lineages->for($position);
             $current = $lean($comparison->current);
@@ -129,10 +128,8 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
             $weight = 1 / (1 + $distance) ** 2;
             $total += $expected * $weight;
             $mass += $weight;
-            $trace[] = compact('distance', 'current', 'previous', 'expected', 'weight');
         }
         $this->assertSame(round($total / $mass, 7), $seed->commitmentSnapshot->chirality);
-        fwrite(STDERR, 'RECEIPT_NEUTRAL_CHIRALITY '.json_encode($trace, JSON_THROW_ON_ERROR).PHP_EOL);
     }
 
 }
