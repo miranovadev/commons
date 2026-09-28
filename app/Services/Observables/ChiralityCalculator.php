@@ -52,7 +52,7 @@ final readonly class ChiralityCalculator
         return $propositions->pluck('id')->diff($supersededIds)->values();
     }
 
-    /** Receipt-weighted effective Attestation lean, before cross-domain comparison. */
+    /** Receipt-neutral effective Attestation lean, before cross-domain comparison. */
     public function leanFor(Collection $activeIds, Substrate $substrate, ?ParticipationContext $context = null): float
     {
         return $this->evidence->valueFor($context !== null ? $context->nodes($activeIds) : Proposition::query()->whereIn('id', $activeIds)->get(), $substrate, $context);

@@ -39,8 +39,8 @@ class ReclassificationEvidenceTest extends TestCase
         $this->assertSame($receipts, Receipt::count());
         $this->assertSame(1, $counts->count($source));
         $this->assertSame(1, $counts->count($target));
-        $this->assertSame(0, $counts->measurementCount($source));
-        $this->assertSame(1, $counts->measurementCount($target));
+        $this->assertSame(1, $counts->count($source));
+        $this->assertSame(1, $counts->count($target));
         $context = new ParticipationContext($f->phase->fresh());
         $this->assertSame([$receipt->id], $state->receipts($target, $context)->pluck('id')->all());
         $this->assertSame(1, $counts->count($target, $context));

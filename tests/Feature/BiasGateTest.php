@@ -102,7 +102,7 @@ class BiasGateTest extends TestCase
         $this->assertSame([], $this->optionIds());
     }
 
-    public function test_unrelated_receipt_weighted_lean_does_not_override_each_heads_lineage(): void
+    public function test_receipt_loads_leave_population_lean_and_each_heads_lineage_unchanged(): void
     {
         $this->fixture();
         $support = $this->sibling('Supported B');
@@ -120,7 +120,7 @@ class BiasGateTest extends TestCase
         foreach (range(1, 4) as $i) {
             $this->loadedReceiptFixture($refute, $negative);
         }
-        $this->assertEqualsWithDelta(.2, $service->leanFor($this->phase), 0.00001); // One attester's loads are capped by the existing participant weight.
+        $this->assertEqualsWithDelta(1 / 3, $service->leanFor($this->phase), 0.00001); // Receipt uptake does not weight Attestations.
         $this->assertEqualsCanonicalizing([$this->gate->id, $support->id], $service->forPhase($this->phase)->pluck('id')->all()); // Unrelated loads do not set this lineage.
         $replacement = new Attestation;
         $later = $this->newPhase($negative->phase->cycle->participant, PhaseKind::Persist, 'stance', true);

@@ -19,9 +19,8 @@ bound is 0 or +1 in Settlement (negative or positive Depth direction), and -1 or
 0 in Emergence. Zero is an optimistic endpoint even where hysteresis makes it a
 supremum rather than an attainable value.
 
-Reinforcement mass is the existing qualifying participant count inherited from
-the seed by a prospective Commit, multiplied by the substrate's receipt increment.
-The shared Closure calculation is `(D + C + R) / (2 + R)`. The canonical field
+The prospective Closure bound is the pure mean `(D + C) / 2`. Receipt state
+and reinforcement count do not enter this calculation or its diagnostic contract. The canonical field
 projection supplies Tension, algebraically `(Correspondence + Chirality + Closure)
 / 3`, using its existing seven-decimal rounding. Margin is Tension in Settlement
 and negative Tension in Emergence; margin <= 0 is closed. Zero retains Domain.

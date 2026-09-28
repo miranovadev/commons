@@ -9,7 +9,7 @@ use DomainException;
 use GuzzleHttp\Psr7\Uri;
 use GuzzleHttp\Psr7\UriResolver;
 
-/** Invocation identity is independent of content versions and Reinforcement weight. */
+/** Invocation identity is independent of content versions and Reinforcement count. */
 final class InstrumentInvocation
 {
     public function normalize(array $input): array

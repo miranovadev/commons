@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 
 final readonly class LineageMeasurementService
 {
-    public const string VERSION = 'domain-cardinal-correspondence-v14';
+    public const string VERSION = 'receipt-neutral-observables-v15';
 
     public function __construct(
         private LocalMeasurementService $local,

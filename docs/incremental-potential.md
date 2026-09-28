@@ -37,7 +37,7 @@ Individual region versions record when that region changed. They need not equal 
 
 ## Mutation boundary
 
-Ledger contributions, Phase touches (including the old Gate when a Gate changes), receipt-context loads/clears, snapshot creation, Horizon creation/rebuild, numeric measurement projection, configuration changes, and exhaustion register impacts. Ordinary changes consult the reverse dependency index and the owning/opened Horizons. Receipt-weight configuration changes legitimately affect the whole substrate.
+Ledger contributions, Phase touches (including the old Gate when a Gate changes), receipt-context loads/clears, snapshot creation, Horizon creation/rebuild, numeric measurement projection, configuration changes, and exhaustion register impacts. Ordinary changes consult the reverse dependency index and the owning/opened Horizons. Configuration changes conservatively invalidate the whole substrate; Receipt ratio configuration no longer changes any measurement.
 
 The dependency set conservatively includes the region's complete causal calculation working set. This includes previous-Domain comparison evidence, Commit-only inherited evidence, reconciliation inputs, receipt links, and phase-touch observations. It is deliberately broader than the newly written proposition. A change to older shared evidence can legitimately require several regions to be refreshed.
 

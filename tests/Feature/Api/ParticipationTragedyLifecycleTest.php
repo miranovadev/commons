@@ -53,8 +53,8 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
         $this->assertSame('emergence', $diagnostic['domain']);
         foreach (['correspondence' => -0.5276331, 'chirality' => 0.9543377,
             'prospective_depth' => 1, 'admissible_cadence_bound' => 0,
-            'reinforcement_mass' => 1 / 3, 'tension_bound' => 0.332711,
-            'crossover_margin' => -0.332711] as $name => $value) {
+            'tension_bound' => 0.3089015,
+            'crossover_margin' => -0.3089015] as $name => $value) {
             $this->assertEqualsWithDelta($value, $diagnostic[$name], 1e-7, $name);
         }
         $this->assertTrue($diagnostic['closed']);

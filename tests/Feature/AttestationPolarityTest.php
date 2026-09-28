@@ -180,22 +180,31 @@ class AttestationPolarityTest extends TestCase
         $this->assertSame(Direction::Positive, $polarity->forSeed($this->origin)['support']);
     }
 
-    public function test_receipt_weighted_history_retains_direction_when_equal_weights_restore_zero(): void
+    #[DataProvider('regions')]
+    public function test_receipt_load_and_clear_cannot_change_neutral_lean_or_direction(Direction $governing, string $register, string $write): void
     {
         $this->bootstrap();
-        $seed = $this->regionSeed(Direction::Negative, 'concord');
-        $position = $this->node('stance', $seed);
-        $support = $this->attest($position, 'support');
+        $seed = $this->regionSeed($governing, $write);
+        $position = $this->node($register, $seed);
+        $this->attest($position, 'support');
         $refute = $this->attest($position, 'refute');
-        foreach ([$refute, $support] as $attestation) {
-            $this->loadedReceiptFixture($position, $attestation);
-        }
         $evidence = app(AttestationEvidenceService::class);
-        $this->assertSame(0.0, $evidence->valueFor(collect([$position]), $this->participant->substrate));
-        // Refute reinforced first establishes positive in a negative frame; the
-        // later Support Receipt balances its weight without erasing that history.
-        $this->assertSame(Direction::Positive, $evidence->directionFor($position));
-        $this->assertSame(Direction::Positive, $evidence->populationDirection($seed, 'stance'));
+        $count = app(\App\Services\Observables\ReinforcementService::class);
+        $assertNeutral = function () use ($evidence, $position, $seed, $register, $governing): void {
+            $this->assertSame(0.0, $evidence->valueFor(collect([$position]), $this->participant->substrate));
+            $this->assertSame($governing, $evidence->directionFor($position));
+            $this->assertSame($governing, $evidence->populationDirection($seed, $register));
+        };
+        $assertNeutral();
+        $this->assertSame(0, $count->count($position));
+        // Reinforcing only Refute used to reverse the retained Support direction.
+        $receipt = $this->loadedReceiptFixture($position, $refute);
+        $this->assertSame(1, $count->count($position));
+        $assertNeutral();
+        $phase = $receipt->phase;
+        app(\App\Services\ReceiptContextService::class)->clear($phase->cycle->participant, $phase, $receipt->id);
+        $this->assertSame(0, $count->count($position));
+        $assertNeutral();
     }
 
     public function test_upgrade_reconstructs_polarity_and_keeps_immutable_measurement_snapshots(): void
