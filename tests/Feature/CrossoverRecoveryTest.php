@@ -219,7 +219,9 @@ class CrossoverRecoveryTest extends TestCase
         $after = app(CrossoverMarginService::class)->inspect($phase->cycle);
         $this->assertSame(1, app(\App\Services\Observables\ReinforcementService::class)->count($seed));
         $this->assertSame($before, $after);
+        $this->assertSame($measurements, $state());
         $this->loadedReceiptFixture($seed);
+        $measurements = $state();
         $this->assertSame(2, app(\App\Services\Observables\ReinforcementService::class)->count($seed));
         $this->assertSame($before, app(CrossoverMarginService::class)->inspect($phase->cycle));
         $this->assertSame($measurements, $state());
