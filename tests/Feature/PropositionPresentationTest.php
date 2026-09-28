@@ -59,7 +59,7 @@ class PropositionPresentationTest extends TestCase
         $plan = app(InputPlanService::class)->forParticipant($this->participant);
         $this->assertSame(['support_direction' => $support->value, 'positive' => 1, 'negative' => 0, 'retained_direction' => 'positive'], $plan['gate']['attestation_summary']);
         $this->assertSame(1, $plan['gate']['attestation_counts'][$label]);
-        $this->assertEquals(-1, $plan['gate']['observables']['chirality']);
+        $this->assertEquals(-0.5, $plan['gate']['observables']['chirality']);
     }
 
     public function test_display_counts_keep_inherited_evidence_in_its_original_frame_and_refresh_after_replacement(): void

@@ -39,9 +39,9 @@ class EnterCycleRequest extends FormRequest
         return [
             'origin' => ['required', 'array:statement,attestation,instrument'],
             'origin.statement' => ['required', 'string', 'max:20000'],
-            'origin.attestation' => ['required', 'array:direction,rationale'],
+            'origin.attestation' => ['sometimes', 'array:direction,rationale'],
             'origin.attestation.direction' => [
-                'required',
+                'required_with:origin.attestation',
                 'string',
                 Rule::in(['support', 'refute']),
             ],

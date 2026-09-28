@@ -415,7 +415,7 @@ final readonly class ParticipationService
             'mode' => 'origin',
             'available' => true,
             'message' => 'Establish the first Committal Proposition to enter the substrate.',
-            'requirements' => ['statement', 'attestation', 'receipt'],
+            'requirements' => ['statement', 'receipt'],
         ];
     }
 

@@ -28,7 +28,7 @@ an Expressive parent's direction, or the broader Context Horizon changes.
 | Negative | Negative | Positive | Negative |
 
 Origin is the unique bootstrap exception. It starts with positive direction;
-the creating participant chooses the **label** for that direction, not its sign.
+without an initial Attestation its support frame defaults to Positive. An optional explicit initial Attestation may choose the **label** for that direction, not its sign.
 
 | Origin's initial label | Initial direction | Region Support | Region Refute |
 | --- | --- | --- | --- |
@@ -60,8 +60,7 @@ never independently removes eligibility when a direction exists.
 
 `AttestationEvidenceService` reconstructs effective directions from ordered
 contribution ledger prefixes. Attestation supersession removes the old evidence
-only from the replacement's sequence onward; reinforcing Receipts add the same
-configured weight from their ledger sequence onward. Original IDs deduplicate
+only from the replacement's sequence onward. Every effective Attestation has equal weight; Receipts never affect values or retained directions. Original IDs deduplicate
 Commit-inherited evidence. No persistent Proposition Support/Refute or Lean state
 is introduced, and opening a participant plan is not required to preserve history.
 
@@ -124,3 +123,5 @@ Older Correspondence signs already overwritten by zero cannot be recovered;
 those positions use lineage/default fallback. Immutable measurement snapshots
 are not rewritten. No fourth measurement or per-Proposition Lean state is added.
 
+
+Chirality v2 names the product of the two effective Domain leans **Orientation**. Its second component, Attestation Cadence, counts all historical acts per current canonical Cycle-entry population of those same causal lineages. Chirality is their arithmetic mean; component directions do not authorize actions. See [observables](observables.md#local-chirality).

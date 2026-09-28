@@ -22,12 +22,15 @@ class LocalMeasurementService
         $closure = $includeClosure ? $this->closure->localComponents($proposition, $comparison)
             : new \App\Domain\Observables\ClosureValues(0, 0);
 
+        $chirality = $this->chirality->components($comparison);
+
         return new LocalMeasurements(
             $this->correspondence->calculate($comparison),
-            $this->chirality->calculate($comparison),
+            $chirality->average(),
             $closure->depth,
             $closure->cadence,
             $closure->average(),
+            $chirality,
         );
     }
 }

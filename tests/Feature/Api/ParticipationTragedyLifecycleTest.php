@@ -50,13 +50,14 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
         $seed = Proposition::findOrFail($boundary['proposition_id']);
         $diagnostic = app(CrossoverMarginService::class)->inspect($cycle);
         $this->assertReceiptNeutralChiralityChain($seed);
+        $this->assertSame($boundary['tension_after'], $seed->commitmentSnapshot->tension);
         $this->assertSame($seed->id, $diagnostic['governing_committal_id']);
         $this->assertSame('emergence', $diagnostic['domain']);
-        foreach (['correspondence' => -0.5276331, 'chirality' => 0.9476349,
+        foreach (['correspondence' => -0.5276331, 'chirality' => 0.7666717,
             'prospective_depth' => 1, 'admissible_cadence_bound' => 0,
-            'tension_bound' => 0.3066672,
-            'crossover_margin' => -0.3066672] as $name => $value) {
-            $this->assertEqualsWithDelta($value, $diagnostic[$name], 1e-7, $name);
+            'tension_bound' => 0.2463462,
+            'crossover_margin' => -0.2463462] as $name => $value) {
+            $this->assertEqualsWithDelta($value, $diagnostic[$name], 1e-7, $name.' '.json_encode($diagnostic));
         }
         $this->assertTrue($diagnostic['closed']);
         $path = app(BackwardRecoveryLineage::class)->distances($participant->position, $participant,
@@ -123,13 +124,24 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
             $comparison = $lineages->for($position);
             $current = $lean($comparison->current);
             $previous = $comparison->previous === null ? null : $lean($comparison->previous);
-            $expected = $comparison->isBootstrap() ? -1.0 : round($current['lean'] * $previous['lean'], 7);
+            $orientation = $previous === null ? 0.0 : round($current['lean'] * $previous['lean'], 7);
+            $components = $chirality->components($comparison);
+            $this->assertSame($orientation, $components->orientation);
+            if ($components->currentCycles === 0 || $components->previousCycles === 0) {
+                $cadence = $components->currentCycles === $components->previousCycles ? 0.0 : -1.0;
+            } else {
+                $left = $components->currentActs / $components->currentCycles;
+                $right = $components->previousActs / $components->previousCycles;
+                $cadence = max($left, $right) == 0 ? 1.0 : round(1 - 2 * abs($left - $right) / max($left, $right), 7);
+            }
+            $this->assertSame($cadence, $components->cadence);
+            $expected = round(($orientation + $cadence) / 2, 7);
             $this->assertSame($expected, $local->calculate($position, $comparison, false)->chirality);
             $weight = 1 / (1 + $distance) ** 2;
             $total += $expected * $weight;
             $mass += $weight;
         }
-        $this->assertSame(round($total / $mass, 7), $seed->commitmentSnapshot->chirality);
+        $this->assertSame(round($total / $mass, 7), $measurements->calculate($seed)->chirality);
     }
 
 }

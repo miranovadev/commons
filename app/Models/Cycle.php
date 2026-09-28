@@ -46,12 +46,12 @@ class Cycle extends Model
         });
     }
 
-    /** Completion participates in the existing root lock/version protocol, including Rest. */
+    /** Entry changes live Chirality; completion retains existing Closure invalidation. */
     public function save(array $options = [])
     {
         $changesParticipation = $this->entry_committal_id !== null
-            && $this->isDirty('completed_at')
-            && (($this->getRawOriginal('completed_at') === null) !== ($this->completed_at === null));
+            && (! $this->exists || ($this->isDirty('completed_at')
+                && (($this->getRawOriginal('completed_at') === null) !== ($this->completed_at === null))));
         if (! $changesParticipation) {
             return parent::save($options);
         }
@@ -64,7 +64,7 @@ class Cycle extends Model
                 // The existing field version remains the publication guard.
                 $horizons = self::where('entry_committal_id', $this->entry_committal_id)
                     ->distinct()->pluck('context_horizon_id')->all();
-                app(\App\Services\FieldMutationService::class)->mark($this->participant->substrate_id, $horizons);
+                app(\App\Services\FieldMutationService::class)->mark($this->participant->substrate_id, $horizons, [$this->entry_committal_id]);
             }
             return $saved;
         });

@@ -66,7 +66,7 @@ class ObservableServiceTest extends TestCase
             ->recalculate($origin);
 
         $this->assertSame(1.0, $measurement->correspondence);
-        $this->assertSame(-1.0, $measurement->chirality);
+        $this->assertSame(-0.5, $measurement->chirality);
         $this->assertSame(-1.0, $measurement->closure);
     }
 

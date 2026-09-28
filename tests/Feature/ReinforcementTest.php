@@ -295,9 +295,13 @@ class ReinforcementTest extends TestCase
             }
             $this->assertSame($count, $this->reinforcementCount());
             $after = $local->calculate($this->node);
-            $this->assertEquals($before, $after); // Includes Correspondence and Chirality.
+            // The fixture creates an additional participating Cycle per reader.
+            // Compare numeric observables, not the deliberately live count diagnostics.
+            $this->assertEquals($before->observables(), $after->observables());
+            $this->assertSame($before->chiralityComponents->orientation, $after->chiralityComponents->orientation);
+            $this->assertSame($before->chiralityComponents->cadence, $after->chiralityComponents->cadence);
             $this->assertSame($before->closure()->resolve(), $after->closure()->resolve());
-            $this->assertEquals($before, $local->calculate($this->node, app(ContextLineageComparisonService::class)->for($this->node, new ParticipationContext($this->later))));
+            $this->assertEquals($after, $local->calculate($this->node, app(ContextLineageComparisonService::class)->for($this->node, new ParticipationContext($this->later))));
             $this->assertSame($historical, $snapshot->fresh()->getAttributes());
         }
     }

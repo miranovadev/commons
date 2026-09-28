@@ -143,13 +143,11 @@ final readonly class CycleEntryService
                 $origin['statement'],
             );
 
-            $this->polarity->establishOrigin($proposition, $origin['attestation']['direction']);
+            $this->polarity->establishOrigin($proposition, $origin['attestation']['direction'] ?? 'support');
             $this->ledger->record($proposition);
-            $this->createAttestation(
-                $order,
-                $proposition,
-                $origin['attestation'],
-            );
+            if (isset($origin['attestation'])) {
+                $this->createAttestation($order, $proposition, $origin['attestation']);
+            }
             $this->createReceipt(
                 $order,
                 $proposition,

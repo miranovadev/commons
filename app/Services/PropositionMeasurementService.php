@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\ObservableDirection;
+use App\Domain\Observables\ChiralityValues;
 use App\Models\CommitmentSnapshot;
 use App\Models\ContextHorizonMembership;
 use App\Models\Proposition;
@@ -32,7 +33,8 @@ final class PropositionMeasurementService
         if ($snapshot !== null) {
             return $this->project($proposition, $snapshot->correspondence, $snapshot->chirality, $snapshot->closure, $calculatedAt);
         }
-        $values = $this->observables->calculate($proposition, $context);
+        $components = $this->observables->components($proposition, $context);
+        $values = $components->observables();
 
         return $this->project(
             $proposition,
@@ -40,6 +42,7 @@ final class PropositionMeasurementService
             $values->chirality,
             $values->closure,
             $calculatedAt,
+            $components->chiralityComponents,
         );
     }
 
@@ -91,9 +94,14 @@ final class PropositionMeasurementService
                 if ($measurable) {
                     $snapshot = $proposition->tier === 'committal'
                         ? ($context !== null ? $context->snapshots->firstWhere('proposition_id', $proposition->id) : CommitmentSnapshot::find($proposition->id)) : null;
-                    $values = $snapshot ?? $this->observables->calculate($proposition, $context);
+                    $components = $snapshot === null ? $this->observables->components($proposition, $context) : null;
+                    $values = $snapshot ?? $components->observables();
+                    $attributes = $snapshot !== null ? $snapshot->only([
+                        'orientation', 'attestation_cadence', 'orientation_direction', 'attestation_cadence_direction',
+                    ]) : ($components->chiralityComponents === null ? [] : $this->componentAttributes($proposition, $components->chiralityComponents, $context));
                     $measurement = new PropositionMeasurement;
                     $measurement->forceFill([
+                        ...$attributes,
                         'proposition_id' => $proposition->id,
                         'correspondence' => $values->correspondence,
                         'chirality' => $values->chirality,
@@ -114,12 +122,13 @@ final class PropositionMeasurementService
         ?float $chirality,
         ?float $closure,
         ?DateTimeInterface $calculatedAt = null,
+        ?ChiralityValues $chiralityComponents = null,
     ): PropositionMeasurement {
         $this->assertMeasurement('correspondence', $correspondence);
         $this->assertMeasurement('chirality', $chirality);
         $this->assertMeasurement('closure', $closure);
 
-        return DB::transaction(function () use ($proposition, $correspondence, $chirality, $closure, $calculatedAt): PropositionMeasurement {
+        return DB::transaction(function () use ($proposition, $correspondence, $chirality, $closure, $calculatedAt, $chiralityComponents): PropositionMeasurement {
             // Maintenance and contribution writes use the same root-before-node order.
             Substrate::query()->lockForUpdate()->findOrFail($proposition->phase->cycle->participant->substrate_id);
             // Lock the Proposition so the numeric projection and retained direction move together.
@@ -135,8 +144,12 @@ final class PropositionMeasurementService
                     'correspondence_direction' => ObservableDirection::after($correspondence)->value,
                 ]);
             }
+            $componentAttributes = $snapshot !== null ? $snapshot->only([
+                'orientation', 'attestation_cadence', 'orientation_direction', 'attestation_cadence_direction',
+            ]) : ($chiralityComponents === null ? [] : $this->componentAttributes($proposition, $chiralityComponents));
             PropositionMeasurement::query()->upsert(
                 [[
+                    ...$componentAttributes,
                     'proposition_id' => $proposition->getKey(),
                     'correspondence' => $correspondence,
                     'chirality' => $chirality,
@@ -146,6 +159,7 @@ final class PropositionMeasurementService
                 ]],
                 ['proposition_id'],
                 [
+                    ...array_keys($componentAttributes),
                     'correspondence',
                     'chirality',
                     'closure',
@@ -161,6 +175,19 @@ final class PropositionMeasurementService
 
             return $measurement;
         });
+    }
+
+    private function componentAttributes(Proposition $proposition, ChiralityValues $values, ?ParticipationContext $context = null): array
+    {
+        $prior = $context === null ? PropositionMeasurement::find($proposition->id) : $context->propositions->get($proposition->id)?->measurement;
+        $entry = $proposition->phase->cycle->entry_committal_id;
+        $previous = $entry === null ? null : ($context === null ? CommitmentSnapshot::find($entry) : $context->snapshots->firstWhere('proposition_id', $entry));
+
+        return ['orientation' => $values->orientation, 'attestation_cadence' => $values->cadence,
+            ...$values->resolveDirections(
+                ObservableDirection::from($prior?->orientation_direction ?? $previous?->orientation_direction ?? 'positive'),
+                ObservableDirection::from($prior?->attestation_cadence_direction ?? $previous?->attestation_cadence_direction ?? 'positive'),
+            )];
     }
 
     /** Correspondence has its own hysteresis; Attestation polarity is unrelated. */
