@@ -285,8 +285,14 @@ class ReinforcementTest extends TestCase
         $before = $local->calculate($this->node);
         $this->assertSame($value, $before->closure()->average());
         $this->assertSame(0, $this->reinforcementCount());
+        $receipt = null;
         foreach (range(1, 3) as $count) {
-            $this->loadedReceipt(phase: $this->phase($this->later->cycle->participant->substrate));
+            $phase = $this->phase($this->later->cycle->participant->substrate);
+            if ($receipt === null) {
+                $receipt = $this->loadedReceipt(phase: $phase);
+            } else {
+                app(ReceiptContextService::class)->read($phase->cycle->participant, $phase, $receipt->id);
+            }
             $this->assertSame($count, $this->reinforcementCount());
             $after = $local->calculate($this->node);
             $this->assertEquals($before, $after); // Includes Correspondence and Chirality.
