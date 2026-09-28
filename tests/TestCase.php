@@ -81,8 +81,54 @@ abstract class TestCase extends BaseTestCase
         return $tragedy;
     }
 
-    /** Explicit frozen non-boundary seed for isolated ownership fixtures. */
+    /** Existing isolated ownership fixtures; complete Commit histories use the strict helper below. */
     protected function freezeRegionFixture(Proposition $seed, float $correspondence = 0): void
+    {
+        $this->freezeRegionSnapshotFixture($seed, $correspondence, null);
+    }
+
+    /** Freeze a complete authored Commit history, without repairing immutable snapshots. */
+    protected function freezeCommittedRegionFixture(Proposition $seed, float $correspondence = 0): void
+    {
+        $commit = $this->commitSupersessionFixture($seed);
+        $existing = $seed->commitmentSnapshot()->first();
+        if ($existing !== null && $existing->supersession_id !== $commit?->id) {
+            throw new \DomainException('Fixture snapshot does not identify its genuine Commit Supersession: '.$seed->id);
+        }
+        $this->freezeRegionSnapshotFixture($seed, $correspondence, $commit?->id);
+    }
+
+    /** The unique parentless Origin is the only nullable Commit source. */
+    protected function commitSupersessionFixture(Proposition $seed): ?Supersession
+    {
+        if ($seed->tier !== 'committal') {
+            throw new \DomainException('A committed fixture snapshot requires a Committal.');
+        }
+        $parents = Supersession::where('target_proposition_id', $seed->id)->get();
+        $commits = $parents->where('type', 'commit');
+        $horizon = $seed->phase->cycle->contextHorizon;
+        $originId = \App\Models\SubstrateLedgerEntry::where('substrate_id', $horizon->substrate_id)
+            ->whereHasMorph('ledgerable', [Proposition::class], fn ($q) => $q->where('tier', 'committal'))
+            ->orderBy('sequence')->value('ledgerable_id');
+        $isOrigin = $seed->id === $originId && $horizon->parent_context_horizon_id === null
+            && $seed->phase->cycle->entry_committal_id === null;
+        if ($isOrigin && $parents->isEmpty()) {
+            return null;
+        }
+        if ($isOrigin || $commits->count() !== 1 || $parents->count() !== 1) {
+            throw new \DomainException('An ordinary fixture Committal requires exactly one genuine Commit parent: '.$seed->id);
+        }
+        $commit = $commits->sole();
+        if ($commit->phase_id !== $seed->phase_id
+            || $commit->source_proposition_id !== $seed->phase->fresh()->gate_proposition_id) {
+            throw new \DomainException('The fixture Commit must identify its producing Phase and selected source: '.$seed->id);
+        }
+
+        return $commit;
+    }
+
+    /** Explicit frozen non-boundary seed for isolated ownership fixtures. */
+    private function freezeRegionSnapshotFixture(Proposition $seed, float $correspondence, ?string $supersessionId): void
     {
         if ($seed->commitmentSnapshot()->exists()) {
             return;
@@ -90,7 +136,7 @@ abstract class TestCase extends BaseTestCase
         $horizon = $seed->phase->cycle->contextHorizon;
         $snapshot = new CommitmentSnapshot;
         $snapshot->forceFill(['proposition_id' => $seed->id, 'substrate_id' => $horizon->substrate_id,
-            'ledger_entry_id' => $seed->ledgerEntry->id, 'correspondence' => $correspondence, 'chirality' => 0, 'closure' => 0,
+            'ledger_entry_id' => $seed->ledgerEntry->id, 'supersession_id' => $supersessionId, 'correspondence' => $correspondence, 'chirality' => 0, 'closure' => 0,
             'cadence_interval' => 1,
             'prominence' => .5, 'turbulence' => .5, 'tension' => 0,
             'direction_before' => $horizon->domain, 'direction_after' => $horizon->domain,

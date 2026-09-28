@@ -238,7 +238,7 @@ class CausalOperationalScopeTest extends TestCase
         if ($horizon->opened_by_proposition_id !== null) {
             $this->commitAncestryFixture($seed, Proposition::findOrFail($horizon->opened_by_proposition_id));
         }
-        $this->freezeRegionFixture($seed);
+        $this->freezeCommittedRegionFixture($seed);
         app(CommitRegionPolarityService::class)->establishOrigin($seed, 'support');
         $this->mock(ClosureGateService::class, function ($mock): void {
             $mock->shouldReceive('preview')->andReturnUsing(fn (Proposition $node) => [

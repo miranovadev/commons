@@ -288,11 +288,18 @@ class CommitRegionTest extends TestCase
         $node = new Proposition;
         $node->forceFill(['phase_id' => $phase->id, 'register' => $register, 'tier' => $tier, 'statement' => 'Region '.$register])->save();
         app(LedgerService::class)->record($node);
-        if ($tier === 'committal') {
-            $this->freezeRegionFixture($node);
-        }
-        if ($parent) {
-            $this->edge($parent, $node, $edge);
+        if ($tier === 'committal' && ! $hasExplicitParent) {
+            if ($parent !== null) {
+                $this->commitAncestryFixture($node, $parent);
+            }
+            $this->freezeCommittedRegionFixture($node);
+        } else {
+            if ($tier === 'committal') {
+                $this->freezeRegionFixture($node);
+            }
+            if ($parent !== null) {
+                $this->edge($parent, $node, $edge);
+            }
         }
 
         return $node;
