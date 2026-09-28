@@ -49,12 +49,13 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
         $origin = $journey['responses'][0]['current_proposition_id'];
         $seed = Proposition::findOrFail($boundary['proposition_id']);
         $diagnostic = app(CrossoverMarginService::class)->inspect($cycle);
+        $this->assertReceiptNeutralChiralityChain($seed);
         $this->assertSame($seed->id, $diagnostic['governing_committal_id']);
         $this->assertSame('emergence', $diagnostic['domain']);
-        foreach (['correspondence' => -0.5276331, 'chirality' => 0.9543377,
+        foreach (['correspondence' => -0.5276331, 'chirality' => 0.9476349,
             'prospective_depth' => 1, 'admissible_cadence_bound' => 0,
-            'tension_bound' => 0.3089015,
-            'crossover_margin' => -0.3089015] as $name => $value) {
+            'tension_bound' => 0.3066672,
+            'crossover_margin' => -0.3066672] as $name => $value) {
             $this->assertEqualsWithDelta($value, $diagnostic[$name], 1e-7, $name);
         }
         $this->assertTrue($diagnostic['closed']);
@@ -90,4 +91,48 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
         // exercised by NaturalChargeBoundaryLifecycleTest's real contributions.
         $this->assertParticipationScriptComplete();
     }
+
+    /** Audit the changed natural field from signed populations, before accepting its snapshot. */
+    private function assertReceiptNeutralChiralityChain(Proposition $seed): void
+    {
+        $lineages = app(\App\Services\Observables\ContextLineageComparisonService::class);
+        $measurements = app(\App\Services\Observables\LineageMeasurementService::class);
+        $local = app(\App\Services\Observables\LocalMeasurementService::class);
+        $chirality = app(\App\Services\Observables\ChiralityCalculator::class);
+        $state = app(\App\Services\PropositionStateService::class);
+        $regions = app(\App\Services\CommitRegionService::class);
+        $polarity = app(\App\Services\CommitRegionPolarityService::class);
+        $lean = function ($domain) use ($chirality, $state, $regions, $polarity): array {
+            $ids = $chirality->activeIds($domain->propositions, $domain->supersessions);
+            $votes = $state->attestations($domain->propositions->whereIn('id', $ids));
+            $positive = $negative = 0;
+            foreach ($votes as $vote) {
+                $region = $regions->seedFor($vote->proposition);
+                $support = $region === null ? 1
+                    : ($polarity->forSeed($region)['support']->value === 'positive' ? 1 : -1);
+                $sign = $vote->direction === 'support' ? $support : -$support;
+                $sign > 0 ? $positive++ : $negative++;
+            }
+            $count = $positive + $negative;
+
+            return ['positive' => $positive, 'negative' => $negative,
+                'lean' => $count === 0 ? 0.0 : ($positive - $negative) / $count];
+        };
+        $total = $mass = 0.0;
+        $trace = [];
+        foreach ($measurements->positions($seed) as [$position, $distance]) {
+            $comparison = $lineages->for($position);
+            $current = $lean($comparison->current);
+            $previous = $comparison->previous === null ? null : $lean($comparison->previous);
+            $expected = $comparison->isBootstrap() ? -1.0 : round($current['lean'] * $previous['lean'], 7);
+            $this->assertSame($expected, $local->calculate($position, $comparison, false)->chirality);
+            $weight = 1 / (1 + $distance) ** 2;
+            $total += $expected * $weight;
+            $mass += $weight;
+            $trace[] = compact('distance', 'current', 'previous', 'expected', 'weight');
+        }
+        $this->assertSame(round($total / $mass, 7), $seed->commitmentSnapshot->chirality);
+        fwrite(STDERR, 'RECEIPT_NEUTRAL_CHIRALITY '.json_encode($trace, JSON_THROW_ON_ERROR).PHP_EOL);
+    }
+
 }

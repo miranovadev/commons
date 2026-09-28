@@ -280,7 +280,7 @@ class ReinforcementTest extends TestCase
         $snapshot->forceFill(['depth' => $value, 'cadence' => $value, 'closure' => $value,
             'depth_direction' => $value < 0 ? 'negative' : 'positive',
             'cadence_direction' => $value < 0 ? 'negative' : 'positive'])->save();
-        $historical = $snapshot->getAttributes();
+        $historical = $snapshot->fresh()->getAttributes();
         $local = app(LocalMeasurementService::class);
         $before = $local->calculate($this->node);
         $this->assertSame($value, $before->closure()->average());
