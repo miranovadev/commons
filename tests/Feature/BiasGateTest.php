@@ -54,8 +54,11 @@ class BiasGateTest extends TestCase
         $this->substrate = new Substrate;
         $this->substrate->forceFill(['slug' => 'bias', 'title' => 'Bias', 'visibility' => 'public', 'configuration' => []])->save();
         $this->history = $this->newPhase($this->participant('author'), PhaseKind::Distinguish, $register === 'stance' ? 'signal' : 'activity', true);
-        $this->parent = $this->node('Local provenance', $write, 'committal', position: PhaseKind::Mediate);
-        $this->freezeRegionFixture($this->parent);
+        $this->parent = $this->node('Local provenance', $write, 'committal', position: PhaseKind::Order, freeze: false);
+        if ($this->parent->phase->cycle->contextHorizon->opened_by_proposition_id !== null) {
+            $this->commitAncestryFixture($this->parent, Proposition::findOrFail($this->parent->phase->cycle->contextHorizon->opened_by_proposition_id));
+        }
+        $this->freezeCommittedRegionFixture($this->parent);
         $this->history = $this->governedPhaseFixture($this->history, $this->parent);
         $this->attest($this->parent, 'support');
         $this->gate = $this->node('Current Gate', $register, position: PhaseKind::Mediate);
@@ -281,8 +284,13 @@ class BiasGateTest extends TestCase
         $beyond = $this->node('Beyond boundary', 'stance', position: PhaseKind::Mediate, governor: $boundary);
         $this->edge($boundary, $beyond);
         $this->attest($beyond, 'refute');
-        $unrelatedSeed = $this->node('Unrelated region', 'concord', 'committal', position: PhaseKind::Bias);
-        $this->attest($this->node('Unrelated Stance', 'stance', position: PhaseKind::Mediate, governor: $unrelatedSeed), 'refute');
+        $unrelatedSeed = $this->node('Unrelated region', 'concord', 'committal', position: PhaseKind::Order, freeze: false);
+        // A sibling Region shares genuine ancestry without belonging to this Region.
+        $this->commitAncestryFixture($unrelatedSeed, $this->parent);
+        $this->freezeCommittedRegionFixture($unrelatedSeed);
+        $unrelated = $this->node('Unrelated Stance', 'stance', position: PhaseKind::Mediate, governor: $unrelatedSeed);
+        $this->edge($unrelatedSeed, $unrelated);
+        $this->attest($unrelated, 'refute');
         config()->set('schemas.options.limit', 1);
         $this->viewer->forceFill(['max_read_count' => 1])->save();
         $other = $this->sibling('Another supported Stance');
@@ -402,7 +410,7 @@ class BiasGateTest extends TestCase
         return $node;
     }
 
-    private function node(string $statement, string $register, string $tier = 'expressive', PhaseKind $position = PhaseKind::Mediate, ?Proposition $governor = null): Proposition
+    private function node(string $statement, string $register, string $tier = 'expressive', PhaseKind $position = PhaseKind::Mediate, ?Proposition $governor = null, bool $freeze = true): Proposition
     {
         $phase = $this->phaseAtPositionFixture($this->history, $position);
         if ($governor !== null) {
@@ -411,7 +419,7 @@ class BiasGateTest extends TestCase
         $node = new Proposition;
         $node->forceFill(['phase_id' => $phase->id, 'register' => $register, 'tier' => $tier, 'statement' => $statement])->save();
         app(LedgerService::class)->record($node);
-        if ($tier === 'committal') {
+        if ($tier === 'committal' && $freeze) {
             $this->freezeRegionFixture($node);
         }
 

@@ -387,19 +387,11 @@ class ContextHorizonProjectorTest extends TestCase
                 'entry_committal_id' => $source->id])->save();
             $this->phase = new Phase;
             $this->phase->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Order,
+                'gate_proposition_id' => $source->id,
                 'write_register' => $cycle->contextHorizon->domain->registerFor(PhaseKind::Order), 'started_at' => now()])->save();
         }
         $proposition = $this->proposition($statement, 'committal');
         app(LedgerService::class)->record($proposition);
-        $this->groundFixture($proposition);
-
-        app(PropositionMeasurementService::class)->project(
-            $proposition,
-            correspondence: -0.5,
-            chirality: 0.25,
-            closure: -0.75,
-        );
-
         $supersession = null;
 
         if ($source !== null) {
@@ -411,7 +403,17 @@ class ContextHorizonProjectorTest extends TestCase
                 'type' => 'commit',
             ]);
             $supersession->save();
+            app(LedgerService::class)->record($supersession);
         }
+
+        $this->groundFixture($proposition);
+
+        app(PropositionMeasurementService::class)->project(
+            $proposition,
+            correspondence: -0.5,
+            chirality: 0.25,
+            closure: -0.75,
+        );
 
         if ($source?->commitmentSnapshot?->cadence_interval !== null) {
             // This topology fixture asks for a later Commit with neutral Closure.
