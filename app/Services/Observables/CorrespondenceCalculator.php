@@ -23,13 +23,6 @@ final readonly class CorrespondenceCalculator
             return 1;
         }
 
-        // Origin is the exact provenance/terminal boundary identity by axiom.
-        // There is no developed predecessor to compare at this unique boundary;
-        // do not fabricate a one-node morphology or Topology/Position components.
-        if ($comparison->previous?->horizon->parent_context_horizon_id === null) {
-            return 1;
-        }
-
         /** @var Proposition $head */
         $head = $comparison->current->propositions->last();
         $current = $this->morphologies->current($head, $comparison->current->horizon, $comparison->current->context);
