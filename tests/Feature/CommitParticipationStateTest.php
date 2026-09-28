@@ -65,10 +65,9 @@ class CommitParticipationStateTest extends TestCase
             $this->assertSame([$attestation->id], $state->attestations(collect([$head]))->pluck('id')->all());
             $this->assertSame([$receipt->id], $state->receipts($head)->pluck('id')->all());
             $this->assertTrue(app(CommitmentAdmissibilityService::class)->grounding($head)['admissible']);
-            $weight = app(ReinforcementService::class)->weights(collect([$head]), $this->phase->cycle->participant->substrate);
-            $this->assertEqualsWithDelta(4 / 3, $weight[$head->id], 1e-10);
+            $this->assertSame(1, app(ReinforcementService::class)->count($head));
         }
-        $this->assertSame(1.0, app(ChiralityCalculator::class)->leanFor(collect([$actual->id]), $this->phase->cycle->participant->substrate));
+        $this->assertSame(1.0, app(ChiralityCalculator::class)->leanFor(collect([$actual->id])));
         $this->assertSame($counts, [Attestation::count(), Receipt::count(), Phase::count()]);
         $this->assertSame($gate->id, $attestation->fresh()->proposition_id);
         $this->assertSame($gate->id, $receipt->fresh()->receiptable_id);
@@ -109,7 +108,7 @@ class CommitParticipationStateTest extends TestCase
         $this->assertSame(['support' => 0, 'refute' => 0], $variant->attestationCounts->all());
         $this->assertSame([$effective->id], $state->attestations(collect([$commit]))->pluck('id')->all());
         $this->assertSame([$receipt->id], $state->receipts($commit)->pluck('id')->all());
-        $this->assertSame(-1.0, app(ChiralityCalculator::class)->leanFor(collect([$commit->id]), $this->phase->cycle->participant->substrate));
+        $this->assertSame(-1.0, app(ChiralityCalculator::class)->leanFor(collect([$commit->id])));
         $this->assertSame(0, $state->touchCount($variant));
         $this->assertCount(0, $state->receipts($variant));
         $this->assertCount(0, $state->attestations(collect([$variant])));

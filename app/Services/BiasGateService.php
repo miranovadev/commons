@@ -23,10 +23,10 @@ final readonly class BiasGateService
         return $phase->kind === PhaseKind::Bias ? $this->regions->forPhase($phase, context: $context) : collect();
     }
 
-    /** One receipt-weighted effective lean; no projected sign or extra attenuation. */
+    /** One Receipt-neutral effective lean; no projected sign or extra attenuation. */
     public function leanFor(Phase $phase): float
     {
-        return $this->chirality->leanFor($this->populationFor($phase)->pluck('id'), $phase->cycle->participant->substrate);
+        return $this->chirality->leanFor($this->populationFor($phase)->pluck('id'));
     }
 
     /** Regional calculation result; this collection does not authorize operational targets. */

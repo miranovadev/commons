@@ -97,7 +97,7 @@ New Instrument Receipts always own the observed Proposition. Legacy Attestation-
 
 Ordinary Receipt metadata in inference is exactly `id`, `type`, `reference`, `loaded`. Type preserves existing schema/UI semantics. Full bodies appear once in the existing loaded evidence prefix only when the Receipt is loaded and grounds the current Read. No Gate, Write, catalogue or Lineage occurrence injects a body. Persistent loads remain true outside Read; visibility never enters a measurement formula. No new summarisation or truncation applies.
 
-Reinforcement retains the existing participant-specific uniqueness and cap: multiple qualifying Receipts supporting the same Participant/Proposition do not multiply that Participant's existing weight. Unloading the last qualifying load removes that Participant's current contribution; another Participant is unaffected. An Attestation uses its author's qualifying Proposition loads. Supersession changes the effective judgment while retaining that author's memory; ownership never moves between judgments.
+Reinforcement retains the existing participant-specific uniqueness and cap: multiple qualifying Receipts supporting the same Participant/Proposition do not multiply that Participant's count. Unloading the last qualifying load removes that Participant's current contribution; another Participant is unaffected. Attestations contribute equally to lean under fixed Commit Region polarity. Receipt loading never changes a judgment's contribution. Supersession changes the effective judgment while retaining that author's memory; ownership never moves between judgments.
 
 ## Gate desired states
 

@@ -12,7 +12,6 @@ use DomainException;
 final readonly class ClosureCalculator
 {
     public function __construct(
-        private ReinforcementService $reinforcement,
         private CommittalLineageService $lineage,
     ) {}
 
@@ -25,14 +24,8 @@ final readonly class ClosureCalculator
             // Persisted measurements remain historical, including pre-upgrade snapshots.
             return new ClosureValues($snapshot->depth ?? 0, $snapshot->cadence ?? 0, $snapshot->closure);
         }
-        $structural = $this->components($proposition, $context);
-        if ($proposition->phase->cycle->entry_committal_id === null && $proposition->tier === 'committal') {
-            return $structural;
-        }
-        $mass = $this->reinforcement->measurementCount($proposition, $context)
-            * $this->reinforcement->receiptIncrement($comparison->current->horizon->substrate);
 
-        return $structural->reinforced($mass);
+        return $this->components($proposition, $context);
     }
 
     public function components(Proposition $position, ?ParticipationContext $context = null): ClosureValues

@@ -515,7 +515,7 @@ Order permits local Commit and direct Committal Traverse under their ordinary ru
 
 This adds no Attestation, Instrument or revision at Order. Commit still requires every local prerequisite. Frozen sources remain immutable. Homologous comparison imports no Receipt stock or Read scope and writes no causal edge. The action chooses the next Cycle entry directly: created Committal for Commit, selected existing Committal for Traverse. The previous Cycle's entry never changes.
 
-Commit copies the selected source's exact statement and participation history by reference, creates an immutable snapshot, and consumes the direct source globally. Later evidence reads cannot rewrite that snapshot. Reinforcement is optional weight; Depth/Cadence remain the admissibility gate. `plan.commitment` describes the current position and `commitment_options` describes every local expressive Write, including inadmissible ones. The same rules govern schema, UI and execution.
+Commit copies the selected source's exact statement and participation history by reference, creates an immutable snapshot, and consumes the direct source globally. Later evidence reads cannot rewrite that snapshot. Reinforcement is evidential metadata; Depth/Cadence remain the admissibility gate. `plan.commitment` describes the current position and `commitment_options` describes every local expressive Write, including inadmissible ones. The same rules govern schema, UI and execution.
 
 ## Binary Reconcile
 
@@ -586,4 +586,3 @@ selected source's Region while retaining the acting Cycle's accounting entry.
 later revisions; unrecorded foreign edges still fail the provenance check.
 Potential retains the edge as a foreign input and excludes it from local terrain,
 just as for existing foreign Reconcile inputs. No Potential formula changes.
-

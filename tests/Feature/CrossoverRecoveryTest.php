@@ -122,7 +122,7 @@ class CrossoverRecoveryTest extends TestCase
         $this->assertSame(-0.3333333, $diagnostic['prospective_depth']);
         $this->assertSame(0.0, $diagnostic['admissible_cadence_bound']);
         $this->assertSame($closed, $diagnostic['closed']);
-        $this->assertSame(0.0, $diagnostic['reinforcement_mass']);
+        $this->assertArrayNotHasKey('reinforcement_mass', $diagnostic);
         $actor = $terminal->cycle->participant;
         $this->assertTrue(app(InputPlanService::class)->forPhase($actor, $terminal)['rest_available']);
         $before = DB::table('commitment_snapshots')->orderBy('proposition_id')->get()->toJson();
@@ -206,7 +206,7 @@ class CrossoverRecoveryTest extends TestCase
         $this->assertFalse($positive['closed']);
     }
 
-    public function test_reinforcement_uses_existing_participant_mass_without_changing_any_measurement(): void
+    public function test_reinforcement_changes_no_crossover_bound_or_measurement(): void
     {
         $origin = $this->commit(null, boundary: true);
         $parent = $this->commit($origin);
@@ -217,9 +217,13 @@ class CrossoverRecoveryTest extends TestCase
         $state = fn () => DB::table('proposition_measurements')->orderBy('proposition_id')->get()->toJson();
         $measurements = $state();
         $after = app(CrossoverMarginService::class)->inspect($phase->cycle);
-        $this->assertSame(0.0, $before['reinforcement_mass']);
-        $this->assertSame(1 / 3, $after['reinforcement_mass']);
-        $this->assertGreaterThan($before['tension_bound'], $after['tension_bound']);
+        $this->assertSame(1, app(\App\Services\Observables\ReinforcementService::class)->count($seed));
+        $this->assertSame($before, $after);
+        $this->assertSame($measurements, $state());
+        $this->loadedReceiptFixture($seed);
+        $measurements = $state();
+        $this->assertSame(2, app(\App\Services\Observables\ReinforcementService::class)->count($seed));
+        $this->assertSame($before, app(CrossoverMarginService::class)->inspect($phase->cycle));
         $this->assertSame($measurements, $state());
     }
 

@@ -197,12 +197,7 @@ class ObservableServiceTest extends TestCase
         $this->receipt($proposition, 'citation', 'unique-citation');
         $this->receipt($proposition, 'hyperlink', null);
 
-        $weights = app(ReinforcementService::class)->weights(
-            collect([$proposition]),
-            $this->substrate->fresh(),
-        );
-
-        $this->assertSame(1.0, $weights->get($proposition->getKey()));
+        $this->assertSame(0, app(ReinforcementService::class)->count($proposition));
     }
 
     private function phase(int $sequence, ?Proposition $entryCommittal = null): Phase

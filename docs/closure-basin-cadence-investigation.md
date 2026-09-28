@@ -3,6 +3,13 @@
 This report describes the committed-lineage Closure replacement built on #196.
 The dump comparison is counterfactual and read-only; it never rewrites snapshots.
 
+Historical checkpoint: the reinforcement formulas and the companion
+`scripts/inspect-basin-cadence.py` comparison below describe the earlier rollout,
+not current measurement authority. Since `receipt-neutral-observables-v15`, new
+Closure is `(Depth + Cadence) / 2` and Receipts never weight any observable.
+See [Observables](observables.md) and [Reinforcement](reinforcement.md) for current
+rules. The recorded historical comparisons and frozen snapshots remain unchanged.
+
 ## Cycle entry
 
 Ordinary live entry records `cycles.entry_committal_id` from the selected

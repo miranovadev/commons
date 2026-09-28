@@ -171,7 +171,7 @@ class ReceiptContextTest extends TestCase
         $before = $local->calculate($subject)->closure()->average();
         $service = app(ReceiptContextService::class);
         $load = $service->read($fixture->viewer, $phase, $receipt->id);
-        $this->assertGreaterThan($before, $local->calculate($subject)->closure()->average());
+        $this->assertSame($before, $local->calculate($subject)->closure()->average());
         $service->clear($fixture->viewer, $phase, $receipt->id);
         $this->assertSame(0, app(ReinforcementService::class)->count($subject));
         $this->assertPublicCount($fixture, $subject, 0);
@@ -258,7 +258,7 @@ class ReceiptContextTest extends TestCase
         $this->assertSame('available', $service->forPhase($next)->firstWhere('id', $duplicate->id)['status']);
     }
 
-    public function test_clearing_attestation_evidence_removes_weight_but_preserves_hysteretic_history(): void
+    public function test_loading_and_clearing_evidence_preserve_attestation_value_and_history(): void
     {
         [$fixture, , $subject] = $this->scenario();
         $phase = $this->move($fixture, $subject);
@@ -269,17 +269,17 @@ class ReceiptContextTest extends TestCase
         $negative->forceFill(['phase_id' => $negativePhase->id, 'proposition_id' => $subject->id, 'direction' => 'refute'])->save();
         app(LedgerService::class)->record($negative);
         $evidence = app(AttestationEvidenceService::class);
-        $this->assertSame(0.0, $evidence->valueFor(collect([$subject]), $fixture->substrate));
+        $this->assertSame(0.0, $evidence->valueFor(collect([$subject])));
         $receipt = $this->loadedReceiptFixture($subject, $negative);
-        $this->assertLessThan(0, $evidence->valueFor(collect([$subject]), $fixture->substrate));
+        $this->assertSame(0.0, $evidence->valueFor(collect([$subject])));
         $reader = $receipt->instrumentExecution->phase->cycle->participant;
         $readerPhase = $this->newPhase($reader, $subject->id);
         app(ReceiptContextService::class)->clear($reader, $readerPhase, $receipt->id);
-        $this->assertSame(0.0, $evidence->valueFor(collect([$subject]), $fixture->substrate));
-        $this->assertSame(ObservableDirection::Negative, $evidence->directionFor($subject));
+        $this->assertSame(0.0, $evidence->valueFor(collect([$subject])));
+        $this->assertSame(ObservableDirection::Positive, $evidence->directionFor($subject));
         $context = new ParticipationContext($phase);
-        $this->assertSame(0.0, $evidence->valueFor(collect([$subject]), $fixture->substrate, $context));
-        $this->assertSame(ObservableDirection::Negative, $evidence->directionFor($subject, context: $context));
+        $this->assertSame(0.0, $evidence->valueFor(collect([$subject]), $context));
+        $this->assertSame(ObservableDirection::Positive, $evidence->directionFor($subject, context: $context));
         $this->assertSame(0, app(ReinforcementService::class)->count($subject, $context));
         $this->assertSame(2, DB::table('substrate_ledger_entries')->where('kind', 'receipt_context')->count());
     }
@@ -299,4 +299,3 @@ class ReceiptContextTest extends TestCase
         return $phase;
     }
 }
-
