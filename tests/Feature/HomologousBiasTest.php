@@ -169,6 +169,9 @@ class HomologousBiasTest extends TestCase
         $this->measure($this->gateC, -1);
         $unattested = $this->source($this->c, attest: false);
         $this->measure($unattested, -1);
+        $this->measure($this->gateB, .1);
+        $this->measure($this->gateC, -1);
+        $this->coherentChiralityFixture($this->gateA);
         $this->assertEqualsCanonicalizing([$this->gateA->id, $this->gateC->id], $this->biasOptionIds());
         $this->assertFalse(app(PhaseGenerationService::class)->available($this->bias, 'proposition.reclassify', position: $unattested));
         $this->reject($this->gateB);

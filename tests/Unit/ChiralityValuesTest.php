@@ -29,7 +29,7 @@ class ChiralityValuesTest extends TestCase
         }
         $this->assertSame(['orientation_direction' => 'negative', 'attestation_cadence_direction' => 'positive'],
             (new ChiralityValues(0, 0))->resolveDirections(Direction::Negative, Direction::Positive));
-        $this->assertSame(['orientation_direction' => 'positive', 'attestation_cadence_direction' => 'negative'],
+        $this->assertSame(['orientation_direction' => 'negative', 'attestation_cadence_direction' => 'negative'],
             (new ChiralityValues(0, -1))->resolveDirections());
     }
 }

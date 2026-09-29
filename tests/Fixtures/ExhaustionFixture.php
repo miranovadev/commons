@@ -28,6 +28,7 @@ trait ExhaustionFixture
 
     private function initializeExhaustionFixture(): void
     {
+        $this->controlledClosureFixture(-1);
         $this->substrate = (new Substrate)->forceFill(['slug' => 'exhaustion', 'title' => 'Exhaustion', 'visibility' => 'public', 'configuration' => []]);
         $this->substrate->save();
         $phase = $this->phase();

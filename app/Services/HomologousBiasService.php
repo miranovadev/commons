@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Enums\ObservableDirection;
 use App\Enums\PhaseKind;
 use App\Models\Phase;
 use App\Services\Participation\ParticipationContext;
@@ -57,9 +56,9 @@ final readonly class HomologousBiasService
                     $value = $field->values[$node->id] ?? null;
 
                     // Numeric Chirality is not the regional Attestation/Bias lean.
-                    // No persisted numeric member history exists; zero initializes explicitly.
+                    // Zero retains this member's own history, independently of the population.
                     return $value !== null && $this->availability->mutable($node, $context)
-                        && ObservableDirection::after($value, ObservableDirection::defaultFor('chirality')) === $field->direction;
+                        && app(PropositionMeasurementService::class)->chiralityDirectionFor($node, $context) === $field->direction;
                 });
             $horizons = $candidates->map(fn ($node) => $node->phase->cycle->context_horizon_id)
                 ->reject(fn ($id) => $id === $phase->cycle->context_horizon_id)->unique()->sort()->values();

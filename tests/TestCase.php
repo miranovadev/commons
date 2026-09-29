@@ -44,9 +44,26 @@ abstract class TestCase extends BaseTestCase
     protected function resolveExpressiveFieldFixture(float $value): void
     {
         $this->mock(LocalMeasurementService::class, function ($mock) use ($value): void {
+            $mock->shouldReceive('chiralityComponents')->andReturn(new ChiralityValues($value, $value));
             $mock->shouldReceive('calculate')->andReturn(new LocalMeasurements($value, $value, $value, $value,
                 chiralityComponents: new ChiralityValues($value, $value),
                 correspondenceComponents: new CorrespondenceValues($value, $value)));
+        });
+    }
+
+    /** Routing fixtures author their fields; they do not model committed Closure runs. */
+    protected function controlledClosureFixture(float $closure): void
+    {
+        $calculator = app(LocalMeasurementService::class);
+        $this->partialMock(LocalMeasurementService::class, function ($mock) use ($calculator, $closure): void {
+            $mock->shouldReceive('calculate')->andReturnUsing(function ($node, $comparison = null, $includeClosure = true) use ($calculator, $closure) {
+                $raw = $calculator->calculate($node, $comparison, false);
+                $value = $node->commitmentSnapshot?->closure ?? $closure;
+
+                return new LocalMeasurements($raw->correspondence, $raw->chirality, $value, $value,
+                    chiralityComponents: $raw->chiralityComponents, correspondenceComponents: $raw->correspondenceComponents);
+            });
+            $mock->shouldReceive('chiralityComponents')->andReturnUsing(fn ($node) => $calculator->chiralityComponents($node));
         });
     }
 

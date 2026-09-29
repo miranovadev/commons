@@ -95,7 +95,7 @@ class ClosureHysteresisTest extends TestCase
         $this->assertSame($result['last_commitment'], app(ParticipationService::class)->stateFor($this->participant)['last_commitment']);
     }
 
-    public function test_an_observed_commit_retries_after_completion_even_when_bootstrap_remains_admissible(): void
+    public function test_an_observed_commit_retries_after_cycle_entry_even_when_bootstrap_remains_admissible(): void
     {
         $this->bootstrap();
         [$phase, $gate] = $this->candidate([2]);
@@ -106,7 +106,7 @@ class ClosureHysteresisTest extends TestCase
         $cycle = (new Cycle)->forceFill(['participant_id' => $other->id, 'sequence' => 1,
             'context_horizon_id' => $phase->cycle->context_horizon_id, 'entry_committal_id' => $this->origin->id]);
         $cycle->save();
-        $cycle->forceFill(['completed_at' => now(), 'rested_at' => now()])->save();
+        $this->assertNull($cycle->completed_at);
         $this->publishPotentialFixture($this->participant);
         $this->assertTrue(app(ClosureGateService::class)->preview($gate, $phase)['admissible']);
         $before = CommitmentSnapshot::count();

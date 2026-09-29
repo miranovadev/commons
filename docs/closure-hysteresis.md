@@ -15,8 +15,7 @@ Attestations and completed Receipts by reference for grounding. Preview writes n
 propositions, edges or snapshots; dispatch reevaluates under the substrate lock.
 
 Depth compares consecutive committed Domain-run lengths. Cadence compares the
-latest two direct ancestral inter-Commit intervals, including completed basin
-participation. Neither uses Receipt count or Phase-touch weighting. Origin has
+latest two direct ancestral inter-Commit intervals, including every Cycle entered in the exact entry/Horizon basin. Completion is irrelevant. Neither uses Receipt count or Phase-touch weighting. Origin has
 Depth/Cadence -1; the first ordinary Commit has both 0 with negative hysteresis.
 Later candidates use measured history. See [Observables](observables.md).
 
@@ -33,9 +32,11 @@ each component retains its own direction under the documented history rules.
 
 Direction history follows the direct creating-Cycle entry Committal chain.
 Unrelated branches and Supersession-parent unions do not supply committed Closure
-history. Expressive work inherits its entry snapshot's structural components.
+history. Expressive work measures exactly one prospective next Commit through
+the same calculation as Order preview. Before C1 this is 0/0. No hypothetical
+structure is persisted.
 Unavailable historical intervals block prospective Commitment explicitly rather
-than guessing a value. Frozen historical snapshots are never rewritten.
+than guessing a value. Every new non-Origin Commit freezes a positive interval. Frozen historical snapshots are never rewritten.
 
 `plan.commitment.closure` exposes candidate values, directions, and history.
 `requirements.closure` is an actual boolean and `closure_enforced` is true.

@@ -454,9 +454,10 @@ Bias additionally requires its source-specific Receipt authority and an effectiv
 sources from `MediatedIncomingBiasService`, and independently adds qualified
 sources from `HomologousBiasService`. The latter uses the shared Homeostatic services to
 aggregate every homologous Gate's own numeric Chirality, including the current
-Gate once. Positive and negative means follow sign; zero retains supplied prior
-population direction or uses Chirality's negative default. No population state
-is persisted or written into proposition measurements.
+Gate once. Positive and negative means follow sign; zero retains the population's
+own prior direction from mutation-boundary observations. Unavailable populations
+inherit corresponding preceding-Horizon history. Positive is only the final
+no-history fallback. Aggregates never write back into member measurements.
 
 Additional homologous sources must be active and unexhausted and pass the existing structural reclassification
 prerequisites. They need not satisfy the local current Gate's evidence/ancestry

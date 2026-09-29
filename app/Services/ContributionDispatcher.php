@@ -87,6 +87,11 @@ final readonly class ContributionDispatcher
                     : 'Support requires an admissible Proposition in the current Write.');
             }
 
+            $affectsChirality = in_array($action, ['attestation.create', 'proposition.variant', 'proposition.revise',
+                'proposition.reclassify', 'proposition.reconcile', 'proposition.commit'], true);
+            if ($affectsChirality) {
+                app(ChiralityPopulationHistoryService::class)->observe($participant->substrate_id);
+            }
             $result = match ($input['action']) {
                 'proposition.traverse' => Proposition::query()
                     ->findOrFail($input['proposition_id']),
@@ -131,6 +136,10 @@ final readonly class ContributionDispatcher
                 // (Traverse, Attestation, Instrument) and Committals are not births.
                 $this->measurements->recalculate($result);
                 app(TragedyService::class)->record($result);
+            }
+
+            if ($affectsChirality) {
+                app(ChiralityPopulationHistoryService::class)->observe($participant->substrate_id);
             }
 
             return $result;

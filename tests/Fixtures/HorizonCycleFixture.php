@@ -13,7 +13,7 @@ use App\Services\ParticipationService;
 
 trait HorizonCycleFixture
 {
-    protected function driveHorizonCycle(int $participantCount = 1, bool $realClosure = false): Proposition
+    protected function driveHorizonCycle(int $participantCount = 1, bool $realClosure = false, bool $originAttestation = true, ?callable $observe = null, int $additionalEntrants = 0): Proposition
     {
         // Isolate the phase motor; numeric Closure has its own real-calculator suite.
         if (! $realClosure) {
@@ -26,7 +26,7 @@ trait HorizonCycleFixture
         $participant = (new Participant)->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'solo', 'max_read_count' => 25]);
         $participant->save();
         $service = app(ParticipationService::class);
-        $state = $service->enter($participant, ['statement' => 'Origin', 'attestation' => ['direction' => 'support'],
+        $state = $service->enter($participant, ['statement' => 'Origin', ...($originAttestation ? ['attestation' => ['direction' => 'support']] : []),
             'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/origin']]);
         $originId = $state['current_proposition_id'];
         $participants = [$participant];
@@ -42,6 +42,7 @@ trait HorizonCycleFixture
             $state = $service->stateFor($participant);
             $this->assertSame('ready', $state['status'], json_encode($trace));
             $plan = $state['plan'];
+            $observe?->__invoke($participant, $state);
             $actions = $plan['schema']['$defs']['actions'];
             $action = collect(['proposition.commit', 'proposition.reclassify', 'proposition.variant', 'proposition.reconcile',
                 'proposition.traverse', 'attestation.create', 'instrument.execute', 'participant.rest'])
@@ -75,7 +76,7 @@ trait HorizonCycleFixture
                 $commit = $participant->fresh()->position;
                 $this->assertSame('committal', $commit->tier);
                 $this->assertNotSame($originId, $commit->id);
-                $this->assertSame($participantCount, Participant::count());
+                $this->assertSame($participantCount + $additionalEntrants, Participant::count());
                 $this->assertSame([3, 6], Phase::whereIn('id', ReceiptConsumption::pluck('phase_id'))->orderBy('kind')->pluck('kind')->map(fn ($kind) => $kind->value)->unique()->values()->all());
                 $this->assertGreaterThan(1, $participant->cycles()->count());
                 $next = $service->stateFor($participant);

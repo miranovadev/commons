@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\PhaseKind;
+use App\Exceptions\ClosureHistoryUnavailable;
 use App\Models\CommitmentSnapshot;
 use App\Models\Cycle;
 use App\Models\Participant;
@@ -14,7 +15,10 @@ use App\Services\ContextHorizonProjector;
 use App\Services\LedgerService;
 use App\Services\Observables\ClosureCalculator;
 use App\Services\Observables\CommittalLineageService;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
@@ -48,6 +52,7 @@ class CommittalClosureTest extends TestCase
             'register' => $ph->write_register, 'statement' => 'Committed lineage fixture']);
         $p->save();
         app(LedgerService::class)->record($p);
+
         return $p;
     }
 
@@ -66,6 +71,7 @@ class CommittalClosureTest extends TestCase
         $s->save();
         app(ContextHorizonProjector::class)->apply($s);
         $p->phase->cycle->forceFill(['completed_at' => now()])->save();
+
         return $p;
     }
 
@@ -108,7 +114,7 @@ class CommittalClosureTest extends TestCase
         $this->assertSame(1.0, $calc->components($e2)->cadence);
     }
 
-    public function test_similarity_and_interval_include_rest_and_producer_but_exclude_open_and_other_basins(): void
+    public function test_similarity_and_interval_include_every_entry_once_but_exclude_other_basins(): void
     {
         $this->assertSame(1.0, ClosureCalculator::similarity(10, 10));
         $this->assertSame(0.3333333, ClosureCalculator::similarity(10, 15));
@@ -119,14 +125,39 @@ class CommittalClosureTest extends TestCase
         $open = $this->candidate($a);
         $b = $this->candidate($a);
         $lineage = app(CommittalLineageService::class);
-        $this->assertSame(4, $lineage->interval($b));
-        $this->freeze($b, 4, 'settlement');
-        $this->assertSame(4, $lineage->interval($b));
+        $this->assertSame(5, $lineage->interval($b));
+        $this->freeze($b, 5, 'settlement');
+        $this->assertSame(5, $lineage->interval($b));
         $this->completed($b, 5);
         $open->phase->cycle->forceFill(['completed_at' => now()])->save();
         $b2 = $this->candidate($a);
         $this->assertSame(6, $lineage->interval($b2));
-        $this->assertSame(4, $b->commitmentSnapshot->cadence_interval);
+        $this->assertSame(5, $b->commitmentSnapshot->cadence_interval);
+    }
+
+    public function test_expressive_closure_is_prospective_and_entry_changes_its_live_interval_without_writes(): void
+    {
+        $origin = $this->origin();
+        $candidate = $this->candidate($origin);
+        $candidate->tier = 'expressive';
+        $before = DB::table('commitment_snapshots')->get()->toJson();
+        $calculator = app(ClosureCalculator::class);
+        $lineage = app(CommittalLineageService::class);
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        $values = $calculator->components($candidate);
+        $this->assertSame(0.0, $values->depth);
+        $this->assertSame(0.0, $values->cadence);
+        $this->assertSame(1, $lineage->interval($candidate));
+        $writes = collect(DB::getQueryLog())->filter(fn ($query) => preg_match('/^\s*(insert|update|delete)/i', $query['query']));
+        DB::disableQueryLog();
+        $this->assertCount(0, $writes);
+        $other = $this->candidate($origin);
+        $this->assertNull($other->phase->cycle->completed_at);
+        $this->assertSame(2, $lineage->interval($candidate));
+        $other->phase->cycle->forceFill(['completed_at' => now()])->save();
+        $this->assertSame(2, $lineage->interval($candidate));
+        $this->assertSame($before, DB::table('commitment_snapshots')->get()->toJson());
     }
 
     public function test_abandoned_descendants_do_not_supply_structure_intervals_or_directions(): void
@@ -157,11 +188,14 @@ class CommittalClosureTest extends TestCase
         $this->assertSame('cadence_history_unavailable', $preview['unavailable_reason']);
         $this->assertNull($preview['cadence']);
         $this->assertSame($before, $b->commitmentSnapshot->fresh()->getAttributes());
+        $c->tier = 'expressive'; // In-memory observation only; no historical rewrite.
+        $this->expectException(ClosureHistoryUnavailable::class);
+        app(ClosureCalculator::class)->components($c);
     }
 
     public function test_migration_backfills_only_proven_intervals_and_leaves_entry_and_observables_unchanged(): void
     {
-        $this->travelTo(\Carbon\CarbonImmutable::parse('2026-09-01 00:00:00'));
+        $this->travelTo(CarbonImmutable::parse('2026-09-01 00:00:00'));
         $a = $this->origin();
         $this->completed($a, 3);
         $this->travel(1)->seconds();
@@ -170,7 +204,7 @@ class CommittalClosureTest extends TestCase
         $b2 = $this->freeze($this->candidate($a), 5, 'settlement');
         $this->completed($a, 1); // Same-second other-Cycle completion makes B2 ambiguous.
         $before = DB::table('commitment_snapshots')->orderBy('proposition_id')->get()
-            ->map(fn ($row) => \Illuminate\Support\Arr::except((array) $row, ['cadence_interval']))->all();
+            ->map(fn ($row) => Arr::except((array) $row, ['cadence_interval']))->all();
         $governors = Cycle::orderBy('id')->pluck('entry_committal_id', 'id')->all();
         $rename = require database_path('migrations/2026_09_22_210000_rename_cycle_governance_to_entry.php');
         $rename->down();
@@ -188,7 +222,7 @@ class CommittalClosureTest extends TestCase
         $this->assertNull($a->commitmentSnapshot->fresh()->cadence_interval);
         $this->assertSame($governors, Cycle::orderBy('id')->pluck('entry_committal_id', 'id')->all());
         $this->assertSame($before, DB::table('commitment_snapshots')->orderBy('proposition_id')->get()
-            ->map(fn ($row) => \Illuminate\Support\Arr::except((array) $row, ['cadence_interval']))->all());
+            ->map(fn ($row) => Arr::except((array) $row, ['cadence_interval']))->all());
         $rename->down();
         $migration->down();
         $this->assertSame($before, DB::table('commitment_snapshots')->orderBy('proposition_id')->get()->map(fn ($row) => (array) $row)->all());
@@ -223,7 +257,7 @@ class CommittalClosureTest extends TestCase
         $before = (int) $this->actor->substrate->fresh()->field_version;
         $this->freeze($b, 1, 'settlement');
         $this->assertGreaterThan($before, (int) $this->actor->substrate->fresh()->field_version);
-        $this->expectException(\Illuminate\Database\QueryException::class);
+        $this->expectException(QueryException::class);
         DB::table('commitment_snapshots')->where('proposition_id', $b->id)->update(['cadence_interval' => 2]);
     }
 }

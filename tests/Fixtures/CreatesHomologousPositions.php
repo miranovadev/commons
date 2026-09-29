@@ -57,6 +57,7 @@ trait CreatesHomologousPositions
         $snapshot->forceFill(['proposition_id' => $node->id, 'substrate_id' => $this->actor->substrate_id,
             'ledger_entry_id' => $ledgerEntry->id, 'supersession_id' => $commit?->id,
             'correspondence' => 0, 'chirality' => 0, 'closure' => 0,
+            'depth' => 0, 'cadence' => 0, 'cadence_interval' => $entry === null ? null : 1,
             'prominence' => .5, 'turbulence' => .5, 'tension' => 0,
             'direction_before' => $horizon->domain, 'direction_after' => $after,
             'calculator_version' => $entry === null ? 'origin-bootstrap-v1' : 'ownership-fixture', 'evaluated_at' => now(), ...$measurements])->save();

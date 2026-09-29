@@ -66,7 +66,7 @@ class ParticipationApiTest extends TestCase
         $this->assertDatabaseHas('commitment_snapshots', [
             'proposition_id' => $response->json('data.current_proposition_id'),
             'orientation' => 0, 'attestation_cadence' => -1, 'chirality' => -0.5,
-            'orientation_direction' => 'positive', 'attestation_cadence_direction' => 'negative',
+            'orientation_direction' => 'negative', 'attestation_cadence_direction' => 'negative',
         ]);
     }
 

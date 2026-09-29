@@ -52,6 +52,7 @@ class CausalRecoveryTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->controlledClosureFixture(-1);
         $this->substrate = new Substrate;
         $this->substrate->forceFill(['slug' => 'recovery', 'title' => 'Recovery', 'visibility' => 'public', 'configuration' => []])->save();
         $this->root = app(ContextHorizonProjector::class)->currentFor($this->substrate);
@@ -1194,6 +1195,7 @@ class CausalRecoveryTest extends TestCase
             'ledger_entry_id' => $node->ledgerEntry->id, 'supersession_id' => $commit?->id, 'correspondence' => $tension, 'chirality' => $tension, 'closure' => $tension,
             'prominence' => (1 + $tension) / 2, 'turbulence' => (1 - $tension) / 2, 'tension' => $tension,
             'direction_before' => $horizon->domain, 'direction_after' => $boundary ? $horizon->domain->opposite() : $horizon->domain,
+            'cadence_interval' => $node->phase->cycle->entry_committal_id === null ? null : 1,
             'calculator_version' => 'controlled-routing-fixture', 'evaluated_at' => now()])->save();
         if ($boundary && $projectBoundary) {
             app(ContextHorizonProjector::class)->apply($snapshot);

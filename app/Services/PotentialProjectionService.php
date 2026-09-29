@@ -151,7 +151,8 @@ final class PotentialProjectionService
                     if ($region['measurements'] !== []) {
                         foreach (array_chunk($region['measurements'], 500) as $measurements) {
                             DB::table('proposition_measurements')->upsert($measurements, ['proposition_id'],
-                                ['correspondence', 'chirality', 'closure', 'calculated_at', 'calculator_version']);
+                                ['correspondence', 'chirality', 'closure', 'calculated_at', 'calculator_version',
+                                    'chirality_direction', 'orientation', 'attestation_cadence', 'orientation_direction', 'attestation_cadence_direction']);
                         }
                         foreach ($region['directions'] as $direction => $nodes) {
                             DB::table('propositions')->whereIn('id', $nodes)->update(['correspondence_direction' => $direction]);
@@ -217,8 +218,12 @@ final class PotentialProjectionService
                 if (! $active->has($node->id) || ! $context->memberships->has($node->id)) {
                     continue;
                 }
-                $values = $node->commitmentSnapshot ?? app(ObservableService::class)->calculate($context->proposition($node), $context);
-                $row = ['proposition_id' => $node->id, 'correspondence' => $values->correspondence,
+                $snapshot = $node->commitmentSnapshot;
+                $components = $snapshot === null ? app(ObservableService::class)->components($context->proposition($node), $context) : null;
+                $values = $snapshot ?? $components->observables();
+                $diagnostics = $snapshot !== null ? $snapshot->only(['chirality_direction', 'orientation', 'attestation_cadence', 'orientation_direction', 'attestation_cadence_direction'])
+                    : app(PropositionMeasurementService::class)->chiralityAttributes($context->proposition($node), $values->chirality, $components->chiralityComponents, $context);
+                $row = [...$diagnostics, 'proposition_id' => $node->id, 'correspondence' => $values->correspondence,
                     'chirality' => $values->chirality, 'closure' => $values->closure,
                     'calculated_at' => now(), 'calculator_version' => LineageMeasurementService::VERSION];
                 $measurements[] = $row;
