@@ -5,8 +5,15 @@ namespace Tests\Feature\Api;
 use App\Models\Participant;
 use App\Models\Proposition;
 use App\Services\BackwardRecoveryLineage;
+use App\Services\CommitRegionPolarityService;
+use App\Services\CommitRegionService;
 use App\Services\CrossoverMarginService;
 use App\Services\ExhaustionService;
+use App\Services\Observables\ChiralityCalculator;
+use App\Services\Observables\ContextLineageComparisonService;
+use App\Services\Observables\LineageMeasurementService;
+use App\Services\Observables\LocalMeasurementService;
+use App\Services\PropositionStateService;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\Support\ScriptedParticipationTestCase;
@@ -41,13 +48,18 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
         $this->assertTrue($boundary['closure_boundary']);
         $this->assertEqualsWithDelta(0, $boundary['depth'], 0.0000001);
         $this->assertEqualsWithDelta(0, $boundary['cadence'], 0.0000001);
-        $this->assertSame(10, (int) DB::table('commitment_snapshots')
+        // The still-open entrant counts alongside completed participation.
+        $this->assertSame(11, (int) DB::table('commitment_snapshots')
             ->where('proposition_id', $boundary['proposition_id'])->value('cadence_interval'));
         $beforeRest = $journey['responses'][50];
         $participant = Participant::findOrFail($actor);
         $cycle = $participant->cycles()->latest('sequence')->firstOrFail();
         $origin = $journey['responses'][0]['current_proposition_id'];
         $seed = Proposition::findOrFail($boundary['proposition_id']);
+        $entries = DB::table('cycles')->where('entry_committal_id', $origin)
+            ->where('context_horizon_id', $seed->phase->cycle->context_horizon_id);
+        $this->assertSame(11, $entries->count());
+        $this->assertTrue($entries->whereNull('completed_at')->exists());
         $diagnostic = app(CrossoverMarginService::class)->inspect($cycle);
         $this->assertReceiptNeutralChiralityChain($seed);
         $this->assertSame($boundary['tension_after'], $seed->commitmentSnapshot->tension);
@@ -96,13 +108,13 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
     /** Audit the changed natural field from signed populations, before accepting its snapshot. */
     private function assertReceiptNeutralChiralityChain(Proposition $seed): void
     {
-        $lineages = app(\App\Services\Observables\ContextLineageComparisonService::class);
-        $measurements = app(\App\Services\Observables\LineageMeasurementService::class);
-        $local = app(\App\Services\Observables\LocalMeasurementService::class);
-        $chirality = app(\App\Services\Observables\ChiralityCalculator::class);
-        $state = app(\App\Services\PropositionStateService::class);
-        $regions = app(\App\Services\CommitRegionService::class);
-        $polarity = app(\App\Services\CommitRegionPolarityService::class);
+        $lineages = app(ContextLineageComparisonService::class);
+        $measurements = app(LineageMeasurementService::class);
+        $local = app(LocalMeasurementService::class);
+        $chirality = app(ChiralityCalculator::class);
+        $state = app(PropositionStateService::class);
+        $regions = app(CommitRegionService::class);
+        $polarity = app(CommitRegionPolarityService::class);
         $lean = function ($domain) use ($chirality, $state, $regions, $polarity): array {
             $ids = $chirality->activeIds($domain->propositions, $domain->supersessions);
             $votes = $state->attestations($domain->propositions->whereIn('id', $ids));
@@ -143,5 +155,4 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
         }
         $this->assertSame(round($total / $mass, 7), $measurements->calculate($seed)->chirality);
     }
-
 }

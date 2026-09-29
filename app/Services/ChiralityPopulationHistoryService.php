@@ -13,7 +13,6 @@ use Illuminate\Support\Facades\DB;
 final readonly class ChiralityPopulationHistoryService
 {
     public function __construct(
-        private HomeostaticPopulationService $populations,
         private HomologousPositionService $homology,
         private CommittalLineageService $lineage,
     ) {}
@@ -72,28 +71,26 @@ final readonly class ChiralityPopulationHistoryService
         $positions = Proposition::whereHas('phase.cycle.participant', fn ($q) => $q->where('substrate_id', $substrateId))
             ->whereHas('ledgerEntry')->with('phase.cycle.contextHorizon', 'phase.cycle.participant', 'commitmentSnapshot')->get();
         $keys = $this->homology->populationKeys($positions);
-        $seen = [];
-        $context = null;
-        foreach ($positions as $position) {
-            $key = $keys[$position->id] ?? null;
-            if ($key === null || isset($seen[$key])) {
-                continue;
-            }
-            $population = $this->populations->forPosition($position);
-            if (! $population->contains('id', $position->id)) {
-                continue;
-            }
-            $seen[$key] = true;
-            $context ??= new ParticipationContext($position->phase, $positions->pluck('id'), includeUnavailableAdditional: true);
+        // The validated key partitions the same full structural population. Rows
+        // without ledger membership are unmeasurable, not synthetic zero members.
+        $populations = $positions->filter(fn ($node) => isset($keys[$node->id]))
+            ->groupBy(fn ($node) => $keys[$node->id]);
+        if ($populations->isEmpty()) {
+            return;
+        }
+        $context = new ParticipationContext($populations->first()->first()->phase, $positions->pluck('id'), includeUnavailableAdditional: true);
+        foreach ($populations as $key => $population) {
+            $position = $population->first();
+            $last = DB::table('chirality_population_observations')->where('population_key', $key)->latest('id')->first();
+            $previous = $last === null ? $this->precedingDirection($position) : ObservableDirection::from($last->direction);
             $values = [];
             foreach ($population as $member) {
                 $values[$member->id] = app(PropositionMeasurementService::class)->observeChirality($context->propositions->get($member->id) ?? $member, $context);
             }
-            $observation = app(HomeostaticDirectionService::class)->aggregate($values, 'chirality', $this->precedingDirection($position));
+            $observation = app(HomeostaticDirectionService::class)->aggregate($values, 'chirality', $previous);
             if ($observation->mean === null) {
                 continue;
             }
-            $last = DB::table('chirality_population_observations')->where('population_key', $key)->latest('id')->first();
             if ($last !== null && (float) $last->mean === $observation->mean && $last->direction === $observation->direction->value) {
                 continue;
             }
