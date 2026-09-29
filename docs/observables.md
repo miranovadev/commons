@@ -120,8 +120,47 @@ D = \frac{\sum_i d_i}{n}
 
 Here d_i is the signed direction of each effective Attestation under its fixed
 Commit Region polarity, and n is the effective Attestation count. Support can map
-to either sign. The final value is D_current × D_previous. A Domain without an active
+to either sign. Orientation is round(D_current × D_previous, 7). A Domain without an active
 Attestation has a neutral lean of 0.
+
+
+Chirality v2 is `round((Orientation + Attestation Cadence) / 2, 7)`.
+Both components use exactly the same causal `LineageComparison`, never whole-Horizon or global populations.
+Orientation uses effective Attestation state, hard-Supersession active positions and Commit-source inheritance.
+Attestation Cadence instead counts every historical Attestation act targeting propositions in each compared DomainLineage, including replaced Attestations.
+
+The participation basins represented by a DomainLineage are the canonical
+`entry_committal_id` values of its propositions' creating Cycles, together with its represented Committals. Each counted Cycle must enter that compared Domain/Horizon through one of these explicit seeds. Count **all**
+persisted Cycles entering those basins, including unfinished, Attestation-only,
+contribution-free and Rested Cycles. A Committal remaining in the Domain also represents its own basin immediately; a boundary's outgoing Cycles enter the child Domain and do not count in the parent's population.
+Origin additionally represents its actual parentless producing Cycle. Never count
+unrelated null-entry Cycles, sibling basins or a whole Horizon merely by membership.
+
+If neither side has a Cycle population, Attestation Cadence is 0. If exactly one
+side has a population, it is -1. With both populations present, each rate is
+historical Attestation acts / Cycles. Two observed zero rates give +1; otherwise
+Cadence is `round(clamp(1 - 2 * abs(currentRate - previousRate) / max(currentRate, previousRate), -1, 1), 7)`.
+Population absence is distinct from an observed zero rate.
+
+These are live observations: later Attestations and Cycle entries may change a
+later calculation. There is no completion, timestamp or first-observation cutoff.
+Receipts, loads, clears, instruments and rationale contribute no weight or activity.
+Only the combined local Chirality undergoes existing inverse-square attenuation.
+Local components remain inspectable independently; they are not separately attenuated.
+
+Orientation and Attestation Cadence have independent retained directions. Nonzero
+values establish their sign; zero retains the prior component direction, falling
+back to the entry Commitment's direction and then Positive. Component disagreement
+is descriptive and never an admissibility or movement gate. Frozen CommitmentSnapshots,
+including old snapshots without component diagnostics, are never recalculated.
+
+Without an Origin Attestation, Origin has Orientation 0, one current bootstrap
+Cycle and no previous population: Cadence -1 and Chirality -0.5. Its component
+directions are Positive and Negative respectively. With Correspondence +1 and
+Closure -1, existing projection produces negative Tension (approximately -1/6)
+and naturally opens Settlement. No artificial Attestation or projection exception
+is required. Ordinary Commit grounding still requires effective Attestation and
+qualifying evidence, plus the existing structural and Closure conditions.
 
 Bias compares each active Stance/Frontier head's retained direction with the
 unweighted Attestation lean of its own causal ancestry. It excludes the candidate's own
@@ -129,7 +168,7 @@ contribution, deduplicates both reconciliation paths, and stops at the governing
 Committal. At zero, each direction retains its own preceding nonzero history,
 initialized from that Committal. Historical ancestors remain comparison context
 without duplicating effective Attestations. This is independent of the sign of
-the final cross-domain Chirality product. Bias requires a Receipt and effective
+the Orientation component of Chirality. Bias requires a Receipt and effective
 Attestation, then preserves content and proposition evidence while resetting the
 new classification's votes and touches. It promises no population-wide lean target.
 Mediate uses the previous Disperse Gate's retained Correspondence direction
@@ -223,9 +262,9 @@ Unloaded evidence, legacy signatures without verification provenance and unsuppo
 Reinforcement count describes qualifying evidence uptake. It never changes
 Correspondence, Chirality or Closure, and has no measurement ratio.
 
-Origin retains raw Correspondence +1, Chirality -1, and Depth/Cadence/Closure -1.
+Origin retains raw Correspondence +1 and Depth/Cadence/Closure -1; Chirality v2 is -0.5 from population asymmetry.
 The first developed Domain immediately uses ordinary structural Correspondence
-comparison. Chirality retains its existing v1 bootstrap and cross-Domain product.
+comparison. Chirality uses the equal mean of Orientation and live Attestation Cadence described above.
 Receipt loading does not change these rules.
 
 Use LocalMeasurementService::calculate() for a raw result and

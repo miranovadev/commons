@@ -21,6 +21,8 @@ class CommitmentSnapshot extends Model
         return [
             'correspondence' => 'float',
             'chirality' => 'float',
+            'orientation' => 'float',
+            'attestation_cadence' => 'float',
             'closure' => 'float',
             'depth' => 'float',
             'cadence' => 'float',

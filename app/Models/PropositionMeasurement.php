@@ -18,6 +18,8 @@ class PropositionMeasurement extends Model
         return [
             'correspondence' => 'float',
             'chirality' => 'float',
+            'orientation' => 'float',
+            'attestation_cadence' => 'float',
             'closure' => 'float',
             'calculated_at' => 'immutable_datetime',
         ];

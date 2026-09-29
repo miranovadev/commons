@@ -64,9 +64,9 @@ class AttestationPolarityTest extends TestCase
         $this->assertSame(1.0, $evidence->valueFor(collect([$this->origin])));
         $this->assertSame($label, $this->origin->attestations()->firstOrFail()->direction);
         // Computed bootstrap Chirality/Tension are separate from initial Attestation polarity.
-        $this->assertSame(-1.0, $this->origin->commitmentSnapshot->chirality);
+        $this->assertSame(-0.5, $this->origin->commitmentSnapshot->chirality);
         $this->assertSame(1.0, $this->origin->commitmentSnapshot->correspondence);
-        $this->assertSame(-0.3333334, $this->origin->commitmentSnapshot->tension);
+        $this->assertEqualsWithDelta(-1 / 6, $this->origin->commitmentSnapshot->tension, 1e-7);
         $child = $this->node('stance', $this->origin);
         $this->assertSame(Direction::Positive, $evidence->directionFor($child));
         $this->attest($child, 'support');

@@ -43,9 +43,9 @@ frontier rank or action availability.
 - `staggered-epochs.json`: 30 steps. The same failed continuation spends A and B
   at step 27; A alone reopens at 28; B alone reopens at 29. Semantic assertions
   inspect parked observers between those final steps.
-- `tragedy-lifecycle.json`: the original first 51 steps, unchanged. The API test
+- `tragedy-lifecycle.json`: the original first 51 authored actions, with explicit live-field diagnostic expectations. The API test
   then submits the authored step-51 Rest and checks its semantic recovery contract.
-  The entry Emergence Region is naturally crossover-closed (margin -0.3505622):
+  The entry Emergence Region is naturally crossover-closed (margin -0.2463462):
   recovery passes its Committal at backward distance 2 and selects the ancestral
   Settlement Origin at distance 9. Receipt loading/consumption, Reinforcement and
   the boundary Commit's frozen interval 10 retain their explicit prefix assertions.
@@ -82,3 +82,5 @@ The complete solo and collective Domain scripts live unchanged in
 `tests/Replay/Fixtures/`. They are manual reference/performance replays, invoked
 with `composer test:replay-domain`, and are outside mandatory PHPUnit discovery.
 A deterministic full Domain round trip is not a Core acceptance requirement.
+
+Chirality v2 recalibrates the recorded intermediate Rest reasons where live Potential is now zero: `no_remaining_potential` replaces `no_available_move` only at the observed steps. Authored actions, topology and recovery assertions are unchanged. The final Crossover remains closed with Correspondence -0.5276331, Chirality 0.7666717 and Tension bound 0.2463462. The diagnostic independently checks Orientation, live Attestation rates, their mean and unchanged attenuation; live reconstruction is not compared to an earlier frozen snapshot.

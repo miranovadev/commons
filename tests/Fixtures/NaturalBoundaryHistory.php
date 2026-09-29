@@ -22,7 +22,7 @@ use App\Services\PropositionMeasurementService;
 trait NaturalBoundaryHistory
 {
     /** @return array{Substrate, Proposition, Proposition, Proposition} */
-    private function naturalBoundaryHistory(): array
+    private function naturalBoundaryHistory(int $futureParticipants = 1): array
     {
         $substrate = (new Substrate)->forceFill(['slug' => 'natural-boundary', 'title' => 'Natural boundary',
             'visibility' => 'public', 'configuration' => []]);
@@ -35,6 +35,11 @@ trait NaturalBoundaryHistory
         $origin = Proposition::findOrFail($state['current_proposition_id']);
         $cycle = $author->cycles()->whereNull('completed_at')->sole();
         $cycle->phases()->update(['completed_at' => now()]);
+        // Seven actual entrants balance the seven later Attestation acts against
+        // Origin's one act/one bootstrap Cycle. Idle participation is intentional.
+        for ($i = 0; $i < 6; $i++) {
+            $this->naturalIdleEntry($origin);
+        }
 
         // The completed reference extends beyond the later seed. Its hard
         // expressive step occupies the same cardinal coordinate as that Commit.
@@ -48,7 +53,10 @@ trait NaturalBoundaryHistory
             $parent = $this->naturalHistoryNode($cycle, $parent, $kind, $type);
         }
         $ancestor = $parent;
-        $this->assertSame('emergence', $ancestor->commitmentSnapshot->direction_after->value);
+        $this->assertSame('emergence', $ancestor->commitmentSnapshot->direction_after->value, json_encode([
+            'snapshot' => $ancestor->commitmentSnapshot->only(['correspondence', 'chirality', 'orientation', 'attestation_cadence', 'closure', 'tension']),
+            'components' => app(\App\Services\Observables\ChiralityCalculator::class)->components(app(\App\Services\Observables\ContextLineageComparisonService::class)->for($ancestor)),
+        ]));
 
         $cycle = new Cycle;
         $cycle->forceFill(['participant_id' => $author->id, 'sequence' => 3,
@@ -58,6 +66,11 @@ trait NaturalBoundaryHistory
             $parent = $this->naturalHistoryNode($cycle, $parent, $kind, $type);
         }
         $seed = $parent;
+        // The later boundary events have three acts and three entrants in this
+        // Domain: its producer, the live actors, and any remaining idle entrant.
+        for ($i = $futureParticipants; $i < 2; $i++) {
+            $this->naturalIdleEntry($seed);
+        }
         $this->assertSame(1.0, $seed->commitmentSnapshot->depth);
         $this->assertSame(1.0, $seed->commitmentSnapshot->cadence);
         // The seed matches its reference locally; attenuation also includes the
@@ -68,10 +81,20 @@ trait NaturalBoundaryHistory
         $mass = 1 + 1 / 4 + 1 / 9 + 1 / 16 + 1 / 25;
         $expected = round((1 + 1 / 4 + 1 / 9 + 1 / 16 - 0.5130659 / 25) / $mass, 7);
         $this->assertSame($expected, $seed->commitmentSnapshot->correspondence);
-        $this->assertSame(1.0, $seed->commitmentSnapshot->chirality);
+        $this->assertSame(1.0, $seed->commitmentSnapshot->orientation);
+        $this->assertEqualsWithDelta(-1 / 3, $seed->commitmentSnapshot->attestation_cadence, 1e-7);
         $this->assertDatabaseCount('tragedies', 0);
 
         return [$substrate, $origin, $ancestor, $seed];
+    }
+
+    private function naturalIdleEntry(Proposition $entry): void
+    {
+        $participant = (new Participant)->forceFill(['substrate_id' => $entry->phase->cycle->participant->substrate_id,
+            'callsign' => 'idle-'.Participant::count()]);
+        $participant->save();
+        (new Cycle)->forceFill(['participant_id' => $participant->id, 'sequence' => 1,
+            'entry_committal_id' => $entry->id])->save();
     }
 
     private function naturalHistoryNode(Cycle $cycle, Proposition $parent, PhaseKind $kind, string $type): Proposition

@@ -23,7 +23,7 @@ class NaturalChargeBoundaryLifecycleTest extends TestCase
 
     public function test_two_participants_reproduce_catastrophe_then_recover_to_the_open_ancestor(): void
     {
-        [$this->substrate, $this->origin, $ancestor, $seed] = $this->naturalBoundaryHistory();
+        [$this->substrate, $this->origin, $ancestor, $seed] = $this->naturalBoundaryHistory(futureParticipants: 2);
         // Seed topology only. Every semantic event below is an ordinary contribution,
         // with real observables, evidence, phase progression and recovery. No field mock.
         $a = $this->phase($seed, PhaseKind::Distinguish);

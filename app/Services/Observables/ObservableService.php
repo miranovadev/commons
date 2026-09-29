@@ -12,6 +12,11 @@ final readonly class ObservableService
         private LineageMeasurementService $measurements,
     ) {}
 
+    public function components(Proposition $proposition, ?ParticipationContext $context = null): \App\Domain\Observables\LocalMeasurements
+    {
+        return $this->measurements->calculate($proposition, context: $context);
+    }
+
     public function calculate(Proposition $proposition, ?ParticipationContext $context = null): ObservableValues
     {
         return $this->measurements->calculate($proposition, context: $context)->observables();
