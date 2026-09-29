@@ -188,7 +188,7 @@ final class PropositionMeasurementService
                 ]],
                 ['proposition_id'],
                 [
-                    ...array_keys($componentAttributes),
+                    ...array_keys(array_diff_key($componentAttributes, ['chirality_direction' => true])),
                     'chirality_direction',
                     'correspondence',
                     'chirality',
@@ -228,7 +228,7 @@ final class PropositionMeasurementService
 
     private function componentAttributes(Proposition $proposition, ChiralityValues $values, ?ParticipationContext $context = null): array
     {
-        $prior = DB::table('chirality_observations')->where('proposition_id', $proposition->id)->first()
+        $prior = $this->priorChiralityObservation($proposition, $context)
             ?? ($context === null ? PropositionMeasurement::find($proposition->id) : $context->propositions->get($proposition->id)?->measurement);
         $entry = $proposition->phase->cycle->entry_committal_id;
         $previous = $entry === null ? null : ($context === null ? CommitmentSnapshot::find($entry) : $context->snapshots->firstWhere('proposition_id', $entry));
@@ -293,7 +293,10 @@ final class PropositionMeasurementService
 
     private function resolvedChiralityDirection(Proposition $position, ?float $value, ?ParticipationContext $context = null): ObservableDirection
     {
-        $prior = DB::table('chirality_observations')->where('proposition_id', $position->id)->first()
+        if ($value !== null && $value !== 0.0) {
+            return ObservableDirection::after($value);
+        }
+        $prior = $this->priorChiralityObservation($position, $context)
             ?? ($context === null ? PropositionMeasurement::find($position->id) : $position->measurement);
         $entry = $position->phase->cycle->entry_committal_id;
         $snapshot = $entry === null ? null : ($context === null ? CommitmentSnapshot::find($entry) : $context->snapshots->firstWhere('proposition_id', $entry));
@@ -301,6 +304,16 @@ final class PropositionMeasurementService
 
         return ObservableDirection::after($value ?? 0.0, $previous === null
             ? ObservableDirection::defaultFor('chirality') : ObservableDirection::from($previous));
+    }
+
+    private function priorChiralityObservation(Proposition $position, ?ParticipationContext $context): ?object
+    {
+        if ($context === null) {
+            return DB::table('chirality_observations')->where('proposition_id', $position->id)->first();
+        }
+
+        return $context->remember('chirality:retained-observations', fn () => DB::table('chirality_observations')
+            ->whereIn('proposition_id', $context->propositions->keys())->get()->keyBy('proposition_id'))->get($position->id);
     }
 
     private function assertMeasurement(string $name, ?float $value): void

@@ -57,6 +57,9 @@ abstract class TestCase extends BaseTestCase
         $calculator = app(LocalMeasurementService::class);
         $this->partialMock(LocalMeasurementService::class, function ($mock) use ($calculator, $closure): void {
             $mock->shouldReceive('calculate')->andReturnUsing(function ($node, $comparison = null, $includeClosure = true) use ($calculator, $closure) {
+                if ($node->tier === 'committal') {
+                    return $calculator->calculate($node, $comparison, $includeClosure);
+                }
                 $raw = $calculator->calculate($node, $comparison, false);
                 $value = $node->commitmentSnapshot?->closure ?? $closure;
 
@@ -326,6 +329,7 @@ abstract class TestCase extends BaseTestCase
                 'correspondence' => 0, 'chirality' => 0, 'closure' => 0,
                 'prominence' => .5, 'turbulence' => .5, 'tension' => 0,
                 'direction_before' => $horizon->domain, 'direction_after' => $horizon->domain->opposite(),
+                'cadence_interval' => $gate === null ? null : 1,
                 'calculator_version' => 'scope-fixture', 'evaluated_at' => now()])->save();
             $horizon = app(ContextHorizonProjector::class)->apply($snapshot);
         }

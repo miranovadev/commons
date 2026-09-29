@@ -5,8 +5,12 @@ namespace Tests\Feature;
 use App\Domain\Observables\ChiralityValues;
 use App\Enums\ObservableDirection;
 use App\Enums\PhaseKind;
+use App\Models\Attestation;
 use App\Models\Cycle;
+use App\Models\Phase;
 use App\Services\ChiralityPopulationHistoryService;
+use App\Services\ContributionDispatcher;
+use App\Services\CycleEntryService;
 use App\Services\HomeostaticDirectionService;
 use App\Services\Observables\LocalMeasurementService;
 use App\Services\PropositionMeasurementService;
@@ -101,6 +105,35 @@ class ChiralityPopulationHistoryTest extends TestCase
         $this->assertSame(ObservableDirection::Positive, $result->direction);
         $means = DB::table('chirality_population_observations')->where('population_key', app(ChiralityPopulationHistoryService::class)->key($a))->orderBy('id')->pluck('mean');
         $this->assertSame([.05, 0.0], $means->take(-2)->map(fn ($v) => (float) $v)->values()->all());
+    }
+
+    public function test_attestation_and_replacement_are_observed_through_real_dispatch(): void
+    {
+        $this->createHomologyActor();
+        app(CycleEntryService::class)->enter($this->actor, ['statement' => 'Origin',
+            'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/history-origin']]);
+        $cycle = $this->actor->cycles()->latest('sequence')->firstOrFail();
+        $phase = $cycle->phases()->whereNull('completed_at')->sole();
+        $dispatcher = app(ContributionDispatcher::class);
+        $node = $dispatcher->dispatch($this->actor, $phase, ['action' => 'proposition.variant', 'statement' => 'Observed source']);
+        $history = app(ChiralityPopulationHistoryService::class);
+        $key = $history->key($node);
+        $this->assertSame(.3, (float) DB::table('chirality_population_observations')->where('population_key', $key)->latest('id')->value('mean'));
+        $beforeReceipt = DB::table('chirality_population_observations')->get()->toJson();
+        $dispatcher->dispatch($this->actor, $phase, ['action' => 'instrument.execute', 'proposition_id' => $node->id,
+            'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/history-evidence']]);
+        $this->assertSame($beforeReceipt, DB::table('chirality_population_observations')->get()->toJson());
+        $dispatcher->dispatch($this->actor, $phase, ['action' => 'attestation.create', 'proposition_id' => $node->id, 'direction' => 'support']);
+        $this->assertSame(-.5, (float) DB::table('chirality_population_observations')->where('population_key', $key)->latest('id')->value('mean'));
+        $phase->forceFill(['completed_at' => now()])->save();
+        $next = new Phase;
+        $next->forceFill(['cycle_id' => $cycle->id, 'kind' => $phase->kind, 'write_register' => $phase->write_register,
+            'gate_proposition_id' => $phase->gate_proposition_id, 'started_at' => now()])->save();
+        $dispatcher->dispatch($this->actor, $next, ['action' => 'attestation.create', 'proposition_id' => $node->id, 'direction' => 'refute']);
+        $this->assertSame(2, app(LocalMeasurementService::class)->chiralityComponents($node)->currentActs);
+        $this->assertSame(1, Attestation::whereNotNull('supersedes_attestation_id')->count());
+        $this->assertSame('negative', DB::table('chirality_population_observations')->where('population_key', $key)->latest('id')->value('direction'));
+        $this->assertSame(-.5, app(HomeostaticDirectionService::class)->forPosition($node->fresh(), 'chirality')->mean);
     }
 
     public function test_unavailable_current_population_inherits_corresponding_preceding_horizon_without_a_synthetic_zero(): void

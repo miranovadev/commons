@@ -312,6 +312,7 @@ class HomologousBiasTest extends TestCase
 
     public function test_wrong_coordinates_and_plain_traverse_cannot_cross_over(): void
     {
+        $this->controlledClosureFixture(-1);
         $this->warrant();
         $wrongDepth = $this->source($this->commit($this->b, 'settlement'));
         $wrongDomain = $this->source($this->commit($this->origin, 'emergence'));
@@ -792,7 +793,7 @@ class HomologousBiasTest extends TestCase
         $actual = app(ObservableService::class)->components($target);
         $this->assertEquals($actual->observables()->chirality, $target->fresh()->measurement->chirality);
         $this->assertSame([$this->gateA->id], $target->parents()->pluck('propositions.id')->all());
-        $this->assertFalse(app(ChiralityGateService::class)->evaluate($target->fresh())['admissible']);
+        $this->assertSame('negative', app(ChiralityGateService::class)->evaluate($target->fresh())['chirality_direction']);
     }
 
     private function measure(Proposition $node, float $value): void

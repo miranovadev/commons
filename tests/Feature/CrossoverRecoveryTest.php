@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\PhaseKind;
+use App\Exceptions\ClosureHistoryUnavailable;
 use App\Models\CommitmentSnapshot;
 use App\Models\Cycle;
 use App\Models\Participant;
@@ -16,6 +17,7 @@ use App\Services\CycleEntryService;
 use App\Services\ExhaustionService;
 use App\Services\InputPlanService;
 use App\Services\LedgerService;
+use App\Services\Observables\ReinforcementService;
 use App\Services\ParticipationService;
 use App\Services\PotentialChargeService;
 use App\Services\PotentialProjectionService;
@@ -217,27 +219,23 @@ class CrossoverRecoveryTest extends TestCase
         $state = fn () => DB::table('proposition_measurements')->orderBy('proposition_id')->get()->toJson();
         $measurements = $state();
         $after = app(CrossoverMarginService::class)->inspect($phase->cycle);
-        $this->assertSame(1, app(\App\Services\Observables\ReinforcementService::class)->count($seed));
+        $this->assertSame(1, app(ReinforcementService::class)->count($seed));
         $this->assertSame($before, $after);
         $this->assertSame($measurements, $state());
         $this->loadedReceiptFixture($seed);
         $measurements = $state();
-        $this->assertSame(2, app(\App\Services\Observables\ReinforcementService::class)->count($seed));
+        $this->assertSame(2, app(ReinforcementService::class)->count($seed));
         $this->assertSame($before, app(CrossoverMarginService::class)->inspect($phase->cycle));
         $this->assertSame($measurements, $state());
     }
 
-    public function test_unavailable_legacy_history_is_not_a_closed_crossover_proof(): void
+    public function test_missing_required_history_fails_closed_as_unsupported_state(): void
     {
         $origin = $this->commit(null, boundary: true);
         $parent = $this->commit($origin);
         $seed = $this->commit($parent, -1, interval: null);
-        $terminal = $this->terminal($seed);
-        $diagnostic = app(CrossoverMarginService::class)->inspect($terminal->cycle);
-        $this->assertFalse($diagnostic['closed']);
-        $this->assertSame('closure_history_unavailable', $diagnostic['unavailable_reason']);
-        app(ParticipationService::class)->contribute($terminal->cycle->participant, $terminal->id, ['action' => 'participant.rest']);
-        $this->assertSame($seed->id, $terminal->cycle->participant->fresh()->current_proposition_id);
+        $this->expectException(ClosureHistoryUnavailable::class);
+        $this->terminal($seed);
     }
 
     public function test_authoritative_exhaustion_still_skips_an_open_crossover_region(): void

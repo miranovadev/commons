@@ -16,6 +16,7 @@ use App\Services\BiasGateService;
 use App\Services\ClosureGateService;
 use App\Services\ClosureOptionService;
 use App\Services\CommitRegionService;
+use App\Services\ContextHorizonProjector;
 use App\Services\ContributionDispatcher;
 use App\Services\InputPlanService;
 use App\Services\LedgerService;
@@ -193,6 +194,7 @@ class CommitRegionTest extends TestCase
     #[DataProvider('domains')]
     public function test_closure_keeps_local_writes_and_revalidates_the_selected_source(string $first, string $second, string $third): void
     {
+        $this->controlledClosureFixture(-1);
         if ($this->regionSeed->register !== $third) {
             $this->regionSeed = $this->node($third, null, 'committal');
         }
@@ -317,7 +319,7 @@ class CommitRegionTest extends TestCase
     {
         $this->viewer->cycles()->whereNull('completed_at')->get()->each(fn ($cycle) => $cycle->forceFill(['completed_at' => now()])->save());
         $governor = $gate->tier === 'committal' ? $gate : $gate->phase->cycle->entryCommittal;
-        $horizon = app(\App\Services\ContextHorizonProjector::class)->forEntry($governor);
+        $horizon = app(ContextHorizonProjector::class)->forEntry($governor);
         $cycle = new Cycle;
         $cycle->forceFill(['participant_id' => $this->viewer->id, 'sequence' => $this->viewer->cycles()->max('sequence') + 1,
             'context_horizon_id' => $horizon->id, 'entry_committal_id' => $governor->id])->save();
@@ -336,4 +338,3 @@ class CommitRegionTest extends TestCase
         app(LedgerService::class)->record($attestation);
     }
 }
-
