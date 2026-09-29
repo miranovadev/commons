@@ -9,51 +9,33 @@ all Commitment prerequisites expose Commit. A Write's own direct Committal child
 may expose Traverse; unrelated regional Writes and Commits cannot. No edge means
 no movement.
 
-Order evaluates the proposed Commit node and edge with the same post-Commit
-active-head state used by actual Commitment. The head inherits its Gate's Phase
-touch history, effective Attestations and completed Receipts through the Commit
-edge. Cadence therefore does not reset to an untouched head or use a different
-pre-Commit population from Depth. Reads do not create
-temporary propositions, ledger entries, memberships, or snapshots. Dispatch
-reevaluates under the substrate lock; snapshot creation checks the actual
-candidate too. Failure rolls back the whole Commit write.
+Order evaluates a hypothetical Commit using the same creating-Cycle governance
+and committed-lineage geometry as actual Commitment. Commit inherits effective
+Attestations and completed Receipts by reference for grounding. Preview writes no
+propositions, edges or snapshots; dispatch reevaluates under the substrate lock.
 
-Depth observes active heads' structural extension and reinforcement. Cadence
-observes their persisted Phase-touch distribution, not cycle or inter-Commit
-timing. Hard-superseded history supplies ancestry but is not an independent
-active-head observation. Both local components pass through the existing
-inverse-square lineage weighted mean once; Closure adds no attenuation.
-
-Settlement can develop positive prospective components with only the Origin
-Commitment in history: matching development and touch variability are observable
-before the proposed Commit. Changed development and concentrated touch
-distributions can develop negative components in Emergence. The original
-comparison of each Write's current and predecessor lineage, independent directions
-and hysteresis remain in force.
+Depth compares consecutive committed Domain-run lengths. Cadence compares the
+latest two direct ancestral inter-Commit intervals, including completed basin
+participation. Neither uses Receipt count or Phase-touch weighting. Origin has
+Depth/Cadence -1; the first ordinary Commit has both 0 with negative hysteresis.
+Later candidates use measured history. See [Observables](observables.md).
 
 Depth and Cadence are retained separately (seven-decimal precision). Each
-positive/negative value selects that direction; exactly zero retains the prior
-committed direction. Both resolved directions must match. Their normalized values combine with counted independent Reinforcement inside
-local Closure before propagation. Closure alone cannot establish admissibility;
-Depth/Cadence direction alignment remains required. See [Reinforcement](reinforcement.md).
+positive/negative value selects that direction; zero retains the prior committed
+direction. Both directions must match. Closure is `(Depth + Cadence) / 2`.
+Receipt loads cannot change the components, Closure, directions or admissibility.
+Persisted snapshots remain immutable, including historically reinforced Closure.
+See [Reinforcement](reinforcement.md).
 
 This applies [Invariant 4: Zero Does Not Erase Direction](core-invariants.md#4-zero-does-not-erase-direction)
 and [Invariant 7: Reference Frames Must Remain Distinct](core-invariants.md#7-reference-frames-must-remain-distinct):
 each component retains its own direction under the documented history rules.
 
-Direction history is the latest evaluated **ancestor** snapshot by substrate
-ledger sequence, not the latest Commit on an unrelated branch. At a
-reconciliation, all parents contribute ancestry; the latest evaluated ancestor
-wins deterministically. Expressive reads and writes do not advance this
-committed hysteretic state. With no evaluated ancestor, both directions default
-negative, including bootstrap.
-
-The additive migration stores Depth, Cadence, both resolved directions, the
-source of direction history, and pre-Commit Tension on new immutable snapshots.
-Old snapshots retain null components: neither their historical values nor their
-Domain transitions are guessed or rewritten. The first evaluation whose ancestry
-contains only old snapshots explicitly reports `negative-default`. Subsequent
-evaluations inherit the newly recorded component directions.
+Direction history follows the direct creating-Cycle entry Committal chain.
+Unrelated branches and Supersession-parent unions do not supply committed Closure
+history. Expressive work inherits its entry snapshot's structural components.
+Unavailable historical intervals block prospective Commitment explicitly rather
+than guessing a value. Frozen historical snapshots are never rewritten.
 
 `plan.commitment.closure` exposes candidate values, directions, and history.
 `requirements.closure` is an actual boolean and `closure_enforced` is true.
@@ -109,8 +91,7 @@ contract and rendered human Support/Refute controls.
 `OperationalClosurePathTest` complements the component fixtures with a complete
 [collaborative lifecycle](operational-closure-path.md). It exercises refusal for
 missing final-Concord evidence, refusal for divergent Depth/Cadence after
-grounding, and successful Commit after real participation changes the touch
-distribution. Preview and the persisted snapshot agree, and only Commit carries
+grounding, and successful Commit after real participation changes committed
+Cadence. Preview and the persisted snapshot agree, and only Commit carries
 the final earned history. No Closure calculation, threshold or hysteresis rule
 is changed to make this path succeed.
-

@@ -106,7 +106,7 @@ Receipt creation alone contributes zero.
 
 Active loads are counted once per Participant/Proposition, deduplicating across
 Commit-inherited source state and preserved reclassification receipts. Thus equivalent signatures, different sources,
-versions, Receipts and repeated Cycles cannot multiply one Participant's weight.
+versions, Receipts and repeated Cycles cannot multiply one Participant's count.
 Multiple Receipts may remain loaded; clearing one preserves the contribution if
 another qualifying load still supports that same state. Clearing the last removes
 it. Different Participants can independently load the same Receipt/signature.
@@ -114,11 +114,11 @@ it. Different Participants can independently load the same Receipt/signature.
 Commit inherits participation by reference and freezes its recorded measurements.
 Reclassify preserves completed proposition-level Receipts and their loaded
 contributions, but starts new Attestations and touches. A superseded classification
-retains its historical reinforcement count; only the active classification
-contributes that application to measurements. Variant, Revise and Reconcile
+retains its historical reinforcement count. Neither classification applies that
+count to measurement values. Variant, Revise and Reconcile
 start fresh evidence state. A Receipt on
 a historical Attestation resolves to that Attestation's Proposition and remains readable after supersession. New Receipts always belong to the observed Proposition.
-Attestation lean replays load and clear events in ledger order and weights each judgment only with its author's qualifying Proposition loads. Supersession changes the effective judgment, retaining that Participant's current load state. Other Participants' loads cannot weight it; at zero, retained direction follows history.
+Attestation lean is the mean of effective signed Attestations under fixed Commit Region polarity. Direction replay uses Attestation creation/replacement and topology events, never Receipt load/clear events. At zero, retained direction follows Attestation history. Participant evidence context still records every load and clear.
 
 Every valid Instrument attempt retains a Receipt. Failed retrieval and changed
 versions awaiting stability remain unqualified. Historical `reinforcement_status`
@@ -127,40 +127,36 @@ record `not-loaded`; participant packets derive the current status separately.
 Re-verification is still required after the stability interval; earlier Receipts
 are not retroactively promoted.
 
-## Committed structure and local reinforcement
+## Receipt-neutral measurement
 
-Depth and Cadence keep their structural definitions, comparison normalization and
-hysteretic directions. Reinforcement no longer multiplies path length. Given
-their local values `D` and `C`, counted participants `N`, and the existing
-`observables.contribution_receipt_ratio` `q` (default 3):
+Receipts may establish evidence, authority, context and reinforcement count.
+They do not alter Correspondence, Chirality or Closure values.
+Reinforcement changes evidential context, never semantic measurement value.
+Neither positive nor negative observable polarity is preferable.
 
-```
-persistence mass = N / q
-local Closure = (D + C + persistence mass) / (2 + persistence mass)
-```
+Closure is the pure mean `(Depth + Cadence) / 2`, retaining structural history,
+bootstrap, directions and admissibility. Chirality retains its v1 cross-Domain
+product, with each Domain lean the unweighted mean of effective signed Attestations.
+Correspondence remains structural, with unit-weight Shape features and Cardinal
+Position comparison. Receipt loads and clears do not enter Orientation replay.
 
-Depth and Cadence each contribute one normalized observation. Each counted
-Participant contributes a persistence observation (+1) at the existing ratio.
-The weighted mean stays within [-1, 1], preserves `(D + C) / 2` when N=0, and
-approaches persistence as independent participation increases. It is monotone in
-N and does not add an arbitrary fixed bonus. Reinforcement keeps the existing
-participant-weighted Correspondence feature and effective-Attestation lean roles,
-using active loaded contributions rather than raw signed Receipt counts.
+`ReinforcementService` counts qualifying active Participant uptake and supplies
+public counts and grounding diagnostics. It provides no measurement weights or
+receipt increment. Existing stored contribution/receipt ratio configuration has
+no effect on measurement. Reinforcement is not moved into attenuation, population
+aggregation, or any derived field.
 
-`LocalMeasurementService` applies this weight to the head's committed structural
-Depth and Cadence. `LineageMeasurementService` preserves the head's Closure directly;
-only Correspondence and Chirality continue through expressive-lineage attenuation.
-Counts are never attenuation-averaged before applying the nonlinear formula.
-The cap, qualification, ratio and reclassification effect above are unchanged.
-New evidence invalidates disposable projections; frozen snapshots stay historical.
-Calculator version is `committal-closure-v10`.
+Ordinary evidence changes may invalidate disposable projections; recalculation
+uses `receipt-neutral-observables-v15`. Frozen CommitmentSnapshot values remain
+historical, including Closure recorded under earlier reinforced semantics.
+Memory-only Receipts keep their existing non-field-invalidating behavior.
 
 ## Commitment and branching
 
 All operational Commit paths require an effective Attestation, a completed
 Receipt, an uncommitted direct source, and the phase, region, register and
 Depth/Cadence alignment constraints. Snapshot creation checks grounding again.
-Loaded Reinforcement contributes additional weight but has no required minimum.
+Loaded Reinforcement remains diagnostic metadata and has no required minimum.
 Neither evidence existence nor reinforcement overrides divergent Depth/Cadence.
 
 The original Origin seed remains the explicit initialization exception:
@@ -192,4 +188,3 @@ references are resolved against the Substrate when offered for Read.
 
 Rollback refuses to discard recorded context transitions. Historical Receipt and
 signature migrations retain their own safeguards against destructive rollback.
-

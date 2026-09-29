@@ -71,11 +71,11 @@ class ClosureHysteresisTest extends TestCase
         $this->assertSame($preview['depth_direction'], $snapshot->depth_direction->value);
         $this->assertSame($preview['history_proposition_id'], $snapshot->closure_history_proposition_id);
         $this->assertSame('settlement', $result['last_commitment']['domain_before']);
-        // The corrected comparison lowers Correspondence; Closure is unchanged.
+        // Receipt-neutral Closure is the pure mean of the two zero components.
         $this->assertSame(-0.0964505, $snapshot->correspondence);
-        $this->assertSame(-0.0816327, $snapshot->chirality);
-        $this->assertSame(0.1428571, $snapshot->closure);
-        $this->assertSame(-0.011742, $snapshot->tension);
+        $this->assertSame(-0.5, $snapshot->chirality);
+        $this->assertSame(0.0, $snapshot->closure);
+        $this->assertSame(-0.1988168, $snapshot->tension);
         $this->assertSame('settlement', $result['last_commitment']['domain_after']);
         $this->assertSame(-1.0, $result['last_commitment']['tension_before']);
         $this->assertFalse($result['last_commitment']['closure_boundary']);
@@ -154,9 +154,9 @@ class ClosureHysteresisTest extends TestCase
         $this->assertSame(2, $state['horizon_sequence']);
         $snapshot = CommitmentSnapshot::findOrFail($state['current_proposition_id']);
         $this->assertSame(-0.3999863, $snapshot->correspondence);
-        $this->assertSame(-0.0273297, $snapshot->chirality);
-        $this->assertSame(0.1428571, $snapshot->closure);
-        $this->assertSame(-0.0948196, $snapshot->tension);
+        $this->assertSame(-0.3813817, $snapshot->chirality);
+        $this->assertSame(0.0, $snapshot->closure);
+        $this->assertSame(-0.260456, $snapshot->tension);
         $this->assertSame($preview['depth'], $snapshot->depth);
         $this->assertSame($preview['cadence'], $snapshot->cadence);
         $this->assertSame($preview['cadence_interval'], $snapshot->cadence_interval);

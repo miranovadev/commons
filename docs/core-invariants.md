@@ -195,16 +195,17 @@ Search collections, are not qualifying evidence. Loading them changes cognition
 only: it grants no Reinforcement, grounding, Receipt-scope, movement or recovery
 authority.
 
-## 13. Reinforcement Forms State Before Attenuation Propagates It
+## 13. Reinforcement Changes Evidence Context, Never Measurement
 
-Reinforcement contributes to a Proposition's intrinsic measurements before
-structural attenuation is applied. Attenuation affects propagation of a measured
-state, not formation of that state. Receipts and Reinforcement are never discounted
-by distance before entering the Proposition's own calculation.
+Receipts may establish evidence, authority, context and reinforcement count.
+They do not alter Correspondence, Chirality or Closure values. Observable value
+measures a relation; direction identifies its pole with existing hysteresis;
+Reinforcement counts qualifying evidence uptake. Neither pole is preferable.
+Receipt weights do not enter attenuation, population aggregation or derived fields.
 
 ## 14. Commitment Requires Grounding, Attestation and Closure
 
-Commit requires a completed qualifying evidence Receipt, an effective Attestation on the selected classification, and aligned Depth/Cadence with hysteresis. Loaded Reinforcement adds weight but is not an admissibility minimum. Origin initialization records its explicit evidence before freezing. Each direct expressive source is committed once globally; its Committal result is immutable and subsequent development takes place through Variants.
+Commit requires a completed qualifying evidence Receipt, an effective Attestation on the selected classification, and aligned Depth/Cadence with hysteresis. Loaded Reinforcement is evidential metadata and is not an admissibility minimum. Origin initialization records its Receipt before freezing and does not require an Attestation. Origin Chirality is -0.5 from one-sided Cycle population. Each direct expressive source is committed once globally; its Committal result is immutable and subsequent development takes place through Variants.
 
 ## 15. Reinforcement Does Not Suppress Branching
 
@@ -376,4 +377,4 @@ is immutable. Only a successful Variant advances its own position's epoch.
 Spent propositions remain contextual evidence without Traverse or Attestation
 targets; a later epoch restores normal eligibility without erasing history.
 
-
+Chirality v2 is the equal mean of Orientation (effective, equally weighted signed Attestation lean product) and Attestation Cadence (historical acts per live canonical Cycle-entry population). Both use the same causal DomainLineages. Component direction disagreement confers no eligibility or movement authority. Receipts cannot affect either component or retained direction; only the combined local Chirality is attenuated. Frozen CommitmentSnapshots remain historical.

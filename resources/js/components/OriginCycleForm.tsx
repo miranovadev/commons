@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Alert, Button, Group, Modal, Stack, Text, Textarea } from '@mantine/core';
+import { Alert, Button, Checkbox, Group, Modal, Stack, Text, Textarea } from '@mantine/core';
 import { IconAlertCircle, IconArrowRight } from '@tabler/icons-react';
 import { messageFrom } from '../errors';
 import { InstrumentFields } from './InstrumentFields';
@@ -9,6 +9,7 @@ import type { AttestationDirection, InstrumentInput, OriginInput } from '../type
 
 interface OriginFormValue {
   statement: string;
+  includeAttestation: boolean;
   direction: AttestationDirection;
   rationale: string;
   instrument: InstrumentInput;
@@ -24,6 +25,7 @@ interface OriginCycleFormProps {
 
 const initialValue: OriginFormValue = {
   statement: '',
+  includeAttestation: false,
   direction: 'support',
   rationale: '',
   instrument: { kind: 'hyperlink', reference: '' },
@@ -44,10 +46,10 @@ export function OriginCycleForm({ opened, loading, error, onClose, onSubmit }: O
     event.preventDefault();
     onSubmit({
       statement: value.statement,
-      attestation: {
+      ...(value.includeAttestation ? { attestation: {
         direction: value.direction,
         ...(value.rationale ? { rationale: value.rationale } : {}),
-      },
+      } } : {}),
       instrument: value.instrument,
     });
   }
@@ -57,7 +59,7 @@ export function OriginCycleForm({ opened, loading, error, onClose, onSubmit }: O
       <form onSubmit={submit}>
         <Stack>
           <Text size="sm" c="dimmed">
-            The Origin is the substrate’s first Committal Proposition. Its Attestation and Receipt are recorded beside it before the first live Cycle begins.
+            The Origin is the substrate’s first Committal Proposition. Its Receipt is recorded before the first live Cycle begins. An initial Attestation is optional.
           </Text>
           {Boolean(error) && (
             <Alert color="red" icon={<IconAlertCircle size={18} />} title="The Origin could not be established">
@@ -73,24 +75,30 @@ export function OriginCycleForm({ opened, loading, error, onClose, onSubmit }: O
             value={value.statement}
             onChange={(event) => update('statement', event.currentTarget.value)}
           />
-          <Stack gap={5}>
-            <Text size="sm" fw={500}>Initial Attestation label</Text>
-            <Text size="xs" c="dimmed">Origin starts in the positive direction. Choose whether to label that direction Support or Refute; this fixes the label polarity for its Commit Region.</Text>
-            <AttestationDirectionControl
-              initialLabelChoice
-              value={value.direction}
-              onChange={(next) => update('direction', next)}
-              showLabels
-            />
-          </Stack>
-          <Textarea
-            label="Attestation rationale"
-            description="Optional context for the initial attestation."
-            minRows={2}
-            autosize
-            value={value.rationale}
-            onChange={(event) => update('rationale', event.currentTarget.value)}
-          />
+          <Checkbox label="Add an initial Attestation" checked={value.includeAttestation}
+            onChange={(event) => update('includeAttestation', event.currentTarget.checked)} />
+          {value.includeAttestation && (
+            <>
+              <Stack gap={5}>
+                <Text size="sm" fw={500}>Initial Attestation label</Text>
+                <Text size="xs" c="dimmed">Origin starts in the positive direction. Choose whether to label that direction Support or Refute; this fixes the label polarity for its Commit Region.</Text>
+                <AttestationDirectionControl
+                  initialLabelChoice
+                  value={value.direction}
+                  onChange={(next) => update('direction', next)}
+                  showLabels
+                />
+              </Stack>
+              <Textarea
+                label="Attestation rationale"
+                description="Optional context for the initial attestation."
+                minRows={2}
+                autosize
+                value={value.rationale}
+                onChange={(event) => update('rationale', event.currentTarget.value)}
+              />
+            </>
+          )}
           <InstrumentFields value={value.instrument} onChange={(instrument) => update('instrument', instrument)} includeCitation={false} />
           <Group justify="flex-end">
             <Button variant="default" onClick={onClose} disabled={loading}>Cancel</Button>

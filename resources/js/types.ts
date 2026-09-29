@@ -213,7 +213,7 @@ export interface ContributionInput {
 
 export interface OriginInput {
   statement: string;
-  attestation: { direction: AttestationDirection; rationale?: string };
+  attestation?: { direction: AttestationDirection; rationale?: string };
   instrument: InstrumentInput;
 }
 

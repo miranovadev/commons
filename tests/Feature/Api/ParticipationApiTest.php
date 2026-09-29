@@ -54,6 +54,22 @@ class ParticipationApiTest extends TestCase
         $this->assertArrayNotHasKey('evidence', $response->json('data.plan.gate_options.0.receipts.0'));
     }
 
+    public function test_origin_entry_does_not_require_an_attestation(): void
+    {
+        [$substrate, $participant] = $this->participant();
+        $payload = $this->originPayload();
+        unset($payload['origin']['attestation']);
+        $response = $this->postJson($this->endpoint($substrate, $participant).'/enter', $payload)
+            ->assertCreated()->assertJsonPath('data.domain', 'settlement')
+            ->assertJsonPath('data.plan.phase.write_register', 'signal');
+        $this->assertDatabaseCount('attestations', 0);
+        $this->assertDatabaseHas('commitment_snapshots', [
+            'proposition_id' => $response->json('data.current_proposition_id'),
+            'orientation' => 0, 'attestation_cadence' => -1, 'chirality' => -0.5,
+            'orientation_direction' => 'positive', 'attestation_cadence_direction' => 'negative',
+        ]);
+    }
+
     public function test_a_participant_can_establish_the_origin_and_enter_the_first_live_cycle(): void
     {
         [$substrate, $participant] = $this->participant();
@@ -96,14 +112,14 @@ class ParticipationApiTest extends TestCase
         $this->assertDatabaseHas('proposition_measurements', [
             'proposition_id' => $originId,
             'correspondence' => 1,
-            'chirality' => -1,
+            'chirality' => -0.5,
             'closure' => -1,
         ]);
         $this->assertDatabaseHas('commitment_snapshots', [
             'proposition_id' => $originId,
-            'prominence' => 0.3333333,
-            'turbulence' => 0.6666667,
-            'tension' => -0.3333334,
+            'prominence' => 0.4166667,
+            'turbulence' => 0.5833333,
+            'tension' => -0.1666666,
             'direction_before' => 'emergence',
             'direction_after' => 'settlement',
             'calculator_version' => 'origin-bootstrap-v1',

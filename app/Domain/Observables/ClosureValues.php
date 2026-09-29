@@ -13,12 +13,6 @@ final readonly class ClosureValues
         return $this->measuredClosure ?? round(($this->depth + $this->cadence) / 2, 7);
     }
 
-    public function reinforced(float $mass): self
-    {
-        return new self($this->depth, $this->cadence,
-            round(($this->depth + $this->cadence + $mass) / (2 + $mass), 7));
-    }
-
     /** @return array{depth: float, cadence: float, closure: float, depth_direction: string, cadence_direction: string, admissible: bool} */
     public function resolve(
         ObservableDirection $previousDepth = ObservableDirection::Negative,

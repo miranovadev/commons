@@ -24,7 +24,7 @@ class PropositionReceiptWeightTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_proposition_loads_weight_only_the_loaders_judgment_and_survive_supersession(): void
+    public function test_proposition_loads_are_neutral_and_survive_attestation_supersession(): void
     {
         $f = new ParticipantContextFixture(1, 0, false);
         $other = (new Participant)->forceFill(['substrate_id' => $f->substrate->id, 'callsign' => 'other']);
@@ -53,19 +53,24 @@ class PropositionReceiptWeightTest extends TestCase
             verification: new VerifiedHyperlink('example.test/weight', hash('sha256', 'weight'), CarbonImmutable::now()));
         $this->assertSame((new Proposition)->getMorphClass(), $r->receiptable_type);
         $this->assertSame($f->gate->id, $r->receiptable_id);
-        $value = fn () => app(AttestationEvidenceService::class)->valueFor(collect([$f->gate]), $f->substrate);
+        $count = fn () => app(\App\Services\Observables\ReinforcementService::class)->count($f->gate);
+        $value = fn () => app(AttestationEvidenceService::class)->valueFor(collect([$f->gate]));
         $this->assertSame(0.0, $value());
+        $this->assertSame(0, $count());
         app(ReceiptContextService::class)->read($f->viewer, $f->phase, $r->id);
-        $this->assertEqualsWithDelta(1 / 7, $value(), 1e-9);
+        $this->assertSame(1, $count());
+        $this->assertSame(0.0, $value());
         $replacement = $attest($f->phase, 'refute', $a);
         $this->assertSame(-1.0, $value());
         $attest($otherPhase, 'support', $b);
-        $this->assertEqualsWithDelta(-1 / 7, $value(), 1e-9);
+        $this->assertSame(0.0, $value());
         app(ReceiptContextService::class)->read($other, $otherPhase, $r->id);
+        $this->assertSame(2, $count());
         $this->assertSame(0.0, $value());
         app(ReceiptContextService::class)->clear($other, $otherPhase, $r->id);
-        $this->assertEqualsWithDelta(-1 / 7, $value(), 1e-9);
-        $this->assertEqualsWithDelta($value(), app(AttestationEvidenceService::class)->valueFor(collect([$f->gate]), $f->substrate, new ParticipationContext($f->phase)), 1e-9);
+        $this->assertSame(1, $count());
+        $this->assertSame(0.0, $value());
+        $this->assertEqualsWithDelta($value(), app(AttestationEvidenceService::class)->valueFor(collect([$f->gate]), new ParticipationContext($f->phase)), 1e-9);
         $this->assertSame($r->id, $r->fresh()->id);
         $this->assertSame($replacement->id, $a->fresh()->supersededBy->id);
     }

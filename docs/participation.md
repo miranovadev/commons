@@ -26,7 +26,7 @@ successful response with status waiting and a machine-readable reason.
 
 When a substrate has no proposition history, the waiting state advertises an
 available `origin` entry. POSTing to `/participate/enter` with the Origin
-statement, an Attestation and a Receipt instrument atomically establishes the
+statement and a Receipt instrument (with an optional Attestation) atomically establishes the
 first Committal Proposition. Its bootstrap observables produce the initial
 Closure Boundary, and the response places the Participant in a live Distinguish
 Phase in the Settlement `signal` register.
@@ -34,10 +34,6 @@ Phase in the Settlement `signal` register.
     {
       "origin": {
         "statement": "The first commitment.",
-        "attestation": {
-          "direction": "support",
-          "rationale": "Why this is a sound beginning."
-        },
         "instrument": {
           "kind": "hyperlink",
           "reference": "https://example.test/evidence"
@@ -515,7 +511,7 @@ Order permits local Commit and direct Committal Traverse under their ordinary ru
 
 This adds no Attestation, Instrument or revision at Order. Commit still requires every local prerequisite. Frozen sources remain immutable. Homologous comparison imports no Receipt stock or Read scope and writes no causal edge. The action chooses the next Cycle entry directly: created Committal for Commit, selected existing Committal for Traverse. The previous Cycle's entry never changes.
 
-Commit copies the selected source's exact statement and participation history by reference, creates an immutable snapshot, and consumes the direct source globally. Later evidence reads cannot rewrite that snapshot. Reinforcement is optional weight; Depth/Cadence remain the admissibility gate. `plan.commitment` describes the current position and `commitment_options` describes every local expressive Write, including inadmissible ones. The same rules govern schema, UI and execution.
+Commit copies the selected source's exact statement and participation history by reference, creates an immutable snapshot, and consumes the direct source globally. Later evidence reads cannot rewrite that snapshot. Reinforcement is evidential metadata; Depth/Cadence remain the admissibility gate. `plan.commitment` describes the current position and `commitment_options` describes every local expressive Write, including inadmissible ones. The same rules govern schema, UI and execution.
 
 ## Binary Reconcile
 
@@ -587,3 +583,4 @@ later revisions; unrecorded foreign edges still fail the provenance check.
 Potential retains the edge as a foreign input and excludes it from local terrain,
 just as for existing foreign Reconcile inputs. No Potential formula changes.
 
+Attestation Cadence counts participation immediately at Cycle entry via `entry_committal_id`, regardless of completion, contribution or Rest. It is live state and uses the same causal DomainLineages as Orientation; no whole-Horizon counts or historical timestamp reconstruction are used. Receipts remain evidence/context/authority only. See [Chirality v2](observables.md#local-chirality).

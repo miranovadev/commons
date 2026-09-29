@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 
 final readonly class LineageMeasurementService
 {
-    public const string VERSION = 'domain-cardinal-correspondence-v14';
+    public const string VERSION = 'chirality-v2-v16';
 
     public function __construct(
         private LocalMeasurementService $local,
@@ -37,6 +37,7 @@ final readonly class LineageMeasurementService
     {
         $totals = ['correspondence' => 0.0, 'chirality' => 0.0];
         $closure = null;
+        $chiralityComponents = null;
         $mass = 0.0;
         foreach ($this->positions($position, $context) as [$proposition, $distance]) {
             $comparison = $distance === 0 ? $headComparison : null;
@@ -44,6 +45,9 @@ final readonly class LineageMeasurementService
             $local = $context !== null && $proposition->exists && $comparison === null
                 ? $context->remember('local:'.($distance === 0 ? 'head:' : 'evidence:').$proposition->id, $calculate) : $calculate();
             $closure ??= $local->closure();
+            if ($distance === 0) {
+                $chiralityComponents = $local->chiralityComponents;
+            }
             $weight = self::attenuation($distance);
             // Every traversed position contributes denominator mass, including neutral values.
             $mass += $weight;
@@ -54,7 +58,7 @@ final readonly class LineageMeasurementService
         }
 
         return new LocalMeasurements(round($totals['correspondence'] / $mass, 7),
-            round($totals['chirality'] / $mass, 7), $closure->depth, $closure->cadence, $closure->average());
+            round($totals['chirality'] / $mass, 7), $closure->depth, $closure->cadence, $closure->average(), $chiralityComponents);
     }
 
     /**

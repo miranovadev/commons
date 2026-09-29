@@ -77,7 +77,7 @@ class BiasGateTest extends TestCase
         $this->assertSame(ObservableDirection::Positive, $chirality->directionFor($this->parent));
         $measurement = app(PropositionMeasurementService::class)->project($this->gate, 0, 0, 0);
         $this->assertSame(0.0, (float) $measurement->chirality);
-        $this->assertSame(0.0, $chirality->leanFor(collect([$this->gate->id]), $this->substrate));
+        $this->assertSame(0.0, $chirality->leanFor(collect([$this->gate->id])));
         $this->assertSame(ObservableDirection::Positive, $chirality->directionFor($this->gate));
         $plan = $this->plan();
         $this->assertTrue($plan['rest_available']);
@@ -86,7 +86,7 @@ class BiasGateTest extends TestCase
 
         $descendant = $this->node('Neutral descendant', $this->gate->register, position: PhaseKind::Mediate);
         $this->edge($this->gate, $descendant);
-        $this->assertSame(0.0, $chirality->leanFor(collect([$descendant->id]), $this->substrate));
+        $this->assertSame(0.0, $chirality->leanFor(collect([$descendant->id])));
         $this->assertSame(ObservableDirection::Positive, $chirality->directionFor($descendant));
         $this->assertSame([], $this->optionIds());
 
@@ -97,12 +97,12 @@ class BiasGateTest extends TestCase
         $this->edge($flipped, $afterFlip);
 
         $this->assertSame(ObservableDirection::Negative, $chirality->directionFor($flipped));
-        $this->assertSame(0.0, $chirality->leanFor(collect([$afterFlip->id]), $this->substrate));
+        $this->assertSame(0.0, $chirality->leanFor(collect([$afterFlip->id])));
         $this->assertSame(ObservableDirection::Positive, $chirality->directionFor($afterFlip));
         $this->assertSame([], $this->optionIds());
     }
 
-    public function test_unrelated_receipt_weighted_lean_does_not_override_each_heads_lineage(): void
+    public function test_receipt_loads_leave_population_lean_and_each_heads_lineage_unchanged(): void
     {
         $this->fixture();
         $support = $this->sibling('Supported B');
@@ -120,7 +120,7 @@ class BiasGateTest extends TestCase
         foreach (range(1, 4) as $i) {
             $this->loadedReceiptFixture($refute, $negative);
         }
-        $this->assertEqualsWithDelta(.2, $service->leanFor($this->phase), 0.00001); // One attester's loads are capped by the existing participant weight.
+        $this->assertEqualsWithDelta(1 / 3, $service->leanFor($this->phase), 0.00001); // Receipt uptake does not weight Attestations.
         $this->assertEqualsCanonicalizing([$this->gate->id, $support->id], $service->forPhase($this->phase)->pluck('id')->all()); // Unrelated loads do not set this lineage.
         $replacement = new Attestation;
         $later = $this->newPhase($negative->phase->cycle->participant, PhaseKind::Persist, 'stance', true);

@@ -129,7 +129,7 @@ class ReinforcementTest extends TestCase
         $this->assertSame(1, Receipt::count());
     }
 
-    public function test_closure_reinforcement_is_local_and_duplicate_events_add_no_weight(): void
+    public function test_receipts_leave_measurements_unchanged_and_duplicate_loads_add_no_count(): void
     {
         $local = app(LocalMeasurementService::class);
         $before = $local->calculate($this->node);
@@ -137,8 +137,8 @@ class ReinforcementTest extends TestCase
         $after = $local->calculate($this->node);
         $this->assertSame($before->depth, $after->depth);
         $this->assertSame($before->cadence, $after->cadence);
-        $this->assertEqualsWithDelta(round(($before->depth + $before->cadence + 1 / 3) / (2 + 1 / 3), 7), $after->closure()->average(), 1e-7);
-        $this->assertGreaterThan($before->closure()->average(), $after->closure()->average());
+        $this->assertEquals($before, $after);
+        $this->assertSame(1, $this->reinforcementCount());
         $this->loadedReceipt('hyperlink', 'https://example.test/different');
         $this->assertEquals($after, $local->calculate($this->node));
 
@@ -248,7 +248,7 @@ class ReinforcementTest extends TestCase
         $this->assertSame(hash('sha256', 'Verified body'), $receipt->metadata['fingerprint']);
         $this->assertSame('not-loaded', $receipt->metadata['reinforcement_status']);
         $this->assertSame(1, $this->reinforcementCount());
-        $this->assertGreaterThan($before, app(LocalMeasurementService::class)->calculate($this->node)->closure()->average());
+        $this->assertSame($before, app(LocalMeasurementService::class)->calculate($this->node)->closure()->average());
     }
 
     public function test_rollback_refuses_to_destroy_shared_signature_history(): void
@@ -265,6 +265,61 @@ class ReinforcementTest extends TestCase
         $this->assertSame($first->signature, $second->fresh()->signature);
         $this->assertSame(2, Receipt::count());
         $this->assertSame(1, $this->reinforcementCount());
+    }
+
+    public static function closurePoles(): array
+    {
+        return ['negative' => [-0.7], 'positive' => [0.7]];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('closurePoles')]
+    public function test_both_closure_poles_are_neutral_at_zero_one_and_multiple_loads(float $value): void
+    {
+        // Controlled committed geometry, established before the evidence changes.
+        $snapshot = $this->governor->commitmentSnapshot;
+        $snapshot->forceFill(['depth' => $value, 'cadence' => $value, 'closure' => $value,
+            'depth_direction' => $value < 0 ? 'negative' : 'positive',
+            'cadence_direction' => $value < 0 ? 'negative' : 'positive'])->save();
+        $historical = $snapshot->fresh()->getAttributes();
+        $local = app(LocalMeasurementService::class);
+        $before = $local->calculate($this->node);
+        $this->assertSame($value, $before->closure()->average());
+        $this->assertSame(0, $this->reinforcementCount());
+        $receipt = null;
+        foreach (range(1, 3) as $count) {
+            $phase = $this->phase($this->later->cycle->participant->substrate);
+            if ($receipt === null) {
+                $receipt = $this->loadedReceipt(phase: $phase);
+            } else {
+                app(ReceiptContextService::class)->read($phase->cycle->participant, $phase, $receipt->id);
+            }
+            $this->assertSame($count, $this->reinforcementCount());
+            $after = $local->calculate($this->node);
+            // The fixture creates an additional participating Cycle per reader.
+            // Compare numeric observables, not the deliberately live count diagnostics.
+            $this->assertEquals($before->observables(), $after->observables());
+            $this->assertSame($before->chiralityComponents->orientation, $after->chiralityComponents->orientation);
+            $this->assertSame($before->chiralityComponents->cadence, $after->chiralityComponents->cadence);
+            $this->assertSame($before->closure()->resolve(), $after->closure()->resolve());
+            $this->assertEquals($after, $local->calculate($this->node, app(ContextLineageComparisonService::class)->for($this->node, new ParticipationContext($this->later))));
+            $this->assertSame($historical, $snapshot->fresh()->getAttributes());
+        }
+    }
+
+    public function test_receipt_grounding_is_required_without_changing_measurement(): void
+    {
+        $service = app(CommitmentAdmissibilityService::class);
+        $before = app(LocalMeasurementService::class)->calculate($this->node);
+        $missing = $service->grounding($this->node);
+        $this->assertTrue($missing['requirements']['attestation']);
+        $this->assertFalse($missing['requirements']['receipt']);
+        $this->assertFalse($missing['admissible']);
+        $this->loadedReceipt();
+        $grounded = $service->grounding($this->node);
+        $this->assertTrue($grounded['requirements']['receipt']);
+        $this->assertTrue($grounded['admissible']);
+        $this->assertSame(1, $grounded['reinforcement_count']);
+        $this->assertEquals($before, app(LocalMeasurementService::class)->calculate($this->node));
     }
 
     private function commitRegionFixture(): void
@@ -308,4 +363,3 @@ class ReinforcementTest extends TestCase
         return $phase;
     }
 }
-

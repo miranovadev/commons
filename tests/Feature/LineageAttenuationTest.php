@@ -104,7 +104,7 @@ class LineageAttenuationTest extends TestCase
         app(PropositionMeasurementService::class)->project($parent, 1, 1, 1);
         app(PropositionMeasurementService::class)->project($head, 1, 1, 1);
         $this->assertEquals($before, $raw->calculate($head));
-        $this->assertSame(-1.0, app(LineageMeasurementService::class)->calculate($head)->chirality);
+        $this->assertSame(-0.5, app(LineageMeasurementService::class)->calculate($head)->chirality);
     }
 
     public function test_preview_and_actual_committal_use_identical_distances(): void
@@ -133,7 +133,7 @@ class LineageAttenuationTest extends TestCase
         $measurement->save();
         $node->unsetRelation('measurement');
         $service->repairMissing(collect([$node]));
-        $this->assertSame(-1.0, $node->measurement->chirality);
+        $this->assertSame(-0.5, $node->measurement->chirality);
         $this->assertSame(LineageMeasurementService::VERSION, $node->measurement->calculator_version);
     }
 

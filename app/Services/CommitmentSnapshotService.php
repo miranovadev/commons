@@ -120,6 +120,7 @@ final readonly class CommitmentSnapshotService
                 'supersession_id' => $supersession?->getKey(),
                 'correspondence' => $measurement->correspondence,
                 'chirality' => $measurement->chirality,
+                ...$measurement->only(['orientation', 'attestation_cadence', 'orientation_direction', 'attestation_cadence_direction']),
                 'closure' => $measurement->closure,
                 'depth' => $closure['depth'],
                 'cadence' => $closure['cadence'],

@@ -19,6 +19,12 @@ class ClosureValuesTest extends TestCase
         $this->assertSame('negative', (new ClosureValues(0, 0))->resolve()['depth_direction']);
     }
 
+    public function test_frozen_historical_closure_is_preserved_even_when_it_differs_from_the_pure_mean(): void
+    {
+        $this->assertSame(-0.7, (new ClosureValues(-0.8, -0.6))->average());
+        $this->assertSame(0.25, (new ClosureValues(-0.8, -0.6, 0.25))->average());
+    }
+
     public function test_invalid_component_is_rejected(): void
     {
         $this->expectException(\InvalidArgumentException::class);
