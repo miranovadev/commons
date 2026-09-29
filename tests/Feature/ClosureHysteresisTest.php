@@ -21,16 +21,24 @@ use App\Services\ClosureGateService;
 use App\Services\CommitRegionPolarityService;
 use App\Services\ContextHorizonProjector;
 use App\Services\ContributionDispatcher;
+use App\Services\InputPlanService;
 use App\Services\LedgerService;
 use App\Services\Observables\LocalMeasurementService;
 use App\Services\ParticipationService;
+use App\Services\PotentialProjectionService;
 use App\Services\PropositionMeasurementService;
 use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Group;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
+use Tests\Fixtures\AssertsLatePhaseContract;
 use Tests\TestCase;
 
 class ClosureHysteresisTest extends TestCase
 {
+    use AssertsLatePhaseContract;
     use RefreshDatabase;
 
     private Participant $participant;
@@ -106,7 +114,7 @@ class ClosureHysteresisTest extends TestCase
             app(ParticipationService::class)->contribute($this->participant, $phase->id,
                 ['action' => 'proposition.commit', 'proposition_id' => $gate->id], $observed);
             $this->fail('A changed observed interval must retry even if its direction still aligns.');
-        } catch (\Symfony\Component\HttpKernel\Exception\ConflictHttpException $error) {
+        } catch (ConflictHttpException $error) {
             $this->assertStringContainsString('Closure changed', $error->getMessage());
         }
         $this->assertSame($before, CommitmentSnapshot::count());
@@ -286,6 +294,60 @@ class ClosureHysteresisTest extends TestCase
         $this->assertSame($before, $snapshot->fresh()->getAttributes());
     }
 
+    public static function latePhaseDirections(): array
+    {
+        return [[.5, .5, true], [-.5, -.5, true], [.5, -.5, false], [-.5, .5, false]];
+    }
+
+    #[Group('late-phase')]
+    #[DataProvider('latePhaseDirections')]
+    public function test_order_native_preview_explains_visible_write_actionability(float $depth, float $cadence, bool $allowed): void
+    {
+        $this->bootstrap();
+        [$phase, $gate] = $this->candidate([2]);
+        // Controlled native components; real Closure resolution, planning and serialization.
+        $this->mock(LocalMeasurementService::class, function ($mock) use ($depth, $cadence): void {
+            $mock->shouldReceive('calculate')->andReturn(new LocalMeasurements(0, 0, $depth, $cadence));
+        });
+        $this->publishPotentialFixture($this->participant);
+        $plan = app(InputPlanService::class)->forPhase($this->participant, $phase);
+        $this->assertLatePhaseContract($plan, PhaseKind::Order, $gate->id, $allowed,
+            $depth > 0 ? 'positive' : 'negative', $cadence > 0 ? 'positive' : 'negative');
+        if (! $allowed) {
+            foreach ([0.0, .75] as $potential) {
+                DB::table('potential_region_states')->where('context_horizon_id', $phase->cycle->context_horizon_id)
+                    ->update(['remaining_potential' => $potential]);
+                $plan = app(InputPlanService::class)->forPhase($this->participant, $phase);
+                $this->assertSame($potential, app(PotentialProjectionService::class)->region($phase->cycle->context_horizon_id)['potential']);
+                $this->assertSame(['participant.rest'], array_keys($plan['schema']['$defs']['actions']));
+            }
+        }
+    }
+
+    #[Group('late-phase')]
+    public function test_admissible_preview_cannot_authorize_commit_after_closure_becomes_opposed(): void
+    {
+        $this->bootstrap();
+        [$phase, $gate] = $this->candidate([2]);
+        $observed = app(ParticipationService::class)->stateFor($this->participant)['plan']['schema'];
+        $this->assertTrue(app(ClosureGateService::class)->preview($gate, $phase)['admissible']);
+        $this->zeroDepthLocalValues(); // Changed observation: retained negative Depth, positive Cadence.
+        $this->assertFalse(app(ClosureGateService::class)->preview($gate, $phase)['admissible']);
+        $this->publishPotentialFixture($this->participant);
+        $before = $this->counts();
+        try {
+            app(ParticipationService::class)->contribute($this->participant, $phase->id,
+                ['action' => 'proposition.commit', 'proposition_id' => $gate->id], $observed);
+            $this->fail('An earlier admissible observation cannot authorize a now-blocked Commit.');
+        } catch (ConflictHttpException $exception) {
+            $this->assertStringContainsString('Closure changed', $exception->getMessage());
+        }
+        $this->assertSame($before, $this->counts());
+        $this->assertSame($gate->id, $this->participant->fresh()->current_proposition_id);
+        $this->assertNull($phase->fresh()->completed_at);
+        $this->assertNull($phase->cycle->fresh()->completed_at);
+    }
+
     private function zeroDepthLocalValues(): void
     {
         // Exercise the zero-direction hysteresis rule independently of the
@@ -339,6 +401,7 @@ class ClosureHysteresisTest extends TestCase
         $this->participant->save();
 
         $this->publishPotentialFixture($this->participant);
+
         return [$phase, $gate];
     }
 

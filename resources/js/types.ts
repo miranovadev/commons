@@ -298,7 +298,24 @@ export interface ExhaustedAlternative {
   actionable: false;
 }
 
+export type ComponentDirection = 'positive' | 'negative' | null;
+interface GateAdmissibility {
+  gate_id: Identifier;
+  admissible: boolean;
+  reason: 'component_directions_disagree' | 'component_directions_unavailable' | null;
+}
+
 export interface ParticipantPlan {
+  correspondence_admissibility?: GateAdmissibility & {
+    shape_topology_direction: ComponentDirection;
+    cardinal_position_direction: ComponentDirection;
+    correspondence_direction: ComponentDirection;
+  };
+  chirality_admissibility?: GateAdmissibility & {
+    orientation_direction: ComponentDirection;
+    attestation_cadence_direction: ComponentDirection;
+    chirality_direction: ComponentDirection;
+  };
   exhausted_alternatives?: ExhaustedAlternative[];
   receipts?: ReceiptContext[];
   commitment_options?: Record<Identifier, NonNullable<ParticipantPlan['commitment']>>;
@@ -308,11 +325,11 @@ export interface ParticipantPlan {
     reinforcement_count: number;
     closure_enforced: boolean;
     closure?: {
-      depth: number;
-      cadence: number;
-      closure: number;
-      depth_direction: 'positive' | 'negative';
-      cadence_direction: 'positive' | 'negative';
+      depth: number | null;
+      cadence: number | null;
+      closure: number | null;
+      depth_direction: ComponentDirection;
+      cadence_direction: ComponentDirection;
       history_proposition_id: Identifier | null;
       history_source: string;
     };

@@ -99,6 +99,21 @@ class ParticipantPromptConstitutionTest extends TestCase
         ];
     }
 
+    public function test_common_late_phase_law_keeps_native_contracts_and_poles_neutral(): void
+    {
+        foreach (PhaseKind::cases() as $phase) {
+            $contract = app(ParticipantPhaseInstructions::class)->forPhase($phase);
+            if (in_array($phase, [PhaseKind::Mediate, PhaseKind::Bias, PhaseKind::Order], true)) {
+                $this->assertStringContainsString('Dominance selects candidate inputs; admissibility governs Writes.', $contract);
+                $this->assertStringContainsString('Positive/Positive and Negative/Negative both qualify', $contract);
+                $this->assertStringContainsString('Admissibility constrains the transition, not its outcome or future descendants.', $contract);
+                $this->assertStringContainsString('Potential neither creates nor suppresses that authority.', $contract);
+            } else {
+                $this->assertStringNotContainsString('Dominance selects candidate inputs', $contract);
+            }
+        }
+    }
+
     #[DataProvider('phaseContracts')]
     public function test_only_the_current_phase_contract_explains_semantics(PhaseKind $phase, array $required, array $absent): void
     {

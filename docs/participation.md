@@ -1,5 +1,10 @@
 # Participation API
 
+The shared law for Mediate, Bias and Order is documented in
+[Unified late-phase admissibility](observables.md#unified-late-phase-admissibility).
+Dominance selects candidate inputs; admissibility governs Writes.
+
+
 The [Core Invariants](core-invariants.md) govern this shared contract for human
 and automated Participants, including participant prompts and UI behaviour.
 The operational rules below apply those normative semantic constraints.

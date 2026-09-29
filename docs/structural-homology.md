@@ -1,5 +1,10 @@
 # Structural homology
 
+The shared law for Mediate, Bias and Order is documented in
+[Unified late-phase admissibility](observables.md#unified-late-phase-admissibility).
+Dominance selects candidate inputs; admissibility governs Writes.
+
+
 Operational locality and structural homology are separate relations.
 `PhasePositionService` remains Horizon-strict. `HomologousPositionService`
 compares structural coordinates without authorizing any action or movement.

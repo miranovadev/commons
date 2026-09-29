@@ -26,6 +26,10 @@ const result = await build({ stdin: { contents: `
   export function notices(commit, closure) {
     return participationNotices({ participation: { status: 'ready' }, plan: { commitment: { requirements: { attestation: false, receipt: false, closure }, closure: { depth: 0, cadence: 0 } } }, canCommit: commit, canRest: false, onRest() {} });
   }
+  export function nativeAdmissibility(plan) {
+    return participationNotices({ participation: { status: 'ready' }, plan, canCommit: false, canRest: false, onRest() {} })
+      .map(notice => ({ id: notice.id, satisfied: notice.satisfied, html: render(notice.content) }));
+  }
   export function status(commit, closure) { return render(<WorkspaceStatus notices={notices(commit, closure)} />); }
   export function placement() {
     const plan = { gate, phase: { id: 'p', number: 7, kind: 'order', write_register: 'concord' }, schema: { $defs: { actions: {} } } };
@@ -71,6 +75,36 @@ test('commit and Closure statuses independently follow actual availability, with
   const html = ui.placement();
   assert.ok(html.indexOf('data-role="write"') < html.indexOf('aria-label="Workspace status"'));
   assert.ok(html.indexOf('aria-label="Workspace status"') < html.indexOf('No existing Proposition'));
+});
+
+test('late-phase notices expose backend component directions without granting actions from signs', () => {
+  for (const sign of ['positive', 'negative']) {
+    for (const admissible of [true, false]) {
+      const state = { gate_id: 'gate', admissible, reason: admissible ? null : 'component_directions_disagree' };
+      const notices = ui.nativeAdmissibility({
+        correspondence_admissibility: { ...state, shape_topology_direction: sign, cardinal_position_direction: sign },
+        chirality_admissibility: { ...state, orientation_direction: sign, attestation_cadence_direction: sign },
+        commitment: { requirements: { closure: admissible }, closure: { depth: 0, cadence: 0, depth_direction: sign, cadence_direction: sign } },
+      });
+      for (const [id, labels, action] of [
+        ['correspondence-admissibility', ['Shape Topology', 'Cardinal Position'], 'Reconcile'],
+        ['chirality-admissibility', ['Orientation', 'Attestation Cadence'], 'Reclassify'],
+        ['closure-preview', ['Depth', 'Cadence'], 'Commit'],
+      ]) {
+        const notice = notices.find(n => n.id === id);
+        assert.equal(notice.satisfied, admissible);
+        for (const label of labels) assert.ok(notice.html.includes(label));
+        assert.ok(notice.html.includes(sign));
+        if (!admissible) assert.ok(notice.html.includes(action + ' unavailable'));
+        assert.doesNotMatch(notice.html, /<button/);
+      }
+    }
+  }
+  const [unavailable] = ui.nativeAdmissibility({ chirality_admissibility: {
+    gate_id: 'gate', admissible: false, reason: 'component_directions_unavailable',
+    orientation_direction: null, attestation_cadence_direction: null,
+  } });
+  assert.match(unavailable.html, /Component directions are unavailable/);
 });
 
 test('header provides a touch Phase info button, selectable identity, and desktop Phase progress', () => {

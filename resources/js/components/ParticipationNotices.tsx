@@ -8,6 +8,28 @@ export function participationNotices({ participation, plan, canCommit, canRest, 
   participation: Participation; plan?: ParticipantPlan; canCommit: boolean; canRest: boolean; error?: unknown; onRest: () => void;
 }): WorkspaceNotice[] {
   const notices: WorkspaceNotice[] = [];
+  const correspondence = plan?.correspondence_admissibility;
+  const chirality = plan?.chirality_admissibility;
+  const coherence = [
+    { id: 'correspondence-admissibility', name: 'Correspondence', action: 'Reconcile', state: correspondence,
+      first: 'Shape Topology', firstDirection: correspondence?.shape_topology_direction,
+      second: 'Cardinal Position', secondDirection: correspondence?.cardinal_position_direction },
+    { id: 'chirality-admissibility', name: 'Chirality', action: 'Reclassify', state: chirality,
+      first: 'Orientation', firstDirection: chirality?.orientation_direction,
+      second: 'Attestation Cadence', secondDirection: chirality?.attestation_cadence_direction },
+  ];
+  for (const item of coherence) {
+    if (!item.state) continue;
+    notices.push({ id: item.id, title: `Gate ${item.name}`, color: item.state.admissible ? 'indigo' : 'gray',
+      satisfied: item.state.admissible, icon: IconRoute, content: <Stack gap="xs">
+        <Text size="sm">{item.first}: {item.firstDirection ?? 'unavailable'}</Text>
+        <Text size="sm">{item.second}: {item.secondDirection ?? 'unavailable'}</Text>
+        <Text size="xs">{item.state.admissible
+          ? 'Component directions align. Other Write requirements still apply.'
+          : `${item.action} unavailable from this Gate. ${item.state.reason === 'component_directions_unavailable' ? 'Component directions are unavailable.' : 'Component directions disagree.'}`}</Text>
+        <Text size="xs" c="dimmed">Zero uses retained component directions. The Gate remains readable.</Text>
+      </Stack> });
+  }
   const last = participation.last_commitment;
   if (last) notices.push({ id: 'last-commitment', title: 'Latest Commitment', color: 'indigo', icon: IconGitCommit, content: <Stack gap="xs">
     <Text size="sm">{last.domain_before} → {last.domain_after} · {last.closure_boundary ? 'Closure Boundary created' : 'No Closure Boundary'}</Text>
@@ -17,7 +39,7 @@ export function participationNotices({ participation, plan, canCommit, canRest, 
   </Stack> });
   if (plan?.commitment) notices.push({ id: 'commitment', title: plan.commitment.requirements.phase_position === false ? 'No phase-6 candidate at this Gate' : plan.commitment.requirements.write_opportunity === false ? 'Source already committed' : canCommit ? 'Committable candidate' : 'No committable candidate',
     color: canCommit ? 'indigo' : 'gray', icon: canCommit ? IconLock : IconLockOpen, satisfied: canCommit, content: <Stack gap="xs">
-    {canCommit && <Text size="sm">An eligible source is available to Commit in Gate.</Text>}
+    {canCommit && <Text size="sm">An eligible source is available to Commit in Write.</Text>}
     {!canCommit && <Text size="sm">{participation.reason?.message}</Text>}
     {plan.commitment.requirements.phase_position === false && <Text size="xs">Commit requires a Bias-produced candidate in the current Commit Region. A matching register label does not change the producing phase.</Text>}
     <Text size="xs">Current Gate Attestation: {plan.commitment.requirements.attestation ? 'available' : 'missing'}.</Text>
@@ -25,10 +47,10 @@ export function participationNotices({ participation, plan, canCommit, canRest, 
     {!canCommit && plan.commitment.requirements.write_opportunity !== false && <Text size="xs" c="dimmed">Grounding can be added in Bias and retained for a later Cycle. Use an available Phase action; the Closure conditions still apply.</Text>}
   </Stack> });
   if (plan?.commitment?.closure) { const closure = plan.commitment.closure;
-    notices.push({ id: 'closure-preview', title: 'Gate Closure preview', color: plan.commitment.requirements.closure === true ? 'indigo' : 'gray', satisfied: plan.commitment.requirements.closure === true, icon: IconRoute, content: <Stack gap="xs">
-      <Text size="sm">Depth: {closure.depth} ({closure.depth_direction})</Text>
-      <Text size="sm">Cadence: {closure.cadence} ({closure.cadence_direction})</Text>
-      <Text size="xs">{plan.commitment.requirements.closure ? 'Directions align.' : 'Directions diverge for this source. Other eligible sources appear in Gate.'}</Text>
+    notices.push({ id: 'closure-preview', title: 'Write Closure preview', color: plan.commitment.requirements.closure === true ? 'indigo' : 'gray', satisfied: plan.commitment.requirements.closure === true, icon: IconRoute, content: <Stack gap="xs">
+      <Text size="sm">Depth: {closure.depth ?? 'unavailable'} ({closure.depth_direction ?? 'unavailable'})</Text>
+      <Text size="sm">Cadence: {closure.cadence ?? 'unavailable'} ({closure.cadence_direction ?? 'unavailable'})</Text>
+      <Text size="xs">{plan.commitment.requirements.closure ? 'Directions align.' : 'Commit unavailable from this Write. See its retained directions and Commitment requirements.'}</Text>
       <Text size="xs" c="dimmed">Zero retains the previous committed direction. History: {closure.history_source}.</Text>
     </Stack> });
   }
