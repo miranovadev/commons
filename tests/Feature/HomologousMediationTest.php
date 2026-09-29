@@ -27,6 +27,7 @@ use App\Services\LedgerService;
 use App\Services\MediationReadService;
 use App\Services\Observables\ObservableService;
 use App\Services\ParticipantContextSerializer;
+use App\Services\ParticipantPromptLayout;
 use App\Services\Participation\ParticipationContext;
 use App\Services\ParticipationService;
 use App\Services\PotentialProjectionService;
@@ -658,6 +659,9 @@ class HomologousMediationTest extends TestCase
         $visible = app(ParticipantContextSerializer::class)->plan($plan);
         $this->assertContains($this->gateA->id, array_column($visible['gate_options'], 'id'));
         $this->assertSame($allowed, $visible['correspondence_admissibility']['admissible']);
+        $packet = app(ParticipantContextSerializer::class)->inference(['status' => 'ready', 'plan' => $visible]);
+        $prompt = app(ParticipantPromptLayout::class)->make($packet);
+        $this->assertEquals($visible['correspondence_admissibility'], json_decode($prompt['user'], true)['plan']['correspondence_admissibility']);
         if (! $allowed) {
             $this->assertNotContains($this->gateB->id, array_column($visible['gate_options'], 'id'));
             $this->assertTrue($plan['rest_available']);
@@ -689,6 +693,22 @@ class HomologousMediationTest extends TestCase
             $service->project($gate, 0, 0, 0, correspondenceComponents: new CorrespondenceValues(0, 0));
         }
         $this->assertSame([$this->gateB->id], $options->forPhase($this->mediate)->pluck('id')->all());
+    }
+
+    public function test_inadmissible_actionless_mediate_can_rest_with_zero_or_positive_potential(): void
+    {
+        app(PropositionMeasurementService::class)->project($this->gateA, .5, 0, 0,
+            correspondenceComponents: new CorrespondenceValues(.8, -.8));
+        $this->publishPotentialFixture($this->actor);
+        foreach ([0.0, .75] as $potential) {
+            // Alter the disposable diagnostic only; action eligibility is unchanged.
+            DB::table('potential_region_states')->where('context_horizon_id', $this->mediate->cycle->context_horizon_id)
+                ->update(['remaining_potential' => $potential]);
+            $plan = app(InputPlanService::class)->forPhase($this->actor, $this->mediate);
+            $this->assertSame($potential, app(PotentialProjectionService::class)->region($this->mediate->cycle->context_horizon_id)['potential']);
+            $this->assertTrue($plan['rest_available']);
+            $this->assertSame(['participant.rest'], array_keys($plan['schema']['$defs']['actions']));
+        }
     }
 
     public function test_pairing_uses_resolved_correspondence_not_the_local_component_mean(): void

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Observables\CorrespondenceValues;
 use App\Enums\ContextDomain;
 use App\Enums\ObservableDirection;
 use App\Enums\PhaseKind;
@@ -66,6 +67,11 @@ class DomainOperationalEligibilityTest extends TestCase
         $measurements = app(PropositionMeasurementService::class);
         foreach ([$anchor, $otherRead, $foreignRead] as $read) {
             $measurements->project($read, .7, 0, 0);
+        }
+        // Domain-scope fixture: both valid Disperse operands are explicitly coherent.
+        foreach ([$gate, $counterpart] as $operand) {
+            $measurements->project($operand, .7, 0, 0,
+                correspondenceComponents: new CorrespondenceValues(.7, .7));
         }
         $reads = app(MediationReadService::class);
         foreach ([null, new ParticipationContext($mediate)] as $context) {

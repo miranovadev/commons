@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Observables\CorrespondenceValues;
 use App\Enums\PhaseKind;
 use App\Enums\SupersessionStrength;
 use App\Models\Attestation;
@@ -70,7 +71,10 @@ class ReconciliationTest extends TestCase
         $this->phase->save();
         // Phase creation invalidates derived views; install this test's controlled
         // structural comparison after recording the Gate observation.
-        app(PropositionMeasurementService::class)->project($this->gate, -$correspondence, -1, -1);
+        app(PropositionMeasurementService::class)->project($this->gate, -$correspondence ?: .8, -1, -1,
+            correspondenceComponents: new CorrespondenceValues(-$correspondence ?: .8, -$correspondence ?: .8));
+        app(PropositionMeasurementService::class)->project($this->gate, -$correspondence, -1, -1,
+            correspondenceComponents: new CorrespondenceValues(-$correspondence, -$correspondence));
         app(PropositionMeasurementService::class)->project($this->parent, $correspondence, -1, -1);
     }
 
@@ -249,9 +253,9 @@ class ReconciliationTest extends TestCase
         [$wrongRegister, $wrongGate] = $this->readSibling('Wrong Read register', -0.7, -1);
         $wrongRegister->register = 'frontier';
         $wrongRegister->save();
-        [$hardRead, $hardGate] = $this->readSibling('Replaced Read', -0.7, -1);
+        [$hardRead, $hardGate] = $this->readSibling('Replaced Read', -0.7, 1);
         $this->edge($hardRead, $this->node('Read replacement', 'canon', position: PhaseKind::Constrain), 'reclassify');
-        [$foreignHorizon, $foreignGate] = $this->readSibling('Other Horizon Read', -0.7, -1);
+        [$foreignHorizon, $foreignGate] = $this->readSibling('Other Horizon Read', -0.7, 1);
         $horizon = $this->laterHorizonFixture($foreignHorizon->contextHorizonMembership->horizon);
         $foreignHorizon->contextHorizonMembership->forceFill(['context_horizon_id' => $horizon->id])->save();
         $distantRead = $this->node('Read grandchild', 'canon', position: PhaseKind::Constrain);
@@ -381,7 +385,7 @@ class ReconciliationTest extends TestCase
         return app(InputPlanService::class)->forParticipant($this->viewer);
     }
 
-    private function sibling(string $statement, float $correspondence = -0.5): Proposition
+    private function sibling(string $statement, ?float $correspondence = null): Proposition
     {
         $node = $this->node($statement, $this->gate->register, $correspondence, position: PhaseKind::Disperse);
         $this->edge($this->parent, $node);
@@ -389,12 +393,22 @@ class ReconciliationTest extends TestCase
         return $node;
     }
 
-    private function node(string $statement, string $register, float $correspondence = -0.5, string $tier = 'expressive', PhaseKind $position = PhaseKind::Disperse): Proposition
+    private function node(string $statement, string $register, ?float $correspondence = null, string $tier = 'expressive', PhaseKind $position = PhaseKind::Disperse): Proposition
     {
         $node = new Proposition;
         $node->forceFill(['phase_id' => $this->phaseAtPositionFixture($this->history, $position)->id, 'register' => $register, 'tier' => $tier, 'statement' => $statement])->save();
         app(LedgerService::class)->record($node);
-        app(PropositionMeasurementService::class)->project($node, $correspondence, -1, -1);
+        // Scope tests use compatible default Gates; explicit nonzero scores remain authored.
+        $gateDirection = isset($this->gate)
+            ? app(PropositionMeasurementService::class)->correspondenceDirectionFor($this->gate)->value : 'positive';
+        $gateValue = $gateDirection === 'positive' ? .8 : -.8;
+        $correspondence ??= $position === PhaseKind::Disperse ? $gateValue : -.5;
+        if ($position === PhaseKind::Disperse && $correspondence === 0.0) {
+            app(PropositionMeasurementService::class)->project($node, $gateValue, -1, -1,
+                correspondenceComponents: new CorrespondenceValues($gateValue, $gateValue));
+        }
+        app(PropositionMeasurementService::class)->project($node, $correspondence, -1, -1,
+            correspondenceComponents: new CorrespondenceValues($correspondence, $correspondence));
 
         return $node;
     }

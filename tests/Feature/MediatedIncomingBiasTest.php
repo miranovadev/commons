@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Observables\CorrespondenceValues;
 use App\Enums\PhaseKind;
 use App\Models\Attestation;
 use App\Models\Cycle;
@@ -315,6 +316,11 @@ class MediatedIncomingBiasTest extends TestCase
             'register' => $register ?? $phase->write_register, 'statement' => 'Comparison fixture'])->save();
         app(LedgerService::class)->record($node);
         $this->edge($parent, $node, $edgeType);
+        if ($kind === PhaseKind::Disperse) {
+            // Author eligible Mediate inputs; this suite tests the later Bias doorway.
+            app(PropositionMeasurementService::class)->project($node, .8, 0, 0,
+                correspondenceComponents: new CorrespondenceValues(.8, .8));
+        }
 
         return $node;
     }
