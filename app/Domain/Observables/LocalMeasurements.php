@@ -11,6 +11,7 @@ final readonly class LocalMeasurements
         public float $cadence,
         public ?float $closureValue = null,
         public ?ChiralityValues $chiralityComponents = null,
+        public ?CorrespondenceValues $correspondenceComponents = null,
     ) {}
 
     public function closure(): ClosureValues
