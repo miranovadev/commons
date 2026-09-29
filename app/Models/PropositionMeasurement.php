@@ -17,6 +17,8 @@ class PropositionMeasurement extends Model
     {
         return [
             'correspondence' => 'float',
+            'shape_topology' => 'float',
+            'cardinal_position' => 'float',
             'chirality' => 'float',
             'orientation' => 'float',
             'attestation_cadence' => 'float',

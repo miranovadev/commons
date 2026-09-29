@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Observables\ClosureValues;
 use App\Enums\ObservableDirection;
 use App\Enums\PhaseKind;
 use App\Models\Attestation;
@@ -14,10 +15,13 @@ use App\Services\ContributionDispatcher;
 use App\Services\HomologousOrderService;
 use App\Services\InputPlanService;
 use App\Services\LedgerService;
+use App\Services\Observables\CommittalLineageService;
+use App\Services\ParticipantContextSerializer;
 use App\Services\Participation\ParticipationContext;
 use App\Services\ParticipationService;
 use App\Services\PhaseProgressionService;
 use App\Services\PropositionOptionService;
+use App\Services\PropositionStateService;
 use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -31,11 +35,17 @@ class HomologousOrderTest extends TestCase
     use RefreshDatabase;
 
     private Proposition $origin;
+
     private Proposition $a;
+
     private Proposition $b;
+
     private Proposition $gate;
+
     private Proposition $positive;
+
     private Proposition $negative;
+
     private Phase $order;
 
     protected function setUp(): void
@@ -74,6 +84,20 @@ class HomologousOrderTest extends TestCase
         $this->reject($unresolved);
     }
 
+    #[Group('late-phase')]
+    public function test_homologous_frozen_selection_never_previews_new_closure(): void
+    {
+        $this->mock(ClosureGateService::class, function ($mock): void {
+            $mock->shouldNotReceive('preview');
+            $mock->shouldNotReceive('forCommitment');
+        });
+        $before = $this->snapshot();
+        foreach ([null, new ParticipationContext($this->order)] as $context) {
+            $this->assertSame([$this->negative->id], app(HomologousOrderService::class)->forPhase($this->order, $context)->pluck('id')->all());
+        }
+        $this->assertSame($before, $this->snapshot());
+    }
+
     public function test_frozen_component_directions_control_matching_even_when_numeric_closure_is_zero(): void
     {
         $extra = $this->frozen($this->b, 'positive');
@@ -104,7 +128,7 @@ class HomologousOrderTest extends TestCase
 
     public function test_missing_ancestor_read_data_fails_closed_without_rewriting_immutable_storage(): void
     {
-        $lineage = app(\App\Services\Observables\CommittalLineageService::class);
+        $lineage = app(CommittalLineageService::class);
         $records = $lineage->recordsForIds($this->actor->substrate_id,
             collect([$this->a->id, $this->positive->id, $this->negative->id]));
         $records->forget($this->b->id);
@@ -126,12 +150,19 @@ class HomologousOrderTest extends TestCase
 
     public function test_inadmissible_local_gate_keeps_homologous_traverse_without_gaining_commit_or_evidence(): void
     {
+        $this->groundFixture($this->gate);
+        $this->mock(ClosureGateService::class, function ($mock): void {
+            $mock->shouldReceive('preview')->andReturn((new ClosureValues(.5, -.5))->resolve());
+        });
         $this->receiptFixture($this->negative);
-        $receipt = app(\App\Services\PropositionStateService::class)->receipts($this->negative)->firstOrFail();
+        $receipt = app(PropositionStateService::class)->receipts($this->negative)->firstOrFail();
         $this->activate();
         $this->publishPotentialFixture($this->actor);
         $before = $this->snapshot();
         $plan = app(InputPlanService::class)->forPhase($this->actor, $this->order);
+        $visible = app(ParticipantContextSerializer::class)->plan($plan);
+        $this->assertContains($this->gate->id, array_column($visible['write_options'], 'id'));
+        $this->assertFalse($visible['commitment']['closure']['admissible']);
         $this->assertArrayNotHasKey('proposition.commit', $plan['schema']['$defs']['actions']);
         $this->assertArrayNotHasKey('participant.rest', $plan['schema']['$defs']['actions']);
         $this->assertSame([$this->negative->id], $plan['schema']['$defs']['actions']['proposition.traverse']['properties']['proposition_id']['enum']);
@@ -169,7 +200,7 @@ class HomologousOrderTest extends TestCase
     public function test_admissible_local_commit_survives_opposite_population_and_enters_its_new_commit(): void
     {
         $this->mock(ClosureGateService::class, function ($mock): void {
-            $closure = [...(new \App\Domain\Observables\ClosureValues(1, 1))->resolve(),
+            $closure = [...(new ClosureValues(1, 1))->resolve(),
                 'history_proposition_id' => $this->a->id, 'history_source' => 'committed-ancestor', 'cadence_interval' => 1];
             $mock->shouldReceive('preview', 'forCommitment')->andReturn($closure);
         });

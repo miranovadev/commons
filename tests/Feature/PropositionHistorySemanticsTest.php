@@ -145,6 +145,9 @@ class PropositionHistorySemanticsTest extends TestCase
         if (in_array($operation, ['reclassify', 'bias'], true)) {
             $input = $this->reclassificationInputFixture($phase, $source);
         }
+        if ($operation === 'bias') {
+            $this->coherentChiralityFixture($source);
+        }
         app(ContributionService::class)->validate($this->participant, $input);
         $state = app(PropositionStateService::class);
         $touches = $sources->mapWithKeys(fn (Proposition $item) => [$item->id => $state->touchCount($item)]);

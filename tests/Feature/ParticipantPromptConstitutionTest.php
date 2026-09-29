@@ -68,7 +68,9 @@ class ParticipantPromptConstitutionTest extends TestCase
                 'current causal Gate retains its ordinary local Bias eligibility independently of the homologous population direction',
                 'Both reconciliation parent paths count once, stop at the governing Committal and exclude unrelated siblings.',
                 'full homologous Mediate Gate population supplies independently lineage-derived numeric Chirality measurements',
-                'Dominant-matching active homologous Gates may add Reclassify options',
+                'Resolve dominance over the full population, including component-inadmissible members',
+                'equal retained Orientation and Attestation Cadence directions',
+                'There is no requirement to match the current Gate’s Chirality direction',
                 "Numeric zero retains explicit prior population direction or uses Chirality's negative default",
                 "Receipt catalogue belongs to the acting Cycle's immutable entry Region",
                 'selected source and Receipt may come from different Regions or Horizons',
@@ -95,6 +97,21 @@ class ParticipantPromptConstitutionTest extends TestCase
                 'the next Cycle starts there under its applicable Horizon, without relocation',
             ], ['instrument.execute', 'attestation.create requires', 'proposition.reclassify', 'proposition.revise', 'proposition.variant', 'Instrument execution may perform', 'instrument.replay_receipt_id']],
         ];
+    }
+
+    public function test_common_late_phase_law_keeps_native_contracts_and_poles_neutral(): void
+    {
+        foreach (PhaseKind::cases() as $phase) {
+            $contract = app(ParticipantPhaseInstructions::class)->forPhase($phase);
+            if (in_array($phase, [PhaseKind::Mediate, PhaseKind::Bias, PhaseKind::Order], true)) {
+                $this->assertStringContainsString('Dominance selects candidate inputs; admissibility governs Writes.', $contract);
+                $this->assertStringContainsString('Positive/Positive and Negative/Negative both qualify', $contract);
+                $this->assertStringContainsString('Admissibility constrains the transition, not its outcome or future descendants.', $contract);
+                $this->assertStringContainsString('Potential neither creates nor suppresses that authority.', $contract);
+            } else {
+                $this->assertStringNotContainsString('Dominance selects candidate inputs', $contract);
+            }
+        }
     }
 
     #[DataProvider('phaseContracts')]

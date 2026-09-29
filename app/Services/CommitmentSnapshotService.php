@@ -10,6 +10,7 @@ use App\Models\Supersession;
 use DomainException;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 final readonly class CommitmentSnapshotService
 {
@@ -99,7 +100,7 @@ final readonly class CommitmentSnapshotService
             if ($expectedClosure !== null) {
                 foreach (['depth', 'cadence', 'closure', 'depth_direction', 'cadence_direction', 'cadence_interval', 'history_proposition_id'] as $component) {
                     if ($closure[$component] !== $expectedClosure[$component]) {
-                        throw new \Symfony\Component\HttpKernel\Exception\ConflictHttpException('Closure changed after preview. Retry from fresh state.');
+                        throw new ConflictHttpException('Closure changed after preview. Retry from fresh state.');
                     }
                 }
             }
@@ -119,6 +120,7 @@ final readonly class CommitmentSnapshotService
                 'ledger_entry_id' => $entry->getKey(),
                 'supersession_id' => $supersession?->getKey(),
                 'correspondence' => $measurement->correspondence,
+                ...$measurement->only(['shape_topology', 'cardinal_position', 'shape_topology_direction', 'cardinal_position_direction']),
                 'chirality' => $measurement->chirality,
                 ...$measurement->only(['orientation', 'attestation_cadence', 'orientation_direction', 'attestation_cadence_direction']),
                 'closure' => $measurement->closure,

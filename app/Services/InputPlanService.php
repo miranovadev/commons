@@ -194,6 +194,8 @@ final readonly class InputPlanService
                 ? $writeOptions->mapWithKeys(fn (Proposition $candidate): array => [
                     $candidate->id => $this->admissibility->evaluate($candidate, $phase, $context),
                 ])->all() : [],
+            ...($phase->kind === PhaseKind::Bias ? ['chirality_admissibility' => app(ChiralityGateService::class)->evaluate($gate, $context)] : []),
+            ...($phase->kind === PhaseKind::Mediate ? ['correspondence_admissibility' => app(CorrespondenceGateService::class)->evaluate($gate, $context)] : []),
             'gate' => $this->proposition($gate, $participant, $context),
             'provenance_id' => $lineage->firstWhere('tier', 'committal')?->id,
             'lineage' => $this->propositions($historical, $participant, $context),

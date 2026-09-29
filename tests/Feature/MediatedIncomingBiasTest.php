@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Observables\ChiralityValues;
+use App\Domain\Observables\CorrespondenceValues;
 use App\Enums\PhaseKind;
 use App\Models\Attestation;
 use App\Models\Cycle;
@@ -89,8 +91,10 @@ class MediatedIncomingBiasTest extends TestCase
         $this->bias = $this->progressToBias($this->b, $this->readB, $this->gateB, $localB);
         $this->bResult = $this->bias->gate;
         // Keep A outside the independent homologous population's dominant sign.
-        app(PropositionMeasurementService::class)->project($this->result, .8, .1, .8);
-        app(PropositionMeasurementService::class)->project($this->bResult, .8, -.9, .8);
+        app(PropositionMeasurementService::class)->project($this->result, .8, .1, .8,
+            chiralityComponents: new ChiralityValues(.1, .1));
+        app(PropositionMeasurementService::class)->project($this->bResult, .8, -.9, .8,
+            chiralityComponents: new ChiralityValues(-.9, -.9));
     }
 
     public function test_reconcile_retains_ownership_and_only_the_exact_other_operand_opens_the_doorway(): void
@@ -244,7 +248,8 @@ class MediatedIncomingBiasTest extends TestCase
         $this->assertCount(1, $this->biasOptions());
         $tragedy = $this->boundaryTragedyFixture($this->bResult);
         DB::transaction(fn () => app(ReceiptContextService::class)->desired($this->actor, $this->bias, ['load' => [$tragedy->receipt_id]]));
-        app(PropositionMeasurementService::class)->project($this->bResult, .8, -.9, .8);
+        app(PropositionMeasurementService::class)->project($this->bResult, .8, -.9, .8,
+            chiralityComponents: new ChiralityValues(-.9, -.9));
         $this->publishPotentialFixture($this->actor);
         $schema = app(InputPlanService::class)->forPhase($this->actor, $this->bias)['schema'];
         try {
@@ -264,6 +269,40 @@ class MediatedIncomingBiasTest extends TestCase
         $this->assertFalse($classified->renewal);
         $this->assertDatabaseMissing('receipt_consumptions', ['receipt_id' => $tragedy->receipt_id]);
         $this->assertNotNull($own->fresh()->consumption);
+    }
+
+    public function test_mediated_chirality_is_independent_of_dominance_and_causal_coherence(): void
+    {
+        $this->attestResult();
+        $own = $this->loadedReceiptFixture($this->gateB);
+        $this->assertFalse(app(HomologousBiasService::class)->forPhase($this->bias)->contains('id', $this->result->id));
+        app(PropositionMeasurementService::class)->project($this->bResult, .8, -.9, .8,
+            chiralityComponents: new ChiralityValues(.5, -.5));
+        $this->assertSame([$this->result->id], $this->biasOptions()->pluck('id')->all());
+        $target = app(ContributionDispatcher::class)->dispatch($this->actor, $this->bias, $this->input($own->id));
+        $this->assertSame([$this->result->id], $target->parents()->pluck('propositions.id')->all());
+    }
+
+    public function test_stale_inadmissible_mediated_source_keeps_history_but_cannot_write_or_consume(): void
+    {
+        $this->attestResult();
+        $own = $this->loadedReceiptFixture($this->gateB);
+        $this->assertSame([$this->result->id], $this->biasOptions()->pluck('id')->all());
+        $input = $this->input($own->id);
+        app(PropositionMeasurementService::class)->project($this->result, .8, .1, .8,
+            chiralityComponents: new ChiralityValues(.5, -.5));
+        $this->assertContains($this->result->id, app(MediatedIncomingBiasService::class)->populationFor($this->bias)->pluck('id'));
+        $this->assertTrue($this->biasOptions()->isEmpty());
+        $tables = ['propositions', 'supersessions', 'reclassification_results', 'receipt_consumptions', 'participant_receipt_contexts'];
+        $snapshot = fn () => collect($tables)->mapWithKeys(fn ($table) => [$table => DB::table($table)->get()->toJson()])->all();
+        $before = $snapshot();
+        try {
+            app(ContributionDispatcher::class)->dispatch($this->actor, $this->bias, $input);
+            $this->fail('A stale mediated source cannot Reclassify.');
+        } catch (\DomainException) {
+            $this->assertSame($before, $snapshot());
+            $this->assertNull($own->fresh()->consumption);
+        }
     }
 
     private function progressToBias(Proposition $owner, Proposition $read, Proposition $gate, Proposition $other): Phase
@@ -315,6 +354,11 @@ class MediatedIncomingBiasTest extends TestCase
             'register' => $register ?? $phase->write_register, 'statement' => 'Comparison fixture'])->save();
         app(LedgerService::class)->record($node);
         $this->edge($parent, $node, $edgeType);
+        if ($kind === PhaseKind::Disperse) {
+            // Author eligible Mediate inputs; this suite tests the later Bias doorway.
+            app(PropositionMeasurementService::class)->project($node, .8, 0, 0,
+                correspondenceComponents: new CorrespondenceValues(.8, .8));
+        }
 
         return $node;
     }

@@ -1,5 +1,10 @@
 # Structural homology
 
+The shared law for Mediate, Bias and Order is documented in
+[Unified late-phase admissibility](observables.md#unified-late-phase-admissibility).
+Dominance selects candidate inputs; admissibility governs Writes.
+
+
 Operational locality and structural homology are separate relations.
 `PhasePositionService` remains Horizon-strict. `HomologousPositionService`
 compares structural coordinates without authorizing any action or movement.
@@ -67,8 +72,12 @@ that anchor once, determines dominant Correspondence from independently measured
 values. Matching Reads contribute additional Gate operands; the ordinary local
 path is never vetoed by a contrary population direction. A zero population mean
 retains explicit population history or uses Correspondence's positive default.
-Member zero hysteresis remains independent of population history. Gate Correspondence
-and Attestation lean do not select counterparts.
+Member zero hysteresis remains independent of population history. After dominant Reads select existing Disperse Gates, Reconcile requires both
+Gates to have coherent retained Correspondence component directions and the same
+resolved Correspondence direction. Inadmissible members remain in the full Read
+population. Attestation lean does not select counterparts. The current causal
+Gate remains visible when its Write is inadmissible; optional invalid operands
+are omitted from the actionable set. Results are measured without outcome constraints.
 
 HomologousMediationService separates structural discovery from hydrated comparison.
 ParticipationContext includes those candidate IDs and their dependencies only
@@ -171,3 +180,18 @@ Potential retains the edge as a foreign input and excludes it from local terrain
 just as for existing foreign Reconcile inputs. No Potential formula changes.
 
 
+
+### Bias Chirality Write coherence
+
+Bias applies the existing-Gate coherence rule to each causal, mediated incoming or
+homologous source before Reclassify: retained Orientation and Attestation Cadence
+directions must agree. Both signs qualify; zeros retain their component history.
+The full homologous Gate population still determines numeric Chirality dominance
+before action filtering. Exact mediated authority stays independent of dominance
+and takes precedence where the same source qualifies through both mechanisms.
+The ordinary local ancestry/evidence rule and all existing Receipt distinctions
+remain separate requirements. No direction pairing with the current causal Gate
+is imposed. Inadmissible causal Gates stay visible; unusable optional sources do
+not enter the actionable set. Dispatch rechecks before any classification mutation.
+The resulting proposition is measured without outcome constraints. See
+[Bias Write admissibility](observables.md#bias-write-admissibility).

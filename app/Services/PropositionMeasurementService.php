@@ -2,8 +2,9 @@
 
 namespace App\Services;
 
-use App\Enums\ObservableDirection;
 use App\Domain\Observables\ChiralityValues;
+use App\Domain\Observables\CorrespondenceValues;
+use App\Enums\ObservableDirection;
 use App\Models\CommitmentSnapshot;
 use App\Models\ContextHorizonMembership;
 use App\Models\Proposition;
@@ -43,6 +44,7 @@ final class PropositionMeasurementService
             $values->closure,
             $calculatedAt,
             $components->chiralityComponents,
+            $components->correspondenceComponents,
         );
     }
 
@@ -98,7 +100,11 @@ final class PropositionMeasurementService
                     $values = $snapshot ?? $components->observables();
                     $attributes = $snapshot !== null ? $snapshot->only([
                         'orientation', 'attestation_cadence', 'orientation_direction', 'attestation_cadence_direction',
+                        'shape_topology', 'cardinal_position', 'shape_topology_direction', 'cardinal_position_direction',
                     ]) : ($components->chiralityComponents === null ? [] : $this->componentAttributes($proposition, $components->chiralityComponents, $context));
+                    if ($snapshot === null && $components->correspondenceComponents !== null) {
+                        $attributes = [...$attributes, ...$this->correspondenceComponentAttributes($proposition, $components->correspondenceComponents, $context)];
+                    }
                     $measurement = new PropositionMeasurement;
                     $measurement->forceFill([
                         ...$attributes,
@@ -123,12 +129,13 @@ final class PropositionMeasurementService
         ?float $closure,
         ?DateTimeInterface $calculatedAt = null,
         ?ChiralityValues $chiralityComponents = null,
+        ?CorrespondenceValues $correspondenceComponents = null,
     ): PropositionMeasurement {
         $this->assertMeasurement('correspondence', $correspondence);
         $this->assertMeasurement('chirality', $chirality);
         $this->assertMeasurement('closure', $closure);
 
-        return DB::transaction(function () use ($proposition, $correspondence, $chirality, $closure, $calculatedAt, $chiralityComponents): PropositionMeasurement {
+        return DB::transaction(function () use ($proposition, $correspondence, $chirality, $closure, $calculatedAt, $chiralityComponents, $correspondenceComponents): PropositionMeasurement {
             // Maintenance and contribution writes use the same root-before-node order.
             Substrate::query()->lockForUpdate()->findOrFail($proposition->phase->cycle->participant->substrate_id);
             // Lock the Proposition so the numeric projection and retained direction move together.
@@ -146,7 +153,11 @@ final class PropositionMeasurementService
             }
             $componentAttributes = $snapshot !== null ? $snapshot->only([
                 'orientation', 'attestation_cadence', 'orientation_direction', 'attestation_cadence_direction',
+                'shape_topology', 'cardinal_position', 'shape_topology_direction', 'cardinal_position_direction',
             ]) : ($chiralityComponents === null ? [] : $this->componentAttributes($proposition, $chiralityComponents));
+            if ($snapshot === null && $correspondenceComponents !== null) {
+                $componentAttributes = [...$componentAttributes, ...$this->correspondenceComponentAttributes($proposition, $correspondenceComponents)];
+            }
             PropositionMeasurement::query()->upsert(
                 [[
                     ...$componentAttributes,
@@ -187,6 +198,20 @@ final class PropositionMeasurementService
             ...$values->resolveDirections(
                 ObservableDirection::from($prior?->orientation_direction ?? $previous?->orientation_direction ?? 'positive'),
                 ObservableDirection::from($prior?->attestation_cadence_direction ?? $previous?->attestation_cadence_direction ?? 'positive'),
+            )];
+    }
+
+    /** Match Chirality provenance independently for each local diagnostic. */
+    private function correspondenceComponentAttributes(Proposition $proposition, CorrespondenceValues $values, ?ParticipationContext $context = null): array
+    {
+        $prior = $context === null ? PropositionMeasurement::find($proposition->id) : $context->propositions->get($proposition->id)?->measurement;
+        $entry = $proposition->phase->cycle->entry_committal_id;
+        $previous = $entry === null ? null : ($context === null ? CommitmentSnapshot::find($entry) : $context->snapshots->firstWhere('proposition_id', $entry));
+
+        return ['shape_topology' => $values->shapeTopology, 'cardinal_position' => $values->cardinalPosition,
+            ...$values->resolveDirections(
+                ObservableDirection::from($prior?->shape_topology_direction ?? $previous?->shape_topology_direction ?? 'positive'),
+                ObservableDirection::from($prior?->cardinal_position_direction ?? $previous?->cardinal_position_direction ?? 'positive'),
             )];
     }
 

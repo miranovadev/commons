@@ -48,6 +48,10 @@ class ReceiptGatedReclassificationTest extends TestCase
         $receipt = $instruments->complete($instruments->start($producer->phase, $producer, 'citation', $this->origin->id), $producer);
         $phase = $this->phase($source, $kind);
 
+        if ($kind === PhaseKind::Bias) {
+            $this->coherentChiralityFixture($source);
+        }
+
         return [$source, $receipt, $phase];
     }
 

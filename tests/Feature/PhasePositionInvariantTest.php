@@ -155,6 +155,7 @@ class PhasePositionInvariantTest extends TestCase
         foreach ([$early, $late, $nodes[3], $nodes[6]] as $node) {
             $this->groundFixture($node);
         }
+        $this->coherentChiralityFixture($late);
         $bias = $this->phase($reader, PhaseKind::Bias, $late);
         foreach ([null, new ParticipationContext($bias)] as $context) {
             $this->assertSame([$late->id], app(BiasGateService::class)->populationFor($bias, $context)->pluck('id')->all());
