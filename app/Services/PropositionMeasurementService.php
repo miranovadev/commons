@@ -51,13 +51,14 @@ final class PropositionMeasurementService
     /** Mutation-only direction observation; never publishes disposable measurements. */
     public function observeChirality(Proposition $position, ?ParticipationContext $context = null): float
     {
-        $snapshot = $position->tier === 'committal' ? CommitmentSnapshot::find($position->id) : null;
+        $snapshot = $position->tier === 'committal'
+            ? ($context === null ? CommitmentSnapshot::find($position->id) : $context->snapshots->firstWhere('proposition_id', $position->id)) : null;
         if ($snapshot !== null) {
             return $snapshot->chirality;
         }
         [$value, $components] = app(LineageMeasurementService::class)->chirality($position, $context);
-        $attributes = [...$this->componentAttributes($position, $components),
-            'chirality' => $value, 'chirality_direction' => $this->resolvedChiralityDirection($position, $value)->value];
+        $attributes = [...$this->componentAttributes($position, $components, $context),
+            'chirality' => $value, 'chirality_direction' => $this->resolvedChiralityDirection($position, $value, $context)->value];
         DB::table('chirality_observations')->upsert([['proposition_id' => $position->id,
             ...$attributes]], ['proposition_id'], array_keys($attributes));
 

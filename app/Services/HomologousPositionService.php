@@ -205,6 +205,43 @@ final readonly class HomologousPositionService
             return null;
         }
 
+        return $this->keyForCoordinate($position, $substrate, $history, $domain);
+    }
+
+    /** Batch the same validated coordinate for one substrate's observation boundary. */
+    public function populationKeys(Collection $positions): array
+    {
+        $positions = (new Proposition)->newCollection($positions->all());
+        $positions->loadMissing('phase.cycle.contextHorizon', 'phase.cycle.participant');
+        $eligible = $positions->filter(fn ($position) => $this->canonical($position));
+        if ($eligible->isEmpty()) {
+            return [];
+        }
+        $keys = [];
+        foreach ($eligible->groupBy(fn ($node) => $node->phase->cycle->participant->substrate_id) as $substrate => $members) {
+            $owners = $this->regions->seedIdsFor($members, $members);
+            $records = $this->lineage->recordsForIds($substrate, collect($owners));
+            $histories = [];
+            foreach ($members as $position) {
+                $owner = $owners[$position->id] ?? null;
+                if ($owner === null) {
+                    continue;
+                }
+                if (! array_key_exists($owner, $histories)) {
+                    $histories[$owner] = $this->distances($owner, $records, $substrate);
+                }
+                $history = $histories[$owner];
+                if ($history !== null) {
+                    $keys[$position->id] = $this->keyForCoordinate($position, $substrate, $history);
+                }
+            }
+        }
+
+        return $keys;
+    }
+
+    private function keyForCoordinate(Proposition $position, string $substrate, array $history, ?string $domain = null): string
+    {
         return hash('sha256', implode(':', [$substrate, array_key_last($history), count($history),
             $domain ?? $position->phase->cycle->contextHorizon->domain->value,
             $position->phase->kind->value, $position->tier]));

@@ -8,10 +8,13 @@ use App\Enums\PhaseKind;
 use App\Models\Attestation;
 use App\Models\Cycle;
 use App\Models\Phase;
+use App\Models\Proposition;
 use App\Services\ChiralityPopulationHistoryService;
 use App\Services\ContributionDispatcher;
 use App\Services\CycleEntryService;
 use App\Services\HomeostaticDirectionService;
+use App\Services\HomeostaticPopulationService;
+use App\Services\HomologousPositionService;
 use App\Services\Observables\LocalMeasurementService;
 use App\Services\PropositionMeasurementService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -134,6 +137,28 @@ class ChiralityPopulationHistoryTest extends TestCase
         $this->assertSame(1, Attestation::whereNotNull('supersedes_attestation_id')->count());
         $this->assertSame('negative', DB::table('chirality_population_observations')->where('population_key', $key)->latest('id')->value('direction'));
         $this->assertSame(-.5, app(HomeostaticDirectionService::class)->forPosition($node->fresh(), 'chirality')->mean);
+    }
+
+    public function test_batched_observation_coordinates_match_the_full_canonical_populations(): void
+    {
+        $this->createHomologyActor();
+        $origin = $this->commit(null, 'emergence');
+        $this->position($origin);
+        $a = $this->commit($origin, 'settlement');
+        $b = $this->commit($origin, 'settlement');
+        $this->position($a);
+        $this->position($b);
+        $this->position($a, PhaseKind::Mediate);
+        $this->position($this->commit($a, 'settlement'));
+        $positions = Proposition::all();
+        $homology = app(HomologousPositionService::class);
+        $keys = $homology->populationKeys($positions);
+        foreach ($positions as $position) {
+            $this->assertSame($homology->populationKey($position), $keys[$position->id] ?? null);
+            $actual = app(HomeostaticPopulationService::class)->forPosition($position)->pluck('id')->all();
+            $group = array_keys(array_filter($keys, fn ($key) => $key === ($keys[$position->id] ?? null)));
+            $this->assertEqualsCanonicalizing($actual, $group);
+        }
     }
 
     public function test_unavailable_current_population_inherits_corresponding_preceding_horizon_without_a_synthetic_zero(): void

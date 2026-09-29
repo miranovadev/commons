@@ -71,10 +71,11 @@ final readonly class ChiralityPopulationHistoryService
         Substrate::whereKey($substrateId)->lockForUpdate()->firstOrFail();
         $positions = Proposition::whereHas('phase.cycle.participant', fn ($q) => $q->where('substrate_id', $substrateId))
             ->whereHas('ledgerEntry')->with('phase.cycle.contextHorizon', 'phase.cycle.participant', 'commitmentSnapshot')->get();
+        $keys = $this->homology->populationKeys($positions);
         $seen = [];
         $context = null;
         foreach ($positions as $position) {
-            $key = $this->key($position);
+            $key = $keys[$position->id] ?? null;
             if ($key === null || isset($seen[$key])) {
                 continue;
             }
