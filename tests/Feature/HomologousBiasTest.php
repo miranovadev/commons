@@ -192,9 +192,10 @@ class HomologousBiasTest extends TestCase
         $this->reject($this->gateA);
     }
 
-    public function test_zero_uses_chirality_default_and_does_not_mutate_measurements_or_state(): void
+    public function test_zero_retains_population_history_and_does_not_mutate_measurements_or_state(): void
     {
         $this->warrant();
+        // Fixture entries established Negative population history before these zero means.
         foreach ([[.5, -.5, 0.0], [0.0, 0.0, 0.0]] as $values) {
             foreach ([$this->gateA, $this->gateB, $this->gateC] as $index => $gate) {
                 $this->measure($gate, $values[$index]);

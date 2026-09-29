@@ -1134,7 +1134,8 @@ class CausalRecoveryTest extends TestCase
     {
         $origin = $this->committal($this->root, -.9, boundary: true);
         $h2 = app(ContextHorizonProjector::class)->forEntry($origin);
-        $commit = $this->committal($h2, .01, $origin, boundary: true);
+        // Controlled routing geometry keeps an open return margin with complete history.
+        $commit = $this->committal($h2, .01, $origin, boundary: true, observables: [-.4, -.4, .83]);
         $h3 = app(ContextHorizonProjector::class)->forEntry($commit);
         $this->assertSame(ContextDomain::Settlement, $h2->domain);
         $this->assertSame(ContextDomain::Emergence, $h3->domain);
@@ -1186,13 +1187,13 @@ class CausalRecoveryTest extends TestCase
         return $node;
     }
 
-    private function committal(ContextHorizon $horizon, float $tension, ?Proposition $parent = null, bool $boundary = false, bool $projectBoundary = true, string $edgeType = 'variant'): Proposition
+    private function committal(ContextHorizon $horizon, float $tension, ?Proposition $parent = null, bool $boundary = false, bool $projectBoundary = true, string $edgeType = 'variant', ?array $observables = null): Proposition
     {
         $node = $this->node($this->phase($horizon, $parent), $parent, 'committal', $edgeType);
         $commit = $edgeType === 'commit' ? $this->commitSupersessionFixture($node) : null;
         $snapshot = new CommitmentSnapshot;
         $snapshot->forceFill(['proposition_id' => $node->id, 'substrate_id' => $this->substrate->id,
-            'ledger_entry_id' => $node->ledgerEntry->id, 'supersession_id' => $commit?->id, 'correspondence' => $tension, 'chirality' => $tension, 'closure' => $tension,
+            'ledger_entry_id' => $node->ledgerEntry->id, 'supersession_id' => $commit?->id, 'correspondence' => $observables[0] ?? $tension, 'chirality' => $observables[1] ?? $tension, 'closure' => $observables[2] ?? $tension,
             'prominence' => (1 + $tension) / 2, 'turbulence' => (1 - $tension) / 2, 'tension' => $tension,
             'direction_before' => $horizon->domain, 'direction_after' => $boundary ? $horizon->domain->opposite() : $horizon->domain,
             'cadence_interval' => $node->phase->cycle->entry_committal_id === null ? null : 1,

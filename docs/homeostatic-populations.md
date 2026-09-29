@@ -61,7 +61,9 @@ identity uses substrate, shared Origin, full committed depth, Domain, canonical
 Phase and tier; it is not a hash of the current member IDs. Mutation-boundary
 observations preserve both sides of Cycle entry and contribution changes,
 including Attestation acts and replacements. They are transactional and do not
-wait for a disposable Potential projection to publish. Repeated zero observations
+wait for a disposable Potential projection to publish. Member direction observations
+are stored separately; recording history does not overwrite disposable measurements.
+The normal projection pathway publishes current component diagnostics. Repeated zero observations
 retain history; no Attestation-specific rewind is used.
 
 An unavailable Chirality population has no numeric mean. Its direction inherits
