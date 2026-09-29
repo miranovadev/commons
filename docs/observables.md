@@ -176,7 +176,9 @@ Local components remain inspectable independently; they are not separately atten
 Orientation and Attestation Cadence have independent retained directions. Nonzero
 values establish their sign; zero retains the prior component direction, falling
 back to the entry Commitment's direction and then Positive. Component disagreement
-is descriptive and never an admissibility or movement gate. Frozen CommitmentSnapshots,
+blocks a Bias Reclassify Write from that existing source; it grants no movement.
+Coherent Positive/Positive and Negative/Negative sources both satisfy this additional
+condition. Numeric zero uses retained component directions, never a directionless state. Frozen CommitmentSnapshots,
 including old snapshots without component diagnostics, are never recalculated.
 
 Without an Origin Attestation, Origin has Orientation 0, one current bootstrap
@@ -205,11 +207,38 @@ The Context Horizon remains comparison context. See
 
 Mediate — Read and Bias — Gate may calculate over regional populations. Only
 Mediate exposes compatible foreign Gates operationally as reconciliation operands;
-Bias exposes only its current causal Gate. Closure, performed during Order —
+Bias retains its causal Gate and may expose actionable mediated or dominant
+homologous sources. Closure, performed during Order —
 Write, is not a region-wide cross-lineage comparison. Calculation membership never
 creates operational options or traversal edges. Local expressive Writes remain
 visible independently of Closure; Commit requires full admissibility and only
 each Write's own direct Committal may be traversed.
+
+### Bias Write admissibility
+
+Dominance selects candidate inputs; admissibility governs whether Bias may Write
+from an existing Gate. `ChiralityGateService` compares retained
+`orientation_direction` and `attestation_cadence_direction`. It never measures a
+prospective Reclassification. Ordinary local evidence/ancestry agreement, structural
+eligibility, effective Attestation and Receipt authority remain required separately.
+
+The full homologous Gate population determines dominant numeric Chirality before
+component coherence filters actionable sources. An inadmissible member still
+contributes its measurement. Exact mediated incoming doorways remain independent
+of that dominance and retain precedence over homologous authority. Local, mediated
+and same-Region homologous sources use ordinary own-Region evidence; foreign
+homologous escape still requires the existing unresolved own-Region Tragedy warrant.
+There is no source/current-Gate direction pairing requirement and an inadmissible
+causal Gate does not veto an independently eligible optional source.
+
+The causal Gate remains visible with backend `chirality_admissibility` diagnostics;
+ineligible optional sources are absent from the actionable set. The diagnostic's
+`chirality_direction` uses existing numeric member resolution (negative default at
+zero), separately from the ordinary local evidence/ancestry direction rule.
+Dispatch checks the selected source again before result creation, causal edges,
+classification registration or Receipt consumption. The result is measured normally
+and need not preserve source direction or component agreement. Rest applies when
+no admissible non-Rest action remains, at either zero or positive Potential.
 
 ## Committed-lineage Closure
 

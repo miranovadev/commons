@@ -52,6 +52,7 @@ class CausalOperationalScopeTest extends TestCase
         $b = $this->node($seed, PhaseKind::Mediate);
         $this->groundFixture($a);
         $this->groundFixture($b);
+        $this->coherentChiralityFixture($b);
         $bias = $this->phase($this->reader, PhaseKind::Bias, $b);
         foreach ([null, new ParticipationContext($bias)] as $context) {
             $this->assertEqualsCanonicalizing([$a->id, $b->id], app(BiasGateService::class)->forPhase($bias, $context)->pluck('id')->all());

@@ -39,7 +39,7 @@ final class ParticipantPromptLayout
         $plan = $packet['plan'];
         $packet['plan'] = [];
         foreach (['lineage', 'provenance_id', 'exhausted_alternatives', 'read_options', 'gate_options', 'write_options',
-            'commitment', 'commitment_options', 'correspondence_admissibility', 'receipts', 'gate_id', 'phase', 'rest_available', 'rest_reason', 'schema'] as $key) {
+            'commitment', 'commitment_options', 'correspondence_admissibility', 'chirality_admissibility', 'receipts', 'gate_id', 'phase', 'rest_available', 'rest_reason', 'schema'] as $key) {
             if (array_key_exists($key, $plan)) {
                 $packet['plan'][$key] = $plan[$key];
             }
