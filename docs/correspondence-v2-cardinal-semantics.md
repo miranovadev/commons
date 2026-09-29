@@ -386,28 +386,46 @@ If the current Domain extends beyond the completed reference, each newly occupie
 Row populations come from the **selected causal morphologies**, while their `(Domain Depth, Lateral Position)` coordinates come from the **complete independently constructed Domain cardinal layouts**. Unrelated propositions in the same complete Domain row do not enter a measurement unless the measured head's causal morphology selects them.
 
 
-## 15. Future hypothesis — Correspondence alignment
-
-> **Non-normative. Do not implement as part of the v2 correction.** Record component values/directions first and evaluate this hypothesis against live substrate behavior.
-
-Shape Topology and Cardinal Position may eventually supply a Correspondence admissibility relation analogous in form, but not necessarily in operational meaning, to Closure component alignment.
-
-The hypothesis is that **directional agreement between the two Correspondence components represents structurally coherent correspondence**, regardless of whether that shared direction is consonant or dissonant:
+## 15. Independently inspectable local diagnostics
 
 ```text
-Topology +   Position +   → aligned consonance   → potentially admissible
-Topology -   Position -   → aligned dissonance   → potentially admissible
-Topology +   Position -   → opposed structure    → potentially inadmissible
-Topology -   Position +   → opposed structure    → potentially inadmissible
+Correspondence
+├── Shape Topology
+└── Cardinal Position
 ```
 
-Under this hypothesis, two parents that are consonant in both topology and cardinal position may be joined because both structural dimensions agree. Two parents that are dissonant in both may also be joined: reconciliation can coherently combine two structures that disagree completely with the reference in the same direction. A topology/position disagreement instead means the structural dimensions themselves do not agree about the relation.
+Disposable Proposition measurements retain `shape_topology`, `cardinal_position`,
+`shape_topology_direction` and `cardinal_position_direction`. These are the measured
+head's local components, never independently attenuation-averaged through ancestry.
+Only `round((ShapeTopology + CardinalPosition) / 2, 7)` forms local Correspondence;
+only that combined local value enters the existing inverse-square attenuation.
 
-This is **not** a positivity gate. Negative/negative alignment is as coherent as positive/positive alignment.
+Each component has independent retained direction/hysteresis. Nonzero follows its
+own sign. At zero, use that Proposition's previously projected component direction;
+if absent, use the corresponding direction frozen in its Cycle-entry Commitment
+snapshot; if also absent, default to Positive. An absent historical component
+is not reconstructed. Numeric zero is never a third, directionless state.
 
-Do not yet add an admissibility Gate, zero-direction hysteresis, Reconcile filtering or movement/authority change. The corrected v2 implementation should expose enough read-only diagnostics to observe Shape Topology and Cardinal Position independently so later runs can test whether aligned/opposed component states actually correspond to meaningful Mediate/Reconcile behavior.
+Component agreement or disagreement is diagnostic only. It grants no authority,
+admissibility, actionability, movement, homology or Commit eligibility. Existing
+`correspondence_direction` remains authoritative for all combined Correspondence
+consumers; component directions neither replace nor reinterpret it. Receipt state,
+reinforcement, loads, clears and evidence availability affect neither component nor
+its direction.
 
-Chirality remains an independent observable. This hypothesis does not imply that Chirality requires decomposition or an analogous gate.
+Calculation is read-only. The existing measurement projection pathway persists
+values and directions together. Newly published Commitment snapshots freeze both
+local components and their directions alongside the combined observable. Historical
+snapshots remain immutable and their new nullable fields remain null; no frozen
+Correspondence is recalculated to manufacture diagnostics.
+
+### Origin components
+
+The exact provenance/terminal identity at Origin has Shape Topology `+1` and
+Cardinal Position `+1`, each with Positive direction. Both components are bounded
+by `[-1,+1]`, so this is the unique pair whose arithmetic mean is the canonical
+Origin `+1`. This documents the existing boundary axiom, without adding a field
+transition or changing Chirality, Closure or first-developed-Domain semantics.
 
 ## 16. Required implementation evidence
 

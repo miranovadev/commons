@@ -108,6 +108,29 @@ The completed immediately preceding complementary Domain is the structural refer
 Origin retains raw Correspondence `+1`. Ordinary structural comparison begins immediately in the first developed Domain after Origin, including unmatched structure against Origin's one-node morphology. Existing inverse-square attenuation remains unchanged.
 
 After each proposition's raw/local Correspondence is calculated, the existing inverse-square structural attenuation described above remains unchanged.
+
+```text
+Correspondence
+├── Shape Topology
+└── Cardinal Position
+```
+
+The local head components are independently inspectable in `shape_topology` and
+`cardinal_position`; only their rounded arithmetic mean forms raw Correspondence,
+and only combined Correspondence receives structural attenuation. Their retained
+`shape_topology_direction` and `cardinal_position_direction` follow their own
+nonzero signs. At zero each independently retains its prior projected direction,
+then the corresponding Cycle-entry snapshot direction if available, otherwise
+Positive. Zero is never directionless. Origin's unique bounded component pair is
+`(+1, +1)`, with Positive directions and mean `+1`.
+
+Agreement/disagreement grants no authority or admissibility. Combined
+`correspondence_direction` remains authoritative for current consumers. Components
+are Receipt-neutral; calculations perform no writes, and disposable measurement
+projection owns persistence. New Commitment snapshots freeze values and directions.
+Historical snapshots keep nullable diagnostics and are never reconstructed or
+recalculated to populate these fields.
+
 ## Local Chirality
 
 Chirality first removes Propositions that have been hard superseded inside

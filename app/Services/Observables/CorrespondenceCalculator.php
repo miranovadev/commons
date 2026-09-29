@@ -3,6 +3,7 @@
 namespace App\Services\Observables;
 
 use App\Domain\Observables\CardinalMorphology;
+use App\Domain\Observables\CorrespondenceValues;
 use App\Domain\Observables\LineageComparison;
 use App\Enums\RegisterPosition;
 use App\Enums\SupersessionStrength;
@@ -19,8 +20,15 @@ final readonly class CorrespondenceCalculator
 
     public function calculate(LineageComparison $comparison): float
     {
+        return $this->components($comparison)->average();
+    }
+
+    public function components(LineageComparison $comparison): CorrespondenceValues
+    {
         if ($comparison->isBootstrap()) {
-            return 1;
+            // Exact provenance/terminal identity. Bounded components with mean +1
+            // uniquely require (+1, +1); no first-Domain bootstrap override.
+            return new CorrespondenceValues(1, 1);
         }
 
         /** @var Proposition $head */
@@ -28,13 +36,13 @@ final readonly class CorrespondenceCalculator
         $current = $this->morphologies->current($head, $comparison->current->horizon, $comparison->current->context);
         $previous = $this->morphologies->reference($comparison->current->horizon, $current->primaryDepth, $comparison->current->context);
         if ($previous === null || $previous->propositions->isEmpty()) {
-            return -1;
+            return new CorrespondenceValues(-1, -1);
         }
 
         $topology = $this->topology($current, $previous);
         $position = $this->positions->calculate($current, $previous);
 
-        return $this->normalise(($topology + $position) / 2);
+        return new CorrespondenceValues($topology, $position);
     }
 
     private function topology(CardinalMorphology $current, CardinalMorphology $previous): float

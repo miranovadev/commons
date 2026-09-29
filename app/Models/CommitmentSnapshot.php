@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ContextDomain;
+use App\Enums\ObservableDirection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -20,6 +21,8 @@ class CommitmentSnapshot extends Model
     {
         return [
             'correspondence' => 'float',
+            'shape_topology' => 'float',
+            'cardinal_position' => 'float',
             'chirality' => 'float',
             'orientation' => 'float',
             'attestation_cadence' => 'float',
@@ -27,8 +30,8 @@ class CommitmentSnapshot extends Model
             'depth' => 'float',
             'cadence' => 'float',
             'cadence_interval' => 'integer',
-            'depth_direction' => \App\Enums\ObservableDirection::class,
-            'cadence_direction' => \App\Enums\ObservableDirection::class,
+            'depth_direction' => ObservableDirection::class,
+            'cadence_direction' => ObservableDirection::class,
             'tension_before' => 'float',
             'prominence' => 'float',
             'turbulence' => 'float',
@@ -67,4 +70,3 @@ class CommitmentSnapshot extends Model
         return $this->direction_before !== $this->direction_after;
     }
 }
-

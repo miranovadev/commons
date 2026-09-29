@@ -2,6 +2,7 @@
 
 namespace App\Services\Observables;
 
+use App\Domain\Observables\ClosureValues;
 use App\Domain\Observables\LineageComparison;
 use App\Domain\Observables\LocalMeasurements;
 use App\Models\Proposition;
@@ -20,17 +21,19 @@ class LocalMeasurementService
     {
         $comparison ??= $this->lineages->for($proposition);
         $closure = $includeClosure ? $this->closure->localComponents($proposition, $comparison)
-            : new \App\Domain\Observables\ClosureValues(0, 0);
+            : new ClosureValues(0, 0);
 
         $chirality = $this->chirality->components($comparison);
+        $correspondence = $this->correspondence->components($comparison);
 
         return new LocalMeasurements(
-            $this->correspondence->calculate($comparison),
+            $correspondence->average(),
             $chirality->average(),
             $closure->depth,
             $closure->cadence,
             $closure->average(),
             $chirality,
+            $correspondence,
         );
     }
 }
