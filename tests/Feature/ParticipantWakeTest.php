@@ -348,12 +348,12 @@ class ParticipantWakeTest extends TestCase
     #[Group('integration')]
     public function test_rest_wake_crosses_a_real_commit_and_stops_immediately_after_genuine_rest(): void
     {
-        $this->controlledClosureFixture(-1);
         $this->runCycleWake('rest');
     }
 
     private function runCycleWake(string $mode): void
     {
+        $this->controlledClosureFixture(-1);
         $f = new ParticipantContextFixture(1, 0);
         $f->phase->forceFill(['kind' => PhaseKind::Distinguish, 'gate_proposition_id' => $f->seed->id, 'write_register' => 'activity'])->save();
         $nodes = [];
