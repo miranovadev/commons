@@ -463,6 +463,9 @@ class BiasGateTest extends TestCase
         $attestation = new Attestation;
         $attestation->forceFill(['phase_id' => $phase->id, 'proposition_id' => $node->id, 'direction' => $direction])->save();
         app(LedgerService::class)->record($attestation);
+        if ($node->tier === 'expressive') {
+            $this->coherentChiralityFixture($node);
+        }
 
         return $attestation;
     }

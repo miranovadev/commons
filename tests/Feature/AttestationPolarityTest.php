@@ -19,7 +19,9 @@ use App\Services\ContextHorizonProjector;
 use App\Services\ContributionDispatcher;
 use App\Services\CycleEntryService;
 use App\Services\LedgerService;
+use App\Services\Observables\ReinforcementService;
 use App\Services\PropositionMeasurementService;
+use App\Services\ReceiptContextService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -140,6 +142,7 @@ class AttestationPolarityTest extends TestCase
         $this->assertSame($counts, [Proposition::count(), $this->participant->substrate->ledgerEntries()->count()]);
         $this->receiptFixture($major);
         // Reclassification is exercised from the candidate's own causal Gate.
+        $this->coherentChiralityFixture($major);
         $phase = $this->phase(PhaseKind::Bias, $write, $major);
         $target = app(ContributionDispatcher::class)->dispatch($this->participant, $phase,
             $this->reclassificationInputFixture($phase, $major));
@@ -189,7 +192,7 @@ class AttestationPolarityTest extends TestCase
         $this->attest($position, 'support');
         $refute = $this->attest($position, 'refute');
         $evidence = app(AttestationEvidenceService::class);
-        $count = app(\App\Services\Observables\ReinforcementService::class);
+        $count = app(ReinforcementService::class);
         $assertNeutral = function () use ($evidence, $position, $seed, $register, $governing): void {
             $this->assertSame(0.0, $evidence->valueFor(collect([$position])));
             $this->assertSame($governing, $evidence->directionFor($position));
@@ -202,7 +205,7 @@ class AttestationPolarityTest extends TestCase
         $this->assertSame(1, $count->count($position));
         $assertNeutral();
         $phase = $this->phase(PhaseKind::Order, $register, $position, $refute->phase->cycle->participant);
-        app(\App\Services\ReceiptContextService::class)->clear($phase->cycle->participant, $phase, $receipt->id);
+        app(ReceiptContextService::class)->clear($phase->cycle->participant, $phase, $receipt->id);
         $this->assertSame(0, $count->count($position));
         $assertNeutral();
     }

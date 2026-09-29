@@ -175,3 +175,18 @@ Potential retains the edge as a foreign input and excludes it from local terrain
 just as for existing foreign Reconcile inputs. No Potential formula changes.
 
 
+
+### Bias Chirality Write coherence
+
+Bias applies the existing-Gate coherence rule to each causal, mediated incoming or
+homologous source before Reclassify: retained Orientation and Attestation Cadence
+directions must agree. Both signs qualify; zeros retain their component history.
+The full homologous Gate population still determines numeric Chirality dominance
+before action filtering. Exact mediated authority stays independent of dominance
+and takes precedence where the same source qualifies through both mechanisms.
+The ordinary local ancestry/evidence rule and all existing Receipt distinctions
+remain separate requirements. No direction pairing with the current causal Gate
+is imposed. Inadmissible causal Gates stay visible; unusable optional sources do
+not enter the actionable set. Dispatch rechecks before any classification mutation.
+The resulting proposition is measured without outcome constraints. See
+[Bias Write admissibility](observables.md#bias-write-admissibility).

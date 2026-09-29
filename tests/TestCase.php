@@ -3,6 +3,7 @@
 namespace Tests;
 
 use App\Domain\Evidence\VerifiedHyperlink;
+use App\Domain\Observables\ChiralityValues;
 use App\Domain\Observables\CorrespondenceValues;
 use App\Domain\Observables\LocalMeasurements;
 use App\Enums\PhaseKind;
@@ -44,8 +45,20 @@ abstract class TestCase extends BaseTestCase
     {
         $this->mock(LocalMeasurementService::class, function ($mock) use ($value): void {
             $mock->shouldReceive('calculate')->andReturn(new LocalMeasurements($value, $value, $value, $value,
+                chiralityComponents: new ChiralityValues($value, $value),
                 correspondenceComponents: new CorrespondenceValues($value, $value)));
         });
+    }
+
+    /** Isolate ordinary authority tests from the additional Bias coherence condition. */
+    protected function coherentChiralityFixture(Proposition $source): void
+    {
+        $service = app(PropositionMeasurementService::class);
+        $source->unsetRelation('measurement');
+        $service->observeMissing(collect([$source]));
+        $values = $source->measurement;
+        $service->project($source, $values->correspondence, $values->chirality, $values->closure,
+            chiralityComponents: new ChiralityValues(.5, .5));
     }
 
     /** Explicit controlled birth fixture; natural acceptance uses real contributions instead. */

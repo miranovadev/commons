@@ -52,6 +52,10 @@ final readonly class PhaseGenerationService
         if ($gate === null) {
             return false;
         }
+        if ($action === 'proposition.reclassify' && $phase->kind === PhaseKind::Bias
+            && ! app(ChiralityGateService::class)->evaluate($gate, $context)['admissible']) {
+            return false;
+        }
         $additionalBias = $action === 'proposition.reclassify' && $phase->kind === PhaseKind::Bias
             && $gate->id !== $phase->gate_proposition_id;
         if ($phase->kind === PhaseKind::Bias && $gate->id !== $phase->gate_proposition_id && ! $additionalBias) {

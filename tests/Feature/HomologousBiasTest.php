@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Observables\ChiralityValues;
 use App\Enums\ObservableDirection;
 use App\Enums\PhaseKind;
 use App\Models\Attestation;
@@ -17,6 +18,7 @@ use App\Services\ActiveParticipantLineage;
 use App\Services\BiasGateService;
 use App\Services\BiasReceiptAuthorityService;
 use App\Services\CausalWriteService;
+use App\Services\ChiralityGateService;
 use App\Services\CommitRegionService;
 use App\Services\ContributionDispatcher;
 use App\Services\ContributionService;
@@ -27,10 +29,14 @@ use App\Services\HomologousBiasService;
 use App\Services\HorizonReceiptService;
 use App\Services\InputPlanService;
 use App\Services\LedgerService;
-use App\Services\Observables\ReinforcementService;
 use App\Services\Observables\CardinalMorphologyService;
 use App\Services\Observables\DomainCardinalLayoutService;
+use App\Services\Observables\LocalMeasurementService;
+use App\Services\Observables\ObservableService;
+use App\Services\Observables\ReinforcementService;
 use App\Services\OpenAIResponseSchema;
+use App\Services\ParticipantContextSerializer;
+use App\Services\ParticipantPromptLayout;
 use App\Services\Participation\ParticipationContext;
 use App\Services\ParticipationService;
 use App\Services\PhaseGenerationService;
@@ -261,12 +267,10 @@ class HomologousBiasTest extends TestCase
         $morphology = app(CardinalMorphologyService::class)->current($target, $localHorizon);
         $this->assertArrayHasKey($source->id, $morphology->positions);
         $this->assertSame($foreignHorizon->id, $morphology->positions[$source->id]->horizonId);
-        $this->assertTrue($morphology->supersessions->contains(fn ($edge) =>
-            $edge->source_proposition_id === $source->id
+        $this->assertTrue($morphology->supersessions->contains(fn ($edge) => $edge->source_proposition_id === $source->id
             && $edge->target_proposition_id === $target->id
             && $edge->type === 'reclassify'));
-        $this->assertFalse($morphology->supersessions->contains(fn ($edge) =>
-            $edge->source_proposition_id === $gate->id
+        $this->assertFalse($morphology->supersessions->contains(fn ($edge) => $edge->source_proposition_id === $gate->id
             && $edge->target_proposition_id === $target->id));
         foreach ([null, new ParticipationContext($target->phase)] as $context) {
             $lineage = app(ActiveParticipantLineage::class)->endingAt($target, $context);
@@ -665,9 +669,128 @@ class HomologousBiasTest extends TestCase
         app(LedgerService::class)->record($vote);
     }
 
+    public static function chiralityCoherence(): array
+    {
+        return [[.5, .5, true], [-.5, -.5, true], [.5, -.5, false], [-.5, .5, false]];
+    }
+
+    private function components(Proposition $gate, float $orientation, float $cadence, float $combined = .8): void
+    {
+        app(PropositionMeasurementService::class)->project($gate, 0, $combined, 0,
+            chiralityComponents: new ChiralityValues($orientation, $cadence));
+    }
+
+    #[DataProvider('chiralityCoherence')]
+    public function test_causal_chirality_coherence_controls_local_write_and_preserves_visibility(float $orientation, float $cadence, bool $allowed): void
+    {
+        $this->components($this->gateA, $orientation, $cadence);
+        $this->publishPotentialFixture($this->actor);
+        $plan = app(InputPlanService::class)->forPhase($this->actor, $this->bias);
+        $this->assertSame($allowed, app(PhaseGenerationService::class)->available($this->bias, 'proposition.reclassify', position: $this->gateA));
+        $this->assertSame($allowed, in_array($this->gateA->id, array_column($plan['gate_options'], 'id')));
+        $visible = app(ParticipantContextSerializer::class)->plan($plan);
+        $this->assertContains($this->gateA->id, array_column($visible['gate_options'], 'id'));
+        $diagnostic = $visible['chirality_admissibility'];
+        $this->assertSame($allowed, $diagnostic['admissible']);
+        $this->assertSame($allowed ? null : 'component_directions_disagree', $diagnostic['reason']);
+        $this->assertSame($orientation > 0 ? 'positive' : 'negative', $diagnostic['orientation_direction']);
+        $this->assertSame($cadence > 0 ? 'positive' : 'negative', $diagnostic['attestation_cadence_direction']);
+        $this->assertSame('positive', $diagnostic['chirality_direction']);
+        $packet = app(ParticipantContextSerializer::class)->inference(['status' => 'ready', 'plan' => $visible]);
+        $prompt = app(ParticipantPromptLayout::class)->make($packet);
+        $this->assertEquals($diagnostic, json_decode($prompt['user'], true)['plan']['chirality_admissibility']);
+        if (! $allowed) {
+            $this->reject($this->gateA);
+        }
+    }
+
+    public function test_zero_components_use_independent_retained_directions(): void
+    {
+        foreach ([[.5, -.5, false], [-.5, .5, false], [-.5, -.5, true], [.5, .5, true]] as [$orientation, $cadence, $allowed]) {
+            $this->components($this->gateA, $orientation, $cadence);
+            $this->components($this->gateA, 0, 0, 0);
+            $diagnostic = app(ChiralityGateService::class)->evaluate($this->gateA->fresh());
+            $this->assertSame($allowed, $diagnostic['admissible']);
+            $this->assertSame($orientation > 0 ? 'positive' : 'negative', $diagnostic['orientation_direction']);
+            $this->assertSame($cadence > 0 ? 'positive' : 'negative', $diagnostic['attestation_cadence_direction']);
+            $this->assertSame($allowed, app(PhaseGenerationService::class)->available($this->bias, 'proposition.reclassify', position: $this->gateA->fresh()));
+        }
+    }
+
+    public function test_inadmissible_member_determines_dominance_before_action_filtering(): void
+    {
+        $this->warrant();
+        $this->measure($this->gateA, .2);
+        $this->measure($this->gateB, .2);
+        $this->components($this->gateC, -.8, .2, -.9);
+        $context = new ParticipationContext($this->bias);
+        $population = app(HomologousBiasService::class)->populationFor($this->bias, $context);
+        $field = app(HomeostaticDirectionService::class)->forPopulation($this->gateA, $population, 'chirality', $context);
+        $this->assertCount(3, $field->values);
+        $this->assertSame(-.1666667, $field->mean);
+        $this->assertSame(ObservableDirection::Negative, $field->direction);
+        $this->assertSame([$this->gateC->id], app(HomologousBiasService::class)->forPhase($this->bias, $context)->pluck('id')->all());
+        $this->assertSame([$this->gateA->id], $this->biasOptionIds($context));
+        $this->components($this->gateC, -.8, -.2, -.9);
+        $this->assertContains($this->gateC->id, $this->biasOptionIds());
+        // Foreign sources are unary; the causal Gate's coherence is not a veto.
+        $this->components($this->gateA, .8, -.2, .2);
+        $this->assertSame([$this->gateC->id], $this->biasOptionIds());
+    }
+
+    public function test_actionless_inadmissible_bias_rests_at_zero_and_positive_potential(): void
+    {
+        foreach ([$this->gateA, $this->gateB, $this->gateC] as $gate) {
+            $this->components($gate, .8, -.2);
+        }
+        $this->publishPotentialFixture($this->actor);
+        foreach ([0.0, .75] as $potential) {
+            DB::table('potential_region_states')->where('context_horizon_id', $this->bias->cycle->context_horizon_id)
+                ->update(['remaining_potential' => $potential]);
+            $plan = app(InputPlanService::class)->forPhase($this->actor, $this->bias);
+            $this->assertSame($potential, app(PotentialProjectionService::class)->region($this->bias->cycle->context_horizon_id)['potential']);
+            $this->assertTrue($plan['rest_available']);
+            $this->assertSame(['participant.rest'], array_keys($plan['schema']['$defs']['actions']));
+        }
+    }
+
+    #[DataProvider('directions')]
+    public function test_stale_local_or_homologous_source_is_rejected_without_any_write(bool $foreign): void
+    {
+        $this->warrant();
+        $source = $foreign ? $this->gateB : $this->gateA;
+        $this->assertContains($source->id, $this->biasOptionIds());
+        $input = $this->input($source);
+        $this->components($source, .5, -.5, $foreign ? -.7 : .8);
+        $before = $this->stateSnapshot();
+        $classifications = DB::table('reclassification_results')->get()->toJson();
+        $attachments = DB::table('participant_receipt_contexts')->get()->toJson();
+        try {
+            app(ContributionDispatcher::class)->dispatch($this->actor, $this->bias, $input);
+            $this->fail('Stale component coherence cannot authorize Reclassify.');
+        } catch (DomainException) {
+            $this->assertSame($before, $this->stateSnapshot());
+            $this->assertSame($classifications, DB::table('reclassification_results')->get()->toJson());
+            $this->assertSame($attachments, DB::table('participant_receipt_contexts')->get()->toJson());
+        }
+    }
+
+    public function test_reclassification_result_uses_ordinary_measurement_without_operand_coherence_constraint(): void
+    {
+        $this->components($this->gateA, .8, .8);
+        // Remove the controlled calculator: the accepted result is measured by real v2.
+        $this->app->forgetInstance(LocalMeasurementService::class);
+        $target = app(ContributionDispatcher::class)->dispatch($this->actor, $this->bias, $this->input($this->gateA));
+        $actual = app(ObservableService::class)->components($target);
+        $this->assertEquals($actual->observables()->chirality, $target->fresh()->measurement->chirality);
+        $this->assertSame([$this->gateA->id], $target->parents()->pluck('propositions.id')->all());
+        $this->assertFalse(app(ChiralityGateService::class)->evaluate($target->fresh())['admissible']);
+    }
+
     private function measure(Proposition $node, float $value): void
     {
-        app(PropositionMeasurementService::class)->project($node, 0, $value, 0);
+        app(PropositionMeasurementService::class)->project($node, 0, $value, 0,
+            chiralityComponents: new ChiralityValues($value, $value));
     }
 
     private function edge(Proposition $source, Proposition $target, string $type): void

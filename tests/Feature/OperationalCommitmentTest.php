@@ -187,6 +187,7 @@ class OperationalCommitmentTest extends TestCase
     {
         $left = $this->positionedCandidate(PhaseKind::Mediate);
         $this->classificationEvidenceFixture($left);
+        $this->coherentChiralityFixture($left);
         $builder = $this->participant($this->participant->substrate, 'orienter');
         $biasPhase = $this->phase($builder, PhaseKind::Bias, 'concord', $left);
         $candidate = app(ContributionDispatcher::class)->dispatch($builder, $biasPhase, $this->reclassificationInputFixture($biasPhase, $left));
