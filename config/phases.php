@@ -61,7 +61,7 @@ return [
     ],
     5 => [
         'name' => 'mediate',
-        'description' => 'Keep the causal Read and ordinary local Reconcile path. Dominant Correspondence across homologous Reads may add immediate Gate counterparts from other Regions or Horizons. Reconcile an offered counterpart with the current Gate, or attest an immediate Write descendant.',
+        'description' => 'Keep the causal Read and ordinary local Reconcile path. Dominant Correspondence across homologous Reads may add immediate Gate counterparts from other Regions or Horizons. Reconcile requires coherent retained Correspondence component directions on both existing Gates and matching resolved Correspondence directions between them. The causal Gate remains visible when inadmissible. Attest an immediate Write descendant when offered.',
         'gate' => 'previous-phase-position',
         'actions' => [
             'proposition.reconcile',
@@ -104,5 +104,3 @@ return [
         ],
     ],
 ];
-
-

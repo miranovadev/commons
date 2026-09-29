@@ -67,8 +67,12 @@ that anchor once, determines dominant Correspondence from independently measured
 values. Matching Reads contribute additional Gate operands; the ordinary local
 path is never vetoed by a contrary population direction. A zero population mean
 retains explicit population history or uses Correspondence's positive default.
-Member zero hysteresis remains independent of population history. Gate Correspondence
-and Attestation lean do not select counterparts.
+Member zero hysteresis remains independent of population history. After dominant Reads select existing Disperse Gates, Reconcile requires both
+Gates to have coherent retained Correspondence component directions and the same
+resolved Correspondence direction. Inadmissible members remain in the full Read
+population. Attestation lean does not select counterparts. The current causal
+Gate remains visible when its Write is inadmissible; optional invalid operands
+are omitted from the actionable set. Results are measured without outcome constraints.
 
 HomologousMediationService separates structural discovery from hydrated comparison.
 ParticipationContext includes those candidate IDs and their dependencies only

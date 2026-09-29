@@ -124,7 +124,9 @@ then the corresponding Cycle-entry snapshot direction if available, otherwise
 Positive. Zero is never directionless. Origin's unique bounded component pair is
 `(+1, +1)`, with Positive directions and mean `+1`.
 
-Agreement/disagreement grants no authority or admissibility. Combined
+Mediate alone now uses retained component agreement as existing-Gate Write
+admissibility (either sign), with same resolved Correspondence direction required
+for both operands. This does not constrain the Reconcile result. Combined
 `correspondence_direction` remains authoritative for current consumers. Components
 are Receipt-neutral; calculations perform no writes, and disposable measurement
 projection owns persistence. New Commitment snapshots freeze values and directions.

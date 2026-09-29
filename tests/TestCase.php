@@ -3,6 +3,7 @@
 namespace Tests;
 
 use App\Domain\Evidence\VerifiedHyperlink;
+use App\Domain\Observables\CorrespondenceValues;
 use App\Domain\Observables\LocalMeasurements;
 use App\Enums\PhaseKind;
 use App\Enums\RegisterPosition;
@@ -16,6 +17,7 @@ use App\Models\Proposition;
 use App\Models\Receipt;
 use App\Models\ReceiptConsumption;
 use App\Models\Substrate;
+use App\Models\SubstrateLedgerEntry;
 use App\Models\Supersession;
 use App\Models\Tragedy;
 use App\Services\ContextHorizonProjector;
@@ -41,7 +43,8 @@ abstract class TestCase extends BaseTestCase
     protected function resolveExpressiveFieldFixture(float $value): void
     {
         $this->mock(LocalMeasurementService::class, function ($mock) use ($value): void {
-            $mock->shouldReceive('calculate')->andReturn(new LocalMeasurements($value, $value, $value, $value));
+            $mock->shouldReceive('calculate')->andReturn(new LocalMeasurements($value, $value, $value, $value,
+                correspondenceComponents: new CorrespondenceValues($value, $value)));
         });
     }
 
@@ -107,7 +110,7 @@ abstract class TestCase extends BaseTestCase
         $parents = Supersession::where('target_proposition_id', $seed->id)->get();
         $commits = $parents->where('type', 'commit');
         $horizon = $seed->phase->cycle->contextHorizon;
-        $originId = \App\Models\SubstrateLedgerEntry::where('substrate_id', $horizon->substrate_id)
+        $originId = SubstrateLedgerEntry::where('substrate_id', $horizon->substrate_id)
             ->whereHasMorph('ledgerable', [Proposition::class], fn ($q) => $q->where('tier', 'committal'))
             ->orderBy('sequence')->value('ledgerable_id');
         $isOrigin = $seed->id === $originId && $horizon->parent_context_horizon_id === null

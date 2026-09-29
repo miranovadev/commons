@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Observables\CorrespondenceValues;
 use App\Enums\PhaseKind;
 use App\Models\CommitmentSnapshot;
 use App\Models\Cycle;
@@ -19,10 +20,14 @@ use App\Services\ContributionDispatcher;
 use App\Services\ExhaustedContinuationService;
 use App\Services\ExplorationPositionService;
 use App\Services\GraphProjectionService;
+use App\Services\HomeostaticDirectionService;
 use App\Services\HomologousMediationService;
 use App\Services\InputPlanService;
 use App\Services\LedgerService;
 use App\Services\MediationReadService;
+use App\Services\Observables\ObservableService;
+use App\Services\ParticipantContextSerializer;
+use App\Services\ParticipantPromptLayout;
 use App\Services\Participation\ParticipationContext;
 use App\Services\ParticipationService;
 use App\Services\PotentialProjectionService;
@@ -33,6 +38,7 @@ use App\Services\ReconciliationOptionService;
 use App\Services\RegionalExhaustionMembership;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
@@ -99,6 +105,7 @@ class HomologousMediationTest extends TestCase
     public function test_foreign_operands_are_exposed_without_importing_receipts_or_movement(): void
     {
         $receipt = $this->loadedReceiptFixture($this->gateB);
+        $this->measure($this->gateB, .9);
         $context = new ParticipationContext($this->mediate);
         $this->assertTrue($context->propositions->has($this->gateB->id));
         $this->assertFalse(app(ReceiptContextService::class)->forPhase($this->mediate, $context)->contains('id', $receipt->id));
@@ -208,6 +215,8 @@ class HomologousMediationTest extends TestCase
         [$readC, $gateC] = $this->pair($this->a);
         $localReceipt = $this->loadedReceiptFixture($gateC);
         $foreignReceipt = $this->loadedReceiptFixture($this->gateB);
+        $this->measure($gateC, .8);
+        $this->measure($this->gateB, .9);
         $this->measure($this->readA, .2);
         $this->measure($this->readB, -.7);
         $this->measure($readC, -.7);
@@ -365,6 +374,7 @@ class HomologousMediationTest extends TestCase
         $c = $this->commit($origin, 'settlement');
         $populationRead = $this->expression($c, $c, PhaseKind::Constrain);
         $receipt = $this->loadedReceiptFixture($this->gateB);
+        $this->measure($this->gateB, .9);
         $this->measure($this->readA, .8);
         $this->measure($this->readB, -.7);
         $this->measure($populationRead, -.7);
@@ -626,6 +636,134 @@ class HomologousMediationTest extends TestCase
         $this->assertSame($counts[0], $counts[1], 'Foreign exhaustion must not query once per Horizon.');
     }
 
+    public static function gateCoherence(): array
+    {
+        return [
+            'positive coherent' => [.5, .5, true],
+            'negative coherent' => [-.5, -.5, true],
+            'positive negative' => [.5, -.5, false],
+            'negative positive' => [-.5, .5, false],
+        ];
+    }
+
+    #[DataProvider('gateCoherence')]
+    public function test_causal_gate_coherence_controls_write_without_removing_visibility(float $shape, float $cardinal, bool $allowed): void
+    {
+        $service = app(PropositionMeasurementService::class);
+        foreach ([$this->gateA, $this->gateB] as $gate) {
+            $service->project($gate, $shape, 0, 0, correspondenceComponents: new CorrespondenceValues($shape, $cardinal));
+        }
+        $this->publishPotentialFixture($this->actor);
+        $plan = app(InputPlanService::class)->forPhase($this->actor, $this->mediate);
+        $this->assertSame($allowed, isset($plan['schema']['$defs']['actions']['proposition.reconcile']));
+        $visible = app(ParticipantContextSerializer::class)->plan($plan);
+        $this->assertContains($this->gateA->id, array_column($visible['gate_options'], 'id'));
+        $this->assertSame($allowed, $visible['correspondence_admissibility']['admissible']);
+        $packet = app(ParticipantContextSerializer::class)->inference(['status' => 'ready', 'plan' => $visible]);
+        $prompt = app(ParticipantPromptLayout::class)->make($packet);
+        $this->assertEquals($visible['correspondence_admissibility'], json_decode($prompt['user'], true)['plan']['correspondence_admissibility']);
+        if (! $allowed) {
+            $this->assertNotContains($this->gateB->id, array_column($visible['gate_options'], 'id'));
+            $this->assertTrue($plan['rest_available']);
+            $this->assertSame(['participant.rest'], array_keys($plan['schema']['$defs']['actions']));
+            $before = [Proposition::count(), Supersession::count()];
+            try {
+                app(ContributionDispatcher::class)->dispatch($this->actor, $this->mediate,
+                    ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateB->id]);
+                $this->fail('An inadmissible causal Gate cannot Write.');
+            } catch (\DomainException) {
+                $this->assertSame($before, [Proposition::count(), Supersession::count()]);
+            }
+        }
+    }
+
+    public function test_candidate_coherence_and_retained_pair_direction_are_checked_after_dominance(): void
+    {
+        $service = app(PropositionMeasurementService::class);
+        $options = app(ReconciliationOptionService::class);
+        $service->project($this->gateB, .8, 0, 0, correspondenceComponents: new CorrespondenceValues(.8, -.8));
+        $this->assertTrue($options->forPhase($this->mediate)->isEmpty());
+        // Coherent Negative candidate remains incompatible with the Positive causal Gate.
+        $this->measure($this->gateB, -.8);
+        $this->assertTrue($options->forPhase($this->mediate)->isEmpty());
+        $this->measure($this->gateA, -.8);
+        $this->assertSame([$this->gateB->id], $options->forPhase($this->mediate)->pluck('id')->all());
+        // Numeric zeros retain each negative component and the combined direction.
+        foreach ([$this->gateA, $this->gateB] as $gate) {
+            $service->project($gate, 0, 0, 0, correspondenceComponents: new CorrespondenceValues(0, 0));
+        }
+        $this->assertSame([$this->gateB->id], $options->forPhase($this->mediate)->pluck('id')->all());
+    }
+
+    public function test_inadmissible_actionless_mediate_can_rest_with_zero_or_positive_potential(): void
+    {
+        app(PropositionMeasurementService::class)->project($this->gateA, .5, 0, 0,
+            correspondenceComponents: new CorrespondenceValues(.8, -.8));
+        $this->publishPotentialFixture($this->actor);
+        foreach ([0.0, .75] as $potential) {
+            // Alter the disposable diagnostic only; action eligibility is unchanged.
+            DB::table('potential_region_states')->where('context_horizon_id', $this->mediate->cycle->context_horizon_id)
+                ->update(['remaining_potential' => $potential]);
+            $plan = app(InputPlanService::class)->forPhase($this->actor, $this->mediate);
+            $this->assertSame($potential, app(PotentialProjectionService::class)->region($this->mediate->cycle->context_horizon_id)['potential']);
+            $this->assertTrue($plan['rest_available']);
+            $this->assertSame(['participant.rest'], array_keys($plan['schema']['$defs']['actions']));
+        }
+    }
+
+    public function test_pairing_uses_resolved_correspondence_not_the_local_component_mean(): void
+    {
+        app(PropositionMeasurementService::class)->project($this->gateB, -.2, 0, 0,
+            correspondenceComponents: new CorrespondenceValues(.8, .8));
+        $this->assertTrue(app(ReconciliationOptionService::class)->forPhase($this->mediate)->isEmpty());
+    }
+
+    public function test_stale_component_admissibility_is_rechecked_before_parent_edges_are_created(): void
+    {
+        $this->assertSame([$this->gateB->id], app(ReconciliationOptionService::class)->forPhase($this->mediate)->pluck('id')->all());
+        app(PropositionMeasurementService::class)->project($this->gateB, .9, 0, 0,
+            correspondenceComponents: new CorrespondenceValues(.8, -.8));
+        $before = [Proposition::count(), Supersession::count()];
+        try {
+            app(ContributionDispatcher::class)->dispatch($this->actor, $this->mediate,
+                ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateB->id]);
+            $this->fail('Stale component eligibility cannot authorize a Write.');
+        } catch (\DomainException) {
+            $this->assertSame($before, [Proposition::count(), Supersession::count()]);
+        }
+    }
+
+    public function test_incoherent_members_still_determine_full_read_population_dominance(): void
+    {
+        [$readC, $gateC] = $this->pair($this->commit($this->a->phase->cycle->entryCommittal, 'settlement'));
+        $this->measure($this->readA, .2);
+        $this->measure($this->readB, .2);
+        app(PropositionMeasurementService::class)->project($readC, -.9, 0, 0,
+            correspondenceComponents: new CorrespondenceValues(-.8, .8));
+        app(PropositionMeasurementService::class)->project($gateC, .8, 0, 0,
+            correspondenceComponents: new CorrespondenceValues(-.8, .8));
+        $context = new ParticipationContext($this->mediate);
+        $pool = app(HomologousMediationService::class)->structuralPoolFor($this->mediate, $context);
+        $field = app(HomeostaticDirectionService::class)->forPopulation($this->readA, $pool['population'], 'correspondence', $context);
+        $this->assertCount(3, $field->values);
+        $this->assertSame('negative', $field->direction->value);
+        $this->assertSame([$readC->id], app(HomologousMediationService::class)->poolFor($this->mediate, $context)['reads']->pluck('id')->all());
+        $this->assertTrue(app(ReconciliationOptionService::class)->forPhase($this->mediate, $context)->isEmpty());
+    }
+
+    public function test_coherent_positive_inputs_can_produce_a_normally_measured_negative_result(): void
+    {
+        $target = app(ContributionDispatcher::class)->dispatch($this->actor, $this->mediate,
+            ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateB->id]);
+        $normal = app(ObservableService::class)->components($target);
+        $actual = $target->fresh()->measurement;
+        $this->assertSame($normal->correspondence, $actual->correspondence);
+        $this->assertSame($normal->correspondenceComponents->shapeTopology, $actual->shape_topology);
+        $this->assertSame($normal->correspondenceComponents->cardinalPosition, $actual->cardinal_position);
+        $this->assertLessThan(0, $actual->correspondence);
+        $this->assertEqualsCanonicalizing([$this->gateA->id, $this->gateB->id], $target->parents()->pluck('propositions.id')->all());
+    }
+
     private function mediateAt(Proposition $owner, Proposition $read, Proposition $gate): Phase
     {
         $disperse = $this->phase($owner, $read, PhaseKind::Disperse);
@@ -676,6 +814,10 @@ class HomologousMediationTest extends TestCase
             'register' => $register ?? $phase->write_register, 'statement' => 'Comparison fixture'])->save();
         app(LedgerService::class)->record($node);
         $this->edge($parent, $node, $edgeType);
+        if ($kind === PhaseKind::Disperse) {
+            // This fixture isolates operand scope/authority using explicitly coherent Gates.
+            $this->measure($node, .8);
+        }
 
         return $node;
     }
@@ -690,7 +832,8 @@ class HomologousMediationTest extends TestCase
 
     private function measure(Proposition $node, float $value): void
     {
-        app(PropositionMeasurementService::class)->project($node, $value, 0, 0);
+        app(PropositionMeasurementService::class)->project($node, $value, 0, 0,
+            correspondenceComponents: new CorrespondenceValues($value, $value));
     }
 
     private function commit(?Proposition $governor, string $after): Proposition
