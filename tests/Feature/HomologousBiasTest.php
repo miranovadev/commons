@@ -53,11 +53,13 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
+use Tests\Fixtures\AssertsLatePhaseContract;
 use Tests\Fixtures\CreatesHomologousPositions;
 use Tests\TestCase;
 
 class HomologousBiasTest extends TestCase
 {
+    use AssertsLatePhaseContract;
     use CreatesHomologousPositions;
     use RefreshDatabase;
 
@@ -681,11 +683,14 @@ class HomologousBiasTest extends TestCase
     }
 
     #[DataProvider('chiralityCoherence')]
+    #[Group('late-phase')]
     public function test_causal_chirality_coherence_controls_local_write_and_preserves_visibility(float $orientation, float $cadence, bool $allowed): void
     {
         $this->components($this->gateA, $orientation, $cadence);
         $this->publishPotentialFixture($this->actor);
         $plan = app(InputPlanService::class)->forPhase($this->actor, $this->bias);
+        $this->assertLatePhaseContract($plan, PhaseKind::Bias, $this->gateA->id, $allowed,
+            $orientation > 0 ? 'positive' : 'negative', $cadence > 0 ? 'positive' : 'negative');
         $this->assertSame($allowed, app(PhaseGenerationService::class)->available($this->bias, 'proposition.reclassify', position: $this->gateA));
         $this->assertSame($allowed, in_array($this->gateA->id, array_column($plan['gate_options'], 'id')));
         $visible = app(ParticipantContextSerializer::class)->plan($plan);

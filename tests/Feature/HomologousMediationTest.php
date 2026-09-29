@@ -14,9 +14,13 @@ use App\Models\Supersession;
 use App\Models\Tragedy;
 use App\Models\User;
 use App\Services\ActiveParticipantLineage;
+use App\Services\BiasGateService;
+use App\Services\BiasReceiptAuthorityService;
+use App\Services\ChiralityGateService;
 use App\Services\CommitRegionService;
 use App\Services\ContextHorizonProjector;
 use App\Services\ContributionDispatcher;
+use App\Services\CorrespondenceGateService;
 use App\Services\ExhaustedContinuationService;
 use App\Services\ExplorationPositionService;
 use App\Services\GraphProjectionService;
@@ -30,6 +34,7 @@ use App\Services\ParticipantContextSerializer;
 use App\Services\ParticipantPromptLayout;
 use App\Services\Participation\ParticipationContext;
 use App\Services\ParticipationService;
+use App\Services\PhaseProgressionService;
 use App\Services\PotentialProjectionService;
 use App\Services\PropositionMeasurementService;
 use App\Services\PropositionOptionService;
@@ -40,10 +45,12 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
+use Tests\Fixtures\AssertsLatePhaseContract;
 use Tests\TestCase;
 
 class HomologousMediationTest extends TestCase
 {
+    use AssertsLatePhaseContract;
     use RefreshDatabase;
 
     private Participant $actor;
@@ -647,6 +654,7 @@ class HomologousMediationTest extends TestCase
     }
 
     #[DataProvider('gateCoherence')]
+    #[Group('late-phase')]
     public function test_causal_gate_coherence_controls_write_without_removing_visibility(float $shape, float $cardinal, bool $allowed): void
     {
         $service = app(PropositionMeasurementService::class);
@@ -655,6 +663,8 @@ class HomologousMediationTest extends TestCase
         }
         $this->publishPotentialFixture($this->actor);
         $plan = app(InputPlanService::class)->forPhase($this->actor, $this->mediate);
+        $this->assertLatePhaseContract($plan, PhaseKind::Mediate, $this->gateA->id, $allowed,
+            $shape > 0 ? 'positive' : 'negative', $cardinal > 0 ? 'positive' : 'negative');
         $this->assertSame($allowed, isset($plan['schema']['$defs']['actions']['proposition.reconcile']));
         $visible = app(ParticipantContextSerializer::class)->plan($plan);
         $this->assertContains($this->gateA->id, array_column($visible['gate_options'], 'id'));
@@ -761,6 +771,30 @@ class HomologousMediationTest extends TestCase
         $this->assertSame($normal->correspondenceComponents->shapeTopology, $actual->shape_topology);
         $this->assertSame($normal->correspondenceComponents->cardinalPosition, $actual->cardinal_position);
         $this->assertLessThan(0, $actual->correspondence);
+        $this->assertEqualsCanonicalizing([$this->gateA->id, $this->gateB->id], $target->parents()->pluck('propositions.id')->all());
+    }
+
+    #[Group('integration')]
+    #[Group('late-phase')]
+    public function test_admissible_mediate_can_reach_an_inadmissible_bias_without_outcome_coercion(): void
+    {
+        $this->assertTrue(app(CorrespondenceGateService::class)->evaluate($this->gateA)['admissible']);
+        $this->assertSame([$this->gateB->id], app(ReconciliationOptionService::class)->forPhase($this->mediate)->pluck('id')->all());
+        $target = app(ContributionDispatcher::class)->dispatch($this->actor, $this->mediate,
+            ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateB->id]);
+        $bias = app(PhaseProgressionService::class)->advance($this->mediate, $target);
+        $this->assertSame(PhaseKind::Bias, $bias->kind);
+        $this->groundFixture($target);
+        app(PropositionMeasurementService::class)->recalculate($target);
+        $this->assertFalse(app(ChiralityGateService::class)->evaluate($target->fresh())['admissible']);
+        // Ordinary local evidence authority is present; Chirality alone blocks the Write.
+        $this->assertContains($target->id, app(BiasGateService::class)->forPhase($bias)->pluck('id'));
+        $this->assertNotEmpty(app(BiasReceiptAuthorityService::class)->receiptsFor($bias, $target));
+        $this->publishPotentialFixture($this->actor);
+        $plan = app(InputPlanService::class)->forPhase($this->actor, $bias);
+        $this->assertLatePhaseContract($plan, PhaseKind::Bias, $target->id, false, 'positive', 'negative');
+        $this->assertSame(['participant.rest'], array_keys($plan['schema']['$defs']['actions']));
+        $this->assertSame($target->id, $bias->gate_proposition_id);
         $this->assertEqualsCanonicalizing([$this->gateA->id, $this->gateB->id], $target->parents()->pluck('propositions.id')->all());
     }
 

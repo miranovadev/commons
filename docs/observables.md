@@ -16,6 +16,61 @@ provenance in the preceding complementary Context Horizon. Closure has a distinc
 committed-lineage path: Horizons supply Domain labels, never comparison populations.
 Raw evidence evaluations never read accumulated measurement projections.
 
+## Unified late-phase admissibility
+
+**Dominance selects candidate inputs. Admissibility governs Writes.**
+
+| Phase | Observable | Homologous dominance selects | Native Write condition | Write |
+| --- | --- | --- | --- | --- |
+| Mediate | Correspondence | Reads, then their existing Disperse Gate operands | Shape Topology direction = Cardinal Position direction | Reconcile |
+| Bias | Chirality | Existing Gates | Orientation direction = Attestation Cadence direction | Reclassify |
+| Order | Closure | Existing frozen Commits | Depth direction = Cadence direction | Commit |
+
+Observable values describe relations. Population direction selects where
+homeostatic pressure is applied. Component-direction agreement supplies a Write
+condition alongside the phase's existing authority requirements. Neither observable
+pole is preferred: Positive/Positive and Negative/Negative are equally coherent.
+Numeric zero retains the established component history; it is not directionless.
+
+Measurement population is distinct from actionable population. Mediate and Bias
+resolve dominance over their full populations before filtering eligible sources.
+Mediate additionally requires compatible combined Correspondence directions for
+its binary operands. Bias has no pairing rule: local, mediated and homologous
+authorities remain distinct, with mediated precedence independent of dominance.
+An inadmissible local Bias source does not veto an authorized optional source.
+
+Order begins at its existing expressive Gate/Write. Keep the established
+prospective-Commit Closure preview, producing-Cycle history, cadence interval and
+preview-versus-persisted guard. This is not a new calculation over the expressive
+candidate. Each local Write remains visible when Commit is blocked. Existing
+homologous Commits embody their historical admissibility; selection uses frozen
+resolved directions and current structural constraints, never a fresh Closure
+preview on those Commits. Existing compatibility behavior remains: absent or
+opposed frozen component directions supply no resolved population direction and
+no matching optional continuation. Do not reconstruct or repair frozen evidence.
+
+Causal visibility is distinct from actionability. Local causal candidates stay
+readable with their blocked Write absent from the schema; optional candidates
+appear operationally only under their existing authority rules. The backend
+exposes `correspondence_admissibility` for Mediate, `chirality_admissibility` for
+Bias, and existing `commitment.closure` / `commitment_options[id].closure` for
+Order. These retain the native component names and directions, so presentation
+can explain a block without deriving directions from numeric values. The
+Commitment envelope also reports separate grounding and structural requirements.
+
+Admissibility constrains transitions, not outcomes. A valid Reconcile may reach
+Bias with opposed Chirality components; a valid Reclassify may reach Order with
+opposed Closure components. A valid Commit establishes a transition and frozen
+snapshot, not a preferred future: descendants' observable directions and Domain
+trajectory remain unconstrained by the parent's admissibility. All ordinary
+calculations and the Domain transition formula remain authoritative.
+
+Dispatch revalidates selected-source authority before accepting Writes; Order
+also retains its Closure observation and persisted consistency guards. Rest is
+available only when no admissible non-Rest action remains. Potential is descriptive
+and neither creates nor suppresses Rest authority. No new Charge, Tragedy,
+Exhaustion, Receipt, movement or recovery behavior follows from coherence.
+
 ## Substrate-level structural attenuation
 
 The persisted measurement is an accumulation of independently calculated raw
