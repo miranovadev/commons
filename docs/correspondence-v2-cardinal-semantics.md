@@ -406,12 +406,25 @@ if absent, use the corresponding direction frozen in its Cycle-entry Commitment
 snapshot; if also absent, default to Positive. An absent historical component
 is not reconstructed. Numeric zero is never a third, directionless state.
 
-Component agreement or disagreement is diagnostic only. It grants no authority,
-admissibility, actionability, movement, homology or Commit eligibility. Existing
-`correspondence_direction` remains authoritative for all combined Correspondence
-consumers; component directions neither replace nor reinterpret it. Receipt state,
-reinforcement, loads, clears and evidence availability affect neither component nor
-its direction.
+Mediate Write admissibility uses existing Gates, never a synthetic Reconcile result.
+Each Gate is admissible exactly when its retained Shape Topology and Cardinal
+Position directions agree: both Positive/Positive and Negative/Negative qualify.
+Zero uses Stage 1 component hysteresis. The causal Gate remains visible when
+inadmissible, but Reconcile is unavailable. Optional homologous operands must
+come from the unchanged dominant Read selection, be individually admissible,
+and share the causal Gate's existing resolved Correspondence direction.
+
+The full homologous Read population determines dominance before any Gate action
+filtering; inadmissible members still contribute. Ordinary local candidate
+selection remains independent of population dominance, while every Reconcile
+pair satisfies Gate coherence and same-direction compatibility. Result measurements
+remain unconstrained: a successful Reconcile can change direction or become
+internally split. Normal parent edges are created only after authorization.
+If no admissible non-Rest action remains, ordinary Rest applies regardless of
+Potential. This introduces no Bias/Order, movement, Receipt or recovery authority.
+
+Combined `correspondence_direction` and all numeric calculations remain unchanged.
+Receipts and evidence availability do not affect either component.
 
 Calculation is read-only. The existing measurement projection pathway persists
 values and directions together. Newly published Commitment snapshots freeze both

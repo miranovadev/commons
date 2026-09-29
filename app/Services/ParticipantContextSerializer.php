@@ -38,6 +38,7 @@ final class ParticipantContextSerializer
             'provenance_id' => $plan['provenance_id'] ?? null,
             'exhausted_alternatives' => array_map($this->historical(...), $plan['exhausted_alternatives'] ?? []),
             'gate_id' => $plan['gate']['id'],
+            ...(isset($plan['correspondence_admissibility']) ? ['correspondence_admissibility' => $plan['correspondence_admissibility']] : []),
             'lineage' => $lineage->map($this->proposition(...))->values()->all(),
             'read_options' => $read->map($this->proposition(...))->values()->all(),
             'gate_options' => $gate->map($this->proposition(...))->values()->all(),
@@ -83,7 +84,7 @@ final class ParticipantContextSerializer
     public function inference(array $state): array
     {
         $plan = Arr::only($state['plan'], ['phase', 'provenance_id', 'gate_id',
-            'lineage', 'exhausted_alternatives', 'read_options', 'gate_options', 'write_options', 'commitment', 'commitment_options', 'rest_available', 'rest_reason', 'receipts', 'schema']);
+            'lineage', 'exhausted_alternatives', 'read_options', 'gate_options', 'write_options', 'commitment', 'commitment_options', 'correspondence_admissibility', 'rest_available', 'rest_reason', 'receipts', 'schema']);
         unset($plan['schema']['$comment']); // Publication guard metadata is not participant cognition.
         $plan['phase'] = Arr::only($plan['phase'], ['id', 'number', 'kind', 'write_register']);
         foreach (['lineage', 'read_options', 'gate_options', 'write_options'] as $key) {

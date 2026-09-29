@@ -24,6 +24,20 @@ final readonly class ReconciliationOptionService
             ->filter(fn ($node) => $this->availability->mutable($node, $context)
             && ! $exhausted->has($node->id));
 
+        // Population dominance has already selected Reads and their existing Gates.
+        // Apply transition policy afterwards, without changing that population.
+        $coherence = app(CorrespondenceGateService::class);
+        $current = $coherence->evaluate($context->proposition($phase->gate), $context);
+        if (! $current['admissible']) {
+            return collect();
+        }
+        $gates = $gates->filter(function ($node) use ($coherence, $current, $context): bool {
+            $candidate = $coherence->evaluate($node, $context);
+
+            return $candidate['admissible']
+                && $candidate['correspondence_direction'] === $current['correspondence_direction'];
+        });
+
         // Complete foreign Horizon data is queried in one batch; the comparison
         // working set is not an authoritative inventory of foreign continuations.
         $horizons = $gates->map(fn ($node) => $node->phase->cycle->context_horizon_id)
