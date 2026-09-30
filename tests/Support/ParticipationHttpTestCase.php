@@ -95,7 +95,6 @@ abstract class ParticipationHttpTestCase extends TestCase
         $payload = $establishOrigin ? ['origin' => [
             'statement' => 'An observed claim can be tested and reconsidered.',
             'attestation' => ['direction' => 'support'],
-            'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://evidence.example.test/origin'],
         ]] : [];
 
         return $this->postJson($this->endpoint($participant).'/enter', $payload)->assertCreated()->json('data');

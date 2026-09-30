@@ -213,8 +213,7 @@ export interface ContributionInput {
 
 export interface OriginInput {
   statement: string;
-  attestation?: { direction: AttestationDirection; rationale?: string };
-  instrument: InstrumentInput;
+  attestation: { direction: AttestationDirection; rationale?: string };
 }
 
 export type ContributionInitialValues = Partial<Omit<ContributionInput, 'action'>>;

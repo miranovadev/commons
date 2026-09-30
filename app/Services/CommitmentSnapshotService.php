@@ -87,6 +87,9 @@ final readonly class CommitmentSnapshotService
                 && $supersession === null && $entry->sequence === 1
                 && ! $proposition->parents()->exists()
                 && ! CommitmentSnapshot::where('substrate_id', $substrate->id)->exists();
+            if ($isOrigin && ! $proposition->attestations()->effective()->exists()) {
+                throw new DomainException('Origin commitment requires an effective Attestation.');
+            }
             if (! $isOrigin && ! $this->admissibility->grounding($proposition)['admissible']) {
                 throw new DomainException('Commitment requires effective Attestation and completed evidence.');
             }
