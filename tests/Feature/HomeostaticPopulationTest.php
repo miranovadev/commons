@@ -8,10 +8,13 @@ use App\Models\Participant;
 use App\Models\Proposition;
 use App\Models\PropositionMeasurement;
 use App\Models\Substrate;
+use App\Models\Supersession;
 use App\Services\HomeostaticDirectionService;
 use App\Services\HomeostaticPopulationService;
 use App\Services\HomologousPositionService;
+use App\Services\LedgerService;
 use App\Services\Observables\ObservableService;
+use App\Services\Participation\ParticipationContext;
 use App\Services\PropositionMeasurementService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -125,7 +128,7 @@ class HomeostaticPopulationTest extends TestCase
         DB::enableQueryLog();
         try {
             foreach (['correspondence' => ObservableDirection::Positive,
-                'chirality' => ObservableDirection::Negative, 'closure' => ObservableDirection::Negative] as $axis => $default) {
+                'chirality' => ObservableDirection::Positive, 'closure' => ObservableDirection::Negative] as $axis => $default) {
                 foreach ([null, ObservableDirection::Positive, ObservableDirection::Negative] as $previous) {
                     $result = $service->forPosition($position, $axis, $previous);
                     $this->assertSame(0.0, $result->mean);
@@ -228,22 +231,22 @@ class HomeostaticPopulationTest extends TestCase
         $population = app(HomeostaticPopulationService::class)->forPosition($a);
         $service = app(HomeostaticDirectionService::class);
         $expected = $service->forPosition($a, 'correspondence');
-        $incomplete = new \App\Services\Participation\ParticipationContext($a->phase);
+        $incomplete = new ParticipationContext($a->phase);
         $before = $incomplete->propositions->keys()->all();
         $this->assertFalse($incomplete->propositions->has($b->id));
         $this->assertEquals($expected, $service->forPopulation($a, $population, 'correspondence', $incomplete));
         $this->assertSame($before, $incomplete->propositions->keys()->all());
-        $complete = new \App\Services\Participation\ParticipationContext($a->phase, $population->pluck('id'));
+        $complete = new ParticipationContext($a->phase, $population->pluck('id'));
         $this->assertEquals($expected, $service->forPopulation($a, $population, 'correspondence', $complete));
     }
 
     private function causalPosition(Proposition $entry): Proposition
     {
         $node = $this->position($entry);
-        $edge = new \App\Models\Supersession;
+        $edge = new Supersession;
         $edge->forceFill(['phase_id' => $node->phase_id, 'source_proposition_id' => $entry->id,
             'target_proposition_id' => $node->id, 'type' => 'variant'])->save();
-        app(\App\Services\LedgerService::class)->record($edge);
+        app(LedgerService::class)->record($edge);
 
         return $node;
     }

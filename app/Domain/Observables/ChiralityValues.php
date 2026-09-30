@@ -21,7 +21,7 @@ final readonly class ChiralityValues
         return round(($this->orientation + $this->cadence) / 2, 7);
     }
 
-    public function resolveDirections(Direction $orientation = Direction::Positive, Direction $cadence = Direction::Positive): array
+    public function resolveDirections(Direction $orientation = Direction::Negative, Direction $cadence = Direction::Positive): array
     {
         return ['orientation_direction' => Direction::after($this->orientation, $orientation)->value,
             'attestation_cadence_direction' => Direction::after($this->cadence, $cadence)->value];

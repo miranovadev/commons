@@ -1,5 +1,7 @@
 # Committal ownership and basin-local Cadence
 
+> Historical investigation: its completed-Cycle interval and inherited expressive Closure descriptions have been superseded by the entry-based prospective model in [Observables](observables.md#committed-lineage-closure).
+
 This report describes the committed-lineage Closure replacement built on #196.
 The dump comparison is counterfactual and read-only; it never rewrites snapshots.
 

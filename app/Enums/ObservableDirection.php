@@ -14,9 +14,9 @@ enum ObservableDirection: string
     {
         return match ($measurement) {
             // Correspondence's unestablished primary lineage has a positive root.
-            'correspondence' => self::Positive,
+            'correspondence', 'chirality' => self::Positive,
             // Numeric Chirality and Closure begin from their negative bootstrap.
-            'chirality', 'closure' => self::Negative,
+            'closure' => self::Negative,
             default => throw new InvalidArgumentException('Unknown observable measurement.'),
         };
     }

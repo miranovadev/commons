@@ -16,6 +16,7 @@ use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Receipt;
 use App\Models\Substrate;
+use App\Models\Tragedy;
 use App\Services\ClosureGateService;
 use App\Services\CycleEntryService;
 use App\Services\DueParticipantWakeDispatcher;
@@ -352,6 +353,7 @@ class ParticipantWakeTest extends TestCase
 
     private function runCycleWake(string $mode): void
     {
+        $this->controlledClosureFixture(-1);
         $f = new ParticipantContextFixture(1, 0);
         $f->phase->forceFill(['kind' => PhaseKind::Distinguish, 'gate_proposition_id' => $f->seed->id, 'write_register' => 'activity'])->save();
         $nodes = [];
@@ -516,7 +518,7 @@ class ParticipantWakeTest extends TestCase
         [$participant, $connection] = $this->readyConnection();
         $connection->forceFill(['configuration' => array_replace_recursive($connection->configuration, ['wake' => ['termination' => 'rest', 'timeout_seconds' => 600]])])->save();
         $cycle = $participant->cycles()->firstOrFail();
-        $tragedies = \App\Models\Tragedy::count();
+        $tragedies = Tragedy::count();
         $exhaustions = DB::table('commit_region_exhaustions')->count();
         $clock = Mockery::mock(WakeClock::class);
         $clock->shouldReceive('now')->andReturn(0, 0, 0, 0, 601);
@@ -531,7 +533,7 @@ class ParticipantWakeTest extends TestCase
         $this->assertDatabaseHas('propositions', ['statement' => 'Completed before the wake deadline.']);
         $this->assertNull($cycle->fresh()->completed_at);
         $this->assertNull($cycle->fresh()->rested_at);
-        $this->assertSame($tragedies, \App\Models\Tragedy::count());
+        $this->assertSame($tragedies, Tragedy::count());
         $this->assertSame($exhaustions, DB::table('commit_region_exhaustions')->count());
         $this->assertStringContainsString('timed out', $connection->fresh()->last_error);
         $phase = $cycle->phases()->whereNull('completed_at')->firstOrFail();
@@ -653,8 +655,12 @@ class ParticipantWakeTest extends TestCase
         $sameRan = false;
         $otherRan = false;
         try {
-            $sameParticipant->middleware()[0]->handle($sameParticipant, function () use (&$sameRan): void { $sameRan = true; });
-            $other->middleware()[0]->handle($other, function () use (&$otherRan): void { $otherRan = true; });
+            $sameParticipant->middleware()[0]->handle($sameParticipant, function () use (&$sameRan): void {
+                $sameRan = true;
+            });
+            $other->middleware()[0]->handle($other, function () use (&$otherRan): void {
+                $otherRan = true;
+            });
             $this->assertFalse($sameRan);
             $this->assertTrue($otherRan);
         } finally {
@@ -751,4 +757,3 @@ class ParticipantWakeTest extends TestCase
         return $participantConnection;
     }
 }
-

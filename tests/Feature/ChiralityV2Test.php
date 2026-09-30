@@ -51,7 +51,7 @@ class ChiralityV2Test extends TestCase
         $this->assertSame(0.0, $snapshot->orientation);
         $this->assertSame(-1.0, $snapshot->attestation_cadence);
         $this->assertSame(-0.5, $snapshot->chirality);
-        $this->assertSame('positive', $snapshot->orientation_direction);
+        $this->assertSame('negative', $snapshot->orientation_direction);
         $this->assertSame('negative', $snapshot->attestation_cadence_direction);
         $this->assertEqualsWithDelta(-1 / 6, $snapshot->tension, 1e-7);
         $this->assertSame('settlement', $snapshot->direction_after->value);

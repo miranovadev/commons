@@ -2,6 +2,7 @@
 
 namespace App\Services\Observables;
 
+use App\Domain\Observables\ChiralityValues;
 use App\Domain\Observables\ClosureValues;
 use App\Domain\Observables\LineageComparison;
 use App\Domain\Observables\LocalMeasurements;
@@ -16,6 +17,11 @@ class LocalMeasurementService
         private readonly ChiralityCalculator $chirality,
         private readonly ClosureCalculator $closure,
     ) {}
+
+    public function chiralityComponents(Proposition $proposition, ?LineageComparison $comparison = null): ChiralityValues
+    {
+        return $this->chirality->components($comparison ?? $this->lineages->for($proposition));
+    }
 
     public function calculate(Proposition $proposition, ?LineageComparison $comparison = null, bool $includeClosure = true): LocalMeasurements
     {

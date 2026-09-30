@@ -33,14 +33,16 @@ final readonly class HomeostaticDirectionService
         string $measurement,
         ?ParticipationContext $context = null,
         ?ObservableDirection $previous = null,
-    ): HomeostaticDirection
-    {
+    ): HomeostaticDirection {
         if (! in_array($measurement, ['correspondence', 'chirality', 'closure'], true)) {
             throw new InvalidArgumentException('Unknown Homeostatic measurement.');
         }
+        if ($measurement === 'chirality' && $previous === null) {
+            $previous = app(ChiralityPopulationHistoryService::class)->precedingDirection($position);
+        }
         $population = $population->unique('id')->values();
         if ($population->isEmpty()) {
-            return $this->aggregate([], $measurement, $previous);
+            return new HomeostaticDirection([], null, $measurement === 'chirality' ? $previous : null);
         }
         // Reuse operational hydration only when it already contains every member.
         // Missing/historical members require a private measurement context, never
@@ -61,7 +63,10 @@ final readonly class HomeostaticDirectionService
                     : $node->measurement?->{$measurement});
         }
 
-        return $this->aggregate($values, $measurement, $previous);
+        $observation = $this->aggregate($values, $measurement, $previous);
+
+        return $measurement === 'chirality' && $observation->mean === null
+            ? new HomeostaticDirection($values, null, $previous) : $observation;
     }
 
     /**
@@ -70,7 +75,7 @@ final readonly class HomeostaticDirectionService
      * Without field history, zero uses the observable's constitutional default.
      * The acting member never supplies population history.
      *
-     * @param array<string, float|null> $values
+     * @param  array<string, float|null>  $values
      */
     public function aggregate(array $values, string $measurement, ?ObservableDirection $previous = null): HomeostaticDirection
     {

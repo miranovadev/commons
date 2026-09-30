@@ -71,7 +71,7 @@ class ParticipantPromptConstitutionTest extends TestCase
                 'Resolve dominance over the full population, including component-inadmissible members',
                 'equal retained Orientation and Attestation Cadence directions',
                 'There is no requirement to match the current Gate’s Chirality direction',
-                "Numeric zero retains explicit prior population direction or uses Chirality's negative default",
+                "Numeric zero retains the nearest preceding nonzero direction of that same structural population",
                 "Receipt catalogue belongs to the acting Cycle's immutable entry Region",
                 'selected source and Receipt may come from different Regions or Horizons',
                 'creates one hard causal edge from that selected source to a new classification in the acting Bias Phase',

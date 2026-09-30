@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Observables\ChiralityValues;
 use App\Domain\Observables\LocalMeasurements;
 use App\Enums\ContextDomain;
 use App\Enums\PhaseKind;
@@ -331,6 +332,7 @@ class CausalHorizonLineageTest extends TestCase
     private function positiveMeasurements(): void
     {
         $this->mock(LocalMeasurementService::class, function ($mock): void {
+            $mock->shouldReceive('chiralityComponents')->andReturn(new ChiralityValues(.6, .6));
             $mock->shouldReceive('calculate')->andReturn(new LocalMeasurements(.6, .6, .6, .6));
         });
     }

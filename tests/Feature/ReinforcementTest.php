@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Domain\Evidence\VerifiedHyperlink;
 use App\Enums\PhaseKind;
 use App\Models\Attestation;
+use App\Models\CommitmentSnapshot;
 use App\Models\Cycle;
 use App\Models\Participant;
 use App\Models\ParticipantReceiptContext;
@@ -34,6 +35,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class ReinforcementTest extends TestCase
@@ -58,7 +60,7 @@ class ReinforcementTest extends TestCase
             'tier' => 'committal', 'register' => 'canon', 'statement' => 'Committed provenance']);
         $this->governor->save();
         $entry = app(LedgerService::class)->record($this->governor);
-        (new \App\Models\CommitmentSnapshot)->forceFill(['proposition_id' => $this->governor->id,
+        (new CommitmentSnapshot)->forceFill(['proposition_id' => $this->governor->id,
             'substrate_id' => $substrate->id, 'ledger_entry_id' => $entry->id,
             'correspondence' => -1, 'chirality' => -1, 'closure' => -1, 'depth' => -1, 'cadence' => -1,
             'depth_direction' => 'negative', 'cadence_direction' => 'negative', 'prominence' => 0, 'turbulence' => 1,
@@ -70,7 +72,7 @@ class ReinforcementTest extends TestCase
         $this->node->forceFill(['phase_id' => $creation->id, 'register' => 'canon', 'tier' => 'expressive', 'statement' => 'Persistence must be earned.'])->save();
         app(LedgerService::class)->record($this->node);
         $creation->forceFill(['gate_proposition_id' => $this->governor->id])->save();
-        (new \App\Models\Supersession)->forceFill(['phase_id' => $creation->id,
+        (new Supersession)->forceFill(['phase_id' => $creation->id,
             'source_proposition_id' => $this->governor->id, 'target_proposition_id' => $this->node->id, 'type' => 'variant'])->save();
         $this->later = $this->phase($substrate, $creation->cycle->participant);
         $attestation = new Attestation;
@@ -272,8 +274,8 @@ class ReinforcementTest extends TestCase
         return ['negative' => [-0.7], 'positive' => [0.7]];
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('closurePoles')]
-    public function test_both_closure_poles_are_neutral_at_zero_one_and_multiple_loads(float $value): void
+    #[DataProvider('closurePoles')]
+    public function test_prospective_closure_ignores_loads_and_does_not_inherit_either_frozen_entry_pole(float $value): void
     {
         // Controlled committed geometry, established before the evidence changes.
         $snapshot = $this->governor->commitmentSnapshot;
@@ -283,7 +285,8 @@ class ReinforcementTest extends TestCase
         $historical = $snapshot->fresh()->getAttributes();
         $local = app(LocalMeasurementService::class);
         $before = $local->calculate($this->node);
-        $this->assertSame($value, $before->closure()->average());
+        $this->assertSame($value, $local->calculate($this->governor)->closure()->average());
+        $this->assertSame(0.0, $before->closure()->average());
         $this->assertSame(0, $this->reinforcementCount());
         $receipt = null;
         foreach (range(1, 3) as $count) {
