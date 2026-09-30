@@ -31,17 +31,17 @@ successful response with status waiting and a machine-readable reason.
 
 When a substrate has no proposition history, the waiting state advertises an
 available `origin` entry. POSTing to `/participate/enter` with the Origin
-statement and a Receipt instrument (with an optional Attestation) atomically establishes the
-first Committal Proposition. Its bootstrap observables produce the initial
+statement and an explicit Support or Refute Attestation atomically establishes the
+first Committal Proposition. The chosen label establishes its positive polarity before
+measurement; no Receipt is created. Its bootstrap observables produce the initial
 Closure Boundary, and the response places the Participant in a live Distinguish
 Phase in the Settlement `signal` register.
 
     {
       "origin": {
         "statement": "The first commitment.",
-        "instrument": {
-          "kind": "hyperlink",
-          "reference": "https://example.test/evidence"
+        "attestation": {
+          "direction": "support"
         }
       }
     }
