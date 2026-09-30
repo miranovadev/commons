@@ -8,7 +8,6 @@ use App\Models\CommitmentSnapshot;
 use App\Models\Cycle;
 use App\Models\Phase;
 use App\Models\Proposition;
-use App\Models\Receipt;
 use App\Models\Supersession;
 use App\Services\ChiralityGateService;
 use App\Services\ClosureGateService;
@@ -67,7 +66,7 @@ class FreshBootstrapTest extends TestCase
         $this->assertSame('negative', $origin->orientation_direction);
         $this->assertSame('negative', $origin->attestation_cadence_direction);
         $this->assertSame($label, $origin->proposition->attestations()->sole()->direction);
-        $this->assertSame(0, Receipt::where('proposition_id', $origin->proposition_id)->count());
+        $this->assertSame(0, $origin->proposition->instrumentExecutions()->count());
         $snapshot = $commit->commitmentSnapshot;
         $this->assertSame(0.0, $snapshot->depth);
         $this->assertSame(0.0, $snapshot->cadence);
