@@ -13,7 +13,7 @@ use App\Services\ParticipationService;
 
 trait HorizonCycleFixture
 {
-    protected function driveHorizonCycle(int $participantCount = 1, bool $realClosure = false): Proposition
+    protected function driveHorizonCycle(int $participantCount = 1, bool $realClosure = false, string $originDirection = 'support', ?callable $observe = null, int $additionalEntrants = 0): Proposition
     {
         // Isolate the phase motor; numeric Closure has its own real-calculator suite.
         if (! $realClosure) {
@@ -26,8 +26,7 @@ trait HorizonCycleFixture
         $participant = (new Participant)->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'solo', 'max_read_count' => 25]);
         $participant->save();
         $service = app(ParticipationService::class);
-        $state = $service->enter($participant, ['statement' => 'Origin', 'attestation' => ['direction' => 'support'],
-            'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/origin']]);
+        $state = $service->enter($participant, ['statement' => 'Origin', 'attestation' => ['direction' => $originDirection]]);
         $originId = $state['current_proposition_id'];
         $participants = [$participant];
         for ($i = 1; $i < $participantCount; $i++) {
@@ -42,6 +41,7 @@ trait HorizonCycleFixture
             $state = $service->stateFor($participant);
             $this->assertSame('ready', $state['status'], json_encode($trace));
             $plan = $state['plan'];
+            $observe?->__invoke($participant, $state);
             $actions = $plan['schema']['$defs']['actions'];
             $action = collect(['proposition.commit', 'proposition.reclassify', 'proposition.variant', 'proposition.reconcile',
                 'proposition.traverse', 'attestation.create', 'instrument.execute', 'participant.rest'])
@@ -60,7 +60,7 @@ trait HorizonCycleFixture
                 $input['instrument'] = ['kind' => 'hyperlink', 'reference' => 'https://example.test/evidence/'.$step];
             }
             if ($action === 'attestation.create') {
-                $choice = collect($definition['anyOf'])->first(fn ($choice) => $choice['properties']['direction']['enum'][0] === 'support')
+                $choice = collect($definition['anyOf'])->first(fn ($choice) => $choice['properties']['direction']['enum'][0] === $originDirection)
                     ?? $definition['anyOf'][0];
                 $input['proposition_id'] = $choice['properties']['proposition_id']['enum'][0];
                 $input['direction'] = $choice['properties']['direction']['enum'][0];
@@ -75,7 +75,7 @@ trait HorizonCycleFixture
                 $commit = $participant->fresh()->position;
                 $this->assertSame('committal', $commit->tier);
                 $this->assertNotSame($originId, $commit->id);
-                $this->assertSame($participantCount, Participant::count());
+                $this->assertSame($participantCount + $additionalEntrants, Participant::count());
                 $this->assertSame([3, 6], Phase::whereIn('id', ReceiptConsumption::pluck('phase_id'))->orderBy('kind')->pluck('kind')->map(fn ($kind) => $kind->value)->unique()->values()->all());
                 $this->assertGreaterThan(1, $participant->cycles()->count());
                 $next = $service->stateFor($participant);

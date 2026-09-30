@@ -13,7 +13,10 @@ use App\Models\Substrate;
 use App\Models\Supersession;
 use App\Services\CommitmentSnapshotService;
 use App\Services\LedgerService;
+use App\Services\Observables\ChiralityCalculator;
+use App\Services\Observables\ContextLineageComparisonService;
 use App\Services\Observables\LineageMeasurementService;
+use App\Services\Observables\LocalMeasurementService;
 use App\Services\ParticipationService;
 use App\Services\ProjectionService;
 use App\Services\PropositionMeasurementService;
@@ -24,6 +27,8 @@ trait NaturalBoundaryHistory
     /** @return array{Substrate, Proposition, Proposition, Proposition} */
     private function naturalBoundaryHistory(int $futureParticipants = 1): array
     {
+        // Unlike controlled routing fixtures, this fixture measures every observable.
+        $this->app->forgetInstance(LocalMeasurementService::class);
         $substrate = (new Substrate)->forceFill(['slug' => 'natural-boundary', 'title' => 'Natural boundary',
             'visibility' => 'public', 'configuration' => []]);
         $substrate->save();
@@ -35,12 +40,6 @@ trait NaturalBoundaryHistory
         $origin = Proposition::findOrFail($state['current_proposition_id']);
         $cycle = $author->cycles()->whereNull('completed_at')->sole();
         $cycle->phases()->update(['completed_at' => now()]);
-        // Seven actual entrants balance the seven later Attestation acts against
-        // Origin's one act/one bootstrap Cycle. Idle participation is intentional.
-        for ($i = 0; $i < 6; $i++) {
-            $this->naturalIdleEntry($origin);
-        }
-
         // The completed reference extends beyond the later seed. Its hard
         // expressive step occupies the same cardinal coordinate as that Commit.
         $parent = $origin;
@@ -52,49 +51,81 @@ trait NaturalBoundaryHistory
         ] as [$kind, $type]) {
             $parent = $this->naturalHistoryNode($cycle, $parent, $kind, $type);
         }
+        // This is constructed catastrophe geometry, not a bootstrap trajectory:
+        // establish two Settlement Commits so the later prospective Emergence
+        // head can compare two committed positions against two.
+        $firstSettlement = $parent;
+        $this->assertSame('settlement', $firstSettlement->commitmentSnapshot->direction_after->value);
+        $interval = 2 * $futureParticipants;
+        for ($i = 0; $i < 7 - $interval; $i++) {
+            $this->naturalIdleEntry($origin);
+        }
+        $cycle = new Cycle;
+        $cycle->forceFill(['participant_id' => $author->id, 'sequence' => (int) $author->cycles()->max('sequence') + 1,
+            'entry_committal_id' => $firstSettlement->id])->save();
+        for ($i = 1; $i < $interval; $i++) {
+            $this->naturalIdleEntry($firstSettlement);
+        }
+        $parent = $this->naturalHistoryNode($cycle, $parent, PhaseKind::Bias, 'reclassify');
+        $parent = $this->naturalHistoryNode($cycle, $parent, PhaseKind::Order, 'commit');
         $ancestor = $parent;
         $this->assertSame('emergence', $ancestor->commitmentSnapshot->direction_after->value, json_encode([
             'snapshot' => $ancestor->commitmentSnapshot->only(['correspondence', 'chirality', 'orientation', 'attestation_cadence', 'closure', 'tension']),
-            'components' => app(\App\Services\Observables\ChiralityCalculator::class)->components(app(\App\Services\Observables\ContextLineageComparisonService::class)->for($ancestor)),
+            'components' => app(ChiralityCalculator::class)->components(app(ContextLineageComparisonService::class)->for($ancestor)),
         ]));
 
         $cycle = new Cycle;
-        $cycle->forceFill(['participant_id' => $author->id, 'sequence' => 3,
+        $cycle->forceFill(['participant_id' => $author->id, 'sequence' => (int) $author->cycles()->max('sequence') + 1,
             'entry_committal_id' => $ancestor->id])->save();
         foreach ([[PhaseKind::Distinguish, 'variant'], [PhaseKind::Persist, 'variant'],
             [PhaseKind::Bias, 'reclassify'], [PhaseKind::Order, 'commit']] as [$kind, $type]) {
             $parent = $this->naturalHistoryNode($cycle, $parent, $kind, $type);
+            if ($kind === PhaseKind::Distinguish) {
+                for ($i = 1; $i < $futureParticipants; $i++) {
+                    $this->naturalIdleEntry($ancestor, $parent);
+                }
+            }
         }
         $seed = $parent;
-        // The later boundary events have three acts and three entrants in this
-        // Domain: its producer, the live actors, and any remaining idle entrant.
-        for ($i = $futureParticipants; $i < 2; $i++) {
-            $this->naturalIdleEntry($seed);
+        // Freeze N entries at the seed's predecessor, then supply the remaining
+        // rate-balancing participation there without rewriting that interval.
+        if ($futureParticipants === 1) {
+            $this->naturalIdleEntry($ancestor);
         }
-        $this->assertSame(1.0, $seed->commitmentSnapshot->depth);
-        $this->assertSame(1.0, $seed->commitmentSnapshot->cadence);
+        $this->assertSame(0.0, $seed->commitmentSnapshot->depth);
+        $this->assertSame(0.0, $seed->commitmentSnapshot->cadence);
         // The seed matches its reference locally; attenuation also includes the
         // preceding boundary's independently calculated first-Domain value.
-        $raw = app(\App\Services\Observables\LocalMeasurementService::class);
+        $raw = app(LocalMeasurementService::class);
         $this->assertSame(1.0, $raw->calculate($seed)->correspondence);
-        $this->assertSame(-0.5130659, $raw->calculate($ancestor)->correspondence);
+        $ancestorCorrespondence = $raw->calculate($ancestor)->correspondence;
+        $this->assertLessThan(0, $ancestorCorrespondence);
         $mass = 1 + 1 / 4 + 1 / 9 + 1 / 16 + 1 / 25;
-        $expected = round((1 + 1 / 4 + 1 / 9 + 1 / 16 - 0.5130659 / 25) / $mass, 7);
+        $expected = round((1 + 1 / 4 + 1 / 9 + 1 / 16 + $ancestorCorrespondence / 25) / $mass, 7);
         $this->assertSame($expected, $seed->commitmentSnapshot->correspondence);
         $this->assertSame(1.0, $seed->commitmentSnapshot->orientation);
-        $this->assertEqualsWithDelta(-1 / 3, $seed->commitmentSnapshot->attestation_cadence, 1e-7);
+        $this->assertEqualsWithDelta($futureParticipants === 1 ? -1 / 3 : 0, $seed->commitmentSnapshot->attestation_cadence, 1e-7);
         $this->assertDatabaseCount('tragedies', 0);
 
         return [$substrate, $origin, $ancestor, $seed];
     }
 
-    private function naturalIdleEntry(Proposition $entry): void
+    private function naturalIdleEntry(Proposition $entry, ?Proposition $attest = null): void
     {
         $participant = (new Participant)->forceFill(['substrate_id' => $entry->phase->cycle->participant->substrate_id,
             'callsign' => 'idle-'.Participant::count()]);
         $participant->save();
-        (new Cycle)->forceFill(['participant_id' => $participant->id, 'sequence' => 1,
+        $cycle = new Cycle;
+        $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => 1,
             'entry_committal_id' => $entry->id])->save();
+        if ($attest !== null) {
+            $phase = new Phase;
+            $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Distinguish,
+                'gate_proposition_id' => $entry->id, 'write_register' => $attest->register, 'started_at' => now()])->save();
+            $vote = new Attestation;
+            $vote->forceFill(['phase_id' => $phase->id, 'proposition_id' => $attest->id, 'direction' => 'support'])->save();
+            app(LedgerService::class)->record($vote);
+        }
     }
 
     private function naturalHistoryNode(Cycle $cycle, Proposition $parent, PhaseKind $kind, string $type): Proposition

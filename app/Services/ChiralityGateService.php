@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Enums\ObservableDirection;
 use App\Models\Proposition;
 use App\Services\Participation\ParticipationContext;
 
@@ -29,7 +28,7 @@ final readonly class ChiralityGateService
             'attestation_cadence_direction' => $cadence,
             // Numeric member direction, as resolved by Homeostatic selection; not evidence lean.
             'chirality_direction' => $measurement?->chirality === null ? null
-                : ObservableDirection::after($measurement->chirality, ObservableDirection::defaultFor('chirality'))->value,
+                : $this->measurements->chiralityDirectionFor($gate, $context)->value,
         ];
     }
 }

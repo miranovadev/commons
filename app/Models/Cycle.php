@@ -2,12 +2,16 @@
 
 namespace App\Models;
 
+use App\Enums\RestReason;
+use App\Services\ChiralityPopulationHistoryService;
 use App\Services\ContextHorizonProjector;
+use App\Services\FieldMutationService;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\DB;
 
 class Cycle extends Model
 {
@@ -56,16 +60,24 @@ class Cycle extends Model
             return parent::save($options);
         }
 
-        return \Illuminate\Support\Facades\DB::transaction(function () use ($options) {
+        return DB::transaction(function () use ($options) {
             Substrate::whereKey($this->participant->substrate_id)->lockForUpdate()->firstOrFail();
+            $entry = ! $this->exists;
+            if ($entry) {
+                app(ChiralityPopulationHistoryService::class)->observe($this->participant->substrate_id);
+            }
             $saved = parent::save($options);
             if ($saved) {
                 // Dirty only Horizons containing Cycles entered at this basin.
                 // The existing field version remains the publication guard.
                 $horizons = self::where('entry_committal_id', $this->entry_committal_id)
                     ->distinct()->pluck('context_horizon_id')->all();
-                app(\App\Services\FieldMutationService::class)->mark($this->participant->substrate_id, $horizons, [$this->entry_committal_id]);
+                app(FieldMutationService::class)->mark($this->participant->substrate_id, $horizons, [$this->entry_committal_id]);
             }
+            if ($saved && $entry) {
+                app(ChiralityPopulationHistoryService::class)->observe($this->participant->substrate_id);
+            }
+
             return $saved;
         });
     }
@@ -85,7 +97,7 @@ class Cycle extends Model
         return [
             'completed_at' => 'immutable_datetime',
             'rested_at' => 'immutable_datetime',
-            'rest_reason' => \App\Enums\RestReason::class,
+            'rest_reason' => RestReason::class,
         ];
     }
 

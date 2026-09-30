@@ -44,9 +44,29 @@ abstract class TestCase extends BaseTestCase
     protected function resolveExpressiveFieldFixture(float $value): void
     {
         $this->mock(LocalMeasurementService::class, function ($mock) use ($value): void {
+            $mock->shouldReceive('chiralityComponents')->andReturn(new ChiralityValues($value, $value));
             $mock->shouldReceive('calculate')->andReturn(new LocalMeasurements($value, $value, $value, $value,
                 chiralityComponents: new ChiralityValues($value, $value),
                 correspondenceComponents: new CorrespondenceValues($value, $value)));
+        });
+    }
+
+    /** Routing fixtures author their fields; they do not model committed Closure runs. */
+    protected function controlledClosureFixture(float $closure): void
+    {
+        $calculator = app(LocalMeasurementService::class);
+        $this->partialMock(LocalMeasurementService::class, function ($mock) use ($calculator, $closure): void {
+            $mock->shouldReceive('calculate')->andReturnUsing(function ($node, $comparison = null, $includeClosure = true) use ($calculator, $closure) {
+                if ($node->tier === 'committal') {
+                    return $calculator->calculate($node, $comparison, $includeClosure);
+                }
+                $raw = $calculator->calculate($node, $comparison, false);
+                $value = $node->commitmentSnapshot?->closure ?? $closure;
+
+                return new LocalMeasurements($raw->correspondence, $raw->chirality, $value, $value,
+                    chiralityComponents: $raw->chiralityComponents, correspondenceComponents: $raw->correspondenceComponents);
+            });
+            $mock->shouldReceive('chiralityComponents')->andReturnUsing(fn ($node) => $calculator->chiralityComponents($node));
         });
     }
 
@@ -309,6 +329,7 @@ abstract class TestCase extends BaseTestCase
                 'correspondence' => 0, 'chirality' => 0, 'closure' => 0,
                 'prominence' => .5, 'turbulence' => .5, 'tension' => 0,
                 'direction_before' => $horizon->domain, 'direction_after' => $horizon->domain->opposite(),
+                'cadence_interval' => $gate === null ? null : 1,
                 'calculator_version' => 'scope-fixture', 'evaluated_at' => now()])->save();
             $horizon = app(ContextHorizonProjector::class)->apply($snapshot);
         }

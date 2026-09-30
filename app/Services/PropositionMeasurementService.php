@@ -48,6 +48,23 @@ final class PropositionMeasurementService
         );
     }
 
+    /** Mutation-only direction observation; never publishes disposable measurements. */
+    public function observeChirality(Proposition $position, ?ParticipationContext $context = null): float
+    {
+        $snapshot = $position->tier === 'committal'
+            ? ($context === null ? CommitmentSnapshot::find($position->id) : $context->snapshots->firstWhere('proposition_id', $position->id)) : null;
+        if ($snapshot !== null) {
+            return $snapshot->chirality;
+        }
+        [$value, $components] = app(LineageMeasurementService::class)->chirality($position, $context);
+        $attributes = [...$this->componentAttributes($position, $components, $context),
+            'chirality' => $value, 'chirality_direction' => $this->resolvedChiralityDirection($position, $value, $context)->value];
+        DB::table('chirality_observations')->upsert([['proposition_id' => $position->id,
+            ...$attributes]], ['proposition_id'], array_keys($attributes));
+
+        return $value;
+    }
+
     public function recalculateIfMeasurable(
         Proposition $proposition,
         ?DateTimeInterface $calculatedAt = null,
@@ -99,7 +116,7 @@ final class PropositionMeasurementService
                     $components = $snapshot === null ? $this->observables->components($proposition, $context) : null;
                     $values = $snapshot ?? $components->observables();
                     $attributes = $snapshot !== null ? $snapshot->only([
-                        'orientation', 'attestation_cadence', 'orientation_direction', 'attestation_cadence_direction',
+                        'chirality_direction', 'orientation', 'attestation_cadence', 'orientation_direction', 'attestation_cadence_direction',
                         'shape_topology', 'cardinal_position', 'shape_topology_direction', 'cardinal_position_direction',
                     ]) : ($components->chiralityComponents === null ? [] : $this->componentAttributes($proposition, $components->chiralityComponents, $context));
                     if ($snapshot === null && $components->correspondenceComponents !== null) {
@@ -108,6 +125,7 @@ final class PropositionMeasurementService
                     $measurement = new PropositionMeasurement;
                     $measurement->forceFill([
                         ...$attributes,
+                        'chirality_direction' => $snapshot?->chirality_direction ?? $this->resolvedChiralityDirection($proposition, $values->chirality, $context)->value,
                         'proposition_id' => $proposition->id,
                         'correspondence' => $values->correspondence,
                         'chirality' => $values->chirality,
@@ -152,7 +170,7 @@ final class PropositionMeasurementService
                 ]);
             }
             $componentAttributes = $snapshot !== null ? $snapshot->only([
-                'orientation', 'attestation_cadence', 'orientation_direction', 'attestation_cadence_direction',
+                'chirality_direction', 'orientation', 'attestation_cadence', 'orientation_direction', 'attestation_cadence_direction',
                 'shape_topology', 'cardinal_position', 'shape_topology_direction', 'cardinal_position_direction',
             ]) : ($chiralityComponents === null ? [] : $this->componentAttributes($proposition, $chiralityComponents));
             if ($snapshot === null && $correspondenceComponents !== null) {
@@ -161,6 +179,7 @@ final class PropositionMeasurementService
             PropositionMeasurement::query()->upsert(
                 [[
                     ...$componentAttributes,
+                    'chirality_direction' => $snapshot?->chirality_direction ?? $this->resolvedChiralityDirection($proposition, $chirality)->value,
                     'proposition_id' => $proposition->getKey(),
                     'correspondence' => $correspondence,
                     'chirality' => $chirality,
@@ -170,7 +189,8 @@ final class PropositionMeasurementService
                 ]],
                 ['proposition_id'],
                 [
-                    ...array_keys($componentAttributes),
+                    ...array_keys(array_diff_key($componentAttributes, ['chirality_direction' => true])),
+                    'chirality_direction',
                     'correspondence',
                     'chirality',
                     'closure',
@@ -182,21 +202,41 @@ final class PropositionMeasurementService
             $measurement = PropositionMeasurement::query()
                 ->findOrFail($proposition->getKey());
 
+            if ($snapshot === null && $chirality !== null) {
+                $history = $measurement->only(['chirality', 'chirality_direction']);
+                if ($chiralityComponents !== null) {
+                    $history = [...$history, ...$measurement->only(['orientation', 'attestation_cadence', 'orientation_direction', 'attestation_cadence_direction'])];
+                }
+                DB::table('chirality_observations')->upsert([['proposition_id' => $proposition->id, ...$history]],
+                    ['proposition_id'], array_keys($history));
+            }
             $proposition->setRelation('measurement', $measurement);
 
             return $measurement;
         });
     }
 
+    /** Read-only diagnostic attributes for the normal field publication pathway. */
+    public function chiralityAttributes(Proposition $position, float $value, ?ChiralityValues $components, ?ParticipationContext $context = null): array
+    {
+        $attributes = $components === null ? ($position->measurement?->only([
+            'orientation', 'attestation_cadence', 'orientation_direction', 'attestation_cadence_direction']) ?? [])
+            : $this->componentAttributes($position, $components, $context);
+
+        return [...array_fill_keys(['orientation', 'attestation_cadence', 'orientation_direction', 'attestation_cadence_direction'], null),
+            ...$attributes, 'chirality_direction' => $this->resolvedChiralityDirection($position, $value, $context)->value];
+    }
+
     private function componentAttributes(Proposition $proposition, ChiralityValues $values, ?ParticipationContext $context = null): array
     {
-        $prior = $context === null ? PropositionMeasurement::find($proposition->id) : $context->propositions->get($proposition->id)?->measurement;
+        $prior = $this->priorChiralityObservation($proposition, $context)
+            ?? ($context === null ? PropositionMeasurement::find($proposition->id) : $context->propositions->get($proposition->id)?->measurement);
         $entry = $proposition->phase->cycle->entry_committal_id;
         $previous = $entry === null ? null : ($context === null ? CommitmentSnapshot::find($entry) : $context->snapshots->firstWhere('proposition_id', $entry));
 
         return ['orientation' => $values->orientation, 'attestation_cadence' => $values->cadence,
             ...$values->resolveDirections(
-                ObservableDirection::from($prior?->orientation_direction ?? $previous?->orientation_direction ?? 'positive'),
+                ObservableDirection::from($prior?->orientation_direction ?? $previous?->orientation_direction ?? 'negative'),
                 ObservableDirection::from($prior?->attestation_cadence_direction ?? $previous?->attestation_cadence_direction ?? 'positive'),
             )];
     }
@@ -243,6 +283,38 @@ final class PropositionMeasurementService
         }
 
         return ObservableDirection::defaultFor('correspondence');
+    }
+
+    public function chiralityDirectionFor(Proposition $position, ?ParticipationContext $context = null): ObservableDirection
+    {
+        $position = $context?->proposition($position) ?? $position;
+
+        return $this->resolvedChiralityDirection($position, $position->measurement?->chirality, $context);
+    }
+
+    private function resolvedChiralityDirection(Proposition $position, ?float $value, ?ParticipationContext $context = null): ObservableDirection
+    {
+        if ($value !== null && $value !== 0.0) {
+            return ObservableDirection::after($value);
+        }
+        $prior = $this->priorChiralityObservation($position, $context)
+            ?? ($context === null ? PropositionMeasurement::find($position->id) : $position->measurement);
+        $entry = $position->phase->cycle->entry_committal_id;
+        $snapshot = $entry === null ? null : ($context === null ? CommitmentSnapshot::find($entry) : $context->snapshots->firstWhere('proposition_id', $entry));
+        $previous = $prior?->chirality_direction ?? $snapshot?->chirality_direction;
+
+        return ObservableDirection::after($value ?? 0.0, $previous === null
+            ? ObservableDirection::defaultFor('chirality') : ObservableDirection::from($previous));
+    }
+
+    private function priorChiralityObservation(Proposition $position, ?ParticipationContext $context): ?object
+    {
+        if ($context === null) {
+            return DB::table('chirality_observations')->where('proposition_id', $position->id)->first();
+        }
+
+        return $context->remember('chirality:retained-observations', fn () => DB::table('chirality_observations')
+            ->whereIn('proposition_id', $context->propositions->keys())->get()->keyBy('proposition_id'))->get($position->id);
     }
 
     private function assertMeasurement(string $name, ?float $value): void

@@ -52,19 +52,31 @@ Each distinct measured proposition contributes its signed value once with equal
 weight. The arithmetic mean uses the existing seven-decimal measurement precision.
 Magnitude matters: two values of +0.1 and one of −0.9 produce a negative aggregate.
 Zero values contribute denominator mass; unavailable/null values do not. An empty
-or entirely unmeasured population has no mean or direction. The result preserves
+or entirely unmeasured population has no mean; Chirality can still inherit a historical direction. The result preserves
 the per-member values, including nulls, so missing data stays explicit.
 
-Direction uses `ObservableDirection::after()` with the requested observable's
-explicit `ObservableDirection::defaultFor()` initialization. At aggregate zero,
-an explicitly supplied prior **population** direction is retained; without it,
-Correspondence starts positive and numeric Chirality/Closure start negative.
-Correspondence shares its positive root fallback with proposition direction;
-Chirality/Closure retain their negative measurement bootstrap, independent of
-regional Attestation polarity and Bias's evidence direction. The acting member's
-sign never supplies population history. This stage adds no persisted field
-history. Nonzero aggregates establish their own direction. This aggregate is not
-a new measurement of any proposition and is never fed back into its calculators.
+Nonzero aggregates establish their own sign. At zero, Chirality retains the
+nearest preceding nonzero direction of the same structural population. Its stable
+identity uses substrate, shared Origin, full committed depth, Domain, canonical
+Phase and tier; it is not a hash of the current member IDs. Mutation-boundary
+observations preserve both sides of Cycle entry and contribution changes,
+including Attestation acts and replacements. They are transactional and do not
+wait for a disposable Potential projection to publish. Member direction observations
+are stored separately; recording history does not overwrite disposable measurements.
+The normal projection pathway publishes current component diagnostics. Repeated zero observations
+retain history; no Attestation-specific rewind is used.
+
+An unavailable Chirality population has no numeric mean. Its direction inherits
+corresponding history along the entry lineage in preceding Horizons, with Positive
+as the final no-history fallback. A population never borrows the acting member's
+direction. Individual Chirality separately retains its own direction, then its
+entry snapshot direction, with the same final Positive default. Orientation's
+primitive default is Negative; Attestation Cadence's is Positive.
+
+Ordinary population reads perform no writes. Observation persistence belongs to
+the mutation pathway; aggregate values are never fed back into proposition
+calculators or participant state. Correspondence and Closure population behavior
+is unchanged by this correction.
 
 Closure here is the generic numeric measurement aggregation surface. Resolving
 Depth/Cadence agreement for Order candidates belongs to the separate Stage 5 consumer below. A generic numeric Closure aggregate is neither Commit admissibility nor a Traverse grant.
@@ -99,9 +111,9 @@ authorize that escape. Population observation does not itself advertise an actio
 Local, same-Region expressive paths and recorded mediated doorways instead use
 ordinary own-Region Receipts and cannot consume Tragedy Receipts. Recorded
 mediation takes precedence over overlapping population eligibility.
-Zero member Chirality uses its explicit negative measurement default; regional
-Attestation lean is not substituted for a numeric measurement. Population history
-is still observation-local and supplied explicitly, never invented or persisted.
+Zero member Chirality retains its own history; regional Attestation lean is not
+substituted for a numeric measurement. Population observations retain separate
+history and never change population membership.
 The action consumes only an acting Cycle-entry Receipt and creates its result in
 that Cycle, with one actual causal edge from the selected source. Homology grants
 no generic Traverse, Read or Receipt access. Order has the separate committed-position consumer below.

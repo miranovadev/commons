@@ -40,18 +40,18 @@ class ChiralityV2Test extends TestCase
     use CreatesHomologousPositions;
     use RefreshDatabase;
 
-    public function test_origin_without_attestation_opens_settlement_and_freezes_components(): void
+    public function test_attested_origin_opens_settlement_and_freezes_components(): void
     {
         $this->createHomologyActor();
-        app(CycleEntryService::class)->enter($this->actor, ['statement' => 'Origin without artificial evidence',
+        app(CycleEntryService::class)->enter($this->actor, ['statement' => 'Explicit Origin evidence', 'attestation' => ['direction' => 'support'],
             'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/origin']]);
         $origin = Proposition::findOrFail($this->actor->fresh()->current_proposition_id);
         $snapshot = $origin->commitmentSnapshot;
-        $this->assertSame(0, Attestation::count());
+        $this->assertSame(1, Attestation::count());
         $this->assertSame(0.0, $snapshot->orientation);
         $this->assertSame(-1.0, $snapshot->attestation_cadence);
         $this->assertSame(-0.5, $snapshot->chirality);
-        $this->assertSame('positive', $snapshot->orientation_direction);
+        $this->assertSame('negative', $snapshot->orientation_direction);
         $this->assertSame('negative', $snapshot->attestation_cadence_direction);
         $this->assertEqualsWithDelta(-1 / 6, $snapshot->tension, 1e-7);
         $this->assertSame('settlement', $snapshot->direction_after->value);

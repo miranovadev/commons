@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Observables\ChiralityValues;
 use App\Domain\Observables\LocalMeasurements;
 use App\Enums\PhaseKind;
 use App\Models\ContextHorizon;
@@ -176,6 +177,8 @@ class ParticipantContinuityTest extends TestCase
         // Hold numeric thresholds fixed; Commit validation, snapshots, ownership,
         // completion, entry and subsequent contributions use their real services.
         $this->mock(LocalMeasurementService::class, function ($mock) use ($value): void {
+            $mock->shouldReceive('chiralityComponents')->andReturnUsing(fn (Proposition $node) => $node->statement === 'Independent continuing opportunity'
+                ? new ChiralityValues(0, 0) : new ChiralityValues($value, $value));
             $mock->shouldReceive('calculate')->andReturnUsing(fn (Proposition $node) => $node->statement === 'Independent continuing opportunity'
                     ? new LocalMeasurements(0, 0, 0, 0)
                     : new LocalMeasurements($value, $value, $value, $value));

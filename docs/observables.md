@@ -41,8 +41,7 @@ An inadmissible local Bias source does not veto an authorized optional source.
 
 Order begins at its existing expressive Gate/Write. Keep the established
 prospective-Commit Closure preview, producing-Cycle history, cadence interval and
-preview-versus-persisted guard. This is not a new calculation over the expressive
-candidate. Each local Write remains visible when Commit is blocked. Existing
+preview-versus-persisted guard. Expressive measurement uses this same prospective Closure calculation. Each local Write remains visible when Commit is blocked. Existing
 homologous Commits embody their historical admissibility; selection uses frozen
 resolved directions and current structural constraints, never a fresh Closure
 preview on those Commits. Existing compatibility behavior remains: absent or
@@ -230,18 +229,21 @@ Local components remain inspectable independently; they are not separately atten
 
 Orientation and Attestation Cadence have independent retained directions. Nonzero
 values establish their sign; zero retains the prior component direction, falling
-back to the entry Commitment's direction and then Positive. Component disagreement
+back to that component's entry Commitment direction and finally its primitive default: Orientation Negative, Attestation Cadence Positive. Combined Chirality has its own retained direction and a Positive no-history default. Component disagreement
 blocks a Bias Reclassify Write from that existing source; it grants no movement.
 Coherent Positive/Positive and Negative/Negative sources both satisfy this additional
 condition. Numeric zero uses retained component directions, never a directionless state. Frozen CommitmentSnapshots,
 including old snapshots without component diagnostics, are never recalculated.
 
-Without an Origin Attestation, Origin has Orientation 0, one current bootstrap
-Cycle and no previous population: Cadence -1 and Chirality -0.5. Its component
-directions are Positive and Negative respectively. With Correspondence +1 and
+Origin requires a creator-selected effective Attestation before its snapshot.
+It has Orientation 0, one current bootstrap Cycle and no previous population: Cadence -1 and Chirality -0.5. Its component
+directions are Negative and Negative respectively. With Correspondence +1 and
 Closure -1, existing projection produces negative Tension (approximately -1/6)
-and naturally opens Settlement. No artificial Attestation or projection exception
-is required. Ordinary Commit grounding still requires effective Attestation and
+and naturally opens Settlement. The genuine Attestation establishes the positive
+label frame before measurement; no Receipt or projection exception is required.
+Aligned first-Settlement evidence can then produce positive Chirality and a
+natural first-Commit Emergence crossover, as covered for both Origin labels in
+`FreshBootstrapTest`. Ordinary Commit grounding still requires effective Attestation and
 qualifying evidence, plus the existing structural and Closure conditions.
 
 Bias compares each active Stance/Frontier head's retained direction with the
@@ -288,8 +290,8 @@ causal Gate does not veto an independently eligible optional source.
 
 The causal Gate remains visible with backend `chirality_admissibility` diagnostics;
 ineligible optional sources are absent from the actionable set. The diagnostic's
-`chirality_direction` uses existing numeric member resolution (negative default at
-zero), separately from the ordinary local evidence/ancestry direction rule.
+`chirality_direction` retains its own previous direction at zero, then the entry
+Commitment direction, and finally Positive only without history, separately from the ordinary local evidence/ancestry direction rule.
 Dispatch checks the selected source again before result creation, causal edges,
 classification registration or Receipt consumption. The result is measured normally
 and need not preserve source direction or component agreement. Rest applies when
@@ -306,11 +308,12 @@ preceding opposite-Domain run length, counting only ancestral Committals and the
 candidate. Recovery retains shared ancestors and excludes abandoned descendants.
 
 Cadence compares the latest two direct ancestral inter-Commit intervals. For A → B,
-freeze the number of other Cycles entered at A and completed before B commits, plus B's
-producing Cycle exactly once. Rest counts. Other unresolved Cycles do not count.
+freeze the number of Cycles entered at A in B's producing Horizon before B commits.
+The producer is already included exactly once. Empty, unfinished, Attestation-only,
+rested and completed Cycles count equally; completion timestamps play no role.
 All expressive paths within A's basin count; other entry Committals, including siblings
 and descendants, do not. Every real interval is at least one. Cadence continues
-across Domain boundaries. Later A → B2 may include more completed participation,
+across Domain boundaries. Later A → B2 may include more entered participation,
 without changing the earlier frozen A → B interval.
 
 Both similarities are `1 - 2 * abs(a - b) / max(a, b)`, bounded to [-1, +1]
@@ -322,16 +325,23 @@ alignment; there is no bootstrap eligibility exception.
 With structural components D and C, Closure is `(D + C) / 2`.
 Receipt count changes neither component, their directions, Closure nor Closure
 admissibility. Reinforcement remains evidence metadata, never a measurement weight.
-Expressive propositions inherit their Cycle entry Committal snapshot's structural components;
-they do not extend committed Domain runs or invent intervals. Persisted Committals
-retain their historical snapshot values.
+Expressive propositions measure one hypothetical next Commit using the live basin
+interval and the same committed Domain-run calculation as Order preview and Commit
+validation. This read-only observation creates no Proposition, edge, movement or
+snapshot. Before C1 it is 0/0, rather than inherited Origin −1/−1. Persisted
+Committals retain their historical snapshot values.
 
 `cadence_interval` is immutable on the successor CommitmentSnapshot, including C1.
-The historical backfill uses original Cycle entry, producing identity and strict completion cutoffs;
-other-Cycle timestamp ties leave the interval unavailable. Existing observables
-are never rewritten. An unavailable predecessor interval blocks prospective
-Commitment explicitly; it is not replaced with an old formula or neutral guess.
-See [the implementation and transition report](closure-basin-cadence-investigation.md).
+Every new non-Origin Committal must freeze a positive interval, including C1 even
+though its displayed components are 0/0. Missing required historical intervals
+are unsupported state: prospective Closure is unavailable and Commit fails
+closed. There is no inherited Closure, synthetic interval or zero fallback. The
+numeric Tension/Charge/Potential model is unchanged. Existing snapshots are not
+reconstructed.
+
+The fresh bootstrap regression terminates at the first valid Commit and checks
+its calculated Domain. See [the bounded first-Settlement analysis](first-settlement-correspondence-bound.md)
+for why this path is not required to open Emergence.
 
 ## Commit participation inheritance
 
@@ -382,12 +392,12 @@ projection. The additive calculator_version migration marks old projections
 as obsolete; normal measurement repair and Potential reads refresh obsolete
 projections before use. A new or changed Phase Gate invalidates disposable
 projections in its substrate because touches can affect either side of a
-comparison. A Cycle with an entry Committal completing also invalidates affected basin previews, including Rest.
+comparison. A new Cycle entry immediately invalidates affected basin previews; completion does not advance Cadence.
 Missing/unmeasurable Potential candidates remain ineligible. No persistent raw
-cache is introduced; prospective Closure uses current completed-basin participation plus its producing Cycle.
+cache is introduced; prospective Closure uses all current basin entries, including its producing Cycle.
 
 Immutable commitment snapshots continue to preserve the values observed at
-commitment time. New non-bootstrap commitments record `committal-closure-v10`.
+commitment time. New commitments record the current calculator version.
 
 See [Attestation polarity and direction history](attestation-polarity.md) for the
 normative distinction between measurement values, retained directions and labels.

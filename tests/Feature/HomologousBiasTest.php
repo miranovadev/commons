@@ -169,6 +169,9 @@ class HomologousBiasTest extends TestCase
         $this->measure($this->gateC, -1);
         $unattested = $this->source($this->c, attest: false);
         $this->measure($unattested, -1);
+        $this->measure($this->gateB, .1);
+        $this->measure($this->gateC, -1);
+        $this->coherentChiralityFixture($this->gateA);
         $this->assertEqualsCanonicalizing([$this->gateA->id, $this->gateC->id], $this->biasOptionIds());
         $this->assertFalse(app(PhaseGenerationService::class)->available($this->bias, 'proposition.reclassify', position: $unattested));
         $this->reject($this->gateB);
@@ -189,9 +192,10 @@ class HomologousBiasTest extends TestCase
         $this->reject($this->gateA);
     }
 
-    public function test_zero_uses_chirality_default_and_does_not_mutate_measurements_or_state(): void
+    public function test_zero_retains_population_history_and_does_not_mutate_measurements_or_state(): void
     {
         $this->warrant();
+        // Fixture entries established Negative population history before these zero means.
         foreach ([[.5, -.5, 0.0], [0.0, 0.0, 0.0]] as $values) {
             foreach ([$this->gateA, $this->gateB, $this->gateC] as $index => $gate) {
                 $this->measure($gate, $values[$index]);
@@ -309,6 +313,7 @@ class HomologousBiasTest extends TestCase
 
     public function test_wrong_coordinates_and_plain_traverse_cannot_cross_over(): void
     {
+        $this->controlledClosureFixture(-1);
         $this->warrant();
         $wrongDepth = $this->source($this->commit($this->b, 'settlement'));
         $wrongDomain = $this->source($this->commit($this->origin, 'emergence'));
@@ -789,7 +794,7 @@ class HomologousBiasTest extends TestCase
         $actual = app(ObservableService::class)->components($target);
         $this->assertEquals($actual->observables()->chirality, $target->fresh()->measurement->chirality);
         $this->assertSame([$this->gateA->id], $target->parents()->pluck('propositions.id')->all());
-        $this->assertFalse(app(ChiralityGateService::class)->evaluate($target->fresh())['admissible']);
+        $this->assertSame('negative', app(ChiralityGateService::class)->evaluate($target->fresh())['chirality_direction']);
     }
 
     private function measure(Proposition $node, float $value): void

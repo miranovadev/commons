@@ -37,11 +37,11 @@ class EnterCycleRequest extends FormRequest
         }
 
         return [
-            'origin' => ['required', 'array:statement,attestation,instrument'],
+            'origin' => ['required', 'array:statement,attestation'],
             'origin.statement' => ['required', 'string', 'max:20000'],
-            'origin.attestation' => ['sometimes', 'array:direction,rationale'],
+            'origin.attestation' => ['required', 'array:direction,rationale'],
             'origin.attestation.direction' => [
-                'required_with:origin.attestation',
+                'required',
                 'string',
                 Rule::in(['support', 'refute']),
             ],
@@ -49,22 +49,6 @@ class EnterCycleRequest extends FormRequest
                 'nullable',
                 'string',
                 'max:20000',
-            ],
-            'origin.instrument' => ['required', 'array:kind,reference,query'],
-            'origin.instrument.kind' => [
-                'required',
-                'string',
-                Rule::in(['hyperlink', 'web_search']),
-            ],
-            'origin.instrument.reference' => [
-                'required_if:origin.instrument.kind,hyperlink',
-                'prohibited_unless:origin.instrument.kind,hyperlink',
-                'string', 'max:20000',
-            ],
-            'origin.instrument.query' => [
-                'required_if:origin.instrument.kind,web_search',
-                'prohibited_unless:origin.instrument.kind,web_search',
-                'string', 'max:1000', 'regex:/^[^\\x00]*[^\\s\\x00][^\\x00]*$/u',
             ],
         ];
     }

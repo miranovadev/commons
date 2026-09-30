@@ -7,12 +7,10 @@ use App\Models\Cycle;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
-use App\Models\Receipt;
 use App\Models\Substrate;
 use App\Models\User;
 use App\Services\LedgerService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class ParticipationApiTest extends TestCase
@@ -32,42 +30,26 @@ class ParticipationApiTest extends TestCase
             ->assertJsonPath('data.plan', null);
     }
 
-    public function test_web_search_origin_accepts_only_the_query_invocation(): void
+    public function test_origin_rejects_instrument_input_without_creating_state(): void
     {
         [$substrate, $participant] = $this->participant();
         $payload = $this->originPayload();
         $payload['origin']['instrument'] = ['kind' => 'web_search', 'query' => 'Origin evidence'];
-        config(['services.tavily.api_key' => 'test-key']);
-        Http::preventStrayRequests();
-        Http::fake(['api.tavily.com/search' => Http::response(['results' => []])]);
-        $invalid = $payload;
-        $invalid['origin']['instrument']['reference'] = 'unexpected';
-        $this->postJson($this->endpoint($substrate, $participant).'/enter', $invalid)->assertUnprocessable();
-        $invalid['origin']['instrument'] = ['kind' => 'web_search', 'query' => '   '];
-        $this->postJson($this->endpoint($substrate, $participant).'/enter', $invalid)->assertUnprocessable();
-        Http::assertNothingSent();
-        $response = $this->postJson($this->endpoint($substrate, $participant).'/enter', $payload)->assertCreated();
-        $this->assertSame('web_search', Receipt::sole()->type);
-        $this->assertDatabaseCount('participant_receipt_contexts', 0);
-        $this->assertSame([], $response->json('data.plan.receipts'));
-        $this->assertSame(Receipt::sole()->id, $response->json('data.plan.gate_options.0.receipts.0.id'));
-        $this->assertArrayNotHasKey('evidence', $response->json('data.plan.gate_options.0.receipts.0'));
+        $this->postJson($this->endpoint($substrate, $participant).'/enter', $payload)->assertUnprocessable();
+        $this->assertDatabaseCount('commitment_snapshots', 0);
+        $this->assertDatabaseCount('receipts', 0);
     }
 
-    public function test_origin_entry_does_not_require_an_attestation(): void
+    public function test_origin_entry_requires_an_explicit_attestation(): void
     {
         [$substrate, $participant] = $this->participant();
         $payload = $this->originPayload();
         unset($payload['origin']['attestation']);
-        $response = $this->postJson($this->endpoint($substrate, $participant).'/enter', $payload)
-            ->assertCreated()->assertJsonPath('data.domain', 'settlement')
-            ->assertJsonPath('data.plan.phase.write_register', 'signal');
-        $this->assertDatabaseCount('attestations', 0);
-        $this->assertDatabaseHas('commitment_snapshots', [
-            'proposition_id' => $response->json('data.current_proposition_id'),
-            'orientation' => 0, 'attestation_cadence' => -1, 'chirality' => -0.5,
-            'orientation_direction' => 'positive', 'attestation_cadence_direction' => 'negative',
-        ]);
+        $this->postJson($this->endpoint($substrate, $participant).'/enter', $payload)
+            ->assertUnprocessable()->assertJsonValidationErrors('origin.attestation');
+        foreach (['propositions', 'attestations', 'cycles', 'context_horizons', 'commitment_snapshots', 'substrate_ledger_entries'] as $table) {
+            $this->assertDatabaseCount($table, 0);
+        }
     }
 
     public function test_a_participant_can_establish_the_origin_and_enter_the_first_live_cycle(): void
@@ -104,9 +86,9 @@ class ParticipationApiTest extends TestCase
         $this->assertDatabaseCount('phases', 2);
         $this->assertDatabaseCount('propositions', 1);
         $this->assertDatabaseCount('attestations', 1);
-        $this->assertDatabaseCount('instrument_executions', 1);
-        $this->assertDatabaseCount('receipts', 1);
-        $this->assertDatabaseCount('substrate_ledger_entries', 3);
+        $this->assertDatabaseCount('instrument_executions', 0);
+        $this->assertDatabaseCount('receipts', 0);
+        $this->assertDatabaseCount('substrate_ledger_entries', 2);
         $this->assertDatabaseCount('commitment_snapshots', 1);
         $this->assertDatabaseCount('context_horizons', 2);
         $this->assertDatabaseHas('proposition_measurements', [
@@ -135,10 +117,6 @@ class ParticipationApiTest extends TestCase
             'sequence' => 2,
             'domain' => 'settlement',
             'opened_by_proposition_id' => $originId,
-        ]);
-        $this->assertDatabaseHas('instrument_executions', [
-            'proposition_id' => $originId,
-            'status' => 'completed',
         ]);
         $this->assertNotNull(
             Cycle::query()->where('sequence', 1)->firstOrFail()->completed_at,
@@ -421,10 +399,6 @@ class ParticipationApiTest extends TestCase
                 'attestation' => [
                     'direction' => 'support',
                     'rationale' => 'This is a worthy Origin.',
-                ],
-                'instrument' => [
-                    'kind' => 'hyperlink',
-                    'reference' => 'https://example.test/origin',
                 ],
             ],
         ];

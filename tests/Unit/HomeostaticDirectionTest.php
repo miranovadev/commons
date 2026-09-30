@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use App\Enums\ObservableDirection;
+use App\Models\Proposition;
 use App\Services\HomeostaticDirectionService;
 use InvalidArgumentException;
 use Tests\TestCase;
@@ -20,7 +21,7 @@ class HomeostaticDirectionTest extends TestCase
     {
         $service = app(HomeostaticDirectionService::class);
         foreach (['correspondence' => ObservableDirection::Positive,
-            'chirality' => ObservableDirection::Negative, 'closure' => ObservableDirection::Negative] as $axis => $default) {
+            'chirality' => ObservableDirection::Positive, 'closure' => ObservableDirection::Negative] as $axis => $default) {
             foreach ([['a' => .7, 'b' => -.7], ['a' => 0.0, 'b' => 0.0]] as $values) {
                 $result = $service->aggregate($values, $axis);
                 $this->assertSame(0.0, $result->mean);
@@ -59,6 +60,6 @@ class HomeostaticDirectionTest extends TestCase
     public function test_unknown_measurement_names_are_rejected_before_loading_a_population(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        app(HomeostaticDirectionService::class)->forPosition(new \App\Models\Proposition, 'potential');
+        app(HomeostaticDirectionService::class)->forPosition(new Proposition, 'potential');
     }
 }

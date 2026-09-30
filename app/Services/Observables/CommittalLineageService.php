@@ -2,6 +2,7 @@
 
 namespace App\Services\Observables;
 
+use App\Exceptions\ClosureHistoryUnavailable;
 use App\Models\CommitmentSnapshot;
 use App\Models\Cycle;
 use App\Models\Proposition;
@@ -19,6 +20,7 @@ final class CommittalLineageService
             $seeds = $context === null ? collect([$position->id, $position->phase->cycle->entry_committal_id])
                 : $context->propositions->keys()->merge($context->propositions->map(fn ($p) => $p->phase->cycle->entry_committal_id))
                     ->push($context->phase->cycle->entry_committal_id);
+
             return $this->recordsForIds($position->phase->cycle->participant->substrate_id, $seeds);
         };
 
@@ -91,8 +93,9 @@ final class CommittalLineageService
         $snapshot = $this->records($position, $context)->get($position->id);
         if ($snapshot !== null) {
             if ($snapshot->cadence_interval === null) {
-                throw new \App\Exceptions\ClosureHistoryUnavailable('This historical incoming interval is unavailable.');
+                throw new ClosureHistoryUnavailable('This historical incoming interval is unavailable.');
             }
+
             return $snapshot->cadence_interval;
         }
         $cycle = $position->phase->cycle;
@@ -104,12 +107,13 @@ final class CommittalLineageService
                 : $context->propositions->map(fn ($p) => $p->phase->cycle->entry_committal_id)->push($context->phase->cycle->entry_committal_id);
 
             return Cycle::whereIn('entry_committal_id', $entries->filter()->unique())
-                ->whereNotNull('completed_at')->selectRaw('entry_committal_id, count(*) as aggregate')
-                ->groupBy('entry_committal_id')->pluck('aggregate', 'entry_committal_id');
+                ->selectRaw('entry_committal_id, context_horizon_id, count(*) as aggregate')
+                ->groupBy('entry_committal_id', 'context_horizon_id')->get()
+                ->mapWithKeys(fn ($row) => [$row->entry_committal_id.':'.$row->context_horizon_id => $row->aggregate]);
         };
-        $counts = $context === null ? $load() : $context->remember('closure:completed-basin-counts', $load);
+        $counts = $context === null ? $load() : $context->remember('closure:entered-basin-counts', $load);
 
-        // Count this producer once even for maintenance callers observing a completed Cycle.
-        return (int) $counts->get($cycle->entry_committal_id, 0) + ($cycle->completed_at === null ? 1 : 0);
+        // Every entered Cycle counts once, including the producer, regardless of completion.
+        return (int) $counts->get($cycle->entry_committal_id.':'.$cycle->context_horizon_id, 0);
     }
 }

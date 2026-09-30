@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Domain\Evidence\InstrumentObservation;
 use App\Domain\Observables\ObservableValues;
 use App\Enums\LedgerEntryKind;
 use App\Enums\PhaseKind;
@@ -25,7 +24,6 @@ final readonly class CycleEntryService
     public function __construct(
         private LedgerService $ledger,
         private CommitRegionPolarityService $polarity,
-        private OperationalInstrumentService $instruments,
         private PropositionMeasurementService $measurements,
         private ProjectionService $projections,
         private CommitmentSnapshotService $commitments,
@@ -70,7 +68,9 @@ final readonly class CycleEntryService
         if (! $required && $this->hasActiveCycle($participant)) {
             return;
         }
-        $observed = $origin === null ? null : $this->instruments->observe($origin['instrument']);
+        if ($origin !== null && ! in_array($origin['attestation']['direction'] ?? null, ['support', 'refute'], true)) {
+            throw new DomainException('Origin requires an explicit Support or Refute Attestation.');
+        }
 
         $participant = $participant->fresh();
         $version = (int) Substrate::whereKey($participant->substrate_id)->value('field_version');
@@ -85,7 +85,7 @@ final readonly class CycleEntryService
             $gate = $this->potential->selectFor($participant->substrate)['proposition'];
         }
 
-        DB::transaction(function () use ($participant, $origin, $required, $observed, $version, $positionId, $gate): void {
+        DB::transaction(function () use ($participant, $origin, $required, $version, $positionId, $gate): void {
             $substrate = Substrate::query()
                 ->lockForUpdate()
                 ->findOrFail($participant->substrate_id);
@@ -143,17 +143,9 @@ final readonly class CycleEntryService
                 $origin['statement'],
             );
 
-            $this->polarity->establishOrigin($proposition, $origin['attestation']['direction'] ?? 'support');
+            $this->polarity->establishOrigin($proposition, $origin['attestation']['direction']);
             $this->ledger->record($proposition);
-            if (isset($origin['attestation'])) {
-                $this->createAttestation($order, $proposition, $origin['attestation']);
-            }
-            $this->createReceipt(
-                $order,
-                $proposition,
-                $origin['instrument'],
-                $observed,
-            );
+            $this->createAttestation($order, $proposition, $origin['attestation']);
 
             $values = $this->measurements->recalculate($proposition);
             $projection = $this->projections->from(new ObservableValues(
@@ -317,17 +309,5 @@ final readonly class CycleEntryService
         ]);
         $attestation->save();
         $this->ledger->record($attestation);
-    }
-
-    /**
-     * @param  array<string, mixed>  $input
-     */
-    private function createReceipt(
-        Phase $phase,
-        Proposition $proposition,
-        array $input,
-        ?InstrumentObservation $observed,
-    ): void {
-        $this->instruments->execute($phase, $proposition, $input, bootstrap: true, observed: $observed);
     }
 }

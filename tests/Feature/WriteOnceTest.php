@@ -312,6 +312,7 @@ class WriteOnceTest extends TestCase
 
     public function test_order_consumes_each_direct_source_globally_and_preserves_other_sources(): void
     {
+        $this->controlledClosureFixture(-1);
         [$participant, $seed] = $this->fixture();
         $this->mock(ClosureGateService::class, function ($mock): void {
             $mock->shouldReceive('preview', 'forCommitment')->andReturn([

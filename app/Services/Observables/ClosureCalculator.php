@@ -32,13 +32,8 @@ final readonly class ClosureCalculator
     {
         $cycle = $position->phase->cycle;
         $ancestors = $this->lineage->ancestors($position, $context);
-        if ($position->tier !== 'committal') {
-            // Expressive work inherits its Cycle entry Committal's structure. It does
-            // not increment Domain-run depth or create a hypothetical interval.
-            $entrySnapshot = $ancestors->first();
-
-            return new ClosureValues($entrySnapshot?->depth ?? -1, $entrySnapshot?->cadence ?? -1);
-        }
+        // An expressive position is exactly one prospective next Commit. The same
+        // head/run calculation serves live measurement and Order's preview.
         if ($ancestors->isEmpty()) {
             if ($cycle->contextHorizon->parent_context_horizon_id !== null) {
                 throw new DomainException('Only Origin may have no entry Committal.');

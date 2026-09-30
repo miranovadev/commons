@@ -4,7 +4,7 @@ namespace App\Domain\Observables;
 
 use App\Enums\ObservableDirection;
 
-/** Observation-local aggregate; never a Proposition measurement or persisted field. */
+/** Aggregate observation; separate from every Proposition measurement and its direction. */
 final readonly class HomeostaticDirection
 {
     /** @param array<string, float|null> $values Independent values keyed by population member. */
