@@ -235,12 +235,15 @@ Coherent Positive/Positive and Negative/Negative sources both satisfy this addit
 condition. Numeric zero uses retained component directions, never a directionless state. Frozen CommitmentSnapshots,
 including old snapshots without component diagnostics, are never recalculated.
 
-Without an Origin Attestation, Origin has Orientation 0, one current bootstrap
-Cycle and no previous population: Cadence -1 and Chirality -0.5. Its component
+Origin requires a creator-selected effective Attestation before its snapshot.
+It has Orientation 0, one current bootstrap Cycle and no previous population: Cadence -1 and Chirality -0.5. Its component
 directions are Negative and Negative respectively. With Correspondence +1 and
 Closure -1, existing projection produces negative Tension (approximately -1/6)
-and naturally opens Settlement. No artificial Attestation or projection exception
-is required. Ordinary Commit grounding still requires effective Attestation and
+and naturally opens Settlement. The genuine Attestation establishes the positive
+label frame before measurement; no Receipt or projection exception is required.
+Aligned first-Settlement evidence can then produce positive Chirality and a
+natural first-Commit Emergence crossover, as covered for both Origin labels in
+`FreshBootstrapTest`. Ordinary Commit grounding still requires effective Attestation and
 qualifying evidence, plus the existing structural and Closure conditions.
 
 Bias compares each active Stance/Frontier head's retained direction with the
