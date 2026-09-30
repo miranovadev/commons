@@ -1,8 +1,8 @@
 # First-Settlement Correspondence before C1
 
-The fresh bootstrap contract ends at the first valid ordinary Commit. Its Domain
-is determined by the actual field, not prescribed by the fixture. The production
-path in `FreshBootstrapTest` has Correspondence −0.5276331, Chirality −0.5 and
+The unattested diagnostic bootstrap contract ended at the first valid ordinary Commit. Explicit Origin Attestation is now required for new substrates. Its Domain
+is determined by the actual field, not prescribed by the fixture. The earlier unattested production
+diagnostic had Correspondence −0.5276331, Chirality −0.5 and
 Closure 0, giving Tension −0.3425444 and continued Settlement.
 
 A bounded analytical check rules out first-Commit Correspondence above +0.5 for
@@ -65,3 +65,9 @@ guaranteed.
 This argument concerns a fresh first-Settlement comparison with the isolated
 Origin reference. It makes no claim about later complementary-Domain references,
 and changes no calculation, selection, admissibility, or transition rule.
+
+With a genuine Origin Attestation and aligned Settlement evidence, the canonical
+`FreshBootstrapTest` now measures Chirality +0.8454858 at the same Correspondence
+−0.5276331 and Closure 0. Tension +0.1059509 opens Emergence at C1 for either
+chosen Origin label. The Correspondence bound is unchanged; the +0.5 crossover
+requirement applied only when Chirality was −0.5.

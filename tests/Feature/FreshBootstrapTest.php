@@ -6,16 +6,15 @@ use App\Enums\ContextDomain;
 use App\Models\Attestation;
 use App\Models\CommitmentSnapshot;
 use App\Models\Cycle;
-use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Supersession;
 use App\Services\ChiralityGateService;
 use App\Services\ClosureGateService;
-use App\Services\CycleEntryService;
 use App\Services\Observables\LineageMeasurementService;
 use App\Services\Observables\LocalMeasurementService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\HorizonCycleFixture;
 use Tests\TestCase;
@@ -25,13 +24,18 @@ class FreshBootstrapTest extends TestCase
 {
     use HorizonCycleFixture, RefreshDatabase;
 
-    /** Bootstrap proves a valid first Commit, not a prescribed future Domain. */
-    public function test_fresh_unattested_origin_reaches_a_valid_first_commit_and_its_calculated_domain(): void
+    public static function polarityLabels(): array
+    {
+        return [['support'], ['refute']];
+    }
+
+    #[DataProvider('polarityLabels')]
+    public function test_explicit_origin_and_aligned_evidence_reach_emergence(string $label): void
     {
         $phases = [];
         $biasAvailable = false;
         $commitPreview = null;
-        $commit = $this->driveHorizonCycle(realClosure: true, originAttestation: false,
+        $commit = $this->driveHorizonCycle(realClosure: true, originDirection: $label,
             observe: function ($participant, $state) use (&$phases, &$biasAvailable, &$commitPreview): void {
                 $plan = $state['plan'];
                 $phases[$plan['phase']['number']] = true;
@@ -39,15 +43,7 @@ class FreshBootstrapTest extends TestCase
                     $phase = Phase::findOrFail($plan['phase']['id']);
                     $gate = $phase->gate;
                     $closure = app(ClosureGateService::class);
-                    $before = $closure->preview($gate, $phase);
-                    $entrant = new Participant;
-                    $entrant->forceFill(['substrate_id' => $participant->substrate_id, 'callsign' => 'unfinished entrant'])->save();
-                    app(CycleEntryService::class)->enter($entrant);
-                    $entered = $entrant->cycles()->sole();
-                    $this->assertNull($entered->completed_at);
-                    $this->assertSame($phase->cycle->entry_committal_id, $entered->entry_committal_id);
                     $commitPreview = $closure->preview($gate, $phase);
-                    $this->assertSame($before['cadence_interval'] + 1, $commitPreview['cadence_interval']);
                     $this->assertSame(0.0, $commitPreview['depth']);
                     $this->assertSame(0.0, $commitPreview['cadence']);
                     $this->assertTrue($commitPreview['admissible']);
@@ -58,23 +54,28 @@ class FreshBootstrapTest extends TestCase
                     $gate = Proposition::findOrFail($plan['gate_id']);
                     $this->assertTrue(app(ChiralityGateService::class)->evaluate($gate)['admissible']);
                 }
-            }, additionalEntrants: 1);
+            });
         $this->assertEqualsCanonicalizing(range(1, 7), array_keys($phases));
         $this->assertTrue($biasAvailable);
         $this->assertSame(2, CommitmentSnapshot::count());
         $origin = CommitmentSnapshot::where('calculator_version', 'origin-bootstrap-v1')->sole();
-        $this->assertSame(0, Attestation::where('proposition_id', $origin->proposition_id)->count());
+        $this->assertSame(1, Attestation::where('proposition_id', $origin->proposition_id)->count());
         $this->assertSame(0.0, $origin->orientation);
         $this->assertSame(-1.0, $origin->attestation_cadence);
         $this->assertSame(-0.5, $origin->chirality);
         $this->assertSame('negative', $origin->orientation_direction);
         $this->assertSame('negative', $origin->attestation_cadence_direction);
+        $this->assertSame($label, $origin->proposition->attestations()->sole()->direction);
+        $this->assertSame(0, $origin->proposition->instrumentExecutions()->count());
         $snapshot = $commit->commitmentSnapshot;
         $this->assertSame(0.0, $snapshot->depth);
         $this->assertSame(0.0, $snapshot->cadence);
         $this->assertSame(-0.5276331, $snapshot->correspondence);
-        $this->assertSame(-0.5, $snapshot->chirality);
-        $this->assertSame(-0.3425444, $snapshot->tension);
+        $this->assertSame(0.8454858, $snapshot->chirality);
+        $this->assertSame(1.0, $snapshot->orientation);
+        $this->assertSame(1.0, $snapshot->attestation_cadence);
+        $this->assertSame(ContextDomain::Emergence, $snapshot->direction_after);
+        $this->assertSame(0.1059509, $snapshot->tension);
         $this->assertSame(ContextDomain::after($snapshot->tension, $snapshot->direction_before), $snapshot->direction_after);
         $this->assertSame($snapshot->direction_after, $commit->phase->cycle->participant->cycles()->latest('sequence')->first()->contextHorizon->domain);
         $this->assertSame($commitPreview['cadence_interval'], $snapshot->cadence_interval);

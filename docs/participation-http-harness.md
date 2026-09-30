@@ -21,7 +21,7 @@ Even initial setup uses HTTP:
 2. `POST /api/substrates` creates a private substrate.
 3. `POST /api/substrates/{slug}/participants` joins each participant.
 4. `POST /api/substrates/{slug}/participants/{id}/participate/enter` establishes
-   Origin and the initial Horizon with its instrument and optional explicit Attestation,
+   Origin and the initial Horizon with a required explicit Attestation and no Receipt,
    or enters an additional participant into the existing substrate.
 
 After that, helpers read `GET .../participate` and send

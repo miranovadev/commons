@@ -162,7 +162,7 @@ class OperationalCommitmentTest extends TestCase
             } catch (\InvalidArgumentException) {
                 $this->assertDatabaseMissing('propositions', ['statement' => 'Rejected']);
                 $this->assertNull(Phase::findOrFail($state['plan']['phase']['id'])->completed_at);
-                $this->assertDatabaseCount('instrument_executions', 2);
+                $this->assertDatabaseCount('instrument_executions', 1);
             }
         }
         $this->expectException(DomainException::class);

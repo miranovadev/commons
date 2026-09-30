@@ -66,10 +66,10 @@ class RealtimeTest extends TestCase
             array_map(fn ($channel) => $channel->name, $created->broadcastOn()));
         $this->assertTrue(collect($this->notifications)->contains(fn ($event) => $event->broadcastWith() ===
             ['type' => 'participant.state_changed', 'participant_id' => $participant->id]));
-        $this->assertSame('completed', $proposition->instrumentExecutions()->first()->status);
+        $this->assertSame(0, $proposition->instrumentExecutions()->count());
         $this->getJson("/api/substrates/{$substrate->slug}/propositions/{$proposition->id}")
             ->assertOk()->assertJsonPath('data.id', $proposition->id)
-            ->assertJsonPath('data.instruments.0.status', 'completed');
+            ->assertJsonPath('data.instruments', []);
     }
 
     public function test_rollback_discards_even_nested_notifications(): void

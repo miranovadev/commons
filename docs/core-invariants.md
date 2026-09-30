@@ -205,7 +205,7 @@ Receipt weights do not enter attenuation, population aggregation or derived fiel
 
 ## 14. Commitment Requires Grounding, Attestation and Closure
 
-Commit requires a completed qualifying evidence Receipt, an effective Attestation on the selected classification, and aligned Depth/Cadence with hysteresis. Loaded Reinforcement is evidential metadata and is not an admissibility minimum. Origin initialization records its Receipt before freezing and does not require an Attestation. Origin Chirality is -0.5 from one-sided Cycle population. Each direct expressive source is committed once globally; its Committal result is immutable and subsequent development takes place through Variants.
+Commit requires a completed qualifying evidence Receipt, an effective Attestation on the selected classification, and aligned Depth/Cadence with hysteresis. Loaded Reinforcement is evidential metadata and is not an admissibility minimum. Origin initialization requires an explicit effective Support or Refute Attestation before freezing, and creates no Receipt. The chosen label establishes the positive relational polarity; there is no default choice. Origin Chirality is -0.5 from one-sided Cycle population. Each direct expressive source is committed once globally; its Committal result is immutable and subsequent development takes place through Variants.
 
 ## 15. Reinforcement Does Not Suppress Branching
 

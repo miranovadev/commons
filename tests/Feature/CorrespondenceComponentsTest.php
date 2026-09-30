@@ -205,7 +205,7 @@ class CorrespondenceComponentsTest extends TestCase
     private function origin(): Proposition
     {
         $this->createHomologyActor();
-        app(CycleEntryService::class)->enter($this->actor, ['statement' => 'Origin',
+        app(CycleEntryService::class)->enter($this->actor, ['statement' => 'Origin', 'attestation' => ['direction' => 'support'],
             'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/origin']]);
 
         return Proposition::findOrFail($this->actor->fresh()->current_proposition_id);

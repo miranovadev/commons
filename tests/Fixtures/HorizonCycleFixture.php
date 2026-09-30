@@ -13,7 +13,7 @@ use App\Services\ParticipationService;
 
 trait HorizonCycleFixture
 {
-    protected function driveHorizonCycle(int $participantCount = 1, bool $realClosure = false, bool $originAttestation = true, ?callable $observe = null, int $additionalEntrants = 0): Proposition
+    protected function driveHorizonCycle(int $participantCount = 1, bool $realClosure = false, string $originDirection = 'support', ?callable $observe = null, int $additionalEntrants = 0): Proposition
     {
         // Isolate the phase motor; numeric Closure has its own real-calculator suite.
         if (! $realClosure) {
@@ -26,8 +26,7 @@ trait HorizonCycleFixture
         $participant = (new Participant)->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'solo', 'max_read_count' => 25]);
         $participant->save();
         $service = app(ParticipationService::class);
-        $state = $service->enter($participant, ['statement' => 'Origin', ...($originAttestation ? ['attestation' => ['direction' => 'support']] : []),
-            'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/origin']]);
+        $state = $service->enter($participant, ['statement' => 'Origin', 'attestation' => ['direction' => $originDirection]]);
         $originId = $state['current_proposition_id'];
         $participants = [$participant];
         for ($i = 1; $i < $participantCount; $i++) {
@@ -61,7 +60,7 @@ trait HorizonCycleFixture
                 $input['instrument'] = ['kind' => 'hyperlink', 'reference' => 'https://example.test/evidence/'.$step];
             }
             if ($action === 'attestation.create') {
-                $choice = collect($definition['anyOf'])->first(fn ($choice) => $choice['properties']['direction']['enum'][0] === 'support')
+                $choice = collect($definition['anyOf'])->first(fn ($choice) => $choice['properties']['direction']['enum'][0] === $originDirection)
                     ?? $definition['anyOf'][0];
                 $input['proposition_id'] = $choice['properties']['proposition_id']['enum'][0];
                 $input['direction'] = $choice['properties']['direction']['enum'][0];

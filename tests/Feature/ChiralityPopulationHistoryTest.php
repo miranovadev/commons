@@ -113,7 +113,7 @@ class ChiralityPopulationHistoryTest extends TestCase
     public function test_attestation_and_replacement_are_observed_through_real_dispatch(): void
     {
         $this->createHomologyActor();
-        app(CycleEntryService::class)->enter($this->actor, ['statement' => 'Origin',
+        app(CycleEntryService::class)->enter($this->actor, ['statement' => 'Origin', 'attestation' => ['direction' => 'support'],
             'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/history-origin']]);
         $cycle = $this->actor->cycles()->latest('sequence')->firstOrFail();
         $phase = $cycle->phases()->whereNull('completed_at')->sole();
@@ -121,13 +121,13 @@ class ChiralityPopulationHistoryTest extends TestCase
         $node = $dispatcher->dispatch($this->actor, $phase, ['action' => 'proposition.variant', 'statement' => 'Observed source']);
         $history = app(ChiralityPopulationHistoryService::class);
         $key = $history->key($node);
-        $this->assertSame(.3, (float) DB::table('chirality_population_observations')->where('population_key', $key)->latest('id')->value('mean'));
+        $this->assertSame(-.5, (float) DB::table('chirality_population_observations')->where('population_key', $key)->latest('id')->value('mean'));
         $beforeReceipt = DB::table('chirality_population_observations')->get()->toJson();
         $dispatcher->dispatch($this->actor, $phase, ['action' => 'instrument.execute', 'proposition_id' => $node->id,
             'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/history-evidence']]);
         $this->assertSame($beforeReceipt, DB::table('chirality_population_observations')->get()->toJson());
         $dispatcher->dispatch($this->actor, $phase, ['action' => 'attestation.create', 'proposition_id' => $node->id, 'direction' => 'support']);
-        $this->assertSame(-.5, (float) DB::table('chirality_population_observations')->where('population_key', $key)->latest('id')->value('mean'));
+        $this->assertSame(.7, (float) DB::table('chirality_population_observations')->where('population_key', $key)->latest('id')->value('mean'));
         $phase->forceFill(['completed_at' => now()])->save();
         $next = new Phase;
         $next->forceFill(['cycle_id' => $cycle->id, 'kind' => $phase->kind, 'write_register' => $phase->write_register,

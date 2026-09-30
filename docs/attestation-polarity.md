@@ -28,7 +28,7 @@ an Expressive parent's direction, or the broader Context Horizon changes.
 | Negative | Negative | Positive | Negative |
 
 Origin is the unique bootstrap exception. It starts with positive direction;
-without an initial Attestation its support frame defaults to Positive. An optional explicit initial Attestation may choose the **label** for that direction, not its sign.
+the creator must explicitly choose Support or Refute as its initial Attestation **label** for that direction, not its sign. No label is selected by default. The Attestation and immutable frame exist before measurement and snapshot publication in the atomic Origin transaction. Origin requires no Receipt; ordinary Commit grounding still requires effective Attestation plus completed evidence. Positive and negative are relational directions, not good and bad.
 
 | Origin's initial label | Initial direction | Region Support | Region Refute |
 | --- | --- | --- | --- |

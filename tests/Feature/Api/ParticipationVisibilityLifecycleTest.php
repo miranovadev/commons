@@ -20,6 +20,7 @@ class ParticipationVisibilityLifecycleTest extends ScriptedParticipationTestCase
         $journey = $this->continueParticipationScript(2);
         $foreignOrigin = $journey['responses'][0]['current_proposition_id'];
         $foreignChild = $journey['responses'][1]['current_proposition_id'];
+        $this->observeExistingWrite('foreign-evidence-author', $foreignChild);
         $foreignReceipts = DB::table('receipts')->pluck('id')->all();
         $foreignAttestations = DB::table('attestations')->pluck('id')->all();
         $foreignEdges = DB::table('supersessions')->pluck('id')->all();
@@ -30,6 +31,7 @@ class ParticipationVisibilityLifecycleTest extends ScriptedParticipationTestCase
         $origin = $journey['responses'][2]['current_proposition_id'];
         $signal = $journey['responses'][4]['current_proposition_id'];
         $distant = $journey['responses'][5]['current_proposition_id'];
+        $this->observeExistingWrite('local-evidence-author', $signal);
         $state = $this->readParticipation($observer);
         $originCard = $this->visibleProposition($state, $origin);
         $signalCard = $this->visibleProposition($state, $signal);
@@ -38,8 +40,8 @@ class ParticipationVisibilityLifecycleTest extends ScriptedParticipationTestCase
         $this->assertSame([$origin], $signalCard['parent_ids']);
         $this->assertDatabaseHas('supersessions', ['source_proposition_id' => $origin, 'target_proposition_id' => $signal]);
         $localReceipt = DB::table('receipts')->whereNotIn('id', $foreignReceipts)->sole()->id;
-        $this->assertNotContains($localReceipt, array_column($state['plan']['receipts'], 'id'));
-        $this->assertContains($localReceipt, array_column($originCard['receipts'], 'id'));
+        $this->assertSame([], $originCard['receipts'] ?? []);
+        $this->assertContains($localReceipt, array_column($signalCard['receipts'], 'id'));
         $json = json_encode($state);
         foreach ([$foreignOrigin, $foreignChild, $distant, ...$foreignReceipts, ...$foreignAttestations, ...$foreignEdges,
             'Foreign branch content.', 'Distant forward detail.'] as $excluded) {
@@ -55,5 +57,13 @@ class ParticipationVisibilityLifecycleTest extends ScriptedParticipationTestCase
         $this->assertSame($before, DB::table('propositions')->count());
         $this->assertSame($state['plan']['phase']['id'], $this->readParticipation($observer)['plan']['phase']['id']);
         $this->getJson('/api/substrates/'.$localSlug.'/propositions/'.$foreignChild)->assertNotFound();
+    }
+
+    private function observeExistingWrite(string $callsign, string $write): void
+    {
+        $author = $this->joinParticipant($callsign);
+        $state = $this->enterParticipant($author);
+        $this->contribute($author, ['action' => 'instrument.execute', 'proposition_id' => $write,
+            'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://evidence.example.test/'.$callsign]], $state);
     }
 }
