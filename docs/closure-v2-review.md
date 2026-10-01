@@ -1,41 +1,51 @@
 # Closure v2 review boundary
 
-This draft implements immutable Proposition birth observations, committed-only
+The draft implements immutable Proposition birth observations, committed-only
 lateral placement, full same-Domain depth counts, population-CV Cadence and the
-approved temporary-next-child rule. The focused Closure/observable run passes
-44 tests / 382 assertions; the frontend build and seven inspector tests pass.
+approved temporary-next-child placement. Crossover Margin now consumes the
+canonical prospective Committed Cardinal Position and its retained direction.
+Its optimistic endpoint policy, field projection, margin sign, zero threshold,
+Rest eligibility and backward recovery walk are unchanged.
 
-## Existing Crossover Margin still assumes the retired Closure composition
+Controlled tests now supply consistent birth observations instead of Gate answers
+that contradict the new Committal's measurement. Recovery fixtures author open
+v2 geometry where they require an open crossover; preliminary Rest is allowed to
+make its existing crossover-based selection. No production recovery policy was
+changed. PostgreSQL trigger installation also tolerates test database resets,
+and the inspector contract expects the new component labels.
 
-`CrossoverMarginService::inspect()` obtains prospective Depth, resolves its
-direction, chooses an optimistic admissible Cadence endpoint and calculates
-`(Depth + endpoint) / 2` through `new ClosureValues(...)`.
+## Stop: the existing natural catastrophe path cannot reach its second Commit
 
-Closure v2 instead calculates `(Depth + Lateral + 2 * Cadence) / 4`, with
-Committed Cardinal Position as the outer structural component. Even at identical
-Depth and Cadence, the old expression is not the new Closure bound:
+The smallest unbranched case is Origin E, followed by C1 S at lateral coordinate 1.
+For the next Commit, whether its Domain is E or S:
 
-| Depth | Lateral | Cadence endpoint | Old Closure expression | Closure v2 |
-|---|---|---|---|---|
-| 0 | 1 | 0 | 0 | 0.25 |
+| Component | Value | Direction |
+|---|---:|---|
+| Committal Depth | 0 | Retained Negative |
+| Lateral Committal Position | 1 | Positive |
+| Committed Cardinal Position | 0.5 | Positive |
+| Committal Cadence | 0 | Retained Negative |
 
-This is an algebraic counterexample, not a claim that every endpoint in this
-example is attainable in a given historical region. A bound also needs to agree
-with the relevant retained component directions and available interval history.
+One Domain still has only one interval sample, so Cadence remains in bootstrap.
+Increasing the open-region population cannot supply the missing committed sample.
+The unchanged direction-agreement requirement therefore rejects the Commit.
+`ClosureBirthTest` explicitly proves both Domains, at populations 1 and 5.
 
-The existing Rest recovery code consumes this bound to decide whether to skip
-its current Commit Region. Updating it therefore touches the explicitly deferred
-continuation/path-viability area; retaining it does not establish a valid v2 bound.
-This draft leaves that implementation unchanged for an explicit scope decision.
+`NaturalBoundaryHistory` attempts exactly this second Settlement Commit. Its
+Core natural-boundary test and Integration catastrophe/recovery test consequently
+fail before a catastrophe or recovery occurs. Merely updating a projected value
+cannot preserve that authored path. Permitting it would require an admissibility
+or bootstrap decision; establishing a different reachable branching history is
+separate path-design work. Neither is silently introduced here. This does not
+claim that every possible branched topology is blocked.
 
-The broader local runs expose changed Crossover/Recovery expectations and a
-constructed natural-catastrophe history that no longer passes its Commit gate.
-There are also old controlled-field fixtures whose mock Gate values must be made
-consistent with their authored birth observations. Those failures are not grounds
-to weaken birth immutability or the real Commit guard. Some local checks require
-PostgreSQL and cannot be validated by the available SQLite runtime.
+The existing natural-path tests remain failing, rather than being skipped,
+weakened, or converted to mocked measurements. This draft is not ready to merge.
 
-This draft is not ready to merge. Before completing broad validation, decide
-whether adapting the existing Crossover Margin consumer to Closure v2 belongs in
-this correction, or how that consumer should be handled until the next task.
-No new continuation filtering, movement, Rest or recovery policy has been added.
+## Validation
+
+The focused Closure/observable/Commit-region/Crossover run passed 62 tests / 566
+assertions before adding the explicit second-Commit boundary cases. The reconciled
+controlled recovery suite passed 56 tests / 619 assertions. PostgreSQL Core and
+Integration reruns and the latest focused results are recorded in the draft PR.
+Local SQLite broad runs cannot validate PostgreSQL-specific invariants.

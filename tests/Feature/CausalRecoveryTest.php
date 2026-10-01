@@ -162,7 +162,7 @@ class CausalRecoveryTest extends TestCase
     public function test_tragedy_receipt_stays_at_the_nearest_recovery_and_is_shared_only_at_its_destination(): void
     {
         $far = $this->committal($this->root, .95);
-        $near = $this->committal($this->root, .02, $far);
+        $near = $this->committal($this->root, .02, $far, observables: [-.2, -.2, .46]);
         DB::table('supersessions')->where('target_proposition_id', $near->id)->update(['type' => 'commit']);
         $position = $this->expressive($this->root, $near);
         $this->opportunity($far);
@@ -192,7 +192,7 @@ class CausalRecoveryTest extends TestCase
     {
         $a = $this->committal($this->root, .2);
         $b = $this->committal($this->root, .95, $a);
-        $c = $this->committal($this->root, .01, $b);
+        $c = $this->committal($this->root, .01, $b, observables: [-.2, -.2, .43]);
         DB::table('supersessions')->whereIn('target_proposition_id', [$b->id, $c->id])->update(['type' => 'commit']);
         $position = $this->expressive($this->root, $c);
         $this->opportunity($a);
@@ -1099,8 +1099,11 @@ class CausalRecoveryTest extends TestCase
         $this->assertSame($seed->id, $terminal->phase->cycle->entry_committal_id);
         $this->assertSame($seed->id, app(CommitRegionService::class)->seedFor($terminal)?->id);
         $this->assertFalse(app(ExhaustionService::class)->unavailable($seed));
+        // Preparatory Rest may already have skipped a closed crossover. Entry
+        // preparation must preserve that selection, not proactively route again.
+        $selected = $phase->cycle->participant->fresh()->current_proposition_id;
         app(CycleEntryService::class)->prepare($phase->cycle->participant);
-        $this->assertSame($seed->id, $phase->cycle->participant->fresh()->current_proposition_id);
+        $this->assertSame($selected, $phase->cycle->participant->fresh()->current_proposition_id);
         $gate = $this->node($this->phase($horizon, $seed, PhaseKind::Constrain), $seed);
         $attempt = $this->phase($horizon, $gate, PhaseKind::Disperse);
         $this->resolveExpressiveFieldFixture(1);
@@ -1155,6 +1158,7 @@ class CausalRecoveryTest extends TestCase
     private function phase(ContextHorizon $horizon, ?Proposition $gate = null, PhaseKind $kind = PhaseKind::Order, ?Participant $participant = null): Phase
     {
         $participant ??= $this->participant();
+        $gate ??= $horizon->opened_by_proposition_id ? Proposition::findOrFail($horizon->opened_by_proposition_id) : null;
         $cycle = new Cycle;
         $cycle->forceFill(['participant_id' => $participant->id, 'context_horizon_id' => $horizon->id,
             'sequence' => (int) $participant->cycles()->max('sequence') + 1,

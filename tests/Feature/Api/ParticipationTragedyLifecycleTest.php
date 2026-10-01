@@ -66,9 +66,9 @@ class ParticipationTragedyLifecycleTest extends ScriptedParticipationTestCase
         $this->assertSame($seed->id, $diagnostic['governing_committal_id']);
         $this->assertSame('emergence', $diagnostic['domain']);
         foreach (['correspondence' => -0.5276331, 'chirality' => 0.7666717,
-            'prospective_depth' => 1, 'admissible_cadence_bound' => 0,
-            'tension_bound' => 0.2463462,
-            'crossover_margin' => -0.2463462] as $name => $value) {
+            'prospective_depth' => 0, 'prospective_committed_cardinal_position' => .5, 'admissible_cadence_bound' => 0,
+            'tension_bound' => 0.1630128,
+            'crossover_margin' => -0.1630128] as $name => $value) {
             $this->assertEqualsWithDelta($value, $diagnostic[$name], 1e-7, $name.' '.json_encode($diagnostic));
         }
         $this->assertTrue($diagnostic['closed']);

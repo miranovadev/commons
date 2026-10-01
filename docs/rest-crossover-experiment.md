@@ -11,15 +11,20 @@ and Chirality are the entry seed's authoritative committed snapshot values. This
 is a conditional bound on **current committed geometry**, not a prediction about
 future expressive measurements or Future Reopening Capacity.
 
-Depth is computed for a hypothetical next Committal in the resting Cycle's Domain,
-with its entry seed as the canonical committed predecessor. `ClosureCalculator`
-follows creating-Cycle governance; the seed's frozen Depth/Cadence are not reused.
-Zero Depth retains the seed's previous Depth direction. The optimistic Cadence
-bound is 0 or +1 in Settlement (negative or positive Depth direction), and -1 or
-0 in Emergence. Zero is an optimistic endpoint even where hysteresis makes it a
-supremum rather than an attainable value.
+Committed Cardinal Position is computed for a hypothetical next Committal in the
+resting Cycle's Domain, using the canonical `ClosureBirthService` and its temporary
+next-child placement. It includes full committed Domain depth and frozen lateral
+history. No Proposition or birth observation is persisted. The component's retained
+direction comes from that observation, including at zero; snapshot Depth direction
+is not a substitute.
 
-The prospective Closure bound is the pure mean `(D + C) / 2`. Receipt state
+The existing optimistic Cadence endpoint policy is unchanged: 0 or +1 in Settlement
+(negative or positive Cardinal direction), and -1 or 0 in Emergence. Zero remains
+an optimistic endpoint even where hysteresis makes it a supremum rather than an
+attainable value. This does not optimize attainable CVs or predict future paths.
+
+The prospective Closure bound is `(Committed Cardinal Position + endpoint) / 2`.
+Receipt state
 and reinforcement count do not enter this calculation or its diagnostic contract. The canonical field
 projection supplies Tension, algebraically `(Correspondence + Chirality + Closure)
 / 3`, using its existing seven-decimal rounding. Margin is Tension in Settlement

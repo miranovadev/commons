@@ -21,6 +21,7 @@ use App\Services\PropositionMeasurementService;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class ClosureBirthTest extends TestCase
@@ -275,6 +276,38 @@ class ClosureBirthTest extends TestCase
         $zero = $this->observation($this->born($head));
         $this->assertSame(0.0, $zero['depth']);
         $this->assertSame('positive', $zero['depth_direction']);
+    }
+
+    public static function secondCommitDomains(): array
+    {
+        return [['settlement'], ['emergence']];
+    }
+
+    #[DataProvider('secondCommitDomains')]
+    public function test_unbranched_second_commit_has_opposed_cardinal_and_bootstrap_cadence_directions(string $domain): void
+    {
+        $origin = $this->commit(null, 'settlement');
+        $first = $this->commit($origin, $domain);
+        $candidate = new Proposition;
+        $candidate->forceFill(['tier' => 'committal']);
+        $phase = new Phase;
+        $phase->setRelation('cycle', $this->cycle($first));
+        $candidate->setRelation('phase', $phase);
+        $births = app(ClosureBirthService::class);
+        foreach ([1, 5] as $population) {
+            while (Cycle::where('entry_committal_id', $first->id)->count() < $population) {
+                $this->cycle($first);
+            }
+            $observation = $births->prospective($candidate);
+            $this->assertSame(0.0, $observation['depth']);
+            $this->assertSame(1.0, $observation['lateral_committal_position']);
+            $this->assertSame(0.5, $observation['committed_cardinal_position']);
+            $this->assertSame('positive', $observation['committed_cardinal_position_direction']);
+            $this->assertSame(0.0, $observation['cadence']);
+            $this->assertSame('negative', $observation['cadence_direction']);
+            $this->assertFalse($observation['admissible']);
+        }
+        $this->assertDatabaseCount('closure_births', 2);
     }
 
     public function test_birth_observation_is_database_immutable(): void
