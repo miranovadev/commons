@@ -20,7 +20,9 @@ return new class extends Migration
             DB::unprepared(<<<'SQL'
                 CREATE FUNCTION commons_closure_birth_immutable() RETURNS trigger LANGUAGE plpgsql AS $$
                 BEGIN
-                    IF NEW IS DISTINCT FROM OLD THEN
+                    IF NEW.proposition_id IS DISTINCT FROM OLD.proposition_id
+                        OR NEW.version IS DISTINCT FROM OLD.version
+                        OR NEW.observation::text IS DISTINCT FROM OLD.observation::text THEN
                         RAISE EXCEPTION 'A Closure birth observation cannot change';
                     END IF;
                     RETURN NEW;
