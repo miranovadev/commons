@@ -12,11 +12,12 @@ final readonly class LocalMeasurements
         public ?float $closureValue = null,
         public ?ChiralityValues $chiralityComponents = null,
         public ?CorrespondenceValues $correspondenceComponents = null,
+        public ?ClosureValues $closureComponents = null,
     ) {}
 
     public function closure(): ClosureValues
     {
-        return new ClosureValues($this->depth, $this->cadence, $this->closureValue);
+        return $this->closureComponents ?? new ClosureValues($this->depth, $this->cadence, $this->closureValue);
     }
 
     public function observables(): ObservableValues

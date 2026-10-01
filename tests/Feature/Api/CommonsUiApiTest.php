@@ -122,7 +122,7 @@ class CommonsUiApiTest extends TestCase
             ->assertJsonPath('data.1.parent_ids.0', $origin->getKey())
             ->assertJsonPath('data.1.observables.correspondence', 0.75)
             ->assertJsonPath('data.1.observables.chirality', -0.25)
-            ->assertJsonPath('data.1.observables.closure', null)
+            ->assertJsonPath('data.1.observables.closure', -1)
             ->assertJsonPath('data.1.context_horizon.sequence', 1)
             ->assertJsonPath(
                 'data.1.context_horizon.domain',

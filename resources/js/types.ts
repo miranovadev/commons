@@ -15,6 +15,13 @@ export interface Observables {
 export type ReceiptReference = Pick<ReceiptContext, 'id' | 'type' | 'reference' | 'loaded'>;
 
 export interface ClosureHistoryPoint {
+  committed_cardinal_position?: number | null;
+  committed_cardinal_position_direction?: 'positive' | 'negative' | null;
+  lateral_committal_position?: number | null;
+  lateral_committal_position_direction?: 'positive' | 'negative' | null;
+  committed_lateral_position?: number | null;
+  historical_lateral_centroid?: number | null;
+  cadence_interval?: number | null;
   proposition_id: Identifier;
   depth: number | null;
   cadence: number | null;
@@ -324,6 +331,8 @@ export interface ParticipantPlan {
     reinforcement_count: number;
     closure_enforced: boolean;
     closure?: {
+      committed_cardinal_position?: number | null;
+      committed_cardinal_position_direction?: ComponentDirection;
       depth: number | null;
       cadence: number | null;
       closure: number | null;
@@ -370,6 +379,8 @@ export interface Participation {
   horizon_sequence?: number | null;
   context_horizon_id?: Identifier | null;
   last_commitment?: {
+    committed_cardinal_position?: number | null;
+    committed_cardinal_position_direction?: ComponentDirection;
     proposition_id: Identifier;
     depth: number | null;
     cadence: number | null;

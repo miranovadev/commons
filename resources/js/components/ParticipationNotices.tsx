@@ -34,7 +34,7 @@ export function participationNotices({ participation, plan, canCommit, canRest, 
   if (last) notices.push({ id: 'last-commitment', title: 'Latest Commitment', color: 'indigo', icon: IconGitCommit, content: <Stack gap="xs">
     <Text size="sm">{last.domain_before} → {last.domain_after} · {last.closure_boundary ? 'Closure Boundary created' : 'No Closure Boundary'}</Text>
     <Text size="xs">Tension: {last.tension_before ?? 'unrecorded'} → {last.tension_after}</Text>
-    <Text size="xs">Depth: {last.depth ?? 'unrecorded'} ({last.depth_direction ?? 'unknown'}) · Cadence: {last.cadence ?? 'unrecorded'} ({last.cadence_direction ?? 'unknown'})</Text>
+    <Text size="xs">Committed Cardinal Position: {last.committed_cardinal_position ?? 'unrecorded'} ({last.committed_cardinal_position_direction ?? 'unknown'}) · Cadence: {last.cadence ?? 'unrecorded'} ({last.cadence_direction ?? 'unknown'})</Text>
     <Text size="xs" c="dimmed">Current Domain: {participation.domain} · Horizon {participation.horizon_sequence}</Text>
   </Stack> });
   if (plan?.commitment) notices.push({ id: 'commitment', title: plan.commitment.requirements.phase_position === false ? 'No phase-6 candidate at this Gate' : plan.commitment.requirements.write_opportunity === false ? 'Source already committed' : canCommit ? 'Committable candidate' : 'No committable candidate',

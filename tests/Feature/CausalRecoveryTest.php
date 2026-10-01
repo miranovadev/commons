@@ -991,6 +991,7 @@ class CausalRecoveryTest extends TestCase
         $before = DB::table('potential_region_states')->whereIn('context_horizon_id', [$this->root->id, $h2->id])
             ->orderBy('context_horizon_id')->get()->toJson();
         $changed = Proposition::whereHas('phase.cycle', fn ($q) => $q->where('context_horizon_id', $h3->id))->where('tier', 'expressive')->sole();
+        $this->controlledBirthClosureFixture(.005, $changed->id);
         app(PropositionMeasurementService::class)->project($changed, .005, .005, .005);
         $this->assertTrue(app(PotentialProjectionService::class)->refresh($this->substrate->id));
         $this->assertSame($before, DB::table('potential_region_states')->whereIn('context_horizon_id', [$this->root->id, $h2->id])
@@ -1246,6 +1247,7 @@ class CausalRecoveryTest extends TestCase
     private function refreshMeasurements(): void
     {
         foreach ($this->measurements as $id => $value) {
+            $this->controlledBirthClosureFixture($value, $id);
             app(PropositionMeasurementService::class)->project(Proposition::findOrFail($id), $value, $value, $value);
         }
         // Routing fixtures supply controlled raw values. Apply their actual

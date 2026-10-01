@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Enums\PhaseKind;
-use App\Exceptions\ClosureHistoryUnavailable;
 use App\Models\CommitmentSnapshot;
 use App\Models\Cycle;
 use App\Models\Participant;
@@ -88,7 +87,7 @@ class CommittalClosureTest extends TestCase
         }
     }
 
-    public function test_symmetric_bootstrap_and_domain_runs_follow_only_cycle_entry(): void
+    public function test_symmetric_bootstrap_and_full_domain_counts_follow_only_cycle_entry(): void
     {
         $calc = app(ClosureCalculator::class);
         $e0 = $this->origin();
@@ -107,10 +106,10 @@ class CommittalClosureTest extends TestCase
         $this->assertSame(-0.3333333, $calc->components($s3)->depth);
         $this->freeze($s3, 1, 'emergence');
         $e1 = $this->candidate($s3);
-        $this->assertSame(-0.3333333, $calc->components($e1)->depth);
+        $this->assertSame(0.3333333, $calc->components($e1)->depth);
         $this->freeze($e1, 1, 'emergence');
         $e2 = $this->candidate($e1);
-        $this->assertSame(0.3333333, $calc->components($e2)->depth);
+        $this->assertSame(1.0, $calc->components($e2)->depth);
         $this->assertSame(1.0, $calc->components($e2)->cadence);
     }
 
@@ -135,7 +134,7 @@ class CommittalClosureTest extends TestCase
         $this->assertSame(5, $b->commitmentSnapshot->cadence_interval);
     }
 
-    public function test_expressive_closure_is_prospective_and_entry_changes_its_live_interval_without_writes(): void
+    public function test_expressive_birth_interval_is_frozen_without_read_time_writes(): void
     {
         $origin = $this->origin();
         $candidate = $this->candidate($origin);
@@ -154,9 +153,11 @@ class CommittalClosureTest extends TestCase
         $this->assertCount(0, $writes);
         $other = $this->candidate($origin);
         $this->assertNull($other->phase->cycle->completed_at);
-        $this->assertSame(2, $lineage->interval($candidate));
+        $this->assertSame(1, $lineage->interval($candidate));
+        $this->assertSame(2, $lineage->interval($other));
         $other->phase->cycle->forceFill(['completed_at' => now()])->save();
-        $this->assertSame(2, $lineage->interval($candidate));
+        $this->assertSame(1, $lineage->interval($candidate));
+        $this->assertSame(2, $lineage->interval($other));
         $this->assertSame($before, DB::table('commitment_snapshots')->get()->toJson());
     }
 
@@ -173,24 +174,21 @@ class CommittalClosureTest extends TestCase
         $this->assertSame($c1->id, app(ClosureGateService::class)->historyFor($c2b)->proposition_id);
         $values = app(ClosureCalculator::class)->components($c2b);
         $this->assertSame(0.0, $values->depth);
-        $this->assertSame(-0.6, $values->cadence); // Two Cycles in C1, compared with its frozen ten.
+        $this->assertSame(0.0, $values->cadence); // Emergence has only one usable sample.
         $this->assertSame('negative', $values->resolve()['depth_direction']);
     }
 
-    public function test_ambiguous_legacy_interval_is_explicitly_unavailable_without_rewriting_observables(): void
+    public function test_missing_committed_birth_state_blocks_preview_but_does_not_rewrite_existing_births(): void
     {
         $a = $this->origin();
-        $b = $this->freeze($this->candidate($a), null, 'settlement');
+        $b = $this->freeze($this->candidate($a), 1, 'settlement');
         $c = $this->candidate($b);
-        $before = $b->commitmentSnapshot->getAttributes();
+        $before = app(ClosureCalculator::class)->components($c)->average();
+        DB::table('closure_births')->where('proposition_id', $b->id)->delete();
         $preview = app(ClosureGateService::class)->preview($b, $c->phase);
         $this->assertFalse($preview['admissible']);
-        $this->assertSame('cadence_history_unavailable', $preview['unavailable_reason']);
-        $this->assertNull($preview['cadence']);
-        $this->assertSame($before, $b->commitmentSnapshot->fresh()->getAttributes());
-        $c->tier = 'expressive'; // In-memory observation only; no historical rewrite.
-        $this->expectException(ClosureHistoryUnavailable::class);
-        app(ClosureCalculator::class)->components($c);
+        $this->assertSame('closure_birth_history_unavailable', $preview['unavailable_reason']);
+        $this->assertSame($before, app(ClosureCalculator::class)->components($c)->average());
     }
 
     public function test_migration_backfills_only_proven_intervals_and_leaves_entry_and_observables_unchanged(): void

@@ -6,7 +6,7 @@ use App\Enums\ObservableDirection;
 
 final readonly class ClosureValues
 {
-    public function __construct(public float $depth, public float $cadence, public ?float $measuredClosure = null) {}
+    public function __construct(public float $depth, public float $cadence, public ?float $measuredClosure = null, public ?array $birthObservation = null) {}
 
     public function average(): float
     {
@@ -18,6 +18,9 @@ final readonly class ClosureValues
         ObservableDirection $previousDepth = ObservableDirection::Negative,
         ObservableDirection $previousCadence = ObservableDirection::Negative,
     ): array {
+        if ($this->birthObservation !== null) {
+            return $this->birthObservation;
+        }
         $depth = ObservableDirection::after($this->depth, $previousDepth);
         $cadence = ObservableDirection::after($this->cadence, $previousCadence);
 

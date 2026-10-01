@@ -1,7 +1,7 @@
 # Closure hysteresis and Domain transitions
 
 Closure, performed during Order — Write, evaluates each causally local expressive
-Write independently from that Write's Depth/Cadence, lineage/history and
+Write independently from that new Committal's committed geometry/Cadence, lineage/history and
 participation. It is not a region-wide cross-lineage comparison or candidate
 enumeration. All local expressive Writes remain visible and retain valid
 expressive actions wherever the Phase rules permit them. Only Writes with
@@ -14,29 +14,27 @@ and committed-lineage geometry as actual Commitment. Commit inherits effective
 Attestations and completed Receipts by reference for grounding. Preview writes no
 propositions, edges or snapshots; dispatch reevaluates under the substrate lock.
 
-Depth compares consecutive committed Domain-run lengths. Cadence compares the
-latest two direct ancestral inter-Commit intervals, including every Cycle entered in the exact entry/Horizon basin. Completion is irrelevant. Neither uses Receipt count or Phase-touch weighting. Origin has
-Depth/Cadence -1; the first ordinary Commit has both 0 with negative hysteresis.
-Later candidates use measured history. See [Observables](observables.md).
+Closure v2 is frozen at each Proposition birth. Its outer components are
+Committed Cardinal Position and Committal Cadence, equally weighted. Committed
+Cardinal Position equally combines full-ancestry Committal Depth and Lateral
+Committal Position against the frozen same-Domain historical centroid. Cadence
+compares per-Domain population CVs over full branch-local interval histories.
+See [the canonical Closure definition](observables.md#closure-v2-committed-historical-crystallization).
 
-Depth and Cadence are retained separately (seven-decimal precision). Each
-positive/negative value selects that direction; zero retains the prior committed
-direction. Both directions must match. Closure is `(Depth + Cadence) / 2`.
-Receipt loads cannot change the components, Closure, directions or admissibility.
-Persisted snapshots remain immutable, including historically reinforced Closure.
-See [Reinforcement](reinforcement.md).
+Each component has independent hysteresis. Nonzero uses its own sign; zero retains
+the direct committed predecessor's direction; absent history uses Negative.
+Committed Cardinal Position and Cadence directions must agree for Commit.
+Depth and Lateral expose their own retained directions as child diagnostics.
+Origin components are -1 and its interval is 1. Missing comparative history produces
+0 under the documented bootstrap rules, never a new direction default.
 
-This applies [Invariant 4: Zero Does Not Erase Direction](core-invariants.md#4-zero-does-not-erase-direction)
-and [Invariant 7: Reference Frames Must Remain Distinct](core-invariants.md#7-reference-frames-must-remain-distinct):
-each component retains its own direction under the documented history rules.
-
-Direction history follows the direct creating-Cycle entry Committal chain.
-Unrelated branches and Supersession-parent unions do not supply committed Closure
-history. Expressive work measures exactly one prospective next Commit through
-the same calculation as Order preview. Before C1 this is 0/0. No hypothetical
-structure is persisted.
-Unavailable historical intervals block prospective Commitment explicitly rather
-than guessing a value. Every new non-Origin Commit freezes a positive interval. Frozen historical snapshots are never rewritten.
+An expressive birth observes a temporary next committed slot without reserving it.
+Its stored Closure never changes. Preview evaluates the prospective **new Committal**
+at today's interval and slot. The actual Committal freezes its own birth measurement,
+which can differ from its expressive source's older observation. Preview adds no
+Proposition, causal edge or reserved slot. Grounding and movement are unchanged.
+Missing durable birth state fails closed; current population is never a historical
+reconstruction. Receipt loads cannot change frozen Closure.
 
 `plan.commitment.closure` exposes candidate values, directions, and history.
 `requirements.closure` is an actual boolean and `closure_enforced` is true.

@@ -27,6 +27,7 @@ class CommitmentSnapshot extends Model
             'orientation' => 'float',
             'attestation_cadence' => 'float',
             'closure' => 'float',
+            'closure_observation' => 'array',
             'depth' => 'float',
             'cadence' => 'float',
             'cadence_interval' => 'integer',
@@ -63,6 +64,14 @@ class CommitmentSnapshot extends Model
     public function supersession(): BelongsTo
     {
         return $this->belongsTo(Supersession::class);
+    }
+
+    public function cardinalDirection(): ?ObservableDirection
+    {
+        $direction = $this->closure_observation['committed_cardinal_position_direction'] ?? null;
+
+        // Read existing frozen legacy snapshots without inventing a new observation.
+        return $direction === null ? $this->depth_direction : ObservableDirection::from($direction);
     }
 
     public function isClosureBoundary(): bool

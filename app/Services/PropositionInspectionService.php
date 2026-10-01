@@ -101,12 +101,14 @@ final readonly class PropositionInspectionService
     public function history(Proposition $position): array
     {
         $records = $this->lineage->records($position);
+        $births = DB::table('closure_births')->whereIn('proposition_id', $records->keys())->get()->keyBy('proposition_id');
         $id = $position->id;
         $points = [];
         $seen = [];
         while ($id !== null && ! isset($seen[$id]) && ($record = $records->get($id)) !== null) {
             $seen[$id] = true;
             $points[] = [
+                ...($births->has($id) ? json_decode($births[$id]->observation, true, flags: JSON_THROW_ON_ERROR) : []),
                 'proposition_id' => $id,
                 'depth' => $record->depth, 'cadence' => $record->cadence,
                 'depth_direction' => $record->depth_direction?->value,
