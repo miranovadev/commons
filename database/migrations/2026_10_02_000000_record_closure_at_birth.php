@@ -18,7 +18,7 @@ return new class extends Migration
         // No backfill: present-day population cannot reconstruct a past birth.
         if (DB::getDriverName() === 'pgsql') {
             DB::unprepared(<<<'SQL'
-                CREATE FUNCTION commons_closure_birth_immutable() RETURNS trigger LANGUAGE plpgsql AS $$
+                CREATE OR REPLACE FUNCTION commons_closure_birth_immutable() RETURNS trigger LANGUAGE plpgsql AS $$
                 BEGIN
                     IF NEW.proposition_id IS DISTINCT FROM OLD.proposition_id
                         OR NEW.version IS DISTINCT FROM OLD.version

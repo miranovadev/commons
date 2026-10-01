@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Contracts\ParticipantInference;
 use App\Contracts\WebSearchProvider;
 use App\Domain\Evidence\SearchObservation;
-use App\Domain\Observables\ClosureValues;
 use App\Enums\PhaseKind;
 use App\Jobs\WakeParticipant;
 use App\Models\Connection;
@@ -17,7 +16,6 @@ use App\Models\Proposition;
 use App\Models\Receipt;
 use App\Models\Substrate;
 use App\Models\Tragedy;
-use App\Services\ClosureGateService;
 use App\Services\CycleEntryService;
 use App\Services\DueParticipantWakeDispatcher;
 use App\Services\InputSchemaService;
@@ -364,8 +362,7 @@ class ParticipantWakeTest extends TestCase
             $nodes[] = $node;
             $parent = $node;
         }
-        $closure = [...(new ClosureValues(1, 1))->resolve(), 'history_proposition_id' => null, 'history_source' => 'negative-default', 'cadence_interval' => 1];
-        $this->mock(ClosureGateService::class, fn ($mock) => $mock->shouldReceive('preview', 'forCommitment')->andReturn($closure));
+        $this->controlledBirthClosureFixture(1.0, includeCommittal: true);
         $this->app->instance(WebSearchProvider::class, new class implements WebSearchProvider
         {
             public function search(string $query): SearchObservation

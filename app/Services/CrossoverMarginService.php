@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Domain\Observables\ClosureValues;
 use App\Domain\Observables\ObservableValues;
 use App\Enums\ContextDomain;
 use App\Enums\ObservableDirection;
@@ -10,7 +9,7 @@ use App\Exceptions\ClosureHistoryUnavailable;
 use App\Models\Cycle;
 use App\Models\Phase;
 use App\Models\Proposition;
-use App\Services\Observables\ClosureCalculator;
+use App\Services\Observables\ClosureBirthService;
 
 /** Read-only, current committed geometry. Neither exhaustion nor future capacity. */
 final readonly class CrossoverMarginService
@@ -22,7 +21,8 @@ final readonly class CrossoverMarginService
         $domain = $cycle->contextHorizon->domain;
         $base = ['governing_committal_id' => $seed?->id, 'domain' => $domain->value,
             'correspondence' => $snapshot?->correspondence, 'chirality' => $snapshot?->chirality,
-            'prospective_depth' => null, 'admissible_cadence_bound' => null,
+            'prospective_depth' => null, 'prospective_committed_cardinal_position' => null,
+            'prospective_cardinal_direction' => null, 'admissible_cadence_bound' => null,
             'tension_bound' => null, 'crossover_margin' => null,
             'closed' => false];
         if ($snapshot === null) {
@@ -37,23 +37,26 @@ final readonly class CrossoverMarginService
         $candidate->setRelation('phase', $phase);
         $candidate->setRelation('commitSources', collect([$seed]));
         try {
-            $depth = app(ClosureCalculator::class)->components($candidate)->depth;
+            $observation = app(ClosureBirthService::class)->prospective($candidate);
         } catch (ClosureHistoryUnavailable) {
             // Missing legacy history is not proof of a closed crossover.
             return [...$base, 'unavailable_reason' => 'closure_history_unavailable'];
         }
-        $direction = ObservableDirection::after($depth, $snapshot->depth_direction ?? ObservableDirection::Negative);
+        $cardinal = $observation['committed_cardinal_position'];
+        $direction = ObservableDirection::from($observation['committed_cardinal_position_direction']);
         // Zero is the optimistic endpoint (possibly only a supremum under
         // hysteresis). A non-crossing bound still proves closure conservatively.
         $cadence = $domain === ContextDomain::Settlement
             ? ($direction === ObservableDirection::Positive ? 1.0 : 0.0)
             : ($direction === ObservableDirection::Negative ? -1.0 : 0.0);
-        $closure = (new ClosureValues($depth, $cadence))->average();
+        $closure = round(($cardinal + $cadence) / 2, 7);
         $tension = app(ProjectionService::class)->field(new ObservableValues(
             $snapshot->correspondence, $snapshot->chirality, $closure))['tension'];
         $margin = $domain === ContextDomain::Settlement ? $tension : -$tension;
 
-        return [...$base, 'prospective_depth' => $depth, 'admissible_cadence_bound' => $cadence,
+        return [...$base, 'prospective_depth' => $observation['depth'],
+            'prospective_committed_cardinal_position' => $cardinal,
+            'prospective_cardinal_direction' => $direction->value, 'admissible_cadence_bound' => $cadence,
             'tension_bound' => $tension,
             'crossover_margin' => $margin, 'closed' => $margin <= 0];
     }
