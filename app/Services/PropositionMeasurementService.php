@@ -10,6 +10,7 @@ use App\Models\ContextHorizonMembership;
 use App\Models\Proposition;
 use App\Models\PropositionMeasurement;
 use App\Models\Substrate;
+use App\Services\Observables\ClosureBirthService;
 use App\Services\Observables\LineageMeasurementService;
 use App\Services\Observables\ObservableService;
 use App\Services\Participation\ParticipationContext;
@@ -152,6 +153,7 @@ final class PropositionMeasurementService
         $this->assertMeasurement('correspondence', $correspondence);
         $this->assertMeasurement('chirality', $chirality);
         $this->assertMeasurement('closure', $closure);
+        $closure = app(ClosureBirthService::class)->stored($proposition)['closure'];
 
         return DB::transaction(function () use ($proposition, $correspondence, $chirality, $closure, $calculatedAt, $chiralityComponents, $correspondenceComponents): PropositionMeasurement {
             // Maintenance and contribution writes use the same root-before-node order.

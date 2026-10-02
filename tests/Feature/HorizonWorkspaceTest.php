@@ -75,7 +75,7 @@ class HorizonWorkspaceTest extends TestCase
         $participant = new Participant;
         $participant->forceFill(['substrate_id' => $horizon->substrate_id, 'user_id' => $user->id, 'callsign' => $callsign])->save();
         $cycle = new Cycle;
-        $cycle->forceFill(['participant_id' => $participant->id, 'context_horizon_id' => $horizon->id, 'sequence' => 1])->save();
+        $cycle->forceFill(['participant_id' => $participant->id, 'context_horizon_id' => $horizon->id, 'sequence' => 1, 'entry_committal_id' => $horizon->opened_by_proposition_id])->save();
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Order,
             'write_register' => $horizon->domain->registerFor(PhaseKind::Order), 'gate_proposition_id' => $provenance->id, 'started_at' => now()])->save();

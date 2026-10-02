@@ -70,6 +70,7 @@ final readonly class ParticipationService
             'last_commitment' => $snapshot === null ? null : [
                 ...$snapshot->only(['proposition_id', 'depth', 'cadence', 'closure', 'tension_before']),
                 'evaluated_at' => $snapshot->evaluated_at->toISOString(),
+                ...($snapshot->closure_observation ?? []),
                 'depth_direction' => $snapshot->depth_direction?->value,
                 'cadence_direction' => $snapshot->cadence_direction?->value,
                 'domain_before' => $snapshot->direction_before->value,
@@ -153,7 +154,7 @@ final readonly class ParticipationService
                     ? 'source_already_committed' : 'commitment_preconditions_unsatisfied',
                 'message' => in_array('source_already_committed', $plan['commitment']['reasons'], true)
                     ? 'This source has already been committed. Continue through its Committal result.'
-                    : 'Commitment requires grounding and aligned Depth/Cadence directions. Use an action available in the current Phase.',
+                    : 'Commitment requires grounding and aligned Committed Cardinal Position/Cadence directions. Use an action available in the current Phase.',
             ] : ($plan['rest_available'] ? [
                 'code' => $plan['rest_reason'],
                 'message' => $plan['rest_reason'] === 'no_remaining_potential'

@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Domain\Observables\ClosureValues;
 use App\Enums\PhaseKind;
 use App\Enums\SupersessionStrength;
 use App\Models\Connection;
@@ -13,7 +12,6 @@ use App\Models\Proposition;
 use App\Models\Substrate;
 use App\Models\Supersession;
 use App\Services\ActiveParticipantLineage;
-use App\Services\ClosureGateService;
 use App\Services\ContextHorizonProjector;
 use App\Services\ContributionDispatcher;
 use App\Services\ContributionService;
@@ -314,12 +312,7 @@ class WriteOnceTest extends TestCase
     {
         $this->controlledClosureFixture(-1);
         [$participant, $seed] = $this->fixture();
-        $this->mock(ClosureGateService::class, function ($mock): void {
-            $mock->shouldReceive('preview', 'forCommitment')->andReturn([
-                ...(new ClosureValues(1, 1))->resolve(),
-                'history_proposition_id' => null, 'history_source' => 'negative-default', 'cadence_interval' => 1,
-            ]);
-        });
+        $this->controlledBirthClosureFixture(1.0, includeCommittal: true);
         $a = $this->node($this->phaseAtPositionFixture($seed->phase, PhaseKind::Bias), 'canon', 'A', parent: $seed);
         $b = $this->node($this->phaseAtPositionFixture($seed->phase, PhaseKind::Bias), 'canon', 'B', parent: $seed);
         $this->groundFixture($a);

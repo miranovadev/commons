@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ObservableDirection;
 use App\Enums\PhaseKind;
 use App\Models\Cycle;
 use App\Models\Participant;
@@ -19,7 +20,7 @@ class PropositionMeasurementServiceTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_measurements_are_a_replaceable_projection(): void
+    public function test_live_measurements_are_replaceable_but_closure_comes_from_birth(): void
     {
         $proposition = $this->proposition();
         $propositionUpdatedAt = $proposition->getRawOriginal('updated_at');
@@ -36,7 +37,7 @@ class PropositionMeasurementServiceTest extends TestCase
 
         $this->assertSame(0.75, $measurement->correspondence);
         $this->assertSame(-0.25, $measurement->chirality);
-        $this->assertNull($measurement->closure);
+        $this->assertSame(-1.0, $measurement->closure);
         $this->assertTrue($measurement->calculated_at->equalTo($calculatedAt));
         $this->assertTrue($proposition->measurement->is($measurement));
 
@@ -50,7 +51,7 @@ class PropositionMeasurementServiceTest extends TestCase
         $this->assertSame(1, PropositionMeasurement::query()->count());
         $this->assertSame(-1.0, $replacement->correspondence);
         $this->assertSame(0.0, $replacement->chirality);
-        $this->assertSame(1.0, $replacement->closure);
+        $this->assertSame(-1.0, $replacement->closure);
         $this->assertSame(
             $propositionUpdatedAt,
             $proposition->fresh()->getRawOriginal('updated_at'),
@@ -80,10 +81,10 @@ class PropositionMeasurementServiceTest extends TestCase
             $service->project($position, $sign, 0, 0);
             foreach ([0.0, null] as $value) {
                 $service->project($position, $value, 0, 0);
-                $this->assertSame(\App\Enums\ObservableDirection::after($sign), $service->correspondenceDirectionFor($position));
+                $this->assertSame(ObservableDirection::after($sign), $service->correspondenceDirectionFor($position));
             }
             PropositionMeasurement::query()->whereKey($position->id)->delete();
-            $this->assertSame(\App\Enums\ObservableDirection::after($sign), $service->correspondenceDirectionFor($position));
+            $this->assertSame(ObservableDirection::after($sign), $service->correspondenceDirectionFor($position));
         }
     }
 

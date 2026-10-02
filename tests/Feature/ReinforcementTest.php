@@ -285,7 +285,7 @@ class ReinforcementTest extends TestCase
         $historical = $snapshot->fresh()->getAttributes();
         $local = app(LocalMeasurementService::class);
         $before = $local->calculate($this->node);
-        $this->assertSame($value, $local->calculate($this->governor)->closure()->average());
+        $this->assertSame(-1.0, $local->calculate($this->governor)->closure()->average()); // Its birth remains constitutional despite the authored snapshot fixture.
         $this->assertSame(0.0, $before->closure()->average());
         $this->assertSame(0, $this->reinforcementCount());
         $receipt = null;

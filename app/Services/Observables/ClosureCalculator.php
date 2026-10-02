@@ -4,73 +4,66 @@ namespace App\Services\Observables;
 
 use App\Domain\Observables\ClosureValues;
 use App\Domain\Observables\LineageComparison;
-use App\Exceptions\ClosureHistoryUnavailable;
 use App\Models\Proposition;
 use App\Services\Participation\ParticipationContext;
 use DomainException;
 
 final readonly class ClosureCalculator
 {
-    public function __construct(
-        private CommittalLineageService $lineage,
-    ) {}
+    public function __construct(private ClosureBirthService $births) {}
 
     public function localComponents(Proposition $proposition, LineageComparison $comparison): ClosureValues
     {
-        $context = $comparison->current->context;
-        $records = $this->lineage->records($proposition, $context);
-        $snapshot = $records->get($proposition->id);
-        if ($snapshot !== null) {
-            // Persisted measurements remain historical, including pre-upgrade snapshots.
-            return new ClosureValues($snapshot->depth ?? 0, $snapshot->cadence ?? 0, $snapshot->closure);
-        }
-
-        return $this->components($proposition, $context);
+        return $this->components($proposition, $comparison->current->context);
     }
 
     public function components(Proposition $position, ?ParticipationContext $context = null): ClosureValues
     {
-        $cycle = $position->phase->cycle;
-        $ancestors = $this->lineage->ancestors($position, $context);
-        // An expressive position is exactly one prospective next Commit. The same
-        // head/run calculation serves live measurement and Order's preview.
-        if ($ancestors->isEmpty()) {
-            if ($cycle->contextHorizon->parent_context_horizon_id !== null) {
-                throw new DomainException('Only Origin may have no entry Committal.');
-            }
+        $observation = $position->exists ? $this->births->stored($position, $context) : $this->births->prospective($position);
 
-            return new ClosureValues(-1, -1);
-        }
-        if ($ancestors->count() === 1) {
-            return new ClosureValues(0, 0);
-        }
-        $runs = [[$cycle->contextHorizon->domain->value, 1]];
-        foreach ($ancestors as $ancestor) {
-            $last = count($runs) - 1;
-            if ($runs[$last][0] === $ancestor->creating_domain) {
-                $runs[$last][1]++;
-            } else {
-                $runs[] = [$ancestor->creating_domain, 1];
-            }
-        }
-        if (count($runs) < 2) {
-            throw new ClosureHistoryUnavailable('Measured Depth requires a preceding opposite-Domain committed run.');
-        }
-        $previousInterval = $ancestors->first()->cadence_interval;
-        if ($previousInterval === null) {
-            throw new ClosureHistoryUnavailable('The preceding frozen Cadence interval is unavailable.');
-        }
-
-        return new ClosureValues(self::similarity($runs[0][1], $runs[1][1]),
-            self::similarity($this->lineage->interval($position, $context), $previousInterval));
+        return new ClosureValues($observation['depth'], $observation['cadence'], $observation['closure'], $observation);
     }
 
     public static function similarity(int $left, int $right): float
     {
         if ($left < 1 || $right < 1) {
-            throw new DomainException('Measured committed depths and intervals must be positive.');
+            throw new DomainException('Measured committed depths must be positive.');
         }
 
-        return round(max(-1, min(1, 1 - 2 * abs($left - $right) / max($left, $right))), 7);
+        return self::bounded(1 - 2 * abs($left - $right) / max($left, $right));
+    }
+
+    public static function positionalSimilarity(float $left, float $right): float
+    {
+        if (! is_finite($left) || ! is_finite($right) || $left <= 0 || $right <= 0) {
+            throw new DomainException('Committed positions and centroids must be positive real values.');
+        }
+
+        return self::bounded(1 - 2 * abs($left - $right) / ($left + $right));
+    }
+
+    public static function coefficientOfVariation(array $intervals): float
+    {
+        if (count($intervals) < 2 || min($intervals) <= 0) {
+            throw new DomainException('CV requires at least two positive intervals.');
+        }
+        $mean = array_sum($intervals) / count($intervals);
+        $variance = array_sum(array_map(fn ($x) => ($x - $mean) ** 2, $intervals)) / count($intervals);
+
+        return sqrt($variance) / $mean;
+    }
+
+    public static function variabilitySimilarity(float $left, float $right): float
+    {
+        if ($left < 0 || $right < 0 || ! is_finite($left) || ! is_finite($right)) {
+            throw new DomainException('CV must be finite and nonnegative.');
+        }
+
+        return $left == 0 && $right == 0 ? 1.0 : self::bounded(1 - 2 * abs($left - $right) / max($left, $right));
+    }
+
+    private static function bounded(float $value): float
+    {
+        return round(max(-1, min(1, $value)), 7);
     }
 }

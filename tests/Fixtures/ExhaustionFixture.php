@@ -131,6 +131,7 @@ trait ExhaustionFixture
 
     private function measure(Proposition $node, float $value): void
     {
+        $this->controlledBirthClosureFixture($value, $node->id);
         app(PropositionMeasurementService::class)->project($node, $value, $value, $value);
         app(PotentialProjectionService::class)->rebuild($this->substrate->id, false);
     }

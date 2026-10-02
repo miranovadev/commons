@@ -4,6 +4,7 @@ namespace Tests\Fixtures;
 
 use App\Enums\PhaseKind;
 use App\Models\CommitmentSnapshot;
+use App\Models\ContextHorizon;
 use App\Models\Cycle;
 use App\Models\Participant;
 use App\Models\Phase;
@@ -68,7 +69,8 @@ trait CreatesHomologousPositions
 
     private function phase(?Proposition $entry, ?Proposition $gate, PhaseKind $kind, bool $malformed = false): Phase
     {
-        $horizon = $entry === null ? app(ContextHorizonProjector::class)->currentFor($this->actor->substrate)
+        $horizon = $entry === null ? (ContextHorizon::where('substrate_id', $this->actor->substrate_id)->whereNull('parent_context_horizon_id')->first()
+            ?? app(ContextHorizonProjector::class)->currentFor($this->actor->substrate))
             : ($malformed ? $gate->phase->cycle->contextHorizon : app(ContextHorizonProjector::class)->forEntry($entry));
         $cycle = new Cycle;
         $cycle->forceFill(['participant_id' => $this->actor->id, 'sequence' => (int) $this->actor->cycles()->max('sequence') + 1,

@@ -104,6 +104,9 @@ class HomeostaticPopulationTest extends TestCase
         $projector = app(PropositionMeasurementService::class);
         $service = app(HomeostaticDirectionService::class);
         foreach ([1.0, -1.0] as $sign) {
+            $this->controlledBirthClosureFixture(-.2 * $sign, $current->id);
+            $this->controlledBirthClosureFixture(.6 * $sign, $b->id);
+            $this->controlledBirthClosureFixture(.8 * $sign, $c->id);
             $projector->project($current, -.2 * $sign, .2 * $sign, -.2 * $sign);
             $projector->project($b, .6 * $sign, -.6 * $sign, .6 * $sign);
             $projector->project($c, .8 * $sign, -.8 * $sign, .8 * $sign);

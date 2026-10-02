@@ -97,6 +97,9 @@ final readonly class CommitmentSnapshotService
             $horizon = $proposition->phase->cycle->contextHorizon;
             // Re-evaluate the actual persisted candidate before allowing a snapshot.
             $closure = $this->closureGate->forCommitment($proposition);
+            if ($measurement->closure !== $closure['closure']) {
+                throw new DomainException('Commitment measurement must match its immutable Closure birth observation.');
+            }
             $initialOrigin = $proposition->phase->cycle->entry_committal_id === null
                 && $horizon->parent_context_horizon_id === null
                 && ! $proposition->parents()->exists()
@@ -105,10 +108,10 @@ final readonly class CommitmentSnapshotService
                 throw new DomainException('An ordinary Commitment requires a valid frozen Cadence interval.');
             }
             if (! $closure['admissible']) {
-                throw new DomainException('Commitment requires aligned Depth/Cadence directions.');
+                throw new DomainException('Commitment requires aligned Committed Cardinal Position/Cadence directions.');
             }
             if ($expectedClosure !== null) {
-                foreach (['depth', 'cadence', 'closure', 'depth_direction', 'cadence_direction', 'cadence_interval', 'history_proposition_id'] as $component) {
+                foreach (['depth', 'cadence', 'closure', 'depth_direction', 'cadence_direction', 'committed_cardinal_position', 'committed_cardinal_position_direction', 'lateral_committal_position', 'lateral_committal_position_direction', 'committed_lateral_position', 'cadence_interval', 'history_proposition_id'] as $component) {
                     if ($closure[$component] !== $expectedClosure[$component]) {
                         throw new ConflictHttpException('Closure changed after preview. Retry from fresh state.');
                     }
@@ -135,6 +138,7 @@ final readonly class CommitmentSnapshotService
                 'chirality_direction' => $measurement->chirality_direction,
                 ...$measurement->only(['orientation', 'attestation_cadence', 'orientation_direction', 'attestation_cadence_direction']),
                 'closure' => $measurement->closure,
+                'closure_observation' => $closure,
                 'depth' => $closure['depth'],
                 'cadence' => $closure['cadence'],
                 'cadence_interval' => $closure['cadence_interval'],

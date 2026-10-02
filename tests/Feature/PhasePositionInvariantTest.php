@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Domain\Observables\ClosureValues;
 use App\Enums\ContextDomain;
 use App\Enums\PhaseKind;
 use App\Enums\RegisterPosition;
@@ -14,7 +13,6 @@ use App\Models\Proposition;
 use App\Models\Substrate;
 use App\Models\Supersession;
 use App\Services\BiasGateService;
-use App\Services\ClosureGateService;
 use App\Services\CommitmentAdmissibilityService;
 use App\Services\CommitRegionService;
 use App\Services\ContributionDispatcher;
@@ -248,7 +246,9 @@ class PhasePositionInvariantTest extends TestCase
         $author = $this->participant($substrate, 'author');
         $reader = $this->participant($substrate, 'reader');
         $horizon = $this->horizonForRegisterFixture($author, $domain->registerFor(PhaseKind::Distinguish));
-        $originPhase = $this->phase($author, PhaseKind::Order, horizonId: $horizon->id);
+        $originPhase = $this->phase($author, PhaseKind::Order,
+            $horizon->opened_by_proposition_id === null ? null : Proposition::findOrFail($horizon->opened_by_proposition_id),
+            horizonId: $horizon->id);
         $origin = $this->node($originPhase, 'committal', freeze: false);
         if ($horizon->opened_by_proposition_id !== null) {
             $this->commitAncestryFixture($origin, Proposition::findOrFail($horizon->opened_by_proposition_id));
@@ -262,8 +262,7 @@ class PhasePositionInvariantTest extends TestCase
                 1, 2, 4 => 'variant', 5 => 'reconcile', default => 'reclassify'
             });
         }
-        $closure = [...(new ClosureValues(1, 1))->resolve(), 'history_proposition_id' => null, 'history_source' => 'negative-default', 'cadence_interval' => 1];
-        $this->mock(ClosureGateService::class, fn ($mock) => $mock->shouldReceive('preview', 'forCommitment')->andReturn($closure));
+        $this->controlledBirthClosureFixture(1.0, includeCommittal: true);
 
         return [$author, $reader, $nodes];
     }

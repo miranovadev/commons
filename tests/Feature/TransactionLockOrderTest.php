@@ -6,7 +6,6 @@ use App\Contracts\ParticipantInference;
 use App\Contracts\WebSearchProvider;
 use App\Domain\Evidence\SearchObservation;
 use App\Domain\Evidence\VerifiedHyperlink;
-use App\Domain\Observables\ClosureValues;
 use App\Enums\PhaseKind;
 use App\Jobs\WakeParticipant;
 use App\Models\Attestation;
@@ -26,7 +25,6 @@ use App\Models\Substrate;
 use App\Models\Supersession;
 use App\Models\Tragedy;
 use App\Models\User;
-use App\Services\ClosureGateService;
 use App\Services\ContextHorizonProjector;
 use App\Services\ContributionDispatcher;
 use App\Services\CycleEntryService;
@@ -45,6 +43,7 @@ use App\Services\PropositionMeasurementService;
 use App\Services\ReceiptContextService;
 use App\Services\ReferencePotentialChargeService;
 use App\Services\TragedyService;
+use App\Services\WakeClock;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\RefreshDatabaseState;
@@ -341,8 +340,7 @@ class TransactionLockOrderTest extends TestCase
         app(LedgerService::class)->record($edge);
         $this->classificationEvidenceFixture($source);
         app(PotentialProjectionService::class)->refresh($first->substrate_id);
-        $closure = [...(new ClosureValues(1, 1))->resolve(), 'history_proposition_id' => null, 'history_source' => 'negative-default', 'cadence_interval' => 1];
-        $this->mock(ClosureGateService::class, fn ($mock) => $mock->shouldReceive('preview', 'forCommitment')->andReturn($closure));
+        $this->controlledBirthClosureFixture(1.0, includeCommittal: true);
         $initial->forceFill(['kind' => PhaseKind::Order, 'write_register' => 'concord', 'gate_proposition_id' => $source->id])->save();
         $second = new Participant;
         $second->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'second-committer'])->save();
@@ -366,7 +364,7 @@ class TransactionLockOrderTest extends TestCase
     #[Group('load')]
     public function test_another_participant_can_commit_an_action_during_inference_between_steps_of_one_wake(): void
     {
-        $clock = \Mockery::mock(\App\Services\WakeClock::class);
+        $clock = \Mockery::mock(WakeClock::class);
         $clock->shouldReceive('now')->andReturn(0, 0, 0, 0, 0, 0, 0, 601);
         [$substrate, $first, $phase] = $this->fixture();
         $second = new Participant;
@@ -752,4 +750,3 @@ class TransactionLockOrderTest extends TestCase
         return Phase::where('cycle_id', $cycle->id)->whereNull('completed_at')->sole();
     }
 }
-

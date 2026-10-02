@@ -6,7 +6,6 @@ use App\Domain\Evidence\PropositionCollection;
 use App\Enums\PhaseKind;
 use App\Models\ContextHorizon;
 use App\Models\Cycle;
-use App\Models\ParticipantReceiptContext;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Receipt;
@@ -304,6 +303,7 @@ class PropositionSearchTest extends TestCase
             'participant_id' => $fixture->viewer->id,
             'sequence' => (int) $fixture->viewer->cycles()->max('sequence') + 1,
             'context_horizon_id' => $horizon->id,
+            'entry_committal_id' => $horizon->opened_by_proposition_id,
             'completed_at' => now(),
         ])->save();
         $phase = new Phase;
@@ -332,22 +332,7 @@ class PropositionSearchTest extends TestCase
     /** A test-only complementary Domain owner; the search assertion is about filtering, not Horizon opening. */
     private function foreignHorizon(ParticipantContextFixture $fixture, ContextHorizon $root): ContextHorizon
     {
-        $id = (string) str()->ulid();
-        DB::table('context_horizons')->insert([
-            'id' => $id,
-            'substrate_id' => $fixture->substrate->id,
-            'sequence' => (int) DB::table('context_horizons')->where('substrate_id', $fixture->substrate->id)->max('sequence') + 100,
-            'domain' => 'settlement',
-            'parent_context_horizon_id' => $root->id,
-            'opened_by_proposition_id' => null,
-            'closed_by_proposition_id' => null,
-            'opened_at' => now(),
-            'closed_at' => null,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        return ContextHorizon::findOrFail($id);
+        return $this->laterHorizonFixture($root, 1);
     }
 
     private function actionTargets(array $schema): array

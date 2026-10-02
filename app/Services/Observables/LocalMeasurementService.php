@@ -40,6 +40,7 @@ class LocalMeasurementService
             $closure->average(),
             $chirality,
             $correspondence,
+            $closure,
         );
     }
 }

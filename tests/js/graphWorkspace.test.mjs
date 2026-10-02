@@ -280,7 +280,7 @@ test('Topology retains stacked presence, live movement, activity and selection w
 
 
 test('Inspector tabs show observed measurements and structural history, with local tab state', async () => withGraph(async page => {
-  const point = { proposition_id: 'origin', depth: 0, cadence: 0, depth_direction: 'negative', cadence_direction: 'negative' };
+  const point = { proposition_id: 'origin', committed_cardinal_position: 0, committed_cardinal_position_direction: 'negative', depth: 0, cadence: 0, depth_direction: 'negative', cadence_direction: 'negative' };
   await act(async () => page.render(nodes.map(p => ({ ...p, observables: { correspondence: .2, chirality: -.3, closure: 0 },
     closure_history: { points: [point], current: point, source: 'selected-committal' } }))));
   await click(card('origin'));
@@ -289,8 +289,8 @@ test('Inspector tabs show observed measurements and structural history, with loc
   for (const label of ['Correspondence', 'Chirality', 'Closure', 'Tension']) assert.ok(document.querySelector(`.graph-inspector svg[aria-label^="${label}:"]`));
   assert.ok(document.querySelector('.graph-inspector svg[aria-label^="Tension: -0.75"]'), 'uses authoritative tension, not a frontend mean');
   await click(tab('Closure'));
-  assert.ok(document.querySelector('svg[aria-label^="Depth history"]'));
-  assert.ok(document.querySelector('svg[aria-label^="Cadence history"]'));
+  assert.ok(document.querySelector('svg[aria-label^="Committed Cardinal Position history"]'));
+  assert.ok(document.querySelector('svg[aria-label^="Committal Cadence history"]'));
   assert.equal(document.querySelectorAll('.closure-direction[data-direction="negative"][data-color="indigo.9"]').length, 2);
   await click(card('b'));
   assert.equal(tab('Closure'), undefined, 'expressive nodes have no Closure tab');

@@ -232,7 +232,7 @@ class CausalOperationalScopeTest extends TestCase
             $this->{$callsign}->save();
         }
         $horizon = $this->horizonForRegisterFixture($this->author, ContextDomain::from($domain)->registerFor(PhaseKind::Distinguish));
-        $phase = $this->phase($this->author, PhaseKind::Order, horizonId: $horizon->id);
+        $phase = $this->phase($this->author, PhaseKind::Order, $horizon->opened_by_proposition_id === null ? null : Proposition::findOrFail($horizon->opened_by_proposition_id), horizonId: $horizon->id);
         $seed = (new Proposition)->forceFill(['phase_id' => $phase->id, 'register' => $phase->write_register, 'tier' => 'committal', 'statement' => 'Origin']);
         $seed->save();
         app(LedgerService::class)->record($seed);
@@ -241,14 +241,18 @@ class CausalOperationalScopeTest extends TestCase
         }
         $this->freezeCommittedRegionFixture($seed);
         app(CommitRegionPolarityService::class)->establishOrigin($seed, 'support');
-        $this->mock(ClosureGateService::class, function ($mock): void {
-            $mock->shouldReceive('preview')->andReturnUsing(fn (Proposition $node) => [
-                ...(new ClosureValues(...($this->closureValues[$node->id] ?? [1, 1])))->resolve(),
-                'history_proposition_id' => null, 'history_source' => 'negative-default', 'cadence_interval' => 1,
-            ]);
-            $mock->shouldReceive('forCommitment')->andReturn([
-                ...(new ClosureValues(1, 1))->resolve(), 'history_proposition_id' => null, 'history_source' => 'negative-default', 'cadence_interval' => 1,
-            ]);
+        $this->controlledBirthClosureFixture(1, includeCommittal: true);
+        $gateService = app(ClosureGateService::class);
+        $this->mock(ClosureGateService::class, function ($mock) use ($gateService): void {
+            $mock->shouldReceive('preview')->andReturnUsing(function (Proposition $node, Phase $phase, $context = null) use ($gateService) {
+                $preview = $gateService->preview($node, $phase, $context);
+                if (! isset($this->closureValues[$node->id])) {
+                    return $preview;
+                }
+
+                return [...$preview, ...(new ClosureValues(...$this->closureValues[$node->id]))->resolve()];
+            });
+            $mock->shouldReceive('forCommitment')->andReturnUsing(fn ($node) => $gateService->forCommitment($node));
         });
 
         return $seed;
