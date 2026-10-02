@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Domain\Observables\ClosureValues;
 use App\Enums\ContextDomain;
 use App\Enums\PhaseKind;
 use App\Models\Attestation;
@@ -14,7 +13,6 @@ use App\Models\Proposition;
 use App\Models\Receipt;
 use App\Models\Substrate;
 use App\Models\Supersession;
-use App\Services\ClosureGateService;
 use App\Services\CommitmentAdmissibilityService;
 use App\Services\ContributionDispatcher;
 use App\Services\InstrumentExecutionService;
@@ -52,14 +50,7 @@ class OperationalCommitmentTest extends TestCase
         $this->origin = Proposition::findOrFail($state['plan']['gate_id']);
         // These tests isolate the operational receipt/phase path. Real component
         // evaluation and refusal are covered by ClosureHysteresisTest.
-        $closure = [
-            ...(new ClosureValues(1, 1))->resolve(),
-            'history_proposition_id' => null,
-            'history_source' => 'negative-default', 'cadence_interval' => 1,
-        ];
-        $this->mock(ClosureGateService::class, function ($mock) use ($closure): void {
-            $mock->shouldReceive('preview', 'forCommitment')->andReturn($closure);
-        });
+        $this->controlledBirthClosureFixture(1.0, includeCommittal: true);
     }
 
     public function test_blocked_commitment_rechecks_grounding_and_does_not_advance(): void

@@ -157,9 +157,9 @@ class PropositionReadTest extends TestCase
         $this->assertSame('commitment_snapshot', $data[$origin->id]['field']['source']);
         $this->assertSame('current', $data[$origin->id]['field']['status']);
         $this->assertSame('missing', $data[$origin->id]['observables']['status']);
-        $this->assertSame(-.05, $data[$child->id]['field']['tension']);
-        $this->assertSame(.75, $data[$child->id]['field']['potential_charge']);
-        $this->assertSame(.75, $data[$origin->id]['field']['potential_charge']);
+        $this->assertSame(-.1333334, $data[$child->id]['field']['tension']);
+        $this->assertSame(.6666666, $data[$child->id]['field']['potential_charge']);
+        $this->assertSame(.6666666, $data[$origin->id]['field']['potential_charge']);
         $this->assertSame($origin->id, $data[$child->id]['field']['committal_proposition_id']);
         $this->assertSame(1, $data[$child->id]['participation_count']);
         $this->assertSame(0, $data[$origin->id]['participation_count']);

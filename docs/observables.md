@@ -343,8 +343,10 @@ Historical samples are the **frozen positions** of previous same-Domain Committa
 in the direct ancestry. Their arithmetic mean is a positive real centroid; [1,2]
 has centroid 1.5. Compare the new coordinate and centroid with
 `1 - 2 * abs(a - b) / (a + b)`, clamped to [-1,+1]. Origin has constitutional
-Lateral -1. After Origin, fewer than two previous same-Domain committed lateral
-observations yields Lateral 0 with normal direction hysteresis and a null centroid.
+Lateral -1. After Origin, historical Lateral activates only when both creating
+Domains have at least two usable Cadence intervals (including the current interval),
+and there are at least two previous same-Domain committed lateral observations.
+Until both conditions hold, Lateral is 0 with normal direction hysteresis and a null centroid.
 A singleton mean is calculable but does not establish a historical tendency.
 Comparison activates with two or more prior observations. The current Proposition
 is never included in its historical centroid; unrelated structure supplies no samples.

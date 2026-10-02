@@ -185,7 +185,7 @@ class ClosureBirthTest extends TestCase
         $r = $this->born($a);
         $this->assertSame(3, $this->observation($r)['committed_lateral_position']);
         $leaf = $this->born($c);
-        $this->assertSame(1.5, $this->observation($leaf)['historical_lateral_centroid']);
+        $this->assertNull($this->observation($leaf)['historical_lateral_centroid']); // Opposite Domain has no samples.
         $this->commit($b, 'emergence'); // A left sibling's descendant occupies a row slot.
         $later = $this->born($c);
         $this->assertSame(1, $this->observation($leaf)['committed_lateral_position']);
@@ -195,9 +195,15 @@ class ClosureBirthTest extends TestCase
 
     public function test_full_same_domain_lateral_centroid_uses_frozen_positions_and_keeps_gaps(): void
     {
-        $origin = $this->commit(null, 'emergence'); // 1
-        $left = $this->commit($origin, 'emergence');
-        $a = $this->commit($origin, 'emergence'); // 2
+        $origin = $this->commit(null, 'settlement'); // E coordinate 1
+        $s1 = $this->commit($origin, 'settlement');
+        $s2 = $this->commit($s1, 'emergence');
+        $left = $this->commit($s2, 'emergence');
+        $a = $this->commit($s2, 'emergence'); // E coordinate 2
+        $fractional = $this->observation($this->born($a));
+        $this->assertSame(1.5, $fractional['historical_lateral_centroid']);
+        $this->assertSame(1, $fractional['committed_lateral_position']);
+        $this->assertSame(.6, $fractional['lateral_committal_position']);
         $left2 = $this->commit($left, 'emergence');
         $b = $this->commit($a, 'emergence'); // 2
         $left3 = $this->commit($left2, 'emergence');
@@ -291,7 +297,18 @@ class ClosureBirthTest extends TestCase
         $this->assertNull($one['historical_lateral_centroid']);
         $this->assertSame(0.0, $one['lateral_committal_position']);
         $this->assertSame('negative', $one['lateral_committal_position_direction']);
-        $current = $this->observation($this->born($second));
+        $immatureNode = $this->born($second);
+        $immature = $this->observation($immatureNode);
+        $this->assertNull($immature['historical_lateral_centroid']);
+        $this->assertSame(0.0, $immature['lateral_committal_position']);
+        $this->assertSame('negative', $immature['lateral_committal_position_direction']);
+        $this->assertNull($immature['domain_cvs']['emergence']);
+        $third = $this->commit($second, 'emergence');
+        $e2 = $this->commit($third, 'settlement');
+        $current = $this->observation($this->born($e2));
+        $this->assertNotNull($current['domain_cvs']['emergence']);
+        $this->assertNotNull($current['domain_cvs']['settlement']);
+        $this->assertSame($immature, $this->observation($immatureNode));
         $this->assertEquals(1.0, $current['historical_lateral_centroid']);
         $this->assertSame(1.0, $current['lateral_committal_position']);
         $this->assertSame('positive', $current['lateral_committal_position_direction']);

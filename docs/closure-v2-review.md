@@ -1,57 +1,54 @@
-# Closure v2 review boundary
+# Closure v2 validation notes
 
-The draft records Closure once at Proposition birth. Crossover Margin consumes
-canonical prospective Committed Cardinal Position and retained direction, with
-its existing endpoint and recovery policies unchanged.
+Closure is persisted at Proposition birth and remains historical. The current
+birth version is `closure-birth-v2-comparative-history`; obsolete draft records
+fail closed rather than being reconstructed with today's population.
 
-## Lateral historical sufficiency correction
+## Historical Lateral maturity
 
-Origin retains constitutional Lateral -1. After Origin, fewer than two previous
-same-Domain committed lateral observations yields Lateral 0, a null historical
-centroid, and normal direction hysteresis. Two or more samples activate the
-arithmetic centroid comparison. The current observation is never a centroid
-sample. A mathematically calculable singleton mean does not establish a tendency.
+Origin retains Lateral -1. After Origin, historical Lateral comparison requires
+both Domains to have at least two usable Cadence samples (including the current
+interval), as well as at least two prior same-Domain lateral observations. Until
+then Lateral is 0 with ordinary retained direction and a null centroid. The
+current position never supplies a centroid sample. This gate depends on history
+sufficiency, not the value or sign of Cadence. Mature CV disagreement still uses
+the unmodified Cardinal/Cadence direction-agreement gate.
 
-The earlier unbranched second-Commit conflict is resolved in both Domains:
-Depth 0, Lateral 0, Cardinal Position 0 retaining Negative, and Cadence 0 retaining
-Negative. The unchanged direction-agreement gate admits this observation.
-Tests cover populations 1 and 5, zero/one/two prior samples, and fractional/full
-centroids that exclude the current observation.
+## Constructed natural catastrophe window
 
-Birth records use version `closure-birth-v2-lateral-history-2`. Earlier draft
-records are obsolete and fail closed; they are not recalculated from today's
-population. Fresh substrates remain the supported scope.
+The fixture constructs real observable conditions, not a prescribed emergent
+trajectory of an unchanged population. Cumulative Depth means its previous
+E=3/S=2 expressive position cannot have maximum Closure at any interval. The
+fixture now authors one additional ordinary Settlement Commit, reaching:
 
-## Next stop: the natural fixture's third Commit
+Origin E → S1 → S2 → S3 → E4 → new E expression.
 
-The single-participant natural fixture now reaches Origin E → S1 → S2 → E3.
-At E3, the real birth observation is:
+Every Commit uses real calculators, grounding and snapshot admissibility.
+S3 has insufficient comparative Cadence history, so historical Lateral remains
+0 and its negative Cardinal direction agrees with retained negative Cadence.
+E4 observes Depth 1/3 and Cadence 0.6970563, both Positive. At the subsequent
+expression both Domain depths are 3 and their interval histories are [1,2,2].
+Depth, Lateral, Cardinal and Cadence are +1, establishing a genuine Closure +1
+window. Chirality uses its own live populations throughout.
 
-| Component | Value | Direction |
-|---|---:|---|
-| Committal Depth (E=2, S=2) | 1 | Positive |
-| Lateral (only Origin is a prior E sample) | 0 | Retained Negative |
-| Committed Cardinal Position | 0.5 | Positive |
-| Cadence | -1 | Negative |
+The fixture uses four idle Origin entries after S2, one extra entry in each
+new committed region, and one Support on the developing E lineage to align the
+real attestational rates. E4 freezes interval 2. The single-participant boundary
+case supplies one idle entry under E4; the two-participant lifecycle supplies both
+entries through its actual participants. No later entry rewrites a frozen interval.
 
-E intervals [1,1] give population CV 0. S intervals [1,2] give population CV 1/3.
-Both Domains have two samples, so real CV comparison activates and yields -1.
-This is an actual direction conflict, not insufficient Cadence history. The gate
-remains unchanged and rejects E3. No intervals, bootstrap defaults, admissibility,
-or recovery/path policy were adjusted to force the authored trajectory through.
+Both natural tests pass: ordinary expression reaches Charge zero; two distinct
+participants reproduce catastrophe, establish regional Exhaustion and recover
+along the recorded lineage, preserving the original Tragedy and Receipt history.
+No formulas, gates, recovery policy, action eligibility or Rest semantics changed.
 
-The two-participant natural fixture gets through that Commit, then fails its old
-seed Depth assertion (expected 0, actual 1). It has not yet established its later
-catastrophe/recovery outcome under v2. Further fixture changes are paused at the
-semantic boundary above, as requested.
+## Broad suite reconciliation
 
-The natural fixture now clears both measurement test doubles and explicitly
-asserts real birth admissibility with complete diagnostics before snapshotting.
-No natural-path test was skipped or converted into mocked measurements.
+Controlled measurement fixtures now provide consistent birth observations rather
+than contradictory Gate doubles. Historical topology fixtures no longer wait for
+an immutable interval to increase, and their Cycles identify genuine governance.
+Deliberately corrupt import fixtures explicitly bypass model birth events.
+Birth reads are batched within existing measurement contexts, preserving bounded
+population-query counts without expanding causal/evidence scope.
 
-## Validation
-
-Latest targeted run: 15 tests, 104 assertions; all 13 Closure birth tests pass,
-including both second-Commit Domains. The two natural-fixture failures are the
-specific cases above. Formatting and diff checks pass. This draft is not ready
-to merge; broad-suite success is not claimed.
+Latest Core/Integration status is recorded in the draft PR. No merge is authorized.

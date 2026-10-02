@@ -6,6 +6,7 @@ use App\Domain\Observables\CorrespondenceValues;
 use App\Enums\PhaseKind;
 use App\Models\Attestation;
 use App\Models\CommitmentSnapshot;
+use App\Models\ContextHorizon;
 use App\Models\Cycle;
 use App\Models\Participant;
 use App\Models\Phase;
@@ -907,7 +908,7 @@ class HomologousMediationTest extends TestCase
 
     private function phase(?Proposition $governor, ?Proposition $gate, PhaseKind $kind, bool $malformed = false): Phase
     {
-        $horizon = $governor === null ? app(ContextHorizonProjector::class)->currentFor($this->actor->substrate)
+        $horizon = $governor === null ? ContextHorizon::where('substrate_id', $this->actor->substrate_id)->whereNull('parent_context_horizon_id')->firstOrFail()
             : ($malformed ? $gate->phase->cycle->contextHorizon : app(ContextHorizonProjector::class)->forEntry($governor));
         $cycle = new Cycle;
         $cycle->forceFill(['participant_id' => $this->actor->id, 'sequence' => (int) $this->actor->cycles()->max('sequence') + 1,

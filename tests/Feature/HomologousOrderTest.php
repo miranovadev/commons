@@ -199,11 +199,7 @@ class HomologousOrderTest extends TestCase
 
     public function test_admissible_local_commit_survives_opposite_population_and_enters_its_new_commit(): void
     {
-        $this->mock(ClosureGateService::class, function ($mock): void {
-            $closure = [...(new ClosureValues(1, 1))->resolve(),
-                'history_proposition_id' => $this->a->id, 'history_source' => 'committed-ancestor', 'cadence_interval' => 1];
-            $mock->shouldReceive('preview', 'forCommitment')->andReturn($closure);
-        });
+        $this->controlledBirthClosureFixture(1.0, includeCommittal: true);
         $vote = new Attestation;
         $vote->forceFill(['phase_id' => $this->gate->phase_id, 'proposition_id' => $this->gate->id, 'direction' => 'support'])->save();
         app(LedgerService::class)->record($vote);

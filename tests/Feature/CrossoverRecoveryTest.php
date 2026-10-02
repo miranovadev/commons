@@ -123,7 +123,7 @@ class CrossoverRecoveryTest extends TestCase
         app(PotentialProjectionService::class)->refresh($this->substrate->id);
         $diagnostic = app(CrossoverMarginService::class)->inspect($terminal->cycle);
         $this->assertSame(-0.3333333, $diagnostic['prospective_depth']);
-        $this->assertSame(1.0, $diagnostic['admissible_cadence_bound']);
+        $this->assertSame(0.0, $diagnostic['admissible_cadence_bound']);
         $this->assertSame($closed, $diagnostic['closed']);
         $this->assertArrayNotHasKey('reinforcement_mass', $diagnostic);
         $actor = $terminal->cycle->participant;
@@ -178,7 +178,7 @@ class CrossoverRecoveryTest extends TestCase
         $this->assertSame('emergence', $terminal->cycle->contextHorizon->domain->value);
         $diagnostic = app(CrossoverMarginService::class)->inspect($terminal->cycle);
         $this->assertSame(1.0, $diagnostic['prospective_depth']);
-        $this->assertSame(1.0, $diagnostic['prospective_committed_cardinal_position']);
+        $this->assertSame(.5, $diagnostic['prospective_committed_cardinal_position']);
         $this->assertSame(0.0, $diagnostic['admissible_cadence_bound']);
         $this->assertTrue($diagnostic['closed']);
         $actor = $terminal->cycle->participant;

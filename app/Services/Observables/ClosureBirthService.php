@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\DB;
 /** Durable historical observable, independent of disposable measurement projections. */
 class ClosureBirthService
 {
-    public const VERSION = 'closure-birth-v2-lateral-history-2';
+    public const VERSION = 'closure-birth-v2-comparative-history';
 
     public function __construct(private readonly CommittalLineageService $lineage) {}
 
@@ -26,7 +26,9 @@ class ClosureBirthService
     public function stored(Proposition $position, ?ParticipationContext $context = null): array
     {
         $load = fn () => DB::table('closure_births')->where('proposition_id', $position->id)->first();
-        $row = $context === null ? $load() : $context->remember('closure:birth:'.$position->id, $load);
+        $row = $context === null || ! $context->propositions->has($position->id) ? $load()
+            : $context->remember('closure:births', fn () => DB::table('closure_births')
+                ->whereIn('proposition_id', $context->propositions->keys())->get()->keyBy('proposition_id'))->get($position->id);
         if ($row === null || $row->version !== self::VERSION) {
             throw new ClosureHistoryUnavailable('Closure birth state is missing or obsolete; current population cannot reconstruct it.');
         }
@@ -71,12 +73,13 @@ class ClosureBirthService
         $other = $domain === 'emergence' ? 'settlement' : 'emergence';
         $origin = $ancestors->isEmpty();
         $lateral = $origin ? 1 : $this->lateralPosition($position, $ancestors->last()->proposition_id);
-        $centroid = count($laterals) < 2 ? null : array_sum($laterals) / count($laterals);
-        // Origin = -1; fewer than two prior same-Domain positions establish no tendency.
+        $cvs = array_map(fn ($samples) => count($samples) < 2 ? null : ClosureCalculator::coefficientOfVariation($samples), $intervals);
+        $mature = $cvs[$domain] !== null && $cvs[$other] !== null;
+        $centroid = ! $mature || count($laterals) < 2 ? null : array_sum($laterals) / count($laterals);
+        // Origin = -1. Lateral history activates only with comparative Cadence maturity.
         $lateralValue = $origin ? -1.0 : ($centroid === null ? 0.0 : ClosureCalculator::positionalSimilarity($lateral, $centroid));
         $depth = $origin ? -1.0 : ($ancestors->count() === 1 || $depths[$other] === 0 ? 0.0 : ClosureCalculator::similarity($depths[$domain], $depths[$other]));
-        $cvs = array_map(fn ($samples) => count($samples) < 2 ? null : ClosureCalculator::coefficientOfVariation($samples), $intervals);
-        $cadence = $origin ? -1.0 : ($cvs[$domain] === null || $cvs[$other] === null ? 0.0 : ClosureCalculator::variabilitySimilarity($cvs[$domain], $cvs[$other]));
+        $cadence = $origin ? -1.0 : (! $mature ? 0.0 : ClosureCalculator::variabilitySimilarity($cvs[$domain], $cvs[$other]));
         $cardinal = round(($depth + $lateralValue) / 2, 7);
         $values = ['depth' => $depth, 'lateral_committal_position' => $lateralValue,
             'committed_cardinal_position' => $cardinal, 'cadence' => $cadence,

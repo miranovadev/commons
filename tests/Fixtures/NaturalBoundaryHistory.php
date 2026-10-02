@@ -54,22 +54,28 @@ trait NaturalBoundaryHistory
             $parent = $this->naturalHistoryNode($cycle, $parent, $kind, $type);
         }
         // This is constructed catastrophe geometry, not a bootstrap trajectory:
-        // establish two Settlement Commits so the later prospective Emergence
-        // head can compare two committed positions against two.
+        // establish three Settlement Commits so a later third Emergence
+        // observation can compare full committed depths of three against three.
         $firstSettlement = $parent;
         $this->assertSame('settlement', $firstSettlement->commitmentSnapshot->direction_after->value);
-        $interval = 2 * $futureParticipants;
-        for ($i = 0; $i < 7 - $interval; $i++) {
-            $this->naturalIdleEntry($origin);
+        // Full committed depth needs three S observations before the third E
+        // observation can align. Build that later window with real Commits.
+        for ($commitIndex = 0; $commitIndex < 2; $commitIndex++) {
+            if ($commitIndex === 1) {
+                for ($i = 0; $i < 4; $i++) {
+                    $this->naturalIdleEntry($origin);
+                }
+            }
+            $entry = $parent;
+            $cycle = new Cycle;
+            $cycle->forceFill(['participant_id' => $author->id, 'sequence' => (int) $author->cycles()->max('sequence') + 1,
+                'entry_committal_id' => $entry->id])->save();
+            $this->naturalIdleEntry($entry);
+            $parent = $this->naturalHistoryNode($cycle, $parent, PhaseKind::Bias, 'reclassify');
+            $parent = $this->naturalHistoryNode($cycle, $parent, PhaseKind::Order, 'commit');
+            $this->assertSame($commitIndex === 0 ? 'settlement' : 'emergence', $parent->commitmentSnapshot->direction_after->value,
+                json_encode($parent->commitmentSnapshot->only(['correspondence', 'chirality', 'closure', 'tension'])));
         }
-        $cycle = new Cycle;
-        $cycle->forceFill(['participant_id' => $author->id, 'sequence' => (int) $author->cycles()->max('sequence') + 1,
-            'entry_committal_id' => $firstSettlement->id])->save();
-        for ($i = 1; $i < $interval; $i++) {
-            $this->naturalIdleEntry($firstSettlement);
-        }
-        $parent = $this->naturalHistoryNode($cycle, $parent, PhaseKind::Bias, 'reclassify');
-        $parent = $this->naturalHistoryNode($cycle, $parent, PhaseKind::Order, 'commit');
         $ancestor = $parent;
         $this->assertSame('emergence', $ancestor->commitmentSnapshot->direction_after->value, json_encode([
             'snapshot' => $ancestor->commitmentSnapshot->only(['correspondence', 'chirality', 'orientation', 'attestation_cadence', 'closure', 'tension']),
@@ -83,19 +89,17 @@ trait NaturalBoundaryHistory
             [PhaseKind::Bias, 'reclassify'], [PhaseKind::Order, 'commit']] as [$kind, $type]) {
             $parent = $this->naturalHistoryNode($cycle, $parent, $kind, $type);
             if ($kind === PhaseKind::Distinguish) {
-                for ($i = 1; $i < $futureParticipants; $i++) {
-                    $this->naturalIdleEntry($ancestor, $parent);
-                }
+                $this->naturalIdleEntry($ancestor, $parent);
             }
         }
         $seed = $parent;
-        // Freeze N entries at the seed's predecessor, then supply the remaining
-        // rate-balancing participation there without rewriting that interval.
+        // E and S will each observe [1,2,2] at the catastrophe birth. The
+        // one-participant case needs one idle seed entry; the lifecycle supplies two.
         if ($futureParticipants === 1) {
-            $this->naturalIdleEntry($ancestor);
+            $this->naturalIdleEntry($seed);
         }
-        $this->assertSame(0.0, $seed->commitmentSnapshot->depth);
-        $this->assertSame(0.0, $seed->commitmentSnapshot->cadence);
+        $this->assertSame(.3333333, $seed->commitmentSnapshot->depth);
+        $this->assertSame(.6970563, $seed->commitmentSnapshot->cadence);
         // The seed matches its reference locally; attenuation also includes the
         // preceding boundary's independently calculated first-Domain value.
         $raw = app(LocalMeasurementService::class);
@@ -106,7 +110,7 @@ trait NaturalBoundaryHistory
         $expected = round((1 + 1 / 4 + 1 / 9 + 1 / 16 + $ancestorCorrespondence / 25) / $mass, 7);
         $this->assertSame($expected, $seed->commitmentSnapshot->correspondence);
         $this->assertSame(1.0, $seed->commitmentSnapshot->orientation);
-        $this->assertEqualsWithDelta($futureParticipants === 1 ? -1 / 3 : 0, $seed->commitmentSnapshot->attestation_cadence, 1e-7);
+        $this->assertEqualsWithDelta(0, $seed->commitmentSnapshot->attestation_cadence, 1e-7);
         $this->assertDatabaseCount('tragedies', 0);
 
         return [$substrate, $origin, $ancestor, $seed];
