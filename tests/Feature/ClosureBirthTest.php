@@ -316,6 +316,22 @@ class ClosureBirthTest extends TestCase
         // [1, 2] => 1.5, proving the current observation is not a third sample.
     }
 
+    public function test_mature_lateral_does_not_depend_on_cadence_sign_or_force_admissibility(): void
+    {
+        $origin = $this->commit(null, 'settlement');
+        $s1 = $this->commit($origin, 'settlement');
+        $s2 = $this->commit($s1, 'emergence');
+        $e2 = $this->commit($s2, 'emergence', 2);
+        $birth = $this->observation($this->born($e2));
+        $this->assertSame([1, 2, 1], $birth['domain_intervals']['emergence']);
+        $this->assertSame([1, 1], $birth['domain_intervals']['settlement']);
+        $this->assertSame(-1.0, $birth['cadence']);
+        $this->assertSame(1.0, $birth['lateral_committal_position']);
+        $this->assertSame('positive', $birth['committed_cardinal_position_direction']);
+        $this->assertSame('negative', $birth['cadence_direction']);
+        $this->assertFalse($birth['admissible']);
+    }
+
     public static function secondCommitDomains(): array
     {
         return [['settlement'], ['emergence']];
