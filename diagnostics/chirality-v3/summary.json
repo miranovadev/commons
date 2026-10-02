@@ -1,0 +1,337 @@
+{
+  "cases": [
+    {
+      "case": "A",
+      "polarity_equivalent": true,
+      "stop": "candidate_cadence_undefined_at_first_bias",
+      "ordinary_commits": 0,
+      "bias_gate": {
+        "domain": "settlement",
+        "current_lean": 1.0,
+        "previous_lean": 1.0,
+        "current_intervals": {
+          "acts": 5,
+          "intervals": [
+            2,
+            1,
+            1,
+            4
+          ],
+          "mean": 2,
+          "cv": 0.6123724356957945,
+          "status": "empirical_cv"
+        },
+        "previous_intervals": {
+          "acts": 1,
+          "intervals": [],
+          "mean": null,
+          "cv": null,
+          "status": "no_intervals"
+        },
+        "candidate": {
+          "orientation": 0.0,
+          "orientation_direction": "negative",
+          "attestation_cadence": null,
+          "attestation_cadence_direction": null,
+          "local_chirality": null,
+          "attenuated_chirality": null,
+          "chirality_direction": null,
+          "bias_admissible": null,
+          "tension": null,
+          "required_correspondence": null,
+          "resulting_domain": null,
+          "attenuated_orientation_contribution": 0.0,
+          "chirality_range_if_all_cadences_bounded": [
+            -0.5,
+            0.5
+          ]
+        },
+        "current": {
+          "orientation": 1.0,
+          "attestation_cadence": 0.0,
+          "current_acts": 5,
+          "current_cycles": 10,
+          "previous_acts": 1,
+          "previous_cycles": 1,
+          "local_chirality": 0.5,
+          "attenuated_chirality": 0.3763272,
+          "gate": {
+            "gate_id": "01m3zcw82mz3dty5eftjzgwvyt",
+            "admissible": false,
+            "reason": "component_directions_disagree",
+            "orientation_direction": "positive",
+            "attestation_cadence_direction": "negative",
+            "chirality_direction": "positive"
+          }
+        },
+        "canonical": {
+          "correspondence": -0.5282627,
+          "shape_topology": -0.5411685,
+          "cardinal_position": -0.6666667,
+          "closure": 0.0,
+          "committed_cardinal_position": 0.0,
+          "committal_cadence": 0.0,
+          "closure_admissible": true
+        }
+      }
+    },
+    {
+      "case": "B",
+      "polarity_equivalent": true,
+      "stop": "candidate_cadence_undefined_at_first_bias",
+      "ordinary_commits": 0,
+      "bias_gate": {
+        "domain": "settlement",
+        "current_lean": 0.0,
+        "previous_lean": 1.0,
+        "current_intervals": {
+          "acts": 5,
+          "intervals": [
+            2,
+            1,
+            1,
+            4
+          ],
+          "mean": 2,
+          "cv": 0.6123724356957945,
+          "status": "empirical_cv"
+        },
+        "previous_intervals": {
+          "acts": 1,
+          "intervals": [],
+          "mean": null,
+          "cv": null,
+          "status": "no_intervals"
+        },
+        "candidate": {
+          "orientation": -0.5,
+          "orientation_direction": "negative",
+          "attestation_cadence": null,
+          "attestation_cadence_direction": null,
+          "local_chirality": null,
+          "attenuated_chirality": null,
+          "chirality_direction": null,
+          "bias_admissible": null,
+          "tension": null,
+          "required_correspondence": null,
+          "resulting_domain": null,
+          "attenuated_orientation_contribution": -0.3177763,
+          "chirality_range_if_all_cadences_bounded": [
+            -0.8177763,
+            0.1822237
+          ]
+        },
+        "current": {
+          "orientation": 0.0,
+          "attestation_cadence": 0.0,
+          "current_acts": 5,
+          "current_cycles": 10,
+          "previous_acts": 1,
+          "previous_cycles": 1,
+          "local_chirality": 0.0,
+          "attenuated_chirality": -0.2592254,
+          "gate": {
+            "gate_id": "01m3zcwte78r5nsmr7h88kc191",
+            "admissible": true,
+            "reason": null,
+            "orientation_direction": "negative",
+            "attestation_cadence_direction": "negative",
+            "chirality_direction": "negative"
+          }
+        },
+        "canonical": {
+          "correspondence": -0.5282627,
+          "shape_topology": -0.5411685,
+          "cardinal_position": -0.6666667,
+          "closure": 0.0,
+          "committed_cardinal_position": 0.0,
+          "committal_cadence": 0.0,
+          "closure_admissible": true
+        }
+      }
+    },
+    {
+      "case": "C",
+      "polarity_equivalent": true,
+      "stop": "candidate_cadence_undefined_at_first_bias",
+      "ordinary_commits": 0,
+      "bias_gate": {
+        "domain": "settlement",
+        "current_lean": 0.0,
+        "previous_lean": 1.0,
+        "current_intervals": {
+          "acts": 5,
+          "intervals": [
+            2,
+            1,
+            1,
+            4
+          ],
+          "mean": 2,
+          "cv": 0.6123724356957945,
+          "status": "empirical_cv"
+        },
+        "previous_intervals": {
+          "acts": 1,
+          "intervals": [],
+          "mean": null,
+          "cv": null,
+          "status": "no_intervals"
+        },
+        "candidate": {
+          "orientation": -0.5,
+          "orientation_direction": "negative",
+          "attestation_cadence": null,
+          "attestation_cadence_direction": null,
+          "local_chirality": null,
+          "attenuated_chirality": null,
+          "chirality_direction": null,
+          "bias_admissible": null,
+          "tension": null,
+          "required_correspondence": null,
+          "resulting_domain": null,
+          "attenuated_orientation_contribution": -0.1885698,
+          "chirality_range_if_all_cadences_bounded": [
+            -0.6885698,
+            0.3114302
+          ]
+        },
+        "current": {
+          "orientation": 0.0,
+          "attestation_cadence": 0.0,
+          "current_acts": 5,
+          "current_cycles": 10,
+          "previous_acts": 1,
+          "previous_cycles": 1,
+          "local_chirality": 0.0,
+          "attenuated_chirality": -0.0008123,
+          "gate": {
+            "gate_id": "01m3zcxcrye59ppkp3kab0wnpk",
+            "admissible": true,
+            "reason": null,
+            "orientation_direction": "negative",
+            "attestation_cadence_direction": "negative",
+            "chirality_direction": "negative"
+          }
+        },
+        "canonical": {
+          "correspondence": -0.5282627,
+          "shape_topology": -0.5411685,
+          "cardinal_position": -0.6666667,
+          "closure": 0.0,
+          "committed_cardinal_position": 0.0,
+          "committal_cadence": 0.0,
+          "closure_admissible": true
+        }
+      }
+    },
+    {
+      "case": "D",
+      "polarity_equivalent": true,
+      "stop": "candidate_cadence_undefined_at_first_bias",
+      "ordinary_commits": 0,
+      "bias_gate": {
+        "domain": "settlement",
+        "current_lean": -1.0,
+        "previous_lean": 1.0,
+        "current_intervals": {
+          "acts": 5,
+          "intervals": [
+            2,
+            1,
+            1,
+            4
+          ],
+          "mean": 2,
+          "cv": 0.6123724356957945,
+          "status": "empirical_cv"
+        },
+        "previous_intervals": {
+          "acts": 1,
+          "intervals": [],
+          "mean": null,
+          "cv": null,
+          "status": "no_intervals"
+        },
+        "candidate": {
+          "orientation": -1.0,
+          "orientation_direction": "negative",
+          "attestation_cadence": null,
+          "attestation_cadence_direction": null,
+          "local_chirality": null,
+          "attenuated_chirality": null,
+          "chirality_direction": null,
+          "bias_admissible": null,
+          "tension": null,
+          "required_correspondence": null,
+          "resulting_domain": null,
+          "attenuated_orientation_contribution": -0.4546707,
+          "chirality_range_if_all_cadences_bounded": [
+            -0.9546707,
+            0.04532930000000002
+          ]
+        },
+        "current": {
+          "orientation": -1.0,
+          "attestation_cadence": 0.0,
+          "current_acts": 5,
+          "current_cycles": 10,
+          "previous_acts": 1,
+          "previous_cycles": 1,
+          "local_chirality": -0.5,
+          "attenuated_chirality": -0.5330142,
+          "gate": {
+            "gate_id": "01m3zcxysqfrdfphcnsydjd1zd",
+            "admissible": true,
+            "reason": null,
+            "orientation_direction": "negative",
+            "attestation_cadence_direction": "negative",
+            "chirality_direction": "negative"
+          }
+        },
+        "canonical": {
+          "correspondence": -0.5282627,
+          "shape_topology": -0.5411685,
+          "cardinal_position": -0.6666667,
+          "closure": 0.0,
+          "committed_cardinal_position": 0.0,
+          "committal_cadence": 0.0,
+          "closure_admissible": true
+        }
+      }
+    }
+  ],
+  "zero_mean_cases": {
+    "no_intervals": {
+      "intervals": [],
+      "cv": null
+    },
+    "all_zero": {
+      "intervals": [
+        0,
+        0
+      ],
+      "mean": 0,
+      "sigma": 0,
+      "cv": null
+    },
+    "constant_positive": {
+      "intervals": [
+        2,
+        2
+      ],
+      "mean": 2,
+      "sigma": 0,
+      "cv": 0
+    },
+    "burst_then_entry": {
+      "intervals": [
+        0,
+        1
+      ],
+      "mean": 0.5,
+      "sigma": 0.5,
+      "cv": 1
+    }
+  }
+}

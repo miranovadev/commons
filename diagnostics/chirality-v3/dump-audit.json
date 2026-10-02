@@ -1,0 +1,84 @@
+{
+  "ledger_types": {
+    "App\\Models\\Proposition": 467,
+    "App\\Models\\Receipt": 291,
+    "App\\Models\\Supersession": 539,
+    "App\\Models\\Attestation": 2722,
+    "App\\Models\\ReceiptContextEvent": 482
+  },
+  "attestation_timestamp_vs_ledger_mismatches": 194,
+  "substrates": [
+    {
+      "id": "01m3y7gbr5kgcdg88af8x6qkjr",
+      "created_at": "2026-10-02 11:55:29",
+      "cycles": 225,
+      "attestations": 466,
+      "attestation_timestamp_vs_ledger_mismatches": 25,
+      "attestations_without_ledger": 0,
+      "cycles_with_ledger": 0,
+      "cross_cycle_same_horizon_act_recording_window_overlaps": 0,
+      "same_region_ties": 0,
+      "examples": []
+    },
+    {
+      "id": "01m3s3bkababcp424mrndvtwp6",
+      "created_at": "2026-09-30 12:06:47",
+      "cycles": 239,
+      "attestations": 685,
+      "attestation_timestamp_vs_ledger_mismatches": 54,
+      "attestations_without_ledger": 0,
+      "cycles_with_ledger": 0,
+      "cross_cycle_same_horizon_act_recording_window_overlaps": 0,
+      "same_region_ties": 0,
+      "examples": []
+    },
+    {
+      "id": "01m3p5x70dknfb0avtr0b4v9nk",
+      "created_at": "2026-09-29 08:53:38",
+      "cycles": 71,
+      "attestations": 194,
+      "attestation_timestamp_vs_ledger_mismatches": 12,
+      "attestations_without_ledger": 0,
+      "cycles_with_ledger": 0,
+      "cross_cycle_same_horizon_act_recording_window_overlaps": 0,
+      "same_region_ties": 0,
+      "examples": []
+    },
+    {
+      "id": "01m3p63bwp3085mcspkx4pwver",
+      "created_at": "2026-09-29 08:57:00",
+      "cycles": 90,
+      "attestations": 245,
+      "attestation_timestamp_vs_ledger_mismatches": 13,
+      "attestations_without_ledger": 0,
+      "cycles_with_ledger": 0,
+      "cross_cycle_same_horizon_act_recording_window_overlaps": 0,
+      "same_region_ties": 0,
+      "examples": []
+    },
+    {
+      "id": "01m3s3c33pmda62r9159r02066",
+      "created_at": "2026-09-30 12:07:03",
+      "cycles": 192,
+      "attestations": 515,
+      "attestation_timestamp_vs_ledger_mismatches": 46,
+      "attestations_without_ledger": 0,
+      "cycles_with_ledger": 0,
+      "cross_cycle_same_horizon_act_recording_window_overlaps": 0,
+      "same_region_ties": 0,
+      "examples": []
+    },
+    {
+      "id": "01m3y7fyx5pv6xeex1rgdyecgc",
+      "created_at": "2026-10-02 11:55:16",
+      "cycles": 258,
+      "attestations": 617,
+      "attestation_timestamp_vs_ledger_mismatches": 44,
+      "attestations_without_ledger": 0,
+      "cycles_with_ledger": 0,
+      "cross_cycle_same_horizon_act_recording_window_overlaps": 0,
+      "same_region_ties": 0,
+      "examples": []
+    }
+  ]
+}
