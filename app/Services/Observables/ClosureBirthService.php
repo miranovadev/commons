@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\DB;
 /** Durable historical observable, independent of disposable measurement projections. */
 class ClosureBirthService
 {
-    public const VERSION = 'closure-birth-v2';
+    public const VERSION = 'closure-birth-v2-lateral-history-2';
 
     public function __construct(private readonly CommittalLineageService $lineage) {}
 
@@ -71,8 +71,8 @@ class ClosureBirthService
         $other = $domain === 'emergence' ? 'settlement' : 'emergence';
         $origin = $ancestors->isEmpty();
         $lateral = $origin ? 1 : $this->lateralPosition($position, $ancestors->last()->proposition_id);
-        $centroid = $laterals === [] ? null : array_sum($laterals) / count($laterals);
-        // Constitutional Origin = -1; no comparative lateral history thereafter = 0.
+        $centroid = count($laterals) < 2 ? null : array_sum($laterals) / count($laterals);
+        // Origin = -1; fewer than two prior same-Domain positions establish no tendency.
         $lateralValue = $origin ? -1.0 : ($centroid === null ? 0.0 : ClosureCalculator::positionalSimilarity($lateral, $centroid));
         $depth = $origin ? -1.0 : ($ancestors->count() === 1 || $depths[$other] === 0 ? 0.0 : ClosureCalculator::similarity($depths[$domain], $depths[$other]));
         $cvs = array_map(fn ($samples) => count($samples) < 2 ? null : ClosureCalculator::coefficientOfVariation($samples), $intervals);

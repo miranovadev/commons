@@ -278,13 +278,34 @@ class ClosureBirthTest extends TestCase
         $this->assertSame('positive', $zero['depth_direction']);
     }
 
+    public function test_lateral_comparison_requires_two_prior_same_domain_observations(): void
+    {
+        $origin = $this->commit(null, 'settlement');
+        $first = $this->commit($origin, 'settlement');
+        $zero = $this->observation($first);
+        $this->assertNull($zero['historical_lateral_centroid']);
+        $this->assertSame(0.0, $zero['lateral_committal_position']);
+        $this->assertSame('negative', $zero['lateral_committal_position_direction']);
+        $second = $this->commit($first, 'settlement');
+        $one = $this->observation($second);
+        $this->assertNull($one['historical_lateral_centroid']);
+        $this->assertSame(0.0, $one['lateral_committal_position']);
+        $this->assertSame('negative', $one['lateral_committal_position_direction']);
+        $current = $this->observation($this->born($second));
+        $this->assertEquals(1.0, $current['historical_lateral_centroid']);
+        $this->assertSame(1.0, $current['lateral_committal_position']);
+        $this->assertSame('positive', $current['lateral_committal_position_direction']);
+        // Existing fractional-centroid coverage compares current 1 with prior
+        // [1, 2] => 1.5, proving the current observation is not a third sample.
+    }
+
     public static function secondCommitDomains(): array
     {
         return [['settlement'], ['emergence']];
     }
 
     #[DataProvider('secondCommitDomains')]
-    public function test_unbranched_second_commit_has_opposed_cardinal_and_bootstrap_cadence_directions(string $domain): void
+    public function test_unbranched_second_commit_retains_aligned_bootstrap_directions(string $domain): void
     {
         $origin = $this->commit(null, 'settlement');
         $first = $this->commit($origin, $domain);
@@ -300,12 +321,12 @@ class ClosureBirthTest extends TestCase
             }
             $observation = $births->prospective($candidate);
             $this->assertSame(0.0, $observation['depth']);
-            $this->assertSame(1.0, $observation['lateral_committal_position']);
-            $this->assertSame(0.5, $observation['committed_cardinal_position']);
-            $this->assertSame('positive', $observation['committed_cardinal_position_direction']);
+            $this->assertSame(0.0, $observation['lateral_committal_position']);
+            $this->assertSame(0.0, $observation['committed_cardinal_position']);
+            $this->assertSame('negative', $observation['committed_cardinal_position_direction']);
             $this->assertSame(0.0, $observation['cadence']);
             $this->assertSame('negative', $observation['cadence_direction']);
-            $this->assertFalse($observation['admissible']);
+            $this->assertTrue($observation['admissible']);
         }
         $this->assertDatabaseCount('closure_births', 2);
     }

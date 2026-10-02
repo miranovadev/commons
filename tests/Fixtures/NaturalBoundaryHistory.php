@@ -14,6 +14,7 @@ use App\Models\Supersession;
 use App\Services\CommitmentSnapshotService;
 use App\Services\LedgerService;
 use App\Services\Observables\ChiralityCalculator;
+use App\Services\Observables\ClosureBirthService;
 use App\Services\Observables\ContextLineageComparisonService;
 use App\Services\Observables\LineageMeasurementService;
 use App\Services\Observables\LocalMeasurementService;
@@ -29,6 +30,7 @@ trait NaturalBoundaryHistory
     {
         // Unlike controlled routing fixtures, this fixture measures every observable.
         $this->app->forgetInstance(LocalMeasurementService::class);
+        $this->app->forgetInstance(ClosureBirthService::class);
         $substrate = (new Substrate)->forceFill(['slug' => 'natural-boundary', 'title' => 'Natural boundary',
             'visibility' => 'public', 'configuration' => []]);
         $substrate->save();
@@ -147,6 +149,8 @@ trait NaturalBoundaryHistory
             app(LedgerService::class)->record($vote);
             $this->receiptFixture($node);
         } else {
+            $birth = app(ClosureBirthService::class)->stored($node);
+            $this->assertTrue($birth['admissible'], 'Natural history Commit birth: '.json_encode($birth));
             $measurement = app(PropositionMeasurementService::class)->recalculate($node);
             $field = app(ProjectionService::class)->from(new ObservableValues(
                 $measurement->correspondence, $measurement->chirality, $measurement->closure));
