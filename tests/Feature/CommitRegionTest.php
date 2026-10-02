@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Domain\Observables\ClosureValues;
 use App\Enums\PhaseKind;
 use App\Enums\RegisterPosition;
 use App\Models\Attestation;
@@ -216,15 +215,18 @@ class CommitRegionTest extends TestCase
         }
         $phase = $this->phase(PhaseKind::Order, $gate, $third);
         $values = [$positive->id => [1, 1], $negative->id => [-1, -1], $ungrounded->id => [-1, -1]];
-        $this->mock(ClosureGateService::class, function ($mock) use (&$values): void {
-            $mock->shouldReceive('preview')->andReturnUsing(function (Proposition $candidate) use (&$values): array {
-                return [...(new ClosureValues(...($values[$candidate->id] ?? [1, -1])))->resolve(),
-                    'cadence_interval' => 1, 'history_proposition_id' => null];
+        $this->controlledBirthClosureFixture(-1.0, includeCommittal: true);
+        $gateService = app(ClosureGateService::class);
+        $this->mock(ClosureGateService::class, function ($mock) use (&$values, $gateService): void {
+            $mock->shouldReceive('preview')->andReturnUsing(function (Proposition $candidate, Phase $phase, $context = null) use (&$values, $gateService): array {
+                $result = $gateService->preview($candidate, $phase, $context);
+                [$cardinal, $cadence] = $values[$candidate->id] ?? [1, -1];
+
+                // Isolate option eligibility; the selected negative candidate keeps
+                // its canonical prospective observation for snapshot verification.
+                return [...$result, 'admissible' => $cardinal === $cadence];
             });
-            $mock->shouldReceive('forCommitment')->andReturn([
-                ...(new ClosureValues(-1, -1))->resolve(),
-                'history_source' => 'negative-default', 'cadence_interval' => 1, 'history_proposition_id' => null,
-            ]);
+            $mock->shouldReceive('forCommitment')->andReturnUsing(fn ($node) => $gateService->forCommitment($node));
         });
         $options = app(ClosureOptionService::class);
         $this->assertEqualsCanonicalizing([$gate->id, $positive->id, $negative->id, $misaligned->id, $ungrounded->id], $options->forPhase($phase)->pluck('id')->all());

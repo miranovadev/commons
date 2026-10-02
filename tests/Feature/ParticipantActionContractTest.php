@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Domain\Observables\ClosureValues;
 use App\Enums\PhaseKind;
 use App\Models\Attestation;
 use App\Models\Connection;
@@ -12,7 +11,6 @@ use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Substrate;
 use App\Models\Supersession;
-use App\Services\ClosureGateService;
 use App\Services\CommitRegionPolarityService;
 use App\Services\ContributionDispatcher;
 use App\Services\ContributionService;
@@ -350,11 +348,7 @@ class ParticipantActionContractTest extends TestCase
                 $this->groundFixture($write);
                 // Contract coverage isolates numeric Closure eligibility; the real
                 // reinforcement, region, validator, dispatcher and lifecycle run.
-                $this->mock(ClosureGateService::class, function ($mock): void {
-                    $values = [...(new ClosureValues(-1, -1))->resolve(), 'history_source' => 'negative-default', 'cadence_interval' => 1, 'history_proposition_id' => null];
-                    $mock->shouldReceive('preview')->andReturn($values);
-                    $mock->shouldReceive('forCommitment')->andReturn($values);
-                });
+                $this->controlledBirthClosureFixture(-1.0, includeCommittal: true);
                 $committedSource = $node('canon', $gate, PhaseKind::Bias, 'revise');
                 $this->groundFixture($committedSource);
                 $past->forceFill(['write_register' => 'canon', 'gate_proposition_id' => $committedSource->id])->save();

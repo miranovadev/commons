@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Domain\Observables\LocalMeasurements;
+use App\Domain\Observables\ClosureValues;
 use App\Enums\ContextDomain;
 use App\Enums\ObservableDirection;
 use App\Enums\PhaseKind;
@@ -23,7 +23,7 @@ use App\Services\ContextHorizonProjector;
 use App\Services\ContributionDispatcher;
 use App\Services\InputPlanService;
 use App\Services\LedgerService;
-use App\Services\Observables\LocalMeasurementService;
+use App\Services\Observables\ClosureBirthService;
 use App\Services\ParticipationService;
 use App\Services\PotentialProjectionService;
 use App\Services\PropositionMeasurementService;
@@ -271,7 +271,7 @@ class ClosureHysteresisTest extends TestCase
             app(ContributionDispatcher::class)->dispatch($this->participant, $phase, ['action' => 'proposition.commit', 'proposition_id' => $phase->gate_proposition_id]);
             $this->fail('An actual candidate rejection must roll back the write.');
         } catch (DomainException $exception) {
-            $this->assertStringContainsString('aligned Depth/Cadence', $exception->getMessage());
+            $this->assertStringContainsString('aligned Committed Cardinal Position/Cadence', $exception->getMessage());
         }
         $this->assertSame($counts, $this->counts());
         $this->assertSame($gate->id, $this->participant->fresh()->current_proposition_id);
@@ -306,9 +306,7 @@ class ClosureHysteresisTest extends TestCase
         $this->bootstrap();
         [$phase, $gate] = $this->candidate([2]);
         // Controlled native components; real Closure resolution, planning and serialization.
-        $this->mock(LocalMeasurementService::class, function ($mock) use ($depth, $cadence): void {
-            $mock->shouldReceive('calculate')->andReturn(new LocalMeasurements(0, 0, $depth, $cadence));
-        });
+        $this->previewClosureFixture($depth, $cadence);
         $this->publishPotentialFixture($this->participant);
         $plan = app(InputPlanService::class)->forPhase($this->participant, $phase);
         $this->assertLatePhaseContract($plan, PhaseKind::Order, $gate->id, $allowed,
@@ -350,10 +348,25 @@ class ClosureHysteresisTest extends TestCase
 
     private function zeroDepthLocalValues(): void
     {
-        // Exercise the zero-direction hysteresis rule independently of the
-        // cycle-depth fixture, whose aggregate is no longer exactly zero.
-        $this->mock(LocalMeasurementService::class, function ($mock): void {
-            $mock->shouldReceive('calculate')->andReturn(new LocalMeasurements(0, 0, 0, 1));
+        $this->previewClosureFixture(0, 1);
+    }
+
+    /** Controlled preview components; real birth persistence and Commit guards stay active. */
+    private function previewClosureFixture(float $cardinal, float $cadence): void
+    {
+        $births = app(ClosureBirthService::class);
+        $this->partialMock(ClosureBirthService::class, function ($mock) use ($births, $cardinal, $cadence): void {
+            $mock->shouldReceive('prospective')->andReturnUsing(function ($node) use ($births, $cardinal, $cadence) {
+                $birth = $births->prospective($node);
+                $values = (new ClosureValues($cardinal, $cadence))->resolve(
+                    ObservableDirection::from($birth['committed_cardinal_position_direction']),
+                    ObservableDirection::from($birth['cadence_direction']));
+
+                return [...$birth, ...$values, 'committed_cardinal_position' => $cardinal,
+                    'committed_cardinal_position_direction' => $values['depth_direction'],
+                    'lateral_committal_position' => $cardinal,
+                    'lateral_committal_position_direction' => $values['depth_direction']];
+            });
         });
     }
 

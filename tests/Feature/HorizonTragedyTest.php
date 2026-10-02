@@ -25,6 +25,9 @@ class HorizonTragedyTest extends TestCase
     public function test_boundary_tragedy_has_one_shared_receipt_and_rest_uses_normal_ancestral_recovery(): void
     {
         [, $phase, , $commit] = $this->exhaustedBranch();
+        // Keep this controlled Receipt-routing fixture's crossover open in E.
+        $commit->commitmentSnapshot->forceFill(['correspondence' => .2, 'chirality' => .2,
+            'closure' => .8, 'tension' => .4, 'prominence' => .7, 'turbulence' => .3])->save();
         $this->boundaryTragedyFixture($phase->gate);
         $proof = app(ExhaustionService::class)->inspect($phase);
         $this->rest($phase);

@@ -2,28 +2,26 @@
 
 namespace App\Services;
 
-use App\Domain\Observables\ClosureValues;
-use App\Enums\ObservableDirection;
 use App\Exceptions\ClosureHistoryUnavailable;
 use App\Models\CommitmentSnapshot;
 use App\Models\ContextHorizon;
 use App\Models\Phase;
 use App\Models\Proposition;
+use App\Services\Observables\ClosureBirthService;
 use App\Services\Observables\CommittalLineageService;
-use App\Services\Observables\LineageMeasurementService;
 use App\Services\Participation\ParticipationContext;
 
 class ClosureGateService
 {
     public function __construct(
-        private readonly LineageMeasurementService $measurements,
+        private readonly ClosureBirthService $births,
         private readonly CommittalLineageService $lineage,
     ) {}
 
     public function preview(Proposition $gate, Phase $phase, ?ParticipationContext $context = null): array
     {
-        $evaluate = function () use ($gate, $phase, $context): array {
-            // History and interval belong to the producing Cycle, never the Gate's owner.
+        $evaluate = function () use ($phase): array {
+            // Producing-Cycle governance, never the expressive Gate's birth state.
             $candidate = new Proposition;
             $candidate->forceFill(['tier' => 'committal']);
             $candidate->setRelation('phase', $phase);
@@ -31,43 +29,29 @@ class ClosureGateService
                 if ($phase->cycle->entry_committal_id === null) {
                     throw new ClosureHistoryUnavailable('A prospective Commit requires its producing Cycle entry Committal.');
                 }
-                return $this->evaluate($this->measurements->prospectiveCommit($gate, $phase, $context)->closure(), $candidate, $context);
+
+                return $this->births->prospective($candidate);
             } catch (ClosureHistoryUnavailable $exception) {
                 return ['depth' => null, 'cadence' => null, 'closure' => null,
+                    'committed_cardinal_position' => null, 'committed_cardinal_position_direction' => null,
+                    'lateral_committal_position' => null, 'lateral_committal_position_direction' => null,
                     'depth_direction' => null, 'cadence_direction' => null, 'admissible' => false,
-                    'cadence_interval' => $phase->cycle->entry_committal_id === null ? null : $this->lineage->interval($candidate, $context),
-                    'history_proposition_id' => $phase->cycle->entry_committal_id,
-                    'history_source' => 'committed-ancestor', 'unavailable_reason' => 'cadence_history_unavailable'];
+                    'cadence_interval' => null, 'history_proposition_id' => $phase->cycle->entry_committal_id,
+                    'history_source' => 'committed-ancestor', 'unavailable_reason' => 'closure_birth_history_unavailable'];
             }
         };
+
         return $context === null ? $evaluate() : $context->remember('closure:'.$phase->id.':'.$gate->id, $evaluate);
     }
 
     public function forCommitment(Proposition $target): array
     {
-        return $this->evaluate($this->measurements->calculate($target)->closure(), $target);
+        return $this->births->stored($target);
     }
 
     /** The creating Cycle's entry Committal is the sole committed directional predecessor. */
     public function historyFor(Proposition $position, ?ParticipationContext $context = null, ?ContextHorizon $horizon = null): ?CommitmentSnapshot
     {
         return $this->lineage->ancestors($position, $context)->first();
-    }
-
-    private function evaluate(ClosureValues $closure, Proposition $position, ?ParticipationContext $context = null): array
-    {
-        $history = $this->historyFor($position, $context);
-        $snapshot = $this->lineage->records($position, $context)->get($position->id);
-
-        return [
-            ...$closure->resolve(
-                $history?->depth_direction ?? ObservableDirection::Negative,
-                $history?->cadence_direction ?? ObservableDirection::Negative,
-            ),
-            'cadence_interval' => $snapshot !== null ? $snapshot->cadence_interval
-                : ($history === null ? null : $this->lineage->interval($position, $context)),
-            'history_proposition_id' => $history?->proposition_id,
-            'history_source' => $history === null ? 'negative-default' : 'committed-ancestor',
-        ];
     }
 }

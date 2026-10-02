@@ -2,25 +2,17 @@
 
 namespace Tests\Fixtures;
 
-use App\Domain\Observables\ClosureValues;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\ReceiptConsumption;
 use App\Models\Substrate;
-use App\Services\ClosureGateService;
 use App\Services\ParticipationService;
 
 trait HorizonCycleFixture
 {
     protected function driveHorizonCycle(int $participantCount = 1, bool $realClosure = false, string $originDirection = 'support', ?callable $observe = null, int $additionalEntrants = 0): Proposition
     {
-        // Isolate the phase motor; numeric Closure has its own real-calculator suite.
-        if (! $realClosure) {
-            $this->mock(ClosureGateService::class, fn ($mock) => $mock->shouldReceive('preview', 'forCommitment')->andReturn([
-                ...(new ClosureValues(1, 1))->resolve(), 'history_proposition_id' => null, 'history_source' => 'negative-default', 'cadence_interval' => 1,
-            ]));
-        }
         $substrate = (new Substrate)->forceFill(['slug' => 'single-bird', 'title' => 'Single Participant', 'visibility' => 'public', 'configuration' => []]);
         $substrate->save();
         $participant = (new Participant)->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'solo', 'max_read_count' => 25]);
@@ -28,6 +20,11 @@ trait HorizonCycleFixture
         $service = app(ParticipationService::class);
         $state = $service->enter($participant, ['statement' => 'Origin', 'attestation' => ['direction' => $originDirection]]);
         $originId = $state['current_proposition_id'];
+        // Isolate numeric eligibility with a consistent birth observation, after Origin.
+        if (! $realClosure) {
+            $this->controlledBirthClosureFixture(1.0, includeCommittal: true);
+            $service = app(ParticipationService::class);
+        }
         $participants = [$participant];
         for ($i = 1; $i < $participantCount; $i++) {
             $other = (new Participant)->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'collaborator-'.$i, 'max_read_count' => 25]);

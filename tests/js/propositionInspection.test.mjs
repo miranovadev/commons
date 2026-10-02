@@ -50,14 +50,14 @@ test('Closure direction colors follow supplied hysteretic direction, including n
     ['positive', 'positive', 'indigo.4'], ['negative', 'negative', 'indigo.9'],
     ['positive', 'negative', 'gray.6'], ['negative', 'positive', 'gray.6'],
   ]) {
-    const point = { proposition_id: 'selected', depth: 0, cadence: 0, depth_direction, cadence_direction };
+    const point = { proposition_id: 'selected', depth: 0, cadence: 0, depth_direction, cadence_direction, committed_cardinal_position: 0, committed_cardinal_position_direction: depth_direction };
     assert.equal(closureDirectionColor(point), color);
     const html = render('closure', { ...node, closure_history: { points: [point], current: point, source: 'selected-committal' } });
     assert.equal((html.match(new RegExp(`data-color="${color}"`, 'g')) || []).length, 2);
-    assert.ok(html.includes(`Depth: ${depth_direction} direction`));
-    assert.ok(html.includes(`Cadence: ${cadence_direction} direction`));
-    assert.match(html, /Depth history: 0.00/);
-    assert.match(html, /Cadence history: 0.00/);
+    assert.ok(html.includes(`Committed Cardinal Position: ${depth_direction} direction`));
+    assert.ok(html.includes(`Committal Cadence: ${cadence_direction} direction`));
+    assert.match(html, /Committed Cardinal Position history: 0.00/);
+    assert.match(html, /Committal Cadence history: 0.00/);
   }
 });
 

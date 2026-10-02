@@ -28,6 +28,7 @@ use App\Services\Evidence\PublicResourceAddress;
 use App\Services\HorizonReceiptService;
 use App\Services\InstrumentExecutionService;
 use App\Services\LedgerService;
+use App\Services\Observables\ClosureBirthService;
 use App\Services\Observables\LocalMeasurementService;
 use App\Services\PotentialProjectionService;
 use App\Services\PropositionMeasurementService;
@@ -43,6 +44,7 @@ abstract class TestCase extends BaseTestCase
     /** Controlled observable output; persistence and canonical field projection stay real. */
     protected function resolveExpressiveFieldFixture(float $value): void
     {
+        $this->controlledBirthClosureFixture($value);
         $this->mock(LocalMeasurementService::class, function ($mock) use ($value): void {
             $mock->shouldReceive('chiralityComponents')->andReturn(new ChiralityValues($value, $value));
             $mock->shouldReceive('calculate')->andReturn(new LocalMeasurements($value, $value, $value, $value,
@@ -54,6 +56,7 @@ abstract class TestCase extends BaseTestCase
     /** Routing fixtures author their fields; they do not model committed Closure runs. */
     protected function controlledClosureFixture(float $closure): void
     {
+        $this->controlledBirthClosureFixture($closure);
         $calculator = app(LocalMeasurementService::class);
         $this->partialMock(LocalMeasurementService::class, function ($mock) use ($calculator, $closure): void {
             $mock->shouldReceive('calculate')->andReturnUsing(function ($node, $comparison = null, $includeClosure = true) use ($calculator, $closure) {
@@ -67,6 +70,29 @@ abstract class TestCase extends BaseTestCase
                     chiralityComponents: $raw->chiralityComponents, correspondenceComponents: $raw->correspondenceComponents);
             });
             $mock->shouldReceive('chiralityComponents')->andReturnUsing(fn ($node) => $calculator->chiralityComponents($node));
+        });
+    }
+
+    /** Isolated field/lifecycle tests control Closure too; birth-invariant tests never use this double. */
+    protected function controlledBirthClosureFixture(float $value, ?string $onlyId = null, bool $includeCommittal = false): void
+    {
+        $births = app(ClosureBirthService::class);
+        $this->partialMock(ClosureBirthService::class, function ($mock) use ($births, $value, $onlyId, $includeCommittal): void {
+            foreach (['stored', 'prospective'] as $method) {
+                $mock->shouldReceive($method)->andReturnUsing(function ($node, $context = null) use ($births, $value, $onlyId, $method, $includeCommittal) {
+                    $observation = $method === 'stored' ? $births->stored($node, $context) : $births->prospective($node);
+                    if ((! $includeCommittal && $node->tier === 'committal') || ($onlyId !== null && $node->id !== $onlyId)) {
+                        return $observation;
+                    }
+                    foreach (['depth', 'lateral_committal_position', 'committed_cardinal_position', 'cadence', 'closure'] as $key) {
+                        $observation[$key] = $value;
+                        $observation[$key.'_direction'] = $value > 0 ? 'positive' : 'negative';
+                    }
+                    $observation['admissible'] = true;
+
+                    return $observation;
+                });
+            }
         });
     }
 
@@ -105,6 +131,7 @@ abstract class TestCase extends BaseTestCase
             $edge->save();
             app(LedgerService::class)->record($edge);
         }
+        $this->controlledBirthClosureFixture(1, $terminal->id);
         $terminal->wasRecentlyCreated = true; // The fixture explicitly supplies the birth event.
         $tragedy = DB::transaction(function () use ($terminal) {
             app(PropositionMeasurementService::class)->project($terminal, 1, 1, 1);

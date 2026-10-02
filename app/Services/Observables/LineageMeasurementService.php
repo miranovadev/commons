@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 
 final readonly class LineageMeasurementService
 {
-    public const string VERSION = 'prospective-closure-chirality-history-v18';
+    public const string VERSION = 'closure-birth-v2-chirality-history-v19';
 
     public function __construct(
         private LocalMeasurementService $local,
@@ -60,7 +60,7 @@ final readonly class LineageMeasurementService
         }
 
         return new LocalMeasurements(round($totals['correspondence'] / $mass, 7),
-            round($totals['chirality'] / $mass, 7), $closure->depth, $closure->cadence, $closure->average(), $chiralityComponents, $correspondenceComponents);
+            round($totals['chirality'] / $mass, 7), $closure->depth, $closure->cadence, $closure->average(), $chiralityComponents, $correspondenceComponents, $closure);
     }
 
     /** Chirality observation without requiring unrelated Closure or Cardinal history. */

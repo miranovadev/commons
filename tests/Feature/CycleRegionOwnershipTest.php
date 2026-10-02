@@ -16,6 +16,7 @@ use App\Services\ContextHorizonProjector;
 use App\Services\GraphProjectionService;
 use App\Services\LedgerService;
 use App\Services\Participation\ParticipationContext;
+use App\Services\PotentialProjectionService;
 use App\Services\ReceiptRegionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -92,7 +93,7 @@ class CycleRegionOwnershipTest extends TestCase
         $this->assertSame($horizonB, $right->fresh()->contextHorizonMembership->context_horizon_id);
         $before = Supersession::orderBy('id')->get()->map->getAttributes()->all();
         $this->publishPotentialFixture($this->actor->substrate);
-        $local = app(\App\Services\PotentialProjectionService::class)->region($horizonA)['local'];
+        $local = app(PotentialProjectionService::class)->region($horizonA)['local'];
         $this->assertSame($a->id, $local['nodes'][$r->id]['seed_id']);
         $this->assertContains([$right->id, $r->id, 'variant'], $local['foreign_inputs']);
         $this->assertNotContains([$right->id, $r->id, 'variant'], $local['edges']);
@@ -205,7 +206,13 @@ class CycleRegionOwnershipTest extends TestCase
     {
         $phase = $this->phase($governor, $gate, PhaseKind::Distinguish, $malformed);
         $node = new Proposition;
-        $node->forceFill(['phase_id' => $phase->id, 'tier' => 'expressive', 'register' => $phase->write_register, 'statement' => 'Owned expression'])->save();
+        $node->forceFill(['phase_id' => $phase->id, 'tier' => 'expressive', 'register' => $phase->write_register, 'statement' => 'Owned expression']);
+        if ($malformed) {
+            // Imported corrupt records deliberately bypass the birth invariant.
+            Proposition::withoutEvents(fn () => $node->save());
+        } else {
+            $node->save();
+        }
         app(LedgerService::class)->record($node);
         $this->edge($gate, $node);
 

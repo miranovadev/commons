@@ -56,7 +56,7 @@ class PropositionReadTest extends TestCase
             $response->assertJsonPath($prefix.'.observables.status', $status === 'invalidated' ? 'stale' : $status)
                 ->assertJsonPath($prefix.'.observables.correspondence', $status === 'missing' ? null : -0.75)
                 ->assertJsonPath($prefix.'.field.status', $status === 'invalidated' ? 'stale' : $status)
-                ->assertJsonPath($prefix.'.field.tension', $status === 'missing' ? null : 0)
+                ->assertJsonPath($prefix.'.field.tension', $status === 'missing' ? null : -0.5)
                 ->assertJsonPath($prefix.'.field.potential_charge', null);
             $this->assertReadOnly($queries);
             $this->assertSame($before, $this->snapshot());
@@ -157,9 +157,9 @@ class PropositionReadTest extends TestCase
         $this->assertSame('commitment_snapshot', $data[$origin->id]['field']['source']);
         $this->assertSame('current', $data[$origin->id]['field']['status']);
         $this->assertSame('missing', $data[$origin->id]['observables']['status']);
-        $this->assertSame(-.2, $data[$child->id]['field']['tension']);
-        $this->assertSame(.6, $data[$child->id]['field']['potential_charge']);
-        $this->assertSame(.6, $data[$origin->id]['field']['potential_charge']);
+        $this->assertSame(-.1333334, $data[$child->id]['field']['tension']);
+        $this->assertSame(.6666666, $data[$child->id]['field']['potential_charge']);
+        $this->assertSame(.6666666, $data[$origin->id]['field']['potential_charge']);
         $this->assertSame($origin->id, $data[$child->id]['field']['committal_proposition_id']);
         $this->assertSame(1, $data[$child->id]['participation_count']);
         $this->assertSame(0, $data[$origin->id]['participation_count']);

@@ -367,7 +367,7 @@ final readonly class ContributionDispatcher
         $eligibility = $this->admissibility->evaluate($gate, $phase);
         if (! $eligibility['admissible']) {
             throw new DomainException(
-                'Commitment requires an effective Attestation, completed Receipt, and aligned Depth/Cadence directions. Missing: '.implode(', ', $eligibility['reasons'])
+                'Commitment requires an effective Attestation, completed Receipt, and aligned Committed Cardinal Position/Cadence directions. Missing: '.implode(', ', $eligibility['reasons'])
             );
         }
 

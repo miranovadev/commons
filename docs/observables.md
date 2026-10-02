@@ -24,7 +24,7 @@ Raw evidence evaluations never read accumulated measurement projections.
 | --- | --- | --- | --- | --- |
 | Mediate | Correspondence | Reads, then their existing Disperse Gate operands | Shape Topology direction = Cardinal Position direction | Reconcile |
 | Bias | Chirality | Existing Gates | Orientation direction = Attestation Cadence direction | Reclassify |
-| Order | Closure | Existing frozen Commits | Depth direction = Cadence direction | Commit |
+| Order | Closure | Existing frozen Commits | Committed Cardinal Position direction = Cadence direction | Commit |
 
 Observable values describe relations. Population direction selects where
 homeostatic pressure is applied. Component-direction agreement supplies a Write
@@ -41,7 +41,7 @@ An inadmissible local Bias source does not veto an authorized optional source.
 
 Order begins at its existing expressive Gate/Write. Keep the established
 prospective-Commit Closure preview, producing-Cycle history, cadence interval and
-preview-versus-persisted guard. Expressive measurement uses this same prospective Closure calculation. Each local Write remains visible when Commit is blocked. Existing
+preview-versus-persisted guard. Each expressive birth freezes its own Closure using the same committed-history calculation. Each local Write remains visible when Commit is blocked. Existing
 homologous Commits embody their historical admissibility; selection uses frozen
 resolved directions and current structural constraints, never a fresh Closure
 preview on those Commits. Existing compatibility behavior remains: absent or
@@ -297,51 +297,108 @@ classification registration or Receipt consumption. The result is measured norma
 and need not preserve source direction or component agreement. Rest applies when
 no admissible non-Rest action remains, at either zero or positive Potential.
 
-## Committed-lineage Closure
+## Closure v2: committed historical crystallization
 
-Closure follows the direct chain from a Committal through its creating Phase and
-Cycle to `entry_committal_id`. No Supersession-parent union, latest-Horizon
-Commit, sibling or abandoned descendant supplies Closure history.
+Correspondence observes current Domain morphology. Chirality observes the current/recent
+attestational relation under its existing live population semantics. Closure observes
+committed historical crystallization **once, at Proposition birth**. This applies equally
+to Origin, expressive Propositions and new Committals. Traversal, later Cycle entries,
+Attestations, downstream Commits and alternate branches cannot change that observation.
 
-Depth compares the current consecutive Domain-run length with the immediately
-preceding opposite-Domain run length, counting only ancestral Committals and the
-candidate. Recovery retains shared ancestors and excludes abandoned descendants.
+The hierarchy and initial equal weights are:
 
-Cadence compares the latest two direct ancestral inter-Commit intervals. For A → B,
-freeze the number of Cycles entered at A in B's producing Horizon before B commits.
-The producer is already included exactly once. Empty, unfinished, Attestation-only,
-rested and completed Cycles count equally; completion timestamps play no role.
-All expressive paths within A's basin count; other entry Committals, including siblings
-and descendants, do not. Every real interval is at least one. Cadence continues
-across Domain boundaries. Later A → B2 may include more entered participation,
-without changing the earlier frozen A → B interval.
+- Closure = 0.5 × Committed Cardinal Position + 0.5 × Committal Cadence.
+- Committed Cardinal Position = 0.5 × Committal Depth + 0.5 × Lateral Committal Position.
 
-Both similarities are `1 - 2 * abs(a - b) / max(a, b)`, bounded to [-1, +1]
-and rounded to seven decimal places. Origin sets Depth and Cadence to -1. C1
-explicitly sets both to 0 and retains Origin's negative directions through normal
-zero hysteresis. C2 onward is measured. Commitment always requires direction
-alignment; there is no bootstrap eligibility exception.
+The creating Cycle's `entry_committal_id` defines the direct committed ancestry.
+Supersession-parent unions, latest-Horizon Commits and abandoned descendants do not
+supply historical samples. Full ancestry is used; there is no decay, truncation or
+rolling window. Those choices are intentionally deferred until long-run empirical
+traces can justify a memory-reduction kernel.
 
-With structural components D and C, Closure is `(D + C) / 2`.
-Receipt count changes neither component, their directions, Closure nor Closure
-admissibility. Reinforcement remains evidence metadata, never a measurement weight.
-Expressive propositions measure one hypothetical next Commit using the live basin
-interval and the same committed Domain-run calculation as Order preview and Commit
-validation. This read-only observation creates no Proposition, edge, movement or
-snapshot. Before C1 it is 0/0, rather than inherited Origin −1/−1. Persisted
-Committals retain their historical snapshot values.
+### Committal Depth
 
-`cadence_interval` is immutable on the successor CommitmentSnapshot, including C1.
-Every new non-Origin Committal must freeze a positive interval, including C1 even
-though its displayed components are 0/0. Missing required historical intervals
-are unsupported state: prospective Closure is unavailable and Commit fails
-closed. There is no inherited Closure, synthetic interval or zero fallback. The
-numeric Tension/Charge/Potential model is unchanged. Existing snapshots are not
-reconstructed.
+Count all committed occurrences of each creating Domain in the direct ancestry,
+plus the newly born Proposition as one current-Domain position observation. E → S → E
+therefore has counts E=2, S=1, not a consecutive E run of one. Compare with
+`1 - 2 * abs(a - b) / max(a, b)`, clamped to [-1,+1]. Origin is -1; the first
+post-Origin observation is 0, preserving the existing C1 bootstrap. Where no
+opposite-Domain committed history exists, comparative Depth remains 0.
 
-The fresh bootstrap regression terminates at the first valid Commit and checks
-its calculated Domain. See [the bounded first-Settlement analysis](first-settlement-correspondence-bound.md)
-for why this path is not required to open Emergence.
+### Committed lateral geometry
+
+Use only Committals, connected through their creating Cycle entry Committals.
+Breadth-first rows expand parents left-to-right; committed siblings follow their
+immutable ledger sequence. Existing sibling positions occupy gaps. Expressive
+Domain morphology, Phase positions and Supersession placement are not reused.
+
+At each birth, temporarily append the observed Proposition after existing committed
+children of its entry Committal. This is a read-only position observation, not a
+causal edge. Expressive observations never reserve slots. If A has committed child
+B, expressive P and Q born under A both observe slot 2. A later Committal C observes
+slot 2; the next expressive birth under A observes slot 3. Frozen observations are
+never renumbered when a left sibling later acquires descendants.
+
+Historical samples are the **frozen positions** of previous same-Domain Committals
+in the direct ancestry. Their arithmetic mean is a positive real centroid; [1,2]
+has centroid 1.5. Compare the new coordinate and centroid with
+`1 - 2 * abs(a - b) / (a + b)`, clamped to [-1,+1]. Origin has constitutional
+Lateral -1. After Origin, historical Lateral activates only when both creating
+Domains have at least two usable Cadence intervals (including the current interval),
+and there are at least two previous same-Domain committed lateral observations.
+Until both conditions hold, Lateral is 0 with normal direction hysteresis and a null centroid.
+A singleton mean is calculable but does not establish a historical tendency.
+Comparison activates with two or more prior observations. The current Proposition
+is never included in its historical centroid; unrelated structure supplies no samples.
+
+### Committal Cadence
+
+The birth interval counts all Cycles already entered in the exact entry-Committal /
+creating-Horizon region, including the producer once. Empty, unfinished, rested,
+Attestation-only and completed Cycles count equally. Completion timestamps play no
+role. Origin's interval is the primitive 1. A Committal freezes its observed interval
+on its snapshot; future development under it starts a fresh entry scope. Later
+traversal through old regions never extends an already frozen interval.
+
+Group the full ancestral frozen intervals by **creating Domain**, and append the
+current birth interval to its Domain. For each Domain with at least two samples,
+compute population standard deviation divided by the arithmetic mean: CV = σ/μ.
+Do not use sample standard deviation. Compare CVs with
+`1 - 2 * abs(CV_A - CV_B) / max(CV_A, CV_B)`, clamped to [-1,+1]. Two zero CVs
+produce +1; exactly one zero CV produces -1. Equal relative variability at different
+absolute scales produces equal CV.
+
+Origin Cadence is constitutionally -1 with Negative direction. Thereafter, if either
+Domain has fewer than two samples, Cadence is 0 with normal direction hysteresis.
+A singleton is not evidence of regularity. This depends on available histories,
+not Commit ordinal numbers. Observable scores are rounded to seven decimals;
+centroids and intermediate CVs retain floating-point precision.
+
+### Birth persistence, hysteresis and Commitment
+
+The Proposition creation transaction serializes with Cycle entry and Commitment
+under the Substrate lock. It stores the Closure observation and its historical
+inputs in `closure_births`, protected against updates. Correspondence and Chirality
+continue through their existing measurement pathways; Closure reads its birth
+record. Disposable measurement repair may restore Closure from that durable record.
+If it is absent or obsolete, repair fails closed instead of using today's population.
+There is no legacy backfill from ambiguous timestamps.
+
+Each component retains its own direction: nonzero uses its sign; zero retains the
+direct committed predecessor's direction; absent history uses Negative. This includes
+Committed Cardinal Position and its Depth/Lateral children. Commit requires aligned
+Committed Cardinal Position and Cadence directions, plus unchanged grounding and
+structural requirements. Receipt loads cannot change Closure.
+
+Order preview evaluates a temporary new Committal using the current birth state.
+The actual new Committal receives its own birth observation and measurements before
+its CommitmentSnapshot freezes them. Its Closure can intentionally differ from its
+expressive source's earlier Closure. Preview and actual birth are checked under the
+existing write transaction. No Cycle-entry invalidation of historical Closure is added.
+
+The Tension/Charge/Potential formulas, Domain transitions, movement, Tragedy,
+Exhaustion, Recovery, Rest and action visibility remain unchanged. This correction
+does not introduce continuation/path viability.
 
 ## Commit participation inheritance
 
@@ -392,9 +449,9 @@ projection. The additive calculator_version migration marks old projections
 as obsolete; normal measurement repair and Potential reads refresh obsolete
 projections before use. A new or changed Phase Gate invalidates disposable
 projections in its substrate because touches can affect either side of a
-comparison. A new Cycle entry immediately invalidates affected basin previews; completion does not advance Cadence.
+comparison. A new Cycle entry changes future birth observations and affected Commit previews; existing Closure observations remain immutable. Completion does not advance Cadence.
 Missing/unmeasurable Potential candidates remain ineligible. No persistent raw
-cache is introduced; prospective Closure uses all current basin entries, including its producing Cycle.
+cache is introduced; new birth and Commit-preview observations use current basin entries, including the producing Cycle.
 
 Immutable commitment snapshots continue to preserve the values observed at
 commitment time. New commitments record the current calculator version.

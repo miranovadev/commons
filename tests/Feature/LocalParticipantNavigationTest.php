@@ -26,6 +26,7 @@ use App\Services\ParticipationService;
 use App\Services\PotentialChargeService;
 use App\Services\PotentialProjectionService;
 use App\Services\PropositionMeasurementService;
+use App\Services\WakeClock;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
@@ -511,7 +512,7 @@ class LocalParticipantNavigationTest extends TestCase
             'action' => 'proposition.traverse', 'proposition_id' => $target->id,
         ]);
         (new WakeParticipant($link->id))->handle($inference, app(ParticipationService::class),
-            app(ParticipantConnectionTriggerService::class), app(ParticipantActivityService::class), app(\App\Services\WakeClock::class));
+            app(ParticipantConnectionTriggerService::class), app(ParticipantActivityService::class), app(WakeClock::class));
         $this->assertSame($target->id, $participant->fresh()->current_proposition_id);
     }
 
@@ -611,6 +612,7 @@ class LocalParticipantNavigationTest extends TestCase
         ])->save();
         $entry = app(LedgerService::class)->record($node);
         $this->fixtureTensions[$node->id] = $tension;
+        $this->controlledBirthClosureFixture($tension, $node->id);
         app(PropositionMeasurementService::class)->project($node, $tension, $tension, $tension);
         if ($tier === 'committal') {
             $snapshot = new CommitmentSnapshot;
@@ -634,6 +636,7 @@ class LocalParticipantNavigationTest extends TestCase
     private function refreshFixtureMeasurements(): void
     {
         foreach ($this->fixtureTensions as $id => $tension) {
+            $this->controlledBirthClosureFixture($tension, $id);
             app(PropositionMeasurementService::class)->project(Proposition::findOrFail($id), $tension, $tension, $tension);
         }
         app(PotentialProjectionService::class)->rebuild($this->substrate->id, false);
@@ -656,4 +659,3 @@ class LocalParticipantNavigationTest extends TestCase
         return app(ParticipationService::class)->stateFor($participant);
     }
 }
-

@@ -17,6 +17,7 @@ use App\Services\CycleEntryService;
 use App\Services\ExhaustionService;
 use App\Services\InputPlanService;
 use App\Services\LedgerService;
+use App\Services\Observables\ClosureBirthService;
 use App\Services\Observables\ReinforcementService;
 use App\Services\ParticipationService;
 use App\Services\PotentialChargeService;
@@ -107,7 +108,7 @@ class CrossoverRecoveryTest extends TestCase
 
     public static function margins(): array
     {
-        return ['open' => [0.2, false], 'closed' => [-0.2, true]];
+        return ['open' => [0.2, false], 'closed' => [-0.8, true]];
     }
 
     #[DataProvider('margins')]
@@ -149,7 +150,7 @@ class CrossoverRecoveryTest extends TestCase
     {
         $origin = $this->commit(null, boundary: true);
         $parent = $this->commit($origin);
-        $seed = $this->commit($parent, -0.2);
+        $seed = $this->commit($parent, -0.8);
         $phase = $this->phase($seed, PhaseKind::Distinguish);
         $actor = $phase->cycle->participant;
         app(PotentialProjectionService::class)->refresh($this->substrate->id);
@@ -176,7 +177,8 @@ class CrossoverRecoveryTest extends TestCase
         $terminal = $this->terminal($boundary);
         $this->assertSame('emergence', $terminal->cycle->contextHorizon->domain->value);
         $diagnostic = app(CrossoverMarginService::class)->inspect($terminal->cycle);
-        $this->assertSame(0.0, $diagnostic['prospective_depth']);
+        $this->assertSame(1.0, $diagnostic['prospective_depth']);
+        $this->assertSame(.5, $diagnostic['prospective_committed_cardinal_position']);
         $this->assertSame(0.0, $diagnostic['admissible_cadence_bound']);
         $this->assertTrue($diagnostic['closed']);
         $actor = $terminal->cycle->participant;
@@ -192,20 +194,26 @@ class CrossoverRecoveryTest extends TestCase
         $this->assertSame($origin->id, $atOrigin->cycle->participant->fresh()->current_proposition_id);
     }
 
-    public function test_zero_margin_retains_domain_and_zero_depth_retains_its_previous_direction(): void
+    public function test_zero_cardinal_retains_canonical_birth_direction_without_reading_mutable_snapshot_direction(): void
     {
         $origin = $this->commit(null, boundary: true);
         $seed = $this->commit($origin, 0);
-        $seed->commitmentSnapshot->forceFill(['depth_direction' => 'negative'])->save();
         $phase = $this->phase($seed, PhaseKind::Order);
-        $diagnostic = app(CrossoverMarginService::class)->inspect($phase->cycle);
-        $this->assertSame(0.0, $diagnostic['prospective_depth']);
-        $this->assertSame(0.0, $diagnostic['crossover_margin']);
-        $this->assertTrue($diagnostic['closed']);
-        $seed->commitmentSnapshot->forceFill(['depth_direction' => 'positive'])->save();
-        $positive = app(CrossoverMarginService::class)->inspect($phase->cycle);
-        $this->assertSame(1.0, $positive['admissible_cadence_bound']);
-        $this->assertFalse($positive['closed']);
+        $before = DB::table('closure_births')->get()->toJson();
+        foreach (['negative' => 0.0, 'positive' => 1.0] as $direction => $endpoint) {
+            // Isolate the consumer at zero: hysteresis is owned by the birth service.
+            $this->partialMock(ClosureBirthService::class, function ($mock) use ($direction): void {
+                $mock->shouldReceive('prospective')->once()->andReturn([
+                    'depth' => -1.0, 'committed_cardinal_position' => 0.0,
+                    'committed_cardinal_position_direction' => $direction,
+                ]);
+            });
+            $diagnostic = app(CrossoverMarginService::class)->inspect($phase->cycle);
+            $this->assertSame($endpoint, $diagnostic['admissible_cadence_bound']);
+            $this->assertEqualsWithDelta($endpoint / 6, $diagnostic['crossover_margin'], 1e-7);
+            $this->assertSame($endpoint === 0.0, $diagnostic['closed']);
+        }
+        $this->assertSame($before, DB::table('closure_births')->get()->toJson());
     }
 
     public function test_reinforcement_changes_no_crossover_bound_or_measurement(): void
@@ -234,6 +242,7 @@ class CrossoverRecoveryTest extends TestCase
         $origin = $this->commit(null, boundary: true);
         $parent = $this->commit($origin);
         $seed = $this->commit($parent, -1, interval: null);
+        DB::table('closure_births')->where('proposition_id', $seed->id)->delete();
         $this->expectException(ClosureHistoryUnavailable::class);
         $this->terminal($seed);
     }

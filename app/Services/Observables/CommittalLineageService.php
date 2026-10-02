@@ -2,7 +2,6 @@
 
 namespace App\Services\Observables;
 
-use App\Exceptions\ClosureHistoryUnavailable;
 use App\Models\CommitmentSnapshot;
 use App\Models\Cycle;
 use App\Models\Proposition;
@@ -90,14 +89,16 @@ final class CommittalLineageService
 
     public function interval(Proposition $position, ?ParticipationContext $context = null): int
     {
-        $snapshot = $this->records($position, $context)->get($position->id);
-        if ($snapshot !== null) {
-            if ($snapshot->cadence_interval === null) {
-                throw new ClosureHistoryUnavailable('This historical incoming interval is unavailable.');
-            }
-
-            return $snapshot->cadence_interval;
+        if ($position->exists) {
+            return app(ClosureBirthService::class)->stored($position, $context)['cadence_interval'];
         }
+
+        return $this->prospectiveInterval($position, $context);
+    }
+
+    /** Live state is consumed only by a new birth or a disposable Commit preview. */
+    public function prospectiveInterval(Proposition $position, ?ParticipationContext $context = null): int
+    {
         $cycle = $position->phase->cycle;
         if ($cycle->entry_committal_id === null) {
             throw new DomainException('An ordinary Commit requires an entry Committal.');
