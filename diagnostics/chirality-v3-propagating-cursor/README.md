@@ -1,0 +1,15 @@
+# Propagating cursor + zero-mean regularity diagnostic
+
+Only two candidate refinements are introduced on top of the previous boundary-beat model: pass the recorded branch cursor through unattested propositions, and use effective CV0 for at least two all-zero local intervals. No production files or existing authored histories are changed.
+
+The cursor is the recorded last beat's event-order endpoint, interpreted against the existing represented Cycle population. At a unary causal birth, use the predecessor's last own act if present; otherwise copy its already-carried endpoint. Copying this coordinate does not create an Attestation, effective grounding, Orientation, Cadence sample, or local Chirality. No position is synthesized when the whole branch has no beat. At each own Attestation the first boundary interval or subsequent own interval belongs only to that proposition, and its outgoing cursor becomes the new beat.
+
+Birth-time capture remains as in the preceding candidate. Later ancestor votes do not retroactively rewrite a descendant's stored boundary beat. Causal provenance paths are audit metadata, not votes or interval history. At multi-parent Reconcile the old explicit selection guard remains: two incoming cursor candidates are recorded and the real attempted write rolls back rather than silently selecting a new merge rule.
+
+`CursorFormulaMeasurements.php` is a diagnostic copy of the prior small formula/interval adapter, with the interval extractor changed from private to protected. This permits the new interval stream and authorized zero-mean rule to be applied **before** formula evaluation. It avoids asking the old adapter to reject raw `[0,0]` before the new semantics can apply. Formula bodies, act ordering, represented Cycle selection and real Orientation/Correspondence/Closure service calls are otherwise unchanged.
+
+`PropagatingCursorMeasurements.php` retains the preceding own-Attestation cache and applies the two interval refinements. Count<2 remains immature even for `[0]`. For count>=2, mean0 and population SD0, raw CV remains null for provenance, effective CV is0 and the existing developmental formula returns+1. Mixed histories use ordinary CV, without deduplication. Positive direction is resolved by the real production direction service from the nonzero measurement.
+
+The copied recorder checks read-only inspection, local invariance, exact identity mapping, and real field/attenuation/grounding state. Tests replay the preserved main sequence and the same 17-action single-participant control. They retain production lifecycle rules. The opt-in workflow runs PHP8.5/PostgreSQL18 and canonical Reclassify/Reconcile/stale-Bias checks. Prior models remain comparison artifacts only.
+
+The supported primary prefix stops at the first multi-parent cursor decision. Reports do not invent fields or Bias outcomes beyond that point. Extract `runtime-results.tar.gz` here to inspect the complete measured prefix, control snapshots, invariants and stop provenance.
