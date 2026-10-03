@@ -1,0 +1,18 @@
+{
+  "base_commit": "489f0cf1d09f84f1bb6b536243dadbf512cd23ad",
+  "tested_commit": "e1f937507a7574575cb14fd0d72e2235887f7706",
+  "run_id": 37157181897,
+  "job_id": 111302863642,
+  "tests": 7,
+  "assertions": 941,
+  "successful_primary_actions": 41,
+  "stop": "undefined_anchor_cv",
+  "single_participant_actions_per_model": 17,
+  "raw_files": {
+    "invariants.json": "62d4c9776d4d3f29f1605d3921fc669ccb23cce9dbc58235b61875b6c98a2d15",
+    "candidate-trace.json": "a49423f6c3ae947acb4b19cb9b53839ef6d539163099ed3b493cd3697535e8df",
+    "single-reset.json": "6013cbe62d9bc53223d69431dd17197d810aea520f85bc98f86c523af411d247",
+    "single-anchor.json": "4c934f5189979057c405d1f1b05b381e548ebedda954908996c811c277b3b0f8",
+    "summary.json": "34446a70f78ec9cd183bfacd91ef884b6a5cd2a1f0e9913f5ad46f197b8a27aa"
+  }
+}
