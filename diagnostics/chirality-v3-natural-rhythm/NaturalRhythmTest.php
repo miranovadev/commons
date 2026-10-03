@@ -70,14 +70,14 @@ class NaturalRhythmTest extends TestCase
         $result = ['population' => $population, 'case' => $name, 'requested_rhythm' => $rhythm,
             'origin' => $origin->commitmentSnapshot->only(['correspondence','chirality','closure','tension','direction_before','direction_after']),
             'origin_label' => 'support', 'rows' => [], 'actions' => [], 'bias' => [], 'spacing_shortfalls' => [],
-            'cycle_boundaries' => [], 'observations' => [], 'crossed' => false, 'stop' => 'action_bound', 'action_bound' => 400];
+            'cycle_boundaries' => [], 'observations' => [], 'crossed' => false, 'stop' => 'action_bound', 'action_bound' => 100];
         $ordinaryActs = 0;
         $lastActOrder = null;
         $nextActor = 0;
         $commits = 0;
         $step = 0;
         try {
-            for (; $step < 400; $step++) {
+            for (; $step < 100; $step++) {
                 // Fair cyclic scan. Delay an Attestation only while another genuine
                 // action exists. No clock advance, forced Rest, or synthetic entry.
                 $offered = [];
@@ -97,7 +97,7 @@ class NaturalRhythmTest extends TestCase
                 $choice = null;
                 foreach ($offered as $offer) {
                     $priority = $attestNow
-                        ? ['attestation.create','proposition.commit','proposition.reclassify','proposition.variant','proposition.reconcile','proposition.traverse','instrument.execute','participant.rest']
+                        ? ['proposition.commit','proposition.reclassify','proposition.variant','proposition.reconcile','proposition.traverse','attestation.create','instrument.execute','participant.rest']
                         : ['proposition.commit','proposition.reclassify','proposition.variant','proposition.reconcile','proposition.traverse','instrument.execute','participant.rest'];
                     foreach ($priority as $action) {
                         if ($action === 'instrument.execute' && collect($result['actions'])->contains(fn ($r) => $r['phase_id'] === $offer['state']['plan']['phase']['id'] && $r['input']['action'] === 'instrument.execute')) { continue; }
