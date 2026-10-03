@@ -125,7 +125,7 @@ class NaturalRhythmTest extends TestCase
                 }
                 if ($phase->kind->value === 7) {
                     $result['rows'][] = $this->preview($gate, $phase, $commits+1) + ['step' => $step, 'actor' => $index,
-                        'cycle' => $state['cycle']['sequence'], 'commit_action_available' => isset($choice['defs']['proposition.commit'])];
+                        'cycle' => $state['cycle']['sequence'], 'state_reason' => $state['reason'], 'plan' => $state['plan'], 'commit_action_available' => isset($choice['defs']['proposition.commit'])];
                 }
                 $action = $choice['action'];
                 $definition = $choice['defs'][$action];
