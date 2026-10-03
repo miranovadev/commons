@@ -1,0 +1,81 @@
+<?php
+namespace Diagnostics\NaturalRhythm;
+use App\Models\{Substrate,Participant,Cycle,Attestation,Proposition};
+use App\Services\ParticipationService;
+use App\Services\Observables\LocalMeasurementService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+final class AnchorReplayTest extends TestCase
+{
+    use RefreshDatabase;
+    public function test_preserved_history_stops_at_undefined_anchor_cv():void
+    {
+        $this->app->singleton(EventOrder::class);
+        $this->app->singleton(PropositionLocalMeasurements::class);
+        $this->app->singleton(LocalMeasurementService::class,AnchorMeasurements::class);
+        \App\Models\Supersession::created(fn($e)=>app(LocalMeasurementService::class)->registerBirth($e));
+        $order=app(EventOrder::class);
+        Cycle::created(function($c)use($order){$order->cycles[$c->id]=++$order->clock;});
+        Attestation::created(function($a)use($order){$order->acts[$a->id]=++$order->clock;});
+        $archive=json_decode(file_get_contents(__DIR__.'/../chirality-v3-positive-window/result-3-sparse_5.json'),true);
+        $trace=json_decode(file_get_contents(__DIR__.'/../chirality-v3-positive-window/window-trace.json'),true)['boundaries'];
+        $sub=(new Substrate)->forceFill(['slug'=>'natural-rhythm','title'=>'Natural rhythm','visibility'=>'public','configuration'=>[]]);$sub->save();
+        $actors=[];
+        for($i=0;$i<3;$i++){$p=(new Participant)->forceFill(['substrate_id'=>$sub->id,'callsign'=>'author-'.$i,'max_read_count'=>25]);$p->save();$actors[]=$p;}
+        $service=app(ParticipationService::class);$recorder=new AnchorRecorder;
+        $service->enter($actors[0],['statement'=>'Origin','attestation'=>['direction'=>'support']]);
+        $service->enter($actors[1]);$service->enter($actors[2]);
+        $recorder->capture($actors,'origin',$trace[0]);
+        $steps=[];foreach($archive['actions'] as $i=>$a)$steps[]=['label'=>'prefix:'.$i,'row'=>$a];
+        foreach($archive['continuation']['actions'] as $i=>$a)$steps[]=['label'=>'continuation:'.$i,'row'=>$a];
+        $done=0;$stop='complete_preserved_history';$blocked=null;
+        try{
+            foreach($steps as $index=>$step){
+                $old=$step['row'];$actor=$actors[$old['actor']];$state=$service->stateFor($actor);
+                $oldState=$trace[$index]['states'][$old['actor']];
+                $this->assertSame($oldState['phase'],$state['plan']['phase']['number']);
+                $this->assertSame($oldState['cycle'],$state['cycle']['sequence']);
+                $this->assertSame($recorder->idMap[$oldState['gate_id']],$state['plan']['gate_id']);
+                $input=$old['input'];foreach(['proposition_id','other_proposition_id','receipt_id'] as $key)if(isset($input[$key]))$input[$key]=$recorder->idMap[$input[$key]]??throw new \RuntimeException('Unmapped authored target '.$key);
+                if(!isset($state['plan']['schema']['$defs']['actions'][$input['action']])){
+                    $stop='archived_action_not_lawful_under_candidate';$blocked=['label'=>$step['label'],'actor'=>$old['actor'],'input'=>$input,'actual_state'=>$state];break;
+                }
+                try{$service->contribute($actor,$state['plan']['phase']['id'],$input);}
+                catch(SemanticBoundary $e){$stop='undefined_anchor_cv';$blocked=['label'=>$step['label'],'input'=>$input,'error'=>$e->getMessage()];break;}
+                catch(\DomainException|\Illuminate\Validation\ValidationException $e){$stop='archived_action_rejected_under_candidate';$blocked=['label'=>$step['label'],'input'=>$input,'error'=>get_class($e).': '.$e->getMessage(),'actual_state'=>$service->stateFor($actor)];break;}
+                $row=$recorder->capture($actors,$step['label'],$trace[$index+1],$input);$done++;
+                foreach($row['states'] as $i=>$s){
+                    foreach(['correspondence','closure'] as $key)$this->assertSame($trace[$index+1]['states'][$i]['field'][$key],$s['field'][$key],$step['label'].' unchanged '.$key);
+                    $this->assertEqualsWithDelta($s['field']['chirality'],$s['field']['normalized_ancestral_chirality']+$s['field']['normalized_head_chirality'],0.00000006);
+                }
+                foreach($row['events'] as $e)if($e['event']==='proposition_write'&&$e['field']['producing_phase']!==7){
+                    $this->assertSame([],$e['field']['local']['own_effective_attestations']);
+                    $this->assertSame(0.0,$e['field']['local']['orientation']);
+                    $this->assertSame(0.0,$e['field']['local']['attestation_cadence']);
+                    $this->assertSame(0.0,$e['field']['local']['local_chirality']);
+                }
+                // Boundaries are checkpointed so a runtime limit cannot erase evidence.
+                $recorder->save(['completed_actions'=>$done,'stop'=>'running']);
+                fwrite(STDERR,"\nLOCAL_STEP ".json_encode(['label'=>$step['label'],'action'=>$input['action']])."\n");
+            }
+        }finally{
+            $overlaps=[];foreach($recorder->boundaries as $r)foreach($r['states'] as $s)if($s['four_way_overlap']??false)$overlaps[]=['label'=>$r['label'],'actor'=>$s['actor']];
+            $recorder->save(['completed_actions'=>$done,'stop'=>$stop,'blocked'=>$blocked,'four_way_overlaps'=>$overlaps,'participants'=>Participant::count(),'ordinary_commits'=>Proposition::where('tier','committal')->count()-1]);
+        }
+        $this->assertSame(3,Participant::count());
+        $this->assertGreaterThan(0,$done);
+        $this->assertSame('undefined_anchor_cv',$stop);
+        $this->assertSame('continuation:8',$blocked['label']);
+        $this->assertSame(41,$done);
+        $u=app(LocalMeasurementService::class)->undefined;
+        $this->assertSame([0,0],$u['attempted_observation']['current_history']['intervals']);
+        $this->assertSame(0,$u['birth']['anchor']);
+        $this->assertSame(0,$u['attempted_observation']['first_successor_interval']);
+        $this->assertSame(1,$u['attempted_observation']['current_history']['acts']);
+        $this->assertNull($u['attempted_observation']['current_history']['cv']);
+        // The real service's transaction must roll back the rejected measurement/write.
+        $this->assertSame(0,Attestation::where('proposition_id',$u['proposition_id'])->count());
+        $this->assertSame(0,Proposition::where('tier','committal')->count()-1);
+    }
+}
