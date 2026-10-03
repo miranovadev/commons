@@ -1,4 +1,4 @@
-name: Natural rhythm runtime probe
+name: Natural rhythm eligibility audit
 
 on:
   push:
@@ -18,7 +18,7 @@ jobs:
       fail-fast: false
       matrix:
         population: [1]
-        case: [regular_1]
+        case: [regular_3]
     services:
       postgres:
         image: postgres:18-alpine
@@ -59,7 +59,7 @@ jobs:
       - name: Zero-mean runtime evidence
         run: php diagnostics/chirality-v3-natural-rhythm/zero-mean.php
       - name: Run fixed population matrix
-        run: vendor/bin/phpunit --bootstrap diagnostics/chirality-v3-natural-rhythm/bootstrap.php diagnostics/chirality-v3-runtime-probe/ProbeTest.php
+        run: vendor/bin/phpunit --bootstrap diagnostics/chirality-v3-natural-rhythm/bootstrap.php diagnostics/chirality-v3-natural-rhythm/NaturalRhythmTest.php
       - name: Print diagnostic evidence
         if: always()
         run: python3 diagnostics/chirality-v3-natural-rhythm/summarize.py
