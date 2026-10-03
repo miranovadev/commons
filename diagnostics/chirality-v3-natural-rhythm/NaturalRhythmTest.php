@@ -69,7 +69,7 @@ class NaturalRhythmTest extends TestCase
         $result = ['population' => $population, 'case' => $name, 'requested_rhythm' => $rhythm,
             'origin' => $origin->commitmentSnapshot->only(['correspondence','chirality','closure','tension','direction_before','direction_after']),
             'origin_label' => 'support', 'rows' => [], 'actions' => [], 'bias' => [], 'spacing_shortfalls' => [],
-            'cycle_boundaries' => [], 'crossed' => false, 'stop' => 'action_bound', 'action_bound' => 400];
+            'cycle_boundaries' => [], 'observations' => [], 'crossed' => false, 'stop' => 'action_bound', 'action_bound' => 400];
         $ordinaryActs = 0;
         $lastActOrder = null;
         $nextActor = 0;
@@ -99,6 +99,8 @@ class NaturalRhythmTest extends TestCase
                         ? ['attestation.create','proposition.commit','proposition.reclassify','proposition.variant','proposition.reconcile','proposition.traverse','instrument.execute','participant.rest']
                         : ['proposition.commit','proposition.reclassify','proposition.variant','proposition.reconcile','proposition.traverse','instrument.execute','participant.rest'];
                     foreach ($priority as $action) {
+                        if ($action === 'instrument.execute' && collect($result['actions'])->contains(fn ($r) => $r['phase_id'] === $offer['state']['plan']['phase']['id'] && $r['input']['action'] === 'instrument.execute')) { continue; }
+                        if ($action === 'participant.rest' && ! collect($result['actions'])->contains(fn ($r) => $r['cycle_id'] === $offer['state']['cycle']['id'] && $r['input']['action'] !== 'participant.rest')) { continue; }
                         if (isset($offer['defs'][$action])) { $choice = $offer + ['action' => $action]; break 2; }
                     }
                 }
@@ -150,8 +152,18 @@ class NaturalRhythmTest extends TestCase
                     $input['direction'] = $selected['direction'];
                 }
                 $before = count($order->cycles);
+                if ($action === 'attestation.create' || $phase->kind->value === 7) {
+                    $cmp = app(ContextLineageComparisonService::class)->for($gate);
+                    $values = app(LineageMeasurementService::class)->calculate($gate, $cmp);
+                    $details = app(LocalMeasurementService::class)->diagnose($cmp);
+                    $field = app(ProjectionService::class)->field($values->observables());
+                    $result['observations'][] = ['step'=>$step, 'actor'=>$index, 'cycle'=>$state['cycle']['sequence'], 'phase'=>$phase->kind->value,
+                        'domain'=>$phase->cycle->contextHorizon->domain->value, 'scope'=>'existing_gate_before_action',
+                        'correspondence'=>$values->correspondence,'chirality'=>$values->chirality,'closure'=>$values->closure()->average(),
+                        ...$field,...$details];
+                }
                 $result['actions'][] = ['step' => $step, 'actor' => $index, 'cycle' => $state['cycle']['sequence'],
-                    'phase' => $phase->kind->value, 'domain' => $phase->cycle->contextHorizon->domain->value,
+                    'phase' => $phase->kind->value, 'phase_id' => $phase->id, 'cycle_id' => $phase->cycle_id, 'domain' => $phase->cycle->contextHorizon->domain->value,
                     'input' => $input, 'requested_gap' => $target, 'global_gap_before' => $gap, 'event_order_before' => $order->clock];
                 $service->contribute($actor, $phase->id, $input);
                 $nextActor = ($index + 1) % $population;
