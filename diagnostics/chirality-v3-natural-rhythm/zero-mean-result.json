@@ -1,0 +1,51 @@
+{
+  "php": "8.5.11",
+  "rows": [
+    {
+      "intervals": [],
+      "unguarded_error": "DivisionByZeroError: Division by zero",
+      "production_closure_guard": "DomainException: CV requires at least two positive intervals.",
+      "formation_interval_cv": null,
+      "formation_outcome": "immature; contribution 0; maturity false"
+    },
+    {
+      "intervals": [
+        0
+      ],
+      "unguarded_error": "DivisionByZeroError: Division by zero",
+      "production_closure_guard": "DomainException: CV requires at least two positive intervals.",
+      "formation_interval_cv": null,
+      "formation_outcome": "immature; contribution 0; maturity false"
+    },
+    {
+      "intervals": [
+        0,
+        0
+      ],
+      "unguarded_error": "DivisionByZeroError: Division by zero",
+      "production_closure_guard": "DomainException: CV requires at least two positive intervals.",
+      "formation_interval_cv": null,
+      "formation_outcome": "SemanticBoundary: zero mean; no assigned value"
+    },
+    {
+      "intervals": [
+        2,
+        2
+      ],
+      "unguarded_cv": 0,
+      "production_closure_cv": 0,
+      "formation_interval_cv": 0,
+      "formation_outcome": "mature"
+    },
+    {
+      "intervals": [
+        0,
+        1
+      ],
+      "unguarded_cv": 1,
+      "production_closure_guard": "DomainException: CV requires at least two positive intervals.",
+      "formation_interval_cv": 1,
+      "formation_outcome": "mature"
+    }
+  ]
+}

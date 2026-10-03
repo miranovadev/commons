@@ -1,0 +1,102 @@
+{
+  "base": "c83a48b441f08177f60c7e85968ce0f703af11dd",
+  "matrix_commit": "5022eb165985924622c3af8f5399274bb64f0cc0",
+  "run_id": 37107379983,
+  "php": "8.5.11",
+  "postgres": "18",
+  "cases": [
+    {
+      "case": "rhythm (1, disrupted)",
+      "job_id": 111158461839,
+      "conclusion": "success",
+      "assertions": 11
+    },
+    {
+      "case": "rhythm (1, noisy)",
+      "job_id": 111158461872,
+      "conclusion": "success",
+      "assertions": 17
+    },
+    {
+      "case": "rhythm (3, noisy)",
+      "job_id": 111158461886,
+      "conclusion": "success",
+      "assertions": 13
+    },
+    {
+      "case": "rhythm (1, regularising)",
+      "job_id": 111158461889,
+      "conclusion": "success",
+      "assertions": 12
+    },
+    {
+      "case": "rhythm (1, regular_3)",
+      "job_id": 111158461899,
+      "conclusion": "success",
+      "assertions": 12
+    },
+    {
+      "case": "rhythm (1, sparse_5)",
+      "job_id": 111158461910,
+      "conclusion": "success",
+      "assertions": 11
+    },
+    {
+      "case": "rhythm (1, regular_2)",
+      "job_id": 111158461924,
+      "conclusion": "success",
+      "assertions": 15
+    },
+    {
+      "case": "rhythm (3, regular_2)",
+      "job_id": 111158461937,
+      "conclusion": "success",
+      "assertions": 15
+    },
+    {
+      "case": "rhythm (3, regularising)",
+      "job_id": 111158461940,
+      "conclusion": "success",
+      "assertions": 13
+    },
+    {
+      "case": "rhythm (1, regular_1)",
+      "job_id": 111158461943,
+      "conclusion": "success",
+      "assertions": 20
+    },
+    {
+      "case": "rhythm (3, sparse_5)",
+      "job_id": 111158461952,
+      "conclusion": "success",
+      "assertions": 11
+    },
+    {
+      "case": "rhythm (3, regular_3)",
+      "job_id": 111158461966,
+      "conclusion": "success",
+      "assertions": 13
+    },
+    {
+      "case": "rhythm (3, disrupted)",
+      "job_id": 111158461967,
+      "conclusion": "success",
+      "assertions": 12
+    },
+    {
+      "case": "rhythm (3, regular_1)",
+      "job_id": 111158462008,
+      "conclusion": "success",
+      "assertions": 22
+    }
+  ],
+  "assertions": 197,
+  "eligibility_audit": {
+    "run_id": 37107731729,
+    "commit": "dc0751d20a843dbeb886ec893ab30acdae4de480",
+    "job_id": 111159455811,
+    "conclusion": "success",
+    "assertions": 12,
+    "numeric_reproduction": "all three prospective regular_3 rows identical"
+  }
+}
