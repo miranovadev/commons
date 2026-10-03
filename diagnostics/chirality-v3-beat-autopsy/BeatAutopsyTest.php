@@ -234,6 +234,21 @@ class BeatAutopsyTest extends TestCase
             BeatRecorder::boundary(Phase::findOrFail($state['phase_id']),Proposition::findOrFail($state['gate_id']),'terminal');
         }
         BeatRecorder::save();
+        $dual=json_decode(file_get_contents(__DIR__.'/beat-trace.json'),true);
+        $terminalDual=collect($dual['rows'])->firstWhere('label','terminal');
+        $this->assertSame([5,5,2,1],$terminalDual['B']['current_history']['intervals']);
+        $this->assertSame(0.2908717,$terminalDual['B']['attestation_cadence']);
+        $this->assertSame(0.4323059,$terminalDual['B']['chirality']);
+        $this->assertSame(-0.034004,$terminalDual['B']['tension']);
+        $this->assertSame('positive',$terminalDual['B']['coherence']['attestation_cadence_direction']);
+        $this->assertTrue($terminalDual['B']['local_bias_source_admissible']);
+        $this->assertFalse($terminalDual['A']['local_bias_source_admissible']);
+        $this->assertCount(12,array_filter($terminalDual['A']['current_history']['intervals'],fn($x)=>$x===0));
+        $control=json_decode(file_get_contents(__DIR__.'/../chirality-v3-natural-rhythm/result-3-regular_3.json'),true);
+        $controlObservation=collect($control['observations'])->firstWhere('step',32);
+        $collapsed=OccupiedLocalMeasurements::occupied($controlObservation['current_history']);
+        $this->assertSame([3,6,9],$collapsed['occupied_positions']);
+        $this->assertSame($controlObservation['current_history']['intervals'],$collapsed['intervals']);
         DirectionRecorder::save();
         $archived = json_decode(file_get_contents(__DIR__.'/../chirality-v3-grounding-continuation/result-3-sparse_5.json'), true);
         $this->assertCount(34, $result['continuation']['actions']);
