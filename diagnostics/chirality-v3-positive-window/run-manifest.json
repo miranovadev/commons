@@ -1,0 +1,41 @@
+{
+  "parent_commit": "2644a51cf6a90d67eec4da933e25cb9eddc44c98",
+  "code_commit": "2d3d10ecce5626e0aa1bd557bcf04bb62cf4841e",
+  "code_tree": "c3d86a078b9ae3d2c718422860b9a169701854f2",
+  "branch": "diagnostic/chirality-v3-positive-window",
+  "run_id": 37141602352,
+  "job_id": 111257020835,
+  "conclusion": "success",
+  "tests": 5,
+  "assertions": 1714,
+  "specimen_assertions": 1658,
+  "canonical_tests": 4,
+  "canonical_assertions": 56,
+  "prefix_actions": 33,
+  "continuation_actions": 80,
+  "population": 3,
+  "recorded_boundaries": 114,
+  "current_actor_states": 342,
+  "four_way_overlaps": [],
+  "first_bias_after_continuation_action": 18,
+  "first_advancing_actor_window_loss_after_continuation_action": 1,
+  "ordinary_commits": 0,
+  "emergence": false,
+  "counterfactual_structural_only_nonstructural_conditions_pass": true,
+  "counterfactual_first_bias_frozen_positive_local_generation": false,
+  "counterfactual_c33_grounded_bias_frozen_positive_local_generation": true,
+  "sha256": {
+    "window-trace.json": "4bbb5e188aae90b3df2bf39f86239a95e719eb3ef8b414cb4999617c9ec33e8e",
+    "result-3-sparse_5.json": "36035e97aa6d02165faee2b8c5a7c32444d8c8a720a0d53c197f009156c57c9d",
+    "selected-boundaries.json": "ea2abf195675bf0a2fcfaa27ca03cc21e1de17d0055c8f26aacbcaa3c143ce17",
+    "runtime-results.tar.gz": "43d164c216a355ac24e19c7cc9fe0497894c1632f608d3296519c9961e49884c"
+  },
+  "notes": [
+    "Exact archived sequence replayed; all 80 continuation actor/action/target/field/interval/direction comparisons passed.",
+    "Current-state read-only scan does not enumerate alternative histories or intermediate transaction states.",
+    "18 actions is the earliest preserved prefix reaching Bias, not a globally shortest-history proof.",
+    "Commit-grounding source Receipt requirement is distinct from Bias authorized ordinary Receipt catalogue.",
+    "No production, canonical fixture, prior diagnostic or source history modification.",
+    "No PR or merge."
+  ]
+}
