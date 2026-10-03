@@ -1,0 +1,27 @@
+{
+  "base_commit": "fa7ec337570ffa4438b6013ae4b21d70bc749f98",
+  "code_commit": "06e0ca718bd86dd30e3a4fdc679667bb9cb37cfe",
+  "run_id": 37110780281,
+  "php": "8.5.11",
+  "postgres": "18",
+  "jobs": [
+    {
+      "id": 111168099779,
+      "case": "3-sparse_5",
+      "assertions": 884,
+      "conclusion": "success"
+    },
+    {
+      "id": 111168099680,
+      "case": "1-regular_3",
+      "assertions": 918,
+      "conclusion": "success"
+    }
+  ],
+  "total_assertions": 1802,
+  "raw_sha256": {
+    "result-1-regular_3.json": "65e2a1ddd16b942135efc6c22a1b90e96c98ea4a6588b405ae966ae6f0fdd15c",
+    "result-3-sparse_5.json": "21dc9e6dbb8ad08e9486a944374d8450295eab39b80c14c3086209fc3e4407c2"
+  },
+  "stop": "100-action archived history; final states still offer lawful work; no global terminality claimed"
+}
