@@ -37,6 +37,7 @@ class NaturalRhythmTest extends TestCase
         $cases = [];
         foreach (getenv('RHYTHM_POPULATION') ? [(int) getenv('RHYTHM_POPULATION')] : [1,3] as $population) {
             foreach ($rhythms as $name => $rhythm) {
+                if (getenv('RHYTHM_CASE') && getenv('RHYTHM_CASE') !== $name) { continue; }
                 $cases[$population.'-'.$name] = [$population, $name, $rhythm];
             }
         }
@@ -167,6 +168,7 @@ class NaturalRhythmTest extends TestCase
                     'input' => $input, 'requested_gap' => $target, 'global_gap_before' => $gap, 'event_order_before' => $order->clock];
                 $service->contribute($actor, $phase->id, $input);
                 $nextActor = ($index + 1) % $population;
+                $result['actions'][array_key_last($result['actions'])]['returned_successfully'] = true;
                 if ($action === 'attestation.create') { $ordinaryActs++; $lastActOrder = max($order->acts); }
                 if (count($order->cycles) > $before) {
                     $result['cycle_boundaries'][] = ['step' => $step, 'actor' => $index, 'caused_by' => $action,
@@ -190,6 +192,8 @@ class NaturalRhythmTest extends TestCase
             $result['stop'] = 'unresolved_zero_mean';
             $result['semantic_boundary'] = $e->getMessage();
         } finally {
+            $result['persisted_attestations'] = Attestation::whereHas('phase.cycle.participant', fn ($q) => $q->where('substrate_id', $sub->id))->get()->map(fn ($a) => ['id'=>$a->id,'proposition_id'=>$a->proposition_id,'phase_id'=>$a->phase_id,'direction'=>$a->direction,'event_order'=>$order->acts[$a->id],'timestamp'=>$a->created_at->toISOString()])->all();
+            $result['persisted_cycles'] = Cycle::whereHas('participant', fn ($q) => $q->where('substrate_id', $sub->id))->get()->map(fn ($c) => ['id'=>$c->id,'participant_id'=>$c->participant_id,'sequence'=>$c->sequence,'entry_committal_id'=>$c->entry_committal_id,'event_order'=>$order->cycles[$c->id],'completed'=>$c->completed_at !== null,'rested'=>$c->rested_at !== null])->all();
             $result['ordinary_commits'] = $commits;
             $result['final_participants'] = Participant::where('substrate_id', $sub->id)->count();
             $result['initial_cycles'] = $initialCycles;

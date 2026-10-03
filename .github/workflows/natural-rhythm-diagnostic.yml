@@ -18,6 +18,7 @@ jobs:
       fail-fast: false
       matrix:
         population: [1, 3]
+        case: [noisy, regularising, regular_2, disrupted, sparse_5, regular_1, regular_3]
     services:
       postgres:
         image: postgres:18-alpine
@@ -44,6 +45,7 @@ jobs:
       SESSION_DRIVER: array
       BROADCAST_CONNECTION: 'null'
       RHYTHM_POPULATION: ${{ matrix.population }}
+      RHYTHM_CASE: ${{ matrix.case }}
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
@@ -64,6 +66,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: natural-rhythm-${{ matrix.population }}
+          name: natural-rhythm-${{ matrix.population }}-${{ matrix.case }}
           path: diagnostics/chirality-v3-natural-rhythm/*result*.json
           retention-days: 30
