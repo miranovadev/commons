@@ -1,0 +1,27 @@
+{
+  "base_commit": "5eb40cd8569edeb0ea8b41fd8f79c8318c067460",
+  "code_commit": "aad4da2ef81b32e884cb440ba5738a6b236a2b78",
+  "run_id": 37112646953,
+  "job_id": 111173411727,
+  "php": "8.5.11",
+  "postgres": "18",
+  "prefix_actions": 33,
+  "continuation_actions": 80,
+  "stop": "continuation_bound",
+  "ordinary_commits": 0,
+  "first_emergence": false,
+  "tests": 9,
+  "assertions": 420,
+  "continuation_assertions": 329,
+  "canonical_tests": 8,
+  "canonical_assertions": 91,
+  "raw_sha256": {
+    "result-3-sparse_5.json": "eed6040cd23bbe7c719fcdc1cef8eb9398d9bc1683b3d668240c35c65c3cec27"
+  },
+  "notes": [
+    "Top-level actions is the archived prefix; continuation.actions is the new branch.",
+    "Original action_bound metadata 100 refers to the preserved source history; executable prefix bound is 33 and continuation bound 80.",
+    "All canonical tests ran in separate normal-bootstrap processes.",
+    "No alternative schedule search or field tuning was performed."
+  ]
+}
