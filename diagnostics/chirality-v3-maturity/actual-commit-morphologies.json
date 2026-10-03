@@ -1,0 +1,926 @@
+[
+  {
+    "head": "01M3ZTMV42W4JWAXPSEQF99VED",
+    "positions": {
+      "01M3ZTMV42W4JWAXPSEQF99VED": {
+        "depth": 7,
+        "lateral": 1
+      },
+      "01m3ztmpwskagr68em4dfjanea": {
+        "depth": 6,
+        "lateral": 1
+      },
+      "01m3ztmkk52q9qwy3m61frxhxz": {
+        "depth": 5,
+        "lateral": 1
+      },
+      "01m3ztmk2a4pq4sgq2jmp92wbq": {
+        "depth": 4,
+        "lateral": 2
+      },
+      "01m3ztmcf79ekqfhbsqtde7q42": {
+        "depth": 4,
+        "lateral": 1
+      },
+      "01m3ztmjqqg5xrtta50kqy7fc5": {
+        "depth": 3,
+        "lateral": 2
+      },
+      "01m3ztmc79ns22w8gvd9rdcrzb": {
+        "depth": 3,
+        "lateral": 1
+      },
+      "01m3ztmgyx31hcpee88d6p8bxa": {
+        "depth": 2,
+        "lateral": 2
+      },
+      "01m3ztmbdak5kvdxx1dncq09zz": {
+        "depth": 2,
+        "lateral": 1
+      },
+      "01m3ztmb8hpevqpamcz0827vca": {
+        "depth": 1,
+        "lateral": 1
+      },
+      "01m3ztmb3cedjqrrtfm0qk5ner": {
+        "depth": 0,
+        "lateral": 1
+      }
+    },
+    "nodes": [
+      {
+        "id": "01M3ZTMV42W4JWAXPSEQF99VED",
+        "register": "concord",
+        "tier": "committal"
+      },
+      {
+        "id": "01m3ztmpwskagr68em4dfjanea",
+        "register": "concord",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztmkk52q9qwy3m61frxhxz",
+        "register": "stance",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztmk2a4pq4sgq2jmp92wbq",
+        "register": "signal",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztmcf79ekqfhbsqtde7q42",
+        "register": "signal",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztmjqqg5xrtta50kqy7fc5",
+        "register": "concord",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztmc79ns22w8gvd9rdcrzb",
+        "register": "concord",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztmgyx31hcpee88d6p8bxa",
+        "register": "stance",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztmbdak5kvdxx1dncq09zz",
+        "register": "stance",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztmb8hpevqpamcz0827vca",
+        "register": "signal",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztmb3cedjqrrtfm0qk5ner",
+        "register": "canon",
+        "tier": "committal"
+      }
+    ],
+    "edges": [
+      {
+        "source": "01m3ztmpwskagr68em4dfjanea",
+        "target": "01M3ZTMV42W4JWAXPSEQF99VED",
+        "strength": "H"
+      },
+      {
+        "source": "01m3ztmkk52q9qwy3m61frxhxz",
+        "target": "01m3ztmpwskagr68em4dfjanea",
+        "strength": "H"
+      },
+      {
+        "source": "01m3ztmk2a4pq4sgq2jmp92wbq",
+        "target": "01m3ztmkk52q9qwy3m61frxhxz",
+        "strength": "H"
+      },
+      {
+        "source": "01m3ztmcf79ekqfhbsqtde7q42",
+        "target": "01m3ztmkk52q9qwy3m61frxhxz",
+        "strength": "H"
+      },
+      {
+        "source": "01m3ztmjqqg5xrtta50kqy7fc5",
+        "target": "01m3ztmk2a4pq4sgq2jmp92wbq",
+        "strength": "S"
+      },
+      {
+        "source": "01m3ztmc79ns22w8gvd9rdcrzb",
+        "target": "01m3ztmcf79ekqfhbsqtde7q42",
+        "strength": "S"
+      },
+      {
+        "source": "01m3ztmgyx31hcpee88d6p8bxa",
+        "target": "01m3ztmjqqg5xrtta50kqy7fc5",
+        "strength": "H"
+      },
+      {
+        "source": "01m3ztmbdak5kvdxx1dncq09zz",
+        "target": "01m3ztmc79ns22w8gvd9rdcrzb",
+        "strength": "H"
+      },
+      {
+        "source": "01m3ztmb8hpevqpamcz0827vca",
+        "target": "01m3ztmgyx31hcpee88d6p8bxa",
+        "strength": "S"
+      },
+      {
+        "source": "01m3ztmb8hpevqpamcz0827vca",
+        "target": "01m3ztmbdak5kvdxx1dncq09zz",
+        "strength": "S"
+      },
+      {
+        "source": "01m3ztmb3cedjqrrtfm0qk5ner",
+        "target": "01m3ztmb8hpevqpamcz0827vca",
+        "strength": "S"
+      }
+    ]
+  },
+  {
+    "head": "01M3ZTQ5HV5PSX0E4SN8X13QP6",
+    "positions": {
+      "01M3ZTQ5HV5PSX0E4SN8X13QP6": {
+        "depth": 14,
+        "lateral": 1
+      },
+      "01m3ztpn6zzghe82whdsyyjpcd": {
+        "depth": 13,
+        "lateral": 1
+      },
+      "01m3ztp8sv46cv0jwn16detkh7": {
+        "depth": 12,
+        "lateral": 1
+      },
+      "01m3ztp7jvymwbq2865vg8ryvk": {
+        "depth": 11,
+        "lateral": 2
+      },
+      "01m3ztn31v79e88pk0p4082188": {
+        "depth": 11,
+        "lateral": 1
+      },
+      "01m3ztp6ew57hxwj22rcw4x1j7": {
+        "depth": 10,
+        "lateral": 2
+      },
+      "01m3ztn2b496xc70nwhc3fvvzv": {
+        "depth": 10,
+        "lateral": 1
+      },
+      "01m3ztnt7w5va83et2gbt0zxyn": {
+        "depth": 9,
+        "lateral": 2
+      },
+      "01m3ztmx88c7tptgejm2vp1vah": {
+        "depth": 9,
+        "lateral": 1
+      },
+      "01m3ztmwsraza7aey7tyhde5en": {
+        "depth": 8,
+        "lateral": 1
+      },
+      "01m3ztmvvm6bmphs6hycktk6t8": {
+        "depth": 7,
+        "lateral": 1
+      },
+      "01m3ztmpwskagr68em4dfjanea": {
+        "depth": 6,
+        "lateral": 1
+      },
+      "01m3ztmkk52q9qwy3m61frxhxz": {
+        "depth": 5,
+        "lateral": 1
+      },
+      "01m3ztmk2a4pq4sgq2jmp92wbq": {
+        "depth": 4,
+        "lateral": 2
+      },
+      "01m3ztmcf79ekqfhbsqtde7q42": {
+        "depth": 4,
+        "lateral": 1
+      },
+      "01m3ztmjqqg5xrtta50kqy7fc5": {
+        "depth": 3,
+        "lateral": 2
+      },
+      "01m3ztmc79ns22w8gvd9rdcrzb": {
+        "depth": 3,
+        "lateral": 1
+      },
+      "01m3ztmgyx31hcpee88d6p8bxa": {
+        "depth": 2,
+        "lateral": 2
+      },
+      "01m3ztmbdak5kvdxx1dncq09zz": {
+        "depth": 2,
+        "lateral": 1
+      },
+      "01m3ztmb8hpevqpamcz0827vca": {
+        "depth": 1,
+        "lateral": 1
+      },
+      "01m3ztmb3cedjqrrtfm0qk5ner": {
+        "depth": 0,
+        "lateral": 1
+      }
+    },
+    "nodes": [
+      {
+        "id": "01M3ZTQ5HV5PSX0E4SN8X13QP6",
+        "register": "concord",
+        "tier": "committal"
+      },
+      {
+        "id": "01m3ztpn6zzghe82whdsyyjpcd",
+        "register": "concord",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztp8sv46cv0jwn16detkh7",
+        "register": "stance",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztp7jvymwbq2865vg8ryvk",
+        "register": "signal",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztn31v79e88pk0p4082188",
+        "register": "signal",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztp6ew57hxwj22rcw4x1j7",
+        "register": "concord",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztn2b496xc70nwhc3fvvzv",
+        "register": "concord",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztnt7w5va83et2gbt0zxyn",
+        "register": "stance",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztmx88c7tptgejm2vp1vah",
+        "register": "stance",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztmwsraza7aey7tyhde5en",
+        "register": "signal",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztmvvm6bmphs6hycktk6t8",
+        "register": "concord",
+        "tier": "committal"
+      },
+      {
+        "id": "01m3ztmpwskagr68em4dfjanea",
+        "register": "concord",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztmkk52q9qwy3m61frxhxz",
+        "register": "stance",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztmk2a4pq4sgq2jmp92wbq",
+        "register": "signal",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztmcf79ekqfhbsqtde7q42",
+        "register": "signal",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztmjqqg5xrtta50kqy7fc5",
+        "register": "concord",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztmc79ns22w8gvd9rdcrzb",
+        "register": "concord",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztmgyx31hcpee88d6p8bxa",
+        "register": "stance",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztmbdak5kvdxx1dncq09zz",
+        "register": "stance",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztmb8hpevqpamcz0827vca",
+        "register": "signal",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztmb3cedjqrrtfm0qk5ner",
+        "register": "canon",
+        "tier": "committal"
+      }
+    ],
+    "edges": [
+      {
+        "source": "01m3ztpn6zzghe82whdsyyjpcd",
+        "target": "01M3ZTQ5HV5PSX0E4SN8X13QP6",
+        "strength": "H"
+      },
+      {
+        "source": "01m3ztp8sv46cv0jwn16detkh7",
+        "target": "01m3ztpn6zzghe82whdsyyjpcd",
+        "strength": "H"
+      },
+      {
+        "source": "01m3ztp7jvymwbq2865vg8ryvk",
+        "target": "01m3ztp8sv46cv0jwn16detkh7",
+        "strength": "H"
+      },
+      {
+        "source": "01m3ztn31v79e88pk0p4082188",
+        "target": "01m3ztp8sv46cv0jwn16detkh7",
+        "strength": "H"
+      },
+      {
+        "source": "01m3ztp6ew57hxwj22rcw4x1j7",
+        "target": "01m3ztp7jvymwbq2865vg8ryvk",
+        "strength": "S"
+      },
+      {
+        "source": "01m3ztn2b496xc70nwhc3fvvzv",
+        "target": "01m3ztn31v79e88pk0p4082188",
+        "strength": "S"
+      },
+      {
+        "source": "01m3ztnt7w5va83et2gbt0zxyn",
+        "target": "01m3ztp6ew57hxwj22rcw4x1j7",
+        "strength": "H"
+      },
+      {
+        "source": "01m3ztmx88c7tptgejm2vp1vah",
+        "target": "01m3ztn2b496xc70nwhc3fvvzv",
+        "strength": "H"
+      },
+      {
+        "source": "01m3ztmwsraza7aey7tyhde5en",
+        "target": "01m3ztnt7w5va83et2gbt0zxyn",
+        "strength": "S"
+      },
+      {
+        "source": "01m3ztmwsraza7aey7tyhde5en",
+        "target": "01m3ztmx88c7tptgejm2vp1vah",
+        "strength": "S"
+      },
+      {
+        "source": "01m3ztmvvm6bmphs6hycktk6t8",
+        "target": "01m3ztmwsraza7aey7tyhde5en",
+        "strength": "S"
+      },
+      {
+        "source": "01m3ztmpwskagr68em4dfjanea",
+        "target": "01m3ztmvvm6bmphs6hycktk6t8",
+        "strength": "H"
+      },
+      {
+        "source": "01m3ztmkk52q9qwy3m61frxhxz",
+        "target": "01m3ztmpwskagr68em4dfjanea",
+        "strength": "H"
+      },
+      {
+        "source": "01m3ztmk2a4pq4sgq2jmp92wbq",
+        "target": "01m3ztmkk52q9qwy3m61frxhxz",
+        "strength": "H"
+      },
+      {
+        "source": "01m3ztmcf79ekqfhbsqtde7q42",
+        "target": "01m3ztmkk52q9qwy3m61frxhxz",
+        "strength": "H"
+      },
+      {
+        "source": "01m3ztmjqqg5xrtta50kqy7fc5",
+        "target": "01m3ztmk2a4pq4sgq2jmp92wbq",
+        "strength": "S"
+      },
+      {
+        "source": "01m3ztmc79ns22w8gvd9rdcrzb",
+        "target": "01m3ztmcf79ekqfhbsqtde7q42",
+        "strength": "S"
+      },
+      {
+        "source": "01m3ztmgyx31hcpee88d6p8bxa",
+        "target": "01m3ztmjqqg5xrtta50kqy7fc5",
+        "strength": "H"
+      },
+      {
+        "source": "01m3ztmbdak5kvdxx1dncq09zz",
+        "target": "01m3ztmc79ns22w8gvd9rdcrzb",
+        "strength": "H"
+      },
+      {
+        "source": "01m3ztmb8hpevqpamcz0827vca",
+        "target": "01m3ztmgyx31hcpee88d6p8bxa",
+        "strength": "S"
+      },
+      {
+        "source": "01m3ztmb8hpevqpamcz0827vca",
+        "target": "01m3ztmbdak5kvdxx1dncq09zz",
+        "strength": "S"
+      },
+      {
+        "source": "01m3ztmb3cedjqrrtfm0qk5ner",
+        "target": "01m3ztmb8hpevqpamcz0827vca",
+        "strength": "S"
+      }
+    ]
+  },
+  {
+    "head": "01M3ZTW4NM2S344NZAD4VEKCR4",
+    "positions": {
+      "01M3ZTW4NM2S344NZAD4VEKCR4": {
+        "depth": 21,
+        "lateral": 1
+      },
+      "01m3ztv5c61qz7ygkr8w1cht3j": {
+        "depth": 20,
+        "lateral": 1
+      },
+      "01m3zttccperdg3xtfq4b490s8": {
+        "depth": 19,
+        "lateral": 1
+      },
+      "01m3ztta0zngp50xt60pb8he90": {
+        "depth": 18,
+        "lateral": 2
+      },
+      "01m3ztqs7gck79jj2afnvsh39e": {
+        "depth": 18,
+        "lateral": 1
+      },
+      "01m3ztt831ev7pqwhcmavw7sz1": {
+        "depth": 17,
+        "lateral": 2
+      },
+      "01m3ztqqnmc102xf1z3rdnrztz": {
+        "depth": 17,
+        "lateral": 1
+      },
+      "01m3ztsdx2g8pd6srdk4pxew1q": {
+        "depth": 16,
+        "lateral": 2
+      },
+      "01m3ztqb54gvcarfyy5535ee84": {
+        "depth": 16,
+        "lateral": 1
+      },
+      "01m3ztqa4ahgmaxg1qh8wrxh1j": {
+        "depth": 15,
+        "lateral": 1
+      },
+      "01m3ztq7gk5ftqg91jg7n2c3y5": {
+        "depth": 14,
+        "lateral": 1
+      },
+      "01m3ztpn6zzghe82whdsyyjpcd": {
+        "depth": 13,
+        "lateral": 1
+      },
+      "01m3ztp8sv46cv0jwn16detkh7": {
+        "depth": 12,
+        "lateral": 1
+      },
+      "01m3ztp7jvymwbq2865vg8ryvk": {
+        "depth": 11,
+        "lateral": 2
+      },
+      "01m3ztn31v79e88pk0p4082188": {
+        "depth": 11,
+        "lateral": 1
+      },
+      "01m3ztp6ew57hxwj22rcw4x1j7": {
+        "depth": 10,
+        "lateral": 2
+      },
+      "01m3ztn2b496xc70nwhc3fvvzv": {
+        "depth": 10,
+        "lateral": 1
+      },
+      "01m3ztnt7w5va83et2gbt0zxyn": {
+        "depth": 9,
+        "lateral": 2
+      },
+      "01m3ztmx88c7tptgejm2vp1vah": {
+        "depth": 9,
+        "lateral": 1
+      },
+      "01m3ztmwsraza7aey7tyhde5en": {
+        "depth": 8,
+        "lateral": 1
+      },
+      "01m3ztmvvm6bmphs6hycktk6t8": {
+        "depth": 7,
+        "lateral": 1
+      },
+      "01m3ztmpwskagr68em4dfjanea": {
+        "depth": 6,
+        "lateral": 1
+      },
+      "01m3ztmkk52q9qwy3m61frxhxz": {
+        "depth": 5,
+        "lateral": 1
+      },
+      "01m3ztmk2a4pq4sgq2jmp92wbq": {
+        "depth": 4,
+        "lateral": 2
+      },
+      "01m3ztmcf79ekqfhbsqtde7q42": {
+        "depth": 4,
+        "lateral": 1
+      },
+      "01m3ztmjqqg5xrtta50kqy7fc5": {
+        "depth": 3,
+        "lateral": 2
+      },
+      "01m3ztmc79ns22w8gvd9rdcrzb": {
+        "depth": 3,
+        "lateral": 1
+      },
+      "01m3ztmgyx31hcpee88d6p8bxa": {
+        "depth": 2,
+        "lateral": 2
+      },
+      "01m3ztmbdak5kvdxx1dncq09zz": {
+        "depth": 2,
+        "lateral": 1
+      },
+      "01m3ztmb8hpevqpamcz0827vca": {
+        "depth": 1,
+        "lateral": 1
+      },
+      "01m3ztmb3cedjqrrtfm0qk5ner": {
+        "depth": 0,
+        "lateral": 1
+      }
+    },
+    "nodes": [
+      {
+        "id": "01M3ZTW4NM2S344NZAD4VEKCR4",
+        "register": "concord",
+        "tier": "committal"
+      },
+      {
+        "id": "01m3ztv5c61qz7ygkr8w1cht3j",
+        "register": "concord",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3zttccperdg3xtfq4b490s8",
+        "register": "stance",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztta0zngp50xt60pb8he90",
+        "register": "signal",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztqs7gck79jj2afnvsh39e",
+        "register": "signal",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztt831ev7pqwhcmavw7sz1",
+        "register": "concord",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztqqnmc102xf1z3rdnrztz",
+        "register": "concord",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztsdx2g8pd6srdk4pxew1q",
+        "register": "stance",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztqb54gvcarfyy5535ee84",
+        "register": "stance",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztqa4ahgmaxg1qh8wrxh1j",
+        "register": "signal",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztq7gk5ftqg91jg7n2c3y5",
+        "register": "concord",
+        "tier": "committal"
+      },
+      {
+        "id": "01m3ztpn6zzghe82whdsyyjpcd",
+        "register": "concord",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztp8sv46cv0jwn16detkh7",
+        "register": "stance",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztp7jvymwbq2865vg8ryvk",
+        "register": "signal",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztn31v79e88pk0p4082188",
+        "register": "signal",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztp6ew57hxwj22rcw4x1j7",
+        "register": "concord",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztn2b496xc70nwhc3fvvzv",
+        "register": "concord",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztnt7w5va83et2gbt0zxyn",
+        "register": "stance",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztmx88c7tptgejm2vp1vah",
+        "register": "stance",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztmwsraza7aey7tyhde5en",
+        "register": "signal",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztmvvm6bmphs6hycktk6t8",
+        "register": "concord",
+        "tier": "committal"
+      },
+      {
+        "id": "01m3ztmpwskagr68em4dfjanea",
+        "register": "concord",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztmkk52q9qwy3m61frxhxz",
+        "register": "stance",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztmk2a4pq4sgq2jmp92wbq",
+        "register": "signal",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztmcf79ekqfhbsqtde7q42",
+        "register": "signal",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztmjqqg5xrtta50kqy7fc5",
+        "register": "concord",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztmc79ns22w8gvd9rdcrzb",
+        "register": "concord",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztmgyx31hcpee88d6p8bxa",
+        "register": "stance",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztmbdak5kvdxx1dncq09zz",
+        "register": "stance",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztmb8hpevqpamcz0827vca",
+        "register": "signal",
+        "tier": "expressive"
+      },
+      {
+        "id": "01m3ztmb3cedjqrrtfm0qk5ner",
+        "register": "canon",
+        "tier": "committal"
+      }
+    ],
+    "edges": [
+      {
+        "source": "01m3ztv5c61qz7ygkr8w1cht3j",
+        "target": "01M3ZTW4NM2S344NZAD4VEKCR4",
+        "strength": "H"
+      },
+      {
+        "source": "01m3zttccperdg3xtfq4b490s8",
+        "target": "01m3ztv5c61qz7ygkr8w1cht3j",
+        "strength": "H"
+      },
+      {
+        "source": "01m3ztta0zngp50xt60pb8he90",
+        "target": "01m3zttccperdg3xtfq4b490s8",
+        "strength": "H"
+      },
+      {
+        "source": "01m3ztqs7gck79jj2afnvsh39e",
+        "target": "01m3zttccperdg3xtfq4b490s8",
+        "strength": "H"
+      },
+      {
+        "source": "01m3ztt831ev7pqwhcmavw7sz1",
+        "target": "01m3ztta0zngp50xt60pb8he90",
+        "strength": "S"
+      },
+      {
+        "source": "01m3ztqqnmc102xf1z3rdnrztz",
+        "target": "01m3ztqs7gck79jj2afnvsh39e",
+        "strength": "S"
+      },
+      {
+        "source": "01m3ztsdx2g8pd6srdk4pxew1q",
+        "target": "01m3ztt831ev7pqwhcmavw7sz1",
+        "strength": "H"
+      },
+      {
+        "source": "01m3ztqb54gvcarfyy5535ee84",
+        "target": "01m3ztqqnmc102xf1z3rdnrztz",
+        "strength": "H"
+      },
+      {
+        "source": "01m3ztqa4ahgmaxg1qh8wrxh1j",
+        "target": "01m3ztsdx2g8pd6srdk4pxew1q",
+        "strength": "S"
+      },
+      {
+        "source": "01m3ztqa4ahgmaxg1qh8wrxh1j",
+        "target": "01m3ztqb54gvcarfyy5535ee84",
+        "strength": "S"
+      },
+      {
+        "source": "01m3ztq7gk5ftqg91jg7n2c3y5",
+        "target": "01m3ztqa4ahgmaxg1qh8wrxh1j",
+        "strength": "S"
+      },
+      {
+        "source": "01m3ztpn6zzghe82whdsyyjpcd",
+        "target": "01m3ztq7gk5ftqg91jg7n2c3y5",
+        "strength": "H"
+      },
+      {
+        "source": "01m3ztp8sv46cv0jwn16detkh7",
+        "target": "01m3ztpn6zzghe82whdsyyjpcd",
+        "strength": "H"
+      },
+      {
+        "source": "01m3ztp7jvymwbq2865vg8ryvk",
+        "target": "01m3ztp8sv46cv0jwn16detkh7",
+        "strength": "H"
+      },
+      {
+        "source": "01m3ztn31v79e88pk0p4082188",
+        "target": "01m3ztp8sv46cv0jwn16detkh7",
+        "strength": "H"
+      },
+      {
+        "source": "01m3ztp6ew57hxwj22rcw4x1j7",
+        "target": "01m3ztp7jvymwbq2865vg8ryvk",
+        "strength": "S"
+      },
+      {
+        "source": "01m3ztn2b496xc70nwhc3fvvzv",
+        "target": "01m3ztn31v79e88pk0p4082188",
+        "strength": "S"
+      },
+      {
+        "source": "01m3ztnt7w5va83et2gbt0zxyn",
+        "target": "01m3ztp6ew57hxwj22rcw4x1j7",
+        "strength": "H"
+      },
+      {
+        "source": "01m3ztmx88c7tptgejm2vp1vah",
+        "target": "01m3ztn2b496xc70nwhc3fvvzv",
+        "strength": "H"
+      },
+      {
+        "source": "01m3ztmwsraza7aey7tyhde5en",
+        "target": "01m3ztnt7w5va83et2gbt0zxyn",
+        "strength": "S"
+      },
+      {
+        "source": "01m3ztmwsraza7aey7tyhde5en",
+        "target": "01m3ztmx88c7tptgejm2vp1vah",
+        "strength": "S"
+      },
+      {
+        "source": "01m3ztmvvm6bmphs6hycktk6t8",
+        "target": "01m3ztmwsraza7aey7tyhde5en",
+        "strength": "S"
+      },
+      {
+        "source": "01m3ztmpwskagr68em4dfjanea",
+        "target": "01m3ztmvvm6bmphs6hycktk6t8",
+        "strength": "H"
+      },
+      {
+        "source": "01m3ztmkk52q9qwy3m61frxhxz",
+        "target": "01m3ztmpwskagr68em4dfjanea",
+        "strength": "H"
+      },
+      {
+        "source": "01m3ztmk2a4pq4sgq2jmp92wbq",
+        "target": "01m3ztmkk52q9qwy3m61frxhxz",
+        "strength": "H"
+      },
+      {
+        "source": "01m3ztmcf79ekqfhbsqtde7q42",
+        "target": "01m3ztmkk52q9qwy3m61frxhxz",
+        "strength": "H"
+      },
+      {
+        "source": "01m3ztmjqqg5xrtta50kqy7fc5",
+        "target": "01m3ztmk2a4pq4sgq2jmp92wbq",
+        "strength": "S"
+      },
+      {
+        "source": "01m3ztmc79ns22w8gvd9rdcrzb",
+        "target": "01m3ztmcf79ekqfhbsqtde7q42",
+        "strength": "S"
+      },
+      {
+        "source": "01m3ztmgyx31hcpee88d6p8bxa",
+        "target": "01m3ztmjqqg5xrtta50kqy7fc5",
+        "strength": "H"
+      },
+      {
+        "source": "01m3ztmbdak5kvdxx1dncq09zz",
+        "target": "01m3ztmc79ns22w8gvd9rdcrzb",
+        "strength": "H"
+      },
+      {
+        "source": "01m3ztmb8hpevqpamcz0827vca",
+        "target": "01m3ztmgyx31hcpee88d6p8bxa",
+        "strength": "S"
+      },
+      {
+        "source": "01m3ztmb8hpevqpamcz0827vca",
+        "target": "01m3ztmbdak5kvdxx1dncq09zz",
+        "strength": "S"
+      },
+      {
+        "source": "01m3ztmb3cedjqrrtfm0qk5ner",
+        "target": "01m3ztmb8hpevqpamcz0827vca",
+        "strength": "S"
+      }
+    ]
+  }
+]

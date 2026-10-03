@@ -211,3 +211,9 @@ python3 diagnostics/chirality-v3/audit_dump.py /path/to/dump.sql
 The diagnostic runner passed 8 cases / 16 assertions. The summary check verified
 all four complete polarity pairs. Only files under `diagnostics/chirality-v3/`
 were added. Existing suites and production behavior were not modified.
+
+## Authorized follow-up
+
+The subsequent maturity hypothesis, genuine candidate-field runs and reachability
+bound are recorded in [the follow-up diagnostic](../chirality-v3-maturity/README.md).
+This first-round report remains the record of the original unassigned-Cadence stop.

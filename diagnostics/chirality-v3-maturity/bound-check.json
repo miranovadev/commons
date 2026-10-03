@@ -1,0 +1,12 @@
+{
+  "seed": 20261003,
+  "generated_dags": 1000,
+  "generated_commit_observations": 9391,
+  "maximum_generated_correspondence": -0.08070634522712625,
+  "observed_prospective_morphologies_in_class": 48,
+  "topology_upper": 0.15470053837925168,
+  "nonroot_depth_at_least_two_raw_upper": -0.08931639747704079,
+  "two_node_raw_upper": -0.09175170953613693,
+  "depth_two_attenuation_numerator_upper": -0.0011432137499639144,
+  "depth_at_least_three_numerator_upper": -0.11014973081037416
+}

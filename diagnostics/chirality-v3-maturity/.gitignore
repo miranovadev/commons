@@ -1,0 +1,3 @@
+result-*.json
+pilot-*.json
+__pycache__/
