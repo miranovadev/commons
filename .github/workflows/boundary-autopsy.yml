@@ -1,0 +1,74 @@
+name: Boundary autopsy
+
+on:
+  push:
+    branches: ['diagnostic/chirality-v3-boundary-autopsy']
+    paths:
+      - 'diagnostics/chirality-v3-boundary-autopsy/**'
+      - '.github/workflows/boundary-autopsy.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  rhythm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - population: 3
+            case: sparse_5
+          - population: 1
+            case: regular_3
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: testing
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -q -d testing -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      APP_ENV: testing
+      APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      APP_DEBUG: false
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: testing
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      CACHE_STORE: array
+      QUEUE_CONNECTION: sync
+      SESSION_DRIVER: array
+      BROADCAST_CONNECTION: 'null'
+      RHYTHM_POPULATION: ${{ matrix.population }}
+      RHYTHM_CASE: ${{ matrix.case }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: mbstring, pdo_pgsql, pdo_sqlite, curl, intl
+          coverage: none
+          tools: composer:v2
+      - run: composer install --prefer-dist --no-interaction --no-progress
+      - run: cp .env.example .env
+      - name: Restore archived specimens
+        run: tar -xzf diagnostics/chirality-v3-natural-rhythm/runtime-results.tar.gz -C diagnostics/chirality-v3-natural-rhythm
+      - name: Replay one archived specimen with boundary instrumentation
+        run: vendor/bin/phpunit --bootstrap diagnostics/chirality-v3-boundary-autopsy/bootstrap.php diagnostics/chirality-v3-boundary-autopsy/BoundaryAutopsyTest.php --filter "${{ matrix.population }}-${{ matrix.case }}"
+      - name: Print lossless evidence
+        if: always()
+        run: python3 diagnostics/chirality-v3-boundary-autopsy/export.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: boundary-autopsy-${{ matrix.population }}-${{ matrix.case }}
+          path: diagnostics/chirality-v3-boundary-autopsy/result-*.json
+          retention-days: 30
