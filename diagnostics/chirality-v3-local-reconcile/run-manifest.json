@@ -1,0 +1,21 @@
+{
+  "base_commit": "521a2cc3dd2b183735b3fca85dbf8a0a99240866",
+  "tested_commit": "acd0f13243275fa0c3f22a4290ca0a95e2ca67d9",
+  "run_id": 37161911741,
+  "job_id": 111316935228,
+  "tests": 7,
+  "assertions": 945,
+  "completed_actions": 55,
+  "stop": "archived_action_not_lawful_under_candidate",
+  "blocked_action": "continuation:22 participant.rest",
+  "ordinary_commits": 0,
+  "files": {
+    "cursor-alternatives.json": "0a25f8210d90541a0cdc78724283be3e096a4c4fbfc4d22de2cb6dd9397a3d00",
+    "invariants.json": "c1e8f9028509a7ef1d0e57e408cb37f807cd3ec538f190be8f22c711530627e2",
+    "single-cursor.json": "fbb38d417c3efd43c9e1fc572cdcb37da4f737a69d96bfdf948d4d9fb077b46d",
+    "candidate-trace.json": "fa725bf46f6fdd48eff3a1f4eba0297cd283caf9d954d0934a66897eabe90ce2",
+    "single-reset.json": "954c2106fe01dc856759c971c112de8103d9363d68ce109596870cbd1da2eb51",
+    "summary.json": "3c1e56b6284e21144ffc62dc0edfb4536cef7522e7de953679bf5572223f3b39",
+    "reconcile-focus.json": "bdbad1d7dbae6a716547cb79a76fb3c84b9a56b885257499c9f8dd3e126098be"
+  }
+}
