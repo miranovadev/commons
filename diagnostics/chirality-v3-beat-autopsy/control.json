@@ -1,0 +1,23 @@
+{
+  "source_file": "result-3-regular_3.json",
+  "source_sha256": "531b5b1c0951f3a49d76511c09d316f7c8aaf999796c014e71721ab6925673bd",
+  "step": 32,
+  "positions": [
+    3,
+    6,
+    9
+  ],
+  "A_intervals": [
+    3,
+    3
+  ],
+  "B_intervals": [
+    3,
+    3
+  ],
+  "mean": 3,
+  "stddev": 0.0,
+  "cv": 0.0,
+  "cadence": 1.0,
+  "note": "Existing lawful distinct-position prefix; no new history authored. Canonical matrix observation supplies A; interval identity establishes B equality."
+}

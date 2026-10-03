@@ -1,0 +1,43 @@
+{
+  "parent_commit": "b9f6faacf007917f5135d123ec874100aedf389d",
+  "code_commit": "d69c099a69469340d1003fcee2c10c67e66e4d3f",
+  "code_tree": "f2aca450217c6fdd219c059058c8cd7162fa63bf",
+  "branch": "diagnostic/chirality-v3-beat-autopsy",
+  "run_id": 37117792762,
+  "job_id": 111187852837,
+  "conclusion": "success",
+  "tests": 9,
+  "assertions": 1041,
+  "paired_observations": 110,
+  "prefix_actions": 33,
+  "continuation_actions": 34,
+  "population": 3,
+  "ordinary_commits": 0,
+  "zero_intervals": 12,
+  "same_own_cycle_zero_pairs": 7,
+  "different_own_cycle_zero_pairs": 5,
+  "final_A": {
+    "cadence": -0.3445034,
+    "chirality": 0.113267,
+    "tension": -0.1403502,
+    "local_bias_source_admissible": false
+  },
+  "final_B": {
+    "cadence": 0.2908717,
+    "chirality": 0.4323059,
+    "tension": -0.034004,
+    "local_bias_source_admissible": true
+  },
+  "sha256": {
+    "beat-trace.json": "d47e47dfc1155b0a2ef78a6f2f84208253a5f181e4dcde3d071ff87d2e84a7ef",
+    "result-3-sparse_5.json": "fce1112714e1eda809d69babd66343bb9ec9b226bef5c5ccc2d6df852dae6a96"
+  },
+  "pilot": {
+    "run_id": 37117372990,
+    "code_commit": "11c0d9952cb8ca8950cf3df1af07eed43a4c1917",
+    "tests": 9,
+    "assertions": 1031,
+    "numerical_observations_match": true
+  },
+  "note": "B is read-only at every relevant local first-Settlement lineage position. No B-driven actions or resulting Commit were authored."
+}
