@@ -1,0 +1,23 @@
+{
+  "parent_commit": "a8a39fdee06431c14d7882f29c93ff01473542d2",
+  "code_commit": "9111915fc5bf5a08bf736a902ca0d342ea882fa2",
+  "code_tree": "aca5e68f39bdcf0c2d2641c5cd7ca575ad2c2ee0",
+  "branch": "diagnostic/chirality-v3-direction-autopsy",
+  "run_id": 37115067694,
+  "job_id": 111180178428,
+  "conclusion": "success",
+  "tests": 7,
+  "assertions": 1018,
+  "prefix_actions": 33,
+  "continuation_actions": 34,
+  "population": 3,
+  "ordinary_commits": 0,
+  "emergence": false,
+  "changes": 75,
+  "sql_observations": 568,
+  "sha256": {
+    "result-3-sparse_5.json": "a9b99c67362a3ce70727c98e9ebbc2eec631c4222bc76a74702bb504ef7b285b",
+    "direction-records.json": "89102fc7325eaad2400c07e3172015ff1ee49fc459b1303fe7dd742dfaa27dd2",
+    "continuation-checkpoint.json": "490e4cd889b9db794f53e8dab68aa829337f6853272722b7603da456f61b077e"
+  }
+}
