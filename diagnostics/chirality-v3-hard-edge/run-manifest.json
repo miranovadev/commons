@@ -1,0 +1,27 @@
+{
+  "base_commit": "374b9b2d85c786c0ef6f115d344dbd728c8de99d",
+  "tested_commit": "87db0266c6178096a12ba94f5a4363d9d87e5d7e",
+  "branch": "diagnostic/chirality-v3-hard-edge",
+  "run_id": 37166255502,
+  "job_id": 111329643050,
+  "tests": 7,
+  "assertions": 972,
+  "mode": "read-only canonical Commit comparison and real first-child measurement probe",
+  "production_snapshot_overwritten": false,
+  "first_attempt_run": 37166031207,
+  "first_attempt_issue": "Diagnostic assumed explicit Variant source; actual schema uses implicit acting Gate",
+  "files": {
+    "CHILD.md": "097d624434c0f132929bd92017a384e95387a44d5e4f657c15d4714b7c922205",
+    "CHIRALITY-AUDIT.md": "5051af82d30b584088874dd270b5304223d8618305926af8feca3bfa09ffab7d",
+    "COMPARISON.md": "f9f363c3b15697083688572f154c7eae189f07e9b05c3803fa2d4f3a5ad270a4",
+    "CORRESPONDENCE-AUDIT.md": "468a229d32b86b6eb506ac70d653057d7bbe6c029f22f869289e4baa0dd3f3bf",
+    "HardEdgeAudit.php": "b434f8cb7bcbe742ba1a62ff0f24f0e6459492e8525b77143da812298dce0271",
+    "HardEdgeReplayTest.php": "52e77c5c0b85996dad6015a6742bdc790fe57198ae6c7bb6fe0bd1b843f536d5",
+    "README.md": "93fcdcccc98e1414fd3ba646c2d0b76e545a84cc618eccccacd12ed6cc27e191",
+    "REPORT.md": "2227e4b44d8d98be1b5fa78a5a69acf830aace7f9028fe2021f1c1f1ae233777",
+    "bootstrap.php": "161cb712701ac8af1d3e4c04e1960934d0717eca1ddfa96b110c5fb02af2949a",
+    "export.py": "5cf847f2e3d89d1f9046b3843ca749ee9df2d03d2aceb0203388ad2edad20c1e",
+    "hard-edge.json": "8e2a6f20d49b7737850a8c3a0c67b4eaeffb107540aadea55b920a781832a3c2",
+    "report.py": "c9312f2d3a4eac6d6911e39b375579bcbefbf19777f5959fefc8085921df0aff"
+  }
+}

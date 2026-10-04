@@ -1,0 +1,1257 @@
+{
+    "source": {
+        "id": "01m426fs9160vdmyc9hrc9f9x6",
+        "parts": [
+            {
+                "id": "01m426fs9160vdmyc9hrc9f9x6",
+                "distance": 0,
+                "weight": 1.0,
+                "raw_correspondence": -0.597315,
+                "raw_chirality": 0.25,
+                "shape_topology": -0.4803442,
+                "cardinal_position": -0.7142857,
+                "normalized_correspondence": -0.3407025952105335,
+                "normalized_chirality": 0.14259753865654365
+            },
+            {
+                "id": "01m426f3d8kwvavhdqww7jkvr0",
+                "distance": 1,
+                "weight": 0.25,
+                "raw_correspondence": -0.6263137,
+                "raw_chirality": 0.75,
+                "shape_topology": -0.5859607,
+                "cardinal_position": -0.6666667,
+                "normalized_correspondence": -0.08931079204687288,
+                "normalized_chirality": 0.10694815399240773
+            },
+            {
+                "id": "01m426e1vzt1mxx4h1syt1phva",
+                "distance": 2,
+                "weight": 0.1111111111111111,
+                "raw_correspondence": -0.5350936,
+                "raw_chirality": 0.25,
+                "shape_topology": -0.4701871,
+                "cardinal_position": -0.6,
+                "normalized_correspondence": -0.033912457915941815,
+                "normalized_chirality": 0.015844170961838183
+            },
+            {
+                "id": "01m426ezpbckaeatrd7bhnpdfp",
+                "distance": 2,
+                "weight": 0.1111111111111111,
+                "raw_correspondence": -0.5350936,
+                "raw_chirality": 0.0,
+                "shape_topology": -0.4701871,
+                "cardinal_position": -0.6,
+                "normalized_correspondence": -0.033912457915941815,
+                "normalized_chirality": 0.0
+            },
+            {
+                "id": "01m426dqew9agmj7d0hmz9n9vj",
+                "distance": 3,
+                "weight": 0.0625,
+                "raw_correspondence": -0.4413933,
+                "raw_chirality": 0.75,
+                "shape_topology": -0.3827866,
+                "cardinal_position": -0.5,
+                "normalized_correspondence": -0.015735399539872342,
+                "normalized_chirality": 0.026737038498101932
+            },
+            {
+                "id": "01m426esxpx03tcm5pg9atw0ct",
+                "distance": 3,
+                "weight": 0.0625,
+                "raw_correspondence": -0.4413933,
+                "raw_chirality": 0.25,
+                "shape_topology": -0.3827866,
+                "cardinal_position": -0.5,
+                "normalized_correspondence": -0.015735399539872342,
+                "normalized_chirality": 0.008912346166033978
+            },
+            {
+                "id": "01m426c7j4bd5mw91fbaf44xff",
+                "distance": 4,
+                "weight": 0.04,
+                "raw_correspondence": -0.4742165,
+                "raw_chirality": 0.25,
+                "shape_topology": -0.6150998,
+                "cardinal_position": -0.3333333,
+                "normalized_correspondence": -0.010819536910451332,
+                "normalized_chirality": 0.005703901546261746
+            },
+            {
+                "id": "01m426efmr5abmsf08yz75wjj1",
+                "distance": 4,
+                "weight": 0.04,
+                "raw_correspondence": -0.4742165,
+                "raw_chirality": 0.25,
+                "shape_topology": -0.6150998,
+                "cardinal_position": -0.3333333,
+                "normalized_correspondence": -0.010819536910451332,
+                "normalized_chirality": 0.005703901546261746
+            },
+            {
+                "id": "01m426c3axmbx6sh2dt0vfgzvv",
+                "distance": 5,
+                "weight": 0.027777777777777776,
+                "raw_correspondence": -0.2642978,
+                "raw_chirality": 0.5713072,
+                "shape_topology": -0.5285955,
+                "cardinal_position": 0.0,
+                "normalized_correspondence": -0.004187579528037715,
+                "normalized_chirality": 0.00905188894852908
+            },
+            {
+                "id": "01m426edcr5sgfbtrb1aphjn0t",
+                "distance": 5,
+                "weight": 0.027777777777777776,
+                "raw_correspondence": -0.2642978,
+                "raw_chirality": 0.0,
+                "shape_topology": -0.5285955,
+                "cardinal_position": 0.0,
+                "normalized_correspondence": -0.004187579528037715,
+                "normalized_chirality": 0.0
+            },
+            {
+                "id": "01m426c15p56d49s7tp1k8hpta",
+                "distance": 6,
+                "weight": 0.02040816326530612,
+                "raw_correspondence": 1.0,
+                "raw_chirality": -0.5,
+                "shape_topology": 1.0,
+                "cardinal_position": 1.0,
+                "normalized_correspondence": 0.011640615400534174,
+                "normalized_chirality": -0.005820307700267087
+            }
+        ],
+        "mass": 1.753185941043084,
+        "resolved": {
+            "correspondence": -0.5476827,
+            "chirality": 0.3156786,
+            "closure": 0.0,
+            "tension": -0.0773348,
+            "charge": 0.9226652
+        }
+    },
+    "source_local": {
+        "current_lean": 1.0,
+        "previous_lean": 0.0,
+        "orientation": 0.5,
+        "orientation_mature": true,
+        "current_history": {
+            "acts": 1,
+            "act_ids": [
+                "01m426g0avq906wkj3n85qan7q"
+            ],
+            "act_order": [
+                30
+            ],
+            "timestamps": [
+                "2026-10-04T00:54:47.000000Z"
+            ],
+            "represented_cycle_order": [
+                3,
+                4,
+                5,
+                7,
+                8,
+                9,
+                10,
+                11,
+                13,
+                14,
+                15,
+                16,
+                17,
+                24,
+                25
+            ],
+            "intervals": [
+                0
+            ],
+            "usable_interval_count": 1,
+            "mean": 0,
+            "stddev": 0.0,
+            "cv": null,
+            "status": "singleton_unresolved",
+            "boundary_beat": 29,
+            "first_successor_interval": 0,
+            "raw_cv": null,
+            "zero_mean_regular": false
+        },
+        "previous_history": {
+            "acts": 1,
+            "act_ids": [
+                "01m426c16ney4tj6t64505gk0z"
+            ],
+            "act_order": [
+                2
+            ],
+            "timestamps": [
+                "2026-10-04T00:52:37.000000Z"
+            ],
+            "represented_cycle_order": [
+                1
+            ],
+            "intervals": [],
+            "usable_interval_count": 0,
+            "mean": null,
+            "stddev": null,
+            "cv": null,
+            "status": "no_intervals",
+            "boundary_beat": null,
+            "first_successor_interval": null,
+            "raw_cv": null,
+            "zero_mean_regular": false
+        },
+        "attestation_cadence": 0.0,
+        "attestation_cadence_mature": false,
+        "cadence_status": "formation_immature",
+        "cadence_contribution": 0.0,
+        "component_gate": "immature_direction_hysteresis",
+        "proposition_id": "01m426fs9160vdmyc9hrc9f9x6",
+        "previous_boundary_beat": 29,
+        "cursor_provenance": "immediate_predecessor",
+        "cursor_path": [
+            "01m426f3d8kwvavhdqww7jkvr0"
+        ],
+        "current_cursor": 30,
+        "local_completed_intervals": [
+            0
+        ],
+        "first_successor_interval": 0,
+        "boundary_beat_used": true,
+        "own_effective_attestations": [
+            {
+                "id": "01m426g0avq906wkj3n85qan7q",
+                "phase_id": "01m426fmj7ca9zz82xk5d7nsw2",
+                "direction": "support",
+                "supersedes_attestation_id": null
+            }
+        ],
+        "attestation_observed": true,
+        "local_chirality": 0.25,
+        "signature": "a07d147e8d7e18f4045700aea8ca8ced075bd52d446f8310f8d14f18ba9f3c42",
+        "observed_event_order": 30,
+        "observation_reason": "own_attestation_state_changed"
+    },
+    "closure_preview": {
+        "depth": 0.0,
+        "lateral_committal_position": 0.0,
+        "committed_cardinal_position": 0.0,
+        "cadence": 0.0,
+        "closure": 0.0,
+        "depth_direction": "negative",
+        "lateral_committal_position_direction": "negative",
+        "committed_cardinal_position_direction": "negative",
+        "cadence_direction": "negative",
+        "closure_direction": "negative",
+        "admissible": true,
+        "creating_domain": "settlement",
+        "cadence_interval": 15,
+        "committed_lateral_position": 1,
+        "historical_lateral_centroid": null,
+        "domain_depths": {
+            "emergence": 1,
+            "settlement": 1
+        },
+        "domain_intervals": {
+            "emergence": [
+                1
+            ],
+            "settlement": [
+                15
+            ]
+        },
+        "domain_cvs": {
+            "emergence": null,
+            "settlement": null
+        },
+        "history_proposition_id": "01m426c15p56d49s7tp1k8hpta",
+        "history_source": "committed-ancestor"
+    },
+    "recorded_commit": {
+        "id": "01m426gbn9eed9feg1zcrt65fs",
+        "parts": [
+            {
+                "id": "01m426gbn9eed9feg1zcrt65fs",
+                "distance": 0,
+                "weight": 1.0,
+                "raw_correspondence": -0.5707097,
+                "raw_chirality": 0.25,
+                "shape_topology": -0.3914194,
+                "cardinal_position": -0.75,
+                "normalized_correspondence": -0.3400911635684624,
+                "normalized_chirality": 0.14897730123058292
+            },
+            {
+                "id": "01m426fs9160vdmyc9hrc9f9x6",
+                "distance": 1,
+                "weight": 0.25,
+                "raw_correspondence": -0.597315,
+                "raw_chirality": 0.25,
+                "shape_topology": -0.4803442,
+                "cardinal_position": -0.7142857,
+                "normalized_correspondence": -0.08898637668454563,
+                "normalized_chirality": 0.03724432530764573
+            },
+            {
+                "id": "01m426f3d8kwvavhdqww7jkvr0",
+                "distance": 2,
+                "weight": 0.1111111111111111,
+                "raw_correspondence": -0.6263137,
+                "raw_chirality": 0.75,
+                "shape_topology": -0.5859607,
+                "cardinal_position": -0.6666667,
+                "normalized_correspondence": -0.04146956655544041,
+                "normalized_chirality": 0.0496591004101943
+            },
+            {
+                "id": "01m426e1vzt1mxx4h1syt1phva",
+                "distance": 3,
+                "weight": 0.0625,
+                "raw_correspondence": -0.5350936,
+                "raw_chirality": 0.25,
+                "shape_topology": -0.4701871,
+                "cardinal_position": -0.6,
+                "normalized_correspondence": -0.01992920010843926,
+                "normalized_chirality": 0.009311081326911433
+            },
+            {
+                "id": "01m426ezpbckaeatrd7bhnpdfp",
+                "distance": 3,
+                "weight": 0.0625,
+                "raw_correspondence": -0.5350936,
+                "raw_chirality": 0.0,
+                "shape_topology": -0.4701871,
+                "cardinal_position": -0.6,
+                "normalized_correspondence": -0.01992920010843926,
+                "normalized_chirality": 0.0
+            },
+            {
+                "id": "01m426dqew9agmj7d0hmz9n9vj",
+                "distance": 4,
+                "weight": 0.04,
+                "raw_correspondence": -0.4413933,
+                "raw_chirality": 0.75,
+                "shape_topology": -0.3827866,
+                "cardinal_position": -0.5,
+                "normalized_correspondence": -0.01052121321844177,
+                "normalized_chirality": 0.01787727614766995
+            },
+            {
+                "id": "01m426esxpx03tcm5pg9atw0ct",
+                "distance": 4,
+                "weight": 0.04,
+                "raw_correspondence": -0.4413933,
+                "raw_chirality": 0.25,
+                "shape_topology": -0.3827866,
+                "cardinal_position": -0.5,
+                "normalized_correspondence": -0.01052121321844177,
+                "normalized_chirality": 0.005959092049223316
+            },
+            {
+                "id": "01m426c7j4bd5mw91fbaf44xff",
+                "distance": 5,
+                "weight": 0.027777777777777776,
+                "raw_correspondence": -0.4742165,
+                "raw_chirality": 0.25,
+                "shape_topology": -0.6150998,
+                "cardinal_position": -0.3333333,
+                "normalized_correspondence": -0.007849721596556967,
+                "normalized_chirality": 0.004138258367516192
+            },
+            {
+                "id": "01m426efmr5abmsf08yz75wjj1",
+                "distance": 5,
+                "weight": 0.027777777777777776,
+                "raw_correspondence": -0.4742165,
+                "raw_chirality": 0.25,
+                "shape_topology": -0.6150998,
+                "cardinal_position": -0.3333333,
+                "normalized_correspondence": -0.007849721596556967,
+                "normalized_chirality": 0.004138258367516192
+            },
+            {
+                "id": "01m426c3axmbx6sh2dt0vfgzvv",
+                "distance": 6,
+                "weight": 0.02040816326530612,
+                "raw_correspondence": -0.2642978,
+                "raw_chirality": 0.5713072,
+                "shape_topology": -0.5285955,
+                "cardinal_position": 0.0,
+                "normalized_correspondence": -0.003214234527769825,
+                "normalized_chirality": 0.006947902435069459
+            },
+            {
+                "id": "01m426edcr5sgfbtrb1aphjn0t",
+                "distance": 6,
+                "weight": 0.02040816326530612,
+                "raw_correspondence": -0.2642978,
+                "raw_chirality": 0.0,
+                "shape_topology": -0.5285955,
+                "cardinal_position": 0.0,
+                "normalized_correspondence": -0.003214234527769825,
+                "normalized_chirality": 0.0
+            },
+            {
+                "id": "01m426c15p56d49s7tp1k8hpta",
+                "distance": 7,
+                "weight": 0.015625,
+                "raw_correspondence": 1.0,
+                "raw_chirality": -0.5,
+                "shape_topology": 1.0,
+                "cardinal_position": 1.0,
+                "normalized_correspondence": 0.009311081326911433,
+                "normalized_chirality": -0.004655540663455716
+            }
+        ],
+        "mass": 1.6781079931972789,
+        "resolved": {
+            "correspondence": -0.5442648,
+            "chirality": 0.2795971,
+            "closure": 0.0,
+            "tension": -0.0882226,
+            "charge": 0.9117774
+        }
+    },
+    "recorded_snapshot": {
+        "proposition_id": "01m426gbn9eed9feg1zcrt65fs",
+        "substrate_id": "01m426c1373xmeezxech78q1q3",
+        "ledger_entry_id": "01m426gbnw93d30zshkjv1ge5j",
+        "supersession_id": "01m426gbpf53es75qc45kmhx1b",
+        "correspondence": -0.5442648,
+        "chirality": 0.2795971,
+        "closure": 0.0,
+        "prominence": 0.4558887,
+        "turbulence": 0.5441113,
+        "tension": -0.0882226,
+        "direction_before": "settlement",
+        "direction_after": "settlement",
+        "calculator_version": "closure-birth-v2-chirality-history-v19",
+        "evaluated_at": "2026-10-04T00:55:01.000000Z",
+        "depth": 0.0,
+        "cadence": 0.0,
+        "depth_direction": "negative",
+        "cadence_direction": "negative",
+        "closure_history_proposition_id": "01m426c15p56d49s7tp1k8hpta",
+        "tension_before": -0.1666666,
+        "cadence_interval": 15,
+        "orientation": 0.5,
+        "attestation_cadence": 0.0,
+        "orientation_direction": "positive",
+        "attestation_cadence_direction": "negative",
+        "shape_topology": -0.3914194,
+        "cardinal_position": -0.75,
+        "shape_topology_direction": "negative",
+        "cardinal_position_direction": "negative",
+        "chirality_direction": "positive",
+        "closure_observation": {
+            "depth": 0,
+            "lateral_committal_position": 0,
+            "committed_cardinal_position": 0,
+            "cadence": 0,
+            "closure": 0,
+            "depth_direction": "negative",
+            "lateral_committal_position_direction": "negative",
+            "committed_cardinal_position_direction": "negative",
+            "cadence_direction": "negative",
+            "closure_direction": "negative",
+            "admissible": true,
+            "creating_domain": "settlement",
+            "cadence_interval": 15,
+            "committed_lateral_position": 1,
+            "historical_lateral_centroid": null,
+            "domain_depths": {
+                "emergence": 1,
+                "settlement": 1
+            },
+            "domain_intervals": {
+                "emergence": [
+                    1
+                ],
+                "settlement": [
+                    15
+                ]
+            },
+            "domain_cvs": {
+                "emergence": null,
+                "settlement": null
+            },
+            "history_proposition_id": "01m426c15p56d49s7tp1k8hpta",
+            "history_source": "committed-ancestor"
+        }
+    },
+    "closure_birth": {
+        "depth": 0.0,
+        "lateral_committal_position": 0.0,
+        "committed_cardinal_position": 0.0,
+        "cadence": 0.0,
+        "closure": 0.0,
+        "depth_direction": "negative",
+        "lateral_committal_position_direction": "negative",
+        "committed_cardinal_position_direction": "negative",
+        "cadence_direction": "negative",
+        "closure_direction": "negative",
+        "admissible": true,
+        "creating_domain": "settlement",
+        "cadence_interval": 15,
+        "committed_lateral_position": 1,
+        "historical_lateral_centroid": null,
+        "domain_depths": {
+            "emergence": 1,
+            "settlement": 1
+        },
+        "domain_intervals": {
+            "emergence": [
+                1
+            ],
+            "settlement": [
+                15
+            ]
+        },
+        "domain_cvs": {
+            "emergence": null,
+            "settlement": null
+        },
+        "history_proposition_id": "01m426c15p56d49s7tp1k8hpta",
+        "history_source": "committed-ancestor"
+    },
+    "candidate_commit": {
+        "proposition_id": "01m426gbn9eed9feg1zcrt65fs",
+        "source_id": "01m426fs9160vdmyc9hrc9f9x6",
+        "kind": "canonical_resolved_baseline",
+        "local_expressive_components": null,
+        "local_cadence_samples": null,
+        "closure_birth": {
+            "depth": 0.0,
+            "lateral_committal_position": 0.0,
+            "committed_cardinal_position": 0.0,
+            "cadence": 0.0,
+            "closure": 0.0,
+            "depth_direction": "negative",
+            "lateral_committal_position_direction": "negative",
+            "committed_cardinal_position_direction": "negative",
+            "cadence_direction": "negative",
+            "closure_direction": "negative",
+            "admissible": true,
+            "creating_domain": "settlement",
+            "cadence_interval": 15,
+            "committed_lateral_position": 1,
+            "historical_lateral_centroid": null,
+            "domain_depths": {
+                "emergence": 1,
+                "settlement": 1
+            },
+            "domain_intervals": {
+                "emergence": [
+                    1
+                ],
+                "settlement": [
+                    15
+                ]
+            },
+            "domain_cvs": {
+                "emergence": null,
+                "settlement": null
+            },
+            "history_proposition_id": "01m426c15p56d49s7tp1k8hpta",
+            "history_source": "committed-ancestor"
+        },
+        "correspondence": -0.5476827,
+        "chirality": 0.3156786,
+        "closure": 0.0,
+        "tension": -0.0773348,
+        "charge": 0.9226652,
+        "direction_before": "settlement",
+        "direction_after": "settlement"
+    },
+    "source_references": {
+        "commit_sources": [
+            "01m426fs9160vdmyc9hrc9f9x6"
+        ],
+        "own_attestation_ids": [],
+        "effective_source_attestation_ids": [
+            "01m426g0avq906wkj3n85qan7q"
+        ]
+    },
+    "child": {
+        "id": "01m426grnkaa60dcqs7pnyk7v2",
+        "before_state": {
+            "status": "ready",
+            "cycle": {
+                "id": "01m426ge8x0j8gmt78nj76556a",
+                "sequence": 8,
+                "context_horizon_id": "01m426c19xw7d6pkq08v2nz6fg",
+                "created_at": "2026-10-04T00:55:01.000000Z"
+            },
+            "plan": {
+                "phase": {
+                    "id": "01m426gedmdmh81qp8ssaas911",
+                    "number": 1,
+                    "kind": "distinguish",
+                    "write_register": "signal"
+                },
+                "provenance_id": "01m426gbn9eed9feg1zcrt65fs",
+                "exhausted_alternatives": [],
+                "gate_id": "01m426gbn9eed9feg1zcrt65fs",
+                "lineage": [],
+                "read_options": [],
+                "gate_options": [
+                    {
+                        "id": "01m426gbn9eed9feg1zcrt65fs",
+                        "register": "concord",
+                        "tier": "committal",
+                        "statement": "Author 0 grounding continuation 17",
+                        "spent": false,
+                        "structural_position": 7,
+                        "exploration_epoch": 0,
+                        "parent_ids": [
+                            "01m426fs9160vdmyc9hrc9f9x6"
+                        ],
+                        "reinforcement_count": 0,
+                        "attestation_summary": {
+                            "support_direction": "positive",
+                            "positive": 1,
+                            "negative": 0,
+                            "retained_direction": "positive"
+                        },
+                        "observables": {
+                            "correspondence": -0.5442648,
+                            "chirality": 0.2795971,
+                            "closure": 0.0
+                        },
+                        "receipts": [
+                            {
+                                "id": "01m426caxdwsh809dx0f6fsabq",
+                                "type": "hyperlink",
+                                "reference": "https:\/\/example.test\/evidence\/2\/5",
+                                "loaded": false
+                            }
+                        ]
+                    }
+                ],
+                "write_options": [],
+                "receipts": [],
+                "rest_available": false,
+                "rest_reason": null,
+                "schema": {
+                    "$schema": "https:\/\/json-schema.org\/draft\/2020-12\/schema",
+                    "$id": "https:\/\/miranova.dev\/commons\/schemas\/phases\/distinguish.json",
+                    "title": "Distinguish phase response",
+                    "description": "Choose exactly one action per response. Optional Gate Receipt desired states accompany successful forward contributions.",
+                    "oneOf": [
+                        {
+                            "$ref": "#\/$defs\/actions\/proposition.variant"
+                        }
+                    ],
+                    "$defs": {
+                        "ulid": {
+                            "type": "string",
+                            "pattern": "^[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26}$"
+                        },
+                        "instrument": {
+                            "description": "Cite references a known substrate object. Creating a Cite Receipt does not itself grant Reinforcement. Hyperlink fetches a known public URL and verifies retrieval, not the truth of its claims. Web Search discovers external resources from a query. Proposition Search retrieves bounded same-Domain recorded-lineage history and creates cognitive memory, never evidence or movement authority. Instrument execution records an immutable Receipt; it never loads context or grants Reinforcement automatically.",
+                            "anyOf": [
+                                {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "required": [
+                                        "kind",
+                                        "reference"
+                                    ],
+                                    "properties": {
+                                        "kind": {
+                                            "type": "string",
+                                            "enum": [
+                                                "citation",
+                                                "hyperlink"
+                                            ]
+                                        },
+                                        "reference": {
+                                            "type": "string",
+                                            "minLength": 1
+                                        }
+                                    }
+                                },
+                                {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "required": [
+                                        "kind",
+                                        "query"
+                                    ],
+                                    "properties": {
+                                        "kind": {
+                                            "const": "web_search"
+                                        },
+                                        "query": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 1000,
+                                            "pattern": "^[^\\x00]*[^\\s\\x00][^\\x00]*$"
+                                        }
+                                    }
+                                },
+                                {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "required": [
+                                        "kind"
+                                    ],
+                                    "properties": {
+                                        "kind": {
+                                            "const": "proposition_search"
+                                        },
+                                        "query": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 1000,
+                                            "pattern": "^[^\\x00]*[^\\s\\x00][^\\x00]*$"
+                                        },
+                                        "limit": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "maximum": 10,
+                                            "default": 5
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        "actions": {
+                            "proposition.variant": {
+                                "title": "Create a variant from the current gate",
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                    "action",
+                                    "statement"
+                                ],
+                                "properties": {
+                                    "action": {
+                                        "const": "proposition.variant"
+                                    },
+                                    "statement": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 20000
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "x-commons": {
+                        "kind": "distinguish",
+                        "description": "Create a distinction or traverse an existing local Expressive Proposition from the current Committal Gate.",
+                        "one_action": true,
+                        "gate": "participant-position",
+                        "constraints": [],
+                        "server_governed": [
+                            "gate_proposition_id",
+                            "domain",
+                            "write_register",
+                            "tier"
+                        ]
+                    }
+                }
+            },
+            "perspective": {
+                "max_read_count": 25,
+                "max_token_count": null,
+                "attenuation": {
+                    "status": "active",
+                    "value": 1.0,
+                    "distance": 0,
+                    "formula": "1 \/ (1 + structural_distance)^2",
+                    "scope": "substrate",
+                    "applied_at": "measurement-lineage"
+                }
+            },
+            "reason": null,
+            "entry": null,
+            "current_proposition_id": "01m426gbn9eed9feg1zcrt65fs",
+            "domain": "settlement",
+            "horizon_sequence": 2,
+            "context_horizon_id": "01m426c19xw7d6pkq08v2nz6fg",
+            "last_commitment": {
+                "proposition_id": "01m426gbn9eed9feg1zcrt65fs",
+                "depth": 0,
+                "cadence": 0,
+                "closure": 0,
+                "tension_before": -0.1666666,
+                "evaluated_at": "2026-10-04T00:55:01.000000Z",
+                "lateral_committal_position": 0,
+                "committed_cardinal_position": 0,
+                "depth_direction": "negative",
+                "lateral_committal_position_direction": "negative",
+                "committed_cardinal_position_direction": "negative",
+                "cadence_direction": "negative",
+                "closure_direction": "negative",
+                "admissible": true,
+                "creating_domain": "settlement",
+                "cadence_interval": 15,
+                "committed_lateral_position": 1,
+                "historical_lateral_centroid": null,
+                "domain_depths": {
+                    "emergence": 1,
+                    "settlement": 1
+                },
+                "domain_intervals": {
+                    "emergence": [
+                        1
+                    ],
+                    "settlement": [
+                        15
+                    ]
+                },
+                "domain_cvs": {
+                    "emergence": null,
+                    "settlement": null
+                },
+                "history_proposition_id": "01m426c15p56d49s7tp1k8hpta",
+                "history_source": "committed-ancestor",
+                "domain_before": "settlement",
+                "domain_after": "settlement",
+                "tension_after": -0.0882226,
+                "closure_boundary": false,
+                "closure_history_proposition_id": "01m426c15p56d49s7tp1k8hpta"
+            }
+        },
+        "input": {
+            "action": "proposition.variant",
+            "statement": "First post-Commit expressive child"
+        },
+        "after_state": {
+            "status": "ready",
+            "cycle": {
+                "id": "01m426ge8x0j8gmt78nj76556a",
+                "sequence": 8,
+                "context_horizon_id": "01m426c19xw7d6pkq08v2nz6fg",
+                "created_at": "2026-10-04T00:55:01.000000Z"
+            },
+            "plan": {
+                "phase": {
+                    "id": "01m426gsjadeyfdkt8x19cb2pq",
+                    "number": 2,
+                    "kind": "persist",
+                    "write_register": "stance"
+                },
+                "provenance_id": "01m426gbn9eed9feg1zcrt65fs",
+                "exhausted_alternatives": [],
+                "gate_id": "01m426grnkaa60dcqs7pnyk7v2",
+                "lineage": [
+                    {
+                        "id": "01m426gbn9eed9feg1zcrt65fs",
+                        "register": "concord",
+                        "tier": "committal",
+                        "statement": "Author 0 grounding continuation 17",
+                        "spent": false,
+                        "structural_position": 7,
+                        "exploration_epoch": 0,
+                        "parent_ids": [
+                            "01m426fs9160vdmyc9hrc9f9x6"
+                        ],
+                        "reinforcement_count": 0,
+                        "attestation_summary": {
+                            "support_direction": "positive",
+                            "positive": 1,
+                            "negative": 0,
+                            "retained_direction": "positive"
+                        },
+                        "observables": {
+                            "correspondence": -0.5442648,
+                            "chirality": 0.2795971,
+                            "closure": 0.0
+                        },
+                        "receipts": [
+                            {
+                                "id": "01m426caxdwsh809dx0f6fsabq",
+                                "type": "hyperlink",
+                                "reference": "https:\/\/example.test\/evidence\/2\/5",
+                                "loaded": false
+                            }
+                        ]
+                    }
+                ],
+                "read_options": [],
+                "gate_options": [
+                    {
+                        "id": "01m426grnkaa60dcqs7pnyk7v2",
+                        "register": "signal",
+                        "tier": "expressive",
+                        "statement": "First post-Commit expressive child",
+                        "spent": false,
+                        "structural_position": 1,
+                        "exploration_epoch": 1,
+                        "parent_ids": [
+                            "01m426gbn9eed9feg1zcrt65fs"
+                        ],
+                        "reinforcement_count": 0,
+                        "attestation_summary": {
+                            "support_direction": "positive",
+                            "positive": 0,
+                            "negative": 0,
+                            "retained_direction": "positive"
+                        },
+                        "observables": {
+                            "correspondence": -0.5954591,
+                            "chirality": 0.05,
+                            "closure": 0.0
+                        }
+                    }
+                ],
+                "write_options": [],
+                "receipts": [],
+                "rest_available": false,
+                "rest_reason": null,
+                "schema": {
+                    "$schema": "https:\/\/json-schema.org\/draft\/2020-12\/schema",
+                    "$id": "https:\/\/miranova.dev\/commons\/schemas\/phases\/persist.json",
+                    "title": "Persist phase response",
+                    "description": "Choose exactly one action per response. Optional Gate Receipt desired states accompany successful forward contributions.",
+                    "oneOf": [
+                        {
+                            "$ref": "#\/$defs\/actions\/proposition.variant"
+                        }
+                    ],
+                    "$defs": {
+                        "ulid": {
+                            "type": "string",
+                            "pattern": "^[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26}$"
+                        },
+                        "instrument": {
+                            "description": "Cite references a known substrate object. Creating a Cite Receipt does not itself grant Reinforcement. Hyperlink fetches a known public URL and verifies retrieval, not the truth of its claims. Web Search discovers external resources from a query. Proposition Search retrieves bounded same-Domain recorded-lineage history and creates cognitive memory, never evidence or movement authority. Instrument execution records an immutable Receipt; it never loads context or grants Reinforcement automatically.",
+                            "anyOf": [
+                                {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "required": [
+                                        "kind",
+                                        "reference"
+                                    ],
+                                    "properties": {
+                                        "kind": {
+                                            "type": "string",
+                                            "enum": [
+                                                "citation",
+                                                "hyperlink"
+                                            ]
+                                        },
+                                        "reference": {
+                                            "type": "string",
+                                            "minLength": 1
+                                        }
+                                    }
+                                },
+                                {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "required": [
+                                        "kind",
+                                        "query"
+                                    ],
+                                    "properties": {
+                                        "kind": {
+                                            "const": "web_search"
+                                        },
+                                        "query": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 1000,
+                                            "pattern": "^[^\\x00]*[^\\s\\x00][^\\x00]*$"
+                                        }
+                                    }
+                                },
+                                {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "required": [
+                                        "kind"
+                                    ],
+                                    "properties": {
+                                        "kind": {
+                                            "const": "proposition_search"
+                                        },
+                                        "query": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 1000,
+                                            "pattern": "^[^\\x00]*[^\\s\\x00][^\\x00]*$"
+                                        },
+                                        "limit": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "maximum": 10,
+                                            "default": 5
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        "actions": {
+                            "proposition.variant": {
+                                "title": "Create a variant from the current gate",
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                    "action",
+                                    "statement"
+                                ],
+                                "properties": {
+                                    "action": {
+                                        "const": "proposition.variant"
+                                    },
+                                    "statement": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 20000
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "x-commons": {
+                        "kind": "persist",
+                        "description": "Develop the selected distinction structurally, or support its existing viable Write.",
+                        "one_action": true,
+                        "gate": "previous-phase-position",
+                        "constraints": [],
+                        "server_governed": [
+                            "gate_proposition_id",
+                            "domain",
+                            "write_register",
+                            "tier"
+                        ]
+                    }
+                }
+            },
+            "perspective": {
+                "max_read_count": 25,
+                "max_token_count": null,
+                "attenuation": {
+                    "status": "active",
+                    "value": 1.0,
+                    "distance": 0,
+                    "formula": "1 \/ (1 + structural_distance)^2",
+                    "scope": "substrate",
+                    "applied_at": "measurement-lineage"
+                }
+            },
+            "reason": null,
+            "entry": null,
+            "current_proposition_id": "01m426grnkaa60dcqs7pnyk7v2",
+            "domain": "settlement",
+            "horizon_sequence": 2,
+            "context_horizon_id": "01m426c19xw7d6pkq08v2nz6fg",
+            "last_commitment": {
+                "proposition_id": "01m426gbn9eed9feg1zcrt65fs",
+                "depth": 0,
+                "cadence": 0,
+                "closure": 0,
+                "tension_before": -0.1666666,
+                "evaluated_at": "2026-10-04T00:55:01.000000Z",
+                "lateral_committal_position": 0,
+                "committed_cardinal_position": 0,
+                "depth_direction": "negative",
+                "lateral_committal_position_direction": "negative",
+                "committed_cardinal_position_direction": "negative",
+                "cadence_direction": "negative",
+                "closure_direction": "negative",
+                "admissible": true,
+                "creating_domain": "settlement",
+                "cadence_interval": 15,
+                "committed_lateral_position": 1,
+                "historical_lateral_centroid": null,
+                "domain_depths": {
+                    "emergence": 1,
+                    "settlement": 1
+                },
+                "domain_intervals": {
+                    "emergence": [
+                        1
+                    ],
+                    "settlement": [
+                        15
+                    ]
+                },
+                "domain_cvs": {
+                    "emergence": null,
+                    "settlement": null
+                },
+                "history_proposition_id": "01m426c15p56d49s7tp1k8hpta",
+                "history_source": "committed-ancestor",
+                "domain_before": "settlement",
+                "domain_after": "settlement",
+                "tension_after": -0.0882226,
+                "closure_boundary": false,
+                "closure_history_proposition_id": "01m426c15p56d49s7tp1k8hpta"
+            }
+        },
+        "parents": [
+            "01m426gbn9eed9feg1zcrt65fs"
+        ],
+        "local": {
+            "current_lean": 0.0,
+            "previous_lean": 0.0,
+            "orientation": 0.0,
+            "orientation_mature": true,
+            "current_history": {
+                "acts": 0,
+                "act_ids": [],
+                "act_order": [],
+                "timestamps": [],
+                "represented_cycle_order": [
+                    31
+                ],
+                "intervals": [],
+                "usable_interval_count": 0,
+                "mean": null,
+                "stddev": null,
+                "cv": null,
+                "status": "no_intervals",
+                "boundary_beat": 30,
+                "first_successor_interval": null,
+                "raw_cv": null,
+                "zero_mean_regular": false
+            },
+            "previous_history": {
+                "acts": 1,
+                "act_ids": [
+                    "01m426c16ney4tj6t64505gk0z"
+                ],
+                "act_order": [
+                    2
+                ],
+                "timestamps": [
+                    "2026-10-04T00:52:37.000000Z"
+                ],
+                "represented_cycle_order": [
+                    1
+                ],
+                "intervals": [],
+                "usable_interval_count": 0,
+                "mean": null,
+                "stddev": null,
+                "cv": null,
+                "status": "no_intervals",
+                "boundary_beat": null,
+                "first_successor_interval": null,
+                "raw_cv": null,
+                "zero_mean_regular": false
+            },
+            "attestation_cadence": 0.0,
+            "attestation_cadence_mature": false,
+            "cadence_status": "formation_immature",
+            "cadence_contribution": 0.0,
+            "component_gate": "immature_direction_hysteresis",
+            "proposition_id": "01m426grnkaa60dcqs7pnyk7v2",
+            "previous_boundary_beat": 30,
+            "cursor_provenance": "unattested_pass_through",
+            "cursor_path": [
+                "01m426fs9160vdmyc9hrc9f9x6",
+                "01m426gbn9eed9feg1zcrt65fs"
+            ],
+            "current_cursor": 30,
+            "local_completed_intervals": [],
+            "first_successor_interval": null,
+            "boundary_beat_used": false,
+            "own_effective_attestations": [],
+            "attestation_observed": false,
+            "local_chirality": 0.0,
+            "signature": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+            "observed_event_order": 31,
+            "observation_reason": "fresh_local_state"
+        },
+        "raw_local": {
+            "correspondence": -0.6016464,
+            "chirality": 0.0,
+            "closure": 0.0,
+            "tension": -0.2005488,
+            "charge": 0.7994512
+        },
+        "production_comparator": {
+            "id": "01m426grnkaa60dcqs7pnyk7v2",
+            "parts": [
+                {
+                    "id": "01m426grnkaa60dcqs7pnyk7v2",
+                    "distance": 0,
+                    "weight": 1.0,
+                    "raw_correspondence": -0.6016464,
+                    "raw_chirality": 0.0,
+                    "shape_topology": -0.425515,
+                    "cardinal_position": -0.7777778,
+                    "normalized_correspondence": -0.48131712000000004,
+                    "normalized_chirality": 0.0
+                },
+                {
+                    "id": "01m426gbn9eed9feg1zcrt65fs",
+                    "distance": 1,
+                    "weight": 0.25,
+                    "raw_correspondence": -0.5707097,
+                    "raw_chirality": 0.25,
+                    "shape_topology": -0.3914194,
+                    "cardinal_position": -0.75,
+                    "normalized_correspondence": -0.11414194,
+                    "normalized_chirality": 0.05
+                }
+            ],
+            "mass": 1.25,
+            "resolved": {
+                "correspondence": -0.5954591,
+                "chirality": 0.05,
+                "closure": 0.0,
+                "tension": -0.1818197,
+                "charge": 0.8181803
+            }
+        },
+        "candidate": {
+            "correspondence": -0.5908537,
+            "chirality": 0.0631357,
+            "closure": 0.0,
+            "tension": -0.175906,
+            "charge": 0.824094
+        },
+        "candidate_positions": [
+            {
+                "id": "01m426grnkaa60dcqs7pnyk7v2",
+                "distance": 0,
+                "weight": 1.0
+            },
+            {
+                "id": "01m426gbn9eed9feg1zcrt65fs",
+                "distance": 1,
+                "weight": 0.25
+            }
+        ],
+        "canonical_reads": [
+            {
+                "id": "01m426gbn9eed9feg1zcrt65fs",
+                "include_closure": false
+            }
+        ],
+        "before_counts": {
+            "attestations": 14,
+            "receipts": 14
+        },
+        "after_counts": {
+            "attestations": 14,
+            "receipts": 14
+        },
+        "existing_local_snapshots_unchanged": {
+            "01m426c15p56d49s7tp1k8hpta": true,
+            "01m426c3axmbx6sh2dt0vfgzvv": true,
+            "01m426c7j4bd5mw91fbaf44xff": true,
+            "01m426dqew9agmj7d0hmz9n9vj": true,
+            "01m426e1vzt1mxx4h1syt1phva": true,
+            "01m426edcr5sgfbtrb1aphjn0t": true,
+            "01m426efmr5abmsf08yz75wjj1": true,
+            "01m426esxpx03tcm5pg9atw0ct": true,
+            "01m426ezpbckaeatrd7bhnpdfp": true,
+            "01m426f3d8kwvavhdqww7jkvr0": true,
+            "01m426fs9160vdmyc9hrc9f9x6": true,
+            "01m426gbn9eed9feg1zcrt65fs": true
+        },
+        "commit_snapshot_unchanged": true
+    }
+}
