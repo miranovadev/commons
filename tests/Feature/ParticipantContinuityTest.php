@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Domain\Observables\ChiralityValues;
+use App\Domain\Observables\CorrespondenceValues;
 use App\Domain\Observables\LocalMeasurements;
 use App\Enums\PhaseKind;
 use App\Models\ContextHorizon;
@@ -180,8 +181,8 @@ class ParticipantContinuityTest extends TestCase
             $mock->shouldReceive('chiralityComponents')->andReturnUsing(fn (Proposition $node) => $node->statement === 'Independent continuing opportunity'
                 ? new ChiralityValues(0, 0) : new ChiralityValues($value, $value));
             $mock->shouldReceive('calculate')->andReturnUsing(fn (Proposition $node) => $node->statement === 'Independent continuing opportunity'
-                    ? new LocalMeasurements(0, 0, 0, 0)
-                    : new LocalMeasurements($value, $value, $value, $value));
+                    ? new LocalMeasurements(0, 0, 0, 0, chiralityComponents: new ChiralityValues(0, 0), correspondenceComponents: new CorrespondenceValues(0, 0))
+                    : new LocalMeasurements($value, $value, $value, $value, chiralityComponents: new ChiralityValues($value, $value), correspondenceComponents: new CorrespondenceValues($value, $value)));
         });
         // Keep a genuine uncommitted branch in Origin's Region. Its neutral
         // field supplies Potential even with the corrected |Origin Tension|=1/3.

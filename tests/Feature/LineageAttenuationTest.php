@@ -12,9 +12,11 @@ use App\Models\Proposition;
 use App\Models\Substrate;
 use App\Models\Supersession;
 use App\Services\LedgerService;
+use App\Services\Observables\CanonicalMeasurementService;
 use App\Services\Observables\LineageMeasurementService;
 use App\Services\Observables\LocalMeasurementService;
 use App\Services\PotentialChargeService;
+use App\Services\PotentialProjectionService;
 use App\Services\PropositionMeasurementService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -107,21 +109,25 @@ class LineageAttenuationTest extends TestCase
         $this->assertSame(-0.5, app(LineageMeasurementService::class)->calculate($head)->chirality);
     }
 
-    public function test_preview_and_actual_committal_use_identical_distances(): void
+    public function test_preview_preserves_source_and_actual_canonical_head_stops_at_the_boundary(): void
     {
         $provenance = $this->node('provenance', 'committal');
         $gate = $this->node('gate');
         $this->edge($provenance, $gate);
-        // Synthetic and actual heads have the same local value; provenance is still counted.
-        $this->rawValues([$provenance->id => 1]);
+        $resolved = app(PropositionMeasurementService::class)->recalculate($gate);
         $service = app(LineageMeasurementService::class);
         $counts = [Proposition::count(), Supersession::count()];
         $preview = $service->prospectiveCommit($gate, $this->phase);
         $this->assertSame($counts, [Proposition::count(), Supersession::count()]);
         $target = $this->node('target', 'committal');
+        app(CanonicalMeasurementService::class)->preserve($target, $gate, $resolved,
+            app(PropositionMeasurementService::class)->correspondenceDirectionFor($gate)->value);
         $this->edge($gate, $target, 'commit');
-        $this->assertEquals($preview, $service->calculate($target));
-        $this->assertSame(0.0, $preview->depth);
+        $actual = $service->calculate($target);
+        $this->assertEquals($preview->observables(), $actual->observables());
+        $this->assertSame($resolved->chirality, $actual->chirality);
+        $this->assertSame($resolved->correspondence, $actual->correspondence);
+        $this->assertCount(1, $service->positions($target));
     }
 
     public function test_obsolete_disposable_measurements_are_repaired_and_versioned(): void
@@ -161,7 +167,7 @@ class LineageAttenuationTest extends TestCase
         // (0 + .8/4) / (1 + 1/4) = .16; observer is beyond provenance.
         $this->assertSame(0.16, $values->chirality);
         $potential = app(PotentialChargeService::class);
-        app(\App\Services\PotentialProjectionService::class)->rebuild($this->phase->cycle->participant->substrate_id, false);
+        app(PotentialProjectionService::class)->rebuild($this->phase->cycle->participant->substrate_id, false);
         $entry = $potential->selectFor($this->phase->cycle->participant->substrate);
         $reentry = $potential->selectFrom($observer);
         $recovery = $potential->recoverFrom($observer);
@@ -205,4 +211,3 @@ class LineageAttenuationTest extends TestCase
         app(LedgerService::class)->record($edge);
     }
 }
-

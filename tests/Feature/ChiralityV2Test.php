@@ -21,6 +21,7 @@ use App\Services\CommitRegionPolarityService;
 use App\Services\ContextHorizonProjector;
 use App\Services\CycleEntryService;
 use App\Services\LedgerService;
+use App\Services\Observables\CanonicalMeasurementService;
 use App\Services\Observables\ChiralityCalculator;
 use App\Services\Observables\ContextLineageComparisonService;
 use App\Services\Observables\LineageMeasurementService;
@@ -212,20 +213,28 @@ class ChiralityV2Test extends TestCase
         $this->assertSame($before, $state());
     }
 
-    public function test_preview_and_persisted_candidate_share_component_and_attenuation_semantics(): void
+    public function test_preview_and_canonical_candidate_preserve_source_components_and_resolved_scalars(): void
     {
         [, $current, , $seed] = $this->pair();
         $this->attest($current, 'support');
         $phase = $this->phase($seed, $current, PhaseKind::Order);
         $service = app(LineageMeasurementService::class);
+        $resolved = app(PropositionMeasurementService::class)->recalculate($current);
         $preview = $service->prospectiveCommit($current, $phase);
         $candidate = (new Proposition)->forceFill(['phase_id' => $phase->id, 'tier' => 'committal',
             'register' => $phase->write_register, 'statement' => $current->statement]);
         $candidate->save();
         app(LedgerService::class)->record($candidate);
+        app(CanonicalMeasurementService::class)->preserve($candidate, $current, $resolved,
+            app(PropositionMeasurementService::class)->correspondenceDirectionFor($current)->value);
         $this->commitAncestryFixture($candidate, $current);
         $actual = $service->calculate($candidate);
-        $this->assertEquals($preview, $actual);
+        $this->assertEquals($preview->observables(), $actual->observables());
+        $this->assertSame($resolved->orientation, $actual->chiralityComponents->orientation);
+        $this->assertSame($resolved->attestation_cadence, $actual->chiralityComponents->cadence);
+        $this->assertSame($resolved->orientation_direction, $actual->chiralityComponents->resolveDirections()['orientation_direction']);
+        $this->assertSame($resolved->attestation_cadence_direction, $actual->chiralityComponents->resolveDirections()['attestation_cadence_direction']);
+        $this->assertCount(1, $service->positions($candidate));
         $local = app(LocalMeasurementService::class);
         $mass = $total = 0;
         foreach ($service->positions($candidate) as [$node, $distance]) {
