@@ -65,11 +65,10 @@ final class HardEdgeAudit
         if($this->data['candidate_commit']['direction_after']!==$snapshot->direction_after->value)throw new \RuntimeException('Candidate Domain differs: cannot reuse production child lifecycle.');
         $state=$service->stateFor($actor);$offer=$state['plan']['schema']['$defs']['actions']['proposition.variant']??null;
         if($offer===null){$this->data['child_stop']='variant_not_offered';$this->save();return;}
-        $ids=$offer['properties']['proposition_id']['enum'];
-        if(!in_array($c->id,$ids,true))throw new \RuntimeException('Canonical source not offered.');
+        if($state['plan']['gate_id']!==$c->id)throw new \RuntimeException('Variant acting Gate is not C1.');
         $beforeCounts=['attestations'=>Attestation::count(),'receipts'=>Receipt::count()];
         $beforeLocals=[];foreach(Proposition::all() as $p)$beforeLocals[$p->id]=app(LocalMeasurementService::class)->observation($p);
-        $input=['action'=>'proposition.variant','proposition_id'=>$c->id,'statement'=>'First post-Commit expressive child'];
+        $input=['action'=>'proposition.variant','statement'=>'First post-Commit expressive child'];
         $service->contribute($actor,$state['plan']['phase']['id'],$input);
         $child=Proposition::where('tier','expressive')->orderByDesc('id')->firstOrFail();
         $provider=new CanonicalBaselineLocal(app(LocalMeasurementService::class),$c->id,$candidate);
