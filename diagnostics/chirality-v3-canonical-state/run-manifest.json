@@ -1,0 +1,20 @@
+{
+  "base_commit": "1274cbf934f74061f578a540740ff34513846451",
+  "tested_commit": "afcff30b1a84b9c04ee6fda888b9be9efceda9fd",
+  "branch": "diagnostic/chirality-v3-canonical-state",
+  "run_id": 37170193512,
+  "job_id": 111341431657,
+  "tests": 7,
+  "assertions": 985,
+  "candidate_mode": "read-only canonical record and guarded consumer views; real first-child write",
+  "files": {
+    "CanonicalStateAudit.php": "34b281981452e5fa5d03010516d4b076c543c0ad01670e6b1864716b1eda758e",
+    "canonical-state.json": "9d29a0438acbd99e5c81123c9fabc0f5dc52870a55c5a0c3e48385847306df21",
+    "REPORT.md": "589ae5288bc4db2c613fa99995d80252c16d07c236fd3e65fdba15d82e3e9828",
+    "bootstrap.php": "6aaabea02f2e376cfd3ed7150030404d52fb098d61e0604970e85e5a77a27990",
+    "CanonicalStateReplayTest.php": "1b5a336110d70b514e51675911435d5e41e5930215ff4215cc6a92f9229dd33e",
+    "README.md": "f1876361534e3ab61584fab52dc758dd9cad304e18aa1032566702e669a89a96",
+    "export.py": "6d0ca3cfb8ef349d1d837e8cb4ab9ffecb776c32576b88bc8b2433782f71b967",
+    "API-AUDIT.md": "822c00c66ec04ee474bffa67c86fcde05c9879a9bf0dcfeb839359855e166980"
+  }
+}
