@@ -1,0 +1,289 @@
+[
+  {
+    "label": "post-bias:2",
+    "field": {
+      "id": "01m423p51vzz0sd29xv6qe2htg",
+      "statement": "Author 0 grounding continuation 17",
+      "producing_phase": 7,
+      "creating_cycle": 7,
+      "domain": "settlement",
+      "parents": [
+        "01m423nqtvgwzjs177tewyjyjn"
+      ],
+      "ancestry_partition": null,
+      "local": {
+        "current_lean": 1.0,
+        "previous_lean": 0.0,
+        "orientation": 0.5,
+        "orientation_mature": true,
+        "current_history": {
+          "acts": 0,
+          "act_ids": [],
+          "act_order": [],
+          "timestamps": [],
+          "represented_cycle_order": [
+            3,
+            4,
+            5,
+            7,
+            8,
+            9,
+            10,
+            11,
+            13,
+            14,
+            15,
+            16,
+            17,
+            24,
+            25
+          ],
+          "intervals": [],
+          "usable_interval_count": 0,
+          "mean": null,
+          "stddev": null,
+          "cv": null,
+          "status": "no_intervals",
+          "boundary_beat": 30,
+          "first_successor_interval": null,
+          "raw_cv": null,
+          "zero_mean_regular": false
+        },
+        "previous_history": {
+          "acts": 1,
+          "act_ids": [
+            "01m423j3f9vdwx9pas38t055xg"
+          ],
+          "act_order": [
+            2
+          ],
+          "timestamps": [
+            "2026-10-04T00:03:30.000000Z"
+          ],
+          "represented_cycle_order": [
+            1
+          ],
+          "intervals": [],
+          "usable_interval_count": 0,
+          "mean": null,
+          "stddev": null,
+          "cv": null,
+          "status": "no_intervals",
+          "boundary_beat": null,
+          "first_successor_interval": null,
+          "raw_cv": null,
+          "zero_mean_regular": false
+        },
+        "attestation_cadence": 0.0,
+        "attestation_cadence_mature": false,
+        "cadence_status": "formation_immature",
+        "cadence_contribution": 0.0,
+        "component_gate": "immature_direction_hysteresis",
+        "proposition_id": "01m423p51vzz0sd29xv6qe2htg",
+        "previous_boundary_beat": 30,
+        "cursor_provenance": "immediate_predecessor",
+        "cursor_path": [
+          "01m423nqtvgwzjs177tewyjyjn"
+        ],
+        "current_cursor": 30,
+        "local_completed_intervals": [],
+        "first_successor_interval": null,
+        "boundary_beat_used": false,
+        "own_effective_attestations": [],
+        "attestation_observed": false,
+        "local_chirality": 0.25,
+        "signature": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "observed_event_order": 30,
+        "observation_reason": "fresh_local_state"
+      },
+      "attenuation_parts": [
+        {
+          "id": "01m423p51vzz0sd29xv6qe2htg",
+          "distance": 0,
+          "weight": 1.0,
+          "local_chirality": 0.25,
+          "weighted_chirality": 0.25
+        },
+        {
+          "id": "01m423nqtvgwzjs177tewyjyjn",
+          "distance": 1,
+          "weight": 0.25,
+          "local_chirality": 0.25,
+          "weighted_chirality": 0.0625
+        },
+        {
+          "id": "01m423n2w0061rt1833xtqar72",
+          "distance": 2,
+          "weight": 0.1111111111111111,
+          "local_chirality": 0.75,
+          "weighted_chirality": 0.08333333333333333
+        },
+        {
+          "id": "01m423m2kmbs3pj02f2ar47vae",
+          "distance": 3,
+          "weight": 0.0625,
+          "local_chirality": 0.25,
+          "weighted_chirality": 0.015625
+        },
+        {
+          "id": "01m423mz8kfkqp5m631wmf9ap6",
+          "distance": 3,
+          "weight": 0.0625,
+          "local_chirality": 0.0,
+          "weighted_chirality": 0.0
+        },
+        {
+          "id": "01m423krep6ds96vgjatrrhvzw",
+          "distance": 4,
+          "weight": 0.04,
+          "local_chirality": 0.75,
+          "weighted_chirality": 0.03
+        },
+        {
+          "id": "01m423msq2g9s6vyves2xs40ma",
+          "distance": 4,
+          "weight": 0.04,
+          "local_chirality": 0.25,
+          "weighted_chirality": 0.01
+        },
+        {
+          "id": "01m423j9p9vhs4ft1xevq37t9q",
+          "distance": 5,
+          "weight": 0.027777777777777776,
+          "local_chirality": 0.25,
+          "weighted_chirality": 0.006944444444444444
+        },
+        {
+          "id": "01m423mfsqdd1m3ant1wrwaw73",
+          "distance": 5,
+          "weight": 0.027777777777777776,
+          "local_chirality": 0.25,
+          "weighted_chirality": 0.006944444444444444
+        },
+        {
+          "id": "01m423j5h8apths4vntesy714d",
+          "distance": 6,
+          "weight": 0.02040816326530612,
+          "local_chirality": 0.5713072,
+          "weighted_chirality": 0.011659330612244898
+        },
+        {
+          "id": "01m423mdn4023gcqbeeg1s7k1h",
+          "distance": 6,
+          "weight": 0.02040816326530612,
+          "local_chirality": 0.0,
+          "weighted_chirality": 0.0
+        },
+        {
+          "id": "01m423j3ec4nqzv6vtprjnr641",
+          "distance": 7,
+          "weight": 0.015625,
+          "local_chirality": -0.5,
+          "weighted_chirality": -0.0078125
+        }
+      ],
+      "attenuation_mass": 1.6781079931972789,
+      "normalized_ancestral_chirality": 0.13061975374829085,
+      "normalized_head_chirality": 0.14897730123058292,
+      "chirality": 0.2795971,
+      "correspondence": -0.5442648,
+      "closure": 0.0,
+      "tension": -0.0882226,
+      "charge": 0.9117774,
+      "directions": {
+        "gate_id": "01m423p51vzz0sd29xv6qe2htg",
+        "admissible": false,
+        "reason": "component_directions_disagree",
+        "orientation_direction": "positive",
+        "attestation_cadence_direction": "negative",
+        "chirality_direction": "positive"
+      },
+      "commitment_snapshot": {
+        "proposition_id": "01m423p51vzz0sd29xv6qe2htg",
+        "substrate_id": "01m423j3bz1n2p83zf4nkdhk3n",
+        "ledger_entry_id": "01m423p52bdjfbxsydmhh9tate",
+        "supersession_id": "01m423p52xymn72rkx3tj47k8h",
+        "correspondence": -0.5442648,
+        "chirality": 0.2795971,
+        "closure": 0.0,
+        "prominence": 0.4558887,
+        "turbulence": 0.5441113,
+        "tension": -0.0882226,
+        "direction_before": "settlement",
+        "direction_after": "settlement",
+        "calculator_version": "closure-birth-v2-chirality-history-v19",
+        "evaluated_at": "2026-10-04T00:05:45.000000Z",
+        "depth": 0.0,
+        "cadence": 0.0,
+        "depth_direction": "negative",
+        "cadence_direction": "negative",
+        "closure_history_proposition_id": "01m423j3ec4nqzv6vtprjnr641",
+        "tension_before": -0.1666666,
+        "cadence_interval": 15,
+        "orientation": 0.5,
+        "attestation_cadence": 0.0,
+        "orientation_direction": "positive",
+        "attestation_cadence_direction": "negative",
+        "shape_topology": -0.3914194,
+        "cardinal_position": -0.75,
+        "shape_topology_direction": "negative",
+        "cardinal_position_direction": "negative",
+        "chirality_direction": "positive",
+        "closure_observation": {
+          "depth": 0,
+          "lateral_committal_position": 0,
+          "committed_cardinal_position": 0,
+          "cadence": 0,
+          "closure": 0,
+          "depth_direction": "negative",
+          "lateral_committal_position_direction": "negative",
+          "committed_cardinal_position_direction": "negative",
+          "cadence_direction": "negative",
+          "closure_direction": "negative",
+          "admissible": true,
+          "creating_domain": "settlement",
+          "cadence_interval": 15,
+          "committed_lateral_position": 1,
+          "historical_lateral_centroid": null,
+          "domain_depths": {
+            "emergence": 1,
+            "settlement": 1
+          },
+          "domain_intervals": {
+            "emergence": [
+              1
+            ],
+            "settlement": [
+              15
+            ]
+          },
+          "domain_cvs": {
+            "emergence": null,
+            "settlement": null
+          },
+          "history_proposition_id": "01m423j3ec4nqzv6vtprjnr641",
+          "history_source": "committed-ancestor"
+        }
+      },
+      "stored_measurement": {
+        "proposition_id": "01m423p51vzz0sd29xv6qe2htg",
+        "correspondence": -0.5442648,
+        "chirality": 0.2795971,
+        "closure": 0.0,
+        "calculated_at": "2026-10-04T00:05:45.000000Z",
+        "created_at": "2026-10-04T00:05:45.000000Z",
+        "updated_at": "2026-10-04T00:05:45.000000Z",
+        "calculator_version": "closure-birth-v2-chirality-history-v19",
+        "orientation": 0.5,
+        "attestation_cadence": 0.0,
+        "orientation_direction": "positive",
+        "attestation_cadence_direction": "negative",
+        "shape_topology": -0.3914194,
+        "cardinal_position": -0.75,
+        "shape_topology_direction": "negative",
+        "cardinal_position_direction": "negative",
+        "chirality_direction": "positive"
+      }
+    }
+  }
+]

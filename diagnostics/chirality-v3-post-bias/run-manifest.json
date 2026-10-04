@@ -1,0 +1,25 @@
+{
+  "base_commit": "a65ad7b3e612ca9e91e2f55a76f7e160aa6ba0b0",
+  "tested_commit": "4a89eea87a6a5fec6fa31e55aa15026ad9132bda",
+  "branch": "diagnostic/chirality-v3-post-bias",
+  "run_id": 37163662049,
+  "job_id": 111322096665,
+  "tests": 7,
+  "assertions": 956,
+  "result": "success",
+  "adapter": "diagnostics/chirality-v3-local-reconcile/LocalReconcileMeasurements.php (unchanged)",
+  "stop": "first_ordinary_commit",
+  "ordinary_commits": 1,
+  "resulting_domain": "settlement",
+  "new_scope_conflict": "Commit source-by-reference evidence gives fresh Committal nonzero local Orientation without own Attestation; not repaired",
+  "files": {
+    "commit-boundary.json": "1d370ef387bb5ea1f0c53f5d1fd6f97f166549ae9b28357a61c13672b7f121d4",
+    "bootstrap.php": "6d305dc740117c2ff432a961e2385b9b853b68f369fc7a27cfc2460fd606e885",
+    "candidate-trace.json": "ee18e168dfbf20f8b8b6db0225bb2c84a3ac1e3debdc9c3b19590380e4148a86",
+    "report.py": "6654582742f12c0189d05ee43795e250fcc744e2c41489b56c9ac62ffd281206",
+    "PostBiasRecorder.php": "e03288a0cf64c7ea7d089402c8572bc921f8cda3e438ba94bc9d9ab6e0b056ec",
+    "PostBiasReplayTest.php": "3f4ade61a1a22aa19be48166a4812a69ca28c4574b9f6c2e70ad6d3323ca5d8a",
+    "export.py": "5fa4eb52aa9d30ca5649c3f387952b9b677e315464e74e170227fdc591f16429",
+    "summary.json": "3d81179897095cc30112afe1ed8df1da359c6167183a524ddc220cf8c9697309"
+  }
+}

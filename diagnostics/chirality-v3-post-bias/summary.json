@@ -1,0 +1,11 @@
+{
+  "stop": "first_ordinary_commit",
+  "completed_actions": 58,
+  "new_actions": 3,
+  "ordinary_commits": 1,
+  "participants": 3,
+  "undefined": null,
+  "local_invariance_checks": 261,
+  "unchanged": 248,
+  "own_changes": 13
+}
