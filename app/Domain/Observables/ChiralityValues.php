@@ -4,7 +4,7 @@ namespace App\Domain\Observables;
 
 use App\Enums\ObservableDirection as Direction;
 
-/** Local components only: their mean, never their separate values, is attenuated. */
+/** Published components. Their mean is local Chirality only; a canonical scalar is preserved independently. */
 final readonly class ChiralityValues
 {
     public function __construct(

@@ -10,6 +10,7 @@ use App\Models\ContextHorizonMembership;
 use App\Models\Proposition;
 use App\Models\PropositionMeasurement;
 use App\Models\Substrate;
+use App\Services\Observables\CanonicalMeasurementService;
 use App\Services\Observables\ClosureBirthService;
 use App\Services\Observables\LineageMeasurementService;
 use App\Services\Observables\ObservableService;
@@ -161,6 +162,12 @@ final class PropositionMeasurementService
             // Lock the Proposition so the numeric projection and retained direction move together.
             Proposition::query()->whereKey($proposition->id)->lockForUpdate()->firstOrFail();
             app(FieldMutationService::class)->touch($proposition->phase, [$proposition->id], measurementsDirty: false);
+            $canonical = app(CanonicalMeasurementService::class)->for($proposition);
+            if ($canonical !== null) {
+                [$correspondence, $chirality] = [$canonical->correspondence, $canonical->chirality];
+                $chiralityComponents = $canonical->chiralityComponents();
+                $correspondenceComponents = $canonical->correspondenceComponents();
+            }
             $snapshot = $proposition->tier === 'committal' ? CommitmentSnapshot::find($proposition->id) : null;
             if ($snapshot !== null) {
                 [$correspondence, $chirality, $closure] = [$snapshot->correspondence, $snapshot->chirality, $snapshot->closure];
@@ -231,6 +238,9 @@ final class PropositionMeasurementService
 
     private function componentAttributes(Proposition $proposition, ChiralityValues $values, ?ParticipationContext $context = null): array
     {
+        if ($canonical = app(CanonicalMeasurementService::class)->for($proposition, $context)) {
+            return $canonical->metadata();
+        }
         $prior = $this->priorChiralityObservation($proposition, $context)
             ?? ($context === null ? PropositionMeasurement::find($proposition->id) : $context->propositions->get($proposition->id)?->measurement);
         $entry = $proposition->phase->cycle->entry_committal_id;
@@ -263,6 +273,9 @@ final class PropositionMeasurementService
         $seen = [];
         $substrateId = $position->phase->cycle->participant->substrate_id;
         while ($position !== null) {
+            if ($canonical = app(CanonicalMeasurementService::class)->for($position, $context)) {
+                return ObservableDirection::from($canonical->correspondence_direction);
+            }
             if (isset($seen[$position->id]) || $position->phase->cycle->participant->substrate_id !== $substrateId) {
                 throw new \DomainException('Correspondence lineage must be acyclic and within one substrate.');
             }
@@ -296,6 +309,9 @@ final class PropositionMeasurementService
 
     private function resolvedChiralityDirection(Proposition $position, ?float $value, ?ParticipationContext $context = null): ObservableDirection
     {
+        if ($canonical = app(CanonicalMeasurementService::class)->for($position, $context)) {
+            return ObservableDirection::from($canonical->chirality_direction);
+        }
         if ($value !== null && $value !== 0.0) {
             return ObservableDirection::after($value);
         }
