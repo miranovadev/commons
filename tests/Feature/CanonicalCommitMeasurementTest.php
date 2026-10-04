@@ -23,11 +23,13 @@ use App\Services\CommitmentAdmissibilityService;
 use App\Services\ContextHorizonProjector;
 use App\Services\ContributionDispatcher;
 use App\Services\LedgerService;
+use App\Services\Observables\CanonicalMeasurementService;
 use App\Services\Observables\ClosureBirthService;
 use App\Services\Observables\LineageMeasurementService;
 use App\Services\Observables\LocalMeasurementService;
 use App\Services\Observables\ObservableService;
 use App\Services\Participation\ParticipationContext;
+use App\Services\PotentialProjectionService;
 use App\Services\ProjectionService;
 use App\Services\PropositionMeasurementService;
 use DomainException;
@@ -255,6 +257,35 @@ class CanonicalCommitMeasurementTest extends TestCase
         $this->assertSame('current', $resource['observables']['status']);
         $this->assertSame($resolved->orientation_direction, $target->measurement->orientation_direction);
         $this->assertSame($resolved->attestation_cadence_direction, $target->measurement->attestation_cadence_direction);
+    }
+
+    public function test_background_projection_rebuild_preserves_all_canonical_metadata(): void
+    {
+        [, $target, $resolved] = $this->committed();
+        $canonical = CanonicalMeasurement::findOrFail($target->id);
+        DB::table('proposition_measurements')->where('proposition_id', $target->id)->delete();
+        app(PotentialProjectionService::class)->rebuild($this->participant->substrate_id);
+        $projected = $target->fresh()->measurement;
+        foreach ($canonical->metadata() as $key => $value) {
+            $this->assertSame($value, $projected->$key, $key);
+        }
+        $this->assertSame($resolved->chirality, $projected->chirality);
+        $this->assertSame($resolved->correspondence, $projected->correspondence);
+        $this->assertFalse(DB::table('local_chirality_states')->where('proposition_id', $target->id)->exists());
+    }
+
+    public function test_canonical_observation_before_snapshot_does_not_write_expressive_history(): void
+    {
+        $this->bootstrap();
+        [$phase, $source] = $this->candidate([2]);
+        $measurements = app(PropositionMeasurementService::class);
+        $resolved = $measurements->recalculate($source);
+        $target = $this->node($phase, 'committal', $phase->write_register);
+        app(CanonicalMeasurementService::class)->preserve($target, $source, $resolved,
+            $measurements->correspondenceDirectionFor($source)->value);
+        $this->assertFalse(CommitmentSnapshot::whereKey($target->id)->exists());
+        $this->assertSame($resolved->chirality, $measurements->observeChirality($target));
+        $this->assertFalse(DB::table('chirality_observations')->where('proposition_id', $target->id)->exists());
     }
 
     private function bootstrap(): void

@@ -53,6 +53,9 @@ final class PropositionMeasurementService
     /** Mutation-only direction observation; never publishes disposable measurements. */
     public function observeChirality(Proposition $position, ?ParticipationContext $context = null): float
     {
+        if ($canonical = app(CanonicalMeasurementService::class)->for($position, $context)) {
+            return $canonical->chirality;
+        }
         $snapshot = $position->tier === 'committal'
             ? ($context === null ? CommitmentSnapshot::find($position->id) : $context->snapshots->firstWhere('proposition_id', $position->id)) : null;
         if ($snapshot !== null) {
@@ -234,6 +237,16 @@ final class PropositionMeasurementService
 
         return [...array_fill_keys(['orientation', 'attestation_cadence', 'orientation_direction', 'attestation_cadence_direction'], null),
             ...$attributes, 'chirality_direction' => $this->resolvedChiralityDirection($position, $value, $context)->value];
+    }
+
+    /** Published Correspondence diagnostics, including canonical retained directions. */
+    public function correspondenceAttributes(Proposition $position, ?CorrespondenceValues $components, ?ParticipationContext $context = null): array
+    {
+        $attributes = $components === null ? ($position->measurement?->only([
+            'shape_topology', 'cardinal_position', 'shape_topology_direction', 'cardinal_position_direction']) ?? [])
+            : $this->correspondenceComponentAttributes($position, $components, $context);
+
+        return [...array_fill_keys(['shape_topology', 'cardinal_position', 'shape_topology_direction', 'cardinal_position_direction'], null), ...$attributes];
     }
 
     private function componentAttributes(Proposition $proposition, ChiralityValues $values, ?ParticipationContext $context = null): array
