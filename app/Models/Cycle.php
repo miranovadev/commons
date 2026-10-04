@@ -50,7 +50,7 @@ class Cycle extends Model
         });
     }
 
-    /** Entry changes live Chirality; completion retains existing Closure invalidation. */
+    /** Entry changes population membership; expressive local Chirality stays event-born. */
     public function save(array $options = [])
     {
         $changesParticipation = $this->entry_committal_id !== null

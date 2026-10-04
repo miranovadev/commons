@@ -14,6 +14,8 @@ final readonly class ChiralityValues
         public int $previousCycles = 0,
         public int $currentActs = 0,
         public int $previousActs = 0,
+        public ?Direction $retainedOrientation = null,
+        public ?Direction $retainedCadence = null,
     ) {}
 
     public function average(): float
@@ -23,8 +25,8 @@ final readonly class ChiralityValues
 
     public function resolveDirections(Direction $orientation = Direction::Negative, Direction $cadence = Direction::Positive): array
     {
-        return ['orientation_direction' => Direction::after($this->orientation, $orientation)->value,
-            'attestation_cadence_direction' => Direction::after($this->cadence, $cadence)->value];
+        return ['orientation_direction' => ($this->retainedOrientation ?? Direction::after($this->orientation, $orientation))->value,
+            'attestation_cadence_direction' => ($this->retainedCadence ?? Direction::after($this->cadence, $cadence))->value];
     }
 
     public static function similarity(int $currentActs, int $currentCycles, int $previousActs, int $previousCycles): float

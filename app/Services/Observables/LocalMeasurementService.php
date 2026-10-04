@@ -16,11 +16,14 @@ class LocalMeasurementService
         private readonly CorrespondenceCalculator $correspondence,
         private readonly ChiralityCalculator $chirality,
         private readonly ClosureCalculator $closure,
+        private readonly LocalChiralityStateService $localChirality,
     ) {}
 
     public function chiralityComponents(Proposition $proposition, ?LineageComparison $comparison = null): ChiralityValues
     {
-        return $this->chirality->components($comparison ?? $this->lineages->for($proposition));
+        return $proposition->tier === 'expressive'
+            ? $this->localChirality->components($proposition, $comparison?->current->context)
+            : $this->chirality->components($comparison ?? $this->lineages->for($proposition));
     }
 
     public function calculate(Proposition $proposition, ?LineageComparison $comparison = null, bool $includeClosure = true): LocalMeasurements
@@ -29,7 +32,7 @@ class LocalMeasurementService
         $closure = $includeClosure ? $this->closure->localComponents($proposition, $comparison)
             : new ClosureValues(0, 0);
 
-        $chirality = $this->chirality->components($comparison);
+        $chirality = $this->chiralityComponents($proposition, $comparison);
         $correspondence = $this->correspondence->components($comparison);
 
         return new LocalMeasurements(

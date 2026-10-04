@@ -11,6 +11,7 @@ use App\Models\ReceiptContextEvent;
 use App\Models\Substrate;
 use App\Models\SubstrateLedgerEntry;
 use App\Models\Supersession;
+use App\Services\Observables\LocalChiralityStateService;
 use DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -73,9 +74,13 @@ final readonly class LedgerService
                 && $kind === LedgerEntryKind::Proposition
             ) {
                 $this->horizons->include($entry);
+                app(LocalChiralityStateService::class)->initialize($ledgerable);
             }
 
             if (! $wasRecorded) {
+                if ($ledgerable instanceof Attestation) {
+                    app(LocalChiralityStateService::class)->attest($ledgerable);
+                }
                 $affected = match (true) {
                     $ledgerable instanceof Proposition => [$ledgerable->id],
                     $ledgerable instanceof Supersession => [$ledgerable->source_proposition_id, $ledgerable->target_proposition_id],
