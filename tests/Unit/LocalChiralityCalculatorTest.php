@@ -4,7 +4,6 @@ namespace Tests\Unit;
 
 use App\Domain\Observables\ChiralityValues;
 use App\Enums\ObservableDirection as Direction;
-use App\Exceptions\DeferredChiralityCadenceBoundary;
 use App\Services\Observables\LocalChiralityCalculator;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -45,10 +44,16 @@ class LocalChiralityCalculatorTest extends TestCase
         }
     }
 
-    public function test_mature_all_zero_intervals_are_an_explicit_deferred_boundary(): void
+    public function test_mature_all_zero_intervals_are_regular_but_raw_cv_remains_undefined(): void
     {
-        $this->expectException(DeferredChiralityCadenceBoundary::class);
-        (new LocalChiralityCalculator)->cadence([0, 0]);
+        foreach ([[0, 0], [0, 0, 0]] as $intervals) {
+            $result = (new LocalChiralityCalculator)->cadence($intervals);
+            $this->assertTrue($result['mature']);
+            $this->assertTrue($result['zero_mean_regular']);
+            $this->assertNull($result['raw_cv']);
+            $this->assertSame(0.0, $result['cv']);
+            $this->assertSame(1.0, $result['value']);
+        }
     }
 
     public function test_zero_retains_component_directions(): void

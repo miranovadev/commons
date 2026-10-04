@@ -37,9 +37,9 @@ The inverse-square lineage walker, weights and denominator remain unchanged. Pop
 
 Origin and ordinary Committal calculation retain their existing path in this stage. No canonical hard-edge preservation is implemented. Correspondence, Closure, Receipt/grounding and Bias admissibility formulas are unchanged.
 
-## Historical-data limitation
+## Prospective migration boundary (review clarification)
 
-The migration deliberately does not infer past beat positions from today's Cycle population. Existing unattested propositions can start at their first genuine new event. An already-attested historical proposition without event-born local state fails explicitly; it is not silently reset or recomputed on read. A reviewed historical transition policy is required before deploying to such data.
+The migration deliberately does not infer past beat positions from today's Cycle population. Existing unattested propositions can start at their first genuine new event. An already-attested historical proposition without event-born local state fails explicitly; it is not silently reset or recomputed on read. Review clarification: historical migration is not required. Historical substrates may remain stored beside new substrates. Live vNext requests for already-attested historical expressive propositions without event-born local state fail explicitly. No backfill or reconstruction from current population is planned.
 
 ## Validation
 
@@ -76,7 +76,7 @@ The four skipped cases are PostgreSQL-dependent tests in `TransactionLockOrderTe
 
 The zero-mean cases are concrete Stage 1 boundaries; their Attestation cannot proceed under the temporary semantics. The focused test verifies that the real transaction shape rolls back the attempted Attestation, ledger entry and local state together. Stop here for review; do not coerce a value or silently advance Stage 2.
 
-For obsolete scalar assertions, propose updating expectations to the new local-plus-attenuated measurements after review. For trajectory-dependent tests, review the intended fixture contract first; do not add actors, acts or timing changes to recover old outcomes. The historical-data transition also needs an explicit policy. No PR or merge is included in this stage's review branch.
+For obsolete scalar assertions, propose updating expectations to the new local-plus-attenuated measurements after review. For trajectory-dependent tests, review the intended fixture contract first; do not add actors, acts or timing changes to recover old outcomes. The historical-data boundary is prospective by explicit review approval; no historical reconstruction is required. No PR or merge is included in this stage's review branch.
 
 ## Exact changed files
 

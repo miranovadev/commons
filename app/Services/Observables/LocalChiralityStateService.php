@@ -19,6 +19,7 @@ final readonly class LocalChiralityStateService
         private ContextLineageComparisonService $lineages,
         private ChiralityCalculator $evidence,
         private LocalChiralityCalculator $calculator,
+        private AttestationBeatCursorService $beats,
     ) {}
 
     public function initialize(Proposition $proposition): void
@@ -40,7 +41,7 @@ final readonly class LocalChiralityStateService
                 ->whereIn('proposition_id', $context->propositions->keys())->get()->keyBy('proposition_id'))->get($proposition->id);
         if ($state === null) {
             if ($context === null ? Attestation::where('proposition_id', $proposition->id)->exists() : $context->attestationsFor([$proposition->id])->isNotEmpty()) {
-                throw new DomainException('Attested proposition '.$proposition->id.' has no event-born local Chirality state; explicit historical migration is required.');
+                throw new DomainException('Attested proposition '.$proposition->id.' has no event-born local Chirality state; live vNext Chirality is unavailable at the prospective migration boundary.');
             }
             $state = (object) $this->fresh($proposition, $context);
         }
@@ -52,7 +53,7 @@ final readonly class LocalChiralityStateService
     }
 
     /** Called within LedgerService's substrate-locked transaction, after recording the act. */
-    public function attest(Attestation $attestation): void
+    public function attest(Attestation $attestation, int $sequence): void
     {
         $proposition = $attestation->proposition;
         if ($proposition->tier !== 'expressive') {
@@ -63,7 +64,7 @@ final readonly class LocalChiralityStateService
             // An existing but previously unattested proposition can start with its
             // first genuine event. Never discard or reconstruct historical acts.
             if (Attestation::where('proposition_id', $proposition->id)->where('id', '!=', $attestation->id)->exists()) {
-                throw new DomainException('Attested proposition '.$proposition->id.' has no event-born local Chirality state; explicit historical migration is required.');
+                throw new DomainException('Attested proposition '.$proposition->id.' has no event-born local Chirality state; live vNext Chirality is unavailable at the prospective migration boundary.');
             }
             $this->initialize($proposition);
             $state = DB::table('local_chirality_states')->where('proposition_id', $proposition->id)->first();
@@ -79,19 +80,19 @@ final readonly class LocalChiralityStateService
         $orientation = $previous === null ? 0.0
             : $this->calculator->orientation($this->evidence->leanFor(collect([$proposition->id])), $previousLean);
 
-        // Snapshot the represented Cycle-entry count at the genuine act, under the
-        // same root lock as Cycle entry. No timestamps, lineage replay or foreign beats.
+        // Retain the own scoped population count for diagnostics. Cross-boundary
+        // interval spacing uses the portable event-born branch cursor below.
         $position = $proposition->phase->cycle->entry_committal_id === null ? 0 : Cycle::where('context_horizon_id', $comparison->current->horizon->id)
             ->where('entry_committal_id', $proposition->phase->cycle->entry_committal_id)->count();
         $intervals = json_decode($state->intervals, true, flags: JSON_THROW_ON_ERROR);
-        if ($state->last_position !== null) {
-            $interval = $position - (int) $state->last_position;
-            if ($interval < 0) {
-                throw new DomainException('Represented Cycle-entry position cannot move backwards.');
-            }
+        if ($state->act_count > 0 && $this->beats->for($proposition)?->beat_sequence === null) {
+            throw new DomainException('Historical local Chirality has no event-born beat cursor; live vNext rhythm is unavailable at the prospective migration boundary.');
+        }
+        $interval = $this->beats->interval($proposition, $sequence);
+        if ($interval !== null) {
             $intervals[] = $interval;
         }
-        $cadence = $this->calculator->cadence($intervals, $proposition->id)['value'];
+        $cadence = $this->calculator->cadence($intervals)['value'];
         $values = new ChiralityValues($orientation, $cadence);
         DB::table('local_chirality_states')->where('proposition_id', $proposition->id)->update([
             'orientation' => $orientation, 'attestation_cadence' => $cadence, 'chirality' => $values->average(),

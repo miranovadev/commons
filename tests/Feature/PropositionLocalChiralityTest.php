@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Enums\PhaseKind;
-use App\Exceptions\DeferredChiralityCadenceBoundary;
 use App\Models\Attestation;
 use App\Models\Participant;
 use App\Models\Phase;
@@ -128,7 +127,7 @@ class PropositionLocalChiralityTest extends TestCase
         }
         $this->act($grandchild, 'refute');
         $this->assertSame($before, $this->state($parent));
-        $this->assertSame([], json_decode($this->state($grandchild)['intervals'], true));
+        $this->assertSame([2], json_decode($this->state($grandchild)['intervals'], true));
         $this->assertSame([], json_decode($this->state($child)['intervals'], true));
     }
 
@@ -158,21 +157,24 @@ class PropositionLocalChiralityTest extends TestCase
         $this->assertSame('positive', $node->fresh()->measurement->orientation_direction);
     }
 
-    public function test_zero_mean_boundary_rolls_back_the_attestation_and_measurement_atomically(): void
+    public function test_attestation_measurement_and_cursor_roll_back_atomically(): void
     {
         [, $node] = $this->setupPosition();
         $first = $this->act($node);
         $second = $this->act($node, 'refute', $first);
         $before = $this->state($node);
+        $cursor = DB::table('proposition_attestation_cursors')->where('proposition_id', $node->id)->first();
         $ledgerCount = DB::table('substrate_ledger_entries')->count();
         try {
-            $this->act($node, 'support', $second);
-            $this->fail('Expected the deferred Stage 2 boundary.');
-        } catch (DeferredChiralityCadenceBoundary $error) {
-            $this->assertSame([0, 0], $error->intervals);
-            $this->assertSame($node->id, $error->propositionId);
+            DB::transaction(function () use ($node, $second) {
+                $this->act($node, 'support', $second);
+                throw new \RuntimeException('rollback');
+            });
+        } catch (\RuntimeException $error) {
+            $this->assertSame('rollback', $error->getMessage());
         }
         $this->assertSame($before, $this->state($node));
+        $this->assertEquals($cursor, DB::table('proposition_attestation_cursors')->where('proposition_id', $node->id)->first());
         $this->assertSame(2, Attestation::where('proposition_id', $node->id)->count());
         $this->assertSame($ledgerCount, DB::table('substrate_ledger_entries')->count());
     }
@@ -183,7 +185,7 @@ class PropositionLocalChiralityTest extends TestCase
         $this->act($node);
         DB::table('local_chirality_states')->where('proposition_id', $node->id)->delete();
         $this->expectException(\DomainException::class);
-        $this->expectExceptionMessage('explicit historical migration is required');
+        $this->expectExceptionMessage('prospective migration boundary');
         $this->components($node);
     }
 
@@ -242,6 +244,6 @@ class PropositionLocalChiralityTest extends TestCase
             'gate_proposition_id' => $phase->gate_proposition_id, 'started_at' => now()])->save();
         $dispatch->dispatch($this->actor, $next, ['action' => 'attestation.create', 'proposition_id' => $node->id, 'direction' => 'refute']);
         $this->assertSame([-.5, 0.0, -.25], array_slice($this->components($node), 0, 3));
-        $this->assertSame([0], json_decode($this->state($node)['intervals'], true));
+        $this->assertSame([1, 0], json_decode($this->state($node)['intervals'], true));
     }
 }

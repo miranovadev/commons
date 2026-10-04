@@ -22,7 +22,7 @@ return new class extends Migration
             $table->unsignedBigInteger('act_count')->default(0);
         });
         // Historical event positions cannot be inferred from today's population.
-        // Existing attested propositions require an explicit migration policy.
+        // Historical substrates remain stored; live vNext requires event-born state. No backfill.
     }
 
     public function down(): void

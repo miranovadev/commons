@@ -44,6 +44,9 @@ class Cycle extends Model
             if ($cycle->isDirty('context_horizon_id')) {
                 throw new \DomainException('A Cycle cannot change its Context Horizon.');
             }
+            if ($cycle->isDirty('chirality_entry_after_sequence')) {
+                throw new \DomainException('A Cycle cannot change its recorded Chirality entry position.');
+            }
             if ($cycle->isDirty('entry_committal_id')) {
                 throw new \DomainException('A Cycle cannot change its entry Committal.');
             }
@@ -56,25 +59,28 @@ class Cycle extends Model
         $changesParticipation = $this->entry_committal_id !== null
             && (! $this->exists || ($this->isDirty('completed_at')
                 && (($this->getRawOriginal('completed_at') === null) !== ($this->completed_at === null))));
-        if (! $changesParticipation) {
+        if (! $changesParticipation && $this->exists) {
             return parent::save($options);
         }
 
-        return DB::transaction(function () use ($options) {
+        return DB::transaction(function () use ($options, $changesParticipation) {
             Substrate::whereKey($this->participant->substrate_id)->lockForUpdate()->firstOrFail();
             $entry = ! $this->exists;
             if ($entry) {
+                $this->chirality_entry_after_sequence = (int) SubstrateLedgerEntry::where('substrate_id', $this->participant->substrate_id)->max('sequence');
+            }
+            if ($entry && $changesParticipation) {
                 app(ChiralityPopulationHistoryService::class)->observe($this->participant->substrate_id);
             }
             $saved = parent::save($options);
-            if ($saved) {
+            if ($saved && $changesParticipation) {
                 // Dirty only Horizons containing Cycles entered at this basin.
                 // The existing field version remains the publication guard.
                 $horizons = self::where('entry_committal_id', $this->entry_committal_id)
                     ->distinct()->pluck('context_horizon_id')->all();
                 app(FieldMutationService::class)->mark($this->participant->substrate_id, $horizons, [$this->entry_committal_id]);
             }
-            if ($saved && $entry) {
+            if ($saved && $entry && $changesParticipation) {
                 app(ChiralityPopulationHistoryService::class)->observe($this->participant->substrate_id);
             }
 

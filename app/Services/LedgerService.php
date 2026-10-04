@@ -11,6 +11,7 @@ use App\Models\ReceiptContextEvent;
 use App\Models\Substrate;
 use App\Models\SubstrateLedgerEntry;
 use App\Models\Supersession;
+use App\Services\Observables\AttestationBeatCursorService;
 use App\Services\Observables\LocalChiralityStateService;
 use DomainException;
 use Illuminate\Database\Eloquent\Model;
@@ -79,7 +80,8 @@ final readonly class LedgerService
 
             if (! $wasRecorded) {
                 if ($ledgerable instanceof Attestation) {
-                    app(LocalChiralityStateService::class)->attest($ledgerable);
+                    app(LocalChiralityStateService::class)->attest($ledgerable, $entry->sequence);
+                    app(AttestationBeatCursorService::class)->attest($ledgerable, $entry->sequence);
                 }
                 $affected = match (true) {
                     $ledgerable instanceof Proposition => [$ledgerable->id],
@@ -97,6 +99,7 @@ final readonly class LedgerService
                     app(FieldMutationService::class)->touch($phase, $affected);
                 }
                 if ($ledgerable instanceof Supersession) {
+                    app(AttestationBeatCursorService::class)->inherit($ledgerable);
                     app(OriginBranchService::class)->include($ledgerable);
                 }
                 $realtime = app(RealtimePublisher::class);

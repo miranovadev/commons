@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 
 final readonly class LineageMeasurementService
 {
-    public const string VERSION = 'closure-birth-v2-local-chirality-v20';
+    public const string VERSION = 'closure-birth-v2-local-chirality-beats-v21';
 
     public function __construct(
         private LocalMeasurementService $local,
