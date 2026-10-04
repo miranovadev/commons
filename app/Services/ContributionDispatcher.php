@@ -11,6 +11,7 @@ use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Substrate;
 use App\Models\Supersession;
+use App\Services\Observables\CanonicalMeasurementService;
 use App\Services\Observables\LineageMeasurementService;
 use DomainException;
 use Illuminate\Support\Facades\DB;
@@ -371,6 +372,8 @@ final readonly class ContributionDispatcher
             );
         }
 
+        $resolved = $this->measurements->recalculate($gate);
+        $correspondenceDirection = $this->measurements->correspondenceDirectionFor($gate)->value;
         $governing = $this->evidence->directionFor($gate);
         $target = $this->write(
             $phase,
@@ -378,6 +381,7 @@ final readonly class ContributionDispatcher
             tier: 'committal',
             preserveStatement: true,
         );
+        app(CanonicalMeasurementService::class)->preserve($target, $gate, $resolved, $correspondenceDirection);
         DB::table('commit_results')->insert(['source_proposition_id' => $gate->id, 'target_proposition_id' => $target->id]);
         $this->polarity->establishCommit($target, $governing);
         $supersession = $this->supersede(

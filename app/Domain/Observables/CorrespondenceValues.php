@@ -4,12 +4,14 @@ namespace App\Domain\Observables;
 
 use App\Enums\ObservableDirection as Direction;
 
-/** Local diagnostics; only their mean participates in structural attenuation. */
+/** Published diagnostics; canonical Correspondence is preserved independently of this local mean. */
 final readonly class CorrespondenceValues
 {
     public function __construct(
         public float $shapeTopology,
         public float $cardinalPosition,
+        public ?Direction $retainedShapeTopology = null,
+        public ?Direction $retainedCardinalPosition = null,
     ) {}
 
     public function average(): float
@@ -22,8 +24,8 @@ final readonly class CorrespondenceValues
         Direction $cardinalPosition = Direction::Positive,
     ): array {
         return [
-            'shape_topology_direction' => Direction::after($this->shapeTopology, $shapeTopology)->value,
-            'cardinal_position_direction' => Direction::after($this->cardinalPosition, $cardinalPosition)->value,
+            'shape_topology_direction' => ($this->retainedShapeTopology ?? Direction::after($this->shapeTopology, $shapeTopology))->value,
+            'cardinal_position_direction' => ($this->retainedCardinalPosition ?? Direction::after($this->cardinalPosition, $cardinalPosition))->value,
         ];
     }
 }

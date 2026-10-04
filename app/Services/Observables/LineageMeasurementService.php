@@ -12,11 +12,13 @@ use Illuminate\Support\Facades\DB;
 
 final readonly class LineageMeasurementService
 {
-    public const string VERSION = 'closure-birth-v2-chirality-history-v19';
+    public const string VERSION = 'closure-birth-v2-canonical-commit-v3';
 
     public function __construct(
         private LocalMeasurementService $local,
         private ContextLineageComparisonService $lineages,
+        private CanonicalMeasurementService $canonical,
+        private ClosureCalculator $closure,
     ) {}
 
     public static function attenuation(int $distance): float
@@ -30,7 +32,11 @@ final readonly class LineageMeasurementService
         // The synthetic candidate is appended by the same comparison builder used locally.
         $candidate = $comparison->current->propositions->last();
 
-        return $this->calculate($candidate, $comparison, $context);
+        $source = $this->calculate($gate, context: $context);
+        $closure = $this->closure->components($candidate, $context);
+
+        return new LocalMeasurements($source->correspondence, $source->chirality, $closure->depth,
+            $closure->cadence, $closure->average(), $source->chiralityComponents, $source->correspondenceComponents, $closure);
     }
 
     public function calculate(Proposition $position, ?LineageComparison $headComparison = null, ?ParticipationContext $context = null): LocalMeasurements
@@ -42,7 +48,7 @@ final readonly class LineageMeasurementService
         $mass = 0.0;
         foreach ($this->positions($position, $context) as [$proposition, $distance]) {
             $comparison = $distance === 0 ? $headComparison : null;
-            $calculate = fn () => $this->local->calculate($proposition, $comparison ?? ($context !== null ? $this->lineages->for($proposition, $context) : null), $distance === 0);
+            $calculate = fn () => $this->local->calculate($proposition, $comparison, $distance === 0, $context);
             $local = $context !== null && $proposition->exists && $comparison === null
                 ? $context->remember('local:'.($distance === 0 ? 'head:' : 'evidence:').$proposition->id, $calculate) : $calculate();
             $closure ??= $local->closure();
@@ -69,11 +75,11 @@ final readonly class LineageMeasurementService
         $total = $mass = 0.0;
         $head = null;
         foreach ($this->positions($position, $context) as [$member, $distance]) {
-            $calculate = fn () => $this->local->chiralityComponents($member, $context === null ? null : $this->lineages->for($member, $context));
+            $calculate = fn () => $this->local->chiralityComponents($member, context: $context);
             $components = $context === null ? $calculate() : $context->remember('chirality:local:'.$member->id, $calculate);
             $head ??= $components;
             $weight = self::attenuation($distance);
-            $total += $components->average() * $weight;
+            $total += ($this->canonical->for($member, $context)?->chirality ?? $components->average()) * $weight;
             $mass += $weight;
         }
 
@@ -82,8 +88,8 @@ final readonly class LineageMeasurementService
 
     /**
      * Reverse BFS: unique positions at minimum edge distance, including each provenance
-     * Committal but never walking beyond it. A prospective/actual Committal head still
-     * measures its incoming lineage. No participant read limit or global Horizon scan.
+     * Committal but never walking beyond it. Canonical heads are also boundaries.
+     * Legacy/bootstrap heads retain their historical measurement path. No participant read limit or global Horizon scan.
      *
      * @return Collection<int, array{Proposition, int}>
      */
@@ -102,7 +108,7 @@ final readonly class LineageMeasurementService
                 }
                 $seen[$proposition->id] = true;
                 $positions->push([$proposition, $distance]);
-                if ($distance === 0 || $proposition->tier !== 'committal') {
+                if ($this->canonical->for($proposition, $context) === null && ($distance === 0 || $proposition->tier !== 'committal')) {
                     $expand->push($proposition->id);
                 }
             }
