@@ -9,7 +9,7 @@ remain later checkpoints.
 
 That status describes the historical Stage 4 checkpoint. Stage 5 subsequently
 addressed the positive successful-route revisit. The normative movement rule
-now stated in [Invariant 17](core-invariants.md#17-lineage-constrained-participant-movement)
+now stated in [Invariant 10](core-invariants.md#10-movement-follows-authorised-structure)
 governs both: only forward causal continuations from the current Gate and
 recorded ancestry backward permit movement. Regional calculation, context
 visibility and historical implementation behaviour create no movement edge.
