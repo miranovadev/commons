@@ -1,380 +1,393 @@
 # Core Invariants
 
-The system must adhere strictly to these invariants, regardless of implementation.
+The Commons has exactly ten Core Invariants.
+
+**This set does not grow or shrink.** New discoveries refine, clarify, or add
+examples beneath one of these ten invariants. If a proposed semantic rule cannot
+fit coherently within them, that is a warning to revisit the semantics rather
+than add an eleventh invariant or remove an existing one.
+
+The system must adhere strictly to these invariants regardless of implementation.
 If an implementation detail conflicts with an invariant, the invariant takes
 precedence. These are normative constraints on The Commons model and govern the
 more specific operational rules documented beneath them.
 
-The authority order is: normative Commons invariants, then explicit phase and
-operation semantics, then implementation representation. Implementation history
-does not override the movement topology defined in Invariant 17.
+The authority order is:
 
-Persistence, repeated-boundary Exhaustion, recursive recovery, regional Tragedy, and observer
-separation are normative; see [the exhaustion invariants](#persistence-exhaustion-recovery-and-observation).
+1. these ten Core Invariants;
+2. explicit phase, observable and operation semantics;
+3. implementation representation and historical code behaviour.
 
-## 1. The Measurements Are Independent
+Implementation history does not override model semantics.
+
+## 1. Measurements Stay Separate
 
 Correspondence, Chirality, and Closure are irreducible and independent
-measurements. No label, projection, derived field, operation, cached value,
-implementation convenience, or new abstraction may become an implicit fourth
-measurement or silently substitute for another axis.
+measurements.
 
-Support/Refute must not be treated as a measurement axis.
+No label, projection, derived field, operation, cached value, implementation
+convenience, population summary, evidentiary signal, or new abstraction may
+become an implicit fourth measurement or silently substitute for another axis.
 
-## 2. Representation Is Not Semantics
+Support/Refute, Reinforcement, Potential, Charge, Tension, Phase, Domain,
+Horizon, Commit Region, homology, actionability and participant movement are not
+additional measurements.
 
-Database columns, cached directions, projections, UI labels, services, algorithms,
-and implementation structures are representations of the model, not authorities
-over it. If a representation conflicts with the documented semantics of The
-Commons, the documented semantics take precedence.
+Derived values may combine measurements only where their definition explicitly
+does so. That combination does not collapse the underlying measurements into one
+another.
 
-Model truth must not be inferred merely from the current shape of the codebase.
+### Examples
 
-## 3. Canonical Terms Retain Canonical Meaning
+- Support/Refute labels Attestations; it is not a measurement axis.
+- Receipt or Reinforcement state may affect evidence or authority but never
+  Correspondence, Chirality or Closure merely by existing.
+- Potential and Charge are derived descriptions; they do not become inputs to an
+  observable unless that observable explicitly defines them as such.
+
+## 2. Semantics Come Before Representation
+
+Database columns, cached directions, projections, indexes, UI labels, services,
+algorithms, graph layouts, fixtures, migration history and implementation
+structures are representations of the model, not authorities over it.
+
+If a representation conflicts with the documented semantics of The Commons, the
+documented semantics take precedence.
+
+Model truth must not be inferred merely from the current shape of the codebase,
+from a convenient query, from a persisted compatibility field, or from behaviour
+that only exists because an implementation once encoded it that way.
+
+A migration, cache or projection may preserve historical representation without
+making that representation current semantic truth.
+
+### Examples
+
+- A disposable membership table does not redefine immutable Cycle ownership.
+- A UI grouping does not create operational scope.
+- A compatibility column may remain readable without becoming live authority.
+- A calculated layout may describe structure without creating causal edges.
+
+## 3. Terms Keep Their Meaning
 
 A defined Commons term must retain the same semantic meaning wherever it is used.
-Context may determine its value, scope, or relational interpretation, but must not
-silently redefine the concept itself.
+Context may determine its value, scope, polarity or relational interpretation,
+but must not silently redefine the concept itself.
 
-This applies especially to Proposition, Committal Proposition, Expressive
-Proposition, Attestation, Receipt, Support, Refute, Commit Region, Context Horizon,
-Correspondence, Chirality, and Closure. Terminology must not drift between
-documentation, implementation, participant prompts, and UI behaviour.
+This applies especially to Proposition, Expressive Proposition, Committal
+Proposition, Phase, Cycle, Attestation, Receipt, Support, Refute, Commit Region,
+Context Horizon, Domain, Correspondence, Chirality, Closure, Tragedy,
+Exhaustion, Reinforcement, Potential and movement.
 
-## 4. Zero Does Not Erase Direction
+Labels must not be used as shortcuts for a different structural concept.
 
-Numeric value and hysteretic direction are distinct properties. An established
-positive or negative direction persists through a current numeric value of zero
-until the documented hysteretic conditions for a directional transition are
-satisfied.
+### Structural identity is not label identity
+
+Register identity does not confer Phase identity. Repeated register labels across
+the seven-phase Cycle remain structurally distinct. Eligibility for phase
+operations is determined by producing Phase position and causal role, not by a
+matching register name alone.
+
+Support/Refute must not be used as aliases for positive/negative outside their
+Attestation context.
+
+A historical field whose name refers to an old semantic primitive must not be
+silently reused to store a new primitive under the old name.
+
+## 4. Established State Persists Until Lawfully Changed
+
+Established state is not erased merely because the current numeric or local
+state becomes neutral, inconvenient, stale-looking or temporarily divergent.
+
+Where the model defines hysteresis, numeric value and retained direction are
+distinct properties. An established positive or negative direction persists
+through a current numeric value of zero until the documented transition rule
+changes it.
+
+Immutable structural ownership and boundary identity likewise persist unless the
+model explicitly defines a new event that creates a new state. Existing state is
+not reinterpreted from later context.
+
+### Zero does not erase direction
 
 A zero value must not automatically be interpreted as directionless, a neutral
-direction, an absence of prior direction, or permission to discard directional
-history. This invariant applies wherever direction is explicitly hysteretic.
+direction, absence of prior direction, or permission to discard directional
+history.
 
-## 5. Committal Provenance Governs the Region
+### Boundaries remain boundaries
 
-Commit Region ownership is determined by immutable Cycle entry: a Committal owns itself,
-and an expressive Proposition belongs to its creating Cycle's immutable
-`entry_committal_id`. Supersession records causal provenance, which may have
-multiple parents from different Regions without making ownership ambiguous.
-The creating Cycle independently determines `context_horizon_id`; neither
-Region nor Horizon membership grants participant movement. See
-[Commit Region ownership](commit-region-ownership.md).
+A Cycle's entry identity, creating Horizon, Proposition-to-Phase ownership,
+Phase-to-Cycle ownership, Horizon parentage and boundary provenance are not
+retroactively changed because later structure would be easier to explain under a
+different frame.
 
-Every Commit Region is governed by its Committal Proposition. Region-level
-semantics derive from that Committal provenance rather than arbitrary Expressive
-ancestry. This includes, where applicable:
+A later event may create a new Horizon, Region, direction or state. It does not
+rewrite the event that established the earlier one.
 
-- the region's fixed supporting Attestation direction;
-- the corresponding refuting Attestation direction;
-- the default effective Attested direction for Attestation-less Expressive
-  Propositions.
+## 5. Provenance Defines Identity and Scope
 
-Expressive ancestry must not silently replace Committal ancestry where the model
-defines the Commit as the governing reference.
+When The Commons needs to know what something is, where it belongs, or which
+frame governs it, actual provenance is authoritative.
 
-Commit Region membership defines calculation/context scope only where a Commons
-operation explicitly requires it. It does not define Participant movement and
-never creates a traversal edge. No edge means no movement.
+Causal ancestry, creating Phase, creating Cycle, immutable Cycle entry,
+governing Committal, Context Horizon ancestry, boundary provenance and recorded
+participant arrival are used where their respective semantics require them.
 
-## 6. Local Change Does Not Rewrite the Frame
+Proximity, recency, visibility, matching labels, graph convenience, population
+membership or implementation accessibility cannot substitute for provenance.
 
-Expressive Propositions may diverge from the governing Committal direction.
-Measurements may change, Attestations and Receipts may accumulate, and local
-effective direction may change through hysteresis.
+### Commit Region ownership
 
-None of these local changes may retroactively redefine the Commit Region itself,
-including its fixed Support/Refute polarity or other semantics established by
-the governing Committal Proposition. A local state transition changes the local
-state, not the frame in which that state is interpreted.
+A persisted Committal owns itself. An Expressive Proposition belongs to the
+immutable entry Committal of its creating Cycle. Supersession records causal
+provenance and may be multi-parent without making Region ownership ambiguous.
 
-## 7. Reference Frames Must Remain Distinct
+Region-level semantics derive from the governing Committal where the model
+defines that frame, including fixed Attestation polarity.
 
-Values or directions belonging to one relational frame must not be substituted
-for another merely because they appear similar. The implementation must preserve
-distinctions between Correspondence direction, effective Attestation direction,
-aggregate Attestation direction, Commit Region polarity, Proposition ancestry,
-Committal ancestry, participant trajectory, and population-level state.
+Expressive ancestry must not silently replace Committal ancestry where Committal
+provenance governs.
 
-In particular:
+### Context Horizon ownership
 
-- a Proposition's direction must not automatically become an aggregate population
-  direction;
-- an Expressive parent's direction must not replace the governing Committal
-  direction;
-- Support/Refute must not be used as aliases for positive/negative outside their
-  Attestation context;
-- Correspondence must not be substituted for Chirality or Attestation polarity.
+Proposition membership follows its creating structure:
 
-Operations may relate different reference frames only where the model explicitly
-defines that relationship.
+`Proposition → Phase → Cycle → Context Horizon → Domain`
 
-## 8. Provenance Is Never Erased
+A Horizon opener identifies a boundary; it does not duplicate that boundary
+Proposition into the child's measurement history or rewrite its creating
+ownership.
 
-Supersession changes active topology without rewriting history. Propositions,
-contributions, Attestations, Receipts, authorship, and lineage must retain their
-provenance even when superseded, reclassified, revised, reconciled, committed,
-or no longer active.
+### Participant path provenance
 
-An operation may transform how an earlier contribution participates in the
-current state, but must not make prior contribution history appear never to have
-existed.
+Where a multi-input Write creates several causal parents, participant recovery
+uses the recorded arrival path where required. An unused parent cannot become a
+shortcut merely because it is also an ancestor of the result.
 
-## 9. Evidence Must Not Be Invented or Reinterpreted
+## 6. Local Change Does Not Rewrite History
 
-Attestations and Receipts must retain the meaning defined when they are created.
-Derived calculations may aggregate, attenuate, compare, or project evidence
-according to the documented model. They must not:
+A local state transition changes the local state. It does not retroactively
+rewrite the frame, erase valid history, destroy independent alternatives, or make
+a prior event appear never to have happened.
 
-- manufacture evidence that was never supplied;
-- reinterpret an existing Attestation as meaning something different;
-- fabricate provenance;
-- infer Support/Refute semantics from instantaneous numeric sign alone;
-- rewrite contribution meaning to simplify implementation.
+Supersession changes active topology without deleting provenance. Reclassify,
+Revise, Reconcile, Commit, Tragedy, Exhaustion, Reinforcement changes and local
+measurement changes preserve the historical facts from which they arose.
+
+Competing Propositions and branches may coexist and develop independently where
+the structural rules permit them.
+
+### Frames are not rewritten by their contents
+
+Expressive Propositions may diverge from their governing Committal. Measurements,
+Attestations and Receipts may change locally. None of these changes retroactively
+redefines the Commit Region's established frame.
+
+### Historical proofs remain historical
+
+Tragedy and Exhaustion proofs remain historical events once lawfully created.
+Later positive Charge, Receipt consumption, recovery, recalculation or
+maintenance does not erase the event.
+
+A current projection may change without rewriting the historical evidence from
+which an earlier decision was made.
+
+### Branching is not globally consumed
+
+Using or reinforcing one valid route does not globally consume unrelated valid
+routes unless an explicit operation defines that consequence.
+
+## 7. Keep Reference Frames and Lineages Separate
+
+Values, directions, populations, ownership scopes, causal histories and
+participant perspectives belong to specific reference frames. They may only be
+related where the model explicitly defines that relationship.
+
+A Proposition's direction is not automatically a population direction. An
+Expressive parent's direction does not replace the governing Committal's
+direction. Correspondence does not substitute for Chirality. Attestation polarity
+does not substitute for an observable pole.
+
+### Measurement lineage is absolute
+
+**EVERY MEASUREMENT IS CONFINED TO THE CAUSAL LINEAGE BEING MEASURED.**
+
+A Context Horizon, Domain, Commit Region, Phase, homologous population, visible
+workspace or other grouping may bound, label, classify, compare or contextualize
+a lineage. Shared membership in one of those structures does **not** make its
+members a measurement population.
+
+Measurements must never aggregate unrelated sibling or neighbouring lineages
+merely because they share a Horizon, Domain, Region, Phase, register, participant
+population or ledger period.
+
+A lawful multi-parent operation such as Reconcile may join causal ancestry.
+Where a measurement follows that resulting lineage, the joined ancestry is
+present because the operation created real causal provenance, not because the
+lineages shared a container.
+
+The Context Horizon is a causal/reference boundary. It is never, by itself, a
+license to compare every Proposition or Cycle inside it.
+
+### Population comparison is different from measurement ancestry
+
+Homeostatic operations may compare already-independent measurements over an
+explicitly defined homologous population. That population comparison does not
+change how each member's measurement was calculated.
+
+For example, Mediate may compare independent Correspondence results and Bias may
+compare independent Chirality results over their authorised populations. The
+population is a consumer of measurements, not a replacement ancestry for them.
+
+### Visibility is a separate frame
+
+Historical and evidentiary material may be visible without belonging to a
+measurement lineage, an actionable population or a participant movement path.
+
+## 8. Authority Must Be Explicitly Granted
+
+Visibility, proximity, graph reachability, homology, evidence availability,
+measurement value, population dominance, ownership adjacency or implementation
+accessibility does not by itself imply operational authority.
+
+Each Commons operation may act only upon Propositions and evidence permitted by
+its documented structural scope.
+
+Relevant constraints may include Phase, register, Commit Region, Context Horizon,
+lineage, ancestry, ownership, provenance, Gate semantics, evidence requirements,
+admissibility and participant position.
+
+Measurements and derived values may select, compare or rank candidates **within
+a scope that is already authorised**. They must not silently create or broaden
+that scope.
+
+### Commitment is granted by its full contract
+
+Ordinary Commit requires the grounding, effective Attestation, structural
+position and Closure conditions defined by the current Commit semantics. Origin
+uses its distinct bootstrap grounding contract.
+
+No favourable observable value, reinforcement count or implementation shortcut
+may waive a required authority condition.
+
+### Receipts, Reinforcement and memory have separate authority
+
+A Receipt may provide evidence or a specific warrant according to its type and
+scope. Participant memory may expose information. Reinforcement may record
+qualifying uptake.
+
+None inherits another's authority merely because the underlying evidence is
+related.
+
+## 9. Evidence Must Be Truthful
+
+Evidence, observations and historical facts must retain the meaning they had
+when created.
+
+Attestations, Receipts, contribution history, authorship, catastrophe proofs,
+Exhaustion proofs, immutable observations and provenance must not be invented,
+silently reconstructed, relabelled or reinterpreted to simplify implementation
+or recover a desired outcome.
 
 Derived state is evidence processing, not evidence creation.
 
-## 10. Operations May Only Act Within Their Structural Authority
+### The system must not
 
-Visibility, proximity, graph reachability, or implementation accessibility does
-not by itself imply operational eligibility. Each Commons operation must act
-only upon Propositions permitted by its documented structural scope.
+- manufacture an Attestation, Receipt, causal edge or historical observation that
+  never occurred;
+- reinterpret an existing Attestation as meaning something different;
+- infer Support/Refute meaning solely from an instantaneous numeric sign;
+- fabricate provenance or a historical measurement population;
+- backfill an event-born observation from present mutable state unless an
+  explicitly approved migration semantics proves that reconstruction;
+- rewrite a contribution's historical meaning to satisfy a newer implementation;
+- treat unavailable history as a genuine observed zero.
 
-Relevant constraints may include phase, register, Commit Region, Context Horizon,
-lineage, ancestry, ownership, provenance, gate semantics, and participant position.
-Measurements and derived values may select, compare, or rank candidates within
-a valid structural scope, but must not silently redefine that scope.
+Historical compatibility data may remain readable while being explicitly
+non-authoritative for current semantics.
 
-A calculation candidate is not thereby a movement candidate. Visibility does
-not imply actionability, and actionability implies movement only when the
-operation is structurally authorised from the current Gate (Invariant 17).
+## 10. Movement Follows Authorised Structure
 
-## 11. Cycles Begin at Committal Propositions
+A positioned Participant changes structural position only through an authorised
+operation.
 
-A Cycle begins from a Committal Proposition. Expressive Propositions cannot serve
-as Cycle entry points. After ordinary completion, the next Cycle continues at
-the exact Committal reached through the current Gate's causal continuation;
-there is no fresh global selection. First entry has no prior position and uses
-its documented Committal selection. Recovery after Rest selects the nearest
-eligible non-exhausted Committal on the recorded backward lineage. Neither
-Potential nor Charge can skip a nearer unresolved basin. A prospective Commitment
-is not eligible until it exists.
+Ordinary forward movement follows real causal continuation from the current
+Gate. Recovery walks recorded causal ancestry backward. Narrowly defined
+operations may authorise additional movement, such as the explicit Order
+homologous-Committal Traverse, but the exception belongs to that operation and
+does not create a general sideways-movement rule.
 
-Recovery proceeds backward through committed basins in causal order. A nearer
-committed basin must be resolved before an older committed basin becomes eligible.
-Recorded arrival provenance determines the path at multi-input Writes. Siblings,
-descendants and unrelated branches are excluded. The persisted Cycle Horizon
-constrains recovery until its boundary-governing Commit Region's exhaustion permits crossing its opening
-boundary along that same path. Previous Horizons do not substitute their opener
-for the next qualifying Committal. The first fresh expressive zero-Charge event
-creates Tragedy; a later distinct fresh zero-Charge event in the same Region
-proves exhaustion. Commitment creates a recovery boundary; exhaustion permits
-recovery past it. Potential does not prove exhaustion or select recovery.
-Origin remains unique and persistent under the same regional proof.
+**No edge means no movement unless an explicit operation itself defines the
+authorised transition.**
 
+There is no unrestricted sideways movement.
 
-Potential is the strongest remaining viable continuation under absolute-Tension-reduction semantics, never an additive budget. Writes maintain affected region projections and propagate changed routing summaries through provenance. Ordinary reads consume the published field version; they never repair measurements or reconstruct the whole substrate. A missing or inconsistent projection is an explicit recoverable maintenance condition. See [Incremental Potential](incremental-potential.md).
+A Proposition is not a movement destination merely because it:
 
-Initial entry uses Potential; Rest recovery uses causal order. The selected Committal determines the entry Horizon: its own creating Horizon, or the direct child explicitly opened by its boundary. Closure markers do not prohibit causal backtracking. Entry must never search arbitrary open descendants to make an old Gate fit. Persisted ownership remains `Proposition → Phase → Cycle → Context Horizon → Domain`; Gates must belong to or explicitly open their Cycle Horizon, and writes must use that Domain's vocabulary.
+- shares a Commit Region, Context Horizon, Domain, register or Phase position;
+- is visible in context;
+- belongs to a Homeostatic comparison population;
+- has greater Potential or a more attractive measurement;
+- is homologous;
+- is historically committed;
+- is structurally nearby.
 
-Under normal Phase progression, there may be at most six consecutive Expressive
-Proposition tiers between Committal Propositions. A new Committal Proposition may
-seed fresh Phase 1 opportunities when structural viability permits; Participant count does not determine their number.
+Comparison can identify a candidate for an operation that is already authorised.
+It does not itself create movement authority.
 
-## 12. Receipts and Reinforcement Are Distinct
+### Population comparison never creates movement
 
-Only qualifying evidence currently loaded by a Participant produces active
-Reinforcement. Creating a Cite Receipt records evidence; it does not itself grant Reinforcement. A Participant may
-contribute at most one counted Reinforcement to a Proposition; repeated Receipts
-and shared signatures remain historical events rather than extra measurement weight.
-Loaded state persists across Cycles and Context Horizons until cleared. Clearing
-removes active Reinforcement without deleting the Receipt or its history.
-Readable cognitive-memory Receipts, including Tragedy memory and Proposition
-Search collections, are not qualifying evidence. Loading them changes cognition
-only: it grants no Reinforcement, grounding, Receipt-scope, movement or recovery
-authority.
+Mediate, Bias and Order may use explicitly defined Homeostatic populations.
+Membership or dominance in those populations grants no movement unless the
+specific operation separately authorises an action.
 
-## 13. Reinforcement Changes Evidence Context, Never Measurement
+### Recovery follows the actual backward path
 
-Receipts may establish evidence, authority, context and reinforcement count.
-They do not alter Correspondence, Chirality or Closure values. Observable value
-measures a relation; direction identifies its pole with existing hysteresis;
-Reinforcement counts qualifying evidence uptake. Neither pole is preferable.
-Receipt weights do not enter attenuation, population aggregation or derived fields.
+Recovery begins at the participant's actual current position and walks recorded
+arrival provenance backward. It does not search siblings, descendants, attractive
+neighbours or unused parents.
 
-## 14. Commitment Requires Grounding, Attestation and Closure
+The current Horizon confines recovery until the governing boundary conditions
+permit crossing its opening boundary. Crossing continues on that same recorded
+lineage; recovery does not reset to an arbitrary Horizon opener.
 
-Commit requires a completed qualifying evidence Receipt, an effective Attestation on the selected classification, and aligned Committed Cardinal Position/Committal Cadence with hysteresis. Loaded Reinforcement is evidential metadata and is not an admissibility minimum. Origin initialization requires an explicit effective Support or Refute Attestation before freezing, and creates no Receipt. The chosen label establishes the positive relational polarity; there is no default choice. Origin Chirality is -0.5 from one-sided Cycle population. Each direct expressive source is committed once globally; its Committal result is immutable and subsequent development takes place through Variants.
+### Cycles begin from Committal positions
 
-## 15. Reinforcement Does Not Suppress Branching
+A Cycle begins from a Committal Proposition under the applicable entry contract.
+Expressive Propositions are not Cycle entry points.
 
-Competing Propositions and reconciliations may coexist and develop independently.
-Reinforcement must not globally consume source Propositions or prohibit reuse of
-organically reachable hard-superseded inputs. Multiple alternatives earn their own
-persistence within the existing phase, register and region rules.
-
-## 16. Register Identity Does Not Confer Phase Identity
-
-Register labels classify Propositions but do not define structural hierarchy.
-Eligibility for phase operations is determined by producing phase position and
-causal role. Repeated register labels across the seven-phase Cycle remain
-structurally distinct, across Participants and Cycles alike.
-
-Order may Commit only an Expressive candidate at the Bias-produced Closure
-position for its Domain and Commit Region. A Constrain Canon or Concord remains
-contextual region material; grounding and favourable Closure cannot promote it.
-Mediate reads Constrain and reconciles Disperse children; Bias consumes Mediate.
-See the [complete phase-role matrix](phase-positions.md).
-
-**Incoming mediation invariant:** A completed Reconcile records a directed
-other-operand → result relationship. Bias retains its Mediate-produced Gate and
-resolves the exact Gate of that proposition's producing Mediate Phase, backed by
-its Reconcile input. That exact operand may expose incoming results as additional
-Bias sources under ordinary evidence and structural protections. No arbitrary
-ancestor or homologue substitutes for the operand. Mediate creates the doorway;
-Bias may later use it. Reconcile itself preserves acting Cycle/Region/Horizon
-ownership and grants no movement, Traverse or Receipt transport. Same-Region
-expressive branches are ordinary relationships; the relevant boundary is the
-Commit Region. Mediated and homologous Bias authority remain separate.
-
-
-Phase-position compatibility and Commit Region membership do not confer
-traversal eligibility. Ordinary Traverse additionally requires the appropriate causal
-relationship to the Participant's current Gate. Order alone also admits the
-explicit, operationally validated homologous Committal rule below.
-
-## 17. Lineage-Constrained Participant Movement
-
-A positioned Participant changes structural position through an authorized
-operation: forward causal progression, recovery backward along recorded causal
-lineage, or Order's explicit homologous Committal Traverse. Bias additionally permits an authorized mediated incoming or homologous Reclassify:
-the selected source creates one real edge to the new acting-Phase classification,
-which becomes the forward position. There is no movement to the foreign Gate
-itself and no invented edge from the old Phase Gate. A structurally authorised contribution may create that forward edge;
-Ordinary Traverse follows an already-existing edge. Order's additional Traverse
-selects a qualified existing Committal without creating an edge.
-
-There is no unrestricted sideways movement. A Proposition is not a movement destination
-merely because it shares a Commit Region, Context Horizon, register or producing
-Phase position; is visible in context or included in a measurement/Homeostatic
-population; has greater Potential; was previously committed; or is structurally
-nearby. None of these properties creates a causal movement edge.
-
-**Population comparison alone never creates movement.** The narrowly scoped Order
-rule authorizes an actual Traverse; structural visibility does not.
-
-These three contracts must remain distinct:
-
-| Contract | Authorised scope | Movement consequence |
-| --- | --- | --- |
-| Movement topology | Forward causal continuations; recorded ancestry backward for recovery; explicit Order homologous Committal Traverse | Only authorized operations change position; Traverse never creates an edge |
-| Homeostatic population | Homologous Reads for Mediate, Gates for Bias, existing Committal Writes for Order | Comparison creates no edges or movement; each consumer separately authorizes actions |
-| Context visibility | Historical and evidentiary material admitted by the context contract | Visibility grants neither actionability nor movement |
-
-Mediate — Read aggregates independent measurements over homologous Reads;
-Bias — Gate aggregates independent numeric Chirality over homologous Gates.
-Mediate adds qualified Reconcile operands; Bias adds qualified Reclassify sources.
-Both preserve their ordinary local causal options. Reconcile creates causal edges
-from both inputs; Reclassify creates one edge from the selected source to the new
-acting-Cycle classification. Foreign Gates are not Read or Traverse destinations
-and never import Receipt stock. The Cycle entry continues to own the catalogue,
-Closure/Cadence history and result accounting.
-
-Closure, performed during Order — Write, evaluates each causally local expressive
-Write independently from its own Depth/Cadence, lineage/history and participation.
-It is not a regional cross-lineage comparison. Every such Write remains visible
-and retains its ordinary expressive actions. Closure inadmissibility removes
-Commit eligibility, not the Write or its other valid actions. That Write's direct Committal continuation remains independently traversable. Stage 5 additionally permits an active homologous existing Order Committal whose frozen Depth/Cadence agree in the dominant resolved population direction. Strict committed Write coordinates and validated Origin ancestry are required; this exception does not broaden ordinary Traverse elsewhere. Neither population direction nor membership grants Commit eligibility or changes Closure measurement.
-
-A population member outside the explicit Order homologous-Committal rule must never gain Traverse from comparison alone. Visibility
-does not imply actionability. Actionability does not imply movement unless the
-operation itself is structurally authorised from the current Gate. Reconcile,
-for example, may use an authorised counterpart to create a new result with an
-explicit edge from the current Gate; it does not move the Participant to that
-counterpart.
-
-Recovery begins at the actual current position and walks recorded arrival
-provenance backward and stops at the nearest eligible non-exhausted Committal.
-An older basin cannot compete until the nearer one is resolved. The current Horizon confines the search until
-its boundary-governing region's exhaustion permits crossing its opening boundary, after which the same lineage
-continues into previous Horizons. Recovery never resets to a Horizon provenance
-node, searches siblings or descendants, or takes an unused parent as a shortcut.
+After ordinary completion, the next Cycle continues from the actual Committal
+reached by causal progression. Initial entry and recovery use their separately
+defined selection contracts; they do not provide a global movement shortcut.
 
 ## Relationship to More Specific Rules
 
-These invariants govern more detailed operational rules; they do not replace
-those rules or their documented conditions. The following are applications of
-the invariants, and their linked definitions remain authoritative within these
-constraints:
+These ten invariants govern more detailed operational rules; they do not replace
+those rules or their documented conditions.
 
-| Specific rule | Governing invariants | Detailed definition |
+The invariant numbers are permanent. Specific examples should be added beneath
+the appropriate invariant or to this relationship table rather than creating a
+new Core Invariant.
+
+| Specific rule | Governing invariant(s) | Detailed definition |
 | --- | --- | --- |
 | Support/Refute label Attestations rather than Propositions or measurement axes. | 1, 3, 7, 9 | [Attestation polarity](attestation-polarity.md) |
-| Attestation-less Expressive Propositions default from the governing Committal Proposition; local divergence does not change the region's fixed polarity. | 5, 6, 7 | [Committal defaults and Origin's label choice](attestation-polarity.md) |
-| Mediate preserves ordinary local causal options and adds operands from homologous Reads expressing dominant population Correspondence. | 4, 7, 10 | [Mediate: Correspondence Read](participation.md#mediate-correspondence-read) |
-| Bias preserves the current Gate’s local evidence/ancestry rule and adds dominant-Chirality homologous Reclassify sources using only entry-Region Receipts. | 4, 7, 10 | [Bias Chirality Gate](participation.md#bias-chirality-gate) |
-| Zero-valued hysteretic observables retain direction according to their documented histories and transition conditions. | 4, 7 | [Value and retained direction](attestation-polarity.md#value-and-retained-direction); [Closure hysteresis](closure-hysteresis.md) |
-| Commit preserves original evidence and provenance when inheriting participation state. | 8, 9 | [Commit participation inheritance](observables.md#commit-participation-inheritance) |
+| Zero-valued hysteretic observables retain their established direction. | 4, 7 | [Attestation polarity](attestation-polarity.md); [Closure hysteresis](closure-hysteresis.md) |
+| Commit Region ownership comes from immutable Cycle entry and the governing Committal. | 5 | [Commit Region ownership](commit-region-ownership.md) |
+| Context Horizon membership comes from creating Cycle ownership and does not create causal movement. | 5, 10 | [Causal Context Horizons](causal-context-horizons.md) |
+| Every observable is calculated from its own causal lineage; shared Horizon/Region membership never substitutes for lineage ancestry. | 7 | [Observable calculation](observables.md) |
+| Homologous populations compare independent measurements; population membership does not rewrite those measurements. | 7, 8 | [Structural homology](structural-homology.md) |
+| Receipts, participant memory and Reinforcement have distinct evidentiary/authority roles and do not enter measurements merely by existing. | 1, 7, 8, 9 | [Receipt context](receipt-region-context.md); [Reinforcement](reinforcement.md) |
+| Mediate and Bias may expose specifically authorised foreign operands/sources without turning those foreign Gates into movement destinations. | 5, 8, 10 | [Participation](participation.md) |
+| Register labels do not confer Phase identity or operation eligibility. | 3, 5, 8 | [Phase positions](phase-positions.md) |
+| Commit requires its complete grounding and admissibility contract; Origin has its explicitly distinct bootstrap contract. | 8, 9 | [Observable calculation](observables.md); [Attestation polarity](attestation-polarity.md) |
+| Supersession and later state changes preserve historical contributions and provenance. | 6, 9 | [Proposition observation](proposition-observation.md) |
+| First/later fresh Charge-boundary events create Tragedy/Exhaustion proofs without deleting prior history. | 5, 6, 9 | [Branch Tragedy](branch-tragedy.md); [Commit Region exhaustion](commit-region-exhaustion.md) |
+| Recovery follows the recorded backward lineage and crosses Horizon boundaries only when the governing boundary permits it. | 5, 8, 10 | [Backward lineage recovery](backward-lineage-recovery.md); [Recovery basins](recovery-basins.md) |
+| Visibility, actionability, calculation population and movement remain distinct contracts. | 7, 8, 10 | [Participant context](participant-context.md); [Participation](participation.md) |
 
-See [Reinforcement](reinforcement.md) for qualification, signature normalization,
-server-observed version stability, local Closure and Commit requirements.
+When ambiguity arises, prefer the interpretation that preserves all ten
+invariants together rather than inferring semantics from current code behaviour.
 
-When ambiguity arises, prefer the interpretation that preserves these invariants
-rather than inferring semantics from current code behaviour.
-
-
-
-## Persistence, exhaustion, recovery, and observation
-
-**Potential invariant:** Potential measures demonstrated tension-reducing capacity. It does not decide whether expression is possible. Zero Potential neither suppresses an otherwise structurally valid Variant nor by itself proves a Commit Region exhausted. Charge and Potential algebra remain unchanged.
-
-**Tragedy invariant:** Tragedy is the first fresh expressive proposition within a Commit Region whose resolved field state reaches zero Charge (`1 - |Tension|`, using the canonical projection precision). Potential Charge does not trigger Tragedy. The resulting proposition's creating Cycle determines Region ownership, including foreign-input writes. One Tragedy and one Receipt retain that first terminal identity; a later distinct fresh boundary result exhausts that Region. Committals, Rest and maintenance do not trigger it.
-
-**Exhaustion invariant:** A later distinct fresh expressive zero-Charge event in an already-tragic open Commit Region creates its unique `commit_region_exhaustions` proof. The original Tragedy remains the first catastrophe; the later proposition is the exhaustion witness. Receipt consumption, Potential and Rest are not prerequisites. Exhaustion permits backward recovery past that governing Committal, including its Horizon boundary where the actual lineage permits it. Sibling Regions remain independent.
-
-**Receipt invariant:** Ordinary Receipts are discovered and consumed within the Commit Region governed by the observed Proposition's first governing Committal, with existing qualification rules and no Horizon-wide fallback. They ground Propositions, persist historically and may be consumed exactly once. Attestations judge Propositions; historical Attestation-owned Receipts remain readable through their Proposition. Generation costs an action; metadata visibility is free; attachment costs an action and changes structure. Participant loads persist independently of prompt visibility and retain participant-specific Reinforcement. Full evidence enters cognition only for loaded Receipts grounding the current participant-facing Read. Eligible Gate load/unload desired states accompany a successful forward Phase contribution atomically without another wake; Rest and standalone Read cannot carry those options. A Tragedy Receipt is a dedicated homologous boundary-exit warrant, not ordinary evidence. Recovery does not relocate it; archived scope visibility never grants foreign authority.
-
-**Reclassification invariant:** Phase 3 and Phase 6 reclassification require an available Receipt. Reclassification atomically attaches/consumes the Receipt. No Receipt, no Reclassification. Only foreign homologous Bias may consume the exact unresolved own-Region Tragedy Receipt; local, mediated, same-Region homologous and non-Bias Reclassification require ordinary evidence. Consumption alone does not exhaust the Region.
-
-**Generation invariant:** Variant availability is controlled by structural viability, independently of Potential Charge, Receipt lifecycle and Participant count. A further Variant requires all current expressive routes at that structural position to be spent in its current exploration epoch, each with its own completed Instrument and effective Attestation. Expression is allowed to increase Tension. A healthy route blocks redundant generation. Each new Variant repeats that sequence; no prior Rest or fixed sibling cap applies. See the [confirmed clarification](horizon-proof-variant-clarification.md).
-
-**Retired final-attempt allowance:** Variant is structurally available independently of Potential. The special allowance service and dispatcher recording are removed. `tragedy_final_attempts` is retained only for historical migrations and provenance, with no live actionability or Tragedy authority.
-
-**Successful-route continuity:** Commitment does not destroy an already-existing
-causal route. When Bias is entered through the exact Gate whose causal
-continuation produced a frozen classification, that classification remains
-traversable through its existing causal edge, subject to the ordinary traversal
-prerequisites. Order may then traverse the Commit produced directly from that
-classification. A frozen classification elsewhere in the same Commit Region or
-Context Horizon is not traversable unless it is the actual causal continuation
-of the current Gate. Successful-route continuity preserves an existing edge;
-it never manufactures one. Neither step creates content, votes or failure
-evidence, and the frozen source remains immutable.
-
-**Exhausted successful continuation:** After explicit outgoing Commit Region Exhaustion, an incoming successful route remains contextual history without being falsified as failure. This propagates through an expressive source only when all its other outgoing continuations are exhausted or failed at their exact current epoch. Live alternatives and Committals stop propagation. Resolved routes are not action targets or viable generation options, and their historical gain does not supply exploration capacity.
-
-**Observation invariant:** Instrument generates evidence; Attestation becomes available only when evidence exists; Attestation becomes Traverse on the next Cycle under the existing rule.
-
-**Persistence invariant:** Exhausted Committals persist permanently and remain contextually visible where structurally relevant. They expose no actions. Historical context is ordered newest-first by creation date. Exhausted means learned-from, not forgotten.
-
-**Recovery invariant:** Exhaustion proof propagates upward through provenance locally, without global graph-wide recomputation. Tragedy uses normal backward-lineage recovery from the terminal position, without an opener override. Region exhaustion permits continuing backward to the previous ancestral Commitment; exhausting a boundary-governing region permits crossing into the parent Horizon on that same lineage. Other Participants move through their normal lifecycle.
-
-**Observer invariant:** Active/exhausted filtering in the graph is presentation-only and must not alter Participant cognition or substrate dynamics.
-
-**Phase-position invariant:** Labels classify. Position governs.
-
-The backend derives Rest reason. Neither Rest reason creates Tragedy or exhaustion. `no_remaining_potential` is diagnostic only; tested continuation failure retains exact epoch/version validation. Participants cannot assert catastrophe.
-
-See [the proof lifecycle](branch-tragedy.md), [migration and compatibility](horizon-proof-migration.md), and [the integrated phase rules](flow-integration.md).
-
-## Epoch-scoped expressive exploration
-
-The [exploration epoch invariants](exploration-epochs.md#invariants) are normative.
-Expressive propositions become spent relative to a Horizon, structural position
-and exploration epoch; Commit Regions become exhausted permanently. Failure history
-is immutable. Only a successful Variant advances its own position's epoch.
-Spent propositions remain contextual evidence without Traverse or Attestation
-targets; a later epoch restores normal eligibility without erasing history.
-
-Chirality v2 is the equal mean of Orientation (effective, equally weighted signed Attestation lean product) and Attestation Cadence (historical acts per live canonical Cycle-entry population). Both use the same causal DomainLineages. Component direction disagreement confers no eligibility or movement authority. Receipts cannot affect either component or retained direction; only the combined local Chirality is attenuated. Frozen CommitmentSnapshots remain historical.
+If a proposed semantic rule appears not to fit within these ten, stop and review
+the proposed semantics before changing the invariant set.
