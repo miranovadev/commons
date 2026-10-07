@@ -18,7 +18,7 @@ return new class extends Migration
         // Prospective only. No population walk, historical reconstruction, or backfill.
         if (DB::getDriverName() === 'pgsql') {
             DB::unprepared(<<<'SQL'
-                CREATE FUNCTION commons_phase_profile_immutable() RETURNS trigger LANGUAGE plpgsql AS $$
+                CREATE OR REPLACE FUNCTION commons_phase_profile_immutable() RETURNS trigger LANGUAGE plpgsql AS $$
                 BEGIN
                     IF NEW.proposition_id IS DISTINCT FROM OLD.proposition_id
                         OR NEW.developmental_cycle_position IS DISTINCT FROM OLD.developmental_cycle_position
