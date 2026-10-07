@@ -1,0 +1,51 @@
+name: Phase Profile diagnostics
+
+on:
+  push:
+    paths:
+      - 'app/Domain/Observables/PhaseProfile.php'
+      - 'app/Exceptions/PhaseProfileHistoryUnavailable.php'
+      - 'app/Services/Observables/PhaseProfile*.php'
+      - 'app/Services/LedgerService.php'
+      - 'database/migrations/*phase_profile*'
+      - 'tests/**/PhaseProfile*'
+      - '.github/workflows/phase-profile.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  diagnostic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      APP_ENV: testing
+      APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      DB_CONNECTION: sqlite
+      DB_DATABASE: ':memory:'
+      CACHE_STORE: array
+      MAIL_MAILER: array
+      QUEUE_CONNECTION: sync
+      SESSION_DRIVER: array
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: mbstring, pdo_sqlite, curl, intl
+          coverage: none
+          tools: composer:v2
+      - run: composer install --prefer-dist --no-interaction --no-progress
+      - run: cp .env.example .env
+      - name: Phase Profile contracts
+        run: php artisan test tests/Unit/PhaseProfileComparisonTest.php tests/Feature/PhaseProfileTest.php --display-warnings
+      - name: Existing observable and ledger contracts
+        run: php artisan test --filter='Cardinal|Correspondence|CycleEntryIdentity|PhasePositionInvariant|ContextHorizonProjector|ClosureBirth|PropositionLocalChirality|CanonicalCommit|ChiralityV2|AttestationBeat' --display-warnings
+      - name: Pint on Stage 1 PHP and whitespace check
+        if: always()
+        run: |
+          vendor/bin/pint app/Domain/Observables/PhaseProfile.php app/Exceptions/PhaseProfileHistoryUnavailable.php app/Services/Observables/PhaseProfileComparisonCalculator.php app/Services/Observables/PhaseProfileObservationService.php app/Services/Observables/PhaseProfileService.php app/Services/LedgerService.php database/migrations/2026_10_08_000000_create_phase_profile_observations.php tests/Unit/PhaseProfileComparisonTest.php tests/Feature/PhaseProfileTest.php
+          git diff --exit-code
+          git diff --check origin/main...HEAD

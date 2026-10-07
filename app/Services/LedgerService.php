@@ -13,6 +13,7 @@ use App\Models\SubstrateLedgerEntry;
 use App\Models\Supersession;
 use App\Services\Observables\AttestationBeatCursorService;
 use App\Services\Observables\LocalChiralityStateService;
+use App\Services\Observables\PhaseProfileObservationService;
 use DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -75,6 +76,7 @@ final readonly class LedgerService
                 && $kind === LedgerEntryKind::Proposition
             ) {
                 $this->horizons->include($entry);
+                app(PhaseProfileObservationService::class)->recordBirth($ledgerable, $entry);
                 app(LocalChiralityStateService::class)->initialize($ledgerable);
             }
 
