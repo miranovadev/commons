@@ -385,7 +385,7 @@ option. Mediated authority uses ordinary own-Region Receipts even when the same 
 
 ## Shared Commit Region scope
 
-This scope applies [Invariant 10: structural authority](core-invariants.md#10-operations-may-only-act-within-their-structural-authority):
+This scope applies [Invariant 8: Authority Must Be Explicitly Granted](core-invariants.md#8-authority-must-be-explicitly-granted):
 measurements select within eligible populations and must not redefine them.
 
 Commit Region membership defines calculation/context scope only where a Commons
@@ -404,16 +404,16 @@ separate contracts.
 See [Commit Region ownership](commit-region-ownership.md).
 
 An immediate parent alone is too narrow to define a Homeostatic calculation
-population; this does not itself authorize movement. A Context Horizon is measurement/comparison context and
-can contain multiple Commit Regions.
-Horizon membership does not define candidate membership, even if a branch's
-ledger entries have different Horizon labels. Substrate isolation remains.
+population; this does not itself authorize movement. A Context Horizon can bound
+and classify a causal lineage and can contain multiple Commit Regions. It is
+never, by shared membership alone, a measurement population or candidate
+population. Horizon membership does not define candidate membership, even if a
+branch's ledger entries have different Horizon labels. Substrate isolation remains.
 
 The reusable `RegisterPosition` mapping is extracted unchanged from structural
 Correspondence: Activity/Signal = First (R), Frontier/Stance = Second (G), and
 Canon/Concord = Third (B). These are vocabulary slots, not phase positions.
-[Invariant 16](core-invariants.md#16-register-identity-does-not-confer-phase-identity)
-requires an independent producing Phase check. Phase-position compatibility
+[Core Invariants 3, 5 and 8](core-invariants.md) require an independent producing Phase check. Phase-position compatibility
 and region membership still do not confer traversal eligibility. The Homeostatic
 scopes are:
 
