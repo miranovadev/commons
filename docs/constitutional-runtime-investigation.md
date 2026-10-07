@@ -87,7 +87,7 @@ action schema. The eventual step-600 Commit selected an earlier Bias advertised
 as eligible by that historical implementation, while the current Gate's own
 commitment summary was still inadmissible. This records what the trace did; it
 does not establish causal authority for that selection. Under
-[Invariant 17](core-invariants.md#17-lineage-constrained-participant-movement),
+[Invariant 10](core-invariants.md#10-movement-follows-authorised-structure),
 regional Homeostatic eligibility cannot authorise a sideways move. Each
 Phase-advancing operation must be structurally authorised from the current Gate;
 Order Traverse requires its direct Commit edge. The trace's conformity to that

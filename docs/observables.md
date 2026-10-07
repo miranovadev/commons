@@ -5,7 +5,7 @@ particular, measurement independence (1), representation versus semantics (2),
 and distinct reference frames (7) constrain every projection described below.
 
 Movement is governed independently by
-[Invariant 17](core-invariants.md#17-lineage-constrained-participant-movement).
+[Invariant 10](core-invariants.md#10-movement-follows-authorised-structure).
 Measurement ancestry, a calculation population and visible evidence do not
 define Participant movement. Forward movement follows the current Gate's causal
 continuation; recovery follows recorded ancestry backward. No edge means no

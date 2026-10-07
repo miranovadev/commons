@@ -2,7 +2,7 @@
 
 **Normative phase model:** [Commit Region Tragedy, Receipts and final-attempt Exhaustion](docs/core-invariants.md#persistence-exhaustion-recovery-and-observation). See [the phase flow](docs/flow-integration.md) and [migration compatibility](docs/horizon-proof-migration.md) before rollout.
 
-**Normative movement:** [Lineage-Constrained Participant Movement](docs/core-invariants.md#17-lineage-constrained-participant-movement).
+**Normative movement:** [Movement Follows Authorised Structure](docs/core-invariants.md#10-movement-follows-authorised-structure).
 Forward progression follows explicit causal edges from the current Gate;
 recovery follows recorded ancestry backward. Commit Region/Horizon membership,
 Homeostatic calculation populations and visible context never create movement

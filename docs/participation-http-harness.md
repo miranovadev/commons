@@ -124,7 +124,7 @@ natural third Variant and the complete Domain cycle, are not claimed here.
 
 Stages 3–6 subsequently changed the recorded red boundaries and recovery
 contracts; see [the checkpoints](substrate-motor-checkpoints.md). The current
-movement authority is [Invariant 17](core-invariants.md#17-lineage-constrained-participant-movement),
+movement authority is [Invariant 10](core-invariants.md#10-movement-follows-authorised-structure),
 not an action merely advertised by a historical harness run. Traverse requires
 the current Gate's existing causal continuation; recovery walks recorded
 ancestry backward. Context, region membership and Homeostatic calculations

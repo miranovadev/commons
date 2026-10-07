@@ -6,7 +6,7 @@ Only current local history, operational options, evidence and the valid action
 schema belong in an inference packet.
 
 Movement topology, Homeostatic populations and context visibility are separate
-contracts under [Invariant 17](core-invariants.md#17-lineage-constrained-participant-movement).
+contracts under [Invariant 10](core-invariants.md#10-movement-follows-authorised-structure).
 Forward movement follows an explicit causal edge from the current Gate; recovery
 follows recorded ancestry backward. Visible history and regional calculation
 members do not become movement targets. **No edge means no movement.**

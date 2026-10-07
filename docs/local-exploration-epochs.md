@@ -6,7 +6,7 @@ evidence/Potential prerequisites, recovery selection, Bias traversal visibility,
 the Tragedy recovery override, or suite/Actions selection.
 
 That boundary records historical Stage 3 scope, not present movement authority.
-[Invariant 17](core-invariants.md#17-lineage-constrained-participant-movement)
+[Invariant 10](core-invariants.md#10-movement-follows-authorised-structure)
 requires a forward causal continuation from the current Gate or recorded ancestry
 backward. Position identity and restored epoch eligibility cannot create a
 movement edge. Historical selected-source provenance below describes the stored

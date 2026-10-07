@@ -31,7 +31,7 @@ current spentness remain separate concepts.
 
 The successful-route case records a positive causal journey. It does not prove
 rejection of an unrelated frozen classification in the same Region/Horizon.
-[Invariant 17](core-invariants.md#17-lineage-constrained-participant-movement)
+[Invariant 10](core-invariants.md#10-movement-follows-authorised-structure)
 requires that negative boundary independently: calculation populations and
 visibility alone cannot become Traverse targets. The completed Homeostatic model
 has one explicit additional rule for Order Committals, independently validated
