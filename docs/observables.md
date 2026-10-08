@@ -16,6 +16,47 @@ provenance in the preceding complementary Context Horizon. Closure has a distinc
 committed-lineage path: Horizons supply Domain labels, never comparison populations.
 Raw evidence evaluations never read accumulated measurement projections.
 
+## Causal observations and Cycle-entry clocks
+
+Three relationships must not be treated as interchangeable:
+
+1. **Causal relationship:** two Propositions may share a real ancestor while
+   belonging to different branches. For example, `C1 → G → P1` and
+   `C1 → G → P2` share causal history. Neither sibling is the other's ancestor.
+2. **Selected measurement ancestry:** a measurement uses the directed causal
+   ancestry selected for its measured head. A shared ancestor may appear in
+   both selected lineages; a sibling does not enter merely through that shared
+   ancestor. A genuine multi-parent Write may join causal branches.
+3. **Governing Cycle-entry basin:** a creating Cycle's immutable
+   `entry_committal_id` identifies the Committal that governs its operational
+   Region. Multiple Participants and separate causal branches can enter Cycles
+   governed by the same Committal. This does not manufacture a Supersession
+   between those branches or make the whole Horizon one basin.
+
+**Selecting Proposition observations and counting Cycle-entry events are
+separate operations.** Where a calculation explicitly uses a represented-basin
+Cycle clock, the selected causal lineage determines which governing Committal
+basins are represented. The clock then counts actual Cycles entered in those
+basins under the calculation's documented Horizon and event-order constraints.
+Those Cycles count even if they are unfinished, Attestation-only, Rested or
+contribution-free, when the calculation defines that scope. They need not each
+produce a Proposition in the selected ancestry. Conversely, counting their
+entry events never imports unrelated Proposition observations into the
+measurement.
+
+For example, P1 and P2 may be separate expressive branches under C1. A
+calculation selecting P2's ancestry does not select P1 merely because both
+share C1. If its defined clock counts C1-governed Cycle entries, a Cycle entered
+by a different Participant under C1 can still advance that clock without
+making P1 part of P2's measurement ancestry.
+
+**Neither shared Horizon membership nor shared ancestry alone authorises
+arbitrary Cycle counting.** Each observable defines which represented basins
+and event boundaries are eligible. The Attestation Cadence definition below
+specifies its own represented-basin population; it is not a general rule that
+every observable uses the same clock. See [Core Invariants 5 and 7](core-invariants.md)
+and [Cycle entry identity](cycle-entry-identity.md).
+
 ## Unified late-phase admissibility
 
 **Dominance selects candidate inputs. Admissibility governs Writes.**

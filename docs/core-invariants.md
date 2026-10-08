@@ -136,6 +136,33 @@ participant arrival are used where their respective semantics require them.
 Proximity, recency, visibility, matching labels, graph convenience, population
 membership or implementation accessibility cannot substitute for provenance.
 
+### Causal relationship is not the same as a selected lineage
+
+Two Propositions may be **causally related** because they share a genuine causal
+ancestor, even when neither Proposition is an ancestor of the other. For
+example, `C1 → G → P1` and `C1 → G → P2` are two branches with shared causal
+history. P1 and P2 are not causally unrelated, but P1 does not become an
+ancestor of P2 (or vice versa) merely because they share C1 and G.
+
+A **selected measurement lineage** is the causal ancestry selected for the
+particular measured head under that measurement's documented traversal rule.
+Shared ancestry can appear in both heads' selected lineages without selecting
+one sibling as part of the other's lineage. A lawful multi-parent Write may
+bring multiple genuine ancestral branches into the resulting head's selected
+lineage. Do not replace those directed relationships with a single global
+"related/unrelated" flag.
+
+**Governing Committal / Commit Region identity is a different relation again.**
+Separate branches may be governed by the same immutable entry Committal; that
+shared governance does not imply a Supersession edge between their expressive
+Propositions. Conversely, a multi-input result may have foreign causal parents
+without changing its creating Cycle's governing Committal.
+
+Participant authorship does not define any of these relationships. Different
+Participants may enter Cycles at the same governing Committal and lawfully
+traverse and develop existing causal structure without becoming its original
+author.
+
 ### Commit Region ownership
 
 A persisted Committal owns itself. An Expressive Proposition belongs to the
@@ -228,6 +255,33 @@ lineages shared a container.
 
 The Context Horizon is a causal/reference boundary. It is never, by itself, a
 license to compare every Proposition or Cycle inside it.
+
+### A lineage-selected observation can use a governing Cycle-entry clock
+
+Do not conflate **which Propositions supply observations** with **which
+recorded Cycle entries supply a temporal denominator or interval**. These are
+different selection contracts.
+
+Where an observable explicitly defines a **represented-basin Cycle clock**,
+first select the relevant causal lineage and the governing Committal basins
+represented by that lineage. Then count the actual Cycle entries for those
+explicitly selected basins, under that observable's documented Horizon and
+event-order boundaries. The clock may include a Cycle entered by another
+Participant that created no Proposition in the selected ancestry. Counting
+that Cycle as a clock event does **not** import that Participant's separate
+Proposition observations into the measured lineage.
+
+A governing Committal is not interchangeable with every other Committal in
+the same Horizon. A shared Horizon alone selects neither a basin nor its
+Cycles. Nor does a common ancestor make sibling Propositions each other's
+selected ancestry.
+
+This is not a universal permission to count every Cycle of every related
+branch: each observable must state its own basin selection and event bounds.
+For the documented Attestation Cadence contract, see
+[Observable calculation](observables.md#causal-observations-and-cycle-entry-clocks).
+For immutable Cycle entry identity, see
+[Cycle entry identity](cycle-entry-identity.md).
 
 ### Population comparison is different from measurement ancestry
 
