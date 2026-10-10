@@ -34,9 +34,10 @@ select their separate expressive Propositions.
    It does **not** subtract the previous same-Phase Revision's stamp.
 4. A genuine interval of zero is valid when both stamps coincide.
    `null` is never inserted as an observed zero.
-5. A lawful multi-parent Write selects only genuine causal provenance
-   according to its documented observation rule; shared Region membership
-   never imports siblings.
+5. Intervals use the selected preceding-Phase causal observation **within
+   the measured Proposition's governing-basin coordinate system**. Selection
+   is operation-aware, as specified below; shared Region membership never
+   imports siblings.
 6. Phase 7 is the prospective interval from the final expressive
    observation to the proposed Commit boundary. It informs prospective
    Historical Phase Profile / Closure, **not** the already-born
@@ -47,6 +48,79 @@ and Phase-2 revisions P2' at 12 and P2'' at 13 give Phase-2
 intervals 1, 2, 3 respectively, all relative to P1 at 10.
 The P1 interval is `null`. Other lineages can advance the shared
 basin clock without becoming observations.
+
+## Causal ancestry and selected temporal references
+
+Genuine causal ancestry, selected temporal reference, governing Committal
+ownership and governing-basin Cycle clock are distinct. A temporal reference
+must be a genuine causal observation in the measured Proposition's own basin.
+An operational Gate without a genuine causal relationship is not measurement
+ancestry. No cross-basin coordinate subtraction is defined.
+
+| Operation | Temporal reference |
+| --- | --- |
+| Ordinary expressive progression | Selected preceding-Phase causal observation |
+| Same-Phase Revision | Retain the selected preceding-Phase observation, not the previous Revision |
+| Multi-parent Reconcile | Acting local Gate |
+| Foreign-source Bias without eligible local causal predecessor | Unavailable (`null`) |
+| Subsequent lawful local continuation of an imported Proposition | Eligible preceding-Phase observation in the local basin |
+
+### Multi-parent Reconcile
+
+A Reconcile uses its acting Phase's local Gate as its preceding-Phase temporal
+reference. The secondary operand is not an interval reference. Do not average
+parent intervals, choose the newest parent or combine Cycle coordinates.
+
+For example, Phase-4 P1 in basin A has coordinate 12 and is the secondary
+operand; Phase-4 P2 in basin B has coordinate 10 and is the acting Gate.
+Their Phase-5 result P3 belongs to basin B and is born at coordinate 15.
+P3's interval is **15 - 10 = 5**, referencing P2.
+
+Both real Reconcile Supersessions, P1 → P3 and P2 → P3, remain intact.
+P1 remains genuine ancestry for measurements selecting all-parent ancestry,
+including Shape Topology. That does not make P1 P3's temporal reference.
+Reversing the acting Gate changes temporal selection and the result's creating
+context accordingly; it does not erase either causal parent.
+
+### Foreign-source Bias and independently governed clocks
+
+An expressive result remains owned by its creating Cycle's entry Committal,
+even when its genuine causal source is foreign. It records that local basin's
+birth coordinate. If no eligible preceding-Phase observation exists within
+that basin on its selected causal lineage, its interval is **`null`**.
+
+For example, foreign source P1 in basin A has coordinate 27. The acting local
+Gate P2 in basin B has coordinate 10. A Bias Reclassification P3, owned by
+basin B, is born at coordinate 15 with the sole genuine parent P1.
+P3 records coordinate **15** and interval **`null`**. P2 is operational context,
+not a causal parent; do not add a P2 → P3 Supersession or use P2 as a temporal
+substitute. Do not subtract 27 from 15, import basin A's Cycle population,
+substitute zero, or treat the Tragedy Receipt as an observation. That Receipt
+retains only its existing narrowly scoped Bias authority.
+
+### Missing reference and subsequent local development
+
+An unavailable interval does not invalidate the birth coordinate. If subsequent
+lawful local development selects P3 at coordinate 15 as its preceding-Phase
+reference and is born at coordinate 19, that continuation has interval **4**.
+This example requires the operation's existing Phase/causal eligibility; it
+creates no new expressive operation after Bias. The Phase-7 Commit boundary
+can likewise use the eligible final expressive observation diagnostically.
+There is no special maturity threshold and no invented first interval.
+
+A missing historical stamp remains unavailable; it must not be reconstructed
+from today's Cycle count. Missing history, absence of an eligible predecessor
+and genuine zero spacing must remain distinguishable in diagnostics.
+
+### Atomic observation ordering
+
+Birth coordinates are immutable event-born facts. A selected reference must
+come from the complete already-authorised operation context, or be resolved
+after genuine causal relationships are recorded within that same atomic
+transaction. Proposition ledger recording can precede Supersession recording;
+incomplete edges, Horizon recency and Region recency are not reference selectors.
+Existing creating-Cycle ownership remains authoritative without a duplicate
+ownership field on the observation.
 
 ## Maturity and neutral slots
 

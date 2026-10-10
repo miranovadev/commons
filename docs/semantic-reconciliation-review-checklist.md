@@ -45,6 +45,15 @@
 - The seven-slot cross-Domain comparison retains neutral zero
   contributions for unavailable comparisons, not fabricated
   empirical zeros.
+- Reconcile with different Phase-4 birth coordinates uses the acting local
+  Gate for its Phase-5 interval, retains both genuine edges and excludes the
+  secondary operand from temporal reference selection. Reverse the acting Gate
+  and verify the corresponding selected interval.
+- Foreign-source Bias records its creating basin's coordinate and an unavailable
+  interval when no eligible local causal predecessor exists. No synthetic local
+  Gate edge, foreign-clock subtraction, Receipt observation or zero is allowed.
+  Foreign Cycle entries cannot advance the local clock; subsequent lawful local
+  development can use the imported Proposition's valid birth coordinate.
 - Cycle entry updates prospective Closure on all expressives governed
   by the entry Committal, not merely heads; Attestation updates
   targeted Chirality; Correspondence remains birth-resolved.

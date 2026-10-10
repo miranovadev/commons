@@ -208,6 +208,7 @@ final readonly class ContributionDispatcher
             $phase,
             $input['statement'],
             tier: 'expressive',
+            temporalSource: $gate,
         );
         $supersession = $this->supersede(
             $phase,
@@ -245,7 +246,7 @@ final readonly class ContributionDispatcher
 
     private function classified(Phase $phase, Proposition $source, string $receiptId): Proposition
     {
-        $target = $this->write($phase, $source->statement, tier: 'expressive', preserveStatement: true);
+        $target = $this->write($phase, $source->statement, tier: 'expressive', preserveStatement: true, temporalSource: $source);
         app(HorizonReceiptService::class)->consume($phase, $source, $target, $receiptId);
         DB::table('reclassification_results')->insert([
             'source_proposition_id' => $source->id, 'register' => $phase->write_register, 'target_proposition_id' => $target->id,
@@ -273,6 +274,7 @@ final readonly class ContributionDispatcher
             $gate->statement,
             tier: 'expressive',
             preserveStatement: true,
+            temporalSource: $gate,
         );
 
         foreach ([$gate, $other] as $source) {
@@ -380,6 +382,7 @@ final readonly class ContributionDispatcher
             $gate->statement,
             tier: 'committal',
             preserveStatement: true,
+            temporalSource: $gate,
         );
         app(CanonicalMeasurementService::class)->preserve($target, $gate, $resolved, $correspondenceDirection);
         DB::table('commit_results')->insert(['source_proposition_id' => $gate->id, 'target_proposition_id' => $target->id]);
@@ -416,6 +419,7 @@ final readonly class ContributionDispatcher
         string $statement,
         string $tier,
         bool $preserveStatement = false,
+        ?Proposition $temporalSource = null,
     ): Proposition {
         if ($phase->write_register === null) {
             throw new DomainException(
@@ -431,7 +435,7 @@ final readonly class ContributionDispatcher
             'statement' => $preserveStatement ? $statement : trim($statement),
         ]);
         $proposition->save();
-        $this->ledger->record($proposition);
+        $this->ledger->record($proposition, $temporalSource);
 
         return $proposition;
     }
