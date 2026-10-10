@@ -1,5 +1,12 @@
 # Backward lineage recovery
 
+> **Recovery geometry remains authoritative.** The current fresh-boundary
+> trigger below is the deployed exhaustion predicate; see
+> [the proposed recursive replacement](tragedy-resolution-target.md).
+> Under that target, an exhausted Committal remains historical but is not
+> traversable or enterable, and an already-positioned participant receives
+> Rest only. The recorded backward path is unchanged.
+
 
 The participant's terminal position and completed Cycle Horizon are the recovery
 starting point. Recovery walks incoming causal edges backward and collects only

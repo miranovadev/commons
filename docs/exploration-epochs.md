@@ -1,5 +1,12 @@
 # Exploration epochs and spent continuations
 
+> **Current epoch mechanics, with proposed regional override.** Ordinary
+> Variant eligibility and epoch-relative spentness below remain the deployed
+> behaviour. Under the [Resolution target](tragedy-resolution-target.md),
+> first Tragedy prohibits Variant and Revise throughout the owning Region;
+> terminal continuation authority is distinct from epoch-relative spentness
+> and cannot be reopened by a later Variant epoch.
+
 A tested expressive route can fail without exhausting its Horizon. Failure is an
 immutable witness, scoped by the creating Horizon, structural Phase position,
 and exploration epoch. Labels classify. Position governs.
