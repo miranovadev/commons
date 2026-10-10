@@ -189,7 +189,7 @@ Implementation responsibilities:
 | Ownership | Derived through the creating Phase/Cycle; no duplicated basin or Horizon columns |
 | Profile population | The inspected head's genuine all-parent ancestry within its creating Horizon, deduplicated; every node supplies only its own operation-selected interval |
 | Completed comparison reference | Genuine ancestry ending at the Committal that opened the current Horizon; later siblings do not extend that reference |
-| Missing history | Explicit reason and `history_complete=false`; an affected Phase mean is unavailable, never silently a partial mean of surviving records |
+| Missing history | Explicit reason and `history_complete=false`; missing intervals supply no sample, while genuine recorded intervals still form the Phase mean with explicit sample counts |
 | C1 unavailable interval | No sample for first expressive birth or no eligible local predecessor; a recorded zero is a genuine sample |
 | Phase 7 | Read-only preview from a Bias head, plus durable actual Commit-boundary observation; neither rewrites the source's profile nor recalculates Closure |
 

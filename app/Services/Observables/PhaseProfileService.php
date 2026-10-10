@@ -74,7 +74,7 @@ final readonly class PhaseProfileService
         }
 
         return ['head_id' => $head->id, 'kind' => 'observed_lineage',
-            'means' => array_map(fn ($sum, $count, $gap) => $gap || $count === 0 ? null : (float) $sum / $count, $sums, $counts, $missing),
+            'means' => array_map(fn ($sum, $count) => $count === 0 ? null : (float) $sum / $count, $sums, $counts),
             'sample_counts' => $counts, 'history_complete' => ! in_array(true, $missing, true),
             'observations' => $observations];
     }

@@ -346,6 +346,20 @@ class PhaseProfileTest extends TestCase
         $this->assertSame(array_fill(0, 7, null), $this->profile($p2)['means']);
     }
 
+    public function test_missing_history_does_not_suppress_another_genuine_phase_sample(): void
+    {
+        $p1 = $this->born($this->firstCycle, PhaseKind::Distinguish, $this->origin);
+        $p2 = $this->born($this->firstCycle, PhaseKind::Persist, $p1);
+        $revision = $this->born($this->cycle(), PhaseKind::Persist, $p2, 'revise', actingGate: $p1);
+        DB::table('phase_profile_observations')->where('proposition_id', $p2->id)->delete();
+        $profile = $this->profile($revision);
+        $this->assertFalse($profile['history_complete']);
+        $this->assertSame(1, $profile['sample_counts'][1]);
+        $this->assertSame(1.0, $profile['means'][1]);
+        $this->assertContains('missing_birth_history', array_column($profile['observations'], 'unavailable_reason'));
+        $this->assertSame(1, $this->observation($revision)['interval']);
+    }
+
     public function test_historical_cycle_without_entry_marker_is_explicitly_unavailable(): void
     {
         DB::table('cycles')->where('id', $this->firstCycle->id)->update(['chirality_entry_after_sequence' => null]);
