@@ -476,7 +476,10 @@ new Core Invariant.
 | Register labels do not confer Phase identity or operation eligibility. | 3, 5, 8 | [Phase positions](phase-positions.md) |
 | Commit requires its complete grounding and admissibility contract; Origin has its explicitly distinct bootstrap contract. | 8, 9 | [Observable calculation](observables.md); [Attestation polarity](attestation-polarity.md) |
 | Supersession and later state changes preserve historical contributions and provenance. | 6, 9 | [Proposition observation](proposition-observation.md) |
-| First/later fresh Charge-boundary events create Tragedy/Exhaustion proofs without deleting prior history. | 5, 6, 9 | [Branch Tragedy](branch-tragedy.md); [Commit Region exhaustion](commit-region-exhaustion.md) |
+| Currently deployed first/later fresh Charge-boundary events create historical Tragedy/Exhaustion proofs without deleting prior history. | 5, 6, 9 | [Deployed Tragedy](branch-tragedy.md); [Deployed exhaustion](commit-region-exhaustion.md) |
+| Proposed direct-encounter Tragedy, Resolution and recursive exhaustion preserve distinct causal continuations and historical evidence. | 4, 5, 6, 8, 9, 10 | [Tragedy/Resolution target](tragedy-resolution-target.md) |
+| Proposed Phase Profile uses selected preceding-Phase birth stamps and neutral comparison slots, never invented observations. | 1, 5, 7, 9 | [Phase Profile target](phase-profile-target.md) |
+| Proposed Cycle-responsive Closure and Commit preservation do not rewrite frozen committed history. | 1, 4, 6, 7, 9 | [Prospective Closure target](prospective-closure-target.md) |
 | Recovery follows the recorded backward lineage and crosses Horizon boundaries only when the governing boundary permits it. | 5, 8, 10 | [Backward lineage recovery](backward-lineage-recovery.md); [Recovery basins](recovery-basins.md) |
 | Visibility, actionability, calculation population and movement remain distinct contracts. | 7, 8, 10 | [Participant context](participant-context.md); [Participation](participation.md) |
 

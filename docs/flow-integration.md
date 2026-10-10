@@ -1,6 +1,11 @@
 # Receipt-backed phase flow
 
-[Core invariants](core-invariants.md#persistence-exhaustion-recovery-and-observation) govern this cycle. Domain mappings select registers; the producing phase position determines eligibility.
+> **Deployed integration contract.** The fresh-birth second-catastrophe
+> rule below is not the proposed [Tragedy/Resolution lifecycle](tragedy-resolution-target.md).
+> The proposed [observable architecture](semantic-reconciliation-status.md)
+> also remains a separate target, not a deployed formula.
+
+[Core invariants](core-invariants.md) govern this cycle. Domain mappings select registers; the producing phase position determines eligibility.
 
 Producing position is necessary but does not confer traversal eligibility.
 Forward movement additionally requires an explicit causal continuation from

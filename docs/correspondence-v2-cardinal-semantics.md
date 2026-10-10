@@ -1,5 +1,10 @@
 # Correspondence v2 — canonical structural semantics
 
+> **Current Cardinal implementation specification and historical design record.**
+> The proposed replacement is [Phase Profile C1](phase-profile-target.md).
+> The word *canonical* in this historical title does not approve the
+> replacement or make Cardinal's row-position rules part of C1.
+
 > **Status:** normative semantics for the Correspondence v2 correction. This document supersedes earlier v2 wording that equated structural depth with Phase position or reduced Position Correspondence to a single head-to-head comparison.
 >
 > Production code must implement these semantics directly. Do not substitute Phase Position, head-only comparison, UI geometry, or an optimization that changes the defined cardinal populations.

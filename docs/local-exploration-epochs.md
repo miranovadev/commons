@@ -1,5 +1,10 @@
 # Stage 3: local exploration epochs and current spentness
 
+> **Historical epoch-locality checkpoint.** The proposed
+> [Resolution lifecycle](tragedy-resolution-target.md) disables
+> Variant and Revise after first Tragedy without rewriting old
+> exploration epochs or continuation-failure provenance.
+
 This checkpoint follows Stage 2 at `ee464ef7f7c96566b3138c96027cc21ff64b2551`.
 It corrects epoch identity and current spentness only. It does not change Variant
 evidence/Potential prerequisites, recovery selection, Bias traversal visibility,
