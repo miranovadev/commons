@@ -108,6 +108,18 @@ Immutable structural ownership and boundary identity likewise persist unless the
 model explicitly defines a new event that creates a new state. Existing state is
 not reinterpreted from later context.
 
+### Event-responsive state and preserved history
+
+An expressive measurement may change only at the event explicitly authorised by
+its observable's lifecycle. A later measurement update is not permission to
+rewrite the Proposition's birth coordinates, evidence, causal ownership or a
+previously frozen Committal snapshot.
+
+A historical terminal continuation remains terminal even if subsequent
+observations would give its Proposition positive Charge. This is historical
+authority, not numeric Charge hysteresis. See the
+[proposed Resolution lifecycle](tragedy-resolution-target.md).
+
 ### Zero does not erase direction
 
 A zero value must not automatically be interpreted as directionless, a neutral
@@ -219,6 +231,15 @@ maintenance does not erase the event.
 A current projection may change without rewriting the historical evidence from
 which an earlier decision was made.
 
+### Regional resolution and independent continuations
+
+A Tragedy on one expressive continuation does not imply that every sibling
+continuation has failed. Region-wide restrictions must be explicitly granted by
+the Tragedy/Resolution operation. A successful Commit may carry a continuation
+into a descendant basin; exhaustion of that descendant can later close that
+route without independently closing viable siblings. These are proposed target
+semantics, not the deployed catastrophe predicate.
+
 ### Branching is not globally consumed
 
 Using or reinforcing one valid route does not globally consume unrelated valid
@@ -255,6 +276,17 @@ lineages shared a container.
 
 The Context Horizon is a causal/reference boundary. It is never, by itself, a
 license to compare every Proposition or Cycle inside it.
+
+### Birth coordinates and Phase-relative intervals
+
+Where a proposed Phase Profile uses a governing-basin Cycle clock, an expressive
+birth records the current count without selecting sibling Proposition
+observations. The first expressive birth on the selected lineage has no
+preceding expressive Phase observation: its interval is unavailable, not an
+observed zero. Later intervals use the selected preceding **Phase** observation,
+not automatically the immediately preceding Supersession parent. A same-Phase
+Revision therefore retains its preceding-Phase reference. The exact observable
+contract belongs in [Phase Profile target](phase-profile-target.md).
 
 ### A lineage-selected observation can use a governing Cycle-entry clock
 
@@ -394,6 +426,14 @@ It does not itself create movement authority.
 Mediate, Bias and Order may use explicitly defined Homeostatic populations.
 Membership or dominance in those populations grants no movement unless the
 specific operation separately authorises an action.
+
+### Exhausted regions are not entry destinations
+
+Under the proposed Resolution lifecycle, an exhausted governing Committal
+remains historical but cannot be traversed or entered for a new Cycle. A
+participant already positioned in an exhausted Region receives Rest as the
+sole participation action; recovery still follows the actual recorded backward
+path. No sibling search or invented movement edge is authorised.
 
 ### Recovery follows the actual backward path
 
