@@ -1,5 +1,11 @@
 # Horizon proof invariant coverage
 
+> **Historical test mapping.** The existing second-fresh-boundary and
+> older final-attempt tests document the code they exercised. A future
+> implementation of [recursive Region Exhaustion](tragedy-resolution-target.md)
+> needs separate atomicity, branch-survival and recovery regressions;
+> these historical fixtures must not be relabelled as passing them.
+
 > Historical checkpoint. Rest-born Tragedy, final-attempt permission, consumption-based exhaustion and recovery-following warrant scope described here are retired. Current authority is [first/later fresh Charge-boundary events](branch-tragedy.md); this document retains historical validation details.
 
 > Historical validation record: Stage 2 supersedes the Rest-born Tragedy and special

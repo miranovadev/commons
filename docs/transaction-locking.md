@@ -1,5 +1,11 @@
 # Participation reads and write locks
 
+> **Current transaction contract.** The proposed
+> [atomic Tragedy/Resolution/Exhaustion evaluation](tragedy-resolution-target.md)
+> must run under the same substrate contribution lock, before publication.
+> This is a target requirement, not an assertion that current dispatch
+> already evaluates recursive Region exhaustion.
+
 Participation reads are optimistic and take no database write locks or enclosing
 transactions. Inference and external Instrument observation run outside database
 transactions. Contributions acquire locks while revalidating and committing a

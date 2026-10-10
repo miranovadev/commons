@@ -1,5 +1,12 @@
 # Participation API
 
+> **Deployed API contract.** Current action schemas and fresh-birth Tragedy
+> rules below describe `main`. The proposed
+> [Exploration/Resolution/Exhaustion target](tragedy-resolution-target.md)
+> prohibits Variant/Revise after first Tragedy, makes directly confronted
+> zero-Charge continuations terminal, and offers Rest only in an exhausted
+> Region. These target rules are not yet enforced by the API.
+
 The shared law for Mediate, Bias and Order is documented in
 [Unified late-phase admissibility](observables.md#unified-late-phase-admissibility).
 Dominance selects candidate inputs; admissibility governs Writes.

@@ -1,5 +1,11 @@
 # Commit Region proof architecture
 
+> **Current implementation architecture.** Proposed responsibilities for
+> unique Tragedy, Resolution, terminal continuations and recursive Exhaustion
+> are specified separately in [the target lifecycle](tragedy-resolution-target.md).
+> In particular, the existing second-boundary `ExhaustionService` path must
+> not be mistaken for the proposed atomic continuation evaluation.
+
 The normative lifecycle is [Charge-boundary Tragedy and exhaustion](branch-tragedy.md).
 
 | Component | Responsibility |

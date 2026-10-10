@@ -1,5 +1,10 @@
 # Autonomous participant context
 
+> **Current participant presentation.** Proposed
+> [Resolution and recursive Exhaustion](tragedy-resolution-target.md)
+> preserve historical visibility while making terminal continuations
+> inactionable and offering Rest only in exhausted Regions.
+
 The [Core Invariants](core-invariants.md) govern this serialization boundary.
 Autonomous cognitive context and human observational data are separate contracts.
 Only current local history, operational options, evidence and the valid action

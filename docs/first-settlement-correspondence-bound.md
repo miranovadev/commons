@@ -1,5 +1,9 @@
 # First-Settlement Correspondence before C1
 
+> **Historical first-Settlement Cardinal diagnostic.** Its numerical
+> bounds are not the proposed [Phase Profile C1](phase-profile-target.md)
+> bootstrap; do not reuse old Cardinal comparisons as C1 observations.
+
 The unattested diagnostic bootstrap contract ended at the first valid ordinary Commit. Explicit Origin Attestation is now required for new substrates. Its Domain
 is determined by the actual field, not prescribed by the fixture. The earlier unattested production
 diagnostic had Correspondence −0.5276331, Chirality −0.5 and

@@ -1,5 +1,10 @@
 # Phase positions
 
+> Phase positions remain structural, not Cardinal coordinates. The
+> proposed [Phase Profile C1](phase-profile-target.md) uses selected
+> preceding-Phase birth stamps and a prospective Phase-7 interval.
+> It does not modify action eligibility or movement topology.
+
 **Register identity does not confer phase identity.** A register classifies a
 Proposition. Its producing `Phase.kind` fixes its position in the seven-phase
 process. Ownership remains `Proposition → Phase → Cycle → Context Horizon → Domain`.

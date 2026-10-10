@@ -1,5 +1,10 @@
 # Continuous Cycles and relevant Instrument observations
 
+> **Deployed Cycle and Receipt contract.** A Cycle entry alone never
+> creates a Tragedy under the proposed [direct-encounter target](tragedy-resolution-target.md).
+> Existing first/later fresh-birth statements below describe the deployed
+> implementation, not the agreed Resolution replacement.
+
 A Participant's Cycle and an autonomous wake are separate lifecycles. Previously,
 Order or Rest completed the Cycle and returned `waiting / cycle_not_started`.
 A later wake entered another Cycle and made only one contribution. The Participant

@@ -1,5 +1,10 @@
 # Stage 5 lifecycle checkpoint
 
+> **Historical implementation checkpoint.** The old final-attempt and
+> catastrophe rules below are not the proposed
+> [direct-encounter Resolution target](tragedy-resolution-target.md).
+> Historical witnesses and fixtures remain evidence of the earlier rules.
+
 > Historical checkpoint. Rest-born Tragedy, final-attempt permission, consumption-based exhaustion and recovery-following warrant scope described here are retired. Current authority is [first/later fresh Charge-boundary events](branch-tragedy.md); this document retains historical validation details.
 
 > Historical checkpoint: the Rest-born Tragedy and special final-attempt allowance

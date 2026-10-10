@@ -1,5 +1,13 @@
 # Charge-boundary Tragedy and exhaustion
 
+> **Current deployed lifecycle (historical after target adoption).** The
+> first/later *fresh expressive birth* rules below describe the implementation
+> currently in `main`, **not** the proposed replacement. For review of the
+> agreed Exploration → Resolution → Exhaustion model, see
+> [the target contract](tragedy-resolution-target.md). Do not combine
+> predicates from the two contracts.
+
+
 Tragedy is the first fresh expressive zero-Charge state in a Commit Region.
 Exhaustion is a later distinct fresh expressive zero-Charge state in that same
 still-open Region. Potential and Rest do not prove either event.

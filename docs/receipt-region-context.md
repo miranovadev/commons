@@ -1,5 +1,12 @@
 # Receipt regions, participant memory and active evidence
 
+> **Receipt authority remains narrow.** The proposed
+> [Resolution lifecycle](tragedy-resolution-target.md) changes the Tragedy
+> trigger from fresh birth to direct zero-Charge Write encounter, not the
+> owning-Region warrant's scope, one-use authority, evidence neutrality or
+> historical persistence. The fresh-birth descriptions below reflect
+> currently deployed behaviour.
+
 Receipts ground Propositions. Attestations express Participant judgments over those Propositions.
 
 | Boundary | Responsibility |

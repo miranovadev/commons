@@ -1,5 +1,11 @@
 # Commit Region exhaustion and compatibility
 
+> **Current implementation and migration record.** The second-fresh-boundary
+> proof described below remains the deployed schema contract. The proposed
+> [recursive exhaustion target](tragedy-resolution-target.md) instead evaluates
+> remaining continuations atomically after terminal Writes. Existing historical
+> proofs and migration provenance must not be rewritten.
+
 
 A Commit Region is the recovery basin governed by its Committal. Recovery walks
 backward through ancestral Commit Regions in causal order. The nearest
