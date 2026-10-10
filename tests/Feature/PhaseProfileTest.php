@@ -99,13 +99,18 @@ class PhaseProfileTest extends TestCase
         return $this->born($cycle, PhaseKind::Disperse, $p3);
     }
 
-    private function throughBias(Cycle $cycle): Proposition
+    private function throughMediate(Cycle $cycle): Proposition
     {
         $gate = $this->throughDisperse($cycle);
-        $other = $this->born($cycle, PhaseKind::Disperse, $gate->parents()->sole());
-        $p5 = $this->born($cycle, PhaseKind::Mediate, $gate, 'reconcile', $other);
+        // A separate producing Cycle authors the alternative Disperse branch.
+        $other = $this->born($this->cycle($cycle->entryCommittal), PhaseKind::Disperse, $gate->parents()->sole());
 
-        return $this->born($cycle, PhaseKind::Bias, $p5, 'reclassify');
+        return $this->born($cycle, PhaseKind::Mediate, $gate, 'reconcile', $other);
+    }
+
+    private function throughBias(Cycle $cycle): Proposition
+    {
+        return $this->born($cycle, PhaseKind::Bias, $this->throughMediate($cycle), 'reclassify');
     }
 
     /** A complete structural Commit history with genuine Order source/edge and frozen birth state. */
@@ -228,21 +233,25 @@ class PhaseProfileTest extends TestCase
         $this->assertSame(1.0, (float) $this->origin->commitmentSnapshot->correspondence);
     }
 
-    public function test_reconcile_uses_acting_gate_and_keeps_both_causal_parents(): void
+    public static function reconcileGates(): array
     {
+        return [[false], [true]];
+    }
+
+    #[DataProvider('reconcileGates')]
+    public function test_reconcile_uses_acting_gate_and_keeps_both_causal_parents(bool $reverse): void
+    {
+        // Reverse in a fresh fixture: do not reconcile already-consumed parents again.
         $a = $this->throughDisperse($this->firstCycle);
         $cb = $this->cycle();
         $b = $this->throughDisperse($cb);
         $unselected = $this->throughDisperse($this->cycle());
-        $r = $this->born($this->firstCycle, PhaseKind::Mediate, $a, 'reconcile', $b);
-        $reverse = $this->born($cb, PhaseKind::Mediate, $b, 'reconcile', $a);
-        $this->assertSame(2, $this->observation($r)['interval']);
-        $this->assertSame(1, $this->observation($reverse)['interval']);
-        $this->assertSame($a->id, $this->observation($r)['reference']);
-        $this->assertSame($b->id, $this->observation($reverse)['reference']);
-        foreach ([$r, $reverse] as $p) {
-            $this->assertEqualsCanonicalizing([$a->id, $b->id], $p->parents()->pluck('propositions.id')->all());
-        }
+        $gate = $reverse ? $b : $a;
+        $operand = $reverse ? $a : $b;
+        $r = $this->born($reverse ? $cb : $this->firstCycle, PhaseKind::Mediate, $gate, 'reconcile', $operand);
+        $this->assertSame($reverse ? 1 : 2, $this->observation($r)['interval']);
+        $this->assertSame($gate->id, $this->observation($r)['reference']);
+        $this->assertEqualsCanonicalizing([$a->id, $b->id], $r->parents()->pluck('propositions.id')->all());
         $ids = array_column($this->profile($r)['observations'], 'proposition_id');
         $this->assertContains($a->id, $ids);
         $this->assertContains($b->id, $ids);
@@ -255,12 +264,12 @@ class PhaseProfileTest extends TestCase
         $a = $this->basin();
         $b = $this->basin();
         $foreignCycle = $this->cycle($a);
-        $foreign = $this->throughBias($foreignCycle)->parents()->sole(); // genuine Phase 5
+        $foreign = $this->throughMediate($foreignCycle);
         $localCycle = $this->cycle($b);
-        $local = $this->throughBias($localCycle)->parents()->sole();
+        $local = $this->throughMediate($localCycle);
         $first = $this->born($localCycle, PhaseKind::Bias, $foreign, 'reclassify', actingGate: $local);
         $this->assertSame($b->id, $first->phase->cycle->entry_committal_id);
-        $this->assertSame(['coordinate' => 1, 'reference' => null, 'interval' => null, 'reason' => 'no_local_predecessor'], $this->observation($first));
+        $this->assertSame(['coordinate' => 2, 'reference' => null, 'interval' => null, 'reason' => 'no_local_predecessor'], $this->observation($first));
         for ($i = 0; $i < 5; $i++) {
             $this->cycle($a);
         }

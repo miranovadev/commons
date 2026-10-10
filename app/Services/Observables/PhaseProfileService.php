@@ -65,7 +65,7 @@ final readonly class PhaseProfileService
             $observations[] = [
                 'proposition_id' => $node->id, 'phase' => $slot + 1,
                 'kind' => $node->tier === 'committal' ? 'commit_boundary' : 'expressive_birth',
-                'governing_committal_id' => $node->phase->cycle->entry_committal_id,
+                'clock_entry_committal_id' => $node->phase->cycle->entry_committal_id,
                 'birth_cycle_coordinate' => $row?->birth_cycle_coordinate === null ? null : (int) $row->birth_cycle_coordinate,
                 'preceding_phase_proposition_id' => $row?->preceding_phase_proposition_id,
                 'cycle_interval' => $row?->cycle_interval === null ? null : (int) $row->cycle_interval,

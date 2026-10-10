@@ -64,15 +64,8 @@ jobs:
       - name: Existing observable and ledger contracts
         if: always()
         run: php artisan test --filter='Cardinal|Correspondence|CycleEntryIdentity|PhasePositionInvariant|ContextHorizonProjector|ClosureBirth|PropositionLocalChirality|CanonicalCommit|ChiralityV2|AttestationBeat' --display-warnings
-      - name: Format patch for review
+      - name: Formatting and whitespace
         if: always()
         run: |
-          vendor/bin/pint app/Domain/Observables/PhaseProfile.php app/Services/Observables/PhaseProfile*.php app/Services/LedgerService.php app/Services/ContributionDispatcher.php app/Console/Commands/InspectPhaseProfile.php database/migrations/*phase_profile* tests/Unit/PhaseProfileComparisonTest.php tests/Feature/PhaseProfileTest.php
-          git diff > /tmp/phase-profile-format.patch
-          git diff
-          git diff --check
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: phase-profile-format-${{ matrix.database }}
-          path: /tmp/phase-profile-format.patch
+          vendor/bin/pint --test app/Domain/Observables/PhaseProfile.php app/Services/Observables/PhaseProfile*.php app/Services/LedgerService.php app/Services/ContributionDispatcher.php app/Console/Commands/InspectPhaseProfile.php database/migrations/*phase_profile* tests/Unit/PhaseProfileComparisonTest.php tests/Feature/PhaseProfileTest.php
+          git diff --check origin/main...HEAD
