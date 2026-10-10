@@ -83,10 +83,12 @@ class PhaseProfileObservationService
         if ($source->phase->kind->value === $phase) {
             // Same-Phase Revision retains its original preceding-Phase reference.
             $prior = $this->stored($source->id);
+
             return $prior === null
                 ? [null, 'missing_reference_history']
                 : [$prior->preceding_phase_proposition_id, $prior->unavailable_reason];
         }
+
         return $source->phase->kind->value === $phase - 1
             ? [$source->id, null]
             : [null, 'no_preceding_phase_observation'];

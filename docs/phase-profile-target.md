@@ -166,3 +166,37 @@ the separately chosen field formulation.
 B1 (first-Cycle baseline), B2 (Committal-zero baseline), and C2
 (two-interval maturity) remain **diagnostic controls**, not target
 rules. Do not discard their evidence or present them as approved canon.
+
+## Stage 1 diagnostic implementation boundary
+
+Stage 1 records observations and exposes `commons:phase-profile-inspect
+PROPOSITION_ID`; it does not replace production Cardinal Position or change any
+production observable, retained direction, actionability or Commit preservation.
+The bounded diagnostic kernel is `1 - 2 * abs(a - b) / max(a, b)` for available
+nonnegative means, with zero/zero = +1, bounded to [-1,+1]. Either unavailable
+mean contributes 0. The independently correct comparison family from historical
+PR #249 is retained; its Horizon population, newest-Proposition predecessor and
+invented first interval are not.
+
+Implementation responsibilities:
+
+| Requirement | Responsibility |
+| --- | --- |
+| Basin clock and event ordering | New Proposition ledger birth under the existing Substrate lock counts entries with the exact creating Cycle's entry Committal/Horizon and entry marker before the birth sequence |
+| Operation-specific temporal selection | Authorized dispatcher source: unary source, revised Proposition, acting Reconcile Gate, or selected Commit source |
+| Same-Phase Revision | Reuse the source's durable preceding-Phase reference; never reconstruct a missing historical reference |
+| Immutable evidence | `phase_profile_observations` stores coordinate, preceding-Phase Proposition ID, interval and unavailability reason; PostgreSQL/SQLite update guards; no historical backfill |
+| Ownership | Derived through the creating Phase/Cycle; no duplicated basin or Horizon columns |
+| Profile population | The inspected head's genuine all-parent ancestry within its creating Horizon, deduplicated; every node supplies only its own operation-selected interval |
+| Completed comparison reference | Genuine ancestry ending at the Committal that opened the current Horizon; later siblings do not extend that reference |
+| Missing history | Explicit reason and `history_complete=false`; an affected Phase mean is unavailable, never silently a partial mean of surviving records |
+| C1 unavailable interval | No sample for first expressive birth or no eligible local predecessor; a recorded zero is a genuine sample |
+| Phase 7 | Read-only preview from a Bias head, plus durable actual Commit-boundary observation; neither rewrites the source's profile nor recalculates Closure |
+
+All genuine selected parent branches remain profile ancestry; selecting a local
+Gate for one Reconcile interval does not erase the secondary parent's own
+historical observations when that parent belongs to the selected Domain lineage.
+Source-less direct ledger callers retain an explicit `missing_source_context`
+interval rather than guessing a causal source. Re-recording a ledger entry
+cannot manufacture a missing birth record. Diagnostics are read-only and may
+observe concurrent committed activity; they are not an admissibility preview.

@@ -30,7 +30,9 @@ class PhaseProfileTest extends TestCase
     use RefreshDatabase;
 
     private Participant $actor;
+
     private Proposition $origin;
+
     private Cycle $firstCycle;
 
     protected function setUp(): void
@@ -54,6 +56,7 @@ class PhaseProfileTest extends TestCase
             'context_horizon_id' => app(ContextHorizonProjector::class)->forEntry($entry)->id,
             'entry_committal_id' => $entry->id]);
         $cycle->save();
+
         return $cycle;
     }
 
@@ -82,6 +85,7 @@ class PhaseProfileTest extends TestCase
                 $edge->save();
                 app(LedgerService::class)->record($edge);
             }
+
             return $node;
         });
     }
@@ -91,6 +95,7 @@ class PhaseProfileTest extends TestCase
         $p1 = $this->born($cycle, PhaseKind::Distinguish, $cycle->entryCommittal);
         $p2 = $this->born($cycle, PhaseKind::Persist, $p1);
         $p3 = $this->born($cycle, PhaseKind::Constrain, $p2, 'reclassify');
+
         return $this->born($cycle, PhaseKind::Disperse, $p3);
     }
 
@@ -99,6 +104,7 @@ class PhaseProfileTest extends TestCase
         $gate = $this->throughDisperse($cycle);
         $other = $this->born($cycle, PhaseKind::Disperse, $gate->parents()->sole());
         $p5 = $this->born($cycle, PhaseKind::Mediate, $gate, 'reconcile', $other);
+
         return $this->born($cycle, PhaseKind::Bias, $p5, 'reclassify');
     }
 
@@ -119,6 +125,7 @@ class PhaseProfileTest extends TestCase
             'calculator_version' => 'phase-profile-structural-fixture', 'evaluated_at' => now()]);
         $snapshot->save();
         app(ContextHorizonProjector::class)->apply($snapshot);
+
         return $commit;
     }
 
@@ -126,6 +133,7 @@ class PhaseProfileTest extends TestCase
     {
         $o = app(PhaseProfileObservationService::class)->stored($p->id);
         $this->assertNotNull($o);
+
         return ['coordinate' => $o->birth_cycle_coordinate === null ? null : (int) $o->birth_cycle_coordinate,
             'reference' => $o->preceding_phase_proposition_id,
             'interval' => $o->cycle_interval === null ? null : (int) $o->cycle_interval,
@@ -170,7 +178,9 @@ class PhaseProfileTest extends TestCase
         $ca = $this->cycle($a);
         $cb = $this->cycle($b);
         $this->assertSame($ca->context_horizon_id, $cb->context_horizon_id);
-        for ($i = 0; $i < 4; $i++) { $this->cycle($b); }
+        for ($i = 0; $i < 4; $i++) {
+            $this->cycle($b);
+        }
         $p = $this->born($ca, PhaseKind::Distinguish, $a);
         $q = $this->born($cb, PhaseKind::Distinguish, $b);
         $this->assertSame(1, $this->observation($p)['coordinate']);
@@ -180,14 +190,18 @@ class PhaseProfileTest extends TestCase
 
     public function test_revisions_keep_preceding_phase_reference_and_mean_uses_all_genuine_samples(): void
     {
-        for ($i = 1; $i < 10; $i++) { $this->cycle(); }
+        for ($i = 1; $i < 10; $i++) {
+            $this->cycle();
+        }
         $p1 = $this->born($this->firstCycle, PhaseKind::Distinguish, $this->origin);
         $p2 = $this->born($this->cycle(), PhaseKind::Persist, $p1);
         $r1 = $this->born($this->cycle(), PhaseKind::Persist, $p2, 'revise', actingGate: $p1);
         $r2 = $this->born($this->cycle(), PhaseKind::Persist, $r1, 'revise', actingGate: $p1);
         $this->assertSame([10, 11, 12, 13], array_map(fn ($p) => $this->observation($p)['coordinate'], [$p1, $p2, $r1, $r2]));
         $this->assertSame([1, 2, 3], array_map(fn ($p) => $this->observation($p)['interval'], [$p2, $r1, $r2]));
-        foreach ([$p2, $r1, $r2] as $p) { $this->assertSame($p1->id, $this->observation($p)['reference']); }
+        foreach ([$p2, $r1, $r2] as $p) {
+            $this->assertSame($p1->id, $this->observation($p)['reference']);
+        }
         $this->assertSame(2.0, $this->profile($r2)['means'][1]);
         $this->assertSame(3, $this->profile($r2)['sample_counts'][1]);
     }
@@ -247,13 +261,17 @@ class PhaseProfileTest extends TestCase
         $first = $this->born($localCycle, PhaseKind::Bias, $foreign, 'reclassify', actingGate: $local);
         $this->assertSame($b->id, $first->phase->cycle->entry_committal_id);
         $this->assertSame(['coordinate' => 1, 'reference' => null, 'interval' => null, 'reason' => 'no_local_predecessor'], $this->observation($first));
-        for ($i = 0; $i < 5; $i++) { $this->cycle($a); }
+        for ($i = 0; $i < 5; $i++) {
+            $this->cycle($a);
+        }
         $second = $first; // Later foreign entries cannot change the local observation.
         $this->assertSame($this->observation($first), $this->observation($second));
         $this->assertSame([$foreign->id], $second->parents()->pluck('propositions.id')->all());
         $this->assertFalse($second->parents()->where('propositions.id', $local->id)->exists());
         $before = $this->profile($second);
-        for ($i = 0; $i < 4; $i++) { $this->cycle($b); }
+        for ($i = 0; $i < 4; $i++) {
+            $this->cycle($b);
+        }
         $preview = app(PhaseProfileService::class)->inspect($second)['prospective_order'];
         $this->assertSame(4, $preview['cycle_interval']);
         $commit = $this->born($localCycle, PhaseKind::Order, $second, 'commit');
@@ -271,12 +289,39 @@ class PhaseProfileTest extends TestCase
         $foreign = $this->throughDisperse($ca);
         $local = $this->throughDisperse($cb);
         $this->cycle($b);
-        for ($i = 0; $i < 8; $i++) { $this->cycle($a); }
+        for ($i = 0; $i < 8; $i++) {
+            $this->cycle($a);
+        }
         $r = $this->born($cb, PhaseKind::Mediate, $local, 'reconcile', $foreign);
         $this->assertSame(2, $this->observation($r)['coordinate']);
         $this->assertSame(1, $this->observation($r)['interval']);
         $this->assertSame($local->id, $this->observation($r)['reference']);
         $this->assertCount(2, $r->parents()->get());
+    }
+
+    public function test_completed_reference_is_the_opening_boundary_lineage_not_later_siblings(): void
+    {
+        $boundary = $this->basin(boundary: true);
+        $childCycle = $this->cycle($boundary);
+        $head = $this->born($childCycle, PhaseKind::Distinguish, $boundary);
+        $before = app(PhaseProfileService::class)->inspect($head);
+        $sibling = $this->throughBias($this->cycle());
+        $after = app(PhaseProfileService::class)->inspect($head);
+        $this->assertSame($before, $after);
+        $this->assertSame($boundary->id, $after['reference']['head_id']);
+        $this->assertNotContains($sibling->id, array_column($after['reference']['observations'], 'proposition_id'));
+        $this->assertSame([$head->id], array_column($after['current']['observations'], 'proposition_id'));
+    }
+
+    public function test_same_phase_revision_cannot_repair_missing_original_reference(): void
+    {
+        $p1 = $this->born($this->firstCycle, PhaseKind::Distinguish, $this->origin);
+        $p2 = $this->born($this->firstCycle, PhaseKind::Persist, $p1);
+        DB::table('phase_profile_observations')->where('proposition_id', $p2->id)->delete();
+        $revision = $this->born($this->cycle(), PhaseKind::Persist, $p2, 'revise', actingGate: $p1);
+        $this->assertSame('missing_reference_history', $this->observation($revision)['reason']);
+        $this->assertNull($this->observation($revision)['interval']);
+        $this->assertNull($this->observation($revision)['reference']);
     }
 
     public function test_missing_historical_stamp_is_not_reconstructed_or_averaged_as_zero(): void
@@ -332,6 +377,20 @@ class PhaseProfileTest extends TestCase
         $this->assertSame([$this->origin->id], $p->parents()->pluck('propositions.id')->all());
     }
 
+    public function test_migration_is_reversible_and_does_not_backfill_history(): void
+    {
+        $p = $this->born($this->firstCycle, PhaseKind::Distinguish, $this->origin);
+        $before = $this->origin->commitmentSnapshot->getAttributes();
+        $migration = require database_path('migrations/2026_10_11_000000_create_phase_profile_observations.php');
+        $migration->down();
+        $migration->up();
+        $this->assertDatabaseCount('phase_profile_observations', 0);
+        app(LedgerService::class)->record($p, $this->origin);
+        $this->assertDatabaseCount('phase_profile_observations', 0);
+        $this->assertFalse($this->profile($p)['history_complete']);
+        $this->assertSame($before, $this->origin->commitmentSnapshot->fresh()->getAttributes());
+    }
+
     public function test_failed_observation_rolls_back_the_atomic_write(): void
     {
         $count = Proposition::count();
@@ -361,10 +420,14 @@ class PhaseProfileTest extends TestCase
         $snapshot = fn () => array_map(fn ($table) => DB::table($table)->get()->toJson(), $tables);
         $before = $snapshot();
         $queries = [];
-        DB::listen(function ($query) use (&$queries): void { $queries[] = $query->sql; });
+        DB::listen(function ($query) use (&$queries): void {
+            $queries[] = $query->sql;
+        });
         app(PhaseProfileService::class)->inspect($p);
         $this->artisan('commons:phase-profile-inspect', ['proposition' => $p->id])->assertSuccessful();
-        foreach ($queries as $sql) { $this->assertDoesNotMatchRegularExpression('/^\s*(insert|update|delete|alter|create)/i', $sql); }
+        foreach ($queries as $sql) {
+            $this->assertDoesNotMatchRegularExpression('/^\s*(insert|update|delete|alter|create)/i', $sql);
+        }
         $this->assertSame($before, $snapshot());
     }
 }
