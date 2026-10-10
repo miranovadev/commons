@@ -1,5 +1,13 @@
 # Observable calculation
 
+> **Deployed observable reference, with historical Chirality v2 text.**
+> The proposed [Phase Profile C1](phase-profile-target.md) and
+> [prospective Closure](prospective-closure-target.md) are review targets,
+> not production behaviour. The Chirality vNext Stage 1–4 implementation
+> is documented in [its integration review](chirality-stage-4.md);
+> the older v2 calculation below is retained as historical context.
+> [Decision/status ledger](semantic-reconciliation-status.md).
+
 The [Core Invariants](core-invariants.md) govern these calculations. In
 particular, measurement independence (1), representation versus semantics (2),
 and distinct reference frames (7) constrain every projection described below.
@@ -183,6 +191,10 @@ measurement population.
 
 ## Local Correspondence
 
+> **Currently deployed:** Shape Topology + Cardinal Position.
+> **Proposed:** Shape Topology + [Phase Profile C1](phase-profile-target.md).
+> Do not combine Cardinal row geometry with Phase-relative Cycle intervals.
+
 > **Canonical v2 semantics:** [Correspondence v2 — canonical structural semantics](correspondence-v2-cardinal-semantics.md).
 > That document is normative for the pending correction and supersedes the earlier Phase-bucket/head-only v2 interpretation.
 
@@ -228,7 +240,16 @@ projection owns persistence. New Commitment snapshots freeze values and directio
 Historical snapshots keep nullable diagnostics and are never reconstructed or
 recalculated to populate these fields.
 
-## Local Chirality
+## Local Chirality: historical v2 formula
+
+> The following Domain-relative v2 description is retained to explain
+> the previous implementation. Current Chirality vNext is proposition-local
+> and Attestation-triggered, with beat-cursor continuity, fresh expressive
+> resets and Commit preservation. See
+> [Stages 1](chirality-stage-1.md),
+> [2](chirality-stage-2.md),
+> [3](chirality-stage-3.md) and
+> [4](chirality-stage-4.md). Do not implement v2 anew from this section.
 
 Chirality first removes Propositions that have been hard superseded inside
 each lineage. It then calculates each Domain's Receipt-neutral attestational
@@ -339,6 +360,11 @@ and need not preserve source direction or component agreement. Rest applies when
 no admissible non-Rest action remains, at either zero or positive Potential.
 
 ## Closure v2: committed historical crystallization
+
+> **Deployed birth-frozen model only.** The proposed
+> [Historical Extent + Historical Rhythm](prospective-closure-target.md)
+> replaces this hierarchy and makes expressive Closure Cycle-responsive.
+> Do not treat the two update lifecycles as simultaneously normative.
 
 Correspondence observes current Domain morphology. Chirality observes the current/recent
 attestational relation under its existing live population semantics. Closure observes

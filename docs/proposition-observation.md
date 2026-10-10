@@ -1,5 +1,11 @@
 # Non-invasive Proposition observation
 
+> This document describes current projection/repair behaviour.
+> The proposed [event-responsive Closure lifecycle](prospective-closure-target.md)
+> requires authorised Cycle-triggered updates, not read-triggered
+> mutation. Frozen committed state and immutable birth coordinates
+> remain protected.
+
 The graph index (up to 500 nodes) and individual Proposition GET only serialize
 persisted projections. Neither calls `repairMissing`, calculates observables,
 updates retained Correspondence direction, queues repair, nor takes write locks.
