@@ -1,15 +1,16 @@
-name: Phase Profile diagnostics
+name: Phase Profile contracts
 
 on:
   push:
     paths:
-      - 'app/Domain/Observables/PhaseProfile.php'
+      - 'app/**'
+      - 'resources/**'
       - 'app/Services/Observables/PhaseProfile*.php'
       - 'app/Services/LedgerService.php'
       - 'app/Services/ContributionDispatcher.php'
       - 'app/Console/Commands/InspectPhaseProfile.php'
       - 'database/migrations/*phase_profile*'
-      - 'tests/**/PhaseProfile*'
+      - 'tests/**'
       - '.github/workflows/phase-profile.yml'
 
 permissions:

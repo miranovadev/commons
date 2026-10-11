@@ -1,7 +1,7 @@
 import { Box, Group, Stack, Text, Tooltip } from '@mantine/core';
 import type { Observables } from '../types';
 
-type MeasurementName = keyof Observables;
+type MeasurementName = 'correspondence' | 'chirality' | 'closure';
 
 export const measurementMeta = {
   correspondence: { label: 'Correspondence', negative: 'Dissonance', positive: 'Consonance' },
@@ -170,3 +170,4 @@ function position(value: number) {
 function signed(value: number) {
   return `${value >= 0 ? '+' : ''}${value.toFixed(2)}`;
 }
+

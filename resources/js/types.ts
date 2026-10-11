@@ -6,7 +6,14 @@ export type PropositionTier = 'expressive' | 'committal';
 export type AttestationDirection = 'support' | 'refute';
 export type TriggerMode = 'manual' | 'interval' | 'scheduled';
 
-export interface Observables {
+export interface CorrespondenceComponents {
+  shape_topology?: number | null;
+  phase_profile?: number | null;
+  shape_topology_direction?: 'positive' | 'negative' | null;
+  phase_profile_direction?: 'positive' | 'negative' | null;
+}
+
+export interface Observables extends CorrespondenceComponents {
   correspondence?: number | string | null;
   chirality?: number | string | null;
   closure?: number | string | null;
@@ -75,7 +82,7 @@ export interface Proposition {
   }>;
 }
 
-export interface GraphField {
+export interface GraphField extends CorrespondenceComponents {
   tension: number | null;
   charge: number | null;
   potential_charge: number | null;
@@ -314,7 +321,7 @@ interface GateAdmissibility {
 export interface ParticipantPlan {
   correspondence_admissibility?: GateAdmissibility & {
     shape_topology_direction: ComponentDirection;
-    cardinal_position_direction: ComponentDirection;
+    phase_profile_direction: ComponentDirection;
     correspondence_direction: ComponentDirection;
   };
   chirality_admissibility?: GateAdmissibility & {
@@ -463,5 +470,6 @@ export interface ParticipantContext {
 }
 
 export type AutonomousParticipation = Omit<Participation, 'plan'> & { plan?: ParticipantContext | null };
+
 
 

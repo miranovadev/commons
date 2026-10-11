@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 
 final readonly class LineageMeasurementService
 {
-    public const string VERSION = 'closure-birth-v2-canonical-commit-v3';
+    public const string VERSION = 'phase-profile-c1-canonical-commit-v4';
 
     public function __construct(
         private LocalMeasurementService $local,
@@ -126,3 +126,4 @@ final readonly class LineageMeasurementService
         return $positions;
     }
 }
+

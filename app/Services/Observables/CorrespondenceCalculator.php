@@ -15,7 +15,7 @@ final readonly class CorrespondenceCalculator
 
     public function __construct(
         private CardinalMorphologyService $morphologies,
-        private CardinalPositionCorrespondenceCalculator $positions,
+        private PhaseProfileService $profiles,
     ) {}
 
     public function calculate(LineageComparison $comparison): float
@@ -35,14 +35,11 @@ final readonly class CorrespondenceCalculator
         $head = $comparison->current->propositions->last();
         $current = $this->morphologies->current($head, $comparison->current->horizon, $comparison->current->context);
         $previous = $this->morphologies->reference($comparison->current->horizon, $current->primaryDepth, $comparison->current->context);
-        if ($previous === null || $previous->propositions->isEmpty()) {
-            return new CorrespondenceValues(-1, -1);
-        }
+        $topology = $previous === null || $previous->propositions->isEmpty()
+            ? -1 : $this->topology($current, $previous);
+        $profile = round($this->profiles->calculate($head, $comparison->current->context), 7);
 
-        $topology = $this->topology($current, $previous);
-        $position = $this->positions->calculate($current, $previous);
-
-        return new CorrespondenceValues($topology, $position);
+        return new CorrespondenceValues($topology, $profile);
     }
 
     private function topology(CardinalMorphology $current, CardinalMorphology $previous): float
@@ -123,3 +120,4 @@ final readonly class CorrespondenceCalculator
         return round(max(-1, min(1, $value)), 7);
     }
 }
+

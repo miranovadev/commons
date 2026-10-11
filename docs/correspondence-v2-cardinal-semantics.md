@@ -1,5 +1,10 @@
 # Correspondence v2 — canonical structural semantics
 
+> **Historical Correspondence component specification.** Production now uses
+> [Phase Profile C1](phase-profile-target.md). The Shape Topology kernel and its
+> structural morphology dependencies remain in use. Closure's Committed Cardinal
+> Position is separate and unchanged.
+
 > **Current Cardinal implementation specification and historical design record.**
 > The proposed replacement is [Phase Profile C1](phase-profile-target.md).
 > The word *canonical* in this historical title does not approve the
@@ -462,3 +467,4 @@ Before replacing production Correspondence, tests must prove:
 - Phase Position, exploration `structural_position`, Domain Depth and Committal Depth cannot be substituted for one another.
 
 These semantics are now frozen for the first corrected implementation. Production changes should begin with red semantic regressions derived from this document before replacing the existing calculator.
+

@@ -776,7 +776,7 @@ class HomologousMediationTest extends TestCase
         $actual = $target->fresh()->measurement;
         $this->assertSame($normal->correspondence, $actual->correspondence);
         $this->assertSame($normal->correspondenceComponents->shapeTopology, $actual->shape_topology);
-        $this->assertSame($normal->correspondenceComponents->cardinalPosition, $actual->cardinal_position);
+        $this->assertSame($normal->correspondenceComponents->phaseProfile, $actual->phase_profile);
         $this->assertLessThan(0, $actual->correspondence);
         $this->assertEqualsCanonicalizing([$this->gateA->id, $this->gateB->id], $target->parents()->pluck('propositions.id')->all());
     }

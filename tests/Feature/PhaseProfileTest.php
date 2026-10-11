@@ -15,6 +15,10 @@ use App\Services\ContributionDispatcher;
 use App\Services\CycleEntryService;
 use App\Services\LedgerService;
 use App\Services\Observables\ClosureBirthService;
+use App\Services\Observables\ContextLineageComparisonService;
+use App\Services\Observables\CorrespondenceCalculator;
+use App\Services\Observables\LocalMeasurementService;
+use App\Services\Participation\ParticipationContext;
 use App\Services\Observables\PhaseProfileObservationService;
 use App\Services\Observables\PhaseProfileService;
 use App\Services\PropositionMeasurementService;
@@ -150,6 +154,70 @@ class PhaseProfileTest extends TestCase
         return app(PhaseProfileService::class)->profile($p);
     }
 
+    private function assertProductionProfile(Proposition $head): void
+    {
+        $components = app(CorrespondenceCalculator::class)->components(app(ContextLineageComparisonService::class)->for($head));
+        $this->assertSame(round(app(PhaseProfileService::class)->calculate($head), 7), $components->phaseProfile);
+        $this->assertSame(round(($components->shapeTopology + $components->phaseProfile) / 2, 7),
+            app(LocalMeasurementService::class)->calculate($head)->correspondence);
+    }
+
+    public function test_production_first_domain_and_zero_sample_use_seven_fixed_slots(): void
+    {
+        $first = $this->born($this->firstCycle, PhaseKind::Distinguish, $this->origin);
+        $next = $this->born($this->firstCycle, PhaseKind::Persist, $first);
+        $this->assertProductionProfile($first);
+        $this->assertProductionProfile($next);
+        $components = app(CorrespondenceCalculator::class)->components(app(ContextLineageComparisonService::class)->for($first));
+        $this->assertSame(round(2 / sqrt(18) - 1, 7), $components->shapeTopology);
+        $this->assertSame(0.0, $components->phaseProfile);
+        $this->assertSame(-.2642978, $components->average());
+        $this->assertSame(round(1 / 7, 7), app(PropositionMeasurementService::class)->recalculate($next)->phase_profile);
+        DB::table('phase_profile_observations')->where('proposition_id', $next->id)->delete();
+        $this->assertSame(0.0, app(PropositionMeasurementService::class)->recalculate($next)->phase_profile);
+    }
+
+    public function test_production_correspondence_stays_fixed_after_cycles_attestation_and_projection_repair(): void
+    {
+        $first = $this->born($this->firstCycle, PhaseKind::Distinguish, $this->origin);
+        $next = $this->born($this->firstCycle, PhaseKind::Persist, $first);
+        $service = app(PropositionMeasurementService::class);
+        $fields = ['correspondence', 'shape_topology', 'phase_profile', 'shape_topology_direction', 'phase_profile_direction'];
+        $before = $service->recalculate($next)->only($fields);
+        $births = DB::table('phase_profile_observations')->get()->toJson();
+        for ($i = 0; $i < 5; $i++) {
+            $this->cycle();
+        }
+        $this->assertSame($before, $service->recalculate($next)->only($fields));
+        $attestation = (new \App\Models\Attestation)->forceFill([
+            'phase_id' => $next->phase_id, 'proposition_id' => $next->id, 'direction' => 'support']);
+        $attestation->save();
+        app(LedgerService::class)->record($attestation);
+        $this->assertSame($before, $service->recalculate($next)->only($fields));
+        DB::table('proposition_measurements')->where('proposition_id', $next->id)->delete();
+        $this->assertSame($before, $service->recalculate($next->fresh())->only($fields));
+        $this->assertSame($births, DB::table('phase_profile_observations')->get()->toJson());
+    }
+
+    public function test_production_profile_context_batches_births_and_matches_plain_calculation(): void
+    {
+        $head = $this->throughBias($this->firstCycle);
+        $service = app(PhaseProfileService::class);
+        $plain = $service->calculate($head);
+        $context = new ParticipationContext($head->phase, collect([$head->id]));
+        $queries = [];
+        DB::listen(function ($query) use (&$queries): void {
+            if (str_contains($query->sql, 'phase_profile_observations')) {
+                $queries[] = $query->sql;
+            }
+        });
+        $this->assertSame($plain, $service->calculate($head, $context));
+        foreach ($context->propositions->where('tier', 'expressive') as $node) {
+            $service->profile($node, $context);
+        }
+        $this->assertCount(1, $queries);
+    }
+
     public function test_first_expressive_birth_records_coordinate_without_inventing_interval(): void
     {
         $p = $this->born($this->firstCycle, PhaseKind::Distinguish, $this->origin);
@@ -209,6 +277,7 @@ class PhaseProfileTest extends TestCase
         }
         $this->assertSame(2.0, $this->profile($r2)['means'][1]);
         $this->assertSame(3, $this->profile($r2)['sample_counts'][1]);
+        $this->assertProductionProfile($r2);
         $history = $this->profile($r2)['observations'];
         $this->assertSame([$p1->id, $p2->id, $r1->id, $r2->id], array_column($history, 'proposition_id'));
         $this->assertSame([null, $p1->id, $p2->id, $r1->id], array_column($history, 'temporal_predecessor_proposition_id'));
@@ -275,6 +344,7 @@ class PhaseProfileTest extends TestCase
         $this->assertSame($gate->id, $observation['reference']);
         $this->assertSame($observation['coordinate'] - $this->observation($gate)['coordinate'], $observation['interval']);
         $this->assertEqualsCanonicalizing([$a->id, $b->id], $r->parents()->pluck('propositions.id')->all());
+        $this->assertProductionProfile($r);
         $profile = $this->profile($r);
         $ids = array_column($profile['observations'], 'proposition_id');
         $this->assertSame([...array_column($selected['observations'], 'proposition_id'), $r->id], $ids);
@@ -305,6 +375,7 @@ class PhaseProfileTest extends TestCase
         $this->assertSame($this->observation($first), $this->observation($second));
         $this->assertSame([$foreign->id], $second->parents()->pluck('propositions.id')->all());
         $this->assertFalse($second->parents()->where('propositions.id', $local->id)->exists());
+        $this->assertProductionProfile($second);
         $before = $this->profile($second);
         $this->assertSame([$second->id], array_column($before['observations'], 'proposition_id'));
         $this->assertSame(array_fill(0, 7, 0), $before['sample_counts']);

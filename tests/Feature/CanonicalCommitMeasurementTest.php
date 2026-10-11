@@ -76,7 +76,7 @@ class CanonicalCommitMeasurementTest extends TestCase
         [$source, $target, $resolved, $preview] = $this->committed();
         $canonical = CanonicalMeasurement::findOrFail($target->id);
         $this->assertSame($source->id, $canonical->source_proposition_id);
-        foreach (['correspondence', 'chirality', 'orientation', 'attestation_cadence', 'orientation_direction', 'attestation_cadence_direction', 'chirality_direction'] as $key) {
+        foreach (['correspondence', 'chirality', 'orientation', 'attestation_cadence', 'orientation_direction', 'attestation_cadence_direction', 'chirality_direction', 'shape_topology', 'phase_profile', 'shape_topology_direction', 'phase_profile_direction'] as $key) {
             $this->assertSame($resolved->$key, $canonical->$key, $key);
             $this->assertSame($resolved->$key, $target->fresh()->measurement->$key, $key);
             $this->assertSame($resolved->$key, $target->fresh()->commitmentSnapshot->$key, $key);
@@ -377,3 +377,4 @@ class CanonicalCommitMeasurementTest extends TestCase
         return [Proposition::count(), Supersession::count(), CommitmentSnapshot::count(), ContextHorizon::count(), SubstrateLedgerEntry::count()];
     }
 }
+
