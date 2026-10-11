@@ -13,6 +13,7 @@ use App\Models\SubstrateLedgerEntry;
 use App\Models\Supersession;
 use App\Services\Observables\AttestationBeatCursorService;
 use App\Services\Observables\LocalChiralityStateService;
+use App\Services\Observables\PhaseProfileObservationService;
 use DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -23,7 +24,7 @@ final readonly class LedgerService
         private ContextHorizonProjector $horizons,
     ) {}
 
-    public function record(Model $ledgerable): SubstrateLedgerEntry
+    public function record(Model $ledgerable, ?Proposition $phaseProfileSource = null): SubstrateLedgerEntry
     {
         if (! $ledgerable->exists) {
             throw new DomainException(
@@ -37,6 +38,7 @@ final readonly class LedgerService
             $ledgerable,
             $kind,
             $substrate,
+            $phaseProfileSource,
         ): SubstrateLedgerEntry {
             $locked = Substrate::query()
                 ->lockForUpdate()
@@ -75,6 +77,7 @@ final readonly class LedgerService
                 && $kind === LedgerEntryKind::Proposition
             ) {
                 $this->horizons->include($entry);
+                app(PhaseProfileObservationService::class)->recordBirth($ledgerable, $entry, $phaseProfileSource);
                 app(LocalChiralityStateService::class)->initialize($ledgerable);
             }
 

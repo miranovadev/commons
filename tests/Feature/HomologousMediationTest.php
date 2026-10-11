@@ -103,6 +103,11 @@ class HomologousMediationTest extends TestCase
         $this->resolveExpressiveFieldFixture(1);
         $target = app(ContributionDispatcher::class)->dispatch($this->actor, $this->mediate,
             ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateB->id]);
+        $profileBirth = app(\App\Services\Observables\PhaseProfileObservationService::class)->stored($target->id);
+        $gateBirth = app(\App\Services\Observables\PhaseProfileObservationService::class)->stored($this->gateA->id);
+        $this->assertSame($this->gateA->id, $profileBirth->preceding_phase_proposition_id);
+        $this->assertSame((int) $profileBirth->birth_cycle_coordinate - (int) $gateBirth->birth_cycle_coordinate,
+            (int) $profileBirth->cycle_interval);
         $tragedy = Tragedy::sole();
         $this->assertSame($target->id, $tragedy->terminal_proposition_id);
         $this->assertSame($this->a->id, $tragedy->governing_committal_id);

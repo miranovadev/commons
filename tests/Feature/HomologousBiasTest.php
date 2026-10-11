@@ -101,6 +101,12 @@ class HomologousBiasTest extends TestCase
         $this->warrant();
         $this->resolveExpressiveFieldFixture(-1);
         $target = app(ContributionDispatcher::class)->dispatch($this->actor, $this->bias, $this->input($this->gateB));
+        $profileBirth = app(\App\Services\Observables\PhaseProfileObservationService::class)->stored($target->id);
+        $this->assertNotNull($profileBirth->birth_cycle_coordinate);
+        $this->assertNull($profileBirth->preceding_phase_proposition_id);
+        $this->assertNull($profileBirth->cycle_interval);
+        $this->assertSame('no_local_predecessor', $profileBirth->unavailable_reason);
+
         $tragedy = Tragedy::sole();
         $this->assertSame($this->gateA->id, $tragedy->terminal_proposition_id);
         $this->assertDatabaseCount('tragedies', 1);
