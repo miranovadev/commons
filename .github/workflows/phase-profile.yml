@@ -1,15 +1,16 @@
-name: Phase Profile final validation
+name: Phase Profile final lifecycle contracts
 on:
   push:
     branches: [validation/phase-profile-stage2]
 permissions:
   contents: read
 jobs:
-  integration:
+  lifecycle:
     strategy:
       fail-fast: false
       matrix:
-        filter: ['FreshBootstrapTest', 'ParticipationHttpHarnessTest::test_real_http_actions_reach_an_operational_commit', 'HorizonProofCycleTest']
+        database: [sqlite, pgsql]
+        filter: ['FreshBootstrapTest|HorizonProofCycleTest|OperationalClosurePathTest', 'ParticipationHttpHarnessTest::test_real_http_actions_reach_an_operational_commit']
     runs-on: ubuntu-latest
     timeout-minutes: 20
     services:
@@ -26,8 +27,8 @@ jobs:
     env:
       APP_ENV: testing
       APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
-      DB_CONNECTION: pgsql
-      DB_DATABASE: testing
+      DB_CONNECTION: ${{ matrix.database }}
+      DB_DATABASE: ${{ matrix.database == 'sqlite' && ':memory:' || 'testing' }}
       DB_HOST: 127.0.0.1
       DB_PORT: 5432
       DB_USERNAME: postgres
@@ -40,10 +41,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: fae6763df7fb927fd7eee4565e5c114bc7ab83ac
-      - uses: actions/checkout@v4
-        with:
-          path: .validation
+          ref: a180ea32311575850f6435b97af8aa526aa9d376
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.5'
@@ -52,10 +50,10 @@ jobs:
           tools: composer:v2
       - run: composer install --prefer-dist --no-interaction --no-progress
       - run: cp .env.example .env
-      - run: python3 .validation/scripts/ci/install-validation-trace.py
-      - run: php artisan test --filter='${{ matrix.filter }}' --log-junit=test-results/continuation.xml
+      - run: vendor/bin/pint --test tests/Feature/FreshBootstrapTest.php tests/Fixtures/HorizonCycleFixture.php tests/Feature/OperationalClosurePathTest.php tests/Feature/Api/ParticipationHttpHarnessTest.php tests/Feature/HorizonProofCycleTest.php
+      - run: php artisan test --filter='${{ matrix.filter }}' --log-junit=test-results/lifecycle.xml
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: continuation-${{ strategy.job-index }}
+          name: lifecycle-${{ strategy.job-index }}
           path: test-results/
