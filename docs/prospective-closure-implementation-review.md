@@ -12,9 +12,9 @@ constitutional exception, and historical Phase aggregation is cumulative across
 selected occurrences of each Domain. Neither decision is being reopened.
 
 The [target specification](prospective-closure-target.md) records these rules.
-One narrower numerical detail could not be established from the accessible
-diagnostics: Origin's denominator multiplicity when constitutional intervals
-coexist with empirical intervals. Production wiring has not begun.
+Claire's October 12 clarification resolves the final numerical detail: all
+observed Phase intervals, including Origin's, have equal weight. No semantic
+ambiguity remains in this register; production implementation can proceed.
 
 ## Ambiguity register
 
@@ -23,28 +23,25 @@ coexist with empirical intervals. Production wiring has not begun.
 | Constitutional Origin | Must ordinary maturity derive its new outer components? | No. C=+1; Closure, Extent, Rhythm, Depth and Cadence=-1; immutable constitutional exception, no empirical Orientation population required | Boundary-resolution instruction §2; protocol §5 | Documented | Assert constants at creation and after later Cycles/Attestations; no invented primitive populations |
 | Origin Phase intervals | Are the first six zeros unavailable? | No. All seven intervals are available constitutional values, distinct from ordinary null first births | Instruction §2 | Documented | Zero/zero compares as +1 without synthetic birth or ledger rows |
 | Repeated Domains | Latest Horizon or cumulative history? | Selected E0+E1+E3 versus S1+S2; group raw observations by creating Domain/Phase, not Horizon means | Instruction §3 | Documented | Worked table: unequal S1/S2 counts give Phase-2 mean 4, not 3.5 |
-| Mixed constitutional/empirical population | What multiplicity does each Origin interval have in a mixed Phase sum and denominator? | Not recovered; exact question below. Do not import older zero-count treatment | Instruction §3 requires evidence for precise multiplicity; evidence table below | Unresolved | Conditional unit-once example gives HPP 5/7; not yet a production expectation |
+| Mixed constitutional/empirical population | What multiplicity does each Origin interval have in a mixed Phase sum and denominator? | Every observed interval counts once, including each Origin interval; no separate weight, denominator or maturity rule | Claire's October 12 final clarification | Documented | Origin 0 plus [2,4] has mean 2; worked repeated-Domain HPP=5/7 |
 | Historical Orientation | Product of leans, or mean resolved displacement? | Local O=(current effective lean−previous complementary lineage lean)/2; HO(D)=mean over selected active causal A(D), including genuine zero | Instruction §4 approves prior clarification | Documented | [+0.5,0,-0.5] has mean 0/count 3; test effective replacements and historical boundaries |
 | Maturity and weights | Does missing Cadence transfer weight to Orientation? | No. Two genuine committed intervals per compared Domain required; immature contribution 0 remains unavailable | Instruction §5 | Documented | First Settlement versus mature E=[1,7], S=[10,12] example |
 | Hysteresis | What about zero and agreeing negative signs? | Independent Extent/Rhythm retention at zero; ++ and -- may satisfy coherence subject to other requirements | Instruction §5 | Documented | Mixed retained directions remain incoherent even at numeric zero |
 | Authorised events | Who is updated, and when? | Complete-context birth and genuine governing Cycle entry only; all governed expressives including superseded, each with own history | Instruction §6; full-event diagnostic below | Documented | Atomic all-recipient update; Attestation/structural progression leave older Closure unchanged |
 | Canonical preservation | Recalculate at Commit? | No. Under lock validate and preserve last authorised source values/directions; no extra head or attenuation | Instruction §6 | Documented | Intervening Cycle supersedes stale preview; snapshot matches validated current source |
 
-## Smallest remaining question
+## Final numerical boundary resolved
 
-**Does each of Origin's seven constitutional interval values contribute exactly
-once to its Phase's historical sum and denominator when combined with empirical
-intervals, while retaining a constitutional (not empirical) source tag?**
+Claire explicitly confirmed on October 12 that all Phase Profile intervals are
+equally weighted observations, including Origin's. Origin's Phase-2 zero and
+subsequent [2,4] therefore have sum 6, count 3 and mean 2. Constitutional versus
+empirical source metadata does not affect this arithmetic. There is no extra
+maturity requirement. Origin's own frozen Closure bootstrap remains a separate
+constitutional exception: Closure=Extent=Rhythm=-1.
 
-For example, Origin's Phase-2 constitutional 0 plus selected empirical intervals
-`[2,4]` would then produce sum 6, total contribution count 3, empirical count 2,
-constitutional count 1 and mean 2. This would not create a third empirical birth.
-Only mixed-population multiplicity is at issue, not Origin's participation,
-values, availability, or selected ancestry.
-
-The target's conditional repeated-Domain calculation shows the effect on all
-seven slots. It is not an approved weighting decision or runtime configuration.
-No competing diagnostic convention is promoted to an approved alternative.
+The target's repeated-Domain calculation is now unconditional. The earlier
+evidence limitations below explain why this explicit clarification was needed;
+they are no longer blockers and must not reintroduce a special weighting rule.
 
 ## Diagnostic evidence inspected
 
@@ -91,12 +88,13 @@ attenuation B remain excluded.
 | Projection and UI | Closure readers use birth state and old component names | Read the new state and expose its true component names without reusing legacy fields |
 
 These are implementation findings, not evidence that the changes already exist.
-No production source, migration, fixture population, authority rule or substrate
-data is changed by this draft.
+The implementation must preserve fixture populations, operational authority and
+existing substrate data. Implementation progress and validation are recorded in
+the PR description.
 
 ## Acceptance and validation plan
 
-After the remaining rule is resolved and production wiring exists, run focused
+As production wiring is implemented, run focused
 tests on both PostgreSQL and SQLite:
 
 - Exact Origin constants, all seven constitutional intervals, ordinary null
@@ -131,9 +129,9 @@ scripts and repeated-Domain tables were retrieved before identifying the gap.
 zero-valued observations and distinct lineage scopes. §§7–8: the target states
 atomic events, hysteresis, canonical preservation, stale-state handling and
 worked cases, with implementation mapping and verification plan here.
-§§9–11: readiness is **not yet claimed** because mixed-population multiplicity
-is necessary for ordinary later-Domain Closure. Preserve this work and request
-only the missing rule or the approved artifact establishing it.
+§§9–11: the final explicit clarification closes the necessary numerical boundary.
+The specification is ready for implementation. This does not claim production
+correctness or completed validation.
 
 Current checks cover documentation arithmetic, local links and whitespace only.
 No new PostgreSQL/SQLite, Core, Integration or performance result is claimed.

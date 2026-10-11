@@ -3,7 +3,7 @@
 > **Implementation and review status.** Each row distinguishes implemented
 > contracts from proposed October 2026 semantics. Phase Profile Stages 1–2 are
 > implemented here; prospective Closure is approved for Stage 3 implementation
-> with [one remaining mixed-population multiplicity question](prospective-closure-implementation-review.md).
+> with [all recorded specification boundaries resolved](prospective-closure-implementation-review.md).
 > Origin's constitutional exception and cumulative selected Domain history are resolved.
 > Resolution remains a separate review target.
 > The [ten Core Invariants](core-invariants.md) remain superior to both.
@@ -16,7 +16,7 @@
 | Causal relationship vs selected lineage vs governing Committal | Established invariant; unchanged | [Core Invariants](core-invariants.md#5-provenance-defines-identity-and-scope) |
 | Phase Profile C1: no invented first interval; preceding-Phase reference | Stage 1 durable observations and Stage 2 production Correspondence | [Phase Profile target](phase-profile-target.md) |
 | Neutral-slot weighting for unavailable comparisons | Production C1 rule; unavailable is not an observed zero | [Phase Profile target](phase-profile-target.md) |
-| Historical Extent / Historical Rhythm and Cycle-responsive prospective Closure | Approved Stage 3 contract; implementation pending the constitutional/empirical mixed-population denominator | [Prospective Closure target](prospective-closure-target.md) |
+| Historical Extent / Historical Rhythm and Cycle-responsive prospective Closure | Approved Stage 3 contract; specification ready; production implementation and validation pending | [Prospective Closure target](prospective-closure-target.md) |
 | Commit preserves resolved expressive measurement state | Established for C/Ch; approved Stage 3 extension to Closure, not yet implemented | [Prospective Closure target](prospective-closure-target.md) |
 | First zero-Charge direct expressive Write → Tragedy → Resolution | Agreed target lifecycle; not deployed | [Tragedy/Resolution target](tragedy-resolution-target.md) |
 | After first Tragedy, Variant and Revise unavailable in owning Region | Agreed target lifecycle; not deployed | [Tragedy/Resolution target](tragedy-resolution-target.md) |

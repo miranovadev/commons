@@ -6,9 +6,9 @@
 > running code. The initial Stage 3 instructions and subsequent boundary resolution
 > approve the contract below and retain attenuation A. Apply the
 > [implementation-readiness protocol](implementation-readiness-protocol.md).
-> No historical backfill or deletion is authorised. The two original broad
-> blockers are resolved; the remaining constitutional-interval multiplicity
-> question and evidence are recorded in
+> No historical backfill or deletion is authorised. All specification boundaries,
+> including equal observation weighting clarified by Claire on October 12, are
+> resolved and recorded in
 > [the Stage 3 review](prospective-closure-implementation-review.md).
 
 ## Constitutional Origin is not an ordinary candidate
@@ -49,8 +49,10 @@ These are genuine constitutional interval values, not unavailable values and not
 seven ordinary expressive births. No synthetic Supersessions, ledger entries or
 birth observations are needed to justify them. Keep their constitutional source
 distinct from empirical event-born evidence and do not invent empirical sample
-counts. Their multiplicity when mixed with empirical observations is the narrow
-review question below; their values and availability are already resolved.
+counts. Each constitutional interval participates exactly once in its Phase's
+sum and denominator, just like every other observed interval. Source metadata
+distinguishes constitutional from empirical provenance, never weight or maturity.
+For example, Origin's Phase-2 zero plus subsequent intervals [2,4] has mean 2.
 
 The ordinary C1 first expressive birth still has a coordinate but a **null**
 interval. That unavailable developmental interval is not interchangeable with
@@ -251,32 +253,28 @@ Settlement counts are `[0, 3, 2, 2, 2, 2, 2]`. The Settlement means are
 `[null, 4, 0, 2, 2, 0, 2]`. For Phase 2, `(2 + 4 + 6) / 3 = 4`, not the
 incorrect mean of Horizon means `(2 + (4 + 6)/2) / 2 = 3.5`.
 
-Let `c_i` denote the still-unresolved denominator multiplicity of Origin's
-constitutional value at Phase i. It is notation for the open question, **not a
-new runtime weight or a configurable parameter**. For positive multiplicity,
-the complete comparison is:
+All observations have equal weight. Origin contributes one observation to each
+Phase, including its six genuine zeros. The complete comparison is:
 
-| Phase | Emergence total count | Emergence mean | Settlement mean | Similarity contribution |
-| --- | --- | --- | --- | --- |
-| 1 | `c_1` | 0 | unavailable | 0, unavailable comparison |
-| 2 | `2 + c_2` | `6 / (2 + c_2)` | 4 | `similarity(6 / (2 + c_2), 4)` |
-| 3 | `2 + c_3` | 0 | 0 | +1 |
-| 4 | `2 + c_4` | `6 / (2 + c_4)` | 2 | `similarity(6 / (2 + c_4), 2)` |
-| 5 | `2 + c_5` | `6 / (2 + c_5)` | 2 | `similarity(6 / (2 + c_5), 2)` |
-| 6 | `2 + c_6` | 0 | 0 | +1 |
-| 7 | `2 + c_7` | `(5 + c_7) / (2 + c_7)` | 2 | `similarity((5 + c_7) / (2 + c_7), 2)` |
+| Phase | Emergence count | Emergence mean | Settlement count | Settlement mean | Similarity contribution |
+| --- | ---: | ---: | ---: | --- | --- |
+| 1 | 1 | 0 | 0 | unavailable | 0, unavailable |
+| 2 | 3 | 2 | 3 | 4 | 0, available |
+| 3 | 3 | 0 | 2 | 0 | +1 |
+| 4 | 3 | 2 | 2 | 2 | +1 |
+| 5 | 3 | 2 | 2 | 2 | +1 |
+| 6 | 3 | 0 | 2 | 0 | +1 |
+| 7 | 3 | 2 | 2 | 2 | +1 |
 
-**Conditional check, not an approved multiplicity decision:** if each
-constitutional interval participates exactly once, Emergence total counts are
-`[1, 3, 3, 3, 3, 3, 3]`, means are `[0, 2, 0, 2, 2, 0, 2]`, and seven
-contributions are `[0, 0, 1, 1, 1, 1, 1]`. Historical Phase Profile is `5/7`.
-Depth counts are E=3, S=2 (including the prospective current position), giving
-Depth `1/3` and Extent `11/21` before production rounding. This numerical branch
-must not be made a production expectation until the multiplicity is resolved.
+Historical Phase Profile is `5/7`. Depth counts are E=3, S=2 (including the
+prospective current position), giving Depth `1/3` and Extent `11/21` before
+production rounding. No separate constitutional denominator or additional
+maturity rule applies. This is now an approved arithmetic acceptance case,
+not a conditional weighting proposal.
 
-The old diagnostic sources establish neither that mixed-population denominator
-nor a competing approved one. The exact evidence limitation and smallest
-question are in the [ambiguity register](prospective-closure-implementation-review.md#ambiguity-register).
+The [ambiguity register](prospective-closure-implementation-review.md#ambiguity-register)
+retains the diagnostic limitations for audit; Claire's October 12 clarification
+supplies the authoritative equal-observation rule.
 
 ### First Settlement and comparative Cadence acceptance cases
 
