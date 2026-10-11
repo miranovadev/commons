@@ -47,9 +47,14 @@ final readonly class ProspectiveClosureCalculator
      * Domain histories contain raw intervals, not Horizon averages. Orientation is
      * already resolved locally; zero participates in its sum and denominator.
      */
-    public function calculate(string $domain, array $depths, array $intervals, array $phaseObservations,
-        array $orientations, array $previous = []): array
-    {
+    public function calculate(
+        string $domain,
+        array $depths,
+        array $intervals,
+        array $phaseObservations,
+        array $orientations,
+        array $previous = [],
+    ): array {
         if (! in_array($domain, ['emergence', 'settlement'], true)) {
             throw new InvalidArgumentException('Closure requires a creating Domain.');
         }

@@ -144,4 +144,86 @@ class ProspectiveClosureStateTest extends TestCase
         $this->assertArrayHasKey($merged->id, $state['orientation_observations']);
         $this->assertSame([1, 1, 1, 1, 1, 1, 1], $state['domain_profiles']['emergence']['sample_counts']);
     }
+
+    private function bias(): Proposition
+    {
+        $head = $this->born(PhaseKind::Distinguish, $this->origin);
+        $head = $this->born(PhaseKind::Persist, $head);
+        $head = $this->born(PhaseKind::Constrain, $head, 'reclassify');
+        $head = $this->born(PhaseKind::Disperse, $head);
+        $other = $this->born(PhaseKind::Disperse, $head->parents()->sole());
+        $head = $this->born(PhaseKind::Mediate, $head, 'reconcile', $other);
+
+        return $this->born(PhaseKind::Bias, $head, 'reclassify');
+    }
+
+    /** A structural preservation test, not a claim of grounded Commit eligibility. */
+    private function preserve(Proposition $source, array $expected): Proposition
+    {
+        return DB::transaction(function () use ($source, $expected) {
+            $phase = (new Phase)->forceFill(['cycle_id' => $this->cycle->id, 'kind' => PhaseKind::Order,
+                'gate_proposition_id' => $source->id, 'write_register' => $this->cycle->contextHorizon->domain->registerFor(PhaseKind::Order), 'started_at' => now()]);
+            $phase->save();
+            $target = (new Proposition)->forceFill(['phase_id' => $phase->id, 'tier' => 'committal',
+                'register' => $phase->write_register, 'statement' => $source->statement]);
+            $target->save();
+            app(LedgerService::class)->record($target, $source);
+            $edge = (new Supersession)->forceFill(['phase_id' => $phase->id, 'source_proposition_id' => $source->id,
+                'target_proposition_id' => $target->id, 'type' => 'commit']);
+            $edge->save();
+            app(LedgerService::class)->record($edge);
+            $this->service()->preserve($target, $source, $expected);
+
+            return $target;
+        });
+    }
+
+    public function test_commit_copies_last_authorised_state_and_later_source_updates_do_not_rewrite_it(): void
+    {
+        $source = $this->bias();
+        $this->enter();
+        $expected = $this->service()->stored($source);
+        $target = $this->preserve($source, $expected);
+        $this->assertSame($expected, $this->service()->stored($target));
+        $this->enter();
+        $this->assertNotSame($expected['trigger'], $this->service()->stored($source)['trigger']);
+        $this->assertSame($expected, $this->service()->stored($target));
+    }
+
+    public function test_stale_preservation_rolls_back_target_and_edges(): void
+    {
+        $source = $this->bias();
+        $expected = $this->service()->stored($source);
+        $this->enter();
+        $count = Proposition::count();
+        $edges = Supersession::count();
+        try {
+            $this->preserve($source, $expected);
+            $this->fail('Stale state must be rejected.');
+        } catch (\Symfony\Component\HttpKernel\Exception\ConflictHttpException) {
+            $this->assertSame($count, Proposition::count());
+            $this->assertSame($edges, Supersession::count());
+        }
+    }
+
+    public function test_batch_history_matches_individual_selection_without_per_head_queries(): void
+    {
+        $head = $this->bias();
+        $heads = Proposition::where('tier', 'expressive')->with(['phase.cycle.contextHorizon', 'phase.cycle.participant', 'ledgerEntry'])->get();
+        $single = new \App\Services\Observables\ProspectiveClosureHistory(collect([$head]));
+        $queries = [];
+        DB::listen(function ($query) use (&$queries): void {
+            $queries[] = $query->sql;
+        });
+        $batch = new \App\Services\Observables\ProspectiveClosureHistory($heads);
+        $loaded = count($queries);
+        $this->assertSame($single->phases($head), $batch->phases($head));
+        $this->assertSame($single->orientations($head), $batch->orientations($head));
+        foreach ($heads as $member) {
+            $batch->phases($member);
+            $batch->orientations($member);
+        }
+        $this->assertSame($loaded, count($queries), 'Traversing additional selected heads must not issue queries.');
+        $this->assertLessThanOrEqual(14, $loaded);
+    }
 }

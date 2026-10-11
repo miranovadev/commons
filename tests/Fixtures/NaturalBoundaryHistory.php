@@ -14,10 +14,12 @@ use App\Models\Supersession;
 use App\Services\CommitmentSnapshotService;
 use App\Services\LedgerService;
 use App\Services\Observables\ChiralityCalculator;
+use App\Services\Observables\CanonicalMeasurementService;
 use App\Services\Observables\ClosureBirthService;
 use App\Services\Observables\ContextLineageComparisonService;
 use App\Services\Observables\LineageMeasurementService;
 use App\Services\Observables\LocalMeasurementService;
+use App\Services\Observables\ProspectiveClosureService;
 use App\Services\ParticipationService;
 use App\Services\ProjectionService;
 use App\Services\PropositionMeasurementService;
@@ -31,6 +33,7 @@ trait NaturalBoundaryHistory
         // Unlike controlled routing fixtures, this fixture measures every observable.
         $this->app->forgetInstance(LocalMeasurementService::class);
         $this->app->forgetInstance(ClosureBirthService::class);
+        $this->app->forgetInstance(ProspectiveClosureService::class);
         $substrate = (new Substrate)->forceFill(['slug' => 'natural-boundary', 'title' => 'Natural boundary',
             'visibility' => 'public', 'configuration' => []]);
         $substrate->save();
@@ -142,19 +145,23 @@ trait NaturalBoundaryHistory
         $node = new Proposition;
         $node->forceFill(['phase_id' => $phase->id, 'register' => $phase->write_register,
             'tier' => $type === 'commit' ? 'committal' : 'expressive', 'statement' => 'Developed '.$kind->name])->save();
-        app(LedgerService::class)->record($node);
+        app(LedgerService::class)->record($node, $parent);
         $edge = new Supersession;
         $edge->forceFill(['phase_id' => $phase->id, 'source_proposition_id' => $parent->id,
             'target_proposition_id' => $node->id, 'type' => $type])->save();
         app(LedgerService::class)->record($edge);
         if ($type !== 'commit') {
+            app(ProspectiveClosureService::class)->initialize($node);
             $vote = new Attestation;
             $vote->forceFill(['phase_id' => $phase->id, 'proposition_id' => $node->id, 'direction' => 'support'])->save();
             app(LedgerService::class)->record($vote);
             $this->receiptFixture($node);
         } else {
-            $birth = app(ClosureBirthService::class)->stored($node);
+            $birth = app(ProspectiveClosureService::class)->stored($parent);
             $this->assertTrue($birth['admissible'], 'Natural history Commit birth: '.json_encode($birth));
+            $source = app(PropositionMeasurementService::class)->recalculate($parent);
+            app(CanonicalMeasurementService::class)->preserve($node, $parent, $source,
+                app(PropositionMeasurementService::class)->correspondenceDirectionFor($parent)->value);
             $measurement = app(PropositionMeasurementService::class)->recalculate($node);
             $field = app(ProjectionService::class)->from(new ObservableValues(
                 $measurement->correspondence, $measurement->chirality, $measurement->closure));

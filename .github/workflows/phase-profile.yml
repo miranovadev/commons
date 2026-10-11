@@ -10,6 +10,7 @@ on:
       - 'app/Services/ContributionDispatcher.php'
       - 'app/Console/Commands/InspectPhaseProfile.php'
       - 'database/migrations/*phase_profile*'
+      - 'database/migrations/*prospective_closure*'
       - 'tests/**'
       - 'scripts/ci/**'
       - '.github/workflows/integration-full.yml'

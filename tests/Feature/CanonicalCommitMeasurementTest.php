@@ -24,7 +24,7 @@ use App\Services\ContextHorizonProjector;
 use App\Services\ContributionDispatcher;
 use App\Services\LedgerService;
 use App\Services\Observables\CanonicalMeasurementService;
-use App\Services\Observables\ClosureBirthService;
+use App\Services\Observables\ProspectiveClosureService;
 use App\Services\Observables\LineageMeasurementService;
 use App\Services\Observables\LocalMeasurementService;
 use App\Services\Observables\ObservableService;
@@ -119,11 +119,11 @@ class CanonicalCommitMeasurementTest extends TestCase
         $this->assertSame($resolved->chirality, $lineage->chirality($target, $context)[0]);
     }
 
-    public function test_closure_is_commit_born_and_snapshot_combines_it_with_preserved_scalars(): void
+    public function test_closure_is_source_preserved_and_snapshot_combines_it_with_preserved_scalars(): void
     {
         [$source, $target, $resolved, $preview] = $this->committed();
-        $birth = app(ClosureBirthService::class)->stored($target);
-        $this->assertTrue(DB::table('closure_births')->where('proposition_id', $source->id)->exists());
+        $birth = app(ProspectiveClosureService::class)->stored($target);
+        $this->assertSame(app(ProspectiveClosureService::class)->stored($source), $birth);
         $snapshot = $target->fresh()->commitmentSnapshot;
         $this->assertSame($birth['closure'], $snapshot->closure);
         $this->assertSame($preview->closure()->average(), $snapshot->closure);
@@ -195,30 +195,20 @@ class CanonicalCommitMeasurementTest extends TestCase
         $canonical->forceFill(['chirality' => 1])->save();
     }
 
-    public function test_source_closure_is_not_preserved_and_commit_closure_remains_frozen(): void
+    public function test_source_closure_is_preserved_and_commit_closure_remains_frozen(): void
     {
         $this->bootstrap();
-        // Controlled expressive birth distinguishes preservation from a real Commit evaluation.
-        $births = app(ClosureBirthService::class);
-        $this->partialMock(ClosureBirthService::class, function ($mock) use ($births) {
-            $mock->shouldReceive('prospective')->andReturnUsing(function ($node) use ($births) {
-                $birth = $births->prospective($node);
-
-                return $node->tier === 'expressive' ? [...$birth, 'closure' => .75] : $birth;
-            });
-        });
         [$phase, $source] = $this->candidate([2]);
-        $this->assertSame(.75, app(ClosureBirthService::class)->stored($source)['closure']);
         $expected = app(ClosureGateService::class)->preview($source, $phase);
         $target = app(ContributionDispatcher::class)->dispatch($this->participant, $phase,
             ['action' => 'proposition.commit', 'proposition_id' => $source->id]);
-        $this->assertNotSame(.75, $expected['closure']);
+        $this->assertSame(app(ProspectiveClosureService::class)->stored($source), $expected);
         $this->assertSame($expected['closure'], $target->fresh()->commitmentSnapshot->closure);
-        $before = app(ClosureBirthService::class)->stored($target);
+        $before = app(ProspectiveClosureService::class)->stored($target);
         (new Cycle)->forceFill(['participant_id' => $this->participant->id, 'sequence' => 3,
             'entry_committal_id' => $target->id])->save();
         app(PropositionMeasurementService::class)->recalculate($target);
-        $this->assertSame($before, app(ClosureBirthService::class)->stored($target));
+        $this->assertSame($before, app(ProspectiveClosureService::class)->stored($target));
         $this->assertSame($expected['closure'], $target->measurement->closure);
     }
 
@@ -238,7 +228,7 @@ class CanonicalCommitMeasurementTest extends TestCase
                 ['action' => 'proposition.commit', 'proposition_id' => $source->id]);
             $this->fail('The actual Closure rejection must roll back the canonical boundary.');
         } catch (DomainException $error) {
-            $this->assertStringContainsString('aligned Committed Cardinal Position/Cadence', $error->getMessage());
+            $this->assertStringContainsString('aligned Historical Extent/Rhythm', $error->getMessage());
         }
         $this->assertSame($before, $this->counts());
         $this->assertSame(0, CanonicalMeasurement::count());
@@ -361,6 +351,9 @@ class CanonicalCommitMeasurementTest extends TestCase
         $edge = new Supersession;
         $edge->forceFill(['phase_id' => $phase->id, 'source_proposition_id' => $source->id, 'target_proposition_id' => $target->id, 'type' => $type])->save();
         app(LedgerService::class)->record($edge);
+        if ($target->tier === 'expressive') {
+            app(ProspectiveClosureService::class)->initialize($target);
+        }
     }
 
     private function finish(Phase $phase): void

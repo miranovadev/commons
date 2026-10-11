@@ -290,7 +290,7 @@ test('Inspector tabs show observed measurements and structural history, with loc
   assert.ok(document.querySelector('.graph-inspector svg[aria-label^="Tension: -0.75"]'), 'uses authoritative tension, not a frontend mean');
   await click(tab('Closure'));
   assert.ok(document.querySelector('svg[aria-label^="Historical Extent history"]'));
-  assert.ok(document.querySelector('svg[aria-label^="Committal Cadence history"]'));
+  assert.ok(document.querySelector('svg[aria-label^="Historical Rhythm history"]'));
   assert.equal(document.querySelectorAll('.closure-direction[data-direction="negative"][data-color="indigo.9"]').length, 2);
   await click(card('b'));
   assert.equal(tab('Closure'), undefined, 'expressive nodes have no Closure tab');

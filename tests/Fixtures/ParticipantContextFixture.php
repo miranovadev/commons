@@ -62,8 +62,7 @@ final class ParticipantContextFixture
             if ($i === 3) {
                 $a = $this->node($head, 'activity');
                 $b = $this->node($head, 'activity');
-                $head = $this->node($a, 'frontier', 'reconcile');
-                $this->edge($b, $head, 'reconcile');
+                $head = $this->node($a, 'frontier', 'reconcile', additionalParent: $b);
                 $this->replaced = [$a->id, $b->id];
             } else {
                 $head = $this->node($head, ['activity', 'frontier', 'canon'][$i % 3]);
@@ -102,7 +101,7 @@ final class ParticipantContextFixture
         $this->viewer->forceFill(['current_proposition_id' => $this->gate->id])->save();
     }
 
-    public function node(?Proposition $parent, string $register, string $type = 'variant', string $tier = 'expressive', ?PhaseKind $position = null): Proposition
+    public function node(?Proposition $parent, string $register, string $type = 'variant', string $tier = 'expressive', ?PhaseKind $position = null, ?Proposition $additionalParent = null): Proposition
     {
         $phase = new Phase;
         $kind = $position ?? ($type === 'reconcile' ? PhaseKind::Mediate : ($type === 'commit' ? PhaseKind::Order : PhaseKind::Distinguish));
@@ -115,7 +114,7 @@ final class ParticipantContextFixture
             'statement' => 'Shared observations should remain open to revision as participants collect evidence. '.
                 'A useful proposal states its assumptions and explains how the next observation could support or challenge them. '.
                 'We preserve earlier contributions while making the current decision and its governing provenance clear.'])->save();
-        app(LedgerService::class)->record($node);
+        app(LedgerService::class)->record($node, $parent);
         if ($tier === 'committal') {
             $horizon = $node->phase->cycle->contextHorizon;
             (new CommitmentSnapshot)->forceFill(['proposition_id' => $node->id, 'substrate_id' => $horizon->substrate_id,
@@ -125,6 +124,15 @@ final class ParticipantContextFixture
         }
         if ($parent !== null) {
             $this->edge($parent, $node, $type);
+        }
+        if ($additionalParent !== null) {
+            $this->edge($additionalParent, $node, $type);
+        }
+        $closure = app(\App\Services\Observables\ProspectiveClosureService::class);
+        if ($tier === 'expressive') {
+            $closure->initialize($node);
+        } elseif ($parent !== null) {
+            $closure->preserve($node, $parent, $closure->stored($parent));
         }
 
         return $node;

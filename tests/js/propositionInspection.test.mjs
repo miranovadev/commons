@@ -57,7 +57,7 @@ test('Closure direction colors follow supplied hysteretic direction, including n
     assert.ok(html.includes(`Historical Extent: ${depth_direction} direction`));
     assert.ok(html.includes(`Historical Rhythm: ${cadence_direction} direction`));
     assert.match(html, /Historical Extent history: 0.00/);
-    assert.match(html, /Committal Cadence history: 0.00/);
+    assert.match(html, /Historical Rhythm history: 0.00/);
   }
 });
 

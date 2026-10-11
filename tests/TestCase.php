@@ -30,6 +30,7 @@ use App\Services\InstrumentExecutionService;
 use App\Services\LedgerService;
 use App\Services\Observables\ClosureBirthService;
 use App\Services\Observables\LocalMeasurementService;
+use App\Services\Observables\ProspectiveClosureService;
 use App\Services\PotentialProjectionService;
 use App\Services\PropositionMeasurementService;
 use App\Services\PropositionStateService;
@@ -76,6 +77,28 @@ abstract class TestCase extends BaseTestCase
     /** Isolated field/lifecycle tests control Closure too; birth-invariant tests never use this double. */
     protected function controlledBirthClosureFixture(float $value, ?string $onlyId = null, bool $includeCommittal = false): void
     {
+        // Preserve the existing explicit field double at the new read boundary.
+        // Real birth/Cycle persistence still runs; measurement contract tests do
+        // not use this routing/transport fixture.
+        $prospective = app(ProspectiveClosureService::class);
+        $this->partialMock(ProspectiveClosureService::class, function ($mock) use ($prospective, $value, $onlyId, $includeCommittal): void {
+            foreach (['initialize', 'entered', 'preserve'] as $method) {
+                $mock->shouldReceive($method)->andReturnUsing(fn (...$args) => $prospective->$method(...$args));
+            }
+            $mock->shouldReceive('stored')->andReturnUsing(function ($node, $context = null) use ($prospective, $value, $onlyId, $includeCommittal) {
+                $observation = $prospective->stored($node, $context);
+                if ((! $includeCommittal && $node->tier === 'committal') || ($onlyId !== null && $node->id !== $onlyId)) {
+                    return $observation;
+                }
+                foreach (['depth', 'cadence', 'historical_extent', 'historical_rhythm', 'closure'] as $key) {
+                    $observation[$key] = $value;
+                    $observation[$key.'_direction'] = $value > 0 ? 'positive' : 'negative';
+                }
+                $observation['admissible'] = true;
+
+                return $observation;
+            });
+        });
         $births = app(ClosureBirthService::class);
         $this->partialMock(ClosureBirthService::class, function ($mock) use ($births, $value, $onlyId, $includeCommittal): void {
             foreach (['stored', 'prospective'] as $method) {
