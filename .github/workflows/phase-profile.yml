@@ -9,8 +9,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        revision: ['a6f27938d940b7cca701503de450c1ed8f5c8f9a', 'fae6763df7fb927fd7eee4565e5c114bc7ab83ac']
-        shard: [1, 2, 3, 4]
+        filter: ['FreshBootstrapTest', 'ParticipationHttpHarnessTest::test_real_http_actions_reach_an_operational_commit', 'HorizonProofCycleTest']
     runs-on: ubuntu-latest
     timeout-minutes: 20
     services:
@@ -41,7 +40,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ matrix.revision }}
+          ref: fae6763df7fb927fd7eee4565e5c114bc7ab83ac
       - uses: actions/checkout@v4
         with:
           path: .validation
@@ -54,9 +53,9 @@ jobs:
       - run: composer install --prefer-dist --no-interaction --no-progress
       - run: cp .env.example .env
       - run: python3 .validation/scripts/ci/install-validation-trace.py
-      - run: python3 scripts/ci/run-suite.py integration --shard ${{ matrix.shard }} --shards 4
+      - run: php artisan test --filter='${{ matrix.filter }}' --log-junit=test-results/continuation.xml
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: validation-${{ matrix.revision }}-${{ matrix.shard }}
+          name: continuation-${{ strategy.job-index }}
           path: test-results/

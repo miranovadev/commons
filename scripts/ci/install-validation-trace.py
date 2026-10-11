@@ -22,3 +22,9 @@ if needle in s:
         \\Tests\\Support\\PhaseProfileValidationTrace::recordProfile($diagnosticStarted);
         return $result;""")
     p.write_text(s)
+
+# Continue precisely one more lawful action; never change populations or action policy.
+p=root/'tests/Fixtures/HorizonCycleFixture.php'
+p.write_text(p.read_text().replace('$step < 100 * $participantCount', '$step < 101 * $participantCount'))
+p=root/'tests/Support/ParticipationHttpTestCase.php'
+p.write_text(p.read_text().replace('int $maxActions = 100', 'int $maxActions = 101'))
