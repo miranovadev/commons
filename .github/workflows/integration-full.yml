@@ -42,4 +42,3 @@ jobs:
         with:
           name: integration-summary
           path: test-results/integration-summary.json
-

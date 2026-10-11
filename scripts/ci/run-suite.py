@@ -71,6 +71,8 @@ def main():
     tests = discover(args.suite)
     (output / f"{args.suite}-{args.shard}-inventory.json").write_text(json.dumps(tests, indent=2) + "\n")
     weights = json.loads((ROOT / "scripts/ci/class-durations.json").read_text())
+    if args.suite == "integration":
+        weights.update(json.loads((ROOT / "scripts/ci/integration-class-durations.json").read_text()))
     shards = partition(tests, weights, args.shards)
     selected_classes = set(shards[args.shard - 1])
     selected = [test for test in tests if test.split("::", 1)[0] in selected_classes]
@@ -111,4 +113,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-

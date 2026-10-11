@@ -11,6 +11,9 @@ on:
       - 'app/Console/Commands/InspectPhaseProfile.php'
       - 'database/migrations/*phase_profile*'
       - 'tests/**'
+      - 'scripts/ci/**'
+      - '.github/workflows/integration-full.yml'
+      - '.github/workflows/php-tests.yml'
       - '.github/workflows/phase-profile.yml'
 
 permissions:
