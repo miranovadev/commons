@@ -3,8 +3,17 @@ namespace Tests\Support;
 use Illuminate\Support\Facades\DB;
 final class PhaseProfileValidationTrace
 {
+    public static int $profileCalls = 0;
+    public static float $profileSeconds = 0.0;
+    public static function recordProfile(float $started): void
+    {
+        self::$profileCalls++;
+        self::$profileSeconds += microtime(true) - $started;
+    }
     public static function start(): float
     {
+        self::$profileCalls = 0;
+        self::$profileSeconds = 0.0;
         DB::flushQueryLog();
         DB::enableQueryLog();
         return microtime(true);
@@ -24,7 +33,8 @@ final class PhaseProfileValidationTrace
             'phase' => $state['plan']['phase']['number'] ?? $state['plan']['phase']['kind'] ?? null,
             'action' => $input['action'], 'seconds' => round($elapsed, 4), 'queries' => $queries->count(),
             'sql_ms' => round($queries->sum('time'), 2), 'profile_queries' => $profile->count(),
-            'profile_sql_ms' => round($profile->sum('time'), 2), 'gate_components' => $values,
+            'profile_sql_ms' => round($profile->sum('time'), 2), 'profile_calls' => self::$profileCalls,
+            'profile_seconds' => round(self::$profileSeconds, 4), 'gate_components' => $values,
             'coherence' => $state['plan']['correspondence_admissibility'] ?? null,
             'next_coherence' => $next['plan']['correspondence_admissibility'] ?? null,
             'actions' => array_keys($state['plan']['schema']['$defs']['actions'] ?? []),

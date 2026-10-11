@@ -10,3 +10,15 @@ p=root/'tests/Support/ParticipationHttpTestCase.php'
 s=p.read_text().replace("        // A driver may use the GET it just performed for this same request.", "        $diagnosticStart = \\Tests\\Support\\PhaseProfileValidationTrace::start();\n        // A driver may use the GET it just performed for this same request.")
 s=s.replace("        return $response->json('data');", "        \\Tests\\Support\\PhaseProfileValidationTrace::finish($diagnosticStart, static::class, $state, $input, $response->json('data'));\n        return $response->json('data');")
 p.write_text(s)
+
+p=root/'app/Services/Observables/PhaseProfileService.php'
+s=p.read_text()
+needle="""        return $context === null ? $this->buildProfile($head)
+            : $context->remember('phase-profile:'.$head->id, fn () => $this->buildProfile($head, $context));"""
+if needle in s:
+    s=s.replace(needle, """        $diagnosticStarted = microtime(true);
+        $result = $context === null ? $this->buildProfile($head)
+            : $context->remember('phase-profile:'.$head->id, fn () => $this->buildProfile($head, $context));
+        \\Tests\\Support\\PhaseProfileValidationTrace::recordProfile($diagnosticStarted);
+        return $result;""")
+    p.write_text(s)
