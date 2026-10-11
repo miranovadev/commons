@@ -38,6 +38,7 @@ class AttestationBeatContinuityTest extends TestCase
             'tier' => 'expressive', 'statement' => 'Local continuation'])->save();
         app(LedgerService::class)->record($node);
         $this->link($parent, $node, $type);
+        app(\App\Services\Observables\ProspectiveClosureService::class)->initialize($node);
 
         return $node;
     }
@@ -223,6 +224,7 @@ class AttestationBeatContinuityTest extends TestCase
         foreach ($foreignFirst ? [$other, $local] : [$local, $other] as $parent) {
             $this->link($parent, $result, 'reconcile');
         }
+        app(\App\Services\Observables\ProspectiveClosureService::class)->initialize($result);
 
         return $result;
     }

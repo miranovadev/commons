@@ -70,6 +70,7 @@ class PropositionLocalChiralityTest extends TestCase
         $edge->forceFill(['phase_id' => $child->phase_id, 'source_proposition_id' => $parent->id,
             'target_proposition_id' => $child->id, 'type' => $type])->save();
         app(LedgerService::class)->record($edge);
+        app(\App\Services\Observables\ProspectiveClosureService::class)->initialize($child);
     }
 
     public function test_own_create_and_replacement_recalculate_and_record_only_own_intervals(): void

@@ -224,6 +224,7 @@ class CorrespondenceComponentsTest extends TestCase
             'source_proposition_id' => $parent->id, 'target_proposition_id' => $node->id, 'type' => 'variant']);
         $edge->save();
         app(LedgerService::class)->record($edge);
+        app(\App\Services\Observables\ProspectiveClosureService::class)->initialize($node);
 
         return $node;
     }

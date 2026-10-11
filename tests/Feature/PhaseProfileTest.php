@@ -126,9 +126,9 @@ class PhaseProfileTest extends TestCase
     }
 
     /** A complete structural Commit history with genuine Order source/edge and frozen birth state. */
-    private function basin(bool $boundary = false): Proposition
+    private function basin(bool $boundary = false, ?Proposition $entry = null): Proposition
     {
-        $cycle = $this->cycle();
+        $cycle = $this->cycle($entry);
         $source = $this->throughBias($cycle);
         $commit = $this->born($cycle, PhaseKind::Order, $source, 'commit');
         $h = $cycle->contextHorizon;
@@ -144,6 +144,29 @@ class PhaseProfileTest extends TestCase
         app(ContextHorizonProjector::class)->apply($snapshot);
 
         return $commit;
+    }
+
+    public function test_prospective_closure_accumulates_selected_alternating_domains_and_preserves_frozen_history(): void
+    {
+        // Reuse the explicit structural Horizon fixture. This proves selection
+        // and persistence across Domain boundaries, not natural field transitions.
+        $s1 = $this->basin(boundary: true);
+        $e1 = $this->basin(boundary: true, entry: $s1);
+        $s2 = $this->basin(boundary: true, entry: $e1);
+        $closure = app(ProspectiveClosureService::class);
+        $frozen = $closure->stored($s2);
+        $head = $this->throughBias($this->cycle($s2));
+        $state = $closure->stored($head);
+        $this->assertSame(['emergence' => 3, 'settlement' => 2], $state['domain_depths']);
+        $this->assertSame([1, 3, 3, 3, 3, 3, 3], $state['domain_profiles']['emergence']['sample_counts']);
+        $this->assertSame([0, 2, 2, 2, 2, 2, 2], $state['domain_profiles']['settlement']['sample_counts']);
+        $this->assertEqualsWithDelta(1 / 3, $state['domain_profiles']['emergence']['means'][6], 1e-7);
+        foreach ($frozen['phase_observations'] as $id => $observation) {
+            $this->assertSame($observation, $state['phase_observations'][$id]);
+        }
+        $this->cycle($s2);
+        $this->assertSame($frozen, $closure->stored($s2));
+        $this->assertNotSame($state['trigger'], $closure->stored($head)['trigger']);
     }
 
     private function observation(Proposition $p): array
@@ -376,10 +399,16 @@ class PhaseProfileTest extends TestCase
         $first = $this->born($localCycle, PhaseKind::Bias, $foreign, 'reclassify', actingGate: $local);
         $this->assertSame($b->id, $first->phase->cycle->entry_committal_id);
         $this->assertSame(['coordinate' => 2, 'reference' => null, 'interval' => null, 'reason' => 'no_local_predecessor'], $this->observation($first));
+        $closure = app(ProspectiveClosureService::class);
+        $initialClosure = $closure->stored($first);
+        $this->assertArrayNotHasKey($foreign->id, $initialClosure['phase_observations']);
+        $this->assertArrayNotHasKey($local->id, $initialClosure['phase_observations']);
+        $this->assertNull($initialClosure['phase_observations'][$first->id]['interval']);
         for ($i = 0; $i < 5; $i++) {
             $this->cycle($a);
         }
         $second = $first; // Later foreign entries cannot change the local observation.
+        $this->assertSame($initialClosure, $closure->stored($first));
         $this->assertSame($this->observation($first), $this->observation($second));
         $this->assertSame([$foreign->id], $second->parents()->pluck('propositions.id')->all());
         $this->assertFalse($second->parents()->where('propositions.id', $local->id)->exists());
@@ -393,6 +422,7 @@ class PhaseProfileTest extends TestCase
         }
         $preview = app(PhaseProfileService::class)->inspect($second)['prospective_order'];
         $this->assertSame(4, $preview['cycle_interval']);
+        $this->assertSame(4, $closure->stored($second)['phase_observations']['order:'.$second->id]['interval']);
         $commit = $this->born($localCycle, PhaseKind::Order, $second, 'commit');
         $this->assertSame(4, $this->observation($commit)['interval']);
         $this->assertSame($second->id, $this->observation($commit)['reference']);

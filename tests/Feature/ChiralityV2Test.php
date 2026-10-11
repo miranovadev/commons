@@ -65,12 +65,13 @@ class ChiralityV2Test extends TestCase
         $this->assertSame($before, $snapshot->fresh()->getAttributes());
         $this->assertSame(-0.5, $origin->fresh()->measurement->chirality);
 
-        // First ordinary Commit uses unchanged Closure's first-interval rule.
+        // Preview reads the selected source, so Origin retains its constitutional
+        // state; it cannot be treated as a new ordinary expressive candidate.
         $phase = $this->phase($origin, $origin, PhaseKind::Order);
         $preview = app(ClosureGateService::class)->preview($origin, $phase);
         $this->assertTrue($preview['admissible']);
-        $this->assertSame(0.0, $preview['depth']);
-        $this->assertSame(0.0, $preview['cadence']);
+        $this->assertSame(-1.0, $preview['depth']);
+        $this->assertSame(-1.0, $preview['cadence']);
         $grounding = app(CommitmentAdmissibilityService::class)->grounding($origin);
         $this->assertFalse($grounding['admissible']);
     }

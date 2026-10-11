@@ -33,11 +33,13 @@ trait HorizonCycleFixture
             $participants[] = $other;
         }
         $trace = [];
+        $lastCommitment = null;
         for ($step = 0; $step < $actionBudget * $participantCount; $step++) {
             $participant = $participants[$step % $participantCount];
             $state = $service->stateFor($participant);
             $this->assertSame('ready', $state['status'], json_encode($trace));
             $plan = $state['plan'];
+            $lastCommitment = $plan['commitment'] ?? $lastCommitment;
             $observe?->__invoke($participant, $state);
             $actions = $plan['schema']['$defs']['actions'];
             $action = collect(['proposition.commit', 'proposition.reclassify', 'proposition.variant', 'proposition.reconcile',
@@ -82,6 +84,8 @@ trait HorizonCycleFixture
                 return $commit;
             }
         }
-        $this->fail('The single-participant motor stalled: '.json_encode($trace));
+        $this->fail('The single-participant motor stalled. Last Commit eligibility: '
+            .json_encode($lastCommitment).'; trace: '.json_encode($trace));
     }
 }
+

@@ -250,6 +250,7 @@ class HomeostaticPopulationTest extends TestCase
         $edge->forceFill(['phase_id' => $node->phase_id, 'source_proposition_id' => $entry->id,
             'target_proposition_id' => $node->id, 'type' => 'variant'])->save();
         app(LedgerService::class)->record($edge);
+        app(\App\Services\Observables\ProspectiveClosureService::class)->initialize($node);
 
         return $node;
     }

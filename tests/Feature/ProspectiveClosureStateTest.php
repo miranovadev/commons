@@ -126,7 +126,11 @@ class ProspectiveClosureStateTest extends TestCase
         $after = $this->service()->stored($head);
         $this->assertSame(.5, $after['historical_orientation']);
         $this->assertSame($attestation->id, $after['orientation_observations'][$head->id]['last_attestation_id']);
-        $replacement = (new Attestation)->forceFill(['phase_id' => $head->phase_id, 'proposition_id' => $head->id,
+        $replacementPhase = (new Phase)->forceFill(['cycle_id' => $this->actor->cycles()->latest('sequence')->value('id'),
+            'kind' => $head->phase->kind, 'write_register' => $head->register,
+            'gate_proposition_id' => $head->id, 'started_at' => now()]);
+        $replacementPhase->save();
+        $replacement = (new Attestation)->forceFill(['phase_id' => $replacementPhase->id, 'proposition_id' => $head->id,
             'direction' => 'refute', 'supersedes_attestation_id' => $attestation->id]);
         $replacement->save();
         app(LedgerService::class)->record($replacement);
