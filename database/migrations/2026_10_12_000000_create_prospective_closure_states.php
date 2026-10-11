@@ -18,7 +18,7 @@ return new class extends Migration
         // No backfill: only new authorised events may establish this state.
         if (DB::getDriverName() === 'pgsql') {
             DB::unprepared(<<<'SQL'
-                CREATE FUNCTION commons_prospective_closure_guard() RETURNS trigger LANGUAGE plpgsql AS $$
+                CREATE OR REPLACE FUNCTION commons_prospective_closure_guard() RETURNS trigger LANGUAGE plpgsql AS $$
                 BEGIN
                     IF NEW.proposition_id IS DISTINCT FROM OLD.proposition_id OR OLD.frozen THEN
                         RAISE EXCEPTION 'Frozen Closure and Proposition identity cannot change';
