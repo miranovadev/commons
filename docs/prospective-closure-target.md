@@ -273,7 +273,7 @@ maturity rule applies. This is now an approved arithmetic acceptance case,
 not a conditional weighting proposal.
 
 The [ambiguity register](prospective-closure-implementation-review.md#ambiguity-register)
-retains the diagnostic limitations for audit; Claire's October 12 clarification
+retains the diagnostic limitations for audit; Claire's final clarification
 supplies the authoritative equal-observation rule.
 
 ### First Settlement and comparative Cadence acceptance cases

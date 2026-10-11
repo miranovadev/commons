@@ -147,20 +147,19 @@ zero-valued observations and distinct lineage scopes. §§7–8: the target stat
 atomic events, hysteresis, canonical preservation, stale-state handling and
 worked cases, with implementation mapping and verification plan here.
 §§9–11: the final explicit clarification closes the necessary numerical boundary.
-The specification is ready for implementation. This does not claim production
-correctness or completed validation.
+The numerical specification is resolved and production wiring is implemented.
+This does not claim full production correctness or successful regression validation.
 
-The first fully wired cross-database run
-[38175291315](https://github.com/miranovadev/commons/actions/runs/38175291315)
-passes 47 Phase Profile cases and 11 prospective Closure cases on each database.
-Its broader observable/ledger group has 55 passes and 85 failures on each,
-primarily direct fixtures missing authorised prospective state. This is not a
-successful regression run. Canonical Commit's focused class passes.
+The [validation report](prospective-closure-validation.md) records exact tested
+heads, PostgreSQL/SQLite results, complete Core and Integration execution,
+baseline comparison, performance and a durable per-test inventory. Focused C1
+and prospective Closure contracts pass on both databases. Complete suite
+execution is within existing CI budgets, but many older direct-model fixtures
+still lack authorised birth or frozen canonical history. Four historical
+Integration trajectories now correctly stop at incoherent Extent/Rhythm.
+Those failures remain visible and do not constitute successful lifecycle proofs.
 
-The first complete wired Integration run
-[38174517219](https://github.com/miranovadev/commons/actions/runs/38174517219)
-executed all 31 cases: 6 passes, 25 failures, no skips, 16,322 assertions. The
-longest PHP shard took 311.92 seconds. It establishes complete execution within
-the unchanged budget, not correctness. Follow-up fixture corrections and new
-coverage are being validated; exact final-head results belong in the PR report.
-Core validation is not yet complete. Continue in PR #255; do not merge.
+Remaining review boundaries are lawful fixture conversion, replacement authored
+scenarios and the separately scoped Rest-bound interpretation described above.
+No production fallback or fabricated history resolves those gaps. Continue in
+PR #255; Claire performs final review. Do not merge.

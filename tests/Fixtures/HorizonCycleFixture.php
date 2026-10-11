@@ -88,4 +88,3 @@ trait HorizonCycleFixture
             .json_encode($lastCommitment).'; trace: '.json_encode($trace));
     }
 }
-

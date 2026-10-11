@@ -1,0 +1,137 @@
+test,result,category,finding,failure_summary,first_test_frame,assertions,seconds
+"Tests\Unit\LocalChiralityCalculatorTest::test_signed_displacement""refute to support""",passed,,,,,1,0.000599
+"Tests\Unit\LocalChiralityCalculatorTest::test_signed_displacement""support to refute""",passed,,,,,1,0.000233
+"Tests\Unit\LocalChiralityCalculatorTest::test_signed_displacement""unchanged support""",passed,,,,,1,0.000143
+"Tests\Unit\LocalChiralityCalculatorTest::test_signed_displacement""unchanged refute""",passed,,,,,1,0.000133
+"Tests\Unit\LocalChiralityCalculatorTest::test_signed_displacement""neutral Origin to support""",passed,,,,,1,0.000149
+"Tests\Unit\LocalChiralityCalculatorTest::test_signed_displacement""neutral Origin to refute""",passed,,,,,1,0.000131
+"Tests\Unit\LocalChiralityCalculatorTest::test_developmental_population_cv""empty""",passed,,,,,3,0.000158
+"Tests\Unit\LocalChiralityCalculatorTest::test_developmental_population_cv""singleton""",passed,,,,,3,0.000146
+"Tests\Unit\LocalChiralityCalculatorTest::test_developmental_population_cv""singleton zero""",passed,,,,,3,0.000139
+"Tests\Unit\LocalChiralityCalculatorTest::test_developmental_population_cv""regular""",passed,,,,,3,0.000141
+"Tests\Unit\LocalChiralityCalculatorTest::test_developmental_population_cv""unequal""",passed,,,,,3,0.000175
+"Tests\Unit\LocalChiralityCalculatorTest::test_developmental_population_cv""mixed zeros""",passed,,,,,3,0.000142
+"Tests\Unit\LocalChiralityCalculatorTest::test_developmental_population_cv""irregular negative""",passed,,,,,3,0.000143
+Tests\Unit\LocalChiralityCalculatorTest::test_mature_all_zero_intervals_are_regular_but_raw_cv_remains_undefined,passed,,,,,10,0.000135
+Tests\Unit\LocalChiralityCalculatorTest::test_zero_retains_component_directions,passed,,,,,2,0.000284
+Tests\Feature\Api\ParticipantCollectionApiTest::test_user_can_own_multiple_participants_in_one_substrate,passed,,,,,10,1.016919
+Tests\Feature\Api\PropositionReadTest::test_graph_and_detail_read_persisted_values_without_repair#0,passed,,,,,191,0.255988
+Tests\Feature\Api\PropositionReadTest::test_graph_and_detail_read_persisted_values_without_repair#1,passed,,,,,191,0.256693
+Tests\Feature\Api\PropositionReadTest::test_graph_and_detail_read_persisted_values_without_repair#2,passed,,,,,191,0.254138
+Tests\Feature\Api\PropositionReadTest::test_graph_and_detail_read_persisted_values_without_repair#3,passed,,,,,191,0.255635
+Tests\Feature\Api\PropositionReadTest::test_bounded_maintenance_repairs_missing_and_obsolete_but_preserves_current_and_unmeasurable_nodes,passed,,,,,12,0.250997
+Tests\Feature\Api\PropositionReadTest::test_overlapping_commit_histories_are_batched_and_counts_stop_at_expressive_nodes,passed,,,,,79,0.658571
+Tests\Feature\Api\PropositionReadTest::test_field_projection_uses_snapshots_canonical_potential_and_direct_phase_touches,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\Api\PropositionReadTest::test_field_projection_uses_snapshots_canonical_potential_and_direct_phase_touches
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/Feature/Api/PropositionReadTest.php:151,0,0.174183
+Tests\Feature\Api\PropositionReadTest::test_batched_region_seeds_follow_cycle_governance_despite_cross_region_ancestry,passed,,,,,3,0.272876
+Tests\Feature\CausalHorizonMigrationTest::test_legacy_cycles_are_backfilled_and_late_memberships_are_repaired_without_changing_snapshots,passed,,,,,15,1.476373
+Tests\Feature\CausalHorizonMigrationTest::test_ambiguous_legacy_entry_is_reported_instead_of_using_the_latest_horizon,passed,,,,,5,1.660946
+"Tests\Feature\ChargeBoundaryTragedyTest::test_fresh_expression_uses_the_canonical_resolved_charge""positive room""",passed,,,,,7,1.402492
+"Tests\Feature\ChargeBoundaryTragedyTest::test_fresh_expression_uses_the_canonical_resolved_charge""negative room""",passed,,,,,7,0.601503
+"Tests\Feature\ChargeBoundaryTragedyTest::test_fresh_expression_uses_the_canonical_resolved_charge""neutral""",passed,,,,,7,0.626905
+"Tests\Feature\ChargeBoundaryTragedyTest::test_fresh_expression_uses_the_canonical_resolved_charge""positive boundary""",passed,,,,,16,0.645841
+"Tests\Feature\ChargeBoundaryTragedyTest::test_fresh_expression_uses_the_canonical_resolved_charge""negative boundary""",passed,,,,,16,0.671747
+"Tests\Feature\ChargeBoundaryTragedyTest::test_fresh_expression_uses_the_canonical_resolved_charge""rounded positive boundary""",passed,,,,,16,0.654470
+"Tests\Feature\ChargeBoundaryTragedyTest::test_fresh_expression_uses_the_canonical_resolved_charge""rounded negative boundary""",passed,,,,,16,0.637880
+"Tests\Feature\ChargeBoundaryTragedyTest::test_fresh_expression_uses_the_canonical_resolved_charge""inside precision""",passed,,,,,7,0.588170
+Tests\Feature\ChargeBoundaryTragedyTest::test_ordinary_unmocked_observables_can_reach_the_boundary,failure,A (Stage 2 baseline),Same baseline expected/actual assertion.,"Tests\Feature\ChargeBoundaryTragedyTest::test_ordinary_unmocked_observables_can_reach_the_boundary
+Failed asserting that two strings are identical.
+--- Expected
++++ Actual
+@@ @@
+-'settlement'
++'emergence'",tests/Fixtures/NaturalBoundaryHistory.php:63,2,4.994249
+Tests\Feature\ChargeBoundaryTragedyTest::test_successful_revision_can_create_a_boundary_tragedy,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\ChargeBoundaryTragedyTest::test_successful_revision_can_create_a_boundary_tragedy
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:86,0,0.514331
+Tests\Feature\ChargeBoundaryTragedyTest::test_zero_potential_allows_further_spent_evidenced_variants_with_positive_charge,passed,,,,,5,0.973754
+Tests\Feature\ChargeBoundaryTragedyTest::test_zero_potential_rest_does_not_create_tragedy,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\ChargeBoundaryTragedyTest::test_zero_potential_rest_does_not_create_tragedy
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:86,0,0.518827
+Tests\Feature\ChargeBoundaryTragedyTest::test_increasing_tension_from_point_four_to_point_eight_is_not_tragedy,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\ChargeBoundaryTragedyTest::test_increasing_tension_from_point_four_to_point_eight_is_not_tragedy
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:86,0,0.510107
+Tests\Feature\ChargeBoundaryTragedyTest::test_two_regions_in_one_horizon_record_their_own_boundary_events,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\ChargeBoundaryTragedyTest::test_two_regions_in_one_horizon_record_their_own_boundary_events
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:86,0,0.514876
+Tests\Feature\ChargeBoundaryTragedyTest::test_repeated_boundary_births_retain_the_first_identity_and_exhaust,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\ChargeBoundaryTragedyTest::test_repeated_boundary_births_retain_the_first_identity_and_exhaust
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:86,0,0.665902
+Tests\Feature\ChargeBoundaryTragedyTest::test_second_boundary_rollback_restores_open_region_and_warrant,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\ChargeBoundaryTragedyTest::test_second_boundary_rollback_restores_open_region_and_warrant
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:86,0,0.658777
+Tests\Feature\ChargeBoundaryTragedyTest::test_historical_boundary_recalculation_and_repeat_observation_do_not_exhaust,passed,,,,,4,0.726018
+Tests\Feature\ChargeBoundaryTragedyTest::test_committal_and_maintenance_measurements_do_not_create_tragedy,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\ChargeBoundaryTragedyTest::test_committal_and_maintenance_measurements_do_not_create_tragedy
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:89,1,0.473572
+Tests\Feature\ChargeBoundaryTragedyTest::test_failed_or_rolled_back_contributions_do_not_leave_a_catastrophe,passed,,,,,7,0.653218
+Tests\Feature\CommittalClosureTest::test_symmetric_bootstrap_and_full_domain_counts_follow_only_cycle_entry,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\CommittalClosureTest::test_symmetric_bootstrap_and_full_domain_counts_follow_only_cycle_entry
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/Feature/CommittalClosureTest.php:95,0,0.276247
+Tests\Feature\CommittalClosureTest::test_similarity_and_interval_include_every_entry_once_but_exclude_other_basins,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\CommittalClosureTest::test_similarity_and_interval_include_every_entry_once_but_exclude_other_basins
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/Feature/CommittalClosureTest.php:127,4,0.893874
+Tests\Feature\CommittalClosureTest::test_expressive_birth_interval_is_frozen_without_read_time_writes,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\CommittalClosureTest::test_expressive_birth_interval_is_frozen_without_read_time_writes
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/Feature/CommittalClosureTest.php:147,0,0.271900
+Tests\Feature\CommittalClosureTest::test_abandoned_descendants_do_not_supply_structure_intervals_or_directions,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\CommittalClosureTest::test_abandoned_descendants_do_not_supply_structure_intervals_or_directions
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/Feature/CommittalClosureTest.php:175,2,1.360725
+Tests\Feature\CommittalClosureTest::test_missing_committed_birth_state_blocks_preview_but_does_not_rewrite_existing_births,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\CommittalClosureTest::test_missing_committed_birth_state_blocks_preview_but_does_not_rewrite_existing_births
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/Feature/CommittalClosureTest.php:186,0,0.430899
+Tests\Feature\CommittalClosureTest::test_migration_backfills_only_proven_intervals_and_leaves_entry_and_observables_unchanged,passed,,,,,8,1.147225
+Tests\Feature\CommittalClosureTest::test_entry_reads_are_bounded_as_committed_lineage_grows,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\CommittalClosureTest::test_entry_reads_are_bounded_as_committed_lineage_grows
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/Feature/CommittalClosureTest.php:241,0,0.458565
+Tests\Feature\CommittalClosureTest::test_completion_versions_the_field_and_frozen_interval_cannot_be_updated,passed,,,,,2,0.299133
+Tests\Feature\ExplorationEpochTest::test_downstream_failure_records_each_positions_own_epoch_and_stops_at_committal,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\ExplorationEpochTest::test_downstream_failure_records_each_positions_own_epoch_and_stops_at_committal
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:89,0,0.481413
+Tests\Feature\ExplorationEpochTest::test_variant_advances_once_and_rejected_or_rolled_back_writes_do_not_advance,passed,,,,,7,1.201990
+Tests\Feature\ExplorationEpochTest::test_unobserved_actionless_mediate_is_not_spent_even_at_zero_potential,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\ExplorationEpochTest::test_unobserved_actionless_mediate_is_not_spent_even_at_zero_potential
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:86,0,0.504543
+Tests\Feature\ExplorationEpochTest::test_a_live_sibling_prevents_failure_from_propagating_to_its_parent,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\ExplorationEpochTest::test_a_live_sibling_prevents_failure_from_propagating_to_its_parent
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:89,0,0.484908
+Tests\Feature\ExplorationEpochTest::test_a_captured_failure_cannot_spend_a_new_epoch_even_if_field_version_matches,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\ExplorationEpochTest::test_a_captured_failure_cannot_spend_a_new_epoch_even_if_field_version_matches
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:89,0,0.482908
+Tests\Feature\GateReceiptOptionsTest::test_exact_gate_ids_appear_in_both_authoritative_and_strict_transport_schemas,passed,,,,,6,0.901475
+Tests\Feature\GateReceiptOptionsTest::test_load_and_unload_are_atomic_with_normal_actions_and_desired_states_are_idempotent,passed,,,,,7,1.767584
+Tests\Feature\GateReceiptOptionsTest::test_rest_rejects_receipt_options_and_preserves_load_context,passed,,,,,23,1.979920
+Tests\Feature\GateReceiptOptionsTest::test_invalid_receipt_selection_rolls_back_the_normal_contribution,passed,,,,,10,1.506109
+Tests\Feature\GateReceiptOptionsTest::test_existing_non_gate_and_foreign_region_receipts_cannot_be_injected,passed,,,,,6,1.877884
+Tests\Feature\GateReceiptOptionsTest::test_invalid_action_never_changes_loads_and_an_outer_failure_rolls_back_both,passed,,,,,4,1.249760
+Tests\Feature\HomologousPositionTest::test_equal_committed_depth_defines_homology_with_nearest_ancestor_as_diagnostics,passed,,,,,16,1.051530
+Tests\Feature\HomologousPositionTest::test_same_horizon_phase_homology_preserves_canonical_phase_and_register,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\HomologousPositionTest::test_same_horizon_phase_homology_preserves_canonical_phase_and_register
+App\Exceptions\ClosureHistoryUnavailable: Prospective Closure requires frozen selected committed history.",tests/Fixtures/CreatesHomologousPositions.php:81,0,0.890311
+Tests\Feature\HomologousPositionTest::test_sibling_horizons_are_structurally_homologous_but_still_operationally_foreign,passed,,,,,4,0.925033
+Tests\Feature\HomologousPositionTest::test_domain_disagreement_is_rejected_even_with_equal_distance_or_misleading_registers,passed,,,,,4,1.320650
+Tests\Feature\HomologousPositionTest::test_disconnected_and_missing_committed_history_fail_closed,passed,,,,,3,0.785816
+Tests\Feature\HomologousPositionTest::test_malformed_ancestral_horizon_link_fails_closed_even_below_a_shared_ancestor,passed,,,,,3,0.941909
+Tests\Feature\HomologousPositionTest::test_foreign_substrate_is_never_homologous,passed,,,,,1,0.143116
+Tests\Feature\HomologousPositionTest::test_cyclic_committed_read_history_fails_closed_without_modifying_immutable_storage,passed,,,,,2,0.485627
+Tests\Feature\HomologousPositionTest::test_batch_expansion_uses_one_query_independent_of_candidate_count_and_chain_length,passed,,,,,4,5.226178
+Tests\Feature\InputSchemaServiceTest::test_mediate_does_not_reuse_the_previous_cached_gate_correspondence_contract,passed,,,,,2,0.025637
+Tests\Feature\InputSchemaServiceTest::test_mediate_retires_cached_regional_guidance_for_dominant_homologous_correspondence,passed,,,,,8,0.022224
+Tests\Feature\InputSchemaServiceTest::test_bias_retires_the_local_only_cached_guidance,passed,,,,,3,0.020011
+Tests\Feature\InputSchemaServiceTest::test_bias_retires_binary_reconciliation_schema_and_exposes_unary_selection,passed,,,,,4,0.018658
+Tests\Feature\InputSchemaServiceTest::test_order_retires_implicit_gate_commit_schema,passed,,,,,2,0.021269
+Tests\Feature\InputSchemaServiceTest::test_instrument_guidance_retires_the_previous_cached_receipt_description,passed,,,,,12,0.025826
+Tests\Feature\InputSchemaServiceTest::test_each_phase_exposes_its_static_single_move_contract,passed,,,,,29,0.031913
+Tests\Feature\InputSchemaServiceTest::test_prompt_and_documentation_describe_the_traverse_phase_boundary,passed,,,,,9,0.022704
+Tests\Feature\InputSchemaServiceTest::test_constrain_reclassification_rejects_instrument_coupling,passed,,,,,3,0.023046
+Tests\Feature\InputSchemaServiceTest::test_write_descendants_do_not_become_reconciliation_gate_options,passed,,,,,7,0.292020
+Tests\Feature\InputSchemaServiceTest::test_lowercase_database_ulids_are_valid_contribution_ids,passed,,,,,3,0.026260
+Tests\Feature\InputSchemaServiceTest::test_write_frontier_does_not_supply_gate_siblings,passed,,,,,3,0.235495
+Tests\Feature\InputSchemaServiceTest::test_non_owner_schema_hides_revise_and_reclassify,passed,,,,,1,0.175677
+Tests\Feature\InputSchemaServiceTest::test_receipts_record_generation_phase_with_optional_execution_for_tragedy,passed,,,,,6,0.031688
+Tests\Feature\InputSchemaServiceTest::test_instrument_completion_creates_a_persistent_unconsumed_receipt,passed,,,,,6,0.080255
+Tests\Feature\MediatedIncomingBiasTest::test_reconcile_retains_ownership_and_only_the_exact_other_operand_opens_the_doorway,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\MediatedIncomingBiasTest::test_reconcile_retains_ownership_and_only_the_exact_other_operand_opens_the_doorway
+App\Exceptions\ClosureHistoryUnavailable: Prospective Closure requires frozen selected committed history.",tests/Fixtures/CreatesHomologousPositions.php:81,0,0.000000
+Tests\Feature\MediatedIncomingBiasTest::test_ordinary_attestation_and_own_region_receipt_authorize_reclassification_without_transport,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\MediatedIncomingBiasTest::test_ordinary_attestation_and_own_region_receipt_authorize_reclassification_without_transport
+App\Exceptions\ClosureHistoryUnavailable: Prospective Closure requires frozen selected committed history.",tests/Fixtures/CreatesHomologousPositions.php:81,0,0.000000
+Tests\Feature\MediatedIncomingBiasTest::test_missing_attestation_still_blocks_with_an_own_region_receipt,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\MediatedIncomingBiasTest::test_missing_attestation_still_blocks_with_an_own_region_receipt
+App\Exceptions\ClosureHistoryUnavailable: Prospective Closure requires frozen selected committed history.",tests/Fixtures/CreatesHomologousPositions.php:81,0,0.000000
+Tests\Feature\MediatedIncomingBiasTest::test_spent_and_exhausted_sources_do_not_gain_a_doorway_allowance,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\MediatedIncomingBiasTest::test_spent_and_exhausted_sources_do_not_gain_a_doorway_allowance
+App\Exceptions\ClosureHistoryUnavailable: Prospective Closure requires frozen selected committed history.",tests/Fixtures/CreatesHomologousPositions.php:81,0,0.000000
+Tests\Feature\MediatedIncomingBiasTest::test_committed_source_cannot_be_used_even_with_evidence,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\MediatedIncomingBiasTest::test_committed_source_cannot_be_used_even_with_evidence
+App\Exceptions\ClosureHistoryUnavailable: Prospective Closure requires frozen selected committed history.",tests/Fixtures/CreatesHomologousPositions.php:81,0,0.000000
+Tests\Feature\MediatedIncomingBiasTest::test_same_region_expressive_paths_use_the_same_ordinary_doorway_rules,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\MediatedIncomingBiasTest::test_same_region_expressive_paths_use_the_same_ordinary_doorway_rules
+App\Exceptions\ClosureHistoryUnavailable: Prospective Closure requires frozen selected committed history.",tests/Fixtures/CreatesHomologousPositions.php:81,0,0.000000
+Tests\Feature\MediatedIncomingBiasTest::test_incomplete_or_reversed_provenance_does_not_create_an_incoming_option,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\MediatedIncomingBiasTest::test_incomplete_or_reversed_provenance_does_not_create_an_incoming_option
+App\Exceptions\ClosureHistoryUnavailable: Prospective Closure requires frozen selected committed history.",tests/Fixtures/CreatesHomologousPositions.php:81,0,0.000000
+Tests\Feature\MediatedIncomingBiasTest::test_mediated_authority_remains_ordinary_even_when_the_source_also_qualifies_by_homology,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\MediatedIncomingBiasTest::test_mediated_authority_remains_ordinary_even_when_the_source_also_qualifies_by_homology
+App\Exceptions\ClosureHistoryUnavailable: Prospective Closure requires frozen selected committed history.",tests/Fixtures/CreatesHomologousPositions.php:81,0,0.000000
+Tests\Feature\MediatedIncomingBiasTest::test_mediated_chirality_is_independent_of_dominance_and_causal_coherence,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\MediatedIncomingBiasTest::test_mediated_chirality_is_independent_of_dominance_and_causal_coherence
+App\Exceptions\ClosureHistoryUnavailable: Prospective Closure requires frozen selected committed history.",tests/Fixtures/CreatesHomologousPositions.php:81,0,0.000000
+Tests\Feature\MediatedIncomingBiasTest::test_stale_inadmissible_mediated_source_keeps_history_but_cannot_write_or_consume,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\MediatedIncomingBiasTest::test_stale_inadmissible_mediated_source_keeps_history_but_cannot_write_or_consume
+App\Exceptions\ClosureHistoryUnavailable: Prospective Closure requires frozen selected committed history.",tests/Fixtures/CreatesHomologousPositions.php:81,0,0.000000
+Tests\Feature\ObservableServiceTest::test_the_origin_uses_the_documented_bootstrap_values,passed,,,,,3,0.111004
+Tests\Feature\ObservableServiceTest::test_first_developed_domain_compares_against_origin_with_inverse_square_attenuation,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\ObservableServiceTest::test_first_developed_domain_compares_against_origin_with_inverse_square_attenuation
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/Feature/ObservableServiceTest.php:82,0,0.424693
