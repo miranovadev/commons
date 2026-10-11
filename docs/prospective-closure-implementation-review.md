@@ -1,77 +1,80 @@
-# Stage 3 implementation review boundary
+# Stage 3 implementation readiness review
 
-Base inspected: `85ddf01d2970a5c446b6225e28a15beb22c07795` (`main`, including
-merged Phase Profile Stages 1–2). This draft records the October 11 approved
-contract before production wiring. It does not implement prospective Closure or
-claim Stage 3 validation.
+PR #255 continues on its original branch. Main at
+`e7c357551f6e9916a8e84c8c61c309069b280ca6`, including PR #256's
+[implementation-readiness protocol](implementation-readiness-protocol.md), is
+incorporated by merge commit `e4943b14294842d9c46ff4225b033943e34b3d39`.
+The [ten Core Invariants](core-invariants.md) remain the highest authority.
 
-The implementation instruction explicitly requires stopping when a measurement
-rule cannot be derived from the approved specifications. Two remaining cases
-need an explicit answer; the old Closure implementation cannot supply replacement
-semantics by analogy.
+The approved **Stage 3: Resolve Implementation Boundaries and Continue Prospective
+Closure** instruction resolves both earlier broad blockers. Origin is a
+constitutional exception, and historical Phase aggregation is cumulative across
+selected occurrences of each Domain. Neither decision is being reopened.
 
-## 1. Origin's new four-primitive state
+The [target specification](prospective-closure-target.md) records these rules.
+One narrower numerical detail could not be established from the accessible
+diagnostics: Origin's denominator multiplicity when constitutional intervals
+coexist with empirical intervals. Production wiring has not begun.
 
-What exact values and availability statuses should a newly created Origin store
-for Depth, Historical Phase Profile, Committal Cadence and Historical Orientation?
+## Ambiguity register
 
-The existing implementation gives Origin Depth/Cadence/Closure = -1, its
-committed interval = 1, and local Chirality Orientation = 0. The Stage 3 contract
-defines the four-way equal mean and the constitutional Phase Profile reference
-`[0, 0, 0, 0, 0, 0, 1]`, but does not specify a Historical Phase Profile comparison
-result or Historical Orientation population for Origin itself. A profile vector
-does not determine its scalar comparison without a comparison reference.
+| Boundary | Question | Resolution | Authority | Status | Verification |
+| --- | --- | --- | --- | --- | --- |
+| Constitutional Origin | Must ordinary maturity derive its new outer components? | No. C=+1; Closure, Extent, Rhythm, Depth and Cadence=-1; immutable constitutional exception, no empirical Orientation population required | Boundary-resolution instruction §2; protocol §5 | Documented | Assert constants at creation and after later Cycles/Attestations; no invented primitive populations |
+| Origin Phase intervals | Are the first six zeros unavailable? | No. All seven intervals are available constitutional values, distinct from ordinary null first births | Instruction §2 | Documented | Zero/zero compares as +1 without synthetic birth or ledger rows |
+| Repeated Domains | Latest Horizon or cumulative history? | Selected E0+E1+E3 versus S1+S2; group raw observations by creating Domain/Phase, not Horizon means | Instruction §3 | Documented | Worked table: unequal S1/S2 counts give Phase-2 mean 4, not 3.5 |
+| Mixed constitutional/empirical population | What multiplicity does each Origin interval have in a mixed Phase sum and denominator? | Not recovered; exact question below. Do not import older zero-count treatment | Instruction §3 requires evidence for precise multiplicity; evidence table below | Unresolved | Conditional unit-once example gives HPP 5/7; not yet a production expectation |
+| Historical Orientation | Product of leans, or mean resolved displacement? | Local O=(current effective lean−previous complementary lineage lean)/2; HO(D)=mean over selected active causal A(D), including genuine zero | Instruction §4 approves prior clarification | Documented | [+0.5,0,-0.5] has mean 0/count 3; test effective replacements and historical boundaries |
+| Maturity and weights | Does missing Cadence transfer weight to Orientation? | No. Two genuine committed intervals per compared Domain required; immature contribution 0 remains unavailable | Instruction §5 | Documented | First Settlement versus mature E=[1,7], S=[10,12] example |
+| Hysteresis | What about zero and agreeing negative signs? | Independent Extent/Rhythm retention at zero; ++ and -- may satisfy coherence subject to other requirements | Instruction §5 | Documented | Mixed retained directions remain incoherent even at numeric zero |
+| Authorised events | Who is updated, and when? | Complete-context birth and genuine governing Cycle entry only; all governed expressives including superseded, each with own history | Instruction §6; full-event diagnostic below | Documented | Atomic all-recipient update; Attestation/structural progression leave older Closure unchanged |
+| Canonical preservation | Recalculate at Commit? | No. Under lock validate and preserve last authorised source values/directions; no extra head or attenuation | Instruction §6 | Documented | Intervening Cycle supersedes stale preview; snapshot matches validated current source |
 
-The instruction to use established Closure bootstrap/reference-frame rules
-resolves unestablished directions, but does not explicitly assign the two new
-primitive values. Retaining old numeric Closure -1 would require additional
-primitive assignments or a bootstrap scalar exception; treating the new slots
-as unavailable zero would produce a different Origin Closure. Neither choice
-has been implemented. Please also specify whether Origin retains its existing
-constitutional Cadence -1 exception to ordinary comparative maturity.
+## Smallest remaining question
 
-## 2. Historical Phase Profile after both Domains develop
+**Does each of Origin's seven constitutional interval values contribute exactly
+once to its Phase's historical sum and denominator when combined with empirical
+intervals, while retaining a constitutional (not empirical) source tag?**
 
-For a selected committed chain `Origin(E0) → S1 → E1 → S2`, followed by an
-expressive in Emergence, which exact observations constitute the two seven-slot
-profiles compared for Historical Phase Profile?
+For example, Origin's Phase-2 constitutional 0 plus selected empirical intervals
+`[2,4]` would then produce sum 6, total contribution count 3, empirical count 2,
+constitutional count 1 and mean 2. This would not create a third empirical birth.
+Only mixed-population multiplicity is at issue, not Origin's participation,
+values, availability, or selected ancestry.
 
-Please specify whether each profile aggregates all selected committed and
-current developmental observations with the corresponding creating Domain, or
-uses the immediately preceding completed complementary Domain boundary, and
-how the constitutional Origin reference participates once empirical Emergence
-history exists. In particular, the Origin vector must not silently become seven
-empirical samples or acquire an invented sample weight.
+The target's conditional repeated-Domain calculation shows the effect on all
+seven slots. It is not an approved weighting decision or runtime configuration.
+No competing diagnostic convention is promoted to an approved alternative.
 
-The existing production `PhaseProfileService` follows one selected local temporal
-chain and compares it with the profile ending at the current Horizon's opening
-Committal. The new Historical Phase Profile explicitly adds selected committed
-ancestry. Reusing its arithmetic and birth observations is defined; choosing the
-general historical aggregation/reference rule is not resolved by that existing
-local comparison method.
+## Diagnostic evidence inspected
 
-The inspected October 9 replay derives historical profile values against Origin
-for the Offsets/Primes candidates. Those observations establish the tested
-Settlement-versus-Origin case, but do not distinguish these later-history cases.
-No new comparison rule has been inferred from those experimental trajectories.
+The following preserved files were retrieved and read. Filenames identify
+supporting artifacts, not newly added repository files. This is not a claim of
+exhaustive access to historical discussions.
 
-## Approved Orientation clarification
+| Artifact | Scenario/result inspected | Evidence and limitation |
+| --- | --- | --- |
+| `commons-lineage-historical-extent-observation-manifest.csv` | 546 observation rows, 16 candidate Commit IDs; B1/B2 controls; types expressive_birth, prospective_phase7, preserved_committed_phase7 | Selected empirical/boundary samples; no constitutional Origin rows defining mixed multiplicity |
+| `commons-lineage-historical-extent-both-baselines.csv` | 128 candidate/control/extra-Cycle rows with Phase counts and means | First-Settlement versus Origin, no later empirical Emergence mixed with Origin |
+| `phase_profile_bootstrap_comparison_v3.py` | Origin vector [0,0,0,0,0,0,1]; profile() counts selected empirical intervals and compares their mean directly with origin[phase−1] | Lineage-correct C1 comparison, but no mixed Origin/empirical denominator |
+| `commons-phase-profile-bootstrap-four-candidates.csv` | C1 Offsets candidate 1: counts [0,2,2,2,1,1,1], means [null,4.5,1,0,2,6,1], contributions [0,−1,−1,+1,−1,−1,+1], HPP=−2/7 | Concrete C1 zero/unavailable arithmetic, only standalone Origin reference |
+| `commons-c1-step1-bootstrap-correspondence-extent.csv` | origin_reference="constitutional axiom, not empirical interval sample"; null_first_interval_is_sample=False | Source distinction, not mixed constitutional denominator |
+| `historical-phase-profile-v1-running-domain-history.csv` and `historical-phase-profile-v1-horizon-profiles.csv` | Older prospective-closure-primes Horizon 3 Emergence: empirical Phase-1 mean 37/count 4 remains 37/4 cumulatively; Phase-7 mean 0/count 2 becomes mean 1/3/count 3 with Origin | Older Horizon-pooled calculation assigns Origin P1–6 count 0, P7 count 1. Not approved C1 selected-lineage aggregation; cannot override explicit constitutional zeros |
+| `historical-phase-profile-v1-observations.csv` | Schema and first 99 data rows, including Origin's recorded Order interval | Partial source-row inspection only; the two summary tables above were read fully. Ordinary event rows do not determine constitutional multiplicity |
+| `c1_full_event_hysteresis.py` | Birth and governing Cycle triggers, independent directions, frozen historical observations | Supports last-trigger preservation; imported replay helper was not recovered, so no reproducible full replay claimed |
+| `commons_step3_field_replay.py` | C1 field replay and canonical boundaries | Supporting lifecycle evidence, not approval of attenuation B |
+| `commons-hysteresis-orientation-corrected-audit.csv` and `commons-hysteresis-closure-directions-v2.csv` | Historical versus Commit-time observations and earlier 13 opposed / 3 agreeing result | Observation-boundary evidence, not universal candidate expectations |
 
-The [target contract](prospective-closure-target.md) now explicitly records:
+The earlier `chirality-v3-historical-extent-v1.csv` and null-bootstrap variant
+were also inspected; neither establishes the mixed-population rule. Historical
+Orientation witnesses and Rhythm candidate/summary files are diagnostic controls,
+not permission to restore shortcut arithmetic. The reported 145/145 local
+Orientation reconstruction is prior evidence, not a production test run here.
 
-- Proposition-local signed displacement, not a product of leans.
-- The arithmetic mean of independently resolved local Orientations in A(D).
-- Active population selection by hard supersession within selected historical
-  causal lineage, not shared Horizon or Region membership.
-- Genuine zero contributions, separate availability and historical boundaries.
-- Complete effective-Attestation semantics for diagnostic reconstruction.
-- Reuse of event-born state, and preservation of the last authorised Closure
-  observation instead of a fresh Commit-time evaluation.
-
-The approved four-slot weighting, neutral immature Cadence slot, independent
-Extent/Rhythm directions, atomic Cycle lifecycle and attenuation A are also
-recorded. These clarifications do not introduce a replacement numeric rule for
-the unresolved cases above.
+The old Horizon-pooled table cannot resolve the gap by excluding constitutional
+zeros: that contradicts the explicit resolution. The C1 script's standalone
+reference cannot prove a mixed count it never computes. B1, B2, C2 and
+attenuation B remain excluded.
 
 ## Implementation sites established by inspection
 
@@ -91,32 +94,48 @@ These are implementation findings, not evidence that the changes already exist.
 No production source, migration, fixture population, authority rule or substrate
 data is changed by this draft.
 
-## Diagnostic evidence inspected
+## Acceptance and validation plan
 
-The following preserved artifacts were read as supporting evidence:
+After the remaining rule is resolved and production wiring exists, run focused
+tests on both PostgreSQL and SQLite:
 
-- `c1_full_event_hysteresis.py`: initial source birth plus genuine governing
-  Cycle events, frozen ancestral source observations, independent directions,
-  and preservation of the last trigger rather than Commit-time recalculation.
-- `commons_step3_field_replay.py`: C1 field replay with canonical boundaries
-  and separate attenuation controls; it does not approve attenuation B.
-- `commons-hysteresis-orientation-corrected-audit.csv` and
-  `commons-hysteresis-closure-directions-v2.csv`: concrete differences between
-  last-trigger and Commit-time Orientation and the earlier corrected 13/3 result.
-- `commons-lineage-historical-extent-observation-manifest.csv`,
-  `commons-lineage-historical-extent-both-baselines.csv`,
-  `commons-lineage-historical-orientation-witnesses.csv`, and historical Rhythm
-  candidate/summary files: selected populations and the earlier diagnostic
-  controls. Earlier shortcut values and B1/B2 are not promoted to production.
+- Exact Origin constants, all seven constitutional intervals, ordinary null
+  first intervals, immutable snapshots and unchanged Attestation polarity.
+- First Settlement, unequal repeated-Domain sample counts, alternating histories
+  and cumulative selected ancestry without siblings or neighbouring Regions.
+- Revision, acting-Gate Reconcile and foreign-source Bias, preserving temporal
+  selection and independent governing-basin clocks.
+- Effective Attestation replacement, genuine zero Orientation and frozen
+  historical populations; the prior 145/145 diagnostic is not a substitute.
+- Immature/mature Cadence and independent Extent/Rhythm directions, including
+  coherent -- and incoherent mixed signs.
+- Atomic Cycle updates for active and superseded expressives, each using its own
+  history; Attestation independence and no older structural-progression trigger.
+- No Commit-time measurement or attenuation, exact source preservation,
+  stale-state protection and fresh descendants without rewriting frozen history.
+- Batched versus individual calculations with identical populations/values;
+  query counts, Cycle fan-out and runtimes on both databases.
 
-The 145/145 reconstruction is a previously reported diagnostic result, not a
-replay executed for this draft. The inspected full-event script distinguishes
-B1, B2 and C1; their candidate outcomes are not interchangeable test expectations.
+Run focused C1/observable/ledger regressions, Core and complete Integration to
+final summaries. Preserve Stage 2 PostgreSQL isolation, sharding and complete
+coverage accounting: preferred under 15 minutes, maximum 20 minutes. Classify
+unchanged baseline failures, lawful trajectories, genuine defects and
+infrastructure failures separately. Do not alter authored populations or historic
+numeric assertions merely to regain previous transitions.
 
-## Validation status
+## Readiness decision and current validation status
 
-Only documentation and local-link/whitespace checks apply to this draft. No
-Stage 3 PostgreSQL/SQLite, performance, Core or Integration result is claimed.
-After the two decisions are supplied, implementation and all required validation
-can continue in this same PR. Keep the Stage 2 Integration sharding, complete
-coverage accounting and 20-minute maximum intact. Do not merge this draft.
+Protocol §§1–3: explicit decisions supersede experimental tables; manifests,
+scripts and repeated-Domain tables were retrieved before identifying the gap.
+§§4–6: the register distinguishes constitutional, empirical, unavailable and
+zero-valued observations and distinct lineage scopes. §§7–8: the target states
+atomic events, hysteresis, canonical preservation, stale-state handling and
+worked cases, with implementation mapping and verification plan here.
+§§9–11: readiness is **not yet claimed** because mixed-population multiplicity
+is necessary for ordinary later-Domain Closure. Preserve this work and request
+only the missing rule or the approved artifact establishing it.
+
+Current checks cover documentation arithmetic, local links and whitespace only.
+No new PostgreSQL/SQLite, Core, Integration or performance result is claimed.
+Full Stage 3 validation remains outstanding, not inferred from Stage 2 or
+individual diagnostic results. Continue in PR #255; do not merge.

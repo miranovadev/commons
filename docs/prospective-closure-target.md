@@ -3,10 +3,63 @@
 > **Approved for Stage 3 implementation; not implemented here.** The current
 > [birth-frozen Closure v2](observables.md#closure-v2-committed-historical-crystallization)
 > and [Closure hysteresis](closure-hysteresis.md) remain descriptions of
-> running code. The October 11 implementation instructions approve the
-> replacement below and retain attenuation A. No historical backfill or
-> deletion is authorised. Remaining implementation questions are recorded in
+> running code. The initial Stage 3 instructions and subsequent boundary resolution
+> approve the contract below and retain attenuation A. Apply the
+> [implementation-readiness protocol](implementation-readiness-protocol.md).
+> No historical backfill or deletion is authorised. The two original broad
+> blockers are resolved; the remaining constitutional-interval multiplicity
+> question and evidence are recorded in
 > [the Stage 3 review](prospective-closure-implementation-review.md).
+
+## Constitutional Origin is not an ordinary candidate
+
+The approved Stage 3 boundary resolution establishes these immutable constitutional
+constants:
+
+| Measurement/component | Origin value | Status |
+| --- | ---: | --- |
+| Correspondence | +1 | Constitutional |
+| Closure | -1 | Constitutional |
+| Historical Extent | -1 | Constitutional |
+| Historical Rhythm | -1 | Constitutional |
+| Committal Depth | -1 | Constitutional |
+| Committal Cadence | -1 | Constitutional |
+
+`Closure = (Extent + Rhythm) / 2 = (-1 + -1) / 2 = -1`.
+The negative components establish Negative direction independently. Ordinary
+empirical comparison/maturity is not a prerequisite for Origin. In particular,
+the two-interval comparative Cadence threshold does not invalidate its
+constitutional Cadence. Do not derive Origin's Closure from an empirical
+Historical Orientation population or solve the ordinary four-primitive equation
+backwards to invent new primitive observations.
+
+Origin's constitutional Phase Profile is `[0, 0, 0, 0, 0, 0, 1]`:
+
+| Phase | Interval | Availability/source |
+| --- | ---: | --- |
+| Distinguish (1) | 0 | Available, constitutional |
+| Persist (2) | 0 | Available, constitutional |
+| Constrain (3) | 0 | Available, constitutional |
+| Disperse (4) | 0 | Available, constitutional |
+| Mediate (5) | 0 | Available, constitutional |
+| Bias (6) | 0 | Available, constitutional |
+| Order (7) | 1 | Available, constitutional |
+
+These are genuine constitutional interval values, not unavailable values and not
+seven ordinary expressive births. No synthetic Supersessions, ledger entries or
+birth observations are needed to justify them. Keep their constitutional source
+distinct from empirical event-born evidence and do not invent empirical sample
+counts. Their multiplicity when mixed with empirical observations is the narrow
+review question below; their values and availability are already resolved.
+
+The ordinary C1 first expressive birth still has a coordinate but a **null**
+interval. That unavailable developmental interval is not interchangeable with
+Origin's available constitutional zero.
+
+Origin is excluded from prospective expressive update recipients. Subsequent
+Cycles, Attestations and developmental transitions do not remeasure its frozen
+constitutional state. Preserve its existing explicit Attestation polarity,
+Chirality bootstrap and canonical snapshot behaviour.
 
 ## Observable independence and lifecycle
 
@@ -33,7 +86,7 @@ Closure until the next lawful Cycle-triggered evaluation. Tension/Charge
 may consequently change; admissibility still evaluates underlying
 component directions and ordinary authority, not Tension sign alone.
 
-## Hierarchy and weighting
+## Ordinary developmental hierarchy and weighting
 
 ```text
 Closure
@@ -145,12 +198,105 @@ similarity(a, b) = clamp(1 - 2 * abs(a - b) / max(a, b), -1, +1)
 Both genuine zeros compare as +1. An unavailable comparison contributes numeric
 zero with unavailable status. Average all seven fixed slots, including unavailable
 slots; never reweight the remaining slots. Origin's constitutional reference
-`[0, 0, 0, 0, 0, 0, 1]` is not a set of fabricated empirical intervals.
+`[0, 0, 0, 0, 0, 0, 1]` supplies available constitutional intervals; it must
+not be discarded as missing merely because no expressive birth rows exist.
 
 The prospective Phase-7 interval runs from the final selected expressive
 observation to the potential Commit boundary using the existing governing-basin
 clock and accepted boundary rules. It can change Closure at a genuine Cycle
 entry without changing the previously resolved Phase-6 Correspondence.
+
+### Cumulative selected Domain aggregation
+
+The approved boundary resolution explicitly selects **all relevant occurrences of each
+creating Domain along the selected committed causal ancestry**, plus the measured
+expressive's selected developmental observations. It is not restricted to the
+latest Horizon or immediately preceding Domain occurrence.
+
+For `Origin E0 → S1 → E1 → S2 → developing E3`:
+
+- Emergence includes the constitutional Origin profile, selected empirical E1
+  observations and selected developing E3 observations.
+- Settlement includes selected empirical S1 and S2 observations.
+- Group raw selected intervals by creating Domain and Phase; derive each mean
+  from those intervals. Do not average Horizon-level means.
+- Exclude unrelated siblings, neighbouring Regions and arbitrary Horizon members.
+  Deduplicate genuine observations reached through shared selected history.
+- Committed observations retain their authoritative historical boundary; later
+  supersessions, Attestations or basin growth cannot rewrite them.
+
+This is Historical Phase Profile for Closure, not a change to the separately
+approved local Correspondence Phase Profile selector.
+
+### Worked alternating/repeated-Domain acceptance case
+
+The following is a constructed arithmetic acceptance case, not a claim that an
+old experimental transcript follows this trajectory. Brackets list selected
+genuine interval observations; `[]` contributes no sample. The two S2 Phase-2
+observations can be a selected same-Phase Revision sequence. Phase 7 in E3 is
+the prospective interval; earlier Phase-7 observations are frozen boundaries.
+
+| Phase | Origin E0 (constitutional) | S1 empirical | E1 empirical | S2 empirical | E3 developmental |
+| --- | ---: | --- | --- | --- | --- |
+| 1 | 0 | [] | [] | [] | [] |
+| 2 | 0 | [2] | [2] | [4, 6] | [4] |
+| 3 | 0 | [0] | [0] | [0] | [0] |
+| 4 | 0 | [1] | [2] | [3] | [4] |
+| 5 | 0 | [3] | [4] | [1] | [2] |
+| 6 | 0 | [0] | [0] | [0] | [0] |
+| 7 | 1 | [1] | [2] | [3] | [3] |
+
+The selected empirical Emergence counts are `[0, 2, 2, 2, 2, 2, 2]`, and
+Settlement counts are `[0, 3, 2, 2, 2, 2, 2]`. The Settlement means are
+`[null, 4, 0, 2, 2, 0, 2]`. For Phase 2, `(2 + 4 + 6) / 3 = 4`, not the
+incorrect mean of Horizon means `(2 + (4 + 6)/2) / 2 = 3.5`.
+
+Let `c_i` denote the still-unresolved denominator multiplicity of Origin's
+constitutional value at Phase i. It is notation for the open question, **not a
+new runtime weight or a configurable parameter**. For positive multiplicity,
+the complete comparison is:
+
+| Phase | Emergence total count | Emergence mean | Settlement mean | Similarity contribution |
+| --- | --- | --- | --- | --- |
+| 1 | `c_1` | 0 | unavailable | 0, unavailable comparison |
+| 2 | `2 + c_2` | `6 / (2 + c_2)` | 4 | `similarity(6 / (2 + c_2), 4)` |
+| 3 | `2 + c_3` | 0 | 0 | +1 |
+| 4 | `2 + c_4` | `6 / (2 + c_4)` | 2 | `similarity(6 / (2 + c_4), 2)` |
+| 5 | `2 + c_5` | `6 / (2 + c_5)` | 2 | `similarity(6 / (2 + c_5), 2)` |
+| 6 | `2 + c_6` | 0 | 0 | +1 |
+| 7 | `2 + c_7` | `(5 + c_7) / (2 + c_7)` | 2 | `similarity((5 + c_7) / (2 + c_7), 2)` |
+
+**Conditional check, not an approved multiplicity decision:** if each
+constitutional interval participates exactly once, Emergence total counts are
+`[1, 3, 3, 3, 3, 3, 3]`, means are `[0, 2, 0, 2, 2, 0, 2]`, and seven
+contributions are `[0, 0, 1, 1, 1, 1, 1]`. Historical Phase Profile is `5/7`.
+Depth counts are E=3, S=2 (including the prospective current position), giving
+Depth `1/3` and Extent `11/21` before production rounding. This numerical branch
+must not be made a production expectation until the multiplicity is resolved.
+
+The old diagnostic sources establish neither that mixed-population denominator
+nor a competing approved one. The exact evidence limitation and smallest
+question are in the [ambiguity register](prospective-closure-implementation-review.md#ambiguity-register).
+
+### First Settlement and comparative Cadence acceptance cases
+
+These cases do not require mixed constitutional/empirical profile weighting:
+
+1. Compare selected first-Settlement Phase means `[null, 0, 2, 0, 1, 0, 1]`
+   with constitutional Origin `[0, 0, 0, 0, 0, 0, 1]`. Contributions are
+   `[0, +1, -1, +1, -1, +1, +1]`, giving Historical Phase Profile `2/7`.
+   The Phase-1 comparison is unavailable; Phase-2 zero/zero is genuinely +1.
+   First-post-Origin Depth is 0, so Extent is `1/7` before rounding.
+2. With only Origin's committed interval in Emergence, ordinary comparative
+   Cadence is unavailable and contributes 0. If the selected active local
+   Orientations are `[+0.5, 0, -0.5]`, Historical Orientation is a genuine
+   measured 0, Rhythm is 0 and retains its own established direction. The two
+   numerically zero primitive contributions have different availability.
+3. For genuine selected committed interval populations E=`[1, 7]` and
+   S=`[10, 12]`, both Domains are mature. Population CVs are `3/4` and `1/11`;
+   comparative Cadence is `-25/33` (rounded to `-0.7575758`). These are the
+   existing committed-interval ownership/CV rules, not Phase Profile intervals.
+   If both genuine populations instead have zero CV, measured Cadence is +1.
 
 ### Independent directions
 
@@ -241,3 +387,4 @@ Stage 3 excludes the proposed Tragedy/Resolution lifecycle, recursive Exhaustion
 movement/recovery, Receipt authority, homology, Correspondence C1 and Chirality
 vNext changes. Production implementation and its PostgreSQL/SQLite, performance,
 Core and complete Integration validation remain required before approval.
+
