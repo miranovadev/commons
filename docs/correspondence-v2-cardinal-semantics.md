@@ -5,14 +5,10 @@
 > structural morphology dependencies remain in use. Closure's Committed Cardinal
 > Position is separate and unchanged.
 
-> **Current Cardinal implementation specification and historical design record.**
-> The proposed replacement is [Phase Profile C1](phase-profile-target.md).
-> The word *canonical* in this historical title does not approve the
-> replacement or make Cardinal's row-position rules part of C1.
-
-> **Status:** normative semantics for the Correspondence v2 correction. This document supersedes earlier v2 wording that equated structural depth with Phase position or reduced Position Correspondence to a single head-to-head comparison.
->
-> Production code must implement these semantics directly. Do not substitute Phase Position, head-only comparison, UI geometry, or an optimization that changes the defined cardinal populations.
+> The following sections preserve the previous v2 design and numeric examples.
+> Their Cardinal Position component is not production C1 authority. The unchanged
+> Shape Topology and structural morphology definitions still apply where referenced
+> by the current observable contract.
 
 ## 1. Purpose
 
@@ -467,4 +463,3 @@ Before replacing production Correspondence, tests must prove:
 - Phase Position, exploration `structural_position`, Domain Depth and Committal Depth cannot be substituted for one another.
 
 These semantics are now frozen for the first corrected implementation. Production changes should begin with red semantic regressions derived from this document before replacing the existing calculator.
-

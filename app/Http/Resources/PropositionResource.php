@@ -102,5 +102,3 @@ class PropositionResource extends JsonResource
         ];
     }
 }
-
-

@@ -209,4 +209,3 @@ final readonly class CommitmentSnapshotService
         }
     }
 }
-

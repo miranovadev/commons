@@ -173,4 +173,3 @@ test('snap viewport has a zero horizontal origin and hides controls at the bound
   assert.match(source, /hidden=\{!navigation.previous\}/);
   assert.match(source, /useLayoutEffect/);
 });
-

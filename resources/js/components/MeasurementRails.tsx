@@ -170,4 +170,3 @@ function position(value: number) {
 function signed(value: number) {
   return `${value >= 0 ? '+' : ''}${value.toFixed(2)}`;
 }
-

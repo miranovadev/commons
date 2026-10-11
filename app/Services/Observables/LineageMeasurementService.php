@@ -126,4 +126,3 @@ final readonly class LineageMeasurementService
         return $positions;
     }
 }
-

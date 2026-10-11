@@ -293,4 +293,3 @@ class CardinalCorrespondenceTest extends TestCase
         app(LedgerService::class)->record($edge);
     }
 }
-

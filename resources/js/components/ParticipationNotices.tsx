@@ -62,4 +62,3 @@ export function participationNotices({ participation, plan, canCommit, canRest, 
     content: <Text size="sm" role="alert">{messageFrom(error, 'Please try again.')}</Text> });
   return notices;
 }
-

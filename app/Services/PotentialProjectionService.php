@@ -301,4 +301,3 @@ final class PotentialProjectionService
             'dependencies' => array_map(fn ($id) => ['context_horizon_id' => $horizon->id, 'proposition_id' => $id], $dependencies)];
     }
 }
-

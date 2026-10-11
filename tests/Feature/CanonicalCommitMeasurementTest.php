@@ -377,4 +377,3 @@ class CanonicalCommitMeasurementTest extends TestCase
         return [Proposition::count(), Supersession::count(), CommitmentSnapshot::count(), ContextHorizon::count(), SubstrateLedgerEntry::count()];
     }
 }
-

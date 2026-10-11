@@ -32,4 +32,3 @@ class PropositionMeasurement extends Model
         return $this->belongsTo(Proposition::class);
     }
 }
-

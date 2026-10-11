@@ -32,4 +32,3 @@ class CanonicalMeasurementService
             'correspondence_direction' => $correspondenceDirection, ...$attributes])->save();
     }
 }
-

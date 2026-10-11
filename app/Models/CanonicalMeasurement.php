@@ -47,4 +47,3 @@ class CanonicalMeasurement extends Model
             'attestation_cadence_direction', 'shape_topology', 'phase_profile', 'shape_topology_direction', 'phase_profile_direction']);
     }
 }
-

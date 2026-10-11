@@ -361,4 +361,3 @@ final class PropositionMeasurementService
         }
     }
 }
-

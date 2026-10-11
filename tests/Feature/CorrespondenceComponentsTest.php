@@ -228,4 +228,3 @@ class CorrespondenceComponentsTest extends TestCase
         return $node;
     }
 }
-

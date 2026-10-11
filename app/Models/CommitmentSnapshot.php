@@ -79,4 +79,3 @@ class CommitmentSnapshot extends Model
         return $this->direction_before !== $this->direction_after;
     }
 }
-

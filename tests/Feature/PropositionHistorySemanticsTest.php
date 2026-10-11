@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Observables\CorrespondenceValues;
 use App\Enums\PhaseKind;
 use App\Enums\SupersessionStrength;
 use App\Models\Attestation;
@@ -140,7 +141,10 @@ class PropositionHistorySemanticsTest extends TestCase
 
         // Isolate history from Mediate/Bias candidate mathematics, covered separately.
         foreach ($sources as $item) {
-            app(PropositionMeasurementService::class)->project($item, -0.8, -1, -1);
+            // This history-isolation fixture explicitly supplies Mediate's new
+            // component coherence as well as the already-controlled scalar.
+            app(PropositionMeasurementService::class)->project($item, -0.8, -1, -1,
+                correspondenceComponents: $operation === 'reconcile' ? new CorrespondenceValues(-.8, -.8) : null);
         }
         if (in_array($operation, ['reclassify', 'bias'], true)) {
             $input = $this->reclassificationInputFixture($phase, $source);

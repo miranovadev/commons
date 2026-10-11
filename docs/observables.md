@@ -507,4 +507,3 @@ commitment time. New commitments record the current calculator version.
 
 See [Attestation polarity and direction history](attestation-polarity.md) for the
 normative distinction between measurement values, retained directions and labels.
-
