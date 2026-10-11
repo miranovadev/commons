@@ -13,6 +13,7 @@ use App\Models\Substrate;
 use App\Models\Supersession;
 use App\Services\Observables\CanonicalMeasurementService;
 use App\Services\Observables\LineageMeasurementService;
+use App\Services\Observables\ProspectiveClosureService;
 use DomainException;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
@@ -132,7 +133,7 @@ final readonly class ContributionDispatcher
             }
 
             if ($result->wasRecentlyCreated && $result->tier === 'expressive') {
-                app(\App\Services\Observables\ProspectiveClosureService::class)->initialize($result);
+                app(ProspectiveClosureService::class)->initialize($result);
                 // Resolve the complete successful write, including selected Receipt
                 // loads, before observing its field boundary. Existing propositions
                 // (Traverse, Attestation, Instrument) and Committals are not births.

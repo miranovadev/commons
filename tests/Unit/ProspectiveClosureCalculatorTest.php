@@ -73,4 +73,21 @@ class ProspectiveClosureCalculatorTest extends TestCase
         $this->assertSame(1, $profile['sample_counts'][1]);
         $this->assertSame(0.0, $profile['means'][1]);
     }
+
+    public function test_first_settlement_retains_fixed_weights_before_cadence_matures(): void
+    {
+        $result = $this->calculator()->calculate('settlement', ['emergence' => 1, 'settlement' => 1],
+            ['emergence' => [1], 'settlement' => [4]],
+            ['emergence' => $this->observations([[0], [0], [0], [0], [0], [0], [1]]),
+                'settlement' => $this->observations([[null], [0], [2], [0], [1], [0], [1]])],
+            ['emergence' => [], 'settlement' => [.5, 0, -.5]]);
+        $this->assertSame([0.0, 1.0, -1.0, 1.0, -1.0, 1.0, 1.0], $result['phase_contributions']);
+        $this->assertSame(round(2 / 7, 7), $result['historical_phase_profile']);
+        $this->assertSame(0.0, $result['cadence']);
+        $this->assertFalse($result['availability']['cadence']);
+        $this->assertSame(0.0, $result['historical_orientation']);
+        $this->assertSame(3, $result['orientation_sample_count']);
+        $this->assertTrue($result['availability']['historical_orientation']);
+        $this->assertEqualsWithDelta(1 / 14, $result['closure'], 1e-7);
+    }
 }

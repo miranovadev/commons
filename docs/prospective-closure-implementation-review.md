@@ -12,7 +12,7 @@ constitutional exception, and historical Phase aggregation is cumulative across
 selected occurrences of each Domain. Neither decision is being reopened.
 
 The [target specification](prospective-closure-target.md) records these rules.
-Claire's October 12 clarification resolves the final numerical detail: all
+Claire's final clarification resolves the final numerical detail: all
 observed Phase intervals, including Origin's, have equal weight. No semantic
 ambiguity remains in this register; production implementation can proceed.
 
@@ -23,7 +23,7 @@ ambiguity remains in this register; production implementation can proceed.
 | Constitutional Origin | Must ordinary maturity derive its new outer components? | No. C=+1; Closure, Extent, Rhythm, Depth and Cadence=-1; immutable constitutional exception, no empirical Orientation population required | Boundary-resolution instruction §2; protocol §5 | Documented | Assert constants at creation and after later Cycles/Attestations; no invented primitive populations |
 | Origin Phase intervals | Are the first six zeros unavailable? | No. All seven intervals are available constitutional values, distinct from ordinary null first births | Instruction §2 | Documented | Zero/zero compares as +1 without synthetic birth or ledger rows |
 | Repeated Domains | Latest Horizon or cumulative history? | Selected E0+E1+E3 versus S1+S2; group raw observations by creating Domain/Phase, not Horizon means | Instruction §3 | Documented | Worked table: unequal S1/S2 counts give Phase-2 mean 4, not 3.5 |
-| Mixed constitutional/empirical population | What multiplicity does each Origin interval have in a mixed Phase sum and denominator? | Every observed interval counts once, including each Origin interval; no separate weight, denominator or maturity rule | Claire's October 12 final clarification | Documented | Origin 0 plus [2,4] has mean 2; worked repeated-Domain HPP=5/7 |
+| Mixed constitutional/empirical population | What multiplicity does each Origin interval have in a mixed Phase sum and denominator? | Every observed interval counts once, including each Origin interval; no separate weight, denominator or maturity rule | Claire's final clarification | Documented | Origin 0 plus [2,4] has mean 2; worked repeated-Domain HPP=5/7 |
 | Historical Orientation | Product of leans, or mean resolved displacement? | Local O=(current effective lean−previous complementary lineage lean)/2; HO(D)=mean over selected active causal A(D), including genuine zero | Instruction §4 approves prior clarification | Documented | [+0.5,0,-0.5] has mean 0/count 3; test effective replacements and historical boundaries |
 | Maturity and weights | Does missing Cadence transfer weight to Orientation? | No. Two genuine committed intervals per compared Domain required; immature contribution 0 remains unavailable | Instruction §5 | Documented | First Settlement versus mature E=[1,7], S=[10,12] example |
 | Hysteresis | What about zero and agreeing negative signs? | Independent Extent/Rhythm retention at zero; ++ and -- may satisfy coherence subject to other requirements | Instruction §5 | Documented | Mixed retained directions remain incoherent even at numeric zero |
@@ -32,7 +32,7 @@ ambiguity remains in this register; production implementation can proceed.
 
 ## Final numerical boundary resolved
 
-Claire explicitly confirmed on October 12 that all Phase Profile intervals are
+Claire explicitly confirmed that all Phase Profile intervals are
 equally weighted observations, including Origin's. Origin's Phase-2 zero and
 subsequent [2,4] therefore have sum 6, count 3 and mean 2. Constitutional versus
 empirical source metadata does not affect this arithmetic. There is no extra
@@ -87,10 +87,27 @@ attenuation B remain excluded.
 | Snapshot validation | `CommitmentSnapshotService` validates old Cardinal/Cadence metadata | Validate Extent/Rhythm and exact authorised source state under the existing lock |
 | Projection and UI | Closure readers use birth state and old component names | Read the new state and expose its true component names without reusing legacy fields |
 
-These are implementation findings, not evidence that the changes already exist.
-The implementation must preserve fixture populations, operational authority and
-existing substrate data. Implementation progress and validation are recorded in
-the PR description.
+The table records the pre-implementation mapping. The draft now implements these
+boundaries through `ProspectiveClosureCalculator`, `ProspectiveClosureHistory`
+and `ProspectiveClosureService`, with durable `prospective_closure_states` rows.
+Origin has a frozen constitutional row. Ordinary births initialise after their
+ledger context and real edges exist. New governing Cycle entries batch-load
+selected histories and atomically update all governed expressive rows. Stored
+reads never repair missing state. PostgreSQL and SQLite guards prevent updates
+to frozen canonical rows. No records are backfilled or deleted.
+
+Commit copies the source observation exactly, including the historical inputs,
+trigger identity and independently retained directions. Snapshot validation
+compares the complete authorised observation, rather than just its scalar.
+Projection, inspection, Order coherence and UI labels consume Extent/Rhythm.
+The underlying Correspondence and Chirality implementations remain unchanged.
+
+The existing `ClosureBirthService` is still used by the separately specified
+Rest crossover diagnostic; it does not supply production Closure measurements.
+`CrossoverMarginService` and movement/recovery rules have not been changed. The
+old Cardinal/Cadence conditional bound in `rest-crossover-experiment.md` is not
+a validated bound on the new four-primitive Closure. This dependency remains a
+review concern; no replacement routing formula is inferred in this PR.
 
 ## Acceptance and validation plan
 
@@ -133,7 +150,17 @@ worked cases, with implementation mapping and verification plan here.
 The specification is ready for implementation. This does not claim production
 correctness or completed validation.
 
-Current checks cover documentation arithmetic, local links and whitespace only.
-No new PostgreSQL/SQLite, Core, Integration or performance result is claimed.
-Full Stage 3 validation remains outstanding, not inferred from Stage 2 or
-individual diagnostic results. Continue in PR #255; do not merge.
+The first fully wired cross-database run
+[38175291315](https://github.com/miranovadev/commons/actions/runs/38175291315)
+passes 47 Phase Profile cases and 11 prospective Closure cases on each database.
+Its broader observable/ledger group has 55 passes and 85 failures on each,
+primarily direct fixtures missing authorised prospective state. This is not a
+successful regression run. Canonical Commit's focused class passes.
+
+The first complete wired Integration run
+[38174517219](https://github.com/miranovadev/commons/actions/runs/38174517219)
+executed all 31 cases: 6 passes, 25 failures, no skips, 16,322 assertions. The
+longest PHP shard took 311.92 seconds. It establishes complete execution within
+the unchanged budget, not correctness. Follow-up fixture corrections and new
+coverage are being validated; exact final-head results belong in the PR report.
+Core validation is not yet complete. Continue in PR #255; do not merge.

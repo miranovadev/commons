@@ -82,7 +82,7 @@ abstract class TestCase extends BaseTestCase
         // not use this routing/transport fixture.
         $prospective = app(ProspectiveClosureService::class);
         $this->partialMock(ProspectiveClosureService::class, function ($mock) use ($prospective, $value, $onlyId, $includeCommittal): void {
-            foreach (['initialize', 'entered', 'preserve'] as $method) {
+            foreach (['initialize', 'entered'] as $method) {
                 $mock->shouldReceive($method)->andReturnUsing(fn (...$args) => $prospective->$method(...$args));
             }
             $mock->shouldReceive('stored')->andReturnUsing(function ($node, $context = null) use ($prospective, $value, $onlyId, $includeCommittal) {

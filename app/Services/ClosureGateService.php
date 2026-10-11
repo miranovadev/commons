@@ -20,9 +20,9 @@ class ClosureGateService
 
     public function preview(Proposition $gate, Phase $phase, ?ParticipationContext $context = null): array
     {
-        $evaluate = function () use ($gate): array {
+        $evaluate = function () use ($gate, $context): array {
             try {
-                return $this->states->stored($gate);
+                return $this->states->stored($gate, $context);
             } catch (ClosureHistoryUnavailable) {
                 return ['depth' => null, 'cadence' => null, 'closure' => null,
                     'historical_extent' => null, 'historical_rhythm' => null,

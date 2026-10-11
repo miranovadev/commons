@@ -1,13 +1,13 @@
 # Prospective Closure: approved Stage 3 contract
 
-> **Approved for Stage 3 implementation; not implemented here.** The current
-> [birth-frozen Closure v2](observables.md#closure-v2-committed-historical-crystallization)
-> and [Closure hysteresis](closure-hysteresis.md) remain descriptions of
-> running code. The initial Stage 3 instructions and subsequent boundary resolution
+> **Approved Stage 3 contract; implementation under validation in PR #255.**
+> The [birth-frozen Closure v2](observables.md#closure-v2-committed-historical-crystallization)
+> and [Closure hysteresis](closure-hysteresis.md) describe the preceding model.
+> The initial Stage 3 instructions and subsequent boundary resolution
 > approve the contract below and retain attenuation A. Apply the
 > [implementation-readiness protocol](implementation-readiness-protocol.md).
 > No historical backfill or deletion is authorised. All specification boundaries,
-> including equal observation weighting clarified by Claire on October 12, are
+> including equal observation weighting in Claire's final clarification, are
 > resolved and recorded in
 > [the Stage 3 review](prospective-closure-implementation-review.md).
 

@@ -126,6 +126,16 @@ class ProspectiveClosureStateTest extends TestCase
         $after = $this->service()->stored($head);
         $this->assertSame(.5, $after['historical_orientation']);
         $this->assertSame($attestation->id, $after['orientation_observations'][$head->id]['last_attestation_id']);
+        $replacement = (new Attestation)->forceFill(['phase_id' => $head->phase_id, 'proposition_id' => $head->id,
+            'direction' => 'refute', 'supersedes_attestation_id' => $attestation->id]);
+        $replacement->save();
+        app(LedgerService::class)->record($replacement);
+        $this->assertSame($after, $this->service()->stored($head));
+        $this->enter();
+        $replaced = $this->service()->stored($head);
+        $this->assertSame(-.5, $replaced['historical_orientation']);
+        $this->assertSame(1, $replaced['orientation_sample_count']);
+        $this->assertSame($replacement->id, $replaced['orientation_observations'][$head->id]['last_attestation_id']);
     }
 
     public function test_temporal_profile_excludes_reconcile_operand_while_orientation_uses_active_causal_population(): void
@@ -145,16 +155,51 @@ class ProspectiveClosureStateTest extends TestCase
         $this->assertSame([1, 1, 1, 1, 1, 1, 1], $state['domain_profiles']['emergence']['sample_counts']);
     }
 
-    private function bias(): Proposition
+    private function bias(bool $staggered = false): Proposition
     {
         $head = $this->born(PhaseKind::Distinguish, $this->origin);
+        if ($staggered) {
+            $this->enter();
+        }
         $head = $this->born(PhaseKind::Persist, $head);
+        if ($staggered) {
+            $this->enter();
+        }
         $head = $this->born(PhaseKind::Constrain, $head, 'reclassify');
+        if ($staggered) {
+            $this->enter();
+        }
         $head = $this->born(PhaseKind::Disperse, $head);
         $other = $this->born(PhaseKind::Disperse, $head->parents()->sole());
+        if ($staggered) {
+            $this->enter();
+        }
         $head = $this->born(PhaseKind::Mediate, $head, 'reconcile', $other);
+        if ($staggered) {
+            $this->enter();
+        }
 
         return $this->born(PhaseKind::Bias, $head, 'reclassify');
+    }
+
+    public function test_revision_retains_selected_intervals_and_excludes_unrelated_siblings(): void
+    {
+        $first = $this->born(PhaseKind::Distinguish, $this->origin);
+        $second = $this->born(PhaseKind::Persist, $first);
+        $unrelated = $this->born(PhaseKind::Persist, $first);
+        $this->enter();
+        $revision = $this->born(PhaseKind::Persist, $second, 'revise');
+        $state = $this->service()->stored($revision);
+        $this->assertArrayHasKey($second->id, $state['phase_observations']);
+        $this->assertArrayHasKey($revision->id, $state['phase_observations']);
+        $this->assertArrayNotHasKey($unrelated->id, $state['phase_observations']);
+        $this->assertNull($state['phase_observations'][$first->id]['interval']);
+        $this->assertSame(0, $state['phase_observations'][$second->id]['interval']);
+        $this->assertSame(1, $state['phase_observations'][$revision->id]['interval']);
+        $domain = $revision->phase->cycle->contextHorizon->domain->value;
+        $constitutional = $domain === 'emergence' ? 1 : 0;
+        $this->assertSame(2 + $constitutional, $state['domain_profiles'][$domain]['sample_counts'][1]);
+        $this->assertEqualsWithDelta(1 / (2 + $constitutional), $state['domain_profiles'][$domain]['means'][1], 1e-7);
     }
 
     /** A structural preservation test, not a claim of grounded Commit eligibility. */
@@ -203,6 +248,35 @@ class ProspectiveClosureStateTest extends TestCase
         } catch (\Symfony\Component\HttpKernel\Exception\ConflictHttpException) {
             $this->assertSame($count, Proposition::count());
             $this->assertSame($edges, Supersession::count());
+        }
+    }
+
+    public function test_grounded_negative_coherence_commit_preserves_authorised_state_without_an_extra_trigger(): void
+    {
+        // A separate Stage 3 scenario; existing authored Integration populations
+        // and their expected transitions are not changed to manufacture a Commit.
+        $source = $this->bias(staggered: true);
+        $attestation = (new Attestation)->forceFill(['phase_id' => $source->phase_id,
+            'proposition_id' => $source->id, 'direction' => 'refute']);
+        $attestation->save();
+        app(LedgerService::class)->record($attestation);
+        $this->loadedReceiptFixture($source);
+        $phase = (new Phase)->forceFill(['cycle_id' => $this->cycle->id, 'kind' => PhaseKind::Order,
+            'gate_proposition_id' => $source->id, 'write_register' => $source->register, 'started_at' => now()]);
+        $phase->save();
+        $this->actor->forceFill(['current_proposition_id' => $source->id])->save();
+        $state = $this->service()->stored($source);
+        $this->assertTrue($state['admissible'], json_encode($state));
+        $this->assertSame('negative', $state['historical_extent_direction']);
+        $this->assertSame('negative', $state['historical_rhythm_direction']);
+        $resolved = app(\App\Services\PropositionMeasurementService::class)->recalculate($source);
+        $target = app(\App\Services\ContributionDispatcher::class)->dispatch($this->actor, $phase,
+            ['action' => 'proposition.commit', 'proposition_id' => $source->id]);
+        $this->assertSame($state, $this->service()->stored($target));
+        $this->assertEquals($state, $target->fresh()->commitmentSnapshot->closure_observation);
+        foreach (['correspondence', 'chirality', 'orientation_direction', 'attestation_cadence_direction',
+            'shape_topology_direction', 'phase_profile_direction'] as $key) {
+            $this->assertSame($resolved->$key, $target->fresh()->measurement->$key, $key);
         }
     }
 

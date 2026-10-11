@@ -21,6 +21,7 @@ use App\Services\Observables\CorrespondenceCalculator;
 use App\Services\Observables\LocalMeasurementService;
 use App\Services\Observables\PhaseProfileObservationService;
 use App\Services\Observables\PhaseProfileService;
+use App\Services\Observables\ProspectiveClosureService;
 use App\Services\Participation\ParticipationContext;
 use App\Services\PropositionMeasurementService;
 use Illuminate\Database\QueryException;
@@ -90,7 +91,7 @@ class PhaseProfileTest extends TestCase
                 $edge->save();
                 app(LedgerService::class)->record($edge);
             }
-            $closure = app(\App\Services\Observables\ProspectiveClosureService::class);
+            $closure = app(ProspectiveClosureService::class);
             if ($node->tier === 'expressive') {
                 $closure->initialize($node);
             } else {
