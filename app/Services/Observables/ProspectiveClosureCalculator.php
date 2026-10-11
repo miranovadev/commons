@@ -38,7 +38,7 @@ final readonly class ProspectiveClosureCalculator
         return ['depth' => -1.0, 'cadence' => -1.0, 'historical_phase_profile' => null,
             'historical_orientation' => null, 'historical_extent' => -1.0, 'historical_rhythm' => -1.0,
             'closure' => -1.0, 'historical_extent_direction' => 'negative',
-            'historical_rhythm_direction' => 'negative', 'admissible' => true,
+            'historical_rhythm_direction' => 'negative', 'depth_direction' => 'negative', 'cadence_direction' => 'negative', 'admissible' => true,
             'availability' => ['depth' => 'constitutional', 'cadence' => 'constitutional',
                 'historical_phase_profile' => 'not_applicable', 'historical_orientation' => 'not_applicable']];
     }
@@ -81,6 +81,8 @@ final readonly class ProspectiveClosureCalculator
             'historical_orientation' => $orientation, 'historical_extent' => $extent, 'historical_rhythm' => $rhythm,
             'closure' => round(($extent + $rhythm) / 2, 7),
             'historical_extent_direction' => $extentDirection->value, 'historical_rhythm_direction' => $rhythmDirection->value,
+            'depth_direction' => ObservableDirection::after($depth, ObservableDirection::from($previous['depth_direction'] ?? 'negative'))->value,
+            'cadence_direction' => ObservableDirection::after($cadence, ObservableDirection::from($previous['cadence_direction'] ?? 'negative'))->value,
             'admissible' => $extentDirection === $rhythmDirection,
             'availability' => ['depth' => $depthAvailable, 'cadence' => $cadenceAvailable,
                 'historical_phase_profile' => $available, 'historical_orientation' => $values !== []],

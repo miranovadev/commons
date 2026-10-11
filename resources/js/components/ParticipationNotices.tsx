@@ -34,7 +34,7 @@ export function participationNotices({ participation, plan, canCommit, canRest, 
   if (last) notices.push({ id: 'last-commitment', title: 'Latest Commitment', color: 'indigo', icon: IconGitCommit, content: <Stack gap="xs">
     <Text size="sm">{last.domain_before} → {last.domain_after} · {last.closure_boundary ? 'Closure Boundary created' : 'No Closure Boundary'}</Text>
     <Text size="xs">Tension: {last.tension_before ?? 'unrecorded'} → {last.tension_after}</Text>
-    <Text size="xs">Committed Cardinal Position: {last.committed_cardinal_position ?? 'unrecorded'} ({last.committed_cardinal_position_direction ?? 'unknown'}) · Cadence: {last.cadence ?? 'unrecorded'} ({last.cadence_direction ?? 'unknown'})</Text>
+    <Text size="xs">Historical Extent: {last.historical_extent ?? 'unrecorded'} ({last.historical_extent_direction ?? 'unknown'}) · Historical Rhythm: {last.historical_rhythm ?? 'unrecorded'} ({last.historical_rhythm_direction ?? 'unknown'})</Text>
     <Text size="xs" c="dimmed">Current Domain: {participation.domain} · Horizon {participation.horizon_sequence}</Text>
   </Stack> });
   if (plan?.commitment) notices.push({ id: 'commitment', title: plan.commitment.requirements.phase_position === false ? 'No phase-6 candidate at this Gate' : plan.commitment.requirements.write_opportunity === false ? 'Source already committed' : canCommit ? 'Committable candidate' : 'No committable candidate',
@@ -48,10 +48,10 @@ export function participationNotices({ participation, plan, canCommit, canRest, 
   </Stack> });
   if (plan?.commitment?.closure) { const closure = plan.commitment.closure;
     notices.push({ id: 'closure-preview', title: 'Write Closure preview', color: plan.commitment.requirements.closure === true ? 'indigo' : 'gray', satisfied: plan.commitment.requirements.closure === true, icon: IconRoute, content: <Stack gap="xs">
-      <Text size="sm">Depth: {closure.depth ?? 'unavailable'} ({closure.depth_direction ?? 'unavailable'})</Text>
-      <Text size="sm">Cadence: {closure.cadence ?? 'unavailable'} ({closure.cadence_direction ?? 'unavailable'})</Text>
+      <Text size="sm">Historical Extent: {closure.historical_extent ?? 'unavailable'} ({closure.historical_extent_direction ?? 'unavailable'})</Text>
+      <Text size="sm">Historical Rhythm: {closure.historical_rhythm ?? 'unavailable'} ({closure.historical_rhythm_direction ?? 'unavailable'})</Text>
       <Text size="xs">{plan.commitment.requirements.closure ? 'Directions align.' : 'Commit unavailable from this Write. See its retained directions and Commitment requirements.'}</Text>
-      <Text size="xs" c="dimmed">Zero retains the previous committed direction. History: {closure.history_source}.</Text>
+      <Text size="xs" c="dimmed">Zero retains each component’s established direction. Commit preserves this authorised state.</Text>
     </Stack> });
   }
   if (canRest) notices.push({ id: 'rest', title: plan?.rest_reason === 'no_remaining_potential' ? 'No remaining Potential · Rest' : 'No available move · Rest', color: 'gray', icon: IconMoon, content: <Stack gap="xs">

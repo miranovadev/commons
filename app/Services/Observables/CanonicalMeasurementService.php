@@ -30,5 +30,7 @@ class CanonicalMeasurementService
         }
         (new CanonicalMeasurement)->forceFill(['proposition_id' => $target->id, 'source_proposition_id' => $source->id,
             'correspondence_direction' => $correspondenceDirection, ...$attributes])->save();
+        $closure = app(ProspectiveClosureService::class);
+        $closure->preserve($target, $source, $closure->stored($source));
     }
 }

@@ -38,7 +38,6 @@ class ProspectiveClosureStateTest extends TestCase
         app(CycleEntryService::class)->enter($this->actor, ['statement' => 'Origin', 'attestation' => ['direction' => 'support']]);
         $this->origin = $this->actor->fresh()->position;
         $this->cycle = $this->actor->cycles()->latest('sequence')->firstOrFail();
-        DB::transaction(fn () => $this->service()->initialize($this->origin));
     }
 
     private function service(): ProspectiveClosureService
@@ -78,7 +77,6 @@ class ProspectiveClosureStateTest extends TestCase
                 'sequence' => (int) $this->actor->cycles()->max('sequence') + 1,
                 'context_horizon_id' => $this->cycle->context_horizon_id, 'entry_committal_id' => $this->origin->id]);
             $cycle->save();
-            $this->service()->entered($cycle);
 
             return $cycle;
         });

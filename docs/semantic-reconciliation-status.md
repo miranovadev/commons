@@ -46,4 +46,3 @@ clarification, catastrophe lifecycle, observable target architecture, and
 historical/cross-reference reconciliation. No database or PHP source changes
 belonged to that documentation-only review. Stage 1–2 are separate implementation
 changes, recorded above.
-

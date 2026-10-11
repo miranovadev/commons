@@ -78,20 +78,20 @@ final class ProspectiveClosureHistory
             $seen[$id] = true;
             $node = $this->nodes->get($id);
             $row = $this->births->get($id);
-            if ($node === null || $row === null) {
-                throw new ClosureHistoryUnavailable('Closure requires durable selected Phase birth history.');
+            if ($node === null) {
+                throw new ClosureHistoryUnavailable('Selected Closure Proposition is unavailable.');
             }
             $observations[$id] = ['phase' => $node->phase->kind->value,
-                'interval' => $row->cycle_interval === null ? null : (int) $row->cycle_interval,
+                'interval' => $row?->cycle_interval === null ? null : (int) $row->cycle_interval,
                 'domain' => $node->phase->cycle->contextHorizon->domain->value,
                 'source' => 'expressive_birth', 'proposition_id' => $id,
-                'unavailable_reason' => $row->unavailable_reason];
-            $id = $row->temporal_predecessor_proposition_id;
+                'unavailable_reason' => $row === null ? 'missing_birth_history' : $row->unavailable_reason];
+            $id = $row?->temporal_predecessor_proposition_id;
         }
         if ($head->phase->kind === PhaseKind::Bias) {
-            $birth = $this->births[$head->id];
+            $birth = $this->births->get($head->id);
             $clock = $this->counts->get($head->phase->cycle->entry_committal_id.':'.$head->phase->cycle->context_horizon_id);
-            $interval = $birth->birth_cycle_coordinate === null || $clock === null || $clock->aggregate !== $clock->stamped
+            $interval = $birth?->birth_cycle_coordinate === null || $clock === null || (int) $clock->aggregate !== (int) $clock->stamped
                 ? null : (int) $clock->aggregate - (int) $birth->birth_cycle_coordinate;
             $observations['order:'.$head->id] = ['phase' => 7, 'interval' => $interval,
                 'domain' => $head->phase->cycle->contextHorizon->domain->value,

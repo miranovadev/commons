@@ -79,6 +79,9 @@ final readonly class LedgerService
                 $this->horizons->include($entry);
                 app(PhaseProfileObservationService::class)->recordBirth($ledgerable, $entry, $phaseProfileSource);
                 app(LocalChiralityStateService::class)->initialize($ledgerable);
+                if ($ledgerable->tier === 'committal' && $ledgerable->phase->cycle->entry_committal_id === null) {
+                    app(\App\Services\Observables\ProspectiveClosureService::class)->initialize($ledgerable);
+                }
             }
 
             if (! $wasRecorded) {

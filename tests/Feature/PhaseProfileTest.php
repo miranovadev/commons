@@ -90,6 +90,12 @@ class PhaseProfileTest extends TestCase
                 $edge->save();
                 app(LedgerService::class)->record($edge);
             }
+            $closure = app(\App\Services\Observables\ProspectiveClosureService::class);
+            if ($node->tier === 'expressive') {
+                $closure->initialize($node);
+            } else {
+                $closure->preserve($node, $source, $closure->stored($source));
+            }
 
             return $node;
         });

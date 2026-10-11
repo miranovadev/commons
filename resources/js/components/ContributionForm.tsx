@@ -210,7 +210,7 @@ export function ContributionForm({
 
           {action === 'participant.rest' && <Text size="sm" c="dimmed">No admissible non-Rest action remains in this Phase. End this Cycle and prepare Phase 1 at an eligible Committal in a viable Domain.</Text>}
 
-          {action === 'proposition.commit' && commitment?.closure && <Text size="sm">New Committal: Committed Cardinal Position {commitment.closure.committed_cardinal_position} ({commitment.closure.committed_cardinal_position_direction}) · Cadence {commitment.closure.cadence} ({commitment.closure.cadence_direction}).</Text>}
+          {action === 'proposition.commit' && commitment?.closure && <Text size="sm">Preserved Closure: Historical Extent {commitment.closure.historical_extent} ({commitment.closure.historical_extent_direction}) · Historical Rhythm {commitment.closure.historical_rhythm} ({commitment.closure.historical_rhythm_direction}).</Text>}
 
           {action === 'proposition.commit' && (
             <Text size="sm" c="dimmed">
