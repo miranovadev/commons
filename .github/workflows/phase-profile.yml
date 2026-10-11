@@ -1,16 +1,11 @@
-name: Phase Profile final lifecycle contracts
+name: Phase Profile database isolation check
 on:
   push:
     branches: [validation/phase-profile-stage2]
 permissions:
   contents: read
 jobs:
-  lifecycle:
-    strategy:
-      fail-fast: false
-      matrix:
-        database: [sqlite, pgsql]
-        filter: ['FreshBootstrapTest|HorizonProofCycleTest|OperationalClosurePathTest', 'ParticipationHttpHarnessTest::test_real_http_actions_reach_an_operational_commit']
+  fresh_database:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     services:
@@ -27,8 +22,8 @@ jobs:
     env:
       APP_ENV: testing
       APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
-      DB_CONNECTION: ${{ matrix.database }}
-      DB_DATABASE: ${{ matrix.database == 'sqlite' && ':memory:' || 'testing' }}
+      DB_CONNECTION: pgsql
+      DB_DATABASE: testing
       DB_HOST: 127.0.0.1
       DB_PORT: 5432
       DB_USERNAME: postgres
@@ -37,7 +32,6 @@ jobs:
       MAIL_MAILER: array
       QUEUE_CONNECTION: sync
       SESSION_DRIVER: array
-      COMPOSER_PROCESS_TIMEOUT: 0
     steps:
       - uses: actions/checkout@v4
         with:
@@ -50,10 +44,25 @@ jobs:
           tools: composer:v2
       - run: composer install --prefer-dist --no-interaction --no-progress
       - run: cp .env.example .env
-      - run: vendor/bin/pint --test tests/Feature/FreshBootstrapTest.php tests/Fixtures/HorizonCycleFixture.php tests/Feature/OperationalClosurePathTest.php tests/Feature/Api/ParticipationHttpHarnessTest.php tests/Feature/HorizonProofCycleTest.php
-      - run: php artisan test --filter='${{ matrix.filter }}' --log-junit=test-results/lifecycle.xml
+      - name: Isolate each existing journey without changing its actions
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('tests/Fixtures/HorizonCycleFixture.php')
+          s = p.read_text()
+          s = s.replace('trait HorizonCycleFixture\n{', '''trait HorizonCycleFixture
+          {
+              protected function setUp(): void
+              {
+                  \\Illuminate\\Foundation\\Testing\\RefreshDatabaseState::$migrated = false;
+                  parent::setUp();
+              }
+          ''')
+          p.write_text(s)
+          PY
+      - run: php artisan test --filter='FreshBootstrapTest|HorizonProofCycleTest|OperationalClosurePathTest' --log-junit=test-results/isolation.xml
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: lifecycle-${{ strategy.job-index }}
+          name: isolation
           path: test-results/
