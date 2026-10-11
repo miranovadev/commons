@@ -5,7 +5,6 @@ namespace App\Services\Observables;
 use App\Domain\Observables\PhaseProfile;
 use App\Enums\PhaseKind;
 use App\Models\Proposition;
-use App\Models\Supersession;
 use DomainException;
 use Illuminate\Support\Facades\DB;
 
@@ -15,10 +14,9 @@ final readonly class PhaseProfileService
     public function __construct(private PhaseProfileComparisonCalculator $comparison) {}
 
     /**
-     * Select genuine all-parent ancestry within its creating Domain/Horizon.
-     * Containers bound this traversal; they never supply additional heads.
-     * Each selected node contributes only its own recorded interval, whose
-     * operation-specific temporal reference may select just one causal parent.
+     * Follow only durable operation-selected local temporal predecessors.
+     * Interval references may skip Revision parents; temporal ancestry must not.
+     * Missing birth history stops traversal without guessing from causal edges.
      */
     public function profile(Proposition $head): array
     {
@@ -33,19 +31,18 @@ final readonly class PhaseProfileService
                 'history_complete' => true, 'observations' => []];
         }
         $nodes = collect();
-        $frontier = collect([$head]);
-        while ($frontier->isNotEmpty()) {
-            foreach ($frontier as $node) {
-                $nodes->put($node->id, $node);
+        $stored = collect();
+        $node = $head;
+        while ($node !== null && ! $nodes->has($node->id)) {
+            $nodes->put($node->id, $node);
+            $row = DB::table('phase_profile_observations')->where('proposition_id', $node->id)->first();
+            if ($row === null) {
+                break;
             }
-            $parents = Supersession::whereIn('target_proposition_id', $frontier->pluck('id'))
-                ->pluck('source_proposition_id');
-            $frontier = Proposition::whereIn('id', $parents)->whereNotIn('id', $nodes->keys())
-                ->whereHas('phase.cycle', fn ($query) => $query->where('context_horizon_id', $horizon->id))
-                ->with(['phase.cycle', 'ledgerEntry'])->get();
+            $stored->put($node->id, $row);
+            $node = $row->temporal_predecessor_proposition_id === null ? null
+                : Proposition::with(['phase.cycle', 'ledgerEntry'])->findOrFail($row->temporal_predecessor_proposition_id);
         }
-        $stored = DB::table('phase_profile_observations')->whereIn('proposition_id', $nodes->keys())
-            ->get()->keyBy('proposition_id');
         $sums = $counts = array_fill(0, 7, 0);
         $missing = array_fill(0, 7, false);
         $observations = [];
@@ -67,6 +64,7 @@ final readonly class PhaseProfileService
                 'kind' => $node->tier === 'committal' ? 'commit_boundary' : 'expressive_birth',
                 'clock_entry_committal_id' => $node->phase->cycle->entry_committal_id,
                 'birth_cycle_coordinate' => $row?->birth_cycle_coordinate === null ? null : (int) $row->birth_cycle_coordinate,
+                'temporal_predecessor_proposition_id' => $row?->temporal_predecessor_proposition_id,
                 'preceding_phase_proposition_id' => $row?->preceding_phase_proposition_id,
                 'cycle_interval' => $row?->cycle_interval === null ? null : (int) $row->cycle_interval,
                 'unavailable_reason' => $reason,

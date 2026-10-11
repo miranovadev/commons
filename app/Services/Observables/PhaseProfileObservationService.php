@@ -52,6 +52,7 @@ class PhaseProfileObservationService
         DB::table('phase_profile_observations')->insert([
             'proposition_id' => $proposition->id,
             'birth_cycle_coordinate' => $coordinate,
+            'temporal_predecessor_proposition_id' => $this->temporalPredecessor($proposition, $source),
             'preceding_phase_proposition_id' => $referenceId,
             'cycle_interval' => $interval,
             'unavailable_reason' => $reason,
@@ -61,6 +62,19 @@ class PhaseProfileObservationService
     public function stored(string $propositionId): ?object
     {
         return DB::table('phase_profile_observations')->where('proposition_id', $propositionId)->first();
+    }
+
+    /** Immediate selected parent, distinct from a Revision's interval reference. */
+    private function temporalPredecessor(Proposition $target, ?Proposition $source): ?string
+    {
+        if ($source === null || $source->tier === 'committal') {
+            return null;
+        }
+        $cycle = $target->phase->cycle;
+
+        return $source->phase->cycle->entry_committal_id === $cycle->entry_committal_id
+            && $source->phase->cycle->context_horizon_id === $cycle->context_horizon_id
+                ? $source->id : null;
     }
 
     /** @return array{?string, ?string} */

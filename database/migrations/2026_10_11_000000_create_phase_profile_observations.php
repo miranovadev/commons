@@ -12,6 +12,7 @@ return new class extends Migration
         Schema::create('phase_profile_observations', function (Blueprint $table): void {
             $table->foreignUlid('proposition_id')->primary()->constrained('propositions')->cascadeOnDelete();
             $table->unsignedBigInteger('birth_cycle_coordinate')->nullable();
+            $table->foreignUlid('temporal_predecessor_proposition_id')->nullable()->constrained('propositions')->restrictOnDelete();
             $table->foreignUlid('preceding_phase_proposition_id')->nullable()->constrained('propositions')->restrictOnDelete();
             $table->unsignedBigInteger('cycle_interval')->nullable();
             $table->string('unavailable_reason', 48)->nullable();

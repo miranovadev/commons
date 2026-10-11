@@ -209,6 +209,9 @@ class PhaseProfileTest extends TestCase
         }
         $this->assertSame(2.0, $this->profile($r2)['means'][1]);
         $this->assertSame(3, $this->profile($r2)['sample_counts'][1]);
+        $history = $this->profile($r2)['observations'];
+        $this->assertSame([$p1->id, $p2->id, $r1->id, $r2->id], array_column($history, 'proposition_id'));
+        $this->assertSame([null, $p1->id, $p2->id, $r1->id], array_column($history, 'temporal_predecessor_proposition_id'));
     }
 
     public function test_genuine_zero_is_a_sample_and_one_interval_is_mature(): void
@@ -233,30 +236,55 @@ class PhaseProfileTest extends TestCase
         $this->assertSame(1.0, (float) $this->origin->commitmentSnapshot->correspondence);
     }
 
+    private function spacedDisperse(Cycle $cycle, int $interval): Proposition
+    {
+        $p1 = $this->born($cycle, PhaseKind::Distinguish, $cycle->entryCommittal);
+        $p2 = $this->born($cycle, PhaseKind::Persist, $p1);
+        $p3 = $this->born($cycle, PhaseKind::Constrain, $p2, 'reclassify');
+        for ($i = 0; $i < $interval; $i++) {
+            $this->cycle($cycle->entryCommittal);
+        }
+
+        return $this->born($cycle, PhaseKind::Disperse, $p3);
+    }
+
     public static function reconcileGates(): array
     {
-        return [[false], [true]];
+        return [[false, false], [true, false], [false, true], [true, true]];
     }
 
     #[DataProvider('reconcileGates')]
-    public function test_reconcile_uses_acting_gate_and_keeps_both_causal_parents(bool $reverse): void
+    public function test_reconcile_selects_only_acting_gate_history(bool $reverse, bool $crossBasin): void
     {
-        // Reverse in a fresh fixture: do not reconcile already-consumed parents again.
-        $a = $this->throughDisperse($this->firstCycle);
-        $cb = $this->cycle();
-        $b = $this->throughDisperse($cb);
-        $unselected = $this->throughDisperse($this->cycle());
+        // Each reversal is a fresh valid fixture, never a second consumption.
+        $ca = $crossBasin ? $this->cycle($this->basin()) : $this->firstCycle;
+        $cb = $this->cycle($crossBasin ? $this->basin() : $this->origin);
+        $a = $this->spacedDisperse($ca, 7);
+        $b = $this->spacedDisperse($cb, 3);
+        $this->assertSame($ca->context_horizon_id, $cb->context_horizon_id);
         $gate = $reverse ? $b : $a;
         $operand = $reverse ? $a : $b;
-        $r = $this->born($reverse ? $cb : $this->firstCycle, PhaseKind::Mediate, $gate, 'reconcile', $operand);
-        $this->assertSame($reverse ? 1 : 2, $this->observation($r)['interval']);
-        $this->assertSame($gate->id, $this->observation($r)['reference']);
+        $cycle = $reverse ? $cb : $ca;
+        $selected = $this->profile($gate);
+        $excluded = array_column($this->profile($operand)['observations'], 'proposition_id');
+        for ($i = 0; $i < 5; $i++) {
+            $this->cycle($cycle->entryCommittal);
+        }
+        $r = $this->born($cycle, PhaseKind::Mediate, $gate, 'reconcile', $operand);
+        $observation = $this->observation($r);
+        $this->assertSame($gate->id, $observation['reference']);
+        $this->assertSame($observation['coordinate'] - $this->observation($gate)['coordinate'], $observation['interval']);
         $this->assertEqualsCanonicalizing([$a->id, $b->id], $r->parents()->pluck('propositions.id')->all());
-        $ids = array_column($this->profile($r)['observations'], 'proposition_id');
-        $this->assertContains($a->id, $ids);
-        $this->assertContains($b->id, $ids);
-        $this->assertNotContains($unselected->id, $ids);
-        $this->assertSame(count($ids), count(array_unique($ids)));
+        $profile = $this->profile($r);
+        $ids = array_column($profile['observations'], 'proposition_id');
+        $this->assertSame([...array_column($selected['observations'], 'proposition_id'), $r->id], $ids);
+        $this->assertSame([], array_values(array_intersect($excluded, $ids)));
+        $expected = $selected['means'];
+        $expected[4] = (float) $observation['interval'];
+        $this->assertSame($expected, $profile['means']);
+        $this->assertSame($reverse ? 3.0 : 7.0, $profile['means'][3]);
+        $this->assertSame([0, 1, 1, 1, 1, 0, 0], $profile['sample_counts']);
+        $this->assertSame($gate->id, $profile['observations'][4]['temporal_predecessor_proposition_id']);
     }
 
     public function test_foreign_bias_has_null_interval_and_order_can_use_its_local_coordinate(): void
@@ -278,6 +306,9 @@ class PhaseProfileTest extends TestCase
         $this->assertSame([$foreign->id], $second->parents()->pluck('propositions.id')->all());
         $this->assertFalse($second->parents()->where('propositions.id', $local->id)->exists());
         $before = $this->profile($second);
+        $this->assertSame([$second->id], array_column($before['observations'], 'proposition_id'));
+        $this->assertSame(array_fill(0, 7, 0), $before['sample_counts']);
+        $this->assertNull($before['observations'][0]['temporal_predecessor_proposition_id']);
         for ($i = 0; $i < 4; $i++) {
             $this->cycle($b);
         }
@@ -287,6 +318,8 @@ class PhaseProfileTest extends TestCase
         $this->assertSame(4, $this->observation($commit)['interval']);
         $this->assertSame($second->id, $this->observation($commit)['reference']);
         $this->assertSame($before, $this->profile($second));
+        $this->assertSame([$second->id, $commit->id], array_column($this->profile($commit)['observations'], 'proposition_id'));
+        $this->assertSame([null, null, null, null, null, null, 4.0], $this->profile($commit)['means']);
     }
 
     public function test_foreign_reconcile_operand_does_not_supply_local_interval(): void
@@ -358,6 +391,9 @@ class PhaseProfileTest extends TestCase
         $this->assertSame(1.0, $profile['means'][1]);
         $this->assertContains('missing_birth_history', array_column($profile['observations'], 'unavailable_reason'));
         $this->assertSame(1, $this->observation($revision)['interval']);
+        $this->assertSame([$p2->id, $revision->id], array_column($profile['observations'], 'proposition_id'));
+        // P1 remains a genuine causal ancestor, but missing P2 history cannot be guessed.
+        $this->assertNotContains($p1->id, array_column($profile['observations'], 'proposition_id'));
     }
 
     public function test_historical_cycle_without_entry_marker_is_explicitly_unavailable(): void
@@ -389,6 +425,15 @@ class PhaseProfileTest extends TestCase
         $p = $this->born($this->firstCycle, PhaseKind::Distinguish, $this->origin);
         $this->expectException(QueryException::class);
         DB::table('phase_profile_observations')->where('proposition_id', $p->id)->update([$column => $value]);
+    }
+
+    public function test_selected_temporal_predecessor_is_database_immutable(): void
+    {
+        $p1 = $this->born($this->firstCycle, PhaseKind::Distinguish, $this->origin);
+        $p2 = $this->born($this->firstCycle, PhaseKind::Persist, $p1);
+        $this->expectException(QueryException::class);
+        DB::table('phase_profile_observations')->where('proposition_id', $p2->id)
+            ->update(['temporal_predecessor_proposition_id' => null]);
     }
 
     public function test_real_dispatch_passes_authorized_source(): void

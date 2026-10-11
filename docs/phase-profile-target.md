@@ -187,15 +187,28 @@ Implementation responsibilities:
 | Same-Phase Revision | Reuse the source's durable preceding-Phase reference; never reconstruct a missing historical reference |
 | Immutable evidence | `phase_profile_observations` stores coordinate, preceding-Phase Proposition ID, interval and unavailability reason; PostgreSQL/SQLite update guards; no historical backfill |
 | Ownership | Derived through the creating Phase/Cycle; no duplicated basin or Horizon columns |
-| Profile population | The inspected head's genuine all-parent ancestry within its creating Horizon, deduplicated; every node supplies only its own operation-selected interval |
+| Profile population | The inspected head's durable selected local temporal predecessor chain; Revision parents remain in the history even when their interval references skip to the preceding Phase |
 | Completed comparison reference | Genuine ancestry ending at the Committal that opened the current Horizon; later siblings do not extend that reference |
 | Missing history | Explicit reason and `history_complete=false`; missing intervals supply no sample, while genuine recorded intervals still form the Phase mean with explicit sample counts |
 | C1 unavailable interval | No sample for first expressive birth or no eligible local predecessor; a recorded zero is a genuine sample |
 | Phase 7 | Read-only preview from a Bias head, plus durable actual Commit-boundary observation; neither rewrites the source's profile nor recalculates Closure |
 
-All genuine selected parent branches remain profile ancestry; selecting a local
-Gate for one Reconcile interval does not erase the secondary parent's own
-historical observations when that parent belongs to the selected Domain lineage.
+Phase Profile historical aggregation follows the selected local temporal ancestry.
+For Reconcile, the acting local Gate determines that ancestry. Secondary operands
+remain genuine causal parents but do not contribute their historical Phase Profile
+observations, regardless of basin membership. Shape Topology retains its existing
+all-parent causal morphology; selecting temporal ancestry changes no Supersessions.
+
+The selected temporal predecessor and the preceding-Phase interval reference are
+separate immutable birth facts. A Revision selects the revised Proposition as its
+temporal predecessor while retaining that Proposition's preceding-Phase interval
+reference. Thus all observations in the selected Revision sequence remain samples.
+A foreign-source Bias has no local temporal predecessor and imports no foreign
+history; its operational Gate is not a substitute. Subsequent local development
+can select the imported Proposition and use its own local birth coordinate.
+A Committal source starts a new expressive temporal history. Missing birth records
+stop traversal and mark history incomplete; never infer missing ancestry from
+Supersession ordering, container membership or recency.
 Source-less direct ledger callers retain an explicit `missing_source_context`
 interval rather than guessing a causal source. Re-recording a ledger entry
 cannot manufacture a missing birth record. Diagnostics are read-only and may
