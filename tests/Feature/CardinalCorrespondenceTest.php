@@ -25,13 +25,13 @@ class CardinalCorrespondenceTest extends TestCase
 
     public function test_metric_lateral_position_is_continuous_not_categorical(): void
     {
-        $this->assertSame(1.0, CorrespondenceCalculator::positionSimilarity(1, 1));
-        $this->assertEqualsWithDelta(.3333333, CorrespondenceCalculator::positionSimilarity(1, 2), 1e-7);
-        $this->assertEqualsWithDelta(.8181818, CorrespondenceCalculator::positionSimilarity(5, 6), 1e-7);
-        $this->assertEqualsWithDelta(-.8095238, CorrespondenceCalculator::positionSimilarity(1, 20), 1e-7);
+        $this->assertSame(1.0, CardinalPositionCorrespondenceCalculator::positionSimilarity(1, 1));
+        $this->assertEqualsWithDelta(.3333333, CardinalPositionCorrespondenceCalculator::positionSimilarity(1, 2), 1e-7);
+        $this->assertEqualsWithDelta(.8181818, CardinalPositionCorrespondenceCalculator::positionSimilarity(5, 6), 1e-7);
+        $this->assertEqualsWithDelta(-.8095238, CardinalPositionCorrespondenceCalculator::positionSimilarity(1, 20), 1e-7);
         $this->assertGreaterThan(
-            CorrespondenceCalculator::positionSimilarity(1, 20),
-            CorrespondenceCalculator::positionSimilarity(1, 2),
+            CardinalPositionCorrespondenceCalculator::positionSimilarity(1, 20),
+            CardinalPositionCorrespondenceCalculator::positionSimilarity(1, 2),
         );
     }
 
@@ -146,7 +146,8 @@ class CardinalCorrespondenceTest extends TestCase
         $topology = (new \ReflectionMethod($calculator, 'topology'))->invoke($calculator, $current, $reference);
         $this->assertSame(round(2 / sqrt(18) - 1, 7), $topology);
         $correspondence = $calculator->calculate($comparison);
-        $this->assertSame(round(($topology + $position) / 2, 7), $correspondence);
+        $this->assertSame(0.0, $calculator->components($comparison)->phaseProfile);
+        $this->assertSame(round($topology / 2, 7), $correspondence);
 
         $this->assertLessThan(1.0, $correspondence);
         $this->assertGreaterThan(-1.0, $correspondence);
@@ -292,3 +293,4 @@ class CardinalCorrespondenceTest extends TestCase
         app(LedgerService::class)->record($edge);
     }
 }
+

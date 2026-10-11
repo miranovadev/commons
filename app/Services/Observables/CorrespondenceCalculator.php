@@ -110,11 +110,6 @@ final readonly class CorrespondenceCalculator
         return $features;
     }
 
-    public static function positionSimilarity(int $a, int $b): float
-    {
-        return CardinalPositionCorrespondenceCalculator::positionSimilarity($a, $b);
-    }
-
     private function normalise(float $value): float
     {
         return round(max(-1, min(1, $value)), 7);

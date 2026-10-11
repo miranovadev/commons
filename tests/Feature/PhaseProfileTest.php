@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\PhaseKind;
+use App\Models\Attestation;
 use App\Models\CommitmentSnapshot;
 use App\Models\Cycle;
 use App\Models\Participant;
@@ -18,9 +19,9 @@ use App\Services\Observables\ClosureBirthService;
 use App\Services\Observables\ContextLineageComparisonService;
 use App\Services\Observables\CorrespondenceCalculator;
 use App\Services\Observables\LocalMeasurementService;
-use App\Services\Participation\ParticipationContext;
 use App\Services\Observables\PhaseProfileObservationService;
 use App\Services\Observables\PhaseProfileService;
+use App\Services\Participation\ParticipationContext;
 use App\Services\PropositionMeasurementService;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -189,7 +190,7 @@ class PhaseProfileTest extends TestCase
             $this->cycle();
         }
         $this->assertSame($before, $service->recalculate($next)->only($fields));
-        $attestation = (new \App\Models\Attestation)->forceFill([
+        $attestation = (new Attestation)->forceFill([
             'phase_id' => $next->phase_id, 'proposition_id' => $next->id, 'direction' => 'support']);
         $attestation->save();
         app(LedgerService::class)->record($attestation);
