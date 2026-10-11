@@ -43,11 +43,11 @@ use App\Services\PropositionOptionService;
 use App\Services\ReceiptContextService;
 use App\Services\ReconciliationOptionService;
 use App\Services\RegionalExhaustionMembership;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\AssertsLatePhaseContract;
+use Tests\Support\RefreshIntegrationDatabase as RefreshDatabase;
 use Tests\TestCase;
 
 class HomologousMediationTest extends TestCase
@@ -662,16 +662,16 @@ class HomologousMediationTest extends TestCase
 
     #[DataProvider('gateCoherence')]
     #[Group('late-phase')]
-    public function test_causal_gate_coherence_controls_write_without_removing_visibility(float $shape, float $cardinal, bool $allowed): void
+    public function test_causal_gate_coherence_controls_write_without_removing_visibility(float $shape, float $profile, bool $allowed): void
     {
         $service = app(PropositionMeasurementService::class);
         foreach ([$this->gateA, $this->gateB] as $gate) {
-            $service->project($gate, $shape, 0, 0, correspondenceComponents: new CorrespondenceValues($shape, $cardinal));
+            $service->project($gate, $shape, 0, 0, correspondenceComponents: new CorrespondenceValues($shape, $profile));
         }
         $this->publishPotentialFixture($this->actor);
         $plan = app(InputPlanService::class)->forPhase($this->actor, $this->mediate);
         $this->assertLatePhaseContract($plan, PhaseKind::Mediate, $this->gateA->id, $allowed,
-            $shape > 0 ? 'positive' : 'negative', $cardinal > 0 ? 'positive' : 'negative');
+            $shape > 0 ? 'positive' : 'negative', $profile > 0 ? 'positive' : 'negative');
         $this->assertSame($allowed, isset($plan['schema']['$defs']['actions']['proposition.reconcile']));
         $visible = app(ParticipantContextSerializer::class)->plan($plan);
         $this->assertContains($this->gateA->id, array_column($visible['gate_options'], 'id'));
@@ -768,7 +768,7 @@ class HomologousMediationTest extends TestCase
         $this->assertTrue(app(ReconciliationOptionService::class)->forPhase($this->mediate, $context)->isEmpty());
     }
 
-    public function test_coherent_positive_inputs_can_produce_a_normally_measured_negative_result(): void
+    public function test_coherent_positive_inputs_produce_the_normal_result_without_sign_coercion(): void
     {
         $target = app(ContributionDispatcher::class)->dispatch($this->actor, $this->mediate,
             ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateB->id]);
@@ -776,8 +776,10 @@ class HomologousMediationTest extends TestCase
         $actual = $target->fresh()->measurement;
         $this->assertSame($normal->correspondence, $actual->correspondence);
         $this->assertSame($normal->correspondenceComponents->shapeTopology, $actual->shape_topology);
-        $this->assertSame($normal->correspondenceComponents->cardinalPosition, $actual->cardinal_position);
-        $this->assertLessThan(0, $actual->correspondence);
+        $this->assertSame($normal->correspondenceComponents->phaseProfile, $actual->phase_profile);
+        // Phase Profile replaces Cardinal's negative result in this fixed history.
+        // Do not change the authored population to recover the former sign.
+        $this->assertSame(.0004164, $actual->correspondence);
         $this->assertEqualsCanonicalizing([$this->gateA->id, $this->gateB->id], $target->parents()->pluck('propositions.id')->all());
     }
 

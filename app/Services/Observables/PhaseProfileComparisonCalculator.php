@@ -4,7 +4,7 @@ namespace App\Services\Observables;
 
 use App\Domain\Observables\PhaseProfile;
 
-/** Diagnostic only. Production Correspondence continues to use Cardinal Position. */
+/** Seven fixed-weight Phase Profile C1 comparison contributions. */
 final readonly class PhaseProfileComparisonCalculator
 {
     /** @return list<float> */

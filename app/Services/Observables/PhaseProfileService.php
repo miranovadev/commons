@@ -5,10 +5,11 @@ namespace App\Services\Observables;
 use App\Domain\Observables\PhaseProfile;
 use App\Enums\PhaseKind;
 use App\Models\Proposition;
+use App\Services\Participation\ParticipationContext;
 use DomainException;
 use Illuminate\Support\Facades\DB;
 
-/** Read-only diagnostics. No production measurement or projection consumes this service. */
+/** Read-only Phase Profile C1 derivation from durable birth observations. */
 final readonly class PhaseProfileService
 {
     public function __construct(private PhaseProfileComparisonCalculator $comparison) {}
@@ -18,30 +19,63 @@ final readonly class PhaseProfileService
      * Interval references may skip Revision parents; temporal ancestry must not.
      * Missing birth history stops traversal without guessing from causal edges.
      */
-    public function profile(Proposition $head): array
+    public function profile(Proposition $head, ?ParticipationContext $context = null): array
+    {
+        return $context === null ? $this->buildProfile($head)
+            : $context->remember('phase-profile:'.$head->id, fn () => $this->buildProfile($head, $context));
+    }
+
+    private function buildProfile(Proposition $head, ?ParticipationContext $context = null): array
     {
         $horizon = $head->phase->cycle->contextHorizon;
         if ($head->ledgerEntry === null) {
             throw new DomainException('Phase Profile inspection requires a ledgered Proposition.');
         }
         if ($head->tier === 'committal' && $horizon->parent_context_horizon_id === null
-            && $head->commitmentSnapshot?->calculator_version === 'origin-bootstrap-v1') {
+            && ($context === null ? $head->commitmentSnapshot
+                : $context->snapshots->firstWhere('proposition_id', $head->id))?->calculator_version === 'origin-bootstrap-v1') {
             return ['head_id' => $head->id, 'kind' => 'constitutional_origin',
                 'means' => PhaseProfile::origin()->values, 'sample_counts' => array_fill(0, 7, 0),
                 'history_complete' => true, 'observations' => []];
         }
-        $nodes = collect();
-        $stored = collect();
-        $node = $head;
-        while ($node !== null && ! $nodes->has($node->id)) {
-            $nodes->put($node->id, $node);
-            $row = DB::table('phase_profile_observations')->where('proposition_id', $node->id)->first();
-            if ($row === null) {
-                break;
+        if ($context === null) {
+            // Load only the selected predecessor chain in one bounded query.
+            // The LEFT JOIN retains a missing birth as an unavailable stopping point.
+            $rows = collect(DB::select(<<<'SQL'
+                WITH RECURSIVE temporal_lineage(proposition_id) AS (
+                    SELECT CAST(? AS TEXT)
+                    UNION
+                    SELECT birth.temporal_predecessor_proposition_id
+                    FROM phase_profile_observations AS birth
+                    JOIN temporal_lineage ON birth.proposition_id = temporal_lineage.proposition_id
+                    WHERE birth.temporal_predecessor_proposition_id IS NOT NULL
+                )
+                SELECT lineage.proposition_id AS selected_id, birth.*
+                FROM temporal_lineage AS lineage
+                LEFT JOIN phase_profile_observations AS birth ON birth.proposition_id = lineage.proposition_id
+                SQL, [$head->id]));
+            $stored = $rows->whereNotNull('proposition_id')->keyBy('proposition_id');
+            $nodes = Proposition::whereIn('id', $rows->pluck('selected_id'))->where('id', '!=', $head->id)
+                ->with(['phase.cycle', 'ledgerEntry'])->get()->keyBy('id');
+            $nodes->put($head->id, $head);
+        } else {
+            $nodes = collect();
+            $stored = collect();
+            $node = $head;
+            while ($node !== null && ! $nodes->has($node->id)) {
+                $nodes->put($node->id, $node);
+                $row = $context !== null && $context->propositions->has($node->id)
+                    ? $context->remember('phase-profile:births', fn () => DB::table('phase_profile_observations')
+                        ->whereIn('proposition_id', $context->propositions->keys())->get()->keyBy('proposition_id'))->get($node->id)
+                    : DB::table('phase_profile_observations')->where('proposition_id', $node->id)->first();
+                if ($row === null) {
+                    break;
+                }
+                $stored->put($node->id, $row);
+                $node = $row->temporal_predecessor_proposition_id === null ? null
+                    : ($context?->propositions->get($row->temporal_predecessor_proposition_id)
+                        ?? Proposition::with(['phase.cycle', 'ledgerEntry'])->findOrFail($row->temporal_predecessor_proposition_id));
             }
-            $stored->put($node->id, $row);
-            $node = $row->temporal_predecessor_proposition_id === null ? null
-                : Proposition::with(['phase.cycle', 'ledgerEntry'])->findOrFail($row->temporal_predecessor_proposition_id);
         }
         $sums = $counts = array_fill(0, 7, 0);
         $missing = array_fill(0, 7, false);
@@ -75,6 +109,19 @@ final readonly class PhaseProfileService
             'means' => array_map(fn ($sum, $count) => $count === 0 ? null : (float) $sum / $count, $sums, $counts),
             'sample_counts' => $counts, 'history_complete' => ! in_array(true, $missing, true),
             'observations' => $observations];
+    }
+
+    /** Production never evaluates the prospective Order preview. */
+    public function calculate(Proposition $head, ?ParticipationContext $context = null): float
+    {
+        $current = $this->profile($head, $context);
+        $boundaryId = $head->phase->cycle->contextHorizon->opened_by_proposition_id;
+        $boundary = $boundaryId === null ? null : ($context?->propositions->get($boundaryId)
+            ?? Proposition::findOrFail($boundaryId));
+        $reference = $boundary === null ? null : $this->profile($boundary, $context);
+
+        return $this->comparison->calculate(new PhaseProfile($current['means']),
+            new PhaseProfile($reference['means'] ?? array_fill(0, 7, null)));
     }
 
     public function inspect(Proposition $head): array

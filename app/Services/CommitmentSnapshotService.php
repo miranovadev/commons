@@ -133,7 +133,7 @@ final readonly class CommitmentSnapshotService
                 'ledger_entry_id' => $entry->getKey(),
                 'supersession_id' => $supersession?->getKey(),
                 'correspondence' => $measurement->correspondence,
-                ...$measurement->only(['shape_topology', 'cardinal_position', 'shape_topology_direction', 'cardinal_position_direction']),
+                ...$measurement->only(['shape_topology', 'phase_profile', 'shape_topology_direction', 'phase_profile_direction']),
                 'chirality' => $measurement->chirality,
                 'chirality_direction' => $measurement->chirality_direction,
                 ...$measurement->only(['orientation', 'attestation_cadence', 'orientation_direction', 'attestation_cadence_direction']),

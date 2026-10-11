@@ -1,9 +1,9 @@
 # Observable calculation
 
 > **Deployed observable reference, with historical Chirality v2 text.**
-> The proposed [Phase Profile C1](phase-profile-target.md) and
-> [prospective Closure](prospective-closure-target.md) are review targets,
-> not production behaviour. The Chirality vNext Stage 1–4 implementation
+> [Phase Profile C1](phase-profile-target.md) is the production Correspondence
+> component. [Prospective Closure](prospective-closure-target.md) remains a review
+> target, not production behaviour. The Chirality vNext Stage 1–4 implementation
 > is documented in [its integration review](chirality-stage-4.md);
 > the older v2 calculation below is retained as historical context.
 > [Decision/status ledger](semantic-reconciliation-status.md).
@@ -71,7 +71,7 @@ and [Cycle entry identity](cycle-entry-identity.md).
 
 | Phase | Observable | Homologous dominance selects | Native Write condition | Write |
 | --- | --- | --- | --- | --- |
-| Mediate | Correspondence | Reads, then their existing Disperse Gate operands | Shape Topology direction = Cardinal Position direction | Reconcile |
+| Mediate | Correspondence | Reads, then their existing Disperse Gate operands | Shape Topology direction = Phase Profile direction | Reconcile |
 | Bias | Chirality | Existing Gates | Orientation direction = Attestation Cadence direction | Reclassify |
 | Order | Closure | Existing frozen Commits | Committed Cardinal Position direction = Cadence direction | Commit |
 
@@ -191,54 +191,36 @@ measurement population.
 
 ## Local Correspondence
 
-> **Currently deployed:** Shape Topology + Cardinal Position.
-> **Proposed:** Shape Topology + [Phase Profile C1](phase-profile-target.md).
-> Do not combine Cardinal row geometry with Phase-relative Cycle intervals.
+Raw/local Correspondence is `round((ShapeTopology + PhaseProfile) / 2, 7)`.
+[Phase Profile C1](phase-profile-target.md) is authoritative. The former
+[Cardinal Position specification](correspondence-v2-cardinal-semantics.md) is
+historical for Correspondence; Closure's Committed Cardinal Position is unchanged.
 
-> **Canonical v2 semantics:** [Correspondence v2 — canonical structural semantics](correspondence-v2-cardinal-semantics.md).
-> That document is normative for the pending correction and supersedes the earlier Phase-bucket/head-only v2 interpretation.
+Shape Topology preserves the established unit-weight Weisfeiler–Lehman features,
+two refinement iterations and bounded cosine comparison. It selects genuine
+all-parent causal morphology, including foreign Reconcile parents. Its completed
+preceding-Domain reference retains the established structural depth reveal.
+Cardinal layout/morphology services remain structural dependencies of this kernel.
 
-Raw/local Correspondence has two equally weighted structural components:
+Phase Profile selects only durable local temporal ancestry, compares its seven
+Phase means with the completed preceding boundary profile and retains all seven
+comparison weights. Unavailable comparisons contribute zero; observed zero/zero
+contributes +1. Secondary Reconcile histories never supply Phase samples. Origin
+retains constitutional profile `[0,0,0,0,0,0,1]` and raw Correspondence +1.
 
-```text
-raw Correspondence
-= 0.5 × Shape Topology
-+ 0.5 × Cardinal Position
-```
+The unattenuated `shape_topology` and `phase_profile` components have independent
+retained directions. Nonzero establishes sign; zero retains the component's prior
+direction, then its entry snapshot direction, otherwise Positive. Phase Profile
+never inherits historical Cardinal direction. Combined Correspondence retains its
+existing independent direction and alone receives structural attenuation.
 
-Shape Topology compares the selected all-parent causal morphology. Cardinal Position compares the occupied `(Domain Depth, Lateral Position)` morphology. Domain Depth is breadth-first depth from the Domain provenance Committal and continues across Cycle/Commit boundaries without resetting; it is not Phase Position and not Closure's Committal Depth.
-
-Each Domain constructs its cardinal layout independently. Measurement ancestry then selects already-positioned propositions, including genuine foreign parents with coordinates from their own Domains. No synthetic causal or placement edge is introduced.
-
-The completed immediately preceding complementary Domain is the structural reference and is revealed only through the current head's Domain Depth. Position is morphology-wide rather than a single head-to-head ordinal comparison. Within each included Domain Depth, selected occupied Lateral Positions are paired left-to-right; unmatched occupancy contributes `-1`; that row's pair scores are averaged. Cardinal Position Correspondence then equally averages the row scores across included Domain Depths. Wide rows therefore affect their own row score without receiving extra historical weight.
-
-Origin retains raw Correspondence `+1`. Ordinary structural comparison begins immediately in the first developed Domain after Origin, including unmatched structure against Origin's one-node morphology. Existing inverse-square attenuation remains unchanged.
-
-After each proposition's raw/local Correspondence is calculated, the existing inverse-square structural attenuation described above remains unchanged.
-
-```text
-Correspondence
-├── Shape Topology
-└── Cardinal Position
-```
-
-The local head components are independently inspectable in `shape_topology` and
-`cardinal_position`; only their rounded arithmetic mean forms raw Correspondence,
-and only combined Correspondence receives structural attenuation. Their retained
-`shape_topology_direction` and `cardinal_position_direction` follow their own
-nonzero signs. At zero each independently retains its prior projected direction,
-then the corresponding Cycle-entry snapshot direction if available, otherwise
-Positive. Zero is never directionless. Origin's unique bounded component pair is
-`(+1, +1)`, with Positive directions and mean `+1`.
-
-Mediate alone now uses retained component agreement as existing-Gate Write
-admissibility (either sign), with same resolved Correspondence direction required
-for both operands. This does not constrain the Reconcile result. Combined
-`correspondence_direction` remains authoritative for current consumers. Components
-are Receipt-neutral; calculations perform no writes, and disposable measurement
-projection owns persistence. New Commitment snapshots freeze values and directions.
-Historical snapshots keep nullable diagnostics and are never reconstructed or
-recalculated to populate these fields.
+Mediate compares Shape Topology and Phase Profile direction agreement for each
+operand, and retains its existing combined Correspondence direction requirement.
+Canonical Commit preserves the selected resolved expressive scalar and component
+state exactly. Phase-7 preview never changes already-born expressive Correspondence.
+Later Cycle entries, Attestations and Receipt state introduce no new Phase Profile
+observation. Production and diagnostics use the same immutable Stage 1 facts;
+participation contexts batch-load births and reuse selected profiles.
 
 ## Local Chirality: historical v2 formula
 

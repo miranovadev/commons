@@ -9,11 +9,11 @@ use App\Models\Tragedy;
 use App\Services\ExhaustionAuditService;
 use App\Services\HorizonReceiptService;
 use App\Services\ParticipationService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\ExhaustionFixture;
 use Tests\Fixtures\NaturalBoundaryHistory;
+use Tests\Support\RefreshIntegrationDatabase as RefreshDatabase;
 use Tests\TestCase;
 
 #[Group('integration')]

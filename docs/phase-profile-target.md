@@ -1,9 +1,9 @@
-# Phase Profile C1: proposed structural observation
+# Phase Profile C1: production Correspondence
 
-> **Preferred diagnostic target; not deployed.** The current implementation
-> uses [Cardinal Position](correspondence-v2-cardinal-semantics.md).
-> This proposal retains Shape Topology, replaces only the second
-> Correspondence component, and requires a separate implementation review.
+> **Stage 2 production semantics.** Phase Profile replaces Correspondence
+> [Cardinal Position](correspondence-v2-cardinal-semantics.md), retaining Shape
+> Topology and its all-parent structural kernel. Closure's Committed Cardinal
+> Position is a separate primitive and remains unchanged.
 > It does not change causal topology, participant movement or Commit ownership.
 
 ## Measurement frame
@@ -147,12 +147,14 @@ Keep the Origin bootstrap explicitly distinguishable from observed
 expressive spacing. Origin's raw Correspondence remains +1;
 ordinary comparison begins in the first developed Domain.
 
-The exact interval-to-similarity kernel and retained component
-direction/hysteresis must be verified against the accepted diagnostic
-before implementation. The C1 diagnostic uses the bounded
-comparison family and fixed neutral-slot aggregation; do not silently
-substitute Cardinal's row-position formula or invent a missing-data
-penalty.
+Production reuses Stage 1's accepted bounded kernel and seven neutral slots.
+The component is rounded to seven decimals for production persistence. Nonzero
+Phase Profile establishes its own direction; zero retains its prior Phase Profile
+direction, then its entry snapshot's Phase Profile direction, otherwise Positive.
+Historical Cardinal direction is never an input. Combined Correspondence retains
+its existing independent hysteresis. Mediate requires retained Shape Topology and
+Phase Profile directions to agree, with its existing combined-direction condition.
+Both positive and negative component agreement remain valid.
 
 ## Historical and causal guarantees
 
@@ -167,11 +169,25 @@ B1 (first-Cycle baseline), B2 (Committal-zero baseline), and C2
 (two-interval maturity) remain **diagnostic controls**, not target
 rules. Do not discard their evidence or present them as approved canon.
 
-## Stage 1 diagnostic implementation boundary
+## Stage 1 foundation and Stage 2 integration
 
 Stage 1 records observations and exposes `commons:phase-profile-inspect
-PROPOSITION_ID`; it does not replace production Cardinal Position or change any
-production observable, retained direction, actionability or Commit preservation.
+PROPOSITION_ID`. Stage 2 consumes those same observations in production; the
+inspector's prospective Order preview remains diagnostic-only. Production never
+uses that preview to recalculate already-born Bias Correspondence.
+
+Raw Correspondence is the equal mean of Shape Topology and Phase Profile.
+Existing inverse-square structural attenuation remains unchanged. Canonical
+Commit preserves the selected source's resolved Correspondence and both component
+values/directions; the new Committal is not another expressive measurement head.
+Immutable profile observations and fixed causal/boundary selection make later
+Cycle entries and Attestation changes neutral to local Correspondence. Projection
+repair derives values from the same birth facts, never from current basin counts.
+
+Stage 2 targets new experimental substrates. It does not backfill birth history,
+convert historical Cardinal measurements, or select between legacy calculators.
+Historical columns retain their original data and names; new nullable Phase
+Profile columns start without fabricated history. No substrates are deleted.
 The bounded diagnostic kernel is `1 - 2 * abs(a - b) / max(a, b)` for available
 nonnegative means, with zero/zero = +1, bounded to [-1,+1]. Either unavailable
 mean contributes 0. The independently correct comparison family from historical
@@ -185,7 +201,7 @@ Implementation responsibilities:
 | Basin clock and event ordering | New Proposition ledger birth under the existing Substrate lock counts entries with the exact creating Cycle's entry Committal/Horizon and entry marker before the birth sequence |
 | Operation-specific temporal selection | Authorized dispatcher source: unary source, revised Proposition, acting Reconcile Gate, or selected Commit source |
 | Same-Phase Revision | Reuse the source's durable preceding-Phase reference; never reconstruct a missing historical reference |
-| Immutable evidence | `phase_profile_observations` stores coordinate, preceding-Phase Proposition ID, interval and unavailability reason; PostgreSQL/SQLite update guards; no historical backfill |
+| Immutable evidence | `phase_profile_observations` stores coordinate, selected temporal predecessor, preceding-Phase Proposition ID, interval and unavailability reason; PostgreSQL/SQLite update guards; no historical backfill |
 | Ownership | Derived through the creating Phase/Cycle; no duplicated basin or Horizon columns |
 | Profile population | The inspected head's durable selected local temporal predecessor chain; Revision parents remain in the history even when their interval references skip to the preceding Phase |
 | Completed comparison reference | Genuine ancestry ending at the Committal that opened the current Horizon; later siblings do not extend that reference |

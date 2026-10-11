@@ -1,7 +1,7 @@
 import { Box, Group, Stack, Text, Tooltip } from '@mantine/core';
 import type { Observables } from '../types';
 
-type MeasurementName = keyof Observables;
+type MeasurementName = 'correspondence' | 'chirality' | 'closure';
 
 export const measurementMeta = {
   correspondence: { label: 'Correspondence', negative: 'Dissonance', positive: 'Consonance' },

@@ -22,7 +22,7 @@ class CommitmentSnapshot extends Model
         return [
             'correspondence' => 'float',
             'shape_topology' => 'float',
-            'cardinal_position' => 'float',
+            'phase_profile' => 'float',
             'chirality' => 'float',
             'orientation' => 'float',
             'attestation_cadence' => 'float',

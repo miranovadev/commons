@@ -16,16 +16,16 @@ final readonly class CorrespondenceGateService
         $this->measurements->observeMissing(collect([$gate]), $context);
         $measurement = $gate->measurement;
         $shape = $measurement?->shape_topology_direction;
-        $cardinal = $measurement?->cardinal_position_direction;
-        $available = $shape !== null && $cardinal !== null;
-        $admissible = $available && $shape === $cardinal;
+        $profile = $measurement?->phase_profile_direction;
+        $available = $shape !== null && $profile !== null;
+        $admissible = $available && $shape === $profile;
 
         return [
             'gate_id' => $gate->id,
             'admissible' => $admissible,
             'reason' => $admissible ? null : ($available ? 'component_directions_disagree' : 'component_directions_unavailable'),
             'shape_topology_direction' => $shape,
-            'cardinal_position_direction' => $cardinal,
+            'phase_profile_direction' => $profile,
             'correspondence_direction' => $this->measurements->correspondenceDirectionFor($gate, $context)->value,
         ];
     }

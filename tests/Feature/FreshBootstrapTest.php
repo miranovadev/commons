@@ -13,10 +13,11 @@ use App\Services\ChiralityGateService;
 use App\Services\ClosureGateService;
 use App\Services\Observables\LineageMeasurementService;
 use App\Services\Observables\LocalMeasurementService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Services\Observables\PhaseProfileService;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\HorizonCycleFixture;
+use Tests\Support\RefreshIntegrationDatabase as RefreshDatabase;
 use Tests\TestCase;
 
 #[Group('integration')]
@@ -30,12 +31,13 @@ class FreshBootstrapTest extends TestCase
     }
 
     #[DataProvider('polarityLabels')]
-    public function test_explicit_origin_and_aligned_evidence_reach_emergence(string $label): void
+    public function test_explicit_origin_and_aligned_evidence_reach_a_lawful_commit(string $label): void
     {
         $phases = [];
         $biasAvailable = false;
         $commitPreview = null;
-        $commit = $this->driveHorizonCycle(realClosure: true, originDirection: $label,
+        // C1 advertises Commit after action 100; no population or policy change.
+        $commit = $this->driveHorizonCycle(realClosure: true, originDirection: $label, actionBudget: 101,
             observe: function ($participant, $state) use (&$phases, &$biasAvailable, &$commitPreview): void {
                 $plan = $state['plan'];
                 $phases[$plan['phase']['number']] = true;
@@ -70,12 +72,14 @@ class FreshBootstrapTest extends TestCase
         $snapshot = $commit->commitmentSnapshot;
         $this->assertSame(0.0, $snapshot->depth);
         $this->assertSame(0.0, $snapshot->cadence);
-        $this->assertSame(-0.5276331, $snapshot->correspondence);
-        $this->assertSame(0.8454858, $snapshot->chirality);
-        $this->assertSame(1.0, $snapshot->orientation);
-        $this->assertSame(1.0, $snapshot->attestation_cadence);
-        $this->assertSame(ContextDomain::Emergence, $snapshot->direction_after);
-        $this->assertSame(0.1059509, $snapshot->tension);
+        // A changed Correspondence can change this journey and its final Domain.
+        // Assert preservation and the ordinary transition, not Cardinal-era numbers.
+        $source = $commit->commitSources()->sole()->measurement;
+        foreach (['correspondence', 'chirality', 'shape_topology', 'phase_profile',
+            'shape_topology_direction', 'phase_profile_direction'] as $field) {
+            $this->assertSame($source->$field, $snapshot->$field);
+        }
+        $this->assertSame(round($snapshot->prominence - $snapshot->turbulence, 7), $snapshot->tension);
         $this->assertSame(ContextDomain::after($snapshot->tension, $snapshot->direction_before), $snapshot->direction_after);
         $this->assertSame($snapshot->direction_after, $commit->phase->cycle->participant->cycles()->latest('sequence')->first()->contextHorizon->domain);
         $this->assertSame($commitPreview['cadence_interval'], $snapshot->cadence_interval);
@@ -84,7 +88,6 @@ class FreshBootstrapTest extends TestCase
             ->where('context_horizon_id', $commit->phase->cycle->context_horizon_id)->count(), $snapshot->cadence_interval);
         $this->assertTrue(Supersession::where('type', 'reclassify')
             ->whereHas('phase', fn ($q) => $q->where('kind', 6))->exists());
-        $witnesses = [];
         foreach ([1, 3, 7] as $phaseNumber) {
             $node = Proposition::whereHas('phase', fn ($q) => $q->where('kind', $phaseNumber))
                 ->where('id', '!=', $origin->proposition_id)->orderBy('id')->firstOrFail();
@@ -92,13 +95,18 @@ class FreshBootstrapTest extends TestCase
             $local = app(LocalMeasurementService::class)->calculate($node);
             $measured = $lineage->calculate($node);
             $this->assertSame($measured->chirality, $lineage->chirality($node)[0]);
-            $this->assertLessThan(.261881, $measured->correspondence);
-            $witnesses[$phaseNumber] = [$local->correspondenceComponents->shapeTopology,
-                $local->correspondenceComponents->cardinalPosition, $measured->correspondence];
+            if ($phaseNumber !== 7) {
+                $this->assertSame(round(app(PhaseProfileService::class)->calculate($node), 7),
+                    $local->correspondenceComponents->phaseProfile);
+                $this->assertSame(round(($local->correspondenceComponents->shapeTopology
+                    + $local->correspondenceComponents->phaseProfile) / 2, 7), $local->correspondence);
+            } else {
+                // Commit preserves its selected expressive state; Phase 7 is not
+                // another expressive Correspondence calculation.
+                $this->assertSame($snapshot->phase_profile, $local->correspondenceComponents->phaseProfile);
+                $this->assertSame($snapshot->correspondence, $measured->correspondence);
+            }
         }
-        $this->assertSame([-.5285955, 0.0, -.0114382], $witnesses[1]);
-        $this->assertSame([-.3827866, -.5, -.3700546], $witnesses[3]);
-        $this->assertSame([-.3420483, -.75, -.5276331], $witnesses[7]);
         $this->assertSame(1, $commit->commitSources()->count());
     }
 }

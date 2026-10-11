@@ -9,23 +9,23 @@ final readonly class CorrespondenceValues
 {
     public function __construct(
         public float $shapeTopology,
-        public float $cardinalPosition,
+        public float $phaseProfile,
         public ?Direction $retainedShapeTopology = null,
-        public ?Direction $retainedCardinalPosition = null,
+        public ?Direction $retainedPhaseProfile = null,
     ) {}
 
     public function average(): float
     {
-        return round(($this->shapeTopology + $this->cardinalPosition) / 2, 7);
+        return round(($this->shapeTopology + $this->phaseProfile) / 2, 7);
     }
 
     public function resolveDirections(
         Direction $shapeTopology = Direction::Positive,
-        Direction $cardinalPosition = Direction::Positive,
+        Direction $phaseProfile = Direction::Positive,
     ): array {
         return [
             'shape_topology_direction' => ($this->retainedShapeTopology ?? Direction::after($this->shapeTopology, $shapeTopology))->value,
-            'cardinal_position_direction' => ($this->retainedCardinalPosition ?? Direction::after($this->cardinalPosition, $cardinalPosition))->value,
+            'phase_profile_direction' => ($this->retainedPhaseProfile ?? Direction::after($this->phaseProfile, $phaseProfile))->value,
         ];
     }
 }

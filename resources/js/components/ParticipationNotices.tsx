@@ -13,7 +13,7 @@ export function participationNotices({ participation, plan, canCommit, canRest, 
   const coherence = [
     { id: 'correspondence-admissibility', name: 'Correspondence', action: 'Reconcile', state: correspondence,
       first: 'Shape Topology', firstDirection: correspondence?.shape_topology_direction,
-      second: 'Cardinal Position', secondDirection: correspondence?.cardinal_position_direction },
+      second: 'Phase Profile', secondDirection: correspondence?.phase_profile_direction },
     { id: 'chirality-admissibility', name: 'Chirality', action: 'Reclassify', state: chirality,
       first: 'Orientation', firstDirection: chirality?.orientation_direction,
       second: 'Attestation Cadence', secondDirection: chirality?.attestation_cadence_direction },

@@ -13,6 +13,32 @@ concurrency:
 
 jobs:
   integration:
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     uses: ./.github/workflows/php-tests.yml
     with:
       suite: integration
+      shard: ${{ matrix.shard }}
+      shards: 4
+
+  summary:
+    if: ${{ always() }}
+    needs: integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: php-integration-*-results
+          path: test-results
+          merge-multiple: true
+      - name: Verify complete Integration coverage and report all outcomes
+        run: python3 scripts/ci/summarize-integration.py test-results 4
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: integration-summary
+          path: test-results/integration-summary.json
