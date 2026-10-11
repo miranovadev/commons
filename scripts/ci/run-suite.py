@@ -2,6 +2,7 @@
 """Partition PHPUnit's actual discovery; Composer remains the suite definition."""
 
 import argparse
+from collections import Counter
 import json
 import os
 import re
@@ -68,6 +69,7 @@ def main():
     if args.audit:
         audit(output)
     tests = discover(args.suite)
+    (output / f"{args.suite}-{args.shard}-inventory.json").write_text(json.dumps(tests, indent=2) + "\n")
     weights = json.loads((ROOT / "scripts/ci/class-durations.json").read_text())
     shards = partition(tests, weights, args.shards)
     selected_classes = set(shards[args.shard - 1])
@@ -96,12 +98,17 @@ def main():
         "suite": args.suite, "shard": args.shard, "shards": args.shards,
         "selected_tests": len(selected), "php_wall_seconds": elapsed, "exit_code": result.returncode,
     }, indent=2) + "\n")
-    if result.returncode == 0:
+    if (output / f"{prefix}.xml").exists():
         cases = list(ET.parse(output / f"{prefix}.xml").iter("testcase"))
-        if len(cases) != len(selected) or any(case.find("skipped") is not None for case in cases):
+        expected = Counter(selected)
+        executed = Counter(case.attrib["class"] + "::" + case.attrib["name"].replace(" with data set ", "") for case in cases)
+        if executed != expected or any(case.find("skipped") is not None for case in cases):
             raise RuntimeError("Executed coverage differs from the selected inventory")
+    else:
+        raise RuntimeError("Missing JUnit report; suite did not reach a final summary")
     return result.returncode
 
 
 if __name__ == "__main__":
     sys.exit(main())
+

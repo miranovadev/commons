@@ -4,13 +4,13 @@ namespace Tests\Support;
 
 use App\Jobs\WakeParticipant;
 use App\Services\Evidence\PublicResourceAddress;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Foundation\Testing\TestCase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Testing\TestResponse;
 use LogicException;
+use Tests\Support\RefreshIntegrationDatabase as RefreshDatabase;
 
 /** Real participation requests; only external DNS and HTTP evidence are deterministic. */
 abstract class ParticipationHttpTestCase extends TestCase
@@ -26,9 +26,11 @@ abstract class ParticipationHttpTestCase extends TestCase
     protected function setUp(): void
     {
         // Rolled-back journeys leave PostgreSQL physical/statistical state behind.
-        // A fresh schema keeps each complete HTTP scenario independent of that
-        // state; migrations still finish before the fixture-write guard is armed.
-        RefreshDatabaseState::$migrated = false;
+        // Outside the Integration runner retain the existing fresh-schema setup.
+        // Integration reclaims storage before the fixture-write guard is armed.
+        if (getenv('COMMONS_INTEGRATION_MAINTENANCE') !== '1') {
+            RefreshDatabaseState::$migrated = false;
+        }
         parent::setUp();
         Http::preventStrayRequests();
         $this->mock(PublicResourceAddress::class, fn ($mock) => $mock

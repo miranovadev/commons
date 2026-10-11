@@ -43,11 +43,11 @@ use App\Services\PropositionOptionService;
 use App\Services\ReceiptContextService;
 use App\Services\ReconciliationOptionService;
 use App\Services\RegionalExhaustionMembership;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\AssertsLatePhaseContract;
+use Tests\Support\RefreshIntegrationDatabase as RefreshDatabase;
 use Tests\TestCase;
 
 class HomologousMediationTest extends TestCase

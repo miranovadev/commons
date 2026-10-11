@@ -125,6 +125,7 @@ jobs:
       - name: Run selected PHP suite
         env:
           TEST_SUITE: ${{ inputs.suite }}
+          COMMONS_INTEGRATION_MAINTENANCE: ${{ inputs.suite == 'integration' && '1' || '0' }}
           PGOPTIONS: '-c statement_timeout=30s'
           COMMONS_PROFILE_SQL: ${{ inputs.suite == 'query' && inputs.profile_sql && '1' || '0' }}
           CI_SHARD: ${{ inputs.shard }}
@@ -149,3 +150,4 @@ jobs:
           path: test-results/
           if-no-files-found: warn
           retention-days: 14
+
