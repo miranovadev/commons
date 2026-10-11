@@ -14,6 +14,7 @@ class HorizonProofCycleTest extends TestCase
 
     public function test_one_participant_builds_and_commits_through_both_receipt_boundaries_over_cycles(): void
     {
-        $this->driveHorizonCycle();
+        // C1 advertises Commit after action 100; execute that next lawful action.
+        $this->driveHorizonCycle(actionBudget: 101);
     }
 }

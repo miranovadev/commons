@@ -36,7 +36,8 @@ class FreshBootstrapTest extends TestCase
         $phases = [];
         $biasAvailable = false;
         $commitPreview = null;
-        $commit = $this->driveHorizonCycle(realClosure: true, originDirection: $label,
+        // C1 advertises Commit after action 100; no population or policy change.
+        $commit = $this->driveHorizonCycle(realClosure: true, originDirection: $label, actionBudget: 101,
             observe: function ($participant, $state) use (&$phases, &$biasAvailable, &$commitPreview): void {
                 $plan = $state['plan'];
                 $phases[$plan['phase']['number']] = true;
