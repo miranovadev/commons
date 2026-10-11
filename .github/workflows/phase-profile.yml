@@ -1,29 +1,18 @@
-name: Phase Profile contracts
-
+name: Phase Profile final validation
 on:
   push:
-    paths:
-      - 'app/**'
-      - 'resources/**'
-      - 'app/Services/Observables/PhaseProfile*.php'
-      - 'app/Services/LedgerService.php'
-      - 'app/Services/ContributionDispatcher.php'
-      - 'app/Console/Commands/InspectPhaseProfile.php'
-      - 'database/migrations/*phase_profile*'
-      - 'tests/**'
-      - '.github/workflows/phase-profile.yml'
-
+    branches: [validation/phase-profile-stage2]
 permissions:
   contents: read
-
 jobs:
-  focused:
+  integration:
     strategy:
       fail-fast: false
       matrix:
-        database: [sqlite, pgsql]
+        revision: ['a6f27938d940b7cca701503de450c1ed8f5c8f9a', 'fae6763df7fb927fd7eee4565e5c114bc7ab83ac']
+        shard: [1, 2, 3, 4]
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 20
     services:
       postgres:
         image: postgres:18-alpine
@@ -38,8 +27,8 @@ jobs:
     env:
       APP_ENV: testing
       APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
-      DB_CONNECTION: ${{ matrix.database }}
-      DB_DATABASE: ${{ matrix.database == 'sqlite' && ':memory:' || 'testing' }}
+      DB_CONNECTION: pgsql
+      DB_DATABASE: testing
       DB_HOST: 127.0.0.1
       DB_PORT: 5432
       DB_USERNAME: postgres
@@ -48,25 +37,26 @@ jobs:
       MAIL_MAILER: array
       QUEUE_CONNECTION: sync
       SESSION_DRIVER: array
+      COMPOSER_PROCESS_TIMEOUT: 0
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          ref: ${{ matrix.revision }}
+      - uses: actions/checkout@v4
+        with:
+          path: .validation
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.5'
-          extensions: mbstring, pdo_sqlite, pdo_pgsql, curl, intl
+          extensions: mbstring, pdo_pgsql, pdo_sqlite, curl, intl
           coverage: none
           tools: composer:v2
       - run: composer install --prefer-dist --no-interaction --no-progress
       - run: cp .env.example .env
-      - name: Phase Profile contracts
-        run: php artisan test tests/Unit/PhaseProfileComparisonTest.php tests/Feature/PhaseProfileTest.php --display-warnings
-      - name: Existing observable and ledger contracts
+      - run: python3 .validation/scripts/ci/install-validation-trace.py
+      - run: python3 scripts/ci/run-suite.py integration --shard ${{ matrix.shard }} --shards 4
+      - uses: actions/upload-artifact@v4
         if: always()
-        run: php artisan test --filter='Cardinal|Correspondence|CycleEntryIdentity|PhasePositionInvariant|ContextHorizonProjector|ClosureBirth|PropositionLocalChirality|CanonicalCommit|ChiralityV2|AttestationBeat|HomeostaticPopulation|PropositionHistorySemantics|coherent_positive_inputs_produce_the_normal_result' --display-warnings
-      - name: Formatting and whitespace
-        if: always()
-        run: |
-          vendor/bin/pint --test app/Domain/Observables/PhaseProfile.php app/Services/Observables/PhaseProfile*.php app/Services/LedgerService.php app/Services/ContributionDispatcher.php app/Console/Commands/InspectPhaseProfile.php database/migrations/*phase_profile* tests/Unit/PhaseProfileComparisonTest.php tests/Feature/PhaseProfileTest.php
-          git diff --check origin/main...HEAD
+        with:
+          name: validation-${{ matrix.revision }}-${{ matrix.shard }}
+          path: test-results/
