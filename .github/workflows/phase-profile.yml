@@ -65,6 +65,9 @@ jobs:
       - run: cp .env.example .env
       - name: Phase Profile contracts
         run: php artisan test tests/Unit/PhaseProfileComparisonTest.php tests/Feature/PhaseProfileTest.php --display-warnings
+      - name: Prospective Closure contracts
+        if: always()
+        run: php artisan test --filter='ProspectiveClosure' --display-warnings --fail-on-empty-test-suite
       - name: Existing observable and ledger contracts
         if: always()
         run: php artisan test --filter='Cardinal|Correspondence|CycleEntryIdentity|PhasePositionInvariant|ContextHorizonProjector|ClosureBirth|PropositionLocalChirality|CanonicalCommit|ChiralityV2|AttestationBeat|HomeostaticPopulation|PropositionHistorySemantics|coherent_positive_inputs_produce_the_normal_result' --display-warnings
