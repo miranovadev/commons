@@ -1,0 +1,101 @@
+test,change_since_832_checkpoint,before,after,Stage2_failed
+Tests\Feature\WriteOnceTest::test_bias_is_once_per_source_and_does_not_impose_a_personal_quota,remains passed,passed,passed,no
+Tests\Feature\WriteOnceTest::test_order_consumes_each_direct_source_globally_and_preserves_other_sources,remains passed,passed,passed,no
+Tests\Feature\WriteOnceTest::test_dispatcher_rejects_support_on_visible_gate_and_unrelated_write,remains passed,passed,passed,no
+Tests\Unit\ChiralityValuesTest::test_population_existence_and_rate_similarity#0,remains passed,passed,passed,no
+Tests\Unit\ChiralityValuesTest::test_population_existence_and_rate_similarity#1,remains passed,passed,passed,no
+Tests\Unit\ChiralityValuesTest::test_population_existence_and_rate_similarity#2,remains passed,passed,passed,no
+Tests\Unit\ChiralityValuesTest::test_population_existence_and_rate_similarity#3,remains passed,passed,passed,no
+Tests\Unit\ChiralityValuesTest::test_population_existence_and_rate_similarity#4,remains passed,passed,passed,no
+Tests\Unit\ChiralityValuesTest::test_population_existence_and_rate_similarity#5,remains passed,passed,passed,no
+Tests\Unit\ChiralityValuesTest::test_population_existence_and_rate_similarity#6,remains passed,passed,passed,no
+Tests\Unit\ChiralityValuesTest::test_population_existence_and_rate_similarity#7,remains passed,passed,passed,no
+Tests\Unit\ChiralityValuesTest::test_composition_and_independent_hysteresis_have_no_admissibility_rule,remains passed,passed,passed,no
+Tests\Unit\ClosureValuesTest::test_alignment_and_zero_retention_are_independent_of_the_average,remains passed,passed,passed,no
+Tests\Unit\ClosureValuesTest::test_frozen_historical_closure_is_preserved_even_when_it_differs_from_the_pure_mean,remains passed,passed,passed,no
+Tests\Unit\ClosureValuesTest::test_population_cv_is_scale_invariant_and_zero_variability_is_explicit,remains passed,passed,passed,no
+Tests\Unit\ClosureValuesTest::test_lateral_centroids_are_positive_real_values_with_bounded_similarity,remains passed,passed,passed,no
+Tests\Unit\ClosureValuesTest::test_invalid_component_is_rejected,remains passed,passed,passed,no
+Tests\Unit\PotentialRegionCalculatorTest::test_exhausting_best_sibling_exposes_next_maximum_without_subtraction,remains passed,passed,passed,no
+Tests\Unit\PotentialRegionCalculatorTest::test_dominated_sibling_changes_do_not_change_provenance_summary,remains passed,passed,passed,no
+Tests\Unit\PotentialRegionCalculatorTest::test_nearer_weaker_candidate_is_retained_because_attenuation_can_change_the_winner,remains passed,passed,passed,no
+Tests\Unit\PotentialRegionCalculatorTest::test_viable_descendant_shadows_stronger_parent_and_exhaustion_reveals_parent,remains passed,passed,passed,no
+Tests\Unit\PotentialRegionCalculatorTest::test_exclusion_preserves_an_alternative_path_through_a_diamond,remains passed,passed,passed,no
+Tests\Unit\PotentialRegionCalculatorTest::test_branch_aggregation_cannot_borrow_another_origin_branch,remains passed,passed,passed,no
+Tests\Unit\RecoveryBasinResolverTest::test_current_horizon_candidates_exclude_viable_downstream_domains,remains passed,passed,passed,no
+Tests\Unit\RecoveryBasinResolverTest::test_sibling_and_descendant_horizons_are_never_searched,remains passed,passed,passed,no
+Tests\Unit\RecoveryBasinResolverTest::test_a_viable_current_branch_does_not_compete_with_its_parents_other_children,remains passed,passed,passed,no
+Tests\Unit\RecoveryBasinResolverTest::test_exhaustion_can_reach_the_parent_but_cannot_discover_a_sibling,remains passed,passed,passed,no
+Tests\Unit\RecoveryBasinResolverTest::test_exhaustion_reaches_historical_domains_and_the_root_without_revisiting_basins,remains passed,passed,passed,no
+Tests\Unit\RecoveryBasinResolverTest::test_changes_in_a_descendant_cannot_change_current_horizon_scope,remains passed,passed,passed,no
+Tests\Unit\RecoveryBasinResolverTest::test_exhaustion_does_not_authorize_crossing_a_boundary_absent_from_the_walked_lineage,remains passed,passed,passed,no
+Tests\Unit\RecoveryBasinResolverTest::test_missing_provenance_does_not_jump_to_an_unrelated_root,remains passed,passed,passed,no
+Tests\Unit\RecoveryBasinResolverTest::test_corrupt_horizon_cycles_terminate_with_an_error,remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""termination phase""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""termination cycle""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""termination rest""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""invalid termination""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout 1""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout 600""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout 1800""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout 0""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout -1""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout 1801""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout 1.5""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout invalid""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""offset mode seconds""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""offset mode random""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""offset mode invalid""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""seconds 0""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""seconds 60""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""seconds -1""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""seconds 61""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""seconds 1.5""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""seconds invalid""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""random_from 0""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""random_from 60""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""random_from -1""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""random_from 61""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""random_from 1.5""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""random_from invalid""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""random_to 0""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""random_to 60""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""random_to -1""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""random_to 61""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""random_to 1.5""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""random_to invalid""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""equal range""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""reversed range""",remains passed,passed,passed,no
+Tests\Unit\WakeConfigurationTest::test_defaults_and_inclusive_random_bounds,remains passed,passed,passed,no
+Tests\Feature\BootstrapOriginReinforcementTest::test_loaded_reinforcement_does_not_rewrite_bootstrap_committal_closure,remains passed,passed,passed,no
+Tests\Feature\CardinalCorrespondenceTest::test_metric_lateral_position_is_continuous_not_categorical,remains passed,passed,passed,no
+Tests\Feature\CardinalCorrespondenceTest::test_domain_layout_assigns_breadth_first_depth_and_parent_relative_lateral_order,remains passed,passed,passed,no
+Tests\Feature\CardinalCorrespondenceTest::test_row_balanced_position_scores_population_and_metric_displacement,remains passed,passed,passed,no
+Tests\Feature\CardinalCorrespondenceTest::test_first_developed_domain_immediately_compares_against_origin_reference,remains passed,passed,passed,no
+Tests\Feature\CardinalCorrespondenceTest::test_domain_depth_continues_across_cycle_phase_repetition,remains passed,passed,passed,no
+Tests\Feature\CardinalCorrespondenceTest::test_lateral_order_follows_causal_parent_order_not_phase_gate_or_global_creation_order,remains passed,passed,passed,no
+Tests\Feature\ClosureBirthTest::test_origin_and_population_cv_bootstrap_then_full_history_comparison,remains passed,passed,passed,no
+Tests\Feature\ClosureBirthTest::test_expressive_and_committal_births_observe_different_intervals_and_never_rewrite_source,still missing history,error,error,no
+Tests\Feature\ClosureBirthTest::test_full_domain_depth_counts_do_not_reset_on_domain_switch,remains passed,passed,passed,no
+Tests\Feature\ClosureBirthTest::test_temporary_slots_do_not_reserve_positions_and_sibling_gaps_remain,still missing history,error,error,no
+Tests\Feature\ClosureBirthTest::test_full_same_domain_lateral_centroid_uses_frozen_positions_and_keeps_gaps,still missing history,error,error,no
+Tests\Feature\ClosureBirthTest::test_forks_and_measurement_repair_use_the_same_durable_birth_observation,still missing history,error,error,no
+Tests\Feature\ClosureBirthTest::test_missing_birth_data_fails_closed_instead_of_using_current_population,still missing history,error,error,no
+Tests\Feature\ClosureBirthTest::test_attestation_can_refresh_chirality_while_closure_remains_frozen,still missing history,error,error,no
+Tests\Feature\ClosureBirthTest::test_zero_depth_retains_positive_committed_history,remains passed,passed,passed,no
+Tests\Feature\ClosureBirthTest::test_lateral_comparison_requires_two_prior_same_domain_observations,still missing history,error,error,no
+Tests\Feature\ClosureBirthTest::test_mature_lateral_does_not_depend_on_cadence_sign_or_force_admissibility,remains passed,passed,passed,no
+Tests\Feature\ClosureBirthTest::test_unbranched_second_commit_retains_aligned_bootstrap_directions#0,remains passed,passed,passed,no
+Tests\Feature\ClosureBirthTest::test_unbranched_second_commit_retains_aligned_bootstrap_directions#1,remains passed,passed,passed,no
+Tests\Feature\ClosureBirthTest::test_birth_observation_is_database_immutable,remains passed,passed,passed,no
+Tests\Feature\CycleEntryIdentityTest::test_origin_has_no_entry_and_live_cycles_keep_their_explicit_entry_committal,remains passed,passed,passed,no
+Tests\Feature\CycleEntryIdentityTest::test_eloquent_cannot_clear_entry,remains passed,passed,passed,no
+Tests\Feature\CycleEntryIdentityTest::test_bulk_updates_cannot_clear_entry,remains passed,passed,passed,no
+Tests\Feature\CycleEntryIdentityTest::test_origin_null_cannot_be_replaced_after_creation,remains passed,passed,passed,no
+Tests\Feature\CycleEntryIdentityTest::test_bulk_updates_cannot_replace_an_existing_entry,remains passed,passed,passed,no
+Tests\Feature\CycleEntryIdentityTest::test_rename_preserves_rows_and_restores_the_old_guard_on_rollback,remains passed,passed,passed,no
+Tests\Feature\CycleEntryIdentityTest::test_entry_foreign_key_rejects_a_missing_committal,remains passed,passed,passed,no
+Tests\Feature\CycleEntryIdentityTest::test_entry_must_belong_to_the_selected_horizon_and_substrate,remains passed,passed,passed,no
+Tests\Feature\CycleEntryIdentityTest::test_migration_uses_original_entry_without_changing_snapshots_or_horizons,remains passed,passed,passed,no
+Tests\Feature\CycleEntryIdentityTest::test_migration_rejects_missing_entry_instead_of_guessing_from_horizon,remains passed,passed,passed,no
+Tests\Feature\HomologousBiasTest::test_boundary_reclassification_belongs_to_the_acting_region_not_its_foreign_source,still missing history,error,error,no

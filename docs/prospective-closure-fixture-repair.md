@@ -1,5 +1,7 @@
 # Stage 3 fixture repair and regression validation
 
+**Reviewed checkpoint.** See the [continued fixture repair report](prospective-closure-fixture-followup.md) for the latest complete results. This report and its original inventories remain preserved.
+
 This follow-up changes test construction only. Production prospective Closure is
 approved; its mathematics, event triggers, admissibility and strict missing-state
 boundary are unchanged. No production file or migration is changed by this repair.

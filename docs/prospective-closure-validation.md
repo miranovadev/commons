@@ -1,6 +1,7 @@
 # Stage 3 prospective Closure validation
 
 **Pre-repair checkpoint.** See the [fixture repair follow-up](prospective-closure-fixture-repair.md)
+and the [continued fixture repairs](prospective-closure-fixture-followup.md)
 for current results and the before/after comparison. The results below remain
 attributed to their original tested head.
 

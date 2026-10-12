@@ -1,0 +1,45 @@
+{
+  "head": "f208025de0d262e43e50be00707bb515a2abbb77",
+  "suites": {
+    "core": {
+      "passed": 887,
+      "assertions": 10682,
+      "error": 247,
+      "failure": 6,
+      "total": 1140,
+      "discovered_selected_executed_exact": true,
+      "categories": {
+        "D (provisional setup/history boundary)": 246,
+        "A (Stage 2 baseline)": 3,
+        "B (Stage 3 trajectory)": 2,
+        "B (Stage 3 Cycle trajectory)": 2
+      },
+      "php_wall_seconds": [
+        164.95165802500003,
+        263.71969739400004,
+        368.370618389,
+        315.158286911,
+        391.549596958
+      ]
+    },
+    "integration": {
+      "failure": 11,
+      "assertions": 17292,
+      "passed": 19,
+      "error": 1,
+      "total": 31,
+      "discovered_selected_executed_exact": true,
+      "categories": {
+        "B (Stage 3 trajectory)": 4,
+        "A (Stage 2 baseline)": 7,
+        "D (provisional setup/history boundary)": 1
+      },
+      "php_wall_seconds": [
+        231.895511968,
+        308.05550069500003,
+        314.445399612,
+        207.11212510299998
+      ]
+    }
+  }
+}

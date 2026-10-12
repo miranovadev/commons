@@ -1,5 +1,7 @@
 # Stage 3 implementation readiness review
 
+Latest regression evidence: [continued fixture repairs](prospective-closure-fixture-followup.md). Approved semantics are unchanged; missing-history assertions still prevent full regression sign-off.
+
 PR #255 continues on its original branch. Main at
 `e7c357551f6e9916a8e84c8c61c309069b280ca6`, including PR #256's
 [implementation-readiness protocol](implementation-readiness-protocol.md), is
