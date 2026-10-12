@@ -1,0 +1,38 @@
+test,result,category,finding,failure_summary,first_test_frame,assertions,seconds
+Tests\Feature\PhaseProfileTest::test_selected_temporal_predecessor_is_database_immutable,passed,,,,,1,0.408082
+Tests\Feature\PhaseProfileTest::test_real_dispatch_passes_authorized_source,passed,,,,,3,0.509132
+Tests\Feature\PhaseProfileTest::test_migration_is_reversible_and_does_not_backfill_history,passed,,,,,4,0.372523
+Tests\Feature\PhaseProfileTest::test_failed_observation_rolls_back_the_atomic_write,passed,,,,,4,0.323783
+Tests\Feature\PhaseProfileTest::test_diagnostics_are_read_only_and_leave_all_production_state_unchanged,passed,,,,,23,0.573844
+"Tests\Feature\PropositionHistorySemanticsTest::test_non_commit_operations_create_fresh_history""Variant from Expressive""",passed,,,,,28,0.888593
+"Tests\Feature\PropositionHistorySemanticsTest::test_non_commit_operations_create_fresh_history""Variant from Committal""",passed,,,,,28,0.618716
+"Tests\Feature\PropositionHistorySemanticsTest::test_non_commit_operations_create_fresh_history""Revise""",passed,,,,,28,1.084439
+"Tests\Feature\PropositionHistorySemanticsTest::test_non_commit_operations_create_fresh_history""Reclassify""",passed,,,,,28,0.962795
+"Tests\Feature\PropositionHistorySemanticsTest::test_non_commit_operations_create_fresh_history""Mediate Reconcile""",passed,,,,,37,1.636186
+"Tests\Feature\PropositionHistorySemanticsTest::test_non_commit_operations_create_fresh_history""Bias unary hard supersession""",passed,,,,,28,1.165992
+Tests\Feature\ReceiptContextMigrationTest::test_upgrade_preserves_historical_allocations_without_inventing_loads,passed,,,,,5,1.648309
+Tests\Feature\ReceiptContextTest::test_gate_load_accompanies_forward_contribution_and_persists_across_cycles,passed,,,,,54,4.479460
+Tests\Feature\ReceiptContextTest::test_backend_rejects_lineage_redundancy_hidden_receipts_and_foreign_participant,passed,,,,,5,1.888587
+Tests\Feature\ReceiptContextTest::test_clear_reduces_active_measurement_and_reload_preserves_history,passed,,,,,14,1.411844
+Tests\Feature\ReceiptContextTest::test_verified_hyperlink_receipts_require_load_and_equivalent_evidence_cannot_stack,passed,,,,,9,1.546422
+Tests\Feature\ReceiptContextTest::test_loaded_cite_content_blocks_equivalent_new_citations_and_clear_restores_readability,passed,,,,,6,1.393262
+Tests\Feature\ReceiptContextTest::test_loaded_citation_knowledge_survives_outside_the_hydrated_causal_lineage,passed,,,,,6,1.774551
+Tests\Feature\ReceiptContextTest::test_loading_and_clearing_evidence_preserve_attestation_value_and_history,passed,,,,,9,1.462006
+Tests\Feature\SharedReclassificationTest::test_receipt_and_attestation_allow_a_foreign_participant_one_shared_classification#0,passed,,,,,10,1.381914
+Tests\Feature\SharedReclassificationTest::test_receipt_and_attestation_allow_a_foreign_participant_one_shared_classification#1,passed,,,,,10,1.583535
+"Tests\Feature\WriteOnceTest::test_persist_variant_ownership_and_history_match_schema_and_backend""own Gate, unused""",passed,,,,,11,0.832322
+"Tests\Feature\WriteOnceTest::test_persist_variant_ownership_and_history_match_schema_and_backend""own Gate, historical Variant""",passed,,,,,4,0.467522
+"Tests\Feature\WriteOnceTest::test_persist_variant_ownership_and_history_match_schema_and_backend""another owner, unused""",passed,,,,,11,0.823055
+"Tests\Feature\WriteOnceTest::test_persist_variant_ownership_and_history_match_schema_and_backend""another owner, historical Variant""",passed,,,,,4,0.450377
+Tests\Feature\WriteOnceTest::test_owned_persist_gate_develops_structure_then_retains_support_without_redundant_variant,passed,,,,,13,0.902227
+Tests\Feature\WriteOnceTest::test_persist_revision_does_not_restore_the_foreign_gate_variant_opportunity,passed,,,,,6,0.864511
+Tests\Feature\WriteOnceTest::test_structural_viability_cannot_be_bypassed_by_another_domain,passed,,,,,2,0.479546
+"Tests\Feature\WriteOnceTest::test_viable_generation_is_shared_across_participants_and_cycles_but_not_a_different_gate""Distinguish""",passed,,,,,10,1.318521
+"Tests\Feature\WriteOnceTest::test_viable_generation_is_shared_across_participants_and_cycles_but_not_a_different_gate""Persist Variant""",passed,,,,,11,1.428946
+"Tests\Feature\WriteOnceTest::test_viable_generation_is_shared_across_participants_and_cycles_but_not_a_different_gate""Constrain""",passed,,,,,11,1.936273
+"Tests\Feature\WriteOnceTest::test_viable_generation_is_shared_across_participants_and_cycles_but_not_a_different_gate""Disperse""",passed,,,,,10,1.518904
+Tests\Feature\WriteOnceTest::test_disperse_revision_stays_in_write_and_does_not_reset_generation,passed,,,,,17,1.927246
+Tests\Feature\WriteOnceTest::test_constrain_requires_receipt_but_not_reinforcement,passed,,,,,4,0.651581
+Tests\Feature\WriteOnceTest::test_bias_is_once_per_source_and_does_not_impose_a_personal_quota,passed,,,,,6,1.446751
+Tests\Feature\WriteOnceTest::test_order_consumes_each_direct_source_globally_and_preserves_other_sources,passed,,,,,8,1.959360
+Tests\Feature\WriteOnceTest::test_dispatcher_rejects_support_on_visible_gate_and_unrelated_write,passed,,,,,6,0.659335

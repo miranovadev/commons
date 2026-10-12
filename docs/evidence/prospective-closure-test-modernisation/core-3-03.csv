@@ -1,0 +1,23 @@
+test,result,category,finding,failure_summary,first_test_frame,assertions,seconds
+Tests\Feature\SpentContinuationTest::test_real_mediate_arrival_can_rest_without_mandatory_receipt_reads,passed,,,,,4,3.647766
+Tests\Feature\SpentContinuationTest::test_mediate_failure_blocks_the_previously_attested_distinguish_route,passed,,,,,28,4.718733
+Tests\Feature\SpentContinuationTest::test_all_spent_without_potential_can_generate_and_advance_its_epoch,passed,,,,,8,2.930035
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Distinguish Variant without traversal""",passed,,,,,18,0.822015
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Persist Variant without traversal""",passed,,,,,18,1.386110
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Persist Instrument without traversal""",passed,,,,,18,1.398800
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Disperse first Variant""",passed,,,,,18,2.513637
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Constrain owned Gate Reclassify""",passed,,,,,18,1.916576
+Tests\Feature\WebSearchProviderTest::test_provider_returns_only_bounded_normalized_resources,passed,,,,,12,0.012613
+"Tests\Feature\WebSearchProviderTest::test_provider_errors_are_bounded_and_sanitized""unauthorized""",passed,,,,,2,0.007942
+"Tests\Feature\WebSearchProviderTest::test_provider_errors_are_bounded_and_sanitized""rate limited""",passed,,,,,2,0.007556
+"Tests\Feature\WebSearchProviderTest::test_provider_errors_are_bounded_and_sanitized""server failure""",passed,,,,,2,0.006795
+"Tests\Feature\WebSearchProviderTest::test_provider_errors_are_bounded_and_sanitized""redirect""",passed,,,,,2,0.006491
+"Tests\Feature\WebSearchProviderTest::test_provider_errors_are_bounded_and_sanitized""not JSON""",passed,,,,,2,0.006427
+"Tests\Feature\WebSearchProviderTest::test_provider_errors_are_bounded_and_sanitized""missing results""",passed,,,,,2,0.006412
+"Tests\Feature\WebSearchProviderTest::test_provider_errors_are_bounded_and_sanitized""non-list results""",passed,,,,,2,0.006367
+"Tests\Feature\WebSearchProviderTest::test_provider_errors_are_bounded_and_sanitized""malformed result""",passed,,,,,2,0.006385
+"Tests\Feature\WebSearchProviderTest::test_provider_errors_are_bounded_and_sanitized""unsafe scheme""",passed,,,,,2,0.006312
+"Tests\Feature\WebSearchProviderTest::test_provider_errors_are_bounded_and_sanitized""NUL content""",passed,,,,,2,0.006593
+"Tests\Feature\WebSearchProviderTest::test_provider_errors_are_bounded_and_sanitized""oversized""",passed,,,,,2,0.009946
+Tests\Feature\WebSearchProviderTest::test_connection_failure_is_sanitized,passed,,,,,2,0.006791
+Tests\Feature\WebSearchProviderTest::test_unsupported_configuration_does_not_send_credentials,passed,,,,,2,0.006222

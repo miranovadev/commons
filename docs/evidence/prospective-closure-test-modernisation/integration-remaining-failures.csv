@@ -1,0 +1,266 @@
+test,result,checkpoint,Stage2,assertions,message
+Tests\Feature\Api\ParticipationHttpHarnessTest::test_real_http_actions_reach_an_operational_commit,failure,failure,absent,512,"Tests\Feature\Api\ParticipationHttpHarnessTest::test_real_http_actions_reach_an_operational_commit
+HTTP action budget exhausted. Last Commit eligibility: {""admissible"":false,""reinforcement_count"":0,""requirements"":{""attestation"":true,""receipt"":true,""closure"":false,""phase_position"":true,""causal_write"":true,""active_region_candidate"":true,""write_opportunity"":true},""closure_enforced"":true,""reasons"":[""extent_rhythm_directions_diverge""],""closure"":{""depth"":0,""cadence"":0,""historical_phase_profile"":0,""historical_orientation"":0.375,""historical_extent"":0,""historical_rhythm"":0.1875,""closure"":0.09375,""historical_extent_direction"":""negative"",""historical_rhythm_direction"":""positive"",""depth_direction"":""negative"",""cadence_direction"":""negative"",""admissible"":false,""availability"":{""depth"":false,""cadence"":false,""historical_phase_profile"":[false,true,true,true,true,true,true],""historical_orientation"":true},""domain_profiles"":{""emergence"":{""means"":[0,0,0,0,0,0,1],""sample_counts"":[1,1,1,1,1,1,1]},""settlement"":{""means"":[null,14,3,0,0,3,1],""sample_counts"":[0,1,1,1,1,1,1]}},""phase_contributions"":[0,-1,-1,1,1,-1,1],""orientation_sample_count"":4,""domain_cvs"":{""emergence"":null,""settlement"":null},""creating_domain"":""settlement"",""domain_depths"":{""emergence"":1,""settlement"":1},""domain_intervals"":{""emergence"":[1],""settlement"":[22]},""cadence_interval"":22,""phase_observations"":{""origin:01m4s1cj7h1eae0k5debskrny7:0"":{""phase"":1,""interval"":0,""domain"":""emergence"",""source"":""constitutional"",""proposition_id"":""01m4s1cj7h1eae [full diagnostic in Actions artifact]"
+Tests\Feature\Api\ParticipationLifecycleRegressionTest::test_distinguish_under_another_committal_does_not_advance_origins_epoch,failure,failure,absent,1370,"Tests\Feature\Api\ParticipationLifecycleRegressionTest::test_distinguish_under_another_committal_does_not_advance_origins_epoch
+Script step 26 (relay-a / contribute) after
+Failed asserting that two arrays are identical.
+--- Expected
++++ Actual
+@@ @@
+ Array &0 [
+     'status' => 'ready',
+-    'reason' => null,
++    'reason' => Array &1 [
++        'code' => 'no_available_move',
++        'message' => 'No admissible non-Rest action remains in this Phase. Rest does not prove Horizon failure.',
++    ],
+     'current_proposition_id' => '01m4s1ebn020mdwkhspbm0v4cq',
+     'domain' => 'settlement',
+     'horizon_sequence' => 2,
+     'context_horizon_id' => '01m4s1djh7gzyyk2d00x87w1x7',
+-    'cycle' => Array &1 [
++    'cycle' => Array &2 [
+         'id' => '01m4s1dm1v0qdk4q6a2qqfh0ah',
+         'sequence' => 1,
+         'context_horizon_id' => '01m4s1djh7gzyyk2d00x87w1x7',
+     ],
+-    'plan' => Array &2 [
+-        'phase' => Array &3 [
++    'plan' => Array &3 [
++        'phase' => Array &4 [
+             'id' => '01m4s1ec742c6f0f9yk443y95p',
+             'number' => 5,
+             'kind' => 'mediate',
+@@ @@
+         ],
+         'provenance_id' => '01m4s1djdpsyyyyd5zhj0axnz9',
+         'gate_id' => '01m4s1ebn020mdwkhspbm0v4cq',
+-        'rest_available' => false,
+-        'rest_reason' => null,
+-        'lineage' => Array &4 [
+-            0 => Array &5 [
++        'rest_available' => true,
++        'rest_reason' => 'no_available_move',
++        'lineage' => Array &5 [
++            0 => [full diagnostic in Actions artifact]"
+Tests\Feature\Api\ParticipationLifecycleRegressionTest::test_successful_route_revisit_can_advance_through_bias_to_its_existing_commit,failure,failure,absent,1877,"Tests\Feature\Api\ParticipationLifecycleRegressionTest::test_successful_route_revisit_can_advance_through_bias_to_its_existing_commit
+Script step 32 (explorer / contribute) after
+Failed asserting that two arrays are identical.
+--- Expected
++++ Actual
+@@ @@
+ Array &0 [
+     'status' => 'ready',
+-    'reason' => null,
++    'reason' => Array &1 [
++        'code' => 'no_available_move',
++        'message' => 'No admissible non-Rest action remains in this Phase. Rest does not prove Horizon failure.',
++    ],
+     'current_proposition_id' => '01m4s1dgxtaa7fxz0zn65stmgm',
+     'domain' => 'settlement',
+     'horizon_sequence' => 2,
+     'context_horizon_id' => '01m4s1cfq3eywhp511eq1hsxkd',
+-    'cycle' => Array &1 [
++    'cycle' => Array &2 [
+         'id' => '01m4s1dct2c8v8d5ks96s475dv',
+         'sequence' => 9,
+         'context_horizon_id' => '01m4s1cfq3eywhp511eq1hsxkd',
+     ],
+-    'plan' => Array &2 [
+-        'phase' => Array &3 [
++    'plan' => Array &3 [
++        'phase' => Array &4 [
+             'id' => '01m4s1dhhtzvykrz95p9htyact',
+             'number' => 5,
+             'kind' => 'mediate',
+@@ @@
+         ],
+         'provenance_id' => '01m4s1cfk6da5jdxs3pa1xdxx9',
+         'gate_id' => '01m4s1dgxtaa7fxz0zn65stmgm',
+-        'rest_available' => false,
+-        'rest_reason' => null,
+-        'lineage' => Array &4 [
+-            0 => Array &5 [
++        'rest_available' => true,
++        'rest_reason' => 'no_available_move',
++        'lineage' => Array &5 [
++          [full diagnostic in Actions artifact]"
+Tests\Feature\Api\ParticipationLocalEpochTest::test_a_third_distinguish_variant_reopens_only_its_own_slot_through_http,failure,failure,absent,1890,"Tests\Feature\Api\ParticipationLocalEpochTest::test_a_third_distinguish_variant_reopens_only_its_own_slot_through_http
+Script step 32 (critical-explorer / contribute) after
+Failed asserting that two arrays are identical.
+--- Expected
++++ Actual
+@@ @@
+ Array &0 [
+     'status' => 'ready',
+-    'reason' => null,
++    'reason' => Array &1 [
++        'code' => 'no_available_move',
++        'message' => 'No admissible non-Rest action remains in this Phase. Rest does not prove Horizon failure.',
++    ],
+     'current_proposition_id' => '01m4s1gk87b44xd85ne7bx0d5r',
+     'domain' => 'settlement',
+     'horizon_sequence' => 2,
+     'context_horizon_id' => '01m4s1fhs574kfcsp23p2s0pyn',
+-    'cycle' => Array &1 [
++    'cycle' => Array &2 [
+         'id' => '01m4s1gf0z4v7jx6mzz29qyda8',
+         'sequence' => 9,
+         'context_horizon_id' => '01m4s1fhs574kfcsp23p2s0pyn',
+     ],
+-    'plan' => Array &2 [
+-        'phase' => Array &3 [
++    'plan' => Array &3 [
++        'phase' => Array &4 [
+             'id' => '01m4s1gkwgkfjtm5vdkkwj50pm',
+             'number' => 5,
+             'kind' => 'mediate',
+@@ @@
+         ],
+         'provenance_id' => '01m4s1fhnhydj3k14nkbjh7r8s',
+         'gate_id' => '01m4s1gk87b44xd85ne7bx0d5r',
+-        'rest_available' => false,
+-        'rest_reason' => null,
+-        'lineage' => Array &4 [
+-            0 => Array &5 [
++        'rest_available' => true,
++        'rest_reason' => 'no_available_move',
++        'lineage' => Array &5 [
++            0 = [full diagnostic in Actions artifact]"
+Tests\Feature\Api\ParticipationRecoveryTest::test_successful_revisit_keeps_its_untraversed_commit_out_of_backward_recovery,failure,failure,absent,1877,"Tests\Feature\Api\ParticipationRecoveryTest::test_successful_revisit_keeps_its_untraversed_commit_out_of_backward_recovery
+Script step 32 (route-author / contribute) after
+Failed asserting that two arrays are identical.
+--- Expected
++++ Actual
+@@ @@
+ Array &0 [
+     'status' => 'ready',
+-    'reason' => null,
++    'reason' => Array &1 [
++        'code' => 'no_available_move',
++        'message' => 'No admissible non-Rest action remains in this Phase. Rest does not prove Horizon failure.',
++    ],
+     'current_proposition_id' => '01m4s1hne2ebwjhxqktva9s7sn',
+     'domain' => 'settlement',
+     'horizon_sequence' => 2,
+     'context_horizon_id' => '01m4s1gmt364ymy2k2dj4mxj68',
+-    'cycle' => Array &1 [
++    'cycle' => Array &2 [
+         'id' => '01m4s1hh8axnzar5ha7zjwa8tp',
+         'sequence' => 9,
+         'context_horizon_id' => '01m4s1gmt364ymy2k2dj4mxj68',
+     ],
+-    'plan' => Array &2 [
+-        'phase' => Array &3 [
++    'plan' => Array &3 [
++        'phase' => Array &4 [
+             'id' => '01m4s1hp35gzb6qj8fav6zeapv',
+             'number' => 5,
+             'kind' => 'mediate',
+@@ @@
+         ],
+         'provenance_id' => '01m4s1gmpfkxgyemkaq1414sw1',
+         'gate_id' => '01m4s1hne2ebwjhxqktva9s7sn',
+-        'rest_available' => false,
+-        'rest_reason' => null,
+-        'lineage' => Array &4 [
+-            0 => Array &5 [
++        'rest_available' => true,
++        'rest_reason' => 'no_available_move',
++        'lineage' => Array &5 [
++            0 => [full diagnostic in Actions artifact]"
+Tests\Feature\Api\ParticipationSourceEquivalenceTest::test_connection_driven_and_manual_participation_share_the_complete_action_contract,failure,failure,absent,2205,"Tests\Feature\Api\ParticipationSourceEquivalenceTest::test_connection_driven_and_manual_participation_share_the_complete_action_contract
+Script step 31 (source-equivalence / contribute) after
+Failed asserting that two arrays are identical.
+--- Expected
++++ Actual
+@@ @@
+ Array &0 [
+     'status' => 'ready',
+-    'reason' => null,
++    'reason' => Array &1 [
++        'code' => 'no_available_move',
++        'message' => 'No admissible non-Rest action remains in this Phase. Rest does not prove Horizon failure.',
++    ],
+     'current_proposition_id' => '01m4s1e13xxk2rvrh3qyn7qk11',
+     'domain' => 'settlement',
+     'horizon_sequence' => 2,
+     'context_horizon_id' => '01m4s1chqm2qcgwm6g7zbv0a5t',
+-    'cycle' => Array &1 [
++    'cycle' => Array &2 [
+         'id' => '01m4s1dtyd58aabvzvk09yz3hn',
+         'sequence' => 9,
+         'context_horizon_id' => '01m4s1chqm2qcgwm6g7zbv0a5t',
+     ],
+-    'plan' => Array &2 [
+-        'phase' => Array &3 [
++    'plan' => Array &3 [
++        'phase' => Array &4 [
+             'id' => '01m4s1e1qyqhadfa0cjgt6mva4',
+             'number' => 5,
+             'kind' => 'mediate',
+@@ @@
+         ],
+         'provenance_id' => '01m4s1chkwfy6ftzgvdfpdv50k',
+         'gate_id' => '01m4s1e13xxk2rvrh3qyn7qk11',
+-        'rest_available' => false,
+-        'rest_reason' => null,
+-        'lineage' => Array &4 [
+-            0 => Array &5 [
++        'rest_available' => true,
++        'rest_reason' => 'no_available_move',
++        'lineage' => Array &5 [full diagnostic in Actions artifact]"
+Tests\Feature\Api\ParticipationTragedyLifecycleTest::test_natural_bootstrap_crossover_remains_open_and_rest_keeps_the_region_without_catastrophe,failure,failure,absent,1877,"Tests\Feature\Api\ParticipationTragedyLifecycleTest::test_natural_bootstrap_crossover_remains_open_and_rest_keeps_the_region_without_catastrophe
+Script step 32 (tragic-explorer / contribute) after
+Failed asserting that two arrays are identical.
+--- Expected
++++ Actual
+@@ @@
+ Array &0 [
+     'status' => 'ready',
+-    'reason' => null,
++    'reason' => Array &1 [
++        'code' => 'no_available_move',
++        'message' => 'No admissible non-Rest action remains in this Phase. Rest does not prove Horizon failure.',
++    ],
+     'current_proposition_id' => '01m4s1f2m9tm4fz91qxgfn6aan',
+     'domain' => 'settlement',
+     'horizon_sequence' => 2,
+     'context_horizon_id' => '01m4s1e2q2a0e6bg4swnxs2y76',
+-    'cycle' => Array &1 [
++    'cycle' => Array &2 [
+         'id' => '01m4s1eyk2j82wrpzrmv46jya5',
+         'sequence' => 9,
+         'context_horizon_id' => '01m4s1e2q2a0e6bg4swnxs2y76',
+     ],
+-    'plan' => Array &2 [
+-        'phase' => Array &3 [
++    'plan' => Array &3 [
++        'phase' => Array &4 [
+             'id' => '01m4s1f37xtn9q66s1x85e9qwj',
+             'number' => 5,
+             'kind' => 'mediate',
+@@ @@
+         ],
+         'provenance_id' => '01m4s1e2jxn0v57ed6czm3m548',
+         'gate_id' => '01m4s1f2m9tm4fz91qxgfn6aan',
+-        'rest_available' => false,
+-        'rest_reason' => null,
+-        'lineage' => Array &4 [
+-            0 => Array &5 [
++        'rest_available' => true,
++        'rest_reason' => 'no_available_move',
++        'lineage' => Arr [full diagnostic in Actions artifact]"
+Tests\Feature\FreshBootstrapTest::test_explicit_origin_and_aligned_evidence_reach_a_lawful_commit#0,failure,failure,absent,103,"Tests\Feature\FreshBootstrapTest::test_explicit_origin_and_aligned_evidence_reach_a_lawful_commit with data set #0
+The single-participant motor stalled. Last Commit eligibility: {""admissible"":false,""reinforcement_count"":0,""requirements"":{""attestation"":true,""receipt"":true,""closure"":false,""phase_position"":true,""causal_write"":true,""active_region_candidate"":true,""write_opportunity"":true},""closure_enforced"":true,""reasons"":[""extent_rhythm_directions_diverge""],""closure"":{""depth"":0,""cadence"":0,""historical_phase_profile"":0,""historical_orientation"":0.375,""historical_extent"":0,""historical_rhythm"":0.1875,""closure"":0.09375,""historical_extent_direction"":""negative"",""historical_rhythm_direction"":""positive"",""depth_direction"":""negative"",""cadence_direction"":""negative"",""admissible"":false,""availability"":{""depth"":false,""cadence"":false,""historical_phase_profile"":[false,true,true,true,true,true,true],""historical_orientation"":true},""domain_profiles"":{""emergence"":{""means"":[0,0,0,0,0,0,1],""sample_counts"":[1,1,1,1,1,1,1]},""settlement"":{""means"":[null,14,3,0,0,3,1],""sample_counts"":[0,1,1,1,1,1,1]}},""phase_contributions"":[0,-1,-1,1,1,-1,1],""orientation_sample_count"":4,""domain_cvs"":{""emergence"":null,""settlement"":null},""creating_domain"":""settlement"",""domain_depths"":{""emergence"":1,""settlement"":1},""domain_intervals"":{""emergence"":[1],""settlement"":[22]},""cadence_interval"":22,""phase_observations"":{""origin:01m4s1fxfxpd5vtc4k46kacw28:0"":{""phase"":1,""interval"":0,""domain"":""emergence"",""source"":""constitutional"",""proposi [full diagnostic in Actions artifact]"
+Tests\Feature\FreshBootstrapTest::test_explicit_origin_and_aligned_evidence_reach_a_lawful_commit#1,failure,failure,absent,103,"Tests\Feature\FreshBootstrapTest::test_explicit_origin_and_aligned_evidence_reach_a_lawful_commit with data set #1
+The single-participant motor stalled. Last Commit eligibility: {""admissible"":false,""reinforcement_count"":0,""requirements"":{""attestation"":true,""receipt"":true,""closure"":false,""phase_position"":true,""causal_write"":true,""active_region_candidate"":true,""write_opportunity"":true},""closure_enforced"":true,""reasons"":[""extent_rhythm_directions_diverge""],""closure"":{""depth"":0,""cadence"":0,""historical_phase_profile"":0,""historical_orientation"":0.375,""historical_extent"":0,""historical_rhythm"":0.1875,""closure"":0.09375,""historical_extent_direction"":""negative"",""historical_rhythm_direction"":""positive"",""depth_direction"":""negative"",""cadence_direction"":""negative"",""admissible"":false,""availability"":{""depth"":false,""cadence"":false,""historical_phase_profile"":[false,true,true,true,true,true,true],""historical_orientation"":true},""domain_profiles"":{""emergence"":{""means"":[0,0,0,0,0,0,1],""sample_counts"":[1,1,1,1,1,1,1]},""settlement"":{""means"":[null,14,3,0,0,3,1],""sample_counts"":[0,1,1,1,1,1,1]}},""phase_contributions"":[0,-1,-1,1,1,-1,1],""orientation_sample_count"":4,""domain_cvs"":{""emergence"":null,""settlement"":null},""creating_domain"":""settlement"",""domain_depths"":{""emergence"":1,""settlement"":1},""domain_intervals"":{""emergence"":[1],""settlement"":[22]},""cadence_interval"":22,""phase_observations"":{""origin:01m4s1mb4fcn8ckwa2bb9f89fb:0"":{""phase"":1,""interval"":0,""domain"":""emergence"",""source"":""constitutional"",""proposi [full diagnostic in Actions artifact]"
+Tests\Feature\NaturalChargeBoundaryLifecycleTest::test_two_participants_reproduce_catastrophe_then_recover_to_the_open_ancestor,failure,failure,absent,2,"Tests\Feature\NaturalChargeBoundaryLifecycleTest::test_two_participants_reproduce_catastrophe_then_recover_to_the_open_ancestor
+Failed asserting that two strings are identical.
+--- Expected
++++ Actual
+@@ @@
+-'settlement'
++'emergence'"
+Tests\Feature\OperationalClosurePathTest::test_receipt_backed_full_cycle_commits_with_real_hysteretic_closure_calculations,failure,failure,absent,102,"Tests\Feature\OperationalClosurePathTest::test_receipt_backed_full_cycle_commits_with_real_hysteretic_closure_calculations
+The single-participant motor stalled. Last Commit eligibility: {""admissible"":false,""reinforcement_count"":0,""requirements"":{""attestation"":true,""receipt"":true,""closure"":false,""phase_position"":true,""causal_write"":true,""active_region_candidate"":true,""write_opportunity"":true},""closure_enforced"":true,""reasons"":[""extent_rhythm_directions_diverge""],""closure"":{""depth"":0,""cadence"":0,""historical_phase_profile"":0,""historical_orientation"":0.375,""historical_extent"":0,""historical_rhythm"":0.1875,""closure"":0.09375,""historical_extent_direction"":""negative"",""historical_rhythm_direction"":""positive"",""depth_direction"":""negative"",""cadence_direction"":""negative"",""admissible"":false,""availability"":{""depth"":false,""cadence"":false,""historical_phase_profile"":[false,true,true,true,true,true,true],""historical_orientation"":true},""domain_profiles"":{""emergence"":{""means"":[0,0,0,0,0,0,1],""sample_counts"":[1,1,1,1,1,1,1]},""settlement"":{""means"":[null,14,3,0,0,3,1],""sample_counts"":[0,1,1,1,1,1,1]}},""phase_contributions"":[0,-1,-1,1,1,-1,1],""orientation_sample_count"":4,""domain_cvs"":{""emergence"":null,""settlement"":null},""creating_domain"":""settlement"",""domain_depths"":{""emergence"":1,""settlement"":1},""domain_intervals"":{""emergence"":[1],""settlement"":[22]},""cadence_interval"":22,""phase_observations"":{""origin:01m4s1fc81x8cxw1hc3hz58bqw:0"":{""phase"":1,""interval"":0,""domain"":""emergence"",""source"":""constitutional"", [full diagnostic in Actions artifact]"

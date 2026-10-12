@@ -49,17 +49,78 @@ Receipt-neutral Chirality and grounding checks now use the real governed-express
 
 ## Focused validation
 
-Tested code: `524e61dacc7cb52c2a80554303c8c881c7102b54`. [PostgreSQL/SQLite matrix](https://github.com/miranovadev/commons/actions/runs/38311736609).
+Tested code: `661d52ab7d8061595107d3ca0eaa6e6df85e8d12`. [PostgreSQL/SQLite matrix](https://github.com/miranovadev/commons/actions/runs/38312799509).
 
 | Selection | PostgreSQL | SQLite |
 | --- | --- | --- |
-| C1 Phase Profile | 48 pass / 300 assertions / 60.80s | 48 pass / 300 assertions / 16.55s |
-| Prospective Closure | 14 pass / 85 assertions / 13.56s | 14 pass / 85 assertions / 3.47s |
-| Observable/ledger and component boundaries | 131 pass / 1,961 assertions / 152.19s | 131 pass / 1,961 assertions / 35.29s |
-| Representative fixtures | 172 pass / 3 fail / 2,045 assertions / 240.49s | 170 pass / 3 fail / two existing PostgreSQL-only skips / 2,039 assertions / 73.89s |
-| Genuine Commit, including actual Reconcile checks | 1 pass / 112 assertions / 70.07s | 1 pass / 112 assertions / 26.45s |
-| Genuine descendant/search | 1 pass / 129 assertions / 95.08s | 1 pass / 129 assertions / 27.29s |
+| C1 Phase Profile | 48 pass / 300 assertions / 47.95s | 48 pass / 300 assertions / 17.00s |
+| Prospective Closure | 14 pass / 85 assertions / 10.36s | 14 pass / 85 assertions / 3.52s |
+| Observable/ledger and component boundaries | 131 pass / 1,961 assertions / 121.74s | 131 pass / 1,961 assertions / 35.36s |
+| Representative fixtures | 172 pass / 3 fail / 2,045 assertions / 335.49s | 170 pass / 3 fail / two existing PostgreSQL-only skips / 2,039 assertions / 36.23s |
+| Genuine Commit, including actual Reconcile checks | 1 pass / 112 assertions / 115.92s | 1 pass / 112 assertions / 25.54s |
+| Genuine descendant/search | 1 pass / 129 assertions / 119.93s | 1 pass / 129 assertions / 31.37s |
 
 The same three ClosureHysteresis assertions remain in both fixture selections: read-only historical scalar expectation, negative-alignment Domain boundary expectation, and a source-polarity candidate correctly blocked by disagreeing Extent/Rhythm. These selections overlap complete-suite identities. Scoped Pint (32 files) passes on both databases. No skip was introduced; the two SQLite skips already require PostgreSQL-specific behaviour.
 
-Complete-suite accounting and coverage comparison follow after all shards finish. No full regression sign-off is claimed from these focused passes.
+## Complete validation and coverage accounting
+
+Both complete suites finished at the tested code head above. No production files, migrations or substrate records changed in this modernisation. The reporting commit changes documentation/evidence only.
+
+| Complete suite | Latest repository checkpoint (`a6a809f`) | Modernised suite | Assertions | Workflow wall time |
+| --- | --- | --- | ---: | --- |
+| [Core](https://github.com/miranovadev/commons/actions/runs/38312799520) | 902 pass / 241 fail / 1,143 cases | **1,109 pass / 7 fail / 1,116 cases** | 13,151 | **9m13s** |
+| [Integration](https://github.com/miranovadev/commons/actions/runs/38312806450) | 21 pass / 12 fail / 33 cases | **21 pass / 11 fail / 32 cases** | 17,533 | **8m22s** |
+
+Discovered, selected and executed identity multisets match exactly for both suites. **Zero complete-suite skips, zero missing-history errors, no timeout.** Core's seven failures consist of six assertion failures and one correctly rejected Commit. Core's separate SQLite migration selection passes all 14 cases / 46 assertions. Frontend build/contracts and [Inspector browser review](https://github.com/miranovadev/commons/actions/runs/38312806442) pass.
+
+The task began from the repository's later 902/241 checkpoint, after the previously reviewed 895/248 checkpoint. Counts changed deliberately; they are not a compatibility claim.
+
+- **891 retained previously passing Core identities still pass.** The other 11 old passes were deliberately consolidated: seven retired ClosureBirth contracts, two old CommittalClosure contracts, and two controlled Commit-success datasets. None is represented as an unchanged passing lifecycle test.
+- **203 retained previously failing Core cases now pass:** 201 formerly missing-history cases now execute as explicitly labelled component contracts; both Reinforcement poles now compare Closure across the Receipt event alone, after the genuine Cycle entry.
+- **42 Core identities were removed or consolidated; 15 new/renamed contracts pass.** These comprise the documented birth/persistence replacements, component guards and narrowed component contracts. The identity lists retain the old outcomes and Stage 2 comparison.
+- The checkpoint's **234 missing-history cases** are now **201 passing component contracts / two exposed baseline assertions / 31 removed or consolidated**. None remains missing-history blocked. Those 201 passes do **not** prove newly constructed committed lifecycles.
+- The newly labelled component group contains **339 cases: 336 pass / three fail, across 35 classes** (34 affected families plus the guard class). Other Core cases include pre-existing unit/component tests as well as real service tests; they must not all be relabelled end-to-end.
+- All **21 prior Integration passes remain passing**, and the same 11 substantive failures remain. The one invalid authored HomologousMediation Integration scenario is consolidated, not skipped or counted as passing. Its exact Mediate-to-inadmissible-Bias lifecycle remains unproven.
+
+[Durable per-test inventories and coverage lists](evidence/prospective-closure-test-modernisation/) include every current outcome, exact added/removed/recovered identities, checkpoint-masked accounting, focused results and the actual lawful Commit transcript. `summary.json` records the strict coverage check and each shard's measured runtime. The prior checkpoint inventories remain unchanged in `evidence/prospective-closure-history-continuation/`.
+
+## Remaining failures
+
+A means substantively present in the Stage 2 baseline; it does not imply every old expectation is normative. B identifies an approved Stage 3 trajectory/event consequence. No newly exposed implementation defect is confirmed; the remaining failures are not concealed or marked expected failures.
+
+| Category | Core | Integration |
+| --- | ---: | ---: |
+| A: Stage 2 baseline assertion/trajectory | 5 | 7 |
+| B: approved Stage 3 trajectory | 2 | 4 |
+| C: confirmed newly exposed production defect | 0 confirmed | 0 confirmed |
+| D: remaining fixture/history or execution failure | 0 | 0 |
+
+Exact Core failures:
+
+1. **A — ChargeBoundaryTragedyTest::test_ordinary_unmocked_observables_can_reach_the_boundary:** expects Settlement, observes Emergence; same baseline mismatch.
+2. **A — ChiralityPopulationHistoryTest::test_attestation_and_replacement_are_observed_through_real_dispatch:** expects -0.5, observes -0.1; unchanged.
+3. **A — ClosureHysteresisTest::test_read_only_bootstrap_preview_matches_actual_commit_while_field_remains_in_settlement:** expects Correspondence -0.0964505, observes 0.1265986; unchanged.
+4. **A — ObservableServiceTest::test_matching_lineages_in_complementary_horizons_align:** previously masked; now reaches the same Stage 2 Correspondence assertion, expected 1, actual 0.5.
+5. **A — HomologousBiasTest::test_zero_retains_population_history_and_does_not_mutate_measurements_or_state:** previously masked; same retained Negative/actual Positive population direction mismatch as Stage 2.
+6. **B — ClosureHysteresisTest::test_negative_closure_alignment_can_commit_while_corrected_field_remains_in_settlement:** actual Commit crosses a Closure boundary; the old test expects no boundary. Stage 2 already failed later numeric assertions in this case.
+7. **B — ClosureHysteresisTest::test_commit_freezes_source_attestation_direction_as_the_next_region_frame:** candidate Extent 0.0714286 Positive / Rhythm -0.25 Negative is correctly inadmissible. Its later source-polarity assertions remain unexecuted.
+
+Exact Integration identities are listed in `integration-remaining-failures.csv`. Category A contains NaturalChargeBoundaryLifecycle, both ParticipationLifecycleRegression cases, ParticipationLocalEpoch, ParticipationRecovery's successful-revisit case, ParticipationSourceEquivalence and ParticipationTragedyLifecycle. Category B contains both FreshBootstrap polarities, OperationalClosurePath and ParticipationHttpHarness. The latter four still encounter **Extent 0 Negative / Rhythm 0.1875 Positive** and **do not complete Commit**. No authored populations, admissibility rules or ParticipationLocalEpoch transcript were changed.
+
+Stage 2 had 1,117 passes / eight failures from 1,125 Core cases. Five of its failures remain substantively identical; its negative-alignment case now meets the approved Stage 3 boundary earlier; raw attenuation and ordinary-result Chirality contracts were modernised to compare their intended invariant rather than an incidental scalar/direction. The latter is explicitly named `test_reclassification_result_uses_real_chirality_independently_of_operand_coherence`; Correspondence remains isolated there. The per-test evidence distinguishes these changes from unchanged passes.
+
+## Genuine lifecycle evidence and performance
+
+The final unmocked source transcript still contains **89 authorised actions and one Reconcile**, now with five additional assertions. The source has Extent **0 with retained Negative**, Rhythm **-0.1875 Negative**, Closure **-0.09375**. All 112 source/Commit assertions and all 129 descendant/search assertions pass on both databases. This establishes the demonstrated first Commit and descendant, not arbitrary further Commits, Domain alternation or the four blocked HTTP/lifecycle scenarios.
+
+The prior complete workflow times were Core **9m11s**, Integration **7m18s**; final times are **9m13s / 8m22s**. Integration remains below the preferred 15 minutes and maximum 20. Core remains below its 10-minute ceiling, above its preferred five-minute target. Its slowest final job used approximately 7m45s of the eight-minute job budget, so runner variation remains a practical concern.
+
+An intermediate Core run (`38309437394`) exceeded a shard's eight-minute limit: PHP took 494.59s. Newly executing assertions had invalidated the old timing estimates. The existing five-shard class weights were updated from measured runs; no timeout, isolation, discovery, accounting or shard-count rule was weakened. The final PHP shard runtimes are 239.45 / 306.34 / 279.13 / 222.49 / 408.51 seconds. Integration retains four isolated PostgreSQL shards: 406.76 / 338.28 / 319.81 / 443.31 seconds. This is not a production speedup claim: fixture scope, executing assertions and runner performance differ.
+
+## Review disposition
+
+The consolidated fixture modernisation is complete and every remaining failure is visible. Production Correspondence, Chirality, prospective Closure, causal selection, admissibility, Receipt authority, movement/recovery, canonical preservation and other approved semantics are unchanged by this continuation. No production data was modified, no compatibility repair was added, and no test was skipped to hide a failure.
+
+Claire should review the explicit coverage reductions above and the remaining baseline/trajectory failures. Arbitrary multi-Commit topologies, simultaneous late Commit across real Domain transitions, the removed foreign-geometry and Tragedy combinations, and ParticipationLocalEpoch's separate lawful third-Variant scenario are not demonstrated by this work. They are coverage gaps, not invitations to invent semantic rules. There are no new semantic decisions needed for the completed component changes.
+
+**Complete execution is verified; the suite is not green and full regression sign-off is not claimed. PR #255 remains unmerged.**

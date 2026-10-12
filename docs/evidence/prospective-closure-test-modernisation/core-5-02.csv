@@ -1,0 +1,101 @@
+test,result,category,finding,failure_summary,first_test_frame,assertions,seconds
+Tests\Feature\HomologousOrderTest::test_direct_local_committal_remains_traversable_when_it_is_not_dominant,passed,,,,,3,2.176053
+Tests\Feature\HomologousOrderTest::test_other_phases_and_direct_progression_do_not_bypass_authorization,passed,,,,,3,1.609627
+Tests\Feature\HomologousOrderTest::test_boundary_traverse_enters_the_selected_committals_opened_horizon,passed,,,,,5,2.837490
+Tests\Feature\HomologousOrderTest::test_same_horizon_homologues_are_distinct_and_included_once,passed,,,,,4,1.659740
+Tests\Feature\HomologousOrderTest::test_operational_homologous_continuation_rejects_rest_without_publishing_failure,passed,,,,,2,1.686406
+Tests\Feature\HomologousOrderTest::test_structural_population_without_resolved_continuation_allows_legitimate_rest,passed,,,,,7,3.547124
+Tests\Feature\HorizonWorkspaceTest::test_concurrent_workspaces_serialize_cycle_domain_boundary_and_actual_provenance_independently,passed,,,,,40,1.950361
+Tests\Feature\InputPlanVisibilityTest::test_reclassified_proposition_remains_visible_in_its_original_register,passed,,,,,5,0.936594
+Tests\Feature\InputPlanVisibilityTest::test_write_is_only_the_immediate_forward_frontier_even_with_horizon_neighbours,passed,,,,,17,1.182803
+"Tests\Feature\InputPlanVisibilityTest::test_personal_effective_attestation_controls_human_and_inference_choices""Distinguish untouched""",passed,,,,,16,0.790557
+"Tests\Feature\InputPlanVisibilityTest::test_personal_effective_attestation_controls_human_and_inference_choices""Distinguish support""",passed,,,,,20,1.214064
+"Tests\Feature\InputPlanVisibilityTest::test_personal_effective_attestation_controls_human_and_inference_choices""Distinguish refute""",passed,,,,,20,1.228413
+"Tests\Feature\InputPlanVisibilityTest::test_personal_effective_attestation_controls_human_and_inference_choices""Persist untouched""",passed,,,,,16,1.048790
+"Tests\Feature\InputPlanVisibilityTest::test_personal_effective_attestation_controls_human_and_inference_choices""Persist support""",passed,,,,,20,1.444875
+"Tests\Feature\InputPlanVisibilityTest::test_personal_effective_attestation_controls_human_and_inference_choices""Persist refute""",passed,,,,,20,1.437683
+"Tests\Feature\InputPlanVisibilityTest::test_personal_effective_attestation_controls_human_and_inference_choices""Constrain untouched""",passed,,,,,16,0.996764
+"Tests\Feature\InputPlanVisibilityTest::test_personal_effective_attestation_controls_human_and_inference_choices""Constrain support""",passed,,,,,20,1.388278
+"Tests\Feature\InputPlanVisibilityTest::test_personal_effective_attestation_controls_human_and_inference_choices""Constrain refute""",passed,,,,,20,1.391770
+"Tests\Feature\InputPlanVisibilityTest::test_personal_effective_attestation_controls_human_and_inference_choices""Disperse untouched""",passed,,,,,16,1.017890
+"Tests\Feature\InputPlanVisibilityTest::test_personal_effective_attestation_controls_human_and_inference_choices""Disperse support""",passed,,,,,20,1.416934
+"Tests\Feature\InputPlanVisibilityTest::test_personal_effective_attestation_controls_human_and_inference_choices""Disperse refute""",passed,,,,,20,1.429261
+"Tests\Feature\InputPlanVisibilityTest::test_personal_effective_attestation_controls_human_and_inference_choices""Mediate untouched""",passed,,,,,16,1.003408
+"Tests\Feature\InputPlanVisibilityTest::test_personal_effective_attestation_controls_human_and_inference_choices""Mediate support""",passed,,,,,20,1.441928
+"Tests\Feature\InputPlanVisibilityTest::test_personal_effective_attestation_controls_human_and_inference_choices""Mediate refute""",passed,,,,,20,1.415874
+"Tests\Feature\InputPlanVisibilityTest::test_personal_effective_attestation_controls_human_and_inference_choices""Bias untouched""",passed,,,,,16,1.020529
+"Tests\Feature\InputPlanVisibilityTest::test_personal_effective_attestation_controls_human_and_inference_choices""Bias support""",passed,,,,,20,1.488732
+"Tests\Feature\InputPlanVisibilityTest::test_personal_effective_attestation_controls_human_and_inference_choices""Bias refute""",passed,,,,,20,1.502010
+"Tests\Feature\InputPlanVisibilityTest::test_personal_effective_attestation_controls_human_and_inference_choices""Order untouched""",passed,,,,,5,1.036636
+"Tests\Feature\InputPlanVisibilityTest::test_personal_effective_attestation_controls_human_and_inference_choices""Order support""",passed,,,,,5,1.034073
+"Tests\Feature\InputPlanVisibilityTest::test_personal_effective_attestation_controls_human_and_inference_choices""Order refute""",passed,,,,,5,1.045270
+Tests\Feature\MediatedIncomingBiasTest::test_reconcile_retains_ownership_and_only_the_exact_other_operand_opens_the_doorway,passed,,,,,26,7.031914
+Tests\Feature\MediatedIncomingBiasTest::test_ordinary_attestation_and_own_region_receipt_authorize_reclassification_without_transport,passed,,,,,20,10.372023
+Tests\Feature\MediatedIncomingBiasTest::test_missing_attestation_still_blocks_with_an_own_region_receipt,passed,,,,,4,5.968904
+Tests\Feature\MediatedIncomingBiasTest::test_spent_and_exhausted_sources_do_not_gain_a_doorway_allowance,passed,,,,,7,6.319556
+Tests\Feature\MediatedIncomingBiasTest::test_committed_source_cannot_be_used_even_with_evidence,passed,,,,,4,6.103126
+Tests\Feature\MediatedIncomingBiasTest::test_same_region_expressive_paths_use_the_same_ordinary_doorway_rules,passed,,,,,7,10.377789
+Tests\Feature\MediatedIncomingBiasTest::test_incomplete_or_reversed_provenance_does_not_create_an_incoming_option,passed,,,,,3,4.660324
+Tests\Feature\MediatedIncomingBiasTest::test_mediated_authority_remains_ordinary_even_when_the_source_also_qualifies_by_homology,passed,,,,,12,8.921166
+Tests\Feature\MediatedIncomingBiasTest::test_mediated_chirality_is_independent_of_dominance_and_causal_coherence,passed,,,,,5,6.815123
+Tests\Feature\MediatedIncomingBiasTest::test_stale_inadmissible_mediated_source_keeps_history_but_cannot_write_or_consume,passed,,,,,7,6.233691
+Tests\Feature\OperationalCommitmentTest::test_blocked_commitment_rechecks_grounding_and_does_not_advance,passed,,,,,10,1.957729
+Tests\Feature\OperationalCommitmentTest::test_ancestor_evidence_is_not_inherited_but_new_proposition_receipts_survive_attestation_supersession,passed,,,,,7,2.744520
+Tests\Feature\OperationalCommitmentTest::test_citation_resolves_attestations_and_verified_hyperlinks_have_signatures,passed,,,,,8,2.134917
+Tests\Feature\OperationalCommitmentTest::test_pending_and_failed_executions_are_visible_without_satisfying_grounding,passed,,,,,15,2.661465
+Tests\Feature\OperationalCommitmentTest::test_invalid_and_unsupported_instruments_leave_no_partial_write,passed,,,,,20,4.720402
+Tests\Feature\OperationalCommitmentTest::test_cross_substrate_citation_is_rejected,passed,,,,,1,0.836512
+Tests\Feature\OperationalCommitmentTest::test_bias_grounding_waits_for_another_participants_attestation_before_commit,passed,,,,,20,8.015877
+Tests\Feature\OperationalCommitmentTest::test_removed_reclassification_contracts_reject_payloads,passed,,,,,13,4.612078
+Tests\Feature\OperationalCommitmentTest::test_constrain_instrument_targets_are_specialised_and_execute_normally,passed,,,,,8,2.755311
+Tests\Feature\OperationalCommitmentTest::test_order_rejects_pre_terminal_actions_even_on_a_receipted_write,passed,,,,,20,2.618460
+Tests\Feature\OperationalCommitmentTest::test_invalid_order_actions_leave_phase_cycle_position_and_evidence_unchanged,passed,,,,,20,2.425679
+Tests\Feature\ParticipantActionContractTest::test_traverse_with_rationale_reproduces_the_reported_union_error,passed,,,,,4,1.235057
+Tests\Feature\ParticipantActionContractTest::test_static_phase_transport_requires_attestation_direction#0,passed,,,,,2,0.027896
+Tests\Feature\ParticipantActionContractTest::test_static_phase_transport_requires_attestation_direction#1,passed,,,,,2,0.028642
+Tests\Feature\ParticipantActionContractTest::test_static_phase_transport_requires_attestation_direction#2,passed,,,,,2,0.026901
+Tests\Feature\ParticipantActionContractTest::test_static_phase_transport_requires_attestation_direction#3,passed,,,,,2,0.025020
+Tests\Feature\ParticipantActionContractTest::test_static_phase_transport_requires_attestation_direction#4,passed,,,,,2,0.026496
+Tests\Feature\ParticipantActionContractTest::test_static_phase_transport_requires_attestation_direction#5,passed,,,,,2,0.030940
+Tests\Feature\ParticipantActionContractTest::test_static_phase_transport_requires_attestation_direction#6,passed,,,,,2,0.026845
+Tests\Feature\ParticipationSnapshotTest::test_evidence_can_commit_during_an_optimistic_plan_and_the_next_plan_sees_it,passed,,,,,7,2.650644
+Tests\Feature\PotentialProjectionTest::test_incremental_projection_matches_full_derivation_after_writes_and_evidence_changes,passed,,,,,28,5.134998
+Tests\Feature\PotentialProjectionTest::test_missing_or_inconsistent_projection_returns_explicit_state_without_rebuilding,passed,,,,,29,0.836429
+Tests\Feature\PotentialProjectionTest::test_version_race_discards_prepared_projection_and_retries_without_calculation_under_the_publish_lock,passed,,,,,6,0.812554
+Tests\Feature\PotentialProjectionTest::test_repeated_contention_leaves_durable_work_for_the_next_sweep_without_releasing_the_job,passed,,,,,7,1.092689
+Tests\Feature\PreOrderInstrumentPathTest::test_fresh_writes_can_be_grounded_before_attestation#0,passed,,,,,7,1.935961
+Tests\Feature\PreOrderInstrumentPathTest::test_fresh_writes_can_be_grounded_before_attestation#1,passed,,,,,7,2.092879
+Tests\Feature\PreOrderInstrumentPathTest::test_variant_children_do_not_prevent_pre_order_grounding,passed,,,,,1,1.011902
+"Tests\Feature\PropositionHistoryLifecycleTest::test_authorised_operation_resets_judgments_and_touches_without_copying_source_history""Persist Variant""",passed,,,,,22,2.347015
+"Tests\Feature\PropositionHistoryLifecycleTest::test_authorised_operation_resets_judgments_and_touches_without_copying_source_history""Constrain Reclassify""",passed,,,,,22,3.114852
+Tests\Feature\ReceiptRegionContextTest::test_ordinary_catalogue_follows_cycle_entry_across_gate_changes_but_not_into_a_new_region,passed,,,,,8,1.754937
+Tests\Feature\ReceiptRegionContextTest::test_missing_governance_stays_unresolved_despite_valid_causal_parents,passed,,,,,3,1.071576
+Tests\Feature\ReceiptRegionContextTest::test_valid_governance_is_not_erased_by_malformed_secondary_provenance,passed,,,,,2,1.074163
+Tests\Feature\ReceiptRegionContextTest::test_a_foreign_region_parent_does_not_import_its_receipts,passed,,,,,3,1.238673
+Tests\Feature\ReceiptRegionContextTest::test_consumption_preserves_origin_and_removes_shared_availability,passed,,,,,4,0.966726
+Tests\Feature\ReceiptRegionContextTest::test_only_loaded_causal_read_evidence_is_active_and_all_other_roles_are_metadata,passed,,,,,21,3.024141
+Tests\Feature\ReceiptRegionContextTest::test_catalogue_query_count_is_constant_with_many_receipts_in_one_region,passed,,,,,4,2.141576
+Tests\Feature\RegionalExhaustionMigrationTest::test_proven_same_region_legacy_boundary_maps_without_rewriting_evidence,passed,,,,,24,11.460540
+Tests\Feature\RegionalExhaustionMigrationTest::test_cycle_entry_rename_preserves_regional_proof_evidence_and_published_state,passed,,,,,13,10.868942
+Tests\Feature\RegionalExhaustionMigrationTest::test_ambiguous_transported_legacy_proof_remains_history_without_regional_authority,passed,,,,,13,11.093051
+Tests\Feature\RegionalExhaustionMigrationTest::test_legacy_local_proof_does_not_exhaust_its_horizons_opening_region,passed,,,,,10,8.403960
+Tests\Feature\RegionalExhaustionMigrationTest::test_archived_exhaustion_references_remain_readable_without_claiming_current_authority,passed,,,,,15,13.714394
+Tests\Feature\RegionalExhaustionMigrationTest::test_unproven_timestamps_and_pre_horizon_tragedies_survive_as_archives_only,passed,,,,,12,2.193220
+Tests\Feature\ReinforcementTest::test_citation_and_unverified_metadata_cannot_reinforce_or_unlock_commit,passed,,,,,10,2.154250
+Tests\Feature\ReinforcementTest::test_signatures_are_shared_but_only_one_reinforcement_per_participant_counts,passed,,,,,9,1.885241
+Tests\Feature\ReinforcementTest::test_originating_evidence_can_be_loaded_later_without_reverification,passed,,,,,4,0.677037
+Tests\Feature\ReinforcementTest::test_receipts_leave_measurements_unchanged_and_duplicate_loads_add_no_count,passed,,,,,8,1.160324
+Tests\Feature\ReinforcementTest::test_source_updates_require_observed_stability_and_timestamps_cannot_accelerate_it,passed,,,,,8,1.359810
+Tests\Feature\ReinforcementTest::test_failed_verification_records_history_without_reinforcement,passed,,,,,4,0.529942
+Tests\Feature\ReinforcementTest::test_commit_inherits_reinforcement_by_reference_but_expressive_alternatives_do_not,passed,,,,,6,0.914788
+Tests\Feature\ReinforcementTest::test_snapshot_can_record_grounded_attested_content_without_loaded_reinforcement,passed,,,,,2,0.560370
+Tests\Feature\ReinforcementTest::test_database_prevents_duplicate_participant_receipt_context,passed,,,,,1,0.674026
+Tests\Feature\ReinforcementTest::test_real_verifier_flows_through_receipt_allocation_and_local_measurement,passed,,,,,6,0.707689
+Tests\Feature\ReinforcementTest::test_rollback_refuses_to_destroy_shared_signature_history,passed,,,,,4,0.932791
+"Tests\Feature\ReinforcementTest::test_prospective_closure_ignores_loads_and_does_not_inherit_either_frozen_entry_pole""negative""",passed,,,,,24,1.494812
+"Tests\Feature\ReinforcementTest::test_prospective_closure_ignores_loads_and_does_not_inherit_either_frozen_entry_pole""positive""",passed,,,,,24,1.536121
+Tests\Feature\ReinforcementTest::test_receipt_grounding_is_required_without_changing_measurement,passed,,,,,7,0.721623
+Tests\Feature\ReverbTransportTest::test_configured_reverb_delivers_identifier_notifications_to_a_real_websocket_client,passed,,,,,6,0.359246
+Tests\Feature\RevisionAdmissibilityTest::test_revision_targets_owned_heads_in_the_write_register_from_a_prior_cycle,passed,,,,,7,0.567089
+Tests\Feature\RevisionAdmissibilityTest::test_the_gate_cannot_be_revised_even_when_it_matches_the_write_register,passed,,,,,3,0.262923
+"Tests\Feature\RevisionAdmissibilityTest::test_packet_and_direct_dispatch_reject_ineligible_stances""no personal attestation""",passed,,,,,8,0.726820
