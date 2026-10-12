@@ -350,4 +350,3 @@ class InputPlanVisibilityTest extends TestCase
         app(LedgerService::class)->record($supersession);
     }
 }
-

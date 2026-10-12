@@ -219,4 +219,3 @@ final class ParticipantContextFixture
             ->update(['calculator_version' => null]);
     }
 }
-
