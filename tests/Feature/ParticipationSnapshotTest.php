@@ -18,9 +18,19 @@ use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
+/** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
+#[\PHPUnit\Framework\Attributes\Group('component-contract')]
 class ParticipationSnapshotTest extends TestCase
 {
+    use \Tests\Fixtures\IsolatesClosureOutput;
+
     use DatabaseMigrations;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->isolateClosureOutput();
+    }
 
     protected function beforeRefreshingDatabase(): void
     {

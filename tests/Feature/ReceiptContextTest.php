@@ -30,9 +30,19 @@ use Illuminate\Support\Facades\DB;
 use Tests\Fixtures\ParticipantContextFixture;
 use Tests\TestCase;
 
+/** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
+#[\PHPUnit\Framework\Attributes\Group('component-contract')]
 class ReceiptContextTest extends TestCase
 {
+    use \Tests\Fixtures\IsolatesClosureOutput;
+
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->isolateClosureOutput();
+    }
 
     private function scenario(): array
     {

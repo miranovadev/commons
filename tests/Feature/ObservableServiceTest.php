@@ -26,8 +26,12 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
 use Tests\TestCase;
 
+/** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
+#[\PHPUnit\Framework\Attributes\Group('component-contract')]
 class ObservableServiceTest extends TestCase
 {
+    use \Tests\Fixtures\IsolatesClosureOutput;
+
     use RefreshDatabase;
 
     private Substrate $substrate;
@@ -39,6 +43,7 @@ class ObservableServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->isolateClosureOutput();
 
         $this->substrate = new Substrate;
         $this->substrate->forceFill([

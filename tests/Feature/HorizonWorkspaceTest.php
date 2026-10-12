@@ -16,9 +16,19 @@ use App\Services\LedgerService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
+/** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
+#[\PHPUnit\Framework\Attributes\Group('component-contract')]
 class HorizonWorkspaceTest extends TestCase
 {
+    use \Tests\Fixtures\IsolatesClosureOutput;
+
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->isolateClosureOutput();
+    }
 
     public function test_concurrent_workspaces_serialize_cycle_domain_boundary_and_actual_provenance_independently(): void
     {

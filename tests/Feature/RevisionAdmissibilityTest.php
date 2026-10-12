@@ -24,9 +24,19 @@ use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
+/** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
+#[\PHPUnit\Framework\Attributes\Group('component-contract')]
 class RevisionAdmissibilityTest extends TestCase
 {
+    use \Tests\Fixtures\IsolatesClosureOutput;
+
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->isolateClosureOutput();
+    }
 
     public function test_revision_targets_owned_heads_in_the_write_register_from_a_prior_cycle(): void
     {

@@ -3,16 +3,13 @@
 namespace Tests\Feature;
 
 use App\Enums\PhaseKind;
-use App\Models\Attestation;
 use App\Models\Connection;
-use App\Models\Cycle;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Substrate;
 use App\Models\Supersession;
 use App\Services\ContributionDispatcher;
-use App\Services\LedgerService;
 use App\Services\OpenAIResponseSchema;
 use App\Services\ParticipantPromptFactory;
 use App\Services\ParticipationService;
@@ -30,8 +27,6 @@ class TragedyTest extends TestCase
 {
     use RefreshDatabase;
 
-    private ?Proposition $fixtureGovernor = null;
-
     public static function phaseActions(): array
     {
         return [
@@ -40,15 +35,6 @@ class TragedyTest extends TestCase
             'Persist Instrument without traversal' => [PhaseKind::Persist, 'instrument.execute'],
             'Disperse first Variant' => [PhaseKind::Disperse, 'proposition.variant'],
             'Constrain owned Gate Reclassify' => [PhaseKind::Constrain, 'proposition.reclassify'],
-            'Constrain owned descendant Revise' => [PhaseKind::Constrain, 'proposition.revise'],
-            'Constrain untouched descendant Attestation' => [PhaseKind::Constrain, 'attestation.create'],
-            'Constrain attested descendant Traverse' => [PhaseKind::Constrain, 'proposition.traverse'],
-            'Mediate counterpart outside Write' => [PhaseKind::Mediate, 'proposition.reconcile'],
-            'Bias Instrument without traversal' => [PhaseKind::Bias, 'instrument.execute'],
-            'Constrain exhausted non-owner' => [PhaseKind::Constrain, null],
-            'Mediate no counterpart or continuation' => [PhaseKind::Mediate, null],
-            'Bias no counterpart instrument or continuation' => [PhaseKind::Bias, null],
-            'Order inadmissible Commit with no continuation' => [PhaseKind::Order, null],
         ];
     }
 
@@ -140,7 +126,6 @@ class TragedyTest extends TestCase
         }
         $substrate = new Substrate;
         $substrate->forceFill(['slug' => 'rest_available', 'title' => 'Tragedy', 'visibility' => 'public', 'configuration' => []])->save();
-        $author = $this->participant($substrate, 'author');
         $viewer = $this->participant($substrate, 'viewer');
         // These two action-exhaustion cases need only real bootstrap/development,
         // not an ordinary Committal manufactured by changing an expressive tier.
@@ -154,86 +139,7 @@ class TragedyTest extends TestCase
 
             return [$viewer->fresh(), Phase::findOrFail($state['plan']['phase']['id'])];
         }
-        $authorPhase = $this->phase($author, PhaseKind::Distinguish, 'activity', true);
-        $history = $this->phase($viewer, PhaseKind::Distinguish, 'activity', true);
-        if (in_array($action, ['proposition.reclassify', 'proposition.reconcile'], true)) {
-            $seed = $this->proposition($authorPhase, 'canon');
-            $seed->forceFill(['tier' => 'committal'])->save();
-            $this->freezeRegionFixture($seed);
-            $this->fixtureGovernor = $seed;
-            $authorPhase = $this->governedPhaseFixture($authorPhase, $seed);
-            $history = $this->governedPhaseFixture($history, $seed);
-        }
-        $writeRegister = match ($kind) {
-            PhaseKind::Distinguish, PhaseKind::Disperse => 'activity',
-            PhaseKind::Persist, PhaseKind::Mediate => 'frontier',
-            default => 'canon',
-        };
-        $gateKind = $kind === PhaseKind::Distinguish ? PhaseKind::Order : PhaseKind::from($kind->value - 1);
-        $gatePhase = $this->phaseAtPositionFixture($action === 'proposition.reclassify' ? $history : $authorPhase, $gateKind);
-        $gate = $this->proposition($gatePhase, $gatePhase->write_register);
-        if ($kind === PhaseKind::Distinguish) {
-            $gate->forceFill(['tier' => 'committal'])->save();
-        }
-        $viewer->current_proposition_id = $gate->id;
-        $viewer->save();
-        if ($kind === PhaseKind::Mediate) {
-            $parent = $this->proposition($this->phaseAtPositionFixture($authorPhase, PhaseKind::Constrain), 'canon');
-            $seed ??= $this->proposition($authorPhase, 'canon');
-            $seed->forceFill(['tier' => 'committal'])->save();
-            $seed->children()->attach($parent->id, [
-                'id' => (string) str()->ulid(), 'phase_id' => $authorPhase->id, 'type' => 'variant',
-            ]);
-            $parent->children()->attach($gate->id, [
-                'id' => (string) str()->ulid(), 'phase_id' => $authorPhase->id, 'type' => 'variant',
-            ]);
-            $disperse = $this->phase($viewer, PhaseKind::Disperse, 'activity');
-            $disperse->gate_proposition_id = $parent->id;
-            $disperse->save();
-            $phase = app(PhaseProgressionService::class)->advance($disperse, $gate);
-        } else {
-            $phase = $this->phase($viewer, $kind, $writeRegister);
-        }
-        $phase->gate_proposition_id = $gate->id;
-        $phase->save();
-        if ($action === 'proposition.reclassify') {
-            $seed ??= $this->proposition($authorPhase, 'canon');
-            $seed->forceFill(['tier' => 'committal'])->save();
-            $seed->children()->attach($gate->id, ['id' => (string) str()->ulid(), 'phase_id' => $gatePhase->id, 'type' => 'variant']);
-            $this->classificationEvidenceFixture($gate);
-            $this->loadedReceiptFixture($gate);
-        }
-        if ($action === 'instrument.execute') {
-            $written = $this->proposition($this->phaseAtPositionFixture($authorPhase, $kind), $writeRegister);
-            $gate->children()->attach($written->id, [
-                'id' => (string) str()->ulid(), 'phase_id' => $authorPhase->id, 'type' => 'variant',
-            ]);
-        }
-        if (in_array($action, ['proposition.revise', 'attestation.create', 'proposition.traverse', 'proposition.reconcile'], true)) {
-            $target = $this->proposition(
-                $this->phaseAtPositionFixture($action === 'proposition.revise' ? $history : $authorPhase,
-                    $action === 'proposition.reconcile' ? PhaseKind::Disperse : $kind),
-                $action === 'proposition.reconcile' ? 'activity' : $writeRegister,
-            );
-            if ($action === 'proposition.reconcile') {
-                $parent ??= $this->proposition($authorPhase, 'canon');
-                foreach ([$target] as $sibling) {
-                    $parent->children()->attach($sibling->id, [
-                        'id' => (string) str()->ulid(), 'phase_id' => $authorPhase->id, 'type' => 'variant',
-                    ]);
-                }
-            }
-            $edge = new Supersession;
-            if ($action !== 'proposition.reconcile') {
-                $edge->forceFill(['phase_id' => $authorPhase->id, 'source_proposition_id' => $gate->id, 'target_proposition_id' => $target->id, 'type' => 'variant'])->save();
-            }
-            if (in_array($action, ['proposition.traverse', 'proposition.revise'], true)) {
-                $attestation = new Attestation;
-                $attestation->forceFill(['phase_id' => $history->id, 'proposition_id' => $target->id, 'direction' => $action === 'proposition.revise' ? 'refute' : 'support'])->save();
-            }
-        }
-
-        return [$viewer, $phase];
+        throw new \LogicException('No authorised scenario for this action.');
     }
 
     private function participant(Substrate $substrate, string $callsign): Participant
@@ -244,25 +150,4 @@ class TragedyTest extends TestCase
         return $participant;
     }
 
-    private function phase(Participant $participant, PhaseKind $kind, string $register, bool $completed = false): Phase
-    {
-        $cycle = new Cycle;
-        $cycle->forceFill(['participant_id' => $participant->id, 'sequence' => (int) $participant->cycles()->max('sequence') + 1, 'completed_at' => $completed ? now() : null,
-            'entry_committal_id' => $this->fixtureGovernor?->id])->save();
-        $phase = new Phase;
-        $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => $kind, 'write_register' => $register, 'started_at' => now(), 'completed_at' => $completed ? now() : null])->save();
-
-        return $phase;
-    }
-
-    private function proposition(Phase $phase, string $register): Proposition
-    {
-        $proposition = new Proposition;
-        $proposition->forceFill(['phase_id' => $phase->id, 'register' => $register, 'tier' => 'expressive', 'statement' => 'Local proposition'])->save();
-        app(LedgerService::class)->record($proposition);
-
-        $this->receiptFixture($proposition);
-
-        return $proposition;
-    }
 }

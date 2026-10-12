@@ -21,8 +21,12 @@ use App\Services\PropositionMeasurementService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
+/** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
+#[\PHPUnit\Framework\Attributes\Group('component-contract')]
 class LineageAttenuationTest extends TestCase
 {
+    use \Tests\Fixtures\IsolatesClosureOutput;
+
     use RefreshDatabase;
 
     private Phase $phase;
@@ -30,6 +34,7 @@ class LineageAttenuationTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->isolateClosureOutput();
         $substrate = new Substrate;
         $substrate->forceFill(['slug' => 'attenuation', 'title' => 'Attenuation', 'visibility' => 'public', 'configuration' => []])->save();
         $participant = new Participant;

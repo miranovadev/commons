@@ -28,8 +28,12 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
+/** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
+#[\PHPUnit\Framework\Attributes\Group('component-contract')]
 class PropositionHistorySemanticsTest extends TestCase
 {
+    use \Tests\Fixtures\IsolatesClosureOutput;
+
     use RefreshDatabase;
 
     private Participant $participant;
@@ -39,6 +43,7 @@ class PropositionHistorySemanticsTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->isolateClosureOutput();
         config()->set('schemas.cache.store', 'array');
         $substrate = new Substrate;
         $substrate->forceFill([

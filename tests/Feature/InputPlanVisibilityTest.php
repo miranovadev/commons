@@ -25,9 +25,19 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Fixtures\PropositionBirth;
 use Tests\TestCase;
 
+/** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
+#[\PHPUnit\Framework\Attributes\Group('component-contract')]
 class InputPlanVisibilityTest extends TestCase
 {
+    use \Tests\Fixtures\IsolatesClosureOutput;
+
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->isolateClosureOutput();
+    }
 
     public function test_reclassified_proposition_remains_visible_in_its_original_register(): void
     {

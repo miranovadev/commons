@@ -24,12 +24,22 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Fixtures\CreatesHomologousPositions;
 use Tests\TestCase;
 
+/** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
+#[\PHPUnit\Framework\Attributes\Group('component-contract')]
 class CorrespondenceComponentsTest extends TestCase
 {
+    use \Tests\Fixtures\IsolatesClosureOutput;
+
     use CreatesHomologousPositions;
     use RefreshDatabase;
 
     private const array FIELDS = ['shape_topology', 'phase_profile', 'shape_topology_direction', 'phase_profile_direction'];
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->isolateClosureOutput();
+    }
 
     public function test_origin_has_the_unique_exact_identity_pair_and_freezes_it(): void
     {

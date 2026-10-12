@@ -25,8 +25,12 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
+/** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
+#[\PHPUnit\Framework\Attributes\Group('component-contract')]
 class PropositionReadTest extends TestCase
 {
+    use \Tests\Fixtures\IsolatesClosureOutput;
+
     use RefreshDatabase;
 
     public static function projections(): array
@@ -35,6 +39,12 @@ class PropositionReadTest extends TestCase
     }
 
     #[DataProvider('projections')]
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->isolateClosureOutput();
+    }
+
     public function test_graph_and_detail_read_persisted_values_without_repair(string $status): void
     {
         [$substrate, $node] = $this->fixture();

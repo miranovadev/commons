@@ -120,6 +120,9 @@ abstract class TestCase extends BaseTestCase
                 return $observation;
             });
             $mock->shouldReceive('preserve')->andReturnUsing(function ($target, $source, $expected) use ($prospective, $onlyId): void {
+                if (method_exists($this, 'isolateClosureOutput')) {
+                    throw new \LogicException('Component fixtures cannot establish canonical Commit preservation.');
+                }
                 if ($onlyId !== null) {
                     $prospective->preserve($target, $source, $expected);
 
@@ -374,7 +377,7 @@ abstract class TestCase extends BaseTestCase
         return $receipt;
     }
 
-    /** A structurally valid later region for tests that isolate option scope from projection labels. */
+    /** Authored read-model input for component tests only; this is not a lawful Domain-transition lifecycle. */
     protected function laterHorizonFixture(ContextHorizon $horizon, int $steps = 2): ContextHorizon
     {
         // By default, two causal boundaries return to the original vocabulary.

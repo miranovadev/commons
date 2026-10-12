@@ -36,8 +36,12 @@ use Illuminate\Support\Facades\DB;
 use Tests\Fixtures\CreatesHomologousPositions;
 use Tests\TestCase;
 
+/** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
+#[\PHPUnit\Framework\Attributes\Group('component-contract')]
 class MediatedIncomingBiasTest extends TestCase
 {
+    use \Tests\Fixtures\IsolatesClosureOutput;
+
     use CreatesHomologousPositions, RefreshDatabase;
 
     private Proposition $a;
@@ -63,6 +67,7 @@ class MediatedIncomingBiasTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->isolateClosureOutput();
         $this->createHomologyActor();
         $origin = $this->commit(null, 'emergence');
         $this->a = $this->commit($origin, 'settlement');

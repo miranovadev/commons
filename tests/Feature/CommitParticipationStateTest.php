@@ -27,9 +27,19 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Fixtures\GovernedExpressionFixture;
 use Tests\TestCase;
 
+/** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
+#[\PHPUnit\Framework\Attributes\Group('component-contract')]
 class CommitParticipationStateTest extends TestCase
 {
+    use \Tests\Fixtures\IsolatesClosureOutput;
+
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->isolateClosureOutput();
+    }
 
     private Phase $phase;
 
@@ -75,13 +85,11 @@ class CommitParticipationStateTest extends TestCase
         $this->assertSame($gate->id, $attestation->fresh()->proposition_id);
         $this->assertSame($gate->id, $receipt->fresh()->receiptable_id);
 
-        // A later Commit inherits history transitively, including its predecessor's own touches.
-        $this->touch($actual);
-        $next = $this->node('committal');
-        $this->edge($actual, $next, 'commit');
-        $this->assertSame(4, $state->touchCount($next));
-        $this->assertCount(1, $state->receipts($next));
-        $this->assertCount(1, $state->attestations(collect([$actual, $next])));
+        // Actual Commit inheritance and descendant reset are independently
+        // exercised by CommitSourceHistoryLifecycleTest and
+        // CommitDescendantHistoryLifecycleTest. A Commit of this Committal is
+        // not a lawful way to test transitive inheritance.
+
     }
 
     public function test_inheritance_respects_effective_attestations_completed_receipts_and_commit_edges_only(): void

@@ -50,8 +50,12 @@ use Tests\Fixtures\AssertsLatePhaseContract;
 use Tests\Support\RefreshIntegrationDatabase as RefreshDatabase;
 use Tests\TestCase;
 
+/** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
+#[\PHPUnit\Framework\Attributes\Group('component-contract')]
 class HomologousMediationTest extends TestCase
 {
+    use \Tests\Fixtures\IsolatesClosureOutput;
+
     use AssertsLatePhaseContract;
     use RefreshDatabase;
 
@@ -74,6 +78,7 @@ class HomologousMediationTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->isolateClosureOutput();
         $substrate = new Substrate;
         $substrate->forceFill(['slug' => 'foreign-mediate', 'title' => 'Foreign Mediate', 'visibility' => 'private', 'configuration' => []])->save();
         $this->actor = new Participant;
@@ -783,7 +788,7 @@ class HomologousMediationTest extends TestCase
         $this->assertEqualsCanonicalizing([$this->gateA->id, $this->gateB->id], $target->parents()->pluck('propositions.id')->all());
     }
 
-    #[Group('integration')]
+    #[Group('component-contract')]
     #[Group('late-phase')]
     public function test_admissible_mediate_can_reach_an_inadmissible_bias_without_outcome_coercion(): void
     {

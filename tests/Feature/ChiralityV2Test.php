@@ -36,10 +36,20 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Fixtures\CreatesHomologousPositions;
 use Tests\TestCase;
 
+/** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
+#[\PHPUnit\Framework\Attributes\Group('component-contract')]
 class ChiralityV2Test extends TestCase
 {
+    use \Tests\Fixtures\IsolatesClosureOutput;
+
     use CreatesHomologousPositions;
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->isolateClosureOutput();
+    }
 
     public function test_attested_origin_opens_settlement_and_freezes_components(): void
     {

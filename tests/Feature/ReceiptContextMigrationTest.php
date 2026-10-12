@@ -16,9 +16,19 @@ use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
+/** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
+#[\PHPUnit\Framework\Attributes\Group('component-contract')]
 class ReceiptContextMigrationTest extends TestCase
 {
+    use \Tests\Fixtures\IsolatesClosureOutput;
+
     use DatabaseMigrations;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->isolateClosureOutput();
+    }
 
     public function test_upgrade_preserves_historical_allocations_without_inventing_loads(): void
     {

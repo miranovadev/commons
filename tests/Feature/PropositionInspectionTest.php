@@ -13,13 +13,18 @@ use Illuminate\Support\Facades\DB;
 use Tests\Fixtures\CreatesHomologousPositions;
 use Tests\TestCase;
 
+/** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
+#[\PHPUnit\Framework\Attributes\Group('component-contract')]
 class PropositionInspectionTest extends TestCase
 {
+    use \Tests\Fixtures\IsolatesClosureOutput;
+
     use CreatesHomologousPositions, RefreshDatabase;
 
     protected function setUp(): void
     {
         parent::setUp();
+        $this->isolateClosureOutput();
         $this->createHomologyActor();
     }
 

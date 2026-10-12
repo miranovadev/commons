@@ -34,9 +34,19 @@ use Tests\Fixtures\GovernedExpressionFixture;
 use Tests\Fixtures\ParticipantContextFixture;
 use Tests\TestCase;
 
+/** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
+#[\PHPUnit\Framework\Attributes\Group('component-contract')]
 class PropositionSearchTest extends TestCase
 {
+    use \Tests\Fixtures\IsolatesClosureOutput;
+
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->isolateClosureOutput();
+    }
 
     public function test_postgresql_kind_constraints_preserve_tragedy_and_add_proposition_search(): void
     {

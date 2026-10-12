@@ -57,8 +57,12 @@ use Tests\Fixtures\AssertsLatePhaseContract;
 use Tests\Fixtures\CreatesHomologousPositions;
 use Tests\TestCase;
 
+/** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
+#[\PHPUnit\Framework\Attributes\Group('component-contract')]
 class HomologousBiasTest extends TestCase
 {
+    use \Tests\Fixtures\IsolatesClosureOutput;
+
     use AssertsLatePhaseContract;
     use CreatesHomologousPositions;
     use RefreshDatabase;
@@ -82,6 +86,7 @@ class HomologousBiasTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->isolateClosureOutput();
         $this->createHomologyActor();
         $this->origin = $this->commit(null, 'emergence');
         $this->a = $this->commit($this->origin, 'settlement');

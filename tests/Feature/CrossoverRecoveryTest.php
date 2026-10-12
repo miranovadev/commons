@@ -27,8 +27,12 @@ use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
+/** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
+#[\PHPUnit\Framework\Attributes\Group('component-contract')]
 class CrossoverRecoveryTest extends TestCase
 {
+    use \Tests\Fixtures\IsolatesClosureOutput;
+
     use RefreshDatabase;
 
     private Substrate $substrate;
@@ -36,6 +40,7 @@ class CrossoverRecoveryTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->isolateClosureOutput();
         $this->substrate = (new Substrate)->forceFill(['slug' => 'crossover', 'title' => 'Crossover', 'visibility' => 'public', 'configuration' => []]);
         $this->substrate->save();
     }

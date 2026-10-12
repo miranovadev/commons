@@ -33,8 +33,12 @@ use Opis\JsonSchema\Validator;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
+/** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
+#[\PHPUnit\Framework\Attributes\Group('component-contract')]
 class CommitRegionTest extends TestCase
 {
+    use \Tests\Fixtures\IsolatesClosureOutput;
+
     use RefreshDatabase;
 
     private Phase $history;
@@ -46,6 +50,7 @@ class CommitRegionTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->isolateClosureOutput();
         $substrate = new Substrate;
         $substrate->forceFill(['slug' => 'regions', 'title' => 'Regions', 'visibility' => 'public', 'configuration' => []])->save();
         $this->viewer = new Participant;

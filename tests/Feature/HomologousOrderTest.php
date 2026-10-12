@@ -29,8 +29,12 @@ use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\CreatesHomologousPositions;
 use Tests\TestCase;
 
+/** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
+#[\PHPUnit\Framework\Attributes\Group('component-contract')]
 class HomologousOrderTest extends TestCase
 {
+    use \Tests\Fixtures\IsolatesClosureOutput;
+
     use CreatesHomologousPositions;
     use RefreshDatabase;
 
@@ -51,6 +55,7 @@ class HomologousOrderTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->isolateClosureOutput();
         $this->createHomologyActor();
         $this->origin = $this->commit(null, 'emergence', ['cadence_interval' => 1]);
         $this->a = $this->commit($this->origin, 'settlement', ['cadence_interval' => 1]);

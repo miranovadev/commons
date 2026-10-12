@@ -23,8 +23,12 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Fixtures\CreatesHomologousPositions;
 use Tests\TestCase;
 
+/** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
+#[\PHPUnit\Framework\Attributes\Group('component-contract')]
 class ChiralityPopulationHistoryTest extends TestCase
 {
+    use \Tests\Fixtures\IsolatesClosureOutput;
+
     use CreatesHomologousPositions, RefreshDatabase;
 
     public static function histories(): array
@@ -34,6 +38,12 @@ class ChiralityPopulationHistoryTest extends TestCase
     }
 
     #[DataProvider('histories')]
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->isolateClosureOutput();
+    }
+
     public function test_identical_zero_population_retains_its_own_actual_prior_direction(float $left, float $right, ObservableDirection $expected): void
     {
         $this->createHomologyActor();
