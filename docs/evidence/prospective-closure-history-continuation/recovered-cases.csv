@@ -1,0 +1,8 @@
+test,change_since_895_checkpoint,before,after,Stage2_failed
+Tests\Feature\PropositionSearchTest::test_schema_and_domain_apply_defaults_and_reject_invalid_limits,checkpoint masked: now passed,error,passed,no
+Tests\Feature\PropositionSearchTest::test_kind_migration_refuses_to_discard_recorded_proposition_search_history,checkpoint masked: now passed,error,passed,no
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Distinguish Variant without traversal""",checkpoint masked: now passed,error,passed,no
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Persist Variant without traversal""",checkpoint masked: now passed,error,passed,no
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Persist Instrument without traversal""",checkpoint masked: now passed,error,passed,no
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Disperse first Variant""",checkpoint masked: now passed,error,passed,no
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Constrain owned Gate Reclassify""",checkpoint masked: now passed,error,passed,no

@@ -1,0 +1,64 @@
+test,result,category,finding,failure_summary,first_test_frame,assertions,seconds
+Tests\Feature\PhasePositionInvariantTest::test_traverse_and_revision_preserve_position_even_with_the_same_parent_and_register#0,passed,,,,,8,2.426051
+Tests\Feature\PhasePositionInvariantTest::test_traverse_and_revision_preserve_position_even_with_the_same_parent_and_register#1,passed,,,,,7,1.528042
+Tests\Feature\PhasePositionInvariantTest::test_a_producing_phase_cannot_be_promoted_by_changing_its_kind,passed,,,,,1,0.891971
+Tests\Feature\PhasePositionInvariantTest::test_progression_rejects_a_same_register_result_from_another_position#0,passed,,,,,15,2.422383
+Tests\Feature\PhasePositionInvariantTest::test_progression_rejects_a_same_register_result_from_another_position#1,passed,,,,,14,2.202710
+Tests\Feature\PhasePositionInvariantTest::test_historical_diagnostic_reports_early_commit_sources_without_writing,passed,,,,,8,1.082844
+"Tests\Feature\PropositionHistoryLifecycleTest::test_authorised_operation_resets_judgments_and_touches_without_copying_source_history""Persist Variant""",passed,,,,,22,2.167072
+"Tests\Feature\PropositionHistoryLifecycleTest::test_authorised_operation_resets_judgments_and_touches_without_copying_source_history""Constrain Reclassify""",passed,,,,,22,2.866789
+Tests\Feature\PropositionMeasurementServiceTest::test_live_measurements_are_replaceable_but_closure_comes_from_birth,passed,,,,,10,0.096433
+Tests\Feature\PropositionMeasurementServiceTest::test_measurements_must_stay_within_their_signed_range,passed,,,,,2,0.020936
+Tests\Feature\PropositionMeasurementServiceTest::test_real_origin_and_developmental_projections_preserve_their_own_authorised_state,passed,,,,,17,0.948015
+Tests\Feature\PropositionMeasurementServiceTest::test_correspondence_retains_both_directions_through_zero_and_projection_deletion,passed,,,,,6,0.849916
+Tests\Feature\ProspectiveClosureStateTest::test_origin_has_seven_available_equal_weight_intervals_without_empirical_births,passed,,,,,4,0.643398
+Tests\Feature\ProspectiveClosureStateTest::test_constitutional_state_is_database_immutable,passed,,,,,1,0.513075
+Tests\Feature\ProspectiveClosureStateTest::test_cycle_updates_superseded_expressives_but_structural_progression_does_not,passed,,,,,4,0.911824
+Tests\Feature\ProspectiveClosureStateTest::test_attestation_is_observed_only_at_next_cycle_and_reads_do_not_remeasure,passed,,,,,7,1.085532
+Tests\Feature\ProspectiveClosureStateTest::test_temporal_profile_excludes_reconcile_operand_while_orientation_uses_active_causal_population,passed,,,,,6,1.071216
+Tests\Feature\ProspectiveClosureStateTest::test_revision_retains_selected_intervals_and_excludes_unrelated_siblings,passed,,,,,8,1.055729
+Tests\Feature\ProspectiveClosureStateTest::test_commit_copies_last_authorised_state_and_later_source_updates_do_not_rewrite_it,passed,,,,,3,1.743884
+Tests\Feature\ProspectiveClosureStateTest::test_stale_preservation_rolls_back_target_and_edges,passed,,,,,2,1.556023
+Tests\Feature\ProspectiveClosureStateTest::test_grounded_negative_coherence_commit_preserves_authorised_state_without_an_extra_trigger,passed,,,,,11,6.231919
+Tests\Feature\ProspectiveClosureStateTest::test_batch_history_matches_individual_selection_without_per_head_queries,passed,,,,,5,1.204913
+Tests\Feature\RevisionAdmissibilityTest::test_revision_targets_owned_heads_in_the_write_register_from_a_prior_cycle,passed,,,,,7,0.502217
+Tests\Feature\RevisionAdmissibilityTest::test_the_gate_cannot_be_revised_even_when_it_matches_the_write_register,passed,,,,,3,0.234140
+"Tests\Feature\RevisionAdmissibilityTest::test_packet_and_direct_dispatch_reject_ineligible_stances""no personal attestation""",error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\RevisionAdmissibilityTest::test_packet_and_direct_dispatch_reject_ineligible_stances with data set ""no personal attestation""
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:500,0,0.202641
+"Tests\Feature\RevisionAdmissibilityTest::test_packet_and_direct_dispatch_reject_ineligible_stances""effective Support""",error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\RevisionAdmissibilityTest::test_packet_and_direct_dispatch_reject_ineligible_stances with data set ""effective Support""
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:500,0,0.202629
+"Tests\Feature\RevisionAdmissibilityTest::test_packet_and_direct_dispatch_reject_ineligible_stances""same opportunity Refute""",error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\RevisionAdmissibilityTest::test_packet_and_direct_dispatch_reject_ineligible_stances with data set ""same opportunity Refute""
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:500,0,0.197980
+"Tests\Feature\RevisionAdmissibilityTest::test_packet_and_direct_dispatch_reject_ineligible_stances""Refute superseded by Support""",error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\RevisionAdmissibilityTest::test_packet_and_direct_dispatch_reject_ineligible_stances with data set ""Refute superseded by Support""
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:500,0,0.204962
+Tests\Feature\RevisionAdmissibilityTest::test_self_refute_unlocks_a_later_cycle_but_not_the_revised_child,passed,,,,,39,2.926908
+Tests\Feature\RevisionAdmissibilityTest::test_switching_back_to_support_invalidates_a_previously_valid_revision_packet,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\RevisionAdmissibilityTest::test_switching_back_to_support_invalidates_a_previously_valid_revision_packet
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:500,0,0.199640
+Tests\Feature\RevisionAdmissibilityTest::test_a_personal_refute_does_not_allow_revision_of_another_participants_write,passed,,,,,8,0.653446
+Tests\Feature\RevisionAdmissibilityTest::test_an_earlier_phase_in_the_same_cycle_does_not_unlock_revision,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\RevisionAdmissibilityTest::test_an_earlier_phase_in_the_same_cycle_does_not_unlock_revision
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:500,0,0.201830
+Tests\Feature\TragedyWarrantSeparationTest::test_only_tragedy_is_visible_but_neither_shared_nor_instrument_evidence#0,passed,,,,,31,1.532935
+Tests\Feature\TragedyWarrantSeparationTest::test_only_tragedy_is_visible_but_neither_shared_nor_instrument_evidence#1,passed,,,,,31,1.700110
+Tests\Feature\TragedyWarrantSeparationTest::test_only_tragedy_is_visible_but_neither_shared_nor_instrument_evidence#2,passed,,,,,31,1.827840
+Tests\Feature\TragedyWarrantSeparationTest::test_tragedy_does_not_suppress_instrument_when_the_only_ordinary_receipt_was_consumed,passed,,,,,5,1.465689
+Tests\Feature\TragedyWarrantSeparationTest::test_non_bias_schema_and_dispatcher_reject_tragedy_even_with_ordinary_evidence_available,passed,,,,,5,1.393330
+Tests\Feature\TragedyWarrantSeparationTest::test_warrant_memory_options_do_not_grant_evidence_read_or_replay#0,passed,,,,,6,1.182413
+Tests\Feature\TragedyWarrantSeparationTest::test_warrant_memory_options_do_not_grant_evidence_read_or_replay#1,passed,,,,,6,1.180690
+Tests\Feature\TragedyWarrantSeparationTest::test_archived_load_remains_auditable_without_becoming_active_evidence#0,passed,,,,,9,0.889666
+Tests\Feature\TragedyWarrantSeparationTest::test_archived_load_remains_auditable_without_becoming_active_evidence#1,passed,,,,,12,2.312920
+"Tests\Feature\WriteOnceTest::test_persist_variant_ownership_and_history_match_schema_and_backend""own Gate, unused""",passed,,,,,11,1.375720
+"Tests\Feature\WriteOnceTest::test_persist_variant_ownership_and_history_match_schema_and_backend""own Gate, historical Variant""",passed,,,,,4,0.750062
+"Tests\Feature\WriteOnceTest::test_persist_variant_ownership_and_history_match_schema_and_backend""another owner, unused""",passed,,,,,11,1.366352
+"Tests\Feature\WriteOnceTest::test_persist_variant_ownership_and_history_match_schema_and_backend""another owner, historical Variant""",passed,,,,,4,0.732151
+Tests\Feature\WriteOnceTest::test_owned_persist_gate_develops_structure_then_retains_support_without_redundant_variant,passed,,,,,13,1.479993
+Tests\Feature\WriteOnceTest::test_persist_revision_does_not_restore_the_foreign_gate_variant_opportunity,passed,,,,,6,1.393099
+Tests\Feature\WriteOnceTest::test_structural_viability_cannot_be_bypassed_by_another_domain,passed,,,,,2,0.833844
+"Tests\Feature\WriteOnceTest::test_viable_generation_is_shared_across_participants_and_cycles_but_not_a_different_gate""Distinguish""",passed,,,,,10,2.250585
+"Tests\Feature\WriteOnceTest::test_viable_generation_is_shared_across_participants_and_cycles_but_not_a_different_gate""Persist Variant""",passed,,,,,11,2.452691
+"Tests\Feature\WriteOnceTest::test_viable_generation_is_shared_across_participants_and_cycles_but_not_a_different_gate""Constrain""",passed,,,,,11,3.195751
+"Tests\Feature\WriteOnceTest::test_viable_generation_is_shared_across_participants_and_cycles_but_not_a_different_gate""Disperse""",passed,,,,,10,2.579113
+Tests\Feature\WriteOnceTest::test_disperse_revision_stays_in_write_and_does_not_reset_generation,passed,,,,,17,3.237728
+Tests\Feature\WriteOnceTest::test_constrain_requires_receipt_but_not_reinforcement,passed,,,,,4,1.138537
+Tests\Feature\WriteOnceTest::test_bias_is_once_per_source_and_does_not_impose_a_personal_quota,passed,,,,,6,2.328318
+Tests\Feature\WriteOnceTest::test_order_consumes_each_direct_source_globally_and_preserves_other_sources,passed,,,,,8,3.252961
+Tests\Feature\WriteOnceTest::test_dispatcher_rejects_support_on_visible_gate_and_unrelated_write,passed,,,,,6,1.084294

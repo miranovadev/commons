@@ -1,0 +1,145 @@
+{
+  "tested_head": "a6a809fa260b01366065f02e021a744f02688169",
+  "final_runs": [
+    {
+      "id": 38302202439,
+      "name": "Core",
+      "status": "completed",
+      "conclusion": "failure",
+      "head": "a6a809fa260b01366065f02e021a744f02688169",
+      "start": "2026-10-12T20:07:57Z",
+      "end": "2026-10-12T20:17:08Z",
+      "url": "https://github.com/miranovadev/commons/actions/runs/38302202439"
+    },
+    {
+      "id": 38302208404,
+      "name": "Integration",
+      "status": "completed",
+      "conclusion": "failure",
+      "head": "a6a809fa260b01366065f02e021a744f02688169",
+      "start": "2026-10-12T20:08:00Z",
+      "end": "2026-10-12T20:15:18Z",
+      "url": "https://github.com/miranovadev/commons/actions/runs/38302208404"
+    },
+    {
+      "id": 38302202339,
+      "name": "Phase Profile contracts",
+      "status": "completed",
+      "conclusion": "failure",
+      "head": "a6a809fa260b01366065f02e021a744f02688169",
+      "start": "2026-10-12T20:07:57Z",
+      "end": "2026-10-12T20:12:28Z",
+      "url": "https://github.com/miranovadev/commons/actions/runs/38302202339"
+    },
+    {
+      "id": 38302208011,
+      "name": "Inspector browser review",
+      "status": "completed",
+      "conclusion": "success",
+      "head": "a6a809fa260b01366065f02e021a744f02688169",
+      "start": "2026-10-12T20:08:00Z",
+      "end": "2026-10-12T20:09:14Z",
+      "url": "https://github.com/miranovadev/commons/actions/runs/38302208011"
+    }
+  ],
+  "focused_jobs": [
+    {
+      "id": 114987576910,
+      "name": "focused (pgsql, contracts)",
+      "results": [
+        "Tests:    48 passed (300 assertions)",
+        "Duration: 47.45s",
+        "Tests:    14 passed (85 assertions)",
+        "Duration: 10.64s",
+        "Tests:    42 failed, 98 passed (1359 assertions)",
+        "Duration: 96.31s",
+        "PASS   .......................................................... 28 files  "
+      ]
+    },
+    {
+      "id": 114987577167,
+      "name": "focused (sqlite, committed-history)",
+      "results": [
+        "Tests:    1 passed (129 assertions)",
+        "Duration: 15.36s"
+      ]
+    },
+    {
+      "id": 114987577229,
+      "name": "focused (sqlite, fixtures)",
+      "results": [
+        "Tests:    28 failed, 2 skipped, 154 passed (1839 assertions)",
+        "Duration: 49.99s"
+      ]
+    },
+    {
+      "id": 114987577353,
+      "name": "focused (pgsql, fixtures)",
+      "results": [
+        "Tests:    28 failed, 156 passed (1845 assertions)",
+        "Duration: 225.63s"
+      ]
+    },
+    {
+      "id": 114987577406,
+      "name": "focused (sqlite, contracts)",
+      "results": [
+        "Tests:    48 passed (300 assertions)",
+        "Duration: 20.56s",
+        "Tests:    14 passed (85 assertions)",
+        "Duration: 4.79s",
+        "Tests:    42 failed, 98 passed (1359 assertions)",
+        "Duration: 34.45s",
+        "PASS   .......................................................... 28 files  "
+      ]
+    },
+    {
+      "id": 114987577410,
+      "name": "focused (sqlite, lifecycle)",
+      "results": [
+        "Tests:    1 passed (107 assertions)",
+        "Duration: 29.07s"
+      ]
+    },
+    {
+      "id": 114987577435,
+      "name": "focused (pgsql, committed-history)",
+      "results": [
+        "Tests:    1 passed (129 assertions)",
+        "Duration: 90.74s"
+      ]
+    },
+    {
+      "id": 114987577797,
+      "name": "focused (pgsql, lifecycle)",
+      "results": [
+        "Tests:    1 passed (107 assertions)",
+        "Duration: 118.79s"
+      ]
+    }
+  ],
+  "separate_sqlite_migration_check": [
+    "2026-10-12T20:11:03.6097530Z   Tests:    6 failed, 12 passed (45 assertions)",
+    "2026-10-12T20:11:03.6098278Z   Duration: 3.60s"
+  ],
+  "intermediate": {
+    "second_commit_attempt": {
+      "head": "05e1c8a7db333077f1ce5b54dbc4ffb6b751df38",
+      "workflow": 38301057729,
+      "sqlite_job": 114983815897,
+      "postgresql_job": 114983816209,
+      "sqlite_seconds": 75.36,
+      "postgresql_seconds": 429.65,
+      "assertions": 198,
+      "result": "failed to construct second Commit within 101 continuation actions; not a production regression or passing coverage"
+    },
+    "descendant_first_passing": {
+      "head": "5a7950ee041acb20aec1201162a3d74d31a481a7",
+      "workflow": 38301873953,
+      "sqlite_seconds": 21.65,
+      "postgresql_seconds": 91.14,
+      "assertions": 129
+    }
+  },
+  "excluded": "Superseded/cancelled complete-suite runs are not counted. Final results use only a6a809f. Focused selections overlap Core/Integration."
+}

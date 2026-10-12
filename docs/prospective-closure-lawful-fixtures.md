@@ -1,5 +1,7 @@
 # Stage 3: lawful fixture continuation
 
+Subsequent continuation: [authorised history, seven further original recoveries and complete validation](prospective-closure-history-continuation.md), tested at `a6a809f`. This report remains the preserved 895-pass checkpoint.
+
 This continuation starts at reviewed report `8b86d55`: Core 887 passed / 253 failed, including 246 missing-history errors; Integration 19 passed / 12 failed. The existing setup-path inventory and [fixture follow-up](prospective-closure-fixture-followup.md) remain the baseline. No measurement semantics were reopened.
 
 ## Corrections and acceptance criteria
