@@ -38,20 +38,24 @@ final class GovernedExpressionFixture
             ['action' => 'proposition.variant', 'statement' => 'An independently authored first distinction.']);
     }
 
+    /** Produce the real Persist Write while leaving its Phase open for evidence. */
+    public function writePersist(): void
+    {
+        $this->phase = app(PhaseProgressionService::class)->advance($this->phase, $this->expression);
+        $this->expression = app(ContributionDispatcher::class)->dispatch($this->actor, $this->phase,
+            ['action' => 'proposition.variant', 'statement' => 'Develop the first distinction.']);
+    }
+
     /** Real Persist birth and evidence-first grounding before Constrain. */
     public function advanceToConstrain(): void
     {
-        $progression = app(PhaseProgressionService::class);
+        $this->writePersist();
         $dispatcher = app(ContributionDispatcher::class);
-        $this->phase = $progression->advance($this->phase, $this->expression);
-        $this->expression = $dispatcher->dispatch($this->actor, $this->phase,
-            ['action' => 'proposition.variant', 'statement' => 'Develop the first distinction.']);
         $dispatcher->dispatch($this->actor, $this->phase,
             ['action' => 'instrument.execute', 'proposition_id' => $this->expression->id,
                 'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/grounded-development']]);
         $dispatcher->dispatch($this->actor, $this->phase,
             ['action' => 'attestation.create', 'proposition_id' => $this->expression->id, 'direction' => 'support']);
-        $this->phase = $progression->advance($this->phase, $this->expression);
+        $this->phase = app(PhaseProgressionService::class)->advance($this->phase, $this->expression);
     }
-
 }

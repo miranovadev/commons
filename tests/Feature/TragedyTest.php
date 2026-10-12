@@ -17,6 +17,7 @@ use App\Services\OpenAIResponseSchema;
 use App\Services\ParticipantPromptFactory;
 use App\Services\ParticipationService;
 use App\Services\PhaseProgressionService;
+use App\Services\PropositionStateService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use InvalidArgumentException;
 use Opis\JsonSchema\Helper;
@@ -118,12 +119,18 @@ class TragedyTest extends TestCase
 
     private function fixture(PhaseKind $kind, ?string $action): array
     {
+        if ($kind === PhaseKind::Persist && $action === 'instrument.execute') {
+            $fixture = new GovernedExpressionFixture;
+            $fixture->writePersist();
+
+            return [$fixture->actor->fresh(), $fixture->phase];
+        }
         if (($kind === PhaseKind::Constrain && $action === 'proposition.reclassify')
             || ($kind === PhaseKind::Disperse && $action === 'proposition.variant')) {
             $fixture = new GovernedExpressionFixture;
             $fixture->advanceToConstrain();
             if ($kind === PhaseKind::Disperse) {
-                $receipt = app(\App\Services\PropositionStateService::class)->receipts($fixture->expression)->sole();
+                $receipt = app(PropositionStateService::class)->receipts($fixture->expression)->sole();
                 $result = app(ContributionDispatcher::class)->dispatch($fixture->actor, $fixture->phase,
                     ['action' => 'proposition.reclassify', 'proposition_id' => $fixture->expression->id, 'receipt_id' => $receipt->id]);
                 $fixture->phase = app(PhaseProgressionService::class)->advance($fixture->phase, $result);
@@ -259,4 +266,3 @@ class TragedyTest extends TestCase
         return $proposition;
     }
 }
-

@@ -32,6 +32,7 @@ trait HorizonCycleFixture
             $service->enter($other);
             $participants[] = $other;
         }
+
         return $this->driveAuthorisedCycle($participants, $originId, $originDirection,
             $observe, $additionalEntrants, $actionBudget, $expressiveDirection, $recordAction);
     }
