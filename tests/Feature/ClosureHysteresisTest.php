@@ -248,9 +248,10 @@ class ClosureHysteresisTest extends TestCase
         $this->assertSame($this->origin->id, $service->historyFor($gate)->proposition_id);
         $this->assertFalse($service->preview($gate, $phase)['admissible']);
 
-        $merged = $this->node($phase, 'expressive', 'concord');
+        $merged = $this->node($phase, 'expressive', 'concord', $gate);
         $this->edge($phase, $gate, $merged, 'reconcile');
         $this->edge($phase, $sibling, $merged, 'reconcile');
+        \Tests\Fixtures\PropositionBirth::complete($merged);
         $this->assertSame($this->origin->id, $service->historyFor($merged)->proposition_id);
     }
 
@@ -397,8 +398,9 @@ class ClosureHysteresisTest extends TestCase
         $previous = $this->origin;
         foreach ($cycles as $sequence) {
             $phase = $this->phase($sequence, $writeRegister);
-            $gate = $this->node($this->phaseAtPositionFixture($phase, PhaseKind::Bias), 'expressive', $sequence === end($cycles) ? $writeRegister : $gateRegister);
+            $gate = $this->node($this->phaseAtPositionFixture($phase, PhaseKind::Bias), 'expressive', $sequence === end($cycles) ? $writeRegister : $gateRegister, $previous);
             $this->edge($phase, $previous, $gate, 'variant');
+            \Tests\Fixtures\PropositionBirth::complete($gate);
             $phase->gate_proposition_id = $gate->id;
             $phase->save();
             if ($sequence !== end($cycles)) {
@@ -429,11 +431,11 @@ class ClosureHysteresisTest extends TestCase
         return $phase;
     }
 
-    private function node(Phase $phase, string $tier, string $register): Proposition
+    private function node(Phase $phase, string $tier, string $register, ?Proposition $source = null): Proposition
     {
         $node = new Proposition;
         $node->forceFill(['phase_id' => $phase->id, 'tier' => $tier, 'register' => $register, 'statement' => 'Fixture proposition.'])->save();
-        app(LedgerService::class)->record($node);
+        app(LedgerService::class)->record($node, $source);
 
         return $node;
     }

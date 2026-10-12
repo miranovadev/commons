@@ -428,7 +428,7 @@ class WriteOnceTest extends TestCase
         }
         $node = new Proposition;
         $node->forceFill(['phase_id' => $phase->id, 'register' => $register, 'tier' => $tier, 'statement' => $statement])->save();
-        app(LedgerService::class)->record($node);
+        app(LedgerService::class)->record($node, $parent);
         if ($tier === 'committal') {
             $this->freezeRegionFixture($node);
         }
@@ -436,6 +436,9 @@ class WriteOnceTest extends TestCase
             $edge = new Supersession;
             $edge->forceFill(['phase_id' => $phase->id, 'source_proposition_id' => $parent->id, 'target_proposition_id' => $node->id, 'type' => 'variant'])->save();
             app(LedgerService::class)->record($edge);
+        }
+        if ($tier === 'expressive') {
+            \Tests\Fixtures\PropositionBirth::complete($node);
         }
 
         return $node;

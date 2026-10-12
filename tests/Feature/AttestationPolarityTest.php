@@ -255,7 +255,7 @@ class AttestationPolarityTest extends TestCase
         $base = $this->governedPhaseFixture($base, $governor, $parent);
         $node = new Proposition;
         $node->forceFill(['phase_id' => $base->id, 'register' => $register, 'tier' => $tier, 'statement' => 'Node '.Proposition::count()])->save();
-        app(LedgerService::class)->record($node);
+        app(LedgerService::class)->record($node, $parent);
         if ($tier === 'committal') {
             $this->freezeRegionFixture($node);
         }
@@ -263,6 +263,9 @@ class AttestationPolarityTest extends TestCase
         $edge->forceFill(['phase_id' => $this->history->id, 'source_proposition_id' => $parent->id,
             'target_proposition_id' => $node->id, 'type' => $type])->save();
         app(LedgerService::class)->record($edge);
+        if ($tier === 'expressive') {
+            \Tests\Fixtures\PropositionBirth::complete($node);
+        }
 
         return $node;
     }

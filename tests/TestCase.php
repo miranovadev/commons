@@ -177,11 +177,12 @@ abstract class TestCase extends BaseTestCase
             $terminal = (new Proposition)->forceFill(['phase_id' => $phase->id, 'register' => $phase->write_register,
                 'tier' => 'expressive', 'statement' => 'Explicit Charge boundary fixture']);
             $terminal->save();
-            app(LedgerService::class)->record($terminal);
+            app(LedgerService::class)->record($terminal, $seed);
             $edge = (new Supersession)->forceFill(['phase_id' => $phase->id,
                 'source_proposition_id' => $seed->id, 'target_proposition_id' => $terminal->id, 'type' => 'variant']);
             $edge->save();
             app(LedgerService::class)->record($edge);
+            \Tests\Fixtures\PropositionBirth::complete($terminal);
         }
         $this->controlledBirthClosureFixture(1, $terminal->id);
         $terminal->wasRecentlyCreated = true; // The fixture explicitly supplies the birth event.
@@ -323,7 +324,7 @@ abstract class TestCase extends BaseTestCase
             $target = (new Proposition)->forceFill(['phase_id' => $phase->id, 'register' => $phase->write_register,
                 'tier' => 'expressive', 'statement' => $source->statement]);
             $target->save();
-            app(LedgerService::class)->record($target);
+            app(LedgerService::class)->record($target, $source);
             $edge = (new Supersession)->forceFill(['phase_id' => $phase->id,
                 'source_proposition_id' => $source->id, 'target_proposition_id' => $target->id, 'type' => 'reclassify']);
             $edge->save();
@@ -335,6 +336,7 @@ abstract class TestCase extends BaseTestCase
                 'source_proposition_id' => $source->id, 'proposition_id' => $target->id, 'consumed_at' => now()])->save();
             DB::table('proposition_receipt_links')->insert([
                 'proposition_id' => $target->id, 'receipt_id' => $receiptId, 'created_at' => now()]);
+            \Tests\Fixtures\PropositionBirth::complete($target);
 
             return $target;
         });

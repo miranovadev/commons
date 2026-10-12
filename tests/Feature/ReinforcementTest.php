@@ -70,10 +70,13 @@ class ReinforcementTest extends TestCase
         $creation->forceFill(['kind' => PhaseKind::Bias])->save();
         $this->node = new Proposition;
         $this->node->forceFill(['phase_id' => $creation->id, 'register' => 'canon', 'tier' => 'expressive', 'statement' => 'Persistence must be earned.'])->save();
-        app(LedgerService::class)->record($this->node);
         $creation->forceFill(['gate_proposition_id' => $this->governor->id])->save();
-        (new Supersession)->forceFill(['phase_id' => $creation->id,
-            'source_proposition_id' => $this->governor->id, 'target_proposition_id' => $this->node->id, 'type' => 'variant'])->save();
+        app(LedgerService::class)->record($this->node, $this->governor);
+        $edge = (new Supersession)->forceFill(['phase_id' => $creation->id,
+            'source_proposition_id' => $this->governor->id, 'target_proposition_id' => $this->node->id, 'type' => 'variant']);
+        $edge->save();
+        app(LedgerService::class)->record($edge);
+        \Tests\Fixtures\PropositionBirth::complete($this->node);
         $this->later = $this->phase($substrate, $creation->cycle->participant);
         $attestation = new Attestation;
         $attestation->forceFill(['phase_id' => $this->later->id, 'proposition_id' => $this->node->id, 'direction' => 'support'])->save();

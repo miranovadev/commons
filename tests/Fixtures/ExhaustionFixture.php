@@ -107,11 +107,17 @@ trait ExhaustionFixture
     {
         $node = (new Proposition)->forceFill(['phase_id' => $phase->id, 'register' => $phase->write_register, 'tier' => $tier, 'statement' => 'Branch fixture']);
         $node->save();
-        app(LedgerService::class)->record($node);
+        app(LedgerService::class)->record($node, $parent);
         if ($parent !== null) {
             $edge = (new Supersession)->forceFill(['phase_id' => $phase->id, 'source_proposition_id' => $parent->id, 'target_proposition_id' => $node->id, 'type' => $tier === 'committal' ? 'commit' : 'variant']);
             $edge->save();
             app(LedgerService::class)->record($edge);
+        }
+        if ($tier === 'expressive') {
+            PropositionBirth::complete($node);
+        } elseif ($parent !== null) {
+            $closure = app(\App\Services\Observables\ProspectiveClosureService::class);
+            $closure->preserve($node, $parent, $closure->stored($parent));
         }
 
         return $node;
