@@ -29,6 +29,7 @@ use App\Services\Participation\ParticipationContext;
 use App\Services\PropositionMeasurementService;
 use App\Services\ReceiptContextService;
 use Carbon\CarbonImmutable;
+use DomainException;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;

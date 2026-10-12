@@ -4,6 +4,7 @@ namespace Tests\Fixtures;
 
 use App\Models\Proposition;
 use App\Services\Observables\ProspectiveClosureService;
+use LogicException;
 
 /**
  * Component-only input boundary. Authored graph/snapshot rows are read-model

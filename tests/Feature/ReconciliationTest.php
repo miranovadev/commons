@@ -25,6 +25,7 @@ use App\Services\ParticipationService;
 use App\Services\PhaseProgressionService;
 use App\Services\PropositionMeasurementService;
 use App\Services\PropositionStateService;
+use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Opis\JsonSchema\Helper;
 use Opis\JsonSchema\Validator;
