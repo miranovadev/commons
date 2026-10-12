@@ -9,6 +9,7 @@ use App\Models\Proposition;
 use App\Models\Substrate;
 use App\Services\ContributionDispatcher;
 use App\Services\CycleEntryService;
+use App\Services\PhaseProgressionService;
 
 /** Real constitutional entry and authorised first expressive birth; no Commit double. */
 final class GovernedExpressionFixture
@@ -36,4 +37,21 @@ final class GovernedExpressionFixture
         $this->expression = app(ContributionDispatcher::class)->dispatch($this->actor, $this->phase,
             ['action' => 'proposition.variant', 'statement' => 'An independently authored first distinction.']);
     }
+
+    /** Real Persist birth and evidence-first grounding before Constrain. */
+    public function advanceToConstrain(): void
+    {
+        $progression = app(PhaseProgressionService::class);
+        $dispatcher = app(ContributionDispatcher::class);
+        $this->phase = $progression->advance($this->phase, $this->expression);
+        $this->expression = $dispatcher->dispatch($this->actor, $this->phase,
+            ['action' => 'proposition.variant', 'statement' => 'Develop the first distinction.']);
+        $dispatcher->dispatch($this->actor, $this->phase,
+            ['action' => 'instrument.execute', 'proposition_id' => $this->expression->id,
+                'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/grounded-development']]);
+        $dispatcher->dispatch($this->actor, $this->phase,
+            ['action' => 'attestation.create', 'proposition_id' => $this->expression->id, 'direction' => 'support']);
+        $this->phase = $progression->advance($this->phase, $this->expression);
+    }
+
 }

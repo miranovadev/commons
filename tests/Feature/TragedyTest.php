@@ -11,6 +11,7 @@ use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Substrate;
 use App\Models\Supersession;
+use App\Services\ContributionDispatcher;
 use App\Services\LedgerService;
 use App\Services\OpenAIResponseSchema;
 use App\Services\ParticipantPromptFactory;
@@ -21,6 +22,7 @@ use InvalidArgumentException;
 use Opis\JsonSchema\Helper;
 use Opis\JsonSchema\Validator;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Tests\Fixtures\GovernedExpressionFixture;
 use Tests\TestCase;
 
 class TragedyTest extends TestCase
@@ -116,6 +118,19 @@ class TragedyTest extends TestCase
 
     private function fixture(PhaseKind $kind, ?string $action): array
     {
+        if (($kind === PhaseKind::Constrain && $action === 'proposition.reclassify')
+            || ($kind === PhaseKind::Disperse && $action === 'proposition.variant')) {
+            $fixture = new GovernedExpressionFixture;
+            $fixture->advanceToConstrain();
+            if ($kind === PhaseKind::Disperse) {
+                $receipt = app(\App\Services\PropositionStateService::class)->receipts($fixture->expression)->sole();
+                $result = app(ContributionDispatcher::class)->dispatch($fixture->actor, $fixture->phase,
+                    ['action' => 'proposition.reclassify', 'proposition_id' => $fixture->expression->id, 'receipt_id' => $receipt->id]);
+                $fixture->phase = app(PhaseProgressionService::class)->advance($fixture->phase, $result);
+            }
+
+            return [$fixture->actor->fresh(), $fixture->phase];
+        }
         $substrate = new Substrate;
         $substrate->forceFill(['slug' => 'rest_available', 'title' => 'Tragedy', 'visibility' => 'public', 'configuration' => []])->save();
         $author = $this->participant($substrate, 'author');

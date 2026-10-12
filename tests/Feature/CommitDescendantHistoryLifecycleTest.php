@@ -82,15 +82,19 @@ class CommitDescendantHistoryLifecycleTest extends TestCase
         $this->assertNotContains($otherOperand, $expected, 'Reconcile does not import the other branch into selected history.');
         $this->assertNotContains($origin->id, array_column($search->results, 'proposition_id'));
         $this->assertSame('settlement', $search->domain);
+        // Persist instrumentation belongs to its actual Write, not the preceding Gate.
+        $written = app(ContributionDispatcher::class)->dispatch($actor, $phase,
+            ['action' => 'proposition.variant', 'statement' => 'Investigate the recorded history.']);
         $edges = Supersession::count();
-        $receipt = app(ContributionDispatcher::class)->dispatch($actor, $phase,
-            ['action' => 'instrument.execute', 'proposition_id' => $head->id,
+        app(ContributionDispatcher::class)->dispatch($actor, $phase,
+            ['action' => 'instrument.execute', 'proposition_id' => $written->id,
                 'instrument' => ['kind' => 'proposition_search', 'limit' => 10]]);
         $memory = Receipt::where('type', 'proposition_search')->sole();
         $this->assertSame($expected, array_column($memory->metadata['proposition_collection']['results'], 'proposition_id'));
+        $this->assertSame([3, 4, 5, 6, 7, 8], array_column($memory->metadata['proposition_collection']['results'], 'lineage_distance'));
         $this->assertNull($memory->signature);
-        $this->assertFalse(app(CommitmentAdmissibilityService::class)->grounding($head)['requirements']['receipt']);
-        $this->assertSame(0, app(ReinforcementService::class)->count($head));
+        $this->assertFalse(app(CommitmentAdmissibilityService::class)->grounding($written)['requirements']['receipt']);
+        $this->assertSame(0, app(ReinforcementService::class)->count($written));
         $load = app(ReceiptContextService::class)->read($actor, $phase, $memory->id);
         $this->assertNull($load->evidence_signature);
         $this->assertSame($edges, Supersession::count());

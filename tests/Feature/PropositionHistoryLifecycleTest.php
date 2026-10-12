@@ -32,19 +32,20 @@ class PropositionHistoryLifecycleTest extends TestCase
         $fixture = new GovernedExpressionFixture;
         $dispatcher = app(ContributionDispatcher::class);
         $progression = app(PhaseProgressionService::class);
-        $source = $fixture->expression;
-        $phase = $fixture->phase;
         if ($operation === 'reclassify') {
+            $fixture->advanceToConstrain();
+            $source = $fixture->expression;
+            $phase = $fixture->phase;
+        } else {
+            $source = $fixture->expression;
+            $phase = $fixture->phase;
+            $dispatcher->dispatch($fixture->actor, $phase,
+                ['action' => 'instrument.execute', 'proposition_id' => $source->id,
+                    'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/fresh-history']]);
+            $dispatcher->dispatch($fixture->actor, $phase,
+                ['action' => 'attestation.create', 'proposition_id' => $source->id, 'direction' => 'support']);
             $phase = $progression->advance($phase, $source);
-            $source = $dispatcher->dispatch($fixture->actor, $phase,
-                ['action' => 'proposition.variant', 'statement' => 'Develop the first distinction.']);
         }
-        $dispatcher->dispatch($fixture->actor, $phase,
-            ['action' => 'instrument.execute', 'proposition_id' => $source->id,
-                'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/fresh-history']]);
-        $dispatcher->dispatch($fixture->actor, $phase,
-            ['action' => 'attestation.create', 'proposition_id' => $source->id, 'direction' => 'support']);
-        $phase = $progression->advance($phase, $source);
         $state = app(PropositionStateService::class);
         $sourceTouches = $state->touchCount($source);
         $votes = $state->attestations(collect([$source]))->pluck('id')->all();
