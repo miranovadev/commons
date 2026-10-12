@@ -77,19 +77,38 @@ abstract class TestCase extends BaseTestCase
     /** Isolated field/lifecycle tests control Closure too; birth-invariant tests never use this double. */
     protected function controlledBirthClosureFixture(float $value, ?string $onlyId = null, bool $includeCommittal = false): void
     {
-        // Preserve the existing explicit field double at the new read boundary.
-        // Real birth/Cycle persistence still runs; measurement contract tests do
-        // not use this routing/transport fixture.
+        // A whole-field routing double controls the new persistence boundary too.
+        // It must not demand real historical measurements before returning its
+        // explicitly authored number. No synthetic Closure history is persisted.
+        // Proposition-specific doubles retain real birth/Cycle construction.
         $prospective = app(ProspectiveClosureService::class);
         $this->partialMock(ProspectiveClosureService::class, function ($mock) use ($prospective, $value, $onlyId, $includeCommittal): void {
-            foreach (['initialize', 'entered'] as $method) {
-                $mock->shouldReceive($method)->andReturnUsing(fn (...$args) => $prospective->$method(...$args));
-            }
-            $mock->shouldReceive('stored')->andReturnUsing(function ($node, $context = null) use ($prospective, $value, $onlyId, $includeCommittal) {
-                $observation = $prospective->stored($node, $context);
-                if ((! $includeCommittal && $node->tier === 'committal') || ($onlyId !== null && $node->id !== $onlyId)) {
-                    return $observation;
+            $preserved = [];
+            $mock->shouldReceive('initialize')->andReturnUsing(function ($node) use ($prospective, $onlyId): void {
+                if ($onlyId !== null || $node->tier === 'committal') {
+                    $prospective->initialize($node);
                 }
+            });
+            $mock->shouldReceive('entered')->andReturnUsing(function ($cycle) use ($prospective, $onlyId): void {
+                if ($onlyId !== null) {
+                    $prospective->entered($cycle);
+                }
+            });
+            $mock->shouldReceive('stored')->andReturnUsing(function ($node, $context = null) use ($prospective, $value, $onlyId, $includeCommittal, &$preserved) {
+                if (isset($preserved[$node->id])) {
+                    return $preserved[$node->id];
+                }
+                if ((! $includeCommittal && $node->tier === 'committal') || ($onlyId !== null && $node->id !== $onlyId)) {
+                    return $prospective->stored($node, $context);
+                }
+                $observation = $onlyId !== null ? $prospective->stored($node, $context) : [
+                    // Existing interval metadata is used only by snapshot plumbing;
+                    // this double supplies no historical observation population.
+                    'cadence_interval' => app(ClosureBirthService::class)->stored($node)['cadence_interval'],
+                    'history_proposition_id' => $node->phase->cycle->entry_committal_id,
+                    'historical_phase_profile' => $value, 'historical_orientation' => $value,
+                    'fixture' => 'controlled_closure_output',
+                ];
                 foreach (['depth', 'cadence', 'historical_extent', 'historical_rhythm', 'closure'] as $key) {
                     $observation[$key] = $value;
                     $observation[$key.'_direction'] = $value > 0 ? 'positive' : 'negative';
@@ -97,6 +116,16 @@ abstract class TestCase extends BaseTestCase
                 $observation['admissible'] = true;
 
                 return $observation;
+            });
+            $mock->shouldReceive('preserve')->andReturnUsing(function ($target, $source, $expected) use ($mock, $prospective, $onlyId, &$preserved): void {
+                if ($onlyId !== null) {
+                    $prospective->preserve($target, $source, $expected);
+
+                    return;
+                }
+                $this->assertSame('expressive', $source->tier);
+                $this->assertSame($mock->stored($source), $expected);
+                $preserved[$target->id] = $expected;
             });
         });
         $births = app(ClosureBirthService::class);
