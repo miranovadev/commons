@@ -26,9 +26,10 @@ trait IsolatesClosureOutput
             $mock->shouldReceive('chiralityComponents')->andReturnUsing(
                 fn ($node, $comparison = null, $context = null) => $real->chiralityComponents($node, $comparison, $context)
             );
-            $mock->shouldReceive('calculate')->andReturnUsing(function ($node, $comparison = null, $includeClosure = true) use ($real) {
-                $chirality = $real->chiralityComponents($node, $comparison);
-                $closure = $includeClosure ? app(ClosureCalculator::class)->components($node, $comparison?->current->context)
+            $mock->shouldReceive('calculate')->andReturnUsing(function ($node, $comparison = null, $includeClosure = true, $context = null) use ($real) {
+                $context ??= $comparison?->current->context;
+                $chirality = $real->chiralityComponents($node, $comparison, $context);
+                $closure = $includeClosure ? app(ClosureCalculator::class)->components($node, $context)
                     : new ClosureValues(0, 0);
 
                 return new LocalMeasurements(0, $chirality->average(), $closure->depth, $closure->cadence,
