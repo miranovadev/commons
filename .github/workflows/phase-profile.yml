@@ -26,7 +26,7 @@ jobs:
       fail-fast: false
       matrix:
         database: [sqlite, pgsql]
-        validation: [contracts, fixtures]
+        validation: [contracts, fixtures, lifecycle]
     runs-on: ubuntu-latest
     timeout-minutes: 8
     services:
@@ -77,6 +77,9 @@ jobs:
       - name: Representative fixture repairs
         if: always() && matrix.validation == 'fixtures'
         run: php artisan test tests/Feature/PersistInstrumentTest.php tests/Feature/ReinforcementTest.php tests/Feature/WriteOnceTest.php tests/Feature/ExhaustionTest.php tests/Feature/ClosureHysteresisTest.php tests/Feature/ParticipantWakeTest.php tests/Feature/ParticipantContinuityTest.php tests/Feature/AttestationDirectionChangeTest.php tests/Feature/LocalParticipantNavigationTest.php tests/Feature/InputPlanVisibilityTest.php tests/Feature/PropositionMeasurementServiceTest.php tests/Feature/ReceiptRegionContextTest.php tests/Feature/ReconciliationTest.php tests/Feature/CommitParticipationStateTest.php tests/Feature/PropositionHistoryLifecycleTest.php tests/Feature/PropositionPresentationTest.php --display-warnings
+      - name: Genuine Commit source lifecycle
+        if: always() && matrix.validation == 'lifecycle'
+        run: php artisan test tests/Feature/CommitSourceHistoryLifecycleTest.php --display-warnings
       - name: Formatting and whitespace
         if: always() && matrix.validation == 'contracts'
         run: |
