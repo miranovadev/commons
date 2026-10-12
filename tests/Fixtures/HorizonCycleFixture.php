@@ -11,7 +11,7 @@ use App\Services\ParticipationService;
 
 trait HorizonCycleFixture
 {
-    protected function driveHorizonCycle(int $participantCount = 1, bool $realClosure = false, string $originDirection = 'support', ?callable $observe = null, int $additionalEntrants = 0, int $actionBudget = 100): Proposition
+    protected function driveHorizonCycle(int $participantCount = 1, bool $realClosure = false, string $originDirection = 'support', ?callable $observe = null, int $additionalEntrants = 0, int $actionBudget = 100, ?string $expressiveDirection = null): Proposition
     {
         $substrate = (new Substrate)->forceFill(['slug' => 'single-bird', 'title' => 'Single Participant', 'visibility' => 'public', 'configuration' => []]);
         $substrate->save();
@@ -59,7 +59,7 @@ trait HorizonCycleFixture
                 $input['instrument'] = ['kind' => 'hyperlink', 'reference' => 'https://example.test/evidence/'.$step];
             }
             if ($action === 'attestation.create') {
-                $choice = collect($definition['anyOf'])->first(fn ($choice) => $choice['properties']['direction']['enum'][0] === $originDirection)
+                $choice = collect($definition['anyOf'])->first(fn ($choice) => $choice['properties']['direction']['enum'][0] === ($expressiveDirection ?? $originDirection))
                     ?? $definition['anyOf'][0];
                 $input['proposition_id'] = $choice['properties']['proposition_id']['enum'][0];
                 $input['direction'] = $choice['properties']['direction']['enum'][0];
