@@ -47,6 +47,8 @@ class LocalParticipantNavigationTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        // Rankings deliberately control the upstream field; no historical Closure is inferred.
+        $this->controlledBirthClosureFixture(0, includeCommittal: true);
         $this->substrate = new Substrate;
         $this->substrate->forceFill([
             'slug' => 'local-navigation', 'title' => 'Local navigation',
@@ -612,7 +614,7 @@ class LocalParticipantNavigationTest extends TestCase
         ])->save();
         $entry = app(LedgerService::class)->record($node);
         $this->fixtureTensions[$node->id] = $tension;
-        $this->controlledBirthClosureFixture($tension, $node->id);
+        $this->controlledBirthClosureFixture($tension, $node->id, includeCommittal: true);
         app(PropositionMeasurementService::class)->project($node, $tension, $tension, $tension);
         if ($tier === 'committal') {
             $snapshot = new CommitmentSnapshot;
@@ -636,7 +638,7 @@ class LocalParticipantNavigationTest extends TestCase
     private function refreshFixtureMeasurements(): void
     {
         foreach ($this->fixtureTensions as $id => $tension) {
-            $this->controlledBirthClosureFixture($tension, $id);
+            $this->controlledBirthClosureFixture($tension, $id, includeCommittal: true);
             app(PropositionMeasurementService::class)->project(Proposition::findOrFail($id), $tension, $tension, $tension);
         }
         app(PotentialProjectionService::class)->rebuild($this->substrate->id, false);
