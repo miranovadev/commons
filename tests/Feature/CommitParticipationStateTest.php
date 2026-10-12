@@ -16,8 +16,11 @@ use App\Services\InstrumentExecutionService;
 use App\Services\LedgerService;
 use App\Services\Observables\ChiralityCalculator;
 use App\Services\Observables\ContextLineageComparisonService;
+use App\Services\Observables\LineageMeasurementService;
 use App\Services\Observables\ReinforcementService;
 use App\Services\OperationalInstrumentService;
+use App\Services\PotentialProjectionService;
+use App\Services\PropositionMeasurementService;
 use App\Services\PropositionStateService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -30,9 +33,8 @@ class CommitParticipationStateTest extends TestCase
 
     private Phase $phase;
 
-    protected function setUp(): void
+    private function historicalOrderPhase(): void
     {
-        parent::setUp();
         $substrate = new Substrate;
         $substrate->forceFill(['slug' => 'inheritance', 'title' => 'Inheritance', 'visibility' => 'public', 'configuration' => []])->save();
         $participant = new Participant;
@@ -120,17 +122,17 @@ class CommitParticipationStateTest extends TestCase
         $fixture = new GovernedExpressionFixture;
         $node = $fixture->expression;
         $this->phase = $fixture->phase;
-        $measurements = app(\App\Services\PropositionMeasurementService::class);
+        $measurements = app(PropositionMeasurementService::class);
         $measurement = $measurements->recalculate($node);
         $touch = $this->touch($node);
         $this->assertDatabaseHas('potential_dirty_horizons', [
             'context_horizon_id' => $this->phase->cycle->context_horizon_id, 'measurements_dirty' => true,
         ]);
-        app(\App\Services\PotentialProjectionService::class)->refresh($this->phase->cycle->participant->substrate_id);
+        app(PotentialProjectionService::class)->refresh($this->phase->cycle->participant->substrate_id);
         $this->assertDatabaseCount('potential_dirty_horizons', 0);
         $touch->completed_at = now()->addHour();
         $touch->save();
-        $this->assertSame(\App\Services\Observables\LineageMeasurementService::VERSION,
+        $this->assertSame(LineageMeasurementService::VERSION,
             $measurement->fresh()->calculator_version);
         $this->assertSame(1, app(PropositionStateService::class)->touchCount($node));
     }
@@ -205,14 +207,20 @@ class CommitParticipationStateTest extends TestCase
         $phase->forceFill(['cycle_id' => $this->phase->cycle_id, 'kind' => PhaseKind::Persist,
             'write_register' => $this->phase->cycle->contextHorizon->domain->registerFor(PhaseKind::Persist),
             'gate_proposition_id' => $gate->id, 'started_at' => now(), 'completed_at' => now()])->save();
+
         return $phase;
     }
 
     private function node(string $tier): Proposition
     {
+        if (! isset($this->phase)) {
+            $this->historicalOrderPhase();
+        }
+
         $node = new Proposition;
         $node->forceFill(['phase_id' => $this->phase->id, 'register' => 'canon', 'tier' => $tier, 'statement' => 'Inherited.'])->save();
         app(LedgerService::class)->record($node);
+
         return $node;
     }
 
