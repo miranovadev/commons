@@ -40,10 +40,10 @@ class PropositionHistoryLifecycleTest extends TestCase
                 ['action' => 'proposition.variant', 'statement' => 'Develop the first distinction.']);
         }
         $dispatcher->dispatch($fixture->actor, $phase,
-            ['action' => 'attestation.create', 'proposition_id' => $source->id, 'direction' => 'support']);
-        $dispatcher->dispatch($fixture->actor, $phase,
             ['action' => 'instrument.execute', 'proposition_id' => $source->id,
                 'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/fresh-history']]);
+        $dispatcher->dispatch($fixture->actor, $phase,
+            ['action' => 'attestation.create', 'proposition_id' => $source->id, 'direction' => 'support']);
         $phase = $progression->advance($phase, $source);
         $state = app(PropositionStateService::class);
         $sourceTouches = $state->touchCount($source);
