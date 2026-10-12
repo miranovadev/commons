@@ -105,7 +105,131 @@ an exception alone does not prove their underlying application assertions correc
 
 ## Validation record
 
-Final result inventory and run links are recorded below after complete execution.
-The earlier [Stage 3 report](prospective-closure-validation.md) is the pre-repair
-checkpoint, not the outcome of this follow-up. Stage 2 remains 1,125 Core cases:
-1,117 passed and eight failed. Stage 3 retains those cases and adds 15.
+Tested code head: `117e657c456d3f7856903458075507b6bd5cd141`.
+The subsequent reporting commit changes only documentation and inventories.
+
+| Validation | Complete result | Assertions | Runtime |
+| --- | --- | ---: | --- |
+| [Core](https://github.com/miranovadev/commons/actions/runs/38226078326) | **1,140 cases: 832 pass / 308 fail** (13 failures, 295 errors), no skips | 10,118 | **7m52s**, slowest PHP shard 355.18s |
+| [Integration](https://github.com/miranovadev/commons/actions/runs/38226084432) | **31 cases: 19 pass / 12 fail** (11 failures, one error), no skips | 17,292 | **6m18s**, slowest PHP shard 322.94s |
+| [Focused PostgreSQL and SQLite](https://github.com/miranovadev/commons/actions/runs/38226078278) | On each: 48 C1/history + 14 prospective Closure pass | 300 + 85 | PG 62.62s + 13.68s; SQLite 11.45s + 2.35s |
+| Same workflow, observable/ledger group | On each: 97 pass / 43 fail | 1,353 | PG 127.65s; SQLite 19.71s |
+| Same workflow, representative fixture group | On each: 70 pass / 13 fail | 969 | PG 103.26s; SQLite 43.61s |
+| Frontend/UI and [Inspector browser](https://github.com/miranovadev/commons/actions/runs/38226084158) | Pass | — | Browser 1m28s |
+
+Scoped Pint and whitespace checks pass. Core's overlapping SQLite preflight
+remains 12 pass / six missing-history errors in CommittalClosureTest (45
+assertions); it does not prevent complete PostgreSQL execution. These focused
+commands overlap Core/Integration and must not be added to the suite totals.
+
+The [summary](evidence/prospective-closure-fixture-repair/summary.json), per-test
+Core/Integration CSVs, [before/after comparison](evidence/prospective-closure-fixture-repair/comparison-summary.json),
+and [setup-path outcomes](evidence/prospective-closure-fixture-repair/setup-path-outcomes.csv)
+retain exact accounting. Discovered, selected and JUnit-executed multisets match
+for both complete suites. Workflow times use completed-run start/end metadata;
+PHP times come from shard artifacts. CI remains red for the recorded failures.
+
+### Before and after
+
+| Checkpoint | Core passed / failed | Missing Closure history |
+| --- | ---: | ---: |
+| Stage 2 baseline (1,125 cases) | 1,117 / 8 | — |
+| Stage 3 before repair (1,140 cases, `0e07262`) | 583 / 557 | 554 |
+| First shared-double repair (`5114b03`) | 789 / 351 | 349 |
+| Repaired preservation and Phase-position setup (`15d4c66`) | 827 / 313 | 298 |
+| Final fixture repair (`117e657`) | **832 / 308** | **293** |
+
+Of the original 554 masked cases, **248 now pass, 13 expose failures, and 293
+remain masked**. The API atomic-advance case also now passes. All 583 previously
+passing Stage 3 cases remain passing. No new test cases, skips or removed assertions
+account for that improvement. The 15 Stage 3 additions to the Stage 2 Core
+inventory are unchanged.
+
+An intermediate run (`f1c57ac`) exposed two defects in the test double itself:
+stacked overrides compared against an older captured value, and a previously
+captured service could not see a controlled canonical copy. The shared frozen
+output map and active-source comparison corrected both. The final runs restore
+the affected Exhaustion and Commit/wake assertions; these were test-infrastructure
+regressions, not production changes.
+
+### Final failure classification
+
+| Category | Core | Integration | Evidence |
+| --- | ---: | ---: | --- |
+| A — unchanged Stage 2 baseline assertion | 3 | 7 | Individual cases below and in CSVs |
+| B — lawful Stage 3 trajectory or obsolete result wording | 5 | 4 | Two Cycle/Receipt cases, two Closure trajectories, one old error-text assertion; four documented Integration coherence blocks |
+| C — confirmed genuine implementation regression | 0 confirmed | 0 confirmed | Masked assertions prevent ruling out hidden defects |
+| D — missing birth/frozen fixture history | 293 | 1 | Exact failing setup frames retained; application assertions still masked |
+| D — exposed legacy preview fixture contract | 7 | 0 | Old hook/fields no longer represent authorised Extent/Rhythm state |
+| **Total failing** | **308** | **12** | No unclassified case is silently counted as passing |
+
+The 13 newly exposed failures comprise one A, five B and seven legacy-contract D
+cases. D is a construction-boundary classification, not a claim that every
+underlying invariant would pass once its scenario is lawfully reconstructed.
+
+Integration retains the same seven baseline cases: NaturalChargeBoundaryLifecycle;
+two ParticipationLifecycleRegression transcripts; ParticipationLocalEpoch;
+ParticipationRecovery successful revisit; ParticipationSourceEquivalence; and
+ParticipationTragedyLifecycle. The four B cases are both FreshBootstrap polarities,
+OperationalClosurePath and ParticipationHttpHarness. Each retains Extent 0 Negative
+and Rhythm 0.1875 Positive as its sole Commit block. HomologousMediation's
+admissible-Mediate/inadmissible-Bias scenario remains D, masking its prior baseline
+assertion. All 31 full names are in the inventory. HorizonProofCycle and the other
+18 passing cases complete, but the four blocked lifecycles **do not**.
+
+Before repair, Stage 3 Core took 6m16s and Integration 6m44s; final runs take
+7m52s and 6m18s respectively. More Core assertions now execute, so duration alone
+is not a like-for-like performance benchmark. Integration stays below the
+preferred 15 minutes and unchanged 20-minute maximum. No timeout, shard count,
+isolation boundary or authored action budget was relaxed.
+
+No production implementation defect has been demonstrated by this follow-up.
+Full regression sign-off remains incomplete: the specific construction and
+legacy-contract boundaries above require reviewable lawful scenarios, not
+invented provenance, measurement fallback, or revised historical expectations.
+
+
+## How to read the remaining failures
+
+A successful formerly masked test means its original assertions executed to the
+end. A missing-history exception still masks the intended invariant. A newly
+exposed assertion failure is neither a pass nor automatically a production defect.
+
+The eight Stage 2 Core failures must be tracked individually:
+
+| Stage 2 failing case | Follow-up disposition |
+| --- | --- |
+| ChargeBoundaryTragedy, ordinary unmocked boundary | Same Settlement/Emergence assertion (A) |
+| ChiralityPopulationHistory, dispatched Attestation replacement | Same expected -0.5 / actual -0.1 (A) |
+| ClosureHysteresis, read-only bootstrap preview | Same expected -0.0964505 / actual 0.1265986 (A); now unmasked |
+| ClosureHysteresis, negative alignment | Commit executes, but now hits the earlier `closure_boundary` assertion (B); the old numerical assertion has not executed |
+| ObservableService, matching complementary lineages | Still masked by missing authorised state (D) |
+| HomologousBias, zero retains population history | Still masked (D) |
+| HomologousBias, ordinary reclassification result | Still masked (D) |
+| LineageAttenuation, raw calculation | Still masked (D) |
+
+The newly exposed legacy-contract cases are not repaired by changing expected
+numbers. `zero_depth`, `unrelated_newer_snapshot`, the three failing
+`order_native_preview` data rows, and `admissible_preview_cannot_authorize_commit`
+all depend on the obsolete preview double or its Cardinal/Cadence gate.
+`legacy_missing_components` expects the old `history_source` preview field.
+A new authorised Extent/Rhythm scenario is required before these can establish
+their intended invariants. In particular, the stale-state test changes the old
+calculator hook, not stored prospective state; production stale-state regression
+coverage remains the separately passing focused tests.
+
+`actual_candidate_rejection` reaches the intended rejection but fails on obsolete
+error wording before its subsequent rollback assertions. Those later assertions
+are not counted as validated. The two Reinforcement pole cases create genuine
+new governing Cycles while loading evidence: their historical Closure diagnostics
+change at that authorised trigger. A Receipt-only test must separate the Cycle
+entry from its before/after measurement, without suppressing the event.
+
+The source-polarity Commit fixture is a further **B** case, not an unexplained
+schema error. Failure-only diagnostics expose Historical Phase Profile 0.1428571,
+Historical Orientation -0.5, Extent 0.0714286 Positive and Rhythm -0.25 Negative.
+The [recorded eligibility output](evidence/prospective-closure-fixture-repair/polarity-commit-eligibility.json)
+agrees on PostgreSQL and SQLite. Depth and Cadence are unavailable zero. The only rejected requirement is Closure
+(`extent_rhythm_directions_diverge`); every other requirement passes. Its later
+polarity-preservation assertions do not execute. Supplying different measurements
+or extra history merely to force this authored candidate to Commit is excluded.

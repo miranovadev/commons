@@ -150,7 +150,8 @@ worked cases, with implementation mapping and verification plan here.
 The numerical specification is resolved and production wiring is implemented.
 This does not claim full production correctness or successful regression validation.
 
-The [validation report](prospective-closure-validation.md) records exact tested
+The [fixture repair follow-up](prospective-closure-fixture-repair.md) and
+[original validation checkpoint](prospective-closure-validation.md) record exact tested
 heads, PostgreSQL/SQLite results, complete Core and Integration execution,
 baseline comparison, performance and a durable per-test inventory. Focused C1
 and prospective Closure contracts pass on both databases. Complete suite

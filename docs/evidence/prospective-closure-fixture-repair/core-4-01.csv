@@ -1,0 +1,127 @@
+test,result,category,finding,failure_summary,first_test_frame,assertions,seconds
+Tests\Unit\HomeostaticDirectionTest::test_magnitude_aggregates_instead_of_counting_positive_and_negative_votes,passed,,,,,2,0.098765
+Tests\Unit\HomeostaticDirectionTest::test_zero_retains_either_prior_direction_or_initializes_from_each_observables_default,passed,,,,,42,0.009407
+Tests\Unit\HomeostaticDirectionTest::test_missing_values_are_not_zero_mass_and_empty_populations_have_no_direction,passed,,,,,5,0.009162
+Tests\Unit\HomeostaticDirectionTest::test_out_of_range_measurements_are_rejected,passed,,,,,1,0.008941
+Tests\Unit\HomeostaticDirectionTest::test_unknown_measurement_names_are_rejected_before_loading_a_population,passed,,,,,1,0.009394
+Tests\Feature\Api\ParticipantConnectionApiTest::test_user_can_create_reusable_connection_without_exposing_credentials,passed,,,,,8,1.134276
+Tests\Feature\Api\ParticipantConnectionApiTest::test_same_connection_can_be_reused_with_independent_wake_schedules,passed,,,,,12,0.145063
+Tests\Feature\Api\ParticipantConnectionApiTest::test_join_can_attach_existing_connection_with_substrate_specific_wake_settings,passed,,,,,6,0.095460
+Tests\Feature\Api\ParticipantConnectionApiTest::test_user_cannot_attach_another_users_connection,passed,,,,,4,0.096885
+Tests\Feature\Api\ParticipantConnectionApiTest::test_connection_credentials_can_be_kept_when_updating_configuration,passed,,,,,7,0.070923
+Tests\Feature\Api\ParticipantConnectionApiTest::test_attached_connection_must_be_detached_before_deletion,passed,,,,,9,0.123113
+Tests\Feature\Api\ParticipantConnectionApiTest::test_interval_attachments_are_due_on_their_own_wall_clock_schedule,passed,,,,,8,0.090638
+Tests\Feature\Api\ParticipantConnectionApiTest::test_connection_options_describe_supported_providers_and_triggers,passed,,,,,4,0.051285
+Tests\Feature\Api\ParticipantConnectionApiTest::test_wake_defaults_are_persisted_and_legacy_rows_serialize_the_same_defaults,passed,,,,,13,0.118613
+Tests\Feature\Api\ParticipantConnectionApiTest::test_wake_updates_preserve_schedule_and_validate_the_merged_random_range,passed,,,,,23,0.215791
+Tests\Feature\Api\ParticipantConnectionApiTest::test_join_rejects_invalid_wake_configuration,passed,,,,,5,0.070778
+Tests\Feature\Api\ParticipationHttpReadGuardTest::test_diagnostics_accept_read_queries_but_reject_data_modifying_ctes,passed,,,,,5,1.480412
+Tests\Feature\BiasLineageTest::test_each_head_uses_its_own_ancestry_and_excludes_itself_and_unrelated_majorities,passed,,,,,10,4.268210
+Tests\Feature\BiasLineageTest::test_reconciled_lineage_deduplicates_shared_ancestry_and_retains_direction_at_zero,passed,,,,,5,2.661905
+Tests\Feature\CausalOperationalScopeTest::test_bias_calculates_regionally_but_does_not_expose_or_follow_another_route#0,passed,,,,,63,4.645652
+Tests\Feature\CausalOperationalScopeTest::test_bias_calculates_regionally_but_does_not_expose_or_follow_another_route#1,passed,,,,,62,3.151344
+Tests\Feature\CausalOperationalScopeTest::test_bias_revisit_follows_its_frozen_classification_then_only_its_direct_commit#0,passed,,,,,58,4.802018
+Tests\Feature\CausalOperationalScopeTest::test_bias_revisit_follows_its_frozen_classification_then_only_its_direct_commit#1,passed,,,,,57,3.082524
+Tests\Feature\CausalOperationalScopeTest::test_order_keeps_every_causal_expressive_write_and_separates_visibility_commit_and_traverse#0,passed,,,,,64,8.736682
+Tests\Feature\CausalOperationalScopeTest::test_order_keeps_every_causal_expressive_write_and_separates_visibility_commit_and_traverse#1,passed,,,,,63,4.767400
+Tests\Feature\CausalOperationalScopeTest::test_mediate_counterpart_is_an_operand_and_reconciliation_creates_both_causal_edges#0,passed,,,,,23,2.147292
+Tests\Feature\CausalOperationalScopeTest::test_mediate_counterpart_is_an_operand_and_reconciliation_creates_both_causal_edges#1,passed,,,,,22,1.967890
+Tests\Feature\ClosureHysteresisTest::test_read_only_bootstrap_preview_matches_actual_commit_while_field_remains_in_settlement,failure,A (Stage 2 baseline),Same baseline expected/actual assertion.,"Tests\Feature\ClosureHysteresisTest::test_read_only_bootstrap_preview_matches_actual_commit_while_field_remains_in_settlement
+Failed asserting that 0.1265986 is identical to -0.0964505.",tests/Feature/ClosureHysteresisTest.php:83,18,2.615493
+Tests\Feature\ClosureHysteresisTest::test_an_observed_commit_retries_after_cycle_entry_even_when_bootstrap_remains_admissible,passed,,,,,10,1.646038
+Tests\Feature\ClosureHysteresisTest::test_commit_freezes_source_attestation_direction_as_the_next_region_frame,error,B (Stage 3 trajectory),Extent 0.0714286 Positive / Rhythm -0.25 Negative; all other Commit requirements pass. Later polarity assertions remain unexecuted.,"{""requirements"":{""attestation"":true,""receipt"":true,""closure"":false,""phase_position"":true,""causal_write"":true,""active_region_candidate"":true,""write_opportunity"":true},""reasons"":[""extent_rhythm_directions_diverge""],""historical_extent"":0.0714286,""historical_rhythm"":-0.25,""historical_extent_direction"":""positive"",""historical_rhythm_direction"":""negative""}",tests/Feature/ClosureHysteresisTest.php:136,5,1.284829
+Tests\Feature\ClosureHysteresisTest::test_negative_closure_alignment_can_commit_while_corrected_field_remains_in_settlement,failure,B (Stage 3 trajectory),Commit executes; unchanged assertion now encounters a Closure boundary before the old Stage 2 numerical mismatch.,"Tests\Feature\ClosureHysteresisTest::test_negative_closure_alignment_can_commit_while_corrected_field_remains_in_settlement
+Failed asserting that true is false.",tests/Feature/ClosureHysteresisTest.php:166,10,3.358696
+Tests\Feature\ClosureHysteresisTest::test_first_post_origin_commit_has_symmetric_unresolved_components,passed,,,,,9,1.001101
+Tests\Feature\ClosureHysteresisTest::test_expressive_depth_and_phase_touches_do_not_change_committed_bootstrap,passed,,,,,6,1.809788
+Tests\Feature\ClosureHysteresisTest::test_zero_depth_retains_negative_history_and_blocks_a_positive_cadence,failure,D (legacy fixture contract; exposed),"Legacy preview double controls ClosureBirthService/cardinal-cadence rather than authorised prospective state, or requires old preview fields/eligibility. Assertions unchanged; scenario needs separate lawful conversion.","Tests\Feature\ClosureHysteresisTest::test_zero_depth_retains_negative_history_and_blocks_a_positive_cadence
+Failed asserting that two strings are identical.
+--- Expected
++++ Actual
+@@ @@
+-'positive'
++'negative'",tests/Feature/ClosureHysteresisTest.php:221,7,1.233468
+Tests\Feature\ClosureHysteresisTest::test_unrelated_newer_snapshot_does_not_supply_lineage_history,failure,D (legacy fixture contract; exposed),"Legacy preview double controls ClosureBirthService/cardinal-cadence rather than authorised prospective state, or requires old preview fields/eligibility. Assertions unchanged; scenario needs separate lawful conversion.","Tests\Feature\ClosureHysteresisTest::test_unrelated_newer_snapshot_does_not_supply_lineage_history
+Failed asserting that true is false.",tests/Feature/ClosureHysteresisTest.php:255,5,0.998113
+Tests\Feature\ClosureHysteresisTest::test_actual_candidate_rejection_rolls_back_a_previously_admissible_preview,failure,B (Stage 3 test wording),Real rejection still occurs; assertion expects obsolete Committed Cardinal Position/Cadence wording instead of Historical Extent/Rhythm.,"Tests\Feature\ClosureHysteresisTest::test_actual_candidate_rejection_rolls_back_a_previously_admissible_preview
+Failed asserting that 'Commitment requires aligned Historical Extent/Rhythm directions.' [ASCII](length: 64) contains ""aligned Committed Cardinal Position/Cadence"" [ASCII](length: 43).",tests/Feature/ClosureHysteresisTest.php:281,5,1.346530
+Tests\Feature\ClosureHysteresisTest::test_legacy_missing_components_use_explicit_default_without_rewriting_history,error,D (legacy fixture contract; exposed),"Legacy preview double controls ClosureBirthService/cardinal-cadence rather than authorised prospective state, or requires old preview fields/eligibility. Assertions unchanged; scenario needs separate lawful conversion.","Tests\Feature\ClosureHysteresisTest::test_legacy_missing_components_use_explicit_default_without_rewriting_history
+ErrorException: Undefined array key ""history_source""",tests/Feature/ClosureHysteresisTest.php:299,3,0.970020
+Tests\Feature\ClosureHysteresisTest::test_order_native_preview_explains_visible_write_actionability#0,passed,,,,,22,1.173306
+Tests\Feature\ClosureHysteresisTest::test_order_native_preview_explains_visible_write_actionability#1,failure,D (legacy fixture contract; exposed),"Legacy preview double controls ClosureBirthService/cardinal-cadence rather than authorised prospective state, or requires old preview fields/eligibility. Assertions unchanged; scenario needs separate lawful conversion.","Tests\Feature\ClosureHysteresisTest::test_order_native_preview_explains_visible_write_actionability with data set #1
+Failed asserting that two strings are identical.
+--- Expected
++++ Actual
+@@ @@
+-'negative'
++'positive'",tests/Fixtures/AssertsLatePhaseContract.php:28,8,1.203336
+Tests\Feature\ClosureHysteresisTest::test_order_native_preview_explains_visible_write_actionability#2,failure,D (legacy fixture contract; exposed),"Legacy preview double controls ClosureBirthService/cardinal-cadence rather than authorised prospective state, or requires old preview fields/eligibility. Assertions unchanged; scenario needs separate lawful conversion.","Tests\Feature\ClosureHysteresisTest::test_order_native_preview_explains_visible_write_actionability with data set #2
+Failed asserting that true is identical to false.",tests/Fixtures/AssertsLatePhaseContract.php:25,6,1.217929
+Tests\Feature\ClosureHysteresisTest::test_order_native_preview_explains_visible_write_actionability#3,failure,D (legacy fixture contract; exposed),"Legacy preview double controls ClosureBirthService/cardinal-cadence rather than authorised prospective state, or requires old preview fields/eligibility. Assertions unchanged; scenario needs separate lawful conversion.","Tests\Feature\ClosureHysteresisTest::test_order_native_preview_explains_visible_write_actionability with data set #3
+Failed asserting that true is identical to false.",tests/Fixtures/AssertsLatePhaseContract.php:25,6,1.213766
+Tests\Feature\ClosureHysteresisTest::test_admissible_preview_cannot_authorize_commit_after_closure_becomes_opposed,failure,D (legacy fixture contract; exposed),"Legacy preview double controls ClosureBirthService/cardinal-cadence rather than authorised prospective state, or requires old preview fields/eligibility. Assertions unchanged; scenario needs separate lawful conversion.","Tests\Feature\ClosureHysteresisTest::test_admissible_preview_cannot_authorize_commit_after_closure_becomes_opposed
+Failed asserting that true is false.",tests/Feature/ClosureHysteresisTest.php:340,5,1.127522
+Tests\Feature\CommitBoundaryTest::test_zero_loaded_reinforcement_can_commit_and_the_direct_source_is_consumed_globally,passed,,,,,23,2.297535
+Tests\Feature\CommitmentSnapshotFixtureTest::test_origin_is_the_unique_parentless_snapshot_exception,passed,,,,,3,0.158216
+Tests\Feature\CommitmentSnapshotFixtureTest::test_snapshot_links_the_unique_commit_and_repeated_freezing_preserves_it,passed,,,,,4,0.209737
+"Tests\Feature\CommitmentSnapshotFixtureTest::test_incomplete_or_ambiguous_ancestry_cannot_publish_a_snapshot""missing""",passed,,,,,2,0.236038
+"Tests\Feature\CommitmentSnapshotFixtureTest::test_incomplete_or_ambiguous_ancestry_cannot_publish_a_snapshot""wrong operation""",passed,,,,,2,0.243914
+"Tests\Feature\CommitmentSnapshotFixtureTest::test_incomplete_or_ambiguous_ancestry_cannot_publish_a_snapshot""ambiguous commits""",passed,,,,,2,0.265488
+Tests\Feature\CommitmentSnapshotFixtureTest::test_a_commit_from_a_different_selected_gate_is_rejected,passed,,,,,2,0.247978
+Tests\Feature\CommitmentSnapshotFixtureTest::test_an_existing_unlinked_snapshot_is_rejected_without_rewriting_history,passed,,,,,2,0.173169
+Tests\Feature\ContextHorizonProjectorTest::test_the_ledger_provides_idempotent_substrate_local_order,passed,,,,,10,0.159425
+Tests\Feature\ContextHorizonProjectorTest::test_completed_receipts_enter_the_ledger_atomically,passed,,,,,1,0.105273
+Tests\Feature\ContextHorizonProjectorTest::test_an_incomplete_commitment_rolls_back_its_ledger_entry,passed,,,,,4,0.101482
+Tests\Feature\ContextHorizonProjectorTest::test_cross_substrate_edges_cannot_enter_the_ledger,passed,,,,,2,0.118498
+Tests\Feature\ContextHorizonProjectorTest::test_commitments_create_horizons_only_on_direction_change,passed,,,,,20,1.941392
+Tests\Feature\ContextHorizonProjectorTest::test_horizons_rebuild_without_rewriting_commitment_history,passed,,,,,8,1.107702
+Tests\Feature\CycleRegionOwnershipTest::test_direct_context_and_batch_ownership_agree_without_parent_inference,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\CycleRegionOwnershipTest::test_direct_context_and_batch_ownership_agree_without_parent_inference
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/Feature/CycleRegionOwnershipTest.php:232,0,0.473233
+Tests\Feature\CycleRegionOwnershipTest::test_cross_horizon_inputs_preserve_owner_horizon_and_only_the_producing_gate_route,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\CycleRegionOwnershipTest::test_cross_horizon_inputs_preserve_owner_horizon_and_only_the_producing_gate_route
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/Feature/CycleRegionOwnershipTest.php:232,0,1.212791
+Tests\Feature\CycleRegionOwnershipTest::test_missing_governance_fails_closed_even_with_a_single_valid_parent,passed,,,,,5,0.244279
+Tests\Feature\CycleRegionOwnershipTest::test_an_expressive_governor_fails_closed_in_all_resolvers,passed,,,,,3,0.584463
+Tests\Feature\CycleRegionOwnershipTest::test_invalid_snapshot_horizon_and_foreign_substrate_governance_fail_closed,passed,,,,,13,1.409977
+Tests\Feature\CycleRegionOwnershipTest::test_hard_mixed_region_inputs_retain_governance_and_gate_lineage,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\CycleRegionOwnershipTest::test_hard_mixed_region_inputs_retain_governance_and_gate_lineage
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/Feature/CycleRegionOwnershipTest.php:232,0,0.915581
+Tests\Feature\DomainOperationalEligibilityTest::test_operational_pools_exclude_analogous_registers_in_both_query_paths#0,passed,,,,,34,3.957448
+Tests\Feature\DomainOperationalEligibilityTest::test_operational_pools_exclude_analogous_registers_in_both_query_paths#1,passed,,,,,34,3.929058
+Tests\Feature\ExampleTest::test_the_application_returns_a_successful_response,passed,,,,,1,0.021212
+Tests\Feature\ExhaustedContinuationTest::test_successful_closed_history_remains_visible_without_a_new_failure,passed,,,,,17,8.290120
+Tests\Feature\ExhaustedContinuationTest::test_live_alternatives_and_exact_current_epochs_control_backward_completion,passed,,,,,15,7.060996
+"Tests\Feature\ExhaustedParticipantContextTest::test_spent_writes_remain_visible_at_their_producing_position_in_both_domains""emergence-Distinguish""",passed,,,,,10,1.171701
+"Tests\Feature\ExhaustedParticipantContextTest::test_spent_writes_remain_visible_at_their_producing_position_in_both_domains""emergence-Persist""",passed,,,,,10,1.451862
+"Tests\Feature\ExhaustedParticipantContextTest::test_spent_writes_remain_visible_at_their_producing_position_in_both_domains""emergence-Constrain""",passed,,,,,10,1.770165
+"Tests\Feature\ExhaustedParticipantContextTest::test_spent_writes_remain_visible_at_their_producing_position_in_both_domains""emergence-Disperse""",passed,,,,,10,2.115550
+"Tests\Feature\ExhaustedParticipantContextTest::test_spent_writes_remain_visible_at_their_producing_position_in_both_domains""emergence-Mediate""",passed,,,,,10,2.503546
+"Tests\Feature\ExhaustedParticipantContextTest::test_spent_writes_remain_visible_at_their_producing_position_in_both_domains""emergence-Bias""",passed,,,,,10,3.084935
+"Tests\Feature\ExhaustedParticipantContextTest::test_spent_writes_remain_visible_at_their_producing_position_in_both_domains""settlement-Distinguish""",passed,,,,,10,1.507081
+"Tests\Feature\ExhaustedParticipantContextTest::test_spent_writes_remain_visible_at_their_producing_position_in_both_domains""settlement-Persist""",passed,,,,,10,1.829885
+"Tests\Feature\ExhaustedParticipantContextTest::test_spent_writes_remain_visible_at_their_producing_position_in_both_domains""settlement-Constrain""",passed,,,,,10,2.200940
+"Tests\Feature\ExhaustedParticipantContextTest::test_spent_writes_remain_visible_at_their_producing_position_in_both_domains""settlement-Disperse""",passed,,,,,10,2.577948
+"Tests\Feature\ExhaustedParticipantContextTest::test_spent_writes_remain_visible_at_their_producing_position_in_both_domains""settlement-Mediate""",passed,,,,,10,3.326908
+"Tests\Feature\ExhaustedParticipantContextTest::test_spent_writes_remain_visible_at_their_producing_position_in_both_domains""settlement-Bias""",passed,,,,,10,4.043766
+Tests\Feature\ExhaustedParticipantContextTest::test_a_healthy_sibling_remains_actionable_alongside_visible_spent_evidence,passed,,,,,3,0.967751
+Tests\Feature\ExhaustedParticipantContextTest::test_context_is_local_and_not_cut_off_by_the_read_limit,passed,,,,,34,6.062399
+Tests\Feature\ExhaustedParticipantContextTest::test_spent_scope_never_crosses_a_horizon_or_hides_nodes_from_the_active_graph,passed,,,,,3,1.590327
+Tests\Feature\ExhaustedParticipantContextTest::test_order_context_retains_exhausted_opening_committal_without_actions,passed,,,,,10,7.359398
+Tests\Feature\ExhaustedParticipantContextTest::test_first_tragedy_keeps_spent_evidence_in_live_participant_context_and_graph,passed,,,,,13,2.505136
+Tests\Feature\ExhaustionTest::test_fresh_zero_potential_basin_remains_open_and_recovers_locally,passed,,,,,7,2.001154
+Tests\Feature\ExhaustionTest::test_tragedy_does_not_close_the_opening_committal_or_move_other_participants,passed,,,,,13,3.477171
+Tests\Feature\ExhaustionTest::test_first_failure_stops_at_child_horizon_and_final_failure_recovers_to_parent,passed,,,,,11,6.834584
+Tests\Feature\ExhaustionTest::test_stale_witness_cannot_create_tragedy_or_exhaust_a_fresh_sibling,passed,,,,,6,2.910617
+Tests\Feature\ExhaustionTest::test_uncompleted_rest_witness_has_no_effect,passed,,,,,5,2.554090
+Tests\Feature\ExhaustionTest::test_diagnostics_do_not_mutate_or_exhaust_an_actionable_phase,passed,,,,,4,0.556033
+Tests\Feature\ExhaustionTest::test_legacy_retirement_is_retained_without_controlling_new_semantics,passed,,,,,4,0.523399
+Tests\Feature\ExhaustionTest::test_audit_accepts_first_tragedy_without_exhaustion,passed,,,,,7,4.451222
+Tests\Feature\ExhaustionTest::test_audit_accepts_second_boundary_without_consumption_or_rest_authority,passed,,,,,10,6.838537
+Tests\Feature\GraphActivityTest::test_snapshot_shows_canonical_positions_inactive_and_active_without_private_details,passed,,,,,13,2.726408
+Tests\Feature\GraphActivityTest::test_killed_worker_expires_and_old_worker_cannot_clear_or_extend_a_new_wake,passed,,,,,8,2.193426
+Tests\Feature\GraphActivityTest::test_position_hints_wait_for_commit_disappear_on_rollback_and_stay_minimal,passed,,,,,9,2.237772
+Tests\Feature\GraphActivityTest::test_metrics_and_batched_graph_reads_are_scoped_and_do_not_serialize_a_graph_in_metrics,passed,,,,,10,2.826697
+Tests\Feature\HomologousOrderTest::test_tie_uses_default_or_explicit_history_and_ignores_unresolved_members,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\HomologousOrderTest::test_tie_uses_default_or_explicit_history_and_ignores_unresolved_members
+App\Exceptions\ClosureHistoryUnavailable: Prospective Closure requires frozen selected committed history.",tests/Fixtures/CreatesHomologousPositions.php:81,0,0.000000
+Tests\Feature\HomologousOrderTest::test_homologous_frozen_selection_never_previews_new_closure,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\HomologousOrderTest::test_homologous_frozen_selection_never_previews_new_closure
+App\Exceptions\ClosureHistoryUnavailable: Prospective Closure requires frozen selected committed history.",tests/Fixtures/CreatesHomologousPositions.php:81,0,0.000000
+Tests\Feature\HomologousOrderTest::test_frozen_component_directions_control_matching_even_when_numeric_closure_is_zero,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\HomologousOrderTest::test_frozen_component_directions_control_matching_even_when_numeric_closure_is_zero
+App\Exceptions\ClosureHistoryUnavailable: Prospective Closure requires frozen selected committed history.",tests/Fixtures/CreatesHomologousPositions.php:81,0,0.000000

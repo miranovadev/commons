@@ -1,5 +1,9 @@
 # Stage 3 prospective Closure validation
 
+**Pre-repair checkpoint.** See the [fixture repair follow-up](prospective-closure-fixture-repair.md)
+for current results and the before/after comparison. The results below remain
+attributed to their original tested head.
+
 This is an implementation checkpoint for PR #255, not a full regression sign-off.
 Claire performs final review. The PR remains a draft and must not be merged.
 

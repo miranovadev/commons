@@ -1,0 +1,98 @@
+{
+  "head": "117e657c456d3f7856903458075507b6bd5cd141",
+  "run": 38226078278,
+  "jobs": {
+    "pgsql": 114733795022,
+    "sqlite": 114733795252
+  },
+  "test": "ClosureHysteresisTest::test_commit_freezes_source_attestation_direction_as_the_next_region_frame",
+  "requirements": {
+    "attestation": true,
+    "receipt": true,
+    "closure": false,
+    "phase_position": true,
+    "causal_write": true,
+    "active_region_candidate": true,
+    "write_opportunity": true
+  },
+  "reasons": [
+    "extent_rhythm_directions_diverge"
+  ],
+  "closure": {
+    "depth": 0,
+    "cadence": 0,
+    "historical_phase_profile": 0.1428571,
+    "historical_orientation": -0.5,
+    "historical_extent": 0.0714286,
+    "historical_rhythm": -0.25,
+    "closure": -0.0892857,
+    "historical_extent_direction": "positive",
+    "historical_rhythm_direction": "negative",
+    "availability": {
+      "depth": false,
+      "cadence": false,
+      "historical_phase_profile": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true
+      ],
+      "historical_orientation": true
+    },
+    "domain_profiles": {
+      "emergence": {
+        "means": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        "sample_counts": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "settlement": {
+        "means": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          1
+        ],
+        "sample_counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1
+        ]
+      }
+    },
+    "phase_contributions": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1
+    ],
+    "orientation_sample_count": 1
+  }
+}

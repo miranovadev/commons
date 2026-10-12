@@ -1,0 +1,8 @@
+{
+  "remains passed": 583,
+  "still missing history": 293,
+  "previous non-history failure: still failing": 2,
+  "formerly masked: now passed": 248,
+  "previous non-history failure: now passed": 1,
+  "formerly masked: now exposed failure": 13
+}

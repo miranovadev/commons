@@ -1,0 +1,47 @@
+{
+  "head": "117e657c456d3f7856903458075507b6bd5cd141",
+  "suites": {
+    "core": {
+      "passed": 832,
+      "assertions": 10118,
+      "error": 295,
+      "failure": 13,
+      "total": 1140,
+      "discovered_selected_executed_exact": true,
+      "categories": {
+        "D (provisional setup/history boundary)": 293,
+        "A (Stage 2 baseline)": 3,
+        "B (Stage 3 trajectory)": 2,
+        "D (legacy fixture contract; exposed)": 7,
+        "B (Stage 3 test wording)": 1,
+        "B (Stage 3 Cycle trajectory)": 2
+      },
+      "php_wall_seconds": [
+        109.861334782,
+        257.73318349,
+        231.78669993699998,
+        355.18105216,
+        281.50653613900005
+      ]
+    },
+    "integration": {
+      "failure": 11,
+      "assertions": 17292,
+      "passed": 19,
+      "error": 1,
+      "total": 31,
+      "discovered_selected_executed_exact": true,
+      "categories": {
+        "B (Stage 3 trajectory)": 4,
+        "A (Stage 2 baseline)": 7,
+        "D (provisional setup/history boundary)": 1
+      },
+      "php_wall_seconds": [
+        286.866160484,
+        322.939398734,
+        196.93260149399998,
+        243.55049114899998
+      ]
+    }
+  }
+}
