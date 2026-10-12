@@ -21,6 +21,7 @@ use App\Services\OperationalInstrumentService;
 use App\Services\PropositionStateService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Tests\Fixtures\GovernedExpressionFixture;
 use Tests\TestCase;
 
 class CommitParticipationStateTest extends TestCase
@@ -116,7 +117,9 @@ class CommitParticipationStateTest extends TestCase
 
     public function test_new_phase_touches_dirty_the_region_but_completion_is_not_another_touch(): void
     {
-        $node = $this->node('expressive');
+        $fixture = new GovernedExpressionFixture;
+        $node = $fixture->expression;
+        $this->phase = $fixture->phase;
         $measurements = app(\App\Services\PropositionMeasurementService::class);
         $measurement = $measurements->recalculate($node);
         $touch = $this->touch($node);
@@ -200,7 +203,8 @@ class CommitParticipationStateTest extends TestCase
     {
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $this->phase->cycle_id, 'kind' => PhaseKind::Persist,
-            'write_register' => 'frontier', 'gate_proposition_id' => $gate->id, 'started_at' => now(), 'completed_at' => now()])->save();
+            'write_register' => $this->phase->cycle->contextHorizon->domain->registerFor(PhaseKind::Persist),
+            'gate_proposition_id' => $gate->id, 'started_at' => now(), 'completed_at' => now()])->save();
         return $phase;
     }
 
