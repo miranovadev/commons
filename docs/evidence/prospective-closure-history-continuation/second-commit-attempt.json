@@ -1,0 +1,969 @@
+{
+  "head": "05e1c8a7db333077f1ce5b54dbc4ffb6b751df38",
+  "workflow": 38301057729,
+  "sqlite": {
+    "job": 114983815897,
+    "passed": false,
+    "assertions": 198,
+    "seconds": 75.36,
+    "last_commit_eligibility": {
+      "admissible": false,
+      "reinforcement_count": 0,
+      "requirements": {
+        "attestation": true,
+        "receipt": true,
+        "closure": true,
+        "phase_position": true,
+        "causal_write": true,
+        "active_region_candidate": false,
+        "write_opportunity": false
+      },
+      "closure_enforced": true,
+      "reasons": [
+        "source_already_committed"
+      ],
+      "closure": {
+        "depth": 0,
+        "cadence": 0,
+        "historical_phase_profile": -0.2571429,
+        "historical_orientation": -0.5,
+        "historical_extent": -0.1285715,
+        "historical_rhythm": -0.25,
+        "closure": -0.1892858,
+        "historical_extent_direction": "negative",
+        "historical_rhythm_direction": "negative",
+        "depth_direction": "negative",
+        "cadence_direction": "negative",
+        "admissible": true,
+        "availability": {
+          "depth": false,
+          "cadence": false,
+          "historical_phase_profile": [
+            false,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true
+          ],
+          "historical_orientation": true
+        },
+        "domain_profiles": {
+          "emergence": {
+            "means": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1
+            ],
+            "sample_counts": [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ]
+          },
+          "settlement": {
+            "means": [
+              null,
+              14,
+              3,
+              0,
+              0,
+              1,
+              10
+            ],
+            "sample_counts": [
+              0,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        "phase_contributions": [
+          0,
+          -1,
+          -1,
+          1,
+          1,
+          -1,
+          -0.8
+        ],
+        "orientation_sample_count": 4,
+        "domain_cvs": {
+          "emergence": null,
+          "settlement": null
+        },
+        "creating_domain": "settlement",
+        "domain_depths": {
+          "emergence": 1,
+          "settlement": 1
+        },
+        "domain_intervals": {
+          "emergence": [
+            1
+          ],
+          "settlement": [
+            29
+          ]
+        },
+        "cadence_interval": 29,
+        "phase_observations": {
+          "origin:01m4rv2ygagwet8vdzmhed03q3:0": {
+            "phase": 1,
+            "interval": 0,
+            "domain": "emergence",
+            "source": "constitutional",
+            "proposition_id": "01m4rv2ygagwet8vdzmhed03q3"
+          },
+          "origin:01m4rv2ygagwet8vdzmhed03q3:1": {
+            "phase": 2,
+            "interval": 0,
+            "domain": "emergence",
+            "source": "constitutional",
+            "proposition_id": "01m4rv2ygagwet8vdzmhed03q3"
+          },
+          "origin:01m4rv2ygagwet8vdzmhed03q3:2": {
+            "phase": 3,
+            "interval": 0,
+            "domain": "emergence",
+            "source": "constitutional",
+            "proposition_id": "01m4rv2ygagwet8vdzmhed03q3"
+          },
+          "origin:01m4rv2ygagwet8vdzmhed03q3:3": {
+            "phase": 4,
+            "interval": 0,
+            "domain": "emergence",
+            "source": "constitutional",
+            "proposition_id": "01m4rv2ygagwet8vdzmhed03q3"
+          },
+          "origin:01m4rv2ygagwet8vdzmhed03q3:4": {
+            "phase": 5,
+            "interval": 0,
+            "domain": "emergence",
+            "source": "constitutional",
+            "proposition_id": "01m4rv2ygagwet8vdzmhed03q3"
+          },
+          "origin:01m4rv2ygagwet8vdzmhed03q3:5": {
+            "phase": 6,
+            "interval": 0,
+            "domain": "emergence",
+            "source": "constitutional",
+            "proposition_id": "01m4rv2ygagwet8vdzmhed03q3"
+          },
+          "origin:01m4rv2ygagwet8vdzmhed03q3:6": {
+            "phase": 7,
+            "interval": 1,
+            "domain": "emergence",
+            "source": "constitutional",
+            "proposition_id": "01m4rv2ygagwet8vdzmhed03q3"
+          },
+          "01m4rv3p85x7y3znew9ghe3v18": {
+            "phase": 6,
+            "interval": 1,
+            "domain": "settlement",
+            "source": "expressive_birth",
+            "proposition_id": "01m4rv3p85x7y3znew9ghe3v18",
+            "unavailable_reason": null
+          },
+          "01m4rv3k4q2qz2wc1jqdxgm2zg": {
+            "phase": 5,
+            "interval": 0,
+            "domain": "settlement",
+            "source": "expressive_birth",
+            "proposition_id": "01m4rv3k4q2qz2wc1jqdxgm2zg",
+            "unavailable_reason": null
+          },
+          "01m4rv3jnstcs3rf84bfy9k87e": {
+            "phase": 4,
+            "interval": 0,
+            "domain": "settlement",
+            "source": "expressive_birth",
+            "proposition_id": "01m4rv3jnstcs3rf84bfy9k87e",
+            "unavailable_reason": null
+          },
+          "01m4rv3jaace9m8mmw0x02vfe9": {
+            "phase": 3,
+            "interval": 3,
+            "domain": "settlement",
+            "source": "expressive_birth",
+            "proposition_id": "01m4rv3jaace9m8mmw0x02vfe9",
+            "unavailable_reason": null
+          },
+          "01m4rv3fctjzkx4vdtkan27v6b": {
+            "phase": 2,
+            "interval": 14,
+            "domain": "settlement",
+            "source": "expressive_birth",
+            "proposition_id": "01m4rv3fctjzkx4vdtkan27v6b",
+            "unavailable_reason": null
+          },
+          "01m4rv2yqcxmhnh17rqymnrk5x": {
+            "phase": 1,
+            "interval": null,
+            "domain": "settlement",
+            "source": "expressive_birth",
+            "proposition_id": "01m4rv2yqcxmhnh17rqymnrk5x",
+            "unavailable_reason": "first_expressive_observation"
+          },
+          "order:01m4rv3p85x7y3znew9ghe3v18": {
+            "phase": 7,
+            "interval": 10,
+            "domain": "settlement",
+            "source": "prospective_phase7",
+            "proposition_id": "01m4rv3p85x7y3znew9ghe3v18",
+            "unavailable_reason": null
+          }
+        },
+        "orientation_observations": {
+          "01m4rv3p85x7y3znew9ghe3v18": {
+            "domain": "settlement",
+            "value": -0.5,
+            "last_attestation_id": "01m4rv3sa356q8zh83ckaj1ket"
+          },
+          "01m4rv3jaace9m8mmw0x02vfe9": {
+            "domain": "settlement",
+            "value": -0.5,
+            "last_attestation_id": "01m4rv3mmkys62dr1f8k776xpr"
+          },
+          "01m4rv2yqcxmhnh17rqymnrk5x": {
+            "domain": "settlement",
+            "value": -0.5,
+            "last_attestation_id": "01m4rv31xj0an2e8wezmep2dew"
+          },
+          "01m4rv35nwgqtksd0vbzvr3g79": {
+            "domain": "settlement",
+            "value": -0.5,
+            "last_attestation_id": "01m4rv378f7dkazjkhtcsxk7kf"
+          }
+        },
+        "history_proposition_id": "01m4rv2ygagwet8vdzmhed03q3",
+        "trigger": {
+          "kind": "cycle_entry",
+          "id": "01m4rv53xkmjfg2cx4zv80sbnj"
+        }
+      }
+    },
+    "trace": [
+      [
+        22,
+        1,
+        "proposition.variant",
+        null,
+        null
+      ],
+      [
+        22,
+        2,
+        "proposition.variant",
+        null,
+        null
+      ],
+      [
+        22,
+        3,
+        "participant.rest",
+        null,
+        "no_available_move"
+      ],
+      [
+        23,
+        1,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        23,
+        2,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        23,
+        3,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        23,
+        4,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        23,
+        5,
+        "attestation.create",
+        "refute",
+        null
+      ],
+      [
+        23,
+        6,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        23,
+        7,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        24,
+        1,
+        "instrument.execute",
+        null,
+        null
+      ],
+      [
+        24,
+        2,
+        "attestation.create",
+        "refute",
+        null
+      ],
+      [
+        24,
+        3,
+        "proposition.reclassify",
+        null,
+        null
+      ],
+      [
+        24,
+        4,
+        "proposition.variant",
+        null,
+        null
+      ],
+      [
+        24,
+        5,
+        "participant.rest",
+        null,
+        "no_available_move"
+      ],
+      [
+        25,
+        1,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        25,
+        2,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        25,
+        3,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        25,
+        4,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        25,
+        5,
+        "attestation.create",
+        "support",
+        null
+      ],
+      [
+        25,
+        6,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        25,
+        7,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        26,
+        1,
+        "instrument.execute",
+        null,
+        null
+      ],
+      [
+        26,
+        2,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        26,
+        3,
+        "attestation.create",
+        "refute",
+        null
+      ],
+      [
+        26,
+        4,
+        "instrument.execute",
+        null,
+        null
+      ],
+      [
+        26,
+        5,
+        "participant.rest",
+        null,
+        "no_available_move"
+      ],
+      [
+        27,
+        1,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        27,
+        2,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        27,
+        3,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        27,
+        4,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        27,
+        5,
+        "attestation.create",
+        "refute",
+        null
+      ],
+      [
+        27,
+        6,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        27,
+        7,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        28,
+        1,
+        "attestation.create",
+        "refute",
+        null
+      ],
+      [
+        28,
+        2,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        28,
+        3,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        28,
+        4,
+        "attestation.create",
+        "refute",
+        null
+      ],
+      [
+        28,
+        5,
+        "participant.rest",
+        null,
+        "no_available_move"
+      ],
+      [
+        29,
+        1,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        29,
+        2,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        29,
+        3,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        29,
+        4,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        29,
+        5,
+        "attestation.create",
+        "support",
+        null
+      ],
+      [
+        29,
+        6,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        29,
+        7,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        30,
+        1,
+        "proposition.variant",
+        null,
+        null
+      ],
+      [
+        30,
+        2,
+        "proposition.variant",
+        null,
+        null
+      ],
+      [
+        30,
+        3,
+        "participant.rest",
+        null,
+        "no_available_move"
+      ],
+      [
+        31,
+        1,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        31,
+        2,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        31,
+        3,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        31,
+        4,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        31,
+        5,
+        "attestation.create",
+        "refute",
+        null
+      ],
+      [
+        31,
+        6,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        31,
+        7,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        32,
+        1,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        32,
+        2,
+        "proposition.variant",
+        null,
+        null
+      ],
+      [
+        32,
+        3,
+        "participant.rest",
+        null,
+        "no_available_move"
+      ],
+      [
+        33,
+        1,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        33,
+        2,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        33,
+        3,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        33,
+        4,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        33,
+        5,
+        "attestation.create",
+        "support",
+        null
+      ],
+      [
+        33,
+        6,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        33,
+        7,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        34,
+        1,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        34,
+        2,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        34,
+        3,
+        "participant.rest",
+        null,
+        "no_available_move"
+      ],
+      [
+        35,
+        1,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        35,
+        2,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        35,
+        3,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        35,
+        4,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        35,
+        5,
+        "attestation.create",
+        "refute",
+        null
+      ],
+      [
+        35,
+        6,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        35,
+        7,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        36,
+        1,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        36,
+        2,
+        "attestation.create",
+        "refute",
+        null
+      ],
+      [
+        36,
+        3,
+        "proposition.reclassify",
+        null,
+        null
+      ],
+      [
+        36,
+        4,
+        "proposition.variant",
+        null,
+        null
+      ],
+      [
+        36,
+        5,
+        "participant.rest",
+        null,
+        "no_available_move"
+      ],
+      [
+        37,
+        1,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        37,
+        2,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        37,
+        3,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        37,
+        4,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        37,
+        5,
+        "attestation.create",
+        "support",
+        null
+      ],
+      [
+        37,
+        6,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        37,
+        7,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        38,
+        1,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        38,
+        2,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        38,
+        3,
+        "attestation.create",
+        "refute",
+        null
+      ],
+      [
+        38,
+        4,
+        "instrument.execute",
+        null,
+        null
+      ],
+      [
+        38,
+        5,
+        "participant.rest",
+        null,
+        "no_available_move"
+      ],
+      [
+        39,
+        1,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        39,
+        2,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        39,
+        3,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        39,
+        4,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        39,
+        5,
+        "attestation.create",
+        "refute",
+        null
+      ],
+      [
+        39,
+        6,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        39,
+        7,
+        "proposition.traverse",
+        null,
+        null
+      ],
+      [
+        40,
+        1,
+        "proposition.traverse",
+        null,
+        null
+      ]
+    ]
+  },
+  "finding": "First Commit succeeds. Continuation takes 101 lawful actions without a second Commit. Last observed candidate has coherent Closure but source_already_committed; no general multi-Commit builder established."
+}

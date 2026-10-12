@@ -120,6 +120,18 @@ class TragedyTest extends TestCase
         $substrate->forceFill(['slug' => 'rest_available', 'title' => 'Tragedy', 'visibility' => 'public', 'configuration' => []])->save();
         $author = $this->participant($substrate, 'author');
         $viewer = $this->participant($substrate, 'viewer');
+        // These two action-exhaustion cases need only real bootstrap/development,
+        // not an ordinary Committal manufactured by changing an expressive tier.
+        if ($action === 'proposition.variant' && in_array($kind, [PhaseKind::Distinguish, PhaseKind::Persist], true)) {
+            $service = app(ParticipationService::class);
+            $state = $service->enter($viewer, ['statement' => 'Origin', 'attestation' => ['direction' => 'support']]);
+            if ($kind === PhaseKind::Persist) {
+                $state = $service->contribute($viewer, $state['plan']['phase']['id'],
+                    ['action' => 'proposition.variant', 'statement' => 'First distinction']);
+            }
+
+            return [$viewer->fresh(), Phase::findOrFail($state['plan']['phase']['id'])];
+        }
         $authorPhase = $this->phase($author, PhaseKind::Distinguish, 'activity', true);
         $history = $this->phase($viewer, PhaseKind::Distinguish, 'activity', true);
         if (in_array($action, ['proposition.reclassify', 'proposition.reconcile'], true)) {

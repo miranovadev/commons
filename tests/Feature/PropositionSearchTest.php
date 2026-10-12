@@ -30,6 +30,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
+use Tests\Fixtures\GovernedExpressionFixture;
 use Tests\Fixtures\ParticipantContextFixture;
 use Tests\TestCase;
 
@@ -98,7 +99,9 @@ class PropositionSearchTest extends TestCase
 
     public function test_schema_and_domain_apply_defaults_and_reject_invalid_limits(): void
     {
-        $s = $this->scenario();
+        // Input normalization does not require the historical distance scenario.
+        $fixture = new GovernedExpressionFixture;
+        $s = ['head' => $fixture->expression];
         $normalized = app(InstrumentInvocation::class)->normalize(['kind' => 'proposition_search']);
         $this->assertSame(['kind' => 'proposition_search', 'limit' => PropositionCollection::DEFAULT_LIMIT], $normalized);
 
@@ -238,7 +241,9 @@ class PropositionSearchTest extends TestCase
 
     public function test_kind_migration_refuses_to_discard_recorded_proposition_search_history(): void
     {
-        $s = $this->scenario();
+        // The migration protects a real recorded search, including an empty result.
+        $fixture = new GovernedExpressionFixture;
+        $s = ['head' => $fixture->expression, 'phase' => $fixture->phase];
         app(OperationalInstrumentService::class)->execute($s['phase'], $s['head'], [
             'kind' => 'proposition_search', 'query' => 'needle',
         ]);
