@@ -2,9 +2,12 @@
 
 namespace Tests\Fixtures;
 
+use App\Domain\Observables\ClosureValues;
 use App\Domain\Observables\CorrespondenceValues;
+use App\Domain\Observables\LocalMeasurements;
 use App\Models\Proposition;
-use App\Services\Observables\CorrespondenceCalculator;
+use App\Services\Observables\ClosureCalculator;
+use App\Services\Observables\LocalMeasurementService;
 use App\Services\Observables\ProspectiveClosureService;
 use LogicException;
 
@@ -18,9 +21,19 @@ trait IsolatesClosureOutput
     /** Explicit numerical input for selection/authority tests, never C1 geometry coverage. */
     protected function isolateCorrespondenceOutput(): void
     {
-        $this->mock(CorrespondenceCalculator::class, function ($mock): void {
-            $mock->shouldReceive('components')->andReturn(new CorrespondenceValues(0, 0));
-            $mock->shouldReceive('calculate')->andReturn(0.0);
+        $real = app(LocalMeasurementService::class);
+        $this->partialMock(LocalMeasurementService::class, function ($mock) use ($real): void {
+            $mock->shouldReceive('chiralityComponents')->andReturnUsing(
+                fn ($node, $comparison = null, $context = null) => $real->chiralityComponents($node, $comparison, $context)
+            );
+            $mock->shouldReceive('calculate')->andReturnUsing(function ($node, $comparison = null, $includeClosure = true) use ($real) {
+                $chirality = $real->chiralityComponents($node, $comparison);
+                $closure = $includeClosure ? app(ClosureCalculator::class)->components($node, $comparison?->current->context)
+                    : new ClosureValues(0, 0);
+
+                return new LocalMeasurements(0, $chirality->average(), $closure->depth, $closure->cadence,
+                    $closure->average(), $chirality, new CorrespondenceValues(0, 0), $closure);
+            });
         });
     }
 
