@@ -65,7 +65,11 @@ setup cases. No masked assertion is counted as passing.
 
 Assertions, authored Integration transcripts, populations and numeric expectations
 are preserved. No test is skipped or removed. Focused CI adds representative
-fixture cases on PostgreSQL and SQLite; the four Integration shards, isolation,
+fixture cases on PostgreSQL and SQLite. Contracts and fixtures run as separate
+matrix jobs under the unchanged eight-minute limit: the combined PostgreSQL job
+previously spent 83.41s + 18.42s + 167.66s + 162.97s in its four test commands,
+leaving little room for setup or additional assertions. No timeout is increased.
+The four Integration shards, isolation,
 coverage accounting and 20-minute maximum remain unchanged.
 
 ## Boundaries retained for review
@@ -78,7 +82,11 @@ coverage accounting and 20-minute maximum remain unchanged.
 2. Several direct model fixtures create ungoverned ordinary expressives, attach
    parents only after measurement/Receipt creation, or change tier after birth.
    Examples are InputPlanVisibility, Tragedy, CommitParticipationState,
-   PropositionMeasurementService and the search-history helper. The helper cannot
+   PropositionMeasurementService and the search-history helper. CommittalClosure
+   directly makes an ordinary Committal and reads Closure before any selected
+   expressive source exists. LocalParticipantNavigation authors disconnected
+   Committal snapshots and per-node field values; converting these into mature
+   canonical history would require more than filling in an omitted birth call. The helper cannot
    infer a missing governor, selected source or completed multi-parent birth.
    Malformed governance tests must retain their deliberate malformed condition.
 3. ClosureHysteresis's old controlled preview helper changes

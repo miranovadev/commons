@@ -127,8 +127,14 @@ class ClosureHysteresisTest extends TestCase
         [$phase, $gate] = $this->candidate([2], direction: 'refute');
         $this->assertSame(ObservableDirection::Negative, app(AttestationEvidenceService::class)->directionFor($gate));
         $this->publishPotentialFixture($this->participant);
-        $state = app(ParticipationService::class)->contribute($this->participant, $phase->id,
-            ['action' => 'proposition.commit', 'proposition_id' => $gate->id]);
+        try {
+            $state = app(ParticipationService::class)->contribute($this->participant, $phase->id,
+                ['action' => 'proposition.commit', 'proposition_id' => $gate->id]);
+        } catch (\InvalidArgumentException $exception) {
+            // Keep the original failure and expose the fixture's actual boundary.
+            $eligibility = app(\App\Services\CommitmentAdmissibilityService::class)->evaluate($gate, $phase);
+            throw new \InvalidArgumentException($exception->getMessage().' Fixture Commit eligibility: '.json_encode($eligibility), previous: $exception);
+        }
         $commit = Proposition::findOrFail($state['current_proposition_id']);
         $this->assertSame(['governing' => ObservableDirection::Negative, 'support' => ObservableDirection::Negative],
             app(CommitRegionPolarityService::class)->forSeed($commit));
