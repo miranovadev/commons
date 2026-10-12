@@ -11,7 +11,7 @@ use App\Services\ParticipationService;
 
 trait HorizonCycleFixture
 {
-    protected function driveHorizonCycle(int $participantCount = 1, bool $realClosure = false, string $originDirection = 'support', ?callable $observe = null, int $additionalEntrants = 0, int $actionBudget = 100, ?string $expressiveDirection = null): Proposition
+    protected function driveHorizonCycle(int $participantCount = 1, bool $realClosure = false, string $originDirection = 'support', ?callable $observe = null, int $additionalEntrants = 0, int $actionBudget = 100, ?string $expressiveDirection = null, ?callable $recordAction = null): Proposition
     {
         $substrate = (new Substrate)->forceFill(['slug' => 'single-bird', 'title' => 'Single Participant', 'visibility' => 'public', 'configuration' => []]);
         $substrate->save();
@@ -66,7 +66,8 @@ trait HorizonCycleFixture
             }
             $trace[] = [$state['cycle']['sequence'], $plan['phase']['number'], $action, $input['direction'] ?? null, $plan['rest_reason'] ?? null];
             try {
-                $service->contribute($participant, $plan['phase']['id'], $input);
+                $result = $service->contribute($participant, $plan['phase']['id'], $input);
+                $recordAction?->__invoke($participant, $state, $input, $result);
             } catch (\Throwable $error) {
                 $this->fail($error->getMessage().' '.json_encode($trace));
             }

@@ -203,4 +203,3 @@ class PropositionPresentationTest extends TestCase
         return $attestation;
     }
 }
-

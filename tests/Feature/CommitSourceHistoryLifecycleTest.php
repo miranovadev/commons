@@ -18,8 +18,14 @@ class CommitSourceHistoryLifecycleTest extends TestCase
 
     public function test_commit_preserves_a_genuine_expressive_source_and_its_evidence_references(): void
     {
+        $actions = [];
         $commit = $this->driveHorizonCycle(realClosure: true, originDirection: 'support',
-            actionBudget: 101, expressiveDirection: 'refute');
+            actionBudget: 101, expressiveDirection: 'refute',
+            recordAction: function ($participant, $state, $input, $result) use (&$actions): void {
+                $actions[] = ['cycle' => $state['cycle']['sequence'], 'phase' => $state['plan']['phase']['number'],
+                    'gate_id' => $state['plan']['gate_id'], 'input' => $input,
+                    'result_id' => $participant->fresh()->current_proposition_id];
+            });
         $source = $commit->commitSources()->sole();
         $this->assertSame('expressive', $source->tier);
         $this->assertSame($source->id, CanonicalMeasurement::findOrFail($commit->id)->source_proposition_id);
@@ -36,5 +42,17 @@ class CommitSourceHistoryLifecycleTest extends TestCase
         $this->assertSame($receipts->pluck('id')->all(), $state->receipts($commit)->pluck('id')->all());
         $this->assertSame(0, $commit->attestations()->count());
         $this->assertSame(0, $commit->instrumentExecutions()->count());
+        // Retain the actual authorised transcript as CI evidence for future
+        // reusable history builders, instead of inferring a cheaper history.
+        $directory = base_path('test-results');
+        if (! is_dir($directory)) {
+            mkdir($directory, 0777, true);
+        }
+        file_put_contents($directory.'/lawful-commit-history.json', json_encode([
+            'origin_direction' => 'support', 'expressive_direction_preference' => 'refute',
+            'actions' => $actions, 'source_id' => $source->id, 'commit_id' => $commit->id,
+            'source_closure' => $closure->stored($source),
+            'snapshot' => $commit->commitmentSnapshot->getAttributes(),
+        ], JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR | JSON_PRESERVE_ZERO_FRACTION));
     }
 }
