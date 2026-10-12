@@ -30,6 +30,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Opis\JsonSchema\Helper;
 use Opis\JsonSchema\Validator;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Tests\Fixtures\PropositionBirth;
 use Tests\TestCase;
 
 class ReconciliationTest extends TestCase
@@ -390,7 +391,7 @@ class ReconciliationTest extends TestCase
             $this->edge($source, $node, $type);
         }
         if ($tier === 'expressive') {
-            \Tests\Fixtures\PropositionBirth::complete($node);
+            PropositionBirth::complete($node);
         }
         // Scope tests use compatible default Gates; explicit nonzero scores remain authored.
         $gateDirection = isset($this->gate)

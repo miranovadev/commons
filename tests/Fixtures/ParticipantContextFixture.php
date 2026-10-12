@@ -17,6 +17,7 @@ use App\Models\Supersession;
 use App\Services\CommitRegionPolarityService;
 use App\Services\InstrumentExecutionService;
 use App\Services\LedgerService;
+use App\Services\Observables\ProspectiveClosureService;
 use Illuminate\Support\Facades\DB;
 
 /** Persisted history, three live registers, evidence, and unrelated Horizon growth. */
@@ -128,7 +129,7 @@ final class ParticipantContextFixture
         if ($additionalParent !== null) {
             $this->edge($additionalParent, $node, $type);
         }
-        $closure = app(\App\Services\Observables\ProspectiveClosureService::class);
+        $closure = app(ProspectiveClosureService::class);
         if ($tier === 'expressive' && $completeBirth) {
             $closure->initialize($node);
         } elseif ($tier === 'committal' && $parent !== null) {

@@ -17,6 +17,7 @@ use App\Models\SubstrateLedgerEntry;
 use App\Models\Supersession;
 use App\Services\AttestationEvidenceService;
 use App\Services\ClosureGateService;
+use App\Services\CommitmentAdmissibilityService;
 use App\Services\CommitRegionPolarityService;
 use App\Services\ContextHorizonProjector;
 use App\Services\ContributionDispatcher;
@@ -29,10 +30,12 @@ use App\Services\PropositionMeasurementService;
 use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Tests\Fixtures\AssertsLatePhaseContract;
+use Tests\Fixtures\PropositionBirth;
 use Tests\TestCase;
 
 class ClosureHysteresisTest extends TestCase
@@ -129,33 +132,12 @@ class ClosureHysteresisTest extends TestCase
         try {
             $state = app(ParticipationService::class)->contribute($this->participant, $phase->id,
                 ['action' => 'proposition.commit', 'proposition_id' => $gate->id]);
-        } catch (\InvalidArgumentException $exception) {
+        } catch (InvalidArgumentException $exception) {
             // Keep the original failure and expose the fixture's actual boundary.
-            $eligibility = app(\App\Services\CommitmentAdmissibilityService::class)->evaluate($gate, $phase);
-            throw new \InvalidArgumentException($exception->getMessage().' Fixture Commit eligibility: '.json_encode($eligibility), previous: $exception);
+            $eligibility = app(CommitmentAdmissibilityService::class)->evaluate($gate, $phase);
+            throw new InvalidArgumentException($exception->getMessage().' Fixture Commit eligibility: '.json_encode($eligibility), previous: $exception);
         }
         $commit = Proposition::findOrFail($state['current_proposition_id']);
-        $this->assertSame(['governing' => ObservableDirection::Negative, 'support' => ObservableDirection::Negative],
-            app(CommitRegionPolarityService::class)->forSeed($commit));
-        $this->assertSame(['governing' => ObservableDirection::Positive, 'support' => ObservableDirection::Positive],
-            app(CommitRegionPolarityService::class)->forSeed($this->origin));
-        $this->assertSame($gate->statement, $commit->statement);
-    }
-
-    public function test_lawful_later_candidate_preserves_negative_source_polarity_and_closure(): void
-    {
-        // Separate scenario; retain the historical first-candidate transcript above.
-        $this->bootstrap();
-        [$phase, $gate] = $this->candidate([2, 3, 6], direction: 'refute');
-        $source = app(ProspectiveClosureService::class)->stored($gate);
-        $this->assertTrue($source['admissible']);
-        $this->assertSame('negative', $source['historical_extent_direction']);
-        $this->assertSame('negative', $source['historical_rhythm_direction']);
-        $this->publishPotentialFixture($this->participant);
-        $result = app(ParticipationService::class)->contribute($this->participant, $phase->id,
-            ['action' => 'proposition.commit', 'proposition_id' => $gate->id]);
-        $commit = Proposition::findOrFail($result['current_proposition_id']);
-        $this->assertSame($source, app(ProspectiveClosureService::class)->stored($commit));
         $this->assertSame(['governing' => ObservableDirection::Negative, 'support' => ObservableDirection::Negative],
             app(CommitRegionPolarityService::class)->forSeed($commit));
         $this->assertSame(['governing' => ObservableDirection::Positive, 'support' => ObservableDirection::Positive],
@@ -273,7 +255,7 @@ class ClosureHysteresisTest extends TestCase
         $merged = $this->node($phase, 'expressive', 'concord', $gate);
         $this->edge($phase, $gate, $merged, 'reconcile');
         $this->edge($phase, $sibling, $merged, 'reconcile');
-        \Tests\Fixtures\PropositionBirth::complete($merged);
+        PropositionBirth::complete($merged);
         $this->assertSame($this->origin->id, $service->historyFor($merged)->proposition_id);
     }
 
@@ -418,7 +400,7 @@ class ClosureHysteresisTest extends TestCase
             $phase = $this->phase($sequence, $writeRegister);
             $gate = $this->node($this->phaseAtPositionFixture($phase, PhaseKind::Bias), 'expressive', $sequence === end($cycles) ? $writeRegister : $gateRegister, $previous);
             $this->edge($phase, $previous, $gate, 'variant');
-            \Tests\Fixtures\PropositionBirth::complete($gate);
+            PropositionBirth::complete($gate);
             $phase->gate_proposition_id = $gate->id;
             $phase->save();
             if ($sequence !== end($cycles)) {

@@ -22,6 +22,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Opis\JsonSchema\Helper;
 use Opis\JsonSchema\Validator;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Tests\Fixtures\PropositionBirth;
 use Tests\TestCase;
 
 class InputPlanVisibilityTest extends TestCase
@@ -318,7 +319,7 @@ class InputPlanVisibilityTest extends TestCase
         app(LedgerService::class)->record($proposition, $source);
         if ($source !== null) {
             $this->supersession($phase, $source, $proposition, $type);
-            \Tests\Fixtures\PropositionBirth::complete($proposition);
+            PropositionBirth::complete($proposition);
         }
         app(PropositionMeasurementService::class)->project(
             $proposition,
