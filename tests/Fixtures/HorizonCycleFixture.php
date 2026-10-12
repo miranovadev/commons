@@ -32,6 +32,15 @@ trait HorizonCycleFixture
             $service->enter($other);
             $participants[] = $other;
         }
+        return $this->driveAuthorisedCycle($participants, $originId, $originDirection,
+            $observe, $additionalEntrants, $actionBudget, $expressiveDirection, $recordAction);
+    }
+
+    /** Continue actual active participation; never seed or request a Domain/depth. */
+    protected function driveAuthorisedCycle(array $participants, string $entryId, string $originDirection = 'support', ?callable $observe = null, int $additionalEntrants = 0, int $actionBudget = 100, ?string $expressiveDirection = null, ?callable $recordAction = null): Proposition
+    {
+        $service = app(ParticipationService::class);
+        $participantCount = count($participants);
         $trace = [];
         $lastCommitment = null;
         for ($step = 0; $step < $actionBudget * $participantCount; $step++) {
@@ -74,7 +83,7 @@ trait HorizonCycleFixture
             if ($action === 'proposition.commit') {
                 $commit = $participant->fresh()->position;
                 $this->assertSame('committal', $commit->tier);
-                $this->assertNotSame($originId, $commit->id);
+                $this->assertNotSame($entryId, $commit->id);
                 $this->assertSame($participantCount + $additionalEntrants, Participant::count());
                 $this->assertSame([3, 6], Phase::whereIn('id', ReceiptConsumption::pluck('phase_id'))->orderBy('kind')->pluck('kind')->map(fn ($kind) => $kind->value)->unique()->values()->all());
                 $this->assertGreaterThan(1, $participant->cycles()->count());

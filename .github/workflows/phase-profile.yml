@@ -26,7 +26,7 @@ jobs:
       fail-fast: false
       matrix:
         database: [sqlite, pgsql]
-        validation: [contracts, fixtures, lifecycle]
+        validation: [contracts, fixtures, lifecycle, committed-history]
     runs-on: ubuntu-latest
     timeout-minutes: 8
     services:
@@ -80,8 +80,11 @@ jobs:
       - name: Genuine Commit source lifecycle
         if: always() && matrix.validation == 'lifecycle'
         run: php artisan test tests/Feature/CommitSourceHistoryLifecycleTest.php --display-warnings
+      - name: Further authorised Commit history
+        if: always() && matrix.validation == 'committed-history'
+        run: php artisan test tests/Feature/RepeatedCommitHistoryLifecycleTest.php --display-warnings
       - name: Formatting and whitespace
         if: always() && matrix.validation == 'contracts'
         run: |
-          vendor/bin/pint --test -v app/Domain/Observables/PhaseProfile.php app/Services/Observables/PhaseProfile*.php app/Services/LedgerService.php app/Services/ContributionDispatcher.php app/Console/Commands/InspectPhaseProfile.php database/migrations/*phase_profile* tests/Unit/PhaseProfileComparisonTest.php tests/Feature/PhaseProfileTest.php tests/Feature/ClosureHysteresisTest.php tests/Feature/LocalParticipantNavigationTest.php tests/Feature/InputPlanVisibilityTest.php tests/Feature/PropositionMeasurementServiceTest.php tests/Feature/ReceiptRegionContextTest.php tests/Feature/ReconciliationTest.php tests/Fixtures/ParticipantContextFixture.php tests/Fixtures/PropositionBirth.php tests/Fixtures/GovernedExpressionFixture.php tests/Feature/CommitParticipationStateTest.php tests/Feature/PropositionHistoryLifecycleTest.php tests/Fixtures/HorizonCycleFixture.php tests/Feature/CommitSourceHistoryLifecycleTest.php tests/Feature/PropositionPresentationTest.php
+          vendor/bin/pint --test -v app/Domain/Observables/PhaseProfile.php app/Services/Observables/PhaseProfile*.php app/Services/LedgerService.php app/Services/ContributionDispatcher.php app/Console/Commands/InspectPhaseProfile.php database/migrations/*phase_profile* tests/Unit/PhaseProfileComparisonTest.php tests/Feature/PhaseProfileTest.php tests/Feature/ClosureHysteresisTest.php tests/Feature/LocalParticipantNavigationTest.php tests/Feature/InputPlanVisibilityTest.php tests/Feature/PropositionMeasurementServiceTest.php tests/Feature/ReceiptRegionContextTest.php tests/Feature/ReconciliationTest.php tests/Fixtures/ParticipantContextFixture.php tests/Fixtures/PropositionBirth.php tests/Fixtures/GovernedExpressionFixture.php tests/Feature/CommitParticipationStateTest.php tests/Feature/PropositionHistoryLifecycleTest.php tests/Fixtures/HorizonCycleFixture.php tests/Feature/CommitSourceHistoryLifecycleTest.php tests/Feature/PropositionPresentationTest.php tests/Feature/RepeatedCommitHistoryLifecycleTest.php
           git diff --check origin/main...HEAD
