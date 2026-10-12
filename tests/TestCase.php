@@ -42,6 +42,9 @@ use Illuminate\Support\Facades\DB;
 
 abstract class TestCase extends BaseTestCase
 {
+    /** Frozen numerical outputs of explicitly controlled Commit fixtures only. */
+    private array $controlledCanonicalClosure = [];
+
     /** Controlled observable output; persistence and canonical field projection stay real. */
     protected function resolveExpressiveFieldFixture(float $value): void
     {
@@ -83,7 +86,6 @@ abstract class TestCase extends BaseTestCase
         // Proposition-specific doubles retain real birth/Cycle construction.
         $prospective = app(ProspectiveClosureService::class);
         $this->partialMock(ProspectiveClosureService::class, function ($mock) use ($prospective, $value, $onlyId, $includeCommittal): void {
-            $preserved = [];
             $mock->shouldReceive('initialize')->andReturnUsing(function ($node) use ($prospective, $onlyId): void {
                 if ($onlyId !== null || $node->tier === 'committal') {
                     $prospective->initialize($node);
@@ -94,9 +96,9 @@ abstract class TestCase extends BaseTestCase
                     $prospective->entered($cycle);
                 }
             });
-            $mock->shouldReceive('stored')->andReturnUsing(function ($node, $context = null) use ($prospective, $value, $onlyId, $includeCommittal, &$preserved) {
-                if (isset($preserved[$node->id])) {
-                    return $preserved[$node->id];
+            $mock->shouldReceive('stored')->andReturnUsing(function ($node, $context = null) use ($prospective, $value, $onlyId, $includeCommittal) {
+                if (isset($this->controlledCanonicalClosure[$node->id])) {
+                    return $this->controlledCanonicalClosure[$node->id];
                 }
                 if ((! $includeCommittal && $node->tier === 'committal') || ($onlyId !== null && $node->id !== $onlyId)) {
                     return $prospective->stored($node, $context);
@@ -117,15 +119,17 @@ abstract class TestCase extends BaseTestCase
 
                 return $observation;
             });
-            $mock->shouldReceive('preserve')->andReturnUsing(function ($target, $source, $expected) use ($mock, $prospective, $onlyId, &$preserved): void {
+            $mock->shouldReceive('preserve')->andReturnUsing(function ($target, $source, $expected) use ($prospective, $onlyId): void {
                 if ($onlyId !== null) {
                     $prospective->preserve($target, $source, $expected);
 
                     return;
                 }
                 $this->assertSame('expressive', $source->tier);
-                $this->assertSame($mock->stored($source), $expected);
-                $preserved[$target->id] = $expected;
+                // A later proposition-specific double may wrap this one. Verify
+                // against that active output, not an older captured field value.
+                $this->assertSame(app(ProspectiveClosureService::class)->stored($source), $expected);
+                $this->controlledCanonicalClosure[$target->id] = $expected;
             });
         });
         $births = app(ClosureBirthService::class);

@@ -345,7 +345,8 @@ class WriteOnceTest extends TestCase
     public function test_dispatcher_rejects_support_on_visible_gate_and_unrelated_write(): void
     {
         [$participant, $gate] = $this->fixture();
-        $unrelated = $this->node($gate->phase, 'activity', 'Unrelated Write');
+        // Deliberately ungoverned rejection target: no authorised measurement birth.
+        $unrelated = $this->node($gate->phase, 'activity', 'Unrelated Write', completeBirth: false);
         $phase = $this->phase($participant, PhaseKind::Disperse, 'activity', $gate);
         foreach ([$gate, $unrelated] as $target) {
             foreach (['attestation.create', 'instrument.execute', 'proposition.revise'] as $action) {
@@ -416,7 +417,7 @@ class WriteOnceTest extends TestCase
         return $phase;
     }
 
-    private function node(Phase $phase, string $register, string $statement, string $tier = 'expressive', ?Proposition $parent = null): Proposition
+    private function node(Phase $phase, string $register, string $statement, string $tier = 'expressive', ?Proposition $parent = null, bool $completeBirth = true): Proposition
     {
         if ($parent !== null) {
             $governor = $parent->tier === 'committal' ? $parent : $parent->phase->cycle->entryCommittal;
@@ -437,7 +438,7 @@ class WriteOnceTest extends TestCase
             $edge->forceFill(['phase_id' => $phase->id, 'source_proposition_id' => $parent->id, 'target_proposition_id' => $node->id, 'type' => 'variant'])->save();
             app(LedgerService::class)->record($edge);
         }
-        if ($tier === 'expressive') {
+        if ($tier === 'expressive' && $completeBirth) {
             \Tests\Fixtures\PropositionBirth::complete($node);
         }
 
