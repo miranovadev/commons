@@ -26,7 +26,6 @@ use App\Services\ParticipationService;
 use App\Services\PropositionMeasurementService;
 use App\Services\PropositionStateService;
 use App\Services\ReconciliationOptionService;
-use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Opis\JsonSchema\Helper;
 use Opis\JsonSchema\Validator;

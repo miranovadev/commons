@@ -29,7 +29,6 @@ use App\Services\Participation\ParticipationContext;
 use App\Services\PropositionMeasurementService;
 use App\Services\ReceiptContextService;
 use Carbon\CarbonImmutable;
-use DomainException;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -295,6 +294,9 @@ class ReinforcementTest extends TestCase
         $receipt = null;
         foreach (range(1, 3) as $count) {
             $phase = $this->phase($this->later->cycle->participant->substrate);
+            // Cycle entry is an authorised Closure event; capture its result
+            // before testing the independent Receipt load boundary.
+            $atEntry = $local->calculate($this->node);
             if ($receipt === null) {
                 $receipt = $this->loadedReceipt(phase: $phase);
             } else {
@@ -307,7 +309,7 @@ class ReinforcementTest extends TestCase
             $this->assertEquals($before->observables(), $after->observables());
             $this->assertSame($before->chiralityComponents->orientation, $after->chiralityComponents->orientation);
             $this->assertSame($before->chiralityComponents->cadence, $after->chiralityComponents->cadence);
-            $this->assertSame($before->closure()->resolve(), $after->closure()->resolve());
+            $this->assertSame($atEntry->closure()->resolve(), $after->closure()->resolve());
             $this->assertEquals($after, $local->calculate($this->node, app(ContextLineageComparisonService::class)->for($this->node, new ParticipationContext($this->later))));
             $this->assertSame($historical, $snapshot->fresh()->getAttributes());
         }

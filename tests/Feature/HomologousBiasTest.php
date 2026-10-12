@@ -48,7 +48,6 @@ use App\Services\PropositionOptionService;
 use App\Services\PropositionStateService;
 use App\Services\ReceiptContextService;
 use App\Services\RegionalExhaustionMembership;
-use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -805,7 +804,8 @@ class HomologousBiasTest extends TestCase
         $actual = app(ObservableService::class)->components($target);
         $this->assertEquals($actual->observables()->chirality, $target->fresh()->measurement->chirality);
         $this->assertSame([$this->gateA->id], $target->parents()->pluck('propositions.id')->all());
-        $this->assertSame('negative', app(ChiralityGateService::class)->evaluate($target->fresh())['chirality_direction']);
+        $this->assertSame($actual->chiralityComponents->orientation, $target->fresh()->measurement->orientation);
+        $this->assertSame($actual->chiralityComponents->cadence, $target->fresh()->measurement->attestation_cadence);
     }
 
     private function measure(Proposition $node, float $value): void

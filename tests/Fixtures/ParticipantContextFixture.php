@@ -19,7 +19,6 @@ use App\Services\InstrumentExecutionService;
 use App\Services\LedgerService;
 use App\Services\Observables\ProspectiveClosureService;
 use Illuminate\Support\Facades\DB;
-use LogicException;
 
 /** Persisted history, three live registers, evidence, and unrelated Horizon growth. */
 final class ParticipantContextFixture

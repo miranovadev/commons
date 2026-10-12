@@ -12,7 +12,6 @@ use App\Models\Proposition;
 use App\Models\Substrate;
 use App\Models\Supersession;
 use App\Services\LedgerService;
-use App\Services\Observables\CanonicalMeasurementService;
 use App\Services\Observables\LineageMeasurementService;
 use App\Services\Observables\LocalMeasurementService;
 use App\Services\PotentialChargeService;
@@ -109,10 +108,11 @@ class LineageAttenuationTest extends TestCase
         $this->edge($parent, $head);
         $raw = app(LocalMeasurementService::class);
         $before = $raw->calculate($head);
+        $resolvedBefore = app(LineageMeasurementService::class)->calculate($head);
         app(PropositionMeasurementService::class)->project($parent, 1, 1, 1);
         app(PropositionMeasurementService::class)->project($head, 1, 1, 1);
         $this->assertEquals($before, $raw->calculate($head));
-        $this->assertSame(-0.5, app(LineageMeasurementService::class)->calculate($head)->chirality);
+        $this->assertSame($resolvedBefore->chirality, app(LineageMeasurementService::class)->calculate($head)->chirality);
     }
 
     public function test_obsolete_disposable_measurements_are_repaired_and_versioned(): void

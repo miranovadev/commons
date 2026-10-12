@@ -206,6 +206,8 @@ class HomeostaticPopulationTest extends TestCase
 
     public function test_population_and_missing_measurement_hydration_are_bounded_across_foreign_horizons(): void
     {
+        // Isolate population hydration/query composition from numerical geometry.
+        $this->resolveExpressiveFieldFixture(.25);
         $origin = $this->committedCoordinate(null, 'emergence');
         $current = $this->causalPosition($this->committedCoordinate($origin, 'settlement'));
         $counts = [];
@@ -234,6 +236,8 @@ class HomeostaticPopulationTest extends TestCase
 
     public function test_reusing_complete_hydration_matches_private_measurement_without_expanding_an_incomplete_context(): void
     {
+        // Isolate population hydration/query composition from numerical geometry.
+        $this->resolveExpressiveFieldFixture(.25);
         $origin = $this->committedCoordinate(null, 'emergence');
         $a = $this->causalPosition($this->committedCoordinate($origin, 'settlement'));
         $b = $this->causalPosition($this->committedCoordinate($origin, 'settlement'));

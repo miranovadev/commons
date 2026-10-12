@@ -2,8 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Domain\Observables\DomainLineage;
-use App\Domain\Observables\LineageComparison;
 use App\Enums\ContextDomain;
 use App\Enums\PhaseKind;
 use App\Models\Attestation;
@@ -309,6 +307,9 @@ class ObservableServiceTest extends TestCase
             chirality: -1,
             closure: -1,
         );
+        // Snapshot assembly is isolated from empirical Closure history here.
+        $this->componentClosureInput($proposition, ['cadence_interval' => 1,
+            'history_proposition_id' => $proposition->phase->cycle->entry_committal_id]);
         app(CommitmentSnapshotService::class)->record(
             $proposition,
             $prominence,

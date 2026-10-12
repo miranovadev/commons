@@ -21,11 +21,8 @@ use App\Services\CommitmentAdmissibilityService;
 use App\Services\ContextHorizonProjector;
 use App\Services\CycleEntryService;
 use App\Services\LedgerService;
-use App\Services\Observables\CanonicalMeasurementService;
 use App\Services\Observables\ChiralityCalculator;
 use App\Services\Observables\ContextLineageComparisonService;
-use App\Services\Observables\LineageMeasurementService;
-use App\Services\Observables\LocalMeasurementService;
 use App\Services\Observables\ReinforcementService;
 use App\Services\Participation\ParticipationContext;
 use App\Services\PropositionMeasurementService;
@@ -35,6 +32,7 @@ use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\CreatesHomologousPositions;
+use Tests\Fixtures\GovernedExpressionFixture;
 use Tests\Fixtures\IsolatesClosureOutput;
 use Tests\TestCase;
 
@@ -188,9 +186,11 @@ class ChiralityV2Test extends TestCase
 
     public function test_uneven_receipt_load_and_clear_leave_both_components_and_directions_unchanged(): void
     {
-        [$comparison, $current, $previous] = $this->pair();
+        $fixture = new GovernedExpressionFixture;
+        $this->actor = $fixture->actor;
+        $current = $fixture->expression;
+        $comparison = app(ContextLineageComparisonService::class)->for($current);
         $attestation = $this->attest($current, 'support');
-        $this->attest($previous, 'support');
         $receipt = $this->loadedReceiptFixture($current, $attestation);
         // Establish the observer Cycle before measuring: entry itself is participation.
         $phase = $this->phase($current->phase->cycle->entryCommittal, $current, PhaseKind::Order);
@@ -227,7 +227,9 @@ class ChiralityV2Test extends TestCase
 
     public function test_non_origin_grounding_still_requires_both_attestation_and_receipt(): void
     {
-        [, $current] = $this->pair();
+        $fixture = new GovernedExpressionFixture;
+        $this->actor = $fixture->actor;
+        $current = $fixture->expression;
         $service = app(CommitmentAdmissibilityService::class);
         $this->assertFalse($service->grounding($current)['admissible']);
         $this->attest($current, 'support');

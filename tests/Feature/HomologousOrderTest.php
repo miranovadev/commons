@@ -22,7 +22,6 @@ use App\Services\Participation\ParticipationContext;
 use App\Services\PhaseProgressionService;
 use App\Services\PropositionOptionService;
 use App\Services\PropositionStateService;
-use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Group;

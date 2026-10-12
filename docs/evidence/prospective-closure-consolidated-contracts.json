@@ -13,5 +13,20 @@
     "old": "LineageAttenuationTest::test_preview_preserves_source_and_actual_canonical_head_stops_at_the_boundary",
     "replacement": "CommitSourceHistoryLifecycleTest; CommitDescendantHistoryLifecycleTest",
     "reason": "Consolidate source preservation and canonical boundary assertions into authorised Commit histories."
+  },
+  {
+    "old": "HomologousMediationTest::test_admissible_mediate_can_reach_an_inadmissible_bias_without_outcome_coercion",
+    "replacement": "HomologousMediationTest::test_coherent_positive_inputs_produce_the_normal_result_without_sign_coercion; HomologousBiasTest::test_causal_chirality_coherence_controls_local_write_and_preserves_visibility",
+    "reason": "Authored coordinate history yields coherent Bias, not the assumed opposed result. Retain ordinary measured-result and independent Bias admissibility contracts; no end-to-end Mediate-to-inadmissible-Bias claim."
+  },
+  {
+    "old": "HomologousMediationTest::test_coherent_positive_inputs_produce_the_normal_result_without_sign_coercion",
+    "replacement": "CommitSourceHistoryLifecycleTest Reconcile result callback; existing coherence matrices",
+    "reason": "Ordinary uncoerced Reconcile output is checked on an authorised operation. Positive-input/foreign-Horizon combination is not claimed as end-to-end coverage."
+  },
+  {
+    "old": "CausalHorizonLineageTest::test_an_existing_settlement_cycle_contributes_after_another_participant_opens_emergence",
+    "replacement": "CausalHorizonLineageTest::test_component_boundary_projection_does_not_reassign_open_cycle_governance; existing branching/ownership component cases",
+    "reason": "Remove forced Order phases and two controlled Commit successes. Preserve open-Cycle ownership through a supplied boundary projection and actual subsequent expressive contribution. Simultaneous late Commit across real Domain transitions is not end-to-end covered."
   }
 ]

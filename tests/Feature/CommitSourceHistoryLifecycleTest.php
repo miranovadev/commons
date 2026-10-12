@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\CanonicalMeasurement;
+use App\Services\Observables\ObservableService;
 use App\Services\Observables\ProspectiveClosureService;
 use App\Services\PropositionStateService;
 use PHPUnit\Framework\Attributes\Group;
@@ -19,13 +20,26 @@ class CommitSourceHistoryLifecycleTest extends TestCase
     public function test_commit_preserves_a_genuine_expressive_source_and_its_evidence_references(): void
     {
         $actions = [];
+        $reconciles = 0;
         $commit = $this->driveHorizonCycle(realClosure: true, originDirection: 'support',
             actionBudget: 101, expressiveDirection: 'refute',
-            recordAction: function ($participant, $state, $input, $result) use (&$actions): void {
+            recordAction: function ($participant, $state, $input, $result) use (&$actions, &$reconciles): void {
                 $actions[] = ['cycle' => $state['cycle']['sequence'], 'phase' => $state['plan']['phase']['number'],
                     'gate_id' => $state['plan']['gate_id'], 'input' => $input,
                     'result_id' => $participant->fresh()->current_proposition_id];
+                if ($input['action'] === 'proposition.reconcile') {
+                    $head = $participant->fresh()->position;
+                    $normal = app(ObservableService::class)->components($head);
+                    $actual = $head->fresh()->measurement;
+                    $this->assertSame($normal->correspondence, $actual->correspondence);
+                    $this->assertSame($normal->correspondenceComponents->shapeTopology, $actual->shape_topology);
+                    $this->assertSame($normal->correspondenceComponents->phaseProfile, $actual->phase_profile);
+                    $this->assertEqualsCanonicalizing([$state['plan']['gate_id'], $input['other_proposition_id']],
+                        $head->parents()->pluck('propositions.id')->all());
+                    $reconciles++;
+                }
             });
+        $this->assertGreaterThan(0, $reconciles, 'Ordinary Reconcile measurement must actually execute.');
         $source = $commit->commitSources()->sole();
         $this->assertSame('expressive', $source->tier);
         $this->assertSame($source->id, CanonicalMeasurement::findOrFail($commit->id)->source_proposition_id);
@@ -50,7 +64,7 @@ class CommitSourceHistoryLifecycleTest extends TestCase
         }
         file_put_contents($directory.'/lawful-commit-history.json', json_encode([
             'origin_direction' => 'support', 'expressive_direction_preference' => 'refute',
-            'actions' => $actions, 'source_id' => $source->id, 'commit_id' => $commit->id,
+            'reconciles_verified' => $reconciles, 'actions' => $actions, 'source_id' => $source->id, 'commit_id' => $commit->id,
             'source_closure' => $closure->stored($source),
             'snapshot' => $commit->commitmentSnapshot->getAttributes(),
         ], JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR | JSON_PRESERVE_ZERO_FRACTION));

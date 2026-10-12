@@ -24,7 +24,6 @@ use App\Services\ParticipationService;
 use App\Services\Participation\ParticipationContext;
 use App\Services\ReceiptContextService;
 use Carbon\CarbonImmutable;
-use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Group;

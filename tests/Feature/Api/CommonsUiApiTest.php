@@ -103,7 +103,7 @@ class CommonsUiApiTest extends TestCase
             $child,
             correspondence: 0.75,
             chirality: -0.25,
-            closure: null,
+            closure: .375,
         );
 
         $supersession = new Supersession;
@@ -133,7 +133,7 @@ class CommonsUiApiTest extends TestCase
             ->assertJsonPath('data.1.parent_ids.0', $origin->getKey())
             ->assertJsonPath('data.1.observables.correspondence', 0.75)
             ->assertJsonPath('data.1.observables.chirality', -0.25)
-            ->assertJsonPath('data.1.observables.closure', -1)
+            ->assertJsonPath('data.1.observables.closure', 0.375)
             ->assertJsonPath('data.1.context_horizon.sequence', 1)
             ->assertJsonPath(
                 'data.1.context_horizon.domain',

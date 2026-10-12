@@ -11,6 +11,7 @@ use App\Enums\RegisterPosition;
 use App\Models\Attestation;
 use App\Models\CommitmentSnapshot;
 use App\Models\ContextHorizon;
+use App\Models\ContextHorizonMembership;
 use App\Models\Cycle;
 use App\Models\Participant;
 use App\Models\Phase;
@@ -412,6 +413,8 @@ abstract class TestCase extends BaseTestCase
                 'direction_before' => $horizon->domain, 'direction_after' => $horizon->domain->opposite(),
                 'cadence_interval' => $gate === null ? null : 1,
                 'calculator_version' => 'scope-fixture', 'evaluated_at' => now()])->save();
+            ContextHorizonMembership::where('proposition_id', $node->id)
+                ->where('context_horizon_id', $horizon->id)->delete();
             $horizon = app(ContextHorizonProjector::class)->apply($snapshot);
         }
 

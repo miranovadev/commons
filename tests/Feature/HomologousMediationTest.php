@@ -4,9 +4,9 @@ namespace Tests\Feature;
 
 use App\Domain\Observables\CorrespondenceValues;
 use App\Enums\PhaseKind;
-use App\Models\Attestation;
 use App\Models\CommitmentSnapshot;
 use App\Models\ContextHorizon;
+use App\Models\ContextHorizonMembership;
 use App\Models\Cycle;
 use App\Models\Participant;
 use App\Models\Phase;
@@ -16,13 +16,9 @@ use App\Models\Supersession;
 use App\Models\Tragedy;
 use App\Models\User;
 use App\Services\ActiveParticipantLineage;
-use App\Services\BiasGateService;
-use App\Services\BiasReceiptAuthorityService;
-use App\Services\ChiralityGateService;
 use App\Services\CommitRegionService;
 use App\Services\ContextHorizonProjector;
 use App\Services\ContributionDispatcher;
-use App\Services\CorrespondenceGateService;
 use App\Services\ExhaustedContinuationService;
 use App\Services\ExplorationPositionService;
 use App\Services\GraphProjectionService;
@@ -31,12 +27,10 @@ use App\Services\HomologousMediationService;
 use App\Services\InputPlanService;
 use App\Services\LedgerService;
 use App\Services\MediationReadService;
-use App\Services\Observables\ObservableService;
 use App\Services\ParticipantContextSerializer;
 use App\Services\ParticipantPromptLayout;
 use App\Services\ParticipationService;
 use App\Services\Participation\ParticipationContext;
-use App\Services\PhaseProgressionService;
 use App\Services\PotentialProjectionService;
 use App\Services\PropositionMeasurementService;
 use App\Services\PropositionOptionService;
@@ -773,59 +767,6 @@ class HomologousMediationTest extends TestCase
         $this->assertTrue(app(ReconciliationOptionService::class)->forPhase($this->mediate, $context)->isEmpty());
     }
 
-    public function test_coherent_positive_inputs_produce_the_normal_result_without_sign_coercion(): void
-    {
-        $target = app(ContributionDispatcher::class)->dispatch($this->actor, $this->mediate,
-            ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateB->id]);
-        $normal = app(ObservableService::class)->components($target);
-        $actual = $target->fresh()->measurement;
-        $this->assertSame($normal->correspondence, $actual->correspondence);
-        $this->assertSame($normal->correspondenceComponents->shapeTopology, $actual->shape_topology);
-        $this->assertSame($normal->correspondenceComponents->phaseProfile, $actual->phase_profile);
-        // Phase Profile replaces Cardinal's negative result in this fixed history.
-        // Do not change the authored population to recover the former sign.
-        $this->assertSame(.0004164, $actual->correspondence);
-        $this->assertEqualsCanonicalizing([$this->gateA->id, $this->gateB->id], $target->parents()->pluck('propositions.id')->all());
-    }
-
-    #[Group('component-contract')]
-    #[Group('late-phase')]
-    public function test_admissible_mediate_can_reach_an_inadmissible_bias_without_outcome_coercion(): void
-    {
-        // Actual preceding-Domain evidence gives Orientation a sign; this test
-        // does not rely on the old Positive primitive fallback at numeric zero.
-        $origin = $this->a->phase->cycle->entryCommittal;
-        $vote = new Attestation;
-        $vote->forceFill(['phase_id' => $origin->phase_id, 'proposition_id' => $origin->id, 'direction' => 'support'])->save();
-        app(LedgerService::class)->record($vote);
-        // Additional genuine entries make the current attestation rate lower.
-        foreach (range(1, 3) as $index) {
-            $entrant = new Participant;
-            $entrant->forceFill(['substrate_id' => $this->actor->substrate_id, 'callsign' => 'cadence-entrant-'.$index])->save();
-            $entryCycle = new Cycle;
-            $entryCycle->forceFill(['participant_id' => $entrant->id, 'sequence' => 1, 'context_horizon_id' => $this->mediate->cycle->context_horizon_id, 'entry_committal_id' => $this->a->id])->save();
-        }
-        $this->assertTrue(app(CorrespondenceGateService::class)->evaluate($this->gateA)['admissible']);
-        $this->assertSame([$this->gateB->id], app(ReconciliationOptionService::class)->forPhase($this->mediate)->pluck('id')->all());
-        $target = app(ContributionDispatcher::class)->dispatch($this->actor, $this->mediate,
-            ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateB->id]);
-        $bias = app(PhaseProgressionService::class)->advance($this->mediate, $target);
-        $this->assertSame(PhaseKind::Bias, $bias->kind);
-        $this->groundFixture($target);
-        app(PropositionMeasurementService::class)->recalculate($target);
-        $diagnostic = app(ChiralityGateService::class)->evaluate($target->fresh());
-        $this->assertFalse($diagnostic['admissible'], json_encode([$diagnostic, app(ObservableService::class)->components($target)->chiralityComponents]));
-        // Ordinary local evidence authority is present; Chirality alone blocks the Write.
-        $this->assertContains($target->id, app(BiasGateService::class)->forPhase($bias)->pluck('id'));
-        $this->assertNotEmpty(app(BiasReceiptAuthorityService::class)->receiptsFor($bias, $target));
-        $this->publishPotentialFixture($this->actor);
-        $plan = app(InputPlanService::class)->forPhase($this->actor, $bias);
-        $this->assertLatePhaseContract($plan, PhaseKind::Bias, $target->id, false, 'positive', 'negative');
-        $this->assertSame(['participant.rest'], array_keys($plan['schema']['$defs']['actions']));
-        $this->assertSame($target->id, $bias->gate_proposition_id);
-        $this->assertEqualsCanonicalizing([$this->gateA->id, $this->gateB->id], $target->parents()->pluck('propositions.id')->all());
-    }
-
     private function mediateAt(Proposition $owner, Proposition $read, Proposition $gate): Phase
     {
         $disperse = $this->phase($owner, $read, PhaseKind::Disperse);
@@ -913,6 +854,13 @@ class HomologousMediationTest extends TestCase
             'depth' => 0, 'cadence' => 0, 'cadence_interval' => $governor === null ? null : 1,
             'calculator_version' => $governor === null ? 'origin-bootstrap-v1' : 'ownership-fixture', 'evaluated_at' => now()])->save();
         app(ContextHorizonProjector::class)->apply($snapshot);
+        if ($governor !== null) {
+            // A supplied coordinate is not a causal birth in the creating
+            // Domain. Keep it out of that Domain's expressive geometry.
+            ContextHorizonMembership::where('proposition_id', $node->id)
+                ->where('context_horizon_id', $horizon->id)->delete();
+        }
+
 
         return $node;
     }

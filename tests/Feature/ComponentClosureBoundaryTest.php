@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Services\Observables\ProspectiveClosureService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use LogicException;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\GovernedExpressionFixture;
 use Tests\Fixtures\IsolatesClosureOutput;

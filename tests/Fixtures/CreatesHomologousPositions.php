@@ -5,6 +5,7 @@ namespace Tests\Fixtures;
 use App\Enums\PhaseKind;
 use App\Models\CommitmentSnapshot;
 use App\Models\ContextHorizon;
+use App\Models\ContextHorizonMembership;
 use App\Models\Cycle;
 use App\Models\Participant;
 use App\Models\Phase;
@@ -58,6 +59,12 @@ trait CreatesHomologousPositions
             'direction_before' => $horizon->domain, 'direction_after' => $after,
             'calculator_version' => $entry === null ? 'origin-bootstrap-v1' : 'ownership-fixture', 'evaluated_at' => now(), ...$measurements])->save();
         app(ContextHorizonProjector::class)->apply($snapshot);
+        if ($entry !== null) {
+            // A supplied coordinate is not a causal birth in the creating
+            // Domain. Keep it out of that Domain's expressive geometry.
+            ContextHorizonMembership::where('proposition_id', $node->id)
+                ->where('context_horizon_id', $horizon->id)->delete();
+        }
 
         return $node;
     }
