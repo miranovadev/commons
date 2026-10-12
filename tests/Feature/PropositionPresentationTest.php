@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\ObservableDirection as Direction;
 use App\Enums\PhaseKind;
+use App\Enums\RegisterPosition;
 use App\Models\Attestation;
 use App\Models\Cycle;
 use App\Models\Participant;
@@ -13,6 +14,7 @@ use App\Models\Substrate;
 use App\Models\Supersession;
 use App\Models\User;
 use App\Services\CommitRegionPolarityService;
+use App\Services\ContextHorizonProjector;
 use App\Services\CycleEntryService;
 use App\Services\InputPlanService;
 use App\Services\LedgerService;
@@ -21,6 +23,7 @@ use App\Services\PropositionPresentationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Tests\Fixtures\PropositionBirth;
 use Tests\TestCase;
 
 class PropositionPresentationTest extends TestCase
@@ -107,12 +110,11 @@ class PropositionPresentationTest extends TestCase
         $this->bootstrap();
         $older = $this->node('concord', $this->origin);
         $primary = $this->node('concord', $this->origin);
-        $target = $this->node('concord', $primary, 'expressive', 'reconcile');
+        $target = $this->node('concord', $primary, 'expressive', 'reconcile', $older);
         $first = Supersession::where('target_proposition_id', $target->id)->firstOrFail();
         $first->forceFill(['created_at' => now()->subMinute()])->save();
-        $second = new Supersession;
-        $second->forceFill(['phase_id' => $this->history->id, 'source_proposition_id' => $older->id,
-            'target_proposition_id' => $target->id, 'type' => 'reconcile'])->save();
+        $second = Supersession::where('target_proposition_id', $target->id)
+            ->where('source_proposition_id', $older->id)->sole();
         $context = new ParticipationContext($this->phase(PhaseKind::Mediate, 'stance', $target));
         $context->parents->put($target->id, collect([$second, $first]));
         $target->setRelation('parents', $target->parents()->get()->reverse());
@@ -138,11 +140,11 @@ class PropositionPresentationTest extends TestCase
         $this->assertSame($primary->id, $shown['parent_ids'][0]);
     }
 
-    private function node(string $register, Proposition $parent, string $tier = 'expressive', string $type = 'variant'): Proposition
+    private function node(string $register, Proposition $parent, string $tier = 'expressive', string $type = 'variant', ?Proposition $additionalParent = null): Proposition
     {
         $governor = $parent->tier === 'committal' ? $parent : $parent->phase->cycle->entryCommittal;
-        $horizon = app(\App\Services\ContextHorizonProjector::class)->forEntry($governor);
-        if ($horizon->domain->registerAt(\App\Enums\RegisterPosition::forRegister($register)) !== $register) {
+        $horizon = app(ContextHorizonProjector::class)->forEntry($governor);
+        if ($horizon->domain->registerAt(RegisterPosition::forRegister($register)) !== $register) {
             $horizon = $this->laterHorizonFixture($horizon, 1);
             $governor = Proposition::findOrFail($horizon->opened_by_proposition_id);
             $parent = $governor;
@@ -153,14 +155,19 @@ class PropositionPresentationTest extends TestCase
         $base = $this->governedPhaseFixture($base, $governor, $parent);
         $node = new Proposition;
         $node->forceFill(['phase_id' => $base->id, 'register' => $register, 'tier' => $tier, 'statement' => 'Node '.Proposition::count()])->save();
-        app(LedgerService::class)->record($node);
+        app(LedgerService::class)->record($node, $parent);
         if ($tier === 'committal') {
             $this->freezeRegionFixture($node);
         }
-        $edge = new Supersession;
-        $edge->forceFill(['phase_id' => $this->history->id, 'source_proposition_id' => $parent->id,
-            'target_proposition_id' => $node->id, 'type' => $type])->save();
-        app(LedgerService::class)->record($edge);
+        foreach (array_filter([$parent, $additionalParent]) as $source) {
+            $edge = new Supersession;
+            $edge->forceFill(['phase_id' => $base->id, 'source_proposition_id' => $source->id,
+                'target_proposition_id' => $node->id, 'type' => $type])->save();
+            app(LedgerService::class)->record($edge);
+        }
+        if ($tier === 'expressive') {
+            PropositionBirth::complete($node);
+        }
 
         return $node;
     }
