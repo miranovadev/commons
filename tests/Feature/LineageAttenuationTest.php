@@ -19,14 +19,15 @@ use App\Services\PotentialChargeService;
 use App\Services\PotentialProjectionService;
 use App\Services\PropositionMeasurementService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Group;
+use Tests\Fixtures\IsolatesClosureOutput;
 use Tests\TestCase;
 
 /** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
-#[\PHPUnit\Framework\Attributes\Group('component-contract')]
+#[Group('component-contract')]
 class LineageAttenuationTest extends TestCase
 {
-    use \Tests\Fixtures\IsolatesClosureOutput;
-
+    use IsolatesClosureOutput;
     use RefreshDatabase;
 
     private Phase $phase;
@@ -112,27 +113,6 @@ class LineageAttenuationTest extends TestCase
         app(PropositionMeasurementService::class)->project($head, 1, 1, 1);
         $this->assertEquals($before, $raw->calculate($head));
         $this->assertSame(-0.5, app(LineageMeasurementService::class)->calculate($head)->chirality);
-    }
-
-    public function test_preview_preserves_source_and_actual_canonical_head_stops_at_the_boundary(): void
-    {
-        $provenance = $this->node('provenance', 'committal');
-        $gate = $this->node('gate');
-        $this->edge($provenance, $gate);
-        $resolved = app(PropositionMeasurementService::class)->recalculate($gate);
-        $service = app(LineageMeasurementService::class);
-        $counts = [Proposition::count(), Supersession::count()];
-        $preview = $service->prospectiveCommit($gate, $this->phase);
-        $this->assertSame($counts, [Proposition::count(), Supersession::count()]);
-        $target = $this->node('target', 'committal');
-        app(CanonicalMeasurementService::class)->preserve($target, $gate, $resolved,
-            app(PropositionMeasurementService::class)->correspondenceDirectionFor($gate)->value);
-        $this->edge($gate, $target, 'commit');
-        $actual = $service->calculate($target);
-        $this->assertEquals($preview->observables(), $actual->observables());
-        $this->assertSame($resolved->chirality, $actual->chirality);
-        $this->assertSame($resolved->correspondence, $actual->correspondence);
-        $this->assertCount(1, $service->positions($target));
     }
 
     public function test_obsolete_disposable_measurements_are_repaired_and_versioned(): void

@@ -24,15 +24,16 @@ use App\Services\PropositionMeasurementService;
 use App\Services\PropositionStateService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\GovernedExpressionFixture;
+use Tests\Fixtures\IsolatesClosureOutput;
 use Tests\TestCase;
 
 /** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
-#[\PHPUnit\Framework\Attributes\Group('component-contract')]
+#[Group('component-contract')]
 class CommitParticipationStateTest extends TestCase
 {
-    use \Tests\Fixtures\IsolatesClosureOutput;
-
+    use IsolatesClosureOutput;
     use RefreshDatabase;
 
     protected function setUp(): void
@@ -89,7 +90,6 @@ class CommitParticipationStateTest extends TestCase
         // exercised by CommitSourceHistoryLifecycleTest and
         // CommitDescendantHistoryLifecycleTest. A Commit of this Committal is
         // not a lawful way to test transitive inheritance.
-
     }
 
     public function test_inheritance_respects_effective_attestations_completed_receipts_and_commit_edges_only(): void

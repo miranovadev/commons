@@ -19,6 +19,7 @@ use App\Services\InstrumentExecutionService;
 use App\Services\LedgerService;
 use App\Services\Observables\ProspectiveClosureService;
 use Illuminate\Support\Facades\DB;
+use LogicException;
 
 /** Persisted history, three live registers, evidence, and unrelated Horizon growth. */
 final class ParticipantContextFixture
@@ -132,11 +133,21 @@ final class ParticipantContextFixture
         $closure = app(ProspectiveClosureService::class);
         if ($tier === 'expressive' && $completeBirth) {
             $closure->initialize($node);
-        } elseif ($tier === 'committal' && $parent !== null) {
+        } elseif ($tier === 'committal' && $parent !== null && $completeBirth) {
             $closure->preserve($node, $parent, $closure->stored($parent));
         }
 
         return $node;
+    }
+
+    /** Authored consumer input only; never an authorised Commit or frozen Closure history. */
+    public function projectedCommittal(Proposition $parent, string $register): Proposition
+    {
+        if ($parent->tier !== 'expressive' || (app(ProspectiveClosureService::class)->stored($parent)['fixture'] ?? null) !== 'isolated_closure_output') {
+            throw new LogicException('Projected Committals require explicit component isolation.');
+        }
+
+        return $this->node($parent, $register, 'commit', 'committal', completeBirth: false);
     }
 
     private function governedCycle(Proposition $seed): Cycle

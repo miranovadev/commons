@@ -15,14 +15,15 @@ use App\Services\OperationalInstrumentService;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use PHPUnit\Framework\Attributes\Group;
+use Tests\Fixtures\IsolatesClosureOutput;
 use Tests\TestCase;
 
 /** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
-#[\PHPUnit\Framework\Attributes\Group('component-contract')]
+#[Group('component-contract')]
 class ReceiptCapabilitiesMigrationTest extends TestCase
 {
-    use \Tests\Fixtures\IsolatesClosureOutput;
-
+    use IsolatesClosureOutput;
     use DatabaseMigrations;
 
     protected function setUp(): void

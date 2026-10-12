@@ -1,0 +1,17 @@
+[
+  {
+    "old": "ChiralityV2Test::test_preview_and_canonical_candidate_preserve_source_components_and_resolved_scalars",
+    "replacement": "CommitSourceHistoryLifecycleTest; ProspectiveClosureStateTest::test_grounded_negative_coherence_commit_preserves_authorised_state_without_an_extra_trigger",
+    "reason": "Direct model canonical candidate did not establish authorised expressive preservation; consolidate canonical invariants into real Commit cases."
+  },
+  {
+    "old": "CorrespondenceComponentsTest::test_new_ordinary_commitment_snapshot_freezes_local_values_and_retained_directions",
+    "replacement": "CommitSourceHistoryLifecycleTest; CommitDescendantHistoryLifecycleTest",
+    "reason": "Direct model canonical candidate did not establish authorised expressive preservation; consolidate canonical invariants into real Commit cases."
+  },
+  {
+    "old": "LineageAttenuationTest::test_preview_preserves_source_and_actual_canonical_head_stops_at_the_boundary",
+    "replacement": "CommitSourceHistoryLifecycleTest; CommitDescendantHistoryLifecycleTest",
+    "reason": "Consolidate source preservation and canonical boundary assertions into authorised Commit histories."
+  }
+]

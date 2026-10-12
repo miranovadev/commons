@@ -382,8 +382,8 @@ abstract class TestCase extends BaseTestCase
     {
         // By default, two causal boundaries return to the original vocabulary.
         foreach (range(1, $steps) as $step) {
-            // Select the actual provenance of this fixture branch. A later
-            // boundary is a Commit of that Gate, never a parentless new Origin.
+            // Select the parent coordinate of this authored projection.
+            // No action, Closure boundary or canonical source is being proven.
             $gate = $horizon->opened_by_proposition_id !== null
                 ? Proposition::findOrFail($horizon->opened_by_proposition_id)
                 : Proposition::whereHas('contextHorizonMembership', fn ($q) => $q->where('context_horizon_id', $horizon->id))
@@ -402,18 +402,11 @@ abstract class TestCase extends BaseTestCase
             $node->forceFill(['phase_id' => $phase->id, 'register' => $phase->write_register,
                 'tier' => 'committal', 'statement' => 'Boundary fixture'])->save();
             $entry = app(LedgerService::class)->record($node);
-            $commit = null;
-            if ($gate !== null) {
-                $commit = new Supersession;
-                $commit->forceFill(['phase_id' => $phase->id, 'source_proposition_id' => $gate->id,
-                    'target_proposition_id' => $node->id, 'type' => 'commit'])->save();
-                app(LedgerService::class)->record($commit);
-            } else {
-                $this->assertNull($horizon->parent_context_horizon_id, 'Only Origin may lack a Commit source.');
-            }
+            // A component projection is not a Commit event. Its entry field
+            // describes the supplied coordinate; there is no fabricated edge.
             $snapshot = new CommitmentSnapshot;
             $snapshot->forceFill(['proposition_id' => $node->id, 'substrate_id' => $horizon->substrate_id,
-                'ledger_entry_id' => $entry->id, 'supersession_id' => $commit?->id,
+                'ledger_entry_id' => $entry->id, 'supersession_id' => null,
                 'correspondence' => 0, 'chirality' => 0, 'closure' => 0,
                 'prominence' => .5, 'turbulence' => .5, 'tension' => 0,
                 'direction_before' => $horizon->domain, 'direction_after' => $horizon->domain->opposite(),

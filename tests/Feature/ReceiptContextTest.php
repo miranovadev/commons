@@ -20,22 +20,23 @@ use App\Services\LedgerService;
 use App\Services\Observables\LocalMeasurementService;
 use App\Services\Observables\ReinforcementService;
 use App\Services\OperationalInstrumentService;
-use App\Services\Participation\ParticipationContext;
 use App\Services\ParticipationService;
+use App\Services\Participation\ParticipationContext;
 use App\Services\ReceiptContextService;
 use Carbon\CarbonImmutable;
 use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\Group;
+use Tests\Fixtures\IsolatesClosureOutput;
 use Tests\Fixtures\ParticipantContextFixture;
 use Tests\TestCase;
 
 /** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
-#[\PHPUnit\Framework\Attributes\Group('component-contract')]
+#[Group('component-contract')]
 class ReceiptContextTest extends TestCase
 {
-    use \Tests\Fixtures\IsolatesClosureOutput;
-
+    use IsolatesClosureOutput;
     use RefreshDatabase;
 
     protected function setUp(): void
@@ -126,7 +127,7 @@ class ReceiptContextTest extends TestCase
         $service->contribute($other, $otherPhase->id, ['action' => 'attestation.create', 'proposition_id' => $classification, 'direction' => 'support', 'receipt_options' => ['load' => [$receipt->id]]]);
         $this->assertSame(2, app(ReinforcementService::class)->count($subject));
         $this->assertPublicCount($fixture, $subject, 2);
-        $commit = $fixture->node($subject, 'canon', 'commit', 'committal');
+        $commit = $fixture->projectedCommittal($subject, 'canon');
         $this->assertPublicCount($fixture, $commit, 2);
         $variant = $fixture->node($subject, 'frontier', 'variant', position: PhaseKind::Persist);
         $this->assertPublicCount($fixture, $variant, 0);

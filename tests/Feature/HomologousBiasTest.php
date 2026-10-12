@@ -37,8 +37,8 @@ use App\Services\Observables\ReinforcementService;
 use App\Services\OpenAIResponseSchema;
 use App\Services\ParticipantContextSerializer;
 use App\Services\ParticipantPromptLayout;
-use App\Services\Participation\ParticipationContext;
 use App\Services\ParticipationService;
+use App\Services\Participation\ParticipationContext;
 use App\Services\PhaseGenerationService;
 use App\Services\PhasePositionService;
 use App\Services\PhaseProgressionService;
@@ -55,14 +55,14 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\AssertsLatePhaseContract;
 use Tests\Fixtures\CreatesHomologousPositions;
+use Tests\Fixtures\IsolatesClosureOutput;
 use Tests\TestCase;
 
 /** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
-#[\PHPUnit\Framework\Attributes\Group('component-contract')]
+#[Group('component-contract')]
 class HomologousBiasTest extends TestCase
 {
-    use \Tests\Fixtures\IsolatesClosureOutput;
-
+    use IsolatesClosureOutput;
     use AssertsLatePhaseContract;
     use CreatesHomologousPositions;
     use RefreshDatabase;
@@ -88,10 +88,10 @@ class HomologousBiasTest extends TestCase
         parent::setUp();
         $this->isolateClosureOutput();
         $this->createHomologyActor();
-        $this->origin = $this->commit(null, 'emergence');
-        $this->a = $this->commit($this->origin, 'settlement');
-        $this->b = $this->commit($this->origin, 'settlement');
-        $this->c = $this->commit($this->origin, 'settlement');
+        $this->origin = $this->committedCoordinate(null, 'emergence');
+        $this->a = $this->committedCoordinate($this->origin, 'settlement');
+        $this->b = $this->committedCoordinate($this->origin, 'settlement');
+        $this->c = $this->committedCoordinate($this->origin, 'settlement');
         $this->gateA = $this->source($this->a);
         $this->gateB = $this->source($this->b);
         $this->gateC = $this->source($this->c);
@@ -326,8 +326,8 @@ class HomologousBiasTest extends TestCase
     {
         $this->controlledClosureFixture(-1);
         $this->warrant();
-        $wrongDepth = $this->source($this->commit($this->b, 'settlement'));
-        $wrongDomain = $this->source($this->commit($this->origin, 'emergence'));
+        $wrongDepth = $this->source($this->committedCoordinate($this->b, 'settlement'));
+        $wrongDomain = $this->source($this->committedCoordinate($this->origin, 'emergence'));
         $wrongPhase = $this->position($this->b, PhaseKind::Persist);
         $this->edge($this->b, $wrongPhase, 'variant');
         $this->receiptFixture($wrongPhase);
@@ -342,7 +342,7 @@ class HomologousBiasTest extends TestCase
         $substrate->forceFill(['slug' => 'foreign-bias', 'title' => 'Foreign', 'visibility' => 'private', 'configuration' => []])->save();
         $this->actor = new Participant;
         $this->actor->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'outsider'])->save();
-        $foreign = $this->source($this->commit(null, 'emergence'));
+        $foreign = $this->source($this->committedCoordinate(null, 'emergence'));
         $this->measure($foreign, -.9);
         $this->actor = $originalActor;
         $this->assertNotContains($foreign->id, $this->biasOptionIds());
@@ -360,8 +360,8 @@ class HomologousBiasTest extends TestCase
     public function test_same_horizon_foreign_result_is_not_adopted_as_the_source_regions_write(): void
     {
         $this->warrant();
-        $a = $this->commit($this->a, 'settlement');
-        $b = $this->commit($this->a, 'settlement');
+        $a = $this->committedCoordinate($this->a, 'settlement');
+        $b = $this->committedCoordinate($this->a, 'settlement');
         $left = $this->source($a);
         $right = $this->source($b);
         $this->bias = $this->biasAt($a, $left);
@@ -440,7 +440,7 @@ class HomologousBiasTest extends TestCase
         $this->warrant();
         $middle = $this->position($this->b, PhaseKind::Bias);
         $this->edge($this->gateB, $middle, 'variant');
-        $terminal = $this->commit($this->b, 'emergence');
+        $terminal = $this->committedCoordinate($this->b, 'emergence');
         $this->edge($middle, $terminal, 'commit');
         $phase = $this->phase($terminal, $terminal, PhaseKind::Distinguish);
         $tragedy = $this->boundaryTragedyFixture($phase->gate);
@@ -469,7 +469,7 @@ class HomologousBiasTest extends TestCase
         foreach ([2, 7] as $count) {
             if ($count === 7) {
                 foreach (range(1, 5) as $index) {
-                    $node = $this->source($this->commit($this->origin, 'settlement'));
+                    $node = $this->source($this->committedCoordinate($this->origin, 'settlement'));
                     $this->measure($node, -.7);
                 }
                 $this->closeFixtureCycles();

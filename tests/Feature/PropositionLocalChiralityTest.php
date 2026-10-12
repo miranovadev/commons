@@ -27,7 +27,7 @@ class PropositionLocalChiralityTest extends TestCase
     private function setupPosition(): array
     {
         $this->createHomologyActor();
-        $origin = $this->commit(null, 'settlement');
+        $origin = $this->committedCoordinate(null, 'settlement');
 
         $node = $this->position($origin);
         $this->edge($origin, $node, 'variant');
@@ -212,7 +212,7 @@ class PropositionLocalChiralityTest extends TestCase
     public function test_real_reclassify_preserves_parent_state_and_resets_the_result(): void
     {
         $this->createHomologyActor();
-        $origin = $this->commit(null, 'settlement');
+        $origin = $this->committedCoordinate(null, 'settlement');
         $source = $this->position($origin, PhaseKind::Persist);
         $this->edge($origin, $source, 'variant');
         $this->act($source);

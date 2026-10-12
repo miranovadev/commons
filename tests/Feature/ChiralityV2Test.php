@@ -16,8 +16,8 @@ use App\Models\SubstrateLedgerEntry;
 use App\Models\Supersession;
 use App\Services\AttestationEvidenceService;
 use App\Services\ClosureGateService;
-use App\Services\CommitmentAdmissibilityService;
 use App\Services\CommitRegionPolarityService;
+use App\Services\CommitmentAdmissibilityService;
 use App\Services\ContextHorizonProjector;
 use App\Services\CycleEntryService;
 use App\Services\LedgerService;
@@ -33,15 +33,16 @@ use App\Services\ReceiptContextService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\CreatesHomologousPositions;
+use Tests\Fixtures\IsolatesClosureOutput;
 use Tests\TestCase;
 
 /** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
-#[\PHPUnit\Framework\Attributes\Group('component-contract')]
+#[Group('component-contract')]
 class ChiralityV2Test extends TestCase
 {
-    use \Tests\Fixtures\IsolatesClosureOutput;
-
+    use IsolatesClosureOutput;
     use CreatesHomologousPositions;
     use RefreshDatabase;
 
@@ -126,7 +127,7 @@ class ChiralityV2Test extends TestCase
         $this->assertSame(4, $values->currentCycles);
         $this->assertSame(1, $values->currentActs);
         $this->assertSame(-1.0, $values->cadence); // .25 versus observed zero.
-        $sibling = $this->commit($seed, 'emergence');
+        $sibling = $this->committedCoordinate($seed, 'emergence');
         $values = app(ChiralityCalculator::class)->components($comparison);
         $this->assertSame(5, $values->currentCycles);
         $this->emptyCycle($sibling); // E: same Horizon, unrelated entry.
@@ -173,7 +174,7 @@ class ChiralityV2Test extends TestCase
     public function test_a_represented_same_domain_committal_counts_its_idle_entrants_before_any_descendant_exists(): void
     {
         [$comparison, $current, $previous, $seed] = $this->pair();
-        $commit = $this->commit($seed, 'emergence');
+        $commit = $this->committedCoordinate($seed, 'emergence');
         $lineage = app(ContextLineageComparisonService::class)->for($commit);
         $calculator = app(ChiralityCalculator::class);
         $before = $calculator->components($lineage);
@@ -224,38 +225,6 @@ class ChiralityV2Test extends TestCase
         $this->assertSame($before, $state());
     }
 
-    public function test_preview_and_canonical_candidate_preserve_source_components_and_resolved_scalars(): void
-    {
-        [, $current, , $seed] = $this->pair();
-        $this->attest($current, 'support');
-        $phase = $this->phase($seed, $current, PhaseKind::Order);
-        $service = app(LineageMeasurementService::class);
-        $resolved = app(PropositionMeasurementService::class)->recalculate($current);
-        $preview = $service->prospectiveCommit($current, $phase);
-        $candidate = (new Proposition)->forceFill(['phase_id' => $phase->id, 'tier' => 'committal',
-            'register' => $phase->write_register, 'statement' => $current->statement]);
-        $candidate->save();
-        app(LedgerService::class)->record($candidate);
-        app(CanonicalMeasurementService::class)->preserve($candidate, $current, $resolved,
-            app(PropositionMeasurementService::class)->correspondenceDirectionFor($current)->value);
-        $this->commitAncestryFixture($candidate, $current);
-        $actual = $service->calculate($candidate);
-        $this->assertEquals($preview->observables(), $actual->observables());
-        $this->assertSame($resolved->orientation, $actual->chiralityComponents->orientation);
-        $this->assertSame($resolved->attestation_cadence, $actual->chiralityComponents->cadence);
-        $this->assertSame($resolved->orientation_direction, $actual->chiralityComponents->resolveDirections()['orientation_direction']);
-        $this->assertSame($resolved->attestation_cadence_direction, $actual->chiralityComponents->resolveDirections()['attestation_cadence_direction']);
-        $this->assertCount(1, $service->positions($candidate));
-        $local = app(LocalMeasurementService::class);
-        $mass = $total = 0;
-        foreach ($service->positions($candidate) as [$node, $distance]) {
-            $weight = $service::attenuation($distance);
-            $mass += $weight;
-            $total += $local->calculate($node)->chirality * $weight;
-        }
-        $this->assertSame(round($total / $mass, 7), $actual->chirality);
-    }
-
     public function test_non_origin_grounding_still_requires_both_attestation_and_receipt(): void
     {
         [, $current] = $this->pair();
@@ -272,10 +241,10 @@ class ChiralityV2Test extends TestCase
     private function pair(): array
     {
         $this->createHomologyActor();
-        $origin = $this->commit(null, 'settlement');
+        $origin = $this->committedCoordinate(null, 'settlement');
         app(CommitRegionPolarityService::class)->establishOrigin($origin, 'refute');
         $previous = $this->position($origin);
-        $seed = $this->commit($origin, 'emergence', ['cadence_interval' => 1]);
+        $seed = $this->committedCoordinate($origin, 'emergence', ['cadence_interval' => 1]);
         app(CommitRegionPolarityService::class)->establishCommit($seed, Direction::Negative);
         $current = $this->position($seed);
         foreach ([[$origin, $previous], [$seed, $current]] as [$parent, $child]) {

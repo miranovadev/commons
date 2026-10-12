@@ -12,8 +12,8 @@ use App\Models\Receipt;
 use App\Models\Supersession;
 use App\Services\CommitmentAdmissibilityService;
 use App\Services\ContributionService;
-use App\Services\Evidence\InstrumentInvocation;
 use App\Services\EvidenceEligibilityService;
+use App\Services\Evidence\InstrumentInvocation;
 use App\Services\HorizonReceiptService;
 use App\Services\InputPlanService;
 use App\Services\InputSchemaService;
@@ -29,17 +29,18 @@ use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Tests\Fixtures\GovernedExpressionFixture;
+use Tests\Fixtures\IsolatesClosureOutput;
 use Tests\Fixtures\ParticipantContextFixture;
 use Tests\TestCase;
 
 /** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
-#[\PHPUnit\Framework\Attributes\Group('component-contract')]
+#[Group('component-contract')]
 class PropositionSearchTest extends TestCase
 {
-    use \Tests\Fixtures\IsolatesClosureOutput;
-
+    use IsolatesClosureOutput;
     use RefreshDatabase;
 
     protected function setUp(): void
@@ -281,7 +282,7 @@ class PropositionSearchTest extends TestCase
         $foreign = $this->historyNode($fixture, $skip5, $foreignHorizon, 'needle complementary domain');
         $a = $this->historyNode($fixture, $foreign, $root, 'needle historical A');
 
-        $committal = $fixture->node($a, 'canon', 'commit', 'committal');
+        $committal = $fixture->projectedCommittal($a, 'canon');
         $visible = $fixture->node($committal, 'activity', position: PhaseKind::Distinguish);
         $head = $fixture->node($visible, 'frontier', position: PhaseKind::Persist);
 

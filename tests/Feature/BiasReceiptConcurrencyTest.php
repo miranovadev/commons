@@ -39,10 +39,10 @@ class BiasReceiptConcurrencyTest extends TestCase
             $this->markTestSkipped('Requires independent PostgreSQL connections and row locks.');
         }
         $this->createHomologyActor();
-        $origin = $this->commit(null, 'emergence');
-        $a = $this->commit($origin, 'settlement');
-        $b = $this->commit($origin, 'settlement');
-        $c = $this->commit($origin, 'settlement');
+        $origin = $this->committedCoordinate(null, 'emergence');
+        $a = $this->committedCoordinate($origin, 'settlement');
+        $b = $this->committedCoordinate($origin, 'settlement');
+        $c = $this->committedCoordinate($origin, 'settlement');
         $gates = [];
         foreach ([$a, $b, $c] as $entry) {
             $node = $this->position($entry, PhaseKind::Mediate);

@@ -23,22 +23,23 @@ use App\Services\CycleEntryService;
 use App\Services\LedgerService;
 use App\Services\Observables\ContextLineageComparisonService;
 use App\Services\Observables\LocalMeasurementService;
-use App\Services\Participation\ParticipationContext;
 use App\Services\ParticipationService;
+use App\Services\Participation\ParticipationContext;
 use App\Services\PhaseProgressionService;
 use App\Services\PropositionMeasurementService;
 use DomainException;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\Group;
+use Tests\Fixtures\IsolatesClosureOutput;
 use Tests\TestCase;
 
 /** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
-#[\PHPUnit\Framework\Attributes\Group('component-contract')]
+#[Group('component-contract')]
 class CausalHorizonLineageTest extends TestCase
 {
-    use \Tests\Fixtures\IsolatesClosureOutput;
-
+    use IsolatesClosureOutput;
     use RefreshDatabase;
 
     private Substrate $substrate;
@@ -178,7 +179,7 @@ class CausalHorizonLineageTest extends TestCase
         $this->assertSame($h4b->id, app(ContextHorizonProjector::class)->forEntry($pb)->id);
     }
 
-    public function test_prior_tension_comes_from_the_parent_boundary_even_after_a_newer_sibling_commit(): void
+    public function test_snapshot_projection_uses_parent_tension_even_after_a_newer_sibling(): void
     {
         [, , , , $h4a, , $pa] = $this->branches();
         $phase = $this->phase($h4a, $pa);
@@ -186,6 +187,8 @@ class CausalHorizonLineageTest extends TestCase
         $this->groundFixture($node);
         $this->positiveMeasurements();
         app(PropositionMeasurementService::class)->recalculate($node);
+        // Explicit snapshot-assembly inputs, not an observed committed interval.
+        $this->componentClosureInput($node, ['cadence_interval' => 1, 'history_proposition_id' => $pa->id]);
         $snapshot = app(CommitmentSnapshotService::class)->record($node, .5, .5, 'causal-test');
         $this->assertSame($pa->commitmentSnapshot->tension, $snapshot->tension_before);
         $this->assertSame(-.4, $snapshot->tension_before);

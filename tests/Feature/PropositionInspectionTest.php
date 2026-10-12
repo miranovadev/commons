@@ -10,15 +10,16 @@ use App\Services\LedgerService;
 use App\Services\PropositionInspectionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\CreatesHomologousPositions;
+use Tests\Fixtures\IsolatesClosureOutput;
 use Tests\TestCase;
 
 /** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
-#[\PHPUnit\Framework\Attributes\Group('component-contract')]
+#[Group('component-contract')]
 class PropositionInspectionTest extends TestCase
 {
-    use \Tests\Fixtures\IsolatesClosureOutput;
-
+    use IsolatesClosureOutput;
     use CreatesHomologousPositions, RefreshDatabase;
 
     protected function setUp(): void
@@ -30,10 +31,10 @@ class PropositionInspectionTest extends TestCase
 
     public function test_only_committals_opening_verified_child_horizons_have_transition_markers(): void
     {
-        $origin = $this->commit(null, 'emergence');
-        $down = $this->commit($origin, 'settlement');
-        $same = $this->commit($down, 'settlement');
-        $up = $this->commit($same, 'emergence');
+        $origin = $this->committedCoordinate(null, 'emergence');
+        $down = $this->committedCoordinate($origin, 'settlement');
+        $same = $this->committedCoordinate($down, 'settlement');
+        $up = $this->committedCoordinate($same, 'emergence');
         $expressive = $this->position($down);
         $expressive->setAttribute('field', ['tension' => 1]);
         $nodes = collect([$origin, $down, $same, $up, $expressive]);
@@ -51,9 +52,9 @@ class PropositionInspectionTest extends TestCase
 
     public function test_recorded_foreign_mediate_classification_is_confluence_but_same_region_is_not(): void
     {
-        $origin = $this->commit(null, 'emergence');
-        $a = $this->commit($origin, 'settlement');
-        $b = $this->commit($origin, 'settlement');
+        $origin = $this->committedCoordinate(null, 'emergence');
+        $a = $this->committedCoordinate($origin, 'settlement');
+        $b = $this->committedCoordinate($origin, 'settlement');
         $foreign = $this->position($a, PhaseKind::Mediate);
         $local = $this->position($b, PhaseKind::Mediate);
         $incoming = $this->classification($b, $foreign, $local);
@@ -70,9 +71,9 @@ class PropositionInspectionTest extends TestCase
 
     public function test_local_bias_retains_exact_foreign_reconcile_operand_provenance(): void
     {
-        $origin = $this->commit(null, 'emergence');
-        $a = $this->commit($origin, 'settlement');
-        $b = $this->commit($origin, 'settlement');
+        $origin = $this->committedCoordinate(null, 'emergence');
+        $a = $this->committedCoordinate($origin, 'settlement');
+        $b = $this->committedCoordinate($origin, 'settlement');
         $gate = $this->position($a, PhaseKind::Disperse);
         $other = $this->position($b, PhaseKind::Disperse);
         $phase = $this->phase($a, $gate, PhaseKind::Mediate);
@@ -93,7 +94,7 @@ class PropositionInspectionTest extends TestCase
 
     public function test_same_region_reconcile_and_bias_do_not_receive_confluence(): void
     {
-        $origin = $this->commit(null, 'emergence');
+        $origin = $this->committedCoordinate(null, 'emergence');
         $gate = $this->position($origin, PhaseKind::Disperse);
         $other = $this->position($origin, PhaseKind::Disperse);
         $phase = $this->phase($origin, $gate, PhaseKind::Mediate);
@@ -110,13 +111,13 @@ class PropositionInspectionTest extends TestCase
 
     public function test_closure_history_follows_entries_not_timestamp_or_siblings_and_preserves_zero_direction(): void
     {
-        $origin = $this->commit(null, 'emergence', ['depth' => -1, 'cadence' => -1,
+        $origin = $this->committedCoordinate(null, 'emergence', ['depth' => -1, 'cadence' => -1,
             'depth_direction' => 'negative', 'cadence_direction' => 'negative']);
-        $a = $this->commit($origin, 'settlement', ['depth' => 0, 'cadence' => 0,
+        $a = $this->committedCoordinate($origin, 'settlement', ['depth' => 0, 'cadence' => 0,
             'depth_direction' => 'negative', 'cadence_direction' => 'negative']);
-        $sibling = $this->commit($origin, 'settlement', ['depth' => 1, 'cadence' => 1,
+        $sibling = $this->committedCoordinate($origin, 'settlement', ['depth' => 1, 'cadence' => 1,
             'depth_direction' => 'positive', 'cadence_direction' => 'positive']);
-        $b = $this->commit($a, 'settlement', ['depth' => .4, 'cadence' => .2,
+        $b = $this->committedCoordinate($a, 'settlement', ['depth' => .4, 'cadence' => .2,
             'depth_direction' => 'positive', 'cadence_direction' => 'positive']);
         CommitmentSnapshot::query()->update(['evaluated_at' => now()]);
         $before = CommitmentSnapshot::all()->map->getAttributes()->all();
@@ -137,7 +138,7 @@ class PropositionInspectionTest extends TestCase
 
     public function test_missing_historical_values_remain_missing(): void
     {
-        $origin = $this->commit(null, 'emergence', ['depth' => null, 'cadence' => null,
+        $origin = $this->committedCoordinate(null, 'emergence', ['depth' => null, 'cadence' => null,
             'depth_direction' => null, 'cadence_direction' => null]);
         $history = app(PropositionInspectionService::class)->history($origin);
         $this->assertNull($history['current']['depth']);

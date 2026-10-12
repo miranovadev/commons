@@ -23,8 +23,8 @@ use App\Services\HorizonReceiptService;
 use App\Services\InputPlanService;
 use App\Services\LedgerService;
 use App\Services\MediatedIncomingBiasService;
-use App\Services\Participation\ParticipationContext;
 use App\Services\ParticipationService;
+use App\Services\Participation\ParticipationContext;
 use App\Services\PhaseProgressionService;
 use App\Services\PropositionMeasurementService;
 use App\Services\PropositionOptionService;
@@ -33,15 +33,16 @@ use App\Services\RegionalExhaustionMembership;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\CreatesHomologousPositions;
+use Tests\Fixtures\IsolatesClosureOutput;
 use Tests\TestCase;
 
 /** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
-#[\PHPUnit\Framework\Attributes\Group('component-contract')]
+#[Group('component-contract')]
 class MediatedIncomingBiasTest extends TestCase
 {
-    use \Tests\Fixtures\IsolatesClosureOutput;
-
+    use IsolatesClosureOutput;
     use CreatesHomologousPositions, RefreshDatabase;
 
     private Proposition $a;
@@ -69,9 +70,9 @@ class MediatedIncomingBiasTest extends TestCase
         parent::setUp();
         $this->isolateClosureOutput();
         $this->createHomologyActor();
-        $origin = $this->commit(null, 'emergence');
-        $this->a = $this->commit($origin, 'settlement');
-        $this->b = $this->commit($origin, 'settlement');
+        $origin = $this->committedCoordinate(null, 'emergence');
+        $this->a = $this->committedCoordinate($origin, 'settlement');
+        $this->b = $this->committedCoordinate($origin, 'settlement');
         [$readA, $this->gateA] = $this->pair($this->a);
         [$this->readB, $this->gateB] = $this->pair($this->b);
         $localB = $this->expression($this->b, $this->readB, PhaseKind::Disperse);
@@ -207,7 +208,7 @@ class MediatedIncomingBiasTest extends TestCase
         $this->attestResult();
         $this->loadedReceiptFixture($this->gateB);
         $this->assertCount(1, $this->biasOptions());
-        $commit = $this->commit($this->a, 'settlement');
+        $commit = $this->committedCoordinate($this->a, 'settlement');
         $this->edge($this->result, $commit, 'commit');
         $this->assertTrue($this->biasOptions()->isEmpty());
     }

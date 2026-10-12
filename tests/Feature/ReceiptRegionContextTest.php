@@ -11,21 +11,22 @@ use App\Services\InstrumentExecutionService;
 use App\Services\MediationReadService;
 use App\Services\Observables\ReinforcementService;
 use App\Services\ParticipantPromptFactory;
-use App\Services\Participation\ParticipationContext;
 use App\Services\ParticipationService;
+use App\Services\Participation\ParticipationContext;
 use App\Services\ReceiptContextService;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\Group;
+use Tests\Fixtures\IsolatesClosureOutput;
 use Tests\Fixtures\ParticipantContextFixture;
 use Tests\TestCase;
 
 /** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
-#[\PHPUnit\Framework\Attributes\Group('component-contract')]
+#[Group('component-contract')]
 class ReceiptRegionContextTest extends TestCase
 {
-    use \Tests\Fixtures\IsolatesClosureOutput;
-
+    use IsolatesClosureOutput;
     use RefreshDatabase;
 
     protected function setUp(): void
@@ -55,7 +56,7 @@ class ReceiptRegionContextTest extends TestCase
             $f->phase->forceFill(['gate_proposition_id' => $gate->id])->save();
             $this->assertContains($r->id, $service->ordinaryAvailable($f->phase)->pluck('id'));
         }
-        $commit = $f->node($reconciled, 'canon', 'commit', 'committal');
+        $commit = $f->projectedCommittal($reconciled, 'canon');
         $f->phase->forceFill(['gate_proposition_id' => $commit->id])->save();
         $this->assertSame($r->context_horizon_id, $f->phase->cycle->context_horizon_id);
         // Changing the Gate does not change this Cycle's immutable catalogue.

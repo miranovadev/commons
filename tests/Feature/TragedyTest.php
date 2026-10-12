@@ -149,5 +149,4 @@ class TragedyTest extends TestCase
 
         return $participant;
     }
-
 }
