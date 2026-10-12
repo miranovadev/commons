@@ -149,10 +149,11 @@ class ReinforcementTest extends TestCase
 
         $child = new Proposition;
         $child->forceFill(['phase_id' => $this->later->id, 'register' => 'canon', 'tier' => 'expressive', 'statement' => 'A child with fresh evidence state.'])->save();
-        app(LedgerService::class)->record($child);
+        app(LedgerService::class)->record($child, $this->node);
         $edge = new Supersession;
         $edge->forceFill(['phase_id' => $this->later->id, 'source_proposition_id' => $this->node->id, 'target_proposition_id' => $child->id, 'type' => 'variant'])->save();
         app(LedgerService::class)->record($edge);
+        \Tests\Fixtures\PropositionBirth::complete($child);
         $this->assertSame(0, app(ReinforcementService::class)->count($child));
         $childClosure = $local->calculate($child)->closure()->average();
         $expected = $childClosure; // Expressive ancestry cannot smear committed Closure or local reinforcement.

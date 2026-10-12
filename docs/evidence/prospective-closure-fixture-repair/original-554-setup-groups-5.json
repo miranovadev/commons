@@ -1,0 +1,142 @@
+[
+  {
+    "count": 1,
+    "setup_path": "direct test setup: Tests.Feature.CommittalClosureTest::test_similarity_and_interval_include_every_entry_once_but_exclude_other_basins",
+    "tests": [
+      "Tests.Feature.CommittalClosureTest::test_similarity_and_interval_include_every_entry_once_but_exclude_other_basins"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "direct test setup: Tests.Feature.CommittalClosureTest::test_symmetric_bootstrap_and_full_domain_counts_follow_only_cycle_entry",
+    "tests": [
+      "Tests.Feature.CommittalClosureTest::test_symmetric_bootstrap_and_full_domain_counts_follow_only_cycle_entry"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "direct test setup: Tests.Feature.HomeostaticPopulationTest::test_committed_members_use_frozen_snapshots_instead_of_disposable_projection_values",
+    "tests": [
+      "Tests.Feature.HomeostaticPopulationTest::test_committed_members_use_frozen_snapshots_instead_of_disposable_projection_values"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "direct test setup: Tests.Feature.HomeostaticPopulationTest::test_zero_population_directions_use_axis_defaults_or_history_without_any_writeback",
+    "tests": [
+      "Tests.Feature.HomeostaticPopulationTest::test_zero_population_directions_use_axis_defaults_or_history_without_any_writeback"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "direct test setup: Tests.Feature.LineageAttenuationTest::test_entry_observer_attenuation_is_separate_from_measurement_accumulation_and_recovery",
+    "tests": [
+      "Tests.Feature.LineageAttenuationTest::test_entry_observer_attenuation_is_separate_from_measurement_accumulation_and_recovery"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "direct test setup: Tests.Feature.LineageAttenuationTest::test_preview_preserves_source_and_actual_canonical_head_stops_at_the_boundary",
+    "tests": [
+      "Tests.Feature.LineageAttenuationTest::test_preview_preserves_source_and_actual_canonical_head_stops_at_the_boundary"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "direct test setup: Tests.Feature.LineageAttenuationTest::test_raw_calculation_never_reads_or_reuses_accumulated_projections",
+    "tests": [
+      "Tests.Feature.LineageAttenuationTest::test_raw_calculation_never_reads_or_reuses_accumulated_projections"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "direct test setup: Tests.Feature.ObservableServiceTest::test_first_developed_domain_compares_against_origin_with_inverse_square_attenuation",
+    "tests": [
+      "Tests.Feature.ObservableServiceTest::test_first_developed_domain_compares_against_origin_with_inverse_square_attenuation"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "direct test setup: Tests.Feature.ObservableServiceTest::test_phase_touches_remain_proposition_state_but_do_not_supply_closure",
+    "tests": [
+      "Tests.Feature.ObservableServiceTest::test_phase_touches_remain_proposition_state_but_do_not_supply_closure"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "direct test setup: Tests.Feature.ParticipationSnapshotTest::test_evidence_can_commit_during_an_optimistic_plan_and_the_next_plan_sees_it",
+    "tests": [
+      "Tests.Feature.ParticipationSnapshotTest::test_evidence_can_commit_during_an_optimistic_plan_and_the_next_plan_sees_it"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "direct test setup: Tests.Feature.PropositionMeasurementServiceTest::test_correspondence_retains_both_directions_through_zero_and_projection_deletion",
+    "tests": [
+      "Tests.Feature.PropositionMeasurementServiceTest::test_correspondence_retains_both_directions_through_zero_and_projection_deletion"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "direct test setup: Tests.Feature.PropositionMeasurementServiceTest::test_live_measurements_are_replaceable_but_closure_comes_from_birth",
+    "tests": [
+      "Tests.Feature.PropositionMeasurementServiceTest::test_live_measurements_are_replaceable_but_closure_comes_from_birth"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "direct test setup: Tests.Feature.ReceiptCapabilitiesMigrationTest::test_upgrade_preserves_legacy_observations_without_backfilling_loads",
+    "tests": [
+      "Tests.Feature.ReceiptCapabilitiesMigrationTest::test_upgrade_preserves_legacy_observations_without_backfilling_loads"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "direct test setup: Tests.Feature.ReceiptContextMigrationTest::test_upgrade_preserves_historical_allocations_without_inventing_loads",
+    "tests": [
+      "Tests.Feature.ReceiptContextMigrationTest::test_upgrade_preserves_historical_allocations_without_inventing_loads"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "direct test setup: Tests.Feature.ReceiptContextTest::test_gate_load_accompanies_forward_contribution_and_persists_across_cycles",
+    "tests": [
+      "Tests.Feature.ReceiptContextTest::test_gate_load_accompanies_forward_contribution_and_persists_across_cycles"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "direct test setup: Tests.Feature.ReceiptContextTest::test_loaded_citation_knowledge_survives_outside_the_hydrated_causal_lineage",
+    "tests": [
+      "Tests.Feature.ReceiptContextTest::test_loaded_citation_knowledge_survives_outside_the_hydrated_causal_lineage"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "tests/Feature/AttestationBeatContinuityTest.php::child",
+    "tests": [
+      "Tests.Feature.AttestationBeatContinuityTest::test_foreign_unary_source_uses_portable_beat_order_and_child_represented_entries_only"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "tests/Feature/AttestationDirectionChangeTest.php::expressiveHead",
+    "tests": [
+      "Tests.Feature.AttestationDirectionChangeTest::test_direction_can_change_once_in_a_later_write_and_remains_auditable"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "tests/Feature/ClosureBirthTest.php::cycle",
+    "tests": [
+      "Tests.Feature.ClosureBirthTest::test_missing_birth_data_fails_closed_instead_of_using_current_population"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "tests/Feature/ClosureBirthTest.php::cycle \u2192 tests/Feature/ClosureBirthTest.php::born",
+    "tests": [
+      "Tests.Feature.ClosureBirthTest::test_temporary_slots_do_not_reserve_positions_and_sibling_gaps_remain"
+    ]
+  }
+]

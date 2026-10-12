@@ -1,0 +1,147 @@
+[
+  {
+    "count": 2,
+    "setup_path": "tests/TestCase.php::controlledBirthClosureFixture \u2192 tests/TestCase.php::receiptFixture \u2192 tests/TestCase.php::classificationEvidenceFixture",
+    "tests": [
+      "Tests.Feature.OperationalCommitmentTest::test_bias_grounding_waits_for_another_participants_attestation_before_commit",
+      "Tests.Feature.HorizonProofCompatibilityTest::test_receipt_backfill_reserves_historical_classification_without_rewriting_evidence"
+    ]
+  },
+  {
+    "count": 2,
+    "setup_path": "tests/TestCase.php::governedPhaseFixture \u2192 tests/Feature/AttestationPolarityTest.php::node",
+    "tests": [
+      "Tests.Feature.AttestationPolarityTest::test_commit_polarity_backfill_uses_historical_source_direction_and_does_not_relabel_inherited_evidence",
+      "Tests.Feature.AttestationPolarityTest::test_upgrade_reconstructs_polarity_and_keeps_immutable_measurement_snapshots"
+    ]
+  },
+  {
+    "count": 2,
+    "setup_path": "tests/TestCase.php::governedPhaseFixture \u2192 tests/Feature/PropositionPresentationTest.php::node",
+    "tests": [
+      "Tests.Feature.PropositionPresentationTest::test_display_counts_keep_inherited_evidence_in_its_original_frame_and_refresh_after_replacement",
+      "Tests.Feature.PropositionPresentationTest::test_reconciliation_display_source_is_stable_when_hydration_order_changes"
+    ]
+  },
+  {
+    "count": 2,
+    "setup_path": "tests/TestCase.php::loadedReceiptFixture",
+    "tests": [
+      "Tests.Feature.CommitParticipationStateTest::test_prospective_and_persisted_commits_inherit_touches_and_evidence_without_copying",
+      "Tests.Feature.CrossoverRecoveryTest::test_reinforcement_changes_no_crossover_bound_or_measurement"
+    ]
+  },
+  {
+    "count": 2,
+    "setup_path": "tests/TestCase.php::loadedReceiptFixture \u2192 tests/TestCase.php::groundFixture",
+    "tests": [
+      "Tests.Feature.CausalHorizonLineageTest::test_an_existing_settlement_cycle_contributes_after_another_participant_opens_emergence",
+      "Tests.Feature.CausalHorizonLineageTest::test_prior_tension_comes_from_the_parent_boundary_even_after_a_newer_sibling_commit"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "direct test setup: Tests.Feature.Api.CommonsUiApiTest::test_graph_endpoint_exposes_navigable_proposition_edges",
+    "tests": [
+      "Tests.Feature.Api.CommonsUiApiTest::test_graph_endpoint_exposes_navigable_proposition_edges"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "direct test setup: Tests.Feature.Api.PropositionReadTest::test_field_projection_uses_snapshots_canonical_potential_and_direct_phase_touches",
+    "tests": [
+      "Tests.Feature.Api.PropositionReadTest::test_field_projection_uses_snapshots_canonical_potential_and_direct_phase_touches"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "direct test setup: Tests.Feature.ClosureBirthTest::test_attestation_can_refresh_chirality_while_closure_remains_frozen",
+    "tests": [
+      "Tests.Feature.ClosureBirthTest::test_attestation_can_refresh_chirality_while_closure_remains_frozen"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "direct test setup: Tests.Feature.ClosureBirthTest::test_expressive_and_committal_births_observe_different_intervals_and_never_rewrite_source",
+    "tests": [
+      "Tests.Feature.ClosureBirthTest::test_expressive_and_committal_births_observe_different_intervals_and_never_rewrite_source"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "direct test setup: Tests.Feature.ClosureBirthTest::test_forks_and_measurement_repair_use_the_same_durable_birth_observation",
+    "tests": [
+      "Tests.Feature.ClosureBirthTest::test_forks_and_measurement_repair_use_the_same_durable_birth_observation"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "direct test setup: Tests.Feature.CommitParticipationStateTest::test_commit_cannot_recover_history_from_before_a_non_commit_reset with data set \"Reclassify\"",
+    "tests": [
+      "Tests.Feature.CommitParticipationStateTest::test_commit_cannot_recover_history_from_before_a_non_commit_reset with data set \"Reclassify\""
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "direct test setup: Tests.Feature.CommitParticipationStateTest::test_commit_cannot_recover_history_from_before_a_non_commit_reset with data set \"Reconcile\"",
+    "tests": [
+      "Tests.Feature.CommitParticipationStateTest::test_commit_cannot_recover_history_from_before_a_non_commit_reset with data set \"Reconcile\""
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "direct test setup: Tests.Feature.CommitParticipationStateTest::test_commit_cannot_recover_history_from_before_a_non_commit_reset with data set \"Revise\"",
+    "tests": [
+      "Tests.Feature.CommitParticipationStateTest::test_commit_cannot_recover_history_from_before_a_non_commit_reset with data set \"Revise\""
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "direct test setup: Tests.Feature.CommitParticipationStateTest::test_commit_cannot_recover_history_from_before_a_non_commit_reset with data set \"Variant\"",
+    "tests": [
+      "Tests.Feature.CommitParticipationStateTest::test_commit_cannot_recover_history_from_before_a_non_commit_reset with data set \"Variant\""
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "direct test setup: Tests.Feature.CommitParticipationStateTest::test_inheritance_respects_effective_attestations_completed_receipts_and_commit_edges_only",
+    "tests": [
+      "Tests.Feature.CommitParticipationStateTest::test_inheritance_respects_effective_attestations_completed_receipts_and_commit_edges_only"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "direct test setup: Tests.Feature.CommitParticipationStateTest::test_new_phase_touches_dirty_the_region_but_completion_is_not_another_touch",
+    "tests": [
+      "Tests.Feature.CommitParticipationStateTest::test_new_phase_touches_dirty_the_region_but_completion_is_not_another_touch"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "direct test setup: Tests.Feature.CommittalClosureTest::test_abandoned_descendants_do_not_supply_structure_intervals_or_directions",
+    "tests": [
+      "Tests.Feature.CommittalClosureTest::test_abandoned_descendants_do_not_supply_structure_intervals_or_directions"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "direct test setup: Tests.Feature.CommittalClosureTest::test_entry_reads_are_bounded_as_committed_lineage_grows",
+    "tests": [
+      "Tests.Feature.CommittalClosureTest::test_entry_reads_are_bounded_as_committed_lineage_grows"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "direct test setup: Tests.Feature.CommittalClosureTest::test_expressive_birth_interval_is_frozen_without_read_time_writes",
+    "tests": [
+      "Tests.Feature.CommittalClosureTest::test_expressive_birth_interval_is_frozen_without_read_time_writes"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "direct test setup: Tests.Feature.CommittalClosureTest::test_missing_committed_birth_state_blocks_preview_but_does_not_rewrite_existing_births",
+    "tests": [
+      "Tests.Feature.CommittalClosureTest::test_missing_committed_birth_state_blocks_preview_but_does_not_rewrite_existing_births"
+    ]
+  }
+]

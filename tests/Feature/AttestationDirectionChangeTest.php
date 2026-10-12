@@ -128,7 +128,7 @@ class AttestationDirectionChangeTest extends TestCase
             'statement' => 'An expressive impact.',
         ]);
         $proposition->save();
-        app(LedgerService::class)->record($proposition);
+        app(LedgerService::class)->record($proposition, $origin);
 
         $supersession = new Supersession;
         $supersession->forceFill([
@@ -142,6 +142,7 @@ class AttestationDirectionChangeTest extends TestCase
 
         $phase->gate_proposition_id = $origin->getKey();
         $phase->save();
+        \Tests\Fixtures\PropositionBirth::complete($proposition);
         app(PropositionMeasurementService::class)->project($origin, -1, -1, -1);
         app(PropositionMeasurementService::class)->project($proposition, 0.8, 0.6, 0.4);
 

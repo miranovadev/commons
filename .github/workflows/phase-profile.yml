@@ -26,6 +26,7 @@ jobs:
       fail-fast: false
       matrix:
         database: [sqlite, pgsql]
+        validation: [contracts, fixtures]
     runs-on: ubuntu-latest
     timeout-minutes: 8
     services:
@@ -65,18 +66,19 @@ jobs:
       - run: composer install --prefer-dist --no-interaction --no-progress
       - run: cp .env.example .env
       - name: Phase Profile contracts
+        if: matrix.validation == 'contracts'
         run: php artisan test tests/Unit/PhaseProfileComparisonTest.php tests/Feature/PhaseProfileTest.php --display-warnings
       - name: Prospective Closure contracts
-        if: always()
+        if: always() && matrix.validation == 'contracts'
         run: php artisan test --filter='ProspectiveClosure' --display-warnings --fail-on-empty-test-suite
       - name: Existing observable and ledger contracts
-        if: always()
+        if: always() && matrix.validation == 'contracts'
         run: php artisan test --filter='Cardinal|Correspondence|CycleEntryIdentity|PhasePositionInvariant|ContextHorizonProjector|ClosureBirth|PropositionLocalChirality|CanonicalCommit|ChiralityV2|AttestationBeat|HomeostaticPopulation|PropositionHistorySemantics|coherent_positive_inputs_produce_the_normal_result' --display-warnings
       - name: Representative fixture repairs
-        if: always()
-        run: php artisan test tests/Feature/PersistInstrumentTest.php tests/Feature/ReinforcementTest.php tests/Feature/WriteOnceTest.php tests/Feature/ExhaustionTest.php tests/Feature/ClosureHysteresisTest.php tests/Feature/ParticipantWakeTest.php --display-warnings
+        if: always() && matrix.validation == 'fixtures'
+        run: php artisan test tests/Feature/PersistInstrumentTest.php tests/Feature/ReinforcementTest.php tests/Feature/WriteOnceTest.php tests/Feature/ExhaustionTest.php tests/Feature/ClosureHysteresisTest.php tests/Feature/ParticipantWakeTest.php tests/Feature/ParticipantContinuityTest.php tests/Feature/AttestationDirectionChangeTest.php --display-warnings
       - name: Formatting and whitespace
-        if: always()
+        if: always() && matrix.validation == 'contracts'
         run: |
           vendor/bin/pint --test app/Domain/Observables/PhaseProfile.php app/Services/Observables/PhaseProfile*.php app/Services/LedgerService.php app/Services/ContributionDispatcher.php app/Console/Commands/InspectPhaseProfile.php database/migrations/*phase_profile* tests/Unit/PhaseProfileComparisonTest.php tests/Feature/PhaseProfileTest.php
           git diff --check origin/main...HEAD

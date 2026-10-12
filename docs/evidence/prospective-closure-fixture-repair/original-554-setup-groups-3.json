@@ -1,0 +1,169 @@
+[
+  {
+    "count": 4,
+    "setup_path": "tests/TestCase.php::controlledBirthClosureFixture \u2192 tests/Fixtures/ExhaustionFixture.php::phase \u2192 tests/Fixtures/ExhaustionFixture.php::commitFrom \u2192 tests/Fixtures/HorizonProofFixture.php::firstFailure \u2192 tests/Feature/RegionalExhaustionMigrationTest.php::firstFailure",
+    "tests": [
+      "Tests.Feature.RegionalExhaustionMigrationTest::test_proven_same_region_legacy_boundary_maps_without_rewriting_evidence",
+      "Tests.Feature.RegionalExhaustionMigrationTest::test_cycle_entry_rename_preserves_regional_proof_evidence_and_published_state",
+      "Tests.Feature.RegionalExhaustionMigrationTest::test_ambiguous_transported_legacy_proof_remains_history_without_regional_authority",
+      "Tests.Feature.RegionalExhaustionMigrationTest::test_archived_exhaustion_references_remain_readable_without_claiming_current_authority"
+    ]
+  },
+  {
+    "count": 3,
+    "setup_path": "tests/Feature/HomeostaticPopulationTest.php::causalPosition",
+    "tests": [
+      "Tests.Feature.HomeostaticPopulationTest::test_each_axis_aggregates_its_own_values_and_never_uses_the_acting_members_sign_as_authority",
+      "Tests.Feature.HomeostaticPopulationTest::test_population_and_missing_measurement_hydration_are_bounded_across_foreign_horizons",
+      "Tests.Feature.HomeostaticPopulationTest::test_reusing_complete_hydration_matches_private_measurement_without_expanding_an_incomplete_context"
+    ]
+  },
+  {
+    "count": 3,
+    "setup_path": "tests/TestCase.php::controlledBirthClosureFixture \u2192 tests/Feature/CausalRecoveryTest.php::refreshMeasurements \u2192 tests/Feature/CausalRecoveryTest.php::recover",
+    "tests": [
+      "Tests.Feature.CausalRecoveryTest::test_exhausted_child_recovers_to_nearest_parent_commit_not_its_stronger_opener",
+      "Tests.Feature.CausalRecoveryTest::test_current_basin_cannot_borrow_potential_from_cross_domain_expressive_edges",
+      "Tests.Feature.CausalRecoveryTest::test_zero_potential_downstream_domain_stays_open_without_changing_history"
+    ]
+  },
+  {
+    "count": 3,
+    "setup_path": "tests/TestCase.php::controlledBirthClosureFixture \u2192 tests/Feature/OperationalCommitmentTest.php::phase \u2192 tests/Feature/OperationalCommitmentTest.php::positionedCandidate \u2192 tests/Feature/OperationalCommitmentTest.php::instrumentFixture",
+    "tests": [
+      "Tests.Feature.OperationalCommitmentTest::test_constrain_instrument_targets_are_specialised_and_execute_normally",
+      "Tests.Feature.OperationalCommitmentTest::test_order_rejects_pre_terminal_actions_even_on_a_receipted_write",
+      "Tests.Feature.OperationalCommitmentTest::test_invalid_order_actions_leave_phase_cycle_position_and_evidence_unchanged"
+    ]
+  },
+  {
+    "count": 3,
+    "setup_path": "tests/TestCase.php::controlledBirthClosureFixture \u2192 tests/TestCase.php::loadedReceiptFixture \u2192 tests/Feature/CausalRecoveryTest.php::explore \u2192 tests/Feature/CausalRecoveryTest.php::exhaustRegion \u2192 tests/Feature/CausalRecoveryTest.php::exhaust",
+    "tests": [
+      "Tests.Feature.CausalRecoveryTest::test_recovery_skips_multiple_exhausted_committals_and_stops_at_the_first_open_basin",
+      "Tests.Feature.CausalRecoveryTest::test_multiple_resting_participants_independently_enter_the_same_valid_historical_region",
+      "Tests.Feature.CausalRecoveryTest::test_exhausted_current_horizon_continues_backward_and_cannot_recover_into_a_sibling"
+    ]
+  },
+  {
+    "count": 3,
+    "setup_path": "tests/TestCase.php::loadedReceiptFixture \u2192 tests/TestCase.php::groundFixture \u2192 tests/Feature/ParticipantContinuityTest.php::prepareCommit",
+    "tests": [
+      "Tests.Feature.ParticipantContinuityTest::test_real_commit_retains_local_continuity_with_or_without_a_domain_boundary with data set \"boundary\"",
+      "Tests.Feature.ParticipantContinuityTest::test_real_commit_retains_local_continuity_with_or_without_a_domain_boundary with data set \"same Domain\"",
+      "Tests.Feature.ParticipantContinuityTest::test_rest_skips_closed_crossover_without_reopening_or_exhausting_tragedy_history"
+    ]
+  },
+  {
+    "count": 2,
+    "setup_path": "tests/Feature/ClosureBirthTest.php::cycle \u2192 tests/Feature/ClosureBirthTest.php::born \u2192 tests/Feature/ClosureBirthTest.php::commit",
+    "tests": [
+      "Tests.Feature.ClosureBirthTest::test_full_same_domain_lateral_centroid_uses_frozen_positions_and_keeps_gaps",
+      "Tests.Feature.ClosureBirthTest::test_lateral_comparison_requires_two_prior_same_domain_observations"
+    ]
+  },
+  {
+    "count": 2,
+    "setup_path": "tests/Feature/ClosureHysteresisTest.php::phase \u2192 tests/Feature/ClosureHysteresisTest.php::candidate",
+    "tests": [
+      "Tests.Feature.ClosureHysteresisTest::test_negative_closure_alignment_can_commit_while_corrected_field_remains_in_settlement",
+      "Tests.Feature.ClosureHysteresisTest::test_expressive_depth_and_phase_touches_do_not_change_committed_bootstrap"
+    ]
+  },
+  {
+    "count": 2,
+    "setup_path": "tests/Fixtures/CreatesHomologousPositions.php::phase",
+    "tests": [
+      "Tests.Feature.HomeostaticPopulationTest::test_unledgered_members_remain_structural_but_do_not_supply_a_synthetic_measurement",
+      "Tests.Feature.PropositionInspectionTest::test_local_bias_retains_exact_foreign_reconcile_operand_provenance"
+    ]
+  },
+  {
+    "count": 2,
+    "setup_path": "tests/Fixtures/CreatesHomologousPositions.php::phase \u2192 tests/Fixtures/CreatesHomologousPositions.php::commit",
+    "tests": [
+      "Tests.Feature.ChiralityPopulationHistoryTest::test_batched_observation_coordinates_match_the_full_canonical_populations",
+      "Tests.Feature.ChiralityPopulationHistoryTest::test_unavailable_current_population_inherits_corresponding_preceding_horizon_without_a_synthetic_zero"
+    ]
+  },
+  {
+    "count": 2,
+    "setup_path": "tests/Fixtures/ParticipantContextFixture.php::node",
+    "tests": [
+      "Tests.Feature.ReceiptRegionContextTest::test_missing_governance_stays_unresolved_despite_valid_causal_parents",
+      "Tests.Feature.ReceiptRegionContextTest::test_valid_governance_is_not_erased_by_malformed_secondary_provenance"
+    ]
+  },
+  {
+    "count": 2,
+    "setup_path": "tests/TestCase.php::controlledBirthClosureFixture \u2192 tests/Feature/CausalRecoveryTest.php::refreshMeasurements",
+    "tests": [
+      "Tests.Feature.CausalRecoveryTest::test_same_horizon_commit_blocks_stronger_ancestors_even_with_legacy_projection_edges",
+      "Tests.Feature.CausalRecoveryTest::test_non_best_sibling_update_stops_before_unchanged_ancestors"
+    ]
+  },
+  {
+    "count": 2,
+    "setup_path": "tests/TestCase.php::controlledBirthClosureFixture \u2192 tests/Feature/HorizonProofMigrationTest.php::observation",
+    "tests": [
+      "Tests.Feature.HorizonProofMigrationTest::test_backfill_reserves_legacy_reused_evidence_without_deleting_any_historical_attachment",
+      "Tests.Feature.HorizonProofMigrationTest::test_rollback_refuses_to_discard_a_new_receipt_consumption"
+    ]
+  },
+  {
+    "count": 2,
+    "setup_path": "tests/TestCase.php::controlledBirthClosureFixture \u2192 tests/Feature/OperationalCommitmentTest.php::phase",
+    "tests": [
+      "Tests.Feature.OperationalCommitmentTest::test_blocked_commitment_rechecks_grounding_and_does_not_advance",
+      "Tests.Feature.OperationalCommitmentTest::test_pending_and_failed_executions_are_visible_without_satisfying_grounding"
+    ]
+  },
+  {
+    "count": 2,
+    "setup_path": "tests/TestCase.php::controlledBirthClosureFixture \u2192 tests/Feature/PhasePositionInvariantTest.php::phase \u2192 tests/Feature/PhasePositionInvariantTest.php::fixture",
+    "tests": [
+      "Tests.Feature.PhasePositionInvariantTest::test_mediate_reads_constrain_and_reconciles_only_disperse_children with data set #0",
+      "Tests.Feature.PhasePositionInvariantTest::test_mediate_reads_constrain_and_reconciles_only_disperse_children with data set #1"
+    ]
+  },
+  {
+    "count": 2,
+    "setup_path": "tests/TestCase.php::controlledBirthClosureFixture \u2192 tests/Feature/ReconciliationTest.php::node \u2192 tests/Feature/ReconciliationTest.php::fixture",
+    "tests": [
+      "Tests.Feature.ReconciliationTest::test_reconcile_is_structural_selection_with_exact_gate_content",
+      "Tests.Feature.ReconciliationTest::test_directed_reconciliation_is_unique_across_participants_but_inverse_and_distinct_pairs_remain_valid"
+    ]
+  },
+  {
+    "count": 2,
+    "setup_path": "tests/TestCase.php::controlledBirthClosureFixture \u2192 tests/Fixtures/ExhaustionFixture.php::phase \u2192 tests/Fixtures/ExhaustionFixture.php::commitFrom \u2192 tests/Feature/ExhaustionTest.php::tragicChild \u2192 tests/Feature/ExhaustionTest.php::exhaustSecondBoundary",
+    "tests": [
+      "Tests.Feature.ExhaustionTest::test_first_failure_stops_at_child_horizon_and_final_failure_recovers_to_parent",
+      "Tests.Feature.ExhaustionTest::test_audit_accepts_second_boundary_without_consumption_or_rest_authority"
+    ]
+  },
+  {
+    "count": 2,
+    "setup_path": "tests/TestCase.php::controlledBirthClosureFixture \u2192 tests/TestCase.php::governedPhaseFixture \u2192 tests/Feature/CommitRegionTest.php::node",
+    "tests": [
+      "Tests.Feature.CommitRegionTest::test_closure_keeps_local_writes_and_revalidates_the_selected_source with data set #0",
+      "Tests.Feature.CommitRegionTest::test_closure_keeps_local_writes_and_revalidates_the_selected_source with data set #1"
+    ]
+  },
+  {
+    "count": 2,
+    "setup_path": "tests/TestCase.php::controlledBirthClosureFixture \u2192 tests/TestCase.php::governedPhaseFixture \u2192 tests/Feature/WriteOnceTest.php::node",
+    "tests": [
+      "Tests.Feature.WriteOnceTest::test_bias_is_once_per_source_and_does_not_impose_a_personal_quota",
+      "Tests.Feature.WriteOnceTest::test_order_consumes_each_direct_source_globally_and_preserves_other_sources"
+    ]
+  },
+  {
+    "count": 2,
+    "setup_path": "tests/TestCase.php::controlledBirthClosureFixture \u2192 tests/TestCase.php::loadedReceiptFixture \u2192 tests/TestCase.php::groundFixture \u2192 tests/Feature/ContextHorizonProjectorTest.php::commit",
+    "tests": [
+      "Tests.Feature.ContextHorizonProjectorTest::test_commitments_create_horizons_only_on_direction_change",
+      "Tests.Feature.ContextHorizonProjectorTest::test_horizons_rebuild_without_rewriting_commitment_history"
+    ]
+  }
+]
