@@ -56,10 +56,8 @@ class ReconciliationTest extends TestCase
         $root = $this->node('Shared provenance', 'frontier', tier: 'committal', position: PhaseKind::Mediate);
         $this->freezeRegionFixture($root);
         $this->history = $this->governedPhaseFixture($this->history, $root);
-        $this->parent = $this->node('Parent', 'canon', position: PhaseKind::Constrain);
-        $this->edge($root, $this->parent);
-        $this->gate = $this->node("  Gate statement\nwith exact whitespace.  \n", 'activity', $correspondence, position: PhaseKind::Disperse);
-        $this->edge($this->parent, $this->gate);
+        $this->parent = $this->node('Parent', 'canon', position: PhaseKind::Constrain, source: $root);
+        $this->gate = $this->node("  Gate statement\nwith exact whitespace.  \n", 'activity', $correspondence, position: PhaseKind::Disperse, source: $this->parent);
         $this->viewer = $this->participant('viewer');
         $this->viewer->current_proposition_id = $this->gate->id;
         $this->viewer->save();
@@ -110,19 +108,15 @@ class ReconciliationTest extends TestCase
     {
         $this->fixture();
         $valid = $this->sibling('Valid');
-        $unrelated = $this->node('Unrelated active head', 'activity', position: PhaseKind::Disperse);
         $otherParent = $this->node('Other parent', 'canon', tier: 'committal', position: PhaseKind::Constrain);
-        $this->edge($otherParent, $unrelated);
-        $child = $this->node('Write child', 'frontier', position: PhaseKind::Mediate);
-        $this->edge($this->gate, $child);
-        $grandchild = $this->node('Grandchild', 'activity', position: PhaseKind::Disperse);
-        $this->edge($child, $grandchild);
-        $wrongRegister = $this->node('Wrong register sibling', 'frontier', position: PhaseKind::Mediate);
-        $this->edge($this->parent, $wrongRegister);
+        $unrelated = $this->node('Unrelated active head', 'activity', position: PhaseKind::Disperse, source: $otherParent);
+        $child = $this->node('Write child', 'frontier', position: PhaseKind::Mediate, source: $this->gate);
+        $grandchild = $this->node('Grandchild', 'activity', position: PhaseKind::Disperse, source: $child);
+        $wrongRegister = $this->node('Wrong register sibling', 'frontier', position: PhaseKind::Mediate, source: $this->parent);
         $hard = $this->sibling('Hard superseded');
-        $this->edge($hard, $this->node('Replacement', 'frontier', position: PhaseKind::Mediate), 'reclassify');
+        $this->node('Replacement', 'frontier', position: PhaseKind::Mediate, source: $hard, type: 'reclassify');
         $soft = $this->sibling('Soft branch remains active');
-        $this->edge($soft, $this->node('Soft continuation', 'frontier', position: PhaseKind::Mediate));
+        $this->node('Soft continuation', 'frontier', position: PhaseKind::Mediate, source: $soft);
         $plan = $this->plan();
         $this->assertEqualsCanonicalizing([$valid->id, $soft->id, $hard->id], array_column($plan['gate_options'], 'id'));
         $this->assertSame([$child->id], array_column($plan['write_options'], 'id'));
@@ -254,21 +248,18 @@ class ReconciliationTest extends TestCase
         $wrongRegister->register = 'frontier';
         $wrongRegister->save();
         [$hardRead, $hardGate] = $this->readSibling('Replaced Read', -0.7, 1);
-        $this->edge($hardRead, $this->node('Read replacement', 'canon', position: PhaseKind::Constrain), 'reclassify');
+        $this->node('Read replacement', 'canon', position: PhaseKind::Constrain, source: $hardRead, type: 'reclassify');
         [$foreignHorizon, $foreignGate] = $this->readSibling('Other Horizon Read', -0.7, 1);
         $horizon = $this->laterHorizonFixture($foreignHorizon->contextHorizonMembership->horizon);
         $foreignHorizon->contextHorizonMembership->forceFill(['context_horizon_id' => $horizon->id])->save();
-        $distantRead = $this->node('Read grandchild', 'canon', position: PhaseKind::Constrain);
-        $this->edge($validRead, $distantRead);
-        $distantGate = $this->node('Distant Gate', 'activity', position: PhaseKind::Disperse);
-        $this->edge($distantRead, $distantGate);
+        $distantRead = $this->node('Read grandchild', 'canon', position: PhaseKind::Constrain, source: $validRead);
+        $distantGate = $this->node('Distant Gate', 'activity', position: PhaseKind::Disperse, source: $distantRead);
         $originalHistory = $this->history;
         $unrelatedSeed = $this->node('Unrelated region', 'canon', tier: 'committal');
         $this->freezeRegionFixture($unrelatedSeed);
         $this->history = $this->governedPhaseFixture($this->history, $unrelatedSeed);
         $unrelatedRead = $this->node('Unrelated matching Read', 'canon', position: PhaseKind::Constrain);
-        $unrelatedGate = $this->node('Unrelated Gate', 'activity', position: PhaseKind::Disperse);
-        $this->edge($unrelatedRead, $unrelatedGate);
+        $unrelatedGate = $this->node('Unrelated Gate', 'activity', position: PhaseKind::Disperse, source: $unrelatedRead);
         $this->history = $originalHistory;
         $plan = $this->plan();
         $this->assertEqualsCanonicalizing([$this->parent->id, $validRead->id, $foreignHorizon->id, $distantRead->id, $hardRead->id, $hardRead->children()->where('register', 'canon')->firstOrFail()->id], app(MediationReadService::class)->readsFor($this->phase)->pluck('id')->all());
@@ -305,7 +296,7 @@ class ReconciliationTest extends TestCase
         $this->fixture();
         $this->sibling('Available counterpart');
         $this->assertNotEmpty($this->plan()['gate_options']);
-        $this->edge($this->gate, $this->node('Hard replacement', 'frontier', position: PhaseKind::Mediate), 'reclassify');
+        $this->node('Hard replacement', 'frontier', position: PhaseKind::Mediate, source: $this->gate, type: 'reclassify');
         $this->assertNotEmpty($this->plan()['gate_options']);
         $this->phase->cycle->phases()->where('kind', PhaseKind::Disperse->value)->update(['completed_at' => null]);
         $this->assertCount(0, app(MediationReadService::class)->readsFor($this->phase));
@@ -313,10 +304,8 @@ class ReconciliationTest extends TestCase
 
     private function readSibling(string $statement, float $correspondence, float $gateCorrespondence): array
     {
-        $read = $this->node($statement, $this->parent->register, $correspondence, position: PhaseKind::Constrain);
-        $this->edge($this->parent->parents()->firstOrFail(), $read);
-        $gate = $this->node($statement.' child', $this->gate->register, $gateCorrespondence, position: PhaseKind::Disperse);
-        $this->edge($read, $gate);
+        $read = $this->node($statement, $this->parent->register, $correspondence, position: PhaseKind::Constrain, source: $this->parent->parents()->firstOrFail());
+        $gate = $this->node($statement.' child', $this->gate->register, $gateCorrespondence, position: PhaseKind::Disperse, source: $read);
 
         return [$read, $gate];
     }
@@ -387,17 +376,22 @@ class ReconciliationTest extends TestCase
 
     private function sibling(string $statement, ?float $correspondence = null): Proposition
     {
-        $node = $this->node($statement, $this->gate->register, $correspondence, position: PhaseKind::Disperse);
-        $this->edge($this->parent, $node);
+        $node = $this->node($statement, $this->gate->register, $correspondence, position: PhaseKind::Disperse, source: $this->parent);
 
         return $node;
     }
 
-    private function node(string $statement, string $register, ?float $correspondence = null, string $tier = 'expressive', PhaseKind $position = PhaseKind::Disperse): Proposition
+    private function node(string $statement, string $register, ?float $correspondence = null, string $tier = 'expressive', PhaseKind $position = PhaseKind::Disperse, ?Proposition $source = null, string $type = 'variant'): Proposition
     {
         $node = new Proposition;
         $node->forceFill(['phase_id' => $this->phaseAtPositionFixture($this->history, $position)->id, 'register' => $register, 'tier' => $tier, 'statement' => $statement])->save();
-        app(LedgerService::class)->record($node);
+        app(LedgerService::class)->record($node, $source);
+        if ($source !== null) {
+            $this->edge($source, $node, $type);
+        }
+        if ($tier === 'expressive') {
+            \Tests\Fixtures\PropositionBirth::complete($node);
+        }
         // Scope tests use compatible default Gates; explicit nonzero scores remain authored.
         $gateDirection = isset($this->gate)
             ? app(PropositionMeasurementService::class)->correspondenceDirectionFor($this->gate)->value : 'positive';

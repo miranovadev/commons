@@ -142,6 +142,27 @@ class ClosureHysteresisTest extends TestCase
         $this->assertSame($gate->statement, $commit->statement);
     }
 
+    public function test_lawful_later_candidate_preserves_negative_source_polarity_and_closure(): void
+    {
+        // Separate scenario; retain the historical first-candidate transcript above.
+        $this->bootstrap();
+        [$phase, $gate] = $this->candidate([2, 3, 6], direction: 'refute');
+        $source = app(ProspectiveClosureService::class)->stored($gate);
+        $this->assertTrue($source['admissible']);
+        $this->assertSame('negative', $source['historical_extent_direction']);
+        $this->assertSame('negative', $source['historical_rhythm_direction']);
+        $this->publishPotentialFixture($this->participant);
+        $result = app(ParticipationService::class)->contribute($this->participant, $phase->id,
+            ['action' => 'proposition.commit', 'proposition_id' => $gate->id]);
+        $commit = Proposition::findOrFail($result['current_proposition_id']);
+        $this->assertSame($source, app(ProspectiveClosureService::class)->stored($commit));
+        $this->assertSame(['governing' => ObservableDirection::Negative, 'support' => ObservableDirection::Negative],
+            app(CommitRegionPolarityService::class)->forSeed($commit));
+        $this->assertSame(['governing' => ObservableDirection::Positive, 'support' => ObservableDirection::Positive],
+            app(CommitRegionPolarityService::class)->forSeed($this->origin));
+        $this->assertSame($gate->statement, $commit->statement);
+    }
+
     public function test_negative_closure_alignment_can_commit_while_corrected_field_remains_in_settlement(): void
     {
         $this->bootstrap();
@@ -210,6 +231,7 @@ class ClosureHysteresisTest extends TestCase
     {
         $this->bootstrap();
         [$phase, $gate] = $this->candidate([2]);
+        $this->previewClosureFixture($gate, -1, 1);
         $this->previewClosureFixture($gate, 0, 1);
         $counts = $this->counts();
         $this->publishPotentialFixture($this->participant);
@@ -335,6 +357,7 @@ class ClosureHysteresisTest extends TestCase
         [$phase, $gate] = $this->candidate([2]);
         $observed = app(ParticipationService::class)->stateFor($this->participant)['plan']['schema'];
         $this->assertTrue(app(ClosureGateService::class)->preview($gate, $phase)['admissible']);
+        $this->previewClosureFixture($gate, -1, 1);
         $this->previewClosureFixture($gate, 0, 1); // Controlled changed state: retained negative Extent, positive Rhythm.
         $this->assertFalse(app(ClosureGateService::class)->preview($gate, $phase)['admissible']);
         $this->publishPotentialFixture($this->participant);

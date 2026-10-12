@@ -101,7 +101,7 @@ final class ParticipantContextFixture
         $this->viewer->forceFill(['current_proposition_id' => $this->gate->id])->save();
     }
 
-    public function node(?Proposition $parent, string $register, string $type = 'variant', string $tier = 'expressive', ?PhaseKind $position = null, ?Proposition $additionalParent = null): Proposition
+    public function node(?Proposition $parent, string $register, string $type = 'variant', string $tier = 'expressive', ?PhaseKind $position = null, ?Proposition $additionalParent = null, bool $completeBirth = true): Proposition
     {
         $phase = new Phase;
         $kind = $position ?? ($type === 'reconcile' ? PhaseKind::Mediate : ($type === 'commit' ? PhaseKind::Order : PhaseKind::Distinguish));
@@ -129,9 +129,9 @@ final class ParticipantContextFixture
             $this->edge($additionalParent, $node, $type);
         }
         $closure = app(\App\Services\Observables\ProspectiveClosureService::class);
-        if ($tier === 'expressive') {
+        if ($tier === 'expressive' && $completeBirth) {
             $closure->initialize($node);
-        } elseif ($parent !== null) {
+        } elseif ($tier === 'committal' && $parent !== null) {
             $closure->preserve($node, $parent, $closure->stored($parent));
         }
 

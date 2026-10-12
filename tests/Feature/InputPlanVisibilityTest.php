@@ -49,8 +49,8 @@ class InputPlanVisibilityTest extends TestCase
             'expressive',
             'An initial distinction.',
             -0.5,
+            source: $origin,
         );
-        $this->supersession($authorPhase, $origin, $source, 'variant');
 
         $reclassified = $this->proposition(
             $authorPhase,
@@ -58,12 +58,8 @@ class InputPlanVisibilityTest extends TestCase
             'expressive',
             'The distinction, reclassified.',
             0.0,
-        );
-        $this->supersession(
-            $authorPhase,
-            $source,
-            $reclassified,
-            'reclassify',
+            source: $source,
+            type: 'reclassify',
         );
 
         $viewer = $this->participant($substrate, 'viewer');
@@ -163,14 +159,11 @@ class InputPlanVisibilityTest extends TestCase
             $gate = $seed;
         } else {
             $gatePhase = $this->governedPhaseFixture($gatePhase, $seed, $seed);
-            $gate = $this->proposition($gatePhase, $gatePhase->write_register, 'expressive', 'Gate', 0);
-            $this->supersession($gatePhase, $seed, $gate, 'variant');
+            $gate = $this->proposition($gatePhase, $gatePhase->write_register, 'expressive', 'Gate', 0, source: $seed);
         }
         $sourcePhase = $this->governedPhaseFixture($sourcePhase, $seed, $gate);
-        $child = $this->proposition($sourcePhase, $register, 'expressive', 'Child', 0);
-        $this->supersession($sourcePhase, $gate, $child, 'variant');
-        $untouched = $this->proposition($sourcePhase, $register, 'expressive', 'Untouched neighbour', 0);
-        $this->supersession($sourcePhase, $gate, $untouched, 'variant');
+        $child = $this->proposition($sourcePhase, $register, 'expressive', 'Child', 0, source: $gate);
+        $untouched = $this->proposition($sourcePhase, $register, 'expressive', 'Untouched neighbour', 0, source: $gate);
         $viewer = $this->participant($substrate, 'viewer');
         $phase = $this->phase($viewer, $kind, $register, $gate);
 
@@ -309,6 +302,8 @@ class InputPlanVisibilityTest extends TestCase
         string $tier,
         string $statement,
         float $measurement,
+        ?Proposition $source = null,
+        string $type = 'variant',
     ): Proposition {
         $proposition = new Proposition;
         $proposition->forceFill([
@@ -319,7 +314,12 @@ class InputPlanVisibilityTest extends TestCase
         ]);
         $proposition->save();
 
-        app(LedgerService::class)->record($proposition);
+        // The caller supplies its existing causal source before any projection or Receipt.
+        app(LedgerService::class)->record($proposition, $source);
+        if ($source !== null) {
+            $this->supersession($phase, $source, $proposition, $type);
+            \Tests\Fixtures\PropositionBirth::complete($proposition);
+        }
         app(PropositionMeasurementService::class)->project(
             $proposition,
             $measurement,

@@ -75,7 +75,7 @@ class PropositionMeasurementServiceTest extends TestCase
 
     public function test_correspondence_retains_both_directions_through_zero_and_projection_deletion(): void
     {
-        $position = $this->proposition();
+        $position = (new \Tests\Fixtures\ParticipantContextFixture(2, 0, false))->gate;
         $service = app(PropositionMeasurementService::class);
         foreach ([1.0, -1.0] as $sign) {
             $service->project($position, $sign, 0, 0);

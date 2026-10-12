@@ -60,7 +60,7 @@ class ReceiptRegionContextTest extends TestCase
     public function test_missing_governance_stays_unresolved_despite_valid_causal_parents(): void
     {
         $f = new ParticipantContextFixture(1, 0, false);
-        $orphan = $f->node(null, 'activity');
+        $orphan = $f->node(null, 'activity', completeBirth: false);
         $r = $this->receipt($f, $orphan);
         $this->assertNotContains($r->id, app(HorizonReceiptService::class)->ordinaryAvailable($f->phase)->pluck('id'));
         $other = $f->node(null, 'canon', 'variant', 'committal');
@@ -74,7 +74,7 @@ class ReceiptRegionContextTest extends TestCase
     public function test_valid_governance_is_not_erased_by_malformed_secondary_provenance(): void
     {
         $f = new ParticipantContextFixture(1, 0, false);
-        $orphan = $f->node(null, 'activity');
+        $orphan = $f->node(null, 'activity', completeBirth: false);
         $mixed = $f->node($f->seed, 'activity');
         $f->edge($orphan, $mixed, 'reconcile');
         $r = $this->receipt($f, $mixed);

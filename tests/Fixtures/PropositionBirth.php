@@ -7,7 +7,7 @@ use App\Services\Observables\PhaseProfileObservationService;
 use App\Services\Observables\ProspectiveClosureService;
 use Illuminate\Support\Facades\DB;
 
-/** Explicit end of a direct fixture's birth, after all real edges and receipts. */
+/** Complete a direct birth after its ledger and real edges, before projection or later Cycle entry. */
 final class PropositionBirth
 {
     public static function complete(Proposition $proposition): void
