@@ -39,6 +39,7 @@ class AttestationPolarityTest extends TestCase
     {
         parent::setUp();
         $this->isolateClosureOutput();
+        $this->isolateCorrespondenceOutput();
     }
 
     private Participant $participant;

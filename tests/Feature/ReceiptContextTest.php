@@ -43,6 +43,7 @@ class ReceiptContextTest extends TestCase
     {
         parent::setUp();
         $this->isolateClosureOutput();
+        $this->isolateCorrespondenceOutput();
     }
 
     private function scenario(): array

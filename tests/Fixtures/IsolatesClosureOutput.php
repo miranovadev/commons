@@ -2,7 +2,9 @@
 
 namespace Tests\Fixtures;
 
+use App\Domain\Observables\CorrespondenceValues;
 use App\Models\Proposition;
+use App\Services\Observables\CorrespondenceCalculator;
 use App\Services\Observables\ProspectiveClosureService;
 use LogicException;
 
@@ -13,6 +15,15 @@ use LogicException;
  */
 trait IsolatesClosureOutput
 {
+    /** Explicit numerical input for selection/authority tests, never C1 geometry coverage. */
+    protected function isolateCorrespondenceOutput(): void
+    {
+        $this->mock(CorrespondenceCalculator::class, function ($mock): void {
+            $mock->shouldReceive('components')->andReturn(new CorrespondenceValues(0, 0));
+            $mock->shouldReceive('calculate')->andReturn(0.0);
+        });
+    }
+
     private array $componentClosureInputs = [];
 
     protected function componentClosureInput(Proposition $head, array $input): void

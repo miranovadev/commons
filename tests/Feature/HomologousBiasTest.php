@@ -29,8 +29,6 @@ use App\Services\HomologousBiasService;
 use App\Services\HorizonReceiptService;
 use App\Services\InputPlanService;
 use App\Services\LedgerService;
-use App\Services\Observables\CardinalMorphologyService;
-use App\Services\Observables\DomainCardinalLayoutService;
 use App\Services\Observables\LocalMeasurementService;
 use App\Services\Observables\ObservableService;
 use App\Services\Observables\ReinforcementService;
@@ -87,6 +85,7 @@ class HomologousBiasTest extends TestCase
     {
         parent::setUp();
         $this->isolateClosureOutput();
+        $this->isolateCorrespondenceOutput();
         $this->createHomologyActor();
         $this->origin = $this->committedCoordinate(null, 'emergence');
         $this->a = $this->committedCoordinate($this->origin, 'settlement');
@@ -126,32 +125,6 @@ class HomologousBiasTest extends TestCase
         $this->assertSame(PhaseKind::Order, $next->kind);
         $this->publishPotentialFixture($this->actor);
         $this->assertSame(['participant.rest'], array_keys(app(InputPlanService::class)->forPhase($this->actor, $next)['schema']['$defs']['actions']));
-    }
-
-    public function test_cardinal_lookup_uses_ownership_without_local_causal_reachability(): void
-    {
-        // Construct the geometry directly, independently of the action planner.
-        $target = new Proposition;
-        $target->forceFill(['phase_id' => $this->bias->id, 'tier' => 'expressive',
-            'register' => $this->bias->write_register, 'statement' => 'Foreign-input local result'])->save();
-        app(LedgerService::class)->record($target);
-        $this->edge($this->gateB, $target, 'reclassify');
-        $before = Supersession::orderBy('id')->get()->map->getAttributes()->all();
-        $local = $this->bias->cycle->contextHorizon;
-        $foreign = $this->gateB->phase->cycle->contextHorizon;
-
-        foreach ([null, new ParticipationContext($this->bias)] as $context) {
-            $layout = app(DomainCardinalLayoutService::class)->for($local, $context);
-            $this->assertSame($local->id, $layout->position($target->id)->horizonId);
-            $this->assertSame($layout->position($this->gateA->id)->depth + 1, $layout->position($target->id)->depth);
-            $this->assertNull(app(DomainCardinalLayoutService::class)->for($foreign, $context)->position($target->id));
-            $morphology = app(CardinalMorphologyService::class)->current($target, $local, $context);
-            $this->assertSame($foreign->id, $morphology->positions[$this->gateB->id]->horizonId);
-            $this->assertArrayNotHasKey($this->gateA->id, $morphology->positions);
-        }
-
-        $this->assertSame([$this->gateB->id], $target->parents()->pluck('propositions.id')->all());
-        $this->assertSame($before, Supersession::orderBy('id')->get()->map->getAttributes()->all());
     }
 
     public function test_dominant_homologues_add_options_without_vetoing_either_local_direction(): void
@@ -266,29 +239,12 @@ class HomologousBiasTest extends TestCase
         $this->assertSame($horizon, $target->contextHorizonMembership->context_horizon_id);
         $this->assertSame([$source->id], $target->parents()->pluck('propositions.id')->all());
 
-        // Correspondence cardinal placement is independent of causal ancestry.
-        // The locally-owned result has only the real foreign Reclassify parent,
-        // yet it still occupies the acting Domain's deterministic cardinal grid.
-        $localHorizon = $target->phase->cycle->contextHorizon;
-        $foreignHorizon = $source->phase->cycle->contextHorizon;
-        $localLayout = app(DomainCardinalLayoutService::class)->for($localHorizon);
-        $foreignLayout = app(DomainCardinalLayoutService::class)->for($foreignHorizon);
-        $this->assertSame($localHorizon->id, $localLayout->position($target->id)->horizonId);
-        $this->assertSame($foreignHorizon->id, $foreignLayout->position($source->id)->horizonId);
-        $this->assertNull($foreignLayout->position($target->id));
-        $this->assertSame($localLayout->position($gate->id)->depth + 1, $localLayout->position($target->id)->depth);
+        // Geometry belongs to the independent C1 contracts, not these supplied
+        // committed-coordinate inputs. No extra causal parent is invented.
         $this->assertDatabaseMissing('supersessions', [
             'source_proposition_id' => $gate->id,
             'target_proposition_id' => $target->id,
         ]);
-        $morphology = app(CardinalMorphologyService::class)->current($target, $localHorizon);
-        $this->assertArrayHasKey($source->id, $morphology->positions);
-        $this->assertSame($foreignHorizon->id, $morphology->positions[$source->id]->horizonId);
-        $this->assertTrue($morphology->supersessions->contains(fn ($edge) => $edge->source_proposition_id === $source->id
-            && $edge->target_proposition_id === $target->id
-            && $edge->type === 'reclassify'));
-        $this->assertFalse($morphology->supersessions->contains(fn ($edge) => $edge->source_proposition_id === $gate->id
-            && $edge->target_proposition_id === $target->id));
         foreach ([null, new ParticipationContext($target->phase)] as $context) {
             $lineage = app(ActiveParticipantLineage::class)->endingAt($target, $context);
             $this->assertSame($source->phase->cycle->entry_committal_id, $lineage->first()->id);

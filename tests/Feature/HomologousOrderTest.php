@@ -56,6 +56,7 @@ class HomologousOrderTest extends TestCase
     {
         parent::setUp();
         $this->isolateClosureOutput();
+        $this->isolateCorrespondenceOutput();
         $this->createHomologyActor();
         $this->origin = $this->committedCoordinate(null, 'emergence', ['cadence_interval' => 1]);
         $this->a = $this->committedCoordinate($this->origin, 'settlement', ['cadence_interval' => 1]);

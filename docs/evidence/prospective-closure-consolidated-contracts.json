@@ -28,5 +28,10 @@
     "old": "CausalHorizonLineageTest::test_an_existing_settlement_cycle_contributes_after_another_participant_opens_emergence",
     "replacement": "CausalHorizonLineageTest::test_component_boundary_projection_does_not_reassign_open_cycle_governance; existing branching/ownership component cases",
     "reason": "Remove forced Order phases and two controlled Commit successes. Preserve open-Cycle ownership through a supplied boundary projection and actual subsequent expressive contribution. Simultaneous late Commit across real Domain transitions is not end-to-end covered."
+  },
+  {
+    "old": "HomologousBiasTest::test_cardinal_lookup_uses_ownership_without_local_causal_reachability; geometry blocks in cross_region_reclassification",
+    "replacement": "Independent C1 geometry contracts; remaining cross-region ownership/parent/Receipt assertions",
+    "reason": "Authored coordinate snapshots lack lawful causal geometry. Remove this exact historical geometry claim rather than insert fake Commit edges. Exact multi-Horizon geometry coverage remains a gap."
   }
 ]

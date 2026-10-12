@@ -6,7 +6,6 @@ use App\Domain\Observables\CorrespondenceValues;
 use App\Enums\PhaseKind;
 use App\Models\CommitmentSnapshot;
 use App\Models\ContextHorizon;
-use App\Models\ContextHorizonMembership;
 use App\Models\Cycle;
 use App\Models\Participant;
 use App\Models\Phase;
@@ -73,6 +72,7 @@ class HomologousMediationTest extends TestCase
     {
         parent::setUp();
         $this->isolateClosureOutput();
+        $this->isolateCorrespondenceOutput();
         $substrate = new Substrate;
         $substrate->forceFill(['slug' => 'foreign-mediate', 'title' => 'Foreign Mediate', 'visibility' => 'private', 'configuration' => []])->save();
         $this->actor = new Participant;
@@ -854,13 +854,6 @@ class HomologousMediationTest extends TestCase
             'depth' => 0, 'cadence' => 0, 'cadence_interval' => $governor === null ? null : 1,
             'calculator_version' => $governor === null ? 'origin-bootstrap-v1' : 'ownership-fixture', 'evaluated_at' => now()])->save();
         app(ContextHorizonProjector::class)->apply($snapshot);
-        if ($governor !== null) {
-            // A supplied coordinate is not a causal birth in the creating
-            // Domain. Keep it out of that Domain's expressive geometry.
-            ContextHorizonMembership::where('proposition_id', $node->id)
-                ->where('context_horizon_id', $horizon->id)->delete();
-        }
-
 
         return $node;
     }
