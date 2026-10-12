@@ -1,0 +1,96 @@
+test,result,category,finding,failure_summary,first_test_frame,assertions,seconds
+Tests\Feature\ReinforcementTest::test_failed_verification_records_history_without_reinforcement,passed,,,,,4,0.269293
+Tests\Feature\ReinforcementTest::test_commit_inherits_reinforcement_by_reference_but_expressive_alternatives_do_not,passed,,,,,6,0.461291
+Tests\Feature\ReinforcementTest::test_snapshot_can_record_grounded_attested_content_without_loaded_reinforcement,passed,,,,,2,0.293816
+Tests\Feature\ReinforcementTest::test_database_prevents_duplicate_participant_receipt_context,passed,,,,,1,0.342391
+Tests\Feature\ReinforcementTest::test_real_verifier_flows_through_receipt_allocation_and_local_measurement,passed,,,,,6,0.353078
+Tests\Feature\ReinforcementTest::test_rollback_refuses_to_destroy_shared_signature_history,passed,,,,,4,0.495499
+"Tests\Feature\ReinforcementTest::test_prospective_closure_ignores_loads_and_does_not_inherit_either_frozen_entry_pole""negative""",failure,B (Stage 3 Cycle trajectory),"Fixture creates a genuine governing Cycle for each reader; Closure metadata can change at that event, independently of the subsequent Receipt load.","Tests\Feature\ReinforcementTest::test_prospective_closure_ignores_loads_and_does_not_inherit_either_frozen_entry_pole with data set ""negative""
+Failed asserting that two arrays are identical.
+--- Expected
++++ Actual
+@@ @@
+                 3 => 0.0,
+                 4 => 0.0,
+                 5 => 0.0,
+-                6 => 1.0,
++                6 => 1.5,
+             ],
+             'sample_counts' => Array &6 [
+                 0 => 1,
+@@ @@
+    ",tests/Feature/ReinforcementTest.php:310,8,0.408909
+"Tests\Feature\ReinforcementTest::test_prospective_closure_ignores_loads_and_does_not_inherit_either_frozen_entry_pole""positive""",failure,B (Stage 3 Cycle trajectory),"Fixture creates a genuine governing Cycle for each reader; Closure metadata can change at that event, independently of the subsequent Receipt load.","Tests\Feature\ReinforcementTest::test_prospective_closure_ignores_loads_and_does_not_inherit_either_frozen_entry_pole with data set ""positive""
+Failed asserting that two arrays are identical.
+--- Expected
++++ Actual
+@@ @@
+                 3 => 0.0,
+                 4 => 0.0,
+                 5 => 0.0,
+-                6 => 1.0,
++                6 => 1.5,
+             ],
+             'sample_counts' => Array &6 [
+                 0 => 1,
+@@ @@
+    ",tests/Feature/ReinforcementTest.php:310,8,0.418019
+Tests\Feature\ReinforcementTest::test_receipt_grounding_is_required_without_changing_measurement,passed,,,,,7,0.368443
+Tests\Feature\ReverbTransportTest::test_configured_reverb_delivers_identifier_notifications_to_a_real_websocket_client,passed,,,,,6,0.277285
+Tests\Feature\SharedReclassificationTest::test_receipt_and_attestation_allow_a_foreign_participant_one_shared_classification#0,passed,,,,,10,1.218489
+Tests\Feature\SharedReclassificationTest::test_receipt_and_attestation_allow_a_foreign_participant_one_shared_classification#1,passed,,,,,10,1.585496
+Tests\Feature\SpentContinuationRealtimeTest::test_spent_and_epoch_events_are_compact_commit_scoped_and_idempotent,passed,,,,,12,3.380402
+Tests\Feature\TragedyMemoryTest::test_load_is_participant_specific_memory_and_unload_preserves_history,passed,,,,,20,1.734672
+Tests\Feature\TragedyMemoryTest::test_memory_never_changes_database_or_context_backed_field_values,passed,,,,,12,0.743902
+Tests\Feature\TragedyMemoryTest::test_historical_boundary_is_not_replaced_by_current_measurements,passed,,,,,5,0.663156
+Tests\Feature\TragedyMemoryTest::test_governance_chain_ignores_foreign_causal_parent_and_siblings,passed,,,,,24,2.945434
+Tests\Feature\TragedyMemoryTest::test_foreign_unloaded_memory_cannot_be_imported_by_id,passed,,,,,7,1.156244
+Tests\Feature\TragedyMemoryTest::test_exhaustion_removes_warrant_not_loaded_memory,passed,,,,,8,0.804420
+Tests\Feature\TragedyMemoryTest::test_prompt_keeps_memory_out_of_the_loaded_evidence_prefix,passed,,,,,5,0.585161
+Tests\Feature\TragedyMemoryTest::test_failed_transaction_restores_memory_state_and_events,passed,,,,,4,0.556248
+Tests\Feature\TragedyMemoryTest::test_memory_migration_refuses_to_discard_null_signature_history,passed,,,,,3,0.541506
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Distinguish Variant without traversal""",error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion with data set ""Distinguish Variant without traversal""
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:500,0,0.102704
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Persist Variant without traversal""",error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion with data set ""Persist Variant without traversal""
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:500,0,0.098978
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Persist Instrument without traversal""",error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion with data set ""Persist Instrument without traversal""
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:500,0,0.096606
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Disperse first Variant""",error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion with data set ""Disperse first Variant""
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:500,0,0.093787
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Constrain owned Gate Reclassify""",error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion with data set ""Constrain owned Gate Reclassify""
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:500,0,0.092979
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Constrain owned descendant Revise""",error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion with data set ""Constrain owned descendant Revise""
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:500,0,0.094645
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Constrain untouched descendant Attestation""",error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion with data set ""Constrain untouched descendant Attestation""
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:500,0,0.093395
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Constrain attested descendant Traverse""",error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion with data set ""Constrain attested descendant Traverse""
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:500,0,0.096525
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Mediate counterpart outside Write""",error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion with data set ""Mediate counterpart outside Write""
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:500,0,0.098460
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Bias Instrument without traversal""",error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion with data set ""Bias Instrument without traversal""
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:500,0,0.098886
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Constrain exhausted non-owner""",error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion with data set ""Constrain exhausted non-owner""
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:500,0,0.093884
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Mediate no counterpart or continuation""",error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion with data set ""Mediate no counterpart or continuation""
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:500,0,0.095012
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Bias no counterpart instrument or continuation""",error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion with data set ""Bias no counterpart instrument or continuation""
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:500,0,0.091411
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Order inadmissible Commit with no continuation""",error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion with data set ""Order inadmissible Commit with no continuation""
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:500,0,0.092709
+Tests\Feature\WebSearchReceiptTest::test_search_round_trips_and_loads_with_the_next_forward_contribution,passed,,,,,29,1.900969
+Tests\Feature\WebSearchReceiptTest::test_invalid_query_is_rejected_by_schema_and_domain_without_execution#0,passed,,,,,3,0.861951
+Tests\Feature\WebSearchReceiptTest::test_invalid_query_is_rejected_by_schema_and_domain_without_execution#1,passed,,,,,3,0.893365
+Tests\Feature\WebSearchReceiptTest::test_invalid_query_is_rejected_by_schema_and_domain_without_execution#2,passed,,,,,3,0.917513
+Tests\Feature\WebSearchReceiptTest::test_invalid_query_is_rejected_by_schema_and_domain_without_execution#3,passed,,,,,3,0.885211
+Tests\Feature\WebSearchReceiptTest::test_invalid_query_is_rejected_by_schema_and_domain_without_execution#4,passed,,,,,3,0.938683
+Tests\Feature\WebSearchReceiptTest::test_invalid_query_is_rejected_by_schema_and_domain_without_execution#5,passed,,,,,3,0.884558
+Tests\Feature\WebSearchReceiptTest::test_effective_observation_suppresses_replay_even_when_external_results_change,passed,,,,,6,0.935195
+Tests\Feature\WebSearchReceiptTest::test_catalogue_does_not_expose_load_or_equivalent_replay_actions,passed,,,,,8,1.008613
+Tests\Feature\WebSearchReceiptTest::test_capabilities_gate_options_and_cite_is_not_replayable,passed,,,,,13,1.330288
+Tests\Feature\WebSearchReceiptTest::test_replay_rejects_hidden_receipts_wrong_participants_and_ineligible_targets,passed,,,,,5,1.241813
+Tests\Feature\WebSearchReceiptTest::test_failed_observation_is_immutable_and_the_query_can_be_retried_in_fresh_evidence,passed,,,,,9,1.039141
+Tests\Feature\WebSearchReceiptTest::test_loaded_external_content_stays_in_evidence_and_cannot_change_prompt_or_action_schema,passed,,,,,11,1.216640
+Tests\Feature\WebSearchReceiptTest::test_provider_abstraction_does_not_require_tavily_fields,passed,,,,,4,0.866139
+Tests\Feature\WebSearchReceiptTest::test_historical_hyperlink_replays_retain_the_stability_clock_and_attestation_subject,passed,,,,,13,0.973201
+Tests\Feature\WebSearchReceiptTest::test_stored_invocation_cannot_be_changed_after_execution,passed,,,,,1,0.839229
+Tests\Feature\WebSearchReceiptTest::test_replay_history_blocks_destructive_migration_rollback,passed,,,,,2,0.909209

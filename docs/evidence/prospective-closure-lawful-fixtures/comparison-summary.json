@@ -1,0 +1,19 @@
+{
+  "checkpoint_comparison": {
+    "remains passed": 887,
+    "still missing history": 241,
+    "previous non-history failure: still failing": 7,
+    "checkpoint masked: now passed": 5,
+    "new separate scenario: passed": 3
+  },
+  "original_554": {
+    "missing": 241,
+    "passed": 308,
+    "exposed": 5
+  },
+  "renamed_contracts": {
+    "test_zero_depth_retains_negative_history_and_blocks_a_positive_cadence": "test_zero_extent_retains_negative_history_and_blocks_a_positive_rhythm",
+    "test_legacy_missing_components_use_explicit_default_without_rewriting_history": "test_unavailable_authorised_state_fails_closed_without_rewriting_history"
+  },
+  "new_failures": []
+}

@@ -1,5 +1,7 @@
 # Stage 3 fixture repair follow-up
 
+Subsequent continuation: [lawful fixture reconstruction and final inventories](prospective-closure-lawful-fixtures.md), tested at `1115837` (895 Core passes; 241 remaining missing-history errors). The checkpoint below is preserved.
+
 This follow-up starts from the reviewed `117e657` code checkpoint (reporting head `343d4a1`): Core 832 passed / 308 failed, including 293 missing-history errors; Integration 19 passed / 12 failed. The approved measurement semantics were not reopened.
 
 ## Construction corrections
