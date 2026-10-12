@@ -752,11 +752,12 @@ class HomologousBiasTest extends TestCase
         }
     }
 
-    public function test_reclassification_result_uses_ordinary_measurement_without_operand_coherence_constraint(): void
+    public function test_reclassification_result_uses_real_chirality_independently_of_operand_coherence(): void
     {
         $this->components($this->gateA, .8, .8);
-        // Remove the controlled calculator: the accepted result is measured by real v2.
+        // Remove the operand Chirality double; keep only Correspondence isolated.
         $this->app->forgetInstance(LocalMeasurementService::class);
+        $this->isolateCorrespondenceOutput();
         $target = app(ContributionDispatcher::class)->dispatch($this->actor, $this->bias, $this->input($this->gateA));
         $actual = app(ObservableService::class)->components($target);
         $this->assertEquals($actual->observables()->chirality, $target->fresh()->measurement->chirality);

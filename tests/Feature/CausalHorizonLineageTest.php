@@ -53,6 +53,7 @@ class CausalHorizonLineageTest extends TestCase
 
     public function test_component_boundary_projection_does_not_reassign_open_cycle_governance(): void
     {
+        $this->isolateCorrespondenceOutput();
         $fixture = new GovernedExpressionFixture;
         $cycle = $fixture->phase->cycle;
         $horizon = $cycle->contextHorizon;

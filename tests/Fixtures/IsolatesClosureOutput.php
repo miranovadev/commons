@@ -28,6 +28,9 @@ trait IsolatesClosureOutput
             );
             $mock->shouldReceive('calculate')->andReturnUsing(function ($node, $comparison = null, $includeClosure = true, $context = null) use ($real) {
                 $context ??= $comparison?->current->context;
+                if ($node->tier === 'committal' && $node->phase->cycle->entry_committal_id === null) {
+                    return $real->calculate($node, $comparison, $includeClosure, $context);
+                }
                 $chirality = $real->chiralityComponents($node, $comparison, $context);
                 $closure = $includeClosure ? app(ClosureCalculator::class)->components($node, $context)
                     : new ClosureValues(0, 0);

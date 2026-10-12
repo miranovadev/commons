@@ -99,6 +99,12 @@ class CommonsUiApiTest extends TestCase
             'A new expressive branch begins here.',
         );
 
+        // Serialization consumes the authorised-state boundary, not an old
+        // disposable Closure projection or an Origin fallback.
+        $this->componentClosureInput($child, [
+            'closure' => .375, 'historical_extent' => .375, 'historical_rhythm' => .375,
+            'historical_extent_direction' => 'positive', 'historical_rhythm_direction' => 'positive',
+        ]);
         app(PropositionMeasurementService::class)->project(
             $child,
             correspondence: 0.75,

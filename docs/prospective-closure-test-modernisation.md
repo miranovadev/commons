@@ -33,7 +33,7 @@ Additional contract corrections preserve behaviour rather than historical scalar
 - Raw attenuation records the resolved Chirality before disposable projection writes and compares it afterwards, alongside unchanged raw local values. It no longer substitutes the historical constant `-0.5` for the no-reuse invariant (the intermediate run observed `-0.1`).
 - Bias reclassification compares the resulting scalar, Orientation and Cadence with ordinary independent calculation; it no longer requires that a particular authored graph produce a Negative direction. The intermediate result was Positive, and no numeric value was changed to force a direction.
 
-The API graph serializer now receives an explicitly persisted Closure value (0.375), alongside its controlled Correspondence/Chirality. This verifies projection serialization rather than the retired fallback from an ungoverned expressive to Origin Closure. The concurrent-Horizon test now verifies an open Cycle retains its owner across a supplied boundary projection and an actual subsequent expressive contribution; its two forced Commit successes are removed. Simultaneous late Commit across real Domain transitions remains outside demonstrated end-to-end coverage.
+The API graph serializer now receives an explicit Closure-state boundary value (0.375), alongside its controlled Correspondence/Chirality. This verifies authorised-state serialization rather than the retired fallback from an ungoverned expressive to Origin Closure. The concurrent-Horizon test now verifies an open Cycle retains its owner across a supplied boundary projection and an actual subsequent expressive contribution; its two forced Commit successes are removed. Simultaneous late Commit across real Domain transitions remains outside demonstrated end-to-end coverage.
 
 ## Genuine lifecycle coverage retained
 
@@ -45,6 +45,21 @@ The four documented Integration directional-disagreement Commit blocks and the h
 
 The modern suite deliberately stops claiming lifecycle coverage for arbitrary multi-Commit branches, forced later-Horizon transitions and the removed Tragedy combinations. These are coverage limits, not unresolved mathematical decisions. New assertion failures must be reported individually; a labelled component fixture is not permission to change expected values to obtain green results.
 
-Receipt-neutral Chirality and grounding checks now use the real governed-expression fixture instead of developed coordinate-only histories. Two Homeostatic hydration tests explicitly isolate numerical outputs; they measure population/query composition, not full numerical geometry cost. HomologousBias, HomologousMediation, HomologousOrder, AttestationPolarity and ReceiptContext explicitly isolate numerical Correspondence as well as Closure. Their selectors, Chirality, ownership, evidence and atomicity remain exercised. The standalone foreign Cardinal-placement case and the two cross-region geometry assertion blocks are removed: source-less coordinate snapshots cannot prove that geometry. C1 has independent real observation/geometry contracts, but this exact multi-Horizon case remains a coverage gap. The intermediate attempt to omit memberships was rejected by lineage provenance checks and reverted; no production fallback was added.
+Receipt-neutral Chirality and grounding checks now use the real governed-expression fixture instead of developed coordinate-only histories. Two Homeostatic hydration tests explicitly isolate numerical outputs; they measure population/query composition, not full numerical geometry cost. HomologousBias, HomologousMediation, HomologousOrder, AttestationPolarity, ReceiptContext and the open-Cycle boundary-projection case explicitly isolate numerical Correspondence as well as Closure. Their selectors, Chirality, ownership, evidence and atomicity remain exercised. The standalone foreign Cardinal-placement case and the two cross-region geometry assertion blocks are removed: source-less coordinate snapshots cannot prove that geometry. C1 has independent real observation/geometry contracts, but this exact multi-Horizon case remains a coverage gap. The intermediate attempt to omit memberships was rejected by lineage provenance checks and reverted; no production fallback was added.
 
-Validation results pending the consolidated run. No sign-off is claimed here.
+## Focused validation
+
+Tested code: `524e61dacc7cb52c2a80554303c8c881c7102b54`. [PostgreSQL/SQLite matrix](https://github.com/miranovadev/commons/actions/runs/38311736609).
+
+| Selection | PostgreSQL | SQLite |
+| --- | --- | --- |
+| C1 Phase Profile | 48 pass / 300 assertions / 60.80s | 48 pass / 300 assertions / 16.55s |
+| Prospective Closure | 14 pass / 85 assertions / 13.56s | 14 pass / 85 assertions / 3.47s |
+| Observable/ledger and component boundaries | 131 pass / 1,961 assertions / 152.19s | 131 pass / 1,961 assertions / 35.29s |
+| Representative fixtures | 172 pass / 3 fail / 2,045 assertions / 240.49s | 170 pass / 3 fail / two existing PostgreSQL-only skips / 2,039 assertions / 73.89s |
+| Genuine Commit, including actual Reconcile checks | 1 pass / 112 assertions / 70.07s | 1 pass / 112 assertions / 26.45s |
+| Genuine descendant/search | 1 pass / 129 assertions / 95.08s | 1 pass / 129 assertions / 27.29s |
+
+The same three ClosureHysteresis assertions remain in both fixture selections: read-only historical scalar expectation, negative-alignment Domain boundary expectation, and a source-polarity candidate correctly blocked by disagreeing Extent/Rhythm. These selections overlap complete-suite identities. Scoped Pint (32 files) passes on both databases. No skip was introduced; the two SQLite skips already require PostgreSQL-specific behaviour.
+
+Complete-suite accounting and coverage comparison follow after all shards finish. No full regression sign-off is claimed from these focused passes.

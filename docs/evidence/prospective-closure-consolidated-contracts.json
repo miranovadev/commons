@@ -16,7 +16,7 @@
   },
   {
     "old": "HomologousMediationTest::test_admissible_mediate_can_reach_an_inadmissible_bias_without_outcome_coercion",
-    "replacement": "HomologousMediationTest::test_coherent_positive_inputs_produce_the_normal_result_without_sign_coercion; HomologousBiasTest::test_causal_chirality_coherence_controls_local_write_and_preserves_visibility",
+    "replacement": "CommitSourceHistoryLifecycleTest Reconcile result callback; HomologousBiasTest::test_causal_chirality_coherence_controls_local_write_and_preserves_visibility",
     "reason": "Authored coordinate history yields coherent Bias, not the assumed opposed result. Retain ordinary measured-result and independent Bias admissibility contracts; no end-to-end Mediate-to-inadmissible-Bias claim."
   },
   {
@@ -33,5 +33,10 @@
     "old": "HomologousBiasTest::test_cardinal_lookup_uses_ownership_without_local_causal_reachability; geometry blocks in cross_region_reclassification",
     "replacement": "Independent C1 geometry contracts; remaining cross-region ownership/parent/Receipt assertions",
     "reason": "Authored coordinate snapshots lack lawful causal geometry. Remove this exact historical geometry claim rather than insert fake Commit edges. Exact multi-Horizon geometry coverage remains a gap."
+  },
+  {
+    "old": "HomologousBiasTest::test_reclassification_result_uses_ordinary_measurement_without_operand_coherence_constraint",
+    "replacement": "HomologousBiasTest::test_reclassification_result_uses_real_chirality_independently_of_operand_coherence",
+    "reason": "Real Chirality and components remain independently calculated; numerical Correspondence is explicitly isolated because coordinate inputs have no empirical causal geometry. No full ordinary Correspondence result claim."
   }
 ]
