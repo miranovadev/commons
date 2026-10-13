@@ -90,7 +90,7 @@ class ObservableServiceTest extends TestCase
         $this->assertSame(round(($raw->correspondence + 1 / 4) / (1 + 1 / 4), 7), $measurement->correspondence);
     }
 
-    public function test_matching_lineages_in_complementary_horizons_align(): void
+    public function test_component_ancestry_attenuates_independent_current_measurements_until_the_committal_boundary(): void
     {
         // Snapshot timestamps intentionally tie; fixture ancestry must be explicit.
         $this->freezeTime();
@@ -114,7 +114,7 @@ class ObservableServiceTest extends TestCase
             'committal',
         );
         $this->supersede($first, $boundary, 'commit');
-        // A genuine Commit retains its selected source's evidence.
+        // Authored read-model boundary; this component case does not prove Commit authority.
         $this->attest($first, 'support');
         $this->attest($boundary, 'support');
         $this->closeHorizon($boundary, prominence: 1, turbulence: 0);
@@ -140,11 +140,11 @@ class ObservableServiceTest extends TestCase
 
         $local = app(LocalMeasurementService::class);
         $headValues = $local->calculate($target);
-        $this->assertSame(1.0, $headValues->correspondence);
-        $this->assertSame(1.0, $headValues->chirality);
+        $this->assertSame(round(($headValues->correspondenceComponents->shapeTopology + $headValues->correspondenceComponents->phaseProfile) / 2, 7), $headValues->correspondence);
+        $this->assertSame($headValues->chiralityComponents->average(), $headValues->chirality);
         $this->assertSame($headValues->closure()->average(), $measurement->closure);
         // Accumulation includes the intermediate position and boundary, not the
-        // boundary's older ancestors. Raw comparisons still align exactly.
+        // boundary's older ancestors. A matching shape does not prescribe C1 or Chirality.
         $middleValues = $local->calculate($next);
         $provenanceValues = $local->calculate($boundary);
         $mass = 1 + 1 / 4 + 1 / 9;

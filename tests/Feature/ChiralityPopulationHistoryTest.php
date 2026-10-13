@@ -132,13 +132,25 @@ class ChiralityPopulationHistoryTest extends TestCase
         $node = $dispatcher->dispatch($this->actor, $phase, ['action' => 'proposition.variant', 'statement' => 'Observed source']);
         $history = app(ChiralityPopulationHistoryService::class);
         $key = $history->key($node);
-        $this->assertSame(-.5, (float) DB::table('chirality_population_observations')->where('population_key', $key)->latest('id')->value('mean'));
+        $assertObserved = function () use ($node, $key): void {
+            // One expressive member with its actual Origin at distance one.
+            // Population history must capture resolved vNext Chirality, not the retired rate scalar.
+            $local = app(LocalMeasurementService::class);
+            $origin = $node->parents()->sole();
+            $expected = round(($local->chiralityComponents($node)->average()
+                + $local->chiralityComponents($origin)->average() / 4) / 1.25, 7);
+            $this->assertSame($expected, (float) DB::table('chirality_population_observations')->where('population_key', $key)->latest('id')->value('mean'));
+            $this->assertSame($expected, app(HomeostaticDirectionService::class)->forPosition($node->fresh(), 'chirality')->mean);
+        };
+        $this->assertSame(0.0, app(LocalMeasurementService::class)->chiralityComponents($node)->orientation);
+        $assertObserved();
         $beforeReceipt = DB::table('chirality_population_observations')->get()->toJson();
         $dispatcher->dispatch($this->actor, $phase, ['action' => 'instrument.execute', 'proposition_id' => $node->id,
             'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/history-evidence']]);
         $this->assertSame($beforeReceipt, DB::table('chirality_population_observations')->get()->toJson());
         $dispatcher->dispatch($this->actor, $phase, ['action' => 'attestation.create', 'proposition_id' => $node->id, 'direction' => 'support']);
-        $this->assertSame(.7, (float) DB::table('chirality_population_observations')->where('population_key', $key)->latest('id')->value('mean'));
+        $this->assertSame(.5, app(LocalMeasurementService::class)->chiralityComponents($node)->orientation);
+        $assertObserved();
         $phase->forceFill(['completed_at' => now()])->save();
         $next = new Phase;
         $next->forceFill(['cycle_id' => $cycle->id, 'kind' => $phase->kind, 'write_register' => $phase->write_register,
@@ -146,8 +158,9 @@ class ChiralityPopulationHistoryTest extends TestCase
         $dispatcher->dispatch($this->actor, $next, ['action' => 'attestation.create', 'proposition_id' => $node->id, 'direction' => 'refute']);
         $this->assertSame(2, app(LocalMeasurementService::class)->chiralityComponents($node)->currentActs);
         $this->assertSame(1, Attestation::whereNotNull('supersedes_attestation_id')->count());
-        $this->assertSame('negative', DB::table('chirality_population_observations')->where('population_key', $key)->latest('id')->value('direction'));
-        $this->assertSame(-.5, app(HomeostaticDirectionService::class)->forPosition($node->fresh(), 'chirality')->mean);
+        $this->assertSame(-.5, app(LocalMeasurementService::class)->chiralityComponents($node)->orientation);
+        $this->assertSame(1, Attestation::effective()->where('proposition_id', $node->id)->count());
+        $assertObserved();
     }
 
     public function test_batched_observation_coordinates_match_the_full_canonical_populations(): void

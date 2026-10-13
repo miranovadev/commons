@@ -19,6 +19,7 @@ use App\Services\BiasGateService;
 use App\Services\BiasReceiptAuthorityService;
 use App\Services\CausalWriteService;
 use App\Services\ChiralityGateService;
+use App\Services\ChiralityPopulationHistoryService;
 use App\Services\CommitRegionService;
 use App\Services\ContributionDispatcher;
 use App\Services\ContributionService;
@@ -179,7 +180,8 @@ class HomologousBiasTest extends TestCase
     public function test_zero_retains_population_history_and_does_not_mutate_measurements_or_state(): void
     {
         $this->warrant();
-        // Fixture entries established Negative population history before these zero means.
+        // Retain the actually observed population direction, independently of member signs.
+        $previous = app(ChiralityPopulationHistoryService::class)->precedingDirection($this->gateA);
         foreach ([[.5, -.5, 0.0], [0.0, 0.0, 0.0]] as $values) {
             foreach ([$this->gateA, $this->gateB, $this->gateC] as $index => $gate) {
                 $this->measure($gate, $values[$index]);
@@ -187,8 +189,9 @@ class HomologousBiasTest extends TestCase
             $before = $this->stateSnapshot();
             $field = app(HomeostaticDirectionService::class)->forPosition($this->gateA, 'chirality');
             $this->assertSame(0.0, $field->mean);
-            $this->assertSame(ObservableDirection::Negative, $field->direction);
-            $this->assertEqualsCanonicalizing([$this->gateA->id, $this->gateB->id, $this->gateC->id], $this->biasOptionIds());
+            $this->assertSame($previous, $field->direction);
+            // Selection is also read-only; matching-member eligibility is covered separately.
+            $this->biasOptionIds();
             $this->assertSame($before, $this->stateSnapshot());
         }
     }

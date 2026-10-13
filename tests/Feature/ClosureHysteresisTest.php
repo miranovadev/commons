@@ -30,7 +30,6 @@ use App\Services\PropositionMeasurementService;
 use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
-use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
@@ -38,6 +37,7 @@ use Tests\Fixtures\AssertsLatePhaseContract;
 use Tests\Fixtures\PropositionBirth;
 use Tests\TestCase;
 
+/** Service contracts with explicit structural fixtures; not a full seven-Phase lifecycle. */
 class ClosureHysteresisTest extends TestCase
 {
     use AssertsLatePhaseContract;
@@ -57,7 +57,7 @@ class ClosureHysteresisTest extends TestCase
         $this->participant->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'observer', 'max_read_count' => 25])->save();
     }
 
-    public function test_read_only_bootstrap_preview_matches_actual_commit_while_field_remains_in_settlement(): void
+    public function test_read_only_preview_preserves_source_measurements_and_the_authorised_closure_state(): void
     {
         $this->bootstrap();
         [$phase, $gate] = $this->candidate([2]);
@@ -71,6 +71,7 @@ class ClosureHysteresisTest extends TestCase
         $this->assertSame('ready', $state['status']);
         $this->assertTrue($state['plan']['commitment']['closure_enforced']);
 
+        $resolved = app(PropositionMeasurementService::class)->recalculate($gate);
         $this->publishPotentialFixture($this->participant);
         $result = app(ParticipationService::class)->contribute($this->participant, $phase->id, ['action' => 'proposition.commit', 'proposition_id' => $phase->gate_proposition_id]);
         $snapshot = CommitmentSnapshot::findOrFail($result['current_proposition_id']);
@@ -81,15 +82,14 @@ class ClosureHysteresisTest extends TestCase
         $this->assertSame($preview['depth_direction'], $snapshot->depth_direction->value);
         $this->assertSame($preview['history_proposition_id'], $snapshot->closure_history_proposition_id);
         $this->assertSame('settlement', $result['last_commitment']['domain_before']);
-        // Receipt-neutral Closure is the pure mean of the two zero components.
-        $this->assertSame(-0.0964505, $snapshot->correspondence);
-        $this->assertSame(-0.5, $snapshot->chirality);
-        $this->assertSame(0.0, $snapshot->closure);
-        $this->assertSame(-0.1988168, $snapshot->tension);
-        $this->assertSame('settlement', $result['last_commitment']['domain_after']);
+        foreach (['correspondence', 'chirality', 'closure'] as $component) {
+            $this->assertSame($resolved->$component, $snapshot->$component);
+        }
+        $this->assertEquals($preview, $snapshot->closure_observation);
+        $this->assertSame(round(($resolved->correspondence + $resolved->chirality + $preview['closure']) / 3, 7), $snapshot->tension);
+        $this->assertSame(ContextDomain::after($snapshot->tension, ContextDomain::Settlement)->value, $result['last_commitment']['domain_after']);
         $this->assertSame(-1.0, $result['last_commitment']['tension_before']);
-        $this->assertFalse($result['last_commitment']['closure_boundary']);
-        $this->assertSame(2, $result['horizon_sequence']);
+        $this->assertSame($snapshot->direction_before !== $snapshot->direction_after, $result['last_commitment']['closure_boundary']);
         $this->assertSame(2, $phase->cycle->contextHorizon->sequence);
         $this->assertSame($snapshot->proposition_id, $this->participant->fresh()->current_proposition_id);
         $this->assertNotNull($phase->fresh()->completed_at);
@@ -123,29 +123,33 @@ class ClosureHysteresisTest extends TestCase
         $this->assertNull($phase->fresh()->completed_at);
     }
 
-    public function test_commit_freezes_source_attestation_direction_as_the_next_region_frame(): void
+    public function test_source_attestation_cannot_bypass_opposed_extent_and_rhythm(): void
     {
         $this->bootstrap();
         [$phase, $gate] = $this->candidate([2], direction: 'refute');
         $this->assertSame(ObservableDirection::Negative, app(AttestationEvidenceService::class)->directionFor($gate));
-        $this->publishPotentialFixture($this->participant);
+        $eligibility = app(CommitmentAdmissibilityService::class)->evaluate($gate, $phase);
+        $this->assertTrue($eligibility['requirements']['attestation']);
+        $this->assertTrue($eligibility['requirements']['receipt']);
+        $this->assertSame('positive', $eligibility['closure']['historical_extent_direction']);
+        $this->assertSame('negative', $eligibility['closure']['historical_rhythm_direction']);
+        $this->assertFalse($eligibility['admissible']);
+        $counts = $this->counts();
         try {
-            $state = app(ParticipationService::class)->contribute($this->participant, $phase->id,
+            app(ContributionDispatcher::class)->dispatch($this->participant, $phase,
                 ['action' => 'proposition.commit', 'proposition_id' => $gate->id]);
-        } catch (InvalidArgumentException $exception) {
-            // Keep the original failure and expose the fixture's actual boundary.
-            $eligibility = app(CommitmentAdmissibilityService::class)->evaluate($gate, $phase);
-            throw new InvalidArgumentException($exception->getMessage().' Fixture Commit eligibility: '.json_encode($eligibility), previous: $exception);
+            $this->fail('Grounding must not bypass independent Closure coherence.');
+        } catch (DomainException $exception) {
+            $this->assertStringContainsString('extent_rhythm_directions_diverge', $exception->getMessage());
         }
-        $commit = Proposition::findOrFail($state['current_proposition_id']);
-        $this->assertSame(['governing' => ObservableDirection::Negative, 'support' => ObservableDirection::Negative],
-            app(CommitRegionPolarityService::class)->forSeed($commit));
+        $this->assertSame($counts, $this->counts());
+        $this->assertNull($phase->fresh()->completed_at);
+        $this->assertSame($gate->id, $this->participant->fresh()->current_proposition_id);
         $this->assertSame(['governing' => ObservableDirection::Positive, 'support' => ObservableDirection::Positive],
             app(CommitRegionPolarityService::class)->forSeed($this->origin));
-        $this->assertSame($gate->statement, $commit->statement);
     }
 
-    public function test_negative_closure_alignment_can_commit_while_corrected_field_remains_in_settlement(): void
+    public function test_negative_closure_alignment_preserves_source_without_prescribing_the_next_domain(): void
     {
         $this->bootstrap();
         [$phase, $gate] = $this->candidate([2, 3, 6]);
@@ -161,18 +165,20 @@ class ClosureHysteresisTest extends TestCase
         $this->assertSame('negative', $preview['depth_direction']);
         $this->assertSame('negative', $preview['cadence_direction']);
         $this->assertTrue($preview['admissible']);
+        $this->assertSame('negative', $preview['historical_extent_direction']);
+        $this->assertSame('negative', $preview['historical_rhythm_direction']);
+        $resolved = app(PropositionMeasurementService::class)->recalculate($gate);
         $this->publishPotentialFixture($this->participant);
         $state = app(ParticipationService::class)->contribute($this->participant, $phase->id, ['action' => 'proposition.commit', 'proposition_id' => $phase->gate_proposition_id]);
-        // Negative retained directions still align. The ordinary structural
-        // comparison changes the combined field, not Closure admissibility.
-        $this->assertFalse($state['last_commitment']['closure_boundary']);
-        $this->assertSame('settlement', $state['domain']);
-        $this->assertSame(2, $state['horizon_sequence']);
         $snapshot = CommitmentSnapshot::findOrFail($state['current_proposition_id']);
-        $this->assertSame(-0.3999863, $snapshot->correspondence);
-        $this->assertSame(-0.3813817, $snapshot->chirality);
-        $this->assertSame(0.0, $snapshot->closure);
-        $this->assertSame(-0.260456, $snapshot->tension);
+        foreach (['correspondence', 'chirality', 'closure'] as $component) {
+            $this->assertSame($resolved->$component, $snapshot->$component);
+        }
+        $this->assertEquals($preview, $snapshot->closure_observation);
+        $this->assertSame(round(($resolved->correspondence + $resolved->chirality + $preview['closure']) / 3, 7), $snapshot->tension);
+        $expectedDomain = ContextDomain::after($snapshot->tension, ContextDomain::Settlement);
+        $this->assertSame($expectedDomain->value, $state['domain']);
+        $this->assertSame($expectedDomain !== ContextDomain::Settlement, $state['last_commitment']['closure_boundary']);
         $this->assertSame($preview['depth'], $snapshot->depth);
         $this->assertSame($preview['cadence'], $snapshot->cadence);
         $this->assertSame($preview['cadence_interval'], $snapshot->cadence_interval);

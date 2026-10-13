@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\CanonicalMeasurement;
+use App\Services\AttestationEvidenceService;
+use App\Services\CommitRegionPolarityService;
 use App\Services\Observables\ObservableService;
 use App\Services\Observables\ProspectiveClosureService;
 use App\Services\PropositionStateService;
@@ -44,6 +46,9 @@ class CommitSourceHistoryLifecycleTest extends TestCase
         $this->assertSame('expressive', $source->tier);
         $this->assertSame($source->id, CanonicalMeasurement::findOrFail($commit->id)->source_proposition_id);
         $this->assertSame($source->statement, $commit->statement);
+        $sourceDirection = app(AttestationEvidenceService::class)->directionFor($source);
+        $this->assertSame(['governing' => $sourceDirection, 'support' => $sourceDirection],
+            app(CommitRegionPolarityService::class)->forSeed($commit));
         $closure = app(ProspectiveClosureService::class);
         $this->assertSame($closure->stored($source), $closure->stored($commit));
         $this->assertEquals($closure->stored($commit), $commit->commitmentSnapshot->closure_observation);
