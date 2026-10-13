@@ -1,0 +1,22 @@
+test,checkpoint,final
+"Tests\Unit\WakeConfigurationTest::test_validation""random_to 60""",passed,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""random_to 61""",passed,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""random_to invalid""",passed,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""reversed range""",passed,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""seconds -1""",passed,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""seconds 0""",passed,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""seconds 1.5""",passed,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""seconds 60""",passed,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""seconds 61""",passed,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""seconds invalid""",passed,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""termination cycle""",passed,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""termination phase""",passed,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""termination rest""",passed,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout -1""",passed,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout 0""",passed,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout 1""",passed,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout 1.5""",passed,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout 1800""",passed,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout 1801""",passed,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout 600""",passed,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout invalid""",passed,passed

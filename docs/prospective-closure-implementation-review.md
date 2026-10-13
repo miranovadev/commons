@@ -1,6 +1,6 @@
 # Stage 3 implementation readiness review
 
-Latest regression evidence: [continued fixture repairs](prospective-closure-fixture-followup.md). Approved semantics are unchanged; missing-history assertions still prevent full regression sign-off.
+Latest conformance and regression evidence: [final Stage 3 review](prospective-closure-final-review.md). Approved semantics are unchanged. Missing-history errors have been eliminated; remaining historical trajectories and lifecycle coverage limits are explicitly reported.
 
 PR #255 continues on its original branch. Main at
 `e7c357551f6e9916a8e84c8c61c309069b280ca6`, including PR #256's
@@ -152,17 +152,18 @@ worked cases, with implementation mapping and verification plan here.
 The numerical specification is resolved and production wiring is implemented.
 This does not claim full production correctness or successful regression validation.
 
-The [fixture repair follow-up](prospective-closure-fixture-repair.md) and
-[original validation checkpoint](prospective-closure-validation.md) record exact tested
-heads, PostgreSQL/SQLite results, complete Core and Integration execution,
-baseline comparison, performance and a durable per-test inventory. Focused C1
-and prospective Closure contracts pass on both databases. Complete suite
-execution is within existing CI budgets, but many older direct-model fixtures
-still lack authorised birth or frozen canonical history. Four historical
-Integration trajectories now correctly stop at incoherent Extent/Rhythm.
-Those failures remain visible and do not constitute successful lifecycle proofs.
+The [final review](prospective-closure-final-review.md) records the complete
+production conformance review, tested SHA, PostgreSQL/SQLite results, complete
+Core/Integration accounting, and coverage changes. The earlier fixture reports
+remain historical checkpoints, not the current missing-history status. No
+production semantics were changed during that final pass.
 
-Remaining review boundaries are lawful fixture conversion, replacement authored
-scenarios and the separately scoped Rest-bound interpretation described above.
-No production fallback or fabricated history resolves those gaps. Continue in
-PR #255; Claire performs final review. Do not merge.
+The four aligned-evidence Integration journeys still stop at incoherent
+Extent/Rhythm. Historical Mediate and catastrophe scripts retain their failures;
+their later assertions are not claimed as demonstrated coverage. Component and
+structural/persistence tests are explicitly distinguished from the genuine
+89-action Commit and descendant/search scenarios. The independently scoped
+Rest-bound interpretation above remains outside this Stage 3 validation claim.
+
+See the final report for readiness and remaining limitations. Continue in PR
+#255; Claire performs final review and merge.
