@@ -17,12 +17,23 @@ use App\Services\ReceiptContextService;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\Group;
+use Tests\Fixtures\IsolatesClosureOutput;
 use Tests\Fixtures\ParticipantContextFixture;
 use Tests\TestCase;
 
+/** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
+#[Group('component-contract')]
 class ReceiptRegionContextTest extends TestCase
 {
+    use IsolatesClosureOutput;
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->isolateClosureOutput();
+    }
 
     private function receipt(ParticipantContextFixture $fixture, Proposition $node, string $name = 'evidence')
     {
@@ -45,7 +56,7 @@ class ReceiptRegionContextTest extends TestCase
             $f->phase->forceFill(['gate_proposition_id' => $gate->id])->save();
             $this->assertContains($r->id, $service->ordinaryAvailable($f->phase)->pluck('id'));
         }
-        $commit = $f->node($reconciled, 'canon', 'commit', 'committal');
+        $commit = $f->projectedCommittal($reconciled, 'canon');
         $f->phase->forceFill(['gate_proposition_id' => $commit->id])->save();
         $this->assertSame($r->context_horizon_id, $f->phase->cycle->context_horizon_id);
         // Changing the Gate does not change this Cycle's immutable catalogue.
@@ -60,7 +71,7 @@ class ReceiptRegionContextTest extends TestCase
     public function test_missing_governance_stays_unresolved_despite_valid_causal_parents(): void
     {
         $f = new ParticipantContextFixture(1, 0, false);
-        $orphan = $f->node(null, 'activity');
+        $orphan = $f->node(null, 'activity', completeBirth: false);
         $r = $this->receipt($f, $orphan);
         $this->assertNotContains($r->id, app(HorizonReceiptService::class)->ordinaryAvailable($f->phase)->pluck('id'));
         $other = $f->node(null, 'canon', 'variant', 'committal');
@@ -74,7 +85,7 @@ class ReceiptRegionContextTest extends TestCase
     public function test_valid_governance_is_not_erased_by_malformed_secondary_provenance(): void
     {
         $f = new ParticipantContextFixture(1, 0, false);
-        $orphan = $f->node(null, 'activity');
+        $orphan = $f->node(null, 'activity', completeBirth: false);
         $mixed = $f->node($f->seed, 'activity');
         $f->edge($orphan, $mixed, 'reconcile');
         $r = $this->receipt($f, $mixed);

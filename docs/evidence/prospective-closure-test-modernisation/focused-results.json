@@ -1,0 +1,76 @@
+[
+  {
+    "job_id": 115022282194,
+    "name": "focused (sqlite, fixtures)",
+    "summaries": [
+      "Tests:    3 failed, 2 skipped, 170 passed (2039 assertions)",
+      "Duration: 36.23s"
+    ]
+  },
+  {
+    "job_id": 115022282389,
+    "name": "focused (sqlite, contracts)",
+    "summaries": [
+      "Tests:    48 passed (300 assertions)",
+      "Duration: 17.00s",
+      "Tests:    14 passed (85 assertions)",
+      "Duration: 3.52s",
+      "Tests:    131 passed (1961 assertions)",
+      "Duration: 35.36s",
+      "PASS   .......................................................... 32 files  "
+    ]
+  },
+  {
+    "job_id": 115022282403,
+    "name": "focused (pgsql, committed-history)",
+    "summaries": [
+      "Tests:    1 passed (129 assertions)",
+      "Duration: 119.93s"
+    ]
+  },
+  {
+    "job_id": 115022282414,
+    "name": "focused (sqlite, committed-history)",
+    "summaries": [
+      "Tests:    1 passed (129 assertions)",
+      "Duration: 31.37s"
+    ]
+  },
+  {
+    "job_id": 115022282441,
+    "name": "focused (pgsql, contracts)",
+    "summaries": [
+      "Tests:    48 passed (300 assertions)",
+      "Duration: 47.95s",
+      "Tests:    14 passed (85 assertions)",
+      "Duration: 10.36s",
+      "Tests:    131 passed (1961 assertions)",
+      "Duration: 121.74s",
+      "PASS   .......................................................... 32 files  "
+    ]
+  },
+  {
+    "job_id": 115022282516,
+    "name": "focused (pgsql, lifecycle)",
+    "summaries": [
+      "Tests:    1 passed (112 assertions)",
+      "Duration: 115.92s"
+    ]
+  },
+  {
+    "job_id": 115022282557,
+    "name": "focused (pgsql, fixtures)",
+    "summaries": [
+      "Tests:    3 failed, 172 passed (2045 assertions)",
+      "Duration: 335.49s"
+    ]
+  },
+  {
+    "job_id": 115022282568,
+    "name": "focused (sqlite, lifecycle)",
+    "summaries": [
+      "Tests:    1 passed (112 assertions)",
+      "Duration: 25.54s"
+    ]
+  }
+]

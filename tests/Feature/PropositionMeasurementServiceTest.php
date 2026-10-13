@@ -10,10 +10,13 @@ use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\PropositionMeasurement;
 use App\Models\Substrate;
+use App\Services\Observables\ProspectiveClosureService;
 use App\Services\PropositionMeasurementService;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use InvalidArgumentException;
+use Tests\Fixtures\GovernedExpressionFixture;
+use Tests\Fixtures\ParticipantContextFixture;
 use Tests\TestCase;
 
 class PropositionMeasurementServiceTest extends TestCase
@@ -23,6 +26,9 @@ class PropositionMeasurementServiceTest extends TestCase
     public function test_live_measurements_are_replaceable_but_closure_comes_from_birth(): void
     {
         $proposition = $this->proposition();
+        // Projection replacement is numerical isolation, not an ordinary
+        // expression inheriting Origin's constitutional measurement.
+        $this->controlledBirthClosureFixture(-1);
         $propositionUpdatedAt = $proposition->getRawOriginal('updated_at');
         $calculatedAt = CarbonImmutable::parse('2026-09-05 12:00:00 UTC');
         $service = app(PropositionMeasurementService::class);
@@ -73,9 +79,33 @@ class PropositionMeasurementServiceTest extends TestCase
         );
     }
 
+    public function test_real_origin_and_developmental_projections_preserve_their_own_authorised_state(): void
+    {
+        $fixture = new GovernedExpressionFixture;
+        $closure = app(ProspectiveClosureService::class);
+        $service = app(PropositionMeasurementService::class);
+        $origin = $closure->stored($fixture->origin);
+        $ordinary = $closure->stored($fixture->expression);
+        $this->assertSame(-1.0, $origin['closure']);
+        $this->assertNotSame($origin, $ordinary);
+        $this->assertSame($fixture->origin->id, $fixture->expression->phase->cycle->entry_committal_id);
+        $this->assertSame([$fixture->origin->id], $fixture->expression->parents()->pluck('propositions.id')->all());
+        $this->assertDatabaseHas('phase_profile_observations', ['proposition_id' => $fixture->expression->id]);
+        foreach ([$fixture->origin, $fixture->expression] as $node) {
+            $before = $closure->stored($node);
+            $updatedAt = $node->getRawOriginal('updated_at');
+            foreach ([-1.0, 1.0] as $untrustedClosure) {
+                $measurement = $service->project($node, .75, -.25, $untrustedClosure);
+                $this->assertSame($before['closure'], $measurement->closure);
+                $this->assertSame($before, $closure->stored($node));
+                $this->assertSame($updatedAt, $node->fresh()->getRawOriginal('updated_at'));
+            }
+        }
+    }
+
     public function test_correspondence_retains_both_directions_through_zero_and_projection_deletion(): void
     {
-        $position = $this->proposition();
+        $position = (new ParticipantContextFixture(2, 0, false))->gate;
         $service = app(PropositionMeasurementService::class);
         foreach ([1.0, -1.0] as $sign) {
             $service->project($position, $sign, 0, 0);

@@ -254,6 +254,9 @@ class PhasePositionInvariantTest extends TestCase
             $this->commitAncestryFixture($origin, Proposition::findOrFail($horizon->opened_by_proposition_id));
         }
         $this->freezeCommittedRegionFixture($origin);
+        // This existing numerical double must cover construction too: the
+        // following cases test Phase authority, not historical Closure runs.
+        $this->controlledBirthClosureFixture(1.0, includeCommittal: true);
         $nodes = [0 => $origin];
         foreach (range(1, 6) as $kind) {
             $phase = $this->phase($author, PhaseKind::from($kind), $nodes[$kind - 1]);
@@ -262,8 +265,6 @@ class PhasePositionInvariantTest extends TestCase
                 1, 2, 4 => 'variant', 5 => 'reconcile', default => 'reclassify'
             });
         }
-        $this->controlledBirthClosureFixture(1.0, includeCommittal: true);
-
         return [$author, $reader, $nodes];
     }
 

@@ -70,10 +70,13 @@ class ReinforcementTest extends TestCase
         $creation->forceFill(['kind' => PhaseKind::Bias])->save();
         $this->node = new Proposition;
         $this->node->forceFill(['phase_id' => $creation->id, 'register' => 'canon', 'tier' => 'expressive', 'statement' => 'Persistence must be earned.'])->save();
-        app(LedgerService::class)->record($this->node);
         $creation->forceFill(['gate_proposition_id' => $this->governor->id])->save();
-        (new Supersession)->forceFill(['phase_id' => $creation->id,
-            'source_proposition_id' => $this->governor->id, 'target_proposition_id' => $this->node->id, 'type' => 'variant'])->save();
+        app(LedgerService::class)->record($this->node, $this->governor);
+        $edge = (new Supersession)->forceFill(['phase_id' => $creation->id,
+            'source_proposition_id' => $this->governor->id, 'target_proposition_id' => $this->node->id, 'type' => 'variant']);
+        $edge->save();
+        app(LedgerService::class)->record($edge);
+        \Tests\Fixtures\PropositionBirth::complete($this->node);
         $this->later = $this->phase($substrate, $creation->cycle->participant);
         $attestation = new Attestation;
         $attestation->forceFill(['phase_id' => $this->later->id, 'proposition_id' => $this->node->id, 'direction' => 'support'])->save();
@@ -146,10 +149,11 @@ class ReinforcementTest extends TestCase
 
         $child = new Proposition;
         $child->forceFill(['phase_id' => $this->later->id, 'register' => 'canon', 'tier' => 'expressive', 'statement' => 'A child with fresh evidence state.'])->save();
-        app(LedgerService::class)->record($child);
+        app(LedgerService::class)->record($child, $this->node);
         $edge = new Supersession;
         $edge->forceFill(['phase_id' => $this->later->id, 'source_proposition_id' => $this->node->id, 'target_proposition_id' => $child->id, 'type' => 'variant'])->save();
         app(LedgerService::class)->record($edge);
+        \Tests\Fixtures\PropositionBirth::complete($child);
         $this->assertSame(0, app(ReinforcementService::class)->count($child));
         $childClosure = $local->calculate($child)->closure()->average();
         $expected = $childClosure; // Expressive ancestry cannot smear committed Closure or local reinforcement.
@@ -291,6 +295,9 @@ class ReinforcementTest extends TestCase
         $receipt = null;
         foreach (range(1, 3) as $count) {
             $phase = $this->phase($this->later->cycle->participant->substrate);
+            // Cycle entry is an authorised Closure event; capture its result
+            // before testing the independent Receipt load boundary.
+            $atEntry = $local->calculate($this->node);
             if ($receipt === null) {
                 $receipt = $this->loadedReceipt(phase: $phase);
             } else {
@@ -303,7 +310,7 @@ class ReinforcementTest extends TestCase
             $this->assertEquals($before->observables(), $after->observables());
             $this->assertSame($before->chiralityComponents->orientation, $after->chiralityComponents->orientation);
             $this->assertSame($before->chiralityComponents->cadence, $after->chiralityComponents->cadence);
-            $this->assertSame($before->closure()->resolve(), $after->closure()->resolve());
+            $this->assertSame($atEntry->closure()->resolve(), $after->closure()->resolve());
             $this->assertEquals($after, $local->calculate($this->node, app(ContextLineageComparisonService::class)->for($this->node, new ParticipationContext($this->later))));
             $this->assertSame($historical, $snapshot->fresh()->getAttributes());
         }

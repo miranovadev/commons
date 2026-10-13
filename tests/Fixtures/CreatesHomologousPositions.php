@@ -10,10 +10,10 @@ use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Substrate;
-use App\Models\Supersession;
 use App\Services\ContextHorizonProjector;
 use App\Services\LedgerService;
 
+/** Authored committed-coordinate read models; never an operational Commit builder. */
 trait CreatesHomologousPositions
 {
     private Participant $actor;
@@ -40,23 +40,18 @@ trait CreatesHomologousPositions
         return $node;
     }
 
-    private function commit(?Proposition $entry, string $after, array $measurements = []): Proposition
+    private function committedCoordinate(?Proposition $entry, string $after, array $measurements = []): Proposition
     {
         $phase = $this->phase($entry, $entry, PhaseKind::Order);
         $node = new Proposition;
         $node->forceFill(['phase_id' => $phase->id, 'tier' => 'committal', 'register' => $phase->write_register, 'statement' => 'Region seed'])->save();
         $ledgerEntry = app(LedgerService::class)->record($node);
-        $commit = null;
-        if ($entry !== null) {
-            $commit = new Supersession;
-            $commit->forceFill(['phase_id' => $phase->id, 'source_proposition_id' => $phase->gate_proposition_id,
-                'target_proposition_id' => $node->id, 'type' => 'commit'])->save();
-            app(LedgerService::class)->record($commit);
-        }
+        // Governance links supply the coordinate projection. Do not fabricate
+        // a Committal-to-Committal Commit Supersession to justify that input.
         $horizon = $phase->cycle->contextHorizon;
         $snapshot = new CommitmentSnapshot;
         $snapshot->forceFill(['proposition_id' => $node->id, 'substrate_id' => $this->actor->substrate_id,
-            'ledger_entry_id' => $ledgerEntry->id, 'supersession_id' => $commit?->id,
+            'ledger_entry_id' => $ledgerEntry->id, 'supersession_id' => null,
             'correspondence' => 0, 'chirality' => 0, 'closure' => 0,
             'depth' => 0, 'cadence' => 0, 'cadence_interval' => $entry === null ? null : 1,
             'prominence' => .5, 'turbulence' => .5, 'tension' => 0,

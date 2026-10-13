@@ -33,6 +33,20 @@ class ExhaustionRealtimeTest extends TestCase
         Queue::fake();
     }
 
+    protected function tearDown(): void
+    {
+        // These tests deliberately open transactions to observe after-commit
+        // delivery. A failed assertion/setup must not leave their locks behind
+        // for the next DatabaseMigrations fixture's schema refresh.
+        try {
+            while (DB::transactionLevel() > 0) {
+                DB::rollBack();
+            }
+        } finally {
+            parent::tearDown();
+        }
+    }
+
     public function test_first_and_second_boundary_publish_minimal_events_after_commit(): void
     {
         $events = $positions = [];

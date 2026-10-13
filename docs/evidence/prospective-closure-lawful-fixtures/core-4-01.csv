@@ -1,0 +1,106 @@
+test,result,category,finding,failure_summary,first_test_frame,assertions,seconds
+Tests\Unit\ChiralityValuesTest::test_population_existence_and_rate_similarity#0,passed,,,,,1,0.000557
+Tests\Unit\ChiralityValuesTest::test_population_existence_and_rate_similarity#1,passed,,,,,1,0.000279
+Tests\Unit\ChiralityValuesTest::test_population_existence_and_rate_similarity#2,passed,,,,,1,0.000217
+Tests\Unit\ChiralityValuesTest::test_population_existence_and_rate_similarity#3,passed,,,,,1,0.000227
+Tests\Unit\ChiralityValuesTest::test_population_existence_and_rate_similarity#4,passed,,,,,1,0.000235
+Tests\Unit\ChiralityValuesTest::test_population_existence_and_rate_similarity#5,passed,,,,,1,0.000209
+Tests\Unit\ChiralityValuesTest::test_population_existence_and_rate_similarity#6,passed,,,,,1,0.000204
+Tests\Unit\ChiralityValuesTest::test_population_existence_and_rate_similarity#7,passed,,,,,1,0.000201
+Tests\Unit\ChiralityValuesTest::test_composition_and_independent_hysteresis_have_no_admissibility_rule,passed,,,,,5,0.000230
+"Tests\Unit\WakeConfigurationTest::test_validation""termination phase""",passed,,,,,1,0.102500
+"Tests\Unit\WakeConfigurationTest::test_validation""termination cycle""",passed,,,,,1,0.010187
+"Tests\Unit\WakeConfigurationTest::test_validation""termination rest""",passed,,,,,1,0.008927
+"Tests\Unit\WakeConfigurationTest::test_validation""invalid termination""",passed,,,,,1,0.009033
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout 1""",passed,,,,,1,0.010673
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout 600""",passed,,,,,1,0.008780
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout 1800""",passed,,,,,1,0.008816
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout 0""",passed,,,,,1,0.009270
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout -1""",passed,,,,,1,0.009672
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout 1801""",passed,,,,,1,0.009302
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout 1.5""",passed,,,,,1,0.009946
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout invalid""",passed,,,,,1,0.009964
+"Tests\Unit\WakeConfigurationTest::test_validation""offset mode seconds""",passed,,,,,1,0.009075
+"Tests\Unit\WakeConfigurationTest::test_validation""offset mode random""",passed,,,,,1,0.008807
+"Tests\Unit\WakeConfigurationTest::test_validation""offset mode invalid""",passed,,,,,1,0.008952
+"Tests\Unit\WakeConfigurationTest::test_validation""seconds 0""",passed,,,,,1,0.008903
+"Tests\Unit\WakeConfigurationTest::test_validation""seconds 60""",passed,,,,,1,0.008890
+"Tests\Unit\WakeConfigurationTest::test_validation""seconds -1""",passed,,,,,1,0.009107
+"Tests\Unit\WakeConfigurationTest::test_validation""seconds 61""",passed,,,,,1,0.009013
+"Tests\Unit\WakeConfigurationTest::test_validation""seconds 1.5""",passed,,,,,1,0.009064
+"Tests\Unit\WakeConfigurationTest::test_validation""seconds invalid""",passed,,,,,1,0.009105
+"Tests\Unit\WakeConfigurationTest::test_validation""random_from 0""",passed,,,,,1,0.008865
+"Tests\Unit\WakeConfigurationTest::test_validation""random_from 60""",passed,,,,,1,0.009041
+"Tests\Unit\WakeConfigurationTest::test_validation""random_from -1""",passed,,,,,1,0.008948
+"Tests\Unit\WakeConfigurationTest::test_validation""random_from 61""",passed,,,,,1,0.009049
+"Tests\Unit\WakeConfigurationTest::test_validation""random_from 1.5""",passed,,,,,1,0.009191
+"Tests\Unit\WakeConfigurationTest::test_validation""random_from invalid""",passed,,,,,1,0.009014
+"Tests\Unit\WakeConfigurationTest::test_validation""random_to 0""",passed,,,,,1,0.009434
+"Tests\Unit\WakeConfigurationTest::test_validation""random_to 60""",passed,,,,,1,0.008832
+"Tests\Unit\WakeConfigurationTest::test_validation""random_to -1""",passed,,,,,1,0.008976
+"Tests\Unit\WakeConfigurationTest::test_validation""random_to 61""",passed,,,,,1,0.008995
+"Tests\Unit\WakeConfigurationTest::test_validation""random_to 1.5""",passed,,,,,1,0.009069
+"Tests\Unit\WakeConfigurationTest::test_validation""random_to invalid""",passed,,,,,1,0.009029
+"Tests\Unit\WakeConfigurationTest::test_validation""equal range""",passed,,,,,1,0.008871
+"Tests\Unit\WakeConfigurationTest::test_validation""reversed range""",passed,,,,,1,0.009265
+Tests\Unit\WakeConfigurationTest::test_defaults_and_inclusive_random_bounds,passed,,,,,204,0.008625
+Tests\Feature\Api\ParticipationHttpReadGuardTest::test_diagnostics_accept_read_queries_but_reject_data_modifying_ctes,passed,,,,,5,1.102280
+Tests\Feature\BiasLineageTest::test_each_head_uses_its_own_ancestry_and_excludes_itself_and_unrelated_majorities,passed,,,,,10,4.095074
+Tests\Feature\BiasLineageTest::test_reconciled_lineage_deduplicates_shared_ancestry_and_retains_direction_at_zero,passed,,,,,5,2.464606
+Tests\Feature\CausalOperationalScopeTest::test_bias_calculates_regionally_but_does_not_expose_or_follow_another_route#0,passed,,,,,63,4.611598
+Tests\Feature\CausalOperationalScopeTest::test_bias_calculates_regionally_but_does_not_expose_or_follow_another_route#1,passed,,,,,62,3.020266
+Tests\Feature\CausalOperationalScopeTest::test_bias_revisit_follows_its_frozen_classification_then_only_its_direct_commit#0,passed,,,,,58,4.593688
+Tests\Feature\CausalOperationalScopeTest::test_bias_revisit_follows_its_frozen_classification_then_only_its_direct_commit#1,passed,,,,,57,3.028739
+Tests\Feature\CausalOperationalScopeTest::test_order_keeps_every_causal_expressive_write_and_separates_visibility_commit_and_traverse#0,passed,,,,,64,8.439458
+Tests\Feature\CausalOperationalScopeTest::test_order_keeps_every_causal_expressive_write_and_separates_visibility_commit_and_traverse#1,passed,,,,,63,4.543910
+Tests\Feature\CausalOperationalScopeTest::test_mediate_counterpart_is_an_operand_and_reconciliation_creates_both_causal_edges#0,passed,,,,,23,2.016566
+Tests\Feature\CausalOperationalScopeTest::test_mediate_counterpart_is_an_operand_and_reconciliation_creates_both_causal_edges#1,passed,,,,,22,1.809736
+Tests\Feature\ClosureHysteresisTest::test_read_only_bootstrap_preview_matches_actual_commit_while_field_remains_in_settlement,failure,A (Stage 2 baseline),Same baseline expected/actual assertion.,"Tests\Feature\ClosureHysteresisTest::test_read_only_bootstrap_preview_matches_actual_commit_while_field_remains_in_settlement
+Failed asserting that 0.1265986 is identical to -0.0964505.",tests/Feature/ClosureHysteresisTest.php:85,18,2.483848
+Tests\Feature\ClosureHysteresisTest::test_an_observed_commit_retries_after_cycle_entry_even_when_bootstrap_remains_admissible,passed,,,,,10,1.573087
+Tests\Feature\ClosureHysteresisTest::test_commit_freezes_source_attestation_direction_as_the_next_region_frame,error,B (Stage 3 trajectory),Extent 0.0714286 Positive / Rhythm -0.25 Negative; all other Commit requirements pass. Later polarity assertions remain unexecuted.,"{""requirements"":{""attestation"":true,""receipt"":true,""closure"":false,""phase_position"":true,""causal_write"":true,""active_region_candidate"":true,""write_opportunity"":true},""reasons"":[""extent_rhythm_directions_diverge""],""historical_extent"":0.0714286,""historical_rhythm"":-0.25,""historical_extent_direction"":""positive"",""historical_rhythm_direction"":""negative""}",tests/Feature/ClosureHysteresisTest.php:138,5,1.236758
+Tests\Feature\ClosureHysteresisTest::test_negative_closure_alignment_can_commit_while_corrected_field_remains_in_settlement,failure,B (Stage 3 trajectory),Commit executes; unchanged assertion now encounters a Closure boundary before the old Stage 2 numerical mismatch.,"Tests\Feature\ClosureHysteresisTest::test_negative_closure_alignment_can_commit_while_corrected_field_remains_in_settlement
+Failed asserting that true is false.",tests/Feature/ClosureHysteresisTest.php:168,10,3.206219
+Tests\Feature\ClosureHysteresisTest::test_first_post_origin_commit_has_symmetric_unresolved_components,passed,,,,,9,0.953416
+Tests\Feature\ClosureHysteresisTest::test_expressive_depth_and_phase_touches_do_not_change_committed_bootstrap,passed,,,,,6,1.763815
+Tests\Feature\ClosureHysteresisTest::test_zero_extent_retains_negative_history_and_blocks_a_positive_rhythm,passed,,,,,18,1.301599
+Tests\Feature\ClosureHysteresisTest::test_unrelated_newer_snapshot_does_not_supply_lineage_history,passed,,,,,8,2.852066
+Tests\Feature\ClosureHysteresisTest::test_actual_candidate_rejection_rolls_back_a_previously_admissible_preview,passed,,,,,11,1.533123
+Tests\Feature\ClosureHysteresisTest::test_unavailable_authorised_state_fails_closed_without_rewriting_history,passed,,,,,10,0.949058
+Tests\Feature\ClosureHysteresisTest::test_order_native_preview_explains_visible_write_actionability#0,passed,,,,,23,1.179743
+Tests\Feature\ClosureHysteresisTest::test_order_native_preview_explains_visible_write_actionability#1,passed,,,,,23,1.165664
+Tests\Feature\ClosureHysteresisTest::test_order_native_preview_explains_visible_write_actionability#2,passed,,,,,27,1.362305
+Tests\Feature\ClosureHysteresisTest::test_order_native_preview_explains_visible_write_actionability#3,passed,,,,,27,1.377115
+Tests\Feature\ClosureHysteresisTest::test_admissible_preview_cannot_authorize_commit_after_closure_becomes_opposed,passed,,,,,13,1.338695
+Tests\Feature\CommitBoundaryTest::test_zero_loaded_reinforcement_can_commit_and_the_direct_source_is_consumed_globally,passed,,,,,23,2.186950
+Tests\Feature\CommitmentSnapshotFixtureTest::test_origin_is_the_unique_parentless_snapshot_exception,passed,,,,,3,0.147199
+Tests\Feature\CommitmentSnapshotFixtureTest::test_snapshot_links_the_unique_commit_and_repeated_freezing_preserves_it,passed,,,,,4,0.180587
+"Tests\Feature\CommitmentSnapshotFixtureTest::test_incomplete_or_ambiguous_ancestry_cannot_publish_a_snapshot""missing""",passed,,,,,2,0.212972
+"Tests\Feature\CommitmentSnapshotFixtureTest::test_incomplete_or_ambiguous_ancestry_cannot_publish_a_snapshot""wrong operation""",passed,,,,,2,0.234209
+"Tests\Feature\CommitmentSnapshotFixtureTest::test_incomplete_or_ambiguous_ancestry_cannot_publish_a_snapshot""ambiguous commits""",passed,,,,,2,0.254859
+Tests\Feature\CommitmentSnapshotFixtureTest::test_a_commit_from_a_different_selected_gate_is_rejected,passed,,,,,2,0.248418
+Tests\Feature\CommitmentSnapshotFixtureTest::test_an_existing_unlinked_snapshot_is_rejected_without_rewriting_history,passed,,,,,2,0.171772
+Tests\Feature\ContextHorizonProjectorTest::test_the_ledger_provides_idempotent_substrate_local_order,passed,,,,,10,0.163375
+Tests\Feature\ContextHorizonProjectorTest::test_completed_receipts_enter_the_ledger_atomically,passed,,,,,1,0.106243
+Tests\Feature\ContextHorizonProjectorTest::test_an_incomplete_commitment_rolls_back_its_ledger_entry,passed,,,,,4,0.096594
+Tests\Feature\ContextHorizonProjectorTest::test_cross_substrate_edges_cannot_enter_the_ledger,passed,,,,,2,0.113890
+Tests\Feature\ContextHorizonProjectorTest::test_commitments_create_horizons_only_on_direction_change,passed,,,,,20,1.937986
+Tests\Feature\ContextHorizonProjectorTest::test_horizons_rebuild_without_rewriting_commitment_history,passed,,,,,8,1.072055
+Tests\Feature\CycleRegionOwnershipTest::test_direct_context_and_batch_ownership_agree_without_parent_inference,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\CycleRegionOwnershipTest::test_direct_context_and_batch_ownership_agree_without_parent_inference
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/Feature/CycleRegionOwnershipTest.php:232,0,0.450083
+Tests\Feature\CycleRegionOwnershipTest::test_cross_horizon_inputs_preserve_owner_horizon_and_only_the_producing_gate_route,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\CycleRegionOwnershipTest::test_cross_horizon_inputs_preserve_owner_horizon_and_only_the_producing_gate_route
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/Feature/CycleRegionOwnershipTest.php:232,0,1.189634
+Tests\Feature\CycleRegionOwnershipTest::test_missing_governance_fails_closed_even_with_a_single_valid_parent,passed,,,,,5,0.238165
+Tests\Feature\CycleRegionOwnershipTest::test_an_expressive_governor_fails_closed_in_all_resolvers,passed,,,,,3,0.571069
+Tests\Feature\CycleRegionOwnershipTest::test_invalid_snapshot_horizon_and_foreign_substrate_governance_fail_closed,passed,,,,,13,1.352045
+Tests\Feature\CycleRegionOwnershipTest::test_hard_mixed_region_inputs_retain_governance_and_gate_lineage,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\CycleRegionOwnershipTest::test_hard_mixed_region_inputs_retain_governance_and_gate_lineage
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/Feature/CycleRegionOwnershipTest.php:232,0,0.869399
+Tests\Feature\DomainOperationalEligibilityTest::test_operational_pools_exclude_analogous_registers_in_both_query_paths#0,passed,,,,,34,3.765623
+Tests\Feature\DomainOperationalEligibilityTest::test_operational_pools_exclude_analogous_registers_in_both_query_paths#1,passed,,,,,34,3.825041
+Tests\Feature\ExhaustedContinuationTest::test_successful_closed_history_remains_visible_without_a_new_failure,passed,,,,,17,8.121611
+Tests\Feature\ExhaustedContinuationTest::test_live_alternatives_and_exact_current_epochs_control_backward_completion,passed,,,,,15,6.966529
+"Tests\Feature\ExhaustedParticipantContextTest::test_spent_writes_remain_visible_at_their_producing_position_in_both_domains""emergence-Distinguish""",passed,,,,,10,1.155562
+"Tests\Feature\ExhaustedParticipantContextTest::test_spent_writes_remain_visible_at_their_producing_position_in_both_domains""emergence-Persist""",passed,,,,,10,1.404575
+"Tests\Feature\ExhaustedParticipantContextTest::test_spent_writes_remain_visible_at_their_producing_position_in_both_domains""emergence-Constrain""",passed,,,,,10,1.730517
+"Tests\Feature\ExhaustedParticipantContextTest::test_spent_writes_remain_visible_at_their_producing_position_in_both_domains""emergence-Disperse""",passed,,,,,10,2.074779
+"Tests\Feature\ExhaustedParticipantContextTest::test_spent_writes_remain_visible_at_their_producing_position_in_both_domains""emergence-Mediate""",passed,,,,,10,2.421801

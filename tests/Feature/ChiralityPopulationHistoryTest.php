@@ -20,12 +20,17 @@ use App\Services\PropositionMeasurementService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\CreatesHomologousPositions;
+use Tests\Fixtures\IsolatesClosureOutput;
 use Tests\TestCase;
 
+/** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
+#[Group('component-contract')]
 class ChiralityPopulationHistoryTest extends TestCase
 {
     use CreatesHomologousPositions, RefreshDatabase;
+    use IsolatesClosureOutput;
 
     public static function histories(): array
     {
@@ -33,11 +38,17 @@ class ChiralityPopulationHistoryTest extends TestCase
             'negative history' => [.4, -.5, ObservableDirection::Negative]];
     }
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->isolateClosureOutput();
+    }
+
     #[DataProvider('histories')]
     public function test_identical_zero_population_retains_its_own_actual_prior_direction(float $left, float $right, ObservableDirection $expected): void
     {
         $this->createHomologyActor();
-        $origin = $this->commit(null, 'emergence');
+        $origin = $this->committedCoordinate(null, 'emergence');
         $a = $this->position($origin);
         $b = $this->position($origin);
         $values = [$a->id => $left, $b->id => $right];
@@ -74,7 +85,7 @@ class ChiralityPopulationHistoryTest extends TestCase
     public function test_cycle_entry_observes_both_sides_even_without_attestation_or_completion_and_rolls_back_atomically(): void
     {
         $this->createHomologyActor();
-        $origin = $this->commit(null, 'emergence');
+        $origin = $this->committedCoordinate(null, 'emergence');
         $a = $this->position($origin);
         $b = $this->position($origin);
         $count = Cycle::where('entry_committal_id', $origin->id)->count();
@@ -121,13 +132,25 @@ class ChiralityPopulationHistoryTest extends TestCase
         $node = $dispatcher->dispatch($this->actor, $phase, ['action' => 'proposition.variant', 'statement' => 'Observed source']);
         $history = app(ChiralityPopulationHistoryService::class);
         $key = $history->key($node);
-        $this->assertSame(-.5, (float) DB::table('chirality_population_observations')->where('population_key', $key)->latest('id')->value('mean'));
+        $assertObserved = function () use ($node, $key): void {
+            // One expressive member with its actual Origin at distance one.
+            // Population history must capture resolved vNext Chirality, not the retired rate scalar.
+            $local = app(LocalMeasurementService::class);
+            $origin = $node->parents()->sole();
+            $expected = round(($local->chiralityComponents($node)->average()
+                + $local->chiralityComponents($origin)->average() / 4) / 1.25, 7);
+            $this->assertSame($expected, (float) DB::table('chirality_population_observations')->where('population_key', $key)->latest('id')->value('mean'));
+            $this->assertSame($expected, app(HomeostaticDirectionService::class)->forPosition($node->fresh(), 'chirality')->mean);
+        };
+        $this->assertSame(0.0, app(LocalMeasurementService::class)->chiralityComponents($node)->orientation);
+        $assertObserved();
         $beforeReceipt = DB::table('chirality_population_observations')->get()->toJson();
         $dispatcher->dispatch($this->actor, $phase, ['action' => 'instrument.execute', 'proposition_id' => $node->id,
             'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/history-evidence']]);
         $this->assertSame($beforeReceipt, DB::table('chirality_population_observations')->get()->toJson());
         $dispatcher->dispatch($this->actor, $phase, ['action' => 'attestation.create', 'proposition_id' => $node->id, 'direction' => 'support']);
-        $this->assertSame(.7, (float) DB::table('chirality_population_observations')->where('population_key', $key)->latest('id')->value('mean'));
+        $this->assertSame(.5, app(LocalMeasurementService::class)->chiralityComponents($node)->orientation);
+        $assertObserved();
         $phase->forceFill(['completed_at' => now()])->save();
         $next = new Phase;
         $next->forceFill(['cycle_id' => $cycle->id, 'kind' => $phase->kind, 'write_register' => $phase->write_register,
@@ -135,21 +158,22 @@ class ChiralityPopulationHistoryTest extends TestCase
         $dispatcher->dispatch($this->actor, $next, ['action' => 'attestation.create', 'proposition_id' => $node->id, 'direction' => 'refute']);
         $this->assertSame(2, app(LocalMeasurementService::class)->chiralityComponents($node)->currentActs);
         $this->assertSame(1, Attestation::whereNotNull('supersedes_attestation_id')->count());
-        $this->assertSame('negative', DB::table('chirality_population_observations')->where('population_key', $key)->latest('id')->value('direction'));
-        $this->assertSame(-.5, app(HomeostaticDirectionService::class)->forPosition($node->fresh(), 'chirality')->mean);
+        $this->assertSame(-.5, app(LocalMeasurementService::class)->chiralityComponents($node)->orientation);
+        $this->assertSame(1, Attestation::effective()->where('proposition_id', $node->id)->count());
+        $assertObserved();
     }
 
     public function test_batched_observation_coordinates_match_the_full_canonical_populations(): void
     {
         $this->createHomologyActor();
-        $origin = $this->commit(null, 'emergence');
+        $origin = $this->committedCoordinate(null, 'emergence');
         $this->position($origin);
-        $a = $this->commit($origin, 'settlement');
-        $b = $this->commit($origin, 'settlement');
+        $a = $this->committedCoordinate($origin, 'settlement');
+        $b = $this->committedCoordinate($origin, 'settlement');
         $this->position($a);
         $this->position($b);
         $this->position($a, PhaseKind::Mediate);
-        $this->position($this->commit($a, 'settlement'));
+        $this->position($this->committedCoordinate($a, 'settlement'));
         $positions = Proposition::all();
         $homology = app(HomologousPositionService::class);
         $keys = $homology->populationKeys($positions);
@@ -164,13 +188,13 @@ class ChiralityPopulationHistoryTest extends TestCase
     public function test_unavailable_current_population_inherits_corresponding_preceding_horizon_without_a_synthetic_zero(): void
     {
         $this->createHomologyActor();
-        $origin = $this->commit(null, 'emergence');
+        $origin = $this->committedCoordinate(null, 'emergence');
         $prior = $this->position($origin);
         $this->partialMock(LocalMeasurementService::class, function ($mock) {
             $mock->shouldReceive('chiralityComponents')->andReturn(new ChiralityValues(-.5, -.5));
         });
         app(ChiralityPopulationHistoryService::class)->observe($this->actor->substrate_id);
-        $boundary = $this->commit($origin, 'settlement');
+        $boundary = $this->committedCoordinate($origin, 'settlement');
         $current = $this->position($boundary);
         $before = DB::table('chirality_population_observations')->count();
         $result = app(HomeostaticDirectionService::class)->forPopulation($current, collect(), 'chirality');

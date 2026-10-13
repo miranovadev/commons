@@ -14,11 +14,22 @@ use App\Services\Observables\ReinforcementService;
 use App\Services\OperationalInstrumentService;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\Group;
+use Tests\Fixtures\IsolatesClosureOutput;
 use Tests\TestCase;
 
+/** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
+#[Group('component-contract')]
 class ReceiptContextMigrationTest extends TestCase
 {
+    use IsolatesClosureOutput;
     use DatabaseMigrations;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->isolateClosureOutput();
+    }
 
     public function test_upgrade_preserves_historical_allocations_without_inventing_loads(): void
     {

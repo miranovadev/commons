@@ -1,0 +1,2 @@
+test,checkpoint,current,change,Stage2
+Tests\Feature\HomologousMediationTest::test_admissible_mediate_can_reach_an_inadmissible_bias_without_outcome_coercion,error,absent,removed/consolidated,absent

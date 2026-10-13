@@ -30,6 +30,7 @@ use App\Services\InstrumentExecutionService;
 use App\Services\LedgerService;
 use App\Services\Observables\ClosureBirthService;
 use App\Services\Observables\LocalMeasurementService;
+use App\Services\Observables\ProspectiveClosureService;
 use App\Services\PotentialProjectionService;
 use App\Services\PropositionMeasurementService;
 use App\Services\PropositionStateService;
@@ -41,6 +42,9 @@ use Illuminate\Support\Facades\DB;
 
 abstract class TestCase extends BaseTestCase
 {
+    /** Frozen numerical outputs of explicitly controlled Commit fixtures only. */
+    private array $controlledCanonicalClosure = [];
+
     /** Controlled observable output; persistence and canonical field projection stay real. */
     protected function resolveExpressiveFieldFixture(float $value): void
     {
@@ -76,6 +80,61 @@ abstract class TestCase extends BaseTestCase
     /** Isolated field/lifecycle tests control Closure too; birth-invariant tests never use this double. */
     protected function controlledBirthClosureFixture(float $value, ?string $onlyId = null, bool $includeCommittal = false): void
     {
+        // A whole-field routing double controls the new persistence boundary too.
+        // It must not demand real historical measurements before returning its
+        // explicitly authored number. No synthetic Closure history is persisted.
+        // Proposition-specific doubles retain real birth/Cycle construction.
+        $prospective = app(ProspectiveClosureService::class);
+        $this->partialMock(ProspectiveClosureService::class, function ($mock) use ($prospective, $value, $onlyId, $includeCommittal): void {
+            $mock->shouldReceive('initialize')->andReturnUsing(function ($node) use ($prospective, $onlyId): void {
+                if ($onlyId !== null || $node->tier === 'committal') {
+                    $prospective->initialize($node);
+                }
+            });
+            $mock->shouldReceive('entered')->andReturnUsing(function ($cycle) use ($prospective, $onlyId): void {
+                if ($onlyId !== null) {
+                    $prospective->entered($cycle);
+                }
+            });
+            $mock->shouldReceive('stored')->andReturnUsing(function ($node, $context = null) use ($prospective, $value, $onlyId, $includeCommittal) {
+                if (isset($this->controlledCanonicalClosure[$node->id])) {
+                    return $this->controlledCanonicalClosure[$node->id];
+                }
+                if ((! $includeCommittal && $node->tier === 'committal') || ($onlyId !== null && $node->id !== $onlyId)) {
+                    return $prospective->stored($node, $context);
+                }
+                $observation = $onlyId !== null ? $prospective->stored($node, $context) : [
+                    // Existing interval metadata is used only by snapshot plumbing;
+                    // this double supplies no historical observation population.
+                    'cadence_interval' => app(ClosureBirthService::class)->stored($node)['cadence_interval'],
+                    'history_proposition_id' => $node->phase->cycle->entry_committal_id,
+                    'historical_phase_profile' => $value, 'historical_orientation' => $value,
+                    'fixture' => 'controlled_closure_output',
+                ];
+                foreach (['depth', 'cadence', 'historical_extent', 'historical_rhythm', 'closure'] as $key) {
+                    $observation[$key] = $value;
+                    $observation[$key.'_direction'] = $value > 0 ? 'positive' : 'negative';
+                }
+                $observation['admissible'] = true;
+
+                return $observation;
+            });
+            $mock->shouldReceive('preserve')->andReturnUsing(function ($target, $source, $expected) use ($prospective, $onlyId): void {
+                if (method_exists($this, 'isolateClosureOutput')) {
+                    throw new \LogicException('Component fixtures cannot establish canonical Commit preservation.');
+                }
+                if ($onlyId !== null) {
+                    $prospective->preserve($target, $source, $expected);
+
+                    return;
+                }
+                $this->assertSame('expressive', $source->tier);
+                // A later proposition-specific double may wrap this one. Verify
+                // against that active output, not an older captured field value.
+                $this->assertSame(app(ProspectiveClosureService::class)->stored($source), $expected);
+                $this->controlledCanonicalClosure[$target->id] = $expected;
+            });
+        });
         $births = app(ClosureBirthService::class);
         $this->partialMock(ClosureBirthService::class, function ($mock) use ($births, $value, $onlyId, $includeCommittal): void {
             foreach (['stored', 'prospective'] as $method) {
@@ -125,11 +184,12 @@ abstract class TestCase extends BaseTestCase
             $terminal = (new Proposition)->forceFill(['phase_id' => $phase->id, 'register' => $phase->write_register,
                 'tier' => 'expressive', 'statement' => 'Explicit Charge boundary fixture']);
             $terminal->save();
-            app(LedgerService::class)->record($terminal);
+            app(LedgerService::class)->record($terminal, $seed);
             $edge = (new Supersession)->forceFill(['phase_id' => $phase->id,
                 'source_proposition_id' => $seed->id, 'target_proposition_id' => $terminal->id, 'type' => 'variant']);
             $edge->save();
             app(LedgerService::class)->record($edge);
+            \Tests\Fixtures\PropositionBirth::complete($terminal);
         }
         $this->controlledBirthClosureFixture(1, $terminal->id);
         $terminal->wasRecentlyCreated = true; // The fixture explicitly supplies the birth event.
@@ -271,7 +331,7 @@ abstract class TestCase extends BaseTestCase
             $target = (new Proposition)->forceFill(['phase_id' => $phase->id, 'register' => $phase->write_register,
                 'tier' => 'expressive', 'statement' => $source->statement]);
             $target->save();
-            app(LedgerService::class)->record($target);
+            app(LedgerService::class)->record($target, $source);
             $edge = (new Supersession)->forceFill(['phase_id' => $phase->id,
                 'source_proposition_id' => $source->id, 'target_proposition_id' => $target->id, 'type' => 'reclassify']);
             $edge->save();
@@ -283,6 +343,7 @@ abstract class TestCase extends BaseTestCase
                 'source_proposition_id' => $source->id, 'proposition_id' => $target->id, 'consumed_at' => now()])->save();
             DB::table('proposition_receipt_links')->insert([
                 'proposition_id' => $target->id, 'receipt_id' => $receiptId, 'created_at' => now()]);
+            \Tests\Fixtures\PropositionBirth::complete($target);
 
             return $target;
         });
@@ -316,13 +377,13 @@ abstract class TestCase extends BaseTestCase
         return $receipt;
     }
 
-    /** A structurally valid later region for tests that isolate option scope from projection labels. */
+    /** Authored read-model input for component tests only; this is not a lawful Domain-transition lifecycle. */
     protected function laterHorizonFixture(ContextHorizon $horizon, int $steps = 2): ContextHorizon
     {
         // By default, two causal boundaries return to the original vocabulary.
         foreach (range(1, $steps) as $step) {
-            // Select the actual provenance of this fixture branch. A later
-            // boundary is a Commit of that Gate, never a parentless new Origin.
+            // Select the parent coordinate of this authored projection.
+            // No action, Closure boundary or canonical source is being proven.
             $gate = $horizon->opened_by_proposition_id !== null
                 ? Proposition::findOrFail($horizon->opened_by_proposition_id)
                 : Proposition::whereHas('contextHorizonMembership', fn ($q) => $q->where('context_horizon_id', $horizon->id))
@@ -341,18 +402,11 @@ abstract class TestCase extends BaseTestCase
             $node->forceFill(['phase_id' => $phase->id, 'register' => $phase->write_register,
                 'tier' => 'committal', 'statement' => 'Boundary fixture'])->save();
             $entry = app(LedgerService::class)->record($node);
-            $commit = null;
-            if ($gate !== null) {
-                $commit = new Supersession;
-                $commit->forceFill(['phase_id' => $phase->id, 'source_proposition_id' => $gate->id,
-                    'target_proposition_id' => $node->id, 'type' => 'commit'])->save();
-                app(LedgerService::class)->record($commit);
-            } else {
-                $this->assertNull($horizon->parent_context_horizon_id, 'Only Origin may lack a Commit source.');
-            }
+            // A component projection is not a Commit event. Its entry field
+            // describes the supplied coordinate; there is no fabricated edge.
             $snapshot = new CommitmentSnapshot;
             $snapshot->forceFill(['proposition_id' => $node->id, 'substrate_id' => $horizon->substrate_id,
-                'ledger_entry_id' => $entry->id, 'supersession_id' => $commit?->id,
+                'ledger_entry_id' => $entry->id, 'supersession_id' => null,
                 'correspondence' => 0, 'chirality' => 0, 'closure' => 0,
                 'prominence' => .5, 'turbulence' => .5, 'tension' => 0,
                 'direction_before' => $horizon->domain, 'direction_after' => $horizon->domain->opposite(),

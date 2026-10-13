@@ -1,0 +1,237 @@
+{
+  "runs": [
+    {
+      "id": 38389254502,
+      "name": "Inspector browser review",
+      "head_sha": "9bc9e8576dc9c28d0f52d766193304a22f614d31",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-13T11:18:00Z",
+      "completed_at": "2026-10-13T11:19:29Z",
+      "url": "https://github.com/miranovadev/commons/actions/runs/38389254502",
+      "final_evidence": true
+    },
+    {
+      "id": 38389254326,
+      "name": "Integration",
+      "head_sha": "9bc9e8576dc9c28d0f52d766193304a22f614d31",
+      "status": "completed",
+      "conclusion": "failure",
+      "started_at": "2026-10-13T11:18:00Z",
+      "completed_at": "2026-10-13T11:28:05Z",
+      "url": "https://github.com/miranovadev/commons/actions/runs/38389254326",
+      "final_evidence": true
+    },
+    {
+      "id": 38389248081,
+      "name": "Phase Profile contracts",
+      "head_sha": "9bc9e8576dc9c28d0f52d766193304a22f614d31",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-13T11:17:57Z",
+      "completed_at": "2026-10-13T11:23:44Z",
+      "url": "https://github.com/miranovadev/commons/actions/runs/38389248081",
+      "final_evidence": true
+    },
+    {
+      "id": 38389248183,
+      "name": "Core",
+      "head_sha": "9bc9e8576dc9c28d0f52d766193304a22f614d31",
+      "status": "completed",
+      "conclusion": "failure",
+      "started_at": "2026-10-13T11:17:57Z",
+      "completed_at": "2026-10-13T11:28:09Z",
+      "url": "https://github.com/miranovadev/commons/actions/runs/38389248183",
+      "final_evidence": true
+    },
+    {
+      "id": 38388776656,
+      "name": "Inspector browser review",
+      "head_sha": "d056cb2fd7600f0efc6f1f6668dfd1bf408d0e55",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-13T11:13:51Z",
+      "completed_at": "2026-10-13T11:15:21Z",
+      "url": "https://github.com/miranovadev/commons/actions/runs/38388776656",
+      "final_evidence": false
+    },
+    {
+      "id": 38388776612,
+      "name": "Integration",
+      "head_sha": "d056cb2fd7600f0efc6f1f6668dfd1bf408d0e55",
+      "status": "completed",
+      "conclusion": "cancelled",
+      "started_at": "2026-10-13T11:13:51Z",
+      "completed_at": "2026-10-13T11:19:27Z",
+      "url": "https://github.com/miranovadev/commons/actions/runs/38388776612",
+      "final_evidence": false
+    },
+    {
+      "id": 38388769435,
+      "name": "Phase Profile contracts",
+      "head_sha": "d056cb2fd7600f0efc6f1f6668dfd1bf408d0e55",
+      "status": "completed",
+      "conclusion": "failure",
+      "started_at": "2026-10-13T11:13:47Z",
+      "completed_at": "2026-10-13T11:19:38Z",
+      "url": "https://github.com/miranovadev/commons/actions/runs/38388769435",
+      "final_evidence": false
+    },
+    {
+      "id": 38388769498,
+      "name": "Core",
+      "head_sha": "d056cb2fd7600f0efc6f1f6668dfd1bf408d0e55",
+      "status": "completed",
+      "conclusion": "cancelled",
+      "started_at": "2026-10-13T11:13:47Z",
+      "completed_at": "2026-10-13T11:19:18Z",
+      "url": "https://github.com/miranovadev/commons/actions/runs/38388769498",
+      "final_evidence": false
+    },
+    {
+      "id": 38388286368,
+      "name": "Inspector browser review",
+      "head_sha": "e476fa29bdcc0f43a264c5e0b3a53f6a46db22d7",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-13T11:09:34Z",
+      "completed_at": "2026-10-13T11:10:49Z",
+      "url": "https://github.com/miranovadev/commons/actions/runs/38388286368",
+      "final_evidence": false
+    },
+    {
+      "id": 38388286265,
+      "name": "Integration",
+      "head_sha": "e476fa29bdcc0f43a264c5e0b3a53f6a46db22d7",
+      "status": "completed",
+      "conclusion": "cancelled",
+      "started_at": "2026-10-13T11:09:34Z",
+      "completed_at": "2026-10-13T11:15:09Z",
+      "url": "https://github.com/miranovadev/commons/actions/runs/38388286265",
+      "final_evidence": false
+    },
+    {
+      "id": 38388281850,
+      "name": "Core",
+      "head_sha": "e476fa29bdcc0f43a264c5e0b3a53f6a46db22d7",
+      "status": "completed",
+      "conclusion": "cancelled",
+      "started_at": "2026-10-13T11:09:31Z",
+      "completed_at": "2026-10-13T11:15:06Z",
+      "url": "https://github.com/miranovadev/commons/actions/runs/38388281850",
+      "final_evidence": false
+    },
+    {
+      "id": 38388281883,
+      "name": "Phase Profile contracts",
+      "head_sha": "e476fa29bdcc0f43a264c5e0b3a53f6a46db22d7",
+      "status": "completed",
+      "conclusion": "failure",
+      "started_at": "2026-10-13T11:09:31Z",
+      "completed_at": "2026-10-13T11:15:26Z",
+      "url": "https://github.com/miranovadev/commons/actions/runs/38388281883",
+      "final_evidence": false
+    }
+  ],
+  "complete_suite_jobs": [
+    {
+      "id": 115269147345,
+      "run_id": 38389248183,
+      "name": "Frontend build and contracts",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-13T11:19:20Z",
+      "completed_at": "2026-10-13T11:20:36Z"
+    },
+    {
+      "id": 115269666780,
+      "run_id": 38389248183,
+      "name": "core (2) / PHP / PostgreSQL (2/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-13T11:20:39Z",
+      "completed_at": "2026-10-13T11:26:42Z"
+    },
+    {
+      "id": 115269666853,
+      "run_id": 38389248183,
+      "name": "core (4) / PHP / PostgreSQL (4/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-13T11:20:39Z",
+      "completed_at": "2026-10-13T11:28:08Z"
+    },
+    {
+      "id": 115269666919,
+      "run_id": 38389248183,
+      "name": "core (3) / PHP / PostgreSQL (3/5)",
+      "status": "completed",
+      "conclusion": "failure",
+      "started_at": "2026-10-13T11:20:38Z",
+      "completed_at": "2026-10-13T11:27:24Z"
+    },
+    {
+      "id": 115269666932,
+      "run_id": 38389248183,
+      "name": "core (1) / PHP / PostgreSQL (1/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-13T11:20:39Z",
+      "completed_at": "2026-10-13T11:25:19Z"
+    },
+    {
+      "id": 115269667094,
+      "run_id": 38389248183,
+      "name": "core (5) / PHP / PostgreSQL (5/5)",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-13T11:20:39Z",
+      "completed_at": "2026-10-13T11:25:16Z"
+    },
+    {
+      "id": 115269207720,
+      "run_id": 38389254326,
+      "name": "integration (3) / PHP / PostgreSQL (3/4)",
+      "status": "completed",
+      "conclusion": "failure",
+      "started_at": "2026-10-13T11:19:29Z",
+      "completed_at": "2026-10-13T11:24:17Z"
+    },
+    {
+      "id": 115269208059,
+      "run_id": 38389254326,
+      "name": "integration (4) / PHP / PostgreSQL (4/4)",
+      "status": "completed",
+      "conclusion": "failure",
+      "started_at": "2026-10-13T11:19:29Z",
+      "completed_at": "2026-10-13T11:27:53Z"
+    },
+    {
+      "id": 115269208067,
+      "run_id": 38389254326,
+      "name": "integration (1) / PHP / PostgreSQL (1/4)",
+      "status": "completed",
+      "conclusion": "failure",
+      "started_at": "2026-10-13T11:19:29Z",
+      "completed_at": "2026-10-13T11:27:11Z"
+    },
+    {
+      "id": 115269208095,
+      "run_id": 38389254326,
+      "name": "integration (2) / PHP / PostgreSQL (2/4)",
+      "status": "completed",
+      "conclusion": "failure",
+      "started_at": "2026-10-13T11:19:30Z",
+      "completed_at": "2026-10-13T11:25:02Z"
+    },
+    {
+      "id": 115272450514,
+      "run_id": 38389254326,
+      "name": "summary",
+      "status": "completed",
+      "conclusion": "failure",
+      "started_at": "2026-10-13T11:27:56Z",
+      "completed_at": "2026-10-13T11:28:05Z"
+    }
+  ]
+}

@@ -205,8 +205,10 @@ abstract class ParticipationHttpTestCase extends TestCase
 
     protected function driveUntil(string $participant, callable $reached, int $maxActions = 100): array
     {
+        $lastCommitment = null;
         for ($step = 0; $step <= $maxActions; $step++) {
             $state = $this->readParticipation($participant);
+            $lastCommitment = $state['plan']['commitment'] ?? $lastCommitment;
             if ($reached($state)) {
                 return $state;
             }
@@ -215,7 +217,8 @@ abstract class ParticipationHttpTestCase extends TestCase
                 $this->contribute($participant, $this->chooseContribution($state), $state);
             }
         }
-        $this->fail('HTTP action budget exhausted. '.$this->traceMessage($state));
+        $this->fail('HTTP action budget exhausted. Last Commit eligibility: '.json_encode($lastCommitment)
+            .'; '.$this->traceMessage($state));
     }
 
     protected function traceMessage(array $state = []): string

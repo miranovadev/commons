@@ -44,9 +44,9 @@ export function FieldStateChart({ proposition }: { proposition: Proposition }) {
 }
 
 export function closureDirectionColor(point?: ClosureHistoryPoint) {
-  if (!point?.committed_cardinal_position_direction || !point.cadence_direction) return 'gray.6';
-  if (point.committed_cardinal_position_direction !== point.cadence_direction) return 'gray.6';
-  return point.committed_cardinal_position_direction === 'positive' ? 'indigo.4' : 'indigo.9';
+  if (!point?.historical_extent_direction || !point.historical_rhythm_direction) return 'gray.6';
+  if (point.historical_extent_direction !== point.historical_rhythm_direction) return 'gray.6';
+  return point.historical_extent_direction === 'positive' ? 'indigo.4' : 'indigo.9';
 }
 
 export function ClosureHistoryChart({ proposition }: { proposition: Proposition }) {
@@ -57,9 +57,9 @@ export function ClosureHistoryChart({ proposition }: { proposition: Proposition 
   return <Stack gap="md">
     <Text size="xs" c="dimmed">Committed lineage, oldest to newest. Spacing shows structural order.</Text>
     {!points.length && <Text size="sm" c="dimmed">Committed Closure history is unavailable for this view.</Text>}
-    {points.length > 0 && (['committed_cardinal_position', 'cadence'] as const).map(key => <Box key={key}>
-      <Text size="sm" fw={650}>{key === 'committed_cardinal_position' ? 'Committed Cardinal Position' : 'Committal Cadence'}</Text>
-      <svg viewBox="0 0 300 76" className="inspector-chart" role="img" aria-label={`${key === 'committed_cardinal_position' ? 'Committed Cardinal Position' : 'Committal Cadence'} history: ${points.map(p => display(finite(p[key]))).join(', ')}`}>
+    {points.length > 0 && (['historical_extent', 'historical_rhythm'] as const).map(key => <Box key={key}>
+      <Text size="sm" fw={650}>{key === 'historical_extent' ? 'Historical Extent' : 'Historical Rhythm'}</Text>
+      <svg viewBox="0 0 300 76" className="inspector-chart" role="img" aria-label={`${key === 'historical_extent' ? 'Historical Extent' : 'Historical Rhythm'} history: ${points.map(p => display(finite(p[key]))).join(', ')}`}>
         <line x1="10" x2="290" y1="38" y2="38" stroke="var(--mantine-color-default-border)" strokeDasharray="3 3" />
         {points.map((point, index) => {
           const value = finite(point[key]);
@@ -76,17 +76,17 @@ export function ClosureHistoryChart({ proposition }: { proposition: Proposition 
       </svg>
     </Box>)}
     {current && <>
-      <Text size="xs">Committed Cardinal Position: ½ Depth + ½ Lateral. Frozen at birth.</Text>
-      <Group grow>{(['depth', 'lateral_committal_position'] as const).map(key => <Box key={key}>
-        <Text size="xs">{key === 'depth' ? 'Committal Depth' : 'Lateral Committal Position'}</Text>
-        <Text size="sm">{display(finite(current[key]))} · {current[`${key}_direction`] ?? 'unavailable'}</Text>
+      <Text size="xs">Extent: ½ Depth + ½ Historical Phase Profile. Rhythm: ½ Cadence + ½ Historical Orientation. Preserved at Commit.</Text>
+      <Group grow>{(['depth', 'historical_phase_profile', 'cadence', 'historical_orientation'] as const).map(key => <Box key={key}>
+        <Text size="xs">{({ depth: 'Committal Depth', historical_phase_profile: 'Historical Phase Profile', cadence: 'Committal Cadence', historical_orientation: 'Historical Orientation' })[key]}</Text>
+        <Text size="sm">{display(finite(current[key]))}</Text>
       </Box>)}</Group>
-      <Text size="xs" c="dimmed">Position {current.committed_lateral_position ?? 'unavailable'} · Historical centroid {current.historical_lateral_centroid ?? 'unavailable'} · Interval {current.cadence_interval ?? 'unavailable'}</Text>
-      <Group grow>{(['committed_cardinal_position', 'cadence'] as const).map(key => {
+      <Text size="xs" c="dimmed">Committed interval {current.cadence_interval ?? 'unavailable'}</Text>
+      <Group grow>{(['historical_extent', 'historical_rhythm'] as const).map(key => {
         const direction = current[`${key}_direction`];
-        const Icon = key === 'committed_cardinal_position' ? IconLayersIntersect : IconWaveSine;
+        const Icon = key === 'historical_extent' ? IconLayersIntersect : IconWaveSine;
         const Arrow = direction === 'positive' ? IconArrowUp : IconArrowDown;
-        const label = key === 'committed_cardinal_position' ? 'Committed Cardinal Position' : 'Committal Cadence';
+        const label = key === 'historical_extent' ? 'Historical Extent' : 'Historical Rhythm';
         return <Box key={key} className="closure-direction" data-color={color} data-direction={direction ?? undefined}>
           <Text size="xs">{label}</Text><Group gap={6} aria-label={`${label}: ${direction || 'unavailable'} direction`}>
             <span className="closure-direction__icons" style={{ color: `var(--mantine-color-${color.replace('.', '-')})` }}><Icon size={22} />{direction && <Arrow size={20} />}</span>
@@ -94,7 +94,7 @@ export function ClosureHistoryChart({ proposition }: { proposition: Proposition 
           </Group>
         </Box>;
       })}</Group>
-      <Text size="xs" c="dimmed">{!current.committed_cardinal_position_direction || !current.cadence_direction ? 'Historical direction unavailable.' : current.committed_cardinal_position_direction === current.cadence_direction
+      <Text size="xs" c="dimmed">{!current.historical_extent_direction || !current.historical_rhythm_direction ? 'Historical direction unavailable.' : current.historical_extent_direction === current.historical_rhythm_direction
         ? 'Directions aligned. This alone does not establish Commit eligibility.' : 'Opposite directions · inadmissible Closure orientation for Commit.'}</Text>
     </>}
   </Stack>;

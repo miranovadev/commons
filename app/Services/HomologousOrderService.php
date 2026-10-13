@@ -39,8 +39,8 @@ final readonly class HomologousOrderService
         $values = [];
         foreach ($population->unique('id') as $node) {
             $snapshot = $node->commitmentSnapshot;
-            $direction = $snapshot?->cardinalDirection();
-            $values[$node->id] = $direction !== null && $direction === $snapshot->cadence_direction
+            $direction = $snapshot?->extentDirection();
+            $values[$node->id] = $direction !== null && $direction === $snapshot->rhythmDirection()
                 ? ($direction === ObservableDirection::Positive ? 1.0 : -1.0) : null;
         }
 
@@ -62,8 +62,8 @@ final readonly class HomologousOrderService
             $active = Proposition::active()->whereKey($population->pluck('id'))->pluck('id')->flip();
 
             return $population->filter(fn ($node) => $active->has($node->id)
-                && $node->commitmentSnapshot->cardinalDirection() === $field->direction
-                && $node->commitmentSnapshot->cadence_direction === $field->direction)->values();
+                && $node->commitmentSnapshot->extentDirection() === $field->direction
+                && $node->commitmentSnapshot->rhythmDirection() === $field->direction)->values();
         };
 
         return $context === null ? $resolve() : $context->remember('homologous-order:'.$phase->id, $resolve);

@@ -20,10 +20,15 @@ use App\Services\PotentialProjectionService;
 use App\Services\ReceiptRegionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\Group;
+use Tests\Fixtures\IsolatesClosureOutput;
 use Tests\TestCase;
 
+/** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
+#[Group('component-contract')]
 class CycleRegionOwnershipTest extends TestCase
 {
+    use IsolatesClosureOutput;
     use RefreshDatabase;
 
     private Participant $actor;
@@ -31,6 +36,7 @@ class CycleRegionOwnershipTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->isolateClosureOutput();
         $substrate = new Substrate;
         $substrate->forceFill(['slug' => 'cycle-regions', 'title' => 'Cycle regions', 'visibility' => 'private', 'configuration' => []])->save();
         $this->actor = new Participant;

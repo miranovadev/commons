@@ -1,0 +1,10 @@
+test,result,category,finding,failure_summary,first_test_frame,assertions,seconds
+Tests\Feature\FreshBootstrapTest::test_explicit_origin_and_aligned_evidence_reach_a_lawful_commit#0,failure,B (Stage 3 trajectory),Extent 0 retains Negative; Rhythm 0.1875 is Positive. Only Closure coherence blocks Commit.,"{""depth"":0,""cadence"":0,""historical_phase_profile"":0,""historical_orientation"":0.375,""historical_extent"":0,""historical_rhythm"":0.1875,""closure"":0.09375,""historical_extent_direction"":""negative"",""historical_rhythm_direction"":""positive"",""phase_contributions"":[0,-1,-1,1,1,-1,1]}",tests/Fixtures/HorizonCycleFixture.php:87,103,134.018892
+Tests\Feature\FreshBootstrapTest::test_explicit_origin_and_aligned_evidence_reach_a_lawful_commit#1,failure,B (Stage 3 trajectory),Extent 0 retains Negative; Rhythm 0.1875 is Positive. Only Closure coherence blocks Commit.,"{""depth"":0,""cadence"":0,""historical_phase_profile"":0,""historical_orientation"":0.375,""historical_extent"":0,""historical_rhythm"":0.1875,""closure"":0.09375,""historical_extent_direction"":""negative"",""historical_rhythm_direction"":""positive"",""phase_contributions"":[0,-1,-1,1,1,-1,1]}",tests/Fixtures/HorizonCycleFixture.php:87,103,145.818667
+Tests\Feature\NaturalChargeBoundaryLifecycleTest::test_two_participants_reproduce_catastrophe_then_recover_to_the_open_ancestor,failure,A (Stage 2 baseline),Same Stage 2 assertion/trajectory mismatch; see validation report for original C1 classification.,"Tests\Feature\NaturalChargeBoundaryLifecycleTest::test_two_participants_reproduce_catastrophe_then_recover_to_the_open_ancestor
+Failed asserting that two strings are identical.
+--- Expected
++++ Actual
+@@ @@
+-'settlement'
++'emergence'",tests/Fixtures/NaturalBoundaryHistory.php:63,2,6.155131

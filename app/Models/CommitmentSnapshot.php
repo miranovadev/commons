@@ -78,4 +78,18 @@ class CommitmentSnapshot extends Model
     {
         return $this->direction_before !== $this->direction_after;
     }
+
+    public function extentDirection(): ?ObservableDirection
+    {
+        $direction = $this->closure_observation['historical_extent_direction'] ?? null;
+
+        return $direction === null ? null : ObservableDirection::from($direction);
+    }
+
+    public function rhythmDirection(): ?ObservableDirection
+    {
+        $direction = $this->closure_observation['historical_rhythm_direction'] ?? null;
+
+        return $direction === null ? null : ObservableDirection::from($direction);
+    }
 }

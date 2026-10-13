@@ -101,7 +101,7 @@ final readonly class PropositionInspectionService
     public function history(Proposition $position): array
     {
         $records = $this->lineage->records($position);
-        $births = DB::table('closure_births')->whereIn('proposition_id', $records->keys())->get()->keyBy('proposition_id');
+        $births = DB::table('prospective_closure_states')->whereIn('proposition_id', $records->keys())->get()->keyBy('proposition_id');
         $id = $position->id;
         $points = [];
         $seen = [];

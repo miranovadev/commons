@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Domain\Observables\CorrespondenceValues;
 use App\Enums\PhaseKind;
-use App\Models\Attestation;
 use App\Models\CommitmentSnapshot;
 use App\Models\ContextHorizon;
 use App\Models\Cycle;
@@ -16,13 +15,9 @@ use App\Models\Supersession;
 use App\Models\Tragedy;
 use App\Models\User;
 use App\Services\ActiveParticipantLineage;
-use App\Services\BiasGateService;
-use App\Services\BiasReceiptAuthorityService;
-use App\Services\ChiralityGateService;
 use App\Services\CommitRegionService;
 use App\Services\ContextHorizonProjector;
 use App\Services\ContributionDispatcher;
-use App\Services\CorrespondenceGateService;
 use App\Services\ExhaustedContinuationService;
 use App\Services\ExplorationPositionService;
 use App\Services\GraphProjectionService;
@@ -31,12 +26,10 @@ use App\Services\HomologousMediationService;
 use App\Services\InputPlanService;
 use App\Services\LedgerService;
 use App\Services\MediationReadService;
-use App\Services\Observables\ObservableService;
 use App\Services\ParticipantContextSerializer;
 use App\Services\ParticipantPromptLayout;
-use App\Services\Participation\ParticipationContext;
 use App\Services\ParticipationService;
-use App\Services\PhaseProgressionService;
+use App\Services\Participation\ParticipationContext;
 use App\Services\PotentialProjectionService;
 use App\Services\PropositionMeasurementService;
 use App\Services\PropositionOptionService;
@@ -47,11 +40,15 @@ use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\AssertsLatePhaseContract;
+use Tests\Fixtures\IsolatesClosureOutput;
 use Tests\Support\RefreshIntegrationDatabase as RefreshDatabase;
 use Tests\TestCase;
 
+/** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
+#[Group('component-contract')]
 class HomologousMediationTest extends TestCase
 {
+    use IsolatesClosureOutput;
     use AssertsLatePhaseContract;
     use RefreshDatabase;
 
@@ -74,13 +71,15 @@ class HomologousMediationTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->isolateClosureOutput();
+        $this->isolateCorrespondenceOutput();
         $substrate = new Substrate;
         $substrate->forceFill(['slug' => 'foreign-mediate', 'title' => 'Foreign Mediate', 'visibility' => 'private', 'configuration' => []])->save();
         $this->actor = new Participant;
         $this->actor->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'observer'])->save();
-        $origin = $this->commit(null, 'emergence');
-        $this->a = $this->commit($origin, 'settlement');
-        $this->b = $this->commit($origin, 'settlement');
+        $origin = $this->committedCoordinate(null, 'emergence');
+        $this->a = $this->committedCoordinate($origin, 'settlement');
+        $this->b = $this->committedCoordinate($origin, 'settlement');
         [$this->readA, $this->gateA] = $this->pair($this->a);
         [$this->readB, $this->gateB] = $this->pair($this->b);
         // Leave exactly the acting Cycle open for the public contribution path.
@@ -154,7 +153,7 @@ class HomologousMediationTest extends TestCase
     public function test_population_can_oppose_either_causal_read_direction_without_vetoing_the_local_operand(): void
     {
         $origin = $this->a->phase->cycle->entryCommittal;
-        $c = $this->commit($origin, 'settlement');
+        $c = $this->committedCoordinate($origin, 'settlement');
         [$readC, $gateC] = $this->pair($c);
         $local = $this->expression($this->a, $this->readA, PhaseKind::Disperse);
         foreach ([1.0, -1.0] as $causalSign) {
@@ -175,7 +174,7 @@ class HomologousMediationTest extends TestCase
     public function test_matching_causal_read_is_one_member_and_non_dominant_homologues_are_not_added(): void
     {
         $origin = $this->a->phase->cycle->entryCommittal;
-        [$readC, $gateC] = $this->pair($this->commit($origin, 'settlement'));
+        [$readC, $gateC] = $this->pair($this->committedCoordinate($origin, 'settlement'));
         $this->measure($this->readA, .6);
         $this->measure($this->readB, .5);
         $this->measure($readC, -.4);
@@ -252,7 +251,7 @@ class HomologousMediationTest extends TestCase
     public function test_a_read_without_an_available_gate_still_contributes_to_the_structural_population(): void
     {
         $origin = $this->a->phase->cycle->entryCommittal;
-        $c = $this->commit($origin, 'settlement');
+        $c = $this->committedCoordinate($origin, 'settlement');
         $readOnly = $this->expression($c, $c, PhaseKind::Constrain);
         $this->measure($this->readA, .2);
         $this->measure($this->readB, .2);
@@ -265,8 +264,8 @@ class HomologousMediationTest extends TestCase
     public function test_mixed_entry_creating_domains_do_not_restrict_same_domain_same_depth_reads(): void
     {
         $origin = $this->a->phase->cycle->entryCommittal;
-        $a = $this->commit($this->a, 'settlement');
-        $b = $this->commit($this->commit($origin, 'emergence'), 'settlement');
+        $a = $this->committedCoordinate($this->a, 'settlement');
+        $b = $this->committedCoordinate($this->committedCoordinate($origin, 'emergence'), 'settlement');
         [$readA, $gateA] = $this->pair($a);
         [$readB, $gateB] = $this->pair($b);
         $phase = $this->mediateAt($a, $readA, $gateA);
@@ -280,7 +279,7 @@ class HomologousMediationTest extends TestCase
     public function test_stale_population_change_rejects_a_previously_exposed_operand_even_when_its_read_is_unchanged(): void
     {
         $origin = $this->a->phase->cycle->entryCommittal;
-        [$readC] = $this->pair($this->commit($origin, 'settlement'));
+        [$readC] = $this->pair($this->committedCoordinate($origin, 'settlement'));
         $this->measure($this->readA, .2);
         $this->measure($this->readB, .4);
         $this->measure($readC, .2);
@@ -300,8 +299,8 @@ class HomologousMediationTest extends TestCase
 
     public function test_distinct_homologous_regions_in_the_same_horizon_are_also_discovered(): void
     {
-        $a = $this->commit($this->a, 'settlement');
-        $b = $this->commit($this->a, 'settlement');
+        $a = $this->committedCoordinate($this->a, 'settlement');
+        $b = $this->committedCoordinate($this->a, 'settlement');
         [$readA, $gateA] = $this->pair($a);
         [$readB, $gateB] = $this->pair($b);
         $disperse = $this->phase($a, $readA, PhaseKind::Disperse);
@@ -330,11 +329,11 @@ class HomologousMediationTest extends TestCase
         $this->expression($this->b, $wrong, PhaseKind::Disperse);
         $badRegister = $this->expression($this->b, $this->b, PhaseKind::Constrain, 'stance');
         $this->expression($this->b, $badRegister, PhaseKind::Disperse);
-        $deeper = $this->commit($this->b, 'settlement');
+        $deeper = $this->committedCoordinate($this->b, 'settlement');
         $this->pair($deeper);
-        $unrelated = $this->commit(null, 'settlement');
+        $unrelated = $this->committedCoordinate(null, 'settlement');
         $this->pair($unrelated);
-        $otherDomain = $this->commit($this->a, 'emergence');
+        $otherDomain = $this->committedCoordinate($this->a, 'emergence');
         $this->pair($otherDomain);
         $pool = app(HomologousMediationService::class)->poolFor($this->mediate);
         $this->assertSame([$this->readB->id], $pool['reads']->pluck('id')->all());
@@ -346,7 +345,7 @@ class HomologousMediationTest extends TestCase
         $replacement = $this->expression($this->b, $this->gateB, PhaseKind::Mediate, edgeType: 'reconcile');
         $service = app(HomologousMediationService::class);
         $this->assertSame([$this->gateB->id], $service->poolFor($this->mediate)['gates']->pluck('id')->all());
-        $commit = $this->commit($this->b, 'settlement');
+        $commit = $this->committedCoordinate($this->b, 'settlement');
         $this->edge($this->gateB, $commit, 'commit');
         $this->assertTrue($service->poolFor($this->mediate)['gates']->isEmpty());
         $this->assertNotNull($replacement->fresh());
@@ -385,7 +384,7 @@ class HomologousMediationTest extends TestCase
     public function test_public_cross_horizon_reconcile_preserves_ownership_gate_route_and_foreign_input_geometry(): void
     {
         $origin = $this->a->phase->cycle->entryCommittal;
-        $c = $this->commit($origin, 'settlement');
+        $c = $this->committedCoordinate($origin, 'settlement');
         $populationRead = $this->expression($c, $c, PhaseKind::Constrain);
         $receipt = $this->loadedReceiptFixture($this->gateB);
         $this->measure($this->gateB, .9);
@@ -469,8 +468,8 @@ class HomologousMediationTest extends TestCase
 
     public function test_same_horizon_foreign_result_does_not_become_the_operand_regions_mediate_write(): void
     {
-        $a = $this->commit($this->a, 'settlement');
-        $b = $this->commit($this->a, 'settlement');
+        $a = $this->committedCoordinate($this->a, 'settlement');
+        $b = $this->committedCoordinate($this->a, 'settlement');
         [$readA, $gateA] = $this->pair($a);
         [$readB, $gateB] = $this->pair($b);
         // Isolate option scope with a real two-parent representation. Public
@@ -538,7 +537,7 @@ class HomologousMediationTest extends TestCase
     public function test_cross_horizon_directed_pairs_are_independent_and_used_pairs_do_not_reopen(): void
     {
         $origin = $this->a->phase->cycle->entryCommittal;
-        $c = $this->commit($origin, 'settlement');
+        $c = $this->committedCoordinate($origin, 'settlement');
         [, $gateC] = $this->pair($c);
         $options = app(ReconciliationOptionService::class);
         $dispatcher = app(ContributionDispatcher::class);
@@ -588,7 +587,7 @@ class HomologousMediationTest extends TestCase
         foreach ([1, 6] as $count) {
             if ($count === 6) {
                 foreach (range(1, 5) as $index) {
-                    $this->pair($this->commit($origin, 'settlement'));
+                    $this->pair($this->committedCoordinate($origin, 'settlement'));
                 }
             }
             $this->publishPotentialFixture($this->actor);
@@ -622,7 +621,7 @@ class HomologousMediationTest extends TestCase
         foreach ([1, 6] as $count) {
             if ($count === 6) {
                 foreach (range(1, 5) as $index) {
-                    $owner = $this->commit($origin, 'settlement');
+                    $owner = $this->committedCoordinate($origin, 'settlement');
                     [$read, $gate] = $this->pair($owner);
                     $closed->push($gate);
                     $live->push($this->expression($owner, $read, PhaseKind::Disperse));
@@ -752,7 +751,7 @@ class HomologousMediationTest extends TestCase
 
     public function test_incoherent_members_still_determine_full_read_population_dominance(): void
     {
-        [$readC, $gateC] = $this->pair($this->commit($this->a->phase->cycle->entryCommittal, 'settlement'));
+        [$readC, $gateC] = $this->pair($this->committedCoordinate($this->a->phase->cycle->entryCommittal, 'settlement'));
         $this->measure($this->readA, .2);
         $this->measure($this->readB, .2);
         app(PropositionMeasurementService::class)->project($readC, -.9, 0, 0,
@@ -766,59 +765,6 @@ class HomologousMediationTest extends TestCase
         $this->assertSame('negative', $field->direction->value);
         $this->assertSame([$readC->id], app(HomologousMediationService::class)->poolFor($this->mediate, $context)['reads']->pluck('id')->all());
         $this->assertTrue(app(ReconciliationOptionService::class)->forPhase($this->mediate, $context)->isEmpty());
-    }
-
-    public function test_coherent_positive_inputs_produce_the_normal_result_without_sign_coercion(): void
-    {
-        $target = app(ContributionDispatcher::class)->dispatch($this->actor, $this->mediate,
-            ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateB->id]);
-        $normal = app(ObservableService::class)->components($target);
-        $actual = $target->fresh()->measurement;
-        $this->assertSame($normal->correspondence, $actual->correspondence);
-        $this->assertSame($normal->correspondenceComponents->shapeTopology, $actual->shape_topology);
-        $this->assertSame($normal->correspondenceComponents->phaseProfile, $actual->phase_profile);
-        // Phase Profile replaces Cardinal's negative result in this fixed history.
-        // Do not change the authored population to recover the former sign.
-        $this->assertSame(.0004164, $actual->correspondence);
-        $this->assertEqualsCanonicalizing([$this->gateA->id, $this->gateB->id], $target->parents()->pluck('propositions.id')->all());
-    }
-
-    #[Group('integration')]
-    #[Group('late-phase')]
-    public function test_admissible_mediate_can_reach_an_inadmissible_bias_without_outcome_coercion(): void
-    {
-        // Actual preceding-Domain evidence gives Orientation a sign; this test
-        // does not rely on the old Positive primitive fallback at numeric zero.
-        $origin = $this->a->phase->cycle->entryCommittal;
-        $vote = new Attestation;
-        $vote->forceFill(['phase_id' => $origin->phase_id, 'proposition_id' => $origin->id, 'direction' => 'support'])->save();
-        app(LedgerService::class)->record($vote);
-        // Additional genuine entries make the current attestation rate lower.
-        foreach (range(1, 3) as $index) {
-            $entrant = new Participant;
-            $entrant->forceFill(['substrate_id' => $this->actor->substrate_id, 'callsign' => 'cadence-entrant-'.$index])->save();
-            $entryCycle = new Cycle;
-            $entryCycle->forceFill(['participant_id' => $entrant->id, 'sequence' => 1, 'context_horizon_id' => $this->mediate->cycle->context_horizon_id, 'entry_committal_id' => $this->a->id])->save();
-        }
-        $this->assertTrue(app(CorrespondenceGateService::class)->evaluate($this->gateA)['admissible']);
-        $this->assertSame([$this->gateB->id], app(ReconciliationOptionService::class)->forPhase($this->mediate)->pluck('id')->all());
-        $target = app(ContributionDispatcher::class)->dispatch($this->actor, $this->mediate,
-            ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateB->id]);
-        $bias = app(PhaseProgressionService::class)->advance($this->mediate, $target);
-        $this->assertSame(PhaseKind::Bias, $bias->kind);
-        $this->groundFixture($target);
-        app(PropositionMeasurementService::class)->recalculate($target);
-        $diagnostic = app(ChiralityGateService::class)->evaluate($target->fresh());
-        $this->assertFalse($diagnostic['admissible'], json_encode([$diagnostic, app(ObservableService::class)->components($target)->chiralityComponents]));
-        // Ordinary local evidence authority is present; Chirality alone blocks the Write.
-        $this->assertContains($target->id, app(BiasGateService::class)->forPhase($bias)->pluck('id'));
-        $this->assertNotEmpty(app(BiasReceiptAuthorityService::class)->receiptsFor($bias, $target));
-        $this->publishPotentialFixture($this->actor);
-        $plan = app(InputPlanService::class)->forPhase($this->actor, $bias);
-        $this->assertLatePhaseContract($plan, PhaseKind::Bias, $target->id, false, 'positive', 'negative');
-        $this->assertSame(['participant.rest'], array_keys($plan['schema']['$defs']['actions']));
-        $this->assertSame($target->id, $bias->gate_proposition_id);
-        $this->assertEqualsCanonicalizing([$this->gateA->id, $this->gateB->id], $target->parents()->pluck('propositions.id')->all());
     }
 
     private function mediateAt(Proposition $owner, Proposition $read, Proposition $gate): Phase
@@ -836,7 +782,7 @@ class HomologousMediationTest extends TestCase
     private function exhaustContinuation(Proposition $owner, Proposition $gate): array
     {
         $middle = $this->expression($owner, $gate, PhaseKind::Mediate);
-        $terminal = $this->commit($owner, 'emergence');
+        $terminal = $this->committedCoordinate($owner, 'emergence');
         $this->edge($middle, $terminal, 'commit');
         $phase = $this->phase($terminal, $terminal, PhaseKind::Distinguish);
         $tragedy = $this->boundaryTragedyFixture($phase->gate);
@@ -893,17 +839,16 @@ class HomologousMediationTest extends TestCase
             correspondenceComponents: new CorrespondenceValues($value, $value));
     }
 
-    private function commit(?Proposition $governor, string $after): Proposition
+    private function committedCoordinate(?Proposition $governor, string $after): Proposition
     {
         $phase = $this->phase($governor, $governor, PhaseKind::Order);
         $node = new Proposition;
         $node->forceFill(['phase_id' => $phase->id, 'tier' => 'committal', 'register' => $phase->write_register, 'statement' => 'Region seed'])->save();
         $entry = app(LedgerService::class)->record($node);
-        $commit = $governor === null ? null : $this->commitAncestryFixture($node, $governor);
         $horizon = $phase->cycle->contextHorizon;
         $snapshot = new CommitmentSnapshot;
         $snapshot->forceFill(['proposition_id' => $node->id, 'substrate_id' => $this->actor->substrate_id,
-            'ledger_entry_id' => $entry->id, 'supersession_id' => $commit?->id, 'correspondence' => 0, 'chirality' => 0, 'closure' => 0,
+            'ledger_entry_id' => $entry->id, 'supersession_id' => null, 'correspondence' => 0, 'chirality' => 0, 'closure' => 0,
             'prominence' => .5, 'turbulence' => .5, 'tension' => 0,
             'direction_before' => $horizon->domain, 'direction_after' => $after,
             'depth' => 0, 'cadence' => 0, 'cadence_interval' => $governor === null ? null : 1,

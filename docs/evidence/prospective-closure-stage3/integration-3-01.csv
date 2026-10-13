@@ -1,0 +1,37 @@
+test,result,category,finding,failure_summary,first_test_frame,assertions,seconds
+Tests\Feature\Api\ParticipationSourceEquivalenceTest::test_the_real_worker_uses_the_http_action_plan_and_stops_after_rest_and_recovery,passed,,,,,44,5.397393
+Tests\Feature\Api\ParticipationSourceEquivalenceTest::test_connection_driven_and_manual_participation_share_the_complete_action_contract,failure,A (Stage 2 baseline),Same Stage 2 assertion/trajectory mismatch; see validation report for original C1 classification.,"Tests\Feature\Api\ParticipationSourceEquivalenceTest::test_connection_driven_and_manual_participation_share_the_complete_action_contract
+Script step 31 (source-equivalence / contribute) after
+Failed asserting that two arrays are identical.
+--- Expected
++++ Actual
+@@ @@
+ Array &0 [
+     'status' => 'ready',
+-    'reason' => null,
++    'reason' => Array &1 [
++        'code' => 'no_available_move',
++        'message' => 'No admissible non-Rest actio",tests/Support/ScriptedParticipationTestCase.php:127,2205,50.349756
+Tests\Feature\Api\ParticipationTragedyLifecycleTest::test_natural_bootstrap_crossover_remains_open_and_rest_keeps_the_region_without_catastrophe,failure,A (Stage 2 baseline),Same Stage 2 assertion/trajectory mismatch; see validation report for original C1 classification.,"Tests\Feature\Api\ParticipationTragedyLifecycleTest::test_natural_bootstrap_crossover_remains_open_and_rest_keeps_the_region_without_catastrophe
+Script step 32 (tragic-explorer / contribute) after
+Failed asserting that two arrays are identical.
+--- Expected
++++ Actual
+@@ @@
+ Array &0 [
+     'status' => 'ready',
+-    'reason' => null,
++    'reason' => Array &1 [
++        'code' => 'no_available_move',
++        'message' => 'No admissible non-Rest ",tests/Support/ScriptedParticipationTestCase.php:127,1877,34.065802
+Tests\Feature\Api\ParticipationVisibilityLifecycleTest::test_http_context_exposes_local_evidence_and_edges_without_leaking_foreign_or_distant_structure,passed,,,,,291,8.488380
+Tests\Feature\OperationalClosurePathTest::test_receipt_backed_full_cycle_commits_with_real_hysteretic_closure_calculations,failure,B (Stage 3 trajectory),Extent 0 retains Negative; Rhythm 0.1875 is Positive. Only Closure coherence blocks Commit.,"{""depth"":0,""cadence"":0,""historical_phase_profile"":0,""historical_orientation"":0.375,""historical_extent"":0,""historical_rhythm"":0.1875,""closure"":0.09375,""historical_extent_direction"":""negative"",""historical_rhythm_direction"":""positive"",""phase_contributions"":[0,-1,-1,1,1,-1,1]}",tests/Fixtures/HorizonCycleFixture.php:87,102,141.433062
+Tests\Feature\ParticipantActionContractTest::test_every_advertised_action_round_trips_through_inference_validation_and_execution#0,passed,,,,,92,7.074099
+Tests\Feature\ParticipantActionContractTest::test_every_advertised_action_round_trips_through_inference_validation_and_execution#1,passed,,,,,128,10.631985
+Tests\Feature\ParticipantActionContractTest::test_every_advertised_action_round_trips_through_inference_validation_and_execution#2,passed,,,,,143,11.721564
+Tests\Feature\ParticipantActionContractTest::test_every_advertised_action_round_trips_through_inference_validation_and_execution#3,passed,,,,,107,9.231035
+Tests\Feature\ParticipantActionContractTest::test_every_advertised_action_round_trips_through_inference_validation_and_execution#4,passed,,,,,113,11.812540
+Tests\Feature\ParticipantActionContractTest::test_every_advertised_action_round_trips_through_inference_validation_and_execution#5,passed,,,,,128,11.703832
+Tests\Feature\ParticipantActionContractTest::test_every_advertised_action_round_trips_through_inference_validation_and_execution#6,passed,,,,,60,5.403901
+"Tests\Feature\ParticipantActionContractTest::test_every_advertised_action_round_trips_through_inference_validation_and_execution""Persist foreign Gate""",passed,,,,,128,10.757129
+Tests\Feature\ParticipantActionContractTest::test_rest_round_trips_and_rejects_rationale,passed,,,,,6,1.955457

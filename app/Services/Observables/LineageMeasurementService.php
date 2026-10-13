@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 
 final readonly class LineageMeasurementService
 {
-    public const string VERSION = 'phase-profile-c1-canonical-commit-v4';
+    public const string VERSION = 'prospective-closure-canonical-commit-v5';
 
     public function __construct(
         private LocalMeasurementService $local,
@@ -28,15 +28,7 @@ final readonly class LineageMeasurementService
 
     public function prospectiveCommit(Proposition $gate, Phase $phase, ?ParticipationContext $context = null): LocalMeasurements
     {
-        $comparison = $this->lineages->prospectiveCommit($gate, $phase, $context);
-        // The synthetic candidate is appended by the same comparison builder used locally.
-        $candidate = $comparison->current->propositions->last();
-
-        $source = $this->calculate($gate, context: $context);
-        $closure = $this->closure->components($candidate, $context);
-
-        return new LocalMeasurements($source->correspondence, $source->chirality, $closure->depth,
-            $closure->cadence, $closure->average(), $source->chiralityComponents, $source->correspondenceComponents, $closure);
+        return $this->calculate($gate, context: $context);
     }
 
     public function calculate(Proposition $position, ?LineageComparison $headComparison = null, ?ParticipationContext $context = null): LocalMeasurements

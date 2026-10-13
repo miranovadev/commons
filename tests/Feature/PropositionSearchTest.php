@@ -29,13 +29,25 @@ use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
+use Tests\Fixtures\GovernedExpressionFixture;
+use Tests\Fixtures\IsolatesClosureOutput;
 use Tests\Fixtures\ParticipantContextFixture;
 use Tests\TestCase;
 
+/** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
+#[Group('component-contract')]
 class PropositionSearchTest extends TestCase
 {
+    use IsolatesClosureOutput;
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->isolateClosureOutput();
+    }
 
     public function test_postgresql_kind_constraints_preserve_tragedy_and_add_proposition_search(): void
     {
@@ -98,7 +110,9 @@ class PropositionSearchTest extends TestCase
 
     public function test_schema_and_domain_apply_defaults_and_reject_invalid_limits(): void
     {
-        $s = $this->scenario();
+        // Input normalization does not require the historical distance scenario.
+        $fixture = new GovernedExpressionFixture;
+        $s = ['head' => $fixture->expression];
         $normalized = app(InstrumentInvocation::class)->normalize(['kind' => 'proposition_search']);
         $this->assertSame(['kind' => 'proposition_search', 'limit' => PropositionCollection::DEFAULT_LIMIT], $normalized);
 
@@ -238,7 +252,9 @@ class PropositionSearchTest extends TestCase
 
     public function test_kind_migration_refuses_to_discard_recorded_proposition_search_history(): void
     {
-        $s = $this->scenario();
+        // The migration protects a real recorded search, including an empty result.
+        $fixture = new GovernedExpressionFixture;
+        $s = ['head' => $fixture->expression, 'phase' => $fixture->phase];
         app(OperationalInstrumentService::class)->execute($s['phase'], $s['head'], [
             'kind' => 'proposition_search', 'query' => 'needle',
         ]);
@@ -266,7 +282,7 @@ class PropositionSearchTest extends TestCase
         $foreign = $this->historyNode($fixture, $skip5, $foreignHorizon, 'needle complementary domain');
         $a = $this->historyNode($fixture, $foreign, $root, 'needle historical A');
 
-        $committal = $fixture->node($a, 'canon', 'commit', 'committal');
+        $committal = $fixture->projectedCommittal($a, 'canon');
         $visible = $fixture->node($committal, 'activity', position: PhaseKind::Distinguish);
         $head = $fixture->node($visible, 'frontier', position: PhaseKind::Persist);
 

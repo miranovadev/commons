@@ -24,11 +24,23 @@ use App\Services\PropositionMeasurementService;
 use App\Services\ReceiptContextService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Group;
+use Tests\Fixtures\IsolatesClosureOutput;
 use Tests\TestCase;
 
+/** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
+#[Group('component-contract')]
 class AttestationPolarityTest extends TestCase
 {
+    use IsolatesClosureOutput;
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->isolateClosureOutput();
+        $this->isolateCorrespondenceOutput();
+    }
 
     private Participant $participant;
 
@@ -255,7 +267,7 @@ class AttestationPolarityTest extends TestCase
         $base = $this->governedPhaseFixture($base, $governor, $parent);
         $node = new Proposition;
         $node->forceFill(['phase_id' => $base->id, 'register' => $register, 'tier' => $tier, 'statement' => 'Node '.Proposition::count()])->save();
-        app(LedgerService::class)->record($node);
+        app(LedgerService::class)->record($node, $parent);
         if ($tier === 'committal') {
             $this->freezeRegionFixture($node);
         }
@@ -263,6 +275,9 @@ class AttestationPolarityTest extends TestCase
         $edge->forceFill(['phase_id' => $this->history->id, 'source_proposition_id' => $parent->id,
             'target_proposition_id' => $node->id, 'type' => $type])->save();
         app(LedgerService::class)->record($edge);
+        if ($tier === 'expressive') {
+            \Tests\Fixtures\PropositionBirth::complete($node);
+        }
 
         return $node;
     }

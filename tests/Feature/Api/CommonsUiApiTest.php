@@ -13,12 +13,23 @@ use App\Models\User;
 use App\Services\LedgerService;
 use App\Services\PropositionMeasurementService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\HttpFoundation\Response;
+use Tests\Fixtures\IsolatesClosureOutput;
 use Tests\TestCase;
 
+/** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
+#[Group('component-contract')]
 class CommonsUiApiTest extends TestCase
 {
+    use IsolatesClosureOutput;
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->isolateClosureOutput();
+    }
 
     public function test_client_is_told_when_system_bootstrap_is_required(): void
     {
@@ -88,11 +99,17 @@ class CommonsUiApiTest extends TestCase
             'A new expressive branch begins here.',
         );
 
+        // Serialization consumes the authorised-state boundary, not an old
+        // disposable Closure projection or an Origin fallback.
+        $this->componentClosureInput($child, [
+            'closure' => .375, 'historical_extent' => .375, 'historical_rhythm' => .375,
+            'historical_extent_direction' => 'positive', 'historical_rhythm_direction' => 'positive',
+        ]);
         app(PropositionMeasurementService::class)->project(
             $child,
             correspondence: 0.75,
             chirality: -0.25,
-            closure: null,
+            closure: .375,
         );
 
         $supersession = new Supersession;
@@ -122,7 +139,7 @@ class CommonsUiApiTest extends TestCase
             ->assertJsonPath('data.1.parent_ids.0', $origin->getKey())
             ->assertJsonPath('data.1.observables.correspondence', 0.75)
             ->assertJsonPath('data.1.observables.chirality', -0.25)
-            ->assertJsonPath('data.1.observables.closure', -1)
+            ->assertJsonPath('data.1.observables.closure', 0.375)
             ->assertJsonPath('data.1.context_horizon.sequence', 1)
             ->assertJsonPath(
                 'data.1.context_horizon.domain',

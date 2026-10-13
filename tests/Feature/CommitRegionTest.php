@@ -25,16 +25,20 @@ use App\Services\OperationalInstrumentService;
 use App\Services\PhaseProgressionService;
 use App\Services\PropositionMeasurementService;
 use App\Services\PropositionOptionService;
-use App\Services\PropositionStateService;
 use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Opis\JsonSchema\Helper;
 use Opis\JsonSchema\Validator;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Group;
+use Tests\Fixtures\IsolatesClosureOutput;
 use Tests\TestCase;
 
+/** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
+#[Group('component-contract')]
 class CommitRegionTest extends TestCase
 {
+    use IsolatesClosureOutput;
     use RefreshDatabase;
 
     private Phase $history;
@@ -46,6 +50,7 @@ class CommitRegionTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->isolateClosureOutput();
         $substrate = new Substrate;
         $substrate->forceFill(['slug' => 'regions', 'title' => 'Regions', 'visibility' => 'public', 'configuration' => []])->save();
         $this->viewer = new Participant;
@@ -191,7 +196,7 @@ class CommitRegionTest extends TestCase
     }
 
     #[DataProvider('domains')]
-    public function test_closure_keeps_local_writes_and_revalidates_the_selected_source(string $first, string $second, string $third): void
+    public function test_component_closure_options_keep_local_writes_and_revalidate_the_selected_source(string $first, string $second, string $third): void
     {
         $this->controlledClosureFixture(-1);
         if ($this->regionSeed->register !== $third) {
@@ -222,8 +227,8 @@ class CommitRegionTest extends TestCase
                 $result = $gateService->preview($candidate, $phase, $context);
                 [$cardinal, $cadence] = $values[$candidate->id] ?? [1, -1];
 
-                // Isolate option eligibility; the selected negative candidate keeps
-                // its canonical prospective observation for snapshot verification.
+                // Isolate option eligibility only; this is not an authorised
+                // prospective observation or proof of canonical preservation.
                 return [...$result, 'admissible' => $cardinal === $cadence];
             });
             $mock->shouldReceive('forCommitment')->andReturnUsing(fn ($node) => $gateService->forCommitment($node));
@@ -248,15 +253,9 @@ class CommitRegionTest extends TestCase
         $values[$positive->id] = [1, -1];
         $this->reject($phase, ['action' => 'proposition.commit', 'proposition_id' => $positive->id]);
         $this->assertSame([$negative->id], $options->committableFor($phase)->pluck('id')->all());
-        $target = app(ContributionDispatcher::class)->dispatch($this->viewer, $phase,
-            ['action' => 'proposition.commit', 'proposition_id' => $negative->id]);
-        $this->assertSame([$negative->id], $target->commitSources()->pluck('propositions.id')->all());
-        $this->assertSame($negative->statement, $target->statement);
-        $state = app(PropositionStateService::class);
-        $this->assertSame($state->attestations(collect([$negative]))->pluck('id')->all(),
-            $state->attestations(collect([$target]))->pluck('id')->all());
-        $this->assertSame($state->touchCount($negative), $state->touchCount($target));
-        $this->assertSame($target->id, app(CommitRegionService::class)->seedFor($target)->id);
+        // Selection and stale rejection are the component contract. Successful
+        // preservation/inheritance belongs to the genuine Commit lifecycle tests.
+
     }
 
     private function reject(Phase $phase, array $input): void

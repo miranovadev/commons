@@ -14,11 +14,22 @@ use App\Models\User;
 use App\Services\CycleEntryService;
 use App\Services\LedgerService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Group;
+use Tests\Fixtures\IsolatesClosureOutput;
 use Tests\TestCase;
 
+/** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
+#[Group('component-contract')]
 class HorizonWorkspaceTest extends TestCase
 {
+    use IsolatesClosureOutput;
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->isolateClosureOutput();
+    }
 
     public function test_concurrent_workspaces_serialize_cycle_domain_boundary_and_actual_provenance_independently(): void
     {

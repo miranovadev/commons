@@ -179,11 +179,12 @@ class PersistInstrumentTest extends TestCase
         $parent = $signal->parents()->sole();
         $signal = $signal->replicate();
         $signal->forceFill(['phase_id' => $ownerPhase->id])->save();
-        app(LedgerService::class)->record($signal);
+        app(LedgerService::class)->record($signal, $parent);
         $edge = new Supersession;
         $edge->forceFill(['phase_id' => $ownerPhase->id, 'source_proposition_id' => $parent->id,
             'target_proposition_id' => $signal->id, 'type' => 'variant'])->save();
         app(LedgerService::class)->record($edge);
+        \Tests\Fixtures\PropositionBirth::complete($signal);
         Phase::findOrFail($state['plan']['phase']['id'])->forceFill(['gate_proposition_id' => $signal->id])->save();
         $author->forceFill(['current_proposition_id' => $signal->id])->save();
         app(PotentialProjectionService::class)->refresh($author->substrate_id);

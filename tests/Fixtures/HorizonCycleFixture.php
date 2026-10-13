@@ -11,7 +11,7 @@ use App\Services\ParticipationService;
 
 trait HorizonCycleFixture
 {
-    protected function driveHorizonCycle(int $participantCount = 1, bool $realClosure = false, string $originDirection = 'support', ?callable $observe = null, int $additionalEntrants = 0, int $actionBudget = 100): Proposition
+    protected function driveHorizonCycle(int $participantCount = 1, bool $realClosure = false, string $originDirection = 'support', ?callable $observe = null, int $additionalEntrants = 0, int $actionBudget = 100, ?string $expressiveDirection = null, ?callable $recordAction = null): Proposition
     {
         $substrate = (new Substrate)->forceFill(['slug' => 'single-bird', 'title' => 'Single Participant', 'visibility' => 'public', 'configuration' => []]);
         $substrate->save();
@@ -32,12 +32,24 @@ trait HorizonCycleFixture
             $service->enter($other);
             $participants[] = $other;
         }
+
+        return $this->driveAuthorisedCycle($participants, $originId, $originDirection,
+            $observe, $additionalEntrants, $actionBudget, $expressiveDirection, $recordAction);
+    }
+
+    /** Continue actual active participation; never seed or request a Domain/depth. */
+    protected function driveAuthorisedCycle(array $participants, string $entryId, string $originDirection = 'support', ?callable $observe = null, int $additionalEntrants = 0, int $actionBudget = 100, ?string $expressiveDirection = null, ?callable $recordAction = null): Proposition
+    {
+        $service = app(ParticipationService::class);
+        $participantCount = count($participants);
         $trace = [];
+        $lastCommitment = null;
         for ($step = 0; $step < $actionBudget * $participantCount; $step++) {
             $participant = $participants[$step % $participantCount];
             $state = $service->stateFor($participant);
             $this->assertSame('ready', $state['status'], json_encode($trace));
             $plan = $state['plan'];
+            $lastCommitment = $plan['commitment'] ?? $lastCommitment;
             $observe?->__invoke($participant, $state);
             $actions = $plan['schema']['$defs']['actions'];
             $action = collect(['proposition.commit', 'proposition.reclassify', 'proposition.variant', 'proposition.reconcile',
@@ -57,21 +69,22 @@ trait HorizonCycleFixture
                 $input['instrument'] = ['kind' => 'hyperlink', 'reference' => 'https://example.test/evidence/'.$step];
             }
             if ($action === 'attestation.create') {
-                $choice = collect($definition['anyOf'])->first(fn ($choice) => $choice['properties']['direction']['enum'][0] === $originDirection)
+                $choice = collect($definition['anyOf'])->first(fn ($choice) => $choice['properties']['direction']['enum'][0] === ($expressiveDirection ?? $originDirection))
                     ?? $definition['anyOf'][0];
                 $input['proposition_id'] = $choice['properties']['proposition_id']['enum'][0];
                 $input['direction'] = $choice['properties']['direction']['enum'][0];
             }
             $trace[] = [$state['cycle']['sequence'], $plan['phase']['number'], $action, $input['direction'] ?? null, $plan['rest_reason'] ?? null];
             try {
-                $service->contribute($participant, $plan['phase']['id'], $input);
+                $result = $service->contribute($participant, $plan['phase']['id'], $input);
+                $recordAction?->__invoke($participant, $state, $input, $result);
             } catch (\Throwable $error) {
                 $this->fail($error->getMessage().' '.json_encode($trace));
             }
             if ($action === 'proposition.commit') {
                 $commit = $participant->fresh()->position;
                 $this->assertSame('committal', $commit->tier);
-                $this->assertNotSame($originId, $commit->id);
+                $this->assertNotSame($entryId, $commit->id);
                 $this->assertSame($participantCount + $additionalEntrants, Participant::count());
                 $this->assertSame([3, 6], Phase::whereIn('id', ReceiptConsumption::pluck('phase_id'))->orderBy('kind')->pluck('kind')->map(fn ($kind) => $kind->value)->unique()->values()->all());
                 $this->assertGreaterThan(1, $participant->cycles()->count());
@@ -82,6 +95,7 @@ trait HorizonCycleFixture
                 return $commit;
             }
         }
-        $this->fail('The single-participant motor stalled: '.json_encode($trace));
+        $this->fail('The single-participant motor stalled. Last Commit eligibility: '
+            .json_encode($lastCommitment).'; trace: '.json_encode($trace));
     }
 }

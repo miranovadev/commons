@@ -1,0 +1,56 @@
+test,change_since_832_checkpoint,before,after,Stage2_failed
+"Tests\Feature\ReconciliationTest::test_mediate_filters_read_siblings_using_the_previous_disperse_gate""consonant""",checkpoint masked: now passed,error,passed,no
+"Tests\Feature\ReconciliationTest::test_mediate_filters_read_siblings_using_the_previous_disperse_gate""dissonant""",checkpoint masked: now passed,error,passed,no
+"Tests\Feature\ReconciliationTest::test_mediate_filters_read_siblings_using_the_previous_disperse_gate""neutral""",checkpoint masked: now passed,error,passed,no
+Tests\Feature\ReconciliationTest::test_horizon_membership_does_not_replace_region_scope_and_substrates_stay_isolated,checkpoint masked: now passed,error,passed,no
+Tests\Feature\ReconciliationTest::test_mediate_exposes_all_gate_children_even_with_small_display_limits,checkpoint masked: now passed,error,passed,no
+Tests\Feature\ReconciliationTest::test_dispatcher_rejects_non_sibling_without_partial_writes,checkpoint masked: now passed,error,passed,no
+Tests\Feature\ReconciliationTest::test_mediate_rechecks_read_direction_before_writing_and_does_not_filter_gate_votes,checkpoint masked: now passed,error,passed,no
+Tests\Feature\ReconciliationTest::test_mediate_requires_its_own_disperse_anchor_but_does_not_consume_current_gate,checkpoint masked: now passed,error,passed,no
+Tests\Feature\ClosureHysteresisTest::test_zero_extent_retains_negative_history_and_blocks_a_positive_rhythm,previous non-history failure: now passed,failure,passed,no
+Tests\Feature\ClosureHysteresisTest::test_unrelated_newer_snapshot_does_not_supply_lineage_history,previous non-history failure: now passed,failure,passed,no
+Tests\Feature\ClosureHysteresisTest::test_actual_candidate_rejection_rolls_back_a_previously_admissible_preview,previous non-history failure: now passed,failure,passed,no
+Tests\Feature\ClosureHysteresisTest::test_unavailable_authorised_state_fails_closed_without_rewriting_history,previous non-history failure: now passed,error,passed,no
+Tests\Feature\ClosureHysteresisTest::test_order_native_preview_explains_visible_write_actionability#1,previous non-history failure: now passed,failure,passed,no
+Tests\Feature\ClosureHysteresisTest::test_order_native_preview_explains_visible_write_actionability#2,previous non-history failure: now passed,failure,passed,no
+Tests\Feature\ClosureHysteresisTest::test_order_native_preview_explains_visible_write_actionability#3,previous non-history failure: now passed,failure,passed,no
+Tests\Feature\ClosureHysteresisTest::test_admissible_preview_cannot_authorize_commit_after_closure_becomes_opposed,previous non-history failure: now passed,failure,passed,no
+Tests\Feature\InputPlanVisibilityTest::test_reclassified_proposition_remains_visible_in_its_original_register,checkpoint masked: now passed,error,passed,no
+"Tests\Feature\InputPlanVisibilityTest::test_personal_effective_attestation_controls_human_and_inference_choices""Distinguish untouched""",checkpoint masked: now passed,error,passed,no
+"Tests\Feature\InputPlanVisibilityTest::test_personal_effective_attestation_controls_human_and_inference_choices""Distinguish support""",checkpoint masked: now passed,error,passed,no
+"Tests\Feature\InputPlanVisibilityTest::test_personal_effective_attestation_controls_human_and_inference_choices""Distinguish refute""",checkpoint masked: now passed,error,passed,no
+"Tests\Feature\InputPlanVisibilityTest::test_personal_effective_attestation_controls_human_and_inference_choices""Persist untouched""",checkpoint masked: now passed,error,passed,no
+"Tests\Feature\InputPlanVisibilityTest::test_personal_effective_attestation_controls_human_and_inference_choices""Persist support""",checkpoint masked: now passed,error,passed,no
+"Tests\Feature\InputPlanVisibilityTest::test_personal_effective_attestation_controls_human_and_inference_choices""Persist refute""",checkpoint masked: now passed,error,passed,no
+"Tests\Feature\InputPlanVisibilityTest::test_personal_effective_attestation_controls_human_and_inference_choices""Constrain untouched""",checkpoint masked: now passed,error,passed,no
+"Tests\Feature\InputPlanVisibilityTest::test_personal_effective_attestation_controls_human_and_inference_choices""Constrain support""",checkpoint masked: now passed,error,passed,no
+"Tests\Feature\InputPlanVisibilityTest::test_personal_effective_attestation_controls_human_and_inference_choices""Constrain refute""",checkpoint masked: now passed,error,passed,no
+"Tests\Feature\InputPlanVisibilityTest::test_personal_effective_attestation_controls_human_and_inference_choices""Disperse untouched""",checkpoint masked: now passed,error,passed,no
+"Tests\Feature\InputPlanVisibilityTest::test_personal_effective_attestation_controls_human_and_inference_choices""Disperse support""",checkpoint masked: now passed,error,passed,no
+"Tests\Feature\InputPlanVisibilityTest::test_personal_effective_attestation_controls_human_and_inference_choices""Disperse refute""",checkpoint masked: now passed,error,passed,no
+"Tests\Feature\InputPlanVisibilityTest::test_personal_effective_attestation_controls_human_and_inference_choices""Mediate untouched""",checkpoint masked: now passed,error,passed,no
+"Tests\Feature\InputPlanVisibilityTest::test_personal_effective_attestation_controls_human_and_inference_choices""Mediate support""",checkpoint masked: now passed,error,passed,no
+"Tests\Feature\InputPlanVisibilityTest::test_personal_effective_attestation_controls_human_and_inference_choices""Mediate refute""",checkpoint masked: now passed,error,passed,no
+"Tests\Feature\InputPlanVisibilityTest::test_personal_effective_attestation_controls_human_and_inference_choices""Bias untouched""",checkpoint masked: now passed,error,passed,no
+"Tests\Feature\InputPlanVisibilityTest::test_personal_effective_attestation_controls_human_and_inference_choices""Bias support""",checkpoint masked: now passed,error,passed,no
+"Tests\Feature\InputPlanVisibilityTest::test_personal_effective_attestation_controls_human_and_inference_choices""Bias refute""",checkpoint masked: now passed,error,passed,no
+"Tests\Feature\InputPlanVisibilityTest::test_personal_effective_attestation_controls_human_and_inference_choices""Order untouched""",checkpoint masked: now passed,error,passed,no
+"Tests\Feature\InputPlanVisibilityTest::test_personal_effective_attestation_controls_human_and_inference_choices""Order support""",checkpoint masked: now passed,error,passed,no
+"Tests\Feature\InputPlanVisibilityTest::test_personal_effective_attestation_controls_human_and_inference_choices""Order refute""",checkpoint masked: now passed,error,passed,no
+Tests\Feature\LocalParticipantNavigationTest::test_initial_entry_selects_potential_and_persists_the_starting_position,checkpoint masked: now passed,error,passed,no
+Tests\Feature\LocalParticipantNavigationTest::test_ordinary_reentry_never_selects_a_disconnected_global_maximum,checkpoint masked: now passed,error,passed,no
+Tests\Feature\LocalParticipantNavigationTest::test_two_expressive_observer_positions_rank_the_same_commitments_differently,checkpoint masked: now passed,error,passed,no
+Tests\Feature\LocalParticipantNavigationTest::test_recovery_excludes_connected_descendants_even_when_the_relative_ranking_diagnostic_prefers_them,checkpoint masked: now passed,error,passed,no
+Tests\Feature\LocalParticipantNavigationTest::test_charge_fallback_is_attenuated_from_the_expressive_position,checkpoint masked: now passed,error,passed,no
+Tests\Feature\LocalParticipantNavigationTest::test_no_reachable_commitment_leaves_entry_unavailable_without_moving,checkpoint masked: now passed,error,passed,no
+Tests\Feature\LocalParticipantNavigationTest::test_non_tragic_expressive_completion_resumes_its_own_committal_seed,checkpoint masked: now passed,error,passed,no
+Tests\Feature\LocalParticipantNavigationTest::test_healthy_evidenced_traverse_prevents_redundant_variant_even_with_positive_potential,checkpoint masked: now passed,error,passed,no
+Tests\Feature\LocalParticipantNavigationTest::test_invalid_traverse_targets_and_legacy_actions_are_rejected_without_movement,checkpoint masked: now passed,error,passed,no
+Tests\Feature\LocalParticipantNavigationTest::test_recovery_stops_at_the_nearest_sequential_ancestor,checkpoint masked: now passed,error,passed,no
+Tests\Feature\LocalParticipantNavigationTest::test_ambiguous_multi_input_without_recorded_arrival_provenance_fails_closed,checkpoint masked: now passed,error,passed,no
+Tests\Feature\LocalParticipantNavigationTest::test_repeated_local_rest_does_not_mark_a_still_open_region_exhausted,checkpoint masked: now passed,error,passed,no
+Tests\Feature\LocalParticipantNavigationTest::test_connected_zero_potential_remains_available_without_borrowing_from_disconnected_regions,checkpoint masked: now passed,error,passed,no
+Tests\Feature\LocalParticipantNavigationTest::test_order_rejects_attestation_and_expressive_traverse_without_weakening_commit,checkpoint masked: now passed,error,passed,no
+Tests\Feature\LocalParticipantNavigationTest::test_automated_wakes_ask_inference_to_choose_traversal,checkpoint masked: now passed,error,passed,no
+Tests\Feature\PropositionMeasurementServiceTest::test_correspondence_retains_both_directions_through_zero_and_projection_deletion,checkpoint masked: now passed,error,passed,no
+Tests\Feature\ReceiptRegionContextTest::test_valid_governance_is_not_erased_by_malformed_secondary_provenance,checkpoint masked: now passed,error,passed,no

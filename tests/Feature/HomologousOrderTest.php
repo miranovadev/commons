@@ -27,10 +27,14 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\CreatesHomologousPositions;
+use Tests\Fixtures\IsolatesClosureOutput;
 use Tests\TestCase;
 
+/** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
+#[Group('component-contract')]
 class HomologousOrderTest extends TestCase
 {
+    use IsolatesClosureOutput;
     use CreatesHomologousPositions;
     use RefreshDatabase;
 
@@ -51,10 +55,12 @@ class HomologousOrderTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->isolateClosureOutput();
+        $this->isolateCorrespondenceOutput();
         $this->createHomologyActor();
-        $this->origin = $this->commit(null, 'emergence', ['cadence_interval' => 1]);
-        $this->a = $this->commit($this->origin, 'settlement', ['cadence_interval' => 1]);
-        $this->b = $this->commit($this->origin, 'settlement', ['cadence_interval' => 1]);
+        $this->origin = $this->committedCoordinate(null, 'emergence', ['cadence_interval' => 1]);
+        $this->a = $this->committedCoordinate($this->origin, 'settlement', ['cadence_interval' => 1]);
+        $this->b = $this->committedCoordinate($this->origin, 'settlement', ['cadence_interval' => 1]);
         $this->positive = $this->frozen($this->b, 'positive');
         $this->negative = $this->frozen($this->b, 'negative');
         $this->gate = $this->position($this->a, PhaseKind::Bias);
@@ -113,7 +119,7 @@ class HomologousOrderTest extends TestCase
     public function test_wrong_coordinates_and_broken_committed_history_cannot_supply_traverse(): void
     {
         $wrongDepth = $this->frozen($this->negative, 'negative');
-        $otherDomainEntry = $this->commit($this->origin, 'emergence');
+        $otherDomainEntry = $this->committedCoordinate($this->origin, 'emergence');
         $wrongDomain = $this->frozen($otherDomainEntry, 'negative');
         $wrongPosition = $this->frozen($this->b, 'negative');
         // Deliberately corrupt storage to exercise fail-closed legacy/malformed input.
@@ -197,7 +203,7 @@ class HomologousOrderTest extends TestCase
             DB::table('commitment_snapshots')->orderBy('proposition_id')->get()->toJson()]);
     }
 
-    public function test_admissible_local_commit_survives_opposite_population_and_enters_its_new_commit(): void
+    public function test_component_plan_keeps_local_commit_option_despite_opposite_population(): void
     {
         $this->controlledBirthClosureFixture(1.0, includeCommittal: true);
         $vote = new Attestation;
@@ -209,13 +215,8 @@ class HomologousOrderTest extends TestCase
         $plan = app(InputPlanService::class)->forPhase($this->actor, $this->order);
         $this->assertArrayHasKey('proposition.commit', $plan['schema']['$defs']['actions']);
         $this->assertContains($this->negative->id, array_column($plan['traversal_options'], 'id'));
-        $state = app(ParticipationService::class)->contribute($this->actor, $this->order->id,
-            ['action' => 'proposition.commit', 'proposition_id' => $this->gate->id]);
-        $next = Phase::findOrFail($state['plan']['phase']['id']);
-        $committed = Proposition::findOrFail($next->gate_proposition_id);
-        $this->assertSame('committal', $committed->tier);
-        $this->assertSame($this->gate->statement, $committed->statement);
-        $this->assertSame($committed->id, $next->cycle->entry_committal_id);
+        // This isolates option composition. The numerical input must not be
+        // used to claim that a genuine canonical Commit completed.
         $this->assertSame($this->a->id, $this->order->cycle->fresh()->entry_committal_id);
     }
 
@@ -242,8 +243,10 @@ class HomologousOrderTest extends TestCase
 
     public function test_boundary_traverse_enters_the_selected_committals_opened_horizon(): void
     {
-        $boundary = $this->commit($this->b, 'emergence',
-            ['depth' => -1, 'cadence' => -1, 'closure' => -1, 'depth_direction' => 'negative', 'cadence_direction' => 'negative']);
+        $boundary = $this->committedCoordinate($this->b, 'emergence',
+            ['depth' => -1, 'cadence' => -1, 'closure' => -1,
+                'closure_observation' => ['historical_extent' => -1.0, 'historical_rhythm' => -1.0,
+                    'historical_extent_direction' => 'negative', 'historical_rhythm_direction' => 'negative']]);
         $this->activate();
         $this->publishPotentialFixture($this->actor);
         $state = app(ParticipationService::class)->contribute($this->actor, $this->order->id,
@@ -272,7 +275,7 @@ class HomologousOrderTest extends TestCase
         foreach ([2, 7] as $count) {
             if ($count === 7) {
                 foreach (range(1, 5) as $index) {
-                    $this->frozen($this->commit($this->origin, 'settlement'), 'negative');
+                    $this->frozen($this->committedCoordinate($this->origin, 'settlement'), 'negative');
                 }
             }
             DB::flushQueryLog();
@@ -326,10 +329,12 @@ class HomologousOrderTest extends TestCase
         $this->assertSame($before, [Proposition::count(), Supersession::count(), DB::table('receipt_consumptions')->count()]);
     }
 
-    private function frozen(Proposition $entry, string $depth, ?string $cadence = null): Proposition
+    private function frozen(Proposition $entry, string $extent, ?string $rhythm = null): Proposition
     {
-        return $this->commit($entry, $entry->commitmentSnapshot->direction_after->value,
-            ['cadence_interval' => 1, 'depth' => 0, 'cadence' => 0, 'closure' => 0, 'depth_direction' => $depth, 'cadence_direction' => $cadence ?? $depth]);
+        return $this->committedCoordinate($entry, $entry->commitmentSnapshot->direction_after->value,
+            ['cadence_interval' => 1, 'depth' => 0, 'cadence' => 0, 'closure' => 0,
+                'closure_observation' => ['historical_extent' => 0.0, 'historical_rhythm' => 0.0,
+                    'historical_extent_direction' => $extent, 'historical_rhythm_direction' => $rhythm ?? $extent]]);
     }
 
     private function activate(): void

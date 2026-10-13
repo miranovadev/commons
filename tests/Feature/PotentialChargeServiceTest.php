@@ -17,11 +17,22 @@ use App\Services\Observables\LineageMeasurementService;
 use App\Services\PotentialChargeService;
 use App\Services\PotentialProjectionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Group;
+use Tests\Fixtures\IsolatesClosureOutput;
 use Tests\TestCase;
 
+/** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
+#[Group('component-contract')]
 class PotentialChargeServiceTest extends TestCase
 {
+    use IsolatesClosureOutput;
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->isolateClosureOutput();
+    }
 
     public function test_it_prefers_the_committal_state_with_the_greatest_tension_reducing_continuation(): void
     {

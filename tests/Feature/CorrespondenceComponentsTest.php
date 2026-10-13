@@ -8,7 +8,6 @@ use App\Models\Attestation;
 use App\Models\Proposition;
 use App\Models\PropositionMeasurement;
 use App\Models\Supersession;
-use App\Services\CommitmentSnapshotService;
 use App\Services\CycleEntryService;
 use App\Services\LedgerService;
 use App\Services\Observables\ContextLineageComparisonService;
@@ -21,15 +20,26 @@ use App\Services\ReceiptContextService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\CreatesHomologousPositions;
+use Tests\Fixtures\IsolatesClosureOutput;
 use Tests\TestCase;
 
+/** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
+#[Group('component-contract')]
 class CorrespondenceComponentsTest extends TestCase
 {
+    use IsolatesClosureOutput;
     use CreatesHomologousPositions;
     use RefreshDatabase;
 
     private const array FIELDS = ['shape_topology', 'phase_profile', 'shape_topology_direction', 'phase_profile_direction'];
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->isolateClosureOutput();
+    }
 
     public function test_origin_has_the_unique_exact_identity_pair_and_freezes_it(): void
     {
@@ -112,7 +122,7 @@ class CorrespondenceComponentsTest extends TestCase
     public function test_missing_component_history_uses_entry_snapshot_then_positive_default(): void
     {
         $this->createHomologyActor();
-        $entry = $this->commit(null, 'settlement', ['shape_topology_direction' => 'negative']);
+        $entry = $this->committedCoordinate(null, 'settlement', ['shape_topology_direction' => 'negative']);
         $head = $this->child($entry, $entry);
         $measurement = app(PropositionMeasurementService::class)->project($head, 0, 0, 0, correspondenceComponents: new CorrespondenceValues(0, 0));
         $this->assertSame('negative', $measurement->shape_topology_direction);
@@ -125,7 +135,7 @@ class CorrespondenceComponentsTest extends TestCase
         $migration = require database_path('migrations/2026_10_12_000000_record_phase_profile_correspondence.php');
         $migration->down();
         $this->createHomologyActor();
-        $origin = $this->commit(null, 'settlement', ['correspondence' => .1234567,
+        $origin = $this->committedCoordinate(null, 'settlement', ['correspondence' => .1234567,
             'cardinal_position' => -.7, 'cardinal_position_direction' => 'negative']);
         $before = $origin->commitmentSnapshot->getAttributes();
         $migration->up();
@@ -183,31 +193,6 @@ class CorrespondenceComponentsTest extends TestCase
         $this->assertSame($observed, $service->recalculate($head)->only(self::FIELDS));
     }
 
-    public function test_new_ordinary_commitment_snapshot_freezes_local_values_and_retained_directions(): void
-    {
-        $origin = $this->origin();
-        $gate = $this->child($origin, $origin);
-        $phase = $this->phase($origin, $gate, PhaseKind::Order);
-        $candidate = (new Proposition)->forceFill(['phase_id' => $phase->id, 'tier' => 'committal',
-            'register' => $phase->write_register, 'statement' => 'Commit']);
-        $candidate->save();
-        app(LedgerService::class)->record($candidate);
-        $edge = $this->commitAncestryFixture($candidate, $gate);
-        $attestation = (new Attestation)->forceFill(['phase_id' => $phase->id, 'proposition_id' => $candidate->id, 'direction' => 'support']);
-        $attestation->save();
-        app(LedgerService::class)->record($attestation);
-        $this->receiptFixture($candidate);
-        $measurement = app(PropositionMeasurementService::class)->recalculate($candidate);
-        $snapshot = app(CommitmentSnapshotService::class)->record($candidate, .5, .5, LineageMeasurementService::VERSION, $edge);
-        $this->assertSame($measurement->only(self::FIELDS), $snapshot->only(self::FIELDS));
-        $this->assertNotNull($snapshot->shape_topology);
-        $before = $snapshot->fresh()->getAttributes();
-        $this->child($origin, $gate);
-        app(PropositionMeasurementService::class)->recalculate($candidate);
-        $this->assertSame($before, $snapshot->fresh()->getAttributes());
-        $this->assertSame($snapshot->only(self::FIELDS), $candidate->fresh()->measurement->only(self::FIELDS));
-    }
-
     private function origin(): Proposition
     {
         $this->createHomologyActor();
@@ -224,6 +209,7 @@ class CorrespondenceComponentsTest extends TestCase
             'source_proposition_id' => $parent->id, 'target_proposition_id' => $node->id, 'type' => 'variant']);
         $edge->save();
         app(LedgerService::class)->record($edge);
+        app(\App\Services\Observables\ProspectiveClosureService::class)->initialize($node);
 
         return $node;
     }

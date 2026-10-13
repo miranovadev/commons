@@ -1,0 +1,1196 @@
+{
+    "origin_direction": "support",
+    "expressive_direction_preference": "refute",
+    "actions": [
+        {
+            "cycle": 2,
+            "phase": 1,
+            "gate_id": "01m4rrd5nedwqmxm2m1g07xecr",
+            "input": {
+                "action": "proposition.variant",
+                "statement": "Opportunity 0"
+            },
+            "result_id": "01m4rrd6h558rq53mavz7c5yr1"
+        },
+        {
+            "cycle": 2,
+            "phase": 2,
+            "gate_id": "01m4rrd6h558rq53mavz7c5yr1",
+            "input": {
+                "action": "proposition.variant",
+                "statement": "Opportunity 1"
+            },
+            "result_id": "01m4rrd7b4yg4rbq1gyx38x9pj"
+        },
+        {
+            "cycle": 2,
+            "phase": 3,
+            "gate_id": "01m4rrd7b4yg4rbq1gyx38x9pj",
+            "input": {
+                "action": "participant.rest"
+            },
+            "result_id": "01m4rrd5nedwqmxm2m1g07xecr"
+        },
+        {
+            "cycle": 3,
+            "phase": 1,
+            "gate_id": "01m4rrd5nedwqmxm2m1g07xecr",
+            "input": {
+                "action": "instrument.execute",
+                "proposition_id": "01m4rrd6h558rq53mavz7c5yr1",
+                "instrument": {
+                    "kind": "hyperlink",
+                    "reference": "https:\/\/example.test\/evidence\/3"
+                }
+            },
+            "result_id": "01m4rrd6h558rq53mavz7c5yr1"
+        },
+        {
+            "cycle": 3,
+            "phase": 2,
+            "gate_id": "01m4rrd6h558rq53mavz7c5yr1",
+            "input": {
+                "action": "attestation.create",
+                "proposition_id": "01m4rrd7b4yg4rbq1gyx38x9pj",
+                "direction": "refute"
+            },
+            "result_id": "01m4rrd7b4yg4rbq1gyx38x9pj"
+        },
+        {
+            "cycle": 3,
+            "phase": 3,
+            "gate_id": "01m4rrd7b4yg4rbq1gyx38x9pj",
+            "input": {
+                "action": "proposition.reclassify",
+                "proposition_id": "01m4rrd7b4yg4rbq1gyx38x9pj",
+                "receipt_id": "01m4rrd9em4sg6c4t987x4651d"
+            },
+            "result_id": "01m4rrdb3aaz2ttg0t80fjkb5w"
+        },
+        {
+            "cycle": 3,
+            "phase": 4,
+            "gate_id": "01m4rrdb3aaz2ttg0t80fjkb5w",
+            "input": {
+                "action": "proposition.variant",
+                "statement": "Opportunity 6"
+            },
+            "result_id": "01m4rrdc55snraffvtq2k28kxf"
+        },
+        {
+            "cycle": 3,
+            "phase": 5,
+            "gate_id": "01m4rrdc55snraffvtq2k28kxf",
+            "input": {
+                "action": "participant.rest"
+            },
+            "result_id": "01m4rrd5nedwqmxm2m1g07xecr"
+        },
+        {
+            "cycle": 4,
+            "phase": 1,
+            "gate_id": "01m4rrd5nedwqmxm2m1g07xecr",
+            "input": {
+                "action": "instrument.execute",
+                "proposition_id": "01m4rrd6h558rq53mavz7c5yr1",
+                "instrument": {
+                    "kind": "hyperlink",
+                    "reference": "https:\/\/example.test\/evidence\/8"
+                }
+            },
+            "result_id": "01m4rrd6h558rq53mavz7c5yr1"
+        },
+        {
+            "cycle": 4,
+            "phase": 2,
+            "gate_id": "01m4rrd6h558rq53mavz7c5yr1",
+            "input": {
+                "action": "proposition.traverse",
+                "proposition_id": "01m4rrd7b4yg4rbq1gyx38x9pj"
+            },
+            "result_id": "01m4rrd7b4yg4rbq1gyx38x9pj"
+        },
+        {
+            "cycle": 4,
+            "phase": 3,
+            "gate_id": "01m4rrd7b4yg4rbq1gyx38x9pj",
+            "input": {
+                "action": "attestation.create",
+                "proposition_id": "01m4rrdb3aaz2ttg0t80fjkb5w",
+                "direction": "refute"
+            },
+            "result_id": "01m4rrdb3aaz2ttg0t80fjkb5w"
+        },
+        {
+            "cycle": 4,
+            "phase": 4,
+            "gate_id": "01m4rrdb3aaz2ttg0t80fjkb5w",
+            "input": {
+                "action": "instrument.execute",
+                "proposition_id": "01m4rrdc55snraffvtq2k28kxf",
+                "instrument": {
+                    "kind": "hyperlink",
+                    "reference": "https:\/\/example.test\/evidence\/11"
+                }
+            },
+            "result_id": "01m4rrdc55snraffvtq2k28kxf"
+        },
+        {
+            "cycle": 4,
+            "phase": 5,
+            "gate_id": "01m4rrdc55snraffvtq2k28kxf",
+            "input": {
+                "action": "participant.rest"
+            },
+            "result_id": "01m4rrd5nedwqmxm2m1g07xecr"
+        },
+        {
+            "cycle": 5,
+            "phase": 1,
+            "gate_id": "01m4rrd5nedwqmxm2m1g07xecr",
+            "input": {
+                "action": "attestation.create",
+                "proposition_id": "01m4rrd6h558rq53mavz7c5yr1",
+                "direction": "refute"
+            },
+            "result_id": "01m4rrd6h558rq53mavz7c5yr1"
+        },
+        {
+            "cycle": 5,
+            "phase": 2,
+            "gate_id": "01m4rrd6h558rq53mavz7c5yr1",
+            "input": {
+                "action": "proposition.traverse",
+                "proposition_id": "01m4rrd7b4yg4rbq1gyx38x9pj"
+            },
+            "result_id": "01m4rrd7b4yg4rbq1gyx38x9pj"
+        },
+        {
+            "cycle": 5,
+            "phase": 3,
+            "gate_id": "01m4rrd7b4yg4rbq1gyx38x9pj",
+            "input": {
+                "action": "proposition.traverse",
+                "proposition_id": "01m4rrdb3aaz2ttg0t80fjkb5w"
+            },
+            "result_id": "01m4rrdb3aaz2ttg0t80fjkb5w"
+        },
+        {
+            "cycle": 5,
+            "phase": 4,
+            "gate_id": "01m4rrdb3aaz2ttg0t80fjkb5w",
+            "input": {
+                "action": "attestation.create",
+                "proposition_id": "01m4rrdc55snraffvtq2k28kxf",
+                "direction": "refute"
+            },
+            "result_id": "01m4rrdc55snraffvtq2k28kxf"
+        },
+        {
+            "cycle": 5,
+            "phase": 5,
+            "gate_id": "01m4rrdc55snraffvtq2k28kxf",
+            "input": {
+                "action": "participant.rest"
+            },
+            "result_id": "01m4rrd5nedwqmxm2m1g07xecr"
+        },
+        {
+            "cycle": 6,
+            "phase": 1,
+            "gate_id": "01m4rrd5nedwqmxm2m1g07xecr",
+            "input": {
+                "action": "proposition.variant",
+                "statement": "Opportunity 18"
+            },
+            "result_id": "01m4rrdrc19m7fsqfz80fff2hn"
+        },
+        {
+            "cycle": 6,
+            "phase": 2,
+            "gate_id": "01m4rrdrc19m7fsqfz80fff2hn",
+            "input": {
+                "action": "proposition.variant",
+                "statement": "Opportunity 19"
+            },
+            "result_id": "01m4rrds7mbfc4y2exyc2yrs12"
+        },
+        {
+            "cycle": 6,
+            "phase": 3,
+            "gate_id": "01m4rrds7mbfc4y2exyc2yrs12",
+            "input": {
+                "action": "participant.rest"
+            },
+            "result_id": "01m4rrd5nedwqmxm2m1g07xecr"
+        },
+        {
+            "cycle": 7,
+            "phase": 1,
+            "gate_id": "01m4rrd5nedwqmxm2m1g07xecr",
+            "input": {
+                "action": "proposition.traverse",
+                "proposition_id": "01m4rrd6h558rq53mavz7c5yr1"
+            },
+            "result_id": "01m4rrd6h558rq53mavz7c5yr1"
+        },
+        {
+            "cycle": 7,
+            "phase": 2,
+            "gate_id": "01m4rrd6h558rq53mavz7c5yr1",
+            "input": {
+                "action": "proposition.variant",
+                "statement": "Opportunity 22"
+            },
+            "result_id": "01m4rrdvtabmy0eejppwq3mw8f"
+        },
+        {
+            "cycle": 7,
+            "phase": 3,
+            "gate_id": "01m4rrdvtabmy0eejppwq3mw8f",
+            "input": {
+                "action": "participant.rest"
+            },
+            "result_id": "01m4rrd5nedwqmxm2m1g07xecr"
+        },
+        {
+            "cycle": 8,
+            "phase": 1,
+            "gate_id": "01m4rrd5nedwqmxm2m1g07xecr",
+            "input": {
+                "action": "proposition.traverse",
+                "proposition_id": "01m4rrd6h558rq53mavz7c5yr1"
+            },
+            "result_id": "01m4rrd6h558rq53mavz7c5yr1"
+        },
+        {
+            "cycle": 8,
+            "phase": 2,
+            "gate_id": "01m4rrd6h558rq53mavz7c5yr1",
+            "input": {
+                "action": "proposition.traverse",
+                "proposition_id": "01m4rrd7b4yg4rbq1gyx38x9pj"
+            },
+            "result_id": "01m4rrd7b4yg4rbq1gyx38x9pj"
+        },
+        {
+            "cycle": 8,
+            "phase": 3,
+            "gate_id": "01m4rrd7b4yg4rbq1gyx38x9pj",
+            "input": {
+                "action": "participant.rest"
+            },
+            "result_id": "01m4rrd5nedwqmxm2m1g07xecr"
+        },
+        {
+            "cycle": 9,
+            "phase": 1,
+            "gate_id": "01m4rrd5nedwqmxm2m1g07xecr",
+            "input": {
+                "action": "proposition.traverse",
+                "proposition_id": "01m4rrd6h558rq53mavz7c5yr1"
+            },
+            "result_id": "01m4rrd6h558rq53mavz7c5yr1"
+        },
+        {
+            "cycle": 9,
+            "phase": 2,
+            "gate_id": "01m4rrd6h558rq53mavz7c5yr1",
+            "input": {
+                "action": "attestation.create",
+                "proposition_id": "01m4rrdvtabmy0eejppwq3mw8f",
+                "direction": "refute"
+            },
+            "result_id": "01m4rrdvtabmy0eejppwq3mw8f"
+        },
+        {
+            "cycle": 9,
+            "phase": 3,
+            "gate_id": "01m4rrdvtabmy0eejppwq3mw8f",
+            "input": {
+                "action": "proposition.reclassify",
+                "proposition_id": "01m4rrdvtabmy0eejppwq3mw8f",
+                "receipt_id": "01m4rrdewyq3ws7pth8k0z33qx"
+            },
+            "result_id": "01m4rre1zh7jb72v7hmwbxpgdb"
+        },
+        {
+            "cycle": 9,
+            "phase": 4,
+            "gate_id": "01m4rre1zh7jb72v7hmwbxpgdb",
+            "input": {
+                "action": "proposition.variant",
+                "statement": "Opportunity 30"
+            },
+            "result_id": "01m4rre33wh4s54fpk2d0z0vh7"
+        },
+        {
+            "cycle": 9,
+            "phase": 5,
+            "gate_id": "01m4rre33wh4s54fpk2d0z0vh7",
+            "input": {
+                "action": "participant.rest"
+            },
+            "result_id": "01m4rrd5nedwqmxm2m1g07xecr"
+        },
+        {
+            "cycle": 10,
+            "phase": 1,
+            "gate_id": "01m4rrd5nedwqmxm2m1g07xecr",
+            "input": {
+                "action": "proposition.traverse",
+                "proposition_id": "01m4rrd6h558rq53mavz7c5yr1"
+            },
+            "result_id": "01m4rrd6h558rq53mavz7c5yr1"
+        },
+        {
+            "cycle": 10,
+            "phase": 2,
+            "gate_id": "01m4rrd6h558rq53mavz7c5yr1",
+            "input": {
+                "action": "proposition.traverse",
+                "proposition_id": "01m4rrdvtabmy0eejppwq3mw8f"
+            },
+            "result_id": "01m4rrdvtabmy0eejppwq3mw8f"
+        },
+        {
+            "cycle": 10,
+            "phase": 3,
+            "gate_id": "01m4rrdvtabmy0eejppwq3mw8f",
+            "input": {
+                "action": "attestation.create",
+                "proposition_id": "01m4rre1zh7jb72v7hmwbxpgdb",
+                "direction": "refute"
+            },
+            "result_id": "01m4rre1zh7jb72v7hmwbxpgdb"
+        },
+        {
+            "cycle": 10,
+            "phase": 4,
+            "gate_id": "01m4rre1zh7jb72v7hmwbxpgdb",
+            "input": {
+                "action": "instrument.execute",
+                "proposition_id": "01m4rre33wh4s54fpk2d0z0vh7",
+                "instrument": {
+                    "kind": "hyperlink",
+                    "reference": "https:\/\/example.test\/evidence\/35"
+                }
+            },
+            "result_id": "01m4rre33wh4s54fpk2d0z0vh7"
+        },
+        {
+            "cycle": 10,
+            "phase": 5,
+            "gate_id": "01m4rre33wh4s54fpk2d0z0vh7",
+            "input": {
+                "action": "participant.rest"
+            },
+            "result_id": "01m4rrd5nedwqmxm2m1g07xecr"
+        },
+        {
+            "cycle": 11,
+            "phase": 1,
+            "gate_id": "01m4rrd5nedwqmxm2m1g07xecr",
+            "input": {
+                "action": "proposition.traverse",
+                "proposition_id": "01m4rrd6h558rq53mavz7c5yr1"
+            },
+            "result_id": "01m4rrd6h558rq53mavz7c5yr1"
+        },
+        {
+            "cycle": 11,
+            "phase": 2,
+            "gate_id": "01m4rrd6h558rq53mavz7c5yr1",
+            "input": {
+                "action": "proposition.traverse",
+                "proposition_id": "01m4rrdvtabmy0eejppwq3mw8f"
+            },
+            "result_id": "01m4rrdvtabmy0eejppwq3mw8f"
+        },
+        {
+            "cycle": 11,
+            "phase": 3,
+            "gate_id": "01m4rrdvtabmy0eejppwq3mw8f",
+            "input": {
+                "action": "proposition.traverse",
+                "proposition_id": "01m4rre1zh7jb72v7hmwbxpgdb"
+            },
+            "result_id": "01m4rre1zh7jb72v7hmwbxpgdb"
+        },
+        {
+            "cycle": 11,
+            "phase": 4,
+            "gate_id": "01m4rre1zh7jb72v7hmwbxpgdb",
+            "input": {
+                "action": "attestation.create",
+                "proposition_id": "01m4rre33wh4s54fpk2d0z0vh7",
+                "direction": "refute"
+            },
+            "result_id": "01m4rre33wh4s54fpk2d0z0vh7"
+        },
+        {
+            "cycle": 11,
+            "phase": 5,
+            "gate_id": "01m4rre33wh4s54fpk2d0z0vh7",
+            "input": {
+                "action": "participant.rest"
+            },
+            "result_id": "01m4rrd5nedwqmxm2m1g07xecr"
+        },
+        {
+            "cycle": 12,
+            "phase": 1,
+            "gate_id": "01m4rrd5nedwqmxm2m1g07xecr",
+            "input": {
+                "action": "instrument.execute",
+                "proposition_id": "01m4rrdrc19m7fsqfz80fff2hn",
+                "instrument": {
+                    "kind": "hyperlink",
+                    "reference": "https:\/\/example.test\/evidence\/42"
+                }
+            },
+            "result_id": "01m4rrdrc19m7fsqfz80fff2hn"
+        },
+        {
+            "cycle": 12,
+            "phase": 2,
+            "gate_id": "01m4rrdrc19m7fsqfz80fff2hn",
+            "input": {
+                "action": "attestation.create",
+                "proposition_id": "01m4rrds7mbfc4y2exyc2yrs12",
+                "direction": "refute"
+            },
+            "result_id": "01m4rrds7mbfc4y2exyc2yrs12"
+        },
+        {
+            "cycle": 12,
+            "phase": 3,
+            "gate_id": "01m4rrds7mbfc4y2exyc2yrs12",
+            "input": {
+                "action": "proposition.reclassify",
+                "proposition_id": "01m4rrds7mbfc4y2exyc2yrs12",
+                "receipt_id": "01m4rrdhf5ehdxqtnzmz38h8bn"
+            },
+            "result_id": "01m4rrej63yd7x3awqsezk9ysr"
+        },
+        {
+            "cycle": 12,
+            "phase": 4,
+            "gate_id": "01m4rrej63yd7x3awqsezk9ysr",
+            "input": {
+                "action": "proposition.variant",
+                "statement": "Opportunity 45"
+            },
+            "result_id": "01m4rreke27r0dyrqt3qxmqrna"
+        },
+        {
+            "cycle": 12,
+            "phase": 5,
+            "gate_id": "01m4rreke27r0dyrqt3qxmqrna",
+            "input": {
+                "action": "participant.rest"
+            },
+            "result_id": "01m4rrd5nedwqmxm2m1g07xecr"
+        },
+        {
+            "cycle": 13,
+            "phase": 1,
+            "gate_id": "01m4rrd5nedwqmxm2m1g07xecr",
+            "input": {
+                "action": "attestation.create",
+                "proposition_id": "01m4rrdrc19m7fsqfz80fff2hn",
+                "direction": "refute"
+            },
+            "result_id": "01m4rrdrc19m7fsqfz80fff2hn"
+        },
+        {
+            "cycle": 13,
+            "phase": 2,
+            "gate_id": "01m4rrdrc19m7fsqfz80fff2hn",
+            "input": {
+                "action": "proposition.traverse",
+                "proposition_id": "01m4rrds7mbfc4y2exyc2yrs12"
+            },
+            "result_id": "01m4rrds7mbfc4y2exyc2yrs12"
+        },
+        {
+            "cycle": 13,
+            "phase": 3,
+            "gate_id": "01m4rrds7mbfc4y2exyc2yrs12",
+            "input": {
+                "action": "attestation.create",
+                "proposition_id": "01m4rrej63yd7x3awqsezk9ysr",
+                "direction": "refute"
+            },
+            "result_id": "01m4rrej63yd7x3awqsezk9ysr"
+        },
+        {
+            "cycle": 13,
+            "phase": 4,
+            "gate_id": "01m4rrej63yd7x3awqsezk9ysr",
+            "input": {
+                "action": "instrument.execute",
+                "proposition_id": "01m4rreke27r0dyrqt3qxmqrna",
+                "instrument": {
+                    "kind": "hyperlink",
+                    "reference": "https:\/\/example.test\/evidence\/50"
+                }
+            },
+            "result_id": "01m4rreke27r0dyrqt3qxmqrna"
+        },
+        {
+            "cycle": 13,
+            "phase": 5,
+            "gate_id": "01m4rreke27r0dyrqt3qxmqrna",
+            "input": {
+                "action": "participant.rest"
+            },
+            "result_id": "01m4rrd5nedwqmxm2m1g07xecr"
+        },
+        {
+            "cycle": 14,
+            "phase": 1,
+            "gate_id": "01m4rrd5nedwqmxm2m1g07xecr",
+            "input": {
+                "action": "proposition.traverse",
+                "proposition_id": "01m4rrdrc19m7fsqfz80fff2hn"
+            },
+            "result_id": "01m4rrdrc19m7fsqfz80fff2hn"
+        },
+        {
+            "cycle": 14,
+            "phase": 2,
+            "gate_id": "01m4rrdrc19m7fsqfz80fff2hn",
+            "input": {
+                "action": "proposition.traverse",
+                "proposition_id": "01m4rrds7mbfc4y2exyc2yrs12"
+            },
+            "result_id": "01m4rrds7mbfc4y2exyc2yrs12"
+        },
+        {
+            "cycle": 14,
+            "phase": 3,
+            "gate_id": "01m4rrds7mbfc4y2exyc2yrs12",
+            "input": {
+                "action": "proposition.traverse",
+                "proposition_id": "01m4rrej63yd7x3awqsezk9ysr"
+            },
+            "result_id": "01m4rrej63yd7x3awqsezk9ysr"
+        },
+        {
+            "cycle": 14,
+            "phase": 4,
+            "gate_id": "01m4rrej63yd7x3awqsezk9ysr",
+            "input": {
+                "action": "attestation.create",
+                "proposition_id": "01m4rreke27r0dyrqt3qxmqrna",
+                "direction": "refute"
+            },
+            "result_id": "01m4rreke27r0dyrqt3qxmqrna"
+        },
+        {
+            "cycle": 14,
+            "phase": 5,
+            "gate_id": "01m4rreke27r0dyrqt3qxmqrna",
+            "input": {
+                "action": "participant.rest"
+            },
+            "result_id": "01m4rrd5nedwqmxm2m1g07xecr"
+        },
+        {
+            "cycle": 15,
+            "phase": 1,
+            "gate_id": "01m4rrd5nedwqmxm2m1g07xecr",
+            "input": {
+                "action": "proposition.variant",
+                "statement": "Opportunity 57"
+            },
+            "result_id": "01m4rrf2452mc2kfavvghw88eq"
+        },
+        {
+            "cycle": 15,
+            "phase": 2,
+            "gate_id": "01m4rrf2452mc2kfavvghw88eq",
+            "input": {
+                "action": "proposition.variant",
+                "statement": "Opportunity 58"
+            },
+            "result_id": "01m4rrf37mxeq5rbhz2v6ddfhd"
+        },
+        {
+            "cycle": 15,
+            "phase": 3,
+            "gate_id": "01m4rrf37mxeq5rbhz2v6ddfhd",
+            "input": {
+                "action": "participant.rest"
+            },
+            "result_id": "01m4rrd5nedwqmxm2m1g07xecr"
+        },
+        {
+            "cycle": 16,
+            "phase": 1,
+            "gate_id": "01m4rrd5nedwqmxm2m1g07xecr",
+            "input": {
+                "action": "proposition.traverse",
+                "proposition_id": "01m4rrd6h558rq53mavz7c5yr1"
+            },
+            "result_id": "01m4rrd6h558rq53mavz7c5yr1"
+        },
+        {
+            "cycle": 16,
+            "phase": 2,
+            "gate_id": "01m4rrd6h558rq53mavz7c5yr1",
+            "input": {
+                "action": "proposition.variant",
+                "statement": "Opportunity 61"
+            },
+            "result_id": "01m4rrf6pwh7q1kbwsmfphg1n3"
+        },
+        {
+            "cycle": 16,
+            "phase": 3,
+            "gate_id": "01m4rrf6pwh7q1kbwsmfphg1n3",
+            "input": {
+                "action": "participant.rest"
+            },
+            "result_id": "01m4rrd5nedwqmxm2m1g07xecr"
+        },
+        {
+            "cycle": 17,
+            "phase": 1,
+            "gate_id": "01m4rrd5nedwqmxm2m1g07xecr",
+            "input": {
+                "action": "proposition.traverse",
+                "proposition_id": "01m4rrd6h558rq53mavz7c5yr1"
+            },
+            "result_id": "01m4rrd6h558rq53mavz7c5yr1"
+        },
+        {
+            "cycle": 17,
+            "phase": 2,
+            "gate_id": "01m4rrd6h558rq53mavz7c5yr1",
+            "input": {
+                "action": "proposition.traverse",
+                "proposition_id": "01m4rrd7b4yg4rbq1gyx38x9pj"
+            },
+            "result_id": "01m4rrd7b4yg4rbq1gyx38x9pj"
+        },
+        {
+            "cycle": 17,
+            "phase": 3,
+            "gate_id": "01m4rrd7b4yg4rbq1gyx38x9pj",
+            "input": {
+                "action": "participant.rest"
+            },
+            "result_id": "01m4rrd5nedwqmxm2m1g07xecr"
+        },
+        {
+            "cycle": 18,
+            "phase": 1,
+            "gate_id": "01m4rrd5nedwqmxm2m1g07xecr",
+            "input": {
+                "action": "proposition.traverse",
+                "proposition_id": "01m4rrd6h558rq53mavz7c5yr1"
+            },
+            "result_id": "01m4rrd6h558rq53mavz7c5yr1"
+        },
+        {
+            "cycle": 18,
+            "phase": 2,
+            "gate_id": "01m4rrd6h558rq53mavz7c5yr1",
+            "input": {
+                "action": "proposition.traverse",
+                "proposition_id": "01m4rrdvtabmy0eejppwq3mw8f"
+            },
+            "result_id": "01m4rrdvtabmy0eejppwq3mw8f"
+        },
+        {
+            "cycle": 18,
+            "phase": 3,
+            "gate_id": "01m4rrdvtabmy0eejppwq3mw8f",
+            "input": {
+                "action": "participant.rest"
+            },
+            "result_id": "01m4rrd5nedwqmxm2m1g07xecr"
+        },
+        {
+            "cycle": 19,
+            "phase": 1,
+            "gate_id": "01m4rrd5nedwqmxm2m1g07xecr",
+            "input": {
+                "action": "proposition.traverse",
+                "proposition_id": "01m4rrd6h558rq53mavz7c5yr1"
+            },
+            "result_id": "01m4rrd6h558rq53mavz7c5yr1"
+        },
+        {
+            "cycle": 19,
+            "phase": 2,
+            "gate_id": "01m4rrd6h558rq53mavz7c5yr1",
+            "input": {
+                "action": "attestation.create",
+                "proposition_id": "01m4rrf6pwh7q1kbwsmfphg1n3",
+                "direction": "refute"
+            },
+            "result_id": "01m4rrf6pwh7q1kbwsmfphg1n3"
+        },
+        {
+            "cycle": 19,
+            "phase": 3,
+            "gate_id": "01m4rrf6pwh7q1kbwsmfphg1n3",
+            "input": {
+                "action": "proposition.reclassify",
+                "proposition_id": "01m4rrf6pwh7q1kbwsmfphg1n3",
+                "receipt_id": "01m4rre8fbfs7h8vj036dvsq3k"
+            },
+            "result_id": "01m4rrfjkatqvzr9j78qk3hwby"
+        },
+        {
+            "cycle": 19,
+            "phase": 4,
+            "gate_id": "01m4rrfjkatqvzr9j78qk3hwby",
+            "input": {
+                "action": "proposition.variant",
+                "statement": "Opportunity 72"
+            },
+            "result_id": "01m4rrfm50hn94ng0sc5wtqtkq"
+        },
+        {
+            "cycle": 19,
+            "phase": 5,
+            "gate_id": "01m4rrfm50hn94ng0sc5wtqtkq",
+            "input": {
+                "action": "proposition.reconcile",
+                "other_proposition_id": "01m4rre33wh4s54fpk2d0z0vh7"
+            },
+            "result_id": "01m4rrfp5bchnt9gj0fp743j3p"
+        },
+        {
+            "cycle": 19,
+            "phase": 6,
+            "gate_id": "01m4rrfp5bchnt9gj0fp743j3p",
+            "input": {
+                "action": "participant.rest"
+            },
+            "result_id": "01m4rrd5nedwqmxm2m1g07xecr"
+        },
+        {
+            "cycle": 20,
+            "phase": 1,
+            "gate_id": "01m4rrd5nedwqmxm2m1g07xecr",
+            "input": {
+                "action": "proposition.traverse",
+                "proposition_id": "01m4rrd6h558rq53mavz7c5yr1"
+            },
+            "result_id": "01m4rrd6h558rq53mavz7c5yr1"
+        },
+        {
+            "cycle": 20,
+            "phase": 2,
+            "gate_id": "01m4rrd6h558rq53mavz7c5yr1",
+            "input": {
+                "action": "proposition.traverse",
+                "proposition_id": "01m4rrf6pwh7q1kbwsmfphg1n3"
+            },
+            "result_id": "01m4rrf6pwh7q1kbwsmfphg1n3"
+        },
+        {
+            "cycle": 20,
+            "phase": 3,
+            "gate_id": "01m4rrf6pwh7q1kbwsmfphg1n3",
+            "input": {
+                "action": "attestation.create",
+                "proposition_id": "01m4rrfjkatqvzr9j78qk3hwby",
+                "direction": "refute"
+            },
+            "result_id": "01m4rrfjkatqvzr9j78qk3hwby"
+        },
+        {
+            "cycle": 20,
+            "phase": 4,
+            "gate_id": "01m4rrfjkatqvzr9j78qk3hwby",
+            "input": {
+                "action": "instrument.execute",
+                "proposition_id": "01m4rrfm50hn94ng0sc5wtqtkq",
+                "instrument": {
+                    "kind": "hyperlink",
+                    "reference": "https:\/\/example.test\/evidence\/78"
+                }
+            },
+            "result_id": "01m4rrfm50hn94ng0sc5wtqtkq"
+        },
+        {
+            "cycle": 20,
+            "phase": 5,
+            "gate_id": "01m4rrfm50hn94ng0sc5wtqtkq",
+            "input": {
+                "action": "attestation.create",
+                "proposition_id": "01m4rrfp5bchnt9gj0fp743j3p",
+                "direction": "refute"
+            },
+            "result_id": "01m4rrfp5bchnt9gj0fp743j3p"
+        },
+        {
+            "cycle": 20,
+            "phase": 6,
+            "gate_id": "01m4rrfp5bchnt9gj0fp743j3p",
+            "input": {
+                "action": "proposition.reclassify",
+                "proposition_id": "01m4rrfp5bchnt9gj0fp743j3p",
+                "receipt_id": "01m4rreg7hxaaz9ctwjfb92rq1"
+            },
+            "result_id": "01m4rrg3ppgw2thqty25dem2by"
+        },
+        {
+            "cycle": 20,
+            "phase": 7,
+            "gate_id": "01m4rrg3ppgw2thqty25dem2by",
+            "input": {
+                "action": "participant.rest"
+            },
+            "result_id": "01m4rrd5nedwqmxm2m1g07xecr"
+        },
+        {
+            "cycle": 21,
+            "phase": 1,
+            "gate_id": "01m4rrd5nedwqmxm2m1g07xecr",
+            "input": {
+                "action": "proposition.traverse",
+                "proposition_id": "01m4rrd6h558rq53mavz7c5yr1"
+            },
+            "result_id": "01m4rrd6h558rq53mavz7c5yr1"
+        },
+        {
+            "cycle": 21,
+            "phase": 2,
+            "gate_id": "01m4rrd6h558rq53mavz7c5yr1",
+            "input": {
+                "action": "proposition.traverse",
+                "proposition_id": "01m4rrf6pwh7q1kbwsmfphg1n3"
+            },
+            "result_id": "01m4rrf6pwh7q1kbwsmfphg1n3"
+        },
+        {
+            "cycle": 21,
+            "phase": 3,
+            "gate_id": "01m4rrf6pwh7q1kbwsmfphg1n3",
+            "input": {
+                "action": "proposition.traverse",
+                "proposition_id": "01m4rrfjkatqvzr9j78qk3hwby"
+            },
+            "result_id": "01m4rrfjkatqvzr9j78qk3hwby"
+        },
+        {
+            "cycle": 21,
+            "phase": 4,
+            "gate_id": "01m4rrfjkatqvzr9j78qk3hwby",
+            "input": {
+                "action": "attestation.create",
+                "proposition_id": "01m4rrfm50hn94ng0sc5wtqtkq",
+                "direction": "refute"
+            },
+            "result_id": "01m4rrfm50hn94ng0sc5wtqtkq"
+        },
+        {
+            "cycle": 21,
+            "phase": 5,
+            "gate_id": "01m4rrfm50hn94ng0sc5wtqtkq",
+            "input": {
+                "action": "attestation.create",
+                "proposition_id": "01m4rrfp5bchnt9gj0fp743j3p",
+                "direction": "support"
+            },
+            "result_id": "01m4rrfp5bchnt9gj0fp743j3p"
+        },
+        {
+            "cycle": 21,
+            "phase": 6,
+            "gate_id": "01m4rrfp5bchnt9gj0fp743j3p",
+            "input": {
+                "action": "attestation.create",
+                "proposition_id": "01m4rrg3ppgw2thqty25dem2by",
+                "direction": "refute"
+            },
+            "result_id": "01m4rrg3ppgw2thqty25dem2by"
+        },
+        {
+            "cycle": 21,
+            "phase": 7,
+            "gate_id": "01m4rrg3ppgw2thqty25dem2by",
+            "input": {
+                "action": "proposition.commit",
+                "proposition_id": "01m4rrg3ppgw2thqty25dem2by"
+            },
+            "result_id": "01m4rrgmy2jn7bpv3xfvh9jyrd"
+        }
+    ],
+    "source_id": "01m4rrg3ppgw2thqty25dem2by",
+    "commit_id": "01m4rrgmy2jn7bpv3xfvh9jyrd",
+    "source_closure": {
+        "depth": 0.0,
+        "cadence": 0.0,
+        "historical_phase_profile": 0.0,
+        "historical_orientation": -0.375,
+        "historical_extent": 0.0,
+        "historical_rhythm": -0.1875,
+        "closure": -0.09375,
+        "historical_extent_direction": "negative",
+        "historical_rhythm_direction": "negative",
+        "depth_direction": "negative",
+        "cadence_direction": "negative",
+        "admissible": true,
+        "availability": {
+            "depth": false,
+            "cadence": false,
+            "historical_phase_profile": [
+                false,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true
+            ],
+            "historical_orientation": true
+        },
+        "domain_profiles": {
+            "emergence": {
+                "means": [
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    1.0
+                ],
+                "sample_counts": [
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1
+                ]
+            },
+            "settlement": {
+                "means": [
+                    null,
+                    14.0,
+                    3.0,
+                    0.0,
+                    0.0,
+                    1.0,
+                    1.0
+                ],
+                "sample_counts": [
+                    0,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1
+                ]
+            }
+        },
+        "phase_contributions": [
+            0.0,
+            -1.0,
+            -1.0,
+            1.0,
+            1.0,
+            -1.0,
+            1.0
+        ],
+        "orientation_sample_count": 4,
+        "domain_cvs": {
+            "emergence": null,
+            "settlement": null
+        },
+        "creating_domain": "settlement",
+        "domain_depths": {
+            "emergence": 1,
+            "settlement": 1
+        },
+        "domain_intervals": {
+            "emergence": [
+                1
+            ],
+            "settlement": [
+                20
+            ]
+        },
+        "cadence_interval": 20,
+        "phase_observations": {
+            "origin:01m4rrd5nedwqmxm2m1g07xecr:0": {
+                "phase": 1,
+                "interval": 0.0,
+                "domain": "emergence",
+                "source": "constitutional",
+                "proposition_id": "01m4rrd5nedwqmxm2m1g07xecr"
+            },
+            "origin:01m4rrd5nedwqmxm2m1g07xecr:1": {
+                "phase": 2,
+                "interval": 0.0,
+                "domain": "emergence",
+                "source": "constitutional",
+                "proposition_id": "01m4rrd5nedwqmxm2m1g07xecr"
+            },
+            "origin:01m4rrd5nedwqmxm2m1g07xecr:2": {
+                "phase": 3,
+                "interval": 0.0,
+                "domain": "emergence",
+                "source": "constitutional",
+                "proposition_id": "01m4rrd5nedwqmxm2m1g07xecr"
+            },
+            "origin:01m4rrd5nedwqmxm2m1g07xecr:3": {
+                "phase": 4,
+                "interval": 0.0,
+                "domain": "emergence",
+                "source": "constitutional",
+                "proposition_id": "01m4rrd5nedwqmxm2m1g07xecr"
+            },
+            "origin:01m4rrd5nedwqmxm2m1g07xecr:4": {
+                "phase": 5,
+                "interval": 0.0,
+                "domain": "emergence",
+                "source": "constitutional",
+                "proposition_id": "01m4rrd5nedwqmxm2m1g07xecr"
+            },
+            "origin:01m4rrd5nedwqmxm2m1g07xecr:5": {
+                "phase": 6,
+                "interval": 0.0,
+                "domain": "emergence",
+                "source": "constitutional",
+                "proposition_id": "01m4rrd5nedwqmxm2m1g07xecr"
+            },
+            "origin:01m4rrd5nedwqmxm2m1g07xecr:6": {
+                "phase": 7,
+                "interval": 1.0,
+                "domain": "emergence",
+                "source": "constitutional",
+                "proposition_id": "01m4rrd5nedwqmxm2m1g07xecr"
+            },
+            "01m4rrg3ppgw2thqty25dem2by": {
+                "phase": 6,
+                "interval": 1,
+                "domain": "settlement",
+                "source": "expressive_birth",
+                "proposition_id": "01m4rrg3ppgw2thqty25dem2by",
+                "unavailable_reason": null
+            },
+            "01m4rrfp5bchnt9gj0fp743j3p": {
+                "phase": 5,
+                "interval": 0,
+                "domain": "settlement",
+                "source": "expressive_birth",
+                "proposition_id": "01m4rrfp5bchnt9gj0fp743j3p",
+                "unavailable_reason": null
+            },
+            "01m4rrfm50hn94ng0sc5wtqtkq": {
+                "phase": 4,
+                "interval": 0,
+                "domain": "settlement",
+                "source": "expressive_birth",
+                "proposition_id": "01m4rrfm50hn94ng0sc5wtqtkq",
+                "unavailable_reason": null
+            },
+            "01m4rrfjkatqvzr9j78qk3hwby": {
+                "phase": 3,
+                "interval": 3,
+                "domain": "settlement",
+                "source": "expressive_birth",
+                "proposition_id": "01m4rrfjkatqvzr9j78qk3hwby",
+                "unavailable_reason": null
+            },
+            "01m4rrf6pwh7q1kbwsmfphg1n3": {
+                "phase": 2,
+                "interval": 14,
+                "domain": "settlement",
+                "source": "expressive_birth",
+                "proposition_id": "01m4rrf6pwh7q1kbwsmfphg1n3",
+                "unavailable_reason": null
+            },
+            "01m4rrd6h558rq53mavz7c5yr1": {
+                "phase": 1,
+                "interval": null,
+                "domain": "settlement",
+                "source": "expressive_birth",
+                "proposition_id": "01m4rrd6h558rq53mavz7c5yr1",
+                "unavailable_reason": "first_expressive_observation"
+            },
+            "order:01m4rrg3ppgw2thqty25dem2by": {
+                "phase": 7,
+                "interval": 1,
+                "domain": "settlement",
+                "source": "prospective_phase7",
+                "proposition_id": "01m4rrg3ppgw2thqty25dem2by",
+                "unavailable_reason": null
+            }
+        },
+        "orientation_observations": {
+            "01m4rrg3ppgw2thqty25dem2by": {
+                "domain": "settlement",
+                "value": 0.0,
+                "last_attestation_id": null
+            },
+            "01m4rre1zh7jb72v7hmwbxpgdb": {
+                "domain": "settlement",
+                "value": -0.5,
+                "last_attestation_id": "01m4rre739jy6hgd22mwd64zqf"
+            },
+            "01m4rrd6h558rq53mavz7c5yr1": {
+                "domain": "settlement",
+                "value": -0.5,
+                "last_attestation_id": "01m4rrdkvpbjp55gvzcme9rrfh"
+            },
+            "01m4rrfjkatqvzr9j78qk3hwby": {
+                "domain": "settlement",
+                "value": -0.5,
+                "last_attestation_id": "01m4rrfwnydkc6njqezedehacq"
+            }
+        },
+        "history_proposition_id": "01m4rrd5nedwqmxm2m1g07xecr",
+        "trigger": {
+            "kind": "cycle_entry",
+            "id": "01m4rrg75enpny1p51a6a12aza"
+        }
+    },
+    "snapshot": {
+        "proposition_id": "01m4rrgmy2jn7bpv3xfvh9jyrd",
+        "substrate_id": "01m4rrd5jb4zzw1wb1nssymqd3",
+        "ledger_entry_id": "01m4rrgmyqpg6v5mbpep7697j0",
+        "supersession_id": "01m4rrgmzm8hf5h2ery1hq279b",
+        "correspondence": "-0.2793287",
+        "chirality": "-0.1080638",
+        "closure": "-0.0937500",
+        "prominence": "0.4198096",
+        "turbulence": "0.5801904",
+        "tension": "-0.1603808",
+        "direction_before": "settlement",
+        "direction_after": "settlement",
+        "calculator_version": "prospective-closure-canonical-commit-v5",
+        "evaluated_at": "2026-10-12 19:13:00+00",
+        "depth": 0.0,
+        "cadence": 0.0,
+        "depth_direction": "negative",
+        "cadence_direction": "negative",
+        "closure_history_proposition_id": "01m4rrd5nedwqmxm2m1g07xecr",
+        "tension_before": -0.1666666,
+        "cadence_interval": 20,
+        "orientation": "-0.5000000",
+        "attestation_cadence": "0.0000000",
+        "orientation_direction": "negative",
+        "attestation_cadence_direction": "negative",
+        "shape_topology": "-0.4314648",
+        "cardinal_position": null,
+        "shape_topology_direction": "negative",
+        "cardinal_position_direction": null,
+        "chirality_direction": "negative",
+        "closure_observation": "{\"depth\":0,\"cadence\":0,\"historical_phase_profile\":0,\"historical_orientation\":-0.375,\"historical_extent\":0,\"historical_rhythm\":-0.1875,\"closure\":-0.09375,\"historical_extent_direction\":\"negative\",\"historical_rhythm_direction\":\"negative\",\"depth_direction\":\"negative\",\"cadence_direction\":\"negative\",\"admissible\":true,\"availability\":{\"depth\":false,\"cadence\":false,\"historical_phase_profile\":[false,true,true,true,true,true,true],\"historical_orientation\":true},\"domain_profiles\":{\"emergence\":{\"means\":[0,0,0,0,0,0,1],\"sample_counts\":[1,1,1,1,1,1,1]},\"settlement\":{\"means\":[null,14,3,0,0,1,1],\"sample_counts\":[0,1,1,1,1,1,1]}},\"phase_contributions\":[0,-1,-1,1,1,-1,1],\"orientation_sample_count\":4,\"domain_cvs\":{\"emergence\":null,\"settlement\":null},\"creating_domain\":\"settlement\",\"domain_depths\":{\"emergence\":1,\"settlement\":1},\"domain_intervals\":{\"emergence\":[1],\"settlement\":[20]},\"cadence_interval\":20,\"phase_observations\":{\"origin:01m4rrd5nedwqmxm2m1g07xecr:0\":{\"phase\":1,\"interval\":0,\"domain\":\"emergence\",\"source\":\"constitutional\",\"proposition_id\":\"01m4rrd5nedwqmxm2m1g07xecr\"},\"origin:01m4rrd5nedwqmxm2m1g07xecr:1\":{\"phase\":2,\"interval\":0,\"domain\":\"emergence\",\"source\":\"constitutional\",\"proposition_id\":\"01m4rrd5nedwqmxm2m1g07xecr\"},\"origin:01m4rrd5nedwqmxm2m1g07xecr:2\":{\"phase\":3,\"interval\":0,\"domain\":\"emergence\",\"source\":\"constitutional\",\"proposition_id\":\"01m4rrd5nedwqmxm2m1g07xecr\"},\"origin:01m4rrd5nedwqmxm2m1g07xecr:3\":{\"phase\":4,\"interval\":0,\"domain\":\"emergence\",\"source\":\"constitutional\",\"proposition_id\":\"01m4rrd5nedwqmxm2m1g07xecr\"},\"origin:01m4rrd5nedwqmxm2m1g07xecr:4\":{\"phase\":5,\"interval\":0,\"domain\":\"emergence\",\"source\":\"constitutional\",\"proposition_id\":\"01m4rrd5nedwqmxm2m1g07xecr\"},\"origin:01m4rrd5nedwqmxm2m1g07xecr:5\":{\"phase\":6,\"interval\":0,\"domain\":\"emergence\",\"source\":\"constitutional\",\"proposition_id\":\"01m4rrd5nedwqmxm2m1g07xecr\"},\"origin:01m4rrd5nedwqmxm2m1g07xecr:6\":{\"phase\":7,\"interval\":1,\"domain\":\"emergence\",\"source\":\"constitutional\",\"proposition_id\":\"01m4rrd5nedwqmxm2m1g07xecr\"},\"01m4rrg3ppgw2thqty25dem2by\":{\"phase\":6,\"interval\":1,\"domain\":\"settlement\",\"source\":\"expressive_birth\",\"proposition_id\":\"01m4rrg3ppgw2thqty25dem2by\",\"unavailable_reason\":null},\"01m4rrfp5bchnt9gj0fp743j3p\":{\"phase\":5,\"interval\":0,\"domain\":\"settlement\",\"source\":\"expressive_birth\",\"proposition_id\":\"01m4rrfp5bchnt9gj0fp743j3p\",\"unavailable_reason\":null},\"01m4rrfm50hn94ng0sc5wtqtkq\":{\"phase\":4,\"interval\":0,\"domain\":\"settlement\",\"source\":\"expressive_birth\",\"proposition_id\":\"01m4rrfm50hn94ng0sc5wtqtkq\",\"unavailable_reason\":null},\"01m4rrfjkatqvzr9j78qk3hwby\":{\"phase\":3,\"interval\":3,\"domain\":\"settlement\",\"source\":\"expressive_birth\",\"proposition_id\":\"01m4rrfjkatqvzr9j78qk3hwby\",\"unavailable_reason\":null},\"01m4rrf6pwh7q1kbwsmfphg1n3\":{\"phase\":2,\"interval\":14,\"domain\":\"settlement\",\"source\":\"expressive_birth\",\"proposition_id\":\"01m4rrf6pwh7q1kbwsmfphg1n3\",\"unavailable_reason\":null},\"01m4rrd6h558rq53mavz7c5yr1\":{\"phase\":1,\"interval\":null,\"domain\":\"settlement\",\"source\":\"expressive_birth\",\"proposition_id\":\"01m4rrd6h558rq53mavz7c5yr1\",\"unavailable_reason\":\"first_expressive_observation\"},\"order:01m4rrg3ppgw2thqty25dem2by\":{\"phase\":7,\"interval\":1,\"domain\":\"settlement\",\"source\":\"prospective_phase7\",\"proposition_id\":\"01m4rrg3ppgw2thqty25dem2by\",\"unavailable_reason\":null}},\"orientation_observations\":{\"01m4rrg3ppgw2thqty25dem2by\":{\"domain\":\"settlement\",\"value\":0,\"last_attestation_id\":null},\"01m4rre1zh7jb72v7hmwbxpgdb\":{\"domain\":\"settlement\",\"value\":-0.5,\"last_attestation_id\":\"01m4rre739jy6hgd22mwd64zqf\"},\"01m4rrd6h558rq53mavz7c5yr1\":{\"domain\":\"settlement\",\"value\":-0.5,\"last_attestation_id\":\"01m4rrdkvpbjp55gvzcme9rrfh\"},\"01m4rrfjkatqvzr9j78qk3hwby\":{\"domain\":\"settlement\",\"value\":-0.5,\"last_attestation_id\":\"01m4rrfwnydkc6njqezedehacq\"}},\"history_proposition_id\":\"01m4rrd5nedwqmxm2m1g07xecr\",\"trigger\":{\"kind\":\"cycle_entry\",\"id\":\"01m4rrg75enpny1p51a6a12aza\"}}",
+        "phase_profile": "-0.1428571",
+        "phase_profile_direction": "negative"
+    }
+}

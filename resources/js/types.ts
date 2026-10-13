@@ -22,6 +22,12 @@ export interface Observables extends CorrespondenceComponents {
 export type ReceiptReference = Pick<ReceiptContext, 'id' | 'type' | 'reference' | 'loaded'>;
 
 export interface ClosureHistoryPoint {
+  historical_extent?: number | null;
+  historical_rhythm?: number | null;
+  historical_phase_profile?: number | null;
+  historical_orientation?: number | null;
+  historical_extent_direction?: ComponentDirection;
+  historical_rhythm_direction?: ComponentDirection;
   committed_cardinal_position?: number | null;
   committed_cardinal_position_direction?: 'positive' | 'negative' | null;
   lateral_committal_position?: number | null;
@@ -338,6 +344,12 @@ export interface ParticipantPlan {
     reinforcement_count: number;
     closure_enforced: boolean;
     closure?: {
+      historical_extent?: number | null;
+      historical_rhythm?: number | null;
+      historical_phase_profile?: number | null;
+      historical_orientation?: number | null;
+      historical_extent_direction?: ComponentDirection;
+      historical_rhythm_direction?: ComponentDirection;
       committed_cardinal_position?: number | null;
       committed_cardinal_position_direction?: ComponentDirection;
       depth: number | null;
@@ -386,6 +398,12 @@ export interface Participation {
   horizon_sequence?: number | null;
   context_horizon_id?: Identifier | null;
   last_commitment?: {
+    historical_extent?: number | null;
+    historical_rhythm?: number | null;
+    historical_phase_profile?: number | null;
+    historical_orientation?: number | null;
+    historical_extent_direction?: ComponentDirection;
+    historical_rhythm_direction?: ComponentDirection;
     committed_cardinal_position?: number | null;
     committed_cardinal_position_direction?: ComponentDirection;
     proposition_id: Identifier;

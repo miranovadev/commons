@@ -14,6 +14,7 @@ use App\Models\Supersession;
 use App\Services\Observables\AttestationBeatCursorService;
 use App\Services\Observables\LocalChiralityStateService;
 use App\Services\Observables\PhaseProfileObservationService;
+use App\Services\Observables\ProspectiveClosureService;
 use DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -79,6 +80,9 @@ final readonly class LedgerService
                 $this->horizons->include($entry);
                 app(PhaseProfileObservationService::class)->recordBirth($ledgerable, $entry, $phaseProfileSource);
                 app(LocalChiralityStateService::class)->initialize($ledgerable);
+                if ($ledgerable->tier === 'committal' && $ledgerable->phase->cycle->entry_committal_id === null) {
+                    app(ProspectiveClosureService::class)->initialize($ledgerable);
+                }
             }
 
             if (! $wasRecorded) {

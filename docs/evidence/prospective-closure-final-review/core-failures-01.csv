@@ -1,0 +1,11 @@
+test,result,category,assertions,seconds,message
+Tests\Feature\ChargeBoundaryTragedyTest::test_ordinary_unmocked_observables_can_reach_the_boundary,failure,Unchanged historical failure; obsolete authored Domain trajectory,2,6.120421,"Tests\Feature\ChargeBoundaryTragedyTest::test_ordinary_unmocked_observables_can_reach_the_boundary
+Failed asserting that two strings are identical.
+--- Expected
++++ Actual
+@@ @@
+-'settlement'
++'emergence'
+
+/home/runner/work/commons/commons/tests/Fixtures/NaturalBoundaryHistory.php:63
+/home/runner/work/commons/commons/tests/Feature/ChargeBoundaryTragedyTest.php:79"

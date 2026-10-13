@@ -1,0 +1,31 @@
+{
+  "core": {
+    "changes": {
+      "retained passing": 891,
+      "previous failure now passing (coverage classification in report)": 203,
+      "removed/consolidated": 42,
+      "new/reclassified": 15,
+      "remaining failure": 7
+    },
+    "results": {
+      "passed": 1109,
+      "failure": 6,
+      "error": 1
+    },
+    "missing": 0,
+    "assertions": 13151
+  },
+  "integration": {
+    "changes": {
+      "remaining failure": 11,
+      "retained passing": 21,
+      "removed/consolidated": 1
+    },
+    "results": {
+      "passed": 21,
+      "failure": 11
+    },
+    "missing": 0,
+    "assertions": 17533
+  }
+}

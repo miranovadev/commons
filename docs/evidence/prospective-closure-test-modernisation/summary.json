@@ -1,0 +1,41 @@
+{
+  "head": "661d52ab7d8061595107d3ca0eaa6e6df85e8d12",
+  "suites": {
+    "core": {
+      "passed": 1109,
+      "assertions": 13151,
+      "failure": 6,
+      "error": 1,
+      "total": 1116,
+      "discovered_selected_executed_exact": true,
+      "categories": {
+        "A (Stage 2 baseline)": 5,
+        "B (Stage 3 trajectory)": 2
+      },
+      "php_wall_seconds": [
+        239.44774902499998,
+        306.344867941,
+        279.12864842500005,
+        222.48566979599997,
+        408.505349427
+      ]
+    },
+    "integration": {
+      "passed": 21,
+      "assertions": 17533,
+      "failure": 11,
+      "total": 32,
+      "discovered_selected_executed_exact": true,
+      "categories": {
+        "B (Stage 3 trajectory)": 4,
+        "A (Stage 2 baseline)": 7
+      },
+      "php_wall_seconds": [
+        406.756372065,
+        338.281177661,
+        319.81434795399997,
+        443.310175202
+      ]
+    }
+  }
+}

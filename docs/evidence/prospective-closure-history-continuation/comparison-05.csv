@@ -1,0 +1,101 @@
+test,change_since_895_checkpoint,before,after,Stage2_failed
+"Tests\Feature\ReconciliationTest::test_mediate_filters_read_siblings_using_the_previous_disperse_gate""consonant""",remains passed,passed,passed,no
+"Tests\Feature\ReconciliationTest::test_mediate_filters_read_siblings_using_the_previous_disperse_gate""dissonant""",remains passed,passed,passed,no
+"Tests\Feature\ReconciliationTest::test_mediate_filters_read_siblings_using_the_previous_disperse_gate""neutral""",remains passed,passed,passed,no
+Tests\Feature\ReconciliationTest::test_mediate_gate_options_include_reusable_superseded_immediate_children,still missing history,error,error,no
+Tests\Feature\ReconciliationTest::test_horizon_membership_does_not_replace_region_scope_and_substrates_stay_isolated,remains passed,passed,passed,no
+Tests\Feature\ReconciliationTest::test_reconcile_is_structural_selection_with_exact_gate_content,remains passed,passed,passed,no
+Tests\Feature\ReconciliationTest::test_mediate_exposes_all_gate_children_even_with_small_display_limits,remains passed,passed,passed,no
+Tests\Feature\ReconciliationTest::test_dispatcher_rejects_non_sibling_without_partial_writes,remains passed,passed,passed,no
+Tests\Feature\ReconciliationTest::test_mediate_reads_cross_branches_and_depths_inside_the_same_region,still missing history,error,error,no
+Tests\Feature\ReconciliationTest::test_mediate_rechecks_read_direction_before_writing_and_does_not_filter_gate_votes,remains passed,passed,passed,no
+Tests\Feature\ReconciliationTest::test_mediate_requires_its_own_disperse_anchor_but_does_not_consume_current_gate,remains passed,passed,passed,no
+Tests\Feature\ReconciliationTest::test_directed_reconciliation_is_unique_across_participants_but_inverse_and_distinct_pairs_remain_valid,remains passed,passed,passed,no
+Tests\Feature\ReinforcementTest::test_citation_and_unverified_metadata_cannot_reinforce_or_unlock_commit,remains passed,passed,passed,no
+Tests\Feature\ReinforcementTest::test_signatures_are_shared_but_only_one_reinforcement_per_participant_counts,remains passed,passed,passed,no
+Tests\Feature\ReinforcementTest::test_originating_evidence_can_be_loaded_later_without_reverification,remains passed,passed,passed,no
+Tests\Feature\ReinforcementTest::test_receipts_leave_measurements_unchanged_and_duplicate_loads_add_no_count,remains passed,passed,passed,no
+Tests\Feature\ReinforcementTest::test_source_updates_require_observed_stability_and_timestamps_cannot_accelerate_it,remains passed,passed,passed,no
+Tests\Feature\ReinforcementTest::test_failed_verification_records_history_without_reinforcement,remains passed,passed,passed,no
+Tests\Feature\ReinforcementTest::test_commit_inherits_reinforcement_by_reference_but_expressive_alternatives_do_not,remains passed,passed,passed,no
+Tests\Feature\ReinforcementTest::test_snapshot_can_record_grounded_attested_content_without_loaded_reinforcement,remains passed,passed,passed,no
+Tests\Feature\ReinforcementTest::test_database_prevents_duplicate_participant_receipt_context,remains passed,passed,passed,no
+Tests\Feature\ReinforcementTest::test_real_verifier_flows_through_receipt_allocation_and_local_measurement,remains passed,passed,passed,no
+Tests\Feature\ReinforcementTest::test_rollback_refuses_to_destroy_shared_signature_history,remains passed,passed,passed,no
+"Tests\Feature\ReinforcementTest::test_prospective_closure_ignores_loads_and_does_not_inherit_either_frozen_entry_pole""negative""",previous non-history failure: still failing,failure,failure,no
+"Tests\Feature\ReinforcementTest::test_prospective_closure_ignores_loads_and_does_not_inherit_either_frozen_entry_pole""positive""",previous non-history failure: still failing,failure,failure,no
+Tests\Feature\ReinforcementTest::test_receipt_grounding_is_required_without_changing_measurement,remains passed,passed,passed,no
+Tests\Feature\ReverbTransportTest::test_configured_reverb_delivers_identifier_notifications_to_a_real_websocket_client,remains passed,passed,passed,no
+Tests\Feature\SharedReclassificationTest::test_receipt_and_attestation_allow_a_foreign_participant_one_shared_classification#0,remains passed,passed,passed,no
+Tests\Feature\SharedReclassificationTest::test_receipt_and_attestation_allow_a_foreign_participant_one_shared_classification#1,remains passed,passed,passed,no
+Tests\Feature\SpentContinuationRealtimeTest::test_spent_and_epoch_events_are_compact_commit_scoped_and_idempotent,remains passed,passed,passed,no
+Tests\Feature\TragedyMemoryTest::test_load_is_participant_specific_memory_and_unload_preserves_history,remains passed,passed,passed,no
+Tests\Feature\TragedyMemoryTest::test_memory_never_changes_database_or_context_backed_field_values,remains passed,passed,passed,no
+Tests\Feature\TragedyMemoryTest::test_historical_boundary_is_not_replaced_by_current_measurements,remains passed,passed,passed,no
+Tests\Feature\TragedyMemoryTest::test_governance_chain_ignores_foreign_causal_parent_and_siblings,remains passed,passed,passed,no
+Tests\Feature\TragedyMemoryTest::test_foreign_unloaded_memory_cannot_be_imported_by_id,remains passed,passed,passed,no
+Tests\Feature\TragedyMemoryTest::test_exhaustion_removes_warrant_not_loaded_memory,remains passed,passed,passed,no
+Tests\Feature\TragedyMemoryTest::test_prompt_keeps_memory_out_of_the_loaded_evidence_prefix,remains passed,passed,passed,no
+Tests\Feature\TragedyMemoryTest::test_failed_transaction_restores_memory_state_and_events,remains passed,passed,passed,no
+Tests\Feature\TragedyMemoryTest::test_memory_migration_refuses_to_discard_null_signature_history,remains passed,passed,passed,no
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Distinguish Variant without traversal""",checkpoint masked: now passed,error,passed,no
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Persist Variant without traversal""",checkpoint masked: now passed,error,passed,no
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Persist Instrument without traversal""",checkpoint masked: now passed,error,passed,no
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Disperse first Variant""",checkpoint masked: now passed,error,passed,no
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Constrain owned Gate Reclassify""",checkpoint masked: now passed,error,passed,no
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Constrain owned descendant Revise""",still missing history,error,error,no
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Constrain untouched descendant Attestation""",still missing history,error,error,no
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Constrain attested descendant Traverse""",still missing history,error,error,no
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Mediate counterpart outside Write""",still missing history,error,error,no
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Bias Instrument without traversal""",still missing history,error,error,no
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Constrain exhausted non-owner""",still missing history,error,error,no
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Mediate no counterpart or continuation""",still missing history,error,error,no
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Bias no counterpart instrument or continuation""",still missing history,error,error,no
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Order inadmissible Commit with no continuation""",still missing history,error,error,no
+Tests\Feature\WebSearchReceiptTest::test_search_round_trips_and_loads_with_the_next_forward_contribution,remains passed,passed,passed,no
+Tests\Feature\WebSearchReceiptTest::test_invalid_query_is_rejected_by_schema_and_domain_without_execution#0,remains passed,passed,passed,no
+Tests\Feature\WebSearchReceiptTest::test_invalid_query_is_rejected_by_schema_and_domain_without_execution#1,remains passed,passed,passed,no
+Tests\Feature\WebSearchReceiptTest::test_invalid_query_is_rejected_by_schema_and_domain_without_execution#2,remains passed,passed,passed,no
+Tests\Feature\WebSearchReceiptTest::test_invalid_query_is_rejected_by_schema_and_domain_without_execution#3,remains passed,passed,passed,no
+Tests\Feature\WebSearchReceiptTest::test_invalid_query_is_rejected_by_schema_and_domain_without_execution#4,remains passed,passed,passed,no
+Tests\Feature\WebSearchReceiptTest::test_invalid_query_is_rejected_by_schema_and_domain_without_execution#5,remains passed,passed,passed,no
+Tests\Feature\WebSearchReceiptTest::test_effective_observation_suppresses_replay_even_when_external_results_change,remains passed,passed,passed,no
+Tests\Feature\WebSearchReceiptTest::test_catalogue_does_not_expose_load_or_equivalent_replay_actions,remains passed,passed,passed,no
+Tests\Feature\WebSearchReceiptTest::test_capabilities_gate_options_and_cite_is_not_replayable,remains passed,passed,passed,no
+Tests\Feature\WebSearchReceiptTest::test_replay_rejects_hidden_receipts_wrong_participants_and_ineligible_targets,remains passed,passed,passed,no
+Tests\Feature\WebSearchReceiptTest::test_failed_observation_is_immutable_and_the_query_can_be_retried_in_fresh_evidence,remains passed,passed,passed,no
+Tests\Feature\WebSearchReceiptTest::test_loaded_external_content_stays_in_evidence_and_cannot_change_prompt_or_action_schema,remains passed,passed,passed,no
+Tests\Feature\WebSearchReceiptTest::test_provider_abstraction_does_not_require_tavily_fields,remains passed,passed,passed,no
+Tests\Feature\WebSearchReceiptTest::test_historical_hyperlink_replays_retain_the_stability_clock_and_attestation_subject,remains passed,passed,passed,no
+Tests\Feature\WebSearchReceiptTest::test_stored_invocation_cannot_be_changed_after_execution,remains passed,passed,passed,no
+Tests\Feature\WebSearchReceiptTest::test_replay_history_blocks_destructive_migration_rollback,remains passed,passed,passed,no
+Tests\Unit\ChiralityValuesTest::test_population_existence_and_rate_similarity#0,remains passed,passed,passed,no
+Tests\Unit\ChiralityValuesTest::test_population_existence_and_rate_similarity#1,remains passed,passed,passed,no
+Tests\Unit\ChiralityValuesTest::test_population_existence_and_rate_similarity#2,remains passed,passed,passed,no
+Tests\Unit\ChiralityValuesTest::test_population_existence_and_rate_similarity#3,remains passed,passed,passed,no
+Tests\Unit\ChiralityValuesTest::test_population_existence_and_rate_similarity#4,remains passed,passed,passed,no
+Tests\Unit\ChiralityValuesTest::test_population_existence_and_rate_similarity#5,remains passed,passed,passed,no
+Tests\Unit\ChiralityValuesTest::test_population_existence_and_rate_similarity#6,remains passed,passed,passed,no
+Tests\Unit\ChiralityValuesTest::test_population_existence_and_rate_similarity#7,remains passed,passed,passed,no
+Tests\Unit\ChiralityValuesTest::test_composition_and_independent_hysteresis_have_no_admissibility_rule,remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""termination phase""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""termination cycle""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""termination rest""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""invalid termination""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout 1""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout 600""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout 1800""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout 0""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout -1""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout 1801""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout 1.5""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout invalid""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""offset mode seconds""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""offset mode random""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""offset mode invalid""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""seconds 0""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""seconds 60""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""seconds -1""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""seconds 61""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""seconds 1.5""",remains passed,passed,passed,no
+"Tests\Unit\WakeConfigurationTest::test_validation""seconds invalid""",remains passed,passed,passed,no

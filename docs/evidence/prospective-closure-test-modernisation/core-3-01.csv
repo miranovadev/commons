@@ -1,0 +1,107 @@
+test,result,category,finding,failure_summary,first_test_frame,assertions,seconds
+Tests\Unit\ClosureValuesTest::test_alignment_and_zero_retention_are_independent_of_the_average,passed,,,,,7,0.000532
+Tests\Unit\ClosureValuesTest::test_frozen_historical_closure_is_preserved_even_when_it_differs_from_the_pure_mean,passed,,,,,2,0.000151
+Tests\Unit\ClosureValuesTest::test_population_cv_is_scale_invariant_and_zero_variability_is_explicit,passed,,,,,5,0.000288
+Tests\Unit\ClosureValuesTest::test_lateral_centroids_are_positive_real_values_with_bounded_similarity,passed,,,,,8,0.000244
+Tests\Unit\ClosureValuesTest::test_invalid_component_is_rejected,passed,,,,,1,0.000148
+Tests\Unit\ProjectionServiceTest::test_signed_measurements_split_into_symmetric_projections,passed,,,,,3,0.006648
+Tests\Feature\Api\ParticipantCollectionApiTest::test_user_can_own_multiple_participants_in_one_substrate,passed,,,,,10,1.501440
+Tests\Feature\Api\ParticipationApiTest::test_participation_reports_an_expected_waiting_state,passed,,,,,7,0.096561
+Tests\Feature\Api\ParticipationApiTest::test_origin_rejects_instrument_input_without_creating_state,passed,,,,,4,0.050657
+Tests\Feature\Api\ParticipationApiTest::test_origin_entry_requires_an_explicit_attestation,passed,,,,,10,0.058139
+Tests\Feature\Api\ParticipationApiTest::test_a_participant_can_establish_the_origin_and_enter_the_first_live_cycle,passed,,,,,44,0.678222
+Tests\Feature\Api\ParticipationApiTest::test_invalid_origin_entry_is_rejected_without_partial_state,passed,,,,,6,0.050583
+Tests\Feature\Api\ParticipationApiTest::test_a_second_participant_enters_an_established_substrate_via_potential,passed,,,,,16,0.910108
+Tests\Feature\Api\ParticipationApiTest::test_ready_state_describes_substrate_measurement_attenuation,passed,,,,,13,0.248657
+Tests\Feature\Api\ParticipationApiTest::test_a_contribution_atomically_advances_the_phase,passed,,,,,19,0.567090
+Tests\Feature\Api\ParticipationApiTest::test_an_invalid_contribution_does_not_advance,passed,,,,,7,0.255482
+Tests\Feature\BootstrapOriginReinforcementTest::test_loaded_reinforcement_does_not_rewrite_bootstrap_committal_closure,passed,,,,,4,0.259904
+"Tests\Feature\ChargeBoundaryTragedyTest::test_fresh_expression_uses_the_canonical_resolved_charge""positive room""",passed,,,,,7,0.511821
+"Tests\Feature\ChargeBoundaryTragedyTest::test_fresh_expression_uses_the_canonical_resolved_charge""negative room""",passed,,,,,7,0.508014
+"Tests\Feature\ChargeBoundaryTragedyTest::test_fresh_expression_uses_the_canonical_resolved_charge""neutral""",passed,,,,,7,0.505849
+"Tests\Feature\ChargeBoundaryTragedyTest::test_fresh_expression_uses_the_canonical_resolved_charge""positive boundary""",passed,,,,,16,0.576921
+"Tests\Feature\ChargeBoundaryTragedyTest::test_fresh_expression_uses_the_canonical_resolved_charge""negative boundary""",passed,,,,,16,0.611759
+"Tests\Feature\ChargeBoundaryTragedyTest::test_fresh_expression_uses_the_canonical_resolved_charge""rounded positive boundary""",passed,,,,,16,0.607739
+"Tests\Feature\ChargeBoundaryTragedyTest::test_fresh_expression_uses_the_canonical_resolved_charge""rounded negative boundary""",passed,,,,,16,0.569131
+"Tests\Feature\ChargeBoundaryTragedyTest::test_fresh_expression_uses_the_canonical_resolved_charge""inside precision""",passed,,,,,7,0.518430
+Tests\Feature\ChargeBoundaryTragedyTest::test_ordinary_unmocked_observables_can_reach_the_boundary,failure,A (Stage 2 baseline),Same baseline expected/actual assertion.,"Tests\Feature\ChargeBoundaryTragedyTest::test_ordinary_unmocked_observables_can_reach_the_boundary
+Failed asserting that two strings are identical.
+--- Expected
++++ Actual
+@@ @@
+-'settlement'
++'emergence'",tests/Fixtures/NaturalBoundaryHistory.php:63,2,4.479996
+Tests\Feature\ChargeBoundaryTragedyTest::test_successful_revision_can_create_a_boundary_tragedy,passed,,,,,2,1.073191
+Tests\Feature\ChargeBoundaryTragedyTest::test_zero_potential_allows_further_spent_evidenced_variants_with_positive_charge,passed,,,,,5,0.791772
+Tests\Feature\ChargeBoundaryTragedyTest::test_zero_potential_rest_does_not_create_tragedy,passed,,,,,6,2.669782
+Tests\Feature\ChargeBoundaryTragedyTest::test_increasing_tension_from_point_four_to_point_eight_is_not_tragedy,passed,,,,,7,1.357686
+Tests\Feature\ChargeBoundaryTragedyTest::test_two_regions_in_one_horizon_record_their_own_boundary_events,passed,,,,,11,2.761784
+Tests\Feature\ChargeBoundaryTragedyTest::test_repeated_boundary_births_retain_the_first_identity_and_exhaust,passed,,,,,8,1.149163
+Tests\Feature\ChargeBoundaryTragedyTest::test_second_boundary_rollback_restores_open_region_and_warrant,passed,,,,,7,1.133699
+Tests\Feature\ChargeBoundaryTragedyTest::test_historical_boundary_recalculation_and_repeat_observation_do_not_exhaust,passed,,,,,4,0.631403
+Tests\Feature\ChargeBoundaryTragedyTest::test_committal_and_maintenance_measurements_do_not_create_tragedy,passed,,,,,3,0.536676
+Tests\Feature\ChargeBoundaryTragedyTest::test_failed_or_rolled_back_contributions_do_not_leave_a_catastrophe,passed,,,,,7,0.552727
+Tests\Feature\ChiralityV2Test::test_attested_origin_opens_settlement_and_freezes_components,passed,,,,,16,0.649677
+Tests\Feature\ChiralityV2Test::test_orientation_uses_effective_equal_weight_evidence_in_negative_support_frames#0,passed,,,,,2,1.075039
+Tests\Feature\ChiralityV2Test::test_orientation_uses_effective_equal_weight_evidence_in_negative_support_frames#1,passed,,,,,2,1.241617
+Tests\Feature\ChiralityV2Test::test_orientation_uses_effective_equal_weight_evidence_in_negative_support_frames#2,passed,,,,,2,1.047800
+Tests\Feature\ChiralityV2Test::test_orientation_uses_effective_equal_weight_evidence_in_negative_support_frames#3,passed,,,,,2,1.056892
+Tests\Feature\ChiralityV2Test::test_orientation_uses_effective_equal_weight_evidence_in_negative_support_frames#4,passed,,,,,1,0.853337
+Tests\Feature\ChiralityV2Test::test_entry_population_includes_attest_only_empty_unfinished_and_rested_cycles_but_not_siblings,passed,,,,,8,4.020086
+Tests\Feature\ChiralityV2Test::test_replacement_changes_orientation_but_both_acts_remain_in_cadence,passed,,,,,5,1.269006
+Tests\Feature\ChiralityV2Test::test_live_entry_counts_match_participation_context_without_any_new_contributions,passed,,,,,4,1.247416
+Tests\Feature\ChiralityV2Test::test_a_represented_same_domain_committal_counts_its_idle_entrants_before_any_descendant_exists,passed,,,,,4,1.059537
+Tests\Feature\ChiralityV2Test::test_uneven_receipt_load_and_clear_leave_both_components_and_directions_unchanged,passed,,,,,5,1.505703
+Tests\Feature\ChiralityV2Test::test_component_directions_retain_independently_and_calculation_is_read_only,passed,,,,,3,0.701973
+Tests\Feature\ChiralityV2Test::test_non_origin_grounding_still_requires_both_attestation_and_receipt,passed,,,,,5,1.017598
+Tests\Feature\CommitParticipationStateTest::test_prospective_and_persisted_commits_inherit_touches_and_evidence_without_copying,passed,,,,,16,0.375172
+Tests\Feature\CommitParticipationStateTest::test_inheritance_respects_effective_attestations_completed_receipts_and_commit_edges_only,passed,,,,,8,0.271620
+Tests\Feature\CommitParticipationStateTest::test_new_phase_touches_dirty_the_region_but_completion_is_not_another_touch,passed,,,,,4,0.880098
+"Tests\Feature\CommitParticipationStateTest::test_commit_cannot_recover_history_from_before_a_non_commit_reset""Variant""",passed,,,,,14,0.418457
+"Tests\Feature\CommitParticipationStateTest::test_commit_cannot_recover_history_from_before_a_non_commit_reset""Revise""",passed,,,,,14,0.422708
+"Tests\Feature\CommitParticipationStateTest::test_commit_cannot_recover_history_from_before_a_non_commit_reset""Reclassify""",passed,,,,,14,0.408631
+"Tests\Feature\CommitParticipationStateTest::test_commit_cannot_recover_history_from_before_a_non_commit_reset""Reconcile""",passed,,,,,14,0.384145
+Tests\Feature\CommitParticipationStateTest::test_preview_structural_parents_do_not_implicitly_grant_commit_history,passed,,,,,4,0.084096
+Tests\Feature\ComponentClosureBoundaryTest::test_component_output_does_not_persist_a_fabricated_expressive_history,passed,,,,,4,0.662072
+Tests\Feature\ComponentClosureBoundaryTest::test_component_output_cannot_be_preserved_as_an_authorised_commit,passed,,,,,2,0.657430
+Tests\Feature\ComponentClosureBoundaryTest::test_nested_numerical_double_cannot_bypass_component_preservation_boundary,passed,,,,,2,0.669969
+Tests\Feature\CycleRegionOwnershipTest::test_direct_context_and_batch_ownership_agree_without_parent_inference,passed,,,,,21,0.836322
+Tests\Feature\CycleRegionOwnershipTest::test_cross_horizon_inputs_preserve_owner_horizon_and_only_the_producing_gate_route,passed,,,,,16,1.278679
+Tests\Feature\CycleRegionOwnershipTest::test_missing_governance_fails_closed_even_with_a_single_valid_parent,passed,,,,,5,0.182749
+Tests\Feature\CycleRegionOwnershipTest::test_an_expressive_governor_fails_closed_in_all_resolvers,passed,,,,,3,0.434101
+Tests\Feature\CycleRegionOwnershipTest::test_invalid_snapshot_horizon_and_foreign_substrate_governance_fail_closed,passed,,,,,13,1.038669
+Tests\Feature\CycleRegionOwnershipTest::test_hard_mixed_region_inputs_retain_governance_and_gate_lineage,passed,,,,,7,0.839918
+Tests\Feature\HomologousMediationTest::test_boundary_reconcile_belongs_to_the_acting_region_not_its_foreign_operand,passed,,,,,7,1.654784
+Tests\Feature\HomologousMediationTest::test_foreign_operands_are_exposed_without_importing_receipts_or_movement,passed,,,,,12,1.810768
+Tests\Feature\HomologousMediationTest::test_retained_read_direction_controls_eligibility_including_zero_hysteresis,passed,,,,,4,1.754420
+Tests\Feature\HomologousMediationTest::test_population_can_oppose_either_causal_read_direction_without_vetoing_the_local_operand,passed,,,,,8,2.468434
+Tests\Feature\HomologousMediationTest::test_matching_causal_read_is_one_member_and_non_dominant_homologues_are_not_added,passed,,,,,4,2.012539
+Tests\Feature\HomologousMediationTest::test_tied_population_uses_correspondence_default_and_preserves_the_local_route,passed,,,,,16,1.899102
+Tests\Feature\HomologousMediationTest::test_same_region_homologous_reads_can_add_dominant_operands_beside_the_local_causal_route,passed,,,,,1,1.976969
+Tests\Feature\HomologousMediationTest::test_homologous_local_operands_keep_their_evidence_while_foreign_operands_do_not_import_it,passed,,,,,8,2.661147
+Tests\Feature\HomologousMediationTest::test_a_read_without_an_available_gate_still_contributes_to_the_structural_population,passed,,,,,2,1.895498
+Tests\Feature\HomologousMediationTest::test_mixed_entry_creating_domains_do_not_restrict_same_domain_same_depth_reads,passed,,,,,3,2.926272
+Tests\Feature\HomologousMediationTest::test_stale_population_change_rejects_a_previously_exposed_operand_even_when_its_read_is_unchanged,passed,,,,,4,2.144520
+Tests\Feature\HomologousMediationTest::test_distinct_homologous_regions_in_the_same_horizon_are_also_discovered,passed,,,,,3,2.662795
+Tests\Feature\HomologousMediationTest::test_wrong_phase_register_and_non_immediate_children_are_excluded,passed,,,,,1,2.140664
+Tests\Feature\HomologousMediationTest::test_wrong_read_position_and_non_homologous_regions_are_excluded,passed,,,,,2,4.001779
+Tests\Feature\HomologousMediationTest::test_commit_consumed_gate_is_unavailable_but_other_hard_replacements_remain_reusable,passed,,,,,3,1.786273
+Tests\Feature\HomologousMediationTest::test_missing_causal_anchor_and_non_mediate_phase_fail_closed,passed,,,,,2,1.330712
+Tests\Feature\HomologousMediationTest::test_query_count_does_not_grow_per_foreign_read_or_gate,passed,,,,,3,3.538770
+Tests\Feature\HomologousMediationTest::test_public_cross_horizon_reconcile_preserves_ownership_gate_route_and_foreign_input_geometry,passed,,,,,42,3.575923
+Tests\Feature\HomologousMediationTest::test_local_and_foreign_counterparts_are_combined_and_stale_foreign_direction_is_rechecked,passed,,,,,3,1.775168
+Tests\Feature\HomologousMediationTest::test_same_horizon_foreign_result_does_not_become_the_operand_regions_mediate_write,passed,,,,,6,3.254533
+Tests\Feature\HomologousMediationTest::test_foreign_exhaustion_uses_complete_authoritative_horizon_and_current_epochs,passed,,,,,17,3.217273
+Tests\Feature\HomologousMediationTest::test_cross_horizon_directed_pairs_are_independent_and_used_pairs_do_not_reopen,passed,,,,,13,3.613470
+"Tests\Feature\HomologousMediationTest::test_causal_gate_coherence_controls_write_without_removing_visibility""positive coherent""",passed,,,,,20,1.692686
+"Tests\Feature\HomologousMediationTest::test_causal_gate_coherence_controls_write_without_removing_visibility""negative coherent""",passed,,,,,20,1.663963
+"Tests\Feature\HomologousMediationTest::test_causal_gate_coherence_controls_write_without_removing_visibility""positive negative""",passed,,,,,24,1.782145
+"Tests\Feature\HomologousMediationTest::test_causal_gate_coherence_controls_write_without_removing_visibility""negative positive""",passed,,,,,24,1.810155
+Tests\Feature\HomologousMediationTest::test_candidate_coherence_and_retained_pair_direction_are_checked_after_dominance,passed,,,,,4,1.635406
+Tests\Feature\HomologousMediationTest::test_inadmissible_actionless_mediate_can_rest_with_zero_or_positive_potential,passed,,,,,7,1.742687
+Tests\Feature\HomologousMediationTest::test_pairing_uses_resolved_correspondence_not_the_local_component_mean,passed,,,,,1,1.461762
+Tests\Feature\HomologousMediationTest::test_stale_component_admissibility_is_rechecked_before_parent_edges_are_created,passed,,,,,2,1.532846
+Tests\Feature\HomologousMediationTest::test_incoherent_members_still_determine_full_read_population_dominance,passed,,,,,4,2.105927
+Tests\Feature\HomologousPositionTest::test_equal_committed_depth_defines_homology_with_nearest_ancestor_as_diagnostics,passed,,,,,4,0.861214
+Tests\Feature\HomologousPositionTest::test_same_horizon_phase_homology_preserves_canonical_phase_and_register,passed,,,,,7,1.026849
+Tests\Feature\HomologousPositionTest::test_sibling_horizons_are_structurally_homologous_but_still_operationally_foreign,passed,,,,,4,0.756486

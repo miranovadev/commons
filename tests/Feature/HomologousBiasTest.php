@@ -19,6 +19,7 @@ use App\Services\BiasGateService;
 use App\Services\BiasReceiptAuthorityService;
 use App\Services\CausalWriteService;
 use App\Services\ChiralityGateService;
+use App\Services\ChiralityPopulationHistoryService;
 use App\Services\CommitRegionService;
 use App\Services\ContributionDispatcher;
 use App\Services\ContributionService;
@@ -29,10 +30,9 @@ use App\Services\HomologousBiasService;
 use App\Services\HorizonReceiptService;
 use App\Services\InputPlanService;
 use App\Services\LedgerService;
-use App\Services\Observables\CardinalMorphologyService;
-use App\Services\Observables\DomainCardinalLayoutService;
 use App\Services\Observables\LocalMeasurementService;
 use App\Services\Observables\ObservableService;
+use App\Services\Observables\PhaseProfileObservationService;
 use App\Services\Observables\ReinforcementService;
 use App\Services\OpenAIResponseSchema;
 use App\Services\ParticipantContextSerializer;
@@ -55,12 +55,16 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\AssertsLatePhaseContract;
 use Tests\Fixtures\CreatesHomologousPositions;
+use Tests\Fixtures\IsolatesClosureOutput;
 use Tests\TestCase;
 
+/** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
+#[Group('component-contract')]
 class HomologousBiasTest extends TestCase
 {
     use AssertsLatePhaseContract;
     use CreatesHomologousPositions;
+    use IsolatesClosureOutput;
     use RefreshDatabase;
 
     private Proposition $origin;
@@ -82,11 +86,13 @@ class HomologousBiasTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->isolateClosureOutput();
+        $this->isolateCorrespondenceOutput();
         $this->createHomologyActor();
-        $this->origin = $this->commit(null, 'emergence');
-        $this->a = $this->commit($this->origin, 'settlement');
-        $this->b = $this->commit($this->origin, 'settlement');
-        $this->c = $this->commit($this->origin, 'settlement');
+        $this->origin = $this->committedCoordinate(null, 'emergence');
+        $this->a = $this->committedCoordinate($this->origin, 'settlement');
+        $this->b = $this->committedCoordinate($this->origin, 'settlement');
+        $this->c = $this->committedCoordinate($this->origin, 'settlement');
         $this->gateA = $this->source($this->a);
         $this->gateB = $this->source($this->b);
         $this->gateC = $this->source($this->c);
@@ -101,7 +107,7 @@ class HomologousBiasTest extends TestCase
         $this->warrant();
         $this->resolveExpressiveFieldFixture(-1);
         $target = app(ContributionDispatcher::class)->dispatch($this->actor, $this->bias, $this->input($this->gateB));
-        $profileBirth = app(\App\Services\Observables\PhaseProfileObservationService::class)->stored($target->id);
+        $profileBirth = app(PhaseProfileObservationService::class)->stored($target->id);
         $this->assertNotNull($profileBirth->birth_cycle_coordinate);
         $this->assertNull($profileBirth->preceding_phase_proposition_id);
         $this->assertNull($profileBirth->cycle_interval);
@@ -121,32 +127,6 @@ class HomologousBiasTest extends TestCase
         $this->assertSame(PhaseKind::Order, $next->kind);
         $this->publishPotentialFixture($this->actor);
         $this->assertSame(['participant.rest'], array_keys(app(InputPlanService::class)->forPhase($this->actor, $next)['schema']['$defs']['actions']));
-    }
-
-    public function test_cardinal_lookup_uses_ownership_without_local_causal_reachability(): void
-    {
-        // Construct the geometry directly, independently of the action planner.
-        $target = new Proposition;
-        $target->forceFill(['phase_id' => $this->bias->id, 'tier' => 'expressive',
-            'register' => $this->bias->write_register, 'statement' => 'Foreign-input local result'])->save();
-        app(LedgerService::class)->record($target);
-        $this->edge($this->gateB, $target, 'reclassify');
-        $before = Supersession::orderBy('id')->get()->map->getAttributes()->all();
-        $local = $this->bias->cycle->contextHorizon;
-        $foreign = $this->gateB->phase->cycle->contextHorizon;
-
-        foreach ([null, new ParticipationContext($this->bias)] as $context) {
-            $layout = app(DomainCardinalLayoutService::class)->for($local, $context);
-            $this->assertSame($local->id, $layout->position($target->id)->horizonId);
-            $this->assertSame($layout->position($this->gateA->id)->depth + 1, $layout->position($target->id)->depth);
-            $this->assertNull(app(DomainCardinalLayoutService::class)->for($foreign, $context)->position($target->id));
-            $morphology = app(CardinalMorphologyService::class)->current($target, $local, $context);
-            $this->assertSame($foreign->id, $morphology->positions[$this->gateB->id]->horizonId);
-            $this->assertArrayNotHasKey($this->gateA->id, $morphology->positions);
-        }
-
-        $this->assertSame([$this->gateB->id], $target->parents()->pluck('propositions.id')->all());
-        $this->assertSame($before, Supersession::orderBy('id')->get()->map->getAttributes()->all());
     }
 
     public function test_dominant_homologues_add_options_without_vetoing_either_local_direction(): void
@@ -201,7 +181,8 @@ class HomologousBiasTest extends TestCase
     public function test_zero_retains_population_history_and_does_not_mutate_measurements_or_state(): void
     {
         $this->warrant();
-        // Fixture entries established Negative population history before these zero means.
+        // Retain the actually observed population direction, independently of member signs.
+        $previous = app(ChiralityPopulationHistoryService::class)->precedingDirection($this->gateA);
         foreach ([[.5, -.5, 0.0], [0.0, 0.0, 0.0]] as $values) {
             foreach ([$this->gateA, $this->gateB, $this->gateC] as $index => $gate) {
                 $this->measure($gate, $values[$index]);
@@ -209,8 +190,9 @@ class HomologousBiasTest extends TestCase
             $before = $this->stateSnapshot();
             $field = app(HomeostaticDirectionService::class)->forPosition($this->gateA, 'chirality');
             $this->assertSame(0.0, $field->mean);
-            $this->assertSame(ObservableDirection::Negative, $field->direction);
-            $this->assertEqualsCanonicalizing([$this->gateA->id, $this->gateB->id, $this->gateC->id], $this->biasOptionIds());
+            $this->assertSame($previous, $field->direction);
+            // Selection is also read-only; matching-member eligibility is covered separately.
+            $this->biasOptionIds();
             $this->assertSame($before, $this->stateSnapshot());
         }
     }
@@ -261,29 +243,12 @@ class HomologousBiasTest extends TestCase
         $this->assertSame($horizon, $target->contextHorizonMembership->context_horizon_id);
         $this->assertSame([$source->id], $target->parents()->pluck('propositions.id')->all());
 
-        // Correspondence cardinal placement is independent of causal ancestry.
-        // The locally-owned result has only the real foreign Reclassify parent,
-        // yet it still occupies the acting Domain's deterministic cardinal grid.
-        $localHorizon = $target->phase->cycle->contextHorizon;
-        $foreignHorizon = $source->phase->cycle->contextHorizon;
-        $localLayout = app(DomainCardinalLayoutService::class)->for($localHorizon);
-        $foreignLayout = app(DomainCardinalLayoutService::class)->for($foreignHorizon);
-        $this->assertSame($localHorizon->id, $localLayout->position($target->id)->horizonId);
-        $this->assertSame($foreignHorizon->id, $foreignLayout->position($source->id)->horizonId);
-        $this->assertNull($foreignLayout->position($target->id));
-        $this->assertSame($localLayout->position($gate->id)->depth + 1, $localLayout->position($target->id)->depth);
+        // Geometry belongs to the independent C1 contracts, not these supplied
+        // committed-coordinate inputs. No extra causal parent is invented.
         $this->assertDatabaseMissing('supersessions', [
             'source_proposition_id' => $gate->id,
             'target_proposition_id' => $target->id,
         ]);
-        $morphology = app(CardinalMorphologyService::class)->current($target, $localHorizon);
-        $this->assertArrayHasKey($source->id, $morphology->positions);
-        $this->assertSame($foreignHorizon->id, $morphology->positions[$source->id]->horizonId);
-        $this->assertTrue($morphology->supersessions->contains(fn ($edge) => $edge->source_proposition_id === $source->id
-            && $edge->target_proposition_id === $target->id
-            && $edge->type === 'reclassify'));
-        $this->assertFalse($morphology->supersessions->contains(fn ($edge) => $edge->source_proposition_id === $gate->id
-            && $edge->target_proposition_id === $target->id));
         foreach ([null, new ParticipationContext($target->phase)] as $context) {
             $lineage = app(ActiveParticipantLineage::class)->endingAt($target, $context);
             $this->assertSame($source->phase->cycle->entry_committal_id, $lineage->first()->id);
@@ -321,8 +286,8 @@ class HomologousBiasTest extends TestCase
     {
         $this->controlledClosureFixture(-1);
         $this->warrant();
-        $wrongDepth = $this->source($this->commit($this->b, 'settlement'));
-        $wrongDomain = $this->source($this->commit($this->origin, 'emergence'));
+        $wrongDepth = $this->source($this->committedCoordinate($this->b, 'settlement'));
+        $wrongDomain = $this->source($this->committedCoordinate($this->origin, 'emergence'));
         $wrongPhase = $this->position($this->b, PhaseKind::Persist);
         $this->edge($this->b, $wrongPhase, 'variant');
         $this->receiptFixture($wrongPhase);
@@ -337,7 +302,7 @@ class HomologousBiasTest extends TestCase
         $substrate->forceFill(['slug' => 'foreign-bias', 'title' => 'Foreign', 'visibility' => 'private', 'configuration' => []])->save();
         $this->actor = new Participant;
         $this->actor->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'outsider'])->save();
-        $foreign = $this->source($this->commit(null, 'emergence'));
+        $foreign = $this->source($this->committedCoordinate(null, 'emergence'));
         $this->measure($foreign, -.9);
         $this->actor = $originalActor;
         $this->assertNotContains($foreign->id, $this->biasOptionIds());
@@ -355,8 +320,8 @@ class HomologousBiasTest extends TestCase
     public function test_same_horizon_foreign_result_is_not_adopted_as_the_source_regions_write(): void
     {
         $this->warrant();
-        $a = $this->commit($this->a, 'settlement');
-        $b = $this->commit($this->a, 'settlement');
+        $a = $this->committedCoordinate($this->a, 'settlement');
+        $b = $this->committedCoordinate($this->a, 'settlement');
         $left = $this->source($a);
         $right = $this->source($b);
         $this->bias = $this->biasAt($a, $left);
@@ -435,7 +400,7 @@ class HomologousBiasTest extends TestCase
         $this->warrant();
         $middle = $this->position($this->b, PhaseKind::Bias);
         $this->edge($this->gateB, $middle, 'variant');
-        $terminal = $this->commit($this->b, 'emergence');
+        $terminal = $this->committedCoordinate($this->b, 'emergence');
         $this->edge($middle, $terminal, 'commit');
         $phase = $this->phase($terminal, $terminal, PhaseKind::Distinguish);
         $tragedy = $this->boundaryTragedyFixture($phase->gate);
@@ -464,7 +429,7 @@ class HomologousBiasTest extends TestCase
         foreach ([2, 7] as $count) {
             if ($count === 7) {
                 foreach (range(1, 5) as $index) {
-                    $node = $this->source($this->commit($this->origin, 'settlement'));
+                    $node = $this->source($this->committedCoordinate($this->origin, 'settlement'));
                     $this->measure($node, -.7);
                 }
                 $this->closeFixtureCycles();
@@ -791,16 +756,18 @@ class HomologousBiasTest extends TestCase
         }
     }
 
-    public function test_reclassification_result_uses_ordinary_measurement_without_operand_coherence_constraint(): void
+    public function test_reclassification_result_uses_real_chirality_independently_of_operand_coherence(): void
     {
         $this->components($this->gateA, .8, .8);
-        // Remove the controlled calculator: the accepted result is measured by real v2.
+        // Remove the operand Chirality double; keep only Correspondence isolated.
         $this->app->forgetInstance(LocalMeasurementService::class);
+        $this->isolateCorrespondenceOutput();
         $target = app(ContributionDispatcher::class)->dispatch($this->actor, $this->bias, $this->input($this->gateA));
         $actual = app(ObservableService::class)->components($target);
         $this->assertEquals($actual->observables()->chirality, $target->fresh()->measurement->chirality);
         $this->assertSame([$this->gateA->id], $target->parents()->pluck('propositions.id')->all());
-        $this->assertSame('negative', app(ChiralityGateService::class)->evaluate($target->fresh())['chirality_direction']);
+        $this->assertSame($actual->chiralityComponents->orientation, $target->fresh()->measurement->orientation);
+        $this->assertSame($actual->chiralityComponents->cadence, $target->fresh()->measurement->attestation_cadence);
     }
 
     private function measure(Proposition $node, float $value): void

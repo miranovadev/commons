@@ -1,0 +1,128 @@
+[
+  {
+    "count": 1,
+    "setup_path": "tests/Feature/CycleRegionOwnershipTest.php::phase",
+    "tests": [
+      "Tests.Feature.CycleRegionOwnershipTest::test_hard_mixed_region_inputs_retain_governance_and_gate_lineage"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "tests/Feature/CycleRegionOwnershipTest.php::phase \u2192 tests/Feature/CycleRegionOwnershipTest.php::commit",
+    "tests": [
+      "Tests.Feature.CycleRegionOwnershipTest::test_direct_context_and_batch_ownership_agree_without_parent_inference"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "tests/Feature/CycleRegionOwnershipTest.php::phase \u2192 tests/Feature/CycleRegionOwnershipTest.php::expressive",
+    "tests": [
+      "Tests.Feature.CycleRegionOwnershipTest::test_cross_horizon_inputs_preserve_owner_horizon_and_only_the_producing_gate_route"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "tests/Feature/PropositionPresentationTest.php::phase",
+    "tests": [
+      "Tests.Feature.PropositionPresentationTest::test_zero_and_tied_counts_expose_the_existing_retained_direction_without_context_queries"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "tests/Fixtures/CreatesHomologousPositions.php::phase \u2192 tests/Feature/PropositionInspectionTest.php::classification",
+    "tests": [
+      "Tests.Feature.PropositionInspectionTest::test_recorded_foreign_mediate_classification_is_confluence_but_same_region_is_not"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "tests/TestCase.php::controlledBirthClosureFixture \u2192 tests/Feature/BiasGateTest.php::newPhase \u2192 tests/Feature/BiasGateTest.php::fixture",
+    "tests": [
+      "Tests.Feature.BiasGateTest::test_participant_selects_one_gate_creating_one_fresh_target_and_reducing_the_lean with data set #1"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "tests/TestCase.php::controlledBirthClosureFixture \u2192 tests/Feature/CausalRecoveryTest.php::phase",
+    "tests": [
+      "Tests.Feature.CausalRecoveryTest::test_revisions_and_historical_inputs_remain_real_backward_hops"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "tests/TestCase.php::controlledBirthClosureFixture \u2192 tests/Fixtures/ExhaustionFixture.php::explore",
+    "tests": [
+      "Tests.Feature.ExhaustedParticipantContextTest::test_first_tragedy_keeps_spent_evidence_in_live_participant_context_and_graph"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "tests/TestCase.php::controlledBirthClosureFixture \u2192 tests/Fixtures/ExhaustionFixture.php::measure \u2192 tests/Fixtures/ExhaustionFixture.php::commitFrom",
+    "tests": [
+      "Tests.Feature.TragedyMemoryTest::test_governance_chain_ignores_foreign_causal_parent_and_siblings"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "tests/TestCase.php::controlledBirthClosureFixture \u2192 tests/Fixtures/ExhaustionFixture.php::phase \u2192 tests/Fixtures/ExhaustionFixture.php::commitFrom \u2192 tests/Feature/ExhaustionTest.php::tragicChild",
+    "tests": [
+      "Tests.Feature.ExhaustionTest::test_audit_accepts_first_tragedy_without_exhaustion"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "tests/TestCase.php::controlledBirthClosureFixture \u2192 tests/TestCase.php::laterHorizonFixture",
+    "tests": [
+      "Tests.Feature.ExhaustedParticipantContextTest::test_spent_scope_never_crosses_a_horizon_or_hides_nodes_from_the_active_graph"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "tests/TestCase.php::controlledBirthClosureFixture \u2192 tests/TestCase.php::loadedReceiptFixture \u2192 tests/Feature/CausalRecoveryTest.php::explore",
+    "tests": [
+      "Tests.Feature.CausalRecoveryTest::test_first_tragedy_returns_to_its_opening_committal_without_crossing_the_boundary"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "tests/TestCase.php::controlledBirthClosureFixture \u2192 tests/TestCase.php::receiptFixture \u2192 tests/Feature/BiasGateTest.php::attest \u2192 tests/Feature/BiasGateTest.php::fixture",
+    "tests": [
+      "Tests.Feature.BiasGateTest::test_participant_selects_one_gate_creating_one_fresh_target_and_reducing_the_lean with data set #0"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "tests/TestCase.php::controlledBirthClosureFixture \u2192 tests/TestCase.php::receiptFixture \u2192 tests/Feature/RevisionAdmissibilityTest.php::revisionFixture",
+    "tests": [
+      "Tests.Feature.RevisionAdmissibilityTest::test_self_refute_unlocks_a_later_cycle_but_not_the_revised_child"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "tests/TestCase.php::governedPhaseFixture \u2192 tests/Feature/PotentialChargeServiceTest.php::continuation",
+    "tests": [
+      "Tests.Feature.PotentialChargeServiceTest::test_increasing_absolute_tension_has_zero_potential_without_changing_charge"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "tests/TestCase.php::laterHorizonFixture",
+    "tests": [
+      "Tests.Feature.HorizonWorkspaceTest::test_concurrent_workspaces_serialize_cycle_domain_boundary_and_actual_provenance_independently"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "tests/TestCase.php::loadedReceiptFixture \u2192 tests/TestCase.php::groundFixture \u2192 tests/Feature/ObservableServiceTest.php::closeHorizon",
+    "tests": [
+      "Tests.Feature.ObservableServiceTest::test_matching_lineages_in_complementary_horizons_align"
+    ]
+  },
+  {
+    "count": 1,
+    "setup_path": "tests/TestCase.php::receiptFixture",
+    "tests": [
+      "Tests.Feature.CorrespondenceComponentsTest::test_new_ordinary_commitment_snapshot_freezes_local_values_and_retained_directions"
+    ]
+  }
+]

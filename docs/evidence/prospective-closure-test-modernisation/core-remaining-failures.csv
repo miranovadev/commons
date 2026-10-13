@@ -1,0 +1,25 @@
+test,result,checkpoint,Stage2,assertions,message
+Tests\Feature\ChargeBoundaryTragedyTest::test_ordinary_unmocked_observables_can_reach_the_boundary,failure,failure,failure,2,"Tests\Feature\ChargeBoundaryTragedyTest::test_ordinary_unmocked_observables_can_reach_the_boundary
+Failed asserting that two strings are identical.
+--- Expected
++++ Actual
+@@ @@
+-'settlement'
++'emergence'"
+Tests\Feature\ChiralityPopulationHistoryTest::test_attestation_and_replacement_are_observed_through_real_dispatch,failure,failure,failure,1,"Tests\Feature\ChiralityPopulationHistoryTest::test_attestation_and_replacement_are_observed_through_real_dispatch
+Failed asserting that -0.1 is identical to -0.5."
+Tests\Feature\ClosureHysteresisTest::test_commit_freezes_source_attestation_direction_as_the_next_region_frame,error,error,passed,5,"Tests\Feature\ClosureHysteresisTest::test_commit_freezes_source_attestation_direction_as_the_next_region_frame
+InvalidArgumentException: {""/action"":[""The data must match the const value""]} Fixture Commit eligibility: {""admissible"":false,""reinforcement_count"":1,""requirements"":{""attestation"":true,""receipt"":true,""closure"":false,""phase_position"":true,""causal_write"":true,""active_region_candidate"":true,""write_opportunity"":true},""closure_enforced"":true,""reasons"":[""extent_rhythm_directions_diverge""],""closure"":{""depth"":0,""cadence"":0,""historical_phase_profile"":0.1428571,""historical_orientation"":-0.5,""historical_extent"":0.0714286,""historical_rhythm"":-0.25,""closure"":-0.0892857,""historical_extent_direction"":""positive"",""historical_rhythm_direction"":""negative"",""depth_direction"":""negative"",""cadence_direction"":""negative"",""admissible"":false,""availability"":{""depth"":false,""cadence"":false,""historical_phase_profile"":[false,false,false,false,false,false,true],""historical_orientation"":true},""domain_profiles"":{""emergence"":{""means"":[0,0,0,0,0,0,1],""sample_counts"":[1,1,1,1,1,1,1]},""settlement"":{""means"":[null,null,null,null,null,null,1],""sample_counts"":[0,0,0,0,0,0,1]}},""phase_contributions"":[0,0,0,0,0,0,1],""orientation_sample_count"":1,""domain_cvs"":{""emergence"":null,""settlement"":null},""creating_domain"":""settlement"",""domain_depths"":{""emergence"":1,""settlement"":1},""domain_intervals"":{""emergence"":[1],""settlement"":[2]},""cadence_interval"":2,""phase_observations"":{""origin:01m4s1gfk2742ms1knxxj2nbhd:0"":{""phase"": [full diagnostic in Actions artifact]"
+Tests\Feature\ClosureHysteresisTest::test_negative_closure_alignment_can_commit_while_corrected_field_remains_in_settlement,failure,failure,failure,10,"Tests\Feature\ClosureHysteresisTest::test_negative_closure_alignment_can_commit_while_corrected_field_remains_in_settlement
+Failed asserting that true is false."
+Tests\Feature\ClosureHysteresisTest::test_read_only_bootstrap_preview_matches_actual_commit_while_field_remains_in_settlement,failure,failure,failure,18,"Tests\Feature\ClosureHysteresisTest::test_read_only_bootstrap_preview_matches_actual_commit_while_field_remains_in_settlement
+Failed asserting that 0.1265986 is identical to -0.0964505."
+Tests\Feature\HomologousBiasTest::test_zero_retains_population_history_and_does_not_mutate_measurements_or_state,failure,error,failure,4,"Tests\Feature\HomologousBiasTest::test_zero_retains_population_history_and_does_not_mutate_measurements_or_state
+Failed asserting that two variables reference the same object.
+--- Expected
++++ Actual
+@@ @@
+-App\Enums\ObservableDirection Enum #1504 (Negative, 'negative')
++App\Enums\ObservableDirection Enum #472 (Positive, 'positive')"
+Tests\Feature\ObservableServiceTest::test_matching_lineages_in_complementary_horizons_align,failure,error,failure,11,"Tests\Feature\ObservableServiceTest::test_matching_lineages_in_complementary_horizons_align
+Failed asserting that 0.5 is identical to 1.0."

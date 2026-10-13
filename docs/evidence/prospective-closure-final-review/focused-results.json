@@ -1,0 +1,106 @@
+{
+  "tested_sha": "9bc9e8576dc9c28d0f52d766193304a22f614d31",
+  "run_id": 38389248081,
+  "jobs": [
+    {
+      "name": "focused (pgsql, lifecycle)",
+      "job_id": 115268633361,
+      "conclusion": "success",
+      "results": [
+        "2026-10-13T11:20:26.4562210Z   Tests:    1 passed (113 assertions)",
+        "2026-10-13T11:20:26.4563032Z   Duration: 105.35s"
+      ]
+    },
+    {
+      "name": "focused (sqlite, fixtures)",
+      "job_id": 115268633620,
+      "conclusion": "success",
+      "results": [
+        "2026-10-13T11:19:42.9777609Z   Tests:    2 skipped, 173 passed (2071 assertions)",
+        "2026-10-13T11:19:42.9778517Z   Duration: 72.47s"
+      ]
+    },
+    {
+      "name": "focused (sqlite, lifecycle)",
+      "job_id": 115268633623,
+      "conclusion": "success",
+      "results": [
+        "2026-10-13T11:18:54.9316831Z   Tests:    1 passed (113 assertions)",
+        "2026-10-13T11:18:54.9317394Z   Duration: 16.00s"
+      ]
+    },
+    {
+      "name": "focused (pgsql, contracts)",
+      "job_id": 115268633713,
+      "conclusion": "success",
+      "results": [
+        "2026-10-13T11:19:56.2017060Z   Tests:    48 passed (300 assertions)",
+        "2026-10-13T11:19:56.2017831Z   Duration: 82.61s",
+        "2026-10-13T11:20:15.5304133Z   Tests:    15 passed (90 assertions)",
+        "2026-10-13T11:20:15.5304975Z   Duration: 19.04s",
+        "2026-10-13T11:23:37.5438234Z   Tests:    131 passed (1961 assertions)",
+        "2026-10-13T11:23:37.5439064Z   Duration: 201.73s",
+        "2026-10-13T11:23:41.7111598Z     PASS   .......................................................... 37 files  "
+      ]
+    },
+    {
+      "name": "focused (sqlite, final-review)",
+      "job_id": 115268633752,
+      "conclusion": "success",
+      "results": [
+        "2026-10-13T11:19:04.2302052Z   Tests:    50 passed (522 assertions)",
+        "2026-10-13T11:19:04.2302782Z   Duration: 22.97s"
+      ]
+    },
+    {
+      "name": "focused (pgsql, final-review)",
+      "job_id": 115268633790,
+      "conclusion": "success",
+      "results": [
+        "2026-10-13T11:21:34.8250264Z   Tests:    50 passed (522 assertions)",
+        "2026-10-13T11:21:34.8251146Z   Duration: 182.51s"
+      ]
+    },
+    {
+      "name": "focused (sqlite, contracts)",
+      "job_id": 115268633803,
+      "conclusion": "success",
+      "results": [
+        "2026-10-13T11:18:51.1206067Z   Tests:    48 passed (300 assertions)",
+        "2026-10-13T11:18:51.1206839Z   Duration: 20.37s",
+        "2026-10-13T11:18:55.7057265Z   Tests:    15 passed (90 assertions)",
+        "2026-10-13T11:18:55.7058177Z   Duration: 4.29s",
+        "2026-10-13T11:19:38.6932757Z   Tests:    131 passed (1961 assertions)",
+        "2026-10-13T11:19:38.6933577Z   Duration: 42.66s",
+        "2026-10-13T11:19:42.5791715Z     PASS   .......................................................... 37 files  "
+      ]
+    },
+    {
+      "name": "focused (sqlite, committed-history)",
+      "job_id": 115268633808,
+      "conclusion": "success",
+      "results": [
+        "2026-10-13T11:19:04.4657300Z   Tests:    1 passed (129 assertions)",
+        "2026-10-13T11:19:04.4657947Z   Duration: 22.02s"
+      ]
+    },
+    {
+      "name": "focused (pgsql, fixtures)",
+      "job_id": 115268633900,
+      "conclusion": "success",
+      "results": [
+        "2026-10-13T11:21:20.6119357Z   Tests:    175 passed (2077 assertions)",
+        "2026-10-13T11:21:20.6119809Z   Duration: 171.30s"
+      ]
+    },
+    {
+      "name": "focused (pgsql, committed-history)",
+      "job_id": 115268633920,
+      "conclusion": "success",
+      "results": [
+        "2026-10-13T11:20:33.5870486Z   Tests:    1 passed (129 assertions)",
+        "2026-10-13T11:20:33.5871564Z   Duration: 122.28s"
+      ]
+    }
+  ]
+}

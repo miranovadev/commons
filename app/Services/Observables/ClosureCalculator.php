@@ -10,7 +10,7 @@ use DomainException;
 
 final readonly class ClosureCalculator
 {
-    public function __construct(private ClosureBirthService $births) {}
+    public function __construct(private ProspectiveClosureService $states) {}
 
     public function localComponents(Proposition $proposition, LineageComparison $comparison): ClosureValues
     {
@@ -19,7 +19,7 @@ final readonly class ClosureCalculator
 
     public function components(Proposition $position, ?ParticipationContext $context = null): ClosureValues
     {
-        $observation = $position->exists ? $this->births->stored($position, $context) : $this->births->prospective($position);
+        $observation = $this->states->stored($position, $context);
 
         return new ClosureValues($observation['depth'], $observation['cadence'], $observation['closure'], $observation);
     }
