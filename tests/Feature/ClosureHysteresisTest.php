@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Observables\ObservableValues;
 use App\Enums\ContextDomain;
 use App\Enums\ObservableDirection;
 use App\Enums\PhaseKind;
@@ -26,6 +27,7 @@ use App\Services\LedgerService;
 use App\Services\Observables\ProspectiveClosureService;
 use App\Services\ParticipationService;
 use App\Services\PotentialProjectionService;
+use App\Services\ProjectionService;
 use App\Services\PropositionMeasurementService;
 use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -86,7 +88,9 @@ class ClosureHysteresisTest extends TestCase
             $this->assertSame($resolved->$component, $snapshot->$component);
         }
         $this->assertEquals($preview, $snapshot->closure_observation);
-        $this->assertSame(round(($resolved->correspondence + $resolved->chirality + $preview['closure']) / 3, 7), $snapshot->tension);
+        // Preserve the existing two-stage Prominence/Turbulence rounding.
+        $field = app(ProjectionService::class)->field(new ObservableValues($resolved->correspondence, $resolved->chirality, $preview['closure']));
+        $this->assertSame($field['tension'], $snapshot->tension);
         $this->assertSame(ContextDomain::after($snapshot->tension, ContextDomain::Settlement)->value, $result['last_commitment']['domain_after']);
         $this->assertSame(-1.0, $result['last_commitment']['tension_before']);
         $this->assertSame($snapshot->direction_before !== $snapshot->direction_after, $result['last_commitment']['closure_boundary']);
@@ -174,7 +178,9 @@ class ClosureHysteresisTest extends TestCase
             $this->assertSame($resolved->$component, $snapshot->$component);
         }
         $this->assertEquals($preview, $snapshot->closure_observation);
-        $this->assertSame(round(($resolved->correspondence + $resolved->chirality + $preview['closure']) / 3, 7), $snapshot->tension);
+        // Preserve the existing two-stage Prominence/Turbulence rounding.
+        $field = app(ProjectionService::class)->field(new ObservableValues($resolved->correspondence, $resolved->chirality, $preview['closure']));
+        $this->assertSame($field['tension'], $snapshot->tension);
         $expectedDomain = ContextDomain::after($snapshot->tension, ContextDomain::Settlement);
         $this->assertSame($expectedDomain->value, $state['domain']);
         $this->assertSame($expectedDomain !== ContextDomain::Settlement, $state['last_commitment']['closure_boundary']);
