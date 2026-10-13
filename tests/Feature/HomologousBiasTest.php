@@ -32,6 +32,7 @@ use App\Services\InputPlanService;
 use App\Services\LedgerService;
 use App\Services\Observables\LocalMeasurementService;
 use App\Services\Observables\ObservableService;
+use App\Services\Observables\PhaseProfileObservationService;
 use App\Services\Observables\ReinforcementService;
 use App\Services\OpenAIResponseSchema;
 use App\Services\ParticipantContextSerializer;
@@ -61,9 +62,9 @@ use Tests\TestCase;
 #[Group('component-contract')]
 class HomologousBiasTest extends TestCase
 {
-    use IsolatesClosureOutput;
     use AssertsLatePhaseContract;
     use CreatesHomologousPositions;
+    use IsolatesClosureOutput;
     use RefreshDatabase;
 
     private Proposition $origin;
@@ -106,7 +107,7 @@ class HomologousBiasTest extends TestCase
         $this->warrant();
         $this->resolveExpressiveFieldFixture(-1);
         $target = app(ContributionDispatcher::class)->dispatch($this->actor, $this->bias, $this->input($this->gateB));
-        $profileBirth = app(\App\Services\Observables\PhaseProfileObservationService::class)->stored($target->id);
+        $profileBirth = app(PhaseProfileObservationService::class)->stored($target->id);
         $this->assertNotNull($profileBirth->birth_cycle_coordinate);
         $this->assertNull($profileBirth->preceding_phase_proposition_id);
         $this->assertNull($profileBirth->cycle_interval);

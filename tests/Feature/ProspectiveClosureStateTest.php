@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\PhaseKind;
+use App\Exceptions\ClosureHistoryUnavailable;
 use App\Models\Attestation;
 use App\Models\Cycle;
 use App\Models\Participant;
@@ -10,12 +11,16 @@ use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Substrate;
 use App\Models\Supersession;
+use App\Services\ContributionDispatcher;
 use App\Services\CycleEntryService;
 use App\Services\LedgerService;
+use App\Services\Observables\ProspectiveClosureHistory;
 use App\Services\Observables\ProspectiveClosureService;
+use App\Services\PropositionMeasurementService;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Tests\TestCase;
 
 class ProspectiveClosureStateTest extends TestCase
@@ -90,6 +95,23 @@ class ProspectiveClosureStateTest extends TestCase
         $this->assertDatabaseMissing('phase_profile_observations', ['proposition_id' => $this->origin->id]);
         $this->enter();
         $this->assertSame($state, $this->service()->stored($this->origin));
+    }
+
+    public function test_migration_round_trip_does_not_backfill_or_rewrite_existing_evidence(): void
+    {
+        $head = $this->born(PhaseKind::Distinguish, $this->origin);
+        $snapshot = $this->origin->commitmentSnapshot->getAttributes();
+        $birth = DB::table('phase_profile_observations')->where('proposition_id', $head->id)->first();
+        $ledger = DB::table('substrate_ledger_entries')->orderBy('id')->get()->toJson();
+        $migration = require database_path('migrations/2026_10_12_000000_create_prospective_closure_states.php');
+        $migration->down();
+        $migration->up();
+        $this->assertDatabaseCount('prospective_closure_states', 0);
+        $this->assertSame($snapshot, $this->origin->commitmentSnapshot->fresh()->getAttributes());
+        $this->assertEquals($birth, DB::table('phase_profile_observations')->where('proposition_id', $head->id)->first());
+        $this->assertSame($ledger, DB::table('substrate_ledger_entries')->orderBy('id')->get()->toJson());
+        $this->expectException(ClosureHistoryUnavailable::class);
+        $this->service()->stored($head);
     }
 
     public function test_constitutional_state_is_database_immutable(): void
@@ -249,7 +271,7 @@ class ProspectiveClosureStateTest extends TestCase
         try {
             $this->preserve($source, $expected);
             $this->fail('Stale state must be rejected.');
-        } catch (\Symfony\Component\HttpKernel\Exception\ConflictHttpException) {
+        } catch (ConflictHttpException) {
             $this->assertSame($count, Proposition::count());
             $this->assertSame($edges, Supersession::count());
         }
@@ -273,8 +295,8 @@ class ProspectiveClosureStateTest extends TestCase
         $this->assertTrue($state['admissible'], json_encode($state));
         $this->assertSame('negative', $state['historical_extent_direction']);
         $this->assertSame('negative', $state['historical_rhythm_direction']);
-        $resolved = app(\App\Services\PropositionMeasurementService::class)->recalculate($source);
-        $target = app(\App\Services\ContributionDispatcher::class)->dispatch($this->actor, $phase,
+        $resolved = app(PropositionMeasurementService::class)->recalculate($source);
+        $target = app(ContributionDispatcher::class)->dispatch($this->actor, $phase,
             ['action' => 'proposition.commit', 'proposition_id' => $source->id]);
         $this->assertSame($state, $this->service()->stored($target));
         $this->assertEquals($state, $target->fresh()->commitmentSnapshot->closure_observation);
@@ -288,12 +310,12 @@ class ProspectiveClosureStateTest extends TestCase
     {
         $head = $this->bias();
         $heads = Proposition::where('tier', 'expressive')->with(['phase.cycle.contextHorizon', 'phase.cycle.participant', 'ledgerEntry'])->get();
-        $single = new \App\Services\Observables\ProspectiveClosureHistory(collect([$head]));
+        $single = new ProspectiveClosureHistory(collect([$head]));
         $queries = [];
         DB::listen(function ($query) use (&$queries): void {
             $queries[] = $query->sql;
         });
-        $batch = new \App\Services\Observables\ProspectiveClosureHistory($heads);
+        $batch = new ProspectiveClosureHistory($heads);
         $loaded = count($queries);
         $this->assertSame($single->phases($head), $batch->phases($head));
         $this->assertSame($single->orientations($head), $batch->orientations($head));

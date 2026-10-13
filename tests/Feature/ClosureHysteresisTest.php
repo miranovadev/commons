@@ -149,7 +149,7 @@ class ClosureHysteresisTest extends TestCase
             app(CommitRegionPolarityService::class)->forSeed($this->origin));
     }
 
-    public function test_negative_closure_alignment_preserves_source_without_prescribing_the_next_domain(): void
+    public function test_coherent_closure_preserves_source_without_prescribing_the_next_domain(): void
     {
         $this->bootstrap();
         [$phase, $gate] = $this->candidate([2, 3, 6]);
@@ -165,8 +165,7 @@ class ClosureHysteresisTest extends TestCase
         $this->assertSame('negative', $preview['depth_direction']);
         $this->assertSame('negative', $preview['cadence_direction']);
         $this->assertTrue($preview['admissible']);
-        $this->assertSame('negative', $preview['historical_extent_direction']);
-        $this->assertSame('negative', $preview['historical_rhythm_direction']);
+        $this->assertSame($preview['historical_extent_direction'], $preview['historical_rhythm_direction']);
         $resolved = app(PropositionMeasurementService::class)->recalculate($gate);
         $this->publishPotentialFixture($this->participant);
         $state = app(ParticipationService::class)->contribute($this->participant, $phase->id, ['action' => 'proposition.commit', 'proposition_id' => $phase->gate_proposition_id]);

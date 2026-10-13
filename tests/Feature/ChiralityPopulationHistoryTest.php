@@ -29,8 +29,8 @@ use Tests\TestCase;
 #[Group('component-contract')]
 class ChiralityPopulationHistoryTest extends TestCase
 {
-    use IsolatesClosureOutput;
     use CreatesHomologousPositions, RefreshDatabase;
+    use IsolatesClosureOutput;
 
     public static function histories(): array
     {

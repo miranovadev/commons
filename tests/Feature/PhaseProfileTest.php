@@ -125,7 +125,7 @@ class PhaseProfileTest extends TestCase
         return $this->born($cycle, PhaseKind::Bias, $this->throughMediate($cycle), 'reclassify');
     }
 
-    /** A complete structural Commit history with genuine Order source/edge and frozen birth state. */
+    /** Explicit structural/persistence inputs; no claim of grounded Commit authority or natural Domain transition. */
     private function basin(bool $boundary = false, ?Proposition $entry = null): Proposition
     {
         $cycle = $this->cycle($entry);
