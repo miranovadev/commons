@@ -33,6 +33,22 @@ class TerminalContinuationTest extends TestCase
         $this->assertSame([], (new TerminalContinuationService)->remaining('parent', $graph)->all());
     }
 
+    public function test_multi_parent_join_closes_only_parents_without_a_live_alternative(): void
+    {
+        $edges = collect([
+            (object) ['source_proposition_id' => 'left', 'target_proposition_id' => 'join'],
+            (object) ['source_proposition_id' => 'right', 'target_proposition_id' => 'join'],
+            (object) ['source_proposition_id' => 'right', 'target_proposition_id' => 'sibling'],
+        ]);
+        $service = new TerminalContinuationService;
+        $closed = $service->closePaths($edges, collect(['join' => true]));
+        $this->assertTrue($closed->has('left'));
+        $this->assertFalse($closed->has('right'));
+        $closed = $service->closePaths($edges, collect(['join' => true, 'sibling' => true]));
+        $this->assertTrue($closed->has('left'));
+        $this->assertTrue($closed->has('right'));
+    }
+
     private function graph(array $closed): array
     {
         return ['nodes' => collect([

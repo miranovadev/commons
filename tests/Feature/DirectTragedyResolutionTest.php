@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Enums\PhaseKind;
+use App\Models\Cycle;
+use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Receipt;
 use App\Models\Tragedy;
@@ -10,8 +12,11 @@ use App\Services\ContributionDispatcher;
 use App\Services\ExhaustionAuditService;
 use App\Services\ExhaustionService;
 use App\Services\PhaseGenerationService;
+use App\Services\InputPlanService;
+use App\Services\PropositionOptionService;
 use App\Services\TerminalContinuationService;
 use App\Services\TragedyService;
+use DomainException;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -51,6 +56,7 @@ class DirectTragedyResolutionTest extends TestCase
         $fixture = new GovernedExpressionFixture;
         $fixture->writePersist();
         $this->measure($fixture->expression, 1);
+        $this->resolveExpressiveFieldFixture(1);
         app(ContributionDispatcher::class)->dispatch($fixture->actor, $fixture->phase,
             ['action' => 'instrument.execute', 'proposition_id' => $fixture->expression->id,
                 'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/direct-terminal']]);
@@ -91,11 +97,11 @@ class DirectTragedyResolutionTest extends TestCase
             ['action' => 'attestation.create', 'proposition_id' => $fixture->expression->id, 'direction' => 'support']);
         // Structural revisit component: real Cycle ownership and earlier effective
         // Attestation. This is not a claim that a full intervening Cycle ran.
-        $cycle = (new \App\Models\Cycle)->forceFill(['participant_id' => $fixture->actor->id,
-            'sequence' => 2, 'entry_committal_id' => $fixture->origin->id,
+        $cycle = (new Cycle)->forceFill(['participant_id' => $fixture->actor->id,
+            'sequence' => (int) $fixture->actor->cycles()->max('sequence') + 1, 'entry_committal_id' => $fixture->origin->id,
             'context_horizon_id' => $fixture->phase->cycle->context_horizon_id]);
         $cycle->save();
-        $phase = (new \App\Models\Phase)->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Distinguish,
+        $phase = (new Phase)->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Distinguish,
             'gate_proposition_id' => $fixture->origin->id, 'write_register' => $fixture->expression->register, 'started_at' => now()]);
         $phase->save();
         $this->measure($fixture->expression, 1);
@@ -155,6 +161,32 @@ class DirectTragedyResolutionTest extends TestCase
         $this->assertSame($receipt, Receipt::where('type', 'tragedy')->sole()->getAttributes());
     }
 
+    public function test_resolution_keeps_an_ordinary_instrument_on_a_nonterminal_sibling(): void
+    {
+        $first = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
+        $sibling = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
+        $this->encounter($first);
+        $this->resolveExpressiveFieldFixture(.5);
+        $this->assertContains($sibling->id, app(PropositionOptionService::class)
+            ->instrumentOptionsFor($sibling->phase)->pluck('id'));
+        app(ContributionDispatcher::class)->dispatch($sibling->phase->cycle->participant, $sibling->phase,
+            ['action' => 'instrument.execute', 'proposition_id' => $sibling->id,
+                'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/surviving-route']]);
+        $this->assertDatabaseCount('terminal_encounters', 1);
+        $this->assertDatabaseCount('commit_region_exhaustions', 0);
+        $this->assertSame(1, $sibling->instrumentExecutions()->count());
+    }
+
+    public function test_exhausted_region_plan_offers_rest_only(): void
+    {
+        $target = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
+        $this->encounter($target);
+        $plan = app(InputPlanService::class)->forPhase($target->phase->cycle->participant, $target->phase);
+        $this->assertSame(['participant.rest'], array_keys($plan['schema']['$defs']['actions']));
+        $this->assertSame([], $plan['traversal_options']);
+        $this->assertSame([], $plan['instrument_options']);
+    }
+
     public function test_terminal_state_survives_positive_charge_and_repeat_observation(): void
     {
         $target = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
@@ -178,7 +210,7 @@ class DirectTragedyResolutionTest extends TestCase
             app(ContributionDispatcher::class)->dispatch($sibling->phase->cycle->participant, $sibling->phase,
                 ['action' => 'proposition.variant', 'statement' => 'Stale client']);
             $this->fail('Resolution must reject a stale Variant.');
-        } catch (\DomainException) {
+        } catch (DomainException) {
             $this->assertSame($before, Proposition::count());
         }
     }

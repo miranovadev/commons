@@ -26,9 +26,18 @@ final class TerminalContinuationService
                     && (($edge->type === 'commit' && $target->tier === 'committal')
                         || ($target->tier === 'expressive' && $source->entry_committal_id === $target->entry_committal_id));
             });
+        $exhausted = DB::table('commit_region_exhaustions')
+            ->whereIn('governing_committal_id', $nodes->keys())->pluck('governing_committal_id');
         $closed = DB::table('terminal_encounters')->whereIn('proposition_id', $nodes->keys())
-            ->pluck('proposition_id')->merge(DB::table('commit_region_exhaustions')
-                ->whereIn('governing_committal_id', $nodes->keys())->pluck('governing_committal_id'))->flip()->map(fn () => true);
+            ->pluck('proposition_id')->merge($exhausted)->flip()->map(fn () => true);
+        $closed = $this->closePaths($edges, $closed);
+
+        return ['nodes' => $nodes, 'edges' => $edges, 'closed' => $closed];
+    }
+
+    /** Every child must already be closed; one live sibling blocks backward propagation. */
+    public function closePaths(Collection $edges, Collection $closed): Collection
+    {
         $children = $edges->groupBy('source_proposition_id');
         $parents = $edges->groupBy('target_proposition_id');
         $queue = $closed->keys()->all();
@@ -43,7 +52,7 @@ final class TerminalContinuationService
             }
         }
 
-        return ['nodes' => $nodes, 'edges' => $edges, 'closed' => $closed];
+        return $closed;
     }
 
     public function closed(Proposition $proposition): bool

@@ -11,10 +11,12 @@ use App\Services\LedgerService;
 use App\Services\RegionalExhaustionMembership;
 use Illuminate\Support\Facades\DB;
 
-/** Regional catastrophe fixtures; archived consumption is isolated for migration tests only. */
+/** Controlled regional lifecycle components; committed coordinates are not end-to-end Commit evidence. */
 trait HorizonProofFixture
 {
     use ExhaustionFixture;
+
+    private array $continuingHeads = [];
 
     protected function firstFailure(): array
     {
@@ -25,19 +27,23 @@ trait HorizonProofFixture
         $phase = $this->phase($head);
         $this->measure($root, 1);
         $this->measure($head, 1);
+        // Resolution requires a real distinct continuation already present at
+        // the first event. Do not create a prohibited Variant afterwards.
+        $this->continuingHeads[$opening->id] = $this->node($this->phase($opening, PhaseKind::Constrain), $opening);
         $this->boundaryTragedyFixture($head);
         $this->rest($phase);
 
-        return [$opening, $phase->cycle->contextHorizon, Tragedy::sole()];
+        return [$opening, $phase->cycle->contextHorizon, Tragedy::sole(), $this->continuingHeads[$opening->id]];
     }
 
     protected function exercise($opening, $tragedy): array
     {
-        $gate = $this->node($this->phase($opening, PhaseKind::Constrain), $opening);
-        $phase = $this->phase($gate, PhaseKind::Disperse);
+        $target = $this->continuingHeads[$opening->id];
+        $phase = $target->phase;
         $this->resolveExpressiveFieldFixture(1);
-        $target = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
-            ['action' => 'proposition.variant', 'statement' => 'A later fresh regional catastrophe']);
+        app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
+            ['action' => 'instrument.execute', 'proposition_id' => $target->id,
+                'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/terminal/'.$target->id]]);
         $terminal = $this->phase($target);
         $this->publishPotentialFixture($this->substrate);
 

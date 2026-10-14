@@ -1090,7 +1090,7 @@ class CausalRecoveryTest extends TestCase
         $this->refreshMeasurements();
         $catastrophes = [Tragedy::count(), DB::table('commit_region_exhaustions')->count()];
         app(ParticipationService::class)->contribute($phase->cycle->participant, $phase->id, ['action' => 'participant.rest']);
-        // Exhaustion below is caused by repeated catastrophe, not by this
+        // Exhaustion below is caused by a direct terminal encounter, not by this
         // preparatory Rest or its incidental zero/positive Potential diagnostic.
         $this->assertNotNull($phase->cycle->fresh()->rested_at);
         $this->assertSame($catastrophes, [Tragedy::count(), DB::table('commit_region_exhaustions')->count()]);
@@ -1098,27 +1098,14 @@ class CausalRecoveryTest extends TestCase
         $tragedy = Tragedy::where('governing_committal_id', $seed->id)->sole();
         $this->assertSame($seed->id, $terminal->phase->cycle->entry_committal_id);
         $this->assertSame($seed->id, app(CommitRegionService::class)->seedFor($terminal)?->id);
-        $this->assertFalse(app(ExhaustionService::class)->unavailable($seed));
-        // Preparatory Rest may already have skipped a closed crossover. Entry
-        // preparation must preserve that selection, not proactively route again.
-        $selected = $phase->cycle->participant->fresh()->current_proposition_id;
-        app(CycleEntryService::class)->prepare($phase->cycle->participant);
-        $this->assertSame($selected, $phase->cycle->participant->fresh()->current_proposition_id);
-        $gate = $this->node($this->phase($horizon, $seed, PhaseKind::Constrain), $seed);
-        $attempt = $this->phase($horizon, $gate, PhaseKind::Disperse);
-        $this->resolveExpressiveFieldFixture(1);
-        $target = app(ContributionDispatcher::class)->dispatch($attempt->cycle->participant, $attempt,
-            ['action' => 'proposition.variant', 'statement' => 'Later regional catastrophe']);
-        $this->measurements[$target->id] = 1;
-        $final = $this->phase($horizon, $target);
-        $this->refreshMeasurements();
-        app(ParticipationService::class)->contribute($final->cycle->participant, $final->id, ['action' => 'participant.rest']);
-        $this->assertDatabaseHas('commit_region_exhaustions', ['governing_committal_id' => $seed->id, 'receipt_id' => $tragedy->receipt_id]);
-        $this->assertSame($seed->id, $target->phase->cycle->entry_committal_id);
-        $this->assertSame($seed->id, app(CommitRegionService::class)->seedFor($target)?->id);
+        // This recovery component needs actual exhausted-region authority, not
+        // another prohibited Variant after the first terminal encounter.
+        $this->assertTrue(app(ExhaustionService::class)->unavailable($seed));
+        $this->assertDatabaseHas('commit_region_exhaustions', ['governing_committal_id' => $seed->id,
+            'receipt_id' => $tragedy->receipt_id]);
         $this->refreshMeasurements();
 
-        return $target;
+        return $terminal;
     }
 
     private function explore(Proposition $node): void

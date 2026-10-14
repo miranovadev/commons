@@ -104,7 +104,7 @@ class HomologousBiasTest extends TestCase
 
     public function test_boundary_reclassification_belongs_to_the_acting_region_not_its_foreign_source(): void
     {
-        $this->warrant();
+        $firstTragedy = $this->warrant();
         $this->resolveExpressiveFieldFixture(-1);
         $target = app(ContributionDispatcher::class)->dispatch($this->actor, $this->bias, $this->input($this->gateB));
         $profileBirth = app(PhaseProfileObservationService::class)->stored($target->id);
@@ -114,7 +114,7 @@ class HomologousBiasTest extends TestCase
         $this->assertSame('no_local_predecessor', $profileBirth->unavailable_reason);
 
         $tragedy = Tragedy::sole();
-        $this->assertSame($this->gateA->id, $tragedy->terminal_proposition_id);
+        $this->assertSame($firstTragedy->terminal_proposition_id, $tragedy->terminal_proposition_id);
         $this->assertDatabaseCount('tragedies', 1);
         $this->assertSame($this->a->id, $tragedy->governing_committal_id);
         $this->assertSame($this->bias->cycle->context_horizon_id, $tragedy->context_horizon_id);
@@ -511,7 +511,7 @@ class HomologousBiasTest extends TestCase
         $this->assertSame('consumed', $item['availability']);
         $this->assertTrue($item['memory_active']);
         $this->assertFalse($item['active']);
-        $this->assertSame($this->gateA->id, $item['tragedy_memory']['catastrophe']['proposition_id']);
+        $this->assertSame($tragedy->terminal_proposition_id, $item['tragedy_memory']['catastrophe']['proposition_id']);
         foreach ([null, new ParticipationContext($next)] as $context) {
             $this->assertSame(0, app(ReinforcementService::class)->count($target, $context));
         }
@@ -593,32 +593,33 @@ class HomologousBiasTest extends TestCase
         $this->assertDatabaseCount('receipt_consumptions', 1);
     }
 
-    public function test_positive_charge_escape_leaves_region_open_but_later_local_boundary_exhausts_it(): void
+    public function test_positive_charge_escape_keeps_resolution_without_reopening_variant(): void
     {
         $tragedy = $this->warrant();
         $this->resolveExpressiveFieldFixture(.8);
         $escape = app(ContributionDispatcher::class)->dispatch($this->actor, $this->bias, $this->input($this->gateB));
         $this->assertDatabaseCount('commit_region_exhaustions', 0);
         $this->assertDatabaseHas('receipt_consumptions', ['receipt_id' => $tragedy->receipt_id, 'proposition_id' => $escape->id]);
-        $gate = $this->position($this->a, PhaseKind::Constrain);
-        $phase = $this->phaseAtPositionFixture($gate->phase, PhaseKind::Disperse);
-        $phase->forceFill(['gate_proposition_id' => $gate->id])->save();
-        $this->resolveExpressiveFieldFixture(-1);
-        $later = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
-            ['action' => 'proposition.variant', 'statement' => 'A later catastrophe after escape']);
-        $this->assertDatabaseHas('commit_region_exhaustions', ['governing_committal_id' => $this->a->id,
-            'terminal_proposition_id' => $later->id, 'receipt_id' => $tragedy->receipt_id]);
+        $this->assertFalse(app(PhaseGenerationService::class)->available($this->bias, 'proposition.variant'));
+        $this->assertFalse(app(PhaseGenerationService::class)->available($this->bias, 'proposition.revise'));
         $this->assertSame(1, ReceiptConsumption::where('receipt_id', $tragedy->receipt_id)->count());
     }
 
     private function warrant(): Tragedy
     {
-        // Isolated homology/Receipt component fixture: the warrant belongs to a
-        // separate terminated branch. The active Bias Gate was never terminal.
-        $terminal = $this->position($this->a, PhaseKind::Distinguish);
-        $this->edge($this->a, $terminal, 'variant');
+        $entry = $this->bias->cycle->entryCommittal;
+        $existing = Tragedy::where('governing_committal_id', $entry->id)->first();
+        if ($existing !== null) {
+            return $existing;
+        }
+        // Isolated homology/Receipt component: a separate terminated branch,
+        // never revival of the active Bias Gate or a claim of a full lifecycle.
+        $terminal = $this->position($entry, PhaseKind::Distinguish);
+        $this->edge($entry, $terminal, 'variant');
+        $tragedy = $this->boundaryTragedyFixture($terminal);
+        $this->closeFixtureCycles();
 
-        return $this->boundaryTragedyFixture($terminal);
+        return $tragedy;
     }
 
     private function source(Proposition $entry, bool $attest = true): Proposition

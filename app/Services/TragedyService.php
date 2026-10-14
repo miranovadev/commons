@@ -5,8 +5,8 @@ namespace App\Services;
 use App\Domain\Observables\ObservableValues;
 use App\Models\CommitmentSnapshot;
 use App\Models\ContextHorizon;
-use App\Models\Proposition;
 use App\Models\Phase;
+use App\Models\Proposition;
 use App\Models\Receipt;
 use App\Models\Substrate;
 use App\Models\Tragedy;
@@ -19,8 +19,10 @@ final class TragedyService
     /** Caller owns the substrate contribution lock. Unique governing-Committal and Receipt keys back it. */
     public function record(Proposition $proposition, Phase $encounterPhase, string $action): ?Tragedy
     {
-        if ($proposition->tier !== 'expressive' || ! in_array($action, ['proposition.variant', 'proposition.revise',
-            'proposition.reclassify', 'proposition.reconcile', 'attestation.create', 'instrument.execute', 'proposition.traverse'], true)) {
+        if ($proposition->tier !== 'expressive' || ! in_array($action, [
+            'proposition.variant', 'proposition.revise', 'proposition.reclassify', 'proposition.reconcile',
+            'attestation.create', 'instrument.execute', 'proposition.traverse',
+        ], true)) {
             return null;
         }
         if (DB::transactionLevel() === 0) {
@@ -65,7 +67,6 @@ final class TragedyService
         }
         $opener = $horizon->opened_by_proposition_id ?? CommitmentSnapshot::where('substrate_id', $horizon->substrate_id)
             ->where('calculator_version', 'origin-bootstrap-v1')->sole()->proposition_id;
-        $version = Substrate::whereKey($horizon->substrate_id)->value('field_version');
         $id = (string) Str::ulid();
         $receipt = (new Receipt)->forceFill([
             'phase_id' => $encounterPhase->id, 'context_horizon_id' => $horizon->id,
