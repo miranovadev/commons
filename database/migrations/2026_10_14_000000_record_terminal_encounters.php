@@ -30,7 +30,7 @@ return new class extends Migration
         });
         foreach (['terminal_encounters', 'tragedies', 'commit_region_exhaustions'] as $table) {
             if (DB::getDriverName() === 'pgsql') {
-                DB::unprepared("CREATE FUNCTION {$table}_immutable() RETURNS trigger LANGUAGE plpgsql AS \$\$ BEGIN RAISE EXCEPTION 'Lifecycle evidence is immutable'; END; \$\$");
+                DB::unprepared("CREATE OR REPLACE FUNCTION {$table}_immutable() RETURNS trigger LANGUAGE plpgsql AS \$\$ BEGIN RAISE EXCEPTION 'Lifecycle evidence is immutable'; END; \$\$");
                 DB::unprepared("CREATE TRIGGER {$table}_immutable BEFORE UPDATE OR DELETE ON {$table} FOR EACH ROW EXECUTE FUNCTION {$table}_immutable()");
             } else {
                 foreach (['UPDATE', 'DELETE'] as $operation) {
@@ -60,7 +60,10 @@ return new class extends Migration
             $table->dropConstrainedForeignId('descendant_exhaustion_id');
             $table->dropColumn('continuation_evaluation');
         });
-        Schema::table('tragedies', fn (Blueprint $table) => $table->dropConstrainedForeignId('terminal_encounter_id'));
+        Schema::table('tragedies', function (Blueprint $table): void {
+            $table->dropUnique(['terminal_encounter_id']);
+            $table->dropConstrainedForeignId('terminal_encounter_id');
+        });
         Schema::drop('terminal_encounters');
     }
 };

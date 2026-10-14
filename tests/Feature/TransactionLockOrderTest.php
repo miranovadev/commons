@@ -519,19 +519,21 @@ class TransactionLockOrderTest extends TestCase
     }
 
     #[Group('load')]
-    public function test_concurrent_boundary_publications_keep_one_tragedy_and_receipt(): void
+    public function test_concurrent_terminal_observers_keep_one_tragedy_and_receipt(): void
     {
         $this->initializeExhaustionFixture();
         $first = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
-        $second = $this->phase($this->origin, PhaseKind::Distinguish);
+        $second = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
         $this->measure($first, 1);
-        $this->whileWorkerWaits($this->substrate, ['operation' => 'fresh-boundary',
-            'substrate_id' => $this->substrate->id, 'phase_id' => $second->id],
-            fn () => app(TragedyService::class)->record($first, $first->phase, 'proposition.variant'));
+        $this->measure($second, 1);
+        $this->whileWorkerWaits($this->substrate, ['operation' => 'terminal-encounter',
+            'substrate_id' => $this->substrate->id, 'phase_id' => $second->phase_id, 'proposition_id' => $second->id],
+            fn () => app(TragedyService::class)->record($first, $first->phase, 'instrument.execute'));
         $this->assertSame($first->id, Tragedy::sole()->terminal_proposition_id);
         $this->assertSame(1, Receipt::where('type', 'tragedy')->count());
-        $this->assertDatabaseCount('tragedy_final_attempts', 0);
+        $this->assertDatabaseCount('terminal_encounters', 2);
         $this->assertDatabaseCount('commit_region_exhaustions', 1);
+        $this->assertSame($second->id, DB::table('commit_region_exhaustions')->sole()->terminal_proposition_id);
     }
 
     #[Group('load')]
@@ -566,24 +568,20 @@ class TransactionLockOrderTest extends TestCase
     }
 
     #[Group('load')]
-    public function test_concurrent_later_boundary_events_record_one_exhaustion_without_consumption(): void
+    public function test_concurrent_repeat_observation_cannot_create_another_terminal_witness(): void
     {
         $this->initializeExhaustionFixture();
-        [$opening, $horizon, $tragedy] = $this->firstFailure();
-        $first = $this->node($this->phase($opening, PhaseKind::Distinguish), $opening);
+        $first = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
         $this->measure($first, 1);
-        $second = $this->phase($opening, PhaseKind::Distinguish);
         $before = Proposition::count();
-        $this->whileWorkerWaits($this->substrate, ['operation' => 'fresh-boundary',
-            'substrate_id' => $this->substrate->id, 'phase_id' => $second->id],
-            fn () => app(TragedyService::class)->record($first, $first->phase, 'proposition.variant'));
-        $this->assertSame($before + 1, Proposition::count());
+        $this->whileWorkerWaits($this->substrate, ['operation' => 'terminal-encounter',
+            'substrate_id' => $this->substrate->id, 'phase_id' => $first->phase_id, 'proposition_id' => $first->id],
+            fn () => app(TragedyService::class)->record($first, $first->phase, 'instrument.execute'));
+        $this->assertSame($before, Proposition::count());
         $this->assertDatabaseCount('tragedies', 1);
+        $this->assertDatabaseCount('terminal_encounters', 1);
         $this->assertDatabaseCount('commit_region_exhaustions', 1);
         $this->assertDatabaseCount('receipt_consumptions', 0);
-        $this->assertSame($first->id, DB::table('commit_region_exhaustions')->sole()->terminal_proposition_id);
-        $this->assertTrue(app(ExhaustionService::class)->boundaryExhausted($horizon));
-        $this->assertDatabaseHas('propositions', ['id' => $opening->id]);
         $this->assertTrue(app(ExhaustionAuditService::class)->inspect($this->substrate->id)['matches']);
     }
 

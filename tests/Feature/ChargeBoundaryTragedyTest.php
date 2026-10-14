@@ -54,7 +54,7 @@ class ChargeBoundaryTragedyTest extends TestCase
         $this->assertSame($tragic ? 1 : 0, Receipt::where('type', 'tragedy')->count());
         $this->assertDatabaseHas('propositions', ['id' => $target->id]);
         $this->assertNull($phase->cycle->fresh()->rested_at);
-        $this->assertDatabaseCount('commit_region_exhaustions', 0);
+        $this->assertDatabaseCount('commit_region_exhaustions', $tragic ? 1 : 0);
         $this->assertDatabaseCount('tragedy_final_attempts', 0);
         if ($tragic) {
             $tragedy = Tragedy::sole();
@@ -160,7 +160,7 @@ class ChargeBoundaryTragedyTest extends TestCase
         $this->assertDatabaseCount('tragedies', 0);
     }
 
-    public function test_two_regions_in_one_horizon_record_their_own_boundary_events(): void
+    public function test_descendant_terminal_event_recursively_closes_resolving_parent(): void
     {
         $root = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
         $seed = $this->commitFrom($root, .4);
@@ -175,17 +175,14 @@ class ChargeBoundaryTragedyTest extends TestCase
         $this->assertSame(1, Tragedy::distinct()->count('context_horizon_id'));
         $this->assertDatabaseCount('tragedies', 2);
         $this->assertSame(2, Receipt::where('type', 'tragedy')->count());
-        $read = $this->node($this->phase($this->origin, PhaseKind::Constrain), $this->origin);
-        $later = $this->phase($read, PhaseKind::Disperse);
-        app(ContributionDispatcher::class)->dispatch($later->cycle->participant, $later,
-            ['action' => 'proposition.variant', 'statement' => 'Only the origin Region repeats catastrophe']);
-        $this->assertDatabaseHas('commit_region_exhaustions', ['governing_committal_id' => $this->origin->id]);
-        $this->assertDatabaseMissing('commit_region_exhaustions', ['governing_committal_id' => $seed->id]);
-        $this->assertFalse(app(ExhaustionService::class)->unavailable($seed));
+        $this->assertDatabaseHas('commit_region_exhaustions', ['governing_committal_id' => $this->origin->id,
+            'descendant_exhaustion_id' => $seed->id]);
+        $this->assertDatabaseHas('commit_region_exhaustions', ['governing_committal_id' => $seed->id]);
+        $this->assertTrue(app(ExhaustionService::class)->unavailable($seed));
 
     }
 
-    public function test_repeated_boundary_births_retain_the_first_identity_and_exhaust(): void
+    public function test_later_direct_encounter_retains_first_identity_and_exhausts(): void
     {
         $firstPhase = $this->phase($this->origin, PhaseKind::Distinguish);
         $read = $this->node($this->phase($this->origin, PhaseKind::Constrain), $this->origin);
@@ -195,8 +192,10 @@ class ChargeBoundaryTragedyTest extends TestCase
             ['action' => 'proposition.variant', 'statement' => 'First boundary contact']);
         $tragedy = Tragedy::sole()->getAttributes();
         $receipt = Receipt::where('type', 'tragedy')->sole()->getAttributes();
-        $second = app(ContributionDispatcher::class)->dispatch($secondPhase->cycle->participant, $secondPhase,
-            ['action' => 'proposition.variant', 'statement' => 'Later boundary contact']);
+        // Observer component: Resolution cannot author a second Variant.
+        $second = $read;
+        $this->measure($second, 1);
+        DB::transaction(fn () => app(TragedyService::class)->record($second, $secondPhase, 'instrument.execute'));
         $this->assertNotSame($first->id, $second->id);
         $this->assertSame($tragedy, Tragedy::sole()->getAttributes());
         $this->assertSame($receipt, Receipt::where('type', 'tragedy')->sole()->getAttributes());
@@ -214,7 +213,7 @@ class ChargeBoundaryTragedyTest extends TestCase
         $this->assertDatabaseCount('commit_region_exhaustions', 1);
     }
 
-    public function test_second_boundary_rollback_restores_open_region_and_warrant(): void
+    public function test_later_encounter_rollback_restores_resolution_and_warrant(): void
     {
         $firstPhase = $this->phase($this->origin, PhaseKind::Distinguish);
         $read = $this->node($this->phase($this->origin, PhaseKind::Constrain), $this->origin);
@@ -226,8 +225,8 @@ class ChargeBoundaryTragedyTest extends TestCase
         $before = Proposition::count();
         try {
             DB::transaction(function () use ($phase): void {
-                app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
-                    ['action' => 'proposition.variant', 'statement' => 'Rolled back second catastrophe']);
+                $this->measure($phase->gate, -1);
+                app(TragedyService::class)->record($phase->gate, $phase, 'instrument.execute');
                 $this->assertDatabaseCount('commit_region_exhaustions', 1);
                 throw new \DomainException('rollback second');
             });
@@ -250,9 +249,9 @@ class ChargeBoundaryTragedyTest extends TestCase
         DB::transaction(fn () => app(TragedyService::class)->record($first, $first->phase, 'proposition.variant'));
         $historical = $first->fresh();
         $this->measure($historical, -1);
-        $this->assertNull(app(TragedyService::class)->record($historical, $historical->phase, 'proposition.variant'));
+        // Passive recalculation has no action witness and never calls the observer.
         $this->publishPotentialFixture($this->substrate, true);
-        $this->assertDatabaseCount('commit_region_exhaustions', 0);
+        $this->assertDatabaseCount('commit_region_exhaustions', 1);
         $this->assertDatabaseCount('tragedies', 1);
     }
 

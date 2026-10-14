@@ -58,7 +58,14 @@ final class TerminalContinuationService
     /** Persisted siblings are alternatives; absence of evidence is not historical termination. */
     public function remaining(string $seed, array $graph): Collection
     {
-        return $graph['nodes']->filter(fn ($node) => $node->tier === 'expressive'
-            && $node->entry_committal_id === $seed && ! $graph['closed']->has($node->id))->keys();
+        $members = $graph['nodes']->filter(fn ($node) => $node->tier === 'expressive'
+            && $node->entry_committal_id === $seed);
+        $exits = $graph['edges']->filter(fn ($edge) => $edge->type === 'commit'
+            && $members->has($edge->source_proposition_id))->pluck('target_proposition_id');
+
+        // A later encounter of an old expressive source cannot erase its already
+        // established, independently continuing Committal descendant.
+        return $members->keys()->merge($exits)->unique()
+            ->reject(fn ($id) => $graph['closed']->has($id))->values();
     }
 }

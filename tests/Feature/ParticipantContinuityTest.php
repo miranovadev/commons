@@ -155,8 +155,9 @@ class ParticipantContinuityTest extends TestCase
         $this->assertSame($origin->id, $rested['plan']['gate_id']);
         $this->assertSame($commit->id, Tragedy::sole()->opening_proposition_id);
         $this->assertSame($cycle->context_horizon_id, $rested['cycle']['context_horizon_id']);
-        $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($next->contextHorizon));
-        $this->assertDatabaseCount('commit_region_exhaustions', 0);
+        // The sole terminal continuation now exhausts immediately; recovery geometry is unchanged.
+        $this->assertTrue(app(ExhaustionService::class)->boundaryExhausted($next->contextHorizon));
+        $this->assertDatabaseCount('commit_region_exhaustions', 1);
         $this->assertSame('settlement', $rested['domain']);
         $this->assertSame('signal', $rested['plan']['phase']['write_register']);
         $this->assertSame($horizons, ContextHorizon::orderBy('sequence')->get()->map(fn ($h) => Arr::except($h->getAttributes(), ['updated_at']))->all());

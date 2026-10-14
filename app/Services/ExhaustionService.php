@@ -94,8 +94,22 @@ final class ExhaustionService
         if ($encounter === null || ($descendant === null && $encounter->governing_committal_id !== $seed->id)) {
             throw new \DomainException('Exhaustion requires an authoritative terminal cause.');
         }
-        if ($descendant !== null && ! DB::table('commit_region_exhaustions')->where('governing_committal_id', $descendant)->exists()) {
-            throw new \DomainException('A continuing descendant cannot prove parent exhaustion.');
+        if ($descendant !== null) {
+            $exit = DB::table('supersessions as edge')
+                ->join('propositions as source', 'source.id', '=', 'edge.source_proposition_id')
+                ->join('phases as phase', 'phase.id', '=', 'source.phase_id')
+                ->join('cycles as cycle', 'cycle.id', '=', 'phase.cycle_id')
+                ->where('source.tier', 'expressive')->where('cycle.entry_committal_id', $seed->id)
+                ->where('edge.type', 'commit')->where('edge.target_proposition_id', $descendant)->exists();
+            if (! $exit || ! DB::table('commit_region_exhaustions')->where('governing_committal_id', $descendant)->exists()) {
+                throw new \DomainException('Parent Exhaustion requires its own genuinely committed exhausted descendant.');
+            }
+        }
+        $tragedy = Tragedy::where('governing_committal_id', $seed->id)->first();
+        if ($tragedy === null) {
+            // Exploration still permits ordinary Variant opportunities. A child
+            // proof does not fabricate a regional Tragedy or Resolution restriction.
+            return false;
         }
         $substrateId = $seed->phase->cycle->participant->substrate_id;
         $graph = app(TerminalContinuationService::class)->graph($substrateId);
@@ -104,7 +118,6 @@ final class ExhaustionService
             return false;
         }
         $horizon = app(ContextHorizonProjector::class)->forEntry($seed);
-        $tragedy = Tragedy::where('governing_committal_id', $seed->id)->first();
         $changed = DB::table('commit_region_exhaustions')->insertOrIgnore([
             'governing_committal_id' => $seed->id,
             'context_horizon_id' => $horizon->id, 'tragedy_id' => $tragedy?->id, 'receipt_id' => $tragedy?->receipt_id,

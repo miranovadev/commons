@@ -404,12 +404,7 @@ class HomologousBiasTest extends TestCase
         $this->edge($middle, $terminal, 'commit');
         $phase = $this->phase($terminal, $terminal, PhaseKind::Distinguish);
         $tragedy = $this->boundaryTragedyFixture($phase->gate);
-        DB::table('commit_region_exhaustions')->insert([
-            'governing_committal_id' => $terminal->id, 'context_horizon_id' => $phase->cycle->context_horizon_id,
-            'tragedy_id' => $tragedy->id, 'receipt_id' => $tragedy->receipt_id, 'phase_id' => $phase->id,
-            'terminal_proposition_id' => $terminal->id, 'observed_field_version' => 1, 'exhausted_at' => now(),
-        ]);
-        app(RegionalExhaustionMembership::class)->publish($terminal->id, [$terminal->id]);
+        $this->assertDatabaseHas('commit_region_exhaustions', ['governing_committal_id' => $terminal->id]);
         $this->measure($this->gateB, -.7);
         $context = new ParticipationContext($this->bias);
         $this->assertFalse($context->propositions->has($middle->id));
@@ -618,12 +613,12 @@ class HomologousBiasTest extends TestCase
 
     private function warrant(): Tragedy
     {
-        $gate = $this->bias->gate;
-        $values = $gate->measurement;
-        $tragedy = $this->boundaryTragedyFixture($gate);
-        app(PropositionMeasurementService::class)->project($gate, $values->correspondence, $values->chirality, $values->closure);
+        // Isolated homology/Receipt component fixture: the warrant belongs to a
+        // separate terminated branch. The active Bias Gate was never terminal.
+        $terminal = $this->position($this->a, PhaseKind::Distinguish);
+        $this->edge($this->a, $terminal, 'variant');
 
-        return $tragedy;
+        return $this->boundaryTragedyFixture($terminal);
     }
 
     private function source(Proposition $entry, bool $attest = true): Proposition

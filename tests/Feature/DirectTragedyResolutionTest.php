@@ -10,7 +10,6 @@ use App\Services\ContributionDispatcher;
 use App\Services\ExhaustionAuditService;
 use App\Services\ExhaustionService;
 use App\Services\PhaseGenerationService;
-use App\Services\PropositionMeasurementService;
 use App\Services\TerminalContinuationService;
 use App\Services\TragedyService;
 use Illuminate\Database\QueryException;
@@ -18,6 +17,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Fixtures\ExhaustionFixture;
+use Tests\Fixtures\GovernedExpressionFixture;
 use Tests\TestCase;
 
 /** Lifecycle component coverage with explicit numerical fields; not natural catastrophe trajectories. */
@@ -44,6 +44,65 @@ class DirectTragedyResolutionTest extends TestCase
             'phase_id' => $phase->id, 'participant_id' => $phase->cycle->participant_id, 'action' => 'proposition.variant']);
         $this->assertTrue(app(ExhaustionService::class)->unavailable($this->origin));
         $this->assertTrue(app(ExhaustionAuditService::class)->inspect($this->substrate->id)['matches']);
+    }
+
+    public function test_authorised_instrument_encounters_its_existing_zero_target(): void
+    {
+        $fixture = new GovernedExpressionFixture;
+        $fixture->writePersist();
+        $this->measure($fixture->expression, 1);
+        app(ContributionDispatcher::class)->dispatch($fixture->actor, $fixture->phase,
+            ['action' => 'instrument.execute', 'proposition_id' => $fixture->expression->id,
+                'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/direct-terminal']]);
+        $this->assertDatabaseHas('terminal_encounters', ['proposition_id' => $fixture->expression->id,
+            'action' => 'instrument.execute', 'participant_id' => $fixture->actor->id]);
+        $this->assertSame(1, $fixture->expression->instrumentExecutions()->count());
+    }
+
+    public static function attestationResults(): array
+    {
+        return [[1.0, true], [.5, false]];
+    }
+
+    #[DataProvider('attestationResults')]
+    public function test_authorised_attestation_observes_resulting_not_previous_charge(float $result, bool $terminal): void
+    {
+        $fixture = new GovernedExpressionFixture;
+        $fixture->writePersist();
+        app(ContributionDispatcher::class)->dispatch($fixture->actor, $fixture->phase,
+            ['action' => 'instrument.execute', 'proposition_id' => $fixture->expression->id,
+                'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/attested-terminal']]);
+        $this->measure($fixture->expression, 1);
+        $this->resolveExpressiveFieldFixture($result);
+        app(ContributionDispatcher::class)->dispatch($fixture->actor, $fixture->phase,
+            ['action' => 'attestation.create', 'proposition_id' => $fixture->expression->id, 'direction' => 'support']);
+        $this->assertSame($terminal, DB::table('terminal_encounters')->where('proposition_id', $fixture->expression->id)->exists());
+        $this->assertSame(1, $fixture->expression->effectiveAttestations()->count());
+    }
+
+    public function test_authorised_expressive_traverse_encounters_an_already_zero_write(): void
+    {
+        $fixture = new GovernedExpressionFixture;
+        $dispatcher = app(ContributionDispatcher::class);
+        $dispatcher->dispatch($fixture->actor, $fixture->phase,
+            ['action' => 'instrument.execute', 'proposition_id' => $fixture->expression->id,
+                'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/traverse-terminal']]);
+        $dispatcher->dispatch($fixture->actor, $fixture->phase,
+            ['action' => 'attestation.create', 'proposition_id' => $fixture->expression->id, 'direction' => 'support']);
+        // Structural revisit component: real Cycle ownership and earlier effective
+        // Attestation. This is not a claim that a full intervening Cycle ran.
+        $cycle = (new \App\Models\Cycle)->forceFill(['participant_id' => $fixture->actor->id,
+            'sequence' => 2, 'entry_committal_id' => $fixture->origin->id,
+            'context_horizon_id' => $fixture->phase->cycle->context_horizon_id]);
+        $cycle->save();
+        $phase = (new \App\Models\Phase)->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Distinguish,
+            'gate_proposition_id' => $fixture->origin->id, 'write_register' => $fixture->expression->register, 'started_at' => now()]);
+        $phase->save();
+        $this->measure($fixture->expression, 1);
+        $dispatcher->dispatch($fixture->actor, $phase,
+            ['action' => 'proposition.traverse', 'proposition_id' => $fixture->expression->id]);
+        $this->assertDatabaseHas('terminal_encounters', ['proposition_id' => $fixture->expression->id,
+            'phase_id' => $phase->id, 'action' => 'proposition.traverse']);
     }
 
     public static function encounters(): array

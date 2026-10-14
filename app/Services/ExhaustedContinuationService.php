@@ -21,7 +21,15 @@ final class ExhaustedContinuationService
     {
         $result = collect();
         foreach (DB::table('context_horizons')->whereIn('id', $horizons)->distinct()->pluck('substrate_id') as $substrate) {
-            $result = $result->union(app(TerminalContinuationService::class)->graph($substrate)['closed']);
+            $hasEvents = DB::table('terminal_encounters as encounter')
+                ->join('participants as actor', 'actor.id', '=', 'encounter.participant_id')
+                ->where('actor.substrate_id', $substrate)->exists();
+            $hasProof = DB::table('commit_region_exhaustions as proof')
+                ->join('context_horizons as horizon', 'horizon.id', '=', 'proof.context_horizon_id')
+                ->where('horizon.substrate_id', $substrate)->exists();
+            if ($hasEvents || $hasProof) {
+                $result = $result->union(app(TerminalContinuationService::class)->graph($substrate)['closed']);
+            }
         }
 
         return $result;

@@ -37,21 +37,12 @@ flush();
 
 try {
     match ($input['operation']) {
-        'fresh-boundary' => DB::transaction(function () use ($input): void {
-            Substrate::whereKey($input['substrate_id'])->lockForUpdate()->firstOrFail();
-            // Publication-level race: each accepted birth has its own real provenance.
-            // Dispatcher stale-plan rejection is exercised separately.
+        'terminal-encounter' => DB::transaction(function () use ($input): void {
+            Substrate::query()->lockForUpdate()->findOrFail($input['substrate_id']);
+            $target = Proposition::findOrFail($input['proposition_id']);
             $phase = Phase::findOrFail($input['phase_id']);
-            $target = (new Proposition)->forceFill(['phase_id' => $phase->id, 'register' => $phase->write_register,
-                'tier' => 'expressive', 'statement' => 'Concurrent fresh catastrophe']);
-            $target->save();
-            app(LedgerService::class)->record($target);
-            $edge = (new Supersession)->forceFill(['phase_id' => $phase->id,
-                'source_proposition_id' => $phase->gate_proposition_id, 'target_proposition_id' => $target->id, 'type' => 'variant']);
-            $edge->save();
-            app(LedgerService::class)->record($edge);
-            app(PropositionMeasurementService::class)->project($target, -1, -1, -1);
-            app(TragedyService::class)->record($target, $target->phase, 'proposition.variant');
+            // Post-authorisation observer concurrency component; no fabricated birth.
+            app(TragedyService::class)->record($target, $phase, 'instrument.execute');
         }),
         'closure-contribute-conflict' => (function () use ($input): void {
             $participant = Participant::findOrFail($input['participant_id']);

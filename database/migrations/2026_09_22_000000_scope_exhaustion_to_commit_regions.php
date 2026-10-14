@@ -23,8 +23,8 @@ return new class extends Migration
         Schema::create('commit_region_exhaustions', function (Blueprint $table): void {
             $table->foreignUlid('governing_committal_id')->primary()->constrained('propositions')->restrictOnDelete();
             $table->foreignUlid('context_horizon_id')->index()->constrained()->restrictOnDelete();
-            $table->foreignUlid('tragedy_id')->nullable()->unique()->constrained('tragedies')->restrictOnDelete();
-            $table->foreignUlid('receipt_id')->nullable()->unique()->constrained()->restrictOnDelete();
+            $table->foreignUlid('tragedy_id')->unique()->constrained('tragedies')->restrictOnDelete();
+            $table->foreignUlid('receipt_id')->unique()->constrained()->restrictOnDelete();
             $table->foreignUlid('phase_id')->constrained()->restrictOnDelete();
             $table->foreignUlid('terminal_proposition_id')->constrained('propositions')->restrictOnDelete();
             $table->unsignedBigInteger('observed_field_version');
