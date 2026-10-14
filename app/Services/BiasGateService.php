@@ -56,7 +56,8 @@ final readonly class BiasGateService
             ->concat(app(HomologousBiasService::class)->forPhase($phase, $context))
             ->unique('id')
                 // Resolve each source class (including full population dominance) first.
-            ->filter(fn (Proposition $source): bool => app(ChiralityGateService::class)->evaluate($source, $context)['admissible'])
+            ->filter(fn (Proposition $source): bool => ! app(ExhaustedContinuationService::class)->ids($phase, $context)->has($source->id)
+                && app(ChiralityGateService::class)->evaluate($source, $context)['admissible'])
             ->sortBy('id')->values());
     }
 }

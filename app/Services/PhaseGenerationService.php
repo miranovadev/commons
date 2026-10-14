@@ -25,6 +25,10 @@ final readonly class PhaseGenerationService
 
     public function available(Phase $phase, string $action, ?ParticipationContext $context = null, ?Proposition $position = null): bool
     {
+        if (in_array($action, ['proposition.variant', 'proposition.revise'], true)
+            && DB::table('tragedies')->where('governing_committal_id', $phase->cycle->entry_committal_id)->exists()) {
+            return false;
+        }
         $exhausted = app(ExhaustedContinuationService::class)->ids($phase, $context);
         if ($exhausted->has($phase->gate_proposition_id) || ($position !== null && $exhausted->has($position->id))) {
             return false;

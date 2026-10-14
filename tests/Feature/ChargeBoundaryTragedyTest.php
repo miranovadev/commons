@@ -247,10 +247,10 @@ class ChargeBoundaryTragedyTest extends TestCase
         $this->resolveExpressiveFieldFixture(1);
         $first = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
             ['action' => 'proposition.variant', 'statement' => 'Only one fresh event']);
-        DB::transaction(fn () => app(TragedyService::class)->record($first));
+        DB::transaction(fn () => app(TragedyService::class)->record($first, $first->phase, 'proposition.variant'));
         $historical = $first->fresh();
         $this->measure($historical, -1);
-        $this->assertNull(app(TragedyService::class)->record($historical));
+        $this->assertNull(app(TragedyService::class)->record($historical, $historical->phase, 'proposition.variant'));
         $this->publishPotentialFixture($this->substrate, true);
         $this->assertDatabaseCount('commit_region_exhaustions', 0);
         $this->assertDatabaseCount('tragedies', 1);
@@ -259,7 +259,7 @@ class ChargeBoundaryTragedyTest extends TestCase
     public function test_committal_and_maintenance_measurements_do_not_create_tragedy(): void
     {
         $this->measure($this->origin, 1);
-        $this->assertNull(app(TragedyService::class)->record($this->origin));
+        $this->assertNull(app(TragedyService::class)->record($this->origin, $this->origin->phase, 'proposition.variant'));
         $target = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
         $this->measure($target, 1);
         $this->publishPotentialFixture($this->substrate, true);

@@ -527,7 +527,7 @@ class TransactionLockOrderTest extends TestCase
         $this->measure($first, 1);
         $this->whileWorkerWaits($this->substrate, ['operation' => 'fresh-boundary',
             'substrate_id' => $this->substrate->id, 'phase_id' => $second->id],
-            fn () => app(TragedyService::class)->record($first));
+            fn () => app(TragedyService::class)->record($first, $first->phase, 'proposition.variant'));
         $this->assertSame($first->id, Tragedy::sole()->terminal_proposition_id);
         $this->assertSame(1, Receipt::where('type', 'tragedy')->count());
         $this->assertDatabaseCount('tragedy_final_attempts', 0);
@@ -576,7 +576,7 @@ class TransactionLockOrderTest extends TestCase
         $before = Proposition::count();
         $this->whileWorkerWaits($this->substrate, ['operation' => 'fresh-boundary',
             'substrate_id' => $this->substrate->id, 'phase_id' => $second->id],
-            fn () => app(TragedyService::class)->record($first));
+            fn () => app(TragedyService::class)->record($first, $first->phase, 'proposition.variant'));
         $this->assertSame($before + 1, Proposition::count());
         $this->assertDatabaseCount('tragedies', 1);
         $this->assertDatabaseCount('commit_region_exhaustions', 1);

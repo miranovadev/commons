@@ -51,7 +51,7 @@ try {
             $edge->save();
             app(LedgerService::class)->record($edge);
             app(PropositionMeasurementService::class)->project($target, -1, -1, -1);
-            app(TragedyService::class)->record($target);
+            app(TragedyService::class)->record($target, $target->phase, 'proposition.variant');
         }),
         'closure-contribute-conflict' => (function () use ($input): void {
             $participant = Participant::findOrFail($input['participant_id']);

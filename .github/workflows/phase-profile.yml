@@ -26,7 +26,7 @@ jobs:
       fail-fast: false
       matrix:
         database: [sqlite, pgsql]
-        validation: [contracts, fixtures, lifecycle, committed-history, final-review]
+        validation: [contracts, fixtures, lifecycle, committed-history, final-review, stage-four]
     runs-on: ubuntu-latest
     timeout-minutes: 8
     services:
@@ -86,6 +86,9 @@ jobs:
       - name: Further authorised Commit history
         if: always() && matrix.validation == 'committed-history'
         run: php artisan test tests/Feature/CommitDescendantHistoryLifecycleTest.php --display-warnings
+      - name: Direct Tragedy and Resolution contracts
+        if: always() && matrix.validation == 'stage-four'
+        run: php artisan test tests/Feature/DirectTragedyResolutionTest.php --display-warnings
       - name: Formatting and whitespace
         if: always() && matrix.validation == 'contracts'
         run: |

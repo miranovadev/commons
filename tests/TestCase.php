@@ -196,7 +196,7 @@ abstract class TestCase extends BaseTestCase
         $tragedy = DB::transaction(function () use ($terminal) {
             app(PropositionMeasurementService::class)->project($terminal, 1, 1, 1);
 
-            return app(TragedyService::class)->record($terminal);
+            return app(TragedyService::class)->record($terminal, $terminal->phase, 'proposition.variant');
         });
         $this->assertNotNull($tragedy);
         $this->publishPotentialFixture($terminal->phase->cycle->participant);
