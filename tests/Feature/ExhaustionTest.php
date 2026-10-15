@@ -16,7 +16,7 @@ use Tests\Fixtures\ExhaustionFixture;
 use Tests\Fixtures\ParticipationScaleFixture;
 use Tests\TestCase;
 
-/** Repeated fresh Charge-boundary proof governs regional retirement. */
+/** Controlled regional/recovery components; committed coordinates are not end-to-end Commit evidence. */
 class ExhaustionTest extends TestCase
 {
     use ExhaustionFixture, RefreshDatabase;
@@ -42,20 +42,6 @@ class ExhaustionTest extends TestCase
         return [$opening, $phase, Tragedy::sole()];
     }
 
-    private function exhaustSecondBoundary(): array
-    {
-        [$opening, $first, $tragedy] = $this->tragicChild();
-        $gate = $this->node($this->phase($opening, PhaseKind::Constrain), $opening);
-        $phase = $this->phase($gate, PhaseKind::Disperse);
-        $this->resolveExpressiveFieldFixture(1);
-        $result = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
-            ['action' => 'proposition.variant', 'statement' => 'Repeated Charge boundary']);
-        $terminal = $this->phase($result);
-        $this->rest($terminal);
-
-        return [$opening, $terminal, $tragedy];
-    }
-
     public function test_fresh_zero_potential_basin_remains_open_and_recovers_locally(): void
     {
         $root = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
@@ -69,7 +55,7 @@ class ExhaustionTest extends TestCase
         $this->assertDatabaseCount('tragedies', 0);
     }
 
-    public function test_tragedy_does_not_close_the_opening_committal_or_move_other_participants(): void
+    public function test_last_continuation_closes_its_committal_without_moving_other_participants(): void
     {
         [, $first, $other, $commit] = $this->exhaustedBranch();
         $before = $other->cycle->participant->fresh()->getAttributes();
@@ -77,18 +63,18 @@ class ExhaustionTest extends TestCase
         $this->boundaryTragedyFixture($first->gate);
         $this->rest($first);
         $this->assertDatabaseCount('tragedies', 1);
-        $this->assertDatabaseCount('commit_region_exhaustions', 0);
+        $this->assertDatabaseCount('commit_region_exhaustions', 1);
         $this->assertSame($propositions, Proposition::count());
-        $this->assertFalse(app(ExhaustionService::class)->unavailable($commit));
+        $this->assertTrue(app(ExhaustionService::class)->unavailable($commit));
         $this->assertSame($before, $other->cycle->participant->fresh()->getAttributes());
         $this->assertNull($other->fresh()->completed_at);
         $this->assertDatabaseHas('propositions', ['id' => $this->origin->id]);
         $this->assertFalse(DB::table('origin_branches')->whereNotNull('pruned_at')->exists());
     }
 
-    public function test_first_failure_stops_at_child_horizon_and_final_failure_recovers_to_parent(): void
+    public function test_immediate_exhaustion_authorises_recorded_parent_recovery(): void
     {
-        [$opening, $terminal] = $this->exhaustSecondBoundary();
+        [$opening, $terminal] = $this->tragicChild();
         $horizon = $terminal->cycle->contextHorizon;
         $this->assertTrue(app(ExhaustionService::class)->boundaryExhausted($horizon));
         $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($horizon->parent));
@@ -139,30 +125,29 @@ class ExhaustionTest extends TestCase
         $this->assertFalse(app(ExhaustionService::class)->unavailable($root));
         $audit = app(ExhaustionAuditService::class)->inspect($this->substrate->id);
         $this->assertTrue($audit['matches']);
-        $this->assertSame(1, $audit['legacy_holds']);
+        // Obsolete retirement markers cannot become terminal event authority.
+        $this->assertDatabaseCount('terminal_encounters', 0);
         $this->assertDatabaseCount('commit_region_exhaustions', 0);
     }
 
-    public function test_audit_accepts_first_tragedy_without_exhaustion(): void
+    public function test_audit_accepts_immediate_exhaustion(): void
     {
         $this->tragicChild();
         $audit = app(ExhaustionAuditService::class)->inspect($this->substrate->id);
         $this->assertTrue($audit['matches'], json_encode($audit));
-        $this->assertDatabaseCount('commit_region_exhaustions', 0);
+        $this->assertDatabaseCount('commit_region_exhaustions', 1);
     }
 
-    public function test_audit_accepts_second_boundary_without_consumption_or_rest_authority(): void
+    public function test_audit_preserves_terminal_proof_independently_of_rest_and_consumption(): void
     {
-        [, $phase, $tragedy] = $this->exhaustSecondBoundary();
+        [, $phase, $tragedy] = $this->tragicChild();
         $this->assertDatabaseMissing('receipt_consumptions', ['receipt_id' => $tragedy->receipt_id]);
         $audit = app(ExhaustionAuditService::class)->inspect($this->substrate->id);
         $this->assertTrue($audit['matches'], json_encode($audit));
         DB::table('cycles')->where('id', $phase->cycle_id)->update(['rest_reason' => 'no_available_move']);
         $this->assertTrue(app(ExhaustionAuditService::class)->inspect($this->substrate->id)['matches']);
-        DB::table('commit_region_exhaustions')->update(['boundary_field' => '{"charge":0.2,"tension":0.8}']);
-        $audit = app(ExhaustionAuditService::class)->inspect($this->substrate->id);
-        $this->assertFalse($audit['matches']);
-        $this->assertSame([$tragedy->governing_committal_id], $audit['invalid_boundary_witnesses']);
+        $this->expectException(\Illuminate\Database\QueryException::class);
+        DB::transaction(fn () => DB::table('commit_region_exhaustions')->update(['boundary_field' => '{"charge":0.2,"tension":0.8}']));
     }
 
     #[Group('query')]

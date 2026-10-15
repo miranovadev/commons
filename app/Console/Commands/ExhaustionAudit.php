@@ -10,7 +10,7 @@ class ExhaustionAudit extends Command
 {
     protected $signature = 'commons:exhaustion-audit {substrate : Substrate ID}';
 
-    protected $description = 'Audit regional first/later Charge-boundary proofs and archived exhaustion compatibility.';
+    protected $description = 'Audit immutable direct terminal encounters and recursive regional Exhaustion proofs.';
 
     public function handle(ExhaustionAuditService $audit): int
     {

@@ -1,8 +1,8 @@
 # Exploration epochs and spent continuations
 
-> **Current epoch mechanics, with proposed regional override.** Ordinary
+> **Epoch mechanics under the approved regional lifecycle.** Ordinary
 > Variant eligibility and epoch-relative spentness below remain the deployed
-> behaviour. Under the [Resolution target](tragedy-resolution-target.md),
+> behaviour during Exploration. Under the [Resolution target](tragedy-resolution-target.md),
 > first Tragedy prohibits Variant and Revise throughout the owning Region;
 > terminal continuation authority is distinct from epoch-relative spentness
 > and cannot be reopened by a later Variant epoch.
@@ -40,15 +40,18 @@ No edge means no movement.
   eligible for Traverse or further Attestation.
 - **Generation invariant:** When all current expressive continuations at a
   structural position are spent, Variant becomes
-  available, subject to the existing evidence prerequisites.
+  available during Exploration, subject to the existing evidence prerequisites.
+  Resolution prohibits Variant and Revise throughout the owning Region.
 - **Healthy-lineage invariant:** A viable existing continuation remains
   actionable and must not cause redundant Variant generation.
 - **Potential invariant:** Potential describes demonstrated reduction in absolute
   Tension; it does not decide whether expression is possible. Zero Potential
   neither suppresses a structurally valid Variant nor marks paths spent or
   proves Horizon Exhaustion.
-- **Tragedy invariant:** The first fresh expressive proposition at zero resolved
-  Charge creates the unique Region Tragedy. Potential and Rest do not create it.
+- **Tragedy invariant:** A qualifying direct expressive Write encounter at resulting
+  canonical Charge zero creates the unique Region Tragedy and permanently
+  terminates that continuation, including an already-zero target. Passive updates,
+  reads, Potential and Rest do not create it.
 - **Exhaustion invariant:** Horizon Exhaustion remains permanent and
   Commit-Region-scoped via `commit_region_exhaustions`; Horizon timestamps summarize boundary consequences only.
 - **Visibility invariant:** Spent expressive propositions remain contextual
@@ -95,7 +98,10 @@ Disperse epoch 7. Creating B at Distinguish advances 3 to 4; A's earlier failure
 remains historical, while X remains spent at epoch 7. Creating Y at Disperse
 advances 7 to 8 and only then reopens X.
 
-## Persistence and rollout
+## Historical persistence and rollout
+
+These earlier migration notes are retained for provenance. Stage 4 deployment uses
+a fresh database; no historical conversion or backfill is required.
 
 `horizon_exploration_states` has one row per Horizon + producing kind +
 `structural_source_id` (the actual source/Gate proposition).

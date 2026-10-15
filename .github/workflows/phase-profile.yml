@@ -26,7 +26,7 @@ jobs:
       fail-fast: false
       matrix:
         database: [sqlite, pgsql]
-        validation: [contracts, fixtures, lifecycle, committed-history, final-review]
+        validation: [contracts, fixtures, lifecycle, committed-history, final-review, stage-four]
     runs-on: ubuntu-latest
     timeout-minutes: 8
     services:
@@ -86,6 +86,15 @@ jobs:
       - name: Further authorised Commit history
         if: always() && matrix.validation == 'committed-history'
         run: php artisan test tests/Feature/CommitDescendantHistoryLifecycleTest.php --display-warnings
+      - name: Direct Tragedy and Resolution contracts
+        if: always() && matrix.validation == 'stage-four'
+        run: php artisan test tests/Feature/DirectTragedyResolutionTest.php tests/Unit/TerminalContinuationTest.php tests/Feature/RegionalExhaustionMigrationTest.php --display-warnings
+      - name: Terminal publication concurrency
+        if: always() && matrix.validation == 'stage-four' && matrix.database == 'pgsql'
+        run: php artisan test tests/Feature/TransactionLockOrderTest.php --filter='concurrent_terminal_observers|concurrent_repeat_observation' --display-warnings
+      - name: Stage 4 formatting
+        if: always() && matrix.validation == 'stage-four'
+        run: vendor/bin/pint --test -v app/Console/Commands/InspectPotential.php app/Console/Commands/InspectRecovery.php app/Services/ParticipantPhaseInstructions.php app/Services/PropositionOptionService.php app/Services/TerminalContinuationService.php app/Services/TragedyService.php app/Services/ExhaustionService.php app/Services/ExhaustionAuditService.php app/Services/ExhaustedContinuationService.php database/migrations/2026_10_14_000000_record_terminal_encounters.php tests/Feature/DirectTragedyResolutionTest.php tests/Unit/TerminalContinuationTest.php
       - name: Formatting and whitespace
         if: always() && matrix.validation == 'contracts'
         run: |

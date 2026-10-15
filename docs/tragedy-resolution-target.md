@@ -1,10 +1,8 @@
-# Proposed Tragedy, Resolution and recursive Exhaustion
+# Tragedy, Resolution and recursive Exhaustion
 
-> **Target semantic contract for review; NOT deployed.** Current production
-> still uses the first and later **fresh expressive birth** Charge-zero
-> predicates described in [the deployed lifecycle](branch-tragedy.md).
-> This proposal supersedes those predicates only when a separate implementation
-> is approved. The [ten Core Invariants](core-invariants.md) always govern.
+> **Approved Stage 4 contract.** Replaces the first/later fresh-birth predicate.
+> Deployment uses a fresh database; no historical proof conversion or compatibility
+> layer is required. The [ten Core Invariants](core-invariants.md) always govern.
 
 ## Identity and scope
 
@@ -110,8 +108,9 @@ original Tragedy and Receipt, terminating contribution or descendant
 exhaustion event, evaluated field/structural version, remaining
 continuation outcome and exhaustion time. This is a **semantic proof
 shape**, not an assertion that the deployed schema already has these
-columns. Historical second-boundary proofs remain immutable records of
-the rules under which they were created.
+columns. Previous experimental databases are retained separately as versioned dumps;
+this installation does not import or reinterpret their proofs. All Stage 4
+event evidence is immutable.
 
 ## Rest and recovery
 
@@ -143,10 +142,11 @@ termination exhausts C1. The traversal/recovery path remains causal.
 A lawful direct Attestation/Instrument/Traverse that encounters P4
 still at zero qualifies; Rest does not.
 
-## Not changed by this proposal
+## Unchanged contracts
 
 No change to the ten invariants, causal ownership, measurement formulas,
 Origin grounding, ordinary Receipt semantics, direction hysteresis,
 Commit preservation, inverse-square attenuation or the existing
-backward recovery path. The [observable targets](semantic-reconciliation-status.md)
-are a separate proposal; Tension-only attenuation remains unresolved.
+backward recovery path. Correspondence C1, Chirality vNext, prospective Closure and attenuation A
+remain as implemented in Stages 1–3. The separate Rest crossover calculation
+is outside Stage 4.

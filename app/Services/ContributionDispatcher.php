@@ -138,12 +138,15 @@ final readonly class ContributionDispatcher
                 // loads, before observing its field boundary. Existing propositions
                 // (Traverse, Attestation, Instrument) and Committals are not births.
                 $this->measurements->recalculate($result);
-                app(TragedyService::class)->record($result);
+
             }
 
             if ($affectsChirality) {
                 app(ChiralityPopulationHistoryService::class)->observe($participant->substrate_id);
             }
+            // Observe only the actual contribution target after its authorised events.
+            // Reading the stored resolved measurement does not add a measurement trigger.
+            app(TragedyService::class)->record($result, $phase, $action);
 
             return $result;
         });

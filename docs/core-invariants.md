@@ -118,7 +118,7 @@ previously frozen Committal snapshot.
 A historical terminal continuation remains terminal even if subsequent
 observations would give its Proposition positive Charge. This is historical
 authority, not numeric Charge hysteresis. See the
-[proposed Resolution lifecycle](tragedy-resolution-target.md).
+[approved Resolution lifecycle](tragedy-resolution-target.md).
 
 ### Zero does not erase direction
 
@@ -237,8 +237,8 @@ A Tragedy on one expressive continuation does not imply that every sibling
 continuation has failed. Region-wide restrictions must be explicitly granted by
 the Tragedy/Resolution operation. A successful Commit may carry a continuation
 into a descendant basin; exhaustion of that descendant can later close that
-route without independently closing viable siblings. These are proposed target
-semantics, not the deployed catastrophe predicate.
+route without independently closing viable siblings. These are the approved Stage 4
+semantics; historical second-catastrophe rules do not override them.
 
 ### Branching is not globally consumed
 
@@ -429,7 +429,7 @@ specific operation separately authorises an action.
 
 ### Exhausted regions are not entry destinations
 
-Under the proposed Resolution lifecycle, an exhausted governing Committal
+Under the approved Resolution lifecycle, an exhausted governing Committal
 remains historical but cannot be traversed or entered for a new Cycle. A
 participant already positioned in an exhausted Region receives Rest as the
 sole participation action; recovery still follows the actual recorded backward
@@ -476,8 +476,7 @@ new Core Invariant.
 | Register labels do not confer Phase identity or operation eligibility. | 3, 5, 8 | [Phase positions](phase-positions.md) |
 | Commit requires its complete grounding and admissibility contract; Origin has its explicitly distinct bootstrap contract. | 8, 9 | [Observable calculation](observables.md); [Attestation polarity](attestation-polarity.md) |
 | Supersession and later state changes preserve historical contributions and provenance. | 6, 9 | [Proposition observation](proposition-observation.md) |
-| Currently deployed first/later fresh Charge-boundary events create historical Tragedy/Exhaustion proofs without deleting prior history. | 5, 6, 9 | [Deployed Tragedy](branch-tragedy.md); [Deployed exhaustion](commit-region-exhaustion.md) |
-| Proposed direct-encounter Tragedy, Resolution and recursive exhaustion preserve distinct causal continuations and historical evidence. | 4, 5, 6, 8, 9, 10 | [Tragedy/Resolution target](tragedy-resolution-target.md) |
+| Approved direct-encounter Tragedy, Resolution and recursive exhaustion preserve distinct causal continuations and historical evidence. | 4, 5, 6, 8, 9, 10 | [Tragedy/Resolution target](tragedy-resolution-target.md) |
 | Proposed Phase Profile uses selected preceding-Phase birth stamps and neutral comparison slots, never invented observations. | 1, 5, 7, 9 | [Phase Profile target](phase-profile-target.md) |
 | Proposed Cycle-responsive Closure and Commit preservation do not rewrite frozen committed history. | 1, 4, 6, 7, 9 | [Prospective Closure target](prospective-closure-target.md) |
 | Recovery follows the recorded backward lineage and crosses Horizon boundaries only when the governing boundary permits it. | 5, 8, 10 | [Backward lineage recovery](backward-lineage-recovery.md); [Recovery basins](recovery-basins.md) |

@@ -13,6 +13,8 @@ on:
       - 'resources/js/components/PropositionContent.tsx'
       - 'resources/js/components/PropositionCard.tsx'
       - 'tests/ui/**'
+      - 'app/Services/TragedyService.php'
+      - 'app/Services/ExhaustionService.php'
       - '.github/workflows/inspector-ui.yml'
 
 permissions:

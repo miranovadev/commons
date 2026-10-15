@@ -1,0 +1,367 @@
+[
+  {
+    "test": "Tests\\Feature\\CausalRecoveryTest::test_boundary_region_exhaustion_permits_crossing_without_retiring_other_child_regions",
+    "baseline": "passed",
+    "final": "absent"
+  },
+  {
+    "test": "Tests\\Feature\\CausalRecoveryTest::test_committed_sibling_blocks_parent_exhaustion_until_its_own_route_terminates",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Feature\\CausalRecoveryTest::test_live_committed_descendant_prevents_boundary_exhaustion_and_backward_crossing",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Feature\\CausalRecoveryTest::test_same_horizon_regions_exhaust_independently_and_recovery_unwinds_c_b_a",
+    "baseline": "passed",
+    "final": "absent"
+  },
+  {
+    "test": "Tests\\Feature\\ChargeBoundaryTragedyTest::test_descendant_terminal_event_recursively_closes_resolving_parent",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Feature\\ChargeBoundaryTragedyTest::test_later_direct_encounter_retains_first_identity_and_exhausts",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Feature\\ChargeBoundaryTragedyTest::test_later_encounter_rollback_restores_resolution_and_warrant",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Feature\\ChargeBoundaryTragedyTest::test_repeated_boundary_births_retain_the_first_identity_and_exhaust",
+    "baseline": "passed",
+    "final": "absent"
+  },
+  {
+    "test": "Tests\\Feature\\ChargeBoundaryTragedyTest::test_second_boundary_rollback_restores_open_region_and_warrant",
+    "baseline": "passed",
+    "final": "absent"
+  },
+  {
+    "test": "Tests\\Feature\\ChargeBoundaryTragedyTest::test_two_regions_in_one_horizon_record_their_own_boundary_events",
+    "baseline": "passed",
+    "final": "absent"
+  },
+  {
+    "test": "Tests\\Feature\\DirectTragedyResolutionTest::test_authorised_attestation_observes_resulting_not_previous_charge#0",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Feature\\DirectTragedyResolutionTest::test_authorised_attestation_observes_resulting_not_previous_charge#1",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Feature\\DirectTragedyResolutionTest::test_authorised_expressive_traverse_encounters_an_already_zero_write",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Feature\\DirectTragedyResolutionTest::test_authorised_first_birth_can_exhaust_immediately",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Feature\\DirectTragedyResolutionTest::test_authorised_instrument_encounters_its_existing_zero_target",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Feature\\DirectTragedyResolutionTest::test_database_rejects_rewriting_event_authority#0",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Feature\\DirectTragedyResolutionTest::test_database_rejects_rewriting_event_authority#1",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Feature\\DirectTragedyResolutionTest::test_database_rejects_rewriting_event_authority#2",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Feature\\DirectTragedyResolutionTest::test_descendant_exhaustion_closes_only_its_parent_route_until_the_sibling_terminates",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Feature\\DirectTragedyResolutionTest::test_exhausted_region_plan_offers_rest_only",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Feature\\DirectTragedyResolutionTest::test_existing_zero_target_uses_encounter_actor_not_birth_actor#0",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Feature\\DirectTragedyResolutionTest::test_existing_zero_target_uses_encounter_actor_not_birth_actor#1",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Feature\\DirectTragedyResolutionTest::test_existing_zero_target_uses_encounter_actor_not_birth_actor#2",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Feature\\DirectTragedyResolutionTest::test_later_terminal_encounter_cannot_close_a_third_surviving_branch",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Feature\\DirectTragedyResolutionTest::test_live_commit_exit_survives_its_source_then_recursively_closes_the_resolving_parent",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Feature\\DirectTragedyResolutionTest::test_multi_parent_terminal_join_preserves_an_independent_causal_route",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Feature\\DirectTragedyResolutionTest::test_resolution_does_not_restrict_generation_in_a_live_descendant_region",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Feature\\DirectTragedyResolutionTest::test_resolution_keeps_an_ordinary_instrument_on_a_nonterminal_sibling",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Feature\\DirectTragedyResolutionTest::test_resolution_revokes_a_previously_authorised_revision_elsewhere_in_the_region",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Feature\\DirectTragedyResolutionTest::test_result_above_zero_and_passive_measurements_do_not_create_terminal_evidence",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Feature\\DirectTragedyResolutionTest::test_sibling_survives_resolution_and_later_terminal_encounter_exhausts_once",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Feature\\DirectTragedyResolutionTest::test_stale_variant_is_rejected_before_any_write",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Feature\\DirectTragedyResolutionTest::test_terminal_committed_source_is_not_reintroduced_as_a_bias_traverse_target",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Feature\\DirectTragedyResolutionTest::test_terminal_publication_rolls_back_as_one_event",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Feature\\DirectTragedyResolutionTest::test_terminal_state_survives_positive_charge_and_repeat_observation",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Feature\\ExhaustedContinuationTest::test_live_alternatives_and_exact_current_epochs_control_backward_completion",
+    "baseline": "passed",
+    "final": "absent"
+  },
+  {
+    "test": "Tests\\Feature\\ExhaustedContinuationTest::test_temporary_epoch_failures_do_not_terminate_a_live_alternative",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Feature\\ExhaustionRealtimeTest::test_first_and_second_boundary_publish_minimal_events_after_commit",
+    "baseline": "passed",
+    "final": "absent"
+  },
+  {
+    "test": "Tests\\Feature\\ExhaustionRealtimeTest::test_terminal_encounters_and_exhaustion_publish_minimal_events_after_commit",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Feature\\ExhaustionTest::test_audit_accepts_first_tragedy_without_exhaustion",
+    "baseline": "passed",
+    "final": "absent"
+  },
+  {
+    "test": "Tests\\Feature\\ExhaustionTest::test_audit_accepts_immediate_exhaustion",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Feature\\ExhaustionTest::test_audit_accepts_second_boundary_without_consumption_or_rest_authority",
+    "baseline": "passed",
+    "final": "absent"
+  },
+  {
+    "test": "Tests\\Feature\\ExhaustionTest::test_audit_preserves_terminal_proof_independently_of_rest_and_consumption",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Feature\\ExhaustionTest::test_first_failure_stops_at_child_horizon_and_final_failure_recovers_to_parent",
+    "baseline": "passed",
+    "final": "absent"
+  },
+  {
+    "test": "Tests\\Feature\\ExhaustionTest::test_immediate_exhaustion_authorises_recorded_parent_recovery",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Feature\\ExhaustionTest::test_last_continuation_closes_its_committal_without_moving_other_participants",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Feature\\ExhaustionTest::test_tragedy_does_not_close_the_opening_committal_or_move_other_participants",
+    "baseline": "passed",
+    "final": "absent"
+  },
+  {
+    "test": "Tests\\Feature\\HomologousBiasTest::test_positive_charge_escape_keeps_resolution_without_reopening_variant",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Feature\\HomologousBiasTest::test_positive_charge_escape_leaves_region_open_but_later_local_boundary_exhausts_it",
+    "baseline": "passed",
+    "final": "absent"
+  },
+  {
+    "test": "Tests\\Feature\\HomologousMediationTest::test_foreign_exhaustion_uses_complete_authoritative_horizon_and_current_epochs",
+    "baseline": "passed",
+    "final": "absent"
+  },
+  {
+    "test": "Tests\\Feature\\HomologousMediationTest::test_foreign_terminal_authority_sees_unhydrated_descendants_and_preserves_existing_siblings\"existing viable sibling\"",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Feature\\HomologousMediationTest::test_foreign_terminal_authority_sees_unhydrated_descendants_and_preserves_existing_siblings\"only exhausted descendant\"",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Feature\\HorizonFailureInvariantTest::test_audit_validates_receipt_exercise_and_detects_corrupt_regional_proof",
+    "baseline": "passed",
+    "final": "absent"
+  },
+  {
+    "test": "Tests\\Feature\\HorizonFailureInvariantTest::test_audit_validates_terminal_events_and_database_rejects_proof_corruption",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Feature\\HorizonProofCompatibilityTest::test_rollbacks_refuse_to_discard_exercised_proof",
+    "baseline": "passed",
+    "final": "absent"
+  },
+  {
+    "test": "Tests\\Feature\\HorizonProofCompatibilityTest::test_stage_four_rollback_refuses_to_discard_terminal_evidence",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Feature\\RegionalBoundaryLifecycleTest::test_final_existing_continuation_exhausts_exactly_once_without_receipt_use",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Feature\\RegionalBoundaryLifecycleTest::test_positive_charge_after_tragedy_and_later_rest_keep_region_open",
+    "baseline": "passed",
+    "final": "absent"
+  },
+  {
+    "test": "Tests\\Feature\\RegionalBoundaryLifecycleTest::test_second_fresh_boundary_exhausts_exactly_once_without_receipt_use",
+    "baseline": "passed",
+    "final": "absent"
+  },
+  {
+    "test": "Tests\\Feature\\RegionalBoundaryLifecycleTest::test_surviving_positive_charge_continuation_keeps_resolution_open",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Feature\\RegionalExhaustionMigrationTest::test_ambiguous_transported_legacy_proof_remains_history_without_regional_authority",
+    "baseline": "passed",
+    "final": "absent"
+  },
+  {
+    "test": "Tests\\Feature\\RegionalExhaustionMigrationTest::test_archived_exhaustion_references_remain_readable_without_claiming_current_authority",
+    "baseline": "passed",
+    "final": "absent"
+  },
+  {
+    "test": "Tests\\Feature\\RegionalExhaustionMigrationTest::test_cycle_entry_rename_preserves_regional_proof_evidence_and_published_state",
+    "baseline": "passed",
+    "final": "absent"
+  },
+  {
+    "test": "Tests\\Feature\\RegionalExhaustionMigrationTest::test_empty_installation_has_one_terminal_and_regional_proof_authority",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Feature\\RegionalExhaustionMigrationTest::test_empty_stage_four_migration_round_trip_restores_integrity",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Feature\\RegionalExhaustionMigrationTest::test_legacy_local_proof_does_not_exhaust_its_horizons_opening_region",
+    "baseline": "passed",
+    "final": "absent"
+  },
+  {
+    "test": "Tests\\Feature\\RegionalExhaustionMigrationTest::test_proven_same_region_legacy_boundary_maps_without_rewriting_evidence",
+    "baseline": "passed",
+    "final": "absent"
+  },
+  {
+    "test": "Tests\\Feature\\RegionalExhaustionMigrationTest::test_unproven_timestamps_and_pre_horizon_tragedies_survive_as_archives_only",
+    "baseline": "passed",
+    "final": "absent"
+  },
+  {
+    "test": "Tests\\Unit\\TerminalContinuationTest::test_all_terminal_routes_leave_no_continuation",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Unit\\TerminalContinuationTest::test_exhausted_child_does_not_close_a_live_sibling",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Unit\\TerminalContinuationTest::test_live_committed_exit_survives_a_terminal_source",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Unit\\TerminalContinuationTest::test_multi_parent_join_closes_only_parents_without_a_live_alternative",
+    "baseline": "absent",
+    "final": "passed"
+  },
+  {
+    "test": "Tests\\Unit\\TerminalContinuationTest::test_other_region_members_are_not_continuations",
+    "baseline": "absent",
+    "final": "passed"
+  }
+]

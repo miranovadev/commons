@@ -51,7 +51,11 @@ final class PropositionOptionService
             $commits = $this->generation->committedWrites($phase, $context);
             $sources = Supersession::query()->where('type', 'commit')
                 ->whereIn('target_proposition_id', $commits->pluck('id'))->pluck('source_proposition_id');
-            $committed = $this->resolveWrites($phase, $context)->whereIn('id', $sources);
+            // The committed descendant stays viable, but its historical source
+            // cannot regain Traverse authority after a direct terminal encounter.
+            $terminal = app(ExhaustedContinuationService::class)->ids($phase, $context);
+            $committed = $this->resolveWrites($phase, $context)->whereIn('id', $sources)
+                ->reject(fn ($node) => $terminal->has($node->id));
         } else {
             $committed = collect();
         }
@@ -179,7 +183,7 @@ final class PropositionOptionService
         Participant $participant,
         ?ParticipationContext $context = null,
     ): Collection {
-        if ($phase->write_register === null) {
+        if ($phase->write_register === null || ! $this->generation->available($phase, 'proposition.revise', $context)) {
             return collect();
         }
 
