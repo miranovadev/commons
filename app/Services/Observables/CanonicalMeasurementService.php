@@ -23,12 +23,14 @@ class CanonicalMeasurementService
             throw new \DomainException('Canonical preservation requires the selected expressive source measurement.');
         }
         $attributes = $resolved->only(['correspondence', 'chirality', 'chirality_direction', 'orientation', 'attestation_cadence',
-            'orientation_direction', 'attestation_cadence_direction', 'shape_topology', 'cardinal_position',
-            'shape_topology_direction', 'cardinal_position_direction']);
+            'orientation_direction', 'attestation_cadence_direction', 'shape_topology', 'phase_profile',
+            'shape_topology_direction', 'phase_profile_direction']);
         if (count($attributes) !== 11 || in_array(null, $attributes, true)) {
             throw new \DomainException('Canonical preservation requires complete resolved source metadata.');
         }
         (new CanonicalMeasurement)->forceFill(['proposition_id' => $target->id, 'source_proposition_id' => $source->id,
             'correspondence_direction' => $correspondenceDirection, ...$attributes])->save();
+        $closure = app(ProspectiveClosureService::class);
+        $closure->preserve($target, $source, $closure->stored($source));
     }
 }

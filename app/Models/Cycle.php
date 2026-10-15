@@ -73,6 +73,9 @@ class Cycle extends Model
                 app(ChiralityPopulationHistoryService::class)->observe($this->participant->substrate_id);
             }
             $saved = parent::save($options);
+            if ($saved && $entry && $changesParticipation) {
+                app(\App\Services\Observables\ProspectiveClosureService::class)->entered($this);
+            }
             if ($saved && $changesParticipation) {
                 // Dirty only Horizons containing Cycles entered at this basin.
                 // The existing field version remains the publication guard.

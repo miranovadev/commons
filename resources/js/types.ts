@@ -6,7 +6,14 @@ export type PropositionTier = 'expressive' | 'committal';
 export type AttestationDirection = 'support' | 'refute';
 export type TriggerMode = 'manual' | 'interval' | 'scheduled';
 
-export interface Observables {
+export interface CorrespondenceComponents {
+  shape_topology?: number | null;
+  phase_profile?: number | null;
+  shape_topology_direction?: 'positive' | 'negative' | null;
+  phase_profile_direction?: 'positive' | 'negative' | null;
+}
+
+export interface Observables extends CorrespondenceComponents {
   correspondence?: number | string | null;
   chirality?: number | string | null;
   closure?: number | string | null;
@@ -15,6 +22,12 @@ export interface Observables {
 export type ReceiptReference = Pick<ReceiptContext, 'id' | 'type' | 'reference' | 'loaded'>;
 
 export interface ClosureHistoryPoint {
+  historical_extent?: number | null;
+  historical_rhythm?: number | null;
+  historical_phase_profile?: number | null;
+  historical_orientation?: number | null;
+  historical_extent_direction?: ComponentDirection;
+  historical_rhythm_direction?: ComponentDirection;
   committed_cardinal_position?: number | null;
   committed_cardinal_position_direction?: 'positive' | 'negative' | null;
   lateral_committal_position?: number | null;
@@ -75,7 +88,7 @@ export interface Proposition {
   }>;
 }
 
-export interface GraphField {
+export interface GraphField extends CorrespondenceComponents {
   tension: number | null;
   charge: number | null;
   potential_charge: number | null;
@@ -314,7 +327,7 @@ interface GateAdmissibility {
 export interface ParticipantPlan {
   correspondence_admissibility?: GateAdmissibility & {
     shape_topology_direction: ComponentDirection;
-    cardinal_position_direction: ComponentDirection;
+    phase_profile_direction: ComponentDirection;
     correspondence_direction: ComponentDirection;
   };
   chirality_admissibility?: GateAdmissibility & {
@@ -331,6 +344,12 @@ export interface ParticipantPlan {
     reinforcement_count: number;
     closure_enforced: boolean;
     closure?: {
+      historical_extent?: number | null;
+      historical_rhythm?: number | null;
+      historical_phase_profile?: number | null;
+      historical_orientation?: number | null;
+      historical_extent_direction?: ComponentDirection;
+      historical_rhythm_direction?: ComponentDirection;
       committed_cardinal_position?: number | null;
       committed_cardinal_position_direction?: ComponentDirection;
       depth: number | null;
@@ -379,6 +398,12 @@ export interface Participation {
   horizon_sequence?: number | null;
   context_horizon_id?: Identifier | null;
   last_commitment?: {
+    historical_extent?: number | null;
+    historical_rhythm?: number | null;
+    historical_phase_profile?: number | null;
+    historical_orientation?: number | null;
+    historical_extent_direction?: ComponentDirection;
+    historical_rhythm_direction?: ComponentDirection;
     committed_cardinal_position?: number | null;
     committed_cardinal_position_direction?: ComponentDirection;
     proposition_id: Identifier;
@@ -463,5 +488,3 @@ export interface ParticipantContext {
 }
 
 export type AutonomousParticipation = Omit<Participation, 'plan'> & { plan?: ParticipantContext | null };
-
-

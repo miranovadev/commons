@@ -123,8 +123,11 @@ jobs:
         run: php artisan test --filter='CommittalClosureTest|CycleEntryIdentityTest'
 
       - name: Run selected PHP suite
+        # SQLite preflight failures must not hide the PostgreSQL suite inventory.
+        if: ${{ !cancelled() && steps.selection.outcome == 'success' }}
         env:
           TEST_SUITE: ${{ inputs.suite }}
+          COMMONS_INTEGRATION_MAINTENANCE: ${{ inputs.suite == 'integration' && '1' || '0' }}
           PGOPTIONS: '-c statement_timeout=30s'
           COMMONS_PROFILE_SQL: ${{ inputs.suite == 'query' && inputs.profile_sql && '1' || '0' }}
           CI_SHARD: ${{ inputs.shard }}

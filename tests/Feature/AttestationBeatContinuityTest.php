@@ -14,17 +14,28 @@ use App\Services\Observables\LocalMeasurementService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\CreatesHomologousPositions;
+use Tests\Fixtures\IsolatesClosureOutput;
 use Tests\TestCase;
 
+/** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
+#[Group('component-contract')]
 class AttestationBeatContinuityTest extends TestCase
 {
+    use IsolatesClosureOutput;
     use CreatesHomologousPositions, RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->isolateClosureOutput();
+    }
 
     private function start(): array
     {
         $this->createHomologyActor();
-        $origin = $this->commit(null, 'settlement', ['attestation_cadence_direction' => 'negative']);
+        $origin = $this->committedCoordinate(null, 'settlement', ['attestation_cadence_direction' => 'negative']);
         $parent = $this->child($origin, $origin);
 
         return [$origin, $parent];
@@ -38,6 +49,7 @@ class AttestationBeatContinuityTest extends TestCase
             'tier' => 'expressive', 'statement' => 'Local continuation'])->save();
         app(LedgerService::class)->record($node);
         $this->link($parent, $node, $type);
+        app(\App\Services\Observables\ProspectiveClosureService::class)->initialize($node);
 
         return $node;
     }
@@ -223,6 +235,7 @@ class AttestationBeatContinuityTest extends TestCase
         foreach ($foreignFirst ? [$other, $local] : [$local, $other] as $parent) {
             $this->link($parent, $result, 'reconcile');
         }
+        app(\App\Services\Observables\ProspectiveClosureService::class)->initialize($result);
 
         return $result;
     }
@@ -231,7 +244,7 @@ class AttestationBeatContinuityTest extends TestCase
     {
         [$origin, $source] = $this->start();
         $this->act($source);
-        $otherEntry = $this->commit($origin, 'settlement');
+        $otherEntry = $this->committedCoordinate($origin, 'settlement');
         $this->entries($origin, 3); // These do not belong to the child's entry basin.
         $child = $this->child($source, $otherEntry, type: 'reclassify');
         $this->entries($otherEntry, 2);

@@ -82,6 +82,10 @@ class PropositionResource extends JsonResource
                 'status' => $measurement === null ? 'missing'
                     : ($measurement->calculator_version === LineageMeasurementService::VERSION ? 'current' : 'stale'),
                 'correspondence' => $measurement?->correspondence,
+                'shape_topology' => $measurement?->shape_topology,
+                'phase_profile' => $measurement?->phase_profile,
+                'shape_topology_direction' => $measurement?->shape_topology_direction,
+                'phase_profile_direction' => $measurement?->phase_profile_direction,
                 'chirality' => $measurement?->chirality,
                 'closure' => $measurement?->closure,
                 'calculated_at' => $measurement?->calculated_at,
@@ -98,4 +102,3 @@ class PropositionResource extends JsonResource
         ];
     }
 }
-

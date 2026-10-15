@@ -1,5 +1,10 @@
 # Stage 5 lifecycle checkpoint
 
+> **Historical implementation checkpoint.** The old final-attempt and
+> catastrophe rules below are not the proposed
+> [direct-encounter Resolution target](tragedy-resolution-target.md).
+> Historical witnesses and fixtures remain evidence of the earlier rules.
+
 > Historical checkpoint. Rest-born Tragedy, final-attempt permission, consumption-based exhaustion and recovery-following warrant scope described here are retired. Current authority is [first/later fresh Charge-boundary events](branch-tragedy.md); this document retains historical validation details.
 
 > Historical checkpoint: the Rest-born Tragedy and special final-attempt allowance
@@ -11,7 +16,7 @@ attempt attainable through the real participation lifecycle. Stage 6 suite
 reorganisation and Stage 7 cleanup are not part of this change.
 
 This checkpoint's intended semantics are subordinate to
-[Lineage-Constrained Participant Movement](core-invariants.md#17-lineage-constrained-participant-movement).
+[Movement Follows Authorised Structure](core-invariants.md#10-movement-follows-authorised-structure).
 Stage 5 intended to preserve a previously existing successful causal route, not
 widen traversal across a Commit Region. Its original same-Horizon/same-region
 wording was insufficient: those properties never create a movement edge.

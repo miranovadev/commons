@@ -1,0 +1,112 @@
+test,result,category,finding,failure_summary,first_test_frame,assertions,seconds
+Tests\Unit\ChiralityValuesTest::test_population_existence_and_rate_similarity#0,passed,,,,,1,0.000613
+Tests\Unit\ChiralityValuesTest::test_population_existence_and_rate_similarity#1,passed,,,,,1,0.000267
+Tests\Unit\ChiralityValuesTest::test_population_existence_and_rate_similarity#2,passed,,,,,1,0.000192
+Tests\Unit\ChiralityValuesTest::test_population_existence_and_rate_similarity#3,passed,,,,,1,0.000177
+Tests\Unit\ChiralityValuesTest::test_population_existence_and_rate_similarity#4,passed,,,,,1,0.000189
+Tests\Unit\ChiralityValuesTest::test_population_existence_and_rate_similarity#5,passed,,,,,1,0.000196
+Tests\Unit\ChiralityValuesTest::test_population_existence_and_rate_similarity#6,passed,,,,,1,0.000169
+Tests\Unit\ChiralityValuesTest::test_population_existence_and_rate_similarity#7,passed,,,,,1,0.000170
+Tests\Unit\ChiralityValuesTest::test_composition_and_independent_hysteresis_have_no_admissibility_rule,passed,,,,,5,0.000178
+Tests\Unit\ClosureValuesTest::test_alignment_and_zero_retention_are_independent_of_the_average,passed,,,,,7,0.008611
+Tests\Unit\ClosureValuesTest::test_frozen_historical_closure_is_preserved_even_when_it_differs_from_the_pure_mean,passed,,,,,2,0.000291
+Tests\Unit\ClosureValuesTest::test_population_cv_is_scale_invariant_and_zero_variability_is_explicit,passed,,,,,5,0.000471
+Tests\Unit\ClosureValuesTest::test_lateral_centroids_are_positive_real_values_with_bounded_similarity,passed,,,,,8,0.000360
+Tests\Unit\ClosureValuesTest::test_invalid_component_is_rejected,passed,,,,,1,0.000251
+Tests\Unit\PotentialRegionCalculatorTest::test_exhausting_best_sibling_exposes_next_maximum_without_subtraction,passed,,,,,4,0.005335
+Tests\Unit\PotentialRegionCalculatorTest::test_dominated_sibling_changes_do_not_change_provenance_summary,passed,,,,,2,0.000247
+Tests\Unit\PotentialRegionCalculatorTest::test_nearer_weaker_candidate_is_retained_because_attenuation_can_change_the_winner,passed,,,,,3,0.000211
+Tests\Unit\PotentialRegionCalculatorTest::test_viable_descendant_shadows_stronger_parent_and_exhaustion_reveals_parent,passed,,,,,3,0.000193
+Tests\Unit\PotentialRegionCalculatorTest::test_exclusion_preserves_an_alternative_path_through_a_diamond,passed,,,,,2,0.000252
+Tests\Unit\PotentialRegionCalculatorTest::test_branch_aggregation_cannot_borrow_another_origin_branch,passed,,,,,2,0.000185
+Tests\Unit\RecoveryBasinResolverTest::test_current_horizon_candidates_exclude_viable_downstream_domains,passed,,,,,3,0.014757
+Tests\Unit\RecoveryBasinResolverTest::test_sibling_and_descendant_horizons_are_never_searched,passed,,,,,2,0.000469
+Tests\Unit\RecoveryBasinResolverTest::test_a_viable_current_branch_does_not_compete_with_its_parents_other_children,passed,,,,,2,0.000382
+Tests\Unit\RecoveryBasinResolverTest::test_exhaustion_can_reach_the_parent_but_cannot_discover_a_sibling,passed,,,,,3,0.000369
+Tests\Unit\RecoveryBasinResolverTest::test_exhaustion_reaches_historical_domains_and_the_root_without_revisiting_basins,passed,,,,,4,0.000479
+Tests\Unit\RecoveryBasinResolverTest::test_changes_in_a_descendant_cannot_change_current_horizon_scope,passed,,,,,3,0.000365
+Tests\Unit\RecoveryBasinResolverTest::test_exhaustion_does_not_authorize_crossing_a_boundary_absent_from_the_walked_lineage,passed,,,,,3,0.000376
+Tests\Unit\RecoveryBasinResolverTest::test_missing_provenance_does_not_jump_to_an_unrelated_root,passed,,,,,1,0.000312
+Tests\Unit\RecoveryBasinResolverTest::test_corrupt_horizon_cycles_terminate_with_an_error,passed,,,,,1,0.000309
+"Tests\Unit\WakeConfigurationTest::test_validation""termination phase""",passed,,,,,1,0.089061
+"Tests\Unit\WakeConfigurationTest::test_validation""termination cycle""",passed,,,,,1,0.009115
+"Tests\Unit\WakeConfigurationTest::test_validation""termination rest""",passed,,,,,1,0.008500
+"Tests\Unit\WakeConfigurationTest::test_validation""invalid termination""",passed,,,,,1,0.008792
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout 1""",passed,,,,,1,0.010366
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout 600""",passed,,,,,1,0.008547
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout 1800""",passed,,,,,1,0.008528
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout 0""",passed,,,,,1,0.008844
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout -1""",passed,,,,,1,0.008723
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout 1801""",passed,,,,,1,0.008744
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout 1.5""",passed,,,,,1,0.009948
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout invalid""",passed,,,,,1,0.008665
+"Tests\Unit\WakeConfigurationTest::test_validation""offset mode seconds""",passed,,,,,1,0.008884
+"Tests\Unit\WakeConfigurationTest::test_validation""offset mode random""",passed,,,,,1,0.008828
+"Tests\Unit\WakeConfigurationTest::test_validation""offset mode invalid""",passed,,,,,1,0.008670
+"Tests\Unit\WakeConfigurationTest::test_validation""seconds 0""",passed,,,,,1,0.008625
+"Tests\Unit\WakeConfigurationTest::test_validation""seconds 60""",passed,,,,,1,0.008542
+"Tests\Unit\WakeConfigurationTest::test_validation""seconds -1""",passed,,,,,1,0.008738
+"Tests\Unit\WakeConfigurationTest::test_validation""seconds 61""",passed,,,,,1,0.008814
+"Tests\Unit\WakeConfigurationTest::test_validation""seconds 1.5""",passed,,,,,1,0.008825
+"Tests\Unit\WakeConfigurationTest::test_validation""seconds invalid""",passed,,,,,1,0.008699
+"Tests\Unit\WakeConfigurationTest::test_validation""random_from 0""",passed,,,,,1,0.008797
+"Tests\Unit\WakeConfigurationTest::test_validation""random_from 60""",passed,,,,,1,0.008576
+"Tests\Unit\WakeConfigurationTest::test_validation""random_from -1""",passed,,,,,1,0.008832
+"Tests\Unit\WakeConfigurationTest::test_validation""random_from 61""",passed,,,,,1,0.008752
+"Tests\Unit\WakeConfigurationTest::test_validation""random_from 1.5""",passed,,,,,1,0.008946
+"Tests\Unit\WakeConfigurationTest::test_validation""random_from invalid""",passed,,,,,1,0.014886
+"Tests\Unit\WakeConfigurationTest::test_validation""random_to 0""",passed,,,,,1,0.008637
+"Tests\Unit\WakeConfigurationTest::test_validation""random_to 60""",passed,,,,,1,0.008578
+"Tests\Unit\WakeConfigurationTest::test_validation""random_to -1""",passed,,,,,1,0.008751
+"Tests\Unit\WakeConfigurationTest::test_validation""random_to 61""",passed,,,,,1,0.008997
+"Tests\Unit\WakeConfigurationTest::test_validation""random_to 1.5""",passed,,,,,1,0.008783
+"Tests\Unit\WakeConfigurationTest::test_validation""random_to invalid""",passed,,,,,1,0.008803
+"Tests\Unit\WakeConfigurationTest::test_validation""equal range""",passed,,,,,1,0.008646
+"Tests\Unit\WakeConfigurationTest::test_validation""reversed range""",passed,,,,,1,0.008630
+Tests\Unit\WakeConfigurationTest::test_defaults_and_inclusive_random_bounds,passed,,,,,204,0.012734
+Tests\Feature\BootstrapOriginReinforcementTest::test_loaded_reinforcement_does_not_rewrite_bootstrap_committal_closure,passed,,,,,4,1.345207
+Tests\Feature\CardinalCorrespondenceTest::test_metric_lateral_position_is_continuous_not_categorical,passed,,,,,5,0.024436
+Tests\Feature\CardinalCorrespondenceTest::test_domain_layout_assigns_breadth_first_depth_and_parent_relative_lateral_order,passed,,,,,7,0.451153
+Tests\Feature\CardinalCorrespondenceTest::test_row_balanced_position_scores_population_and_metric_displacement,passed,,,,,4,0.027836
+Tests\Feature\CardinalCorrespondenceTest::test_first_developed_domain_immediately_compares_against_origin_reference,passed,,,,,11,0.400450
+Tests\Feature\CardinalCorrespondenceTest::test_domain_depth_continues_across_cycle_phase_repetition,passed,,,,,29,1.009242
+Tests\Feature\CardinalCorrespondenceTest::test_lateral_order_follows_causal_parent_order_not_phase_gate_or_global_creation_order,passed,,,,,2,0.550319
+Tests\Feature\ClosureBirthTest::test_origin_and_population_cv_bootstrap_then_full_history_comparison,passed,,,,,11,2.549228
+Tests\Feature\ClosureBirthTest::test_expressive_and_committal_births_observe_different_intervals_and_never_rewrite_source,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\ClosureBirthTest::test_expressive_and_committal_births_observe_different_intervals_and_never_rewrite_source
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/Feature/ClosureBirthTest.php:138,1,1.784619
+Tests\Feature\ClosureBirthTest::test_full_domain_depth_counts_do_not_reset_on_domain_switch,passed,,,,,8,0.910739
+Tests\Feature\ClosureBirthTest::test_temporary_slots_do_not_reserve_positions_and_sibling_gaps_remain,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\ClosureBirthTest::test_temporary_slots_do_not_reserve_positions_and_sibling_gaps_remain
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/Feature/ClosureBirthTest.php:49,0,0.409213
+Tests\Feature\ClosureBirthTest::test_full_same_domain_lateral_centroid_uses_frozen_positions_and_keeps_gaps,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\ClosureBirthTest::test_full_same_domain_lateral_centroid_uses_frozen_positions_and_keeps_gaps
+App\Exceptions\ClosureHistoryUnavailable: Prospective Closure requires frozen selected committed history.",tests/Feature/ClosureBirthTest.php:49,3,1.063244
+Tests\Feature\ClosureBirthTest::test_forks_and_measurement_repair_use_the_same_durable_birth_observation,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\ClosureBirthTest::test_forks_and_measurement_repair_use_the_same_durable_birth_observation
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/Feature/ClosureBirthTest.php:231,0,0.288062
+Tests\Feature\ClosureBirthTest::test_missing_birth_data_fails_closed_instead_of_using_current_population,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\ClosureBirthTest::test_missing_birth_data_fails_closed_instead_of_using_current_population
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/Feature/ClosureBirthTest.php:49,0,0.330151
+Tests\Feature\ClosureBirthTest::test_attestation_can_refresh_chirality_while_closure_remains_frozen,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\ClosureBirthTest::test_attestation_can_refresh_chirality_while_closure_remains_frozen
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/Feature/ClosureBirthTest.php:260,0,0.287607
+Tests\Feature\ClosureBirthTest::test_zero_depth_retains_positive_committed_history,passed,,,,,3,1.384236
+Tests\Feature\ClosureBirthTest::test_lateral_comparison_requires_two_prior_same_domain_observations,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\ClosureBirthTest::test_lateral_comparison_requires_two_prior_same_domain_observations
+App\Exceptions\ClosureHistoryUnavailable: Prospective Closure requires frozen selected committed history.",tests/Feature/ClosureBirthTest.php:49,10,0.592582
+Tests\Feature\ClosureBirthTest::test_mature_lateral_does_not_depend_on_cadence_sign_or_force_admissibility,passed,,,,,7,0.781138
+Tests\Feature\ClosureBirthTest::test_unbranched_second_commit_retains_aligned_bootstrap_directions#0,passed,,,,,15,0.587345
+Tests\Feature\ClosureBirthTest::test_unbranched_second_commit_retains_aligned_bootstrap_directions#1,passed,,,,,15,0.678878
+Tests\Feature\ClosureBirthTest::test_birth_observation_is_database_immutable,passed,,,,,1,0.091060
+Tests\Feature\CycleEntryIdentityTest::test_origin_has_no_entry_and_live_cycles_keep_their_explicit_entry_committal,passed,,,,,6,1.806418
+Tests\Feature\CycleEntryIdentityTest::test_eloquent_cannot_clear_entry,passed,,,,,1,1.755302
+Tests\Feature\CycleEntryIdentityTest::test_bulk_updates_cannot_clear_entry,passed,,,,,1,1.775774
+Tests\Feature\CycleEntryIdentityTest::test_origin_null_cannot_be_replaced_after_creation,passed,,,,,1,1.796412
+Tests\Feature\CycleEntryIdentityTest::test_bulk_updates_cannot_replace_an_existing_entry,passed,,,,,1,2.180741
+Tests\Feature\CycleEntryIdentityTest::test_rename_preserves_rows_and_restores_the_old_guard_on_rollback,passed,,,,,11,1.792452
+Tests\Feature\CycleEntryIdentityTest::test_entry_foreign_key_rejects_a_missing_committal,passed,,,,,1,1.784872
+Tests\Feature\CycleEntryIdentityTest::test_entry_must_belong_to_the_selected_horizon_and_substrate,passed,,,,,1,2.228255
+Tests\Feature\CycleEntryIdentityTest::test_migration_uses_original_entry_without_changing_snapshots_or_horizons,passed,,,,,4,1.823718
+Tests\Feature\CycleEntryIdentityTest::test_migration_rejects_missing_entry_instead_of_guessing_from_horizon,passed,,,,,2,1.786511
+Tests\Feature\HomologousBiasTest::test_boundary_reclassification_belongs_to_the_acting_region_not_its_foreign_source,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\HomologousBiasTest::test_boundary_reclassification_belongs_to_the_acting_region_not_its_foreign_source
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:500,0,0.000000
+Tests\Feature\HomologousBiasTest::test_cardinal_lookup_uses_ownership_without_local_causal_reachability,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\HomologousBiasTest::test_cardinal_lookup_uses_ownership_without_local_causal_reachability
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:500,0,0.000000
+Tests\Feature\HomologousBiasTest::test_dominant_homologues_add_options_without_vetoing_either_local_direction,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\HomologousBiasTest::test_dominant_homologues_add_options_without_vetoing_either_local_direction
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:500,0,0.000000
+Tests\Feature\HomologousBiasTest::test_non_dominant_homologues_and_unattested_members_do_not_gain_actions,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\HomologousBiasTest::test_non_dominant_homologues_and_unattested_members_do_not_gain_actions
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:500,0,0.000000

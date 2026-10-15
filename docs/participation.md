@@ -1,5 +1,7 @@
 # Participation API
 
+> **Stage 4 API contract.** The approved [Exploration/Resolution/Exhaustion lifecycle](tragedy-resolution-target.md) is enforced by action schemas and locked dispatch. Historical first/later fresh-birth rules no longer apply.
+
 The shared law for Mediate, Bias and Order is documented in
 [Unified late-phase admissibility](observables.md#unified-late-phase-admissibility).
 Dominance selects candidate inputs; admissibility governs Writes.
@@ -176,7 +178,7 @@ Variant, Revise and Reconcile create new content/structure with fresh votes and 
 | Phase 6 | Reclassify an attested Phase-5 source with Receipt and lineage agreement |
 | Phase 7 | Existing grounded, freshly attested and Closure-aligned Commit or Committal Traverse |
 
-Variant eligibility does not depend on Potential Charge, Receipt generation/consumption or Participant count. A further Variant requires all existing routes at its structural position to be spent in the current epoch, with their own completed Instrument and effective Attestation. Zero Potential does not suppress an otherwise structurally valid Variant; expression may increase Tension. A viable existing route blocks redundant generation. Only successful Variant advances that position's epoch; other positions remain unchanged. Spent routes remain visible without Traverse, Attestation or redundant Instrument targets. See [exploration epochs](exploration-epochs.md). Each new Variant repeats this sequence. No prior Mediate Rest or fixed sibling cap applies; see the [confirmed clarification](horizon-proof-variant-clarification.md).
+During Exploration, Variant eligibility does not depend on Potential Charge, Receipt generation/consumption or Participant count. A further Variant requires all existing routes at its structural position to be spent in the current epoch, with their own completed Instrument and effective Attestation. Zero Potential does not suppress an otherwise structurally valid Variant; expression may increase Tension. A viable existing route blocks redundant generation. Only successful Variant advances that position's epoch; other positions remain unchanged. Spent routes remain visible without Traverse, Attestation or redundant Instrument targets. See [exploration epochs](exploration-epochs.md). Each new Variant repeats this sequence. No prior Mediate Rest or fixed sibling cap applies; see the [confirmed clarification](horizon-proof-variant-clarification.md).
 
 Instruments target mutable expressive Writes in phases 1–6. Phase 1/4 offer Instrument when a Write lacks its own completed Instrument or no shared Receipt remains available. Existing evidence makes Attestation available without a transfer from its author or a paid visibility action. Transactional execution rechecks the same rules advertised in the schema.
 
@@ -385,7 +387,7 @@ option. Mediated authority uses ordinary own-Region Receipts even when the same 
 
 ## Shared Commit Region scope
 
-This scope applies [Invariant 10: structural authority](core-invariants.md#10-operations-may-only-act-within-their-structural-authority):
+This scope applies [Invariant 8: Authority Must Be Explicitly Granted](core-invariants.md#8-authority-must-be-explicitly-granted):
 measurements select within eligible populations and must not redefine them.
 
 Commit Region membership defines calculation/context scope only where a Commons
@@ -404,16 +406,16 @@ separate contracts.
 See [Commit Region ownership](commit-region-ownership.md).
 
 An immediate parent alone is too narrow to define a Homeostatic calculation
-population; this does not itself authorize movement. A Context Horizon is measurement/comparison context and
-can contain multiple Commit Regions.
-Horizon membership does not define candidate membership, even if a branch's
-ledger entries have different Horizon labels. Substrate isolation remains.
+population; this does not itself authorize movement. A Context Horizon can bound
+and classify a causal lineage and can contain multiple Commit Regions. It is
+never, by shared membership alone, a measurement population or candidate
+population. Horizon membership does not define candidate membership, even if a
+branch's ledger entries have different Horizon labels. Substrate isolation remains.
 
 The reusable `RegisterPosition` mapping is extracted unchanged from structural
 Correspondence: Activity/Signal = First (R), Frontier/Stance = Second (G), and
 Canon/Concord = Third (B). These are vocabulary slots, not phase positions.
-[Invariant 16](core-invariants.md#16-register-identity-does-not-confer-phase-identity)
-requires an independent producing Phase check. Phase-position compatibility
+[Core Invariants 3, 5 and 8](core-invariants.md) require an independent producing Phase check. Phase-position compatibility
 and region membership still do not confer traversal eligibility. The Homeostatic
 scopes are:
 
@@ -483,7 +485,7 @@ Mediate opens an incoming doorway. The homologous population identifies possible
 exits. A Tragedy Receipt authorizes leaving through one eligible homologous exit;
 it supplies no destination or permanent movement permission. Subsequent
 Attestation and Traverse follow ordinary contribution rules. Recovery skips the
-Region only after a later fresh zero-Charge catastrophe proves it exhausted. Warrant consumption alone does not exhaust it.
+Region only after actual remaining continuations prove it exhausted. A viable sibling or live committed descendant prevents Exhaustion; warrant consumption alone does not exhaust it.
 
 The result belongs to the acting Bias Phase, Horizon and entry accounting Region.
 Its sole reclassify edge comes from the selected source, and the participant
@@ -578,7 +580,7 @@ and equivalent-evidence exclusions, and creates a new Proposition-grounded Recei
 with replay provenance. Neither fresh execution nor replay automatically loads
 source or result. There are no standalone Receipt Read or Replay action families.
 
-The first fresh expressive proposition whose resolved canonical Charge is zero records its Region Tragedy and unique Receipt inside the contribution transaction. A later distinct fresh zero-Charge proposition in that same open Region records exhaustion. Potential, Rest and Receipt consumption prove neither event. Historical alternatives remain visible and non-actionable. Recovery skips only authoritatively exhausted Regions. See [Charge-boundary lifecycle](branch-tragedy.md).
+A qualifying direct expressive Write encounter with resulting canonical Charge zero establishes the Region’s unique Tragedy and Receipt and permanently terminates that continuation. Resolution prohibits Variant and Revise throughout the Region while preserving ordinary authority on viable routes. Exhaustion follows atomically only when no lawful continuation remains; viable siblings and live committed descendants prevent it. Descendant Exhaustion closes only its corresponding route. No second catastrophe, Rest or Receipt consumption is required. Passive measurements and reads establish neither event. Recovery follows actual recorded backward lineage. See the approved [Tragedy/Resolution lifecycle](tragedy-resolution-target.md). Qualifying encounters include expressive birth, Attestation, Instrument and lawful expressive Traverse, including already-zero targets. An Exhausted Region offers Rest only. Historical alternatives remain visible and non-actionable.
 
 Gate Receipt load/unload desired states accompany a forward Phase contribution (never Rest) and take cognitive effect in the next Phase. Only loaded evidence grounding the participant-facing Read activates a full body; other Receipt references are metadata. See the normative [Receipt model](receipt-region-context.md), including the shared recovery-scoped Tragedy exception.
 

@@ -23,15 +23,25 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
+use Tests\Fixtures\IsolatesClosureOutput;
 use Tests\TestCase;
 
+/** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
+#[Group('component-contract')]
 class PropositionReadTest extends TestCase
 {
+    use IsolatesClosureOutput;
     use RefreshDatabase;
 
     public static function projections(): array
     {
         return [['missing'], ['stale'], ['invalidated'], ['current']];
+    }
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->isolateClosureOutput();
     }
 
     #[DataProvider('projections')]

@@ -1,6 +1,5 @@
 <?php
 
-use App\Services\RegionalExhaustionBackfill;
 use App\Services\RegionalExhaustionMembership;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -26,7 +25,7 @@ return new class extends Migration
             $table->foreignUlid('context_horizon_id')->index()->constrained()->restrictOnDelete();
             $table->foreignUlid('tragedy_id')->unique()->constrained('tragedies')->restrictOnDelete();
             $table->foreignUlid('receipt_id')->unique()->constrained()->restrictOnDelete();
-            $table->foreignUlid('phase_id')->unique()->constrained()->restrictOnDelete();
+            $table->foreignUlid('phase_id')->constrained()->restrictOnDelete();
             $table->foreignUlid('terminal_proposition_id')->constrained('propositions')->restrictOnDelete();
             $table->unsignedBigInteger('observed_field_version');
             $table->timestampTz('exhausted_at');
@@ -37,7 +36,6 @@ return new class extends Migration
             $table->foreign('governing_committal_id')->references('governing_committal_id')
                 ->on('commit_region_exhaustions')->restrictOnDelete();
         });
-        app(RegionalExhaustionBackfill::class)->run();
         app(RegionalExhaustionMembership::class)->rebuild();
         // Retain only timestamps not already reconstructible from immutable old proof.
         // This archive has no runtime actionability or recovery authority.

@@ -16,22 +16,36 @@ use App\Services\InstrumentExecutionService;
 use App\Services\LedgerService;
 use App\Services\Observables\ChiralityCalculator;
 use App\Services\Observables\ContextLineageComparisonService;
+use App\Services\Observables\LineageMeasurementService;
 use App\Services\Observables\ReinforcementService;
 use App\Services\OperationalInstrumentService;
+use App\Services\PotentialProjectionService;
+use App\Services\PropositionMeasurementService;
 use App\Services\PropositionStateService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Group;
+use Tests\Fixtures\GovernedExpressionFixture;
+use Tests\Fixtures\IsolatesClosureOutput;
 use Tests\TestCase;
 
+/** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
+#[Group('component-contract')]
 class CommitParticipationStateTest extends TestCase
 {
+    use IsolatesClosureOutput;
     use RefreshDatabase;
-
-    private Phase $phase;
 
     protected function setUp(): void
     {
         parent::setUp();
+        $this->isolateClosureOutput();
+    }
+
+    private Phase $phase;
+
+    private function historicalOrderPhase(): void
+    {
         $substrate = new Substrate;
         $substrate->forceFill(['slug' => 'inheritance', 'title' => 'Inheritance', 'visibility' => 'public', 'configuration' => []])->save();
         $participant = new Participant;
@@ -72,13 +86,10 @@ class CommitParticipationStateTest extends TestCase
         $this->assertSame($gate->id, $attestation->fresh()->proposition_id);
         $this->assertSame($gate->id, $receipt->fresh()->receiptable_id);
 
-        // A later Commit inherits history transitively, including its predecessor's own touches.
-        $this->touch($actual);
-        $next = $this->node('committal');
-        $this->edge($actual, $next, 'commit');
-        $this->assertSame(4, $state->touchCount($next));
-        $this->assertCount(1, $state->receipts($next));
-        $this->assertCount(1, $state->attestations(collect([$actual, $next])));
+        // Actual Commit inheritance and descendant reset are independently
+        // exercised by CommitSourceHistoryLifecycleTest and
+        // CommitDescendantHistoryLifecycleTest. A Commit of this Committal is
+        // not a lawful way to test transitive inheritance.
     }
 
     public function test_inheritance_respects_effective_attestations_completed_receipts_and_commit_edges_only(): void
@@ -116,18 +127,20 @@ class CommitParticipationStateTest extends TestCase
 
     public function test_new_phase_touches_dirty_the_region_but_completion_is_not_another_touch(): void
     {
-        $node = $this->node('expressive');
-        $measurements = app(\App\Services\PropositionMeasurementService::class);
+        $fixture = new GovernedExpressionFixture;
+        $node = $fixture->expression;
+        $this->phase = $fixture->phase;
+        $measurements = app(PropositionMeasurementService::class);
         $measurement = $measurements->recalculate($node);
         $touch = $this->touch($node);
         $this->assertDatabaseHas('potential_dirty_horizons', [
             'context_horizon_id' => $this->phase->cycle->context_horizon_id, 'measurements_dirty' => true,
         ]);
-        app(\App\Services\PotentialProjectionService::class)->refresh($this->phase->cycle->participant->substrate_id);
+        app(PotentialProjectionService::class)->refresh($this->phase->cycle->participant->substrate_id);
         $this->assertDatabaseCount('potential_dirty_horizons', 0);
         $touch->completed_at = now()->addHour();
         $touch->save();
-        $this->assertSame(\App\Services\Observables\LineageMeasurementService::VERSION,
+        $this->assertSame(LineageMeasurementService::VERSION,
             $measurement->fresh()->calculator_version);
         $this->assertSame(1, app(PropositionStateService::class)->touchCount($node));
     }
@@ -200,15 +213,22 @@ class CommitParticipationStateTest extends TestCase
     {
         $phase = new Phase;
         $phase->forceFill(['cycle_id' => $this->phase->cycle_id, 'kind' => PhaseKind::Persist,
-            'write_register' => 'frontier', 'gate_proposition_id' => $gate->id, 'started_at' => now(), 'completed_at' => now()])->save();
+            'write_register' => $this->phase->cycle->contextHorizon->domain->registerFor(PhaseKind::Persist),
+            'gate_proposition_id' => $gate->id, 'started_at' => now(), 'completed_at' => now()])->save();
+
         return $phase;
     }
 
     private function node(string $tier): Proposition
     {
+        if (! isset($this->phase)) {
+            $this->historicalOrderPhase();
+        }
+
         $node = new Proposition;
         $node->forceFill(['phase_id' => $this->phase->id, 'register' => 'canon', 'tier' => $tier, 'statement' => 'Inherited.'])->save();
         app(LedgerService::class)->record($node);
+
         return $node;
     }
 

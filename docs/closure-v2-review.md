@@ -1,5 +1,10 @@
 # Closure v2 validation notes
 
+> **Historical validation of the currently deployed birth-frozen Closure.**
+> The proposed Cycle-responsive [Historical Extent/Rhythm model](prospective-closure-target.md)
+> is a separate target. These old trajectory expectations are not acceptance
+> criteria for the new lifecycle.
+
 Closure is persisted at Proposition birth and remains historical. The current
 birth version is `closure-birth-v2-comparative-history`; obsolete draft records
 fail closed rather than being reconstructed with today's population.

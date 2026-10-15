@@ -23,21 +23,25 @@ use App\Services\HorizonReceiptService;
 use App\Services\InputPlanService;
 use App\Services\LedgerService;
 use App\Services\MediatedIncomingBiasService;
-use App\Services\Participation\ParticipationContext;
 use App\Services\ParticipationService;
+use App\Services\Participation\ParticipationContext;
 use App\Services\PhaseProgressionService;
 use App\Services\PropositionMeasurementService;
 use App\Services\PropositionOptionService;
 use App\Services\ReceiptContextService;
-use App\Services\RegionalExhaustionMembership;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\CreatesHomologousPositions;
+use Tests\Fixtures\IsolatesClosureOutput;
 use Tests\TestCase;
 
+/** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
+#[Group('component-contract')]
 class MediatedIncomingBiasTest extends TestCase
 {
+    use IsolatesClosureOutput;
     use CreatesHomologousPositions, RefreshDatabase;
 
     private Proposition $a;
@@ -63,10 +67,11 @@ class MediatedIncomingBiasTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->isolateClosureOutput();
         $this->createHomologyActor();
-        $origin = $this->commit(null, 'emergence');
-        $this->a = $this->commit($origin, 'settlement');
-        $this->b = $this->commit($origin, 'settlement');
+        $origin = $this->committedCoordinate(null, 'emergence');
+        $this->a = $this->committedCoordinate($origin, 'settlement');
+        $this->b = $this->committedCoordinate($origin, 'settlement');
         [$readA, $this->gateA] = $this->pair($this->a);
         [$this->readB, $this->gateB] = $this->pair($this->b);
         $localB = $this->expression($this->b, $this->readB, PhaseKind::Disperse);
@@ -189,11 +194,7 @@ class MediatedIncomingBiasTest extends TestCase
         DB::table('horizon_exploration_states')->insert([...$position, 'epoch' => 1]);
         $this->assertCount(1, $this->biasOptions());
         $tragedy = $this->boundaryTragedyFixture($this->result);
-        DB::table('commit_region_exhaustions')->insert(['governing_committal_id' => $this->a->id,
-            'context_horizon_id' => $tragedy->context_horizon_id, 'tragedy_id' => $tragedy->id,
-            'receipt_id' => $tragedy->receipt_id, 'phase_id' => $this->result->phase_id,
-            'terminal_proposition_id' => $this->result->id, 'observed_field_version' => 1, 'exhausted_at' => now()]);
-        app(RegionalExhaustionMembership::class)->publish($this->a->id, [$this->result->id]);
+        $this->assertDatabaseHas('commit_region_exhaustions', ['governing_committal_id' => $tragedy->governing_committal_id]);
         $this->assertTrue($this->biasOptions()->isEmpty());
     }
 
@@ -202,7 +203,7 @@ class MediatedIncomingBiasTest extends TestCase
         $this->attestResult();
         $this->loadedReceiptFixture($this->gateB);
         $this->assertCount(1, $this->biasOptions());
-        $commit = $this->commit($this->a, 'settlement');
+        $commit = $this->committedCoordinate($this->a, 'settlement');
         $this->edge($this->result, $commit, 'commit');
         $this->assertTrue($this->biasOptions()->isEmpty());
     }
@@ -246,7 +247,7 @@ class MediatedIncomingBiasTest extends TestCase
         app(PropositionMeasurementService::class)->project($this->result, .8, -.9, .8);
         $this->assertTrue(app(HomologousBiasService::class)->forPhase($this->bias)->contains('id', $this->result->id));
         $this->assertCount(1, $this->biasOptions());
-        $tragedy = $this->boundaryTragedyFixture($this->bResult);
+        $tragedy = $this->tragedyBesideFixture($this->bResult);
         DB::transaction(fn () => app(ReceiptContextService::class)->desired($this->actor, $this->bias, ['load' => [$tragedy->receipt_id]]));
         app(PropositionMeasurementService::class)->project($this->bResult, .8, -.9, .8,
             chiralityComponents: new ChiralityValues(-.9, -.9));

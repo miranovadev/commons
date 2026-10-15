@@ -25,10 +25,15 @@ use App\Services\PotentialProjectionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Group;
+use Tests\Fixtures\IsolatesClosureOutput;
 use Tests\TestCase;
 
+/** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
+#[Group('component-contract')]
 class CrossoverRecoveryTest extends TestCase
 {
+    use IsolatesClosureOutput;
     use RefreshDatabase;
 
     private Substrate $substrate;
@@ -36,6 +41,7 @@ class CrossoverRecoveryTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->isolateClosureOutput();
         $this->substrate = (new Substrate)->forceFill(['slug' => 'crossover', 'title' => 'Crossover', 'visibility' => 'public', 'configuration' => []]);
         $this->substrate->save();
     }
@@ -254,8 +260,9 @@ class CrossoverRecoveryTest extends TestCase
         $seed = $this->commit($parent, 0.2);
         $terminal = $this->terminal($seed);
         $this->assertFalse(app(CrossoverMarginService::class)->inspect($terminal->cycle)['closed']);
-        $this->boundaryTragedyFixture($this->node($this->phase($seed, PhaseKind::Distinguish)));
-        $this->boundaryTragedyFixture($this->node($this->phase($seed, PhaseKind::Distinguish)));
+        // The existing continuation itself must terminate; unrelated catastrophes
+        // cannot close it merely by reaching a witness count.
+        $this->boundaryTragedyFixture($terminal->gate);
         $this->assertDatabaseCount('commit_region_exhaustions', 1);
         app(ParticipationService::class)->contribute($terminal->cycle->participant, $terminal->id, ['action' => 'participant.rest']);
         $this->assertSame($parent->id, $terminal->cycle->participant->fresh()->current_proposition_id);

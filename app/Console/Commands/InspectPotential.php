@@ -4,7 +4,6 @@ namespace App\Console\Commands;
 
 use App\Exceptions\PotentialProjectionUnavailable;
 use App\Models\Participant;
-use App\Services\ExhaustionService;
 use App\Services\PotentialChargeService;
 use App\Services\PotentialProjectionService;
 use App\Services\ReferencePotentialChargeService;
@@ -35,8 +34,7 @@ final class InspectPotential extends Command
         $result['parent_context_horizon_id'] = $region['local']['parent'];
         $result['region_potential'] = $region['potential'];
         $result['substrate_field_version'] = (int) $participant->substrate->fresh()->field_version;
-        $phase = $cycle?->phases()->orderByDesc('kind')->first();
-        $result['would_tragedy'] = $phase !== null && collect(app(ExhaustionService::class)->inspect($phase)['branches'])->contains('exhausted', true);
+        $result['would_tragedy'] = false; // Potential and inspection never publish terminal encounters.
         if ($this->option('verify')) {
             $reference = app(ReferencePotentialChargeService::class)->inspectRecoveryFrom($position, $cycle?->contextHorizon, $participant)['selection'];
             $result['reference_matches'] = ($selection['proposition_id'] ?? null) === ($reference['proposition']->id ?? null)

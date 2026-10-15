@@ -1,0 +1,59 @@
+test,checkpoint,current,change,Stage2
+Tests\Unit\PhaseProfileComparisonTest::test_invalid_profiles_are_rejected#4,passed,passed,retained passing,passed
+Tests\Unit\PhaseProfileComparisonTest::test_invalid_profiles_are_rejected#5,passed,passed,retained passing,passed
+Tests\Unit\PotentialRegionCalculatorTest::test_branch_aggregation_cannot_borrow_another_origin_branch,passed,passed,retained passing,passed
+Tests\Unit\PotentialRegionCalculatorTest::test_dominated_sibling_changes_do_not_change_provenance_summary,passed,passed,retained passing,passed
+Tests\Unit\PotentialRegionCalculatorTest::test_exclusion_preserves_an_alternative_path_through_a_diamond,passed,passed,retained passing,passed
+Tests\Unit\PotentialRegionCalculatorTest::test_exhausting_best_sibling_exposes_next_maximum_without_subtraction,passed,passed,retained passing,passed
+Tests\Unit\PotentialRegionCalculatorTest::test_nearer_weaker_candidate_is_retained_because_attenuation_can_change_the_winner,passed,passed,retained passing,passed
+Tests\Unit\PotentialRegionCalculatorTest::test_viable_descendant_shadows_stronger_parent_and_exhaustion_reveals_parent,passed,passed,retained passing,passed
+Tests\Unit\ProjectionServiceTest::test_signed_measurements_split_into_symmetric_projections,passed,passed,retained passing,passed
+Tests\Unit\ProspectiveClosureCalculatorTest::test_first_settlement_retains_fixed_weights_before_cadence_matures,passed,passed,retained passing,absent
+Tests\Unit\ProspectiveClosureCalculatorTest::test_origin_constants_do_not_require_an_empirical_population,passed,passed,retained passing,absent
+Tests\Unit\ProspectiveClosureCalculatorTest::test_repeated_domains_use_raw_equally_weighted_intervals_including_origin,passed,passed,retained passing,absent
+Tests\Unit\ProspectiveClosureCalculatorTest::test_zero_and_unavailable_remain_distinct_and_zero_retains_independent_directions,passed,passed,retained passing,absent
+Tests\Unit\RecoveryBasinResolverTest::test_a_viable_current_branch_does_not_compete_with_its_parents_other_children,passed,passed,retained passing,passed
+Tests\Unit\RecoveryBasinResolverTest::test_changes_in_a_descendant_cannot_change_current_horizon_scope,passed,passed,retained passing,passed
+Tests\Unit\RecoveryBasinResolverTest::test_corrupt_horizon_cycles_terminate_with_an_error,passed,passed,retained passing,passed
+Tests\Unit\RecoveryBasinResolverTest::test_current_horizon_candidates_exclude_viable_downstream_domains,passed,passed,retained passing,passed
+Tests\Unit\RecoveryBasinResolverTest::test_exhaustion_can_reach_the_parent_but_cannot_discover_a_sibling,passed,passed,retained passing,passed
+Tests\Unit\RecoveryBasinResolverTest::test_exhaustion_does_not_authorize_crossing_a_boundary_absent_from_the_walked_lineage,passed,passed,retained passing,passed
+Tests\Unit\RecoveryBasinResolverTest::test_exhaustion_reaches_historical_domains_and_the_root_without_revisiting_basins,passed,passed,retained passing,passed
+Tests\Unit\RecoveryBasinResolverTest::test_missing_provenance_does_not_jump_to_an_unrelated_root,passed,passed,retained passing,passed
+Tests\Unit\RecoveryBasinResolverTest::test_sibling_and_descendant_horizons_are_never_searched,passed,passed,retained passing,passed
+Tests\Unit\WakeConfigurationTest::test_defaults_and_inclusive_random_bounds,passed,passed,retained passing,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""equal range""",passed,passed,retained passing,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""invalid termination""",passed,passed,retained passing,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""offset mode invalid""",passed,passed,retained passing,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""offset mode random""",passed,passed,retained passing,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""offset mode seconds""",passed,passed,retained passing,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""random_from -1""",passed,passed,retained passing,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""random_from 0""",passed,passed,retained passing,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""random_from 1.5""",passed,passed,retained passing,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""random_from 60""",passed,passed,retained passing,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""random_from 61""",passed,passed,retained passing,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""random_from invalid""",passed,passed,retained passing,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""random_to -1""",passed,passed,retained passing,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""random_to 0""",passed,passed,retained passing,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""random_to 1.5""",passed,passed,retained passing,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""random_to 60""",passed,passed,retained passing,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""random_to 61""",passed,passed,retained passing,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""random_to invalid""",passed,passed,retained passing,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""reversed range""",passed,passed,retained passing,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""seconds -1""",passed,passed,retained passing,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""seconds 0""",passed,passed,retained passing,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""seconds 1.5""",passed,passed,retained passing,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""seconds 60""",passed,passed,retained passing,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""seconds 61""",passed,passed,retained passing,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""seconds invalid""",passed,passed,retained passing,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""termination cycle""",passed,passed,retained passing,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""termination phase""",passed,passed,retained passing,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""termination rest""",passed,passed,retained passing,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout -1""",passed,passed,retained passing,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout 0""",passed,passed,retained passing,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout 1""",passed,passed,retained passing,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout 1.5""",passed,passed,retained passing,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout 1800""",passed,passed,retained passing,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout 1801""",passed,passed,retained passing,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout 600""",passed,passed,retained passing,passed
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout invalid""",passed,passed,retained passing,passed

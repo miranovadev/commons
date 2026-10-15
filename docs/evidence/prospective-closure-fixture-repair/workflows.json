@@ -1,0 +1,38 @@
+[
+  {
+    "id": 38226078326,
+    "status": "completed",
+    "conclusion": "failure",
+    "head": "117e657c456d3f7856903458075507b6bd5cd141",
+    "start": "2026-10-12T08:50:36Z",
+    "end": "2026-10-12T08:58:28Z",
+    "seconds": 472
+  },
+  {
+    "id": 38226084432,
+    "status": "completed",
+    "conclusion": "failure",
+    "head": "117e657c456d3f7856903458075507b6bd5cd141",
+    "start": "2026-10-12T08:50:39Z",
+    "end": "2026-10-12T08:56:57Z",
+    "seconds": 378
+  },
+  {
+    "id": 38226078278,
+    "status": "completed",
+    "conclusion": "failure",
+    "head": "117e657c456d3f7856903458075507b6bd5cd141",
+    "start": "2026-10-12T08:50:36Z",
+    "end": "2026-10-12T08:54:36Z",
+    "seconds": 240
+  },
+  {
+    "id": 38226084158,
+    "status": "completed",
+    "conclusion": "success",
+    "head": "117e657c456d3f7856903458075507b6bd5cd141",
+    "start": "2026-10-12T08:50:39Z",
+    "end": "2026-10-12T08:52:07Z",
+    "seconds": 88
+  }
+]

@@ -85,7 +85,7 @@ class HorizonFailureInvariantTest extends TestCase
         $this->assertSame(0, Tragedy::count());
     }
 
-    public function test_audit_validates_receipt_exercise_and_detects_corrupt_regional_proof(): void
+    public function test_audit_validates_terminal_events_and_database_rejects_proof_corruption(): void
     {
         [$opening, $horizon, $tragedy] = $this->firstFailure();
         $audit = app(ExhaustionAuditService::class);
@@ -94,11 +94,9 @@ class HorizonFailureInvariantTest extends TestCase
         $this->rest($terminal);
         $this->assertTrue($audit->inspect($this->substrate->id)['matches']);
         $this->artisan('commons:exhaustion-audit', ['substrate' => $this->substrate->id])->assertSuccessful();
+        $this->expectException(\Illuminate\Database\QueryException::class);
         DB::table('commit_region_exhaustions')->where('context_horizon_id', $horizon->id)
             ->update(['terminal_proposition_id' => $this->origin->id]);
-        $result = $audit->inspect($this->substrate->id);
-        $this->assertFalse($result['matches']);
-        $this->assertSame([$horizon->id], $result['horizon_mismatches']);
     }
 
     public function test_legacy_retirement_import_archives_history_without_actionability_effects(): void

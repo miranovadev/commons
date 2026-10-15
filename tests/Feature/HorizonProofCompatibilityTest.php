@@ -76,14 +76,13 @@ class HorizonProofCompatibilityTest extends TestCase
         $this->assertDatabaseHas('propositions', ['id' => $this->origin->id]);
     }
 
-    public function test_rollbacks_refuse_to_discard_exercised_proof(): void
+    public function test_stage_four_rollback_refuses_to_discard_terminal_evidence(): void
     {
         [$opening, , $tragedy] = $this->firstFailure();
-        [$terminal] = $this->legacyExercise($opening, $tragedy);
+        [$terminal] = $this->exercise($opening, $tragedy);
         $this->rest($terminal);
-        $this->archiveExhaustion($terminal, $tragedy);
-        foreach (['000100_scope_receipts_to_horizons', '000300_record_horizon_tragedies'] as $name) {
-            $migration = require database_path('migrations/2026_09_18_'.$name.'.php');
+        foreach (['2026_10_14_000000_record_terminal_encounters', '2026_09_22_000000_scope_exhaustion_to_commit_regions'] as $name) {
+            $migration = require database_path('migrations/'.$name.'.php');
             try {
                 $migration->down();
                 $this->fail('Rollback discarded persistent proof: '.$name);
@@ -91,15 +90,8 @@ class HorizonProofCompatibilityTest extends TestCase
                 $this->assertStringContainsString('Cannot discard', $error->getMessage());
             }
         }
-        $regional = require database_path('migrations/2026_09_22_000000_scope_exhaustion_to_commit_regions.php');
-        try {
-            $regional->down();
-            $this->fail('Rollback discarded regional proof');
-        } catch (\RuntimeException $error) {
-            $this->assertStringContainsString('Cannot discard', $error->getMessage());
-        }
         $this->assertDatabaseCount('commit_region_exhaustions', 1);
         $this->assertDatabaseCount('tragedies', 1);
-        $this->assertDatabaseCount('receipt_consumptions', 1);
+        $this->assertDatabaseCount('receipt_consumptions', 0);
     }
 }

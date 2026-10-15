@@ -1,0 +1,4 @@
+test,result,category,finding,failure_summary,first_test_frame,assertions,seconds
+Tests\Feature\SpentContinuationTest::test_real_mediate_arrival_can_rest_without_mandatory_receipt_reads,passed,,,,,4,2.972841
+Tests\Feature\SpentContinuationTest::test_mediate_failure_blocks_the_previously_attested_distinguish_route,passed,,,,,28,5.196738
+Tests\Feature\SpentContinuationTest::test_all_spent_without_potential_can_generate_and_advance_its_epoch,passed,,,,,8,3.229894

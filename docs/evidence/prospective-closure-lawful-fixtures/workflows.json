@@ -1,0 +1,165 @@
+{
+  "tested_head": "111583715db7b16a3ada52baf0f698e40823bf3e",
+  "final_runs": [
+    {
+      "id": 38295670731,
+      "status": "completed",
+      "conclusion": "failure",
+      "head": "111583715db7b16a3ada52baf0f698e40823bf3e",
+      "start": "2026-10-12T19:08:41Z",
+      "end": "2026-10-12T19:18:00Z",
+      "url": "https://github.com/miranovadev/commons/actions/runs/38295670731"
+    },
+    {
+      "id": 38295678417,
+      "status": "completed",
+      "conclusion": "failure",
+      "head": "111583715db7b16a3ada52baf0f698e40823bf3e",
+      "start": "2026-10-12T19:08:45Z",
+      "end": "2026-10-12T19:18:27Z",
+      "url": "https://github.com/miranovadev/commons/actions/runs/38295678417"
+    },
+    {
+      "id": 38295670764,
+      "status": "completed",
+      "conclusion": "failure",
+      "head": "111583715db7b16a3ada52baf0f698e40823bf3e",
+      "start": "2026-10-12T19:08:41Z",
+      "end": "2026-10-12T19:13:12Z",
+      "url": "https://github.com/miranovadev/commons/actions/runs/38295670764"
+    },
+    {
+      "id": 38295678395,
+      "status": "completed",
+      "conclusion": "success",
+      "head": "111583715db7b16a3ada52baf0f698e40823bf3e",
+      "start": "2026-10-12T19:08:45Z",
+      "end": "2026-10-12T19:10:07Z",
+      "url": "https://github.com/miranovadev/commons/actions/runs/38295678395"
+    }
+  ],
+  "intermediate_complete": [
+    {
+      "id": 38293914233,
+      "name": "Core",
+      "head": "fa7a908de25c2b0edb1827b7ad29b2f483c7e634",
+      "status": "completed",
+      "conclusion": "failure",
+      "started": "2026-10-12T18:53:06Z",
+      "updated": "2026-10-12T19:02:51Z",
+      "wall_seconds": 585
+    },
+    {
+      "id": 38293925668,
+      "name": "Integration",
+      "head": "fa7a908de25c2b0edb1827b7ad29b2f483c7e634",
+      "status": "completed",
+      "conclusion": "failure",
+      "started": "2026-10-12T18:53:12Z",
+      "updated": "2026-10-12T19:01:58Z",
+      "wall_seconds": 526
+    },
+    {
+      "id": 38293914123,
+      "name": "Phase Profile contracts",
+      "head": "fa7a908de25c2b0edb1827b7ad29b2f483c7e634",
+      "status": "completed",
+      "conclusion": "failure",
+      "started": "2026-10-12T18:53:06Z",
+      "updated": "2026-10-12T18:58:33Z",
+      "wall_seconds": 327
+    },
+    {
+      "id": 38293924801,
+      "name": "Inspector browser review",
+      "head": "fa7a908de25c2b0edb1827b7ad29b2f483c7e634",
+      "status": "completed",
+      "conclusion": "success",
+      "started": "2026-10-12T18:53:12Z",
+      "updated": "2026-10-12T18:54:38Z",
+      "wall_seconds": 86
+    }
+  ],
+  "note": "Superseded/cancelled runs are not used for final complete-suite evidence.",
+  "focused": {
+    "postgresql": {
+      "phase_profile": [
+        48,
+        0,
+        300,
+        69.92
+      ],
+      "prospective_closure": [
+        14,
+        0,
+        85,
+        15.24
+      ],
+      "observable_ledger": [
+        98,
+        42,
+        1359,
+        138.7
+      ],
+      "fixtures": [
+        148,
+        15,
+        1749,
+        232.31
+      ],
+      "lawful_commit": [
+        1,
+        0,
+        107,
+        119.3
+      ]
+    },
+    "sqlite": {
+      "phase_profile": [
+        48,
+        0,
+        300,
+        20.72
+      ],
+      "prospective_closure": [
+        14,
+        0,
+        85,
+        4.18
+      ],
+      "observable_ledger": [
+        98,
+        42,
+        1359,
+        34.67
+      ],
+      "fixtures": [
+        147,
+        15,
+        1746,
+        61.2
+      ],
+      "fixtures_existing_pg_only_skip": 1,
+      "lawful_commit": [
+        1,
+        0,
+        107,
+        25.54
+      ]
+    },
+    "array_columns": [
+      "passed",
+      "failed",
+      "assertions",
+      "php_seconds"
+    ],
+    "pint_25_files": "passed"
+  },
+  "sqlite_migration_check": {
+    "passed": 12,
+    "failed": 6,
+    "assertions": 45,
+    "seconds": 3.18,
+    "note": "Six existing CommittalClosure missing-history fixture errors; check is not green."
+  }
+}

@@ -1,0 +1,104 @@
+test,result,category,finding,failure_summary,first_test_frame,assertions,seconds
+Tests\Feature\ReinforcementTest::test_rollback_refuses_to_destroy_shared_signature_history,passed,,,,,4,0.648236
+"Tests\Feature\ReinforcementTest::test_prospective_closure_ignores_loads_and_does_not_inherit_either_frozen_entry_pole""negative""",failure,B (Stage 3 Cycle trajectory),"Fixture creates a genuine governing Cycle for each reader; Closure metadata can change at that event, independently of the subsequent Receipt load.","Tests\Feature\ReinforcementTest::test_prospective_closure_ignores_loads_and_does_not_inherit_either_frozen_entry_pole with data set ""negative""
+Failed asserting that two arrays are identical.
+--- Expected
++++ Actual
+@@ @@
+                 3 => 0.0,
+                 4 => 0.0,
+                 5 => 0.0,
+-                6 => 1.0,
++                6 => 1.5,
+             ],
+             'sample_counts' => Array &6 [
+                 0 => 1,
+@@ @@
+    ",tests/Feature/ReinforcementTest.php:310,8,0.551095
+"Tests\Feature\ReinforcementTest::test_prospective_closure_ignores_loads_and_does_not_inherit_either_frozen_entry_pole""positive""",failure,B (Stage 3 Cycle trajectory),"Fixture creates a genuine governing Cycle for each reader; Closure metadata can change at that event, independently of the subsequent Receipt load.","Tests\Feature\ReinforcementTest::test_prospective_closure_ignores_loads_and_does_not_inherit_either_frozen_entry_pole with data set ""positive""
+Failed asserting that two arrays are identical.
+--- Expected
++++ Actual
+@@ @@
+                 3 => 0.0,
+                 4 => 0.0,
+                 5 => 0.0,
+-                6 => 1.0,
++                6 => 1.5,
+             ],
+             'sample_counts' => Array &6 [
+                 0 => 1,
+@@ @@
+    ",tests/Feature/ReinforcementTest.php:310,8,0.561556
+Tests\Feature\ReinforcementTest::test_receipt_grounding_is_required_without_changing_measurement,passed,,,,,7,0.481980
+Tests\Feature\SharedReclassificationTest::test_receipt_and_attestation_allow_a_foreign_participant_one_shared_classification#0,passed,,,,,10,1.636912
+Tests\Feature\SharedReclassificationTest::test_receipt_and_attestation_allow_a_foreign_participant_one_shared_classification#1,passed,,,,,10,2.017838
+Tests\Feature\SpentContinuationRealtimeTest::test_spent_and_epoch_events_are_compact_commit_scoped_and_idempotent,passed,,,,,12,4.860028
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Distinguish Variant without traversal""",error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion with data set ""Distinguish Variant without traversal""
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:500,0,1.383555
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Persist Variant without traversal""",error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion with data set ""Persist Variant without traversal""
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:500,0,0.122927
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Persist Instrument without traversal""",error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion with data set ""Persist Instrument without traversal""
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:500,0,0.120039
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Disperse first Variant""",error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion with data set ""Disperse first Variant""
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:500,0,0.120857
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Constrain owned Gate Reclassify""",error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion with data set ""Constrain owned Gate Reclassify""
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:500,0,0.117876
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Constrain owned descendant Revise""",error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion with data set ""Constrain owned descendant Revise""
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:500,0,0.118826
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Constrain untouched descendant Attestation""",error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion with data set ""Constrain untouched descendant Attestation""
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:500,0,0.119849
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Constrain attested descendant Traverse""",error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion with data set ""Constrain attested descendant Traverse""
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:500,0,0.118963
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Mediate counterpart outside Write""",error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion with data set ""Mediate counterpart outside Write""
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:500,0,0.119655
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Bias Instrument without traversal""",error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion with data set ""Bias Instrument without traversal""
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:500,0,0.119923
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Constrain exhausted non-owner""",error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion with data set ""Constrain exhausted non-owner""
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:500,0,0.124487
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Mediate no counterpart or continuation""",error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion with data set ""Mediate no counterpart or continuation""
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:500,0,0.121463
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Bias no counterpart instrument or continuation""",error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion with data set ""Bias no counterpart instrument or continuation""
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:500,0,0.120925
+"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion""Order inadmissible Commit with no continuation""",error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\TragedyTest::test_rest_is_exclusive_to_complete_action_exhaustion with data set ""Order inadmissible Commit with no continuation""
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:500,0,0.119650
+Tests\Feature\TragedyWarrantSeparationTest::test_only_tragedy_is_visible_but_neither_shared_nor_instrument_evidence#0,passed,,,,,31,1.202557
+Tests\Feature\TragedyWarrantSeparationTest::test_only_tragedy_is_visible_but_neither_shared_nor_instrument_evidence#1,passed,,,,,31,1.303533
+Tests\Feature\TragedyWarrantSeparationTest::test_only_tragedy_is_visible_but_neither_shared_nor_instrument_evidence#2,passed,,,,,31,1.443758
+Tests\Feature\TragedyWarrantSeparationTest::test_tragedy_does_not_suppress_instrument_when_the_only_ordinary_receipt_was_consumed,passed,,,,,5,1.136046
+Tests\Feature\TragedyWarrantSeparationTest::test_non_bias_schema_and_dispatcher_reject_tragedy_even_with_ordinary_evidence_available,passed,,,,,5,1.122668
+Tests\Feature\TragedyWarrantSeparationTest::test_warrant_memory_options_do_not_grant_evidence_read_or_replay#0,passed,,,,,6,0.935944
+Tests\Feature\TragedyWarrantSeparationTest::test_warrant_memory_options_do_not_grant_evidence_read_or_replay#1,passed,,,,,6,0.905969
+Tests\Feature\TragedyWarrantSeparationTest::test_archived_load_remains_auditable_without_becoming_active_evidence#0,passed,,,,,9,0.725405
+Tests\Feature\TragedyWarrantSeparationTest::test_archived_load_remains_auditable_without_becoming_active_evidence#1,passed,,,,,12,1.792077
+Tests\Feature\WebSearchProviderTest::test_provider_returns_only_bounded_normalized_resources,passed,,,,,12,0.013221
+"Tests\Feature\WebSearchProviderTest::test_provider_errors_are_bounded_and_sanitized""unauthorized""",passed,,,,,2,0.007378
+"Tests\Feature\WebSearchProviderTest::test_provider_errors_are_bounded_and_sanitized""rate limited""",passed,,,,,2,0.007036
+"Tests\Feature\WebSearchProviderTest::test_provider_errors_are_bounded_and_sanitized""server failure""",passed,,,,,2,0.006845
+"Tests\Feature\WebSearchProviderTest::test_provider_errors_are_bounded_and_sanitized""redirect""",passed,,,,,2,0.006788
+"Tests\Feature\WebSearchProviderTest::test_provider_errors_are_bounded_and_sanitized""not JSON""",passed,,,,,2,0.006671
+"Tests\Feature\WebSearchProviderTest::test_provider_errors_are_bounded_and_sanitized""missing results""",passed,,,,,2,0.006796
+"Tests\Feature\WebSearchProviderTest::test_provider_errors_are_bounded_and_sanitized""non-list results""",passed,,,,,2,0.006767
+"Tests\Feature\WebSearchProviderTest::test_provider_errors_are_bounded_and_sanitized""malformed result""",passed,,,,,2,0.012350
+"Tests\Feature\WebSearchProviderTest::test_provider_errors_are_bounded_and_sanitized""unsafe scheme""",passed,,,,,2,0.007453
+"Tests\Feature\WebSearchProviderTest::test_provider_errors_are_bounded_and_sanitized""NUL content""",passed,,,,,2,0.007082
+"Tests\Feature\WebSearchProviderTest::test_provider_errors_are_bounded_and_sanitized""oversized""",passed,,,,,2,0.008336
+Tests\Feature\WebSearchProviderTest::test_connection_failure_is_sanitized,passed,,,,,2,0.007301
+Tests\Feature\WebSearchProviderTest::test_unsupported_configuration_does_not_send_credentials,passed,,,,,2,0.006824
+Tests\Feature\WebSearchReceiptTest::test_search_round_trips_and_loads_with_the_next_forward_contribution,passed,,,,,29,2.486805
+Tests\Feature\WebSearchReceiptTest::test_invalid_query_is_rejected_by_schema_and_domain_without_execution#0,passed,,,,,3,1.126888
+Tests\Feature\WebSearchReceiptTest::test_invalid_query_is_rejected_by_schema_and_domain_without_execution#1,passed,,,,,3,1.126033
+Tests\Feature\WebSearchReceiptTest::test_invalid_query_is_rejected_by_schema_and_domain_without_execution#2,passed,,,,,3,1.156766
+Tests\Feature\WebSearchReceiptTest::test_invalid_query_is_rejected_by_schema_and_domain_without_execution#3,passed,,,,,3,1.157791
+Tests\Feature\WebSearchReceiptTest::test_invalid_query_is_rejected_by_schema_and_domain_without_execution#4,passed,,,,,3,1.157154
+Tests\Feature\WebSearchReceiptTest::test_invalid_query_is_rejected_by_schema_and_domain_without_execution#5,passed,,,,,3,1.148721
+Tests\Feature\WebSearchReceiptTest::test_effective_observation_suppresses_replay_even_when_external_results_change,passed,,,,,6,1.194840
+Tests\Feature\WebSearchReceiptTest::test_catalogue_does_not_expose_load_or_equivalent_replay_actions,passed,,,,,8,1.343946
+Tests\Feature\WebSearchReceiptTest::test_capabilities_gate_options_and_cite_is_not_replayable,passed,,,,,13,1.778612
+Tests\Feature\WebSearchReceiptTest::test_replay_rejects_hidden_receipts_wrong_participants_and_ineligible_targets,passed,,,,,5,1.643044
+Tests\Feature\WebSearchReceiptTest::test_failed_observation_is_immutable_and_the_query_can_be_retried_in_fresh_evidence,passed,,,,,9,1.369950
+Tests\Feature\WebSearchReceiptTest::test_loaded_external_content_stays_in_evidence_and_cannot_change_prompt_or_action_schema,passed,,,,,11,1.589693
+Tests\Feature\WebSearchReceiptTest::test_provider_abstraction_does_not_require_tavily_fields,passed,,,,,4,1.145063
+Tests\Feature\WebSearchReceiptTest::test_historical_hyperlink_replays_retain_the_stability_clock_and_attestation_subject,passed,,,,,13,1.330829
+Tests\Feature\WebSearchReceiptTest::test_stored_invocation_cannot_be_changed_after_execution,passed,,,,,1,1.243108
+Tests\Feature\WebSearchReceiptTest::test_replay_history_blocks_destructive_migration_rollback,passed,,,,,2,1.230749

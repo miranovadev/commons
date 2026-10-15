@@ -82,14 +82,14 @@ test('late-phase notices expose backend component directions without granting ac
     for (const admissible of [true, false]) {
       const state = { gate_id: 'gate', admissible, reason: admissible ? null : 'component_directions_disagree' };
       const notices = ui.nativeAdmissibility({
-        correspondence_admissibility: { ...state, shape_topology_direction: sign, cardinal_position_direction: sign },
+        correspondence_admissibility: { ...state, shape_topology_direction: sign, phase_profile_direction: sign },
         chirality_admissibility: { ...state, orientation_direction: sign, attestation_cadence_direction: sign },
-        commitment: { requirements: { closure: admissible }, closure: { depth: 0, cadence: 0, depth_direction: sign, cadence_direction: sign } },
+        commitment: { requirements: { closure: admissible }, closure: { historical_extent: 0, historical_rhythm: 0, historical_extent_direction: sign, historical_rhythm_direction: sign } },
       });
       for (const [id, labels, action] of [
-        ['correspondence-admissibility', ['Shape Topology', 'Cardinal Position'], 'Reconcile'],
+        ['correspondence-admissibility', ['Shape Topology', 'Phase Profile'], 'Reconcile'],
         ['chirality-admissibility', ['Orientation', 'Attestation Cadence'], 'Reclassify'],
-        ['closure-preview', ['Depth', 'Cadence'], 'Commit'],
+        ['closure-preview', ['Historical Extent', 'Historical Rhythm'], 'Commit'],
       ]) {
         const notice = notices.find(n => n.id === id);
         assert.equal(notice.satisfied, admissible);

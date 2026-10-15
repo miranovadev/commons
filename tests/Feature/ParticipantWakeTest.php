@@ -29,7 +29,6 @@ use App\Services\WakeClock;
 use App\Services\WakeOffsetResolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Queue\Job;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -38,6 +37,7 @@ use Illuminate\Support\Facades\Queue;
 use Mockery;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\ParticipantContextFixture;
+use Tests\Support\RefreshIntegrationDatabase as RefreshDatabase;
 use Tests\TestCase;
 
 class ParticipantWakeTest extends TestCase

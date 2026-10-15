@@ -3,9 +3,9 @@
 namespace Tests\Feature;
 
 use App\Services\Observables\LineageMeasurementService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\HorizonCycleFixture;
+use Tests\Support\RefreshIntegrationDatabase as RefreshDatabase;
 use Tests\TestCase;
 
 #[Group('integration')]
@@ -15,7 +15,7 @@ class OperationalClosurePathTest extends TestCase
 
     public function test_receipt_backed_full_cycle_commits_with_real_hysteretic_closure_calculations(): void
     {
-        $commit = $this->driveHorizonCycle(realClosure: true);
+        $commit = $this->driveHorizonCycle(realClosure: true, actionBudget: 101);
         $snapshot = $commit->commitmentSnapshot;
         $this->assertSame(LineageMeasurementService::VERSION, $snapshot->calculator_version);
         $this->assertSame($snapshot->depth_direction, $snapshot->cadence_direction);

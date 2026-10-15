@@ -17,8 +17,12 @@ class ParticipationHttpHarnessTest extends ScriptedParticipationTestCase
         $this->startSubstrate();
         $actor = $this->joinParticipant('explorer');
         $origin = $this->enterParticipant($actor, true)['current_proposition_id'];
-        $state = $this->reachFirstCommit($actor, $origin);
+        // C1 reaches an advertised Commit at the old 100-action boundary.
+        // Execute it under the unchanged published-action policy.
+        $state = $this->driveUntil($actor,
+            fn ($state) => ($state['last_commitment']['proposition_id'] ?? $origin) !== $origin, 101);
         $this->assertSame('distinguish', $state['plan']['phase']['kind']);
+        $this->assertSame($state['last_commitment']['proposition_id'], $state['plan']['gate_id']);
         $snapshot = DB::table('commitment_snapshots')->where('proposition_id', $state['last_commitment']['proposition_id'])->sole();
         $this->assertSame(LineageMeasurementService::VERSION, $snapshot->calculator_version);
         $this->assertSame($snapshot->depth_direction, $snapshot->cadence_direction);

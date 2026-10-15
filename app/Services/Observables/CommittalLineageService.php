@@ -90,7 +90,7 @@ final class CommittalLineageService
     public function interval(Proposition $position, ?ParticipationContext $context = null): int
     {
         if ($position->exists) {
-            return app(ClosureBirthService::class)->stored($position, $context)['cadence_interval'];
+            return app(ProspectiveClosureService::class)->stored($position, $context)['cadence_interval'];
         }
 
         return $this->prospectiveInterval($position, $context);

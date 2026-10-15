@@ -1,0 +1,43 @@
+test,result,category,finding,failure_summary,first_test_frame,assertions,seconds
+Tests\Feature\ParticipantPromptCacheTest::test_layers_preserve_all_cognition_and_both_action_schemas#2,passed,,,,,18,0.010823
+Tests\Feature\ParticipantPromptCacheTest::test_layers_preserve_all_cognition_and_both_action_schemas#3,passed,,,,,18,0.010593
+Tests\Feature\ParticipantPromptCacheTest::test_layers_preserve_all_cognition_and_both_action_schemas#4,passed,,,,,18,0.010297
+Tests\Feature\ParticipantPromptCacheTest::test_layers_preserve_all_cognition_and_both_action_schemas#5,passed,,,,,18,0.010253
+Tests\Feature\ParticipantPromptCacheTest::test_layers_preserve_all_cognition_and_both_action_schemas#6,passed,,,,,18,0.010067
+Tests\Feature\ParticipantPromptCacheTest::test_object_key_and_database_receipt_order_do_not_change_serialization,passed,,,,,1,0.009474
+Tests\Feature\ParticipantPromptCacheTest::test_dynamic_state_cannot_rewrite_evidence_and_new_loads_append,passed,,,,,7,0.010712
+Tests\Feature\ParticipantPromptCacheTest::test_ranked_results_and_semantic_lists_keep_their_exact_order,passed,,,,,2,0.009386
+Tests\Feature\ParticipantPromptCacheTest::test_provider_sends_two_supported_boundaries_or_implicit_caching#0,passed,,,,,8,0.014182
+Tests\Feature\ParticipantPromptCacheTest::test_provider_sends_two_supported_boundaries_or_implicit_caching#1,passed,,,,,8,0.010635
+Tests\Feature\ParticipantPromptCacheTest::test_provider_sends_two_supported_boundaries_or_implicit_caching#2,passed,,,,,10,0.010293
+Tests\Feature\ParticipantPromptCacheTest::test_provider_sends_two_supported_boundaries_or_implicit_caching#3,passed,,,,,10,0.010193
+Tests\Feature\ParticipantPromptCacheTest::test_provider_sends_two_supported_boundaries_or_implicit_caching#4,passed,,,,,10,0.010254
+Tests\Feature\ParticipantPromptCacheTest::test_provider_sends_two_supported_boundaries_or_implicit_caching#5,passed,,,,,10,0.010163
+Tests\Feature\ParticipantPromptCacheTest::test_provider_sends_two_supported_boundaries_or_implicit_caching#6,passed,,,,,8,0.010140
+Tests\Feature\ParticipantPromptCacheTest::test_cache_family_is_stable_across_wakes_and_separates_model_substrate_and_constitution,passed,,,,,14,0.028101
+Tests\Feature\ParticipantPromptCacheTest::test_all_contract_content_versions_the_family_without_entering_model_context,passed,,,,,4,0.009941
+Tests\Feature\ParticipantPromptCacheTest::test_usage_is_logged_even_on_refusal_without_prompt_content,passed,,,,,15,0.012660
+Tests\Feature\ParticipantPromptCacheTest::test_unknown_usage_is_not_reported_as_zero_and_logger_failure_cannot_fail_inference,passed,,,,,9,0.009595
+Tests\Feature\PropositionLocalChiralityTest::test_own_create_and_replacement_recalculate_and_record_only_own_intervals,passed,,,,,6,1.881246
+Tests\Feature\PropositionLocalChiralityTest::test_cycles_unrelated_attestations_and_projection_reads_do_not_change_local_state,passed,,,,,2,1.321108
+Tests\Feature\PropositionLocalChiralityTest::test_reclassification_and_descendants_do_not_mutate_ancestors_or_inherit_local_state,passed,,,,,13,0.847518
+Tests\Feature\PropositionLocalChiralityTest::test_parent_influence_remains_downstream_through_existing_attenuation,passed,,,,,2,0.580898
+Tests\Feature\PropositionLocalChiralityTest::test_zero_hysteresis_is_local_and_not_overwritten_by_projection,passed,,,,,3,0.604363
+Tests\Feature\PropositionLocalChiralityTest::test_attestation_measurement_and_cursor_roll_back_atomically,passed,,,,,5,0.444789
+Tests\Feature\PropositionLocalChiralityTest::test_missing_historical_state_is_not_reconstructed_from_live_population,passed,,,,,2,0.346093
+Tests\Feature\PropositionLocalChiralityTest::test_existing_unattested_proposition_can_start_at_its_first_genuine_act,passed,,,,,3,0.351398
+Tests\Feature\PropositionLocalChiralityTest::test_duplicate_ledger_record_is_not_another_beat,passed,,,,,1,0.351747
+Tests\Feature\PropositionLocalChiralityTest::test_real_reclassify_preserves_parent_state_and_resets_the_result,passed,,,,,5,1.104961
+Tests\Feature\PropositionLocalChiralityTest::test_real_dispatch_creates_and_changes_only_the_target_local_measurement,passed,,,,,3,1.545335
+Tests\Feature\ReceiptCapabilitiesMigrationTest::test_upgrade_preserves_legacy_observations_without_backfilling_loads,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\ReceiptCapabilitiesMigrationTest::test_upgrade_preserves_legacy_observations_without_backfilling_loads
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/Feature/ReceiptCapabilitiesMigrationTest.php:37,0,1.969719
+Tests\Feature\RegionalBoundaryLifecycleTest::test_repeated_failure_before_receipt_use_keeps_horizon_open,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\RegionalBoundaryLifecycleTest::test_repeated_failure_before_receipt_use_keeps_horizon_open
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:86,0,1.213365
+Tests\Feature\RegionalBoundaryLifecycleTest::test_second_fresh_boundary_exhausts_exactly_once_without_receipt_use,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\RegionalBoundaryLifecycleTest::test_second_fresh_boundary_exhausts_exactly_once_without_receipt_use
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:86,0,0.464032
+Tests\Feature\RegionalBoundaryLifecycleTest::test_positive_charge_after_tragedy_and_later_rest_keep_region_open,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\RegionalBoundaryLifecycleTest::test_positive_charge_after_tragedy_and_later_rest_keep_region_open
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:86,0,0.532014
+Tests\Feature\RegionalBoundaryLifecycleTest::test_legacy_pruning_and_old_exhaustion_do_not_control_new_semantics,passed,,,,,1,0.382869
+Tests\Feature\RegionalBoundaryLifecycleTest::test_child_exhaustion_enriches_parent_tragedy_with_ids_and_loads_statements_locally,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\RegionalBoundaryLifecycleTest::test_child_exhaustion_enriches_parent_tragedy_with_ids_and_loads_statements_locally
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:86,0,0.463595
+Tests\Feature\ReverbTransportTest::test_configured_reverb_delivers_identifier_notifications_to_a_real_websocket_client,passed,,,,,6,0.279958

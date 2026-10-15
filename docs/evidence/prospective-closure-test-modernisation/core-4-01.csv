@@ -1,0 +1,102 @@
+test,result,category,finding,failure_summary,first_test_frame,assertions,seconds
+Tests\Unit\ChiralityValuesTest::test_population_existence_and_rate_similarity#0,passed,,,,,1,0.000516
+Tests\Unit\ChiralityValuesTest::test_population_existence_and_rate_similarity#1,passed,,,,,1,0.000146
+Tests\Unit\ChiralityValuesTest::test_population_existence_and_rate_similarity#2,passed,,,,,1,0.000111
+Tests\Unit\ChiralityValuesTest::test_population_existence_and_rate_similarity#3,passed,,,,,1,0.000130
+Tests\Unit\ChiralityValuesTest::test_population_existence_and_rate_similarity#4,passed,,,,,1,0.000144
+Tests\Unit\ChiralityValuesTest::test_population_existence_and_rate_similarity#5,passed,,,,,1,0.000106
+Tests\Unit\ChiralityValuesTest::test_population_existence_and_rate_similarity#6,passed,,,,,1,0.000101
+Tests\Unit\ChiralityValuesTest::test_population_existence_and_rate_similarity#7,passed,,,,,1,0.000099
+Tests\Unit\ChiralityValuesTest::test_composition_and_independent_hysteresis_have_no_admissibility_rule,passed,,,,,5,0.000119
+Tests\Unit\HomeostaticDirectionTest::test_magnitude_aggregates_instead_of_counting_positive_and_negative_votes,passed,,,,,2,0.066737
+Tests\Unit\HomeostaticDirectionTest::test_zero_retains_either_prior_direction_or_initializes_from_each_observables_default,passed,,,,,42,0.005348
+Tests\Unit\HomeostaticDirectionTest::test_missing_values_are_not_zero_mass_and_empty_populations_have_no_direction,passed,,,,,5,0.004913
+Tests\Unit\HomeostaticDirectionTest::test_out_of_range_measurements_are_rejected,passed,,,,,1,0.004807
+Tests\Unit\HomeostaticDirectionTest::test_unknown_measurement_names_are_rejected_before_loading_a_population,passed,,,,,1,0.005035
+Tests\Unit\PotentialRegionCalculatorTest::test_exhausting_best_sibling_exposes_next_maximum_without_subtraction,passed,,,,,4,0.007904
+Tests\Unit\PotentialRegionCalculatorTest::test_dominated_sibling_changes_do_not_change_provenance_summary,passed,,,,,2,0.000172
+Tests\Unit\PotentialRegionCalculatorTest::test_nearer_weaker_candidate_is_retained_because_attenuation_can_change_the_winner,passed,,,,,3,0.000139
+Tests\Unit\PotentialRegionCalculatorTest::test_viable_descendant_shadows_stronger_parent_and_exhaustion_reveals_parent,passed,,,,,3,0.000118
+Tests\Unit\PotentialRegionCalculatorTest::test_exclusion_preserves_an_alternative_path_through_a_diamond,passed,,,,,2,0.000145
+Tests\Unit\PotentialRegionCalculatorTest::test_branch_aggregation_cannot_borrow_another_origin_branch,passed,,,,,2,0.000114
+"Tests\Unit\WakeConfigurationTest::test_validation""termination phase""",passed,,,,,1,0.010545
+"Tests\Unit\WakeConfigurationTest::test_validation""termination cycle""",passed,,,,,1,0.007056
+"Tests\Unit\WakeConfigurationTest::test_validation""termination rest""",passed,,,,,1,0.013164
+"Tests\Unit\WakeConfigurationTest::test_validation""invalid termination""",passed,,,,,1,0.008044
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout 1""",passed,,,,,1,0.010319
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout 600""",passed,,,,,1,0.007473
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout 1800""",passed,,,,,1,0.006150
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout 0""",passed,,,,,1,0.006117
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout -1""",passed,,,,,1,0.005602
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout 1801""",passed,,,,,1,0.005402
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout 1.5""",passed,,,,,1,0.005876
+"Tests\Unit\WakeConfigurationTest::test_validation""timeout invalid""",passed,,,,,1,0.005241
+"Tests\Unit\WakeConfigurationTest::test_validation""offset mode seconds""",passed,,,,,1,0.005284
+"Tests\Unit\WakeConfigurationTest::test_validation""offset mode random""",passed,,,,,1,0.005193
+"Tests\Unit\WakeConfigurationTest::test_validation""offset mode invalid""",passed,,,,,1,0.005590
+"Tests\Unit\WakeConfigurationTest::test_validation""seconds 0""",passed,,,,,1,0.005171
+"Tests\Unit\WakeConfigurationTest::test_validation""seconds 60""",passed,,,,,1,0.005041
+"Tests\Unit\WakeConfigurationTest::test_validation""seconds -1""",passed,,,,,1,0.005232
+"Tests\Unit\WakeConfigurationTest::test_validation""seconds 61""",passed,,,,,1,0.005163
+"Tests\Unit\WakeConfigurationTest::test_validation""seconds 1.5""",passed,,,,,1,0.005147
+"Tests\Unit\WakeConfigurationTest::test_validation""seconds invalid""",passed,,,,,1,0.005156
+"Tests\Unit\WakeConfigurationTest::test_validation""random_from 0""",passed,,,,,1,0.006026
+"Tests\Unit\WakeConfigurationTest::test_validation""random_from 60""",passed,,,,,1,0.005152
+"Tests\Unit\WakeConfigurationTest::test_validation""random_from -1""",passed,,,,,1,0.005233
+"Tests\Unit\WakeConfigurationTest::test_validation""random_from 61""",passed,,,,,1,0.005234
+"Tests\Unit\WakeConfigurationTest::test_validation""random_from 1.5""",passed,,,,,1,0.005207
+"Tests\Unit\WakeConfigurationTest::test_validation""random_from invalid""",passed,,,,,1,0.005178
+"Tests\Unit\WakeConfigurationTest::test_validation""random_to 0""",passed,,,,,1,0.005161
+"Tests\Unit\WakeConfigurationTest::test_validation""random_to 60""",passed,,,,,1,0.005098
+"Tests\Unit\WakeConfigurationTest::test_validation""random_to -1""",passed,,,,,1,0.005639
+"Tests\Unit\WakeConfigurationTest::test_validation""random_to 61""",passed,,,,,1,0.005230
+"Tests\Unit\WakeConfigurationTest::test_validation""random_to 1.5""",passed,,,,,1,0.005213
+"Tests\Unit\WakeConfigurationTest::test_validation""random_to invalid""",passed,,,,,1,0.009777
+"Tests\Unit\WakeConfigurationTest::test_validation""equal range""",passed,,,,,1,0.005257
+"Tests\Unit\WakeConfigurationTest::test_validation""reversed range""",passed,,,,,1,0.005204
+Tests\Unit\WakeConfigurationTest::test_defaults_and_inclusive_random_bounds,passed,,,,,204,0.005029
+Tests\Feature\Api\CommonsUiApiTest::test_client_is_told_when_system_bootstrap_is_required,passed,,,,,3,0.705602
+Tests\Feature\Api\CommonsUiApiTest::test_guest_can_list_and_view_only_public_substrates,passed,,,,,5,0.029221
+Tests\Feature\Api\CommonsUiApiTest::test_graph_endpoint_exposes_navigable_proposition_edges,passed,,,,,14,0.179324
+Tests\Feature\Api\PropositionReadTest::test_graph_and_detail_read_persisted_values_without_repair#0,passed,,,,,191,0.177790
+Tests\Feature\Api\PropositionReadTest::test_graph_and_detail_read_persisted_values_without_repair#1,passed,,,,,191,0.179613
+Tests\Feature\Api\PropositionReadTest::test_graph_and_detail_read_persisted_values_without_repair#2,passed,,,,,191,0.182043
+Tests\Feature\Api\PropositionReadTest::test_graph_and_detail_read_persisted_values_without_repair#3,passed,,,,,191,0.174536
+Tests\Feature\Api\PropositionReadTest::test_bounded_maintenance_repairs_missing_and_obsolete_but_preserves_current_and_unmeasurable_nodes,passed,,,,,12,0.172895
+Tests\Feature\Api\PropositionReadTest::test_overlapping_commit_histories_are_batched_and_counts_stop_at_expressive_nodes,passed,,,,,79,0.443080
+Tests\Feature\Api\PropositionReadTest::test_field_projection_uses_snapshots_canonical_potential_and_direct_phase_touches,passed,,,,,18,0.337580
+Tests\Feature\Api\PropositionReadTest::test_batched_region_seeds_follow_cycle_governance_despite_cross_region_ancestry,passed,,,,,3,0.188683
+Tests\Feature\BiasGateTest::test_zero_attestation_descendants_retain_direction_without_becoming_classification_options,passed,,,,,17,1.373403
+Tests\Feature\BiasGateTest::test_receipt_loads_leave_population_lean_and_each_heads_lineage_unchanged,passed,,,,,8,3.095918
+Tests\Feature\BiasGateTest::test_participant_selects_one_gate_creating_one_fresh_target_and_reducing_the_lean#0,passed,,,,,39,2.332877
+Tests\Feature\BiasGateTest::test_participant_selects_one_gate_creating_one_fresh_target_and_reducing_the_lean#1,passed,,,,,39,1.955382
+Tests\Feature\BiasGateTest::test_inference_keeps_bias_gate_ids_separate_from_write_instrument_and_attestation_ids,passed,,,,,11,0.997463
+Tests\Feature\BiasGateTest::test_a_single_supported_gate_needs_no_sibling_or_instrument_to_progress,passed,,,,,6,1.589399
+Tests\Feature\BiasGateTest::test_zero_aggregate_retains_population_history_for_zero_vote_candidates,passed,,,,,8,1.552975
+Tests\Feature\BiasGateTest::test_population_has_deeper_stances_but_excludes_other_registers_and_stops_at_boundaries,passed,,,,,6,3.217280
+Tests\Feature\BiasGateTest::test_overlapping_parent_families_are_deduplicated_before_one_aggregate_lean,passed,,,,,7,1.739549
+Tests\Feature\BiasGateTest::test_region_votes_ignore_horizon_labels_but_preserve_substrate_isolation,passed,,,,,3,1.278831
+Tests\Feature\BiasGateTest::test_stale_direction_hard_supersession_and_binary_inputs_are_rejected_before_writes,passed,,,,,7,1.640847
+Tests\Feature\CausalHorizonLineageTest::test_component_boundary_projection_does_not_reassign_open_cycle_governance,passed,,,,,11,0.890517
+Tests\Feature\CausalHorizonLineageTest::test_branching_alternates_and_comparisons_use_only_the_direct_parent_in_both_calculation_paths,passed,,,,,64,0.764696
+Tests\Feature\CausalHorizonLineageTest::test_snapshot_projection_uses_parent_tension_even_after_a_newer_sibling,passed,,,,,4,0.881496
+Tests\Feature\CausalHorizonLineageTest::test_only_origin_uses_bootstrap_and_missing_non_root_provenance_fails_closed,passed,,,,,8,0.150660
+Tests\Feature\CausalHorizonLineageTest::test_cycle_ownership_is_immutable_in_eloquent,passed,,,,,2,0.417246
+Tests\Feature\CausalHorizonLineageTest::test_cycle_ownership_is_immutable_in_bulk_sql,passed,,,,,1,0.417275
+Tests\Feature\CausalHorizonLineageTest::test_closed_horizons_retain_ownership_when_accepting_causal_reentry,passed,,,,,2,0.464437
+Tests\Feature\CausalHorizonLineageTest::test_cycle_creation_rejects_a_horizon_from_another_substrate,passed,,,,,1,0.027911
+Tests\Feature\CausalHorizonLineageTest::test_a_horizon_cannot_be_reparented_after_cycles_begin,passed,,,,,2,0.475211
+"Tests\Feature\ChiralityPopulationHistoryTest::test_identical_zero_population_retains_its_own_actual_prior_direction""positive history""",passed,,,,,8,0.466736
+"Tests\Feature\ChiralityPopulationHistoryTest::test_identical_zero_population_retains_its_own_actual_prior_direction""negative history""",passed,,,,,8,0.454765
+Tests\Feature\ChiralityPopulationHistoryTest::test_cycle_entry_observes_both_sides_even_without_attestation_or_completion_and_rolls_back_atomically,passed,,,,,8,0.487244
+Tests\Feature\ChiralityPopulationHistoryTest::test_attestation_and_replacement_are_observed_through_real_dispatch,failure,A (Stage 2 baseline),Same baseline expected/actual assertion.,"Tests\Feature\ChiralityPopulationHistoryTest::test_attestation_and_replacement_are_observed_through_real_dispatch
+Failed asserting that -0.1 is identical to -0.5.",tests/Feature/ChiralityPopulationHistoryTest.php:135,1,0.502354
+Tests\Feature\ChiralityPopulationHistoryTest::test_batched_observation_coordinates_match_the_full_canonical_populations,passed,,,,,18,1.209509
+Tests\Feature\ChiralityPopulationHistoryTest::test_unavailable_current_population_inherits_corresponding_preceding_horizon_without_a_synthetic_zero,passed,,,,,4,0.482386
+Tests\Feature\ExhaustedContinuationTest::test_successful_closed_history_remains_visible_without_a_new_failure,passed,,,,,17,4.533415
+Tests\Feature\ExhaustedContinuationTest::test_live_alternatives_and_exact_current_epochs_control_backward_completion,passed,,,,,15,3.878624
+"Tests\Feature\ExhaustedParticipantContextTest::test_spent_writes_remain_visible_at_their_producing_position_in_both_domains""emergence-Distinguish""",passed,,,,,10,0.693600
+"Tests\Feature\ExhaustedParticipantContextTest::test_spent_writes_remain_visible_at_their_producing_position_in_both_domains""emergence-Persist""",passed,,,,,10,0.828771
+"Tests\Feature\ExhaustedParticipantContextTest::test_spent_writes_remain_visible_at_their_producing_position_in_both_domains""emergence-Constrain""",passed,,,,,10,0.997859
+"Tests\Feature\ExhaustedParticipantContextTest::test_spent_writes_remain_visible_at_their_producing_position_in_both_domains""emergence-Disperse""",passed,,,,,10,1.234229
+"Tests\Feature\ExhaustedParticipantContextTest::test_spent_writes_remain_visible_at_their_producing_position_in_both_domains""emergence-Mediate""",passed,,,,,10,1.434658

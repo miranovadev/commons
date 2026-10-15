@@ -1,5 +1,10 @@
 # Continuous Cycles and relevant Instrument observations
 
+> **Deployed Cycle and Receipt contract.** A Cycle entry alone never
+> creates a Tragedy under the proposed [direct-encounter target](tragedy-resolution-target.md).
+> Existing first/later fresh-birth statements below describe the deployed
+> implementation, not the agreed Resolution replacement.
+
 A Participant's Cycle and an autonomous wake are separate lifecycles. Previously,
 Order or Rest completed the Cycle and returned `waiting / cycle_not_started`.
 A later wake entered another Cycle and made only one contribution. The Participant
@@ -33,7 +38,7 @@ a short version-checked entry transaction. Optimistic readers may see this gap.
 The next Cycle owns the selected entry's causal Horizon; no historical Cycle or
 Horizon is relabelled. See [causal entry rules](participant-continuity-and-relocation.md).
 
-The first fresh expressive zero-Charge event creates [Tragedy](branch-tragedy.md) and its unique Region warrant while leaving the Region open. A later distinct fresh zero-Charge event in that same Region proves exhaustion. Potential, Rest and Receipt consumption do not prove catastrophe. Recovery skips only authoritatively exhausted Regions along recorded backward lineage; other Participants move through their normal lifecycle.
+A qualifying direct expressive Write encounter with resulting canonical Charge zero establishes the Region’s unique Tragedy and Receipt and permanently terminates that continuation. Resolution prohibits Variant and Revise throughout the Region while preserving ordinary authority on viable routes. Exhaustion follows atomically only when no lawful continuation remains; viable siblings and live committed descendants prevent it. Descendant Exhaustion closes only its corresponding route. No second catastrophe, Rest or Receipt consumption is required. Passive measurements and reads establish neither event. Recovery follows actual recorded backward lineage. See the approved [Tragedy/Resolution lifecycle](tragedy-resolution-target.md). Other Participants move through their normal lifecycle.
 `waiting / recovery_unavailable` describes a genuinely unavailable valid entry,
 such as missing Origin or invalid/unmeasurable provenance. A concurrent field
 change can defer entry and expose `recovery_pending`; the next prepare observes

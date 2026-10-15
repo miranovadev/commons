@@ -1,0 +1,2 @@
+suite,test,result
+integration,Tests\Feature\CommitDescendantHistoryLifecycleTest::test_real_commit_descendant_resets_evidence_and_searches_selected_history_without_authority,passed

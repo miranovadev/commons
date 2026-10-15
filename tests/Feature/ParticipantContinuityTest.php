@@ -132,11 +132,12 @@ class ParticipantContinuityTest extends TestCase
         $head = (new Proposition)->forceFill(['phase_id' => $creation->id, 'register' => $creation->write_register,
             'tier' => 'expressive', 'statement' => 'Explored terminal in the new Horizon']);
         $head->save();
-        app(LedgerService::class)->record($head);
+        app(LedgerService::class)->record($head, $commit);
         $edge = (new Supersession)->forceFill(['phase_id' => $creation->id, 'source_proposition_id' => $commit->id,
             'target_proposition_id' => $head->id, 'type' => 'variant']);
         $edge->save();
         app(LedgerService::class)->record($edge);
+        \Tests\Fixtures\PropositionBirth::complete($head);
         $this->classificationEvidenceFixture($head);
         $phase->forceFill(['kind' => PhaseKind::Order, 'write_register' => 'canon', 'gate_proposition_id' => $head->id])->save();
         $participant->forceFill(['current_proposition_id' => $head->id])->save();
@@ -154,8 +155,9 @@ class ParticipantContinuityTest extends TestCase
         $this->assertSame($origin->id, $rested['plan']['gate_id']);
         $this->assertSame($commit->id, Tragedy::sole()->opening_proposition_id);
         $this->assertSame($cycle->context_horizon_id, $rested['cycle']['context_horizon_id']);
-        $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($next->contextHorizon));
-        $this->assertDatabaseCount('commit_region_exhaustions', 0);
+        // The sole terminal continuation now exhausts immediately; recovery geometry is unchanged.
+        $this->assertTrue(app(ExhaustionService::class)->boundaryExhausted($next->contextHorizon));
+        $this->assertDatabaseCount('commit_region_exhaustions', 1);
         $this->assertSame('settlement', $rested['domain']);
         $this->assertSame('signal', $rested['plan']['phase']['write_register']);
         $this->assertSame($horizons, ContextHorizon::orderBy('sequence')->get()->map(fn ($h) => Arr::except($h->getAttributes(), ['updated_at']))->all());
@@ -198,20 +200,22 @@ class ParticipantContinuityTest extends TestCase
         $opportunity = new Proposition;
         $opportunity->forceFill(['phase_id' => $opportunityPhase->id, 'register' => 'signal',
             'tier' => 'expressive', 'statement' => 'Independent continuing opportunity'])->save();
-        app(LedgerService::class)->record($opportunity);
+        app(LedgerService::class)->record($opportunity, $origin);
         $opportunityEdge = new Supersession;
         $opportunityEdge->forceFill(['phase_id' => $opportunityPhase->id, 'source_proposition_id' => $origin->id,
             'target_proposition_id' => $opportunity->id, 'type' => 'variant'])->save();
         app(LedgerService::class)->record($opportunityEdge);
+        \Tests\Fixtures\PropositionBirth::complete($opportunity);
         $phase = $cycle->currentPhase;
         $phase->forceFill(['kind' => PhaseKind::Order, 'write_register' => 'concord'])->save();
         $candidate = new Proposition;
         $candidate->forceFill(['phase_id' => $this->phaseAtPositionFixture($phase, PhaseKind::Bias)->id, 'register' => 'concord', 'tier' => 'expressive', 'statement' => 'Prepared local continuation'])->save();
-        app(LedgerService::class)->record($candidate);
+        app(LedgerService::class)->record($candidate, $origin);
         $edge = new Supersession;
         $edge->forceFill(['phase_id' => $phase->id, 'source_proposition_id' => $origin->id,
             'target_proposition_id' => $candidate->id, 'type' => 'variant'])->save();
         app(LedgerService::class)->record($edge);
+        \Tests\Fixtures\PropositionBirth::complete($candidate);
         $this->groundFixture($candidate);
         $phase->forceFill(['gate_proposition_id' => $candidate->id])->save();
         $participant->forceFill(['current_proposition_id' => $candidate->id])->save();

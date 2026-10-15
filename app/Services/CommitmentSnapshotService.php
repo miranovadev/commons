@@ -98,7 +98,7 @@ final readonly class CommitmentSnapshotService
             // Re-evaluate the actual persisted candidate before allowing a snapshot.
             $closure = $this->closureGate->forCommitment($proposition);
             if ($measurement->closure !== $closure['closure']) {
-                throw new DomainException('Commitment measurement must match its immutable Closure birth observation.');
+                throw new DomainException('Commitment measurement must match its preserved authorised Closure state.');
             }
             $initialOrigin = $proposition->phase->cycle->entry_committal_id === null
                 && $horizon->parent_context_horizon_id === null
@@ -108,13 +108,11 @@ final readonly class CommitmentSnapshotService
                 throw new DomainException('An ordinary Commitment requires a valid frozen Cadence interval.');
             }
             if (! $closure['admissible']) {
-                throw new DomainException('Commitment requires aligned Committed Cardinal Position/Cadence directions.');
+                throw new DomainException('Commitment requires aligned Historical Extent/Rhythm directions.');
             }
             if ($expectedClosure !== null) {
-                foreach (['depth', 'cadence', 'closure', 'depth_direction', 'cadence_direction', 'committed_cardinal_position', 'committed_cardinal_position_direction', 'lateral_committal_position', 'lateral_committal_position_direction', 'committed_lateral_position', 'cadence_interval', 'history_proposition_id'] as $component) {
-                    if ($closure[$component] !== $expectedClosure[$component]) {
-                        throw new ConflictHttpException('Closure changed after preview. Retry from fresh state.');
-                    }
+                if ($closure !== $expectedClosure) {
+                    throw new ConflictHttpException('Closure changed after preview. Retry from fresh state.');
                 }
             }
             $previous = $horizon->predecessorCommitment();
@@ -133,7 +131,7 @@ final readonly class CommitmentSnapshotService
                 'ledger_entry_id' => $entry->getKey(),
                 'supersession_id' => $supersession?->getKey(),
                 'correspondence' => $measurement->correspondence,
-                ...$measurement->only(['shape_topology', 'cardinal_position', 'shape_topology_direction', 'cardinal_position_direction']),
+                ...$measurement->only(['shape_topology', 'phase_profile', 'shape_topology_direction', 'phase_profile_direction']),
                 'chirality' => $measurement->chirality,
                 'chirality_direction' => $measurement->chirality_direction,
                 ...$measurement->only(['orientation', 'attestation_cadence', 'orientation_direction', 'attestation_cadence_direction']),

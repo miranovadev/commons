@@ -27,7 +27,7 @@ class PropositionLocalChiralityTest extends TestCase
     private function setupPosition(): array
     {
         $this->createHomologyActor();
-        $origin = $this->commit(null, 'settlement');
+        $origin = $this->committedCoordinate(null, 'settlement');
 
         $node = $this->position($origin);
         $this->edge($origin, $node, 'variant');
@@ -70,6 +70,7 @@ class PropositionLocalChiralityTest extends TestCase
         $edge->forceFill(['phase_id' => $child->phase_id, 'source_proposition_id' => $parent->id,
             'target_proposition_id' => $child->id, 'type' => $type])->save();
         app(LedgerService::class)->record($edge);
+        app(\App\Services\Observables\ProspectiveClosureService::class)->initialize($child);
     }
 
     public function test_own_create_and_replacement_recalculate_and_record_only_own_intervals(): void
@@ -211,7 +212,7 @@ class PropositionLocalChiralityTest extends TestCase
     public function test_real_reclassify_preserves_parent_state_and_resets_the_result(): void
     {
         $this->createHomologyActor();
-        $origin = $this->commit(null, 'settlement');
+        $origin = $this->committedCoordinate(null, 'settlement');
         $source = $this->position($origin, PhaseKind::Persist);
         $this->edge($origin, $source, 'variant');
         $this->act($source);

@@ -1,0 +1,53 @@
+test,result,category,finding,failure_summary,first_test_frame,assertions,seconds
+Tests\Feature\Api\ParticipationLifecycleRegressionTest::test_successful_route_revisit_can_advance_through_bias_to_its_existing_commit,failure,A (Stage 2 baseline),Same Stage 2 assertion/trajectory mismatch; see validation report for original C1 classification.,"Tests\Feature\Api\ParticipationLifecycleRegressionTest::test_successful_route_revisit_can_advance_through_bias_to_its_existing_commit
+Script step 32 (explorer / contribute) after
+Failed asserting that two arrays are identical.
+--- Expected
++++ Actual
+@@ @@
+ Array &0 [
+     'status' => 'ready',
+-    'reason' => null,
++    'reason' => Array &1 [
++        'code' => 'no_available_move',
++        'message' => 'No admissible non-Rest action remains in ",tests/Support/ScriptedParticipationTestCase.php:127,1877,35.315586
+Tests\Feature\Api\ParticipationLifecycleRegressionTest::test_distinguish_under_another_committal_does_not_advance_origins_epoch,failure,A (Stage 2 baseline),Same Stage 2 assertion/trajectory mismatch; see validation report for original C1 classification.,"Tests\Feature\Api\ParticipationLifecycleRegressionTest::test_distinguish_under_another_committal_does_not_advance_origins_epoch
+Script step 26 (relay-a / contribute) after
+Failed asserting that two arrays are identical.
+--- Expected
++++ Actual
+@@ @@
+ Array &0 [
+     'status' => 'ready',
+-    'reason' => null,
++    'reason' => Array &1 [
++        'code' => 'no_available_move',
++        'message' => 'No admissible non-Rest action remains in this Ph",tests/Support/ScriptedParticipationTestCase.php:127,1370,26.365089
+Tests\Feature\Api\ParticipationLifecycleRegressionTest::test_disperse_under_another_constrain_gate_does_not_reopen_a_spent_slot,passed,,,,,2054,36.600607
+Tests\Feature\Api\ParticipationLocalEpochTest::test_a_third_distinguish_variant_reopens_only_its_own_slot_through_http,failure,A (Stage 2 baseline),Same Stage 2 assertion/trajectory mismatch; see validation report for original C1 classification.,"Tests\Feature\Api\ParticipationLocalEpochTest::test_a_third_distinguish_variant_reopens_only_its_own_slot_through_http
+Script step 32 (critical-explorer / contribute) after
+Failed asserting that two arrays are identical.
+--- Expected
++++ Actual
+@@ @@
+ Array &0 [
+     'status' => 'ready',
+-    'reason' => null,
++    'reason' => Array &1 [
++        'code' => 'no_available_move',
++        'message' => 'No admissible non-Rest action remains in this P",tests/Support/ScriptedParticipationTestCase.php:127,1890,33.944821
+Tests\Feature\Api\ParticipationRecoveryTest::test_successful_revisit_keeps_its_untraversed_commit_out_of_backward_recovery,failure,A (Stage 2 baseline),Same Stage 2 assertion/trajectory mismatch; see validation report for original C1 classification.,"Tests\Feature\Api\ParticipationRecoveryTest::test_successful_revisit_keeps_its_untraversed_commit_out_of_backward_recovery
+Script step 32 (route-author / contribute) after
+Failed asserting that two arrays are identical.
+--- Expected
++++ Actual
+@@ @@
+ Array &0 [
+     'status' => 'ready',
+-    'reason' => null,
++    'reason' => Array &1 [
++        'code' => 'no_available_move',
++        'message' => 'No admissible non-Rest action remains in this Ph",tests/Support/ScriptedParticipationTestCase.php:127,1877,33.403482
+Tests\Feature\Api\ParticipationRecoveryTest::test_actual_actionless_http_rest_recovers_by_the_traversed_edge_distance,passed,,,,,199,3.850229
+Tests\Feature\HorizonProofCycleTest::test_one_participant_builds_and_commits_through_both_receipt_boundaries_over_cycles,passed,,,,,110,139.384190
+Tests\Feature\ParticipantWakeTest::test_rest_wake_crosses_a_real_commit_and_stops_immediately_after_genuine_rest,passed,,,,,32,13.169465

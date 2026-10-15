@@ -1,6 +1,8 @@
 # Receipt-backed phase flow
 
-[Core invariants](core-invariants.md#persistence-exhaustion-recovery-and-observation) govern this cycle. Domain mappings select registers; the producing phase position determines eligibility.
+> **Stage 4 contract.** The approved [Tragedy/Resolution lifecycle](tragedy-resolution-target.md) governs terminal encounters and regional exhaustion. Earlier second-catastrophe descriptions are historical.
+
+[Core invariants](core-invariants.md) govern this cycle. Domain mappings select registers; the producing phase position determines eligibility.
 
 Producing position is necessary but does not confer traversal eligibility.
 Forward movement additionally requires an explicit causal continuation from
@@ -31,9 +33,9 @@ Ordinary Receipt availability is Commit-Region-scoped and independent of authors
 
 Reclassification copies the exact statement and attaches only the selected Receipt. Effective Attestations and phase touches start fresh. It rejects missing, consumed, foreign-Horizon or structurally invalid inputs before publishing any new target. Other historical evidence remains on its original source. Shared classifications are unique per source/destination register.
 
-Another Variant is an option only after every current viable Variant at that position is spent in the current exploration epoch and has its own completed Instrument and effective Attestation. Potential Charge does not govern this permission. Each new Variant repeats this sequence; a Receipt from another Variant does not replace its Instrument prerequisite. Receipt consumption alone never reopens Variant. There is no Participant quota, fixed sibling cap or prior Mediate Rest requirement. Mediate still needs a second Proposition. This is the [confirmed Variant clarification](horizon-proof-variant-clarification.md).
+During Exploration, another Variant is an option only after every current viable Variant at that position is spent in the current exploration epoch and has its own completed Instrument and effective Attestation. Potential Charge does not govern this permission. Each new Variant repeats this sequence; a Receipt from another Variant does not replace its Instrument prerequisite. Receipt consumption alone never reopens Variant. There is no Participant quota, fixed sibling cap or prior Mediate Rest requirement. Mediate still needs a second Proposition. This is the [confirmed Variant clarification](horizon-proof-variant-clarification.md).
 
-A first fresh expressive zero-Charge write creates its Region Tragedy; a later distinct fresh zero-Charge write in the same open Region proves exhaustion. Potential and Rest prove neither. Tragedy Receipt consumption authorizes foreign homologous Bias escape and alone does not exhaust the Region. Recovery skips only authoritative regional exhaustion on the recorded backward lineage.
+A qualifying direct expressive Write encounter with resulting canonical Charge zero establishes the Region’s unique Tragedy and Receipt and permanently terminates that continuation. Resolution prohibits Variant and Revise throughout the Region while preserving ordinary authority on viable routes. Exhaustion follows atomically only when no lawful continuation remains; viable siblings and live committed descendants prevent it. Descendant Exhaustion closes only its corresponding route. No second catastrophe, Rest or Receipt consumption is required. Passive measurements and reads establish neither event. Recovery follows actual recorded backward lineage. See the approved [Tragedy/Resolution lifecycle](tragedy-resolution-target.md).
 
 ## Review stack
 

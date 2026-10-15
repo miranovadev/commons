@@ -1,0 +1,115 @@
+test,result,category,finding,failure_summary,first_test_frame,assertions,seconds
+Tests\Feature\ObservableServiceTest::test_matching_lineages_in_complementary_horizons_align,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\ObservableServiceTest::test_matching_lineages_in_complementary_horizons_align
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:360,5,0.689915
+Tests\Feature\ObservableServiceTest::test_closure_matches_committed_interval_similarity_examples,passed,,,,,4,0.052771
+Tests\Feature\ObservableServiceTest::test_phase_touches_remain_proposition_state_but_do_not_supply_closure,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\ObservableServiceTest::test_phase_touches_remain_proposition_state_but_do_not_supply_closure
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/Feature/ObservableServiceTest.php:171,1,0.215685
+Tests\Feature\ObservableServiceTest::test_legacy_receipt_signatures_without_verification_do_not_reinforce,passed,,,,,1,0.118179
+Tests\Feature\ParticipantActionContractTest::test_traverse_with_rationale_reproduces_the_reported_union_error,passed,,,,,4,1.165426
+Tests\Feature\ParticipantActionContractTest::test_static_phase_transport_requires_attestation_direction#0,passed,,,,,2,0.026444
+Tests\Feature\ParticipantActionContractTest::test_static_phase_transport_requires_attestation_direction#1,passed,,,,,2,0.023728
+Tests\Feature\ParticipantActionContractTest::test_static_phase_transport_requires_attestation_direction#2,passed,,,,,2,0.024956
+Tests\Feature\ParticipantActionContractTest::test_static_phase_transport_requires_attestation_direction#3,passed,,,,,2,0.023258
+Tests\Feature\ParticipantActionContractTest::test_static_phase_transport_requires_attestation_direction#4,passed,,,,,2,0.024288
+Tests\Feature\ParticipantActionContractTest::test_static_phase_transport_requires_attestation_direction#5,passed,,,,,2,0.027068
+Tests\Feature\ParticipantActionContractTest::test_static_phase_transport_requires_attestation_direction#6,passed,,,,,2,0.024841
+"Tests\Feature\ParticipantContinuityTest::test_real_commit_retains_local_continuity_with_or_without_a_domain_boundary""boundary""",passed,,,,,37,6.485747
+"Tests\Feature\ParticipantContinuityTest::test_real_commit_retains_local_continuity_with_or_without_a_domain_boundary""same Domain""",passed,,,,,35,5.892740
+Tests\Feature\ParticipantContinuityTest::test_rest_skips_closed_crossover_without_reopening_or_exhausting_tragedy_history,passed,,,,,15,4.941775
+Tests\Feature\ParticipantPromptPersistenceTest::test_actual_load_clear_and_reload_preserve_the_current_packet_and_do_not_cache_stale_evidence,passed,,,,,45,3.330568
+Tests\Feature\ParticipantPromptPersistenceTest::test_attachment_removes_catalogue_entry_and_exposes_only_a_reference_until_read,passed,,,,,15,2.284451
+Tests\Feature\ParticipantPromptPersistenceTest::test_receipt_heavy_gate_packet_keeps_memory_but_activates_no_bodies,passed,,,,,15,3.906468
+Tests\Feature\ParticipantWakeTest::test_scheduler_command_claims_due_connections_and_queues_wakes,passed,,,,,9,0.192525
+Tests\Feature\ParticipantWakeTest::test_overlapping_wake_does_not_burn_queue_attempts_and_a_later_wake_can_run,passed,,,,,5,0.170555
+Tests\Feature\ParticipantWakeTest::test_openai_receives_only_the_autonomous_context_as_json_and_a_strict_response_schema,passed,,,,,9,0.044810
+Tests\Feature\ParticipantWakeTest::test_openai_schema_makes_optional_fields_required_and_nullable,passed,,,,,6,0.025252
+Tests\Feature\ParticipantWakeTest::test_default_phase_wake_completes_one_phase_and_leaves_the_cycle_active,passed,,,,,5,0.809043
+Tests\Feature\ParticipantWakeTest::test_wake_job_does_not_call_a_provider_while_participant_is_waiting,passed,,,,,2,0.098447
+Tests\Feature\ParticipantWakeTest::test_wake_job_enters_an_established_substrate_via_potential,passed,,,,,4,1.816910
+Tests\Feature\ParticipantWakeTest::test_cycle_wake_stops_at_prepared_phase_one,passed,,,,,32,11.118846
+Tests\Feature\ParticipantWakeTest::test_stale_inference_rebuilds_state_without_replaying_a_rejected_contribution,passed,,,,,10,3.430113
+Tests\Feature\ParticipantWakeTest::test_inference_failure_clears_activity_and_preserves_canonical_position,passed,,,,,6,0.418899
+Tests\Feature\ParticipantWakeTest::test_cycle_mode_stops_when_the_current_cycle_rests,passed,,,,,4,1.593594
+Tests\Feature\ParticipantWakeTest::test_whole_job_deadline_preserves_completed_work_and_next_wake_resumes,passed,,,,,14,1.707875
+Tests\Feature\ParticipantWakeTest::test_expired_inference_is_not_contributed,passed,,,,,4,0.427609
+Tests\Feature\ParticipantWakeTest::test_fixed_offsets_use_native_queue_availability_without_cadence_drift,passed,,,,,10,0.201387
+Tests\Feature\ParticipantWakeTest::test_late_scheduler_claims_preserve_scheduled_offsets_and_cadence,passed,,,,,19,0.205326
+Tests\Feature\ParticipantWakeTest::test_random_offsets_are_sampled_per_trigger_and_never_move_the_schedule,passed,,,,,9,0.191058
+Tests\Feature\ParticipantWakeTest::test_delayed_rest_wakes_share_a_participant_lock_but_other_participants_do_not,passed,,,,,5,0.302328
+Tests\Feature\PersistInstrumentTest::test_persist_instrument_receipt_survives_as_constrain_gate_and_unlocks_owner_reclassification,passed,,,,,36,6.984013
+"Tests\Feature\PersistInstrumentTest::test_schema_and_dispatcher_reject_invalid_persist_instrument_targets""gate""",passed,,,,,7,4.478381
+"Tests\Feature\PersistInstrumentTest::test_schema_and_dispatcher_reject_invalid_persist_instrument_targets""ancestor""",passed,,,,,7,4.494172
+"Tests\Feature\PersistInstrumentTest::test_schema_and_dispatcher_reject_invalid_persist_instrument_targets""unrelated-write""",passed,,,,,7,4.502222
+"Tests\Feature\PersistInstrumentTest::test_schema_and_dispatcher_reject_invalid_persist_instrument_targets""wrong-register""",passed,,,,,7,4.547804
+Tests\Feature\PersistInstrumentTest::test_instrument_prevents_tragedy_when_it_is_the_only_remaining_action,passed,,,,,8,4.501263
+Tests\Feature\PotentialChargeServiceTest::test_it_prefers_the_committal_state_with_the_greatest_tension_reducing_continuation,passed,,,,,3,0.328813
+Tests\Feature\PotentialChargeServiceTest::test_it_falls_back_to_highest_charge_when_potential_is_zero,passed,,,,,3,0.206630
+Tests\Feature\PotentialChargeServiceTest::test_increasing_absolute_tension_has_zero_potential_without_changing_charge,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\PotentialChargeServiceTest::test_increasing_absolute_tension_has_zero_potential_without_changing_charge
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/TestCase.php:286,0,0.276097
+Tests\Feature\PotentialChargeServiceTest::test_snapshot_presence_does_not_make_an_expressive_proposition_eligible,passed,,,,,2,0.238956
+Tests\Feature\PotentialChargeServiceTest::test_it_refuses_entry_when_only_expressive_snapshots_exist,passed,,,,,2,0.163594
+Tests\Feature\PreOrderInstrumentPathTest::test_fresh_writes_can_be_grounded_before_attestation#0,passed,,,,,7,1.827462
+Tests\Feature\PreOrderInstrumentPathTest::test_fresh_writes_can_be_grounded_before_attestation#1,passed,,,,,7,1.955749
+Tests\Feature\PreOrderInstrumentPathTest::test_variant_children_do_not_prevent_pre_order_grounding,passed,,,,,1,0.926498
+"Tests\Feature\PropositionHistorySemanticsTest::test_non_commit_operations_create_fresh_history""Variant from Expressive""",error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\PropositionHistorySemanticsTest::test_non_commit_operations_create_fresh_history with data set ""Variant from Expressive""
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/Feature/PropositionHistorySemanticsTest.php:228,1,0.551777
+"Tests\Feature\PropositionHistorySemanticsTest::test_non_commit_operations_create_fresh_history""Variant from Committal""",error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\PropositionHistorySemanticsTest::test_non_commit_operations_create_fresh_history with data set ""Variant from Committal""
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/Feature/PropositionHistorySemanticsTest.php:228,1,0.428944
+"Tests\Feature\PropositionHistorySemanticsTest::test_non_commit_operations_create_fresh_history""Revise""",error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\PropositionHistorySemanticsTest::test_non_commit_operations_create_fresh_history with data set ""Revise""
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/Feature/PropositionHistorySemanticsTest.php:228,1,0.639085
+"Tests\Feature\PropositionHistorySemanticsTest::test_non_commit_operations_create_fresh_history""Reclassify""",error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\PropositionHistorySemanticsTest::test_non_commit_operations_create_fresh_history with data set ""Reclassify""
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/Feature/PropositionHistorySemanticsTest.php:228,1,0.569956
+"Tests\Feature\PropositionHistorySemanticsTest::test_non_commit_operations_create_fresh_history""Mediate Reconcile""",error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\PropositionHistorySemanticsTest::test_non_commit_operations_create_fresh_history with data set ""Mediate Reconcile""
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/Feature/PropositionHistorySemanticsTest.php:228,1,0.701680
+"Tests\Feature\PropositionHistorySemanticsTest::test_non_commit_operations_create_fresh_history""Bias unary hard supersession""",error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\PropositionHistorySemanticsTest::test_non_commit_operations_create_fresh_history with data set ""Bias unary hard supersession""
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/Feature/PropositionHistorySemanticsTest.php:228,1,0.604004
+Tests\Feature\PropositionSearchTest::test_postgresql_kind_constraints_preserve_tragedy_and_add_proposition_search,passed,,,,,3,0.032505
+Tests\Feature\PropositionSearchTest::test_search_is_bounded_to_unseen_same_domain_recorded_lineage_with_true_distances,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\PropositionSearchTest::test_search_is_bounded_to_unseen_same_domain_recorded_lineage_with_true_distances
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/Fixtures/ParticipantContextFixture.php:136,0,1.625643
+Tests\Feature\PropositionSearchTest::test_schema_and_domain_apply_defaults_and_reject_invalid_limits,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\PropositionSearchTest::test_schema_and_domain_apply_defaults_and_reject_invalid_limits
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/Fixtures/ParticipantContextFixture.php:136,0,1.633146
+Tests\Feature\PropositionSearchTest::test_receipt_loads_as_cognitive_memory_without_evidence_reinforcement_or_authority,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\PropositionSearchTest::test_receipt_loads_as_cognitive_memory_without_evidence_reinforcement_or_authority
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/Fixtures/ParticipantContextFixture.php:136,0,1.673735
+Tests\Feature\PropositionSearchTest::test_stale_internal_history_observation_is_rejected_before_persistence,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\PropositionSearchTest::test_stale_internal_history_observation_is_rejected_before_persistence
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/Fixtures/ParticipantContextFixture.php:136,0,1.661876
+Tests\Feature\PropositionSearchTest::test_duplicate_identity_uses_the_observed_collection_not_query_alone,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\PropositionSearchTest::test_duplicate_identity_uses_the_observed_collection_not_query_alone
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/Fixtures/ParticipantContextFixture.php:136,0,1.680782
+Tests\Feature\PropositionSearchTest::test_kind_migration_refuses_to_discard_recorded_proposition_search_history,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\PropositionSearchTest::test_kind_migration_refuses_to_discard_recorded_proposition_search_history
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/Fixtures/ParticipantContextFixture.php:136,0,1.644140
+Tests\Feature\RealtimeTest::test_origin_and_participant_notifications_wait_for_the_outer_commit,passed,,,,,9,2.019790
+Tests\Feature\RealtimeTest::test_rollback_discards_even_nested_notifications,passed,,,,,2,1.933419
+Tests\Feature\RealtimeTest::test_participation_action_notifies_observers_and_invalid_action_does_not,passed,,,,,3,2.874476
+Tests\Feature\RealtimeTest::test_private_channel_auth_matches_http_access_and_unknown_channels_are_denied,passed,,,,,12,2.095704
+Tests\Feature\RealtimeTest::test_public_graph_metadata_and_detail_do_not_leak_another_substrate,passed,,,,,7,1.977278
+Tests\Feature\ReceiptContextTest::test_gate_load_accompanies_forward_contribution_and_persists_across_cycles,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\ReceiptContextTest::test_gate_load_accompanies_forward_contribution_and_persists_across_cycles
+App\Exceptions\ClosureHistoryUnavailable: Authorised prospective Closure is unavailable; reads cannot reconstruct it.",tests/Feature/ReceiptContextTest.php:76,13,4.839380
+Tests\Feature\ReceiptContextTest::test_backend_rejects_lineage_redundancy_hidden_receipts_and_foreign_participant,passed,,,,,5,3.935012
+Tests\Feature\ReceiptContextTest::test_clear_reduces_active_measurement_and_reload_preserves_history,passed,,,,,14,2.930064
+Tests\Feature\ReceiptContextTest::test_verified_hyperlink_receipts_require_load_and_equivalent_evidence_cannot_stack,passed,,,,,9,3.292919
+Tests\Feature\ReceiptContextTest::test_loaded_cite_content_blocks_equivalent_new_citations_and_clear_restores_readability,passed,,,,,6,2.776979
+Tests\Feature\ReceiptContextTest::test_loaded_citation_knowledge_survives_outside_the_hydrated_causal_lineage,error,D (provisional setup/history boundary),Missing authorised birth or frozen canonical state; underlying assertion masked. Fixture conversion required before excluding a production defect.,"Tests\Feature\ReceiptContextTest::test_loaded_citation_knowledge_survives_outside_the_hydrated_causal_lineage
+App\Exceptions\ClosureHistoryUnavailable: Prospective Closure requires frozen selected committed history.",tests/Feature/ReceiptContextTest.php:247,1,3.157574
+Tests\Feature\ReceiptContextTest::test_loading_and_clearing_evidence_preserve_attestation_value_and_history,passed,,,,,9,3.042040
+"Tests\Feature\RelevantInstrumentTest::test_effective_receipts_suppress_duplicates_across_services_and_reclassification_without_mutating_history""canonical hyperlink""",passed,,,,,20,2.684048
+"Tests\Feature\RelevantInstrumentTest::test_effective_receipts_suppress_duplicates_across_services_and_reclassification_without_mutating_history""normalized search""",passed,,,,,20,2.677524
+"Tests\Feature\RelevantInstrumentTest::test_effective_receipts_suppress_duplicates_across_services_and_reclassification_without_mutating_history""stable citation""",passed,,,,,20,2.706978
+Tests\Feature\RelevantInstrumentTest::test_url_identity_does_not_collapse_distinct_resources#0,passed,,,,,1,0.021674
+Tests\Feature\RelevantInstrumentTest::test_url_identity_does_not_collapse_distinct_resources#1,passed,,,,,1,0.021644
+Tests\Feature\RelevantInstrumentTest::test_url_identity_does_not_collapse_distinct_resources#2,passed,,,,,1,0.018831
+Tests\Feature\RelevantInstrumentTest::test_url_identity_does_not_collapse_distinct_resources#3,passed,,,,,1,0.020975
+Tests\Feature\RelevantInstrumentTest::test_url_identity_does_not_collapse_distinct_resources#4,passed,,,,,1,0.022870
+Tests\Feature\RelevantInstrumentTest::test_url_identity_does_not_collapse_distinct_resources#5,passed,,,,,1,0.019389
+Tests\Feature\RelevantInstrumentTest::test_url_identity_does_not_collapse_distinct_resources#6,passed,,,,,1,0.020521
+Tests\Feature\RelevantInstrumentTest::test_url_identity_does_not_collapse_distinct_resources#7,passed,,,,,1,0.019781
+Tests\Feature\RelevantInstrumentTest::test_schema_exposes_target_specific_exclusions_and_retains_other_free_form_resources,passed,,,,,6,2.190697
+Tests\Feature\RelevantInstrumentTest::test_replay_capability_survives_but_equivalent_effective_evidence_cannot_be_replayed,passed,,,,,6,2.012250
+Tests\Feature\TragedyMemoryTest::test_load_is_participant_specific_memory_and_unload_preserves_history,passed,,,,,20,1.629974
+Tests\Feature\TragedyMemoryTest::test_memory_never_changes_database_or_context_backed_field_values,passed,,,,,12,1.330963
+Tests\Feature\TragedyMemoryTest::test_historical_boundary_is_not_replaced_by_current_measurements,passed,,,,,5,1.124284
+Tests\Feature\TragedyMemoryTest::test_governance_chain_ignores_foreign_causal_parent_and_siblings,passed,,,,,24,5.655397
+Tests\Feature\TragedyMemoryTest::test_foreign_unloaded_memory_cannot_be_imported_by_id,passed,,,,,7,1.952902
+Tests\Feature\TragedyMemoryTest::test_exhaustion_removes_warrant_not_loaded_memory,passed,,,,,8,1.370915
+Tests\Feature\TragedyMemoryTest::test_prompt_keeps_memory_out_of_the_loaded_evidence_prefix,passed,,,,,5,0.992984
+Tests\Feature\TragedyMemoryTest::test_failed_transaction_restores_memory_state_and_events,passed,,,,,4,0.906875
+Tests\Feature\TragedyMemoryTest::test_memory_migration_refuses_to_discard_null_signature_history,passed,,,,,3,0.905022
+Tests\Feature\TransactionLockOrderTest::test_fresh_admissibility_rejects_a_previously_valid_schema_as_a_retryable_conflict,passed,,,,,3,4.881543

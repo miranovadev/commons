@@ -12,11 +12,11 @@ use App\Services\ParticipantPromptFactory;
 use App\Services\ParticipationService;
 use App\Services\ReceiptContextService;
 use Carbon\CarbonImmutable;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\ParticipantContextFixture;
+use Tests\Support\RefreshIntegrationDatabase as RefreshDatabase;
 use Tests\TestCase;
 
 #[Group('integration')]

@@ -1,0 +1,152 @@
+{
+  "base": "e7c357551f6e9916a8e84c8c61c309069b280ca6",
+  "reviewed_checkpoint": "f5a8b8ddf4260e40abd1b0d5af41f9dce869b228",
+  "final_test_code": "9bc9e8576dc9c28d0f52d766193304a22f614d31",
+  "production_changes_this_pass": [],
+  "files": [
+    {
+      "path": "app/Models/CommitmentSnapshot.php",
+      "remote": "1864d8b915fa1321fa29d28d295a867bf7f33a05",
+      "local": "1864d8b915fa1321fa29d28d295a867bf7f33a05",
+      "matches": true
+    },
+    {
+      "path": "app/Models/Cycle.php",
+      "remote": "b77357c147d2a941289f788e102ed010bf2fc60b",
+      "local": "b77357c147d2a941289f788e102ed010bf2fc60b",
+      "matches": true
+    },
+    {
+      "path": "app/Services/ClosureGateService.php",
+      "remote": "79daaf2864acc2280ca0c54b00b1b1113b79bf6a",
+      "local": "79daaf2864acc2280ca0c54b00b1b1113b79bf6a",
+      "matches": true
+    },
+    {
+      "path": "app/Services/CommitmentAdmissibilityService.php",
+      "remote": "ca2ff8c95810c7ed1272ebc2d7bf31c312ae666f",
+      "local": "ca2ff8c95810c7ed1272ebc2d7bf31c312ae666f",
+      "matches": true
+    },
+    {
+      "path": "app/Services/CommitmentSnapshotService.php",
+      "remote": "58f82bec7d06d993e218397d32324c79ab8da584",
+      "local": "58f82bec7d06d993e218397d32324c79ab8da584",
+      "matches": true
+    },
+    {
+      "path": "app/Services/ContributionDispatcher.php",
+      "remote": "9c08a4b2371b555d480c258f337ee70089ac466e",
+      "local": "9c08a4b2371b555d480c258f337ee70089ac466e",
+      "matches": true
+    },
+    {
+      "path": "app/Services/HomologousOrderService.php",
+      "remote": "408ea104e1a60de1c416e969f23cf1f7ab9699b5",
+      "local": "408ea104e1a60de1c416e969f23cf1f7ab9699b5",
+      "matches": true
+    },
+    {
+      "path": "app/Services/LedgerService.php",
+      "remote": "27742319daf391949f088b011f194d005a269ada",
+      "local": "27742319daf391949f088b011f194d005a269ada",
+      "matches": true
+    },
+    {
+      "path": "app/Services/Observables/CanonicalMeasurementService.php",
+      "remote": "481592643d5663311c9c495d54e4fbd5caa4aca1",
+      "local": "481592643d5663311c9c495d54e4fbd5caa4aca1",
+      "matches": true
+    },
+    {
+      "path": "app/Services/Observables/ClosureCalculator.php",
+      "remote": "b957f85ccc5833ea3e5f658365b6a18853ab018e",
+      "local": "b957f85ccc5833ea3e5f658365b6a18853ab018e",
+      "matches": true
+    },
+    {
+      "path": "app/Services/Observables/CommittalLineageService.php",
+      "remote": "ee458d98c630ec1115655ae351bb9268e26a12af",
+      "local": "ee458d98c630ec1115655ae351bb9268e26a12af",
+      "matches": true
+    },
+    {
+      "path": "app/Services/Observables/LineageMeasurementService.php",
+      "remote": "d6c9c34f5201b255a8010e5ca44a317d6e1c04a8",
+      "local": "d6c9c34f5201b255a8010e5ca44a317d6e1c04a8",
+      "matches": true
+    },
+    {
+      "path": "app/Services/Observables/ProspectiveClosureCalculator.php",
+      "remote": "e6634e3db870af0ab162f27fa499739fedd89c62",
+      "local": "e6634e3db870af0ab162f27fa499739fedd89c62",
+      "matches": true
+    },
+    {
+      "path": "app/Services/Observables/ProspectiveClosureHistory.php",
+      "remote": "cb496890bb1a31e5b26086e13e67c549b9ae38d7",
+      "local": "cb496890bb1a31e5b26086e13e67c549b9ae38d7",
+      "matches": true
+    },
+    {
+      "path": "app/Services/Observables/ProspectiveClosureService.php",
+      "remote": "ccb9dcc22cb0b8d5719f9d5ee7312c09a2637b1b",
+      "local": "ccb9dcc22cb0b8d5719f9d5ee7312c09a2637b1b",
+      "matches": true
+    },
+    {
+      "path": "app/Services/ParticipantPhaseInstructions.php",
+      "remote": "885f62356471229a17024928283c6ba7bc5725a3",
+      "local": "885f62356471229a17024928283c6ba7bc5725a3",
+      "matches": true
+    },
+    {
+      "path": "app/Services/ParticipationService.php",
+      "remote": "9c37936d8dadce909039c824e99d3fc717f5ce35",
+      "local": "9c37936d8dadce909039c824e99d3fc717f5ce35",
+      "matches": true
+    },
+    {
+      "path": "app/Services/PropositionInspectionService.php",
+      "remote": "52fbe5a25d6683646af9918a2bbf8285268174ad",
+      "local": "52fbe5a25d6683646af9918a2bbf8285268174ad",
+      "matches": true
+    },
+    {
+      "path": "app/Services/PropositionMeasurementService.php",
+      "remote": "bba7dcb8d070ddfb86c3538f289c1f95f345dddc",
+      "local": "bba7dcb8d070ddfb86c3538f289c1f95f345dddc",
+      "matches": true
+    },
+    {
+      "path": "database/migrations/2026_10_12_000000_create_prospective_closure_states.php",
+      "remote": "813ba5e96d6e3060b9e62288fd133f6de9fd6d8f",
+      "local": "813ba5e96d6e3060b9e62288fd133f6de9fd6d8f",
+      "matches": true
+    },
+    {
+      "path": "resources/js/components/ContributionForm.tsx",
+      "remote": "f4cdf81d5ca0eb6b2ef1e98096882d278f6999aa",
+      "local": "f4cdf81d5ca0eb6b2ef1e98096882d278f6999aa",
+      "matches": true
+    },
+    {
+      "path": "resources/js/components/InspectorCharts.tsx",
+      "remote": "646fb6de45addf8432834bf79ec5bc5732d9078f",
+      "local": "646fb6de45addf8432834bf79ec5bc5732d9078f",
+      "matches": true
+    },
+    {
+      "path": "resources/js/components/ParticipationNotices.tsx",
+      "remote": "4633b2c9bfdb8c2bfffbff618bd233ea545dfbbb",
+      "local": "4633b2c9bfdb8c2bfffbff618bd233ea545dfbbb",
+      "matches": true
+    },
+    {
+      "path": "resources/js/types.ts",
+      "remote": "fc2df8d77dfacaf2001e08f9cf64dcca1438116f",
+      "local": "fc2df8d77dfacaf2001e08f9cf64dcca1438116f",
+      "matches": true
+    }
+  ]
+}

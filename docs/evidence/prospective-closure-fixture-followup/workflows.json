@@ -1,0 +1,158 @@
+{
+  "tested_head": "f208025de0d262e43e50be00707bb515a2abbb77",
+  "final_runs": [
+    {
+      "id": 38241946077,
+      "name": "Inspector browser review",
+      "head": "f208025de0d262e43e50be00707bb515a2abbb77",
+      "status": "completed",
+      "conclusion": "success",
+      "started": "2026-10-12T11:19:49Z",
+      "ended": "2026-10-12T11:21:06Z",
+      "seconds": 77
+    },
+    {
+      "id": 38241946093,
+      "name": "Integration",
+      "head": "f208025de0d262e43e50be00707bb515a2abbb77",
+      "status": "completed",
+      "conclusion": "failure",
+      "started": "2026-10-12T11:19:49Z",
+      "ended": "2026-10-12T11:27:13Z",
+      "seconds": 444
+    },
+    {
+      "id": 38241940312,
+      "name": "Phase Profile contracts",
+      "head": "f208025de0d262e43e50be00707bb515a2abbb77",
+      "status": "completed",
+      "conclusion": "failure",
+      "started": "2026-10-12T11:19:46Z",
+      "ended": "2026-10-12T11:25:01Z",
+      "seconds": 315
+    },
+    {
+      "id": 38241940336,
+      "name": "Core",
+      "head": "f208025de0d262e43e50be00707bb515a2abbb77",
+      "status": "completed",
+      "conclusion": "failure",
+      "started": "2026-10-12T11:19:46Z",
+      "ended": "2026-10-12T11:29:22Z",
+      "seconds": 576
+    }
+  ],
+  "focused_jobs": [
+    {
+      "id": 114786439211,
+      "name": "focused (sqlite, contracts)",
+      "summary": [
+        "2026-10-12T11:20:40.9582619Z   Tests:    48 passed (300 assertions)",
+        "2026-10-12T11:20:40.9583553Z   Duration: 20.59s",
+        "2026-10-12T11:20:45.5588269Z   Tests:    14 passed (85 assertions)",
+        "2026-10-12T11:20:45.5589107Z   Duration: 4.30s",
+        "2026-10-12T11:21:21.4705953Z   Tests:    42 failed, 98 passed (1359 assertions)",
+        "2026-10-12T11:21:21.4706920Z   Duration: 35.44s",
+        "2026-10-12T11:21:23.6864316Z     PASS   .......................................................... 19 files  "
+      ]
+    },
+    {
+      "id": 114786439434,
+      "name": "focused (pgsql, fixtures)",
+      "summary": [
+        "2026-10-12T11:23:01.8944430Z   Tests:    10 failed, 137 passed (1647 assertions)",
+        "2026-10-12T11:23:01.8944956Z   Duration: 155.43s"
+      ]
+    },
+    {
+      "id": 114786439472,
+      "name": "focused (pgsql, contracts)",
+      "summary": [
+        "2026-10-12T11:21:45.6016249Z   Tests:    48 passed (300 assertions)",
+        "2026-10-12T11:21:45.6035961Z   Duration: 82.74s",
+        "2026-10-12T11:22:04.2285107Z   Tests:    14 passed (85 assertions)",
+        "2026-10-12T11:22:04.2286296Z   Duration: 18.34s",
+        "2026-10-12T11:24:55.0994853Z   Tests:    42 failed, 98 passed (1359 assertions)",
+        "2026-10-12T11:24:55.0995761Z   Duration: 170.44s",
+        "2026-10-12T11:24:57.4406289Z     PASS   .......................................................... 19 files  "
+      ]
+    },
+    {
+      "id": 114786439631,
+      "name": "focused (sqlite, fixtures)",
+      "summary": [
+        "2026-10-12T11:21:15.6211363Z   Tests:    10 failed, 1 skipped, 136 passed (1644 assertions)",
+        "2026-10-12T11:21:15.6212405Z   Duration: 55.61s"
+      ]
+    }
+  ],
+  "incremental_complete_runs": [
+    {
+      "id": 38239652930,
+      "name": "Core",
+      "head": "b3ef01c52d134514b7f23398c9b88ffb632788e7",
+      "conclusion": "failure",
+      "started": "2026-10-12T10:58:24Z",
+      "ended": "2026-10-12T11:06:25Z",
+      "seconds": 481
+    },
+    {
+      "id": 38239658971,
+      "name": "Integration",
+      "head": "b3ef01c52d134514b7f23398c9b88ffb632788e7",
+      "conclusion": "failure",
+      "started": "2026-10-12T10:58:28Z",
+      "ended": "2026-10-12T11:04:51Z",
+      "seconds": 383
+    },
+    {
+      "id": 38239652832,
+      "name": "Phase Profile contracts",
+      "head": "b3ef01c52d134514b7f23398c9b88ffb632788e7",
+      "conclusion": "failure",
+      "started": "2026-10-12T10:58:24Z",
+      "ended": "2026-10-12T11:03:53Z",
+      "seconds": 329
+    },
+    {
+      "id": 38240600837,
+      "name": "Core",
+      "head": "0e62885c6a007f222073e83ec7497fb2d5db02ec",
+      "conclusion": "failure",
+      "started": "2026-10-12T11:07:10Z",
+      "ended": "2026-10-12T11:15:56Z",
+      "seconds": 526
+    },
+    {
+      "id": 38240607451,
+      "name": "Integration",
+      "head": "0e62885c6a007f222073e83ec7497fb2d5db02ec",
+      "conclusion": "failure",
+      "started": "2026-10-12T11:07:13Z",
+      "ended": "2026-10-12T11:13:27Z",
+      "seconds": 374
+    },
+    {
+      "id": 38240600594,
+      "name": "Phase Profile contracts",
+      "head": "0e62885c6a007f222073e83ec7497fb2d5db02ec",
+      "conclusion": "failure",
+      "started": "2026-10-12T11:07:09Z",
+      "ended": "2026-10-12T11:11:46Z",
+      "seconds": 277
+    }
+  ],
+  "superseded_incomplete_runs": [
+    {
+      "id": 38241618967,
+      "name": "Core",
+      "conclusion": "cancelled"
+    },
+    {
+      "id": 38241624415,
+      "name": "Integration",
+      "conclusion": "cancelled"
+    }
+  ],
+  "note": "The superseded runs are not complete-suite evidence. Final discovered/selected/executed identity accounting is in summary.json."
+}

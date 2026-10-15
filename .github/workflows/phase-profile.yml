@@ -1,0 +1,102 @@
+name: Phase Profile contracts
+
+on:
+  push:
+    paths:
+      - 'app/**'
+      - 'resources/**'
+      - 'app/Services/Observables/PhaseProfile*.php'
+      - 'app/Services/LedgerService.php'
+      - 'app/Services/ContributionDispatcher.php'
+      - 'app/Console/Commands/InspectPhaseProfile.php'
+      - 'database/migrations/*phase_profile*'
+      - 'database/migrations/*prospective_closure*'
+      - 'tests/**'
+      - 'scripts/ci/**'
+      - '.github/workflows/integration-full.yml'
+      - '.github/workflows/php-tests.yml'
+      - '.github/workflows/phase-profile.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  focused:
+    strategy:
+      fail-fast: false
+      matrix:
+        database: [sqlite, pgsql]
+        validation: [contracts, fixtures, lifecycle, committed-history, final-review, stage-four]
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: testing
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -q -d testing -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      APP_ENV: testing
+      APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      DB_CONNECTION: ${{ matrix.database }}
+      DB_DATABASE: ${{ matrix.database == 'sqlite' && ':memory:' || 'testing' }}
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      CACHE_STORE: array
+      MAIL_MAILER: array
+      QUEUE_CONNECTION: sync
+      SESSION_DRIVER: array
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: mbstring, pdo_sqlite, pdo_pgsql, curl, intl
+          coverage: none
+          tools: composer:v2
+      - run: composer install --prefer-dist --no-interaction --no-progress
+      - run: cp .env.example .env
+      - name: Phase Profile contracts
+        if: matrix.validation == 'contracts'
+        run: php artisan test tests/Unit/PhaseProfileComparisonTest.php tests/Feature/PhaseProfileTest.php --display-warnings
+      - name: Prospective Closure contracts
+        if: always() && matrix.validation == 'contracts'
+        run: php artisan test --filter='ProspectiveClosure' --display-warnings --fail-on-empty-test-suite
+      - name: Existing observable and ledger contracts
+        if: always() && matrix.validation == 'contracts'
+        run: php artisan test --filter='Cardinal|Correspondence|CycleEntryIdentity|PhasePositionInvariant|ContextHorizonProjector|ClosureBirth|PropositionLocalChirality|CanonicalCommit|ChiralityV2|AttestationBeat|HomeostaticPopulation|PropositionHistorySemantics|coherent_positive_inputs_produce_the_normal_result|ComponentClosureBoundary|CommittalClosure' --display-warnings
+      - name: Representative fixture repairs
+        if: always() && matrix.validation == 'fixtures'
+        run: php artisan test tests/Feature/PersistInstrumentTest.php tests/Feature/ReinforcementTest.php tests/Feature/WriteOnceTest.php tests/Feature/ExhaustionTest.php tests/Feature/ClosureHysteresisTest.php tests/Feature/ParticipantWakeTest.php tests/Feature/ParticipantContinuityTest.php tests/Feature/AttestationDirectionChangeTest.php tests/Feature/LocalParticipantNavigationTest.php tests/Feature/InputPlanVisibilityTest.php tests/Feature/PropositionMeasurementServiceTest.php tests/Feature/ReceiptRegionContextTest.php tests/Feature/ReconciliationTest.php tests/Feature/CommitParticipationStateTest.php tests/Feature/PropositionHistoryLifecycleTest.php tests/Feature/PropositionPresentationTest.php tests/Feature/TragedyTest.php tests/Feature/PropositionSearchTest.php --display-warnings
+      - name: Final review contracts
+        if: always() && matrix.validation == 'final-review'
+        run: php artisan test tests/Feature/ChiralityPopulationHistoryTest.php tests/Feature/HomologousBiasTest.php tests/Feature/ObservableServiceTest.php --display-warnings
+      - name: Genuine Commit source lifecycle
+        if: always() && matrix.validation == 'lifecycle'
+        run: php artisan test tests/Feature/CommitSourceHistoryLifecycleTest.php --display-warnings
+      - name: Further authorised Commit history
+        if: always() && matrix.validation == 'committed-history'
+        run: php artisan test tests/Feature/CommitDescendantHistoryLifecycleTest.php --display-warnings
+      - name: Direct Tragedy and Resolution contracts
+        if: always() && matrix.validation == 'stage-four'
+        run: php artisan test tests/Feature/DirectTragedyResolutionTest.php tests/Unit/TerminalContinuationTest.php tests/Feature/RegionalExhaustionMigrationTest.php --display-warnings
+      - name: Terminal publication concurrency
+        if: always() && matrix.validation == 'stage-four' && matrix.database == 'pgsql'
+        run: php artisan test tests/Feature/TransactionLockOrderTest.php --filter='concurrent_terminal_observers|concurrent_repeat_observation' --display-warnings
+      - name: Stage 4 formatting
+        if: always() && matrix.validation == 'stage-four'
+        run: vendor/bin/pint --test -v app/Console/Commands/InspectPotential.php app/Console/Commands/InspectRecovery.php app/Services/ParticipantPhaseInstructions.php app/Services/PropositionOptionService.php app/Services/TerminalContinuationService.php app/Services/TragedyService.php app/Services/ExhaustionService.php app/Services/ExhaustionAuditService.php app/Services/ExhaustedContinuationService.php database/migrations/2026_10_14_000000_record_terminal_encounters.php tests/Feature/DirectTragedyResolutionTest.php tests/Unit/TerminalContinuationTest.php
+      - name: Formatting and whitespace
+        if: always() && matrix.validation == 'contracts'
+        run: |
+          vendor/bin/pint --test -v app/Domain/Observables/PhaseProfile.php app/Services/Observables/PhaseProfile*.php database/migrations/*prospective_closure* tests/Feature/ProspectiveClosureStateTest.php app/Services/LedgerService.php app/Services/ContributionDispatcher.php app/Console/Commands/InspectPhaseProfile.php database/migrations/*phase_profile* tests/Unit/PhaseProfileComparisonTest.php tests/Feature/PhaseProfileTest.php tests/Feature/ClosureHysteresisTest.php tests/Feature/LocalParticipantNavigationTest.php tests/Feature/InputPlanVisibilityTest.php tests/Feature/PropositionMeasurementServiceTest.php tests/Feature/ReceiptRegionContextTest.php tests/Feature/ReconciliationTest.php tests/Fixtures/ParticipantContextFixture.php tests/Fixtures/PropositionBirth.php tests/Fixtures/GovernedExpressionFixture.php tests/Feature/CommitParticipationStateTest.php tests/Feature/PropositionHistoryLifecycleTest.php tests/Fixtures/HorizonCycleFixture.php tests/Feature/CommitSourceHistoryLifecycleTest.php tests/Feature/PropositionPresentationTest.php tests/Feature/CommitDescendantHistoryLifecycleTest.php tests/Feature/TragedyTest.php tests/Feature/PropositionSearchTest.php tests/Fixtures/IsolatesClosureOutput.php tests/Feature/ComponentClosureBoundaryTest.php tests/Feature/CommittalClosureTest.php tests/Feature/ClosureBirthTest.php tests/Feature/ChiralityPopulationHistoryTest.php tests/Feature/HomologousBiasTest.php tests/Feature/ObservableServiceTest.php
+          git diff --check origin/main...HEAD

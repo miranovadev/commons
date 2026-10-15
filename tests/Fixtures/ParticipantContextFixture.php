@@ -17,7 +17,9 @@ use App\Models\Supersession;
 use App\Services\CommitRegionPolarityService;
 use App\Services\InstrumentExecutionService;
 use App\Services\LedgerService;
+use App\Services\Observables\ProspectiveClosureService;
 use Illuminate\Support\Facades\DB;
+use LogicException;
 
 /** Persisted history, three live registers, evidence, and unrelated Horizon growth. */
 final class ParticipantContextFixture
@@ -62,8 +64,7 @@ final class ParticipantContextFixture
             if ($i === 3) {
                 $a = $this->node($head, 'activity');
                 $b = $this->node($head, 'activity');
-                $head = $this->node($a, 'frontier', 'reconcile');
-                $this->edge($b, $head, 'reconcile');
+                $head = $this->node($a, 'frontier', 'reconcile', additionalParent: $b);
                 $this->replaced = [$a->id, $b->id];
             } else {
                 $head = $this->node($head, ['activity', 'frontier', 'canon'][$i % 3]);
@@ -102,7 +103,7 @@ final class ParticipantContextFixture
         $this->viewer->forceFill(['current_proposition_id' => $this->gate->id])->save();
     }
 
-    public function node(?Proposition $parent, string $register, string $type = 'variant', string $tier = 'expressive', ?PhaseKind $position = null): Proposition
+    public function node(?Proposition $parent, string $register, string $type = 'variant', string $tier = 'expressive', ?PhaseKind $position = null, ?Proposition $additionalParent = null, bool $completeBirth = true): Proposition
     {
         $phase = new Phase;
         $kind = $position ?? ($type === 'reconcile' ? PhaseKind::Mediate : ($type === 'commit' ? PhaseKind::Order : PhaseKind::Distinguish));
@@ -115,7 +116,7 @@ final class ParticipantContextFixture
             'statement' => 'Shared observations should remain open to revision as participants collect evidence. '.
                 'A useful proposal states its assumptions and explains how the next observation could support or challenge them. '.
                 'We preserve earlier contributions while making the current decision and its governing provenance clear.'])->save();
-        app(LedgerService::class)->record($node);
+        app(LedgerService::class)->record($node, $parent);
         if ($tier === 'committal') {
             $horizon = $node->phase->cycle->contextHorizon;
             (new CommitmentSnapshot)->forceFill(['proposition_id' => $node->id, 'substrate_id' => $horizon->substrate_id,
@@ -126,8 +127,27 @@ final class ParticipantContextFixture
         if ($parent !== null) {
             $this->edge($parent, $node, $type);
         }
+        if ($additionalParent !== null) {
+            $this->edge($additionalParent, $node, $type);
+        }
+        $closure = app(ProspectiveClosureService::class);
+        if ($tier === 'expressive' && $completeBirth) {
+            $closure->initialize($node);
+        } elseif ($tier === 'committal' && $parent !== null && $completeBirth) {
+            $closure->preserve($node, $parent, $closure->stored($parent));
+        }
 
         return $node;
+    }
+
+    /** Authored consumer input only; never an authorised Commit or frozen Closure history. */
+    public function projectedCommittal(Proposition $parent, string $register): Proposition
+    {
+        if ($parent->tier !== 'expressive' || (app(ProspectiveClosureService::class)->stored($parent)['fixture'] ?? null) !== 'isolated_closure_output') {
+            throw new LogicException('Projected Committals require explicit component isolation.');
+        }
+
+        return $this->node($parent, $register, 'commit', 'committal', completeBirth: false);
     }
 
     private function governedCycle(Proposition $seed): Cycle
@@ -210,4 +230,3 @@ final class ParticipantContextFixture
             ->update(['calculator_version' => null]);
     }
 }
-

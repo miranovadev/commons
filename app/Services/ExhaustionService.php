@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\DB;
 
-/** A later fresh expressive Charge boundary in the same Region proves exhaustion. */
+/** Unique regional proof after all actual continuations terminate. */
 final class ExhaustionService
 {
     public function actionable(Builder $query): Builder
@@ -81,27 +81,59 @@ final class ExhaustionService
         app(HorizonFailureService::class)->publish($phase, $proof);
     }
 
-    /** Called only by the fresh-expression boundary observer under the Substrate lock. */
-    public function recordBoundary(Proposition $terminal, Tragedy $tragedy, array $field): bool
+    /** Caller owns the Substrate lock; publication and recursion share its transaction. */
+    public function evaluate(Proposition $seed, string $encounterId, ?string $descendant = null): bool
     {
         if (DB::transactionLevel() === 0) {
-            throw new \DomainException('Exhaustion belongs to the expressive contribution transaction.');
+            throw new \DomainException('Exhaustion belongs to the contribution transaction.');
         }
-        $phase = $terminal->phase;
-        $seed = app(CommitRegionService::class)->seedFor($terminal);
-        if (! $terminal->wasRecentlyCreated || $terminal->tier !== 'expressive' || $field['charge'] !== 0.0
-            || $seed?->id !== $tragedy->governing_committal_id
-            || $terminal->id === $tragedy->terminal_proposition_id
-            || $phase->cycle->context_horizon_id !== $tragedy->context_horizon_id) {
+        if (DB::table('commit_region_exhaustions')->where('governing_committal_id', $seed->id)->exists()) {
             return false;
         }
-        $horizon = ContextHorizon::whereKey($tragedy->context_horizon_id)->lockForUpdate()->firstOrFail();
+        $encounter = DB::table('terminal_encounters')->where('id', $encounterId)->first();
+        if ($encounter === null || ($descendant === null && $encounter->governing_committal_id !== $seed->id)) {
+            throw new \DomainException('Exhaustion requires an authoritative terminal cause.');
+        }
+        if ($descendant !== null) {
+            $exit = DB::table('supersessions as edge')
+                ->join('propositions as source', 'source.id', '=', 'edge.source_proposition_id')
+                ->join('phases as phase', 'phase.id', '=', 'source.phase_id')
+                ->join('cycles as cycle', 'cycle.id', '=', 'phase.cycle_id')
+                ->where('source.tier', 'expressive')->where('cycle.entry_committal_id', $seed->id)
+                ->where('edge.type', 'commit')->where('edge.target_proposition_id', $descendant)->exists();
+            if (! $exit || ! DB::table('commit_region_exhaustions')->where('governing_committal_id', $descendant)->exists()) {
+                throw new \DomainException('Parent Exhaustion requires its own genuinely committed exhausted descendant.');
+            }
+        }
+        $tragedy = Tragedy::where('governing_committal_id', $seed->id)->first();
+        if ($tragedy === null) {
+            // Exploration still permits ordinary Variant opportunities. A child
+            // proof does not fabricate a regional Tragedy or Resolution restriction.
+            return false;
+        }
+        $substrateId = $seed->phase->cycle->participant->substrate_id;
+        $graph = app(TerminalContinuationService::class)->graph($substrateId);
+        $remaining = app(TerminalContinuationService::class)->remaining($seed->id, $graph);
+        if ($remaining->isNotEmpty()) {
+            return false;
+        }
+        $horizon = app(ContextHorizonProjector::class)->forEntry($seed);
         $changed = DB::table('commit_region_exhaustions')->insertOrIgnore([
             'governing_committal_id' => $seed->id,
-            'context_horizon_id' => $horizon->id, 'tragedy_id' => $tragedy->id, 'receipt_id' => $tragedy->receipt_id,
-            'phase_id' => $phase->id, 'terminal_proposition_id' => $terminal->id,
-            'observed_field_version' => Substrate::whereKey($horizon->substrate_id)->value('field_version'),
-            'boundary_field' => json_encode($field, JSON_THROW_ON_ERROR), 'exhausted_at' => now(),
+            'context_horizon_id' => $horizon->id, 'tragedy_id' => $tragedy?->id, 'receipt_id' => $tragedy?->receipt_id,
+            'phase_id' => $encounter->phase_id, 'terminal_proposition_id' => $encounter->proposition_id,
+            'terminal_encounter_id' => $encounterId, 'descendant_exhaustion_id' => $descendant,
+            'observed_field_version' => Substrate::whereKey($substrateId)->value('field_version'),
+            'boundary_field' => $encounter->field,
+            'continuation_evaluation' => json_encode([
+                'rule' => 'direct-terminal-recursive-v1', 'remaining' => [],
+                'members' => $graph['nodes']->filter(fn ($node) => $node->tier === 'expressive'
+                    && $node->entry_committal_id === $seed->id)->keys()->all(),
+                'closed' => $graph['closed']->keys()->all(),
+                'edges' => $graph['edges']->map(fn ($edge) => [
+                    'source' => $edge->source_proposition_id, 'target' => $edge->target_proposition_id, 'type' => $edge->type,
+                ])->values()->all(),
+            ], JSON_THROW_ON_ERROR), 'exhausted_at' => now(),
         ]);
         if ($changed) {
             app(RegionalExhaustionMembership::class)->publish($seed->id,
@@ -124,12 +156,20 @@ final class ExhaustionService
                 ['type' => 'region.exhausted', 'governing_committal_id' => $seed->id, 'boundary_exhausted' => $boundary]);
         }
 
-        // A separately accepted concurrent birth remains historical even when
-        // another proposition won the unique proof. Never replace that witness.
-        if (! $changed) {
-            app(RegionalExhaustionMembership::class)->publish($seed->id, [$terminal->id]);
+        if ($changed) {
+            // Commit edges carry the real expressive source into this basin.
+            // Re-evaluate only owning parent Regions, never neighbouring basins.
+            $parents = DB::table('supersessions as edge')
+                ->join('propositions as source', 'source.id', '=', 'edge.source_proposition_id')
+                ->join('phases as phase', 'phase.id', '=', 'source.phase_id')
+                ->join('cycles as cycle', 'cycle.id', '=', 'phase.cycle_id')
+                ->where('edge.type', 'commit')->where('edge.target_proposition_id', $seed->id)
+                ->where('source.tier', 'expressive')->distinct()->pluck('cycle.entry_committal_id');
+            foreach (Proposition::whereKey($parents)->get() as $parent) {
+                $this->evaluate($parent, $encounterId, $seed->id);
+            }
         }
 
-        return true;
+        return (bool) $changed;
     }
 }

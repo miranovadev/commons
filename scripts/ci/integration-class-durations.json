@@ -1,0 +1,19 @@
+{
+  "Tests\\Feature\\Api\\ParticipationHttpHarnessTest": 106.89,
+  "Tests\\Feature\\Api\\ParticipationLifecycleRegressionTest": 66.83,
+  "Tests\\Feature\\Api\\ParticipationLocalEpochTest": 21.84,
+  "Tests\\Feature\\Api\\ParticipationRecoveryTest": 40.54,
+  "Tests\\Feature\\Api\\ParticipationSourceEquivalenceTest": 34.65,
+  "Tests\\Feature\\Api\\ParticipationStaggeredEpochTest": 32.6,
+  "Tests\\Feature\\Api\\ParticipationTragedyLifecycleTest": 21.6,
+  "Tests\\Feature\\Api\\ParticipationVisibilityLifecycleTest": 9.43,
+  "Tests\\Feature\\FreshBootstrapTest": 265.24,
+  "Tests\\Feature\\FullEvidenceFlowTest": 125.4,
+  "Tests\\Feature\\HomologousMediationTest": 3.34,
+  "Tests\\Feature\\HorizonProofCycleTest": 133.37,
+  "Tests\\Feature\\NaturalChargeBoundaryLifecycleTest": 3.22,
+  "Tests\\Feature\\OperationalClosurePathTest": 131.02,
+  "Tests\\Feature\\ParticipantActionContractTest": 76.21,
+  "Tests\\Feature\\ParticipantWakeTest": 14.63,
+  "Tests\\Feature\\ReceiptPhaseBoundaryTest": 2.09
+}

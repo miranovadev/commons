@@ -1,8 +1,14 @@
 # Correspondence v2 — canonical structural semantics
 
-> **Status:** normative semantics for the Correspondence v2 correction. This document supersedes earlier v2 wording that equated structural depth with Phase position or reduced Position Correspondence to a single head-to-head comparison.
->
-> Production code must implement these semantics directly. Do not substitute Phase Position, head-only comparison, UI geometry, or an optimization that changes the defined cardinal populations.
+> **Historical Correspondence component specification.** Production now uses
+> [Phase Profile C1](phase-profile-target.md). The Shape Topology kernel and its
+> structural morphology dependencies remain in use. Closure's Committed Cardinal
+> Position is separate and unchanged.
+
+> The following sections preserve the previous v2 design and numeric examples.
+> Their Cardinal Position component is not production C1 authority. The unchanged
+> Shape Topology and structural morphology definitions still apply where referenced
+> by the current observable contract.
 
 ## 1. Purpose
 

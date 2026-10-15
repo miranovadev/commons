@@ -22,7 +22,6 @@ use App\Services\OpenAIResponsesClient;
 use App\Services\OperationalInstrumentService;
 use App\Services\ParticipationService;
 use App\Services\PotentialProjectionService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use InvalidArgumentException;
@@ -30,6 +29,7 @@ use Opis\JsonSchema\Helper;
 use Opis\JsonSchema\Validator;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
+use Tests\Support\RefreshIntegrationDatabase as RefreshDatabase;
 use Tests\TestCase;
 
 class ParticipantActionContractTest extends TestCase
@@ -284,11 +284,12 @@ class ParticipantActionContractTest extends TestCase
         $node = function (string $register, ?Proposition $parent = null, PhaseKind $position = PhaseKind::Order, string $edgeType = 'variant') use (&$past): Proposition {
             $node = new Proposition;
             $node->forceFill(['phase_id' => $this->phaseAtPositionFixture($past, $position)->id, 'register' => $register, 'tier' => $parent ? 'expressive' : 'committal', 'statement' => 'Contract fixture'])->save();
-            app(LedgerService::class)->record($node);
+            app(LedgerService::class)->record($node, $parent);
             if ($parent) {
                 $edge = new Supersession;
                 $edge->forceFill(['phase_id' => $past->id, 'source_proposition_id' => $parent->id, 'target_proposition_id' => $node->id, 'type' => $edgeType])->save();
                 app(LedgerService::class)->record($edge);
+                app(\App\Services\Observables\ProspectiveClosureService::class)->initialize($node);
             }
 
             $this->receiptFixture($node);
@@ -315,11 +316,12 @@ class ParticipantActionContractTest extends TestCase
             $ownerPhase->save();
             $gate = $gate->replicate();
             $gate->forceFill(['phase_id' => $ownerPhase->id])->save();
-            app(LedgerService::class)->record($gate);
+            app(LedgerService::class)->record($gate, $anchor);
             $edge = new Supersession;
             $edge->forceFill(['phase_id' => $ownerPhase->id, 'source_proposition_id' => $anchor->id,
                 'target_proposition_id' => $gate->id, 'type' => 'variant'])->save();
             app(LedgerService::class)->record($edge);
+            app(\App\Services\Observables\ProspectiveClosureService::class)->initialize($gate);
         }
         if (! $empty) {
             $this->classificationEvidenceFixture($gate);

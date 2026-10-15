@@ -1,5 +1,11 @@
 # Closure hysteresis and Domain transitions
 
+> **Current deployed birth-frozen Closure semantics.** Proposed
+> Cycle-responsive Historical Extent/Rhythm and Commit preservation
+> are specified in [prospective Closure target](prospective-closure-target.md).
+> These are different lifecycles; this document is not authority to
+> freeze new expressive Closure under the proposed target.
+
 Closure, performed during Order — Write, evaluates each causally local expressive
 Write independently from that new Committal's committed geometry/Cadence, lineage/history and
 participation. It is not a region-wide cross-lineage comparison or candidate

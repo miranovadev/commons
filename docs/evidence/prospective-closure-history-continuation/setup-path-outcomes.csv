@@ -1,0 +1,119 @@
+original_setup_path,original_missing,now_passed,now_exposed_failure,still_missing_history
+tests/TestCase.php::receiptFixture → tests/Feature/HomologousBiasTest.php::source → tests/Feature/HomologousBiasTest.php::setUp,38,0,0,38
+tests/Feature/HomologousMediationTest.php::phase → tests/Feature/HomologousMediationTest.php::expression → tests/Feature/HomologousMediationTest.php::pair → tests/Feature/HomologousMediationTest.php::setUp,32,0,0,32
+tests/TestCase.php::controlledBirthClosureFixture → tests/Fixtures/ExhaustionFixture.php::phase,29,29,0,0
+tests/Feature/InputPlanVisibilityTest.php::proposition,23,22,0,1
+tests/TestCase.php::controlledBirthClosureFixture → tests/Fixtures/ExhaustionFixture.php::phase → tests/Fixtures/ExhaustionFixture.php::commitFrom → tests/Fixtures/ExhaustionFixture.php::exhaustedBranch,16,16,0,0
+tests/TestCase.php::governedPhaseFixture → tests/Feature/AttestationPolarityTest.php::node → tests/Feature/AttestationPolarityTest.php::regionSeed,16,0,0,16
+tests/Feature/ReinforcementTest.php::phase → tests/Feature/ReinforcementTest.php::setUp,14,12,2,0
+tests/Fixtures/CreatesHomologousPositions.php::phase → tests/Feature/HomologousOrderTest.php::activate → tests/Feature/HomologousOrderTest.php::setUp,14,0,0,14
+tests/TestCase.php::receiptFixture → tests/Feature/TragedyTest.php::proposition → tests/Feature/TragedyTest.php::fixture,14,5,0,9
+tests/Fixtures/CreatesHomologousPositions.php::phase → tests/Fixtures/CreatesHomologousPositions.php::commit → tests/Feature/ChiralityV2Test.php::pair,13,0,0,13
+tests/TestCase.php::loadedReceiptFixture → tests/Feature/ClosureHysteresisTest.php::candidate,13,11,2,0
+tests/Feature/PhasePositionInvariantTest.php::phase → tests/Feature/PhasePositionInvariantTest.php::fixture,12,12,0,0
+tests/TestCase.php::controlledBirthClosureFixture → tests/Feature/WriteOnceTest.php::phase,12,12,0,0
+tests/TestCase.php::controlledBirthClosureFixture → tests/Fixtures/ExhaustionFixture.php::phase → tests/Feature/ReceiptGatedReclassificationTest.php::boundary,11,11,0,0
+tests/Feature/ReconciliationTest.php::node → tests/Feature/ReconciliationTest.php::fixture,10,8,0,2
+tests/Fixtures/CreatesHomologousPositions.php::phase → tests/Feature/MediatedIncomingBiasTest.php::expression → tests/Feature/MediatedIncomingBiasTest.php::pair → tests/Feature/MediatedIncomingBiasTest.php::setUp,10,0,0,10
+tests/TestCase.php::controlledBirthClosureFixture → tests/Feature/LocalParticipantNavigationTest.php::node → tests/Feature/LocalParticipantNavigationTest.php::region,10,10,0,0
+tests/TestCase.php::controlledBirthClosureFixture → tests/Fixtures/ExhaustionFixture.php::phase → tests/Fixtures/ExhaustionFixture.php::commitFrom → tests/Fixtures/HorizonProofFixture.php::firstFailure,10,10,0,0
+tests/TestCase.php::controlledBirthClosureFixture,9,9,0,0
+tests/TestCase.php::controlledBirthClosureFixture → tests/Feature/CausalRecoveryTest.php::phase → tests/Feature/CausalRecoveryTest.php::expressive,9,9,0,0
+tests/TestCase.php::controlledBirthClosureFixture → tests/Feature/CausalRecoveryTest.php::phase → tests/Feature/CausalRecoveryTest.php::expressive → tests/Feature/CausalRecoveryTest.php::opportunity,9,9,0,0
+tests/TestCase.php::receiptFixture → tests/Feature/BiasGateTest.php::attest → tests/Feature/BiasGateTest.php::fixture,9,0,0,9
+tests/TestCase.php::controlledBirthClosureFixture → tests/Feature/CausalOperationalScopeTest.php::phase → tests/Feature/CausalOperationalScopeTest.php::node,8,8,0,0
+tests/TestCase.php::controlledBirthClosureFixture → tests/Fixtures/ExhaustionFixture.php::explore → tests/Fixtures/SpentContinuationFixture.php::testedLineage,8,8,0,0
+tests/TestCase.php::controlledBirthClosureFixture → tests/TestCase.php::boundaryTragedyFixture,8,8,0,0
+tests/TestCase.php::controlledBirthClosureFixture → tests/TestCase.php::boundaryTragedyFixture → tests/Feature/TragedyMemoryTest.php::memoryFixture,8,8,0,0
+tests/TestCase.php::governedPhaseFixture → tests/Feature/CommitRegionTest.php::node,8,0,0,8
+tests/Fixtures/CreatesHomologousPositions.php::phase → tests/Fixtures/CreatesHomologousPositions.php::position,7,0,0,7
+tests/TestCase.php::controlledBirthClosureFixture → tests/Fixtures/ExhaustionFixture.php::phase → tests/Fixtures/ExhaustionFixture.php::commitFrom,7,7,0,0
+tests/Feature/PersistInstrumentTest.php::fixture,6,6,0,0
+tests/Feature/PropositionHistorySemanticsTest.php::giveHistory,6,0,0,6
+tests/Fixtures/ParticipantContextFixture.php::node → tests/Feature/PropositionSearchTest.php::scenario,6,2,0,4
+tests/TestCase.php::controlledBirthClosureFixture → tests/Feature/LocalParticipantNavigationTest.php::node,6,6,0,0
+tests/TestCase.php::receiptFixture → tests/Feature/RevisionAdmissibilityTest.php::revisionFixture,6,0,0,6
+tests/TestCase.php::controlledBirthClosureFixture → tests/Feature/CausalRecoveryTest.php::phase → tests/Feature/CausalRecoveryTest.php::committal,5,5,0,0
+tests/TestCase.php::controlledBirthClosureFixture → tests/Feature/CausalRecoveryTest.php::phase → tests/Feature/CausalRecoveryTest.php::resting,5,5,0,0
+tests/TestCase.php::controlledBirthClosureFixture → tests/Fixtures/ExhaustionFixture.php::phase → tests/Feature/ExpressiveEvidenceGatingTest.php::position,5,5,0,0
+tests/Feature/CrossoverRecoveryTest.php::phase → tests/Feature/CrossoverRecoveryTest.php::terminal,4,0,0,4
+tests/TestCase.php::controlledBirthClosureFixture → tests/Feature/HorizonReceiptLifecycleTest.php::observation,4,4,0,0
+tests/TestCase.php::controlledBirthClosureFixture → tests/Fixtures/ExhaustionFixture.php::measure,4,4,0,0
+tests/TestCase.php::controlledBirthClosureFixture → tests/Fixtures/ExhaustionFixture.php::phase → tests/Fixtures/ExhaustionFixture.php::commitFrom → tests/Fixtures/HorizonProofFixture.php::firstFailure → tests/Feature/RegionalExhaustionMigrationTest.php::firstFailure,4,4,0,0
+tests/Feature/HomeostaticPopulationTest.php::causalPosition,3,0,0,3
+tests/TestCase.php::controlledBirthClosureFixture → tests/Feature/CausalRecoveryTest.php::refreshMeasurements → tests/Feature/CausalRecoveryTest.php::recover,3,3,0,0
+tests/TestCase.php::controlledBirthClosureFixture → tests/Feature/OperationalCommitmentTest.php::phase → tests/Feature/OperationalCommitmentTest.php::positionedCandidate → tests/Feature/OperationalCommitmentTest.php::instrumentFixture,3,3,0,0
+tests/TestCase.php::controlledBirthClosureFixture → tests/TestCase.php::loadedReceiptFixture → tests/Feature/CausalRecoveryTest.php::explore → tests/Feature/CausalRecoveryTest.php::exhaustRegion → tests/Feature/CausalRecoveryTest.php::exhaust,3,3,0,0
+tests/TestCase.php::loadedReceiptFixture → tests/TestCase.php::groundFixture → tests/Feature/ParticipantContinuityTest.php::prepareCommit,3,3,0,0
+tests/Feature/ClosureBirthTest.php::cycle → tests/Feature/ClosureBirthTest.php::born → tests/Feature/ClosureBirthTest.php::commit,2,0,0,2
+tests/Feature/ClosureHysteresisTest.php::phase → tests/Feature/ClosureHysteresisTest.php::candidate,2,1,1,0
+tests/Fixtures/CreatesHomologousPositions.php::phase,2,0,0,2
+tests/Fixtures/CreatesHomologousPositions.php::phase → tests/Fixtures/CreatesHomologousPositions.php::commit,2,0,0,2
+tests/Fixtures/ParticipantContextFixture.php::node,2,1,0,1
+tests/TestCase.php::controlledBirthClosureFixture → tests/Feature/CausalRecoveryTest.php::refreshMeasurements,2,2,0,0
+tests/TestCase.php::controlledBirthClosureFixture → tests/Feature/HorizonProofMigrationTest.php::observation,2,2,0,0
+tests/TestCase.php::controlledBirthClosureFixture → tests/Feature/OperationalCommitmentTest.php::phase,2,2,0,0
+tests/TestCase.php::controlledBirthClosureFixture → tests/Feature/PhasePositionInvariantTest.php::phase → tests/Feature/PhasePositionInvariantTest.php::fixture,2,2,0,0
+tests/TestCase.php::controlledBirthClosureFixture → tests/Feature/ReconciliationTest.php::node → tests/Feature/ReconciliationTest.php::fixture,2,2,0,0
+tests/TestCase.php::controlledBirthClosureFixture → tests/Fixtures/ExhaustionFixture.php::phase → tests/Fixtures/ExhaustionFixture.php::commitFrom → tests/Feature/ExhaustionTest.php::tragicChild → tests/Feature/ExhaustionTest.php::exhaustSecondBoundary,2,2,0,0
+tests/TestCase.php::controlledBirthClosureFixture → tests/TestCase.php::governedPhaseFixture → tests/Feature/CommitRegionTest.php::node,2,2,0,0
+tests/TestCase.php::controlledBirthClosureFixture → tests/TestCase.php::governedPhaseFixture → tests/Feature/WriteOnceTest.php::node,2,2,0,0
+tests/TestCase.php::controlledBirthClosureFixture → tests/TestCase.php::loadedReceiptFixture → tests/TestCase.php::groundFixture → tests/Feature/ContextHorizonProjectorTest.php::commit,2,2,0,0
+tests/TestCase.php::controlledBirthClosureFixture → tests/TestCase.php::receiptFixture → tests/TestCase.php::classificationEvidenceFixture,2,2,0,0
+tests/TestCase.php::governedPhaseFixture → tests/Feature/AttestationPolarityTest.php::node,2,1,0,1
+tests/TestCase.php::governedPhaseFixture → tests/Feature/PropositionPresentationTest.php::node,2,2,0,0
+tests/TestCase.php::loadedReceiptFixture,2,0,0,2
+tests/TestCase.php::loadedReceiptFixture → tests/TestCase.php::groundFixture,2,0,0,2
+direct test setup: Tests.Feature.Api.CommonsUiApiTest::test_graph_endpoint_exposes_navigable_proposition_edges,1,0,0,1
+direct test setup: Tests.Feature.Api.PropositionReadTest::test_field_projection_uses_snapshots_canonical_potential_and_direct_phase_touches,1,0,0,1
+direct test setup: Tests.Feature.ClosureBirthTest::test_attestation_can_refresh_chirality_while_closure_remains_frozen,1,0,0,1
+direct test setup: Tests.Feature.ClosureBirthTest::test_expressive_and_committal_births_observe_different_intervals_and_never_rewrite_source,1,0,0,1
+direct test setup: Tests.Feature.ClosureBirthTest::test_forks_and_measurement_repair_use_the_same_durable_birth_observation,1,0,0,1
+"direct test setup: Tests.Feature.CommitParticipationStateTest::test_commit_cannot_recover_history_from_before_a_non_commit_reset with data set ""Reclassify""",1,0,0,1
+"direct test setup: Tests.Feature.CommitParticipationStateTest::test_commit_cannot_recover_history_from_before_a_non_commit_reset with data set ""Reconcile""",1,0,0,1
+"direct test setup: Tests.Feature.CommitParticipationStateTest::test_commit_cannot_recover_history_from_before_a_non_commit_reset with data set ""Revise""",1,0,0,1
+"direct test setup: Tests.Feature.CommitParticipationStateTest::test_commit_cannot_recover_history_from_before_a_non_commit_reset with data set ""Variant""",1,0,0,1
+direct test setup: Tests.Feature.CommitParticipationStateTest::test_inheritance_respects_effective_attestations_completed_receipts_and_commit_edges_only,1,0,0,1
+direct test setup: Tests.Feature.CommitParticipationStateTest::test_new_phase_touches_dirty_the_region_but_completion_is_not_another_touch,1,1,0,0
+direct test setup: Tests.Feature.CommittalClosureTest::test_abandoned_descendants_do_not_supply_structure_intervals_or_directions,1,0,0,1
+direct test setup: Tests.Feature.CommittalClosureTest::test_entry_reads_are_bounded_as_committed_lineage_grows,1,0,0,1
+direct test setup: Tests.Feature.CommittalClosureTest::test_expressive_birth_interval_is_frozen_without_read_time_writes,1,0,0,1
+direct test setup: Tests.Feature.CommittalClosureTest::test_missing_committed_birth_state_blocks_preview_but_does_not_rewrite_existing_births,1,0,0,1
+direct test setup: Tests.Feature.CommittalClosureTest::test_similarity_and_interval_include_every_entry_once_but_exclude_other_basins,1,0,0,1
+direct test setup: Tests.Feature.CommittalClosureTest::test_symmetric_bootstrap_and_full_domain_counts_follow_only_cycle_entry,1,0,0,1
+direct test setup: Tests.Feature.HomeostaticPopulationTest::test_committed_members_use_frozen_snapshots_instead_of_disposable_projection_values,1,0,0,1
+direct test setup: Tests.Feature.HomeostaticPopulationTest::test_zero_population_directions_use_axis_defaults_or_history_without_any_writeback,1,0,0,1
+direct test setup: Tests.Feature.LineageAttenuationTest::test_entry_observer_attenuation_is_separate_from_measurement_accumulation_and_recovery,1,0,0,1
+direct test setup: Tests.Feature.LineageAttenuationTest::test_preview_preserves_source_and_actual_canonical_head_stops_at_the_boundary,1,0,0,1
+direct test setup: Tests.Feature.LineageAttenuationTest::test_raw_calculation_never_reads_or_reuses_accumulated_projections,1,0,0,1
+direct test setup: Tests.Feature.ObservableServiceTest::test_first_developed_domain_compares_against_origin_with_inverse_square_attenuation,1,0,0,1
+direct test setup: Tests.Feature.ObservableServiceTest::test_phase_touches_remain_proposition_state_but_do_not_supply_closure,1,0,0,1
+direct test setup: Tests.Feature.ParticipationSnapshotTest::test_evidence_can_commit_during_an_optimistic_plan_and_the_next_plan_sees_it,1,0,0,1
+direct test setup: Tests.Feature.PropositionMeasurementServiceTest::test_correspondence_retains_both_directions_through_zero_and_projection_deletion,1,1,0,0
+direct test setup: Tests.Feature.PropositionMeasurementServiceTest::test_live_measurements_are_replaceable_but_closure_comes_from_birth,1,1,0,0
+direct test setup: Tests.Feature.ReceiptCapabilitiesMigrationTest::test_upgrade_preserves_legacy_observations_without_backfilling_loads,1,0,0,1
+direct test setup: Tests.Feature.ReceiptContextMigrationTest::test_upgrade_preserves_historical_allocations_without_inventing_loads,1,0,0,1
+direct test setup: Tests.Feature.ReceiptContextTest::test_gate_load_accompanies_forward_contribution_and_persists_across_cycles,1,0,0,1
+direct test setup: Tests.Feature.ReceiptContextTest::test_loaded_citation_knowledge_survives_outside_the_hydrated_causal_lineage,1,0,0,1
+tests/Feature/AttestationBeatContinuityTest.php::child,1,0,0,1
+tests/Feature/AttestationDirectionChangeTest.php::expressiveHead,1,1,0,0
+tests/Feature/ClosureBirthTest.php::cycle,1,0,0,1
+tests/Feature/ClosureBirthTest.php::cycle → tests/Feature/ClosureBirthTest.php::born,1,0,0,1
+tests/Feature/CycleRegionOwnershipTest.php::phase,1,0,0,1
+tests/Feature/CycleRegionOwnershipTest.php::phase → tests/Feature/CycleRegionOwnershipTest.php::commit,1,0,0,1
+tests/Feature/CycleRegionOwnershipTest.php::phase → tests/Feature/CycleRegionOwnershipTest.php::expressive,1,0,0,1
+tests/Feature/PropositionPresentationTest.php::phase,1,1,0,0
+tests/Fixtures/CreatesHomologousPositions.php::phase → tests/Feature/PropositionInspectionTest.php::classification,1,0,0,1
+tests/TestCase.php::controlledBirthClosureFixture → tests/Feature/BiasGateTest.php::newPhase → tests/Feature/BiasGateTest.php::fixture,1,1,0,0
+tests/TestCase.php::controlledBirthClosureFixture → tests/Feature/CausalRecoveryTest.php::phase,1,1,0,0
+tests/TestCase.php::controlledBirthClosureFixture → tests/Fixtures/ExhaustionFixture.php::explore,1,1,0,0
+tests/TestCase.php::controlledBirthClosureFixture → tests/Fixtures/ExhaustionFixture.php::measure → tests/Fixtures/ExhaustionFixture.php::commitFrom,1,1,0,0
+tests/TestCase.php::controlledBirthClosureFixture → tests/Fixtures/ExhaustionFixture.php::phase → tests/Fixtures/ExhaustionFixture.php::commitFrom → tests/Feature/ExhaustionTest.php::tragicChild,1,1,0,0
+tests/TestCase.php::controlledBirthClosureFixture → tests/TestCase.php::laterHorizonFixture,1,1,0,0
+tests/TestCase.php::controlledBirthClosureFixture → tests/TestCase.php::loadedReceiptFixture → tests/Feature/CausalRecoveryTest.php::explore,1,1,0,0
+tests/TestCase.php::controlledBirthClosureFixture → tests/TestCase.php::receiptFixture → tests/Feature/BiasGateTest.php::attest → tests/Feature/BiasGateTest.php::fixture,1,0,0,1
+tests/TestCase.php::controlledBirthClosureFixture → tests/TestCase.php::receiptFixture → tests/Feature/RevisionAdmissibilityTest.php::revisionFixture,1,1,0,0
+tests/TestCase.php::governedPhaseFixture → tests/Feature/PotentialChargeServiceTest.php::continuation,1,0,0,1
+tests/TestCase.php::laterHorizonFixture,1,0,0,1
+tests/TestCase.php::loadedReceiptFixture → tests/TestCase.php::groundFixture → tests/Feature/ObservableServiceTest.php::closeHorizon,1,0,0,1
+tests/TestCase.php::receiptFixture,1,0,0,1

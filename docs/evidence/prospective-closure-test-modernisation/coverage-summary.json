@@ -1,0 +1,12 @@
+{
+  "checkpoint_missing_history": {
+    "passing component contract": 201,
+    "removed/consolidated": 31,
+    "exposed assertion/failure": 2
+  },
+  "component_group_cases": {
+    "passed": 336,
+    "failure": 3
+  },
+  "component_classes": 35
+}

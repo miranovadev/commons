@@ -1,11 +1,19 @@
 # Observable calculation
 
+> **Deployed observable reference, with historical Chirality v2 text.**
+> [Phase Profile C1](phase-profile-target.md) is the production Correspondence
+> component. [Prospective Closure](prospective-closure-target.md) remains a review
+> target, not production behaviour. The Chirality vNext Stage 1–4 implementation
+> is documented in [its integration review](chirality-stage-4.md);
+> the older v2 calculation below is retained as historical context.
+> [Decision/status ledger](semantic-reconciliation-status.md).
+
 The [Core Invariants](core-invariants.md) govern these calculations. In
 particular, measurement independence (1), representation versus semantics (2),
 and distinct reference frames (7) constrain every projection described below.
 
 Movement is governed independently by
-[Invariant 17](core-invariants.md#17-lineage-constrained-participant-movement).
+[Invariant 10](core-invariants.md#10-movement-follows-authorised-structure).
 Measurement ancestry, a calculation population and visible evidence do not
 define Participant movement. Forward movement follows the current Gate's causal
 continuation; recovery follows recorded ancestry backward. No edge means no
@@ -16,13 +24,54 @@ provenance in the preceding complementary Context Horizon. Closure has a distinc
 committed-lineage path: Horizons supply Domain labels, never comparison populations.
 Raw evidence evaluations never read accumulated measurement projections.
 
+## Causal observations and Cycle-entry clocks
+
+Three relationships must not be treated as interchangeable:
+
+1. **Causal relationship:** two Propositions may share a real ancestor while
+   belonging to different branches. For example, `C1 → G → P1` and
+   `C1 → G → P2` share causal history. Neither sibling is the other's ancestor.
+2. **Selected measurement ancestry:** a measurement uses the directed causal
+   ancestry selected for its measured head. A shared ancestor may appear in
+   both selected lineages; a sibling does not enter merely through that shared
+   ancestor. A genuine multi-parent Write may join causal branches.
+3. **Governing Cycle-entry basin:** a creating Cycle's immutable
+   `entry_committal_id` identifies the Committal that governs its operational
+   Region. Multiple Participants and separate causal branches can enter Cycles
+   governed by the same Committal. This does not manufacture a Supersession
+   between those branches or make the whole Horizon one basin.
+
+**Selecting Proposition observations and counting Cycle-entry events are
+separate operations.** Where a calculation explicitly uses a represented-basin
+Cycle clock, the selected causal lineage determines which governing Committal
+basins are represented. The clock then counts actual Cycles entered in those
+basins under the calculation's documented Horizon and event-order constraints.
+Those Cycles count even if they are unfinished, Attestation-only, Rested or
+contribution-free, when the calculation defines that scope. They need not each
+produce a Proposition in the selected ancestry. Conversely, counting their
+entry events never imports unrelated Proposition observations into the
+measurement.
+
+For example, P1 and P2 may be separate expressive branches under C1. A
+calculation selecting P2's ancestry does not select P1 merely because both
+share C1. If its defined clock counts C1-governed Cycle entries, a Cycle entered
+by a different Participant under C1 can still advance that clock without
+making P1 part of P2's measurement ancestry.
+
+**Neither shared Horizon membership nor shared ancestry alone authorises
+arbitrary Cycle counting.** Each observable defines which represented basins
+and event boundaries are eligible. The Attestation Cadence definition below
+specifies its own represented-basin population; it is not a general rule that
+every observable uses the same clock. See [Core Invariants 5 and 7](core-invariants.md)
+and [Cycle entry identity](cycle-entry-identity.md).
+
 ## Unified late-phase admissibility
 
 **Dominance selects candidate inputs. Admissibility governs Writes.**
 
 | Phase | Observable | Homologous dominance selects | Native Write condition | Write |
 | --- | --- | --- | --- | --- |
-| Mediate | Correspondence | Reads, then their existing Disperse Gate operands | Shape Topology direction = Cardinal Position direction | Reconcile |
+| Mediate | Correspondence | Reads, then their existing Disperse Gate operands | Shape Topology direction = Phase Profile direction | Reconcile |
 | Bias | Chirality | Existing Gates | Orientation direction = Attestation Cadence direction | Reclassify |
 | Order | Closure | Existing frozen Commits | Committed Cardinal Position direction = Cadence direction | Commit |
 
@@ -142,52 +191,47 @@ measurement population.
 
 ## Local Correspondence
 
-> **Canonical v2 semantics:** [Correspondence v2 — canonical structural semantics](correspondence-v2-cardinal-semantics.md).
-> That document is normative for the pending correction and supersedes the earlier Phase-bucket/head-only v2 interpretation.
+Raw/local Correspondence is `round((ShapeTopology + PhaseProfile) / 2, 7)`.
+[Phase Profile C1](phase-profile-target.md) is authoritative. The former
+[Cardinal Position specification](correspondence-v2-cardinal-semantics.md) is
+historical for Correspondence; Closure's Committed Cardinal Position is unchanged.
 
-Raw/local Correspondence has two equally weighted structural components:
+Shape Topology preserves the established unit-weight Weisfeiler–Lehman features,
+two refinement iterations and bounded cosine comparison. It selects genuine
+all-parent causal morphology, including foreign Reconcile parents. Its completed
+preceding-Domain reference retains the established structural depth reveal.
+Cardinal layout/morphology services remain structural dependencies of this kernel.
 
-```text
-raw Correspondence
-= 0.5 × Shape Topology
-+ 0.5 × Cardinal Position
-```
+Phase Profile selects only durable local temporal ancestry, compares its seven
+Phase means with the completed preceding boundary profile and retains all seven
+comparison weights. Unavailable comparisons contribute zero; observed zero/zero
+contributes +1. Secondary Reconcile histories never supply Phase samples. Origin
+retains constitutional profile `[0,0,0,0,0,0,1]` and raw Correspondence +1.
 
-Shape Topology compares the selected all-parent causal morphology. Cardinal Position compares the occupied `(Domain Depth, Lateral Position)` morphology. Domain Depth is breadth-first depth from the Domain provenance Committal and continues across Cycle/Commit boundaries without resetting; it is not Phase Position and not Closure's Committal Depth.
+The unattenuated `shape_topology` and `phase_profile` components have independent
+retained directions. Nonzero establishes sign; zero retains the component's prior
+direction, then its entry snapshot direction, otherwise Positive. Phase Profile
+never inherits historical Cardinal direction. Combined Correspondence retains its
+existing independent direction and alone receives structural attenuation.
 
-Each Domain constructs its cardinal layout independently. Measurement ancestry then selects already-positioned propositions, including genuine foreign parents with coordinates from their own Domains. No synthetic causal or placement edge is introduced.
+Mediate compares Shape Topology and Phase Profile direction agreement for each
+operand, and retains its existing combined Correspondence direction requirement.
+Canonical Commit preserves the selected resolved expressive scalar and component
+state exactly. Phase-7 preview never changes already-born expressive Correspondence.
+Later Cycle entries, Attestations and Receipt state introduce no new Phase Profile
+observation. Production and diagnostics use the same immutable Stage 1 facts;
+participation contexts batch-load births and reuse selected profiles.
 
-The completed immediately preceding complementary Domain is the structural reference and is revealed only through the current head's Domain Depth. Position is morphology-wide rather than a single head-to-head ordinal comparison. Within each included Domain Depth, selected occupied Lateral Positions are paired left-to-right; unmatched occupancy contributes `-1`; that row's pair scores are averaged. Cardinal Position Correspondence then equally averages the row scores across included Domain Depths. Wide rows therefore affect their own row score without receiving extra historical weight.
+## Local Chirality: historical v2 formula
 
-Origin retains raw Correspondence `+1`. Ordinary structural comparison begins immediately in the first developed Domain after Origin, including unmatched structure against Origin's one-node morphology. Existing inverse-square attenuation remains unchanged.
-
-After each proposition's raw/local Correspondence is calculated, the existing inverse-square structural attenuation described above remains unchanged.
-
-```text
-Correspondence
-├── Shape Topology
-└── Cardinal Position
-```
-
-The local head components are independently inspectable in `shape_topology` and
-`cardinal_position`; only their rounded arithmetic mean forms raw Correspondence,
-and only combined Correspondence receives structural attenuation. Their retained
-`shape_topology_direction` and `cardinal_position_direction` follow their own
-nonzero signs. At zero each independently retains its prior projected direction,
-then the corresponding Cycle-entry snapshot direction if available, otherwise
-Positive. Zero is never directionless. Origin's unique bounded component pair is
-`(+1, +1)`, with Positive directions and mean `+1`.
-
-Mediate alone now uses retained component agreement as existing-Gate Write
-admissibility (either sign), with same resolved Correspondence direction required
-for both operands. This does not constrain the Reconcile result. Combined
-`correspondence_direction` remains authoritative for current consumers. Components
-are Receipt-neutral; calculations perform no writes, and disposable measurement
-projection owns persistence. New Commitment snapshots freeze values and directions.
-Historical snapshots keep nullable diagnostics and are never reconstructed or
-recalculated to populate these fields.
-
-## Local Chirality
+> The following Domain-relative v2 description is retained to explain
+> the previous implementation. Current Chirality vNext is proposition-local
+> and Attestation-triggered, with beat-cursor continuity, fresh expressive
+> resets and Commit preservation. See
+> [Stages 1](chirality-stage-1.md),
+> [2](chirality-stage-2.md),
+> [3](chirality-stage-3.md) and
+> [4](chirality-stage-4.md). Do not implement v2 anew from this section.
 
 Chirality first removes Propositions that have been hard superseded inside
 each lineage. It then calculates each Domain's Receipt-neutral attestational
@@ -298,6 +342,11 @@ and need not preserve source direction or component agreement. Rest applies when
 no admissible non-Rest action remains, at either zero or positive Potential.
 
 ## Closure v2: committed historical crystallization
+
+> **Deployed birth-frozen model only.** The proposed
+> [Historical Extent + Historical Rhythm](prospective-closure-target.md)
+> replaces this hierarchy and makes expressive Closure Cycle-responsive.
+> Do not treat the two update lifecycles as simultaneously normative.
 
 Correspondence observes current Domain morphology. Chirality observes the current/recent
 attestational relation under its existing live population semantics. Closure observes

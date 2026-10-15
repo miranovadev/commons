@@ -22,7 +22,7 @@ class CommitmentSnapshot extends Model
         return [
             'correspondence' => 'float',
             'shape_topology' => 'float',
-            'cardinal_position' => 'float',
+            'phase_profile' => 'float',
             'chirality' => 'float',
             'orientation' => 'float',
             'attestation_cadence' => 'float',
@@ -77,5 +77,19 @@ class CommitmentSnapshot extends Model
     public function isClosureBoundary(): bool
     {
         return $this->direction_before !== $this->direction_after;
+    }
+
+    public function extentDirection(): ?ObservableDirection
+    {
+        $direction = $this->closure_observation['historical_extent_direction'] ?? null;
+
+        return $direction === null ? null : ObservableDirection::from($direction);
+    }
+
+    public function rhythmDirection(): ?ObservableDirection
+    {
+        $direction = $this->closure_observation['historical_rhythm_direction'] ?? null;
+
+        return $direction === null ? null : ObservableDirection::from($direction);
     }
 }

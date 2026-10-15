@@ -1,0 +1,18 @@
+test,result,category,finding,failure_summary,first_test_frame,assertions,seconds
+Tests\Feature\RegionalExhaustionMigrationTest::test_legacy_local_proof_does_not_exhaust_its_horizons_opening_region,passed,,,,,10,7.684873
+Tests\Feature\RegionalExhaustionMigrationTest::test_archived_exhaustion_references_remain_readable_without_claiming_current_authority,passed,,,,,15,12.692963
+Tests\Feature\RegionalExhaustionMigrationTest::test_unproven_timestamps_and_pre_horizon_tragedies_survive_as_archives_only,passed,,,,,12,2.008948
+"Tests\Feature\RelevantInstrumentTest::test_effective_receipts_suppress_duplicates_across_services_and_reclassification_without_mutating_history""canonical hyperlink""",passed,,,,,20,3.842047
+"Tests\Feature\RelevantInstrumentTest::test_effective_receipts_suppress_duplicates_across_services_and_reclassification_without_mutating_history""normalized search""",passed,,,,,20,2.435625
+"Tests\Feature\RelevantInstrumentTest::test_effective_receipts_suppress_duplicates_across_services_and_reclassification_without_mutating_history""stable citation""",passed,,,,,20,2.498462
+Tests\Feature\RelevantInstrumentTest::test_url_identity_does_not_collapse_distinct_resources#0,passed,,,,,1,0.024032
+Tests\Feature\RelevantInstrumentTest::test_url_identity_does_not_collapse_distinct_resources#1,passed,,,,,1,0.021073
+Tests\Feature\RelevantInstrumentTest::test_url_identity_does_not_collapse_distinct_resources#2,passed,,,,,1,0.023698
+Tests\Feature\RelevantInstrumentTest::test_url_identity_does_not_collapse_distinct_resources#3,passed,,,,,1,0.021040
+Tests\Feature\RelevantInstrumentTest::test_url_identity_does_not_collapse_distinct_resources#4,passed,,,,,1,0.021367
+Tests\Feature\RelevantInstrumentTest::test_url_identity_does_not_collapse_distinct_resources#5,passed,,,,,1,0.019964
+Tests\Feature\RelevantInstrumentTest::test_url_identity_does_not_collapse_distinct_resources#6,passed,,,,,1,0.020906
+Tests\Feature\RelevantInstrumentTest::test_url_identity_does_not_collapse_distinct_resources#7,passed,,,,,1,0.018792
+Tests\Feature\RelevantInstrumentTest::test_schema_exposes_target_specific_exclusions_and_retains_other_free_form_resources,passed,,,,,6,1.932453
+Tests\Feature\RelevantInstrumentTest::test_replay_capability_survives_but_equivalent_effective_evidence_cannot_be_replayed,passed,,,,,6,1.768061
+Tests\Feature\TransactionLockOrderTest::test_fresh_admissibility_rejects_a_previously_valid_schema_as_a_retryable_conflict,passed,,,,,3,4.396569

@@ -3,22 +3,23 @@
 namespace Tests\Feature;
 
 use App\Enums\PhaseKind;
-use App\Models\CommitmentSnapshot;
-use App\Models\Cycle;
 use App\Models\Participant;
-use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Substrate;
 use App\Services\ContextHorizonProjector;
 use App\Services\HomologousPositionService;
-use App\Services\LedgerService;
 use App\Services\PhasePositionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\Group;
+use Tests\Fixtures\IsolatesClosureOutput;
 use Tests\TestCase;
 
+/** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
+#[Group('component-contract')]
 class HomologousPositionTest extends TestCase
 {
+    use IsolatesClosureOutput;
     use RefreshDatabase;
 
     use \Tests\Fixtures\CreatesHomologousPositions;
@@ -26,17 +27,18 @@ class HomologousPositionTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->isolateClosureOutput();
         $this->createHomologyActor();
     }
 
     public function test_equal_committed_depth_defines_homology_with_nearest_ancestor_as_diagnostics(): void
     {
-        $c0 = $this->commit(null, 'emergence');
-        $c1 = $this->commit($c0, 'emergence');
-        $a2 = $this->commit($c1, 'emergence');
-        $a3 = $this->commit($a2, 'emergence');
-        $b2 = $this->commit($c1, 'emergence');
-        $b3 = $this->commit($b2, 'emergence');
+        $c0 = $this->committedCoordinate(null, 'emergence');
+        $c1 = $this->committedCoordinate($c0, 'emergence');
+        $a2 = $this->committedCoordinate($c1, 'emergence');
+        $a3 = $this->committedCoordinate($a2, 'emergence');
+        $b2 = $this->committedCoordinate($c1, 'emergence');
+        $b3 = $this->committedCoordinate($b2, 'emergence');
         $service = app(HomologousPositionService::class);
         $this->assertSame([$b3->id => ['ancestor_id' => $c1->id, 'distance' => 2]],
             $service->committedCoordinatesFor($a3, collect([$b2, $b3])));
@@ -44,25 +46,15 @@ class HomologousPositionTest extends TestCase
         $this->assertTrue($service->areCommittedHomologous($b3, $a3));
         $this->assertSame([$a3->id => ['ancestor_id' => $a3->id, 'distance' => 0]],
             $service->committedCoordinatesFor($a3, collect([$a3])));
-        // Homology retains the same committed-depth diagnostics when each
-        // ordinary Committal carries its genuine selected-source history.
-        $this->assertSame(5, DB::table('supersessions')->count());
-        $this->assertFalse($c0->parents()->exists());
-        foreach ([[$c0, $c1], [$c1, $a2], [$a2, $a3], [$c1, $b2], [$b2, $b3]] as [$source, $commit]) {
-            $this->assertDatabaseHas('supersessions', [
-                'id' => $commit->commitmentSnapshot->supersession_id,
-                'phase_id' => $commit->phase_id, 'source_proposition_id' => $source->id,
-                'target_proposition_id' => $commit->id, 'type' => 'commit',
-            ]);
-            $this->assertSame($source->id, $commit->phase->gate_proposition_id);
-        }
+        // These are committed-coordinate read-model inputs only. No edge count
+        // or direct Committal-to-Committal lifecycle is asserted.
     }
 
     public function test_same_horizon_phase_homology_preserves_canonical_phase_and_register(): void
     {
-        $origin = $this->commit(null, 'emergence');
-        $a = $this->commit($origin, 'emergence');
-        $b = $this->commit($origin, 'emergence');
+        $origin = $this->committedCoordinate(null, 'emergence');
+        $a = $this->committedCoordinate($origin, 'emergence');
+        $b = $this->committedCoordinate($origin, 'emergence');
         $readA = $this->position($a);
         $readB = $this->position($b);
         $wrongPhase = $this->position($b, PhaseKind::Bias); // Same canon label, different phase.
@@ -80,9 +72,9 @@ class HomologousPositionTest extends TestCase
 
     public function test_sibling_horizons_are_structurally_homologous_but_still_operationally_foreign(): void
     {
-        $origin = $this->commit(null, 'emergence');
-        $a = $this->commit($origin, 'settlement');
-        $b = $this->commit($origin, 'settlement');
+        $origin = $this->committedCoordinate(null, 'emergence');
+        $a = $this->committedCoordinate($origin, 'settlement');
+        $b = $this->committedCoordinate($origin, 'settlement');
         $readA = $this->position($a);
         $readB = $this->position($b);
         $this->assertNotSame($readA->phase->cycle->context_horizon_id, $readB->phase->cycle->context_horizon_id);
@@ -93,11 +85,11 @@ class HomologousPositionTest extends TestCase
 
     public function test_domain_disagreement_is_rejected_even_with_equal_distance_or_misleading_registers(): void
     {
-        $origin = $this->commit(null, 'emergence');
-        $a1 = $this->commit($origin, 'emergence');
-        $b1 = $this->commit($origin, 'settlement');
-        $a2 = $this->commit($a1, 'emergence');
-        $b2 = $this->commit($b1, 'settlement');
+        $origin = $this->committedCoordinate(null, 'emergence');
+        $a1 = $this->committedCoordinate($origin, 'emergence');
+        $b1 = $this->committedCoordinate($origin, 'settlement');
+        $a2 = $this->committedCoordinate($a1, 'emergence');
+        $b2 = $this->committedCoordinate($b1, 'settlement');
         $service = app(HomologousPositionService::class);
         $this->assertFalse($service->areCommittedHomologous($a2, $b2));
         $readA = $this->position($a1);
@@ -113,10 +105,10 @@ class HomologousPositionTest extends TestCase
 
     public function test_disconnected_and_missing_committed_history_fail_closed(): void
     {
-        $origin = $this->commit(null, 'emergence');
-        $otherRoot = $this->commit(null, 'emergence');
-        $a = $this->commit($origin, 'emergence');
-        $b = $this->commit($otherRoot, 'emergence');
+        $origin = $this->committedCoordinate(null, 'emergence');
+        $otherRoot = $this->committedCoordinate(null, 'emergence');
+        $a = $this->committedCoordinate($origin, 'emergence');
+        $b = $this->committedCoordinate($otherRoot, 'emergence');
         $service = app(HomologousPositionService::class);
         $this->assertFalse($service->areCommittedHomologous($a, $b));
         $uncommitted = new Proposition;
@@ -128,11 +120,11 @@ class HomologousPositionTest extends TestCase
 
     public function test_malformed_ancestral_horizon_link_fails_closed_even_below_a_shared_ancestor(): void
     {
-        $origin = $this->commit(null, 'emergence');
-        $boundary = $this->commit($origin, 'settlement');
-        $otherBoundary = $this->commit($origin, 'settlement');
-        $a = $this->commit($boundary, 'settlement');
-        $b = $this->commit($boundary, 'settlement');
+        $origin = $this->committedCoordinate(null, 'emergence');
+        $boundary = $this->committedCoordinate($origin, 'settlement');
+        $otherBoundary = $this->committedCoordinate($origin, 'settlement');
+        $a = $this->committedCoordinate($boundary, 'settlement');
+        $b = $this->committedCoordinate($boundary, 'settlement');
         $service = app(HomologousPositionService::class);
         $this->assertTrue($service->areCommittedHomologous($a, $b));
         // Database guards reject rewriting Horizon parentage. Exercise malformed
@@ -154,20 +146,20 @@ class HomologousPositionTest extends TestCase
 
     public function test_foreign_substrate_is_never_homologous(): void
     {
-        $a = $this->commit(null, 'emergence');
+        $a = $this->committedCoordinate(null, 'emergence');
         $substrate = new Substrate;
         $substrate->forceFill(['slug' => 'elsewhere', 'title' => 'Elsewhere', 'visibility' => 'private', 'configuration' => []])->save();
         $this->actor = new Participant;
         $this->actor->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'other'])->save();
-        $b = $this->commit(null, 'emergence');
+        $b = $this->committedCoordinate(null, 'emergence');
         $this->assertFalse(app(HomologousPositionService::class)->areCommittedHomologous($a, $b));
     }
 
     public function test_cyclic_committed_read_history_fails_closed_without_modifying_immutable_storage(): void
     {
-        $origin = $this->commit(null, 'emergence');
-        $a = $this->commit($origin, 'emergence');
-        $b = $this->commit($origin, 'emergence');
+        $origin = $this->committedCoordinate(null, 'emergence');
+        $a = $this->committedCoordinate($origin, 'emergence');
+        $b = $this->committedCoordinate($origin, 'emergence');
         $a->load('phase.cycle.participant');
         $records = app(\App\Services\Observables\CommittalLineageService::class)
             ->recordsForIds($this->actor->substrate_id, collect([$a->id, $b->id]));
@@ -186,13 +178,13 @@ class HomologousPositionTest extends TestCase
 
     public function test_batch_expansion_uses_one_query_independent_of_candidate_count_and_chain_length(): void
     {
-        $origin = $this->commit(null, 'emergence');
+        $origin = $this->committedCoordinate(null, 'emergence');
         $a = $origin;
         $b = $origin;
         $candidates = collect();
         foreach (range(1, 12) as $depth) {
-            $a = $this->commit($a, 'emergence');
-            $b = $this->commit($b, 'emergence');
+            $a = $this->committedCoordinate($a, 'emergence');
+            $b = $this->committedCoordinate($b, 'emergence');
             $candidates->push($b);
             if (! in_array($depth, [2, 12], true)) {
                 continue;

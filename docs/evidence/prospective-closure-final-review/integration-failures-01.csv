@@ -1,0 +1,489 @@
+test,result,category,assertions,seconds,message
+Tests\Feature\FreshBootstrapTest::test_explicit_origin_and_aligned_evidence_reach_a_lawful_commit#0,failure,Lawful prospective Closure consequence,103,150.231694,"Tests\Feature\FreshBootstrapTest::test_explicit_origin_and_aligned_evidence_reach_a_lawful_commit with data set #0
+The single-participant motor stalled. Last Commit eligibility: {""admissible"":false,""reinforcement_count"":0,""requirements"":{""attestation"":true,""receipt"":true,""closure"":false,""phase_position"":true,""causal_write"":true,""active_region_candidate"":true,""write_opportunity"":true},""closure_enforced"":true,""reasons"":[""extent_rhythm_directions_diverge""],""closure"":{""depth"":0,""cadence"":0,""historical_phase_profile"":0,""historical_orientation"":0.375,""historical_extent"":0,""historical_rhythm"":0.1875,""closure"":0.09375,""historical_extent_direction"":""negative"",""historical_rhythm_direction"":""positive"",""depth_direction"":""negative"",""cadence_direction"":""negative"",""admissible"":false,""availability"":{""depth"":false,""cadence"":false,""historical_phase_profile"":[false,true,true,true,true,true,true],""historical_orientation"":true},""domain_profiles"":{""emergence"":{""means"":[0,0,0,0,0,0,1],""sample_counts"":[1,1,1,1,1,1,1]},""settlement"":{""means"":[null,14,3,0,0,3,1],""sample_counts"":[0,1,1,1,1,1,1]}},""phase_contributions"":[0,-1,-1,1,1,-1,1],""orientation_sample_count"":4,""domain_cvs"":{""emergence"":null,""settlement"":null},""creating_domain"":""settlement"",""domain_depths"":{""emergence"":1,""settlement"":1},""domain_intervals"":{""emergence"":[1],""settlement"":[22]},""cadence_interval"":22,""phase_observations"":{""origin:01m4tfz2rb4k49c8w4b2jh82v0:0"":{""phase"":1,""interval"":0,""domain"":""emergence"",""source"":""constitutional"",""proposition_id"":""01m4tfz2rb4k49c8w4b2jh82v0""},""origin:01m4tfz2rb4k49c8w4b2jh82v0:1"":{""phase"":2,""interval"":0,""domain"":""emergence"",""source"":""constitutional"",""proposition_id"":""01m4tfz2rb4k49c8w4b2jh82v0""},""origin:01m4tfz2rb4k49c8w4b2jh82v0:2"":{""phase"":3,""interval"":0,""domain"":""emergence"",""source"":""constitutional"",""proposition_id"":""01m4tfz2rb4k49c8w4b2jh82v0""},""origin:01m4tfz2rb4k49c8w4b2jh82v0:3"":{""phase"":4,""interval"":0,""domain"":""emergence"",""source"":""constitutional"",""proposition_id"":""01m4tfz2rb4k49c8w4b2jh82v0""},""origin:01m4tfz2rb4k49c8w4b2jh82v0:4"":{""phase"":5,""interval"":0,""domain"":""emergence"",""source"":""constitutional"",""proposition_id"":""01m4tfz2rb4k49c8w4b2jh82v0""},""origin:01m4tfz2rb4k49c8w4b2jh82v0:5"":{""phase"":6,""interval"":0,""domain"":""emergence"",""source"":""constitutional"",""proposition_id"":""01m4tfz2rb4k49c8w4b2jh82v0""},""origin:01m4tfz2rb4k49c8w4b2jh82v0:6"":{""phase"":7,""interval"":1,""domain"":""emergence"",""source"":""constitutional"",""proposition_id"":""01m4tfz2rb4k49c8w4b2jh82v0""},""01m4tg2yy26z1q55vs2b16e3pn"":{""phase"":6,""interval"":3,""domain"":""settlement"",""source"":""expressive_birth"",""proposition_id"":""01m4tg2yy26z1q55vs2b16e3pn"",""unavailable_reason"":null},""01m4tg1qqape3s9278fn0fek4d"":{""phase"":5,""interval"":0,""domain"":""settlement"",""source"":""expressive_birth"",""proposition_id"":""01m4tg1qqape3s9278fn0fek4d"",""unavailable_reason"":null},""01m4tg1nc9pky5cv8d4betdvqa"":{""phase"":4,""interval"":0,""domain"":""settlement"",""source"":""expressive_birth"",""proposition_id"":""01m4tg1nc9pky5cv8d4betdvqa"",""unavailable_reason"":nul"
+Tests\Feature\FreshBootstrapTest::test_explicit_origin_and_aligned_evidence_reach_a_lawful_commit#1,failure,Lawful prospective Closure consequence,103,147.138031,"Tests\Feature\FreshBootstrapTest::test_explicit_origin_and_aligned_evidence_reach_a_lawful_commit with data set #1
+The single-participant motor stalled. Last Commit eligibility: {""admissible"":false,""reinforcement_count"":0,""requirements"":{""attestation"":true,""receipt"":true,""closure"":false,""phase_position"":true,""causal_write"":true,""active_region_candidate"":true,""write_opportunity"":true},""closure_enforced"":true,""reasons"":[""extent_rhythm_directions_diverge""],""closure"":{""depth"":0,""cadence"":0,""historical_phase_profile"":0,""historical_orientation"":0.375,""historical_extent"":0,""historical_rhythm"":0.1875,""closure"":0.09375,""historical_extent_direction"":""negative"",""historical_rhythm_direction"":""positive"",""depth_direction"":""negative"",""cadence_direction"":""negative"",""admissible"":false,""availability"":{""depth"":false,""cadence"":false,""historical_phase_profile"":[false,true,true,true,true,true,true],""historical_orientation"":true},""domain_profiles"":{""emergence"":{""means"":[0,0,0,0,0,0,1],""sample_counts"":[1,1,1,1,1,1,1]},""settlement"":{""means"":[null,14,3,0,0,3,1],""sample_counts"":[0,1,1,1,1,1,1]}},""phase_contributions"":[0,-1,-1,1,1,-1,1],""orientation_sample_count"":4,""domain_cvs"":{""emergence"":null,""settlement"":null},""creating_domain"":""settlement"",""domain_depths"":{""emergence"":1,""settlement"":1},""domain_intervals"":{""emergence"":[1],""settlement"":[22]},""cadence_interval"":22,""phase_observations"":{""origin:01m4tg3negbvntzvwa4bxk0k0j:0"":{""phase"":1,""interval"":0,""domain"":""emergence"",""source"":""constitutional"",""proposition_id"":""01m4tg3negbvntzvwa4bxk0k0j""},""origin:01m4tg3negbvntzvwa4bxk0k0j:1"":{""phase"":2,""interval"":0,""domain"":""emergence"",""source"":""constitutional"",""proposition_id"":""01m4tg3negbvntzvwa4bxk0k0j""},""origin:01m4tg3negbvntzvwa4bxk0k0j:2"":{""phase"":3,""interval"":0,""domain"":""emergence"",""source"":""constitutional"",""proposition_id"":""01m4tg3negbvntzvwa4bxk0k0j""},""origin:01m4tg3negbvntzvwa4bxk0k0j:3"":{""phase"":4,""interval"":0,""domain"":""emergence"",""source"":""constitutional"",""proposition_id"":""01m4tg3negbvntzvwa4bxk0k0j""},""origin:01m4tg3negbvntzvwa4bxk0k0j:4"":{""phase"":5,""interval"":0,""domain"":""emergence"",""source"":""constitutional"",""proposition_id"":""01m4tg3negbvntzvwa4bxk0k0j""},""origin:01m4tg3negbvntzvwa4bxk0k0j:5"":{""phase"":6,""interval"":0,""domain"":""emergence"",""source"":""constitutional"",""proposition_id"":""01m4tg3negbvntzvwa4bxk0k0j""},""origin:01m4tg3negbvntzvwa4bxk0k0j:6"":{""phase"":7,""interval"":1,""domain"":""emergence"",""source"":""constitutional"",""proposition_id"":""01m4tg3negbvntzvwa4bxk0k0j""},""01m4tg7f7gy0a81hd545qan5g9"":{""phase"":6,""interval"":3,""domain"":""settlement"",""source"":""expressive_birth"",""proposition_id"":""01m4tg7f7gy0a81hd545qan5g9"",""unavailable_reason"":null},""01m4tg68zqwvaqk3qtvtbnhq6m"":{""phase"":5,""interval"":0,""domain"":""settlement"",""source"":""expressive_birth"",""proposition_id"":""01m4tg68zqwvaqk3qtvtbnhq6m"",""unavailable_reason"":null},""01m4tg66r02fnykwmv3pgeq9c3"":{""phase"":4,""interval"":0,""domain"":""settlement"",""source"":""expressive_birth"",""proposition_id"":""01m4tg66r02fnykwmv3pgeq9c3"",""unavailable_reason"":nul"
+Tests\Feature\Api\ParticipationLifecycleRegressionTest::test_successful_route_revisit_can_advance_through_bias_to_its_existing_commit,failure,Unchanged historical C1 authored-trajectory failure,1877,29.999093,"Tests\Feature\Api\ParticipationLifecycleRegressionTest::test_successful_route_revisit_can_advance_through_bias_to_its_existing_commit
+Script step 32 (explorer / contribute) after
+Failed asserting that two arrays are identical.
+--- Expected
++++ Actual
+@@ @@
+ Array &0 [
+     'status' => 'ready',
+-    'reason' => null,
++    'reason' => Array &1 [
++        'code' => 'no_available_move',
++        'message' => 'No admissible non-Rest action remains in this Phase. Rest does not prove Horizon failure.',
++    ],
+     'current_proposition_id' => '01m4tfwzpmetj5dn0sxzrcv0me',
+     'domain' => 'settlement',
+     'horizon_sequence' => 2,
+     'context_horizon_id' => '01m4tfw61j6rpak6efb41cqmtt',
+-    'cycle' => Array &1 [
++    'cycle' => Array &2 [
+         'id' => '01m4tfwwkh0mg7ee22jpebwyzj',
+         'sequence' => 9,
+         'context_horizon_id' => '01m4tfw61j6rpak6efb41cqmtt',
+     ],
+-    'plan' => Array &2 [
+-        'phase' => Array &3 [
++    'plan' => Array &3 [
++        'phase' => Array &4 [
+             'id' => '01m4tfx05fvdmchrq5knzc9fqr',
+             'number' => 5,
+             'kind' => 'mediate',
+@@ @@
+         ],
+         'provenance_id' => '01m4tfw5ymahfmrr993jjdqj77',
+         'gate_id' => '01m4tfwzpmetj5dn0sxzrcv0me',
+-        'rest_available' => false,
+-        'rest_reason' => null,
+-        'lineage' => Array &4 [
+-            0 => Array &5 [
++        'rest_available' => true,
++        'rest_reason' => 'no_available_move',
++        'lineage' => Array &5 [
++            0 => Array &6 [
+                 'id' => '01m4tfw5ymahfmrr993jjdqj77',
+                 'spent' => false,
+                 'exploration_epoch' => 0,
+-                'parent_ids' => Array &6 [],
+-                'attestation_summary' => Array &7 [
++                'parent_ids' => Array &7 [],
++                'attestation_summary' => Array &8 [
+                     'support_direction' => 'positive',
+                     'positive' => 1,
+                     'negative' => 0,
+                     'retained_direction' => 'positive',
+                 ],
+-                'attestation' => Array &8 [
++                'attestation' => Array &9 [
+                     'direction' => 'support',
+                     'rationale' => null,
+                 ],
+             ],
+-            1 => Array &9 [
++            1 => Array &10 [
+                 'id' => '01m4tfw72a92jk31edxzzd6yp7',
+                 'spent' => false,
+                 'exploration_epoch' => 2,
+-                'parent_ids' => Array &10 [
++                'parent_ids' => Array &11 [
+                     0 => '01m4tfw5ymahfmrr993jjdqj77',
+                 ],
+-                'attestation_summary' => Array &11 [
++                'attestation_summary' => Array &12 [
+                     'support_direction' => 'positive',
+                     'positive' => 1,
+                     'negative' => 0,
+                     'retained_direction' => 'positive',
+                 ],
+-                'attestation' => Array &12 [
++    "
+Tests\Feature\Api\ParticipationLifecycleRegressionTest::test_distinguish_under_another_committal_does_not_advance_origins_epoch,failure,Unchanged historical C1 authored-trajectory failure,1370,21.861152,"Tests\Feature\Api\ParticipationLifecycleRegressionTest::test_distinguish_under_another_committal_does_not_advance_origins_epoch
+Script step 26 (relay-a / contribute) after
+Failed asserting that two arrays are identical.
+--- Expected
++++ Actual
+@@ @@
+ Array &0 [
+     'status' => 'ready',
+-    'reason' => null,
++    'reason' => Array &1 [
++        'code' => 'no_available_move',
++        'message' => 'No admissible non-Rest action remains in this Phase. Rest does not prove Horizon failure.',
++    ],
+     'current_proposition_id' => '01m4tfxn3q5kwnt7dgwd4fra67',
+     'domain' => 'settlement',
+     'horizon_sequence' => 2,
+     'context_horizon_id' => '01m4tfx194t52byztxwhrc808c',
+-    'cycle' => Array &1 [
++    'cycle' => Array &2 [
+         'id' => '01m4tfx2d6mh3xspekhd2mb9x1',
+         'sequence' => 1,
+         'context_horizon_id' => '01m4tfx194t52byztxwhrc808c',
+     ],
+-    'plan' => Array &2 [
+-        'phase' => Array &3 [
++    'plan' => Array &3 [
++        'phase' => Array &4 [
+             'id' => '01m4tfxnhc66fkxrng3bbttd40',
+             'number' => 5,
+             'kind' => 'mediate',
+@@ @@
+         ],
+         'provenance_id' => '01m4tfx16c3dfg9ce7m076v74s',
+         'gate_id' => '01m4tfxn3q5kwnt7dgwd4fra67',
+-        'rest_available' => false,
+-        'rest_reason' => null,
+-        'lineage' => Array &4 [
+-            0 => Array &5 [
++        'rest_available' => true,
++        'rest_reason' => 'no_available_move',
++        'lineage' => Array &5 [
++            0 => Array &6 [
+                 'id' => '01m4tfx16c3dfg9ce7m076v74s',
+                 'spent' => false,
+                 'exploration_epoch' => 0,
+-                'parent_ids' => Array &6 [],
+-                'attestation_summary' => Array &7 [
++                'parent_ids' => Array &7 [],
++                'attestation_summary' => Array &8 [
+                     'support_direction' => 'positive',
+                     'positive' => 1,
+                     'negative' => 0,
+@@ @@
+                     'retained_direction' => 'positive',
+                 ],
+             ],
+-            1 => Array &8 [
++            1 => Array &9 [
+                 'id' => '01m4tfx1wq0pehgqfryx79z49z',
+                 'spent' => true,
+                 'exploration_epoch' => 1,
+-                'parent_ids' => Array &9 [
++                'parent_ids' => Array &10 [
+                     0 => '01m4tfx16c3dfg9ce7m076v74s',
+                 ],
+-                'attestation_summary' => Array &10 [
++                'attestation_summary' => Array &11 [
+                     'support_direction' => 'positive',
+                     'positive' => 2,
+                     'negative' => 0,
+@@ @@
+                 ],
+             ],
+         ],
+-        'read_options' => Array &11 [
+-            0 => Array &12 [
++        'read_options' => Array &12 [
++            0 => Array &13 [
+                 'id' => '01m4tfxm7c039bsfh6q7ec970m',
+                 'spent' => false,
+                 'exploration_epoch' => 0,
+-     "
+Tests\Feature\Api\ParticipationLocalEpochTest::test_a_third_distinguish_variant_reopens_only_its_own_slot_through_http,failure,Unchanged historical C1 authored-trajectory failure,1890,27.639917,"Tests\Feature\Api\ParticipationLocalEpochTest::test_a_third_distinguish_variant_reopens_only_its_own_slot_through_http
+Script step 32 (critical-explorer / contribute) after
+Failed asserting that two arrays are identical.
+--- Expected
++++ Actual
+@@ @@
+ Array &0 [
+     'status' => 'ready',
+-    'reason' => null,
++    'reason' => Array &1 [
++        'code' => 'no_available_move',
++        'message' => 'No admissible non-Rest action remains in this Phase. Rest does not prove Horizon failure.',
++    ],
+     'current_proposition_id' => '01m4tfzdhev72afc0sv5rrtrsn',
+     'domain' => 'settlement',
+     'horizon_sequence' => 2,
+     'context_horizon_id' => '01m4tfym2em9jbtejg4tj1q1hz',
+-    'cycle' => Array &1 [
++    'cycle' => Array &2 [
+         'id' => '01m4tfzac45r3ej4xqx40dd55v',
+         'sequence' => 9,
+         'context_horizon_id' => '01m4tfym2em9jbtejg4tj1q1hz',
+     ],
+-    'plan' => Array &2 [
+-        'phase' => Array &3 [
++    'plan' => Array &3 [
++        'phase' => Array &4 [
+             'id' => '01m4tfzdzw47asxxrt2chd7r1a',
+             'number' => 5,
+             'kind' => 'mediate',
+@@ @@
+         ],
+         'provenance_id' => '01m4tfykzpfbendq2pedtm9mqv',
+         'gate_id' => '01m4tfzdhev72afc0sv5rrtrsn',
+-        'rest_available' => false,
+-        'rest_reason' => null,
+-        'lineage' => Array &4 [
+-            0 => Array &5 [
++        'rest_available' => true,
++        'rest_reason' => 'no_available_move',
++        'lineage' => Array &5 [
++            0 => Array &6 [
+                 'id' => '01m4tfykzpfbendq2pedtm9mqv',
+                 'spent' => false,
+                 'exploration_epoch' => 0,
+-                'parent_ids' => Array &6 [],
+-                'attestation_summary' => Array &7 [
++                'parent_ids' => Array &7 [],
++                'attestation_summary' => Array &8 [
+                     'support_direction' => 'positive',
+                     'positive' => 1,
+                     'negative' => 0,
+                     'retained_direction' => 'positive',
+                 ],
+-                'attestation' => Array &8 [
++                'attestation' => Array &9 [
+                     'direction' => 'support',
+                     'rationale' => null,
+                 ],
+             ],
+-            1 => Array &9 [
++            1 => Array &10 [
+                 'id' => '01m4tfyn5pbve8379dfsf7edzd',
+                 'spent' => false,
+                 'exploration_epoch' => 2,
+-                'parent_ids' => Array &10 [
++                'parent_ids' => Array &11 [
+                     0 => '01m4tfykzpfbendq2pedtm9mqv',
+                 ],
+-                'attestation_summary' => Array &11 [
++                'attestation_summary' => Array &12 [
+                     'support_direction' => 'positive',
+                     'positive' => 1,
+                     'negative' => 0,
+                     'retained_direction' => 'positive',
+                 ],
+-                'attestation' => Array &12 [
++          "
+Tests\Feature\Api\ParticipationRecoveryTest::test_successful_revisit_keeps_its_untraversed_commit_out_of_backward_recovery,failure,Unchanged historical C1 authored-trajectory failure,1877,27.054788,"Tests\Feature\Api\ParticipationRecoveryTest::test_successful_revisit_keeps_its_untraversed_commit_out_of_backward_recovery
+Script step 32 (route-author / contribute) after
+Failed asserting that two arrays are identical.
+--- Expected
++++ Actual
+@@ @@
+ Array &0 [
+     'status' => 'ready',
+-    'reason' => null,
++    'reason' => Array &1 [
++        'code' => 'no_available_move',
++        'message' => 'No admissible non-Rest action remains in this Phase. Rest does not prove Horizon failure.',
++    ],
+     'current_proposition_id' => '01m4tg07yd901q5qcn7v8a0kg3',
+     'domain' => 'settlement',
+     'horizon_sequence' => 2,
+     'context_horizon_id' => '01m4tfzf7zbfpcjc1cfvf65p6b',
+-    'cycle' => Array &1 [
++    'cycle' => Array &2 [
+         'id' => '01m4tg04t57p7g7d7f1qk6ab49',
+         'sequence' => 9,
+         'context_horizon_id' => '01m4tfzf7zbfpcjc1cfvf65p6b',
+     ],
+-    'plan' => Array &2 [
+-        'phase' => Array &3 [
++    'plan' => Array &3 [
++        'phase' => Array &4 [
+             'id' => '01m4tg08ddrm5zbh71zf4wafzv',
+             'number' => 5,
+             'kind' => 'mediate',
+@@ @@
+         ],
+         'provenance_id' => '01m4tfzf5at3d7p3pp8shk1bmt',
+         'gate_id' => '01m4tg07yd901q5qcn7v8a0kg3',
+-        'rest_available' => false,
+-        'rest_reason' => null,
+-        'lineage' => Array &4 [
+-            0 => Array &5 [
++        'rest_available' => true,
++        'rest_reason' => 'no_available_move',
++        'lineage' => Array &5 [
++            0 => Array &6 [
+                 'id' => '01m4tfzf5at3d7p3pp8shk1bmt',
+                 'spent' => false,
+                 'exploration_epoch' => 0,
+-                'parent_ids' => Array &6 [],
+-                'attestation_summary' => Array &7 [
++                'parent_ids' => Array &7 [],
++                'attestation_summary' => Array &8 [
+                     'support_direction' => 'positive',
+                     'positive' => 1,
+                     'negative' => 0,
+                     'retained_direction' => 'positive',
+                 ],
+-                'attestation' => Array &8 [
++                'attestation' => Array &9 [
+                     'direction' => 'support',
+                     'rationale' => null,
+                 ],
+             ],
+-            1 => Array &9 [
++            1 => Array &10 [
+                 'id' => '01m4tfzg6eamnnvdmqccyxz1qh',
+                 'spent' => false,
+                 'exploration_epoch' => 2,
+-                'parent_ids' => Array &10 [
++                'parent_ids' => Array &11 [
+                     0 => '01m4tfzf5at3d7p3pp8shk1bmt',
+                 ],
+-                'attestation_summary' => Array &11 [
++                'attestation_summary' => Array &12 [
+                     'support_direction' => 'positive',
+                     'positive' => 1,
+                     'negative' => 0,
+                     'retained_direction' => 'positive',
+                 ],
+-                'attestation' => Array &12 [
++           "
+Tests\Feature\Api\ParticipationSourceEquivalenceTest::test_connection_driven_and_manual_participation_share_the_complete_action_contract,failure,Unchanged historical C1 authored-trajectory failure,2205,36.433435,"Tests\Feature\Api\ParticipationSourceEquivalenceTest::test_connection_driven_and_manual_participation_share_the_complete_action_contract
+Script step 31 (source-equivalence / contribute) after
+Failed asserting that two arrays are identical.
+--- Expected
++++ Actual
+@@ @@
+ Array &0 [
+     'status' => 'ready',
+-    'reason' => null,
++    'reason' => Array &1 [
++        'code' => 'no_available_move',
++        'message' => 'No admissible non-Rest action remains in this Phase. Rest does not prove Horizon failure.',
++    ],
+     'current_proposition_id' => '01m4tfwyv12q08aehrqrbe8nba',
+     'domain' => 'settlement',
+     'horizon_sequence' => 2,
+     'context_horizon_id' => '01m4tfvwn5fvznx6ntbncdhbrm',
+-    'cycle' => Array &1 [
++    'cycle' => Array &2 [
+         'id' => '01m4tfwtcnyek5seqjgvefh5td',
+         'sequence' => 9,
+         'context_horizon_id' => '01m4tfvwn5fvznx6ntbncdhbrm',
+     ],
+-    'plan' => Array &2 [
+-        'phase' => Array &3 [
++    'plan' => Array &3 [
++        'phase' => Array &4 [
+             'id' => '01m4tfwz9d3fa3dsy6gyq1vx46',
+             'number' => 5,
+             'kind' => 'mediate',
+@@ @@
+         ],
+         'provenance_id' => '01m4tfvwjqx2jjw0bbedr4pbmm',
+         'gate_id' => '01m4tfwyv12q08aehrqrbe8nba',
+-        'rest_available' => false,
+-        'rest_reason' => null,
+-        'lineage' => Array &4 [
+-            0 => Array &5 [
++        'rest_available' => true,
++        'rest_reason' => 'no_available_move',
++        'lineage' => Array &5 [
++            0 => Array &6 [
+                 'id' => '01m4tfvwjqx2jjw0bbedr4pbmm',
+                 'spent' => false,
+                 'exploration_epoch' => 0,
+-                'parent_ids' => Array &6 [],
+-                'attestation_summary' => Array &7 [
++                'parent_ids' => Array &7 [],
++                'attestation_summary' => Array &8 [
+                     'support_direction' => 'positive',
+                     'positive' => 1,
+                     'negative' => 0,
+                     'retained_direction' => 'positive',
+                 ],
+-                'attestation' => Array &8 [
++                'attestation' => Array &9 [
+                     'direction' => 'support',
+                     'rationale' => null,
+                 ],
+             ],
+-            1 => Array &9 [
++            1 => Array &10 [
+                 'id' => '01m4tfvxefr4yted1bx5d223hh',
+                 'spent' => false,
+                 'exploration_epoch' => 2,
+-                'parent_ids' => Array &10 [
++                'parent_ids' => Array &11 [
+                     0 => '01m4tfvwjqx2jjw0bbedr4pbmm',
+                 ],
+-                'attestation_summary' => Array &11 [
++                'attestation_summary' => Array &12 [
+                     'support_direction' => 'positive',
+                     'positive' => 1,
+                     'negative' => 0,
+                     'retained_direction' => 'positive',
+                 ],
+-                'attestation' => Arra"
+Tests\Feature\Api\ParticipationTragedyLifecycleTest::test_natural_bootstrap_crossover_remains_open_and_rest_keeps_the_region_without_catastrophe,failure,Unchanged historical C1 authored-trajectory failure,1877,24.596064,"Tests\Feature\Api\ParticipationTragedyLifecycleTest::test_natural_bootstrap_crossover_remains_open_and_rest_keeps_the_region_without_catastrophe
+Script step 32 (tragic-explorer / contribute) after
+Failed asserting that two arrays are identical.
+--- Expected
++++ Actual
+@@ @@
+ Array &0 [
+     'status' => 'ready',
+-    'reason' => null,
++    'reason' => Array &1 [
++        'code' => 'no_available_move',
++        'message' => 'No admissible non-Rest action remains in this Phase. Rest does not prove Horizon failure.',
++    ],
+     'current_proposition_id' => '01m4tfxpx12mt45tv4f68v8mp9',
+     'domain' => 'settlement',
+     'horizon_sequence' => 2,
+     'context_horizon_id' => '01m4tfx03283gg2jxac4xjtp22',
+-    'cycle' => Array &1 [
++    'cycle' => Array &2 [
+         'id' => '01m4tfxkzjjs2gcbf9fr8d7t5j',
+         'sequence' => 9,
+         'context_horizon_id' => '01m4tfx03283gg2jxac4xjtp22',
+     ],
+-    'plan' => Array &2 [
+-        'phase' => Array &3 [
++    'plan' => Array &3 [
++        'phase' => Array &4 [
+             'id' => '01m4tfxqafx2v0mwpswzcfyzqx',
+             'number' => 5,
+             'kind' => 'mediate',
+@@ @@
+         ],
+         'provenance_id' => '01m4tfx00kmmkf7ve5cd9hy65s',
+         'gate_id' => '01m4tfxpx12mt45tv4f68v8mp9',
+-        'rest_available' => false,
+-        'rest_reason' => null,
+-        'lineage' => Array &4 [
+-            0 => Array &5 [
++        'rest_available' => true,
++        'rest_reason' => 'no_available_move',
++        'lineage' => Array &5 [
++            0 => Array &6 [
+                 'id' => '01m4tfx00kmmkf7ve5cd9hy65s',
+                 'spent' => false,
+                 'exploration_epoch' => 0,
+-                'parent_ids' => Array &6 [],
+-                'attestation_summary' => Array &7 [
++                'parent_ids' => Array &7 [],
++                'attestation_summary' => Array &8 [
+                     'support_direction' => 'positive',
+                     'positive' => 1,
+                     'negative' => 0,
+                     'retained_direction' => 'positive',
+                 ],
+-                'attestation' => Array &8 [
++                'attestation' => Array &9 [
+                     'direction' => 'support',
+                     'rationale' => null,
+                 ],
+             ],
+-            1 => Array &9 [
++            1 => Array &10 [
+                 'id' => '01m4tfx0zgkk0dxxqs6mh08vrd',
+                 'spent' => false,
+                 'exploration_epoch' => 2,
+-                'parent_ids' => Array &10 [
++                'parent_ids' => Array &11 [
+                     0 => '01m4tfx00kmmkf7ve5cd9hy65s',
+                 ],
+-                'attestation_summary' => Array &11 [
++                'attestation_summary' => Array &12 [
+                     'support_direction' => 'positive',
+                     'positive' => 1,
+                     'negative' => 0,
+                     'retained_direction' => 'positive',
+                 ],
+-                'attestation' =>"
+Tests\Feature\OperationalClosurePathTest::test_receipt_backed_full_cycle_commits_with_real_hysteretic_closure_calculations,failure,Lawful prospective Closure consequence,102,106.503088,"Tests\Feature\OperationalClosurePathTest::test_receipt_backed_full_cycle_commits_with_real_hysteretic_closure_calculations
+The single-participant motor stalled. Last Commit eligibility: {""admissible"":false,""reinforcement_count"":0,""requirements"":{""attestation"":true,""receipt"":true,""closure"":false,""phase_position"":true,""causal_write"":true,""active_region_candidate"":true,""write_opportunity"":true},""closure_enforced"":true,""reasons"":[""extent_rhythm_directions_diverge""],""closure"":{""depth"":0,""cadence"":0,""historical_phase_profile"":0,""historical_orientation"":0.375,""historical_extent"":0,""historical_rhythm"":0.1875,""closure"":0.09375,""historical_extent_direction"":""negative"",""historical_rhythm_direction"":""positive"",""depth_direction"":""negative"",""cadence_direction"":""negative"",""admissible"":false,""availability"":{""depth"":false,""cadence"":false,""historical_phase_profile"":[false,true,true,true,true,true,true],""historical_orientation"":true},""domain_profiles"":{""emergence"":{""means"":[0,0,0,0,0,0,1],""sample_counts"":[1,1,1,1,1,1,1]},""settlement"":{""means"":[null,14,3,0,0,3,1],""sample_counts"":[0,1,1,1,1,1,1]}},""phase_contributions"":[0,-1,-1,1,1,-1,1],""orientation_sample_count"":4,""domain_cvs"":{""emergence"":null,""settlement"":null},""creating_domain"":""settlement"",""domain_depths"":{""emergence"":1,""settlement"":1},""domain_intervals"":{""emergence"":[1],""settlement"":[22]},""cadence_interval"":22,""phase_observations"":{""origin:01m4tfxyfga5gsctwb6kpfjn54:0"":{""phase"":1,""interval"":0,""domain"":""emergence"",""source"":""constitutional"",""proposition_id"":""01m4tfxyfga5gsctwb6kpfjn54""},""origin:01m4tfxyfga5gsctwb6kpfjn54:1"":{""phase"":2,""interval"":0,""domain"":""emergence"",""source"":""constitutional"",""proposition_id"":""01m4tfxyfga5gsctwb6kpfjn54""},""origin:01m4tfxyfga5gsctwb6kpfjn54:2"":{""phase"":3,""interval"":0,""domain"":""emergence"",""source"":""constitutional"",""proposition_id"":""01m4tfxyfga5gsctwb6kpfjn54""},""origin:01m4tfxyfga5gsctwb6kpfjn54:3"":{""phase"":4,""interval"":0,""domain"":""emergence"",""source"":""constitutional"",""proposition_id"":""01m4tfxyfga5gsctwb6kpfjn54""},""origin:01m4tfxyfga5gsctwb6kpfjn54:4"":{""phase"":5,""interval"":0,""domain"":""emergence"",""source"":""constitutional"",""proposition_id"":""01m4tfxyfga5gsctwb6kpfjn54""},""origin:01m4tfxyfga5gsctwb6kpfjn54:5"":{""phase"":6,""interval"":0,""domain"":""emergence"",""source"":""constitutional"",""proposition_id"":""01m4tfxyfga5gsctwb6kpfjn54""},""origin:01m4tfxyfga5gsctwb6kpfjn54:6"":{""phase"":7,""interval"":1,""domain"":""emergence"",""source"":""constitutional"",""proposition_id"":""01m4tfxyfga5gsctwb6kpfjn54""},""01m4tg0pfae4165dyamybrepch"":{""phase"":6,""interval"":3,""domain"":""settlement"",""source"":""expressive_birth"",""proposition_id"":""01m4tg0pfae4165dyamybrepch"",""unavailable_reason"":null},""01m4tfzvexv72nwnd5nbwsrt5f"":{""phase"":5,""interval"":0,""domain"":""settlement"",""source"":""expressive_birth"",""proposition_id"":""01m4tfzvexv72nwnd5nbwsrt5f"",""unavailable_reason"":null},""01m4tfzst7hbv7td07y6fkz3gp"":{""phase"":4,""interval"":0,""domain"":""settlement"",""source"":""expressive_birth"",""proposition_id"":""01m4tfzst7hbv7td07y6fkz3gp"",""unavailable_rea"
+Tests\Feature\Api\ParticipationHttpHarnessTest::test_real_http_actions_reach_an_operational_commit,failure,Lawful prospective Closure consequence,512,152.116373,"Tests\Feature\Api\ParticipationHttpHarnessTest::test_real_http_actions_reach_an_operational_commit
+HTTP action budget exhausted. Last Commit eligibility: {""admissible"":false,""reinforcement_count"":0,""requirements"":{""attestation"":true,""receipt"":true,""closure"":false,""phase_position"":true,""causal_write"":true,""active_region_candidate"":true,""write_opportunity"":true},""closure_enforced"":true,""reasons"":[""extent_rhythm_directions_diverge""],""closure"":{""depth"":0,""cadence"":0,""historical_phase_profile"":0,""historical_orientation"":0.375,""historical_extent"":0,""historical_rhythm"":0.1875,""closure"":0.09375,""historical_extent_direction"":""negative"",""historical_rhythm_direction"":""positive"",""depth_direction"":""negative"",""cadence_direction"":""negative"",""admissible"":false,""availability"":{""depth"":false,""cadence"":false,""historical_phase_profile"":[false,true,true,true,true,true,true],""historical_orientation"":true},""domain_profiles"":{""emergence"":{""means"":[0,0,0,0,0,0,1],""sample_counts"":[1,1,1,1,1,1,1]},""settlement"":{""means"":[null,14,3,0,0,3,1],""sample_counts"":[0,1,1,1,1,1,1]}},""phase_contributions"":[0,-1,-1,1,1,-1,1],""orientation_sample_count"":4,""domain_cvs"":{""emergence"":null,""settlement"":null},""creating_domain"":""settlement"",""domain_depths"":{""emergence"":1,""settlement"":1},""domain_intervals"":{""emergence"":[1],""settlement"":[22]},""cadence_interval"":22,""phase_observations"":{""origin:01m4tfv9zpcnnadnvjj8xege6h:0"":{""phase"":1,""interval"":0,""domain"":""emergence"",""source"":""constitutional"",""proposition_id"":""01m4tfv9zpcnnadnvjj8xege6h""},""origin:01m4tfv9zpcnnadnvjj8xege6h:1"":{""phase"":2,""interval"":0,""domain"":""emergence"",""source"":""constitutional"",""proposition_id"":""01m4tfv9zpcnnadnvjj8xege6h""},""origin:01m4tfv9zpcnnadnvjj8xege6h:2"":{""phase"":3,""interval"":0,""domain"":""emergence"",""source"":""constitutional"",""proposition_id"":""01m4tfv9zpcnnadnvjj8xege6h""},""origin:01m4tfv9zpcnnadnvjj8xege6h:3"":{""phase"":4,""interval"":0,""domain"":""emergence"",""source"":""constitutional"",""proposition_id"":""01m4tfv9zpcnnadnvjj8xege6h""},""origin:01m4tfv9zpcnnadnvjj8xege6h:4"":{""phase"":5,""interval"":0,""domain"":""emergence"",""source"":""constitutional"",""proposition_id"":""01m4tfv9zpcnnadnvjj8xege6h""},""origin:01m4tfv9zpcnnadnvjj8xege6h:5"":{""phase"":6,""interval"":0,""domain"":""emergence"",""source"":""constitutional"",""proposition_id"":""01m4tfv9zpcnnadnvjj8xege6h""},""origin:01m4tfv9zpcnnadnvjj8xege6h:6"":{""phase"":7,""interval"":1,""domain"":""emergence"",""source"":""constitutional"",""proposition_id"":""01m4tfv9zpcnnadnvjj8xege6h""},""01m4tfz9ra888yhk8bqhsq1mgh"":{""phase"":6,""interval"":3,""domain"":""settlement"",""source"":""expressive_birth"",""proposition_id"":""01m4tfz9ra888yhk8bqhsq1mgh"",""unavailable_reason"":null},""01m4tfy4x4ekacrvcwva0wbaw5"":{""phase"":5,""interval"":0,""domain"":""settlement"",""source"":""expressive_birth"",""proposition_id"":""01m4tfy4x4ekacrvcwva0wbaw5"",""unavailable_reason"":null},""01m4tfy2psnrjqkz63jshe5kf9"":{""phase"":4,""interval"":0,""domain"":""settlement"",""source"":""expressive_birth"",""proposition_id"":""01m4tfy2psnrjqkz63jshe5kf9"",""unavailable_reason"":null},""01m4tfy0yzfdxmh1frca"
+Tests\Feature\NaturalChargeBoundaryLifecycleTest::test_two_participants_reproduce_catastrophe_then_recover_to_the_open_ancestor,failure,Unchanged historical failure; obsolete authored Domain trajectory,2,6.600793,"Tests\Feature\NaturalChargeBoundaryLifecycleTest::test_two_participants_reproduce_catastrophe_then_recover_to_the_open_ancestor
+Failed asserting that two strings are identical.
+--- Expected
++++ Actual
+@@ @@
+-'settlement'
++'emergence'
+
+/home/runner/work/commons/commons/tests/Fixtures/NaturalBoundaryHistory.php:63
+/home/runner/work/commons/commons/tests/Feature/NaturalChargeBoundaryLifecycleTest.php:26"

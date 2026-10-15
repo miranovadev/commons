@@ -12,9 +12,9 @@ trait AssertsLatePhaseContract
     protected function assertLatePhaseContract(array $plan, PhaseKind $phase, string $sourceId, bool $allowed, string $first, string $second): void
     {
         [$action, $diagnostic, $components, $role] = match ($phase) {
-            PhaseKind::Mediate => ['proposition.reconcile', 'correspondence_admissibility', ['shape_topology_direction', 'cardinal_position_direction'], 'gate_options'],
+            PhaseKind::Mediate => ['proposition.reconcile', 'correspondence_admissibility', ['shape_topology_direction', 'phase_profile_direction'], 'gate_options'],
             PhaseKind::Bias => ['proposition.reclassify', 'chirality_admissibility', ['orientation_direction', 'attestation_cadence_direction'], 'gate_options'],
-            PhaseKind::Order => ['proposition.commit', 'commitment.closure', ['depth_direction', 'cadence_direction'], 'write_options'],
+            PhaseKind::Order => ['proposition.commit', 'commitment.closure', ['historical_extent_direction', 'historical_rhythm_direction'], 'write_options'],
         };
         $serializer = app(ParticipantContextSerializer::class);
         $visible = $serializer->plan($plan);

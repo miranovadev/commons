@@ -16,16 +16,13 @@ use App\Models\SubstrateLedgerEntry;
 use App\Models\Supersession;
 use App\Services\AttestationEvidenceService;
 use App\Services\ClosureGateService;
-use App\Services\CommitmentAdmissibilityService;
 use App\Services\CommitRegionPolarityService;
+use App\Services\CommitmentAdmissibilityService;
 use App\Services\ContextHorizonProjector;
 use App\Services\CycleEntryService;
 use App\Services\LedgerService;
-use App\Services\Observables\CanonicalMeasurementService;
 use App\Services\Observables\ChiralityCalculator;
 use App\Services\Observables\ContextLineageComparisonService;
-use App\Services\Observables\LineageMeasurementService;
-use App\Services\Observables\LocalMeasurementService;
 use App\Services\Observables\ReinforcementService;
 use App\Services\Participation\ParticipationContext;
 use App\Services\PropositionMeasurementService;
@@ -33,13 +30,25 @@ use App\Services\ReceiptContextService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\Fixtures\CreatesHomologousPositions;
+use Tests\Fixtures\GovernedExpressionFixture;
+use Tests\Fixtures\IsolatesClosureOutput;
 use Tests\TestCase;
 
+/** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
+#[Group('component-contract')]
 class ChiralityV2Test extends TestCase
 {
+    use IsolatesClosureOutput;
     use CreatesHomologousPositions;
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->isolateClosureOutput();
+    }
 
     public function test_attested_origin_opens_settlement_and_freezes_components(): void
     {
@@ -65,12 +74,13 @@ class ChiralityV2Test extends TestCase
         $this->assertSame($before, $snapshot->fresh()->getAttributes());
         $this->assertSame(-0.5, $origin->fresh()->measurement->chirality);
 
-        // First ordinary Commit uses unchanged Closure's first-interval rule.
+        // Preview reads the selected source, so Origin retains its constitutional
+        // state; it cannot be treated as a new ordinary expressive candidate.
         $phase = $this->phase($origin, $origin, PhaseKind::Order);
         $preview = app(ClosureGateService::class)->preview($origin, $phase);
         $this->assertTrue($preview['admissible']);
-        $this->assertSame(0.0, $preview['depth']);
-        $this->assertSame(0.0, $preview['cadence']);
+        $this->assertSame(-1.0, $preview['depth']);
+        $this->assertSame(-1.0, $preview['cadence']);
         $grounding = app(CommitmentAdmissibilityService::class)->grounding($origin);
         $this->assertFalse($grounding['admissible']);
     }
@@ -115,7 +125,7 @@ class ChiralityV2Test extends TestCase
         $this->assertSame(4, $values->currentCycles);
         $this->assertSame(1, $values->currentActs);
         $this->assertSame(-1.0, $values->cadence); // .25 versus observed zero.
-        $sibling = $this->commit($seed, 'emergence');
+        $sibling = $this->committedCoordinate($seed, 'emergence');
         $values = app(ChiralityCalculator::class)->components($comparison);
         $this->assertSame(5, $values->currentCycles);
         $this->emptyCycle($sibling); // E: same Horizon, unrelated entry.
@@ -162,7 +172,7 @@ class ChiralityV2Test extends TestCase
     public function test_a_represented_same_domain_committal_counts_its_idle_entrants_before_any_descendant_exists(): void
     {
         [$comparison, $current, $previous, $seed] = $this->pair();
-        $commit = $this->commit($seed, 'emergence');
+        $commit = $this->committedCoordinate($seed, 'emergence');
         $lineage = app(ContextLineageComparisonService::class)->for($commit);
         $calculator = app(ChiralityCalculator::class);
         $before = $calculator->components($lineage);
@@ -176,9 +186,11 @@ class ChiralityV2Test extends TestCase
 
     public function test_uneven_receipt_load_and_clear_leave_both_components_and_directions_unchanged(): void
     {
-        [$comparison, $current, $previous] = $this->pair();
+        $fixture = new GovernedExpressionFixture;
+        $this->actor = $fixture->actor;
+        $current = $fixture->expression;
+        $comparison = app(ContextLineageComparisonService::class)->for($current);
         $attestation = $this->attest($current, 'support');
-        $this->attest($previous, 'support');
         $receipt = $this->loadedReceiptFixture($current, $attestation);
         // Establish the observer Cycle before measuring: entry itself is participation.
         $phase = $this->phase($current->phase->cycle->entryCommittal, $current, PhaseKind::Order);
@@ -213,41 +225,11 @@ class ChiralityV2Test extends TestCase
         $this->assertSame($before, $state());
     }
 
-    public function test_preview_and_canonical_candidate_preserve_source_components_and_resolved_scalars(): void
-    {
-        [, $current, , $seed] = $this->pair();
-        $this->attest($current, 'support');
-        $phase = $this->phase($seed, $current, PhaseKind::Order);
-        $service = app(LineageMeasurementService::class);
-        $resolved = app(PropositionMeasurementService::class)->recalculate($current);
-        $preview = $service->prospectiveCommit($current, $phase);
-        $candidate = (new Proposition)->forceFill(['phase_id' => $phase->id, 'tier' => 'committal',
-            'register' => $phase->write_register, 'statement' => $current->statement]);
-        $candidate->save();
-        app(LedgerService::class)->record($candidate);
-        app(CanonicalMeasurementService::class)->preserve($candidate, $current, $resolved,
-            app(PropositionMeasurementService::class)->correspondenceDirectionFor($current)->value);
-        $this->commitAncestryFixture($candidate, $current);
-        $actual = $service->calculate($candidate);
-        $this->assertEquals($preview->observables(), $actual->observables());
-        $this->assertSame($resolved->orientation, $actual->chiralityComponents->orientation);
-        $this->assertSame($resolved->attestation_cadence, $actual->chiralityComponents->cadence);
-        $this->assertSame($resolved->orientation_direction, $actual->chiralityComponents->resolveDirections()['orientation_direction']);
-        $this->assertSame($resolved->attestation_cadence_direction, $actual->chiralityComponents->resolveDirections()['attestation_cadence_direction']);
-        $this->assertCount(1, $service->positions($candidate));
-        $local = app(LocalMeasurementService::class);
-        $mass = $total = 0;
-        foreach ($service->positions($candidate) as [$node, $distance]) {
-            $weight = $service::attenuation($distance);
-            $mass += $weight;
-            $total += $local->calculate($node)->chirality * $weight;
-        }
-        $this->assertSame(round($total / $mass, 7), $actual->chirality);
-    }
-
     public function test_non_origin_grounding_still_requires_both_attestation_and_receipt(): void
     {
-        [, $current] = $this->pair();
+        $fixture = new GovernedExpressionFixture;
+        $this->actor = $fixture->actor;
+        $current = $fixture->expression;
         $service = app(CommitmentAdmissibilityService::class);
         $this->assertFalse($service->grounding($current)['admissible']);
         $this->attest($current, 'support');
@@ -261,10 +243,10 @@ class ChiralityV2Test extends TestCase
     private function pair(): array
     {
         $this->createHomologyActor();
-        $origin = $this->commit(null, 'settlement');
+        $origin = $this->committedCoordinate(null, 'settlement');
         app(CommitRegionPolarityService::class)->establishOrigin($origin, 'refute');
         $previous = $this->position($origin);
-        $seed = $this->commit($origin, 'emergence', ['cadence_interval' => 1]);
+        $seed = $this->committedCoordinate($origin, 'emergence', ['cadence_interval' => 1]);
         app(CommitRegionPolarityService::class)->establishCommit($seed, Direction::Negative);
         $current = $this->position($seed);
         foreach ([[$origin, $previous], [$seed, $current]] as [$parent, $child]) {

@@ -22,8 +22,8 @@ export function HorizonContext({ horizon, domain, provenance, onInspect }: {
         <Text size="10px">Horizon</Text>
         <Text size="xs" fw={700}>{metaForDomain(domain).label}{horizon && ` · H${horizon.sequence}`}</Text>
       </Box></Group>
-      {horizon?.opening_region_exhausted_at ? <Text size="xs" c="dimmed">Opening Region exhausted · final attempt failed</Text>
-        : horizon?.tragedy && <Text size="xs" c="dimmed">Tragedy · final evidence-bearing attempt open</Text>}
+      {horizon?.opening_region_exhausted_at ? <Text size="xs" c="dimmed">Opening Region exhausted · no continuing routes</Text>
+        : horizon?.tragedy && <Text size="xs" c="dimmed">Tragedy recorded · Variant and Revise unavailable</Text>}
       {horizon?.opening_proposition ? <Box className="horizon-context__opening"><Text size="10px">Opened by</Text>
         {reference(horizon.opening_proposition, 'Horizon boundary')}</Box>
         : <Text size="xs">{!horizon ? 'Horizon details unavailable'

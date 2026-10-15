@@ -1,12 +1,17 @@
 # Stage 3: local exploration epochs and current spentness
 
+> **Historical epoch-locality checkpoint.** The proposed
+> [Resolution lifecycle](tragedy-resolution-target.md) disables
+> Variant and Revise after first Tragedy without rewriting old
+> exploration epochs or continuation-failure provenance.
+
 This checkpoint follows Stage 2 at `ee464ef7f7c96566b3138c96027cc21ff64b2551`.
 It corrects epoch identity and current spentness only. It does not change Variant
 evidence/Potential prerequisites, recovery selection, Bias traversal visibility,
 the Tragedy recovery override, or suite/Actions selection.
 
 That boundary records historical Stage 3 scope, not present movement authority.
-[Invariant 17](core-invariants.md#17-lineage-constrained-participant-movement)
+[Invariant 10](core-invariants.md#10-movement-follows-authorised-structure)
 requires a forward causal continuation from the current Gate or recorded ancestry
 backward. Position identity and restored epoch eligibility cannot create a
 movement edge. Historical selected-source provenance below describes the stored

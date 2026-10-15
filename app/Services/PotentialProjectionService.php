@@ -153,7 +153,7 @@ final class PotentialProjectionService
                             DB::table('proposition_measurements')->upsert($measurements, ['proposition_id'],
                                 ['correspondence', 'chirality', 'closure', 'calculated_at', 'calculator_version',
                                     'chirality_direction', 'orientation', 'attestation_cadence', 'orientation_direction', 'attestation_cadence_direction',
-                                    'shape_topology', 'cardinal_position', 'shape_topology_direction', 'cardinal_position_direction']);
+                                    'shape_topology', 'phase_profile', 'shape_topology_direction', 'phase_profile_direction']);
                         }
                         foreach ($region['directions'] as $direction => $nodes) {
                             DB::table('propositions')->whereIn('id', $nodes)->update(['correspondence_direction' => $direction]);
@@ -223,7 +223,7 @@ final class PotentialProjectionService
                 $components = $snapshot === null ? app(ObservableService::class)->components($context->proposition($node), $context) : null;
                 $values = $snapshot ?? $components->observables();
                 $diagnostics = $snapshot !== null ? $snapshot->only(['chirality_direction', 'orientation', 'attestation_cadence', 'orientation_direction', 'attestation_cadence_direction',
-                    'shape_topology', 'cardinal_position', 'shape_topology_direction', 'cardinal_position_direction'])
+                    'shape_topology', 'phase_profile', 'shape_topology_direction', 'phase_profile_direction'])
                     : [...app(PropositionMeasurementService::class)->chiralityAttributes($context->proposition($node), $values->chirality, $components->chiralityComponents, $context),
                         ...app(PropositionMeasurementService::class)->correspondenceAttributes($context->proposition($node), $components->correspondenceComponents, $context)];
                 $row = [...$diagnostics, 'proposition_id' => $node->id, 'correspondence' => $values->correspondence,

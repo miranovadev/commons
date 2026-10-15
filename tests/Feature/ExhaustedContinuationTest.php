@@ -54,7 +54,7 @@ class ExhaustedContinuationTest extends TestCase
         $this->assertDatabaseHas('commitment_snapshots', ['proposition_id' => $opening->id]);
     }
 
-    public function test_live_alternatives_and_exact_current_epochs_control_backward_completion(): void
+    public function test_temporary_epoch_failures_do_not_terminate_a_live_alternative(): void
     {
         [$opening, , $tragedy] = $this->firstFailure();
         [$terminal] = $this->exercise($opening, $tragedy);
@@ -73,7 +73,7 @@ class ExhaustedContinuationTest extends TestCase
             'structural_position' => $position['structural_position'], 'exploration_epoch' => 0,
             'phase_id' => $phase->id, 'failed_at' => now(),
         ]);
-        $this->assertTrue($service->ids($phase)->has($parent->id));
+        $this->assertFalse($service->ids($phase)->has($parent->id), 'A Rest failure is not terminal authority');
         $this->assertEquals($service->ids($phase), $service->ids($phase, new ParticipationContext($phase)));
         // This isolated epoch rule deliberately constructs a later epoch; the
         // HTTP lifecycle test establishes actual Variant-driven advancement.

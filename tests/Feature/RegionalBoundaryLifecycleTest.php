@@ -40,7 +40,7 @@ class RegionalBoundaryLifecycleTest extends TestCase
         $this->assertDatabaseCount('commit_region_exhaustions', 0);
     }
 
-    public function test_second_fresh_boundary_exhausts_exactly_once_without_receipt_use(): void
+    public function test_final_existing_continuation_exhausts_exactly_once_without_receipt_use(): void
     {
         [$opening, $horizon, $tragedy] = $this->firstFailure();
         [$terminal] = $this->exercise($opening, $tragedy);
@@ -71,20 +71,14 @@ class RegionalBoundaryLifecycleTest extends TestCase
         $this->assertFalse(DB::table('origin_branches')->whereNotNull('pruned_at')->exists());
     }
 
-    public function test_positive_charge_after_tragedy_and_later_rest_keep_region_open(): void
+    public function test_surviving_positive_charge_continuation_keeps_resolution_open(): void
     {
-        [$opening, $horizon, $tragedy] = $this->firstFailure();
-        $gate = $this->node($this->phase($opening, PhaseKind::Constrain), $opening);
-        $phase = $this->phase($gate, PhaseKind::Disperse);
-        $this->resolveExpressiveFieldFixture(.8);
-        $result = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
-            ['action' => 'proposition.variant', 'statement' => 'Positive Charge after catastrophe']);
-        $this->explore($result);
-        $terminal = $this->phase($result);
-        $this->rest($terminal);
+        [$opening, $horizon, $tragedy, $survivor] = $this->firstFailure();
+        $this->measure($survivor, .8);
         $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($horizon));
         $this->assertDatabaseCount('commit_region_exhaustions', 0);
         $this->assertDatabaseMissing('receipt_consumptions', ['receipt_id' => $tragedy->receipt_id]);
+        $this->assertFalse(app(\App\Services\TerminalContinuationService::class)->closed($survivor));
     }
 
     public function test_legacy_pruning_and_old_exhaustion_do_not_control_new_semantics(): void
@@ -105,6 +99,7 @@ class RegionalBoundaryLifecycleTest extends TestCase
         $this->explore($parentHead);
         $parentRest = $this->phase($parentHead);
         $this->measure($parentHead, 1);
+        $this->continuingHeads[$this->origin->id] = $this->node($this->phase($this->origin, PhaseKind::Constrain), $this->origin);
         $this->boundaryTragedyFixture($parentHead);
         $this->rest($parentRest);
         $parentTragedy = Tragedy::where('context_horizon_id', $horizon->parent_context_horizon_id)->sole();

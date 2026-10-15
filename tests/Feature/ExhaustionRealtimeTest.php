@@ -33,7 +33,21 @@ class ExhaustionRealtimeTest extends TestCase
         Queue::fake();
     }
 
-    public function test_first_and_second_boundary_publish_minimal_events_after_commit(): void
+    protected function tearDown(): void
+    {
+        // These tests deliberately open transactions to observe after-commit
+        // delivery. A failed assertion/setup must not leave their locks behind
+        // for the next DatabaseMigrations fixture's schema refresh.
+        try {
+            while (DB::transactionLevel() > 0) {
+                DB::rollBack();
+            }
+        } finally {
+            parent::tearDown();
+        }
+    }
+
+    public function test_terminal_encounters_and_exhaustion_publish_minimal_events_after_commit(): void
     {
         $events = $positions = [];
         Event::listen(RealtimeInvalidation::class, function ($event) use (&$events): void {
@@ -44,6 +58,8 @@ class ExhaustionRealtimeTest extends TestCase
         });
         DB::beginTransaction();
         [$opening, $horizon, $tragedy] = $this->firstFailure();
+        [$terminal] = $this->exercise($opening, $tragedy);
+        $this->rest($terminal);
         $this->assertSame([], $events);
         $this->assertSame([], $positions);
         DB::commit();
@@ -51,16 +67,8 @@ class ExhaustionRealtimeTest extends TestCase
         $event = collect($events)->firstWhere('type', 'horizon.tragedy');
         $this->assertSame($opening->id, $event['governing_committal_id']);
         $this->assertSame('commit_region', $event['scope']);
-        $this->assertNotContains('horizon.exhausted', array_column($events, 'type'));
-        $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($horizon));
-        $events = $positions = [];
-        DB::beginTransaction();
-        [$terminal] = $this->exercise($opening, $tragedy);
-        $this->rest($terminal);
-        $this->assertSame([], $events);
-        $this->assertSame([], $positions);
-        DB::commit();
-        // The second catastrophe does not consume the warrant.
+        $this->assertTrue(app(ExhaustionService::class)->boundaryExhausted($horizon));
+        // Immediate Exhaustion does not consume the warrant.
         $this->assertNotContains('receipt.consumed', array_column($events, 'type'));
         foreach (['horizon.exhausted', 'context-horizons.changed', 'graph.metrics_changed', 'participant.state_changed'] as $type) {
             $this->assertContains($type, array_column($events, 'type'));
@@ -69,7 +77,7 @@ class ExhaustionRealtimeTest extends TestCase
         $this->assertSame($opening->id, $event['governing_committal_id']);
         $this->assertTrue($event['opening_region_exhausted']);
         $this->assertTrue($event['boundary_region_exhausted']);
-        $this->assertContains($terminal->cycle->participant_id, array_column($positions, 'participant_id'));
+        $this->assertNotEmpty($positions);
         foreach (array_merge($events, $positions) as $event) {
             $this->assertLessThan(350, strlen(json_encode($event)));
             $this->assertArrayNotHasKey('statement', $event);

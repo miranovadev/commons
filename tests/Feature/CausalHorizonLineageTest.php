@@ -19,22 +19,26 @@ use App\Models\Supersession;
 use App\Services\ClosureGateService;
 use App\Services\CommitmentSnapshotService;
 use App\Services\ContextHorizonProjector;
-use App\Services\CycleEntryService;
 use App\Services\LedgerService;
 use App\Services\Observables\ContextLineageComparisonService;
 use App\Services\Observables\LocalMeasurementService;
 use App\Services\Participation\ParticipationContext;
 use App\Services\ParticipationService;
-use App\Services\PhaseProgressionService;
 use App\Services\PropositionMeasurementService;
 use DomainException;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\Group;
+use Tests\Fixtures\GovernedExpressionFixture;
+use Tests\Fixtures\IsolatesClosureOutput;
 use Tests\TestCase;
 
+/** Component/read-model contract; Closure output is explicitly isolated, not lifecycle evidence. */
+#[Group('component-contract')]
 class CausalHorizonLineageTest extends TestCase
 {
+    use IsolatesClosureOutput;
     use RefreshDatabase;
 
     private Substrate $substrate;
@@ -42,98 +46,34 @@ class CausalHorizonLineageTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->isolateClosureOutput();
         $this->substrate = new Substrate;
         $this->substrate->forceFill(['slug' => 'causal', 'title' => 'Causal Horizons', 'visibility' => 'public', 'configuration' => []])->save();
     }
 
-    public function test_an_existing_settlement_cycle_contributes_after_another_participant_opens_emergence(): void
+    public function test_component_boundary_projection_does_not_reassign_open_cycle_governance(): void
     {
-        $b = $this->participant('B');
-        $entry = app(CycleEntryService::class);
-        $entry->enter($b, ['statement' => 'Origin', 'attestation' => ['direction' => 'support'],
-            'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/origin']]);
-        $a = $this->participant('A');
-        $entry->enter($a);
-        $cycleA = $a->cycles()->whereNull('completed_at')->sole();
-        $cycleB = $b->cycles()->whereNull('completed_at')->sole();
-        $h2 = $cycleA->contextHorizon;
-        $this->assertSame($h2->id, $cycleB->context_horizon_id);
-        $this->assertSame(ContextDomain::Settlement, $h2->domain);
-        $service = app(ParticipationService::class);
-        $this->publishPotentialFixture($a);
-        $stateA = $service->contribute($a, $cycleA->currentPhase->id, ['action' => 'proposition.variant', 'statement' => 'Signal in H2']);
-
-        // Isolate transition routing from the numeric threshold. The action,
-        // grounding, snapshot, terminal progression and projection paths are real.
-        $this->positiveMeasurements();
-        $order = $cycleB->currentPhase;
-        $order->forceFill(['kind' => PhaseKind::Order, 'write_register' => 'concord'])->save();
-        $candidate = $this->node($this->phaseAtPositionFixture($order, PhaseKind::Bias), $b->fresh()->position, 'expressive');
-        $this->groundFixture($candidate);
-        $order->forceFill(['gate_proposition_id' => $candidate->id])->save();
-        $b->forceFill(['current_proposition_id' => $candidate->id])->save();
-        $this->publishPotentialFixture($b);
-        $service->contribute($b, $order->id, ['action' => 'proposition.commit', 'proposition_id' => $candidate->id]);
-        $commit = $b->fresh()->position;
-        $h3 = ContextHorizon::where('opened_by_proposition_id', $commit->id)->sole();
-        $this->assertSame($h2->id, $h3->parent_context_horizon_id);
-        $this->assertSame($h2->id, $commit->contextHorizonMembership->context_horizon_id);
-        $this->assertNotNull($cycleB->fresh()->completed_at);
-        $this->assertNull($cycleA->fresh()->completed_at);
-
-        $this->classificationEvidenceFixture($a->fresh()->position);
-        $this->travel(10)->seconds();
-        $this->publishPotentialFixture($a);
-        $stateA = $service->contribute($a, $stateA['plan']['phase']['id'], ['action' => 'proposition.variant', 'statement' => 'Structural development in the retained Horizon']);
-        $stance = $a->fresh()->position;
-        $this->assertGreaterThan($h3->opened_at, $stance->created_at);
-        $this->assertSame('stance', $stance->register);
-        $this->assertSame('concord', $stateA['plan']['phase']['write_register']);
-        $this->assertSame('settlement', $stateA['domain']);
-        $this->assertSame($h2->id, $stateA['cycle']['context_horizon_id']);
-        $this->assertSame($h2->id, $stance->contextHorizonMembership->context_horizon_id);
-        $this->assertFalse($h3->propositions()->whereKey($stance->id)->exists());
-        $this->publishPotentialFixture($a);
-        $workspace = $service->workspaceFor($a)['plan']['workspace'];
-        $this->assertSame($h2->id, $workspace['horizon']['id']);
-        $this->assertSame('settlement', $workspace['domain']);
-        $this->assertNotNull($h2->fresh()->closed_at);
-
-        $next = $b->cycles()->whereNull('completed_at')->sole();
-        $this->assertSame($h3->id, $next->context_horizon_id);
-        $this->assertSame('activity', $next->currentPhase->write_register);
-        // A fresh distinction from the parent-domain boundary uses the new Cycle vocabulary.
-        $distinction = $this->node($next->currentPhase, $commit);
-        $advanced = app(PhaseProgressionService::class)->advance($next->currentPhase, $distinction);
-        $this->assertSame('frontier', $advanced->write_register);
-
-        // A finishes its original H2 Cycle after B is already operating in H3.
-        $lateOrder = $cycleA->fresh()->currentPhase;
-        $lateOrder->forceFill(['kind' => PhaseKind::Order, 'write_register' => 'concord'])->save();
-        $lateCandidate = $this->node($this->phaseAtPositionFixture($lateOrder, PhaseKind::Bias), $stance);
-        $this->groundFixture($lateCandidate);
-        $lateOrder->forceFill(['gate_proposition_id' => $lateCandidate->id])->save();
-        $a->forceFill(['current_proposition_id' => $lateCandidate->id])->save();
-        $this->publishPotentialFixture($a);
-        app(ParticipationService::class)->contribute($a, $lateOrder->id, ['action' => 'proposition.commit', 'proposition_id' => $lateCandidate->id]);
-        $lateCommit = $a->fresh()->position;
-        $sibling = ContextHorizon::where('opened_by_proposition_id', $lateCommit->id)->sole();
-        $this->assertSame($h2->id, $lateCommit->contextHorizonMembership->context_horizon_id);
-        $this->assertSame(ContextDomain::Settlement, $lateCommit->commitmentSnapshot->direction_before);
-        $this->assertSame($h2->id, $sibling->parent_context_horizon_id);
-        $this->assertSame(ContextDomain::Emergence, $sibling->domain);
-        $this->assertNotSame($h3->id, $sibling->id);
-        $this->assertSame($commit->id, $h2->fresh()->closed_by_proposition_id);
-        $this->assertSame($h3->id, $next->fresh()->context_horizon_id);
-        $this->publishPotentialFixture($b);
-        $this->assertSame($h3->id, app(ParticipationService::class)->stateFor($b)['context_horizon_id']);
-
-        $ids = ContextHorizon::orderBy('sequence')->pluck('id')->all();
-        ContextHorizonMembership::where('proposition_id', $stance->id)->update(['context_horizon_id' => $h3->id]);
-        app(ContextHorizonProjector::class)->rebuild($this->substrate);
-        $this->assertSame($ids, ContextHorizon::orderBy('sequence')->pluck('id')->all());
-        $this->assertSame($h2->id, $stance->contextHorizonMembership()->sole()->context_horizon_id);
-        $this->assertSame($h2->id, $cycleA->fresh()->context_horizon_id);
+        $this->isolateCorrespondenceOutput();
+        $fixture = new GovernedExpressionFixture;
+        $cycle = $fixture->phase->cycle;
+        $horizon = $cycle->contextHorizon;
+        $governor = $cycle->entry_committal_id;
+        // This supplies a later boundary projection, not an authorised Commit.
+        $later = $this->laterHorizonFixture($horizon, 1);
+        $fixture->writePersist();
+        $head = $fixture->expression;
+        $this->assertSame($horizon->id, $cycle->fresh()->context_horizon_id);
+        $this->assertSame($governor, $cycle->fresh()->entry_committal_id);
+        $this->assertSame($cycle->id, $head->phase->cycle_id);
+        $this->assertSame('stance', $head->register);
+        $this->assertSame($horizon->id, $head->contextHorizonMembership->context_horizon_id);
+        $this->assertFalse($later->propositions()->whereKey($head->id)->exists());
+        $this->assertNotNull($horizon->fresh()->closed_at);
+        $this->assertSame($horizon->id, $later->parent_context_horizon_id);
+        $this->publishPotentialFixture($fixture->actor);
+        $state = app(ParticipationService::class)->stateFor($fixture->actor);
+        $this->assertSame('settlement', $state['domain']);
+        $this->assertSame($horizon->id, $state['cycle']['context_horizon_id']);
     }
 
     public function test_branching_alternates_and_comparisons_use_only_the_direct_parent_in_both_calculation_paths(): void
@@ -173,7 +113,7 @@ class CausalHorizonLineageTest extends TestCase
         $this->assertSame($h4b->id, app(ContextHorizonProjector::class)->forEntry($pb)->id);
     }
 
-    public function test_prior_tension_comes_from_the_parent_boundary_even_after_a_newer_sibling_commit(): void
+    public function test_snapshot_projection_uses_parent_tension_even_after_a_newer_sibling(): void
     {
         [, , , , $h4a, , $pa] = $this->branches();
         $phase = $this->phase($h4a, $pa);
@@ -181,6 +121,8 @@ class CausalHorizonLineageTest extends TestCase
         $this->groundFixture($node);
         $this->positiveMeasurements();
         app(PropositionMeasurementService::class)->recalculate($node);
+        // Explicit snapshot-assembly inputs, not an observed committed interval.
+        $this->componentClosureInput($node, ['cadence_interval' => 1, 'history_proposition_id' => $pa->id]);
         $snapshot = app(CommitmentSnapshotService::class)->record($node, .5, .5, 'causal-test');
         $this->assertSame($pa->commitmentSnapshot->tension, $snapshot->tension_before);
         $this->assertSame(-.4, $snapshot->tension_before);

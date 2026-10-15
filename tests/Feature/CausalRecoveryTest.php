@@ -36,6 +36,7 @@ use App\Services\TragedyReceiptScopeService;
 use DomainException;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
@@ -302,7 +303,7 @@ class CausalRecoveryTest extends TestCase
         $tragedy = $this->boundaryTragedyFixture($position);
         $before = $tragedy->fresh()->getAttributes();
         $receipt = Receipt::findOrFail($tragedy->receipt_id)->getAttributes();
-        $this->exhaustRegion($near, $position);
+        $this->assertTrue(app(ExhaustionService::class)->unavailable($near));
         $participant = $this->resting($this->root, $position);
         $this->refreshMeasurements();
         app(CycleEntryService::class)->prepare($participant);
@@ -965,9 +966,12 @@ class CausalRecoveryTest extends TestCase
         $this->assertSame(0, $inspection['fallback_depth']);
         $this->assertSame([$h2->id], array_column($inspection['searched_basins'], 'context_horizon_id'));
         $this->assertSame($before, [Cycle::count(), Proposition::count(), $participant->fresh()->getAttributes()]);
-        $this->artisan('commons:recovery-inspect', ['participant' => $participant->id])
-            ->expectsOutputToContain($origin->id)
-            ->assertSuccessful();
+        foreach (['commons:recovery-inspect', 'commons:potential-inspect'] as $command) {
+            $this->assertSame(0, Artisan::call($command, ['participant' => $participant->id]));
+            $output = Artisan::output();
+            $this->assertStringContainsString($origin->id, $output);
+            $this->assertFalse(json_decode($output, true, flags: JSON_THROW_ON_ERROR)['would_tragedy']);
+        }
         $this->assertSame([], $writes);
     }
 
@@ -1004,7 +1008,7 @@ class CausalRecoveryTest extends TestCase
         $this->assertSame($incremental, $terrain());
     }
 
-    public function test_same_horizon_regions_exhaust_independently_and_recovery_unwinds_c_b_a(): void
+    public function test_committed_sibling_blocks_parent_exhaustion_until_its_own_route_terminates(): void
     {
         $a = $this->committal($this->root, .9);
         $a->commitmentSnapshot->forceFill(['calculator_version' => 'origin-bootstrap-v1'])->save();
@@ -1017,7 +1021,8 @@ class CausalRecoveryTest extends TestCase
         $this->opportunity($a);
         $bOpportunity = $this->expressive($this->root, $b);
         $this->measurements[$bOpportunity->id] = 0;
-        $this->opportunity($sibling);
+        $siblingOpportunity = $this->expressive($this->root, $sibling);
+        $this->measurements[$siblingOpportunity->id] = 0;
         $this->assertDatabaseCount('context_horizons', 1);
         foreach ([$a, $b, $c, $sibling] as $commit) {
             $this->assertSame($this->root->id, app(ContextHorizonProjector::class)->forEntry($commit)->id);
@@ -1035,14 +1040,24 @@ class CausalRecoveryTest extends TestCase
         $this->assertSame($b->id, $this->recover($failedC)['proposition']->id);
         $this->assertDatabaseCount('commit_region_exhaustions', 1);
         $this->measurements[$bOpportunity->id] = 1;
-        $failedB = $this->exhaustRegion($b, $bOpportunity);
+        $this->boundaryTragedyFixture($bOpportunity);
+        $this->assertFalse(app(ExhaustionService::class)->unavailable($b));
+        $this->assertSame($b->id, $this->recover($failedC)['proposition']->id);
+        $this->assertDatabaseCount('commit_region_exhaustions', 1);
+        // The successful sibling Commit is still a real continuation. Only its
+        // own terminal event can close that route and recursively exhaust B.
+        $this->measurements[$siblingOpportunity->id] = 1;
+        $this->exhaustRegion($sibling, $siblingOpportunity);
+        $failedB = $bOpportunity;
         $this->assertSame($a->id, $this->recover($failedB)['proposition']->id);
         $this->assertSame($a->id, $this->recover($failedC)['proposition']->id);
         $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($this->root));
         $this->assertFalse(app(ExhaustionService::class)->unavailable($a));
-        $this->assertFalse(app(ExhaustionService::class)->unavailable($sibling));
-        $this->assertDatabaseCount('commit_region_exhaustions', 2);
-        $this->assertDatabaseCount('tragedies', 2);
+        $this->assertTrue(app(ExhaustionService::class)->unavailable($sibling));
+        $this->assertDatabaseCount('commit_region_exhaustions', 3);
+        $this->assertDatabaseCount('tragedies', 3);
+        $this->assertDatabaseHas('commit_region_exhaustions', ['governing_committal_id' => $b->id,
+            'descendant_exhaustion_id' => $sibling->id]);
         $this->assertDatabaseCount('tragedy_final_attempts', 0);
         $this->assertDatabaseCount('horizon_exhaustions', 0);
         $members = DB::table('exhausted_region_memberships')->orderBy('proposition_id')->get()->toJson();
@@ -1054,13 +1069,13 @@ class CausalRecoveryTest extends TestCase
         $this->assertTrue(app(ExhaustionService::class)->unavailable($failedB));
     }
 
-    public function test_boundary_region_exhaustion_permits_crossing_without_retiring_other_child_regions(): void
+    public function test_live_committed_descendant_prevents_boundary_exhaustion_and_backward_crossing(): void
     {
         $far = $this->committal($this->root, .95);
         $near = $this->committal($this->root, .01, $this->expressive($this->root, $far));
         $boundary = $this->committal($this->root, .1, $this->expressive($this->root, $near), boundary: true);
         $child = app(ContextHorizonProjector::class)->forEntry($boundary);
-        $live = $this->committal($child, .9, $this->expressive($child, $boundary));
+        $live = $this->committal($child, .9, $this->expressive($child, $boundary), edgeType: 'commit');
         $sibling = $this->committal($this->root, .99, $far);
         $this->opportunity($far);
         $this->opportunity($near);
@@ -1070,16 +1085,15 @@ class CausalRecoveryTest extends TestCase
         $this->measurements[$terminal->id] = 1;
         $this->assertSame($boundary->id, $this->recover($terminal)['proposition']->id);
         $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($child));
-        $failed = $this->exhaustRegion($boundary, $terminal);
-        $this->assertTrue(app(ExhaustionService::class)->boundaryExhausted($child));
-        $this->assertSame(DB::table('commit_region_exhaustions')->where('governing_committal_id', $boundary->id)->value('exhausted_at'),
-            app(ExhaustionService::class)->openingRegionExhaustedAt($child));
+        $this->boundaryTragedyFixture($terminal);
+        $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($child));
+        $this->assertNull(app(ExhaustionService::class)->openingRegionExhaustedAt($child));
         $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($this->root));
-        $this->assertSame($near->id, $this->recover($failed)['proposition']->id);
+        $this->assertSame($boundary->id, $this->recover($terminal)['proposition']->id);
         $this->assertFalse(app(ExhaustionService::class)->unavailable($live));
         $liveTerminal = $this->expressive($child, $live);
         $this->assertSame($live->id, $this->recover($liveTerminal)['proposition']->id);
-        $this->assertDatabaseCount('commit_region_exhaustions', 1);
+        $this->assertDatabaseCount('commit_region_exhaustions', 0);
     }
 
     private function exhaustRegion(Proposition $seed, Proposition $terminal): Proposition
@@ -1090,7 +1104,7 @@ class CausalRecoveryTest extends TestCase
         $this->refreshMeasurements();
         $catastrophes = [Tragedy::count(), DB::table('commit_region_exhaustions')->count()];
         app(ParticipationService::class)->contribute($phase->cycle->participant, $phase->id, ['action' => 'participant.rest']);
-        // Exhaustion below is caused by repeated catastrophe, not by this
+        // Exhaustion below is caused by a direct terminal encounter, not by this
         // preparatory Rest or its incidental zero/positive Potential diagnostic.
         $this->assertNotNull($phase->cycle->fresh()->rested_at);
         $this->assertSame($catastrophes, [Tragedy::count(), DB::table('commit_region_exhaustions')->count()]);
@@ -1098,27 +1112,14 @@ class CausalRecoveryTest extends TestCase
         $tragedy = Tragedy::where('governing_committal_id', $seed->id)->sole();
         $this->assertSame($seed->id, $terminal->phase->cycle->entry_committal_id);
         $this->assertSame($seed->id, app(CommitRegionService::class)->seedFor($terminal)?->id);
-        $this->assertFalse(app(ExhaustionService::class)->unavailable($seed));
-        // Preparatory Rest may already have skipped a closed crossover. Entry
-        // preparation must preserve that selection, not proactively route again.
-        $selected = $phase->cycle->participant->fresh()->current_proposition_id;
-        app(CycleEntryService::class)->prepare($phase->cycle->participant);
-        $this->assertSame($selected, $phase->cycle->participant->fresh()->current_proposition_id);
-        $gate = $this->node($this->phase($horizon, $seed, PhaseKind::Constrain), $seed);
-        $attempt = $this->phase($horizon, $gate, PhaseKind::Disperse);
-        $this->resolveExpressiveFieldFixture(1);
-        $target = app(ContributionDispatcher::class)->dispatch($attempt->cycle->participant, $attempt,
-            ['action' => 'proposition.variant', 'statement' => 'Later regional catastrophe']);
-        $this->measurements[$target->id] = 1;
-        $final = $this->phase($horizon, $target);
-        $this->refreshMeasurements();
-        app(ParticipationService::class)->contribute($final->cycle->participant, $final->id, ['action' => 'participant.rest']);
-        $this->assertDatabaseHas('commit_region_exhaustions', ['governing_committal_id' => $seed->id, 'receipt_id' => $tragedy->receipt_id]);
-        $this->assertSame($seed->id, $target->phase->cycle->entry_committal_id);
-        $this->assertSame($seed->id, app(CommitRegionService::class)->seedFor($target)?->id);
+        // This recovery component needs actual exhausted-region authority, not
+        // another prohibited Variant after the first terminal encounter.
+        $this->assertTrue(app(ExhaustionService::class)->unavailable($seed));
+        $this->assertDatabaseHas('commit_region_exhaustions', ['governing_committal_id' => $seed->id,
+            'receipt_id' => $tragedy->receipt_id]);
         $this->refreshMeasurements();
 
-        return $target;
+        return $terminal;
     }
 
     private function explore(Proposition $node): void

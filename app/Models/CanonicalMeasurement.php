@@ -20,7 +20,7 @@ class CanonicalMeasurement extends Model
 
     protected function casts(): array
     {
-        return array_fill_keys(['correspondence', 'chirality', 'orientation', 'attestation_cadence', 'shape_topology', 'cardinal_position'], 'float');
+        return array_fill_keys(['correspondence', 'chirality', 'orientation', 'attestation_cadence', 'shape_topology', 'phase_profile'], 'float');
     }
 
     protected static function booted(): void
@@ -37,13 +37,13 @@ class CanonicalMeasurement extends Model
 
     public function correspondenceComponents(): CorrespondenceValues
     {
-        return new CorrespondenceValues($this->shape_topology, $this->cardinal_position,
-            ObservableDirection::from($this->shape_topology_direction), ObservableDirection::from($this->cardinal_position_direction));
+        return new CorrespondenceValues($this->shape_topology, $this->phase_profile,
+            ObservableDirection::from($this->shape_topology_direction), ObservableDirection::from($this->phase_profile_direction));
     }
 
     public function metadata(): array
     {
         return $this->only(['chirality_direction', 'orientation', 'attestation_cadence', 'orientation_direction',
-            'attestation_cadence_direction', 'shape_topology', 'cardinal_position', 'shape_topology_direction', 'cardinal_position_direction']);
+            'attestation_cadence_direction', 'shape_topology', 'phase_profile', 'shape_topology_direction', 'phase_profile_direction']);
     }
 }

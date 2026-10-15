@@ -82,14 +82,14 @@ class ParticipantPromptConstitutionTest extends TestCase
             ], ['proposition.reconcile', 'proposition.revise', 'proposition.variant', 'proposition.commit', 'Closure, performed']],
             'Order' => [PhaseKind::Order, [
                 'including legitimate same-position revisions',
-                'Closure, performed during Order — Write, evaluates a new Committal observation for each causally local expressive Write.',
-                "The source's Closure is frozen at its own birth and is never recalculated.",
+                'Closure is prospective and event-driven.',
+                "Commit preserves the selected expressive's last authorised Closure values and directions, with no extra head, recalculation or attenuation.",
                 'Local expressive Writes remain visible regardless of Commit admissibility.',
                 'The persisted consistency guard remains authoritative.',
                 'proposition.commit is available only where that local Write satisfies its full Commitment prerequisites',
                 'Local Commit and direct Committal Traverse remain independently available under their ordinary rules, regardless of population direction.',
                 'homologous existing Committals at the Order Write position may add proposition.traverse options',
-                'Frozen Committed Cardinal Position and Cadence directions must agree; disagreement contributes no resolved direction.',
+                'Frozen Historical Extent and Historical Rhythm directions must agree; disagreement contributes no resolved direction.',
                 "A tied aggregate retains supplied prior population direction, otherwise uses Closure's negative default.",
                 'Order remains terminal',
                 'Order introduces no new Attestation, Instrument, Revision, Reclassification or Variant actions',
@@ -173,10 +173,15 @@ class ParticipantPromptConstitutionTest extends TestCase
         $state['plan']['schema'] = app(InputSchemaService::class)->forPhase($phase, ['participant.rest']);
         $with = $factory->make(new Connection, $state);
         $this->assertStringContainsString('Rest never creates Tragedy or Commit Region exhaustion, including no_remaining_potential Rest.', $with['system']);
-        $this->assertStringContainsString('regardless of authorship or Receipt consumption', $with['system']);
-        $this->assertStringContainsString('nearest eligible non-exhausted Committal on the recorded backward lineage', $with['system']);
+        foreach ([$without, $with] as $prompt) {
+            $this->assertStringContainsString('Variant and Revise are then unavailable throughout that Region', $prompt['system']);
+            $this->assertStringContainsString('A viable sibling or live committed descendant prevents Exhaustion.', $prompt['system']);
+            $this->assertStringContainsString('No second catastrophe, Rest or Receipt consumption is required.', $prompt['system']);
+            $this->assertStringNotContainsString('A later distinct fresh expressive zero-Charge result', $prompt['system']);
+        }
+        $this->assertStringContainsString('nearest eligible non-exhausted Committal on the actual recorded backward lineage', $with['system']);
         $this->assertStringContainsString('A nearer unresolved basin blocks older ancestors regardless of Potential or Charge', $with['system']);
-        $this->assertStringContainsString('never jumping to a Horizon opener or unrelated branch', $with['system']);
+        $this->assertStringContainsString('Recovery never invents movement to a sibling, foreign parent, Horizon opener or unrelated Committal.', $with['system']);
         $this->assertSame($without['instruction_family'], $with['instruction_family']);
         $this->assertSame($state['plan']['schema'], $with['schema']);
     }

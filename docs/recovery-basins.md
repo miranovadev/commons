@@ -1,5 +1,6 @@
 # Backward lineage recovery
 
+> Recovery geometry is unchanged by the [approved Stage 4 lifecycle](tragedy-resolution-target.md).
 
 The participant's terminal position and completed Cycle Horizon are the recovery
 starting point. Recovery walks incoming causal edges backward and collects only
@@ -33,9 +34,8 @@ eligible retained Committal is itself the distance-zero boundary.
 
 A Commit Region is the recovery basin governed by its Committal. Same-Horizon
 non-boundary Commits govern distinct basins. `commit_region_exhaustions` is the
-primitive proof authority, keyed by that governing Committal. The first fresh
-expressive Charge-zero event creates Tragedy; a later distinct fresh Charge-zero
-event in that same Region proves exhaustion. Potential, ordinary Rest, historical
+primitive proof authority, keyed by that governing Committal. A qualifying direct expressive Charge-zero encounter establishes terminal
+authority; locked evaluation proves Exhaustion when no lawful continuation remains. Potential, ordinary Rest, historical
 zero measurements and Tragedy Receipt consumption do not establish that proof.
 
 Only the exhausted region becomes unavailable. Older, sibling and descendant
@@ -65,9 +65,8 @@ relative-ranking diagnostics and ordinary Commit continuity retain their semanti
 
 Tragedy uses this same recovery route. Publication retains the terminal position
 and creates no `recovery_proposition_id` override. Legacy override values are
-ignored, while retained historical values are not rewritten. Tragedy/final-attempt identity is regional; its consumption, subsequent-failure
-and causal/transactional safeguards remain required. See
-[Tragedy and final-attempt Exhaustion](branch-tragedy.md).
+ignored, while retained historical values are not rewritten. Tragedy identity and Receipt authority remain regional. See
+[direct Tragedy and Resolution](branch-tragedy.md).
 
 The projected resolver reads maintained local topology and raw measurements plus
 the relevant durable Phase arrivals. It never discovers candidates from child
