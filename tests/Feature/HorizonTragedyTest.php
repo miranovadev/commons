@@ -28,13 +28,15 @@ class HorizonTragedyTest extends TestCase
         // Keep this controlled Receipt-routing fixture's crossover open in E.
         $commit->commitmentSnapshot->forceFill(['correspondence' => .2, 'chirality' => .2,
             'closure' => .8, 'tension' => .4, 'prominence' => .7, 'turbulence' => .3])->save();
+        // A pre-existing sibling retains Resolution and the ancestral entry.
+        $this->node($this->phase($commit, PhaseKind::Distinguish), $commit);
         $this->boundaryTragedyFixture($phase->gate);
         $proof = app(ExhaustionService::class)->inspect($phase);
         $this->rest($phase);
         $tragedy = Tragedy::sole();
         $receipt = Receipt::findOrFail($tragedy->receipt_id);
         $this->assertSame($phase->cycle->context_horizon_id, $tragedy->context_horizon_id);
-        $this->assertSame(RestReason::NoRemainingPotential, $phase->cycle->fresh()->rest_reason);
+        $this->assertSame(RestReason::NoAvailableMove, $phase->cycle->fresh()->rest_reason);
         $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($phase->cycle->contextHorizon));
         $this->assertNull($receipt->instrument_execution_id, 'Tragedy is not a fabricated Instrument execution');
         $this->assertSame('tragedy', $receipt->type);
@@ -68,6 +70,7 @@ class HorizonTragedyTest extends TestCase
         $phase = $this->phase($head);
         $this->measure($root, 1);
         $this->measure($head, 1);
+        $this->node($this->phase($opening, PhaseKind::Distinguish), $opening);
         $this->boundaryTragedyFixture($head);
         $this->rest($phase);
         $this->assertSame($opening->id, Tragedy::sole()->opening_proposition_id);

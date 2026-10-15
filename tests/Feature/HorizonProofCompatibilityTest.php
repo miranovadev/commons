@@ -79,9 +79,8 @@ class HorizonProofCompatibilityTest extends TestCase
     public function test_rollbacks_refuse_to_discard_exercised_proof(): void
     {
         [$opening, , $tragedy] = $this->firstFailure();
-        [$terminal] = $this->legacyExercise($opening, $tragedy);
+        [$terminal] = $this->exercise($opening, $tragedy);
         $this->rest($terminal);
-        $this->archiveExhaustion($terminal, $tragedy);
         foreach (['000100_scope_receipts_to_horizons', '000300_record_horizon_tragedies'] as $name) {
             $migration = require database_path('migrations/2026_09_18_'.$name.'.php');
             try {
@@ -100,6 +99,6 @@ class HorizonProofCompatibilityTest extends TestCase
         }
         $this->assertDatabaseCount('commit_region_exhaustions', 1);
         $this->assertDatabaseCount('tragedies', 1);
-        $this->assertDatabaseCount('receipt_consumptions', 1);
+        $this->assertDatabaseCount('receipt_consumptions', 0);
     }
 }

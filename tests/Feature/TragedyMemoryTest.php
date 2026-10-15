@@ -75,7 +75,8 @@ class TragedyMemoryTest extends TestCase
         $this->assertDatabaseCount('receipt_context_events', 2);
         $this->assertDatabaseHas('tragedies', ['id' => $tragedy->id]);
         $this->assertDatabaseCount('receipt_consumptions', 0);
-        $this->assertSame($receipt->id, app(HorizonReceiptService::class)->tragedyWarrant($phase)->id);
+        // Immutable memory survives, but an exhausted Region has no escape warrant.
+        $this->assertNull(app(HorizonReceiptService::class)->tragedyWarrant($phase));
     }
 
     public function test_memory_never_changes_database_or_context_backed_field_values(): void

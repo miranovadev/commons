@@ -29,7 +29,6 @@ use App\Services\PhaseProgressionService;
 use App\Services\PropositionMeasurementService;
 use App\Services\PropositionOptionService;
 use App\Services\ReceiptContextService;
-use App\Services\RegionalExhaustionMembership;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -195,11 +194,7 @@ class MediatedIncomingBiasTest extends TestCase
         DB::table('horizon_exploration_states')->insert([...$position, 'epoch' => 1]);
         $this->assertCount(1, $this->biasOptions());
         $tragedy = $this->boundaryTragedyFixture($this->result);
-        DB::table('commit_region_exhaustions')->insert(['governing_committal_id' => $this->a->id,
-            'context_horizon_id' => $tragedy->context_horizon_id, 'tragedy_id' => $tragedy->id,
-            'receipt_id' => $tragedy->receipt_id, 'phase_id' => $this->result->phase_id,
-            'terminal_proposition_id' => $this->result->id, 'observed_field_version' => 1, 'exhausted_at' => now()]);
-        app(RegionalExhaustionMembership::class)->publish($this->a->id, [$this->result->id]);
+        $this->assertDatabaseHas('commit_region_exhaustions', ['governing_committal_id' => $tragedy->governing_committal_id]);
         $this->assertTrue($this->biasOptions()->isEmpty());
     }
 
@@ -252,7 +247,7 @@ class MediatedIncomingBiasTest extends TestCase
         app(PropositionMeasurementService::class)->project($this->result, .8, -.9, .8);
         $this->assertTrue(app(HomologousBiasService::class)->forPhase($this->bias)->contains('id', $this->result->id));
         $this->assertCount(1, $this->biasOptions());
-        $tragedy = $this->boundaryTragedyFixture($this->bResult);
+        $tragedy = $this->tragedyBesideFixture($this->bResult);
         DB::transaction(fn () => app(ReceiptContextService::class)->desired($this->actor, $this->bias, ['load' => [$tragedy->receipt_id]]));
         app(PropositionMeasurementService::class)->project($this->bResult, .8, -.9, .8,
             chiralityComponents: new ChiralityValues(-.9, -.9));

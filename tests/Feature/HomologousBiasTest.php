@@ -47,7 +47,6 @@ use App\Services\PropositionMeasurementService;
 use App\Services\PropositionOptionService;
 use App\Services\PropositionStateService;
 use App\Services\ReceiptContextService;
-use App\Services\RegionalExhaustionMembership;
 use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -119,8 +118,11 @@ class HomologousBiasTest extends TestCase
         $this->assertSame($this->a->id, $tragedy->governing_committal_id);
         $this->assertSame($this->bias->cycle->context_horizon_id, $tragedy->context_horizon_id);
         $this->assertNotSame($this->b->id, $tragedy->governing_committal_id);
-        $this->assertDatabaseHas('commit_region_exhaustions', ['governing_committal_id' => $this->a->id,
-            'terminal_proposition_id' => $target->id, 'tragedy_id' => $tragedy->id]);
+        $this->assertDatabaseHas('terminal_encounters', ['governing_committal_id' => $this->a->id,
+            'proposition_id' => $target->id, 'action' => 'proposition.reclassify']);
+        // The local acting Gate remains an independent route: a foreign-source
+        // Bias result does not fabricate a causal edge from that Gate.
+        $this->assertDatabaseMissing('commit_region_exhaustions', ['governing_committal_id' => $this->a->id]);
         $this->assertDatabaseMissing('commit_region_exhaustions', ['governing_committal_id' => $this->b->id]);
         // The accepted Bias write still completes into an Order/Rest position.
         $next = app(PhaseProgressionService::class)->advance($this->bias, $target);

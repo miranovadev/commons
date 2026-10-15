@@ -302,7 +302,7 @@ class CausalRecoveryTest extends TestCase
         $tragedy = $this->boundaryTragedyFixture($position);
         $before = $tragedy->fresh()->getAttributes();
         $receipt = Receipt::findOrFail($tragedy->receipt_id)->getAttributes();
-        $this->exhaustRegion($near, $position);
+        $this->assertTrue(app(ExhaustionService::class)->unavailable($near));
         $participant = $this->resting($this->root, $position);
         $this->refreshMeasurements();
         app(CycleEntryService::class)->prepare($participant);
@@ -1004,7 +1004,7 @@ class CausalRecoveryTest extends TestCase
         $this->assertSame($incremental, $terrain());
     }
 
-    public function test_same_horizon_regions_exhaust_independently_and_recovery_unwinds_c_b_a(): void
+    public function test_committed_sibling_blocks_parent_exhaustion_until_its_own_route_terminates(): void
     {
         $a = $this->committal($this->root, .9);
         $a->commitmentSnapshot->forceFill(['calculator_version' => 'origin-bootstrap-v1'])->save();
@@ -1017,7 +1017,8 @@ class CausalRecoveryTest extends TestCase
         $this->opportunity($a);
         $bOpportunity = $this->expressive($this->root, $b);
         $this->measurements[$bOpportunity->id] = 0;
-        $this->opportunity($sibling);
+        $siblingOpportunity = $this->expressive($this->root, $sibling);
+        $this->measurements[$siblingOpportunity->id] = 0;
         $this->assertDatabaseCount('context_horizons', 1);
         foreach ([$a, $b, $c, $sibling] as $commit) {
             $this->assertSame($this->root->id, app(ContextHorizonProjector::class)->forEntry($commit)->id);
@@ -1035,14 +1036,24 @@ class CausalRecoveryTest extends TestCase
         $this->assertSame($b->id, $this->recover($failedC)['proposition']->id);
         $this->assertDatabaseCount('commit_region_exhaustions', 1);
         $this->measurements[$bOpportunity->id] = 1;
-        $failedB = $this->exhaustRegion($b, $bOpportunity);
+        $this->boundaryTragedyFixture($bOpportunity);
+        $this->assertFalse(app(ExhaustionService::class)->unavailable($b));
+        $this->assertSame($b->id, $this->recover($failedC)['proposition']->id);
+        $this->assertDatabaseCount('commit_region_exhaustions', 1);
+        // The successful sibling Commit is still a real continuation. Only its
+        // own terminal event can close that route and recursively exhaust B.
+        $this->measurements[$siblingOpportunity->id] = 1;
+        $this->exhaustRegion($sibling, $siblingOpportunity);
+        $failedB = $bOpportunity;
         $this->assertSame($a->id, $this->recover($failedB)['proposition']->id);
         $this->assertSame($a->id, $this->recover($failedC)['proposition']->id);
         $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($this->root));
         $this->assertFalse(app(ExhaustionService::class)->unavailable($a));
-        $this->assertFalse(app(ExhaustionService::class)->unavailable($sibling));
-        $this->assertDatabaseCount('commit_region_exhaustions', 2);
-        $this->assertDatabaseCount('tragedies', 2);
+        $this->assertTrue(app(ExhaustionService::class)->unavailable($sibling));
+        $this->assertDatabaseCount('commit_region_exhaustions', 3);
+        $this->assertDatabaseCount('tragedies', 3);
+        $this->assertDatabaseHas('commit_region_exhaustions', ['governing_committal_id' => $b->id,
+            'descendant_exhaustion_id' => $sibling->id]);
         $this->assertDatabaseCount('tragedy_final_attempts', 0);
         $this->assertDatabaseCount('horizon_exhaustions', 0);
         $members = DB::table('exhausted_region_memberships')->orderBy('proposition_id')->get()->toJson();
@@ -1054,13 +1065,13 @@ class CausalRecoveryTest extends TestCase
         $this->assertTrue(app(ExhaustionService::class)->unavailable($failedB));
     }
 
-    public function test_boundary_region_exhaustion_permits_crossing_without_retiring_other_child_regions(): void
+    public function test_live_committed_descendant_prevents_boundary_exhaustion_and_backward_crossing(): void
     {
         $far = $this->committal($this->root, .95);
         $near = $this->committal($this->root, .01, $this->expressive($this->root, $far));
         $boundary = $this->committal($this->root, .1, $this->expressive($this->root, $near), boundary: true);
         $child = app(ContextHorizonProjector::class)->forEntry($boundary);
-        $live = $this->committal($child, .9, $this->expressive($child, $boundary));
+        $live = $this->committal($child, .9, $this->expressive($child, $boundary), edgeType: 'commit');
         $sibling = $this->committal($this->root, .99, $far);
         $this->opportunity($far);
         $this->opportunity($near);
@@ -1070,16 +1081,15 @@ class CausalRecoveryTest extends TestCase
         $this->measurements[$terminal->id] = 1;
         $this->assertSame($boundary->id, $this->recover($terminal)['proposition']->id);
         $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($child));
-        $failed = $this->exhaustRegion($boundary, $terminal);
-        $this->assertTrue(app(ExhaustionService::class)->boundaryExhausted($child));
-        $this->assertSame(DB::table('commit_region_exhaustions')->where('governing_committal_id', $boundary->id)->value('exhausted_at'),
-            app(ExhaustionService::class)->openingRegionExhaustedAt($child));
+        $this->boundaryTragedyFixture($terminal);
+        $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($child));
+        $this->assertNull(app(ExhaustionService::class)->openingRegionExhaustedAt($child));
         $this->assertFalse(app(ExhaustionService::class)->boundaryExhausted($this->root));
-        $this->assertSame($near->id, $this->recover($failed)['proposition']->id);
+        $this->assertSame($boundary->id, $this->recover($terminal)['proposition']->id);
         $this->assertFalse(app(ExhaustionService::class)->unavailable($live));
         $liveTerminal = $this->expressive($child, $live);
         $this->assertSame($live->id, $this->recover($liveTerminal)['proposition']->id);
-        $this->assertDatabaseCount('commit_region_exhaustions', 1);
+        $this->assertDatabaseCount('commit_region_exhaustions', 0);
     }
 
     private function exhaustRegion(Proposition $seed, Proposition $terminal): Proposition

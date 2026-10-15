@@ -48,7 +48,7 @@ class TragedyWarrantSeparationTest extends TestCase
             : $this->node($this->phase($this->origin, PhaseKind::from($kind->value - 1)), $this->origin);
         $phase = $this->phase($gate, $kind);
         $write = $this->node($phase, $gate);
-        $tragedy = $this->boundaryTragedyFixture($write);
+        $tragedy = $this->tragedyBesideFixture($write);
         $receipt = Receipt::findOrFail($tragedy->receipt_id);
         $service = app(HorizonReceiptService::class);
         $this->assertFalse($receipt->observationComplete());
@@ -87,7 +87,7 @@ class TragedyWarrantSeparationTest extends TestCase
     {
         $phase = $this->phase($this->origin, PhaseKind::Distinguish);
         $write = $this->node($phase, $this->origin);
-        $this->boundaryTragedyFixture($write);
+        $this->tragedyBesideFixture($write);
         $this->receiptFixture($write);
         $ordinary = app(HorizonReceiptService::class)->ordinaryAvailable($phase)->sole();
         $source = $this->node($this->phase($this->origin, PhaseKind::Persist), $this->origin);
@@ -102,7 +102,7 @@ class TragedyWarrantSeparationTest extends TestCase
     public function test_non_bias_schema_and_dispatcher_reject_tragedy_even_with_ordinary_evidence_available(): void
     {
         $source = $this->node($this->phase($this->origin, PhaseKind::Persist), $this->origin);
-        $tragedy = $this->boundaryTragedyFixture($source);
+        $tragedy = $this->tragedyBesideFixture($source);
         $this->receiptFixture($source);
         $vote = (new Attestation)->forceFill(['phase_id' => $source->phase_id, 'proposition_id' => $source->id, 'direction' => 'support']);
         $vote->save();
@@ -136,7 +136,7 @@ class TragedyWarrantSeparationTest extends TestCase
     public function test_warrant_memory_options_do_not_grant_evidence_read_or_replay(string $operation): void
     {
         $gate = $this->node($this->phase($this->origin, PhaseKind::Persist), $this->origin);
-        $tragedy = $this->boundaryTragedyFixture($gate);
+        $tragedy = $this->tragedyBesideFixture($gate);
         $phase = $this->phase($gate, PhaseKind::Constrain);
         $this->receiptFixture($gate);
         $actor = $phase->cycle->participant;

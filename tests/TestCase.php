@@ -166,6 +166,14 @@ abstract class TestCase extends BaseTestCase
             chiralityComponents: new ChiralityValues(.5, .5));
     }
 
+    /** Receipt/visibility component fixture: a separate controlled branch, never a revived target. */
+    protected function tragedyBesideFixture(Proposition $viable): Tragedy
+    {
+        $seed = Proposition::findOrFail($viable->phase->cycle->entry_committal_id);
+
+        return $this->boundaryTragedyFixture($seed);
+    }
+
     /** Explicit controlled birth fixture; natural acceptance uses real contributions instead. */
     protected function boundaryTragedyFixture(Proposition $terminal): Tragedy
     {

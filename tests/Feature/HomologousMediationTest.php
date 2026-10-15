@@ -35,7 +35,6 @@ use App\Services\PropositionMeasurementService;
 use App\Services\PropositionOptionService;
 use App\Services\ReceiptContextService;
 use App\Services\ReconciliationOptionService;
-use App\Services\RegionalExhaustionMembership;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
@@ -786,13 +785,7 @@ class HomologousMediationTest extends TestCase
         $this->edge($middle, $terminal, 'commit');
         $phase = $this->phase($terminal, $terminal, PhaseKind::Distinguish);
         $tragedy = $this->boundaryTragedyFixture($phase->gate);
-        DB::table('commit_region_exhaustions')->insert([
-            'governing_committal_id' => $terminal->id, 'context_horizon_id' => $phase->cycle->context_horizon_id,
-            'tragedy_id' => $tragedy->id, 'receipt_id' => $tragedy->receipt_id,
-            'phase_id' => $phase->id, 'terminal_proposition_id' => $terminal->id,
-            'observed_field_version' => 1, 'exhausted_at' => now(),
-        ]);
-        app(RegionalExhaustionMembership::class)->publish($terminal->id, [$terminal->id]);
+        $this->assertDatabaseHas('commit_region_exhaustions', ['governing_committal_id' => $tragedy->governing_committal_id]);
 
         return [$terminal, $middle, $tragedy];
     }

@@ -7,12 +7,13 @@ use App\Models\Cycle;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Receipt;
+use App\Models\Supersession;
 use App\Models\Tragedy;
 use App\Services\ContributionDispatcher;
 use App\Services\ExhaustionAuditService;
 use App\Services\ExhaustionService;
-use App\Services\PhaseGenerationService;
 use App\Services\InputPlanService;
+use App\Services\PhaseGenerationService;
 use App\Services\PropositionOptionService;
 use App\Services\TerminalContinuationService;
 use App\Services\TragedyService;
@@ -175,6 +176,79 @@ class DirectTragedyResolutionTest extends TestCase
         $this->assertDatabaseCount('terminal_encounters', 1);
         $this->assertDatabaseCount('commit_region_exhaustions', 0);
         $this->assertSame(1, $sibling->instrumentExecutions()->count());
+    }
+
+    public function test_later_terminal_encounter_cannot_close_a_third_surviving_branch(): void
+    {
+        $first = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
+        $later = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
+        $survivor = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
+        $this->encounter($first);
+        $tragedy = Tragedy::sole()->getAttributes();
+        $this->encounter($later);
+        $this->assertDatabaseCount('terminal_encounters', 2);
+        $this->assertDatabaseCount('commit_region_exhaustions', 0);
+        $this->assertFalse(app(TerminalContinuationService::class)->closed($survivor));
+        $this->assertSame($tragedy, Tragedy::sole()->getAttributes());
+        $this->assertSame(1, Receipt::where('type', 'tragedy')->count());
+    }
+
+    /** Persisted Commit topology and controlled fields; not an end-to-end Commit lifecycle. */
+    public function test_descendant_exhaustion_closes_only_its_parent_route_until_the_sibling_terminates(): void
+    {
+        $source = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
+        $child = $this->commitFrom($source);
+        $first = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
+        $sibling = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
+        $childHead = $this->node($this->phase($child, PhaseKind::Distinguish), $child);
+        $this->encounter($first);
+        $parentTragedy = Tragedy::sole()->getAttributes();
+        $this->assertDatabaseCount('commit_region_exhaustions', 0);
+        $this->encounter($childHead);
+        $this->assertTrue(app(TerminalContinuationService::class)->closed($source));
+        $this->assertFalse(app(TerminalContinuationService::class)->closed($sibling));
+        $this->assertDatabaseHas('commit_region_exhaustions', ['governing_committal_id' => $child->id]);
+        $this->assertDatabaseMissing('commit_region_exhaustions', ['governing_committal_id' => $this->origin->id]);
+        $this->encounter($sibling);
+        $this->assertDatabaseCount('commit_region_exhaustions', 2);
+        $this->assertSame($parentTragedy, Tragedy::where('governing_committal_id', $this->origin->id)->sole()->getAttributes());
+        $this->assertTrue(app(ExhaustionAuditService::class)->inspect($this->substrate->id)['matches']);
+    }
+
+    /** A terminal old source cannot erase a previously established Commit exit. */
+    public function test_live_commit_exit_survives_its_source_then_recursively_closes_the_resolving_parent(): void
+    {
+        $source = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
+        $child = $this->commitFrom($source);
+        $childHead = $this->node($this->phase($child, PhaseKind::Distinguish), $child);
+        $this->encounter($source);
+        $this->assertDatabaseCount('commit_region_exhaustions', 0);
+        $this->assertFalse(app(ExhaustionService::class)->unavailable($child));
+        $this->encounter($childHead);
+        $this->assertDatabaseCount('commit_region_exhaustions', 2);
+        $this->assertDatabaseHas('commit_region_exhaustions', ['governing_committal_id' => $this->origin->id,
+            'descendant_exhaustion_id' => $child->id]);
+        $this->assertTrue(app(ExhaustionAuditService::class)->inspect($this->substrate->id)['matches']);
+    }
+
+    /** Controlled multi-parent topology verifies persisted route propagation, not Reconcile authorisation. */
+    public function test_multi_parent_terminal_join_preserves_an_independent_causal_route(): void
+    {
+        $left = $this->node($this->phase($this->origin, PhaseKind::Disperse), $this->origin);
+        $right = $this->node($this->phase($this->origin, PhaseKind::Disperse), $this->origin);
+        $join = $this->node($this->phase($left, PhaseKind::Mediate), $left);
+        (new Supersession)->forceFill(['phase_id' => $join->phase_id,
+            'source_proposition_id' => $right->id, 'target_proposition_id' => $join->id, 'type' => 'reconcile'])->save();
+        $sibling = $this->node($this->phase($right, PhaseKind::Mediate), $right);
+        $this->encounter($join);
+        $service = app(TerminalContinuationService::class);
+        $this->assertTrue($service->closed($left));
+        $this->assertFalse($service->closed($right));
+        $this->assertFalse($service->closed($sibling));
+        $this->assertDatabaseCount('commit_region_exhaustions', 0);
+        $this->encounter($sibling);
+        $this->assertTrue($service->closed($right));
+        $this->assertDatabaseCount('commit_region_exhaustions', 1);
     }
 
     public function test_exhausted_region_plan_offers_rest_only(): void
