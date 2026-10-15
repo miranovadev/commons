@@ -1,0 +1,126 @@
+{
+  "run_id": 38721238481,
+  "attempt": 2,
+  "job_id": 116380595437,
+  "artifact_id": 11966323523,
+  "status": "completed",
+  "conclusion": "success",
+  "started_at": "2026-10-15T10:46:15Z",
+  "completed_at": "2026-10-15T10:53:42Z",
+  "job_seconds": 447,
+  "passed": 192,
+  "assertions": 3165,
+  "php_seconds": 391.77,
+  "steps": [
+    {
+      "name": "Set up job",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Initialize containers",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Check out repository",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Set up PHP",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Resolve Composer cache directory",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Cache Composer packages",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Install PHP dependencies",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Download the Core frontend build",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Prepare test environment",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Discover shard runtime dependencies",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Set up the websocket smoke client runtime",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Install the locked websocket smoke client",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Verify Cycle entry and Closure migrations on SQLite",
+      "status": "completed",
+      "conclusion": "skipped"
+    },
+    {
+      "name": "Run selected PHP suite",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Upload PHP test results",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Post Set up the websocket smoke client runtime",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Post Cache Composer packages",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Post Check out repository",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Stop containers",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Complete job",
+      "status": "completed",
+      "conclusion": "success"
+    }
+  ],
+  "identical_case_outcomes_and_assertions": true,
+  "exact_selected_executed": true,
+  "php_runtime": {
+    "suite": "core",
+    "shard": 4,
+    "shards": 5,
+    "selected_tests": 192,
+    "php_wall_seconds": 392.329871122,
+    "exit_code": 0
+  }
+}
