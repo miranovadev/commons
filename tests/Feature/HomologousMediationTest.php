@@ -490,48 +490,58 @@ class HomologousMediationTest extends TestCase
         $this->assertEqualsCanonicalizing([$gateA->id, $gateB->id], $foreignResult->parents()->pluck('propositions.id')->all());
     }
 
-    public function test_foreign_exhaustion_uses_complete_authoritative_horizon_and_current_epochs(): void
+    public static function foreignContinuationCases(): array
+    {
+        return ['only exhausted descendant' => [false], 'existing viable sibling' => [true]];
+    }
+
+    #[DataProvider('foreignContinuationCases')]
+    public function test_foreign_terminal_authority_sees_unhydrated_descendants_and_preserves_existing_siblings(bool $survives): void
     {
         $options = app(ReconciliationOptionService::class);
         $this->assertTrue($options->forPhase($this->mediate)->contains('id', $this->gateB->id));
+        // The alternative exists before termination; no fixture-only revival of
+        // an already closed causal route and no post-Resolution generation.
+        $live = $survives ? $this->expression($this->b, $this->gateB, PhaseKind::Mediate) : null;
         [$terminal, $middle, $tragedy] = $this->exhaustContinuation($this->b, $this->gateB);
         $horizonB = $this->gateB->phase->cycle->context_horizon_id;
         $this->assertNotSame($horizonB, app(ContextHorizonProjector::class)->forEntry($terminal)->id);
         $context = new ParticipationContext($this->mediate->fresh());
         $this->assertFalse($context->propositions->has($middle->id));
         $this->assertFalse($context->propositions->has($terminal->id));
-        $this->assertTrue(app(HomologousMediationService::class)->poolFor($this->mediate, $context)['gates']->contains('id', $this->gateB->id));
-        $this->assertFalse(app(ExhaustedContinuationService::class)->ids($this->mediate)->has($this->gateB->id));
+        $this->assertSame($survives, app(HomologousMediationService::class)->poolFor($this->mediate, $context)['gates']->contains('id', $this->gateB->id));
+        $this->assertSame(! $survives, app(ExhaustedContinuationService::class)->ids($this->mediate)->has($this->gateB->id));
         foreach ([null, $context] as $readModel) {
-            $this->assertFalse($options->forPhase($this->mediate, $readModel)->contains('id', $this->gateB->id));
+            $this->assertSame($survives, $options->forPhase($this->mediate, $readModel)->contains('id', $this->gateB->id));
         }
-        $before = Proposition::count();
-        try {
-            app(ContributionDispatcher::class)->dispatch($this->actor, $this->mediate,
-                ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateB->id]);
-            $this->fail('A foreign exhausted continuation cannot be reconciled.');
-        } catch (\DomainException) {
-            $this->assertSame($before, Proposition::count());
-            $this->assertSame($this->gateA->id, $this->actor->fresh()->current_proposition_id);
+        $this->assertFalse(app(ReceiptContextService::class)->forPhase($this->mediate, $context)->contains('id', $tragedy->receipt_id));
+        if (! $survives) {
+            $before = Proposition::count();
+            try {
+                app(ContributionDispatcher::class)->dispatch($this->actor, $this->mediate,
+                    ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateB->id]);
+                $this->fail('A foreign exhausted continuation cannot be reconciled.');
+            } catch (\DomainException) {
+                $this->assertSame($before, Proposition::count());
+                $this->assertSame($this->gateA->id, $this->actor->fresh()->current_proposition_id);
+            }
+
+            return;
         }
 
-        // A live alternative in B, absent from A's comparison context, keeps B's
-        // Gate eligible. B's exhaustion proof must not retire the entire Horizon.
-        $live = $this->expression($this->b, $this->gateB, PhaseKind::Mediate);
-        $context = new ParticipationContext($this->mediate->fresh());
         $this->assertFalse($context->propositions->has($live->id));
-        $this->assertTrue($options->forPhase($this->mediate, $context)->contains('id', $this->gateB->id));
-        $this->assertFalse(app(ReceiptContextService::class)->forPhase($this->mediate, $context)->contains('id', $tragedy->receipt_id));
         $position = app(ExplorationPositionService::class)->forProposition($live);
         DB::table('continuation_failures')->insert([
             'proposition_id' => $live->id, 'context_horizon_id' => $horizonB,
             'structural_position' => $position['structural_position'], 'exploration_epoch' => 0,
             'phase_id' => $live->phase_id, 'failed_at' => now(),
         ]);
-        $this->assertFalse($options->forPhase($this->mediate->fresh())->contains('id', $this->gateB->id));
+        // Temporary Rest/epoch failure is not persistent terminal authority.
+        $this->assertTrue($options->forPhase($this->mediate->fresh())->contains('id', $this->gateB->id));
         DB::table('horizon_exploration_states')->insert([...$position, 'epoch' => 1]);
         $this->assertTrue($options->forPhase($this->mediate->fresh())->contains('id', $this->gateB->id));
     }
+
 
     public function test_cross_horizon_directed_pairs_are_independent_and_used_pairs_do_not_reopen(): void
     {

@@ -13,6 +13,7 @@ use App\Services\ContributionDispatcher;
 use App\Services\ExhaustionAuditService;
 use App\Services\ExhaustionService;
 use App\Services\InputPlanService;
+use App\Services\Participation\ParticipationContext;
 use App\Services\PhaseGenerationService;
 use App\Services\PropositionOptionService;
 use App\Services\TerminalContinuationService;
@@ -287,6 +288,81 @@ class DirectTragedyResolutionTest extends TestCase
         } catch (DomainException) {
             $this->assertSame($before, Proposition::count());
         }
+    }
+
+    public function test_resolution_revokes_a_previously_authorised_revision_elsewhere_in_the_region(): void
+    {
+        $gate = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
+        $prior = $this->phase($gate, PhaseKind::Persist);
+        $write = $this->node($prior, $gate);
+        $this->explore($write);
+        $prior->forceFill(['completed_at' => now()])->save();
+        $prior->cycle->forceFill(['completed_at' => now()])->save();
+        $cycle = (new Cycle)->forceFill(['participant_id' => $prior->cycle->participant_id,
+            'sequence' => 2, 'entry_committal_id' => $this->origin->id,
+            'context_horizon_id' => $prior->cycle->context_horizon_id]);
+        $cycle->save();
+        $phase = (new Phase)->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Persist,
+            'gate_proposition_id' => $gate->id, 'write_register' => $prior->write_register, 'started_at' => now()]);
+        $phase->save();
+        $actor = $cycle->participant;
+        $options = app(PropositionOptionService::class);
+        $this->assertContains($write->id, $options->revisionOptionsFor($phase, $actor)->pluck('id'));
+        $terminal = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
+        $this->encounter($terminal);
+        $this->assertDatabaseCount('commit_region_exhaustions', 0);
+        $this->assertFalse(app(TerminalContinuationService::class)->closed($write));
+        foreach ([null, new ParticipationContext($phase)] as $context) {
+            $this->assertTrue($options->revisionOptionsFor($phase, $actor, $context)->isEmpty());
+        }
+        $before = Proposition::count();
+        try {
+            app(ContributionDispatcher::class)->dispatch($actor, $phase,
+                ['action' => 'proposition.revise', 'proposition_id' => $write->id, 'statement' => 'Stale revision']);
+            $this->fail('Resolution must revoke the earlier revision authority.');
+        } catch (DomainException) {
+            $this->assertSame($before, Proposition::count());
+        }
+    }
+
+    public function test_resolution_does_not_restrict_generation_in_a_live_descendant_region(): void
+    {
+        $source = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
+        $child = $this->commitFrom($source);
+        $phase = $this->phase($child, PhaseKind::Distinguish);
+        $terminal = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
+        $this->encounter($terminal);
+        $this->assertTrue(app(PhaseGenerationService::class)->available($phase, 'proposition.variant'));
+        $this->resolveExpressiveFieldFixture(.5);
+        $write = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
+            ['action' => 'proposition.variant', 'statement' => 'Independent descendant exploration']);
+        $this->assertSame($child->id, $write->phase->cycle->entry_committal_id);
+        $this->assertDatabaseCount('tragedies', 1);
+        $this->assertDatabaseCount('commit_region_exhaustions', 0);
+    }
+
+    public function test_terminal_committed_source_is_not_reintroduced_as_a_bias_traverse_target(): void
+    {
+        $gate = $this->node($this->phase($this->origin, PhaseKind::Mediate), $this->origin);
+        $child = $this->commitFrom($gate);
+        $source = $child->parents()->wherePivot('type', 'commit')->sole();
+        $sibling = $this->node($this->phase($gate, PhaseKind::Bias), $gate);
+        $phase = $this->phase($gate, PhaseKind::Bias);
+        $options = app(PropositionOptionService::class);
+        $this->assertContains($source->id, $options->traversalOptionsFor($phase)->pluck('id'));
+        $snapshot = $child->commitmentSnapshot->getAttributes();
+        $this->encounter($source);
+        $this->assertFalse(app(TerminalContinuationService::class)->closed($gate));
+        $this->assertFalse(app(TerminalContinuationService::class)->closed($sibling));
+        $this->assertFalse(app(ExhaustionService::class)->unavailable($child));
+        foreach ([null, new ParticipationContext($phase)] as $context) {
+            $this->assertNotContains($source->id, $options->traversalOptionsFor($phase, $context)->pluck('id'));
+            $this->assertContains($sibling->id, $options->instrumentOptionsFor($phase, $context)->pluck('id'));
+        }
+        $this->assertSame($snapshot, $child->fresh()->commitmentSnapshot->getAttributes());
+        $this->expectException(DomainException::class);
+        app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
+            ['action' => 'proposition.traverse', 'proposition_id' => $source->id]);
     }
 
     public function test_terminal_publication_rolls_back_as_one_event(): void
