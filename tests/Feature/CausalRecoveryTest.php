@@ -36,6 +36,7 @@ use App\Services\TragedyReceiptScopeService;
 use DomainException;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
@@ -965,13 +966,12 @@ class CausalRecoveryTest extends TestCase
         $this->assertSame(0, $inspection['fallback_depth']);
         $this->assertSame([$h2->id], array_column($inspection['searched_basins'], 'context_horizon_id'));
         $this->assertSame($before, [Cycle::count(), Proposition::count(), $participant->fresh()->getAttributes()]);
-        $this->artisan('commons:recovery-inspect', ['participant' => $participant->id])
-            ->expectsOutputToContain($origin->id)
-            ->expectsOutputToContain('"would_tragedy": false')
-            ->assertSuccessful();
-        $this->artisan('commons:potential-inspect', ['participant' => $participant->id])
-            ->expectsOutputToContain('"would_tragedy": false')
-            ->assertSuccessful();
+        foreach (['commons:recovery-inspect', 'commons:potential-inspect'] as $command) {
+            $this->assertSame(0, Artisan::call($command, ['participant' => $participant->id]));
+            $output = Artisan::output();
+            $this->assertStringContainsString($origin->id, $output);
+            $this->assertFalse(json_decode($output, true, flags: JSON_THROW_ON_ERROR)['would_tragedy']);
+        }
         $this->assertSame([], $writes);
     }
 

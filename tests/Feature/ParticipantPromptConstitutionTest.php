@@ -173,10 +173,15 @@ class ParticipantPromptConstitutionTest extends TestCase
         $state['plan']['schema'] = app(InputSchemaService::class)->forPhase($phase, ['participant.rest']);
         $with = $factory->make(new Connection, $state);
         $this->assertStringContainsString('Rest never creates Tragedy or Commit Region exhaustion, including no_remaining_potential Rest.', $with['system']);
-        $this->assertStringContainsString('regardless of authorship or Receipt consumption', $with['system']);
-        $this->assertStringContainsString('nearest eligible non-exhausted Committal on the recorded backward lineage', $with['system']);
+        foreach ([$without, $with] as $prompt) {
+            $this->assertStringContainsString('Variant and Revise are then unavailable throughout that Region', $prompt['system']);
+            $this->assertStringContainsString('A viable sibling or live committed descendant prevents Exhaustion.', $prompt['system']);
+            $this->assertStringContainsString('No second catastrophe, Rest or Receipt consumption is required.', $prompt['system']);
+            $this->assertStringNotContainsString('A later distinct fresh expressive zero-Charge result', $prompt['system']);
+        }
+        $this->assertStringContainsString('nearest eligible non-exhausted Committal on the actual recorded backward lineage', $with['system']);
         $this->assertStringContainsString('A nearer unresolved basin blocks older ancestors regardless of Potential or Charge', $with['system']);
-        $this->assertStringContainsString('never jumping to a Horizon opener or unrelated branch', $with['system']);
+        $this->assertStringContainsString('Recovery never invents movement to a sibling, foreign parent, Horizon opener or unrelated Committal.', $with['system']);
         $this->assertSame($without['instruction_family'], $with['instruction_family']);
         $this->assertSame($state['plan']['schema'], $with['schema']);
     }
