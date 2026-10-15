@@ -967,6 +967,10 @@ class CausalRecoveryTest extends TestCase
         $this->assertSame($before, [Cycle::count(), Proposition::count(), $participant->fresh()->getAttributes()]);
         $this->artisan('commons:recovery-inspect', ['participant' => $participant->id])
             ->expectsOutputToContain($origin->id)
+            ->expectsOutputToContain('"would_tragedy": false')
+            ->assertSuccessful();
+        $this->artisan('commons:potential-inspect', ['participant' => $participant->id])
+            ->expectsOutputToContain('"would_tragedy": false')
             ->assertSuccessful();
         $this->assertSame([], $writes);
     }

@@ -1,11 +1,6 @@
 # Participation API
 
-> **Deployed API contract.** Current action schemas and fresh-birth Tragedy
-> rules below describe `main`. The proposed
-> [Exploration/Resolution/Exhaustion target](tragedy-resolution-target.md)
-> prohibits Variant/Revise after first Tragedy, makes directly confronted
-> zero-Charge continuations terminal, and offers Rest only in an exhausted
-> Region. These target rules are not yet enforced by the API.
+> **Stage 4 API contract.** The approved [Exploration/Resolution/Exhaustion lifecycle](tragedy-resolution-target.md) is enforced by action schemas and locked dispatch. Historical first/later fresh-birth rules no longer apply.
 
 The shared law for Mediate, Bias and Order is documented in
 [Unified late-phase admissibility](observables.md#unified-late-phase-admissibility).
@@ -183,7 +178,7 @@ Variant, Revise and Reconcile create new content/structure with fresh votes and 
 | Phase 6 | Reclassify an attested Phase-5 source with Receipt and lineage agreement |
 | Phase 7 | Existing grounded, freshly attested and Closure-aligned Commit or Committal Traverse |
 
-Variant eligibility does not depend on Potential Charge, Receipt generation/consumption or Participant count. A further Variant requires all existing routes at its structural position to be spent in the current epoch, with their own completed Instrument and effective Attestation. Zero Potential does not suppress an otherwise structurally valid Variant; expression may increase Tension. A viable existing route blocks redundant generation. Only successful Variant advances that position's epoch; other positions remain unchanged. Spent routes remain visible without Traverse, Attestation or redundant Instrument targets. See [exploration epochs](exploration-epochs.md). Each new Variant repeats this sequence. No prior Mediate Rest or fixed sibling cap applies; see the [confirmed clarification](horizon-proof-variant-clarification.md).
+During Exploration, Variant eligibility does not depend on Potential Charge, Receipt generation/consumption or Participant count. A further Variant requires all existing routes at its structural position to be spent in the current epoch, with their own completed Instrument and effective Attestation. Zero Potential does not suppress an otherwise structurally valid Variant; expression may increase Tension. A viable existing route blocks redundant generation. Only successful Variant advances that position's epoch; other positions remain unchanged. Spent routes remain visible without Traverse, Attestation or redundant Instrument targets. See [exploration epochs](exploration-epochs.md). Each new Variant repeats this sequence. No prior Mediate Rest or fixed sibling cap applies; see the [confirmed clarification](horizon-proof-variant-clarification.md).
 
 Instruments target mutable expressive Writes in phases 1–6. Phase 1/4 offer Instrument when a Write lacks its own completed Instrument or no shared Receipt remains available. Existing evidence makes Attestation available without a transfer from its author or a paid visibility action. Transactional execution rechecks the same rules advertised in the schema.
 
@@ -490,7 +485,7 @@ Mediate opens an incoming doorway. The homologous population identifies possible
 exits. A Tragedy Receipt authorizes leaving through one eligible homologous exit;
 it supplies no destination or permanent movement permission. Subsequent
 Attestation and Traverse follow ordinary contribution rules. Recovery skips the
-Region only after a later fresh zero-Charge catastrophe proves it exhausted. Warrant consumption alone does not exhaust it.
+Region only after actual remaining continuations prove it exhausted. A viable sibling or live committed descendant prevents Exhaustion; warrant consumption alone does not exhaust it.
 
 The result belongs to the acting Bias Phase, Horizon and entry accounting Region.
 Its sole reclassify edge comes from the selected source, and the participant
@@ -585,7 +580,7 @@ and equivalent-evidence exclusions, and creates a new Proposition-grounded Recei
 with replay provenance. Neither fresh execution nor replay automatically loads
 source or result. There are no standalone Receipt Read or Replay action families.
 
-The first fresh expressive proposition whose resolved canonical Charge is zero records its Region Tragedy and unique Receipt inside the contribution transaction. A later distinct fresh zero-Charge proposition in that same open Region records exhaustion. Potential, Rest and Receipt consumption prove neither event. Historical alternatives remain visible and non-actionable. Recovery skips only authoritatively exhausted Regions. See [Charge-boundary lifecycle](branch-tragedy.md).
+A qualifying direct expressive Write encounter with resulting canonical Charge zero establishes the Region’s unique Tragedy and Receipt and permanently terminates that continuation. Resolution prohibits Variant and Revise throughout the Region while preserving ordinary authority on viable routes. Exhaustion follows atomically only when no lawful continuation remains; viable siblings and live committed descendants prevent it. Descendant Exhaustion closes only its corresponding route. No second catastrophe, Rest or Receipt consumption is required. Passive measurements and reads establish neither event. Recovery follows actual recorded backward lineage. See the approved [Tragedy/Resolution lifecycle](tragedy-resolution-target.md). Qualifying encounters include expressive birth, Attestation, Instrument and lawful expressive Traverse, including already-zero targets. An Exhausted Region offers Rest only. Historical alternatives remain visible and non-actionable.
 
 Gate Receipt load/unload desired states accompany a forward Phase contribution (never Rest) and take cognitive effect in the next Phase. Only loaded evidence grounding the participant-facing Read activates a full body; other Receipt references are metadata. See the normative [Receipt model](receipt-region-context.md), including the shared recovery-scoped Tragedy exception.
 

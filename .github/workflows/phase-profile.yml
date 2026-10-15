@@ -94,7 +94,7 @@ jobs:
         run: php artisan test tests/Feature/TransactionLockOrderTest.php --filter='concurrent_terminal_observers|concurrent_repeat_observation' --display-warnings
       - name: Stage 4 formatting
         if: always() && matrix.validation == 'stage-four'
-        run: vendor/bin/pint --test -v app/Services/PropositionOptionService.php app/Services/TerminalContinuationService.php app/Services/TragedyService.php app/Services/ExhaustionService.php app/Services/ExhaustionAuditService.php app/Services/ExhaustedContinuationService.php database/migrations/2026_10_14_000000_record_terminal_encounters.php tests/Feature/DirectTragedyResolutionTest.php tests/Unit/TerminalContinuationTest.php
+        run: vendor/bin/pint --test -v app/Console/Commands/InspectPotential.php app/Console/Commands/InspectRecovery.php app/Services/ParticipantPhaseInstructions.php app/Services/PropositionOptionService.php app/Services/TerminalContinuationService.php app/Services/TragedyService.php app/Services/ExhaustionService.php app/Services/ExhaustionAuditService.php app/Services/ExhaustedContinuationService.php database/migrations/2026_10_14_000000_record_terminal_encounters.php tests/Feature/DirectTragedyResolutionTest.php tests/Unit/TerminalContinuationTest.php
       - name: Formatting and whitespace
         if: always() && matrix.validation == 'contracts'
         run: |

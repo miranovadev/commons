@@ -3,7 +3,6 @@
 namespace App\Console\Commands;
 
 use App\Models\Participant;
-use App\Models\Tragedy;
 use App\Services\ExhaustionService;
 use App\Services\ExplorationEpochService;
 use App\Services\ParticipantHistoricalContext;
@@ -47,8 +46,7 @@ class InspectRecovery extends Command
             'exhausted_alternatives' => $phase === null || app(ExhaustionService::class)->unavailable($participant->position)
                 ? $history->position($participant->position) : $history->forPhase($phase),
             'origin_lineages' => DB::table('origin_branch_memberships')->where('proposition_id', $participant->current_proposition_id)->pluck('root_proposition_id')->all(),
-            'would_tragedy' => ($exhaustion['rest_reason'] ?? null) === 'no_remaining_potential'
-                && ! Tragedy::where('governing_committal_id', $exhaustion['governing_committal_id'] ?? null)->whereNotNull('governing_committal_id')->exists(),
+            'would_tragedy' => false, // Rest and inspection never publish terminal encounters.
             ...$inspection,
             'horizon_failure' => $exhaustion,
 
