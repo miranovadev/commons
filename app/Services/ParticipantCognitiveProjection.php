@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Enums\PhaseKind;
 use App\Models\Proposition;
+use App\Models\Supersession;
 use App\Services\Observables\CommittalLineageService;
 use DomainException;
 use Illuminate\Support\Collection;
@@ -46,7 +48,9 @@ final class ParticipantCognitiveProjection
                 : Proposition::findOrFail($gateId)->parents()->orderBy('propositions.id')->pluck('propositions.id');
             $read = $this->nodes($ids, $pool);
             if ($read->count() > 1) {
-                $read = $read->map(fn ($node) => [...$node, 'relation' => 'causal']);
+                $actingId = $this->reconcileSource($gateId, $read);
+                $read = $read->map(fn ($node) => [...$node,
+                    'relation' => $actingId !== null && $node['id'] !== $actingId ? 'counterpart' : 'causal']);
             }
             // Order's operational Read has its own local Mediate-ancestry rule.
             if ($kind === 'order') {
@@ -81,6 +85,27 @@ final class ParticipantCognitiveProjection
         }
 
         return $registers;
+    }
+
+    /** Describe a recorded Reconcile, never infer operand roles from display order. */
+    private function reconcileSource(string $gateId, Collection $read): ?string
+    {
+        $target = Proposition::findOrFail($gateId);
+        $edges = Supersession::where('target_proposition_id', $gateId)->get();
+        // Other joins and incomplete/inconsistent records retain honest causal
+        // visibility. Only the two inputs of this producing operation get roles.
+        if ($edges->count() !== 2 || $read->count() !== 2
+            || ! $edges->every(fn ($edge) => $edge->type === 'reconcile' && $edge->phase_id === $target->phase_id)
+            || $edges->pluck('source_proposition_id')->unique()->count() !== 2
+            || $edges->pluck('source_proposition_id')->diff($read->pluck('id'))->isNotEmpty()) {
+            return null;
+        }
+        // This existing resolver uses the producing Phase's recorded Gate for
+        // Reconcile and returns null when that Gate does not identify an input.
+        $position = app(ExplorationPositionService::class)->forProposition($target);
+
+        return ($position['structural_position'] ?? null) === PhaseKind::Mediate->value
+            ? $position['structural_source_id'] : null;
     }
 
     /** Hydrate only missing contextual records; consume stored measurements. */

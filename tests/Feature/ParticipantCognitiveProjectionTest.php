@@ -12,6 +12,7 @@ use App\Services\ParticipantContextSerializer;
 use App\Services\ParticipantPromptFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Fixtures\ParticipantContextFixture;
 use Tests\TestCase;
 
@@ -47,16 +48,89 @@ class ParticipantCognitiveProjectionTest extends TestCase
     public function test_local_read_keeps_both_reconcile_parents_even_when_history_selects_one(): void
     {
         $f = new ParticipantContextFixture(2, 0, false);
-        $a = $f->node($f->seed, 'activity', position: PhaseKind::Disperse);
+        // The acting parent is deliberately newer than its counterpart.
         $b = $f->node($f->seed, 'activity', position: PhaseKind::Disperse);
+        $a = $f->node($f->seed, 'activity', position: PhaseKind::Disperse);
         $result = $f->node($a, 'frontier', 'reconcile', additionalParent: $b);
         $registers = app(ParticipantCognitiveProjection::class)->registers($this->plan($result, 'bias'));
         $this->assertEqualsCanonicalizing([$a->id, $b->id], array_column($registers['read']['propositions'], 'id'));
-        $this->assertSame(['causal', 'causal'], array_column($registers['read']['propositions'], 'relation'));
+        $this->assertEquals([$a->id => 'causal', $b->id => 'counterpart'],
+            array_column($registers['read']['propositions'], 'relation', 'id'));
+        foreach ([[$a->id, $b->id], [$b->id, $a->id]] as $order) {
+            $plan = $this->plan($result, 'bias');
+            $plan['gate_options'][0]['parent_ids'] = $order;
+            $read = app(ParticipantCognitiveProjection::class)->registers($plan)['read']['propositions'];
+            $this->assertSame($order, array_column($read, 'id'));
+            $this->assertEquals([$a->id => 'causal', $b->id => 'counterpart'], array_column($read, 'relation', 'id'));
+        }
+        unset($plan['gate_options'][0]['parent_ids']);
+        $read = app(ParticipantCognitiveProjection::class)->registers($plan)['read']['propositions'];
+        $this->assertEquals([$a->id => 'causal', $b->id => 'counterpart'], array_column($read, 'relation', 'id'));
         $this->assertSame([$result->id], array_column($registers['gate']['propositions'], 'id'));
         $unary = app(ParticipantCognitiveProjection::class)->registers($this->plan($a, 'persist'));
         $this->assertSame([$f->seed->id], array_column($unary['read']['propositions'], 'id'));
         $this->assertArrayNotHasKey('relation', $unary['read']['propositions'][0]);
+    }
+
+    #[DataProvider('unresolvedParentRoles')]
+    public function test_unresolved_or_other_multi_parent_history_keeps_honest_causal_visibility(string $case): void
+    {
+        $f = new ParticipantContextFixture(2, 0, false);
+        $a = $f->node($f->seed, 'activity', position: PhaseKind::Disperse);
+        $b = $f->node($f->seed, 'activity', position: PhaseKind::Disperse);
+        $result = $f->node($a, 'frontier', 'reconcile', additionalParent: $b);
+        if ($case === 'missing' || $case === 'non-parent') {
+            DB::table('phases')->where('id', $result->phase_id)->update([
+                'gate_proposition_id' => $case === 'missing' ? null : $f->seed->id,
+            ]);
+        } elseif ($case === 'other-join') {
+            DB::table('supersessions')->where('target_proposition_id', $result->id)->update(['type' => 'variant']);
+        } elseif ($case === 'conflicting-phase') {
+            DB::table('supersessions')->where('target_proposition_id', $result->id)
+                ->where('source_proposition_id', $b->id)->update(['phase_id' => $f->phase->id]);
+        } else {
+            $f->edge($f->gate, $result, 'reconcile');
+        }
+        $plan = $this->plan($result->fresh(), 'bias');
+        $read = app(ParticipantCognitiveProjection::class)->registers($plan)['read']['propositions'];
+        $this->assertEqualsCanonicalizing($plan['gate_options'][0]['parent_ids'], array_column($read, 'id'));
+        $this->assertSame(array_fill(0, count($read), 'causal'), array_column($read, 'relation'));
+    }
+
+    public static function unresolvedParentRoles(): array
+    {
+        return array_combine($cases = ['missing', 'non-parent', 'other-join', 'conflicting-phase', 'extra-input'],
+            array_map(fn ($case) => [$case], $cases));
+    }
+
+    public function test_reconcile_role_projection_preserves_actions_measurements_and_causal_records(): void
+    {
+        $this->freezeTime();
+        $f = new ParticipantContextFixture(2, 2, false);
+        $other = $f->node($f->seed, 'activity', position: PhaseKind::Disperse);
+        $result = $f->node($f->gate, 'frontier', 'reconcile', additionalParent: $other);
+        $f->phase->forceFill(['kind' => PhaseKind::Bias, 'write_register' => 'canon',
+            'gate_proposition_id' => $result->id])->save();
+        $f->phase->unsetRelation('gate');
+        $raw = app(InputPlanService::class)->forPhase($f->viewer, $f->phase);
+        $state = ['participant' => $f->viewer->only(['callsign', 'designation']),
+            'plan' => app(ParticipantContextSerializer::class)->plan($raw)];
+        $snapshot = fn () => collect(['propositions', 'phases', 'supersessions', 'proposition_measurements'])
+            ->mapWithKeys(fn ($table) => [$table => DB::table($table)->orderBy('id')->get()->toJson()])->all();
+        $before = $snapshot();
+        DB::enableQueryLog();
+        DB::flushQueryLog();
+        $prompt = app(ParticipantPromptFactory::class)->make(new Connection, $state);
+        foreach (DB::getQueryLog() as $query) {
+            $this->assertDoesNotMatchRegularExpression('/^\s*(insert|update|delete|replace|alter|create|drop)\b/i', $query['query']);
+        }
+        DB::disableQueryLog();
+        $this->assertSame($before, $snapshot());
+        $this->assertSame($state['plan']['schema'], $prompt['schema']);
+        $this->assertSame(json_encode($raw), json_encode(app(InputPlanService::class)->forPhase($f->viewer, $f->phase)));
+        $packet = json_decode($prompt['user'], true);
+        $this->assertEquals([$f->gate->id => 'causal', $other->id => 'counterpart'],
+            array_column($packet['read']['propositions'], 'relation', 'id'));
     }
 
     public function test_mediate_projects_all_authorized_counterparts_without_changing_the_action_schema(): void

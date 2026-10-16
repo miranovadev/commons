@@ -49,7 +49,17 @@ Cycle entry even when an expressive multi-input Write has foreign causal inputs.
 
 `ancestor` labels prior Committals. Mediate uses `causal` for its Read anchor and
 `counterpart` for its eligible operands; these are not both asserted to be parents
-of the current Gate. Multiple genuine immediate parents use `causal` for both.
+of the current Gate. For a confirmed two-input Reconcile result,
+`ExplorationPositionService` resolves
+its acting source from the producing Phase's recorded Gate, as used by
+`ActiveParticipantLineage`. That parent is `causal`; the additional Reconcile
+parent is `counterpart`. Both are genuine causal parents with equal causal authority.
+The projection verifies that both Reconcile edges belong to the result's producing
+Phase. Parent retrieval order, identifiers, timestamps and measurements do not
+select these roles. Missing/non-parent Gate provenance, inconsistent producing
+Phases, extra inputs and other multi-parent operations retain all parents as
+`causal` without inventing a counterpart. Existing operational provenance errors
+and recovery's fail-closed contract are unchanged.
 A lone ordinary causal Read needs no relationship label. Relationship metadata
 never grants an action or traversal destination. A comparative Read question is
 present only for a Mediate comparison with more than one proposition.
@@ -102,7 +112,11 @@ model, substrate and custom instructions retain their existing routing separatio
 The universal prefix can now remain identical across Phase transitions, but actual
 cache hits, minimum cache thresholds and billed tokens were not measured.
 
-## Identical-state offline comparison
+## Identical-state offline comparison (initial C1)
+
+These measurements were captured before the multi-parent role clarification, at
+`95993315`. The follow-up adds provenance reads only for multi-parent Gates and
+changes the additional Reconcile parent's label from `causal` to `counterpart`.
 
 A persisted dense fixture provides five producing Phases, genuine parents, six
 comparison branches, Writes and loaded evidence. Both factories consume the same
