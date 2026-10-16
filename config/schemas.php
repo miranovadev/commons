@@ -12,7 +12,7 @@ $statement = [
 ];
 
 $instrument = [
-    'description' => 'Cite references a known substrate object. Creating a Cite Receipt does not itself grant Reinforcement. Hyperlink fetches a known public URL and verifies retrieval, not the truth of its claims. Web Search discovers external resources from a query. Proposition Search retrieves bounded same-Domain recorded-lineage history and creates cognitive memory, never evidence or movement authority. Instrument execution records an immutable Receipt; it never loads context or grants Reinforcement automatically.',
+    'description' => 'Citation references a substrate object; hyperlink retrieves a public URL; web_search finds external resources; proposition_search retrieves bounded historical memory. Instruments record Receipts without loading them. Creating a Cite Receipt does not itself grant Reinforcement.',
     'anyOf' => [
         [
             'type' => 'object', 'additionalProperties' => false,
@@ -45,6 +45,7 @@ $instrument = [
 $proposition = static function (string $action, string $title) use ($statement): array {
     return [
         'title' => $title,
+        'description' => 'Create a new proposition from the current Gate.',
         'type' => 'object',
         'additionalProperties' => false,
         'required' => ['action', 'statement'],
@@ -56,7 +57,7 @@ $proposition = static function (string $action, string $title) use ($statement):
 };
 
 return [
-    'version' => 25,
+    'version' => 26,
 
     'cache' => [
         'store' => env('COMMONS_SCHEMA_CACHE_STORE'),
@@ -74,6 +75,7 @@ return [
 
     'actions' => [
         'proposition.traverse' => [
+            'description' => 'Move to an available continuation.',
             'title' => 'Continue through an admissible Write',
             'type' => 'object',
             'additionalProperties' => false,
@@ -84,7 +86,8 @@ return [
             ],
         ],
         'participant.rest' => [
-            'title' => 'Rest in a Tragic Region and end this Cycle',
+            'description' => 'End this Cycle and allow recovery.',
+            'title' => 'Rest',
             'type' => 'object',
             'additionalProperties' => false,
             'required' => ['action'],
@@ -95,6 +98,7 @@ return [
             'Create a variant from the current gate',
         ),
         'proposition.revise' => [
+            'description' => 'Replace the selected proposition with a revised statement.',
             'title' => 'Revise a proposition in the current write register',
             'type' => 'object',
             'additionalProperties' => false,
@@ -106,6 +110,7 @@ return [
             ],
         ],
         'proposition.reclassify' => [
+            'description' => 'Classify the selected source using the selected Receipt, preserving its statement.',
             'type' => 'object',
             'title' => 'Reclassify the Gate without changing its statement',
             'additionalProperties' => false,
@@ -117,6 +122,7 @@ return [
             ],
         ],
         'proposition.reconcile' => [
+            'description' => 'Create a result with the Gate and selected counterpart as causal parents, preserving the Gate statement.',
             'title' => 'Reconcile an admissible counterpart with the current Gate statement',
             'type' => 'object',
             'additionalProperties' => false,
@@ -127,6 +133,7 @@ return [
             ],
         ],
         'attestation.create' => [
+            'description' => 'Record Support or Refute for the selected proposition, with an optional rationale.',
             'title' => 'Create an attestation',
             'type' => 'object',
             'additionalProperties' => false,
@@ -142,6 +149,7 @@ return [
             ],
         ],
         'instrument.execute' => [
+            'description' => 'Observe the selected proposition with an Instrument and record its Receipt.',
             'title' => 'Execute an instrument against a proposition',
             'type' => 'object',
             'additionalProperties' => false,
@@ -153,6 +161,7 @@ return [
             ],
         ],
         'proposition.commit' => [
+            'description' => 'Preserve an admissible proposition as a new canonical boundary.',
             'title' => 'Commit a Closure candidate',
             'type' => 'object',
             'additionalProperties' => false,
@@ -164,5 +173,3 @@ return [
         ],
     ],
 ];
-
-

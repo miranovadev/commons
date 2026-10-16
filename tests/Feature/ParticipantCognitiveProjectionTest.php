@@ -70,6 +70,7 @@ class ParticipantCognitiveProjectionTest extends TestCase
         $packet = app(ParticipantContextSerializer::class)->inference($state);
         $this->assertSame(['participant', 'read', 'gate', 'write', 'actions'], array_keys($packet));
         $this->assertSame($state['participant'], $packet['participant']);
+        unset($schema['x-commons']['description']);
         $this->assertSame($schema, $packet['actions']);
         $this->assertSame($plan, $state['plan']);
         $this->assertSame('How do these propositions relate?', $packet['read']['question']);

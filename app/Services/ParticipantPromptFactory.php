@@ -10,7 +10,6 @@ final class ParticipantPromptFactory
 {
     public function __construct(
         private readonly ParticipantContextSerializer $context,
-        private readonly ParticipantPhaseInstructions $phases = new ParticipantPhaseInstructions,
     ) {}
 
     /**
@@ -33,8 +32,7 @@ final class ParticipantPromptFactory
             throw new DomainException('A known, consistent participation Phase is required.');
         }
 
-        $system = ParticipantPromptCore::TEXT."\n\n".ParticipantPromptLayout::FORMAT_INSTRUCTION
-            ."\n\n".$this->phases->forPhase($phase, isset($schema['$defs']['actions']['participant.rest']));
+        $system = ParticipantPromptCore::TEXT."\n\n".ParticipantPromptLayout::FORMAT_INSTRUCTION;
 
         $instructions = trim((string) data_get(
             $connection->configuration,
@@ -52,7 +50,7 @@ final class ParticipantPromptFactory
             // Only the current contract is sent; this fingerprint contains no additional model context.
             'instruction_family' => hash('sha256', json_encode([
                 ParticipantPromptCore::TEXT, ParticipantPromptLayout::FORMAT_INSTRUCTION,
-                $this->phases->fingerprint(), $instructions,
+                $instructions,
             ], JSON_THROW_ON_ERROR)),
             ...(new ParticipantPromptLayout)->make($this->context->inference($state),
                 $this->context->receipts($state['plan']['receipts'] ?? []), $state['plan']['read_options'] ?? []),

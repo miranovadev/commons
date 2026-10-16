@@ -101,7 +101,7 @@ final class ParticipantContextSerializer
             PhaseKind::from($plan['phase']['number']), $plan['phase']['write_register'],
         );
         $schema = $plan['schema'];
-        unset($schema['$comment']); // Publication guard remains in the transport/validator.
+        unset($schema['$comment'], $schema['x-commons']['description']); // Publication guard remains in the transport/validator.
 
         return ['participant' => Arr::only($state['participant'], ['callsign', 'designation']),
             ...$registers, 'actions' => $schema];

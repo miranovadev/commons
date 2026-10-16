@@ -70,6 +70,7 @@ final class OpenAIResponseSchema
                 }
 
                 $variants[] = [
+                    ...(isset($action['description']) ? ['description' => $action['description']] : []),
                     'type' => 'object',
                     'additionalProperties' => false,
                     'required' => $fields,
