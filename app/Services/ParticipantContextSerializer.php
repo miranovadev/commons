@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\PhaseKind;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 
@@ -96,6 +97,9 @@ final class ParticipantContextSerializer
             ], $register['propositions']);
         }
         unset($register);
+        $registers['write']['question'] = app(ParticipantRegisterQuestions::class)->forPhase(
+            PhaseKind::from($plan['phase']['number']), $plan['phase']['write_register'],
+        );
         $schema = $plan['schema'];
         unset($schema['$comment']); // Publication guard remains in the transport/validator.
 
