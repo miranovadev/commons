@@ -3,14 +3,14 @@
 namespace Tests\Feature;
 
 use App\Enums\PhaseKind;
-use App\Models\Connection;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Services\InputPlanService;
 use App\Services\InputSchemaService;
 use App\Services\InstrumentExecutionService;
-use App\Services\ParticipantPromptFactory;
+use App\Services\LedgerService;
+use App\Services\ParticipantPromptCore;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -54,14 +54,8 @@ class InputSchemaServiceTest extends TestCase
         $this->assertStringContainsString('Dominant Correspondence across homologous Reads', $schema['x-commons']['description']);
         $this->assertStringContainsString('other Regions or Horizons', $schema['x-commons']['description']);
 
-        $prompt = app(ParticipantPromptFactory::class)->make(
-            new Connection,
-            ['status' => 'ready', 'plan' => ['phase' => ['kind' => 'mediate'], 'schema' => $schema]],
-        )['system'];
-        $this->assertStringContainsString('ordinary local Reconcile path retains its existing eligibility', $prompt);
-        $this->assertStringContainsString('Dominant Correspondence across homologous Reads', $prompt);
-        $this->assertStringContainsString('Regions and Horizons may differ', $prompt);
-        $this->assertStringNotContainsString('Reads elsewhere in the same Commit Region whose retained Correspondence direction matches', $prompt);
+        $this->assertStringNotContainsString('Dominant Correspondence', ParticipantPromptCore::TEXT);
+
     }
 
     public function test_bias_retires_the_local_only_cached_guidance(): void
@@ -110,7 +104,7 @@ class InputSchemaServiceTest extends TestCase
             $schema = app(InputSchemaService::class)->forPhase($kind);
             $description = $schema['$defs']['instrument']['description'];
             $this->assertStringContainsString('Creating a Cite Receipt does not itself grant Reinforcement.', $description);
-            $this->assertStringContainsString('verifies retrieval, not the truth of its claims', $description);
+            $this->assertStringContainsString('hyperlink retrieves a public URL', $description);
             $this->assertStringNotContainsString('no page fetch or content verification', $description);
         }
     }
@@ -193,14 +187,12 @@ class InputSchemaServiceTest extends TestCase
     public function test_prompt_and_documentation_describe_the_traverse_phase_boundary(): void
     {
         $schema = app(InputSchemaService::class)->forPhase(PhaseKind::Distinguish);
-        $prompt = app(ParticipantPromptFactory::class)->make(
-            new Connection,
-            ['status' => 'ready', 'plan' => ['phase' => ['kind' => 'distinguish'], 'schema' => $schema]],
-        )['system'];
+        $prompt = ParticipantPromptCore::TEXT;
         $documentation = file_get_contents(base_path('docs/participation.md'))
             .file_get_contents(base_path('docs/operational-commitment.md'));
 
-        $this->assertStringContainsString('proposition.traverse selects an authorized causal Write', $prompt);
+        $this->assertStringContainsString('Move to an available continuation.', $schema['$defs']['actions']['proposition.traverse']['description']);
+        $this->assertStringNotContainsString('proposition.traverse', $prompt);
         $this->assertStringNotContainsString('Current Phase: 5 Mediate', $prompt);
         $this->assertStringNotContainsString('Current Phase: 7 Order', $prompt);
         foreach ([
@@ -244,7 +236,7 @@ class InputSchemaServiceTest extends TestCase
             'frontier',
         );
         $seed = Proposition::findOrFail($state['gate_id']);
-        app(\App\Services\LedgerService::class)->record($seed);
+        app(LedgerService::class)->record($seed);
         $this->freezeRegionFixture($seed);
         $bootstrap = Phase::findOrFail($state['phase_id']);
         $governed = $this->governedPhaseFixture($bootstrap, $seed, $seed);
@@ -569,4 +561,3 @@ class InputSchemaServiceTest extends TestCase
         );
     }
 }
-

@@ -55,8 +55,8 @@ final class ParticipantContextSerializer
     }
 
     /**
-     * Proposition IDs actually exposed to cognition. Calculation-only hydration is
-     * deliberately absent, so bounded memory inherits the same visibility authority.
+     * Existing Proposition Search exclusion contract. C1 keeps this operational
+     * visibility boundary unchanged; search over newly hidden history is deferred.
      *
      * @return Collection<int, string>
      */

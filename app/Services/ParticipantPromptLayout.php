@@ -14,7 +14,7 @@ final class ParticipantPromptLayout
     private const RECEIPT_BODY = ['id', 'proposition_id', 'context_horizon_id', 'type', 'reference', 'signature',
         'capabilities', 'replayed_from_receipt_id', 'observation_error', 'evidence'];
 
-    /** @return array{evidence: string, user: string, loaded_receipt_count: int} */
+    /** @return array{evidence: string, user: string, support: string, loaded_receipt_count: int} */
     public function make(array $packet, array $receipts = [], array $evidenceReads = []): array
     {
         // Existing receipt order is identity order; never sort ranked evidence or lineage.

@@ -26,10 +26,11 @@ use App\Services\HomologousMediationService;
 use App\Services\InputPlanService;
 use App\Services\LedgerService;
 use App\Services\MediationReadService;
+use App\Services\Observables\PhaseProfileObservationService;
 use App\Services\ParticipantContextSerializer;
 use App\Services\ParticipantPromptLayout;
-use App\Services\ParticipationService;
 use App\Services\Participation\ParticipationContext;
+use App\Services\ParticipationService;
 use App\Services\PotentialProjectionService;
 use App\Services\PropositionMeasurementService;
 use App\Services\PropositionOptionService;
@@ -47,8 +48,8 @@ use Tests\TestCase;
 #[Group('component-contract')]
 class HomologousMediationTest extends TestCase
 {
-    use IsolatesClosureOutput;
     use AssertsLatePhaseContract;
+    use IsolatesClosureOutput;
     use RefreshDatabase;
 
     private Participant $actor;
@@ -101,8 +102,8 @@ class HomologousMediationTest extends TestCase
         $this->resolveExpressiveFieldFixture(1);
         $target = app(ContributionDispatcher::class)->dispatch($this->actor, $this->mediate,
             ['action' => 'proposition.reconcile', 'other_proposition_id' => $this->gateB->id]);
-        $profileBirth = app(\App\Services\Observables\PhaseProfileObservationService::class)->stored($target->id);
-        $gateBirth = app(\App\Services\Observables\PhaseProfileObservationService::class)->stored($this->gateA->id);
+        $profileBirth = app(PhaseProfileObservationService::class)->stored($target->id);
+        $gateBirth = app(PhaseProfileObservationService::class)->stored($this->gateA->id);
         $this->assertSame($this->gateA->id, $profileBirth->preceding_phase_proposition_id);
         $this->assertSame((int) $profileBirth->birth_cycle_coordinate - (int) $gateBirth->birth_cycle_coordinate,
             (int) $profileBirth->cycle_interval);
@@ -542,7 +543,6 @@ class HomologousMediationTest extends TestCase
         $this->assertTrue($options->forPhase($this->mediate->fresh())->contains('id', $this->gateB->id));
     }
 
-
     public function test_cross_horizon_directed_pairs_are_independent_and_used_pairs_do_not_reopen(): void
     {
         $origin = $this->a->phase->cycle->entryCommittal;
@@ -684,9 +684,10 @@ class HomologousMediationTest extends TestCase
         $visible = app(ParticipantContextSerializer::class)->plan($plan);
         $this->assertContains($this->gateA->id, array_column($visible['gate_options'], 'id'));
         $this->assertSame($allowed, $visible['correspondence_admissibility']['admissible']);
-        $packet = app(ParticipantContextSerializer::class)->inference(['status' => 'ready', 'plan' => $visible]);
+        $packet = app(ParticipantContextSerializer::class)->inference(['participant' => $this->actor->only(['callsign', 'designation']), 'plan' => $visible]);
         $prompt = app(ParticipantPromptLayout::class)->make($packet);
-        $this->assertEquals($visible['correspondence_admissibility'], json_decode($prompt['user'], true)['plan']['correspondence_admissibility']);
+        $this->assertArrayNotHasKey('correspondence_admissibility', json_decode($prompt['user'], true));
+        $this->assertSame($visible['gate_id'], json_decode($prompt['user'], true)['gate']['propositions'][0]['id']);
         if (! $allowed) {
             $this->assertNotContains($this->gateB->id, array_column($visible['gate_options'], 'id'));
             $this->assertTrue($plan['rest_available']);

@@ -182,7 +182,7 @@ class BiasGateTest extends TestCase
         $this->publishPotentialFixture($this->viewer);
         $prompt = app(ParticipantPromptFactory::class)->make(new Connection, app(ParticipationService::class)->stateFor($this->viewer));
         $this->assertSame($plan['schema'], $prompt['schema']);
-        $this->assertSame($this->optionIds(), array_column(json_decode($prompt['user'], true)['plan']['gate_options'], 'id'));
+        $this->assertSame($this->optionIds(), array_column(json_decode($prompt['user'], true)['gate']['propositions'], 'id'));
         $transport = app(OpenAIResponseSchema::class)->fromCommons($prompt['schema']);
         $union = $transport['properties']['contribution'];
         $properties = isset($union['anyOf'])

@@ -6,6 +6,7 @@ use App\Enums\PhaseKind;
 use App\Models\Connection;
 use App\Models\Proposition;
 use App\Services\InputPlanService;
+use App\Services\InputSchemaService;
 use App\Services\ParticipantCognitiveProjection;
 use App\Services\ParticipantContextSerializer;
 use App\Services\ParticipantPromptFactory;
@@ -105,6 +106,28 @@ class ParticipantCognitiveProjectionTest extends TestCase
         $this->assertSame($plan['schema'], $prompt['schema']);
         $this->assertStringNotContainsString('"lineage"', $prompt['user']);
         $this->assertStringNotContainsString('"question":null', $prompt['user']);
+    }
+
+    public function test_multiple_gate_and_write_roles_keep_their_ids_without_granting_read_authority(): void
+    {
+        $f = new ParticipantContextFixture(2, 0, false);
+        $plan = $this->plan($f->gate, 'persist');
+        $plan['phase'] += ['number' => 2, 'write_register' => 'frontier'];
+        $plan['gate_options'][] = $f->seed->only(['id', 'statement', 'register', 'tier']);
+        $plan['write_options'] = Proposition::whereKey($f->writes)->get()->map->only(['id', 'statement', 'register', 'tier'])->all();
+        $plan['schema'] = app(InputSchemaService::class)->forPhase(PhaseKind::Persist, ['proposition.traverse']);
+        $plan['schema']['$defs']['actions']['proposition.traverse']['properties']['proposition_id']['enum'] = $f->writes;
+        $state = ['participant' => ['callsign' => 'Nova', 'designation' => 'Explorer'], 'plan' => $plan];
+        $packet = app(ParticipantContextSerializer::class)->inference($state);
+        $this->assertSame(array_column($plan['gate_options'], 'id'), array_column($packet['gate']['propositions'], 'id'));
+        $this->assertSame('acting', $packet['gate']['propositions'][0]['relation']);
+        $this->assertSame(array_column($plan['write_options'], 'id'), array_column($packet['write']['propositions'], 'id'));
+        $this->assertSame('What else is possible here?', $packet['write']['question']);
+        $this->assertSame($f->writes, $packet['actions']['$defs']['actions']['proposition.traverse']['properties']['proposition_id']['enum']);
+        $state['plan']['write_options'] = [];
+        $empty = app(ParticipantContextSerializer::class)->inference($state);
+        $this->assertSame([], $empty['write']['propositions']);
+        $this->assertSame('What else is possible here?', $empty['write']['question']);
     }
 
     private function plan(Proposition $gate, string $kind): array

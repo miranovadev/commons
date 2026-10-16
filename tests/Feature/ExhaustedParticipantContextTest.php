@@ -129,6 +129,15 @@ class ExhaustedParticipantContextTest extends TestCase
         $this->assertTrue($write['basin_exhausted']);
         $this->assertFalse($write['actionable']);
         $this->assertStringNotContainsString($commit->id, json_encode($plan['schema']));
+        $packet = app(ParticipantContextSerializer::class)->inference([
+            'participant' => $phase->cycle->participant->only(['callsign', 'designation']),
+            'plan' => app(ParticipantContextSerializer::class)->plan($plan),
+        ]);
+        $historical = collect($packet['write']['propositions'])->firstWhere('id', $commit->id);
+        $this->assertTrue($historical['basin_exhausted']);
+        $this->assertFalse($historical['actionable']);
+        $this->assertSame('What should persist?', $packet['write']['question']);
+        $this->assertStringNotContainsString($commit->id, json_encode($packet['actions']));
     }
 
     public function test_first_tragedy_keeps_spent_evidence_in_live_participant_context_and_graph(): void
@@ -140,6 +149,11 @@ class ExhaustedParticipantContextTest extends TestCase
         $state = $this->rest($terminal);
         $participant = $terminal->cycle->participant->fresh();
         $this->assertSame($this->origin->id, $state['current_proposition_id']);
+        $packet = app(ParticipantContextSerializer::class)->inference($state);
+        $this->assertSame([], $packet['read']['propositions']);
+        $this->assertSame([$this->origin->id], array_column($packet['gate']['propositions'], 'id'));
+        $this->assertContains($root->id, array_column($packet['write']['propositions'], 'id'));
+        $this->assertArrayNotHasKey('lineage', $packet);
         $this->assertContains($root->id, array_column($state['plan']['write_options'], 'id'));
         $this->assertSame([], $state['plan']['exhausted_alternatives']);
         $workspace = app(ParticipationService::class)->workspaceFor($participant);

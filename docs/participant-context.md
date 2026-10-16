@@ -1,9 +1,9 @@
 # Autonomous participant context
 
-> **Current participant presentation.** Proposed
-> [Resolution and recursive Exhaustion](tragedy-resolution-target.md)
-> preserve historical visibility while making terminal continuations
-> inactionable and offering Rest only in exhausted Regions.
+> **Participant Context Refinement C1.** The provider receives Participant,
+> Read, Gate, Write and Actions. See the [C1 implementation and validation](participant-context-c1.md)
+> for the authoritative inference projection. The operational/API plan and human
+> historical browsing contracts described below remain separate and unchanged.
 
 The [Core Invariants](core-invariants.md) govern this serialization boundary.
 Autonomous cognitive context and human observational data are separate contracts.
@@ -35,7 +35,9 @@ channel semantics are unchanged. No query flag enables workspace data on
 schema between the two paths. Its default path does not build the Horizon
 workspace. `ParticipantContextSerializer` explicitly allowlists model fields;
 `ParticipantPromptFactory` also applies that allowlist at the provider boundary.
-The actual external JSON contains only `status` and `plan`. Cycle display,
+The resumable API contains `status`, `plan` and Participant callsign/designation.
+The provider projection contains only `participant`, `read`, `gate`, `write` and
+`actions`; supporting Receipt data remains in separate transport messages. Cycle display,
 entry/completion UI, last-Commit display and Perspective explanation stay outside
 inference. The resumable API retains those lifecycle fields for clients.
 
@@ -54,7 +56,8 @@ inference. The resumable API retains those lifecycle fields for clients.
 }
 ```
 
-The four populations always appear in Lineage → Read → Gate → Write order.
+The operational/API plan preserves Lineage → Read → Gate → Write order.
+C1 does not serialize that separate Lineage to the provider.
 Propositions retain statements, classification, structural parent references,
 observables, effective directional evidence, the viewer's Attestation and
 Instrument outcomes when present. They omit titles, avatars/callsigns, transition
@@ -172,7 +175,7 @@ recovery walk cannot. See [backward lineage recovery](recovery-basins.md).
 
 ## Payload regression and measurement
 
-`ParticipantContextFixture` builds a 25-position active path before role removal,
+The pre-C1 operational/API regression fixture `ParticipantContextFixture` builds a 25-position active path before role removal,
 a hard Reconcile, six additional Read/Gate branches, three actionable Writes,
 realistic 300-character statements, effective Attestations with rationales and
 completed Instruments/Receipts. Growth adds 10 then 500 propositions in a separate
@@ -230,8 +233,8 @@ Tragedy references additionally identify `purpose: homologous_boundary_escape`, 
 Proposition Search uses the same cognition-not-evidence separation with
 `purpose: bounded_historical_memory`. Its loaded `proposition_collection`
 contains only the bounded historical result items and remains outside the stable
-loaded-evidence prefix. Search exclusion uses the serializer's actual
-participant-facing Proposition IDs, so calculation-only hydration cannot silently
+loaded-evidence prefix. Search exclusion retains the serializer's existing operational
+Proposition IDs in C1 (including the pre-C1 historical visibility boundary), so calculation-only hydration cannot silently
 redefine what is already visible. Search results remain read-only memory and are
 never action targets merely because they are loaded.
 
@@ -242,8 +245,9 @@ The human transport retains capability and replay lifecycle metadata required by
 Exhaustion removes operational eligibility, not local contextual visibility.
 `ParticipantHistoricalContext` owns `exhausted_alternatives`, separately from the
 operational/evidence working set in `ParticipationContext` and the active-only
-`PropositionOptionService`. Both workspace and autonomous plans receive this same
-collection. The provider boundary explicitly allowlists its compact fields.
+`PropositionOptionService`. Both workspace and resumable API plans receive this same
+collection. C1 places those allowlisted historical records inside the corresponding
+cognitive register, retaining `actionable: false`.
 
 Each alternative contains `id`, `role` (`read`, `gate`, or `write`), producing
 `phase_number`, `register`, `tier`, a statement excerpt (240 characters plus the

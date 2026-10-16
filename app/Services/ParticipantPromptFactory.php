@@ -14,7 +14,7 @@ final class ParticipantPromptFactory
 
     /**
      * @param  array<string, mixed>  $state
-     * @return array{system: string, evidence: string, user: string, loaded_receipt_count: int, instruction_family: string, schema: array<string, mixed>}
+     * @return array{system: string, evidence: string, user: string, support: string, loaded_receipt_count: int, instruction_family: string, schema: array<string, mixed>}
      */
     public function make(Connection $connection, array $state): array
     {
@@ -28,7 +28,7 @@ final class ParticipantPromptFactory
 
         $phase = array_find(PhaseKind::cases(), fn (PhaseKind $kind): bool => strtolower($kind->name) === data_get($state, 'plan.phase.kind'));
         $number = data_get($state, 'plan.phase.number');
-        if ($phase === null || ($number !== null && $number !== $phase->value)) {
+        if ($phase === null || $number !== $phase->value) {
             throw new DomainException('A known, consistent participation Phase is required.');
         }
 

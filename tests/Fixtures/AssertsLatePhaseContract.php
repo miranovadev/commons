@@ -3,6 +3,7 @@
 namespace Tests\Fixtures;
 
 use App\Enums\PhaseKind;
+use App\Models\Phase;
 use App\Services\ParticipantContextSerializer;
 use App\Services\ParticipantPromptLayout;
 
@@ -18,17 +19,22 @@ trait AssertsLatePhaseContract
         };
         $serializer = app(ParticipantContextSerializer::class);
         $visible = $serializer->plan($plan);
-        $packet = $serializer->inference(['status' => 'ready', 'plan' => $visible]);
-        $prompt = json_decode(app(ParticipantPromptLayout::class)->make($packet)['user'], true)['plan'];
-        foreach ([$visible, $packet['plan'], $prompt] as $view) {
-            $this->assertContains($sourceId, array_column($view[$role], 'id'));
-            $this->assertSame($allowed, isset($view['schema']['$defs']['actions'][$action]));
-            $state = data_get($view, $diagnostic);
-            $this->assertSame($allowed, $state['admissible']);
-            $this->assertSame($first, $state[$components[0]]);
-            $this->assertSame($second, $state[$components[1]]);
+        $participant = Phase::findOrFail($plan['phase']['id'])->cycle->participant;
+        $packet = $serializer->inference(['participant' => $participant->only(['callsign', 'designation']), 'plan' => $visible]);
+        $prompt = json_decode(app(ParticipantPromptLayout::class)->make($packet)['user'], true);
+        // Detailed measurement diagnostics remain in the operational/API plan.
+        $this->assertContains($sourceId, array_column($visible[$role], 'id'));
+        $state = data_get($visible, $diagnostic);
+        $this->assertSame($allowed, $state['admissible']);
+        $this->assertSame($first, $state[$components[0]]);
+        $this->assertSame($second, $state[$components[1]]);
+        foreach ([$packet, $prompt] as $view) {
+            $register = $phase === PhaseKind::Order ? 'write' : 'gate';
+            $this->assertContains($sourceId, array_column($view[$register]['propositions'], 'id'));
+            $this->assertSame($allowed, isset($view['actions']['$defs']['actions'][$action]));
             if ($phase === PhaseKind::Order) {
-                $this->assertSame($state, $view['commitment_options'][$sourceId]['closure']);
+                $node = collect($view['write']['propositions'])->firstWhere('id', $sourceId);
+                $this->assertEquals($state, $node['commitment']['closure']);
             }
         }
     }
