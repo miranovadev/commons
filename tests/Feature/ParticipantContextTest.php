@@ -75,7 +75,7 @@ class ParticipantContextTest extends TestCase
         app(PotentialProjectionService::class)->rebuild($fixture->substrate->id, false);
         $state = app(ParticipationService::class)->stateFor($fixture->viewer);
         $prompt = app(ParticipantPromptFactory::class)->make($connection, $state);
-        $this->assertSame(['status', 'plan'], array_keys(json_decode($prompt['user'], true)));
+        $this->assertSame(['participant', 'read', 'gate', 'write', 'actions'], array_keys(json_decode($prompt['user'], true)));
         $this->assertLessThanOrEqual(self::MAX_BYTES, strlen($prompt['user']));
         $polluted = $state;
         $polluted['plan']['workspace'] = ['registers' => array_fill(0, 500, $plan['gate_options'])];

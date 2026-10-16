@@ -54,7 +54,8 @@ final class ParticipantPromptFactory
                 ParticipantPromptCore::TEXT, ParticipantPromptLayout::FORMAT_INSTRUCTION,
                 $this->phases->fingerprint(), $instructions,
             ], JSON_THROW_ON_ERROR)),
-            ...(new ParticipantPromptLayout)->make($this->context->inference($state)),
+            ...(new ParticipantPromptLayout)->make($this->context->inference($state),
+                $this->context->receipts($state['plan']['receipts'] ?? []), $state['plan']['read_options'] ?? []),
             'schema' => $schema,
         ];
     }

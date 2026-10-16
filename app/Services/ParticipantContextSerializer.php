@@ -84,22 +84,23 @@ final class ParticipantContextSerializer
     /** Lifecycle details for human display do not belong in an inference prompt. */
     public function inference(array $state): array
     {
-        $plan = Arr::only($state['plan'], ['phase', 'provenance_id', 'gate_id',
-            'lineage', 'exhausted_alternatives', 'read_options', 'gate_options', 'write_options', 'commitment', 'commitment_options', 'correspondence_admissibility', 'chirality_admissibility', 'rest_available', 'rest_reason', 'receipts', 'schema']);
-        unset($plan['schema']['$comment']); // Publication guard metadata is not participant cognition.
-        $plan['phase'] = Arr::only($plan['phase'], ['id', 'number', 'kind', 'write_register']);
-        foreach (['lineage', 'read_options', 'gate_options', 'write_options'] as $key) {
-            if (isset($plan[$key])) {
-                $plan[$key] = array_map($this->proposition(...), $plan[$key]);
-            }
+        $plan = $state['plan'];
+        $registers = app(ParticipantCognitiveProjection::class)->registers($plan);
+        foreach ($registers as &$register) {
+            $register['propositions'] = array_map(fn ($node) => [
+                ...$this->proposition($node),
+                ...Arr::only($node, ['relation', 'role', 'phase_number', 'statement_truncated',
+                    'exhausted', 'basin_exhausted', 'exhausted_at', 'actionable']),
+                ...(isset($plan['commitment_options'][$node['id']])
+                    ? ['commitment' => $plan['commitment_options'][$node['id']]] : []),
+            ], $register['propositions']);
         }
+        unset($register);
+        $schema = $plan['schema'];
+        unset($schema['$comment']); // Publication guard remains in the transport/validator.
 
-        $plan['receipts'] = $this->receipts($plan['receipts'] ?? []);
-        if (isset($plan['exhausted_alternatives'])) {
-            $plan['exhausted_alternatives'] = array_map($this->historical(...), $plan['exhausted_alternatives']);
-        }
-
-        return ['status' => $state['status'], 'plan' => $plan];
+        return ['participant' => Arr::only($state['participant'], ['callsign', 'designation']),
+            ...$registers, 'actions' => $schema];
     }
 
     /** Shared available catalogue plus the Participant's already-admitted loaded state.
