@@ -79,7 +79,7 @@ final class ParticipantReceiptProjection
                     $content = $evidence->observation($model)['evidence'] ?? $evidence->failure($model);
                     if ($model->type === 'citation') {
                         $context ??= new ParticipationContext(Phase::findOrFail($state['plan']['phase']['id']));
-                        $content = $evidence->describe($model, $context)['evidence'] ?? null;
+                        $content = $evidence->citation($model, $context)['evidence'] ?? null;
                     }
                 } else {
                     $content = $receipt['evidence'] ?? null;

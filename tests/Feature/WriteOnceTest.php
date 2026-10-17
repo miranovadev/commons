@@ -21,10 +21,12 @@ use App\Services\Observables\ReinforcementService;
 use App\Services\OperationalInstrumentService;
 use App\Services\ParticipantPromptFactory;
 use App\Services\ParticipationService;
+use App\Services\ReceiptContextService;
 use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Tests\Fixtures\PropositionBirth;
 use Tests\TestCase;
 
 class WriteOnceTest extends TestCase
@@ -269,7 +271,8 @@ class WriteOnceTest extends TestCase
         $phase = $this->phase($participant, PhaseKind::Constrain, 'canon', $gate);
         $input = ['action' => 'proposition.reclassify'];
         $this->assertUnavailable($participant, $phase, $input);
-        app(OperationalInstrumentService::class)->execute($phase, $gate, ['kind' => 'citation', 'reference' => $gate->id]);
+        $receipt = app(OperationalInstrumentService::class)->execute($phase, $gate, ['kind' => 'citation', 'reference' => $gate->id]);
+        app(ReceiptContextService::class)->clear($participant, $phase, $receipt->id);
         $this->assertSame(0, app(ReinforcementService::class)->count($gate));
         $this->assertUnavailable($participant, $phase, $input);
         $this->classificationEvidenceFixture($gate);
@@ -439,7 +442,7 @@ class WriteOnceTest extends TestCase
             app(LedgerService::class)->record($edge);
         }
         if ($tier === 'expressive' && $completeBirth) {
-            \Tests\Fixtures\PropositionBirth::complete($node);
+            PropositionBirth::complete($node);
         }
 
         return $node;

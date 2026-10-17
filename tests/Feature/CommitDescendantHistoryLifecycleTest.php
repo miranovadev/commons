@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Participant;
+use App\Models\ParticipantReceiptContext;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Receipt;
@@ -70,6 +71,12 @@ class CommitDescendantHistoryLifecycleTest extends TestCase
         $this->assertCount(0, $state->receipts($head));
         $this->assertSame(1, $state->touchCount($head)); // Real progression into Persist, not inherited touches.
         $this->assertDatabaseHas('phase_profile_observations', ['proposition_id' => $head->id]);
+
+        // C2's creator loads retain cited history in personal context. Explicitly
+        // unload it before testing the unchanged search over unavailable history.
+        foreach (ParticipantReceiptContext::active()->where('participant_id', $actor->id)->get() as $load) {
+            app(ReceiptContextService::class)->clear($actor, $phase, $load->receipt_id);
+        }
 
         // The final traversal records Bias, Mediate, local Disperse, Constrain,
         // Persist, Distinguish in that order behind the real Commit hard edge.

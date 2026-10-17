@@ -103,7 +103,7 @@ class InputSchemaServiceTest extends TestCase
 
             $schema = app(InputSchemaService::class)->forPhase($kind);
             $description = $schema['$defs']['instrument']['description'];
-            $this->assertStringContainsString('Creating a Cite Receipt does not itself grant Reinforcement.', $description);
+            $this->assertStringContainsString('Loading does not grant action permission.', $description);
             $this->assertStringContainsString('hyperlink retrieves a public URL', $description);
             $this->assertStringNotContainsString('no page fetch or content verification', $description);
         }

@@ -1,0 +1,197 @@
+{
+    "base": "62a4f065e3333176c26403cc12881c3fe2507998",
+    "method": "Identical persisted fixtures and operational plans, including identical action schemas. Prompt bytes sum system/evidence/user/support; response schema reported separately. Tokens are bytes/4 estimates, not provider tokenization. Timing is illustrative local wall time.",
+    "live_inference": false,
+    "cases": [
+        {
+            "phase": "Distinguish",
+            "before": {
+                "prompt_bytes": 5587,
+                "estimated_tokens_bytes_div_4": 1397,
+                "receipt_metadata_bytes": 328,
+                "evidence_bytes": 0,
+                "receipt_metadata_entries": 3,
+                "duplicate_receipt_entries": 0,
+                "visible_evidence_bodies": 0,
+                "schema_bytes": 2957,
+                "messages": 4
+            },
+            "after": {
+                "prompt_bytes": 4750,
+                "estimated_tokens_bytes_div_4": 1188,
+                "receipt_metadata_bytes": 2,
+                "evidence_bytes": 0,
+                "receipt_metadata_entries": 0,
+                "duplicate_receipt_entries": 0,
+                "visible_evidence_bodies": 0,
+                "schema_bytes": 2957,
+                "messages": 2
+            },
+            "projection": {
+                "c1": {
+                    "queries": 6,
+                    "milliseconds": 2.033
+                },
+                "c2": {
+                    "queries": 16,
+                    "milliseconds": 4.106
+                }
+            },
+            "actions_equal": true,
+            "register_ids_and_questions_equal": true,
+            "persistent_state_unchanged": true
+        },
+        {
+            "phase": "Persist",
+            "before": {
+                "prompt_bytes": 5433,
+                "estimated_tokens_bytes_div_4": 1359,
+                "receipt_metadata_bytes": 328,
+                "evidence_bytes": 0,
+                "receipt_metadata_entries": 3,
+                "duplicate_receipt_entries": 0,
+                "visible_evidence_bodies": 0,
+                "schema_bytes": 2774,
+                "messages": 4
+            },
+            "after": {
+                "prompt_bytes": 4596,
+                "estimated_tokens_bytes_div_4": 1149,
+                "receipt_metadata_bytes": 2,
+                "evidence_bytes": 0,
+                "receipt_metadata_entries": 0,
+                "duplicate_receipt_entries": 0,
+                "visible_evidence_bodies": 0,
+                "schema_bytes": 2774,
+                "messages": 2
+            },
+            "projection": {
+                "c1": {
+                    "queries": 1,
+                    "milliseconds": 0.375
+                },
+                "c2": {
+                    "queries": 11,
+                    "milliseconds": 2.475
+                }
+            },
+            "actions_equal": true,
+            "register_ids_and_questions_equal": true,
+            "persistent_state_unchanged": true
+        },
+        {
+            "phase": "Mediate",
+            "before": {
+                "prompt_bytes": 19765,
+                "estimated_tokens_bytes_div_4": 4942,
+                "receipt_metadata_bytes": 1034,
+                "evidence_bytes": 243,
+                "receipt_metadata_entries": 7,
+                "duplicate_receipt_entries": 4,
+                "visible_evidence_bodies": 1,
+                "schema_bytes": 7772,
+                "messages": 4
+            },
+            "after": {
+                "prompt_bytes": 15897,
+                "estimated_tokens_bytes_div_4": 3975,
+                "receipt_metadata_bytes": 328,
+                "evidence_bytes": 486,
+                "receipt_metadata_entries": 3,
+                "duplicate_receipt_entries": 0,
+                "visible_evidence_bodies": 2,
+                "schema_bytes": 7772,
+                "messages": 2
+            },
+            "projection": {
+                "c1": {
+                    "queries": 1,
+                    "milliseconds": 0.647
+                },
+                "c2": {
+                    "queries": 11,
+                    "milliseconds": 3.391
+                }
+            },
+            "actions_equal": true,
+            "register_ids_and_questions_equal": true,
+            "persistent_state_unchanged": true
+        },
+        {
+            "phase": "Bias",
+            "before": {
+                "prompt_bytes": 8418,
+                "estimated_tokens_bytes_div_4": 2105,
+                "receipt_metadata_bytes": 328,
+                "evidence_bytes": 0,
+                "receipt_metadata_entries": 3,
+                "duplicate_receipt_entries": 0,
+                "visible_evidence_bodies": 0,
+                "schema_bytes": 4708,
+                "messages": 4
+            },
+            "after": {
+                "prompt_bytes": 7926,
+                "estimated_tokens_bytes_div_4": 1982,
+                "receipt_metadata_bytes": 110,
+                "evidence_bytes": 243,
+                "receipt_metadata_entries": 1,
+                "duplicate_receipt_entries": 0,
+                "visible_evidence_bodies": 1,
+                "schema_bytes": 4708,
+                "messages": 2
+            },
+            "projection": {
+                "c1": {
+                    "queries": 8,
+                    "milliseconds": 2.125
+                },
+                "c2": {
+                    "queries": 18,
+                    "milliseconds": 4.059
+                }
+            },
+            "actions_equal": true,
+            "register_ids_and_questions_equal": true,
+            "persistent_state_unchanged": true
+        },
+        {
+            "phase": "Order",
+            "before": {
+                "prompt_bytes": 27207,
+                "estimated_tokens_bytes_div_4": 6802,
+                "receipt_metadata_bytes": 328,
+                "evidence_bytes": 0,
+                "receipt_metadata_entries": 3,
+                "duplicate_receipt_entries": 0,
+                "visible_evidence_bodies": 0,
+                "schema_bytes": 2144,
+                "messages": 4
+            },
+            "after": {
+                "prompt_bytes": 4357,
+                "estimated_tokens_bytes_div_4": 1090,
+                "receipt_metadata_bytes": 2,
+                "evidence_bytes": 0,
+                "receipt_metadata_entries": 0,
+                "duplicate_receipt_entries": 0,
+                "visible_evidence_bodies": 0,
+                "schema_bytes": 2144,
+                "messages": 2
+            },
+            "projection": {
+                "c1": {
+                    "queries": 1,
+                    "milliseconds": 0.576
+                },
+                "c2": {
+                    "queries": 10,
+                    "milliseconds": 2.149
+                }
+            },
+            "actions_equal": true,
+            "register_ids_and_questions_equal": true,
+            "persistent_state_unchanged": true
+        }
+    ]
+}

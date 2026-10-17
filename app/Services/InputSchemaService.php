@@ -91,8 +91,7 @@ final readonly class InputSchemaService
                 $receiptIds = [];
                 foreach ($context->nodes($gateOptionIds) as $source) {
                     $ids = $authority->receiptsFor($occurrence, $source, $context)->pluck('id')->all();
-                    $unloadIds = $this->receipts->unloadOptions($phase)->all();
-                    if ($ids === [] && $unloadIds === []) {
+                    if ($ids === []) {
                         continue;
                     }
                     $escape = $authority->authority($occurrence, $source, $context) === 'tragedy';
@@ -198,7 +197,7 @@ final readonly class InputSchemaService
             }
             $action['properties']['receipt_options'] = ['type' => 'object', 'additionalProperties' => false,
                 'properties' => $selections,
-                'description' => 'Load eligible local Receipts or scoped memory; unload your currently loaded Receipts. Tragedy and Proposition Search loading remember only: no evidence or Reinforcement; memory alone grants no movement, grounding or escape authority. Load and unload must be disjoint; already satisfied states are no-ops. Applied atomically with this action, visible next Phase.'];
+                'description' => 'Load eligible local Receipts or scoped memory; unload your currently loaded Receipts. Tragedy and Proposition Search loading remember only: no evidence or Reinforcement; memory alone grants no movement, grounding or escape authority. Load and unload must be disjoint; already-loaded eligible loads are no-ops. Applied atomically with this action, visible next Phase.'];
         }
         unset($action);
 

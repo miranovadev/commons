@@ -140,6 +140,9 @@ class TragedyWarrantSeparationTest extends TestCase
         $phase = $this->phase($gate, PhaseKind::Constrain);
         $this->receiptFixture($gate);
         $actor = $phase->cycle->participant;
+        if ($operation === 'unload') {
+            DB::transaction(fn () => app(ReceiptContextService::class)->desired($actor, $phase, ['load' => [$tragedy->receipt_id]]));
+        }
         $plan = app(InputPlanService::class)->forPhase($actor, $phase);
         foreach ($plan['schema']['$defs']['actions'] as $action) {
             if (($action['properties']['action']['const'] ?? null) !== 'participant.rest') {
@@ -148,12 +151,12 @@ class TragedyWarrantSeparationTest extends TestCase
         }
         DB::transaction(fn () => app(ReceiptContextService::class)->desired($actor, $phase, [$operation => [$tragedy->receipt_id]]));
         $expected = $operation === 'load' ? 1 : 0;
-        $this->assertDatabaseCount('participant_receipt_contexts', $expected);
+        $this->assertSame($expected, ParticipantReceiptContext::active()->where('receipt_id', $tragedy->receipt_id)->count());
         try {
             app(ReceiptContextService::class)->read($actor, $phase, $tragedy->receipt_id);
             $this->fail('Legacy read API cannot create a warrant load.');
         } catch (DomainException) {
-            $this->assertDatabaseCount('participant_receipt_contexts', $expected);
+            $this->assertSame($expected, ParticipantReceiptContext::active()->where('receipt_id', $tragedy->receipt_id)->count());
         }
         $this->assertNull(Receipt::findOrFail($tragedy->receipt_id)->replayInvocation());
         $this->expectException(DomainException::class);

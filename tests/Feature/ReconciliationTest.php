@@ -336,7 +336,7 @@ class ReconciliationTest extends TestCase
         app(ParticipationService::class)->contribute($this->viewer, $this->phase->id, $input);
         $x = Proposition::findOrFail($this->viewer->fresh()->current_proposition_id);
         $this->receiptFixture($x);
-        $this->assertSame(0, app(ReinforcementService::class)->count($x));
+        $this->assertSame(1, app(ReinforcementService::class)->count($x));
 
         $competitor = $this->participant('competitor');
         $disperse = $this->newPhase($competitor, PhaseKind::Disperse, 'activity');
@@ -374,7 +374,7 @@ class ReconciliationTest extends TestCase
         $this->assertEqualsCanonicalizing($x->parents->pluck('id')->all(), $y->parents->pluck('id')->all());
         $this->assertInput($this->plan()['schema'], $reverse, false);
         $this->loadedReceiptFixture($x);
-        $this->assertSame([1, 0, 0], array_map(fn ($node) => app(ReinforcementService::class)->count($node), [$x, $y, $z]));
+        $this->assertSame([2, 0, 0], array_map(fn ($node) => app(ReinforcementService::class)->count($node), [$x, $y, $z]));
     }
 
     private function assertInput(array $schema, array $input, bool $valid): void

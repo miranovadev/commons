@@ -76,7 +76,7 @@ class ParticipantCognitiveProjectionTest extends TestCase
         $this->assertSame($observer->only(['id', 'callsign', 'designation']), $state['participant']);
         $before = app(InputPlanService::class)->forPhase($observer, $phase);
         $snapshot = fn () => collect(['participants', 'propositions', 'phases', 'cycles', 'supersessions', 'proposition_measurements'])
-            ->mapWithKeys(fn ($table) => [$table => DB::table($table)->orderBy('id')->get()->toJson()])->all();
+            ->mapWithKeys(fn ($table) => [$table => DB::table($table)->orderBy($table === 'proposition_measurements' ? 'proposition_id' : 'id')->get()->toJson()])->all();
         $records = $snapshot();
         $prompt = app(ParticipantPromptFactory::class)->make(new Connection, $state);
         $packet = json_decode($prompt['user'], true);
@@ -202,7 +202,7 @@ class ParticipantCognitiveProjectionTest extends TestCase
         $state = ['participant' => $f->viewer->only(['id', 'callsign', 'designation']),
             'plan' => app(ParticipantContextSerializer::class)->plan($raw)];
         $snapshot = fn () => collect(['propositions', 'phases', 'supersessions', 'proposition_measurements'])
-            ->mapWithKeys(fn ($table) => [$table => DB::table($table)->orderBy('id')->get()->toJson()])->all();
+            ->mapWithKeys(fn ($table) => [$table => DB::table($table)->orderBy($table === 'proposition_measurements' ? 'proposition_id' : 'id')->get()->toJson()])->all();
         $before = $snapshot();
         DB::enableQueryLog();
         DB::flushQueryLog();
@@ -229,7 +229,7 @@ class ParticipantCognitiveProjectionTest extends TestCase
         $this->assertGreaterThan(1, count($ids));
         $state = ['participant' => ['id' => $f->viewer->id, 'callsign' => 'Nova', 'designation' => 'Analytical explorer'], 'plan' => $plan];
         $packet = app(ParticipantContextSerializer::class)->inference($state);
-        $this->assertSame(['participant', 'read', 'gate', 'write', 'actions'], array_keys($packet));
+        $this->assertSame(['participant', 'receipts', 'read', 'gate', 'write', 'actions'], array_keys($packet));
         $this->assertSame($state['participant'], $packet['participant']);
         unset($schema['x-commons']['description']);
         $this->assertSame($schema, $packet['actions']);

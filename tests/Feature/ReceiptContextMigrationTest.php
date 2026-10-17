@@ -22,8 +22,8 @@ use Tests\TestCase;
 #[Group('component-contract')]
 class ReceiptContextMigrationTest extends TestCase
 {
-    use IsolatesClosureOutput;
     use DatabaseMigrations;
+    use IsolatesClosureOutput;
 
     protected function setUp(): void
     {
@@ -46,6 +46,11 @@ class ReceiptContextMigrationTest extends TestCase
         app(LedgerService::class)->record($subject);
         $receipt = app(OperationalInstrumentService::class)->execute($phase, $subject,
             ['kind' => 'hyperlink', 'reference' => 'https://example.test/legacy']);
+        // Construct a pre-C2 historical fixture, before creator loading existed.
+        $eventIds = DB::table('receipt_context_events')->pluck('id');
+        DB::table('substrate_ledger_entries')->where('kind', 'receipt_context')->whereIn('ledgerable_id', $eventIds)->delete();
+        DB::table('receipt_context_events')->delete();
+        DB::table('participant_receipt_contexts')->delete();
         DB::table('reinforcements')->insert([
             'id' => strtolower((string) str()->ulid()), 'proposition_id' => $subject->id,
             'participant_id' => $participant->id, 'receipt_id' => $receipt->id, 'created_at' => now(),

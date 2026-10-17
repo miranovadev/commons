@@ -1,5 +1,12 @@
 # Receipts, Reinforcement and Commitment
 
+> **C2 update:** [Participant Context C2](participant-context-c2-implementation.md)
+> supersedes the inference Receipt layout and loading timing described below.
+> New Instrument Receipts auto-load for their performer; eligible local Write
+> loads and personal same-substrate unloads are supported. Loaded Read/Gate
+> content appears once in the top-level catalogue; Write alone exposes metadata.
+> Operational evidence, causal authority and measurement formulas are unchanged.
+
 The [Core Invariants](core-invariants.md) take precedence over this implementation.
 
 A Receipt is the historical outcome of an Instrument. Active Reinforcement comes

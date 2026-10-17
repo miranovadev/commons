@@ -47,7 +47,14 @@ final class ReceiptEvidenceService
         if (($observation = $this->observation($receipt)) !== null) {
             return $observation;
         }
-        if ($receipt->type !== 'citation') {
+
+        return $this->citation($receipt, $context);
+    }
+
+    /** Canonical citation content for cognition, without admitting operational evidence. */
+    public function citation(Receipt $receipt, ParticipationContext $context): ?array
+    {
+        if ($receipt->type !== 'citation' || ! $receipt->supports(ReceiptCapability::Readable) || ! $receipt->observationComplete()) {
             return null;
         }
         // Resolve the actual same-substrate object, never caller-supplied metadata.

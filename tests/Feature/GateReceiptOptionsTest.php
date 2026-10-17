@@ -46,7 +46,7 @@ class GateReceiptOptionsTest extends TestCase
         $transport = app(OpenAIResponseSchema::class)->fromCommons($schema);
         $this->assertStringContainsString($r->id, json_encode($transport));
         $this->assertStringNotContainsString('uniqueItems', json_encode($transport));
-        $this->assertDatabaseCount('participant_receipt_contexts', 0);
+        $this->assertDatabaseCount('participant_receipt_contexts', 1);
     }
 
     public function test_load_and_unload_are_atomic_with_normal_actions_and_desired_states_are_idempotent(): void
@@ -63,8 +63,8 @@ class GateReceiptOptionsTest extends TestCase
         app(ContributionDispatcher::class)->dispatch($f->viewer, $f->phase, $input);
         $this->assertSame(0, ParticipantReceiptContext::active()->count());
         $this->assertDatabaseCount('receipt_context_events', 2);
+        $this->expectException(\DomainException::class);
         DB::transaction(fn () => app(ReceiptContextService::class)->desired($f->viewer, $f->phase, ['unload' => [$r->id]]));
-        $this->assertDatabaseCount('receipt_context_events', 2);
     }
 
     public function test_rest_rejects_receipt_options_and_preserves_load_context(): void
@@ -115,7 +115,7 @@ class GateReceiptOptionsTest extends TestCase
                 $this->fail('Invalid options accepted');
             } catch (\DomainException) {
                 $this->assertDatabaseCount('attestations', 0);
-                $this->assertDatabaseCount('participant_receipt_contexts', 0);
+                $this->assertDatabaseCount('participant_receipt_contexts', 1);
                 $this->assertSame($before, DB::table('substrate_ledger_entries')->count());
             }
         }
@@ -126,7 +126,7 @@ class GateReceiptOptionsTest extends TestCase
         [$f, $r, $input] = $this->scenario();
         $service = app(InstrumentExecutionService::class);
         $foreign = $f->node(null, 'canon', 'variant', 'committal');
-        foreach ([$f->node($f->seed, 'activity'), $f->node($foreign, 'activity')] as $node) {
+        foreach ([$f->node($f->seed, 'activity'), $f->node($foreign, 'activity')] as $index => $node) {
             $receipt = $service->complete($service->start($f->phase, $node, 'hyperlink', 'https://example.test/'.$node->id), $node,
                 verification: new VerifiedHyperlink('example.test/'.$node->id, hash('sha256', $node->id), CarbonImmutable::now()));
             try {
@@ -134,7 +134,7 @@ class GateReceiptOptionsTest extends TestCase
                 $this->fail('Non-Gate Receipt accepted');
             } catch (\DomainException) {
                 $this->assertDatabaseCount('attestations', 0);
-                $this->assertDatabaseCount('participant_receipt_contexts', 0);
+                $this->assertDatabaseCount('participant_receipt_contexts', $index + 2);
             }
         }
         $this->assertSame([$r->id], app(ReceiptContextService::class)->gateOptions($f->phase)->pluck('id')->all());
@@ -148,7 +148,7 @@ class GateReceiptOptionsTest extends TestCase
                 'receipt_options' => ['load' => [$r->id]]]);
             $this->fail('Invalid action accepted');
         } catch (\DomainException) {
-            $this->assertDatabaseCount('participant_receipt_contexts', 0);
+            $this->assertDatabaseCount('participant_receipt_contexts', 1);
         }
         try {
             DB::transaction(function () use ($f, $r, $input): void {
@@ -157,7 +157,7 @@ class GateReceiptOptionsTest extends TestCase
             });
         } catch (\DomainException) {
             $this->assertDatabaseCount('attestations', 0);
-            $this->assertDatabaseCount('receipt_context_events', 0);
+            $this->assertDatabaseCount('receipt_context_events', 1);
         }
     }
 }

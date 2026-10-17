@@ -34,7 +34,8 @@ trait AssertsLatePhaseContract
             $this->assertSame($allowed, isset($view['actions']['$defs']['actions'][$action]));
             if ($phase === PhaseKind::Order) {
                 $node = collect($view['write']['propositions'])->firstWhere('id', $sourceId);
-                $this->assertEquals($state, $node['commitment']['closure']);
+                $this->assertArrayNotHasKey('commitment', $node);
+                $this->assertArrayNotHasKey('observables', $node);
             }
         }
     }

@@ -9,9 +9,11 @@ use App\Models\ParticipantReceiptContext;
 use App\Models\Proposition;
 use App\Models\Receipt;
 use App\Services\ContributionDispatcher;
+use App\Services\Evidence\ReceiptEvidenceService;
 use App\Services\InputPlanService;
 use App\Services\InstrumentExecutionService;
 use App\Services\ParticipantReceiptProjection;
+use App\Services\Participation\ParticipationContext;
 use App\Services\ReceiptContextService;
 use Carbon\CarbonImmutable;
 use DomainException;
@@ -113,6 +115,78 @@ class ParticipantReceiptC2Test extends TestCase
         $this->assertDatabaseCount('instrument_executions', 0);
     }
 
+    public function test_instrument_failure_without_a_receipt_creates_no_load(): void
+    {
+        $f = new ParticipantContextFixture(1, 0, false);
+        $service = app(InstrumentExecutionService::class);
+        $execution = $service->start($f->phase, $f->gate, 'hyperlink', 'https://example.test/unavailable');
+        $service->fail($execution, 'Failed before an observation was recorded.');
+        $this->assertSame('failed', $execution->fresh()->status);
+        $this->assertDatabaseCount('receipts', 0);
+        $this->assertDatabaseCount('participant_receipt_contexts', 0);
+        $this->assertDatabaseCount('receipt_context_events', 0);
+    }
+
+    public function test_hydrated_committal_read_preserves_recorded_receipt_inheritance(): void
+    {
+        $f = new ParticipantContextFixture(1, 0, false);
+        $r = $this->receipt($f);
+        $commit = $f->node($f->gate, 'canon', 'commit', 'committal');
+        $registers = ['read' => ['propositions' => [['id' => $commit->id]]],
+            'gate' => ['propositions' => []], 'write' => ['propositions' => []]];
+        $before = $this->snapshot();
+        $catalogue = app(ParticipantReceiptProjection::class)->normalize($registers,
+            ['participant' => ['id' => $f->viewer->id], 'plan' => ['phase' => ['id' => $f->phase->id], 'receipts' => []]]);
+        $this->assertSame([$r->id], $registers['read']['propositions'][0]['receipts']);
+        $this->assertSame([$r->id], array_column($catalogue, 'id'));
+        $this->assertStringContainsString('C2-IMMUTABLE-BODY', json_encode($catalogue));
+        $this->assertSame($before, $this->snapshot());
+    }
+
+    public function test_loaded_historical_citation_uses_canonical_content_without_operational_activation(): void
+    {
+        $f = new ParticipantContextFixture(1, 0, false);
+        $service = app(InstrumentExecutionService::class);
+        $receipt = $service->complete($service->start($f->phase, $f->gate, 'citation', $f->seed->id), $f->gate);
+        $context = new ParticipationContext($f->phase);
+        // Historical cognitive Reads may be outside the current operational working set.
+        $context->propositions->forget($f->gate->id);
+        $receipt->context_horizon_id = 'historical-horizon';
+        $evidence = app(ReceiptEvidenceService::class);
+        $this->assertNull($evidence->describe($receipt, $context));
+        $body = $evidence->citation($receipt, $context)['evidence'];
+        $this->assertSame($f->seed->id, $body['proposition_id']);
+        $this->assertSame($f->seed->statement, $body['statement']);
+        $this->assertNull($evidence->describe($receipt, $context));
+        $this->assertNotSame('historical-horizon', $receipt->fresh()->context_horizon_id);
+    }
+
+    public function test_unload_rejects_unowned_foreign_substrate_and_stale_phase_without_mutation(): void
+    {
+        $f = new ParticipantContextFixture(1, 0, false);
+        $foreign = new ParticipantContextFixture(1, 0, false);
+        $r = $this->receipt($foreign);
+        $context = app(ReceiptContextService::class);
+        $reject = function ($phase) use ($f, $r, $context) {
+            $before = $this->snapshot();
+            try {
+                DB::transaction(fn () => $context->desired($f->viewer, $phase, ['unload' => [$r->id]]));
+                $this->fail('Invalid personal unload was accepted.');
+            } catch (DomainException) {
+                $this->assertSame($before, $this->snapshot());
+            }
+        };
+        $reject($f->phase); // Another Participant's load grants no personal authority.
+        // An inconsistent historical row cannot bypass the same-substrate guard.
+        (new ParticipantReceiptContext)->forceFill(['participant_id' => $f->viewer->id, 'receipt_id' => $r->id,
+            'proposition_id' => $foreign->gate->id, 'loaded_at' => now()])->save();
+        $this->assertNotContains($r->id, $context->unloadOptions($f->phase));
+        $reject($f->phase);
+        $reject($foreign->phase); // The Phase must belong to this Participant.
+        $f->phase->forceFill(['completed_at' => now()])->save();
+        $reject($f->phase);
+    }
+
     public function test_write_loading_and_hidden_personal_unloading_preserve_authority_and_immutable_receipts(): void
     {
         $f = new ParticipantContextFixture(1, 0, false);
@@ -148,6 +222,6 @@ class ParticipantReceiptC2Test extends TestCase
     {
         return collect(['receipts', 'participant_receipt_contexts', 'receipt_context_events', 'supersessions',
             'proposition_measurements', 'substrate_ledger_entries', 'phases', 'participants'])
-            ->mapWithKeys(fn ($table) => [$table => DB::table($table)->orderBy('id')->get()->toJson()])->all();
+            ->mapWithKeys(fn ($table) => [$table => DB::table($table)->orderBy($table === 'proposition_measurements' ? 'proposition_id' : 'id')->get()->toJson()])->all();
     }
 }

@@ -46,16 +46,17 @@ class ParticipantPromptPersistenceTest extends TestCase
             DB::flushQueryLog();
             $prompt = app(ParticipantPromptFactory::class)->make($connection, $state);
             $queries = DB::getQueryLog();
-            $this->assertCount(1, $queries, 'Only one batched creator lookup is needed.');
-            $this->assertStringStartsWith('select ', $queries[0]['query']);
-            $this->assertStringContainsString('participants', $queries[0]['query']);
-            $this->assertDoesNotMatchRegularExpression('/\b(receipts|attestations|instrument_executions|for update)\b/i', $queries[0]['query']);
+            $this->assertNotEmpty($queries);
+            foreach ($queries as $query) {
+                $this->assertStringStartsWith('select ', $query['query']);
+                $this->assertStringNotContainsString('for update', strtolower($query['query']));
+            }
             DB::flushQueryLog();
             app(ParticipantPromptLayout::class)->make($before, $state['plan']['receipts'], $state['plan']['read_options']);
             $this->assertSame([], DB::getQueryLog(), 'Layout must not fetch more evidence or acquire locks.');
             DB::disableQueryLog();
             $after = json_decode($prompt['user'], true);
-            $bodies = array_column(json_decode($prompt['evidence'], true)['loaded_receipts'], null, 'id');
+            $bodies = collect($after['receipts'])->filter(fn ($r) => isset($r['loaded_inline_content']))->keyBy('id')->all();
             $this->assertEquals($before, $after);
             $this->assertSame($before['actions'], $after['actions']);
             $references = json_decode($prompt['support'] ?: '{"receipts":[]}', true)['receipts'];
@@ -64,20 +65,25 @@ class ParticipantPromptPersistenceTest extends TestCase
             }
 
             foreach (['first', 'second'] as $name) {
-                $expected = collect($bodies)->contains(fn ($body) => ($body['evidence']['content_excerpt'] ?? null) === $name.' observed evidence') ? 1 : 0;
+                $expected = collect($bodies)->contains(fn ($body) => ($body['loaded_inline_content']['content_excerpt'] ?? null) === $name.' observed evidence') ? 1 : 0;
                 $this->assertSame($expected, substr_count($prompt['evidence'].$prompt['user'], $name.' observed evidence'));
-                $this->assertStringNotContainsString($name.' observed evidence', $prompt['user']);
+                $this->assertSame('', $prompt['evidence']);
+                $this->assertSame('', $prompt['support']);
             }
 
             return array_keys($bodies);
         };
+        $this->assertSame([$receipts[0]->id, $receipts[1]->id], $packet());
+        foreach ($receipts as $receipt) {
+            $context->clear($fixture->viewer, $fixture->phase, $receipt->id);
+        }
         $this->assertSame([], $packet());
-        // Load in reverse creation order, then append the older observation.
+        // Load in reverse creation order; catalogue order remains Receipt identity order.
         $context->read($fixture->viewer, $fixture->phase, $receipts[1]->id);
         $this->assertSame([$receipts[1]->id], $packet());
         $this->travel(1)->seconds();
         $context->read($fixture->viewer, $fixture->phase, $receipts[0]->id);
-        $this->assertSame([$receipts[1]->id, $receipts[0]->id], $packet());
+        $this->assertSame([$receipts[0]->id, $receipts[1]->id], $packet());
         $context->clear($fixture->viewer, $fixture->phase, $receipts[1]->id);
         $this->assertSame([$receipts[0]->id], $packet());
         $this->travel(1)->seconds();
@@ -94,6 +100,7 @@ class ParticipantPromptPersistenceTest extends TestCase
             $fixture->gate, verification: new VerifiedHyperlink('example.test/attached', hash('sha256', 'attached'),
                 CarbonImmutable::now(), contentExcerpt: 'PRIVATE-ATTACHED-OBSERVATION'),
         );
+        app(ReceiptContextService::class)->clear($fixture->viewer, $fixture->phase, $receipt->id);
         $write = $fixture->node($fixture->gate, 'frontier', position: PhaseKind::Mediate);
         $packet = function () use ($fixture): array {
             $this->publishPotentialFixture($fixture->viewer);
@@ -117,15 +124,14 @@ class ParticipantPromptPersistenceTest extends TestCase
         app(ReceiptContextService::class)->read($fixture->viewer, $fixture->phase, $receipt->id);
         $loaded = $packet();
         $prompt = app(ParticipantPromptFactory::class)->make(new Connection, $loaded);
-        $this->assertSame(0, substr_count($prompt['evidence'].$prompt['user'], 'PRIVATE-ATTACHED-OBSERVATION')); // Gate/Write are metadata even when loaded.
-        $this->assertStringNotContainsString('PRIVATE-ATTACHED-OBSERVATION', $prompt['user']);
-        $entry = collect(json_decode($prompt['support'], true)['receipts'])->firstWhere('id', $receipt->id);
+        $this->assertSame(1, substr_count($prompt['user'], 'PRIVATE-ATTACHED-OBSERVATION')); // Gate admits content even when also attached to Write.
+        $entry = collect(json_decode($prompt['user'], true)['receipts'])->firstWhere('id', $receipt->id);
         $this->assertTrue($entry['loaded']);
-        $this->assertEqualsCanonicalizing(['id', 'type', 'reference', 'loaded'], array_keys($entry));
+        $this->assertEqualsCanonicalizing(['id', 'type', 'reference', 'loaded', 'loaded_inline_content'], array_keys($entry));
         $this->assertSame($fixture->phase->id, $loaded['plan']['phase']['id']);
     }
 
-    public function test_receipt_heavy_gate_packet_keeps_memory_but_activates_no_bodies(): void
+    public function test_receipt_heavy_gate_exposes_loaded_cognition_without_operational_activation(): void
     {
         $fixture = new ParticipantContextFixture(2, 3, false);
         $executions = app(InstrumentExecutionService::class);
@@ -136,8 +142,8 @@ class ParticipantPromptPersistenceTest extends TestCase
                 $fixture->gate, verification: new VerifiedHyperlink('example.test/measurement/'.$i, hash('sha256', (string) $i),
                     CarbonImmutable::now(), contentExcerpt: str_repeat('Observed evidence '.$i.'. ', 150)),
             );
-            if ($i < 3) {
-                $context->read($fixture->viewer, $fixture->phase, $receipt->id);
+            if ($i >= 3) {
+                $context->clear($fixture->viewer, $fixture->phase, $receipt->id);
             }
         }
         $this->publishPotentialFixture($fixture->viewer);
@@ -147,16 +153,17 @@ class ParticipantPromptPersistenceTest extends TestCase
         $receipts = app(ParticipantContextSerializer::class)->receipts($rawReceipts);
         $layout = app(ParticipantPromptLayout::class);
         $new = $layout->make($packet, $receipts, $state['plan']['read_options']);
-        $this->assertSame(0, $new['loaded_receipt_count']);
+        $this->assertSame(3, $new['loaded_receipt_count']);
         $this->assertSame(3, ParticipantReceiptContext::active()->count());
         foreach ($receipts as $receipt) {
             $this->assertArrayNotHasKey('evidence', $receipt);
         }
-        $references = json_decode($new['support'], true)['receipts'];
+        $references = json_decode($new['user'], true)['receipts'];
         $this->assertSame(array_column($receipts, 'id'), array_column($references, 'id'));
         foreach ($references as $reference) {
-            $this->assertEqualsCanonicalizing(['id', 'type', 'reference', 'loaded'], array_keys($reference));
+            $this->assertEqualsCanonicalizing(['id', 'type', 'reference', 'loaded', ...($reference['loaded'] ? ['loaded_inline_content'] : [])], array_keys($reference));
         }
-        $this->assertStringNotContainsString('Observed evidence', $new['evidence'].$new['user'].$new['support']);
+        $this->assertStringContainsString('Observed evidence', $new['user']);
+        $this->assertSame('', $new['evidence'].$new['support']);
     }
 }
