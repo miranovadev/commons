@@ -4,21 +4,83 @@ namespace Tests\Feature;
 
 use App\Enums\PhaseKind;
 use App\Models\Connection;
+use App\Models\Cycle;
+use App\Models\Participant;
+use App\Models\Phase;
 use App\Models\Proposition;
 use App\Services\InputPlanService;
 use App\Services\InputSchemaService;
+use App\Services\LedgerService;
 use App\Services\ParticipantCognitiveProjection;
 use App\Services\ParticipantContextSerializer;
 use App\Services\ParticipantPromptFactory;
+use App\Services\ParticipationService;
+use App\Services\PotentialProjectionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Fixtures\ParticipantContextFixture;
+use Tests\Fixtures\PropositionBirth;
 use Tests\TestCase;
 
 class ParticipantCognitiveProjectionTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_current_identity_and_recorded_authorship_survive_inference_without_ownership_rules(): void
+    {
+        $this->freezeTime();
+        $f = new ParticipantContextFixture(2, 0, false);
+        $observer = (new Participant)->forceFill(['substrate_id' => $f->substrate->id,
+            'callsign' => 'Nova', 'designation' => 'Analytical explorer', 'current_proposition_id' => $f->gate->id]);
+        $observer->save();
+        $cycle = (new Cycle)->forceFill(['participant_id' => $observer->id, 'sequence' => 1,
+            'context_horizon_id' => $f->history->context_horizon_id, 'entry_committal_id' => $f->seed->id]);
+        $cycle->save();
+        $phase = (new Phase)->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Persist,
+            'write_register' => 'frontier', 'gate_proposition_id' => $f->gate->id, 'started_at' => now()]);
+        $phase->save();
+        $own = (new Proposition)->forceFill(['phase_id' => $phase->id, 'register' => 'frontier',
+            'tier' => 'expressive', 'statement' => 'An independently authored continuation.']);
+        $own->save();
+        app(LedgerService::class)->record($own, $f->gate);
+        $f->edge($f->gate, $own, 'variant');
+        PropositionBirth::complete($own);
+
+        app(PotentialProjectionService::class)->rebuild($f->substrate->id, false);
+        $state = app(ParticipationService::class)->stateFor($observer);
+        $this->assertSame($observer->only(['id', 'callsign', 'designation']), $state['participant']);
+        $before = app(InputPlanService::class)->forPhase($observer, $phase);
+        $snapshot = fn () => collect(['participants', 'propositions', 'phases', 'cycles', 'supersessions', 'proposition_measurements'])
+            ->mapWithKeys(fn ($table) => [$table => DB::table($table)->orderBy('id')->get()->toJson()])->all();
+        $records = $snapshot();
+        $prompt = app(ParticipantPromptFactory::class)->make(new Connection, $state);
+        $packet = json_decode($prompt['user'], true);
+        $this->assertEquals(['id' => $observer->id, 'callsign' => 'Nova', 'designation' => 'Analytical explorer'], $packet['participant']);
+        $gate = collect($packet['gate']['propositions'])->firstWhere('id', $f->gate->id);
+        $write = collect($packet['write']['propositions'])->firstWhere('id', $own->id);
+        $this->assertEquals($f->viewer->only(['id', 'callsign']), $gate['participant']);
+        $this->assertEquals($observer->only(['id', 'callsign']), $write['participant']);
+        $this->assertNotSame($packet['participant']['id'], $gate['participant']['id']);
+        $this->assertSame($packet['participant']['id'], $write['participant']['id']);
+        foreach ($packet['read']['propositions'] as $node) {
+            $this->assertSame($f->viewer->id, $node['participant']['id']);
+        }
+        $this->assertSame($state['plan']['schema'], $prompt['schema']);
+        $this->assertSame($records, $snapshot());
+        $this->assertSame(json_encode($before), json_encode(app(InputPlanService::class)->forPhase($observer, $phase)));
+
+        // An inference-only historical Read missing from the operational pool
+        // still resolves its creator, independently of the observing Participant.
+        $state['plan'] = $this->plan($f->gate, 'persist');
+        $state['plan']['phase'] += ['number' => 2, 'write_register' => 'frontier'];
+        $state['plan']['schema'] = $prompt['schema'];
+        $hydrated = app(ParticipantContextSerializer::class)->inference($state);
+        $this->assertNotEmpty($hydrated['read']['propositions']);
+        foreach ($hydrated['read']['propositions'] as $node) {
+            $this->assertSame($f->viewer->id, $node['participant']['id']);
+        }
+    }
 
     public function test_origin_and_three_committed_boundaries_follow_entry_provenance_only(): void
     {
@@ -113,7 +175,7 @@ class ParticipantCognitiveProjectionTest extends TestCase
             'gate_proposition_id' => $result->id])->save();
         $f->phase->unsetRelation('gate');
         $raw = app(InputPlanService::class)->forPhase($f->viewer, $f->phase);
-        $state = ['participant' => $f->viewer->only(['callsign', 'designation']),
+        $state = ['participant' => $f->viewer->only(['id', 'callsign', 'designation']),
             'plan' => app(ParticipantContextSerializer::class)->plan($raw)];
         $snapshot = fn () => collect(['propositions', 'phases', 'supersessions', 'proposition_measurements'])
             ->mapWithKeys(fn ($table) => [$table => DB::table($table)->orderBy('id')->get()->toJson()])->all();
@@ -141,7 +203,7 @@ class ParticipantCognitiveProjectionTest extends TestCase
         $schema = $plan['schema'];
         $ids = $schema['$defs']['actions']['proposition.reconcile']['properties']['other_proposition_id']['enum'];
         $this->assertGreaterThan(1, count($ids));
-        $state = ['participant' => ['callsign' => 'Nova', 'designation' => 'Analytical explorer'], 'plan' => $plan];
+        $state = ['participant' => ['id' => $f->viewer->id, 'callsign' => 'Nova', 'designation' => 'Analytical explorer'], 'plan' => $plan];
         $packet = app(ParticipantContextSerializer::class)->inference($state);
         $this->assertSame(['participant', 'read', 'gate', 'write', 'actions'], array_keys($packet));
         $this->assertSame($state['participant'], $packet['participant']);
@@ -167,7 +229,7 @@ class ParticipantCognitiveProjectionTest extends TestCase
         $f = new ParticipantContextFixture(2, 2);
         $raw = app(InputPlanService::class)->forPhase($f->viewer, $f->phase);
         $plan = app(ParticipantContextSerializer::class)->plan($raw);
-        $state = ['participant' => $f->viewer->only(['callsign', 'designation']), 'plan' => $plan];
+        $state = ['participant' => $f->viewer->only(['id', 'callsign', 'designation']), 'plan' => $plan];
         DB::enableQueryLog();
         DB::flushQueryLog();
         $packet = app(ParticipantContextSerializer::class)->inference($state);
@@ -191,7 +253,7 @@ class ParticipantCognitiveProjectionTest extends TestCase
         $plan['write_options'] = Proposition::whereKey($f->writes)->get()->map->only(['id', 'statement', 'register', 'tier'])->all();
         $plan['schema'] = app(InputSchemaService::class)->forPhase(PhaseKind::Persist, ['proposition.traverse']);
         $plan['schema']['$defs']['actions']['proposition.traverse']['properties']['proposition_id']['enum'] = $f->writes;
-        $state = ['participant' => ['callsign' => 'Nova', 'designation' => 'Explorer'], 'plan' => $plan];
+        $state = ['participant' => ['id' => $f->viewer->id, 'callsign' => 'Nova', 'designation' => 'Explorer'], 'plan' => $plan];
         $packet = app(ParticipantContextSerializer::class)->inference($state);
         $this->assertSame(array_column($plan['gate_options'], 'id'), array_column($packet['gate']['propositions'], 'id'));
         $this->assertSame('acting', $packet['gate']['propositions'][0]['relation']);

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\PhaseKind;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /** Allowlisted model/API contract. UI additions cannot enter inference implicitly. */
 final class ParticipantContextSerializer
@@ -87,9 +88,20 @@ final class ParticipantContextSerializer
     {
         $plan = $state['plan'];
         $registers = app(ParticipantCognitiveProjection::class)->registers($plan);
+        // Preserve the operational Proposition.participant naming, resolving
+        // authorship from creation records even for hydrated/historical Reads.
+        // This batch lookup neither selects visible nodes nor grants permissions.
+        $ids = collect($registers)->flatMap(fn ($register) => array_column($register['propositions'], 'id'))->unique();
+        $authors = DB::table('propositions')->join('phases', 'phases.id', '=', 'propositions.phase_id')
+            ->join('cycles', 'cycles.id', '=', 'phases.cycle_id')
+            ->join('participants', 'participants.id', '=', 'cycles.participant_id')
+            ->whereIn('propositions.id', $ids)
+            ->get(['propositions.id', 'participants.id as participant_id', 'participants.callsign'])
+            ->mapWithKeys(fn ($row) => [$row->id => ['id' => $row->participant_id, 'callsign' => $row->callsign]]);
         foreach ($registers as &$register) {
             $register['propositions'] = array_map(fn ($node) => [
                 ...$this->proposition($node),
+                ...($authors->has($node['id']) ? ['participant' => $authors->get($node['id'])] : []),
                 ...Arr::only($node, ['relation', 'role', 'phase_number', 'statement_truncated',
                     'exhausted', 'basin_exhausted', 'exhausted_at', 'actionable']),
                 ...(isset($plan['commitment_options'][$node['id']])
@@ -103,7 +115,7 @@ final class ParticipantContextSerializer
         $schema = $plan['schema'];
         unset($schema['$comment'], $schema['x-commons']['description']); // Publication guard remains in the transport/validator.
 
-        return ['participant' => Arr::only($state['participant'], ['callsign', 'designation']),
+        return ['participant' => Arr::only($state['participant'], ['id', 'callsign', 'designation']),
             ...$registers, 'actions' => $schema];
     }
 

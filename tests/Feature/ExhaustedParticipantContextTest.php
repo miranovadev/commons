@@ -130,7 +130,7 @@ class ExhaustedParticipantContextTest extends TestCase
         $this->assertFalse($write['actionable']);
         $this->assertStringNotContainsString($commit->id, json_encode($plan['schema']));
         $packet = app(ParticipantContextSerializer::class)->inference([
-            'participant' => $phase->cycle->participant->only(['callsign', 'designation']),
+            'participant' => $phase->cycle->participant->only(['id', 'callsign', 'designation']),
             'plan' => app(ParticipantContextSerializer::class)->plan($plan),
         ]);
         $historical = collect($packet['write']['propositions'])->firstWhere('id', $commit->id);

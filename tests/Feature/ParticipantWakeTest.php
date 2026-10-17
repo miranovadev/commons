@@ -150,7 +150,7 @@ class ParticipantWakeTest extends TestCase
         ]);
         $f = new ParticipantContextFixture(2, 0, false);
         $state = [
-            'participant' => $f->viewer->only(['callsign', 'designation']),
+            'participant' => $f->viewer->only(['id', 'callsign', 'designation']),
             'status' => 'ready',
             'cycle' => ['id' => 'cycle-id', 'sequence' => 1],
             'plan' => [

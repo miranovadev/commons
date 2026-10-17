@@ -65,7 +65,7 @@ class ParticipantContextC1ComparisonTest extends TestCase
             config(['schemas' => $oldConfig]);
             Cache::clear();
             $oldPlan = app(InputPlanService::class)->forPhase($f->viewer, $f->phase);
-            $oldState = ['status' => 'ready', 'participant' => $f->viewer->only(['callsign', 'designation']),
+            $oldState = ['status' => 'ready', 'participant' => $f->viewer->only(['id', 'callsign', 'designation']),
                 'plan' => (new Baseline\ParticipantContextSerializer)->plan($oldPlan)];
             $old = $oldFactory->make($connection, $oldState);
             config(['schemas' => $newConfig]);

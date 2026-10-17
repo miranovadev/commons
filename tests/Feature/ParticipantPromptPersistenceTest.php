@@ -45,6 +45,13 @@ class ParticipantPromptPersistenceTest extends TestCase
             DB::enableQueryLog();
             DB::flushQueryLog();
             $prompt = app(ParticipantPromptFactory::class)->make($connection, $state);
+            $queries = DB::getQueryLog();
+            $this->assertCount(1, $queries, 'Only one batched creator lookup is needed.');
+            $this->assertStringStartsWith('select ', $queries[0]['query']);
+            $this->assertStringContainsString('participants', $queries[0]['query']);
+            $this->assertDoesNotMatchRegularExpression('/\b(receipts|attestations|instrument_executions|for update)\b/i', $queries[0]['query']);
+            DB::flushQueryLog();
+            app(ParticipantPromptLayout::class)->make($before, $state['plan']['receipts'], $state['plan']['read_options']);
             $this->assertSame([], DB::getQueryLog(), 'Layout must not fetch more evidence or acquire locks.');
             DB::disableQueryLog();
             $after = json_decode($prompt['user'], true);

@@ -11,7 +11,7 @@ No migrations or historical rewrites are introduced.
 The dynamic cognitive message has exactly five components:
 
 ```text
-participant: { callsign, designation }
+participant: { id, callsign, designation }
 read:        { question?, propositions: [] }
 gate:        { question?, propositions: [] }
 write:       { question,  propositions: [] }
@@ -21,6 +21,13 @@ actions:     authoritative JSON Schema
 Absent questions are omitted, never null. Existing nullable designation values
 are preserved. Connection-specific custom instructions retain their configured
 text and separate final system-instruction section. There is no inference lineage.
+
+The current Participant's `id` is its immutable recorded identifier. Each visible
+Proposition exposes the existing `participant: { id, callsign }` authorship shape,
+resolved through its creating Phase and Cycle to the creating Participant. One
+batched read covers all three registers, including hydrated and historical Reads.
+Authorship is never inferred from a parent, current Gate, observer or position;
+these identity fields do not grant ownership or change action eligibility.
 
 `InputPlanService`, `ActiveParticipantLineage`, all selectors and dispatchers retain
 their existing contracts. `ParticipantCognitiveProjection` consumes the serialized
@@ -114,9 +121,11 @@ cache hits, minimum cache thresholds and billed tokens were not measured.
 
 ## Identical-state offline comparison (initial C1)
 
-These measurements were captured before the multi-parent role clarification, at
+These measurements were captured before the parent-role and identity refinements, at
 `95993315`. The follow-up adds provenance reads only for multi-parent Gates and
 changes the additional Reconcile parent's label from `causal` to `counterpart`.
+The identity follow-up adds one batched creator lookup and identity metadata to
+the dynamic context; it does not change the universal instructions or action schema.
 
 A persisted dense fixture provides five producing Phases, genuine parents, six
 comparison branches, Writes and loaded evidence. Both factories consume the same

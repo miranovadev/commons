@@ -90,7 +90,7 @@ class ParticipantPromptConstitutionTest extends TestCase
         $this->fixture ??= new ParticipantContextFixture(2, 0, false);
         $gate = $this->fixture->seed;
 
-        return ['status' => 'ready', 'participant' => ['callsign' => 'Nova', 'designation' => 'Analytical explorer'], 'plan' => [
+        return ['status' => 'ready', 'participant' => ['id' => 'participant', 'callsign' => 'Nova', 'designation' => 'Analytical explorer'], 'plan' => [
             'phase' => ['id' => 'phase', 'number' => $phase->value, 'kind' => strtolower($phase->name),
                 'write_register' => ContextDomain::Emergence->registerFor($phase)],
             'gate_id' => $gate->id, 'gate_options' => [[...$gate->only(['id', 'statement', 'register', 'tier']), 'parent_ids' => []]],

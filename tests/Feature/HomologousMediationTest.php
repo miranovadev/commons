@@ -684,7 +684,7 @@ class HomologousMediationTest extends TestCase
         $visible = app(ParticipantContextSerializer::class)->plan($plan);
         $this->assertContains($this->gateA->id, array_column($visible['gate_options'], 'id'));
         $this->assertSame($allowed, $visible['correspondence_admissibility']['admissible']);
-        $packet = app(ParticipantContextSerializer::class)->inference(['participant' => $this->actor->only(['callsign', 'designation']), 'plan' => $visible]);
+        $packet = app(ParticipantContextSerializer::class)->inference(['participant' => $this->actor->only(['id', 'callsign', 'designation']), 'plan' => $visible]);
         $prompt = app(ParticipantPromptLayout::class)->make($packet);
         $this->assertArrayNotHasKey('correspondence_admissibility', json_decode($prompt['user'], true));
         $this->assertSame($visible['gate_id'], json_decode($prompt['user'], true)['gate']['propositions'][0]['id']);

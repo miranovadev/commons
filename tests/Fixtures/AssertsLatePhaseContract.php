@@ -20,7 +20,7 @@ trait AssertsLatePhaseContract
         $serializer = app(ParticipantContextSerializer::class);
         $visible = $serializer->plan($plan);
         $participant = Phase::findOrFail($plan['phase']['id'])->cycle->participant;
-        $packet = $serializer->inference(['participant' => $participant->only(['callsign', 'designation']), 'plan' => $visible]);
+        $packet = $serializer->inference(['participant' => $participant->only(['id', 'callsign', 'designation']), 'plan' => $visible]);
         $prompt = json_decode(app(ParticipantPromptLayout::class)->make($packet)['user'], true);
         // Detailed measurement diagnostics remain in the operational/API plan.
         $this->assertContains($sourceId, array_column($visible[$role], 'id'));

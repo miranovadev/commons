@@ -286,7 +286,7 @@ class ParticipantPromptCacheTest extends TestCase
         $unloaded = [...$receipt, 'id' => 'r2', 'status' => 'available', 'active' => false, 'loaded' => false, 'loaded_at' => null,
             'evidence' => ['content_excerpt' => 'another observation']];
 
-        return ['participant' => ['callsign' => 'Nova', 'designation' => 'Explorer'], 'status' => 'ready', 'domain' => 'emergence', 'perspective' => ['note' => 'DO-NOT-EXPOSE'],
+        return ['participant' => ['id' => 'participant', 'callsign' => 'Nova', 'designation' => 'Explorer'], 'status' => 'ready', 'domain' => 'emergence', 'perspective' => ['note' => 'DO-NOT-EXPOSE'],
             '_inference' => ['participant_id' => 'participant', 'substrate_id' => 'substrate'],
             'plan' => ['phase' => ['id' => 'phase', 'number' => $phase->value, 'kind' => strtolower($phase->name), 'write_register' => ContextDomain::Emergence->registerFor($phase)],
                 'provenance_id' => 'history', 'gate_id' => $gateId, 'lineage' => [$node],
