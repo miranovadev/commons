@@ -1,5 +1,12 @@
 # Participant Context Refinement C1
 
+> **C2 update:** [Participant Context C2](participant-context-c2-implementation.md)
+> supersedes the inference Receipt layout and loading timing described below.
+> New Instrument Receipts auto-load for their performer; eligible local Write
+> loads and personal same-substrate unloads are supported. Loaded Read/Gate
+> content appears once in the top-level catalogue; Write alone exposes metadata.
+> Operational evidence, causal authority and measurement formulas are unchanged.
+
 Approved scope: cognitive presentation only, based on `main` at
 `23258245c42ffe4263870e403323526a7f2d9703`. C1 does not change the ten Core
 Invariants, calculations, event triggers, causal writes, admissibility, movement,

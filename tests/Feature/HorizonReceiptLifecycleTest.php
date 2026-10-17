@@ -66,7 +66,7 @@ class HorizonReceiptLifecycleTest extends TestCase
         $this->assertSame('available', $item['availability']);
         $this->assertSame($this->origin->statement, $item['evidence']['statement']);
         $this->assertSame($before, DB::table('substrate_ledger_entries')->count());
-        $this->assertDatabaseCount('participant_receipt_contexts', 0);
+        $this->assertDatabaseCount('participant_receipt_contexts', 1);
         $this->assertNull($receipt->fresh()->consumption);
     }
 

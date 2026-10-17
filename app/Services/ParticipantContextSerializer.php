@@ -100,23 +100,24 @@ final class ParticipantContextSerializer
             ->mapWithKeys(fn ($row) => [$row->id => ['id' => $row->participant_id, 'callsign' => $row->callsign]]);
         foreach ($registers as &$register) {
             $register['propositions'] = array_map(fn ($node) => [
-                ...$this->proposition($node),
+                ...Arr::except($this->proposition($node), [
+                    'observables', 'attestation_summary', 'reinforcement_count', 'structural_position', 'exploration_epoch',
+                ]),
                 ...($authors->has($node['id']) ? ['participant' => $authors->get($node['id'])] : []),
                 ...Arr::only($node, ['relation', 'role', 'phase_number', 'statement_truncated',
                     'exhausted', 'basin_exhausted', 'exhausted_at', 'actionable']),
-                ...(isset($plan['commitment_options'][$node['id']])
-                    ? ['commitment' => $plan['commitment_options'][$node['id']]] : []),
             ], $register['propositions']);
         }
         unset($register);
         $registers['write']['question'] = app(ParticipantRegisterQuestions::class)->forPhase(
             PhaseKind::from($plan['phase']['number']), $plan['phase']['write_register'],
         );
+        $receipts = app(ParticipantReceiptProjection::class)->normalize($registers, $state);
         $schema = $plan['schema'];
         unset($schema['$comment'], $schema['x-commons']['description']); // Publication guard remains in the transport/validator.
 
         return ['participant' => Arr::only($state['participant'], ['id', 'callsign', 'designation']),
-            ...$registers, 'actions' => $schema];
+            'receipts' => $receipts, ...$registers, 'actions' => $schema];
     }
 
     /** Shared available catalogue plus the Participant's already-admitted loaded state.

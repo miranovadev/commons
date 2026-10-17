@@ -176,21 +176,75 @@ final readonly class ReceiptContextService
         });
     }
 
-    /** Ordinary Gate evidence plus scoped Tragedy memory; these are distinct authorities. */
+    /** Eligible local Read/Gate/Write associations; visibility is never authority. */
     public function loadOptions(Phase $phase, ?ParticipationContext $context = null): Collection
     {
         $context ??= new ParticipationContext($phase);
 
-        return $this->gateOptions($phase, $context)->concat(
-            $this->forPhase($phase, $context)->filter(function ($item): bool {
+        return $context->remember('receipt-load-options', function () use ($phase, $context) {
+            $parentIds = $context->parents->get($phase->gate_proposition_id, collect())->pluck('source_proposition_id');
+            $nodes = collect([$context->propositions->get($phase->gate_proposition_id)])->filter()
+                ->concat($context->propositions->only($parentIds->all())->values())
+                ->concat($this->mediation->visibleReadsFor($phase, $context))
+                ->concat($this->options->gateOptionsFor($phase, $context))
+                ->concat($this->options->writeOptionsFor($phase, $context))
+                ->concat($this->options->traversalOptionsFor($phase, $context))
+                ->unique('id');
+            $references = $nodes->flatMap(fn ($node) => $this->state->evidenceReceipts($node, $context))
+                ->unique('id')->filter(fn ($receipt) => app(ReceiptRegionService::class)->contains($receipt, $phase, $context))->keyBy('id');
+
+            return $this->forPhase($phase, $context)->filter(function ($item) use ($references): bool {
                 if ($item['type'] === 'tragedy') {
                     return $item['loaded'] || $item['availability'] === 'available' || $item['consumed_in_current_phase'];
                 }
+                if ($item['type'] === 'proposition_search') {
+                    return $item['loaded'] || $item['status'] === 'available';
+                }
 
-                return $item['type'] === 'proposition_search'
-                    && ($item['loaded'] || $item['status'] === 'available');
-            })
-        )->unique('id')->values();
+                return $references->has($item['id']) && $item['capabilities']['readable']
+                    && ($item['signature'] !== null || $this->evidence->failure($references[$item['id']]) !== null);
+            })->values();
+        });
+    }
+
+    /** Personal same-substrate memory may be cleared even after leaving its position. */
+    public function unloadOptions(Phase $phase): Collection
+    {
+        return ParticipantReceiptContext::active()->where('participant_id', $phase->cycle->participant_id)
+            ->whereHas('receipt.horizon', fn ($q) => $q->where('substrate_id', $phase->cycle->participant->substrate_id))
+            ->orderBy('receipt_id')->pluck('receipt_id');
+    }
+
+    /** Called inside Instrument completion, after immutable Receipt persistence. */
+    public function loadCreated(Receipt $receipt): ParticipantReceiptContext
+    {
+        if (DB::transactionLevel() === 0 || ! $receipt->observationComplete()) {
+            throw new DomainException('Creator loading requires completed Instrument persistence in its transaction.');
+        }
+        $phase = $receipt->instrumentExecution->phase;
+        $participant = $phase->cycle->participant;
+        Participant::query()->lockForUpdate()->findOrFail($participant->id);
+        Phase::query()->lockForUpdate()->findOrFail($phase->id);
+        $signature = $receipt->type === 'citation'
+            ? ($this->evidence->describe($receipt, new ParticipationContext($phase))['signature'] ?? null)
+            : ($this->evidence->observation($receipt)['signature'] ?? null);
+
+        return $this->persistLoad($participant, $phase, $receipt->id, $receipt->instrumentExecution->proposition_id, $signature);
+    }
+
+    private function persistLoad(Participant $participant, Phase $phase, string $id, string $propositionId, ?string $signature): ParticipantReceiptContext
+    {
+        $load = ParticipantReceiptContext::where('participant_id', $participant->id)->where('receipt_id', $id)->first();
+        if ($load !== null && $load->cleared_at === null) {
+            return $load;
+        }
+        $load ??= new ParticipantReceiptContext;
+        $load->forceFill(['participant_id' => $participant->id, 'receipt_id' => $id,
+            'proposition_id' => $propositionId, 'evidence_signature' => $signature,
+            'loaded_at' => now(), 'cleared_at' => null])->save();
+        $this->changed($load, $phase, 'loaded');
+
+        return $load;
     }
 
     /** Caller owns the same transaction as the accepted normal Phase contribution. */
@@ -211,32 +265,26 @@ final readonly class ReceiptContextService
             throw new DomainException('Receipt desired states must be disjoint lists of IDs.');
         }
         $eligible = $this->loadOptions($phase)->keyBy('id');
-        if (array_diff([...$loadIds, ...$unloadIds], $eligible->keys()->all()) !== []) {
-            throw new DomainException('Receipt options require current Gate evidence or an available scoped memory.');
+        if (array_diff($loadIds, $eligible->keys()->all()) !== []
+            || array_diff($unloadIds, $this->unloadOptions($phase)->all()) !== []) {
+            throw new DomainException('Receipt options require eligible local evidence/scoped memory or a Receipt loaded by this Participant.');
         }
         foreach (array_unique($loadIds) as $id) {
             $option = $eligible[$id];
-            $load = ParticipantReceiptContext::where('participant_id', $participant->id)->where('receipt_id', $id)->first();
-            if ($load !== null && $load->cleared_at === null) {
-                continue;
-            }
-            $load ??= new ParticipantReceiptContext;
-            $load->forceFill(['participant_id' => $participant->id, 'receipt_id' => $id,
-                'proposition_id' => $option['proposition_id'], 'evidence_signature' => $option['signature'],
-                'loaded_at' => now(), 'cleared_at' => null])->save();
-            $this->changed($load, $phase, 'loaded');
+            $this->persistLoad($participant, $phase, $id, $option['proposition_id'], $option['signature']);
         }
         foreach (array_unique($unloadIds) as $id) {
             $this->clear($participant, $phase, $id);
         }
     }
 
-    /** Internal desired-state primitive; public options are Gate-validated above. */
+    /** Internal desired-state primitive; public options are Participant-validated above. */
     public function clear(Participant $participant, Phase $phase, string $receiptId): void
     {
         DB::transaction(function () use ($participant, $phase, $receiptId): void {
             $phase = $this->lock($participant, $phase);
-            $load = ParticipantReceiptContext::active()->where('participant_id', $participant->id)->where('receipt_id', $receiptId)->first();
+            $load = ParticipantReceiptContext::active()->where('participant_id', $participant->id)->where('receipt_id', $receiptId)
+                ->whereHas('receipt.horizon', fn ($q) => $q->where('substrate_id', $participant->substrate_id))->first();
             if ($load === null) {
                 return;
             }

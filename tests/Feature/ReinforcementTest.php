@@ -36,6 +36,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Tests\Fixtures\PropositionBirth;
 use Tests\TestCase;
 
 class ReinforcementTest extends TestCase
@@ -76,14 +77,14 @@ class ReinforcementTest extends TestCase
             'source_proposition_id' => $this->governor->id, 'target_proposition_id' => $this->node->id, 'type' => 'variant']);
         $edge->save();
         app(LedgerService::class)->record($edge);
-        \Tests\Fixtures\PropositionBirth::complete($this->node);
+        PropositionBirth::complete($this->node);
         $this->later = $this->phase($substrate, $creation->cycle->participant);
         $attestation = new Attestation;
         $attestation->forceFill(['phase_id' => $this->later->id, 'proposition_id' => $this->node->id, 'direction' => 'support'])->save();
         app(LedgerService::class)->record($attestation);
     }
 
-    public function test_citation_and_unverified_metadata_cannot_reinforce_or_unlock_commit(): void
+    public function test_creator_loads_use_existing_count_without_fabricating_qualified_evidence(): void
     {
         $this->commitRegionFixture();
         app(PropositionMeasurementService::class)->project($this->node, 1, 1, 1);
@@ -95,12 +96,12 @@ class ReinforcementTest extends TestCase
         $this->assertNull($forged->signature);
         $this->assertFalse($forged->metadata['content_verified']);
         $this->assertSame(2, Receipt::count());
-        $this->assertSame(0, ParticipantReceiptContext::active()->count());
+        $this->assertSame(2, ParticipantReceiptContext::active()->count());
         $gate = app(CommitmentAdmissibilityService::class)->evaluate($this->node, $this->later);
         $this->assertTrue($gate['requirements']['receipt']);
         $this->assertTrue($gate['requirements']['closure']);
         $this->assertTrue($gate['admissible']);
-        $this->assertSame(0, $gate['reinforcement_count']);
+        $this->assertSame(1, $gate['reinforcement_count']);
         $this->assertSame([], $gate['reasons']);
     }
 
@@ -128,6 +129,8 @@ class ReinforcementTest extends TestCase
         $origin = app(OperationalInstrumentService::class)->execute($this->node->phase, $this->node,
             ['kind' => 'hyperlink', 'reference' => 'https://example.test/page']);
         $this->assertNotNull($origin->signature);
+        $this->assertSame(1, $this->reinforcementCount());
+        app(ReceiptContextService::class)->clear($this->later->cycle->participant, $this->later, $origin->id);
         $this->assertSame(0, $this->reinforcementCount());
         app(ReceiptContextService::class)->read($this->later->cycle->participant, $this->later, $origin->id);
         $this->assertSame(1, $this->reinforcementCount());
@@ -153,7 +156,7 @@ class ReinforcementTest extends TestCase
         $edge = new Supersession;
         $edge->forceFill(['phase_id' => $this->later->id, 'source_proposition_id' => $this->node->id, 'target_proposition_id' => $child->id, 'type' => 'variant'])->save();
         app(LedgerService::class)->record($edge);
-        \Tests\Fixtures\PropositionBirth::complete($child);
+        PropositionBirth::complete($child);
         $this->assertSame(0, app(ReinforcementService::class)->count($child));
         $childClosure = $local->calculate($child)->closure()->average();
         $expected = $childClosure; // Expressive ancestry cannot smear committed Closure or local reinforcement.
@@ -190,13 +193,13 @@ class ReinforcementTest extends TestCase
         $this->assertNull($this->loadedReceipt(reference: 'https://example.test/page?observation='.(string) Str::ulid())->signature, 'A newly seen body starts its own stability interval.');
     }
 
-    public function test_failed_verification_records_history_without_reinforcement(): void
+    public function test_failed_verification_loads_without_qualifying_evidence_and_uses_existing_count(): void
     {
         $this->mock(HyperlinkVerifier::class, fn ($mock) => $mock->shouldReceive('verify')->andThrow(new DomainException('Unavailable.')));
         $receipt = $this->loadedReceipt();
         $this->assertFalse($receipt->metadata['content_verified']);
         $this->assertNull($receipt->signature);
-        $this->assertSame(0, $this->reinforcementCount());
+        $this->assertSame(1, $this->reinforcementCount());
         $this->assertNotNull($receipt->ledgerEntry);
     }
 
@@ -221,7 +224,8 @@ class ReinforcementTest extends TestCase
 
     public function test_snapshot_can_record_grounded_attested_content_without_loaded_reinforcement(): void
     {
-        $this->loadedReceipt('citation', $this->node->id);
+        $receipt = $this->loadedReceipt('citation', $this->node->id);
+        app(ReceiptContextService::class)->clear($this->later->cycle->participant, $this->later, $receipt->id);
         $this->node->tier = 'committal';
         $this->node->save();
         app(PropositionMeasurementService::class)->project($this->node, 1, 1, 1);

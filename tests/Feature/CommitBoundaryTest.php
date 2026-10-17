@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\PhaseKind;
+use App\Models\ParticipantReceiptContext;
 use App\Models\Proposition;
 use App\Services\CommitmentAdmissibilityService;
 use App\Services\ContributionDispatcher;
@@ -10,6 +11,7 @@ use App\Services\InputPlanService;
 use App\Services\Observables\ReinforcementService;
 use App\Services\OperationalInstrumentService;
 use App\Services\PropositionMeasurementService;
+use App\Services\ReceiptContextService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Fixtures\ParticipantContextFixture;
 use Tests\TestCase;
@@ -26,6 +28,11 @@ class CommitBoundaryTest extends TestCase
         $this->classificationEvidenceFixture($source);
         $this->controlledBirthClosureFixture(1.0, includeCommittal: true);
         $f->phase->forceFill(['kind' => PhaseKind::Order, 'gate_proposition_id' => $source->id, 'write_register' => 'canon'])->save();
+        // C2 creates a personal load; explicitly clear it to retain this zero-load invariant.
+        foreach (ParticipantReceiptContext::active()->where('proposition_id', $source->id)->get() as $load) {
+            $this->assertSame($f->viewer->id, $load->participant_id);
+            app(ReceiptContextService::class)->clear($f->viewer, $f->phase->fresh(), $load->receipt_id);
+        }
         $admissibility = app(CommitmentAdmissibilityService::class)->evaluate($source, $f->phase->fresh());
         $this->assertTrue($admissibility['admissible']);
         $this->assertSame(0, $admissibility['reinforcement_count']);

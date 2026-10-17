@@ -10,6 +10,7 @@ use App\Services\Observables\ObservableService;
 use App\Services\Observables\ReinforcementService;
 use App\Services\ParticipantContextSerializer;
 use App\Services\ParticipantPromptLayout;
+use App\Services\ParticipantReceiptProjection;
 use App\Services\Participation\ParticipationContext;
 use App\Services\ReceiptContextService;
 use App\Services\TragedyMemoryService;
@@ -166,11 +167,13 @@ class TragedyMemoryTest extends TestCase
         [, , $phase, $receipt] = $this->memoryFixture();
         $this->desired($phase, $receipt);
         $receipts = app(ParticipantContextSerializer::class)->receipts(app(ReceiptContextService::class)->forPhase($phase)->all());
-        $packet = ['plan' => ['receipts' => $receipts]];
-        $prompt = app(ParticipantPromptLayout::class)->make($packet);
-        $this->assertSame([], json_decode($prompt['evidence'], true)['loaded_receipts']);
-        $this->assertTrue(json_decode($prompt['user'], true)['plan']['receipts'][0]['memory_active']);
-        $this->assertArrayHasKey('tragedy_memory', json_decode($prompt['user'], true)['plan']['receipts'][0]);
+        $registers = array_fill_keys(['read', 'gate', 'write'], ['propositions' => []]);
+        $catalogue = app(ParticipantReceiptProjection::class)->normalize($registers,
+            ['participant' => ['id' => $phase->cycle->participant_id], 'plan' => ['receipts' => $receipts]]);
+        $prompt = app(ParticipantPromptLayout::class)->make(['receipts' => $catalogue, ...$registers]);
+        $this->assertSame('', $prompt['evidence']);
+        $this->assertTrue(json_decode($prompt['user'], true)['receipts'][0]['loaded']);
+        $this->assertArrayHasKey('loaded_inline_content', json_decode($prompt['user'], true)['receipts'][0]);
     }
 
     public function test_failed_transaction_restores_memory_state_and_events(): void

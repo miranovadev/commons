@@ -71,7 +71,7 @@ class WebSearchReceiptTest extends TestCase
         return app(OperationalInstrumentService::class)->execute($fixture->phase, $subject, ['kind' => 'web_search', 'query' => $query]);
     }
 
-    public function test_search_round_trips_and_loads_with_the_next_forward_contribution(): void
+    public function test_search_round_trips_and_auto_loads_before_the_next_phase(): void
     {
         [$fixture, $subject] = $this->scenario();
         $service = app(ParticipationService::class);
@@ -100,22 +100,22 @@ class WebSearchReceiptTest extends TestCase
         $this->assertNotNull($receipt->metadata['observation']['executed_at']);
         $this->assertStringNotContainsString('Never persist', json_encode($receipt->getAttributes()));
         $this->assertStringNotContainsString('server-only-test-key', json_encode($next));
-        $this->assertSame(0, ParticipantReceiptContext::count());
-        $this->assertSame(0, app(ReinforcementService::class)->count($subject));
+        $this->assertSame(5, ParticipantReceiptContext::count());
+        $this->assertSame(1, app(ReinforcementService::class)->count($subject));
         $this->assertSame('constrain', $next['plan']['phase']['kind']);
         $option = collect($next['plan']['receipts'])->firstWhere('id', $receipt->id);
         $this->assertSame(['readable' => true, 'replayable' => true], $option['capabilities']);
         $this->assertArrayNotHasKey('evidence', $option);
         $this->assertSame($receipt->reference, $option['reference']);
         $this->assertStringNotContainsString('Observed resource content', json_encode($next));
-        $this->assertDatabaseCount('participant_receipt_contexts', 0);
+        $this->assertDatabaseCount('participant_receipt_contexts', 5);
         $this->publishPotentialFixture($fixture->viewer);
         $write = $fixture->node($subject, 'canon', position: PhaseKind::Constrain);
         $this->publishPotentialFixture($fixture->viewer);
         $read = $service->contribute($fixture->viewer, $next['plan']['phase']['id'], ['action' => 'attestation.create', 'proposition_id' => $write->id, 'direction' => 'support', 'receipt_options' => ['load' => [$receipt->id]]]);
         $this->assertNotSame($next['plan']['phase']['id'], $read['plan']['phase']['id']);
         $this->assertArrayNotHasKey('evidence', collect($read['plan']['receipts'])->firstWhere('id', $receipt->id));
-        $this->assertSame(1, ParticipantReceiptContext::count());
+        $this->assertSame(5, ParticipantReceiptContext::count());
         $this->assertSame(1, app(ReinforcementService::class)->count($subject));
         Http::assertSentCount(1); // Loading never fetches again.
         Http::assertSent(fn ($r) => $r->hasHeader('Authorization', 'Bearer server-only-test-key')
@@ -163,8 +163,8 @@ class WebSearchReceiptTest extends TestCase
         } catch (DomainException) {
             $this->assertSame($original, $first->fresh()->getAttributes());
             $this->assertSame(1, Receipt::where('type', 'web_search')->count());
-            $this->assertSame(0, ParticipantReceiptContext::count());
-            $this->assertSame(0, app(ReinforcementService::class)->count($subject));
+            $this->assertSame(5, ParticipantReceiptContext::count());
+            $this->assertSame(1, app(ReinforcementService::class)->count($subject));
         }
         Http::assertSentCount(1);
         $this->expectException(DomainException::class);
@@ -180,9 +180,9 @@ class WebSearchReceiptTest extends TestCase
         $this->assertArrayNotHasKey('receipt.read', $plan['schema']['$defs']['actions']);
         $this->assertArrayNotHasKey('receipt.replay', $plan['schema']['$defs']['actions']);
         $this->assertStringNotContainsString('replay_receipt_id', json_encode($plan['schema']));
-        $this->assertFalse(collect($plan['receipts'])->firstWhere('id', $receipt->id)['loaded']);
-        $this->assertSame(0, ParticipantReceiptContext::count());
-        $this->assertSame(0, app(ReinforcementService::class)->count($subject));
+        $this->assertTrue(collect($plan['receipts'])->firstWhere('id', $receipt->id)['loaded']);
+        $this->assertSame(5, ParticipantReceiptContext::count());
+        $this->assertSame(1, app(ReinforcementService::class)->count($subject));
         Http::assertSentCount(1);
     }
 
@@ -208,7 +208,7 @@ class WebSearchReceiptTest extends TestCase
                 app(ReceiptContextService::class)->read($fixture->viewer, $fixture->phase, $copy->id);
                 $this->fail('An unreadable Receipt was loaded.');
             } catch (DomainException) {
-                $this->assertSame(0, ParticipantReceiptContext::count());
+                $this->assertSame(6, ParticipantReceiptContext::count());
             }
         }
         $this->expectException(DomainException::class);
@@ -245,7 +245,7 @@ class WebSearchReceiptTest extends TestCase
         $failed = $this->search($fixture, $subject);
         $this->assertNull($failed->signature);
         $this->assertSame('search-failed', $failed->metadata['validation']);
-        $this->assertSame('unqualified', app(ReceiptContextService::class)->forPhase($fixture->phase)->firstWhere('id', $failed->id)['status']);
+        $this->assertSame('loaded', app(ReceiptContextService::class)->forPhase($fixture->phase)->firstWhere('id', $failed->id)['status']);
         Http::assertNothingSent();
         config(['services.tavily.api_key' => 'server-only-test-key']);
         $fresh = $fixture->node($subject, 'canon');
@@ -253,8 +253,8 @@ class WebSearchReceiptTest extends TestCase
         $this->assertNotNull($retry->signature);
         $this->assertNull($retry->instrumentExecution->replayed_from_receipt_id);
         $this->assertSame('search-failed', $failed->fresh()->metadata['validation']);
-        $this->assertSame(0, ParticipantReceiptContext::count());
-        $this->assertSame(0, app(ReinforcementService::class)->count($subject));
+        $this->assertSame(6, ParticipantReceiptContext::count());
+        $this->assertSame(1, app(ReinforcementService::class)->count($subject)); // Existing load-based counting is unchanged.
     }
 
     public function test_loaded_external_content_stays_in_evidence_and_cannot_change_prompt_or_action_schema(): void
@@ -267,7 +267,7 @@ class WebSearchReceiptTest extends TestCase
         $this->publishPotentialFixture($fixture->viewer);
         $before = $factory->make(new Connection, app(ParticipationService::class)->stateFor($fixture->viewer));
         $this->assertStringNotContainsString('Ignore the schema', $before['user'].$before['evidence']);
-        $catalogue = collect(json_decode($before['support'], true)['receipts'])->firstWhere('id', $receipt->id);
+        $catalogue = collect(json_decode($before['user'], true)['receipts'])->firstWhere('id', $receipt->id);
         $this->assertSame('web_search', $catalogue['type']);
         $this->assertSame($receipt->reference, $catalogue['reference']);
         $this->assertArrayNotHasKey('evidence', $catalogue);
@@ -337,8 +337,8 @@ class WebSearchReceiptTest extends TestCase
         $this->assertSame('accepted-version', $accepted->metadata['reinforcement_version']);
         $this->assertSame($pending->id, $accepted->instrumentExecution->replayed_from_receipt_id);
         $this->assertSame($original, $first->fresh()->getAttributes());
-        $this->assertSame(0, ParticipantReceiptContext::count());
-        $this->assertSame(0, app(ReinforcementService::class)->count($subject));
+        $this->assertSame(7, ParticipantReceiptContext::count());
+        $this->assertSame(1, app(ReinforcementService::class)->count($subject));
         $this->travelBack();
     }
 

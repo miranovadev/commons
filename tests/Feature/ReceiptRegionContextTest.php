@@ -120,7 +120,7 @@ class ReceiptRegionContextTest extends TestCase
         $this->assertEquals($original, $r->fresh()->getAttributes());
         $this->assertNotContains($r->id, app(HorizonReceiptService::class)->ordinaryAvailable($f->phase)->pluck('id'));
         $this->assertSame($target->id, $r->fresh()->consumption->proposition_id);
-        $this->assertDatabaseCount('participant_receipt_contexts', 0);
+        $this->assertDatabaseCount('participant_receipt_contexts', 1);
     }
 
     public function test_only_loaded_causal_read_evidence_is_active_and_all_other_roles_are_metadata(): void
@@ -138,13 +138,13 @@ class ReceiptRegionContextTest extends TestCase
         $state = app(ParticipationService::class)->stateFor($f->viewer);
         $this->assertSame([$read->id], array_column($state['plan']['read_options'], 'id'));
         $prompt = app(ParticipantPromptFactory::class)->make(new Connection, $state);
-        $this->assertSame([$receipts[0]->id], array_column(json_decode($prompt['evidence'], true)['loaded_receipts'], 'id'));
+        $this->assertSame([$receipts[0]->id, $receipts[1]->id], collect(json_decode($prompt['user'], true)['receipts'])->filter(fn ($r) => isset($r['loaded_inline_content']))->pluck('id')->all());
         $this->assertSame(1, substr_count($prompt['evidence'].$prompt['user'], 'BODY-role-0'));
-        foreach ([1, 2, 3] as $index) {
+        foreach ([2, 3] as $index) {
             $this->assertStringNotContainsString('BODY-role-'.$index, $prompt['evidence'].$prompt['user']);
         }
-        foreach (json_decode($prompt['support'], true)['receipts'] as $ref) {
-            $this->assertEqualsCanonicalizing(['id', 'type', 'reference', 'loaded'], array_keys($ref));
+        foreach (json_decode($prompt['user'], true)['receipts'] as $ref) {
+            $this->assertEqualsCanonicalizing(['id', 'type', 'reference', 'loaded', ...(isset($ref['loaded_inline_content']) ? ['loaded_inline_content'] : [])], array_keys($ref));
             $this->assertTrue($ref['loaded']);
         }
         $this->assertSame(4, ParticipantReceiptContext::active()->count());
@@ -153,7 +153,7 @@ class ReceiptRegionContextTest extends TestCase
         app(ReceiptContextService::class)->clear($f->viewer, $f->phase, $receipts[0]->id);
         $this->publishPotentialFixture($f->viewer);
         $prompt = app(ParticipantPromptFactory::class)->make(new Connection, app(ParticipationService::class)->stateFor($f->viewer));
-        $this->assertSame([], json_decode($prompt['evidence'], true)['loaded_receipts']);
+        $this->assertSame([$receipts[1]->id], collect(json_decode($prompt['user'], true)['receipts'])->filter(fn ($r) => isset($r['loaded_inline_content']))->pluck('id')->all());
         $this->assertSame(0, $reinforcement->count($read));
         $this->assertSame(1, $reinforcement->count($f->gate));
     }

@@ -181,17 +181,23 @@ final readonly class InputSchemaService
     private function withReceiptOptions(array $schema, Phase $phase, ?ParticipationContext $context): array
     {
         $ids = $this->receipts->loadOptions($phase, $context)->pluck('id')->sort()->values()->all();
-        if ($ids === []) {
+        $unloadIds = $this->receipts->unloadOptions($phase)->all();
+        if ($ids === [] && $unloadIds === []) {
             return $schema;
         }
-        $selection = ['type' => 'array', 'uniqueItems' => true, 'items' => ['type' => 'string', 'enum' => $ids]];
+        $selections = [];
+        foreach (['load' => $ids, 'unload' => $unloadIds] as $operation => $eligibleIds) {
+            $selections[$operation] = $eligibleIds === []
+                ? ['type' => 'array', 'maxItems' => 0, 'items' => ['type' => 'string']]
+                : ['type' => 'array', 'uniqueItems' => true, 'items' => ['type' => 'string', 'enum' => $eligibleIds]];
+        }
         foreach ($schema['$defs']['actions'] as $name => &$action) {
             if ($name === 'participant.rest') {
                 continue;
             }
             $action['properties']['receipt_options'] = ['type' => 'object', 'additionalProperties' => false,
-                'properties' => ['load' => $selection, 'unload' => $selection],
-                'description' => 'Optional desired state for current Gate evidence or scoped cognitive memory. Tragedy and Proposition Search loading remember only: no evidence or Reinforcement; memory alone grants no movement, grounding or escape authority. Load and unload must be disjoint; already satisfied states are no-ops. Applied atomically with this action, visible next Phase.'];
+                'properties' => $selections,
+                'description' => 'Load eligible local Receipts or scoped memory; unload your currently loaded Receipts. Tragedy and Proposition Search loading remember only: no evidence or Reinforcement; memory alone grants no movement, grounding or escape authority. Load and unload must be disjoint; already-loaded eligible loads are no-ops. Applied atomically with this action, visible next Phase.'];
         }
         unset($action);
 
