@@ -267,7 +267,7 @@ class WebSearchReceiptTest extends TestCase
         $this->publishPotentialFixture($fixture->viewer);
         $before = $factory->make(new Connection, app(ParticipationService::class)->stateFor($fixture->viewer));
         $this->assertStringNotContainsString('Ignore the schema', $before['user'].$before['evidence']);
-        $catalogue = collect(json_decode($before['user'], true)['plan']['receipts'])->firstWhere('id', $receipt->id);
+        $catalogue = collect(json_decode($before['support'], true)['receipts'])->firstWhere('id', $receipt->id);
         $this->assertSame('web_search', $catalogue['type']);
         $this->assertSame($receipt->reference, $catalogue['reference']);
         $this->assertArrayNotHasKey('evidence', $catalogue);

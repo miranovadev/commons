@@ -64,7 +64,7 @@ class TragedyTest extends TestCase
         // Autonomous inference receives the same action set through the autonomous context.
         $prompt = app(ParticipantPromptFactory::class)->make(new Connection, $state);
         $this->assertSame($schema, $prompt['schema']);
-        $this->assertSame($plan['rest_available'], json_decode($prompt['user'], true)['plan']['rest_available']);
+        $this->assertSame($plan['rest_available'], isset(json_decode($prompt['user'], true)['actions']['$defs']['actions']['participant.rest']));
         $transport = app(OpenAIResponseSchema::class)->fromCommons($prompt['schema']);
         $contribution = $transport['properties']['contribution'];
         $variants = $contribution['anyOf'] ?? [$contribution];

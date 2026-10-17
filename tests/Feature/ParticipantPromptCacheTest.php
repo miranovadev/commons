@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ContextDomain;
 use App\Enums\PhaseKind;
 use App\Models\Connection;
 use App\Services\InputSchemaService;
@@ -9,19 +10,24 @@ use App\Services\OpenAIRequestFactory;
 use App\Services\OpenAIResponseSchema;
 use App\Services\OpenAIResponsesClient;
 use App\Services\ParticipantContextSerializer;
-use App\Services\ParticipantPhaseInstructions;
 use App\Services\ParticipantPromptCore;
 use App\Services\ParticipantPromptFactory;
 use App\Services\ParticipantPromptLayout;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Mockery;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use Tests\Fixtures\ParticipantContextFixture;
 use Tests\TestCase;
 
 class ParticipantPromptCacheTest extends TestCase
 {
+    use RefreshDatabase;
+
+    private ?ParticipantContextFixture $fixture = null;
+
     public static function phases(): array
     {
         return array_map(fn ($phase) => [$phase], PhaseKind::cases());
@@ -38,20 +44,19 @@ class ParticipantPromptCacheTest extends TestCase
         $this->assertEquals($this->visiblePacket($before), $after);
         // Assert ordered populations separately: recursive object-key equality must
         // never conceal a change to historical, ranked or action ordering.
-        foreach (['lineage', 'read_options', 'gate_options', 'write_options', 'receipts'] as $key) {
-            $this->assertSame(array_column($before['plan'][$key], 'id'), array_column($after['plan'][$key], 'id'));
+        foreach (['read', 'gate', 'write'] as $key) {
+            $this->assertSame(array_column($before[$key]['propositions'], 'id'), array_column($after[$key]['propositions'], 'id'));
         }
         $this->assertSame($state['plan']['schema'], $prompt['schema']);
-        $this->assertSame($before['plan']['schema'], $after['plan']['schema']);
+        $this->assertSame($before['actions'], $after['actions']);
         $request = app(OpenAIRequestFactory::class)->make($connection, $prompt);
         $this->assertSame(app(OpenAIResponseSchema::class)->fromCommons($state['plan']['schema']), $request['text']['format']['schema']);
         $this->assertSame(1, substr_count($prompt['evidence'].$prompt['user'], 'immutable observation'));
         $this->assertStringNotContainsString('another observation', $prompt['evidence'].$prompt['user']);
         $this->assertStringNotContainsString('DO-NOT-EXPOSE', json_encode($request));
         $this->assertStringContainsString(ParticipantPromptCore::TEXT, $prompt['system']);
-        $this->assertStringContainsString(app(ParticipantPhaseInstructions::class)->forPhase($phase), $prompt['system']);
         // Corrected cognition uses the existing evidence/state layout unchanged.
-        $layers = (new ParticipantPromptLayout)->make($before);
+        $layers = (new ParticipantPromptLayout)->make($before, app(ParticipantContextSerializer::class)->receipts($state['plan']['receipts']), $state['plan']['read_options']);
         $this->assertSame($layers['evidence'], $prompt['evidence']);
         $this->assertSame($layers['user'], $prompt['user']);
         $this->assertSame($layers['loaded_receipt_count'], $prompt['loaded_receipt_count']);
@@ -84,7 +89,7 @@ class ParticipantPromptCacheTest extends TestCase
         $connection = $this->connection();
         $before = $factory->make($connection, $state);
         $state['plan']['phase']['id'] = 'next-phase';
-        $state['plan']['lineage'][0]['observables']['closure'] = 0.75;
+        $state['plan']['gate_options'][0]['observables']['closure'] = 0.75;
         $state['plan']['receipts'][0]['availability'] = 'consumed';
         $state['plan']['receipts'][0]['consumed_at'] = '2026-09-20T01:00:00Z';
         $state['plan']['receipts'][0]['can_replay'] = false;
@@ -121,7 +126,7 @@ class ParticipantPromptCacheTest extends TestCase
         ]];
         $prompt = app(ParticipantPromptFactory::class)->make($this->connection(), $state);
         $this->assertSame(['https://z.test', 'https://a.test'], array_column(json_decode($prompt['evidence'], true)['loaded_receipts'][0]['evidence']['results'], 'url'));
-        $this->assertSame(['parent-z', 'parent-a'], $this->reconstruct($prompt)['plan']['lineage'][0]['parent_ids']);
+        $this->assertSame(['history'], $this->reconstruct($prompt)['gate']['propositions'][0]['parent_ids']);
     }
 
     public static function models(): array
@@ -140,7 +145,8 @@ class ParticipantPromptCacheTest extends TestCase
         Http::assertSent(function ($request) use ($explicit, $state, $connection): bool {
             $payload = $request->data();
             $prompt = app(ParticipantPromptFactory::class)->make($connection, $state);
-            $this->assertCount(3, $payload['input']);
+            $this->assertCount(4, $payload['input']);
+            $this->assertSame($prompt['support'], $payload['input'][3]['content']);
             foreach ([0 => 'system', 1 => 'evidence'] as $index => $section) {
                 $content = $payload['input'][$index]['content'];
                 $this->assertSame($prompt[$section], $explicit ? $content[0]['text'] : $content);
@@ -162,7 +168,7 @@ class ParticipantPromptCacheTest extends TestCase
         $connection = $this->connection();
         $key = fn ($c, $s) => app(OpenAIRequestFactory::class)->make($c, app(ParticipantPromptFactory::class)->make($c, $s), $s['_inference'])['prompt_cache_key'];
         $before = $key($connection, $state);
-        $this->assertStringStartsWith('commons-prefix-v2:', $before);
+        $this->assertStringStartsWith('commons-context-c1:', $before);
         foreach (PhaseKind::cases() as $phase) {
             $this->assertSame($before, $key($connection, $this->state($phase)));
         }
@@ -180,19 +186,14 @@ class ParticipantPromptCacheTest extends TestCase
 
     public function test_all_contract_content_versions_the_family_without_entering_model_context(): void
     {
-        $contracts = app(ParticipantPhaseInstructions::class);
-        $catalog = array_map(fn (PhaseKind $phase) => $contracts->forPhase($phase, restAvailable: true), PhaseKind::cases());
-        $this->assertSame(hash('sha256', json_encode($catalog, JSON_THROW_ON_ERROR)), $contracts->fingerprint());
         $connection = $this->connection();
         $prompt = app(ParticipantPromptFactory::class)->make($connection, $this->state());
         $this->assertSame(hash('sha256', json_encode([
-            ParticipantPromptCore::TEXT, ParticipantPromptLayout::FORMAT_INSTRUCTION, $contracts->fingerprint(), '',
+            ParticipantPromptCore::TEXT, ParticipantPromptLayout::FORMAT_INSTRUCTION, '',
         ], JSON_THROW_ON_ERROR)), $prompt['instruction_family']);
         $before = app(OpenAIRequestFactory::class)->make($connection, $prompt);
-        $catalog[5] .= '\nA future Bias semantic correction.';
         $prompt['instruction_family'] = hash('sha256', json_encode([
-            ParticipantPromptCore::TEXT, ParticipantPromptLayout::FORMAT_INSTRUCTION,
-            hash('sha256', json_encode($catalog, JSON_THROW_ON_ERROR)), '',
+            ParticipantPromptCore::TEXT.' Future interface edit.', ParticipantPromptLayout::FORMAT_INSTRUCTION, '',
         ], JSON_THROW_ON_ERROR));
         $after = app(OpenAIRequestFactory::class)->make($connection, $prompt);
         $this->assertNotSame($before['prompt_cache_key'], $after['prompt_cache_key']);
@@ -248,23 +249,12 @@ class ParticipantPromptCacheTest extends TestCase
 
     private function visiblePacket(array $packet): array
     {
-        $packet['plan']['receipts'] = array_map(fn ($r) => array_intersect_key($r, array_flip(
-            ($r['active'] ?? false)
-                ? ['id', 'type', 'reference', 'loaded', 'proposition_id', 'context_horizon_id', 'signature', 'capabilities', 'replayed_from_receipt_id', 'observation_error', 'evidence']
-                : ['id', 'type', 'reference', 'loaded'])), $packet['plan']['receipts']);
-
         return $packet;
     }
 
     private function reconstruct(array $prompt): array
     {
-        $packet = json_decode($prompt['user'], true, flags: JSON_THROW_ON_ERROR);
-        $bodies = array_column(json_decode($prompt['evidence'], true)['loaded_receipts'], null, 'id');
-        foreach ($packet['plan']['receipts'] as &$receipt) {
-            $receipt = [...($bodies[$receipt['id']] ?? []), ...$receipt];
-        }
-
-        return $packet;
+        return json_decode($prompt['user'], true, flags: JSON_THROW_ON_ERROR);
     }
 
     private function connection(string $model = 'gpt-5.6'): Connection
@@ -282,6 +272,8 @@ class ParticipantPromptCacheTest extends TestCase
 
     private function state(PhaseKind $phase = PhaseKind::Distinguish): array
     {
+        $this->fixture ??= new ParticipantContextFixture(2, 0, false);
+        $gateId = $this->fixture->seed->id;
         $node = ['id' => 'history', 'statement' => 'Retain historical meaning.', 'register' => 'canon', 'tier' => 'committal',
             'parent_ids' => ['parent-z', 'parent-a'], 'observables' => ['correspondence' => 0.2, 'chirality' => -1, 'closure' => 0.5],
             'attestation' => ['direction' => 'refute', 'rationale' => 'Recorded judgment.'], 'reinforcement_count' => 3];
@@ -294,11 +286,11 @@ class ParticipantPromptCacheTest extends TestCase
         $unloaded = [...$receipt, 'id' => 'r2', 'status' => 'available', 'active' => false, 'loaded' => false, 'loaded_at' => null,
             'evidence' => ['content_excerpt' => 'another observation']];
 
-        return ['status' => 'ready', 'domain' => 'emergence', 'perspective' => ['note' => 'DO-NOT-EXPOSE'],
+        return ['participant' => ['id' => 'participant', 'callsign' => 'Nova', 'designation' => 'Explorer'], 'status' => 'ready', 'domain' => 'emergence', 'perspective' => ['note' => 'DO-NOT-EXPOSE'],
             '_inference' => ['participant_id' => 'participant', 'substrate_id' => 'substrate'],
-            'plan' => ['phase' => ['id' => 'phase', 'number' => $phase->value, 'kind' => strtolower($phase->name)],
-                'provenance_id' => 'history', 'gate_id' => 'gate', 'lineage' => [$node],
-                'read_options' => [$node], 'gate_options' => [[...$node, 'id' => 'gate']], 'write_options' => [],
+            'plan' => ['phase' => ['id' => 'phase', 'number' => $phase->value, 'kind' => strtolower($phase->name), 'write_register' => ContextDomain::Emergence->registerFor($phase)],
+                'provenance_id' => 'history', 'gate_id' => $gateId, 'lineage' => [$node],
+                'read_options' => [$node], 'gate_options' => [[...$node, 'id' => $gateId, 'parent_ids' => ['history']]], 'write_options' => [],
                 'receipts' => [$receipt, $unloaded], 'rest_available' => false, 'rest_reason' => null,
                 'schema' => app(InputSchemaService::class)->forPhase($phase)]];
     }

@@ -2,8 +2,10 @@
 
 namespace App\Services;
 
+use App\Enums\PhaseKind;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /** Allowlisted model/API contract. UI additions cannot enter inference implicitly. */
 final class ParticipantContextSerializer
@@ -54,8 +56,8 @@ final class ParticipantContextSerializer
     }
 
     /**
-     * Proposition IDs actually exposed to cognition. Calculation-only hydration is
-     * deliberately absent, so bounded memory inherits the same visibility authority.
+     * Existing Proposition Search exclusion contract. C1 keeps this operational
+     * visibility boundary unchanged; search over newly hidden history is deferred.
      *
      * @return Collection<int, string>
      */
@@ -84,22 +86,37 @@ final class ParticipantContextSerializer
     /** Lifecycle details for human display do not belong in an inference prompt. */
     public function inference(array $state): array
     {
-        $plan = Arr::only($state['plan'], ['phase', 'provenance_id', 'gate_id',
-            'lineage', 'exhausted_alternatives', 'read_options', 'gate_options', 'write_options', 'commitment', 'commitment_options', 'correspondence_admissibility', 'chirality_admissibility', 'rest_available', 'rest_reason', 'receipts', 'schema']);
-        unset($plan['schema']['$comment']); // Publication guard metadata is not participant cognition.
-        $plan['phase'] = Arr::only($plan['phase'], ['id', 'number', 'kind', 'write_register']);
-        foreach (['lineage', 'read_options', 'gate_options', 'write_options'] as $key) {
-            if (isset($plan[$key])) {
-                $plan[$key] = array_map($this->proposition(...), $plan[$key]);
-            }
+        $plan = $state['plan'];
+        $registers = app(ParticipantCognitiveProjection::class)->registers($plan);
+        // Preserve the operational Proposition.participant naming, resolving
+        // authorship from creation records even for hydrated/historical Reads.
+        // This batch lookup neither selects visible nodes nor grants permissions.
+        $ids = collect($registers)->flatMap(fn ($register) => array_column($register['propositions'], 'id'))->unique();
+        $authors = DB::table('propositions')->join('phases', 'phases.id', '=', 'propositions.phase_id')
+            ->join('cycles', 'cycles.id', '=', 'phases.cycle_id')
+            ->join('participants', 'participants.id', '=', 'cycles.participant_id')
+            ->whereIn('propositions.id', $ids)
+            ->get(['propositions.id', 'participants.id as participant_id', 'participants.callsign'])
+            ->mapWithKeys(fn ($row) => [$row->id => ['id' => $row->participant_id, 'callsign' => $row->callsign]]);
+        foreach ($registers as &$register) {
+            $register['propositions'] = array_map(fn ($node) => [
+                ...$this->proposition($node),
+                ...($authors->has($node['id']) ? ['participant' => $authors->get($node['id'])] : []),
+                ...Arr::only($node, ['relation', 'role', 'phase_number', 'statement_truncated',
+                    'exhausted', 'basin_exhausted', 'exhausted_at', 'actionable']),
+                ...(isset($plan['commitment_options'][$node['id']])
+                    ? ['commitment' => $plan['commitment_options'][$node['id']]] : []),
+            ], $register['propositions']);
         }
+        unset($register);
+        $registers['write']['question'] = app(ParticipantRegisterQuestions::class)->forPhase(
+            PhaseKind::from($plan['phase']['number']), $plan['phase']['write_register'],
+        );
+        $schema = $plan['schema'];
+        unset($schema['$comment'], $schema['x-commons']['description']); // Publication guard remains in the transport/validator.
 
-        $plan['receipts'] = $this->receipts($plan['receipts'] ?? []);
-        if (isset($plan['exhausted_alternatives'])) {
-            $plan['exhausted_alternatives'] = array_map($this->historical(...), $plan['exhausted_alternatives']);
-        }
-
-        return ['status' => $state['status'], 'plan' => $plan];
+        return ['participant' => Arr::only($state['participant'], ['id', 'callsign', 'designation']),
+            ...$registers, 'actions' => $schema];
     }
 
     /** Shared available catalogue plus the Participant's already-admitted loaded state.

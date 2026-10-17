@@ -1,0 +1,140 @@
+{
+  "base": "23258245c42ffe4263870e403323526a7f2d9703",
+  "method": "Identical persisted fixtures, old/new authoritative schema annotations; bytes/4 rough token estimate, not provider tokenization.",
+  "live_inference": false,
+  "cases": [
+    {
+      "phase": "Distinguish",
+      "before": {
+        "system_bytes": 11445,
+        "evidence_bytes": 22,
+        "user_bytes": 5667,
+        "support_bytes": 0,
+        "prompt_bytes": 17134,
+        "rough_tokens": 4284
+      },
+      "after": {
+        "system_bytes": 635,
+        "evidence_bytes": 22,
+        "user_bytes": 3701,
+        "support_bytes": 1540,
+        "prompt_bytes": 5898,
+        "rough_tokens": 1475
+      },
+      "projection_ms": 2.094,
+      "projection_queries": 5,
+      "actions": [
+        "instrument.execute"
+      ],
+      "schema_constraints_equal": true,
+      "evidence_bytes_equal": true
+    },
+    {
+      "phase": "Persist",
+      "before": {
+        "system_bytes": 11316,
+        "evidence_bytes": 22,
+        "user_bytes": 5508,
+        "support_bytes": 0,
+        "prompt_bytes": 16846,
+        "rough_tokens": 4212
+      },
+      "after": {
+        "system_bytes": 635,
+        "evidence_bytes": 22,
+        "user_bytes": 3547,
+        "support_bytes": 1540,
+        "prompt_bytes": 5744,
+        "rough_tokens": 1436
+      },
+      "projection_ms": 0.196,
+      "projection_queries": 0,
+      "actions": [
+        "proposition.variant"
+      ],
+      "schema_constraints_equal": true,
+      "evidence_bytes_equal": true
+    },
+    {
+      "phase": "Mediate",
+      "before": {
+        "system_bytes": 13269,
+        "evidence_bytes": 682,
+        "user_bytes": 37095,
+        "support_bytes": 0,
+        "prompt_bytes": 51046,
+        "rough_tokens": 12762
+      },
+      "after": {
+        "system_bytes": 635,
+        "evidence_bytes": 682,
+        "user_bytes": 17239,
+        "support_bytes": 1540,
+        "prompt_bytes": 20096,
+        "rough_tokens": 5024
+      },
+      "projection_ms": 0.349,
+      "projection_queries": 0,
+      "actions": [
+        "proposition.reconcile",
+        "instrument.execute",
+        "attestation.create"
+      ],
+      "schema_constraints_equal": true,
+      "evidence_bytes_equal": true
+    },
+    {
+      "phase": "Bias",
+      "before": {
+        "system_bytes": 15283,
+        "evidence_bytes": 22,
+        "user_bytes": 25952,
+        "support_bytes": 0,
+        "prompt_bytes": 41257,
+        "rough_tokens": 10315
+      },
+      "after": {
+        "system_bytes": 635,
+        "evidence_bytes": 22,
+        "user_bytes": 5537,
+        "support_bytes": 1540,
+        "prompt_bytes": 7734,
+        "rough_tokens": 1934
+      },
+      "projection_ms": 1.238,
+      "projection_queries": 3,
+      "actions": [
+        "instrument.execute",
+        "attestation.create"
+      ],
+      "schema_constraints_equal": true,
+      "evidence_bytes_equal": true
+    },
+    {
+      "phase": "Order",
+      "before": {
+        "system_bytes": 12092,
+        "evidence_bytes": 22,
+        "user_bytes": 46580,
+        "support_bytes": 0,
+        "prompt_bytes": 58694,
+        "rough_tokens": 14674
+      },
+      "after": {
+        "system_bytes": 635,
+        "evidence_bytes": 22,
+        "user_bytes": 25984,
+        "support_bytes": 1540,
+        "prompt_bytes": 28181,
+        "rough_tokens": 7046
+      },
+      "projection_ms": 0.341,
+      "projection_queries": 0,
+      "actions": [
+        "participant.rest"
+      ],
+      "schema_constraints_equal": true,
+      "evidence_bytes_equal": true
+    }
+  ]
+}
