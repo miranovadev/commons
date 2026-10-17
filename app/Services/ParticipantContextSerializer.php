@@ -112,11 +112,12 @@ final class ParticipantContextSerializer
         $registers['write']['question'] = app(ParticipantRegisterQuestions::class)->forPhase(
             PhaseKind::from($plan['phase']['number']), $plan['phase']['write_register'],
         );
+        $receipts = app(ParticipantReceiptProjection::class)->normalize($registers, $state);
         $schema = $plan['schema'];
         unset($schema['$comment'], $schema['x-commons']['description']); // Publication guard remains in the transport/validator.
 
         return ['participant' => Arr::only($state['participant'], ['id', 'callsign', 'designation']),
-            ...$registers, 'actions' => $schema];
+            'receipts' => $receipts, ...$registers, 'actions' => $schema];
     }
 
     /** Shared available catalogue plus the Participant's already-admitted loaded state.
