@@ -50,3 +50,12 @@ acting Participant's active same-substrate loads, even outside the current view.
 A second unload of an already-cleared Receipt is rejected, as C2 explicitly
 requires unload IDs to be currently loaded. Already-loaded eligible load IDs
 remain idempotent. Rest retains its existing no-options contract.
+
+## Cognitive minimalism
+
+Inference omits observables, aggregate Attestation summaries, Reinforcement
+counts, structural position, exploration epoch, and per-Proposition commitment
+calculation reports. Operational planning and workspace serialization retain them.
+Individual `attestation.direction` and `attestation.rationale`, recorded creator
+identity, useful register/tier and causal/recovery relationship labels remain.
+All seven C1 questions and the C1 causal projection are unchanged.

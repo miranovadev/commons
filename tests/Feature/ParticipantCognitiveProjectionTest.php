@@ -27,6 +27,30 @@ class ParticipantCognitiveProjectionTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_inference_omits_measurement_metadata_but_keeps_individual_attestation_and_author(): void
+    {
+        $f = new ParticipantContextFixture(1, 0, false);
+        $node = [...$f->gate->only(['id', 'statement', 'register', 'tier']), 'parent_ids' => [],
+            'observables' => ['correspondence' => 1, 'chirality' => -1, 'closure' => 0],
+            'attestation_summary' => ['positive' => 3], 'reinforcement_count' => 2,
+            'structural_position' => 4, 'exploration_epoch' => 7,
+            'attestation' => ['direction' => 'support', 'rationale' => 'An individual judgment.']];
+        $plan = ['gate_id' => $node['id'], 'gate_options' => [$node], 'read_options' => [], 'write_options' => [],
+            'phase' => ['id' => $f->phase->id, 'kind' => 'persist', 'number' => 2, 'write_register' => 'frontier'],
+            'schema' => app(InputSchemaService::class)->forPhase(PhaseKind::Persist),
+            'commitment_options' => [$node['id'] => ['closure' => 0.5, 'admissible' => false]]];
+        $state = ['participant' => $f->viewer->only(['id', 'callsign', 'designation']), 'plan' => $plan];
+        $packet = app(ParticipantContextSerializer::class)->inference($state);
+        $gate = $packet['gate']['propositions'][0];
+        foreach (['observables', 'attestation_summary', 'reinforcement_count', 'structural_position', 'exploration_epoch', 'commitment'] as $key) {
+            $this->assertArrayNotHasKey($key, $gate);
+        }
+        $this->assertSame($node['attestation'], $gate['attestation']);
+        $this->assertSame($f->viewer->only(['id', 'callsign']), $gate['participant']);
+        $this->assertSame([], $gate['receipts']);
+        $this->assertSame($plan, $state['plan']);
+    }
+
     public function test_current_identity_and_recorded_authorship_survive_inference_without_ownership_rules(): void
     {
         $this->freezeTime();
