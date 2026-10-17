@@ -45,21 +45,23 @@ class ParticipantPromptPersistenceTest extends TestCase
             DB::enableQueryLog();
             DB::flushQueryLog();
             $prompt = app(ParticipantPromptFactory::class)->make($connection, $state);
+            $queries = DB::getQueryLog();
+            $this->assertCount(1, $queries, 'Only one batched creator lookup is needed.');
+            $this->assertStringStartsWith('select ', $queries[0]['query']);
+            $this->assertStringContainsString('participants', $queries[0]['query']);
+            $this->assertDoesNotMatchRegularExpression('/\b(receipts|attestations|instrument_executions|for update)\b/i', $queries[0]['query']);
+            DB::flushQueryLog();
+            app(ParticipantPromptLayout::class)->make($before, $state['plan']['receipts'], $state['plan']['read_options']);
             $this->assertSame([], DB::getQueryLog(), 'Layout must not fetch more evidence or acquire locks.');
             DB::disableQueryLog();
             $after = json_decode($prompt['user'], true);
             $bodies = array_column(json_decode($prompt['evidence'], true)['loaded_receipts'], null, 'id');
-            foreach ($after['plan']['receipts'] as &$receipt) {
-                $receipt = [...($bodies[$receipt['id']] ?? []), ...$receipt];
-            }
-            foreach ($before['plan']['receipts'] as &$ref) {
-                $ref = array_intersect_key($ref, array_flip(($ref['active'] ?? false)
-                    ? ['id', 'type', 'reference', 'loaded', 'proposition_id', 'context_horizon_id', 'signature', 'capabilities', 'replayed_from_receipt_id', 'observation_error', 'evidence']
-                    : ['id', 'type', 'reference', 'loaded']));
-            }
-            unset($ref);
             $this->assertEquals($before, $after);
-            $this->assertSame($before['plan']['schema'], $after['plan']['schema']);
+            $this->assertSame($before['actions'], $after['actions']);
+            $references = json_decode($prompt['support'] ?: '{"receipts":[]}', true)['receipts'];
+            foreach ($references as $reference) {
+                $this->assertArrayNotHasKey('evidence', $reference);
+            }
 
             foreach (['first', 'second'] as $name) {
                 $expected = collect($bodies)->contains(fn ($body) => ($body['evidence']['content_excerpt'] ?? null) === $name.' observed evidence') ? 1 : 0;
@@ -117,7 +119,7 @@ class ParticipantPromptPersistenceTest extends TestCase
         $prompt = app(ParticipantPromptFactory::class)->make(new Connection, $loaded);
         $this->assertSame(0, substr_count($prompt['evidence'].$prompt['user'], 'PRIVATE-ATTACHED-OBSERVATION')); // Gate/Write are metadata even when loaded.
         $this->assertStringNotContainsString('PRIVATE-ATTACHED-OBSERVATION', $prompt['user']);
-        $entry = collect(json_decode($prompt['user'], true)['plan']['receipts'])->firstWhere('id', $receipt->id);
+        $entry = collect(json_decode($prompt['support'], true)['receipts'])->firstWhere('id', $receipt->id);
         $this->assertTrue($entry['loaded']);
         $this->assertEqualsCanonicalizing(['id', 'type', 'reference', 'loaded'], array_keys($entry));
         $this->assertSame($fixture->phase->id, $loaded['plan']['phase']['id']);
@@ -140,28 +142,21 @@ class ParticipantPromptPersistenceTest extends TestCase
         }
         $this->publishPotentialFixture($fixture->viewer);
         $state = app(ParticipationService::class)->stateFor($fixture->viewer);
-        $after = app(ParticipantContextSerializer::class)->inference($state);
-        $before = $after;
-        $before['plan']['receipts'] = $context->forPhase($fixture->phase)->all();
+        $packet = app(ParticipantContextSerializer::class)->inference($state);
+        $rawReceipts = $context->forPhase($fixture->phase)->all();
+        $receipts = app(ParticipantContextSerializer::class)->receipts($rawReceipts);
         $layout = app(ParticipantPromptLayout::class);
-        $old = $layout->make($before);
-        $new = $layout->make($after);
-        $this->assertSame($old['evidence'], $new['evidence']);
-        $this->assertSame($before['plan']['schema'], $after['plan']['schema']);
+        $new = $layout->make($packet, $receipts, $state['plan']['read_options']);
         $this->assertSame(0, $new['loaded_receipt_count']);
         $this->assertSame(3, ParticipantReceiptContext::active()->count());
-        foreach ($after['plan']['receipts'] as $receipt) {
-            if ($receipt['status'] !== 'loaded') {
-                $this->assertArrayNotHasKey('evidence', $receipt);
-            }
+        foreach ($receipts as $receipt) {
+            $this->assertArrayNotHasKey('evidence', $receipt);
         }
-        $bytes = fn ($value) => strlen(json_encode($value, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR));
-        $catalogue = fn ($packet) => array_values(array_filter($packet['plan']['receipts'], fn ($r) => $r['status'] !== 'loaded'));
-        $metrics = ['catalogue_before' => $bytes($catalogue($before)), 'catalogue_after' => $bytes($catalogue($after)),
-            'loaded_evidence' => strlen($new['evidence']), 'internal_packet' => $bytes($before),
-            'packet_after' => strlen($new['evidence'].$new['user']), 'reads' => count($after['plan']['read_options']),
-            'counterparts' => count($after['plan']['schema']['$defs']['actions']['proposition.reconcile']['properties']['other_proposition_id']['enum'] ?? [])];
-        $this->assertLessThan($metrics['catalogue_before'], $metrics['catalogue_after']);
-        fwrite(STDERR, "\nRECEIPT_CONTEXT_FIXTURE ".json_encode($metrics)."\n");
+        $references = json_decode($new['support'], true)['receipts'];
+        $this->assertSame(array_column($receipts, 'id'), array_column($references, 'id'));
+        foreach ($references as $reference) {
+            $this->assertEqualsCanonicalizing(['id', 'type', 'reference', 'loaded'], array_keys($reference));
+        }
+        $this->assertStringNotContainsString('Observed evidence', $new['evidence'].$new['user'].$new['support']);
     }
 }

@@ -75,7 +75,7 @@ class ParticipantContextTest extends TestCase
         app(PotentialProjectionService::class)->rebuild($fixture->substrate->id, false);
         $state = app(ParticipationService::class)->stateFor($fixture->viewer);
         $prompt = app(ParticipantPromptFactory::class)->make($connection, $state);
-        $this->assertSame(['status', 'plan'], array_keys(json_decode($prompt['user'], true)));
+        $this->assertSame(['participant', 'read', 'gate', 'write', 'actions'], array_keys(json_decode($prompt['user'], true)));
         $this->assertLessThanOrEqual(self::MAX_BYTES, strlen($prompt['user']));
         $polluted = $state;
         $polluted['plan']['workspace'] = ['registers' => array_fill(0, 500, $plan['gate_options'])];
@@ -127,12 +127,14 @@ class ParticipantContextTest extends TestCase
         $connection->configuration = [];
         $prompt = app(ParticipantPromptFactory::class)->make($connection, $state);
         $packet = json_decode($prompt['user'], true, flags: JSON_THROW_ON_ERROR);
-        $schema = $packet['plan']['schema'];
+        $schema = $packet['actions'];
         $this->assertArrayHasKey('instrument.execute', $schema['$defs']['actions']);
-        $this->assertSame($schema, $prompt['schema']);
+        $transportSchema = $prompt['schema'];
+        unset($transportSchema['x-commons']['description'], $transportSchema['$comment']);
+        $this->assertSame($schema, $transportSchema);
 
         $guidance = 'Creating a Cite Receipt does not itself grant Reinforcement.';
-        $this->assertStringContainsString($guidance, $prompt['system']);
+        $this->assertStringNotContainsString($guidance, $prompt['system']);
         $this->assertStringContainsString($guidance, $schema['$defs']['instrument']['description']);
         $transport = app(OpenAIResponseSchema::class)->fromCommons($prompt['schema']);
         $this->assertStringContainsString($guidance, json_encode($transport, JSON_THROW_ON_ERROR));
@@ -140,7 +142,7 @@ class ParticipantContextTest extends TestCase
         $this->assertStringNotContainsString('no page fetch or content verification', $prompt['user']);
         $this->assertStringNotContainsString('an unsigned Receipt', $prompt['user']);
 
-        $write = collect($packet['plan']['write_options'])->firstWhere('id', $candidate->id);
+        $write = collect($packet['write']['propositions'])->firstWhere('id', $candidate->id);
         $this->assertNotNull($write);
         $instrument = collect($write['instruments'])->firstWhere('receipt_id', $receipt->id);
         $this->assertNotNull($instrument);

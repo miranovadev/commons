@@ -15,8 +15,8 @@ final readonly class OpenAIRequestFactory
         $explicit = preg_match('/^gpt-(?:5\.6|6)(?:[-.]|$)/', $model) === 1;
         $content = fn (string $text): array => [['type' => 'input_text', 'text' => $text,
             ...($explicit ? ['prompt_cache_breakpoint' => ['mode' => 'explicit']] : [])]];
-        // Pool the complete instruction catalog and custom constitution within a substrate.
-        // The selected Phase changes the prefix, not its routing family. State and schema stay out.
+        // Pool the stable interface and custom instructions within a substrate.
+        // Phase questions, dynamic state and schemas stay outside the routing family.
         $family = [$model, ParticipantPromptLayout::VERSION, $prompt['instruction_family'],
             $metadata['substrate_id'] ?? $connection->getKey()];
 
@@ -26,6 +26,7 @@ final readonly class OpenAIRequestFactory
                 ['role' => 'system', 'content' => $explicit ? $content($prompt['system']) : $prompt['system']],
                 ['role' => 'user', 'content' => $explicit ? $content($prompt['evidence']) : $prompt['evidence']],
                 ['role' => 'user', 'content' => $prompt['user']],
+                ...(! empty($prompt['support']) ? [['role' => 'user', 'content' => $prompt['support']]] : []),
             ],
             'text' => ['format' => [
                 'type' => 'json_schema', 'name' => 'commons_phase_contribution', 'strict' => true,

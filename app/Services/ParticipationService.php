@@ -63,6 +63,7 @@ final readonly class ParticipationService
 
         return [
             ...$state,
+            'participant' => $participant->only(['id', 'callsign', 'designation']),
             'current_proposition_id' => $participant->fresh()->current_proposition_id,
             'domain' => $horizon?->domain->value,
             'horizon_sequence' => $horizon?->sequence,

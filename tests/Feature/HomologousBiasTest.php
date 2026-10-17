@@ -675,9 +675,10 @@ class HomologousBiasTest extends TestCase
         $this->assertSame($orientation > 0 ? 'positive' : 'negative', $diagnostic['orientation_direction']);
         $this->assertSame($cadence > 0 ? 'positive' : 'negative', $diagnostic['attestation_cadence_direction']);
         $this->assertSame('positive', $diagnostic['chirality_direction']);
-        $packet = app(ParticipantContextSerializer::class)->inference(['status' => 'ready', 'plan' => $visible]);
+        $packet = app(ParticipantContextSerializer::class)->inference(['participant' => $this->actor->only(['id', 'callsign', 'designation']), 'plan' => $visible]);
         $prompt = app(ParticipantPromptLayout::class)->make($packet);
-        $this->assertEquals($diagnostic, json_decode($prompt['user'], true)['plan']['chirality_admissibility']);
+        $this->assertArrayNotHasKey('chirality_admissibility', json_decode($prompt['user'], true));
+        $this->assertSame($visible['gate_id'], json_decode($prompt['user'], true)['gate']['propositions'][0]['id']);
         if (! $allowed) {
             $this->reject($this->gateA);
         }

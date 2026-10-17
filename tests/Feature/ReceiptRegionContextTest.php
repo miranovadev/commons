@@ -143,7 +143,7 @@ class ReceiptRegionContextTest extends TestCase
         foreach ([1, 2, 3] as $index) {
             $this->assertStringNotContainsString('BODY-role-'.$index, $prompt['evidence'].$prompt['user']);
         }
-        foreach (json_decode($prompt['user'], true)['plan']['receipts'] as $ref) {
+        foreach (json_decode($prompt['support'], true)['receipts'] as $ref) {
             $this->assertEqualsCanonicalizing(['id', 'type', 'reference', 'loaded'], array_keys($ref));
             $this->assertTrue($ref['loaded']);
         }

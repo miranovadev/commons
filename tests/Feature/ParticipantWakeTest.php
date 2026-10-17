@@ -24,6 +24,7 @@ use App\Services\OpenAIResponseSchema;
 use App\Services\OpenAIResponsesClient;
 use App\Services\OperationalInstrumentService;
 use App\Services\ParticipantActivityService;
+use App\Services\ParticipantContextSerializer;
 use App\Services\ParticipationService;
 use App\Services\WakeClock;
 use App\Services\WakeOffsetResolver;
@@ -147,11 +148,15 @@ class ParticipantWakeTest extends TestCase
             ],
             'credentials' => ['api_key' => 'test-secret'],
         ]);
+        $f = new ParticipantContextFixture(2, 0, false);
         $state = [
+            'participant' => $f->viewer->only(['id', 'callsign', 'designation']),
             'status' => 'ready',
             'cycle' => ['id' => 'cycle-id', 'sequence' => 1],
             'plan' => [
-                'phase' => ['id' => 'phase-id', 'kind' => 'distinguish'],
+                'phase' => ['id' => 'phase-id', 'kind' => 'distinguish', 'number' => 1, 'write_register' => 'activity'],
+                'gate_id' => $f->seed->id,
+                'gate_options' => [[...$f->seed->only(['id', 'statement', 'register', 'tier']), 'parent_ids' => []]],
                 'receipts' => [],
                 'schema' => app(InputSchemaService::class)
                     ->forPhase(PhaseKind::Distinguish),
@@ -173,7 +178,7 @@ class ParticipantWakeTest extends TestCase
             $payload = $request->data();
 
             $this->assertEquals(
-                ['status' => $state['status'], 'plan' => $state['plan']],
+                app(ParticipantContextSerializer::class)->inference($state),
                 json_decode(
                     $payload['input'][2]['content'],
                     true,
