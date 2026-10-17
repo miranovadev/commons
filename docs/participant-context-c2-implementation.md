@@ -29,3 +29,24 @@ The existing strict response schema remains. The system's explicit cache
 breakpoint and routing-family mechanism remain; the old independent evidence
 prefix is removed. Cache hits are not guaranteed by immutable evidence. C2
 versions the routing family so old C1 prefixes cannot be mistaken for this layout.
+
+## Loading and evidence
+
+Creator loads occur inside Instrument completion's transaction and use the same
+load persistence, ledger event, invalidation and recalculation path as ordinary
+loading. Failed observations load with no qualifying signature. No-Receipt
+failures create no load. There is no historical backfill.
+
+Read and Gate allow loaded content; Write alone does not. Scoped loaded memory
+retains its existing independent visibility. Search/hyperlink content is the
+stored canonical observation; failed observations expose their recorded errors
+with `content_verified: false`. Missing evidence is omitted. Citation resolution
+uses the existing canonical same-substrate object resolver.
+
+Load options use operational local Read/Gate/Write selectors plus the existing
+ReceiptRegionService and qualification checks. Foreign comparison visibility
+never bypasses Region/Horizon scope. Unload options independently enumerate the
+acting Participant's active same-substrate loads, even outside the current view.
+A second unload of an already-cleared Receipt is rejected, as C2 explicitly
+requires unload IDs to be currently loaded. Already-loaded eligible load IDs
+remain idempotent. Rest retains its existing no-options contract.

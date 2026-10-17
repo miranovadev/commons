@@ -12,7 +12,7 @@ $statement = [
 ];
 
 $instrument = [
-    'description' => 'Citation references a substrate object; hyperlink retrieves a public URL; web_search finds external resources; proposition_search retrieves bounded historical memory. Instruments record Receipts without loading them. Creating a Cite Receipt does not itself grant Reinforcement.',
+    'description' => 'Citation references a substrate object; hyperlink retrieves a public URL; web_search finds external resources; proposition_search retrieves bounded historical memory. Instruments record Receipts and load them for the performing Participant. Creating a Cite Receipt does not itself grant Reinforcement.',
     'anyOf' => [
         [
             'type' => 'object', 'additionalProperties' => false,
@@ -57,7 +57,7 @@ $proposition = static function (string $action, string $title) use ($statement):
 };
 
 return [
-    'version' => 26,
+    'version' => 27,
 
     'cache' => [
         'store' => env('COMMONS_SCHEMA_CACHE_STORE'),

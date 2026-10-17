@@ -4,8 +4,12 @@ namespace App\Services;
 
 use App\Models\Attestation;
 use App\Models\ParticipantReceiptContext;
+use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Receipt;
+use App\Services\Evidence\ReceiptEvidenceService;
+use App\Services\Participation\ParticipationContext;
+use DomainException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -54,15 +58,36 @@ final class ParticipantReceiptProjection
                 && (($receipt['memory_active'] ?? false) || ($receipt['availability'] ?? null) === 'available')));
         $loads = ParticipantReceiptContext::active()->where('participant_id', $state['participant']['id'])
             ->whereIn('receipt_id', $catalogue->keys())->pluck('receipt_id')->flip();
-        $persisted = Receipt::whereKey($catalogue->keys())->pluck('id')->flip();
+        $persisted = Receipt::with('instrumentExecution')->whereKey($catalogue->keys())->get()->keyBy('id');
+        $visible = collect(['read', 'gate'])->flatMap(fn ($role) => $registers[$role]['propositions'])
+            ->flatMap(fn ($node) => $node['receipts'])->unique();
+        if ($references->diff($catalogue->keys())->isNotEmpty()) {
+            throw new DomainException('A cognitive Receipt reference has no recorded metadata.');
+        }
+        $evidence = app(ReceiptEvidenceService::class);
+        $context = null;
 
-        return $catalogue->sortKeys()->map(function ($receipt) use ($loads, $persisted) {
-            $loaded = $persisted->has($receipt['id']) ? $loads->has($receipt['id']) : ($receipt['loaded'] ?? false);
-            $content = $receipt['tragedy_memory'] ?? $receipt['proposition_collection'] ?? $receipt['evidence'] ?? null;
+        return $catalogue->sortKeys()->map(function ($receipt) use ($loads, $persisted, $visible, $evidence, &$context, $state) {
+            $model = $persisted->get($receipt['id']);
+            $loaded = $model !== null ? $loads->has($receipt['id']) : ($receipt['loaded'] ?? false);
+            $memory = ($receipt['load_mode'] ?? null) === 'memory';
+            $content = null;
+            if ($loaded && ($visible->contains($receipt['id']) || ($memory && ($receipt['memory_active'] ?? false)))) {
+                if ($memory) {
+                    $content = $receipt['tragedy_memory'] ?? $receipt['proposition_collection'] ?? null;
+                } elseif ($model !== null) {
+                    $content = $evidence->observation($model)['evidence'] ?? $evidence->failure($model);
+                    if ($model->type === 'citation') {
+                        $context ??= new ParticipationContext(Phase::findOrFail($state['plan']['phase']['id']));
+                        $content = $evidence->describe($model, $context)['evidence'] ?? null;
+                    }
+                } else {
+                    $content = $receipt['evidence'] ?? null;
+                }
+            }
 
-            return [...Arr::only($receipt, ['id', 'type', 'reference']), 'loaded' => $loaded,
-                ...($loaded && $content !== null && (($receipt['active'] ?? false) || ($receipt['memory_active'] ?? false))
-                    ? ['loaded_inline_content' => $content] : [])];
+            return [...($model?->only(['id', 'type', 'reference']) ?? Arr::only($receipt, ['id', 'type', 'reference'])), 'loaded' => $loaded,
+                ...($content !== null ? ['loaded_inline_content' => $content] : [])];
         })->values()->all();
     }
 

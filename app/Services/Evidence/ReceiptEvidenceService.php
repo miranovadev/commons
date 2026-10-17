@@ -44,21 +44,8 @@ final class ReceiptEvidenceService
                 && ! $context->propositions->has($execution->proposition_id))) {
             return null;
         }
-        if ($receipt->type === 'hyperlink' && $receipt->signature !== null
-            && ($receipt->metadata['content_verified'] ?? false) === true
-            && ($receipt->metadata['reinforcement_version'] ?? null) === 'accepted-version') {
-            return [
-                'signature' => $receipt->signature,
-                'evidence' => array_intersect_key($receipt->metadata, array_flip([
-                    'resource', 'fingerprint', 'observed_at', 'last_modified', 'content_excerpt', 'excerpt_truncated',
-                ])),
-            ];
-        }
-        if ($receipt->type === 'web_search' && $receipt->signature !== null
-            && ($receipt->metadata['content_verified'] ?? false) === true
-            && ($receipt->metadata['reinforcement_version'] ?? null) === 'observed-search'
-            && is_array($receipt->metadata['observation'] ?? null)) {
-            return ['signature' => $receipt->signature, 'evidence' => $receipt->metadata['observation']];
+        if (($observation = $this->observation($receipt)) !== null) {
+            return $observation;
         }
         if ($receipt->type !== 'citation') {
             return null;
@@ -92,5 +79,44 @@ final class ReceiptEvidenceService
                     'direction' => $attestation->direction, 'rationale' => $attestation->rationale]),
             ],
         ];
+    }
+
+    /** Immutable external evidence, independent of operational activation. */
+    public function observation(Receipt $receipt): ?array
+    {
+        if (! $receipt->supports(ReceiptCapability::Readable) || ! $receipt->observationComplete()) {
+            return null;
+        }
+        if ($receipt->type === 'hyperlink' && $receipt->signature !== null
+            && ($receipt->metadata['content_verified'] ?? false) === true
+            && ($receipt->metadata['reinforcement_version'] ?? null) === 'accepted-version') {
+            return [
+                'signature' => $receipt->signature,
+                'evidence' => array_intersect_key($receipt->metadata, array_flip([
+                    'resource', 'fingerprint', 'observed_at', 'last_modified', 'content_excerpt', 'excerpt_truncated',
+                ])),
+            ];
+        }
+        if ($receipt->type === 'web_search' && $receipt->signature !== null
+            && ($receipt->metadata['content_verified'] ?? false) === true
+            && ($receipt->metadata['reinforcement_version'] ?? null) === 'observed-search'
+            && is_array($receipt->metadata['observation'] ?? null)) {
+            return ['signature' => $receipt->signature, 'evidence' => $receipt->metadata['observation']];
+        }
+
+        return null;
+    }
+
+    /** A recorded failure is information, never a qualifying evidence signature. */
+    public function failure(Receipt $receipt): ?array
+    {
+        $metadata = $receipt->metadata ?? [];
+        if (! $receipt->observationComplete() || (! isset($metadata['observation_error']) && ! isset($metadata['verification_error']))) {
+            return null;
+        }
+
+        return ['content_verified' => false, ...array_intersect_key($metadata, array_flip([
+            'validation', 'observation_error', 'verification_error',
+        ]))];
     }
 }
