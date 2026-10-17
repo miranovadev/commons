@@ -24,9 +24,7 @@ final readonly class OpenAIRequestFactory
             'model' => $model,
             'input' => [
                 ['role' => 'system', 'content' => $explicit ? $content($prompt['system']) : $prompt['system']],
-                ['role' => 'user', 'content' => $explicit ? $content($prompt['evidence']) : $prompt['evidence']],
                 ['role' => 'user', 'content' => $prompt['user']],
-                ...(! empty($prompt['support']) ? [['role' => 'user', 'content' => $prompt['support']]] : []),
             ],
             'text' => ['format' => [
                 'type' => 'json_schema', 'name' => 'commons_phase_contribution', 'strict' => true,

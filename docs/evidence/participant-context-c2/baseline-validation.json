@@ -1,0 +1,107 @@
+{
+  "base": "62a4f065e3333176c26403cc12881c3fe2507998",
+  "runtime": "PHP 8.5.8, SQLite in-memory",
+  "suites": {
+    "Core": {
+      "tests": "1157",
+      "assertions": "13191",
+      "errors": "1",
+      "failures": "3",
+      "skipped": "5",
+      "time": "449.268393",
+      "failures_by_identity": [
+        {
+          "test": "Tests\\Feature\\Api\\ParticipationHttpReadGuardTest::test_diagnostics_accept_read_queries_but_reject_data_modifying_ctes",
+          "kind": "error",
+          "reason": "Illuminate\\Database\\QueryException: SQLSTATE[HY000]: General error: 1 near \"(\": syntax error (Connection: sqlite, Database: :memory:, SQL: (select 1 as n) union"
+        },
+        {
+          "test": "Tests\\Feature\\CausalHorizonLineageTest::test_cycle_ownership_is_immutable_in_bulk_sql",
+          "kind": "failure",
+          "reason": "Failed asserting that exception of type \"Illuminate\\Database\\QueryException\" is thrown."
+        },
+        {
+          "test": "Tests\\Feature\\ChargeBoundaryTragedyTest::test_ordinary_unmocked_observables_can_reach_the_boundary",
+          "kind": "failure",
+          "reason": "Failed asserting that two strings are identical."
+        },
+        {
+          "test": "Tests\\Feature\\ExampleTest::test_the_application_returns_a_successful_response",
+          "kind": "failure",
+          "reason": "Expected response status code [200] but received 500."
+        }
+      ]
+    },
+    "Integration": {
+      "tests": "32",
+      "assertions": "17534",
+      "errors": "0",
+      "failures": "11",
+      "skipped": "0",
+      "time": "421.311116",
+      "failures_by_identity": [
+        {
+          "test": "Tests\\Feature\\Api\\ParticipationHttpHarnessTest::test_real_http_actions_reach_an_operational_commit",
+          "kind": "failure",
+          "reason": "HTTP action budget exhausted. Last Commit eligibility: {\"admissible\":false,\"reinforcement_count\":0,\"requirements\":{\"attestation\":true,\"receipt\":true,\"closure\":f"
+        },
+        {
+          "test": "Tests\\Feature\\Api\\ParticipationLifecycleRegressionTest::test_successful_route_revisit_can_advance_through_bias_to_its_existing_commit",
+          "kind": "failure",
+          "reason": "Script step 32 (explorer / contribute) after"
+        },
+        {
+          "test": "Tests\\Feature\\Api\\ParticipationLifecycleRegressionTest::test_distinguish_under_another_committal_does_not_advance_origins_epoch",
+          "kind": "failure",
+          "reason": "Script step 26 (relay-a / contribute) after"
+        },
+        {
+          "test": "Tests\\Feature\\Api\\ParticipationLocalEpochTest::test_a_third_distinguish_variant_reopens_only_its_own_slot_through_http",
+          "kind": "failure",
+          "reason": "Script step 32 (critical-explorer / contribute) after"
+        },
+        {
+          "test": "Tests\\Feature\\Api\\ParticipationRecoveryTest::test_successful_revisit_keeps_its_untraversed_commit_out_of_backward_recovery",
+          "kind": "failure",
+          "reason": "Script step 32 (route-author / contribute) after"
+        },
+        {
+          "test": "Tests\\Feature\\Api\\ParticipationSourceEquivalenceTest::test_connection_driven_and_manual_participation_share_the_complete_action_contract",
+          "kind": "failure",
+          "reason": "Script step 31 (source-equivalence / contribute) after"
+        },
+        {
+          "test": "Tests\\Feature\\Api\\ParticipationTragedyLifecycleTest::test_natural_bootstrap_crossover_remains_open_and_rest_keeps_the_region_without_catastrophe",
+          "kind": "failure",
+          "reason": "Script step 32 (tragic-explorer / contribute) after"
+        },
+        {
+          "test": "Tests\\Feature\\FreshBootstrapTest::test_explicit_origin_and_aligned_evidence_reach_a_lawful_commit with data set #0",
+          "kind": "failure",
+          "reason": "The single-participant motor stalled. Last Commit eligibility: {\"admissible\":false,\"reinforcement_count\":0,\"requirements\":{\"attestation\":true,\"receipt\":true,\"cl"
+        },
+        {
+          "test": "Tests\\Feature\\FreshBootstrapTest::test_explicit_origin_and_aligned_evidence_reach_a_lawful_commit with data set #1",
+          "kind": "failure",
+          "reason": "The single-participant motor stalled. Last Commit eligibility: {\"admissible\":false,\"reinforcement_count\":0,\"requirements\":{\"attestation\":true,\"receipt\":true,\"cl"
+        },
+        {
+          "test": "Tests\\Feature\\NaturalChargeBoundaryLifecycleTest::test_two_participants_reproduce_catastrophe_then_recover_to_the_open_ancestor",
+          "kind": "failure",
+          "reason": "Failed asserting that two strings are identical."
+        },
+        {
+          "test": "Tests\\Feature\\OperationalClosurePathTest::test_receipt_backed_full_cycle_commits_with_real_hysteretic_closure_calculations",
+          "kind": "failure",
+          "reason": "The single-participant motor stalled. Last Commit eligibility: {\"admissible\":false,\"reinforcement_count\":0,\"requirements\":{\"attestation\":true,\"receipt\":true,\"cl"
+        }
+      ]
+    }
+  },
+  "notes": [
+    "Core ExampleTest was an environment-only missing frontend build; after copying the generated build it passes (1 test, 1 assertion).",
+    "Core SQLite bulk-SQL ownership and parenthesized UNION failures are existing database-specific baseline issues; ChargeBoundaryTragedyTest also fails main PostgreSQL CI.",
+    "Main PostgreSQL Core additionally has two existing C1 snapshot query errors (proposition_measurements.id does not exist). C2 repairs the test-only ordering to proposition_id.",
+    "Integration baseline contains 11 failures; compare exact identities, not only totals."
+  ]
+}

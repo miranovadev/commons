@@ -22,6 +22,7 @@ use App\Services\Observables\ReinforcementService;
 use App\Services\OperationalInstrumentService;
 use App\Services\ParticipantContextSerializer;
 use App\Services\ParticipantPromptLayout;
+use App\Services\ParticipantReceiptProjection;
 use App\Services\Participation\ParticipationContext;
 use App\Services\PropositionSearchService;
 use App\Services\ReceiptContextService;
@@ -175,9 +176,9 @@ class PropositionSearchTest extends TestCase
         $context = app(ReceiptContextService::class);
         $available = $context->forPhase($s['phase'])->firstWhere('id', $receipt->id);
         $this->assertSame('available', $available['availability']);
-        $this->assertSame('available', $available['status']);
+        $this->assertSame('loaded', $available['status']);
         $this->assertSame('memory', $available['load_mode']);
-        $this->assertFalse($available['loaded']);
+        $this->assertTrue($available['loaded']);
         $this->assertFalse($available['active']);
         $this->assertArrayNotHasKey('evidence', $available);
 
@@ -194,10 +195,14 @@ class PropositionSearchTest extends TestCase
         $memory = collect($serialized)->firstWhere('id', $receipt->id);
         $this->assertNotNull($memory);
         $this->assertArrayHasKey('proposition_collection', $memory);
-        $prompt = app(ParticipantPromptLayout::class)->make(['plan' => ['receipts' => $serialized]]);
-        $this->assertSame([], json_decode($prompt['evidence'], true)['loaded_receipts']);
+        $registers = array_fill_keys(['read', 'gate', 'write'], ['propositions' => []]);
+        $catalogue = app(ParticipantReceiptProjection::class)->normalize($registers,
+            ['participant' => ['id' => $s['fixture']->viewer->id], 'plan' => ['receipts' => $serialized]]);
+        $prompt = app(ParticipantPromptLayout::class)->make(['receipts' => $catalogue, ...$registers]);
+        $this->assertSame('', $prompt['evidence']);
+        $this->assertArrayHasKey('loaded_inline_content', json_decode($prompt['user'], true)['receipts'][0]);
         $this->assertSame([3, 6, 9], array_column(
-            collect(json_decode($prompt['user'], true)['plan']['receipts'])->firstWhere('id', $receipt->id)['proposition_collection']['results'],
+            collect(json_decode($prompt['user'], true)['receipts'])->firstWhere('id', $receipt->id)['loaded_inline_content']['results'],
             'lineage_distance',
         ));
 
@@ -231,6 +236,8 @@ class PropositionSearchTest extends TestCase
         $s = $this->scenario();
         $input = ['kind' => 'proposition_search', 'query' => 'needle', 'limit' => 10];
         $first = app(OperationalInstrumentService::class)->execute($s['phase'], $s['head'], $input);
+        // Hold the observed population constant: loaded memory is excluded by the existing search contract.
+        app(ReceiptContextService::class)->clear($s['fixture']->viewer, $s['phase'], $first->id);
 
         foreach ([$input, [...$input, 'limit' => 5]] as $duplicate) {
             try {

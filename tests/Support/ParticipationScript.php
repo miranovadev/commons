@@ -61,6 +61,39 @@ final class ParticipationScript
         return $state;
     }
 
+    /** C2 expectations from authored Instrument steps only; never runtime responses. */
+    public static function creatorLoads(array $steps): array
+    {
+        $creators = [];
+        foreach ($steps as $step) {
+            if (($step['input']['action'] ?? null) !== 'instrument.execute') {
+                continue;
+            }
+            foreach ($step['bind'] as $alias => $path) {
+                if (array_slice($path, 0, 2) === ['plan', 'receipts'] && end($path) === 'id') {
+                    $creators[$alias] = $step['participant'];
+                }
+            }
+        }
+        foreach ($steps as &$step) {
+            // Existing explicit loads already have authored loaded expectations.
+            // These transcripts have no unloads; never override a future unload.
+            if (! empty($step['input']['receipt_options']['unload'])) {
+                throw new \LogicException('Author explicit Receipt-option expectations for this transcript.');
+            }
+            foreach (['before', 'after'] as $when) {
+                foreach ($step[$when]['plan']['receipts'] ?? [] as $index => $receipt) {
+                    if (($creators[$receipt['id']['$ref'] ?? ''] ?? null) === $step['participant']) {
+                        $step[$when]['plan']['receipts'][$index]['status'] = 'loaded';
+                    }
+                }
+            }
+        }
+        unset($step);
+
+        return $steps;
+    }
+
     /** Resolve static fixture deltas without consulting the application. */
     public static function expand(array $steps): array
     {

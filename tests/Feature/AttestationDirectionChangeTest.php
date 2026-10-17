@@ -16,6 +16,7 @@ use App\Services\LedgerService;
 use App\Services\PropositionMeasurementService;
 use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Fixtures\PropositionBirth;
 use Tests\TestCase;
 
 class AttestationDirectionChangeTest extends TestCase
@@ -48,7 +49,7 @@ class AttestationDirectionChangeTest extends TestCase
         $this->assertCount(2, $attestations);
         $this->assertSame($attestations[0]->getKey(), $attestations[1]->supersedes_attestation_id);
         $this->assertSame('refute', Attestation::query()->effective()->sole()->direction);
-        $this->assertDatabaseCount('substrate_ledger_entries', 6);
+        $this->assertDatabaseCount('substrate_ledger_entries', 7);
 
         app(PropositionMeasurementService::class)->project(
             $proposition,
@@ -142,7 +143,7 @@ class AttestationDirectionChangeTest extends TestCase
 
         $phase->gate_proposition_id = $origin->getKey();
         $phase->save();
-        \Tests\Fixtures\PropositionBirth::complete($proposition);
+        PropositionBirth::complete($proposition);
         app(PropositionMeasurementService::class)->project($origin, -1, -1, -1);
         app(PropositionMeasurementService::class)->project($proposition, 0.8, 0.6, 0.4);
 
@@ -169,4 +170,3 @@ class AttestationDirectionChangeTest extends TestCase
         return $phase;
     }
 }
-

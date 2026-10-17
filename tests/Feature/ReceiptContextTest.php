@@ -75,11 +75,11 @@ class ReceiptContextTest extends TestCase
         $service = app(ParticipationService::class);
         $this->publishPotentialFixture($fixture->viewer);
         $before = $service->stateFor($fixture->viewer)['plan'];
-        $this->assertSame('already-in-context', collect($before['receipts'])->firstWhere('id', $receipt->id)['status']);
+        $this->assertSame('loaded', collect($before['receipts'])->firstWhere('id', $receipt->id)['status']);
         $this->assertArrayNotHasKey('receipt.read', $before['schema']['$defs']['actions']);
-        $this->assertSame(0, app(ReinforcementService::class)->count($subject));
-        $this->assertPublicCount($fixture, $subject, 0);
-        $this->assertSame(0, ParticipantReceiptContext::count());
+        $this->assertSame(1, app(ReinforcementService::class)->count($subject));
+        $this->assertPublicCount($fixture, $subject, 1);
+        $this->assertSame(5, ParticipantReceiptContext::count());
         $phase = $this->move($fixture, $subject);
         $this->publishPotentialFixture($fixture->viewer);
         $plan = $service->stateFor($fixture->viewer)['plan'];
@@ -97,7 +97,7 @@ class ReceiptContextTest extends TestCase
         $this->assertArrayNotHasKey('receipt.read', $state['plan']['schema']['$defs']['actions']);
         $this->assertSame(1, app(ReinforcementService::class)->count($subject));
         $this->assertSame(1, app(ReinforcementService::class)->count($subject, new ParticipationContext($phase)));
-        $this->assertSame(1, DB::table('receipt_context_events')->count());
+        $this->assertSame(5, DB::table('receipt_context_events')->count());
 
         $phase->cycle->phases()->whereNull('completed_at')->update(['completed_at' => now()]);
         $phase->cycle->forceFill(['completed_at' => now()])->save();
@@ -108,7 +108,7 @@ class ReceiptContextTest extends TestCase
         $this->publishPotentialFixture($fixture->viewer);
         $later = $service->stateFor($fixture->viewer)['plan'];
         $this->assertNotContains($receipt->id, array_column($later['receipts'], 'id'));
-        $this->assertSame(1, ParticipantReceiptContext::active()->count());
+        $this->assertSame(5, ParticipantReceiptContext::active()->count());
         // Return to the subject's actual historical Horizon; retained evidence becomes visible again.
         $next->forceFill(['completed_at' => now()])->save();
         $next->cycle->forceFill(['completed_at' => now()])->save();
@@ -119,7 +119,7 @@ class ReceiptContextTest extends TestCase
         $this->assertSame('loaded', collect($later['receipts'])->firstWhere('id', $receipt->id)['status']);
         $this->assertSame($loaded['loaded_at'], collect($later['receipts'])->firstWhere('id', $receipt->id)['loaded_at']);
         $this->assertArrayNotHasKey('receipt.read', $later['schema']['$defs']['actions']);
-        $this->assertSame(1, ParticipantReceiptContext::count());
+        $this->assertSame(5, ParticipantReceiptContext::count());
 
         $other = new Participant;
         $other->forceFill(['substrate_id' => $fixture->substrate->id, 'callsign' => 'Another reader'])->save();
@@ -132,8 +132,8 @@ class ReceiptContextTest extends TestCase
         $this->assertPublicCount($fixture, $commit, 2);
         $variant = $fixture->node($subject, 'frontier', 'variant', position: PhaseKind::Persist);
         $this->assertPublicCount($fixture, $variant, 0);
-        $this->assertSame(2, ParticipantReceiptContext::count());
-        $this->assertSame(2, DB::table('receipt_context_events')->count());
+        $this->assertSame(6, ParticipantReceiptContext::count());
+        $this->assertSame(6, DB::table('receipt_context_events')->count());
         $this->assertSame($receipt->id, $receipt->fresh()->id);
     }
 
@@ -155,7 +155,7 @@ class ReceiptContextTest extends TestCase
             app(ContributionDispatcher::class)->dispatch($fixture->viewer, $fixture->phase, ['action' => 'receipt.read', 'receipt_id' => $receipt->id]);
             $this->fail('A Cite already in context cannot be loaded through a direct dispatcher call.');
         } catch (DomainException) {
-            $this->assertSame(0, ParticipantReceiptContext::count());
+            $this->assertSame(5, ParticipantReceiptContext::count());
         }
         $foreign = new ParticipantContextFixture(1, 0);
         $hidden = $foreign->node($foreign->seed, 'canon');
@@ -166,7 +166,7 @@ class ReceiptContextTest extends TestCase
                 app(ReceiptContextService::class)->read($fixture->viewer, $phase, $id);
                 $this->fail('Unencountered evidence cannot be loaded.');
             } catch (DomainException) {
-                $this->assertSame(0, ParticipantReceiptContext::count());
+                $this->assertSame(10, ParticipantReceiptContext::count());
             }
         }
         $other = new Participant;
@@ -191,17 +191,18 @@ class ReceiptContextTest extends TestCase
         $this->assertNotNull($load->fresh()->cleared_at);
         $this->assertSame($receipt->id, $receipt->fresh()->id);
         $service->clear($fixture->viewer, $phase, $receipt->id);
-        $this->assertSame(2, DB::table('receipt_context_events')->count());
+        $this->assertSame(6, DB::table('receipt_context_events')->count());
         $reloaded = $service->read($fixture->viewer, $phase, $receipt->id);
         $this->assertSame($load->id, $reloaded->id);
         $this->assertSame(1, app(ReinforcementService::class)->count($subject));
-        $this->assertSame(['loaded', 'cleared', 'loaded'], DB::table('receipt_context_events')->orderBy('id')->pluck('action')->all());
+        $this->assertSame(['loaded', 'cleared', 'loaded'], DB::table('receipt_context_events')->where('participant_receipt_context_id', $load->id)->orderBy('id')->pluck('action')->all());
     }
 
     public function test_verified_hyperlink_receipts_require_load_and_equivalent_evidence_cannot_stack(): void
     {
-        [$fixture, , $subject] = $this->scenario();
+        [$fixture, , $subject, $citation] = $this->scenario();
         $phase = $this->move($fixture, $subject);
+        app(ReceiptContextService::class)->clear($fixture->viewer, $phase, $citation->id);
         $executions = app(InstrumentExecutionService::class);
         $receipts = [];
         foreach (['https://example.test/page?a=1', 'http://example.test/page#section'] as $url) {
@@ -211,13 +212,13 @@ class ReceiptContextTest extends TestCase
             ));
         }
         $this->assertSame($receipts[0]->signature, $receipts[1]->signature);
-        $this->assertSame(0, app(ReinforcementService::class)->count($subject));
+        $this->assertSame(1, app(ReinforcementService::class)->count($subject));
         $service = app(ReceiptContextService::class);
         foreach ($receipts as $receipt) {
             $service->read($fixture->viewer, $phase, $receipt->id);
         }
         $this->assertSame(1, app(ReinforcementService::class)->count($subject));
-        $this->assertSame(2, ParticipantReceiptContext::active()->count());
+        $this->assertSame(6, ParticipantReceiptContext::active()->count());
         $this->publishPotentialFixture($fixture->viewer);
         $packet = app(ParticipationService::class)->stateFor($fixture->viewer)['plan'];
         $this->assertArrayNotHasKey('evidence', collect($packet['receipts'])->firstWhere('id', $receipts[0]->id));
@@ -236,8 +237,9 @@ class ReceiptContextTest extends TestCase
         // Legacy duplicate history still obeys load uniqueness; new dispatches reject it.
         $execution = app(InstrumentExecutionService::class)->start($phase, $subject, 'citation', $reference->id);
         $duplicate = app(InstrumentExecutionService::class)->complete($execution, $subject);
+        $service->clear($fixture->viewer, $phase, $duplicate->id);
         $this->assertSame('already-in-context', $service->forPhase($phase)->firstWhere('id', $duplicate->id)['status']);
-        $this->assertSame(1, ParticipantReceiptContext::count());
+        $this->assertSame(6, ParticipantReceiptContext::count());
         $service->clear($fixture->viewer, $phase, $first->id);
         $this->assertSame('available', $service->forPhase($phase)->firstWhere('id', $duplicate->id)['status']);
         $this->expectException(\RuntimeException::class);
@@ -260,6 +262,7 @@ class ReceiptContextTest extends TestCase
             ['action' => 'proposition.variant', 'statement' => 'A new lineage']);
         $duplicate = app(OperationalInstrumentService::class)->execute($next, $newSubject,
             ['kind' => 'citation', 'reference' => $reference->id]);
+        $service->clear($fixture->viewer, $next, $duplicate->id);
         $context = new ParticipationContext($next->fresh());
         $this->assertFalse($context->propositions->has($subject->id));
         $this->assertFalse($context->propositions->has($reference->id));
@@ -292,8 +295,8 @@ class ReceiptContextTest extends TestCase
         $context = new ParticipationContext($phase);
         $this->assertSame(0.0, $evidence->valueFor(collect([$subject]), $context));
         $this->assertSame(ObservableDirection::Positive, $evidence->directionFor($subject, context: $context));
-        $this->assertSame(0, app(ReinforcementService::class)->count($subject, $context));
-        $this->assertSame(2, DB::table('substrate_ledger_entries')->where('kind', 'receipt_context')->count());
+        $this->assertSame(1, app(ReinforcementService::class)->count($subject, $context));
+        $this->assertSame(7, DB::table('substrate_ledger_entries')->where('kind', 'receipt_context')->count());
     }
 
     private function newPhase(Participant $participant, string $gateId, ?ContextHorizon $horizon = null): Phase

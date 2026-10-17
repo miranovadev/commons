@@ -23,8 +23,8 @@ use Tests\TestCase;
 #[Group('component-contract')]
 class ReceiptCapabilitiesMigrationTest extends TestCase
 {
-    use IsolatesClosureOutput;
     use DatabaseMigrations;
+    use IsolatesClosureOutput;
 
     protected function setUp(): void
     {
@@ -47,6 +47,11 @@ class ReceiptCapabilitiesMigrationTest extends TestCase
         app(LedgerService::class)->record($subject);
         $receipt = app(OperationalInstrumentService::class)->execute($phase, $subject,
             ['kind' => 'hyperlink', 'reference' => 'https://example.test/legacy']);
+        // Construct a pre-C2 historical fixture, before creator loading existed.
+        $eventIds = DB::table('receipt_context_events')->pluck('id');
+        DB::table('substrate_ledger_entries')->where('kind', 'receipt_context')->whereIn('ledgerable_id', $eventIds)->delete();
+        DB::table('receipt_context_events')->delete();
+        DB::table('participant_receipt_contexts')->delete();
         $original = $receipt->fresh()->only(['metadata', 'signature', 'reference', 'instrument_execution_id']);
         $migration = require database_path('migrations/2026_09_14_120000_add_receipt_capabilities_and_replay.php');
         $migration->down();

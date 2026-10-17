@@ -75,7 +75,7 @@ class ParticipantContextTest extends TestCase
         app(PotentialProjectionService::class)->rebuild($fixture->substrate->id, false);
         $state = app(ParticipationService::class)->stateFor($fixture->viewer);
         $prompt = app(ParticipantPromptFactory::class)->make($connection, $state);
-        $this->assertSame(['participant', 'read', 'gate', 'write', 'actions'], array_keys(json_decode($prompt['user'], true)));
+        $this->assertSame(['participant', 'receipts', 'read', 'gate', 'write', 'actions'], array_keys(json_decode($prompt['user'], true)));
         $this->assertLessThanOrEqual(self::MAX_BYTES, strlen($prompt['user']));
         $polluted = $state;
         $polluted['plan']['workspace'] = ['registers' => array_fill(0, 500, $plan['gate_options'])];
@@ -88,8 +88,8 @@ class ParticipantContextTest extends TestCase
         ])]);
         $connection->forceFill(['configuration' => ['model' => 'test-model'], 'credentials' => ['api_key' => 'test-key']]);
         app(OpenAIResponsesClient::class)->contribute($connection, $state);
-        Http::assertSent(fn ($request) => $request['input'][2]['content'] === $prompt['user']
-            && $request['input'][1]['content'] === $prompt['evidence']);
+        Http::assertSent(fn ($request) => $request['input'][1]['content'] === $prompt['user']
+            && count($request['input']) === 2);
         foreach (['workspace', 'gate', 'attestation_options', 'instrument_options', 'revision_options', 'traversal_options'] as $key) {
             $this->assertArrayNotHasKey($key, $plan);
         }
@@ -133,7 +133,7 @@ class ParticipantContextTest extends TestCase
         unset($transportSchema['x-commons']['description'], $transportSchema['$comment']);
         $this->assertSame($schema, $transportSchema);
 
-        $guidance = 'Creating a Cite Receipt does not itself grant Reinforcement.';
+        $guidance = 'Loading does not grant action permission.';
         $this->assertStringNotContainsString($guidance, $prompt['system']);
         $this->assertStringContainsString($guidance, $schema['$defs']['instrument']['description']);
         $transport = app(OpenAIResponseSchema::class)->fromCommons($prompt['schema']);
@@ -144,10 +144,11 @@ class ParticipantContextTest extends TestCase
 
         $write = collect($packet['write']['propositions'])->firstWhere('id', $candidate->id);
         $this->assertNotNull($write);
-        $instrument = collect($write['instruments'])->firstWhere('receipt_id', $receipt->id);
-        $this->assertNotNull($instrument);
-        $this->assertSame('citation', $instrument['kind']);
-        $this->assertSame('already-in-context', $instrument['reinforcement_status']);
+        $this->assertContains($receipt->id, $write['receipts']);
+        $catalogue = collect($packet['receipts'])->firstWhere('id', $receipt->id);
+        $this->assertSame('citation', $catalogue['type']);
+        $this->assertTrue($catalogue['loaded']);
+        $this->assertArrayNotHasKey('loaded_inline_content', $catalogue);
     }
 
     #[DataProvider('evidencePhases')]

@@ -146,6 +146,7 @@ final readonly class InstrumentExecutionService
             $locked->save();
 
             $receipt->setRelation('instrumentExecution', $locked);
+            app(ReceiptContextService::class)->loadCreated($receipt);
 
             $proposition = $locked->proposition()->first();
             if ($proposition !== null && $receipt->isEvidence()) {

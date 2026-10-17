@@ -22,7 +22,7 @@ abstract class ScriptedParticipationTestCase extends ParticipationHttpTestCase
     protected function replayParticipationScript(string $file, ?int $count = null): array
     {
         $this->script = json_decode(file_get_contents($file), true, flags: JSON_THROW_ON_ERROR)['steps'];
-        $this->script = ParticipationScript::expand($this->script);
+        $this->script = ParticipationScript::creatorLoads(ParticipationScript::expand($this->script));
         $this->startSubstrate();
 
         return $this->continueParticipationScript($count ?? count($this->script));

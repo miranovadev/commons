@@ -101,7 +101,7 @@ class InstrumentReplayActionTest extends TestCase
         $this->assertNotNull($result->ledgerEntry);
         $this->assertSame($original, $source->fresh()->getAttributes());
         $this->assertSame($invocation, $source->instrumentExecution->fresh()->getAttributes());
-        $this->assertSame(0, ParticipantReceiptContext::count());
+        $this->assertSame(2, ParticipantReceiptContext::count());
         $this->assertNotNull($f->phase->fresh()->completed_at);
         $this->assertSame('bias', $next['plan']['phase']['kind']);
         Http::assertSentCount(1);

@@ -180,12 +180,12 @@ class ParticipantWakeTest extends TestCase
             $this->assertEquals(
                 app(ParticipantContextSerializer::class)->inference($state),
                 json_decode(
-                    $payload['input'][2]['content'],
+                    $payload['input'][1]['content'],
                     true,
                     flags: JSON_THROW_ON_ERROR,
                 ),
             );
-            $this->assertSame(['loaded_receipts' => []], json_decode($payload['input'][1]['content'], true));
+            $this->assertCount(2, $payload['input']);
             $this->assertStringContainsString(
                 'Preserve uncertainty.',
                 $payload['input'][0]['content'],
@@ -398,7 +398,7 @@ class ParticipantWakeTest extends TestCase
             $kind = $state['plan']['phase']['number'];
             $calls[] = [$kind, $state['plan']['phase']['id']];
             if ($kind === 1) {
-                $this->assertFalse(collect($state['plan']['receipts'])->firstWhere('id', $receipt->id)['loaded']);
+                $this->assertTrue(collect($state['plan']['receipts'])->firstWhere('id', $receipt->id)['loaded']);
             }
             if ($kind === 3) {
                 $this->assertTrue(collect($state['plan']['receipts'])->firstWhere('id', $receipt->id)['loaded']);

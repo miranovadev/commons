@@ -55,8 +55,8 @@ class ParticipantPromptCacheTest extends TestCase
         $this->assertStringNotContainsString('another observation', $prompt['evidence'].$prompt['user']);
         $this->assertStringNotContainsString('DO-NOT-EXPOSE', json_encode($request));
         $this->assertStringContainsString(ParticipantPromptCore::TEXT, $prompt['system']);
-        // Corrected cognition uses the existing evidence/state layout unchanged.
-        $layers = (new ParticipantPromptLayout)->make($before, app(ParticipantContextSerializer::class)->receipts($state['plan']['receipts']), $state['plan']['read_options']);
+        // The layout encodes the complete cognitive contract once.
+        $layers = (new ParticipantPromptLayout)->make($before);
         $this->assertSame($layers['evidence'], $prompt['evidence']);
         $this->assertSame($layers['user'], $prompt['user']);
         $this->assertSame($layers['loaded_receipt_count'], $prompt['loaded_receipt_count']);
@@ -82,40 +82,28 @@ class ParticipantPromptCacheTest extends TestCase
         $this->assertSame($before, $after);
     }
 
-    public function test_dynamic_state_cannot_rewrite_evidence_and_new_loads_append(): void
+    public function test_dynamic_measurement_state_cannot_rewrite_cognition_and_receipts_are_identity_sorted(): void
     {
         $state = $this->state();
         $factory = app(ParticipantPromptFactory::class);
         $connection = $this->connection();
         $before = $factory->make($connection, $state);
-        $state['plan']['phase']['id'] = 'next-phase';
         $state['plan']['gate_options'][0]['observables']['closure'] = 0.75;
         $state['plan']['receipts'][0]['availability'] = 'consumed';
         $state['plan']['receipts'][0]['consumed_at'] = '2026-09-20T01:00:00Z';
-        $state['plan']['receipts'][0]['can_replay'] = false;
-        $changed = $factory->make($connection, $state);
-        $this->assertSame($before['evidence'], $changed['evidence']);
-        $this->assertNotSame($before['user'], $changed['user']);
-        $new = $state['plan']['receipts'][0];
-        $new['id'] = 'a-older-receipt-loaded-later';
-        $new['loaded_at'] = '2026-09-21T00:00:00Z';
+        $this->assertSame($before['user'], $factory->make($connection, $state)['user']);
+        $new = [...$state['plan']['receipts'][0], 'id' => 'a-older-receipt-loaded-later'];
         $state['plan']['receipts'][] = $new;
+        $state['plan']['gate_options'][0]['receipts'][] = $new;
         $appended = $factory->make($connection, $state);
-        $bodies = json_decode($appended['evidence'], true)['loaded_receipts'];
-        $this->assertSame(['r1', $new['id']], array_column($bodies, 'id'));
-        $this->assertStringStartsWith(substr($before['evidence'], 0, -2), $appended['evidence']);
-
-        $state['plan']['receipts'][0]['status'] = 'available';
-        $state['plan']['receipts'][0]['active'] = false;
+        $this->assertSame([$new['id'], 'r1'], array_column($this->reconstruct($appended)['receipts'], 'id'));
         $state['plan']['receipts'][0]['loaded'] = false;
-        $state['plan']['receipts'][0]['loaded_at'] = null;
         $cleared = $factory->make($connection, $state);
-        $this->assertSame([$new['id']], array_column(json_decode($cleared['evidence'], true)['loaded_receipts'], 'id'));
-        usort($state['plan']['receipts'], fn ($a, $b) => strcmp($a['id'], $b['id']));
-        $this->assertEquals($this->visiblePacket(app(ParticipantContextSerializer::class)->inference($state)), $this->reconstruct($cleared));
-        // Leaving visibility removes evidence even when its load persists in storage.
-        $state['plan']['receipts'] = [];
-        $this->assertSame('{"loaded_receipts":[]}', $factory->make($connection, $state)['evidence']);
+        $catalogue = collect($this->reconstruct($cleared)['receipts']);
+        $this->assertArrayNotHasKey('loaded_inline_content', $catalogue->firstWhere('id', 'r1'));
+        $this->assertArrayHasKey('loaded_inline_content', $catalogue->firstWhere('id', $new['id']));
+        $this->assertSame('', $cleared['evidence']);
+        $this->assertSame('', $cleared['support']);
     }
 
     public function test_ranked_results_and_semantic_lists_keep_their_exact_order(): void
@@ -125,7 +113,7 @@ class ParticipantPromptCacheTest extends TestCase
             ['url' => 'https://z.test', 'title' => 'First ranked'], ['url' => 'https://a.test', 'title' => 'Second ranked'],
         ]];
         $prompt = app(ParticipantPromptFactory::class)->make($this->connection(), $state);
-        $this->assertSame(['https://z.test', 'https://a.test'], array_column(json_decode($prompt['evidence'], true)['loaded_receipts'][0]['evidence']['results'], 'url'));
+        $this->assertSame(['https://z.test', 'https://a.test'], array_column($this->reconstruct($prompt)['receipts'][0]['loaded_inline_content']['results'], 'url'));
         $this->assertSame(['history'], $this->reconstruct($prompt)['gate']['propositions'][0]['parent_ids']);
     }
 
@@ -136,7 +124,7 @@ class ParticipantPromptCacheTest extends TestCase
     }
 
     #[DataProvider('models')]
-    public function test_provider_sends_two_supported_boundaries_or_implicit_caching(string $model, bool $explicit): void
+    public function test_provider_sends_one_system_boundary_and_one_complete_cognitive_message(string $model, bool $explicit): void
     {
         $state = $this->state();
         $connection = $this->connection($model);
@@ -145,16 +133,15 @@ class ParticipantPromptCacheTest extends TestCase
         Http::assertSent(function ($request) use ($explicit, $state, $connection): bool {
             $payload = $request->data();
             $prompt = app(ParticipantPromptFactory::class)->make($connection, $state);
-            $this->assertCount(4, $payload['input']);
-            $this->assertSame($prompt['support'], $payload['input'][3]['content']);
-            foreach ([0 => 'system', 1 => 'evidence'] as $index => $section) {
+            $this->assertCount(2, $payload['input']);
+            foreach ([0 => 'system'] as $index => $section) {
                 $content = $payload['input'][$index]['content'];
                 $this->assertSame($prompt[$section], $explicit ? $content[0]['text'] : $content);
                 if ($explicit) {
                     $this->assertSame(['mode' => 'explicit'], $content[0]['prompt_cache_breakpoint']);
                 }
             }
-            $this->assertSame($prompt['user'], $payload['input'][2]['content']);
+            $this->assertSame($prompt['user'], $payload['input'][1]['content']);
             $this->assertSame($explicit ? ['mode' => 'explicit'] : null, $payload['prompt_cache_options'] ?? null);
             $this->assertArrayNotHasKey('prompt_cache_retention', $payload);
 
@@ -168,7 +155,7 @@ class ParticipantPromptCacheTest extends TestCase
         $connection = $this->connection();
         $key = fn ($c, $s) => app(OpenAIRequestFactory::class)->make($c, app(ParticipantPromptFactory::class)->make($c, $s), $s['_inference'])['prompt_cache_key'];
         $before = $key($connection, $state);
-        $this->assertStringStartsWith('commons-context-c1:', $before);
+        $this->assertStringStartsWith('commons-context-c2:', $before);
         foreach (PhaseKind::cases() as $phase) {
             $this->assertSame($before, $key($connection, $this->state($phase)));
         }
@@ -276,7 +263,7 @@ class ParticipantPromptCacheTest extends TestCase
         $gateId = $this->fixture->seed->id;
         $node = ['id' => 'history', 'statement' => 'Retain historical meaning.', 'register' => 'canon', 'tier' => 'committal',
             'parent_ids' => ['parent-z', 'parent-a'], 'observables' => ['correspondence' => 0.2, 'chirality' => -1, 'closure' => 0.5],
-            'attestation' => ['direction' => 'refute', 'rationale' => 'Recorded judgment.'], 'reinforcement_count' => 3];
+            'attestation' => ['direction' => 'refute', 'rationale' => 'Recorded judgment.'], 'reinforcement_count' => 3, 'receipts' => [['id' => 'r1', 'type' => 'hyperlink', 'reference' => 'https://example.test/evidence']]];
         $receipt = ['id' => 'r1', 'proposition_id' => 'history', 'context_horizon_id' => 'horizon', 'type' => 'hyperlink',
             'reference' => 'https://example.test/evidence', 'signature' => 'signature', 'status' => 'loaded', 'loaded' => true, 'active' => true,
             'availability' => 'available', 'consumed_at' => null, 'attached_proposition_id' => null,

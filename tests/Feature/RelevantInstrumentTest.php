@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\PhaseKind;
 use App\Enums\ReceiptCapability;
 use App\Models\InstrumentExecution;
 use App\Models\ParticipantReceiptContext;
@@ -43,7 +44,7 @@ class RelevantInstrumentTest extends TestCase
     {
         Http::fake();
         $f = new ParticipantContextFixture(1, 0);
-        $target = $f->node($f->gate, 'frontier', position: \App\Enums\PhaseKind::Mediate);
+        $target = $f->node($f->gate, 'frontier', position: PhaseKind::Mediate);
         if ($input['kind'] === 'citation') {
             $input['reference'] = $f->seed->id;
             $equivalent['reference'] = ' '.$f->seed->id.' ';
@@ -91,7 +92,7 @@ class RelevantInstrumentTest extends TestCase
         $this->assertNotSame($receipt->id, $observedAgain->id);
         $this->assertSame($history, $receipt->fresh()->getAttributes());
         $this->assertSame($execution, $receipt->instrumentExecution->fresh()->getAttributes());
-        $this->assertSame(0, ParticipantReceiptContext::count());
+        $this->assertSame(6, ParticipantReceiptContext::active()->count());
         $this->assertSame(0, DB::table('reinforcements')->count());
     }
 
@@ -116,7 +117,7 @@ class RelevantInstrumentTest extends TestCase
     public function test_schema_exposes_target_specific_exclusions_and_retains_other_free_form_resources(): void
     {
         $f = new ParticipantContextFixture(1, 0);
-        $target = $f->node($f->gate, 'frontier', position: \App\Enums\PhaseKind::Mediate);
+        $target = $f->node($f->gate, 'frontier', position: PhaseKind::Mediate);
         $input = ['kind' => 'citation', 'reference' => $f->seed->id];
         $receipt = app(OperationalInstrumentService::class)->execute($f->phase, $target, $input);
         $this->publishPotentialFixture($f->viewer);
@@ -138,7 +139,7 @@ class RelevantInstrumentTest extends TestCase
     {
         Http::fake();
         $f = new ParticipantContextFixture(1, 0);
-        $target = $f->node($f->gate, 'frontier', position: \App\Enums\PhaseKind::Mediate);
+        $target = $f->node($f->gate, 'frontier', position: PhaseKind::Mediate);
         $receipt = app(OperationalInstrumentService::class)->execute($f->phase, $target, ['kind' => 'web_search', 'query' => 'evidence']);
         $this->assertTrue($receipt->supports(ReceiptCapability::Readable));
         $this->assertTrue($receipt->supports(ReceiptCapability::Replayable));

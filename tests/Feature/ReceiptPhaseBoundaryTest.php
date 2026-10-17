@@ -26,30 +26,31 @@ class ReceiptPhaseBoundaryTest extends TestCase
 
     public static function desiredStates(): array
     {
-        return [['load'], ['unload']];
+        return [['load', 'gate'], ['unload', 'gate'], ['load', 'write'], ['unload', 'write']];
     }
 
     #[DataProvider('desiredStates')]
-    public function test_gate_changes_accompany_one_normal_contribution_and_activate_only_in_the_next_read(string $desired): void
+    public function test_receipt_changes_accompany_one_normal_contribution_and_affect_the_next_context(string $desired, string $role): void
     {
         $f = new ParticipantContextFixture(1, 0, false);
         $anchor = app(MediationReadService::class)->anchorFor($f->phase);
         $f->phase->forceFill(['kind' => PhaseKind::Disperse, 'gate_proposition_id' => $anchor->id, 'write_register' => 'activity'])->save();
         $f->viewer->forceFill(['current_proposition_id' => $anchor->id])->save();
         $executions = app(InstrumentExecutionService::class);
-        $r = $executions->complete($executions->start($f->phase, $anchor, 'hyperlink', 'https://example.test/boundary'), $anchor,
+        $subject = $role === 'gate' ? $anchor : $f->gate;
+        $r = $executions->complete($executions->start($f->phase, $subject, 'hyperlink', 'https://example.test/boundary'), $subject,
             verification: new VerifiedHyperlink('example.test/boundary', hash('sha256', 'boundary'), CarbonImmutable::now(), contentExcerpt: 'BOUNDARY-BODY'));
         // The existing Distinguish/Disperse prerequisite requires this Write's own observation.
         $executions->complete($executions->start($f->phase, $f->gate, 'hyperlink', 'https://example.test/write'), $f->gate,
             verification: new VerifiedHyperlink('example.test/write', hash('sha256', 'write'), CarbonImmutable::now()));
-        if ($desired === 'unload') {
-            app(ReceiptContextService::class)->read($f->viewer, $f->phase, $r->id);
+        if ($desired === 'load') {
+            app(ReceiptContextService::class)->clear($f->viewer, $f->phase, $r->id);
         }
         $this->publishPotentialFixture($f->viewer);
         $service = app(ParticipationService::class);
         $before = $service->stateFor($f->viewer);
         $prompt = app(ParticipantPromptFactory::class)->make(new Connection, $before);
-        $this->assertStringNotContainsString('BOUNDARY-BODY', $prompt['user'].$prompt['evidence']);
+        $this->assertSame($desired === 'unload' && $role === 'gate' ? 1 : 0, substr_count($prompt['user'], 'BOUNDARY-BODY')); // Loaded Gate evidence is visible before unloading.
         $phaseCount = DB::table('phases')->count();
         $eventCount = DB::table('receipt_context_events')->count();
         $after = $service->contribute($f->viewer, $f->phase->id, ['action' => 'attestation.create',

@@ -22,7 +22,7 @@ class EvidenceFirstInteractionTest extends TestCase
     }
 
     #[DataProvider('phases')]
-    public function test_receipt_then_attestation_unlocks_personal_traversal_without_loading(PhaseKind $kind, string $register): void
+    public function test_receipt_then_attestation_unlocks_personal_traversal_without_an_explicit_load_request(PhaseKind $kind, string $register): void
     {
         $f = new ParticipantContextFixture(1, 0);
         $gate = $kind === PhaseKind::Bias ? $f->node($f->gate, 'frontier', position: PhaseKind::Mediate) : $f->node($f->seed, 'activity', position: PhaseKind::Distinguish);
@@ -41,7 +41,7 @@ class EvidenceFirstInteractionTest extends TestCase
         $this->assertContains($other->id, $targets('attestation.create'));
         $this->assertNotContains($write->id, $targets('proposition.traverse'));
         app(OperationalInstrumentService::class)->execute($f->phase->fresh(), $write, ['kind' => 'citation', 'reference' => $gate->id]);
-        $this->assertSame(0, ParticipantReceiptContext::count());
+        $this->assertSame(6, ParticipantReceiptContext::active()->count());
         $this->assertContains($write->id, $targets('attestation.create'));
         $this->assertNotContains($write->id, $targets('proposition.traverse'));
         app(ContributionDispatcher::class)->dispatch($f->viewer, $f->phase->fresh(), ['action' => 'attestation.create', 'proposition_id' => $write->id, 'direction' => 'refute']);
@@ -59,4 +59,3 @@ class EvidenceFirstInteractionTest extends TestCase
         $this->assertSame($write->id, $next['plan']['gate_id']);
     }
 }
-
