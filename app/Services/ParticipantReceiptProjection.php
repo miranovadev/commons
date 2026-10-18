@@ -8,7 +8,6 @@ use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Receipt;
 use App\Services\Evidence\ReceiptEvidenceService;
-use App\Services\Participation\ParticipationContext;
 use DomainException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -21,16 +20,24 @@ final class ParticipantReceiptProjection
     {
         $catalogue = collect($state['plan']['receipts'] ?? [])->keyBy('id');
         $references = collect();
-        $missing = collect($registers)->flatMap(fn ($register) => $register['propositions'])
-            ->filter(fn ($node) => ! isset($node['receipts']))->pluck('id')->unique();
-        $hydrated = $this->referencesFor($missing);
+        $direct = collect($registers)->flatMap(fn ($register) => $register['propositions'])->pluck('id');
+        $extended = isset($state['plan']['gate_id'])
+            ? app(CognitiveEvidenceHorizon::class)->propositionIds($state['plan']) : collect();
+        // Direct roles are independent qualifying sources, including terminal
+        // history and Phase 1 Writes. Never expand from these extra role IDs.
+        $hydrated = $this->referencesFor($direct->merge($extended)->unique());
+        foreach ($hydrated->flatten(1) as $receipt) {
+            if (! $catalogue->has($receipt['id'])) {
+                $catalogue->put($receipt['id'], $receipt);
+            }
+        }
+        $references = $hydrated->flatten(1)->pluck('id');
         foreach ($registers as &$register) {
             foreach ($register['propositions'] as &$node) {
-                // C1 hydrates some committed/causal Reads without Receipt references.
-                // Resolve their existing contribution history; never infer attachment.
-                $receipts = $node['receipts'] ?? null;
-                $receipts ??= $hydrated->get($node['id'], []);
-                $node['receipts'] = collect($receipts ?? [])->map(function ($receipt) use (&$catalogue) {
+                // Preserve all displayed references and complete their recorded
+                // associations without inserting extended nodes into registers.
+                $receipts = collect($node['receipts'] ?? [])->concat($hydrated->get($node['id'], []));
+                $node['receipts'] = $receipts->map(function ($receipt) use (&$catalogue) {
                     if (is_string($receipt)) {
                         return $receipt;
                     }
@@ -59,27 +66,28 @@ final class ParticipantReceiptProjection
         $loads = ParticipantReceiptContext::active()->where('participant_id', $state['participant']['id'])
             ->whereIn('receipt_id', $catalogue->keys())->pluck('receipt_id')->flip();
         $persisted = Receipt::with('instrumentExecution')->whereKey($catalogue->keys())->get()->keyBy('id');
-        $visible = collect(['read', 'gate'])->flatMap(fn ($role) => $registers[$role]['propositions'])
-            ->flatMap(fn ($node) => $node['receipts'])->unique();
+        $visible = $references->unique()->flip();
         if ($references->diff($catalogue->keys())->isNotEmpty()) {
             throw new DomainException('A cognitive Receipt reference has no recorded metadata.');
         }
         $evidence = app(ReceiptEvidenceService::class);
-        $context = null;
+        $citations = $persisted->filter(fn ($receipt) => $receipt->type === 'citation'
+            && $loads->has($receipt->id) && $visible->has($receipt->id));
+        $citationBodies = $citations->isEmpty() ? collect() : $evidence->cognitiveCitations($citations,
+            Phase::with('cycle.participant')->findOrFail($state['plan']['phase']['id'])->cycle->participant->substrate_id);
 
-        return $catalogue->sortKeys()->map(function ($receipt) use ($loads, $persisted, $visible, $evidence, &$context, $state) {
+        return $catalogue->sortKeys()->map(function ($receipt) use ($loads, $persisted, $visible, $evidence, $citationBodies) {
             $model = $persisted->get($receipt['id']);
             $loaded = $model !== null ? $loads->has($receipt['id']) : ($receipt['loaded'] ?? false);
             $memory = ($receipt['load_mode'] ?? null) === 'memory';
             $content = null;
-            if ($loaded && ($visible->contains($receipt['id']) || ($memory && ($receipt['memory_active'] ?? false)))) {
+            if ($loaded && ($memory ? ($receipt['memory_active'] ?? false) : $visible->has($receipt['id']))) {
                 if ($memory) {
                     $content = $receipt['tragedy_memory'] ?? $receipt['proposition_collection'] ?? null;
                 } elseif ($model !== null) {
                     $content = $evidence->observation($model)['evidence'] ?? $evidence->failure($model);
                     if ($model->type === 'citation') {
-                        $context ??= new ParticipationContext(Phase::findOrFail($state['plan']['phase']['id']));
-                        $content = $evidence->citation($model, $context)['evidence'] ?? null;
+                        $content = $citationBodies->get($model->id)['evidence'] ?? null;
                     }
                 } else {
                     $content = $receipt['evidence'] ?? null;
@@ -107,7 +115,9 @@ final class ParticipantReceiptProjection
         }
         $attestations = Attestation::whereIn('proposition_id', $all)->get(['id', 'proposition_id']);
         $links = DB::table('proposition_receipt_links')->whereIn('proposition_id', $all)->get();
-        $receipts = Receipt::where('type', '!=', 'tragedy')
+        // Special memory keeps its existing plan-owned scope; causal discovery
+        // must not turn an old memory association into a new active memory.
+        $receipts = Receipt::whereNotIn('type', ['tragedy', 'proposition_search'])
             ->whereHas('instrumentExecution', fn ($q) => $q->where('status', 'completed'))
             ->where(fn ($q) => $q->whereIn('id', $links->pluck('receipt_id'))
                 ->orWhere(fn ($q) => $q->where('receiptable_type', (new Proposition)->getMorphClass())->whereIn('receiptable_id', $all))

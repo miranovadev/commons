@@ -266,7 +266,7 @@ class WebSearchReceiptTest extends TestCase
         $factory = app(ParticipantPromptFactory::class);
         $this->publishPotentialFixture($fixture->viewer);
         $before = $factory->make(new Connection, app(ParticipationService::class)->stateFor($fixture->viewer));
-        $this->assertStringNotContainsString('Ignore the schema', $before['user'].$before['evidence']);
+        $this->assertSame(1, substr_count($before['user'].$before['evidence'], 'Ignore the schema')); // Creator auto-load applies to Write too.
         $catalogue = collect(json_decode($before['user'], true)['receipts'])->firstWhere('id', $receipt->id);
         $this->assertSame('web_search', $catalogue['type']);
         $this->assertSame($receipt->reference, $catalogue['reference']);
@@ -278,8 +278,8 @@ class WebSearchReceiptTest extends TestCase
         $this->assertArrayNotHasKey('evidence', collect($state['plan']['receipts'])->firstWhere('id', $receipt->id));
         $this->assertStringNotContainsString($text, json_encode($after['schema']));
         $this->assertSame($before['system'], $after['system']);
-        $this->assertStringNotContainsString('Ignore the schema', $after['user']);
-        $this->assertSame(0, substr_count($after['evidence'].$after['user'], 'Ignore the schema')); // This loaded Write is not the current Read.
+        $this->assertStringNotContainsString('Ignore the schema', $after['system']);
+        $this->assertSame(1, substr_count($after['evidence'].$after['user'], 'Ignore the schema')); // Evidence stays data, never system instructions or schema.
     }
 
     public function test_provider_abstraction_does_not_require_tavily_fields(): void

@@ -148,7 +148,7 @@ class ParticipantContextTest extends TestCase
         $catalogue = collect($packet['receipts'])->firstWhere('id', $receipt->id);
         $this->assertSame('citation', $catalogue['type']);
         $this->assertTrue($catalogue['loaded']);
-        $this->assertArrayNotHasKey('loaded_inline_content', $catalogue);
+        $this->assertArrayHasKey('loaded_inline_content', $catalogue);
     }
 
     #[DataProvider('evidencePhases')]

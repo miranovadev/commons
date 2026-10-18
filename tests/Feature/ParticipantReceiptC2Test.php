@@ -60,7 +60,7 @@ class ParticipantReceiptC2Test extends TestCase
     }
 
     #[DataProvider('visibility')]
-    public function test_visibility_depends_on_load_and_read_or_gate_without_mutating_history(array $roles, bool $loaded): void
+    public function test_visibility_depends_on_personal_load_in_every_cognitive_role_without_mutating_history(array $roles, bool $loaded): void
     {
         $f = new ParticipantContextFixture(1, 0, false);
         $r = $this->receipt($f);
@@ -71,7 +71,7 @@ class ParticipantReceiptC2Test extends TestCase
         $catalogue = $this->catalogue($f, $r, $roles);
         $this->assertCount(1, $catalogue);
         $this->assertSame($loaded, $catalogue[0]['loaded']);
-        $visible = $loaded && $roles !== ['write'];
+        $visible = $loaded;
         $this->assertSame($visible, array_key_exists('loaded_inline_content', $catalogue[0]));
         $this->assertSame($visible ? 1 : 0, substr_count(json_encode($catalogue), 'C2-IMMUTABLE-BODY'));
         $this->assertSame($before, $this->snapshot());
@@ -90,11 +90,11 @@ class ParticipantReceiptC2Test extends TestCase
         $missing = $service->complete($service->start($f->phase, $f->gate, 'hyperlink', 'missing'), $f->gate);
         $this->assertSame(3, ParticipantReceiptContext::active()->where('participant_id', $f->viewer->id)->count());
         $this->assertSame([], $this->catalogue($f, $empty, ['gate'])[0]['loaded_inline_content']['results']);
-        $failure = $this->catalogue($f, $failed, ['read'])[0]['loaded_inline_content'];
+        $failure = collect($this->catalogue($f, $failed, ['read']))->firstWhere('id', $failed->id)['loaded_inline_content'];
         $this->assertFalse($failure['content_verified']);
         $this->assertSame('Unavailable', $failure['observation_error']);
         $this->assertNull(ParticipantReceiptContext::where('receipt_id', $failed->id)->value('evidence_signature'));
-        $this->assertArrayNotHasKey('loaded_inline_content', $this->catalogue($f, $missing, ['gate'])[0]);
+        $this->assertArrayNotHasKey('loaded_inline_content', collect($this->catalogue($f, $missing, ['gate']))->firstWhere('id', $missing->id));
         $this->assertFalse($this->catalogue($f, $empty, ['gate'], $other)[0]['loaded']);
         $this->assertArrayNotHasKey('loaded_inline_content', $this->catalogue($f, $empty, ['gate'], $other)[0]);
     }
@@ -157,8 +157,35 @@ class ParticipantReceiptC2Test extends TestCase
         $body = $evidence->citation($receipt, $context)['evidence'];
         $this->assertSame($f->seed->id, $body['proposition_id']);
         $this->assertSame($f->seed->statement, $body['statement']);
+        $this->assertSame($body, $evidence->cognitiveCitations(collect([$receipt]), $f->substrate->id)[$receipt->id]['evidence']);
         $this->assertNull($evidence->describe($receipt, $context));
         $this->assertNotSame('historical-horizon', $receipt->fresh()->context_horizon_id);
+    }
+
+    public function test_cognitive_citations_batch_subjects_and_preserve_attestations_and_substrate_scope(): void
+    {
+        $f = new ParticipantContextFixture(1, 0, false);
+        $foreign = new ParticipantContextFixture(1, 0, false);
+        $vote = (new \App\Models\Attestation)->forceFill(['phase_id' => $f->phase->id,
+            'proposition_id' => $f->gate->id, 'direction' => 'refute', 'rationale' => 'Recorded rationale']);
+        $vote->save();
+        $service = app(InstrumentExecutionService::class);
+        $receipts = collect([$f->seed->id, $vote->id, $foreign->seed->id, strtolower((string) str()->ulid())])
+            ->map(fn ($reference) => $service->complete($service->start($f->phase, $f->gate, 'citation', $reference), $f->gate));
+        $receipts->each(fn ($receipt) => $receipt->loadMissing('instrumentExecution'));
+        $evidence = app(ReceiptEvidenceService::class);
+        $context = new ParticipationContext($f->phase);
+        $expected = $receipts->mapWithKeys(fn ($r) => [$r->id => $evidence->citation($r, $context)]);
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        $actual = $evidence->cognitiveCitations($receipts, $f->substrate->id);
+        $queries = DB::getQueryLog();
+        DB::disableQueryLog();
+        $this->assertCount(2, $queries);
+        $this->assertSame($expected->all(), $actual->all());
+        $this->assertSame('Recorded rationale', $actual[$receipts[1]->id]['evidence']['rationale']);
+        $this->assertNull($actual[$receipts[2]->id]);
+        $this->assertNull($actual[$receipts[3]->id]);
     }
 
     public function test_unload_rejects_unowned_foreign_substrate_and_stale_phase_without_mutation(): void
@@ -203,7 +230,7 @@ class ParticipantReceiptC2Test extends TestCase
         $events = DB::table('receipt_context_events')->count();
         DB::transaction(fn () => $context->desired($f->viewer, $f->phase, ['load' => [$r->id]]));
         $this->assertDatabaseCount('receipt_context_events', $events);
-        $this->assertArrayNotHasKey('loaded_inline_content', $this->catalogue($f, $r, ['write'])[0]);
+        $this->assertArrayHasKey('loaded_inline_content', $this->catalogue($f, $r, ['write'])[0]);
         $this->assertArrayHasKey('loaded_inline_content', $this->catalogue($f, $r, ['gate'])[0]);
 
         // A different branch's loaded Receipt is not a current load option, but remains unloadable.
