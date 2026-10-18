@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\Proposition;
 use App\Services\Observables\CommittalLineageService;
-use DomainException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -22,7 +21,10 @@ final class CognitiveEvidenceHorizon
 
         $governor = app(CommitRegionService::class)->seedFor($gate);
         if ($governor === null) {
-            throw new DomainException('Cognitive evidence requires recorded Commit Region ownership.');
+            // No recorded basin means no authority for additional discovery.
+            // Direct register visibility remains independent; never guess a
+            // governor from a neighbouring node or block operational actions.
+            return collect();
         }
         $substrateId = $gate->phase->cycle->participant->substrate_id;
         // Load recorded topology once, including superseded history. Container

@@ -50,7 +50,7 @@ class ReceiptPhaseBoundaryTest extends TestCase
         $service = app(ParticipationService::class);
         $before = $service->stateFor($f->viewer);
         $prompt = app(ParticipantPromptFactory::class)->make(new Connection, $before);
-        $this->assertSame($desired === 'unload' && $role === 'gate' ? 1 : 0, substr_count($prompt['user'], 'BOUNDARY-BODY')); // Loaded Gate evidence is visible before unloading.
+        $this->assertSame($desired === 'unload' ? 1 : 0, substr_count($prompt['user'], 'BOUNDARY-BODY')); // Loaded Gate and Write evidence are visible before unloading.
         $phaseCount = DB::table('phases')->count();
         $eventCount = DB::table('receipt_context_events')->count();
         $after = $service->contribute($f->viewer, $f->phase->id, ['action' => 'attestation.create',

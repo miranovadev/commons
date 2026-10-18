@@ -123,7 +123,7 @@ class ReceiptRegionContextTest extends TestCase
         $this->assertDatabaseCount('participant_receipt_contexts', 1);
     }
 
-    public function test_only_loaded_causal_read_evidence_is_active_and_all_other_roles_are_metadata(): void
+    public function test_loaded_cognitive_evidence_includes_write_and_causal_history_without_changing_reinforcement(): void
     {
         $f = new ParticipantContextFixture(2, 1, false);
         $read = app(MediationReadService::class)->anchorFor($f->phase);
@@ -138,10 +138,10 @@ class ReceiptRegionContextTest extends TestCase
         $state = app(ParticipationService::class)->stateFor($f->viewer);
         $this->assertSame([$read->id], array_column($state['plan']['read_options'], 'id'));
         $prompt = app(ParticipantPromptFactory::class)->make(new Connection, $state);
-        $this->assertSame([$receipts[0]->id, $receipts[1]->id], collect(json_decode($prompt['user'], true)['receipts'])->filter(fn ($r) => isset($r['loaded_inline_content']))->pluck('id')->all());
+        $this->assertEqualsCanonicalizing(array_map(fn ($r) => $r->id, $receipts), collect(json_decode($prompt['user'], true)['receipts'])->filter(fn ($r) => isset($r['loaded_inline_content']))->pluck('id')->all());
         $this->assertSame(1, substr_count($prompt['evidence'].$prompt['user'], 'BODY-role-0'));
         foreach ([2, 3] as $index) {
-            $this->assertStringNotContainsString('BODY-role-'.$index, $prompt['evidence'].$prompt['user']);
+            $this->assertSame(1, substr_count($prompt['evidence'].$prompt['user'], 'BODY-role-'.$index));
         }
         foreach (json_decode($prompt['user'], true)['receipts'] as $ref) {
             $this->assertEqualsCanonicalizing(['id', 'type', 'reference', 'loaded', ...(isset($ref['loaded_inline_content']) ? ['loaded_inline_content'] : [])], array_keys($ref));
@@ -153,7 +153,7 @@ class ReceiptRegionContextTest extends TestCase
         app(ReceiptContextService::class)->clear($f->viewer, $f->phase, $receipts[0]->id);
         $this->publishPotentialFixture($f->viewer);
         $prompt = app(ParticipantPromptFactory::class)->make(new Connection, app(ParticipationService::class)->stateFor($f->viewer));
-        $this->assertSame([$receipts[1]->id], collect(json_decode($prompt['user'], true)['receipts'])->filter(fn ($r) => isset($r['loaded_inline_content']))->pluck('id')->all());
+        $this->assertEqualsCanonicalizing([$receipts[1]->id, $receipts[2]->id, $receipts[3]->id], collect(json_decode($prompt['user'], true)['receipts'])->filter(fn ($r) => isset($r['loaded_inline_content']))->pluck('id')->all());
         $this->assertSame(0, $reinforcement->count($read));
         $this->assertSame(1, $reinforcement->count($f->gate));
     }

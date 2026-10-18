@@ -1,0 +1,370 @@
+{
+  "base": "2b0612a150dea6e106b72cb9b2227d07593a78e4",
+  "php": "8.5.11",
+  "database": "PostgreSQL 18.6 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+  "source_sha256": "9ef53c2d2307616755980c5d9dda009a92765821f10e7f4fa9b349343629644c",
+  "method": "Recorded October 18 domain rows; prose redacted with equal compact JSON bytes. No accounts or credentials. Not a lifecycle replay.",
+  "notes": [
+    "Three repetitions per projection, median runtime; actual SQL count.",
+    "Full prompt bytes include system/user; strict response schema and provider transport excluded.",
+    "Tokens estimated as bytes/4, not billed tokens. Recorded state reprojection, not historical prompt reconstruction.",
+    "Operational plan creation measured separately; identical plans supplied to C2 and C3.",
+    "Whole restored domain snapshot unchanged after plan and prompt projection."
+  ],
+  "cases": [
+    {
+      "label": "Luna current Origin",
+      "phase": "01m56dvrrs10jpbjvw72xcq7x5",
+      "plan": {
+        "queries": 99,
+        "milliseconds": 164.086837
+      },
+      "projections": {
+        "c2": {
+          "eligible_receipts": 4,
+          "loaded_receipts": 4,
+          "visible_bodies": 0,
+          "evidence_bytes": 0,
+          "prompt_bytes": 8729,
+          "estimated_input_tokens_bytes_div_4": 2183,
+          "database_queries": 17,
+          "projection_median_ms": 15.115,
+          "duplicate_catalogue_entries": 0
+        },
+        "c3": {
+          "eligible_receipts": 4,
+          "loaded_receipts": 4,
+          "visible_bodies": 4,
+          "evidence_bytes": 25719,
+          "prompt_bytes": 34645,
+          "estimated_input_tokens_bytes_div_4": 8662,
+          "database_queries": 22,
+          "projection_median_ms": 23.248,
+          "duplicate_catalogue_entries": 0
+        }
+      },
+      "qualifying_associations": 4,
+      "duplicate_associations_eliminated": 0,
+      "actions_and_registers_equal": true
+    },
+    {
+      "label": "Nova current first branch",
+      "phase": "01m56d9aqg2ckb0xwbkscrdqg3",
+      "plan": {
+        "queries": 93,
+        "milliseconds": 143.883849
+      },
+      "projections": {
+        "c2": {
+          "eligible_receipts": 5,
+          "loaded_receipts": 3,
+          "visible_bodies": 2,
+          "evidence_bytes": 12991,
+          "prompt_bytes": 25683,
+          "estimated_input_tokens_bytes_div_4": 6421,
+          "database_queries": 12,
+          "projection_median_ms": 9.211,
+          "duplicate_catalogue_entries": 0
+        },
+        "c3": {
+          "eligible_receipts": 9,
+          "loaded_receipts": 5,
+          "visible_bodies": 5,
+          "evidence_bytes": 22108,
+          "prompt_bytes": 35551,
+          "estimated_input_tokens_bytes_div_4": 8888,
+          "database_queries": 24,
+          "projection_median_ms": 29.83,
+          "duplicate_catalogue_entries": 0
+        }
+      },
+      "qualifying_associations": 13,
+      "duplicate_associations_eliminated": 4,
+      "actions_and_registers_equal": true
+    },
+    {
+      "label": "Luna other branch",
+      "phase": "01m56dd01y9r06wfpp9mf58qa7",
+      "plan": {
+        "queries": 93,
+        "milliseconds": 132.954925
+      },
+      "projections": {
+        "c2": {
+          "eligible_receipts": 1,
+          "loaded_receipts": 1,
+          "visible_bodies": 1,
+          "evidence_bytes": 6364,
+          "prompt_bytes": 15699,
+          "estimated_input_tokens_bytes_div_4": 3925,
+          "database_queries": 12,
+          "projection_median_ms": 8.865,
+          "duplicate_catalogue_entries": 0
+        },
+        "c3": {
+          "eligible_receipts": 7,
+          "loaded_receipts": 6,
+          "visible_bodies": 6,
+          "evidence_bytes": 24266,
+          "prompt_bytes": 34732,
+          "estimated_input_tokens_bytes_div_4": 8683,
+          "database_queries": 24,
+          "projection_median_ms": 26.609,
+          "duplicate_catalogue_entries": 0
+        }
+      },
+      "qualifying_associations": 8,
+      "duplicate_associations_eliminated": 1,
+      "actions_and_registers_equal": true
+    },
+    {
+      "label": "Luna before portfolio Disperse",
+      "phase": "01m56c73n4gsvtc4rj7qtn4gm8",
+      "plan": {
+        "queries": 102,
+        "milliseconds": 133.78701
+      },
+      "projections": {
+        "c2": {
+          "eligible_receipts": 1,
+          "loaded_receipts": 1,
+          "visible_bodies": 1,
+          "evidence_bytes": 6627,
+          "prompt_bytes": 11999,
+          "estimated_input_tokens_bytes_div_4": 3000,
+          "database_queries": 14,
+          "projection_median_ms": 9.817,
+          "duplicate_catalogue_entries": 0
+        },
+        "c3": {
+          "eligible_receipts": 5,
+          "loaded_receipts": 4,
+          "visible_bodies": 4,
+          "evidence_bytes": 15554,
+          "prompt_bytes": 21668,
+          "estimated_input_tokens_bytes_div_4": 5417,
+          "database_queries": 27,
+          "projection_median_ms": 27.794,
+          "duplicate_catalogue_entries": 0
+        }
+      },
+      "qualifying_associations": 7,
+      "duplicate_associations_eliminated": 2,
+      "actions_and_registers_equal": true
+    },
+    {
+      "label": "Vela current committed entry",
+      "phase": "01m56dnw4cqsd1entesnjs7jmm",
+      "plan": {
+        "queries": 99,
+        "milliseconds": 137.089697
+      },
+      "projections": {
+        "c2": {
+          "eligible_receipts": 2,
+          "loaded_receipts": 1,
+          "visible_bodies": 0,
+          "evidence_bytes": 0,
+          "prompt_bytes": 6401,
+          "estimated_input_tokens_bytes_div_4": 1601,
+          "database_queries": 20,
+          "projection_median_ms": 17.132,
+          "duplicate_catalogue_entries": 0
+        },
+        "c3": {
+          "eligible_receipts": 2,
+          "loaded_receipts": 1,
+          "visible_bodies": 1,
+          "evidence_bytes": 1418,
+          "prompt_bytes": 7941,
+          "estimated_input_tokens_bytes_div_4": 1986,
+          "database_queries": 28,
+          "projection_median_ms": 26.27,
+          "duplicate_catalogue_entries": 0
+        }
+      },
+      "qualifying_associations": 2,
+      "duplicate_associations_eliminated": 0,
+      "actions_and_registers_equal": true
+    },
+    {
+      "label": "Greater-depth Committal",
+      "phase": "01m53129fgzx2mts4278ps8p84",
+      "plan": {
+        "queries": 100,
+        "milliseconds": 460.976175
+      },
+      "projections": {
+        "c2": {
+          "eligible_receipts": 6,
+          "loaded_receipts": 5,
+          "visible_bodies": 4,
+          "evidence_bytes": 28435,
+          "prompt_bytes": 43972,
+          "estimated_input_tokens_bytes_div_4": 10993,
+          "database_queries": 23,
+          "projection_median_ms": 23.462,
+          "duplicate_catalogue_entries": 0
+        },
+        "c3": {
+          "eligible_receipts": 6,
+          "loaded_receipts": 5,
+          "visible_bodies": 5,
+          "evidence_bytes": 35390,
+          "prompt_bytes": 51049,
+          "estimated_input_tokens_bytes_div_4": 12763,
+          "database_queries": 28,
+          "projection_median_ms": 31.395,
+          "duplicate_catalogue_entries": 0
+        }
+      },
+      "qualifying_associations": 5,
+      "duplicate_associations_eliminated": 0,
+      "actions_and_registers_equal": true
+    },
+    {
+      "label": "Larger recorded population 01m50kz8gy5jg8e36mbqykje79",
+      "phase": "01m50rpkeptc2nddzgba0x5eef",
+      "diagnostic_ordinary_receipts": 17,
+      "plan": {
+        "queries": 90,
+        "milliseconds": 464.760686
+      },
+      "projections": {
+        "c2": {
+          "eligible_receipts": 2,
+          "loaded_receipts": 2,
+          "visible_bodies": 2,
+          "evidence_bytes": 12998,
+          "prompt_bytes": 23290,
+          "estimated_input_tokens_bytes_div_4": 5823,
+          "database_queries": 12,
+          "projection_median_ms": 9.731,
+          "duplicate_catalogue_entries": 0
+        },
+        "c3": {
+          "eligible_receipts": 17,
+          "loaded_receipts": 14,
+          "visible_bodies": 14,
+          "evidence_bytes": 83260,
+          "prompt_bytes": 96857,
+          "estimated_input_tokens_bytes_div_4": 24215,
+          "database_queries": 24,
+          "projection_median_ms": 73.179,
+          "duplicate_catalogue_entries": 0
+        }
+      },
+      "qualifying_associations": 24,
+      "duplicate_associations_eliminated": 7,
+      "actions_and_registers_equal": true
+    },
+    {
+      "label": "Larger recorded population 01m50kznxd8y46rf7xhn1t954m",
+      "phase": "01m5305pbtgax29knsv3mjcwqe",
+      "diagnostic_ordinary_receipts": 50,
+      "plan": {
+        "queries": 98,
+        "milliseconds": 562.555519
+      },
+      "projections": {
+        "c2": {
+          "eligible_receipts": 4,
+          "loaded_receipts": 3,
+          "visible_bodies": 2,
+          "evidence_bytes": 8358,
+          "prompt_bytes": 16921,
+          "estimated_input_tokens_bytes_div_4": 4231,
+          "database_queries": 50,
+          "projection_median_ms": 347.342,
+          "duplicate_catalogue_entries": 0
+        },
+        "c3": {
+          "eligible_receipts": 50,
+          "loaded_receipts": 38,
+          "visible_bodies": 38,
+          "evidence_bytes": 186659,
+          "prompt_bytes": 203949,
+          "estimated_input_tokens_bytes_div_4": 50988,
+          "database_queries": 29,
+          "projection_median_ms": 377.866,
+          "duplicate_catalogue_entries": 0
+        }
+      },
+      "qualifying_associations": 74,
+      "duplicate_associations_eliminated": 24,
+      "actions_and_registers_equal": true
+    },
+    {
+      "label": "Larger recorded population 01m53kyyvav7ftb9q7fpjjrnwy",
+      "phase": "01m54v3jakm5aaa4vssc4nq8ze",
+      "diagnostic_ordinary_receipts": 70,
+      "plan": {
+        "queries": 98,
+        "milliseconds": 498.72172
+      },
+      "projections": {
+        "c2": {
+          "eligible_receipts": 5,
+          "loaded_receipts": 4,
+          "visible_bodies": 1,
+          "evidence_bytes": 5043,
+          "prompt_bytes": 12387,
+          "estimated_input_tokens_bytes_div_4": 3097,
+          "database_queries": 12,
+          "projection_median_ms": 9.303,
+          "duplicate_catalogue_entries": 0
+        },
+        "c3": {
+          "eligible_receipts": 71,
+          "loaded_receipts": 46,
+          "visible_bodies": 45,
+          "evidence_bytes": 223589,
+          "prompt_bytes": 240847,
+          "estimated_input_tokens_bytes_div_4": 60212,
+          "database_queries": 24,
+          "projection_median_ms": 197.104,
+          "duplicate_catalogue_entries": 0
+        }
+      },
+      "qualifying_associations": 86,
+      "duplicate_associations_eliminated": 16,
+      "actions_and_registers_equal": true
+    },
+    {
+      "label": "Larger recorded population 01m53kz9cs3mg8zzvkyvhdke3e",
+      "phase": "01m55r7gd944cgj6m2ywvvvq5x",
+      "diagnostic_ordinary_receipts": 70,
+      "plan": {
+        "queries": 95,
+        "milliseconds": 496.444102
+      },
+      "projections": {
+        "c2": {
+          "eligible_receipts": 3,
+          "loaded_receipts": 1,
+          "visible_bodies": 1,
+          "evidence_bytes": 7019,
+          "prompt_bytes": 13063,
+          "estimated_input_tokens_bytes_div_4": 3266,
+          "database_queries": 12,
+          "projection_median_ms": 9.566,
+          "duplicate_catalogue_entries": 0
+        },
+        "c3": {
+          "eligible_receipts": 70,
+          "loaded_receipts": 39,
+          "visible_bodies": 37,
+          "evidence_bytes": 162975,
+          "prompt_bytes": 179341,
+          "estimated_input_tokens_bytes_div_4": 44836,
+          "database_queries": 24,
+          "projection_median_ms": 245.209,
+          "duplicate_catalogue_entries": 0
+        }
+      },
+      "qualifying_associations": 78,
+      "duplicate_associations_eliminated": 8,
+      "actions_and_registers_equal": true
+    }
+  ]
+}

@@ -34,7 +34,8 @@ index, cap, ranking, summary, unloading or provider attachment is introduced.
 
 ## Validation evidence
 
-Implementation validation and measured C2/C3 comparisons will be recorded here
-in stage 4. Graph fixtures, authorised lifecycle component tests and full lifecycle
-tests must be identified separately. No model sampling is required to establish
-correct prompt construction, and no behavioural improvement is claimed from it.
+The [validation report](participant-context-c3-validation.md) records focused and
+CI results, baseline failure comparisons, actual PHP/PostgreSQL C2/C3 measurements
+and remaining limitations. Graph fixtures, authorised lifecycle components and
+natural end-to-end paths are distinguished explicitly. No model sampling was
+performed and no behavioural improvement is claimed from prompt construction.

@@ -8,7 +8,6 @@ use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Receipt;
 use App\Services\Evidence\ReceiptEvidenceService;
-use App\Services\Participation\ParticipationContext;
 use DomainException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -72,9 +71,12 @@ final class ParticipantReceiptProjection
             throw new DomainException('A cognitive Receipt reference has no recorded metadata.');
         }
         $evidence = app(ReceiptEvidenceService::class);
-        $context = null;
+        $citations = $persisted->filter(fn ($receipt) => $receipt->type === 'citation'
+            && $loads->has($receipt->id) && $visible->has($receipt->id));
+        $citationBodies = $citations->isEmpty() ? collect() : $evidence->cognitiveCitations($citations,
+            Phase::with('cycle.participant')->findOrFail($state['plan']['phase']['id'])->cycle->participant->substrate_id);
 
-        return $catalogue->sortKeys()->map(function ($receipt) use ($loads, $persisted, $visible, $evidence, &$context, $state) {
+        return $catalogue->sortKeys()->map(function ($receipt) use ($loads, $persisted, $visible, $evidence, $citationBodies) {
             $model = $persisted->get($receipt['id']);
             $loaded = $model !== null ? $loads->has($receipt['id']) : ($receipt['loaded'] ?? false);
             $memory = ($receipt['load_mode'] ?? null) === 'memory';
@@ -85,8 +87,7 @@ final class ParticipantReceiptProjection
                 } elseif ($model !== null) {
                     $content = $evidence->observation($model)['evidence'] ?? $evidence->failure($model);
                     if ($model->type === 'citation') {
-                        $context ??= new ParticipationContext(Phase::findOrFail($state['plan']['phase']['id']));
-                        $content = $evidence->citation($model, $context)['evidence'] ?? null;
+                        $content = $citationBodies->get($model->id)['evidence'] ?? null;
                     }
                 } else {
                     $content = $receipt['evidence'] ?? null;
