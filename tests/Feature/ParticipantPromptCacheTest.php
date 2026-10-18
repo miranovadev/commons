@@ -155,7 +155,7 @@ class ParticipantPromptCacheTest extends TestCase
         $connection = $this->connection();
         $key = fn ($c, $s) => app(OpenAIRequestFactory::class)->make($c, app(ParticipantPromptFactory::class)->make($c, $s), $s['_inference'])['prompt_cache_key'];
         $before = $key($connection, $state);
-        $this->assertStringStartsWith('commons-context-c2:', $before);
+        $this->assertStringStartsWith('commons-context-c3:', $before);
         foreach (PhaseKind::cases() as $phase) {
             $this->assertSame($before, $key($connection, $this->state($phase)));
         }

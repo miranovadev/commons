@@ -60,7 +60,7 @@ class ParticipantReceiptC2Test extends TestCase
     }
 
     #[DataProvider('visibility')]
-    public function test_visibility_depends_on_load_and_read_or_gate_without_mutating_history(array $roles, bool $loaded): void
+    public function test_visibility_depends_on_personal_load_in_every_cognitive_role_without_mutating_history(array $roles, bool $loaded): void
     {
         $f = new ParticipantContextFixture(1, 0, false);
         $r = $this->receipt($f);
@@ -71,7 +71,7 @@ class ParticipantReceiptC2Test extends TestCase
         $catalogue = $this->catalogue($f, $r, $roles);
         $this->assertCount(1, $catalogue);
         $this->assertSame($loaded, $catalogue[0]['loaded']);
-        $visible = $loaded && $roles !== ['write'];
+        $visible = $loaded;
         $this->assertSame($visible, array_key_exists('loaded_inline_content', $catalogue[0]));
         $this->assertSame($visible ? 1 : 0, substr_count(json_encode($catalogue), 'C2-IMMUTABLE-BODY'));
         $this->assertSame($before, $this->snapshot());
@@ -203,7 +203,7 @@ class ParticipantReceiptC2Test extends TestCase
         $events = DB::table('receipt_context_events')->count();
         DB::transaction(fn () => $context->desired($f->viewer, $f->phase, ['load' => [$r->id]]));
         $this->assertDatabaseCount('receipt_context_events', $events);
-        $this->assertArrayNotHasKey('loaded_inline_content', $this->catalogue($f, $r, ['write'])[0]);
+        $this->assertArrayHasKey('loaded_inline_content', $this->catalogue($f, $r, ['write'])[0]);
         $this->assertArrayHasKey('loaded_inline_content', $this->catalogue($f, $r, ['gate'])[0]);
 
         // A different branch's loaded Receipt is not a current load option, but remains unloadable.
