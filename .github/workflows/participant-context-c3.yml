@@ -1,0 +1,71 @@
+name: C3 context validation
+
+on:
+  pull_request:
+    paths:
+      - 'app/Services/CognitiveEvidenceHorizon.php'
+      - 'app/Services/ParticipantReceiptProjection.php'
+      - 'app/Services/ParticipantPrompt*.php'
+      - 'tests/**/Participant*C3*'
+      - 'tests/Feature/CognitiveEvidenceHorizonTest.php'
+      - 'tests/Feature/ParticipantPromptConstitutionTest.php'
+      - 'tests/Fixtures/c3/**'
+      - '.github/workflows/participant-context-c3.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: testing
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -q -d testing -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      APP_ENV: testing
+      APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_DATABASE: testing
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      CACHE_STORE: array
+      QUEUE_CONNECTION: sync
+      SESSION_DRIVER: array
+      MAIL_MAILER: array
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: 2b0612a150dea6e106b72cb9b2227d07593a78e4
+          path: c2-baseline
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: mbstring, pdo_pgsql, pdo_sqlite, curl, intl
+          coverage: none
+          tools: composer:v2
+      - run: composer install --prefer-dist --no-interaction --no-progress
+      - run: mkdir -p test-results && cp .env.example .env
+      - name: Focused cognition, evidence, authority and provider packet contracts
+        run: php artisan test --filter='CognitiveEvidenceHorizonTest|ParticipantReceiptC[23]Test|ParticipantReceiptProjectionTest|ParticipantCognitiveProjectionTest|ParticipantPromptConstitutionTest|ParticipantPromptCacheTest|ParticipantRegisterQuestionsTest|ReceiptRegionContextTest|RevisionAdmissibilityTest' --log-junit test-results/c3-focused.xml
+      - name: Recorded PHP/PostgreSQL C2 versus C3 comparison
+        if: ${{ !cancelled() }}
+        env:
+          COMMONS_CONTEXT_BASELINE_DIR: ${{ github.workspace }}/c2-baseline
+        run: php artisan test tests/Diagnostics/ParticipantContextC3ComparisonTest.php --log-junit test-results/c3-comparison.xml
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: c3-validation
+          path: test-results/
+          retention-days: 14

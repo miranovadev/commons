@@ -5,7 +5,7 @@ namespace App\Services;
 /** Deterministic presentation only: never queries or mutates load state. */
 final class ParticipantPromptLayout
 {
-    public const VERSION = 'commons-context-c2';
+    public const VERSION = 'commons-context-c3';
 
     public const FORMAT_INSTRUCTION = 'Proposition receipts are IDs in the Receipts catalogue. loaded_inline_content contains loaded evidence or scoped memory. Visibility grants no permission; use only the Actions schema to select targets and parameters.';
 

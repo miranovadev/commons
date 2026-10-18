@@ -73,6 +73,34 @@ final class ReceiptEvidenceService
 
             return [$attestation, $target];
         });
+
+        return $this->citationDescription($receipt, $attestation, $target);
+    }
+
+    /** Batch cognitive subjects only; never hydrate an operational working graph. */
+    public function cognitiveCitations(Collection $receipts, string $substrateId): Collection
+    {
+        $receipts = $receipts->filter(fn ($receipt) => $receipt->type === 'citation'
+            && $receipt->supports(ReceiptCapability::Readable) && $receipt->observationComplete());
+        if ($receipts->isEmpty()) {
+            return collect();
+        }
+        $references = $receipts->pluck('reference')->unique();
+        $owned = fn ($q) => $q->where('substrate_id', $substrateId);
+        $attestations = Attestation::whereKey($references)->whereHas('phase.cycle.participant', $owned)->get()->keyBy('id');
+        $targets = Proposition::whereKey($references->merge($attestations->pluck('proposition_id'))->unique())
+            ->whereHas('phase.cycle.participant', $owned)->get()->keyBy('id');
+
+        return $receipts->mapWithKeys(function ($receipt) use ($attestations, $targets) {
+            $attestation = $attestations->get($receipt->reference);
+            $target = $targets->get($receipt->reference) ?? $targets->get($attestation?->proposition_id);
+
+            return [$receipt->id => $this->citationDescription($receipt, $attestation, $target)];
+        });
+    }
+
+    private function citationDescription(Receipt $receipt, ?Attestation $attestation, ?Proposition $target): ?array
+    {
         if ($target === null) {
             return null;
         }

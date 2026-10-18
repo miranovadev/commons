@@ -1,0 +1,96 @@
+{
+  "base": "2b0612a150dea6e106b72cb9b2227d07593a78e4",
+  "testedBaseline": "7008675b93d9be8e41f7e3313525d1d240d8779e",
+  "identicalTree": "381d2ac8fac466a750815301c3417e8d593c62d5",
+  "baselineRun": 39000438290,
+  "c3Run": 39120409194,
+  "c3Head": "9152e91b71f3b7df3ade207a8e37e12f99bd0e9f",
+  "normalization": "Remove log timestamps, randomized ULIDs, dates, object identities, stack-frame numbers, whitespace and asynchronously interleaved Composer failure lines. Compare remaining complete failure blocks.",
+  "integration": [
+    {
+      "test": "Tests\\Feature\\Api\\ParticipationLifecycleRegressionTest::test_successful_route_revisit_can_advance_through_bias_to_its_existing_commit",
+      "sameNormalizedFailure": true,
+      "baseJob": 117302126455,
+      "c3Job": 117654691922,
+      "reason": "Script step 32 (explorer / contribute) after Failed asserting that two arrays are identical. Array &0 ["
+    },
+    {
+      "test": "Tests\\Feature\\Api\\ParticipationLifecycleRegressionTest::test_distinguish_under_another_committal_does_not_advance_origins_epoch",
+      "sameNormalizedFailure": true,
+      "baseJob": 117302126455,
+      "c3Job": 117654691922,
+      "reason": "Script step 26 (relay-a / contribute) after Failed asserting that two arrays are identical. Array &0 ["
+    },
+    {
+      "test": "Tests\\Feature\\Api\\ParticipationLocalEpochTest::test_a_third_distinguish_variant_reopens_only_its_own_slot_through_http",
+      "sameNormalizedFailure": true,
+      "baseJob": 117302126455,
+      "c3Job": 117654691922,
+      "reason": "Script step 32 (critical-explorer / contribute) after Failed asserting that two arrays are identical. Array &0 ["
+    },
+    {
+      "test": "Tests\\Feature\\Api\\ParticipationRecoveryTest::test_successful_revisit_keeps_its_untraversed_commit_out_of_backward_recovery",
+      "sameNormalizedFailure": true,
+      "baseJob": 117302126455,
+      "c3Job": 117654691922,
+      "reason": "Script step 32 (route-author / contribute) after Failed asserting that two arrays are identical. Array &0 ["
+    },
+    {
+      "test": "Tests\\Feature\\Api\\ParticipationSourceEquivalenceTest::test_connection_driven_and_manual_participation_share_the_complete_action_contract",
+      "sameNormalizedFailure": true,
+      "baseJob": 117302126601,
+      "c3Job": 117654692003,
+      "reason": "Script step 31 (source-equivalence / contribute) after Failed asserting that two arrays are identical. Array &0 ["
+    },
+    {
+      "test": "Tests\\Feature\\Api\\ParticipationTragedyLifecycleTest::test_natural_bootstrap_crossover_remains_open_and_rest_keeps_the_region_without_catastrophe",
+      "sameNormalizedFailure": true,
+      "baseJob": 117302126601,
+      "c3Job": 117654692003,
+      "reason": "Script step 32 (tragic-explorer / contribute) after Failed asserting that two arrays are identical. Array &0 ["
+    },
+    {
+      "test": "Tests\\Feature\\OperationalClosurePathTest::test_receipt_backed_full_cycle_commits_with_real_hysteretic_closure_calculations",
+      "sameNormalizedFailure": true,
+      "baseJob": 117302126601,
+      "c3Job": 117654692003,
+      "reason": "The single-participant motor stalled. Last Commit eligibility: {\"admissible\":false,\"reinforcement_count\":1,\"requirements\":{\"attestation\":true,\"receipt\":true,\"closure\":false,\"phase_position\":true,\"caus"
+    },
+    {
+      "test": "Tests\\Feature\\FreshBootstrapTest::test_explicit_origin_and_aligned_evidence_reach_a_lawful_commit#0",
+      "sameNormalizedFailure": true,
+      "baseJob": 117302126612,
+      "c3Job": 117654691823,
+      "reason": "The single-participant motor stalled. Last Commit eligibility: {\"admissible\":false,\"reinforcement_count\":1,\"requirements\":{\"attestation\":true,\"receipt\":true,\"closure\":false,\"phase_position\":true,\"caus"
+    },
+    {
+      "test": "Tests\\Feature\\FreshBootstrapTest::test_explicit_origin_and_aligned_evidence_reach_a_lawful_commit#1",
+      "sameNormalizedFailure": true,
+      "baseJob": 117302126612,
+      "c3Job": 117654691823,
+      "reason": "The single-participant motor stalled. Last Commit eligibility: {\"admissible\":false,\"reinforcement_count\":1,\"requirements\":{\"attestation\":true,\"receipt\":true,\"closure\":false,\"phase_position\":true,\"caus"
+    },
+    {
+      "test": "Tests\\Feature\\Api\\ParticipationHttpHarnessTest::test_real_http_actions_reach_an_operational_commit",
+      "sameNormalizedFailure": true,
+      "baseJob": 117302126715,
+      "c3Job": 117654692005,
+      "reason": "HTTP action budget exhausted. Last Commit eligibility: {\"admissible\":false,\"reinforcement_count\":1,\"requirements\":{\"attestation\":true,\"receipt\":true,\"closure\":false,\"phase_position\":true,\"causal_write"
+    },
+    {
+      "test": "Tests\\Feature\\NaturalChargeBoundaryLifecycleTest::test_two_participants_reproduce_catastrophe_then_recover_to_the_open_ancestor",
+      "sameNormalizedFailure": true,
+      "baseJob": 117302126715,
+      "c3Job": 117654692005,
+      "reason": "Failed asserting that two strings are identical. -'settlement' +'emergence'"
+    }
+  ],
+  "core": {
+    "baselineRun": 39008367419,
+    "attempt": 1,
+    "job": 117325654209,
+    "failure": "Tests\\Feature\\ChargeBoundaryTragedyTest::test_ordinary_unmocked_observables_can_reach_the_boundary",
+    "reason": "NaturalBoundaryHistory.php:63 expects settlement, gets emergence.",
+    "note": "Initial attempt produced the test log although job status is cancelled. Subsequent attempt failed to download frontend-build and is not test evidence."
+  }
+}
