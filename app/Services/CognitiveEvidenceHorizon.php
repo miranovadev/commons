@@ -38,8 +38,12 @@ final class CognitiveEvidenceHorizon
         $parents = $edges->groupBy('target_proposition_id');
         $children = $edges->groupBy('source_proposition_id');
         $local = fn ($id) => ($nodes->get($id)?->tier === 'expressive'
-            && $nodes[$id]->entry_committal_id === $governor->id);
+            && $nodes[$id]->entry_committal_id === $governor->id
+            && ($gate->tier === 'committal' || $nodes[$id]->context_horizon_id === $gate->phase->cycle->context_horizon_id));
         $selected = collect([$governor->id => true]);
+        // One authoritative closure calculation per projection, never per Receipt.
+        // Its narrower continuation graph is not our cognitive ancestry graph.
+        $closed = app(TerminalContinuationService::class)->graph($substrateId)['closed'];
 
         // Independent traversals: never descend from an encountered ancestor.
         // Doing so would select the siblings of an already chosen continuation.
@@ -53,6 +57,10 @@ final class CognitiveEvidenceHorizon
                 }
                 $seen[$id] = true;
                 $selected->put($id, true);
+                // A terminal node retains its associations. Only expansion stops.
+                if ($direction === 'forward' && $closed->has($id)) {
+                    continue;
+                }
                 $adjacent = $direction === 'backward' ? $parents->get($id, collect()) : $children->get($id, collect());
                 foreach ($adjacent as $edge) {
                     $next = $direction === 'backward' ? $edge->source_proposition_id : $edge->target_proposition_id;
@@ -61,6 +69,22 @@ final class CognitiveEvidenceHorizon
                     }
                     // Committals are hard endpoints. Only the governor and
                     // independently displayed Committals contribute evidence.
+                }
+            }
+        }
+
+        // An encountered genuine Reconcile supplies its two direct operands.
+        // Do this AFTER traversal: a prospective operand is a leaf, not a new
+        // backward/forward seed. Foreign ancestry must never enter through it.
+        foreach ($selected->keys() as $id) {
+            $incoming = $parents->get($id, collect());
+            $node = $nodes->get($id);
+            if ($incoming->count() === 2
+                && $incoming->pluck('source_proposition_id')->unique()->count() === 2
+                && $incoming->every(fn ($edge) => $edge->type === 'reconcile' && $edge->phase_id === $node->phase_id)
+                && $incoming->contains('source_proposition_id', $node->gate_proposition_id)) {
+                foreach ($incoming as $edge) {
+                    $selected->put($edge->source_proposition_id, true);
                 }
             }
         }
