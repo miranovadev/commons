@@ -14,7 +14,12 @@ class HyperlinkVerifier
 {
     public const int MAX_BYTES = 2 * 1024 * 1024;
 
-    public function __construct(private HyperlinkIdentity $identity, private PublicResourceAddress $addresses) {}
+    public function __construct(
+        private HyperlinkIdentity $identity,
+        private PublicResourceAddress $addresses,
+        private ArtifactStore $artifacts,
+        private HyperlinkMetadataExtractor $descriptions,
+    ) {}
 
     public function verify(string $reference): VerifiedHyperlink
     {
@@ -51,6 +56,7 @@ class HyperlinkVerifier
             if ($body === '' || strlen($body) > self::MAX_BYTES) {
                 throw new DomainException('Hyperlink verification requires a non-empty bounded resource.');
             }
+            $original = $body;
             $type = strtolower(explode(';', $response->header('Content-Type'))[0]);
             if ($type === 'text/html') {
                 $body = preg_replace('/<(script|style)\b[^>]*>.*?<\/\1\s*>/is', '', $body);
@@ -77,9 +83,19 @@ class HyperlinkVerifier
                 // Missing or malformed source timestamps cannot invent version precision.
             }
 
+            $excerpt = str_starts_with($type, 'text/') || $type === 'application/json'
+                ? mb_substr(mb_convert_encoding($body, 'UTF-8', 'UTF-8'), 0, 1200) : null;
+            $truncated = mb_strlen($body) > 1200;
+            // Descriptor normalization must not change the historical fingerprint path above.
+            $mediaType = trim($type);
+            if (! preg_match('~^[a-z0-9!#$&^_.+\-]+/[a-z0-9!#$&^_.+\-]+$~D', $mediaType)) {
+                $mediaType = 'application/octet-stream';
+            }
+            $artifact = $this->artifacts->preserve($original, $mediaType);
+            $description = $this->descriptions->extract($original, $type, $excerpt, $truncated);
+
             return new VerifiedHyperlink($this->identity->resource($url), hash('sha256', $body), $observed, $modified,
-                str_starts_with($type, 'text/') || $type === 'application/json' ? mb_substr(mb_convert_encoding($body, 'UTF-8', 'UTF-8'), 0, 1200) : null,
-                mb_strlen($body) > 1200);
+                $excerpt, $truncated, [$artifact], $description);
         }
 
         throw new DomainException('Hyperlink verification exceeded the redirect limit.');

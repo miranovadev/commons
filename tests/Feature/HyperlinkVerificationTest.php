@@ -8,6 +8,7 @@ use App\Services\Evidence\PublicResourceAddress;
 use Carbon\CarbonImmutable;
 use DomainException;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -19,6 +20,7 @@ class HyperlinkVerificationTest extends TestCase
         $this->app->bind(HyperlinkVerifier::class, HyperlinkVerifier::class);
         $this->mock(PublicResourceAddress::class, fn ($mock) => $mock->shouldReceive('resolve')->andReturn('93.184.216.34'));
         Http::preventStrayRequests();
+        Storage::fake('artifacts');
     }
 
     public static function equivalents(): array
@@ -69,6 +71,20 @@ class HyperlinkVerificationTest extends TestCase
             ->push('<div>  Stable   text </div><script>time=2</script>', 200, ['Content-Type' => 'text/html'])]);
         $verifier = app(HyperlinkVerifier::class);
         $this->assertSame($verifier->verify('https://example.com/page')->fingerprint, $verifier->verify('https://example.com/page')->fingerprint);
+    }
+
+    public function test_description_metadata_changes_do_not_create_new_evidence_identity(): void
+    {
+        Http::fake(['*' => Http::sequence()
+            ->push('<meta name="description" content="First"><p>Stable</p>', 200, ['Content-Type' => 'text/html'])
+            ->push('<meta name="description" content="Second"><p>Stable</p>', 200, ['Content-Type' => 'text/html'])]);
+        $a = app(HyperlinkVerifier::class)->verify('https://example.com/page');
+        $b = app(HyperlinkVerifier::class)->verify('https://example.com/page');
+        $this->assertSame(hash('sha256', 'Stable'), $a->fingerprint);
+        $this->assertSame($a->fingerprint, $b->fingerprint);
+        $this->assertNotSame($a->artifacts, $b->artifacts);
+        $this->assertSame('First', $a->metadata()['description']);
+        $this->assertSame('Second', $b->metadata()['description']);
     }
 
     public function test_redirects_resolve_to_final_identity(): void
