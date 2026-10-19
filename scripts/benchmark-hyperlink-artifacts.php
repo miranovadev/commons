@@ -1,14 +1,14 @@
 <?php
 
-/** Offline microbenchmark: no HTTP, database or provider calls. */
-require __DIR__.'/../vendor/autoload.php';
-$app = require __DIR__.'/../bootstrap/app.php';
-$app->make(Kernel::class)->bootstrap();
-
 use App\Services\Evidence\ArtifactStore;
 use App\Services\Evidence\HyperlinkMetadataExtractor;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\Storage;
+
+/** Offline microbenchmark: no HTTP, database or provider calls. */
+require __DIR__.'/../vendor/autoload.php';
+$app = require __DIR__.'/../bootstrap/app.php';
+$app->make(Kernel::class)->bootstrap();
 
 $root = sys_get_temp_dir().'/commons-artifact-benchmark-'.bin2hex(random_bytes(12));
 config(['artifacts.disk' => 'artifact-benchmark', 'filesystems.disks.artifact-benchmark' => [
@@ -24,12 +24,12 @@ $median = function (array $samples): float {
 $results = [];
 try {
     foreach ([48 * 1024, 512 * 1024, 2 * 1024 * 1024] as $size) {
-        $prefix = '<html><head><title>Artifact benchmark</title><meta name="description" content="Original description"></head><body><a href="https://example.test/out">Original link</a>';
+        $prefix = '<!--00--><html><head><title>Artifact benchmark</title><meta name="description" content="Original description"></head><body><a href="https://example.test/out">Original link</a>';
         $body = $prefix.str_repeat('x', $size - strlen($prefix) - strlen('</body></html>')).'</body></html>';
         $samples = ['normalization_and_fingerprint_ms' => [], 'new_artifact_ms' => [], 'existing_artifact_ms' => [], 'metadata_ms' => []];
         for ($i = 0; $i < 20; $i++) {
             // Fixed-length variation creates distinct byte keys without changing visible text.
-            $original = substr_replace($body, sprintf('%02d', $i), -16, 2);
+            $original = substr_replace($body, sprintf('%02d', $i), 4, 2);
             $start = hrtime(true);
             $normalized = preg_replace('/<(script|style)\b[^>]*>.*?<\/\1\s*>/is', '', $original);
             $normalized = html_entity_decode(strip_tags($normalized), ENT_QUOTES | ENT_HTML5, 'UTF-8');

@@ -87,6 +87,19 @@ class HyperlinkVerificationTest extends TestCase
         $this->assertSame('Second', $b->metadata()['description']);
     }
 
+    public function test_descriptor_media_type_normalization_does_not_change_the_legacy_fingerprint_path(): void
+    {
+        $html = '<title>Title</title><p>Body</p>';
+        Http::fake(['*' => Http::response($html, 200, ['Content-Type' => 'text/html ; charset=utf-8'])]);
+        $result = app(HyperlinkVerifier::class)->verify('https://example.com/page');
+        // The old verifier does not strip markup when the token contains a trailing
+        // space. Preserve that identity while using normalized MIME for description.
+        $this->assertSame(hash('sha256', $html), $result->fingerprint);
+        $this->assertSame('text/html', $result->artifacts[0]['media_type']);
+        $this->assertSame('Title', $result->metadata()['title']);
+        $this->assertSame('Body', $result->metadata()['description']);
+    }
+
     public function test_redirects_resolve_to_final_identity(): void
     {
         Http::fake(['https://example.com/old' => Http::response('', 301, ['Location' => '/new?track=x']),

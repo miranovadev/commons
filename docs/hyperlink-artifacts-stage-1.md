@@ -211,12 +211,12 @@ On local PHP 8.5.8, median milliseconds were:
 
 | Resource bytes | Existing normalization + fingerprint | New Artifact publication + verification | Deduplicated verification | Metadata extraction |
 | ---: | ---: | ---: | ---: | ---: |
-| 49,152 | 0.581 | 0.834 | 0.406 | 0.237 |
-| 524,288 | 6.603 | 5.025 | 4.364 | 1.980 |
-| 2,097,152 | 31.580 | 19.399 | 17.211 | 9.728 |
+| 49,152 | 0.583 | 0.786 | 0.399 | 0.246 |
+| 524,288 | 6.788 | 4.968 | 4.167 | 1.947 |
+| 2,097,152 | 29.251 | 18.516 | 16.869 | 9.364 |
 
-The added work is measurable: approximately 1.1 ms for a new 48 KiB local Artifact
-and 29.1 ms at the 2 MiB limit in this run. These are isolated local component
+The added work is measurable: approximately 1.0 ms for a new 48 KiB local Artifact
+and 27.9 ms at the 2 MiB limit in this run. These are isolated local component
 medians, not end-to-end guarantees. S3 normally adds HEAD + PUT + GET for a new
 object, or HEAD + GET for reuse; remote latency and production storage cost have
 not been measured. Reuse avoids upload but deliberately still verifies content.
