@@ -22,7 +22,9 @@ use App\Models\SubstrateLedgerEntry;
 use App\Models\Supersession;
 use App\Models\Tragedy;
 use App\Services\ContextHorizonProjector;
+use App\Services\Evidence\ArtifactStore;
 use App\Services\Evidence\HyperlinkIdentity;
+use App\Services\Evidence\HyperlinkMetadataExtractor;
 use App\Services\Evidence\HyperlinkVerifier;
 use App\Services\Evidence\PublicResourceAddress;
 use App\Services\HorizonReceiptService;
@@ -315,7 +317,7 @@ abstract class TestCase extends BaseTestCase
         // Semantic fixtures use deterministic external evidence and never the network.
         // HyperlinkVerificationTest explicitly restores the real verifier/HTTP boundary.
         $this->app->bind(HyperlinkVerifier::class, function ($app) {
-            return new class($app->make(HyperlinkIdentity::class), $app->make(PublicResourceAddress::class)) extends HyperlinkVerifier
+            return new class($app->make(HyperlinkIdentity::class), $app->make(PublicResourceAddress::class), $app->make(ArtifactStore::class), $app->make(HyperlinkMetadataExtractor::class)) extends HyperlinkVerifier
             {
                 public function verify(string $reference): VerifiedHyperlink
                 {

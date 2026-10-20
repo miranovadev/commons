@@ -6,6 +6,7 @@ use App\Contracts\WebSearchProvider;
 use App\Domain\Evidence\InstrumentObservation;
 use App\Domain\Evidence\PropositionCollection;
 use App\Domain\Evidence\SearchObservation;
+use App\Exceptions\ArtifactStorageException;
 use App\Models\Attestation;
 use App\Models\CommitmentSnapshot;
 use App\Models\Phase;
@@ -129,6 +130,10 @@ final readonly class OperationalInstrumentService
         if ($input['kind'] === 'hyperlink') {
             try {
                 $verification = $this->verifier->verify($reference);
+            } catch (ArtifactStorageException $exception) {
+                // Infrastructure failure is not a failed observation of the resource.
+                // No execution/Receipt has been persisted and no write lock is held.
+                throw $exception;
             } catch (\Throwable $exception) {
                 // A failed verification is still an observable Instrument attempt.
                 // Complete a non-reinforcing Receipt, without claiming verified content.

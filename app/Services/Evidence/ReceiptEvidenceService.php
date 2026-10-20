@@ -125,11 +125,20 @@ final class ReceiptEvidenceService
         if ($receipt->type === 'hyperlink' && $receipt->signature !== null
             && ($receipt->metadata['content_verified'] ?? false) === true
             && ($receipt->metadata['reinforcement_version'] ?? null) === 'accepted-version') {
+            $content = array_intersect_key($receipt->metadata, array_flip([
+                'resource', 'fingerprint', 'observed_at', 'last_modified', 'content_excerpt', 'excerpt_truncated',
+                'title', 'title_source', 'description_source',
+            ]));
+            // Keep the existing small presentation slot; do not duplicate the description
+            // or reveal storage keys. Historical Receipts keep their original excerpt.
+            if (array_key_exists('description', $receipt->metadata)) {
+                $content['content_excerpt'] = $receipt->metadata['description'];
+                $content['excerpt_truncated'] = $receipt->metadata['description_truncated'] ?? false;
+            }
+
             return [
                 'signature' => $receipt->signature,
-                'evidence' => array_intersect_key($receipt->metadata, array_flip([
-                    'resource', 'fingerprint', 'observed_at', 'last_modified', 'content_excerpt', 'excerpt_truncated',
-                ])),
+                'evidence' => $content,
             ];
         }
         if ($receipt->type === 'web_search' && $receipt->signature !== null

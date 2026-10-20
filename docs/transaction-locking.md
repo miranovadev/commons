@@ -20,7 +20,11 @@ iteration. A wake still completes at most its original Cycle.
    may include concurrent committed changes; it does not promise a frozen snapshot.
 2. Infer an action. For external Instruments, validate the input, collect the
    observation, and retain it only in a request-local `InstrumentObservation`.
-   Hyperlink verification and Web Search never run in the write section.
+   Hyperlink verification, Artifact publication/read-back, descriptive metadata
+   extraction and Web Search never run in the write section. Artifact failure
+   aborts observation preparation; a later stale-state rejection or rollback may
+   leave an immutable unreferenced object. No storage I/O is added to Receipt
+   completion. See [Hyperlink Artifacts Stage 1](hyperlink-artifacts-stage-1.md).
 3. Begin the contribution transaction. Acquire Substrate → Participant → active
    Cycle → active Phase. Confirm the submitted Phase and the field version of the
    schema prepared before the transaction. A mismatch rejects the stale action.

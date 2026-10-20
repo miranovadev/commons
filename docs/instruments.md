@@ -1,5 +1,21 @@
 # Instruments and immutable observations
 
+## Hyperlink Artifact preservation (Stage 1)
+
+Successful Hyperlink observations now preserve the exact received resource as a
+private, immutable, content-addressed **Artifact**. Receipt metadata adds an
+`artifacts` array, independently selected title/description and extraction-source
+labels. Evidence fingerprints and the seven-day version rule remain unchanged.
+See [the Stage 1 contract](hyperlink-artifacts-stage-1.md) for metadata examples,
+atomic storage, failure semantics and required shared-storage configuration.
+Artifacts do not become readable documents in Participant cognition. C2/C3
+continue presenting one bounded description for eligible personally loaded
+observations; internal storage keys and full bytes are omitted.
+
+
+> **C2/C3 update:** [Participant Context C3](participant-context-c3.md)
+> extends loaded ordinary evidence presentation to all causally selected
+> associations, including Write and extended history.
 > **C2 update:** [Participant Context C2](participant-context-c2-implementation.md)
 > supersedes the inference Receipt layout and loading timing described below.
 > New Instrument Receipts auto-load for their performer; eligible local Write
