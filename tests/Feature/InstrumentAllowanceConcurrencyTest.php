@@ -71,9 +71,9 @@ class InstrumentAllowanceConcurrencyTest extends TestCase
         [$gate, $source, $target] = DB::transaction(function () use ($f): array {
             $gate = $f->node($f->seed, 'activity', position: PhaseKind::Distinguish);
             $sibling = $f->node($f->seed, 'activity', position: PhaseKind::Distinguish);
-            $source = $f->node($sibling, 'frontier', position: PhaseKind::Persist);
             $consumer = (new Participant)->forceFill(['substrate_id' => $f->substrate->id, 'callsign' => 'concurrent-consumer']);
             $consumer->save();
+            $source = $f->node($sibling, 'frontier', position: PhaseKind::Persist, participant: $consumer);
             $target = $f->node($source, 'canon', 'reclassify', position: PhaseKind::Constrain, participant: $consumer);
             $this->assertNotSame($f->viewer->id, $target->phase->cycle->participant_id);
 

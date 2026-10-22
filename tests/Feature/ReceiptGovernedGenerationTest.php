@@ -69,9 +69,9 @@ class ReceiptGovernedGenerationTest extends TestCase
     /** Catalogue component: use the existing transactional attachment operation. */
     private function consume(ParticipantContextFixture $f, Receipt $receipt): void
     {
-        $source = $f->node($f->gate, 'frontier', position: PhaseKind::Persist);
         $consumer = (new Participant)->forceFill(['substrate_id' => $f->substrate->id, 'callsign' => 'consumer-'.str()->ulid()]);
         $consumer->save();
+        $source = $f->node($f->gate, 'frontier', position: PhaseKind::Persist, participant: $consumer);
         $target = $f->node($source, 'canon', 'reclassify', position: PhaseKind::Constrain, participant: $consumer);
         $this->assertNotSame($f->viewer->id, $target->phase->cycle->participant_id);
         DB::transaction(fn () => app(HorizonReceiptService::class)->consume($target->phase, $source, $target, $receipt->id));
