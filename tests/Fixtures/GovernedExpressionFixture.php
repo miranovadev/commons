@@ -52,7 +52,7 @@ final class GovernedExpressionFixture
         $this->writePersist();
         $dispatcher = app(ContributionDispatcher::class);
         $dispatcher->dispatch($this->actor, $this->phase,
-            ['action' => 'instrument.execute', 'proposition_id' => $this->expression->id,
+            ['action' => 'instrument.execute', 'proposition_id' => $this->phase->gate_proposition_id,
                 'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/grounded-development']]);
         $dispatcher->dispatch($this->actor, $this->phase,
             ['action' => 'attestation.create', 'proposition_id' => $this->expression->id, 'direction' => 'support']);

@@ -4,13 +4,18 @@ namespace Tests\Feature;
 
 use App\Domain\Evidence\VerifiedHyperlink;
 use App\Enums\PhaseKind;
+use App\Models\Cycle;
 use App\Models\Participant;
+use App\Models\Phase;
 use App\Models\Proposition;
 use App\Services\ContributionDispatcher;
 use App\Services\InputPlanService;
 use App\Services\InstrumentExecutionService;
 use App\Services\ParticipantContextSerializer;
 use App\Services\ParticipantReceiptProjection;
+use App\Services\PhaseProgressionService;
+use App\Services\PotentialProjectionService;
+use App\Services\PropositionMeasurementService;
 use App\Services\TerminalContinuationService;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -105,20 +110,15 @@ class ParticipantReceiptC3Test extends TestCase
         // Real Origin entry, dispatched Variant/Persist and dispatched Instrument.
         // Only the numerical boundary is isolated, as in DirectTragedyResolutionTest.
         $f = new GovernedExpressionFixture;
-        $f->writePersist();
-        $dispatcher = app(ContributionDispatcher::class);
-        $dispatcher->dispatch($f->actor, $f->phase, ['action' => 'instrument.execute',
+        $f->phase = app(PhaseProgressionService::class)->advance($f->phase, $f->expression);
+        $this->controlledBirthClosureFixture(1, $f->expression->id);
+        app(PropositionMeasurementService::class)->project($f->expression, 1, 1, 1);
+        app(PotentialProjectionService::class)->rebuild($f->actor->substrate_id, false);
+        $this->resolveExpressiveFieldFixture(1);
+        app(ContributionDispatcher::class)->dispatch($f->actor, $f->phase, ['action' => 'instrument.execute',
             'proposition_id' => $f->expression->id,
             'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/c3-terminal']]);
-        $this->controlledBirthClosureFixture(1, $f->expression->id);
-        app(\App\Services\PropositionMeasurementService::class)->project($f->expression, 1, 1, 1);
-        app(\App\Services\PotentialProjectionService::class)->rebuild($f->actor->substrate_id, false);
-        $this->resolveExpressiveFieldFixture(1);
-        // Resolve after installing the numerical double: the earlier dispatcher
-        // retains its constructor-injected measurement calculator.
-        app(ContributionDispatcher::class)->dispatch($f->actor, $f->phase, ['action' => 'attestation.create',
-            'proposition_id' => $f->expression->id, 'direction' => 'support']);
-        $this->assertDatabaseHas('terminal_encounters', ['proposition_id' => $f->expression->id, 'action' => 'attestation.create']);
+        $this->assertDatabaseHas('terminal_encounters', ['proposition_id' => $f->expression->id, 'action' => 'instrument.execute']);
         $this->assertTrue(app(TerminalContinuationService::class)->closed($f->expression));
         $plan = app(InputPlanService::class)->forPhase($f->actor, $f->phase);
         $state = ['participant' => $f->actor->only(['id', 'callsign', 'designation']),
@@ -153,10 +153,10 @@ class ParticipantReceiptC3Test extends TestCase
     {
         $f = new ParticipantContextFixture(1, 0, false);
         // Construct incomplete ownership initially; established ownership is immutable.
-        $cycle = (new \App\Models\Cycle)->forceFill(['participant_id' => $f->viewer->id,
+        $cycle = (new Cycle)->forceFill(['participant_id' => $f->viewer->id,
             'sequence' => $f->viewer->cycles()->max('sequence') + 1]);
         $cycle->save();
-        $phase = (new \App\Models\Phase)->forceFill(['cycle_id' => $cycle->id,
+        $phase = (new Phase)->forceFill(['cycle_id' => $cycle->id,
             'kind' => PhaseKind::Persist, 'write_register' => 'activity', 'started_at' => now()]);
         $phase->save();
         $gate = (new Proposition)->forceFill(['phase_id' => $phase->id,

@@ -27,11 +27,13 @@ class InstrumentReplayActionTest extends TestCase
     private function scenario(): array
     {
         $f = new ParticipantContextFixture(1, 0, false);
-        $target = $f->node($f->gate, 'frontier', position: PhaseKind::Mediate);
+        $target = $f->node($f->seed, 'activity', position: PhaseKind::Distinguish);
+        $f->phase->forceFill(['kind' => PhaseKind::Persist, 'gate_proposition_id' => $target->id, 'write_register' => 'frontier'])->save();
+        $f->viewer->forceFill(['current_proposition_id' => $target->id])->save();
         $other = $f->node($f->gate, 'frontier', position: PhaseKind::Mediate);
         // Archival catalogue evidence can have distinct observation and grounding
         // targets. New execution must ground the observed target, not copy ownership.
-        $execution = app(InstrumentExecutionService::class)->start($f->phase, $target, 'web_search', 'archival query',
+        $execution = app(InstrumentExecutionService::class)->start($target->phase, $target, 'web_search', 'archival query',
             ['kind' => 'web_search', 'query' => 'archival query']);
         $execution->forceFill(['status' => 'completed', 'completed_at' => now()])->save();
         $source = (new Receipt)->forceFill(['instrument_execution_id' => $execution->id, 'type' => 'web_search',
@@ -61,7 +63,7 @@ class InstrumentReplayActionTest extends TestCase
     {
         [$f, $target, $other, $source] = $this->scenario();
         $service = app(ParticipationService::class);
-        $citation = app(OperationalInstrumentService::class)->execute($f->phase, $target, ['kind' => 'citation', 'reference' => $f->seed->id]);
+        $citation = app(OperationalInstrumentService::class)->execute($target->phase, $target, ['kind' => 'citation', 'reference' => $f->seed->id]);
         $this->publishPotentialFixture($f->viewer);
         $schema = $service->stateFor($f->viewer)['plan']['schema'];
         $this->assertNotEmpty($schema['x-commons']['instrument_exclusions'][$target->id]);
@@ -102,8 +104,9 @@ class InstrumentReplayActionTest extends TestCase
         $this->assertSame($original, $source->fresh()->getAttributes());
         $this->assertSame($invocation, $source->instrumentExecution->fresh()->getAttributes());
         $this->assertSame(2, ParticipantReceiptContext::count());
-        $this->assertNotNull($f->phase->fresh()->completed_at);
-        $this->assertSame('bias', $next['plan']['phase']['kind']);
+        $this->assertNull($f->phase->fresh()->completed_at);
+        $this->assertSame('persist', $next['plan']['phase']['kind']);
+        $this->assertArrayNotHasKey('instrument.execute', $next['plan']['schema']['$defs']['actions']);
         Http::assertSentCount(1);
     }
 

@@ -71,9 +71,10 @@ class WebSearchReceiptTest extends TestCase
         return app(OperationalInstrumentService::class)->execute($fixture->phase, $subject, ['kind' => 'web_search', 'query' => $query]);
     }
 
-    public function test_search_round_trips_and_auto_loads_before_the_next_phase(): void
+    public function test_search_round_trips_and_auto_loads_in_the_same_phase(): void
     {
         [$fixture, $subject] = $this->scenario();
+        $subject = $fixture->phase->gate;
         $service = app(ParticipationService::class);
         $this->publishPotentialFixture($fixture->viewer);
         $state = $service->stateFor($fixture->viewer);
@@ -102,7 +103,7 @@ class WebSearchReceiptTest extends TestCase
         $this->assertStringNotContainsString('server-only-test-key', json_encode($next));
         $this->assertSame(5, ParticipantReceiptContext::count());
         $this->assertSame(1, app(ReinforcementService::class)->count($subject));
-        $this->assertSame('constrain', $next['plan']['phase']['kind']);
+        $this->assertSame('persist', $next['plan']['phase']['kind']);
         $option = collect($next['plan']['receipts'])->firstWhere('id', $receipt->id);
         $this->assertSame(['readable' => true, 'replayable' => true], $option['capabilities']);
         $this->assertArrayNotHasKey('evidence', $option);
@@ -110,7 +111,7 @@ class WebSearchReceiptTest extends TestCase
         $this->assertStringNotContainsString('Observed resource content', json_encode($next));
         $this->assertDatabaseCount('participant_receipt_contexts', 5);
         $this->publishPotentialFixture($fixture->viewer);
-        $write = $fixture->node($subject, 'canon', position: PhaseKind::Constrain);
+        $write = $fixture->node($subject, 'frontier', position: PhaseKind::Persist);
         $this->publishPotentialFixture($fixture->viewer);
         $read = $service->contribute($fixture->viewer, $next['plan']['phase']['id'], ['action' => 'attestation.create', 'proposition_id' => $write->id, 'direction' => 'support', 'receipt_options' => ['load' => [$receipt->id]]]);
         $this->assertNotSame($next['plan']['phase']['id'], $read['plan']['phase']['id']);

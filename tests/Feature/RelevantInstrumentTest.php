@@ -44,13 +44,15 @@ class RelevantInstrumentTest extends TestCase
     {
         Http::fake();
         $f = new ParticipantContextFixture(1, 0);
-        $target = $f->node($f->gate, 'frontier', position: PhaseKind::Mediate);
+        $target = $f->node($f->seed, 'activity', position: PhaseKind::Distinguish);
+        $f->phase->forceFill(['kind' => PhaseKind::Persist, 'gate_proposition_id' => $target->id, 'write_register' => 'frontier'])->save();
+        $f->viewer->forceFill(['current_proposition_id' => $target->id])->save();
         if ($input['kind'] === 'citation') {
             $input['reference'] = $f->seed->id;
             $equivalent['reference'] = ' '.$f->seed->id.' ';
         }
         $instruments = app(OperationalInstrumentService::class);
-        $receipt = $instruments->execute($f->phase, $target, $input);
+        $receipt = $instruments->execute($target->phase, $target, $input);
         $history = $receipt->fresh()->getAttributes();
         $execution = $receipt->instrumentExecution->fresh()->getAttributes();
         $count = InstrumentExecution::count();
@@ -117,9 +119,11 @@ class RelevantInstrumentTest extends TestCase
     public function test_schema_exposes_target_specific_exclusions_and_retains_other_free_form_resources(): void
     {
         $f = new ParticipantContextFixture(1, 0);
-        $target = $f->node($f->gate, 'frontier', position: PhaseKind::Mediate);
+        $target = $f->node($f->seed, 'activity', position: PhaseKind::Distinguish);
+        $f->phase->forceFill(['kind' => PhaseKind::Persist, 'gate_proposition_id' => $target->id, 'write_register' => 'frontier'])->save();
+        $f->viewer->forceFill(['current_proposition_id' => $target->id])->save();
         $input = ['kind' => 'citation', 'reference' => $f->seed->id];
-        $receipt = app(OperationalInstrumentService::class)->execute($f->phase, $target, $input);
+        $receipt = app(OperationalInstrumentService::class)->execute($target->phase, $target, $input);
         $this->publishPotentialFixture($f->viewer);
         $plan = app(ParticipationService::class)->stateFor($f->viewer)['plan'];
         $this->assertSame([['receipt_id' => $receipt->id, 'invocation' => $input]], $plan['schema']['x-commons']['instrument_exclusions'][$target->id]);
@@ -139,7 +143,9 @@ class RelevantInstrumentTest extends TestCase
     {
         Http::fake();
         $f = new ParticipantContextFixture(1, 0);
-        $target = $f->node($f->gate, 'frontier', position: PhaseKind::Mediate);
+        $target = $f->node($f->seed, 'activity', position: PhaseKind::Distinguish);
+        $f->phase->forceFill(['kind' => PhaseKind::Persist, 'gate_proposition_id' => $target->id, 'write_register' => 'frontier'])->save();
+        $f->viewer->forceFill(['current_proposition_id' => $target->id])->save();
         $receipt = app(OperationalInstrumentService::class)->execute($f->phase, $target, ['kind' => 'web_search', 'query' => 'evidence']);
         $this->assertTrue($receipt->supports(ReceiptCapability::Readable));
         $this->assertTrue($receipt->supports(ReceiptCapability::Replayable));

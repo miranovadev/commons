@@ -29,7 +29,7 @@ test('revision and attestation selectors use separate schema permissions', () =>
   assert.deepEqual(actionPropositions(plan, 'proposition.revise'), []);
 });
 
-test('Traverse and Bias instruments use their own authorized historical target sets', () => {
+test('Traverse and Instrument forms use their own schema-authorized target sets', () => {
   const grounded = { ...archived, id: 'reconciled' };
   const navigation = {
     ...plan, traversal_options: [archived], instrument_options: [grounded],
@@ -45,17 +45,17 @@ test('Traverse and Bias instruments use their own authorized historical target s
 
 const { attestationDirections, writePropositions } = await import('../../resources/js/participationOptions.ts');
 
-test('Persist instruments expose only schema-authorized Writes, never nearby Gate options', () => {
+test('Persist Instrument targets the Gate without duplicating it into Write cards', () => {
   const persist = {
-    ...plan, write_options: [archived], instrument_options: [archived],
+    ...plan, write_options: [archived], instrument_options: [plan.gate],
     gate_options: [plan.gate, unavailable],
     schema: { $defs: { actions: {
-      'instrument.execute': { properties: { proposition_id: { enum: [archived.id] } } },
+      'instrument.execute': { properties: { proposition_id: { enum: [plan.gate.id] } } },
     } } },
   };
-  assert.deepEqual(actionPropositions(persist, 'instrument.execute'), [archived]);
-  assert.deepEqual(writePropositions(persist), [archived]);
-  assert.equal(actionTargetIds(persist, 'instrument.execute').has(plan.gate.id), false);
+  assert.deepEqual(actionPropositions(persist, 'instrument.execute'), [plan.gate]);
+  assert.deepEqual(writePropositions(persist), []);
+  assert.equal(actionTargetIds(persist, 'instrument.execute').has(plan.gate.id), true);
   assert.equal(actionTargetIds(persist, 'instrument.execute').has(unavailable.id), false);
   assert.deepEqual(actionPropositions({ ...persist, schema: {} }, 'instrument.execute'), []);
 });
