@@ -114,39 +114,34 @@ class InputSchemaServiceTest extends TestCase
         $expected = [
             PhaseKind::Distinguish->value => [
                 'proposition.variant',
-                'instrument.execute',
                 'attestation.create',
                 'proposition.traverse',
             ],
             PhaseKind::Persist->value => [
+                'instrument.execute',
                 'proposition.variant',
                 'proposition.revise',
-                'instrument.execute',
                 'attestation.create',
                 'proposition.traverse',
             ],
             PhaseKind::Constrain->value => [
                 'proposition.revise',
                 'proposition.reclassify',
-                'instrument.execute',
                 'attestation.create',
                 'proposition.traverse',
             ],
             PhaseKind::Disperse->value => [
                 'proposition.variant',
                 'proposition.revise',
-                'instrument.execute',
                 'attestation.create',
                 'proposition.traverse',
             ],
             PhaseKind::Mediate->value => [
                 'proposition.reconcile',
-                'instrument.execute',
                 'attestation.create',
             ],
             PhaseKind::Bias->value => [
                 'proposition.reclassify',
-                'instrument.execute',
                 'attestation.create',
                 'proposition.traverse',
             ],
@@ -384,9 +379,10 @@ class InputSchemaServiceTest extends TestCase
         );
 
         $this->assertSame(
-            ['proposition.variant'],
+            ['instrument.execute', 'proposition.variant'],
             array_keys($schema['$defs']['actions']),
         );
+        $this->assertSame([$owner['gate_id']], $schema['$defs']['actions']['instrument.execute']['properties']['proposition_id']['enum']);
     }
 
     public function test_receipts_record_generation_phase_with_optional_execution_for_tragedy(): void

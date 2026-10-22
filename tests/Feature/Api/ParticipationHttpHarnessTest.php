@@ -6,21 +6,23 @@ use App\Services\Observables\LineageMeasurementService;
 use Illuminate\Support\Facades\DB;
 use LogicException;
 use PHPUnit\Framework\Attributes\Group;
+use Tests\Fixtures\PersistCommitHttpFixture;
 use Tests\Support\ScriptedParticipationTestCase;
 
 #[Group('http-participation')]
 class ParticipationHttpHarnessTest extends ScriptedParticipationTestCase
 {
+    use PersistCommitHttpFixture;
+
     #[Group('integration')]
     public function test_real_http_actions_reach_an_operational_commit(): void
     {
-        $this->startSubstrate();
-        $actor = $this->joinParticipant('explorer');
-        $origin = $this->enterParticipant($actor, true)['current_proposition_id'];
-        // C1 reaches an advertised Commit at the old 100-action boundary.
-        // Execute it under the unchanged published-action policy.
-        $state = $this->driveUntil($actor,
-            fn ($state) => ($state['last_commitment']['proposition_id'] ?? $origin) !== $origin, 101);
+        [$actor, $initial] = $this->beginPersistJourney('explorer');
+        $origin = $initial['current_proposition_id'];
+        foreach (array_keys($this->persistJourneySteps) as $index) {
+            $state = $this->executePersistJourneyStep($actor, $index);
+        }
+        $this->assertNotSame($origin, $state['last_commitment']['proposition_id']);
         $this->assertSame('distinguish', $state['plan']['phase']['kind']);
         $this->assertSame($state['last_commitment']['proposition_id'], $state['plan']['gate_id']);
         $snapshot = DB::table('commitment_snapshots')->where('proposition_id', $state['last_commitment']['proposition_id'])->sole();
@@ -72,11 +74,11 @@ class ParticipationHttpHarnessTest extends ScriptedParticipationTestCase
 
     public function test_proposition_search_limit_is_enforced_by_the_http_contract(): void
     {
-        $journey = $this->replayParticipationScript(__DIR__.'/../../Fixtures/participation/rest-unread-receipt.json', 4);
+        $journey = $this->replayParticipationScript(__DIR__.'/../../Fixtures/participation/rest-unread-receipt.json', 2);
         $actor = $journey['participants']['rest-reader'];
         $state = $journey['states']['rest-reader'];
         $this->assertActionAvailable($state, 'instrument.execute');
-        $target = $state['plan']['write_options'][0]['id'];
+        $target = $state['plan']['gate_id'];
 
         foreach ([0, 11, 1.5, '5'] as $limit) {
             $this->postContribution($actor, $state['plan']['phase']['id'], [

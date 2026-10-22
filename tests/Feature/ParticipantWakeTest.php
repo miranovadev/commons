@@ -446,7 +446,8 @@ class ParticipantWakeTest extends TestCase
     public function test_stale_inference_rebuilds_state_without_replaying_a_rejected_contribution(): void
     {
         $f = new ParticipantContextFixture(1, 0);
-        $target = $f->node($f->gate, 'frontier', position: PhaseKind::Mediate);
+        $target = $f->node($f->seed, 'activity', position: PhaseKind::Distinguish);
+        $f->phase->forceFill(['kind' => PhaseKind::Persist, 'gate_proposition_id' => $target->id, 'write_register' => 'frontier'])->save();
         $this->publishPotentialFixture($f->viewer);
         $connection = $this->connectionFor($f->viewer);
         $calls = 0;
@@ -457,20 +458,20 @@ class ParticipantWakeTest extends TestCase
             if ($calls === 1) {
                 app(OperationalInstrumentService::class)->execute($f->phase, $target, $input);
                 $this->publishPotentialFixture($f->viewer);
-            } else {
-                $this->assertSame($input, $state['plan']['schema']['x-commons']['instrument_exclusions'][$target->id][0]['invocation']);
-                $this->assertSame($f->phase->id, $state['plan']['phase']['id']);
-            }
 
-            return ['action' => 'instrument.execute', 'proposition_id' => $target->id,
-                'instrument' => $calls === 1 ? $input : ['kind' => 'citation', 'reference' => $f->gate->id]];
+                return ['action' => 'instrument.execute', 'proposition_id' => $target->id, 'instrument' => $input];
+            }
+            $this->assertArrayNotHasKey('instrument.execute', $state['plan']['schema']['$defs']['actions']);
+            $this->assertSame($f->phase->id, $state['plan']['phase']['id']);
+
+            return ['action' => 'proposition.variant', 'statement' => 'Continue after the completed observation.'];
         });
         $this->app->instance(ParticipantInference::class, $inference);
         $this->app->call([new WakeParticipant($connection->id), 'handle']);
-        $this->assertSame(2, Receipt::where('receiptable_id', $target->id)->count());
+        $this->assertSame(1, Receipt::where('receiptable_id', $target->id)->count());
         $this->assertNull($f->phase->cycle->fresh()->completed_at);
         $this->assertNull($f->phase->cycle->fresh()->rested_at);
-        $this->assertSame('bias', app(ParticipationService::class)->stateFor($f->viewer)['plan']['phase']['kind']);
+        $this->assertSame('constrain', app(ParticipationService::class)->stateFor($f->viewer)['plan']['phase']['kind']);
         $this->assertNull($connection->fresh()->last_error);
     }
 

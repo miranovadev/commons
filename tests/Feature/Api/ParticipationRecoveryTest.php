@@ -6,6 +6,7 @@ use App\Models\Participant;
 use App\Services\PotentialChargeService;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Group;
+use Tests\Fixtures\PersistCommitHttpFixture;
 use Tests\Support\ScriptedParticipationTestCase;
 
 #[Group('http-participation')]
@@ -13,18 +14,16 @@ use Tests\Support\ScriptedParticipationTestCase;
 #[Group('constitutional')]
 class ParticipationRecoveryTest extends ScriptedParticipationTestCase
 {
+    use PersistCommitHttpFixture;
+
     public function test_successful_revisit_keeps_its_untraversed_commit_out_of_backward_recovery(): void
     {
-        $journey = $this->replayParticipationScript(__DIR__.'/../../Fixtures/participation/recovery-revisit.json');
-        $this->assertParticipationScriptComplete();
-        $author = $journey['participants']['route-author'];
-        $observer = $journey['participants']['route-observer'];
-        $origin = $journey['responses'][0]['current_proposition_id'];
-        $committed = $journey['responses'][48];
+        [$author, $observer, $initial, $committed] = $this->persistCommitWithObserver('route-author', 'route-observer');
+        $origin = $initial['current_proposition_id'];
         $commit = $committed['last_commitment']['proposition_id'];
         $source = DB::table('supersessions')->where('type', 'commit')->where('target_proposition_id', $commit)->sole()->source_proposition_id;
         $biasGate = DB::table('supersessions')->where('type', 'reclassify')->where('target_proposition_id', $source)->sole()->source_proposition_id;
-        $before = $journey['responses'][53];
+        $before = $this->revisitPersistCommit($observer);
         $this->assertSame($biasGate, $before['plan']['gate_id']);
         // Stage 5 supersedes the Stage 4 expectation of Rest at this broken
         // Bias position: a successful route now has a valid forward Traverse.

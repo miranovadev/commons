@@ -39,7 +39,7 @@ trait HorizonProofFixture
     protected function exercise($opening, $tragedy): array
     {
         $target = $this->continuingHeads[$opening->id];
-        $phase = $target->phase;
+        $phase = $this->phase($target, PhaseKind::Persist);
         $this->resolveExpressiveFieldFixture(1);
         app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
             ['action' => 'instrument.execute', 'proposition_id' => $target->id,

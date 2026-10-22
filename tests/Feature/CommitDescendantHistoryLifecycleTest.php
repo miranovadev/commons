@@ -89,16 +89,19 @@ class CommitDescendantHistoryLifecycleTest extends TestCase
         $this->assertNotContains($otherOperand, $expected, 'Reconcile does not import the other branch into selected history.');
         $this->assertNotContains($origin->id, array_column($search->results, 'proposition_id'));
         $this->assertSame('settlement', $search->domain);
-        // Persist instrumentation belongs to its actual Write, not the preceding Gate.
+        // Persist observes the current Gate; the separately authored Write does
+        // not inherit this internal-memory observation or grounding authority.
         $written = app(ContributionDispatcher::class)->dispatch($actor, $phase,
             ['action' => 'proposition.variant', 'statement' => 'Investigate the recorded history.']);
         $edges = Supersession::count();
         app(ContributionDispatcher::class)->dispatch($actor, $phase,
-            ['action' => 'instrument.execute', 'proposition_id' => $written->id,
+            ['action' => 'instrument.execute', 'proposition_id' => $head->id,
                 'instrument' => ['kind' => 'proposition_search', 'limit' => 10]]);
         $memory = Receipt::where('type', 'proposition_search')->sole();
         $this->assertSame($expected, array_column($memory->metadata['proposition_collection']['results'], 'proposition_id'));
-        $this->assertSame([3, 4, 5, 6, 7, 8], array_column($memory->metadata['proposition_collection']['results'], 'lineage_distance'));
+        $this->assertSame([2, 3, 4, 5, 6, 7], array_column($memory->metadata['proposition_collection']['results'], 'lineage_distance'));
+        $this->assertSame($head->id, $memory->instrumentExecution->proposition_id);
+        $this->assertSame(0, $written->instrumentExecutions()->count());
         $this->assertNull($memory->signature);
         $this->assertFalse(app(CommitmentAdmissibilityService::class)->grounding($written)['requirements']['receipt']);
         $this->assertSame(0, app(ReinforcementService::class)->count($written));

@@ -48,9 +48,9 @@ export function writePropositions(plan: ParticipantPlan): Proposition[] {
   ].map(node => [node.id, node])).values()];
   const actionable = new Set(([
     'attestation.create', 'proposition.traverse', 'proposition.revise',
-    'instrument.execute', 'proposition.commit',
+    'proposition.commit',
   ] as ActionName[]).flatMap((action) => [...actionTargetIds(plan, action)]));
-  return [...new Map([...(plan.write_options ?? []), ...actionPropositions(plan, 'instrument.execute'),
+  return [...new Map([...(plan.write_options ?? []),
     ...actionPropositions(plan, 'proposition.traverse')].filter((item) => actionable.has(item.id) || item.spent === true)
     .map((item) => [item.id, item])).values()];
 }

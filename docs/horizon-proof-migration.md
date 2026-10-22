@@ -25,7 +25,7 @@ The backfill performs bounded batches and local joins. It runs once during migra
 ## Semantic clarifications and compatibility assumptions
 
 - A grounded, effectively attested Gate is required for an actionless state to evidence no remaining Potential. Other actionless states remain `no_available_move`.
-- Confirmed Variant clarification: each viable Variant needs its own completed Instrument and effective Attestation, and positive Commit Region Potential Charge must remain before another Variant becomes an option. Every new Variant repeats this sequence. No prior Mediate Rest, Participant quorum or fixed sibling cap. Mediate still requires two Propositions.
+- Historical Variant clarification (superseded): this rollout originally required exact-Write Instrumentation and positive Potential. The current [Variant contract](horizon-proof-variant-clarification.md) instead requires current-epoch spentness, genuine ordinary evidence and effective Attestation. Stage 2A removes exact-Write Instrumentation; Potential is not generation authority. Mediate still requires two Propositions.
 - The Origin Horizon may eventually exhaust under the same proof. Origin itself and its historical Committals persist permanently; no synthetic renewal branch is invented.
 - Tragedy Receipt metadata contains IDs only. Loaded context resolves full statements and flat local evidence by ID; no recursive subtree is embedded or historical age cutoff introduced.
 

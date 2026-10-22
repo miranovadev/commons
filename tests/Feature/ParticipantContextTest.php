@@ -110,16 +110,19 @@ class ParticipantContextTest extends TestCase
     public function test_cite_receipt_guidance_does_not_promise_reinforcement_in_the_generated_packet(): void
     {
         $fixture = new ParticipantContextFixture(2, 0);
-        $gate = Proposition::findOrFail($fixture->writes[0]);
+        $observation = $fixture->node($fixture->seed, 'activity', position: PhaseKind::Distinguish);
+        $fixture->phase->forceFill(['kind' => PhaseKind::Persist, 'gate_proposition_id' => $observation->id, 'write_register' => 'frontier'])->save();
+        $receipt = app(OperationalInstrumentService::class)->execute($fixture->phase, $observation, [
+            'kind' => 'citation', 'reference' => $fixture->seed->id,
+        ]);
+        $gate = $fixture->node($observation, 'frontier', position: PhaseKind::Persist);
+        $fixture->phase = $fixture->phase->replicate();
         $candidate = $fixture->node($gate, 'canon', position: PhaseKind::Constrain);
         $fixture->phase->forceFill([
             'kind' => PhaseKind::Constrain,
             'gate_proposition_id' => $gate->id,
             'write_register' => 'canon',
         ])->save();
-        $receipt = app(OperationalInstrumentService::class)->execute($fixture->phase, $candidate, [
-            'kind' => 'citation', 'reference' => $fixture->seed->id,
-        ]);
 
         app(PotentialProjectionService::class)->rebuild($fixture->substrate->id, false);
         $state = app(ParticipationService::class)->stateFor($fixture->viewer);
@@ -128,7 +131,7 @@ class ParticipantContextTest extends TestCase
         $prompt = app(ParticipantPromptFactory::class)->make($connection, $state);
         $packet = json_decode($prompt['user'], true, flags: JSON_THROW_ON_ERROR);
         $schema = $packet['actions'];
-        $this->assertArrayHasKey('instrument.execute', $schema['$defs']['actions']);
+        $this->assertArrayNotHasKey('instrument.execute', $schema['$defs']['actions']);
         $transportSchema = $prompt['schema'];
         unset($transportSchema['x-commons']['description'], $transportSchema['$comment']);
         $this->assertSame($schema, $transportSchema);
@@ -137,14 +140,14 @@ class ParticipantContextTest extends TestCase
         $this->assertStringNotContainsString($guidance, $prompt['system']);
         $this->assertStringContainsString($guidance, $schema['$defs']['instrument']['description']);
         $transport = app(OpenAIResponseSchema::class)->fromCommons($prompt['schema']);
-        $this->assertStringContainsString($guidance, json_encode($transport, JSON_THROW_ON_ERROR));
+        $this->assertStringContainsString('memory alone grants no movement, grounding or escape authority', json_encode($transport, JSON_THROW_ON_ERROR));
         $this->assertStringNotContainsString('Cite records evidence but never reinforces.', $prompt['system']);
         $this->assertStringNotContainsString('no page fetch or content verification', $prompt['user']);
         $this->assertStringNotContainsString('an unsigned Receipt', $prompt['user']);
 
         $write = collect($packet['write']['propositions'])->firstWhere('id', $candidate->id);
         $this->assertNotNull($write);
-        $this->assertContains($receipt->id, $write['receipts']);
+        $this->assertNotContains($receipt->id, $write['receipts'], 'Shared availability does not rewrite observation provenance');
         $catalogue = collect($packet['receipts'])->firstWhere('id', $receipt->id);
         $this->assertSame('citation', $catalogue['type']);
         $this->assertTrue($catalogue['loaded']);
@@ -153,7 +156,7 @@ class ParticipantContextTest extends TestCase
 
     #[DataProvider('evidencePhases')]
     #[Group('query')]
-    public function test_dense_instrument_and_commitment_contexts_fit_the_same_budget(PhaseKind $kind): void
+    public function test_dense_evidence_and_commitment_contexts_fit_the_same_budget(PhaseKind $kind): void
     {
         $this->freezeTime();
         $fixture = new ParticipantContextFixture;
@@ -170,11 +173,7 @@ class ParticipantContextTest extends TestCase
         $fixture->phase->forceFill(['kind' => $kind, 'gate_proposition_id' => $gate->id, 'write_register' => 'canon'])->save();
         app(PotentialProjectionService::class)->rebuild($fixture->substrate->id, false);
         $plan = app(ParticipationService::class)->stateFor($fixture->viewer)['plan'];
-        if ($kind !== PhaseKind::Order) {
-            $this->assertArrayHasKey('instrument.execute', $plan['schema']['$defs']['actions']);
-        } else {
-            $this->assertArrayNotHasKey('instrument.execute', $plan['schema']['$defs']['actions']);
-        }
+        $this->assertArrayNotHasKey('instrument.execute', $plan['schema']['$defs']['actions']);
         if ($kind === PhaseKind::Order) {
             $this->assertArrayHasKey('commitment', $plan);
             $this->assertArrayHasKey('closure', $plan['commitment']);

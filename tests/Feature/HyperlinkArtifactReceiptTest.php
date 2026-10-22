@@ -61,7 +61,9 @@ class HyperlinkArtifactReceiptTest extends TestCase
     public function test_real_contribution_preserves_bytes_but_only_projects_bounded_metadata(): void
     {
         $f = DB::transaction(fn () => new ParticipantContextFixture(1, 0, false));
-        $target = DB::transaction(fn () => $f->node($f->gate, 'frontier', position: PhaseKind::Mediate));
+        $target = DB::transaction(fn () => $f->node($f->seed, 'activity', position: PhaseKind::Distinguish));
+        $f->phase->forceFill(['kind' => PhaseKind::Persist, 'gate_proposition_id' => $target->id, 'write_register' => 'frontier'])->save();
+        $f->viewer->forceFill(['current_proposition_id' => $target->id])->save();
         $html = '<html><head><title>🌌 Title &amp; more</title><meta name="description" content="'.str_repeat('界', 1300).'"></head><body><a href="https://example.com/out">EXACT ORIGINAL LINK</a><script>privateArtifactSentinel()</script>'.str_repeat(' Full body.', 5000).'</body></html>';
         $store = app(ArtifactStore::class);
         $this->mock(ArtifactStore::class, function ($mock) use ($store) {

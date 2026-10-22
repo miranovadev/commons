@@ -145,7 +145,9 @@ class ChiralityPopulationHistoryTest extends TestCase
         $this->assertSame(0.0, app(LocalMeasurementService::class)->chiralityComponents($node)->orientation);
         $assertObserved();
         $beforeReceipt = DB::table('chirality_population_observations')->get()->toJson();
-        $dispatcher->dispatch($this->actor, $phase, ['action' => 'instrument.execute', 'proposition_id' => $node->id,
+        $persist = $phase->replicate();
+        $persist->forceFill(['kind' => PhaseKind::Persist, 'gate_proposition_id' => $node->id, 'write_register' => $phase->cycle->contextHorizon->domain->registerFor(PhaseKind::Persist)])->save();
+        $dispatcher->dispatch($this->actor, $persist, ['action' => 'instrument.execute', 'proposition_id' => $node->id,
             'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/history-evidence']]);
         $this->assertSame($beforeReceipt, DB::table('chirality_population_observations')->get()->toJson());
         $dispatcher->dispatch($this->actor, $phase, ['action' => 'attestation.create', 'proposition_id' => $node->id, 'direction' => 'support']);

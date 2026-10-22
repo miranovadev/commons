@@ -17,6 +17,7 @@ use App\Services\ContributionService;
 use App\Services\InputPlanService;
 use App\Services\InputSchemaService;
 use App\Services\LedgerService;
+use App\Services\Observables\ProspectiveClosureService;
 use App\Services\OpenAIResponseSchema;
 use App\Services\OpenAIResponsesClient;
 use App\Services\OperationalInstrumentService;
@@ -59,7 +60,7 @@ class ParticipantActionContractTest extends TestCase
         // participant's generative opportunity. Fresh generation is covered by
         // FullEvidenceFlowTest and SharedReclassificationTest.
         $spent = match ($kind) {
-            PhaseKind::Distinguish, PhaseKind::Disperse => ['proposition.variant', 'instrument.execute'],
+            PhaseKind::Distinguish, PhaseKind::Disperse => ['proposition.variant'],
             PhaseKind::Persist => ['proposition.variant', 'proposition.reclassify'],
             PhaseKind::Constrain, PhaseKind::Bias => [],
             default => [],
@@ -130,7 +131,12 @@ class ParticipantActionContractTest extends TestCase
                     $this->assertValid($schema, $decoded);
                     app(ContributionService::class)->validate($participant, $decoded);
                     app(ParticipationService::class)->contribute($participant, $phase->id, $decoded);
-                    $this->assertNotNull($phase->fresh()->completed_at, $action);
+                    if ($action === 'instrument.execute') {
+                        $this->assertNull($phase->fresh()->completed_at, $action);
+                        $this->assertNull($phase->cycle->fresh()->completed_at);
+                    } else {
+                        $this->assertNotNull($phase->fresh()->completed_at, $action);
+                    }
                     if ($action === 'attestation.create') {
                         $attestation = Attestation::where('phase_id', $phase->id)->sole();
                         $this->assertSame($decoded['direction'], $attestation->direction);
@@ -289,7 +295,7 @@ class ParticipantActionContractTest extends TestCase
                 $edge = new Supersession;
                 $edge->forceFill(['phase_id' => $past->id, 'source_proposition_id' => $parent->id, 'target_proposition_id' => $node->id, 'type' => $edgeType])->save();
                 app(LedgerService::class)->record($edge);
-                app(\App\Services\Observables\ProspectiveClosureService::class)->initialize($node);
+                app(ProspectiveClosureService::class)->initialize($node);
             }
 
             $this->receiptFixture($node);
@@ -321,7 +327,7 @@ class ParticipantActionContractTest extends TestCase
             $edge->forceFill(['phase_id' => $ownerPhase->id, 'source_proposition_id' => $anchor->id,
                 'target_proposition_id' => $gate->id, 'type' => 'variant'])->save();
             app(LedgerService::class)->record($edge);
-            app(\App\Services\Observables\ProspectiveClosureService::class)->initialize($gate);
+            app(ProspectiveClosureService::class)->initialize($gate);
         }
         if (! $empty) {
             $this->classificationEvidenceFixture($gate);

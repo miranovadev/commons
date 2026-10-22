@@ -39,7 +39,8 @@ final class PotentialProjectionTest extends TestCase
         $other = $this->participant($participant->substrate);
         app(CycleEntryService::class)->enter($other);
         $phase = $other->cycles()->whereNull('completed_at')->sole()->currentPhase;
-        $service->contribute($other, $phase->id, ['action' => 'instrument.execute', 'proposition_id' => $first->id, 'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/shared-observation']]);
+        $persist = $participant->cycles()->whereNull('completed_at')->sole()->currentPhase;
+        $service->contribute($participant, $persist->id, ['action' => 'instrument.execute', 'proposition_id' => $first->id, 'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/shared-observation']]);
         $sibling = $other->fresh()->position;
         $attestation = (new Attestation)->forceFill(['phase_id' => $phase->id, 'proposition_id' => $first->id, 'direction' => 'refute']);
         $attestation->save();

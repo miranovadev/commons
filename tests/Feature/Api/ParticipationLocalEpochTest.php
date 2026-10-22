@@ -5,6 +5,7 @@ namespace Tests\Feature\Api;
 use App\Enums\PhaseKind;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Group;
+use Tests\Fixtures\PersistCommitHttpFixture;
 use Tests\Support\ScriptedParticipationTestCase;
 
 #[Group('http-participation')]
@@ -12,18 +13,19 @@ use Tests\Support\ScriptedParticipationTestCase;
 #[Group('constitutional')]
 class ParticipationLocalEpochTest extends ScriptedParticipationTestCase
 {
+    use PersistCommitHttpFixture;
+
     public function test_a_third_distinguish_variant_reopens_only_its_own_slot_through_http(): void
     {
-        // Observe the final Mediate Writes before Refuting them. With additive
-        // Bias, an attested, unspent homologue can use any entry Receipt; this
-        // epoch journey must not assume those legitimate options are absent.
-        $journey = $this->replayParticipationScript(__DIR__.'/../../Fixtures/participation/local-epochs.json', 2);
-        $actor = $journey['participants']['critical-explorer'];
-        $observer = $journey['participants']['origin-observer'];
-        $origin = $journey['responses'][0]['current_proposition_id'];
+        [$actor, $initial] = $this->beginPersistJourney('critical-explorer');
+        $observer = $this->joinParticipant('origin-observer');
+        $this->enterParticipant($observer);
+        $origin = $initial['current_proposition_id'];
         $variants = 0;
-        for ($step = 2; $step <= 83; $step++) {
-            $opening = in_array($step, [2, 20, 83], true);
+        // Fixed authored prefix through its third Distinguish Variant. The
+        // observer never acts; no fixture writes manufacture spentness.
+        for ($step = 0; $step <= 46; $step++) {
+            $opening = in_array($step, [0, 15, 46], true);
             if ($opening) {
                 $before = $this->readParticipation($observer)['plan']['write_options'];
                 $history = $this->failures();
@@ -32,7 +34,7 @@ class ParticipationLocalEpochTest extends ScriptedParticipationTestCase
                     $this->assertTrue($option['spent'], 'Every existing option must genuinely be spent before another Variant.');
                 }
             }
-            $this->continueParticipationScript(1);
+            $this->executePersistJourneyStep($actor, $step);
             if ($opening) {
                 $variants++;
                 $after = $this->readParticipation($observer);
@@ -46,7 +48,6 @@ class ParticipationLocalEpochTest extends ScriptedParticipationTestCase
                 $this->assertSame($disperse, $this->disperseEpochs(), 'Distinguish does not advance any Disperse slot.');
             }
         }
-        $this->assertParticipationScriptComplete();
         $this->assertSame(3, $variants, $this->traceMessage($this->readParticipation($actor)));
         $this->assertNotSame('[]', $this->failures());
         $this->assertCount(3, $this->readParticipation($observer)['plan']['write_options']);
@@ -64,4 +65,3 @@ class ParticipationLocalEpochTest extends ScriptedParticipationTestCase
             ->orderBy('context_horizon_id')->orderBy('structural_source_id')->get()->toJson();
     }
 }
-

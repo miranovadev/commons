@@ -7,12 +7,10 @@ use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Substrate;
-use App\Models\Supersession;
 use App\Services\ContextHorizonProjector;
 use App\Services\ContributionDispatcher;
 use App\Services\InputPlanService;
 use App\Services\InstrumentExecutionService;
-use App\Services\LedgerService;
 use App\Services\ParticipationService;
 use App\Services\PotentialProjectionService;
 use App\Services\PropositionMeasurementService;
@@ -61,6 +59,20 @@ try {
         'receipt-desired' => DB::transaction(fn () => app(ReceiptContextService::class)->desired(
             Participant::findOrFail($input['participant_id']), Phase::findOrFail($input['phase_id']), $input['receipt_options'],
         )),
+        'instrument-conflict' => (function () use ($input): void {
+            try {
+                app(ContributionDispatcher::class)->dispatch(
+                    Participant::findOrFail($input['participant_id']),
+                    Phase::findOrFail($input['phase_id']), $input['contribution'],
+                );
+            } catch (ConflictHttpException $exception) {
+                if (str_contains($exception->getMessage(), 'unused Cycle allowance')) {
+                    return;
+                }
+                throw $exception;
+            }
+            throw new RuntimeException('Concurrent Instrument allowance was spent twice.');
+        })(),
         'dispatch-rejected' => (function () use ($input): void {
             try {
                 app(ContributionDispatcher::class)->dispatch(

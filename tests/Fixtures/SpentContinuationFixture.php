@@ -3,23 +3,32 @@
 namespace Tests\Fixtures;
 
 use App\Enums\PhaseKind;
+use App\Models\Attestation;
 use App\Models\Cycle;
 use App\Models\Phase;
+use App\Models\Proposition;
+use App\Services\InstrumentExecutionService;
+use App\Services\LedgerService;
 use App\Services\PotentialChargeService;
 
 trait SpentContinuationFixture
 {
     use ExhaustionFixture;
 
-    private function testedLineage(): array
+    private function testedLineage(bool $separateObservation = false): array
     {
         $distinguish = $this->phase($this->origin, PhaseKind::Distinguish);
         $signal = $this->node($distinguish, $this->origin);
-        $this->explore($signal);
+        $observed = $separateObservation
+            ? $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin) : $signal;
+        $observation = $this->phase($observed, PhaseKind::Persist);
+        $instruments = app(InstrumentExecutionService::class);
+        $instruments->complete($instruments->start($observation, $observed, 'citation', $this->origin->id), $observed);
+        $this->judgeContinuation($signal);
         $persist = $this->node($this->phase($signal, PhaseKind::Persist), $signal);
         $constrain = $this->node($this->phase($persist, PhaseKind::Constrain), $persist);
         $activity = $this->node($this->phase($constrain, PhaseKind::Disperse), $constrain);
-        $this->explore($activity);
+        $this->judgeContinuation($activity);
         $terminal = $this->phase($activity, PhaseKind::Mediate);
         $this->measure($activity, 0);
         $this->assertTrue(app(PotentialChargeService::class)->hasRemainingInHorizon($terminal));
@@ -36,5 +45,14 @@ trait SpentContinuationFixture
         $this->assertTrue(app(PotentialChargeService::class)->hasRemainingInHorizon($terminal));
 
         return [$signal, $activity, $terminal, $return];
+    }
+
+    private function judgeContinuation(Proposition $node): void
+    {
+        $vote = (new Attestation)->forceFill([
+            'phase_id' => $node->phase_id, 'proposition_id' => $node->id, 'direction' => 'refute',
+        ]);
+        $vote->save();
+        app(LedgerService::class)->record($vote);
     }
 }

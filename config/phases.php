@@ -7,34 +7,31 @@ return [
         'gate' => 'participant-position',
         'actions' => [
             'proposition.variant',
-            'instrument.execute',
             'attestation.create',
             'proposition.traverse',
         ],
     ],
     2 => [
         'name' => 'persist',
-        'description' => 'Develop the selected distinction structurally, or support its existing viable Write.',
+        'description' => 'Develop the selected distinction structurally, support its existing viable Write, or acquire evidence once per Cycle at the current Gate without advancing Persist.',
         'gate' => 'previous-phase-position',
         'actions' => [
+            'instrument.execute',
             'proposition.variant',
             'proposition.revise',
-            'instrument.execute',
             'attestation.create',
             'proposition.traverse',
         ],
         'constraints' => [
-            'instrument.execute' => ['write-register'],
         ],
     ],
     3 => [
         'name' => 'constrain',
-        'description' => 'Strengthen or classify the selected Proposition. Grounding is a separate Instrument action.',
+        'description' => 'Strengthen or classify the selected Proposition. Grounding is acquired during Persist.',
         'gate' => 'previous-phase-position',
         'actions' => [
             'proposition.revise',
             'proposition.reclassify',
-            'instrument.execute',
             'attestation.create',
             'proposition.traverse',
         ],
@@ -46,17 +43,15 @@ return [
     ],
     4 => [
         'name' => 'disperse',
-        'description' => 'Open a structurally needed expressive opportunity, generate shared evidence, attest, or traverse an already-attested Write.',
+        'description' => 'Open a structurally needed expressive opportunity, attest, or traverse an already-attested Write.',
         'gate' => 'previous-phase-position',
         'actions' => [
             'proposition.variant',
             'proposition.revise',
-            'instrument.execute',
             'attestation.create',
             'proposition.traverse',
         ],
         'constraints' => [
-            'instrument.execute' => ['write-register'],
         ],
     ],
     5 => [
@@ -65,7 +60,6 @@ return [
         'gate' => 'previous-phase-position',
         'actions' => [
             'proposition.reconcile',
-            'instrument.execute',
             'attestation.create',
         ],
         'constraints' => [
@@ -80,7 +74,6 @@ return [
         'gate' => 'previous-phase-position',
         'actions' => [
             'proposition.reclassify',
-            'instrument.execute',
             'attestation.create',
             'proposition.traverse',
         ],
@@ -90,7 +83,6 @@ return [
                 'unary-selection-fresh-history',
                 'completed-receipt-and-effective-attestation',
             ],
-            'instrument.execute' => ['write-register'],
         ],
     ],
     7 => [

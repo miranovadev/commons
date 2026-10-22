@@ -84,7 +84,8 @@ each schema-authorized Mediate Gate counterpart, opening the existing form with
 `other_proposition_id` selected. The current Gate is explicitly labelled as the
 retained statement. Hover or keyboard focus on a counterpart's Reconcile control
 subtly dims that card. Gate cards still show the same Mediate/Bias populations. Reclassify stays on its current Gate card; Revise,
-Instrument and Commit stay on eligible Write cards. Attest/Traverse retain the
+Commit stays on eligible Write cards. Instrument appears only on the current
+Persist Gate, while its Cycle allowance is unused. Attest/Traverse retain the
 existing direct-submission contract and phase concurrency guard.
 
 Compact cards group tier, register and Git-style operation badges above the

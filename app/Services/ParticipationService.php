@@ -315,7 +315,9 @@ final readonly class ParticipationService
                 $input,
                 $observed,
             );
-            $this->progression->advance($phase, $gate);
+            if ($input['action'] !== 'instrument.execute') {
+                $this->progression->advance($phase, $gate);
+            }
 
         });
 

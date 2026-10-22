@@ -7,6 +7,7 @@ use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\ReceiptConsumption;
 use App\Models\Substrate;
+use App\Services\HorizonReceiptService;
 use App\Services\ParticipationService;
 
 trait HorizonCycleFixture
@@ -52,9 +53,18 @@ trait HorizonCycleFixture
             $lastCommitment = $plan['commitment'] ?? $lastCommitment;
             $observe?->__invoke($participant, $state);
             $actions = $plan['schema']['$defs']['actions'];
-            $action = collect(['proposition.commit', 'proposition.reclassify', 'proposition.variant', 'proposition.reconcile',
-                'proposition.traverse', 'attestation.create', 'instrument.execute', 'participant.rest'])
-                ->first(fn ($candidate) => isset($actions[$candidate]));
+            $needsEvidence = app(HorizonReceiptService::class)
+                ->ordinaryAvailable(Phase::findOrFail($plan['phase']['id']))->isEmpty();
+            $preferredJudgment = collect($actions['attestation.create']['anyOf'] ?? [])
+                ->contains(fn ($choice) => $choice['properties']['direction']['enum'][0] === ($expressiveDirection ?? $originDirection));
+            // Judge an existing Write before generating another reconciliation.
+            // Acquisition no longer selects/advances through an unjudged Write.
+            $action = collect(['instrument.execute', 'proposition.commit', 'proposition.reclassify', 'attestation.create',
+                'proposition.variant', 'proposition.reconcile', 'proposition.traverse', 'participant.rest'])
+                ->first(fn ($candidate) => isset($actions[$candidate])
+                    && ($candidate !== 'instrument.execute' || $needsEvidence || count($actions) === 1)
+                    && ($candidate !== 'attestation.create' || $preferredJudgment))
+                ?? 'attestation.create';
             $definition = $actions[$action];
             $input = ['action' => $action];
             foreach (['proposition_id', 'other_proposition_id', 'receipt_id'] as $key) {

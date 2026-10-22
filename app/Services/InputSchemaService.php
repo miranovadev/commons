@@ -68,6 +68,7 @@ final readonly class InputSchemaService
 
         $attestationOptionIds ??= $this->options->attestationOptionsFor($occurrence, $context)->pluck('id')->all();
         $traversalOptionIds ??= $this->options->traversalOptionsFor($occurrence, $context)->pluck('id')->all();
+        $instrumentOptionIds ??= $this->options->instrumentOptionsFor($occurrence, $context)->pluck('id')->all();
 
         $schema = $this->specialize(
             $this->forPhase($kind, $actions),
@@ -75,7 +76,7 @@ final readonly class InputSchemaService
             $revisionOptionIds,
             $attestationOptionIds ?? $writeOptionIds,
             $traversalOptionIds,
-            $instrumentOptionIds ?? $writeOptionIds,
+            $instrumentOptionIds,
             $commitOptionIds,
         );
 

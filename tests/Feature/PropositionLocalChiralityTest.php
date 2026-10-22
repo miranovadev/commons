@@ -13,6 +13,7 @@ use App\Services\CycleEntryService;
 use App\Services\LedgerService;
 use App\Services\Observables\LineageMeasurementService;
 use App\Services\Observables\LocalMeasurementService;
+use App\Services\Observables\ProspectiveClosureService;
 use App\Services\Participation\ParticipationContext;
 use App\Services\PropositionMeasurementService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -70,7 +71,7 @@ class PropositionLocalChiralityTest extends TestCase
         $edge->forceFill(['phase_id' => $child->phase_id, 'source_proposition_id' => $parent->id,
             'target_proposition_id' => $child->id, 'type' => $type])->save();
         app(LedgerService::class)->record($edge);
-        app(\App\Services\Observables\ProspectiveClosureService::class)->initialize($child);
+        app(ProspectiveClosureService::class)->initialize($child);
     }
 
     public function test_own_create_and_replacement_recalculate_and_record_only_own_intervals(): void
@@ -235,7 +236,9 @@ class PropositionLocalChiralityTest extends TestCase
         $phase = $cycle->phases()->whereNull('completed_at')->sole();
         $dispatch = app(ContributionDispatcher::class);
         $node = $dispatch->dispatch($this->actor, $phase, ['action' => 'proposition.variant', 'statement' => 'Local source']);
-        $dispatch->dispatch($this->actor, $phase, ['action' => 'instrument.execute', 'proposition_id' => $node->id,
+        $persist = $phase->replicate();
+        $persist->forceFill(['kind' => PhaseKind::Persist, 'gate_proposition_id' => $node->id, 'write_register' => $phase->cycle->contextHorizon->domain->registerFor(PhaseKind::Persist)])->save();
+        $dispatch->dispatch($this->actor, $persist, ['action' => 'instrument.execute', 'proposition_id' => $node->id,
             'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/local-evidence']]);
         $dispatch->dispatch($this->actor, $phase, ['action' => 'attestation.create', 'proposition_id' => $node->id, 'direction' => 'support']);
         $this->assertSame([.5, 0.0, .25], array_slice($this->components($node), 0, 3));
