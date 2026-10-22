@@ -62,7 +62,7 @@ class ParticipationLifecycleRegressionTest extends ScriptedParticipationTestCase
         $attest($this->persistJourneyIds['p6']);
         $this->contribute($explorer, ['action' => 'participant.rest']);
         $traverse($signal);
-        $this->observePersist($explorer, $signal, 'independent-committal-slot');
+        $this->assertActionUnavailable($this->readParticipation($explorer), 'instrument.execute');
         $new = $attest($persist);
         $receipt = $new['plan']['schema']['$defs']['actions']['proposition.reclassify']['properties']['receipt_id']['enum'][0];
         $new = $this->contribute($explorer, ['action' => 'proposition.reclassify', 'proposition_id' => $persist, 'receipt_id' => $receipt]);
@@ -111,12 +111,12 @@ class ParticipationLifecycleRegressionTest extends ScriptedParticipationTestCase
         $this->assertSame($firstGate, $parked['plan']['gate_id']);
         $state = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Independent Distinguish route']);
         $signal = $state['current_proposition_id'];
-        $this->observePersist($actor, $signal, 'other-slot-first');
+        $this->assertActionUnavailable($this->readParticipation($actor), 'instrument.execute');
         $state = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Independent Persist route']);
         $persist = $state['current_proposition_id'];
         $this->contribute($actor, ['action' => 'participant.rest']);
         $this->judge($actor, $signal);
-        $this->observePersist($actor, $signal, 'other-slot-second');
+        $this->assertActionUnavailable($this->readParticipation($actor), 'instrument.execute');
         $state = $this->judge($actor, $persist);
         $receipt = $state['plan']['schema']['$defs']['actions']['proposition.reclassify']['properties']['receipt_id']['enum'][0];
         $secondSlot = $this->contribute($actor, ['action' => 'proposition.reclassify', 'proposition_id' => $persist, 'receipt_id' => $receipt]);

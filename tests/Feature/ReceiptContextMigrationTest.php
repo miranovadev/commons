@@ -11,7 +11,6 @@ use App\Models\Proposition;
 use App\Models\Substrate;
 use App\Services\LedgerService;
 use App\Services\Observables\ReinforcementService;
-use App\Services\OperationalInstrumentService;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Group;
@@ -44,7 +43,7 @@ class ReceiptContextMigrationTest extends TestCase
         $subject = new Proposition;
         $subject->forceFill(['phase_id' => $phase->id, 'register' => 'canon', 'tier' => 'expressive', 'statement' => 'Legacy evidence'])->save();
         app(LedgerService::class)->record($subject);
-        $receipt = app(OperationalInstrumentService::class)->execute($phase, $subject,
+        $receipt = $this->observationFixture($phase, $subject,
             ['kind' => 'hyperlink', 'reference' => 'https://example.test/legacy']);
         // Construct a pre-C2 historical fixture, before creator loading existed.
         $eventIds = DB::table('receipt_context_events')->pluck('id');

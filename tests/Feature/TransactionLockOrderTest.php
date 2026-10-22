@@ -30,7 +30,6 @@ use App\Services\ContributionDispatcher;
 use App\Services\CycleEntryService;
 use App\Services\Evidence\HyperlinkVerifier;
 use App\Services\ExhaustionAuditService;
-use App\Services\ExhaustionService;
 use App\Services\InstrumentExecutionService;
 use App\Services\LedgerService;
 use App\Services\ParticipantActivityService;
@@ -303,6 +302,9 @@ class TransactionLockOrderTest extends TestCase
         [$substrate, $first, $initial] = $this->fixture();
         app(ParticipationService::class)->contribute($first, $initial->id, ['action' => 'proposition.variant', 'statement' => 'Shared classification source']);
         $persist = $first->cycles()->whereNull('completed_at')->sole()->currentPhase;
+        app(ParticipationService::class)->contribute($first, $persist->id, ['action' => 'instrument.execute',
+            'proposition_id' => $persist->gate_proposition_id,
+            'instrument' => ['kind' => 'citation', 'reference' => $persist->cycle->entry_committal_id]]);
         app(ParticipationService::class)->contribute($first, $persist->id, ['action' => 'proposition.variant', 'statement' => 'Persisted source']);
         $source = $first->fresh()->position;
         $this->classificationEvidenceFixture($source);
@@ -394,7 +396,8 @@ class TransactionLockOrderTest extends TestCase
             $this->assertStringContainsString('completed', $process->getOutput());
             $this->assertNotNull($secondPhase->fresh()->completed_at);
 
-            return ['action' => 'proposition.variant', 'statement' => 'Second forward wake action'];
+            return ['action' => 'instrument.execute', 'proposition_id' => $state['plan']['gate_id'],
+                'instrument' => ['kind' => 'citation', 'reference' => $phase->cycle->entry_committal_id]];
         });
         (new WakeParticipant($link->id))->handle($inference, app(ParticipationService::class), app(ParticipantConnectionTriggerService::class), app(ParticipantActivityService::class), $clock);
         $this->assertSame(2, $calls);
@@ -408,6 +411,9 @@ class TransactionLockOrderTest extends TestCase
         [, $first, $initial] = $this->fixture();
         app(ParticipationService::class)->contribute($first, $initial->id, ['action' => 'proposition.variant', 'statement' => 'Source']);
         $persist = $first->cycles()->whereNull('completed_at')->sole()->currentPhase;
+        app(ParticipationService::class)->contribute($first, $persist->id, ['action' => 'instrument.execute',
+            'proposition_id' => $persist->gate_proposition_id,
+            'instrument' => ['kind' => 'citation', 'reference' => $persist->cycle->entry_committal_id]]);
         app(ParticipationService::class)->contribute($first, $persist->id, ['action' => 'proposition.variant', 'statement' => 'Persisted source']);
         $source = $first->fresh()->position;
         $this->classificationEvidenceFixture($source);
@@ -439,9 +445,7 @@ class TransactionLockOrderTest extends TestCase
         app(ParticipationService::class)->contribute($first, $initial->id,
             ['action' => 'proposition.variant', 'statement' => 'Instrument lineage']);
         $initial = $this->activePhase($first);
-        $target = app(ContributionDispatcher::class)->dispatch($first, $initial,
-            ['action' => 'proposition.variant', 'statement' => 'Instrument subject']);
-        $this->receiptFixture($target); // Allow the competing attestation to advance this Phase.
+        $target = $initial->gate;
         app(PotentialProjectionService::class)->refresh($substrate->id);
         $second = new Participant;
         $second->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'during-observation'])->save();
@@ -455,16 +459,21 @@ class TransactionLockOrderTest extends TestCase
         $beforeExecutions = InstrumentExecution::where('phase_id', $initial->id)->orderBy('id')->pluck('id')->all();
         $beforeReceipts = Receipt::where('phase_id', $initial->id)->orderBy('id')->pluck('id')->all();
         $observed = false;
-        $this->mock($kind === 'hyperlink' ? HyperlinkVerifier::class : WebSearchProvider::class, function ($mock) use ($kind, &$observed, $second, $secondPhase, $first, $initial, $target): void {
-            $mock->shouldReceive($kind === 'hyperlink' ? 'verify' : 'search')->once()->andReturnUsing(function ($reference) use ($kind, &$observed, $second, $secondPhase, $first, $initial, $target) {
+        $this->mock($kind === 'hyperlink' ? HyperlinkVerifier::class : WebSearchProvider::class, function ($mock) use ($kind, &$observed, $second, $secondPhase, $first, $initial): void {
+            $mock->shouldReceive($kind === 'hyperlink' ? 'verify' : 'search')->once()->andReturnUsing(function ($reference) use ($kind, &$observed, $second, $secondPhase, $first, $initial) {
                 $observed = DB::transactionLevel() === 0;
                 $process = new Process([PHP_BINARY, base_path('tests/Support/concurrent-commons-worker.php')], base_path(), null,
                     json_encode(['operation' => 'contribute', 'participant_id' => $second->id, 'phase_id' => $secondPhase->id,
                         'database' => config('database.connections.'.DB::getDefaultConnection())], JSON_THROW_ON_ERROR), 5);
                 $process->mustRun();
-                // Another actor also advances this Participant while observation is in flight.
+                // The other Participant acquires shared evidence; a competing
+                // contribution then advances the original Persist occurrence.
+                $otherPersist = $this->activePhase($second);
+                app(ParticipationService::class)->contribute($second, $otherPersist->id,
+                    ['action' => 'instrument.execute', 'proposition_id' => $otherPersist->gate_proposition_id,
+                        'instrument' => ['kind' => 'citation', 'reference' => $otherPersist->cycle->entry_committal_id]]);
                 app(ParticipationService::class)->contribute($first, $initial->id,
-                    ['action' => 'attestation.create', 'proposition_id' => $target->id, 'direction' => 'support']);
+                    ['action' => 'proposition.variant', 'statement' => 'Develop the newly shared observation']);
 
                 return $kind === 'hyperlink' ? new VerifiedHyperlink($reference, hash('sha256', $reference), CarbonImmutable::now())
                     : new SearchObservation($reference, CarbonImmutable::now(), [], 'fixture');

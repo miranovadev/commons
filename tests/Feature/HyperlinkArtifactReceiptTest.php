@@ -53,6 +53,14 @@ class HyperlinkArtifactReceiptTest extends TestCase
         Storage::fake('artifacts');
     }
 
+    private function persistFixture(): ParticipantContextFixture
+    {
+        $f = DB::transaction(fn () => new ParticipantContextFixture(1, 0, false));
+        $f->phase->forceFill(['kind' => PhaseKind::Persist, 'write_register' => 'frontier'])->save();
+
+        return $f;
+    }
+
     private function input(string $path = 'page'): array
     {
         return ['kind' => 'hyperlink', 'reference' => 'https://example.com/'.$path];
@@ -60,7 +68,7 @@ class HyperlinkArtifactReceiptTest extends TestCase
 
     public function test_real_contribution_preserves_bytes_but_only_projects_bounded_metadata(): void
     {
-        $f = DB::transaction(fn () => new ParticipantContextFixture(1, 0, false));
+        $f = $this->persistFixture();
         $target = DB::transaction(fn () => $f->node($f->seed, 'activity', position: PhaseKind::Distinguish));
         $f->phase->forceFill(['kind' => PhaseKind::Persist, 'gate_proposition_id' => $target->id, 'write_register' => 'frontier'])->save();
         $f->viewer->forceFill(['current_proposition_id' => $target->id])->save();
@@ -112,11 +120,11 @@ class HyperlinkArtifactReceiptTest extends TestCase
 
     public function test_distinct_receipts_share_one_artifact_without_changing_duplicate_suppression(): void
     {
-        $f = DB::transaction(fn () => new ParticipantContextFixture(1, 0, false));
+        $f = $this->persistFixture();
         Http::fake(['*' => Http::response('<h1>Same bytes</h1>', 200, ['Content-Type' => 'text/html'])]);
         $service = app(OperationalInstrumentService::class);
         $a = $service->execute($f->phase, $f->gate, $this->input());
-        $other = DB::transaction(fn () => new ParticipantContextFixture(1, 0, false));
+        $other = $this->persistFixture();
         $b = $service->execute($other->phase, $other->gate, $this->input());
         $this->assertNotSame($a->id, $b->id);
         $this->assertSame($a->metadata['artifacts'], $b->metadata['artifacts']);
@@ -134,13 +142,13 @@ class HyperlinkArtifactReceiptTest extends TestCase
     public function test_byte_changes_do_not_replace_normalized_identity_or_the_seven_day_clock(): void
     {
         $this->travelTo(CarbonImmutable::parse('2026-10-20T00:00:00Z'));
-        $f = DB::transaction(fn () => new ParticipantContextFixture(1, 0, false));
+        $f = $this->persistFixture();
         Http::fake(['*' => Http::sequence()
             ->push('<h1>Stable text</h1><script>1</script>', 200, ['Content-Type' => 'text/html'])
             ->push('<div> Stable  text </div><script>2</script>', 200, ['Content-Type' => 'text/html'])
             ->push('<p>Changed text</p>', 200, ['Content-Type' => 'text/html'])
             ->push('<p>Changed text</p>', 200, ['Content-Type' => 'text/html'])]);
-        $observe = fn () => app(OperationalInstrumentService::class)->execute($f->phase,
+        $observe = fn () => $this->observationFixture($f->phase,
             DB::transaction(fn () => $f->node($f->gate, 'frontier', position: PhaseKind::Mediate)), $this->input());
         $a = $observe();
         $b = $observe();
@@ -167,7 +175,7 @@ class HyperlinkArtifactReceiptTest extends TestCase
     #[DataProvider('retrievalFailures')]
     public function test_failed_observations_never_preserve_artifacts(string $mode): void
     {
-        $f = DB::transaction(fn () => new ParticipantContextFixture(1, 0, false));
+        $f = $this->persistFixture();
         Http::fake(['*' => match ($mode) {
             'http' => Http::response('Not found', 404),
             'empty' => Http::response('', 200),
@@ -188,7 +196,7 @@ class HyperlinkArtifactReceiptTest extends TestCase
 
     public function test_storage_failure_is_an_execution_error_without_receipt_or_auto_load(): void
     {
-        $f = DB::transaction(fn () => new ParticipantContextFixture(1, 0, false));
+        $f = $this->persistFixture();
         Http::fake(['*' => Http::response('Valid content', 200, ['Content-Type' => 'text/plain'])]);
         $this->mock(ArtifactStore::class, fn ($m) => $m->shouldReceive('preserve')->once()->andThrow(new ArtifactStorageException('Artifact persistence failed.')));
         try {
@@ -203,7 +211,7 @@ class HyperlinkArtifactReceiptTest extends TestCase
 
     public function test_completion_rollback_leaves_only_the_immutable_artifact(): void
     {
-        $f = DB::transaction(fn () => new ParticipantContextFixture(1, 0, false));
+        $f = $this->persistFixture();
         Http::fake(['*' => Http::response('Retained after rollback', 200, ['Content-Type' => 'text/plain'])]);
         ParticipantReceiptContext::created(function () {
             throw new RuntimeException('completion failure');
@@ -242,7 +250,7 @@ class HyperlinkArtifactReceiptTest extends TestCase
 
     public function test_historical_receipt_without_artifacts_keeps_its_existing_readable_projection(): void
     {
-        $f = DB::transaction(fn () => new ParticipantContextFixture(1, 0, false));
+        $f = $this->persistFixture();
         $execution = app(InstrumentExecutionService::class)->start($f->phase, $f->gate, 'hyperlink', 'https://example.com/old', $this->input('old'));
         $execution->forceFill(['status' => 'completed', 'completed_at' => now()])->save();
         $receipt = (new Receipt)->forceFill(['instrument_execution_id' => $execution->id,

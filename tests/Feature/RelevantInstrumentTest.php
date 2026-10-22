@@ -43,7 +43,7 @@ class RelevantInstrumentTest extends TestCase
     public function test_effective_receipts_suppress_duplicates_across_services_and_reclassification_without_mutating_history(array $input, array $equivalent): void
     {
         Http::fake();
-        $f = new ParticipantContextFixture(1, 0);
+        $f = new ParticipantContextFixture(1, 0, false);
         $target = $f->node($f->seed, 'activity', position: PhaseKind::Distinguish);
         $f->phase->forceFill(['kind' => PhaseKind::Persist, 'gate_proposition_id' => $target->id, 'write_register' => 'frontier'])->save();
         $f->viewer->forceFill(['current_proposition_id' => $target->id])->save();
@@ -52,7 +52,8 @@ class RelevantInstrumentTest extends TestCase
             $equivalent['reference'] = ' '.$f->seed->id.' ';
         }
         $instruments = app(OperationalInstrumentService::class);
-        $receipt = $instruments->execute($target->phase, $target, $input);
+        $receipt = $this->observationFixture($target->phase, $target, $input);
+        $this->consumeObservationFixture($f, $receipt);
         $history = $receipt->fresh()->getAttributes();
         $execution = $receipt->instrumentExecution->fresh()->getAttributes();
         $count = InstrumentExecution::count();
@@ -90,11 +91,12 @@ class RelevantInstrumentTest extends TestCase
         // A structural descendant with fresh evidence is a natural relevance boundary.
         $fresh = $f->node($classification, 'activity');
         $this->assertNull($relevance->equivalent($fresh, $input));
-        $observedAgain = $instruments->execute($f->phase, $fresh, $input);
+        $f->phase->forceFill(['gate_proposition_id' => $fresh->id])->save();
+        $observedAgain = $instruments->execute($f->phase->fresh(), $fresh, $input);
         $this->assertNotSame($receipt->id, $observedAgain->id);
         $this->assertSame($history, $receipt->fresh()->getAttributes());
         $this->assertSame($execution, $receipt->instrumentExecution->fresh()->getAttributes());
-        $this->assertSame(6, ParticipantReceiptContext::active()->count());
+        $this->assertSame(2, ParticipantReceiptContext::active()->count());
         $this->assertSame(0, DB::table('reinforcements')->count());
     }
 
@@ -118,12 +120,13 @@ class RelevantInstrumentTest extends TestCase
 
     public function test_schema_exposes_target_specific_exclusions_and_retains_other_free_form_resources(): void
     {
-        $f = new ParticipantContextFixture(1, 0);
+        $f = new ParticipantContextFixture(1, 0, false);
         $target = $f->node($f->seed, 'activity', position: PhaseKind::Distinguish);
         $f->phase->forceFill(['kind' => PhaseKind::Persist, 'gate_proposition_id' => $target->id, 'write_register' => 'frontier'])->save();
         $f->viewer->forceFill(['current_proposition_id' => $target->id])->save();
         $input = ['kind' => 'citation', 'reference' => $f->seed->id];
-        $receipt = app(OperationalInstrumentService::class)->execute($target->phase, $target, $input);
+        $receipt = $this->observationFixture($target->phase, $target, $input);
+        $this->consumeObservationFixture($f, $receipt);
         $this->publishPotentialFixture($f->viewer);
         $plan = app(ParticipationService::class)->stateFor($f->viewer)['plan'];
         $this->assertSame([['receipt_id' => $receipt->id, 'invocation' => $input]], $plan['schema']['x-commons']['instrument_exclusions'][$target->id]);
@@ -142,7 +145,7 @@ class RelevantInstrumentTest extends TestCase
     public function test_replay_capability_survives_but_equivalent_effective_evidence_cannot_be_replayed(): void
     {
         Http::fake();
-        $f = new ParticipantContextFixture(1, 0);
+        $f = new ParticipantContextFixture(1, 0, false);
         $target = $f->node($f->seed, 'activity', position: PhaseKind::Distinguish);
         $f->phase->forceFill(['kind' => PhaseKind::Persist, 'gate_proposition_id' => $target->id, 'write_register' => 'frontier'])->save();
         $f->viewer->forceFill(['current_proposition_id' => $target->id])->save();

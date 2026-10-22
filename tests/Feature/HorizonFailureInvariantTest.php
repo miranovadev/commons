@@ -9,6 +9,7 @@ use App\Services\ExhaustionAuditService;
 use App\Services\ExhaustionService;
 use App\Services\InputPlanService;
 use App\Services\PotentialChargeService;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Group;
@@ -35,7 +36,7 @@ class HorizonFailureInvariantTest extends TestCase
         $this->measure($root, 1);
         $this->measure($fresh, 1);
         $this->assertSame($commit->id, app(PotentialChargeService::class)->inspectRecoveryFrom($fresh)['selection']['proposition_id']);
-        $this->assertArrayHasKey('proposition.variant', app(InputPlanService::class)->forPhase($phase->cycle->participant, $phase)['schema']['$defs']['actions']);
+        $this->assertArrayHasKey('instrument.execute', app(InputPlanService::class)->forPhase($phase->cycle->participant, $phase)['schema']['$defs']['actions']);
         $this->assertDatabaseCount('commit_region_exhaustions', 0);
         $this->assertSame(0, Tragedy::count());
     }
@@ -94,7 +95,7 @@ class HorizonFailureInvariantTest extends TestCase
         $this->rest($terminal);
         $this->assertTrue($audit->inspect($this->substrate->id)['matches']);
         $this->artisan('commons:exhaustion-audit', ['substrate' => $this->substrate->id])->assertSuccessful();
-        $this->expectException(\Illuminate\Database\QueryException::class);
+        $this->expectException(QueryException::class);
         DB::table('commit_region_exhaustions')->where('context_horizon_id', $horizon->id)
             ->update(['terminal_proposition_id' => $this->origin->id]);
     }

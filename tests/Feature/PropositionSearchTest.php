@@ -24,8 +24,10 @@ use App\Services\ParticipantContextSerializer;
 use App\Services\ParticipantPromptLayout;
 use App\Services\ParticipantReceiptProjection;
 use App\Services\Participation\ParticipationContext;
+use App\Services\PhaseProgressionService;
 use App\Services\PropositionSearchService;
 use App\Services\ReceiptContextService;
+use App\Services\RelevantInstrumentService;
 use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -241,6 +243,8 @@ class PropositionSearchTest extends TestCase
 
         foreach ([$input, [...$input, 'limit' => 5]] as $duplicate) {
             try {
+                $collection = app(PropositionSearchService::class)->search($s['phase'], $s['head'], $duplicate);
+                app(RelevantInstrumentService::class)->assertAvailable($s['head'], $duplicate, $collection);
                 app(OperationalInstrumentService::class)->execute($s['phase'], $s['head'], $duplicate);
                 $this->fail('The same query and same observed collection should be suppressed.');
             } catch (ConflictHttpException) {
@@ -250,7 +254,14 @@ class PropositionSearchTest extends TestCase
 
         $older = $this->historyNode($s['fixture'], null, $s['root'], 'needle older history');
         $s['fixture']->edge($older, $s['oldest'], 'variant');
-        $second = app(OperationalInstrumentService::class)->execute($s['phase'], $s['head'], $input);
+        // A new collection still requires a fresh personal Cycle allowance.
+        $s['phase']->forceFill(['completed_at' => now()])->save();
+        $s['phase']->cycle->forceFill(['completed_at' => now()])->save();
+        $cycle = $s['phase']->cycle->replicate();
+        $cycle->forceFill(['sequence' => (int) $s['fixture']->viewer->cycles()->max('sequence') + 1, 'completed_at' => null])->save();
+        $phase = $s['phase']->replicate();
+        $phase->forceFill(['cycle_id' => $cycle->id, 'completed_at' => null])->save();
+        $second = app(OperationalInstrumentService::class)->execute($phase->fresh(), $s['head'], $input);
         $this->assertNotSame($first->metadata['observation_identity'], $second->metadata['observation_identity']);
         $this->assertSame([3, 6, 9, 11],
             array_column($second->metadata['proposition_collection']['results'], 'lineage_distance'));
@@ -261,7 +272,7 @@ class PropositionSearchTest extends TestCase
     {
         // The migration protects a real recorded search, including an empty result.
         $fixture = new GovernedExpressionFixture;
-        $s = ['head' => $fixture->expression, 'phase' => $fixture->phase];
+        $s = ['head' => $fixture->expression, 'phase' => app(PhaseProgressionService::class)->advance($fixture->phase, $fixture->expression)];
         app(OperationalInstrumentService::class)->execute($s['phase'], $s['head'], [
             'kind' => 'proposition_search', 'query' => 'needle',
         ]);
@@ -303,8 +314,8 @@ class PropositionSearchTest extends TestCase
         $phase = new Phase;
         $phase->forceFill([
             'cycle_id' => $cycle->id,
-            'kind' => PhaseKind::Constrain,
-            'write_register' => 'canon',
+            'kind' => PhaseKind::Persist,
+            'write_register' => 'frontier',
             'gate_proposition_id' => $head->id,
             'started_at' => now(),
         ])->save();

@@ -107,7 +107,7 @@ class TragedyTest extends TestCase
     {
         if ($kind === PhaseKind::Persist && $action === 'instrument.execute') {
             $fixture = new GovernedExpressionFixture;
-            $fixture->writePersist();
+            $fixture->phase = app(PhaseProgressionService::class)->advance($fixture->phase, $fixture->expression);
 
             return [$fixture->actor->fresh(), $fixture->phase];
         }
@@ -135,6 +135,9 @@ class TragedyTest extends TestCase
             if ($kind === PhaseKind::Persist) {
                 $state = $service->contribute($viewer, $state['plan']['phase']['id'],
                     ['action' => 'proposition.variant', 'statement' => 'First distinction']);
+                $state = $service->contribute($viewer, $state['plan']['phase']['id'],
+                    ['action' => 'instrument.execute', 'proposition_id' => $state['plan']['gate_id'],
+                        'instrument' => ['kind' => 'citation', 'reference' => Phase::findOrFail($state['plan']['phase']['id'])->cycle->entry_committal_id]]);
             }
 
             return [$viewer->fresh(), Phase::findOrFail($state['plan']['phase']['id'])];

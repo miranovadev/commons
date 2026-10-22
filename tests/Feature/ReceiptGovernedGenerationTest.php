@@ -12,6 +12,7 @@ use App\Models\Receipt;
 use App\Services\ContributionDispatcher;
 use App\Services\HorizonReceiptService;
 use App\Services\InputPlanService;
+use App\Services\InputSchemaService;
 use App\Services\LedgerService;
 use App\Services\OperationalInstrumentService;
 use App\Services\ParticipantPromptFactory;
@@ -101,6 +102,11 @@ class ReceiptGovernedGenerationTest extends TestCase
         $this->assertSame($available, isset($actions['proposition.variant']));
         $this->assertSame(! $available && ! $used, isset($actions['instrument.execute']));
         $this->assertSame($state['plan']['schema'], app(ParticipantPromptFactory::class)->make(new Connection, $state)['schema']);
+        if ($available) {
+            $suppliedTargets = app(InputSchemaService::class)->forParticipant($f->viewer, [], [$f->gate->id],
+                instrumentOptionIds: [$f->gate->id]);
+            $this->assertArrayNotHasKey('instrument.execute', $suppliedTargets['$defs']['actions']);
+        }
     }
 
     public function test_shared_receipt_enables_generation_without_loading_or_consumption(): void
@@ -227,5 +233,34 @@ class ReceiptGovernedGenerationTest extends TestCase
             }
             $this->assertNotContains('preparation.execute', config("phases.{$kind->value}.actions"));
         }
+    }
+
+    public function test_spent_allowance_and_consumed_evidence_preserve_independent_attestation_and_traverse(): void
+    {
+        $f = $this->fixture();
+        $head = $f->node($f->gate, 'frontier', position: PhaseKind::Persist);
+        $vote = (new Attestation)->forceFill(['phase_id' => $head->phase_id, 'proposition_id' => $head->id, 'direction' => 'refute']);
+        $vote->save();
+        app(LedgerService::class)->record($vote);
+        $receipt = $this->observe($f, $f->phase);
+        // An existing Write's own historical evidence remains eligible for
+        // judgment after consumption; generic structural parents do not inherit it.
+        $this->receiptFixture($head);
+        $this->consume($f, Receipt::where('receiptable_id', $head->id)->sole());
+        $this->consume($f, $receipt);
+        app(PotentialProjectionService::class)->refresh($f->substrate->id);
+        $plan = app(InputPlanService::class)->forPhase($f->viewer, $f->phase);
+        foreach (['instrument.execute', 'proposition.variant', 'proposition.revise'] as $action) {
+            $this->assertArrayNotHasKey($action, $plan['schema']['$defs']['actions']);
+        }
+        foreach (['attestation.create', 'proposition.traverse'] as $action) {
+            $this->assertArrayHasKey($action, $plan['schema']['$defs']['actions']);
+            $this->assertStringContainsString($head->id, json_encode($plan['schema']['$defs']['actions'][$action]));
+        }
+        $this->assertFalse($plan['rest_available']);
+        app(ContributionDispatcher::class)->dispatch($f->viewer, $f->phase,
+            ['action' => 'attestation.create', 'proposition_id' => $head->id, 'direction' => 'support']);
+        $this->assertSame('support', $head->effectiveAttestations()->sole()->direction);
+        $this->assertDatabaseCount('receipt_consumptions', 2);
     }
 }

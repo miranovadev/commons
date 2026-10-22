@@ -379,7 +379,7 @@ class InputSchemaServiceTest extends TestCase
         );
 
         $this->assertSame(
-            ['instrument.execute', 'proposition.variant'],
+            ['instrument.execute'],
             array_keys($schema['$defs']['actions']),
         );
         $this->assertSame([$owner['gate_id']], $schema['$defs']['actions']['instrument.execute']['properties']['proposition_id']['enum']);

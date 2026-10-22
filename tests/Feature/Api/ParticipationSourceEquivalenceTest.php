@@ -35,18 +35,21 @@ class ParticipationSourceEquivalenceTest extends ScriptedParticipationTestCase
             ])->assertCreated()->json('data.id');
         $phases = [];
         $positions = [];
-        $this->mock(ParticipantInference::class)->shouldReceive('contribute')->times(3)
+        $this->mock(ParticipantInference::class)->shouldReceive('contribute')->times(4)
             ->andReturnUsing(function ($connection, $state, $metadata) use ($actor, $initial, &$phases, &$positions): array {
                 $this->assertSame($this->readParticipation($actor), json_decode(json_encode($state), true));
                 $this->assertSame($actor, $metadata['participant_id']);
                 $this->assertSame(Participant::findOrFail($actor)->substrate_id, $metadata['substrate_id']);
                 $index = count($phases);
-                $this->assertSame(['distinguish', 'persist', 'constrain'][$index], $state['plan']['phase']['kind']);
+                $this->assertSame(['distinguish', 'persist', 'persist', 'constrain'][$index], $state['plan']['phase']['kind']);
                 $this->assertSame('settlement', $state['domain']);
                 $this->assertSame($initial['context_horizon_id'], $state['context_horizon_id']);
                 $this->assertSame($initial['cycle']['id'], $state['cycle']['id']);
                 $this->assertSame($state['current_proposition_id'], $state['plan']['gate_id']);
-                if ($index > 0) {
+                if ($index === 2) {
+                    $this->assertSame($positions[1], $state['current_proposition_id']);
+                    $this->assertSame($phases[1], $state['plan']['phase']['kind']);
+                } elseif ($index > 0) {
                     $this->assertDatabaseHas('supersessions', [
                         'source_proposition_id' => $positions[$index - 1],
                         'target_proposition_id' => $state['current_proposition_id'],
@@ -58,13 +61,15 @@ class ParticipationSourceEquivalenceTest extends ScriptedParticipationTestCase
                 // Exact synchronous worker inputs; no autonomous inference policy.
                 return [
                     ['action' => 'proposition.variant', 'statement' => 'Testable opportunity 0'],
+                    ['action' => 'instrument.execute', 'proposition_id' => $state['plan']['gate_id'],
+                        'instrument' => ['kind' => 'citation', 'reference' => $initial['current_proposition_id']]],
                     ['action' => 'proposition.variant', 'statement' => 'Testable opportunity 0'],
                     ['action' => 'participant.rest'],
                 ][count($phases) - 1];
             });
         $this->wakeParticipant($link);
         $after = $this->readParticipation($actor);
-        $this->assertSame(['distinguish', 'persist', 'constrain'], $phases);
+        $this->assertSame(['distinguish', 'persist', 'persist', 'constrain'], $phases);
         $this->assertSame('distinguish', $after['plan']['phase']['kind']);
         $this->assertSame($initial['current_proposition_id'], $after['current_proposition_id']);
         $this->assertGreaterThan($initial['cycle']['sequence'], $after['cycle']['sequence']);

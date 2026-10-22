@@ -20,7 +20,6 @@ use App\Services\InstrumentExecutionService;
 use App\Services\LedgerService;
 use App\Services\Observables\ChiralityCalculator;
 use App\Services\OpenAIResponseSchema;
-use App\Services\OperationalInstrumentService;
 use App\Services\ParticipantPromptFactory;
 use App\Services\ParticipationService;
 use App\Services\PropositionMeasurementService;
@@ -158,7 +157,7 @@ class BiasGateTest extends TestCase
             $this->attest($source, 'support');
         }
         $this->attest($opposite, 'refute');
-        app(OperationalInstrumentService::class)->execute($this->history, $selected,
+        $this->observationFixture($this->history, $selected,
             ['kind' => 'hyperlink', 'reference' => 'https://example.test/selected']);
         foreach (range(1, 3) as $i) {
             $touch = $this->newPhase($this->history->cycle->participant, PhaseKind::Persist, $register, true);

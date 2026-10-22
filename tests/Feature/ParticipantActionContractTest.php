@@ -20,7 +20,6 @@ use App\Services\LedgerService;
 use App\Services\Observables\ProspectiveClosureService;
 use App\Services\OpenAIResponseSchema;
 use App\Services\OpenAIResponsesClient;
-use App\Services\OperationalInstrumentService;
 use App\Services\ParticipationService;
 use App\Services\PotentialProjectionService;
 use Illuminate\Support\Facades\DB;
@@ -61,7 +60,7 @@ class ParticipantActionContractTest extends TestCase
         // FullEvidenceFlowTest and SharedReclassificationTest.
         $spent = match ($kind) {
             PhaseKind::Distinguish, PhaseKind::Disperse => ['proposition.variant'],
-            PhaseKind::Persist => ['proposition.variant', 'proposition.reclassify'],
+            PhaseKind::Persist => ['proposition.variant', 'proposition.reclassify', 'instrument.execute'],
             PhaseKind::Constrain, PhaseKind::Bias => [],
             default => [],
         };
@@ -350,7 +349,7 @@ class ParticipantActionContractTest extends TestCase
                 app(LedgerService::class)->record($attestation);
             }
             if (in_array('instrument.execute', config('phases.'.$kind->value.'.actions'), true)) {
-                app(OperationalInstrumentService::class)->execute($past, $write, ['kind' => 'hyperlink', 'reference' => 'https://example.test/replay']);
+                $this->observationFixture($past, $write, ['kind' => 'hyperlink', 'reference' => 'https://example.test/replay']);
             }
             if ($kind === PhaseKind::Order) {
                 $this->groundFixture($write);

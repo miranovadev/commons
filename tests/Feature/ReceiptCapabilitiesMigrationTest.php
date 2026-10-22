@@ -11,7 +11,6 @@ use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Substrate;
 use App\Services\LedgerService;
-use App\Services\OperationalInstrumentService;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -45,7 +44,7 @@ class ReceiptCapabilitiesMigrationTest extends TestCase
         $subject = new Proposition;
         $subject->forceFill(['phase_id' => $phase->id, 'register' => 'canon', 'tier' => 'expressive', 'statement' => 'Legacy evidence'])->save();
         app(LedgerService::class)->record($subject);
-        $receipt = app(OperationalInstrumentService::class)->execute($phase, $subject,
+        $receipt = $this->observationFixture($phase, $subject,
             ['kind' => 'hyperlink', 'reference' => 'https://example.test/legacy']);
         // Construct a pre-C2 historical fixture, before creator loading existed.
         $eventIds = DB::table('receipt_context_events')->pluck('id');
@@ -69,7 +68,7 @@ class ReceiptCapabilitiesMigrationTest extends TestCase
         try {
             // The widened enum works with existing rows/FKs. Roll this observation
             // back so test teardown can exercise the legitimate legacy rollback.
-            $search = app(OperationalInstrumentService::class)->execute($phase, $subject,
+            $search = $this->observationFixture($phase, $subject,
                 ['kind' => 'web_search', 'query' => 'upgrade']);
             $this->assertNotNull($search->signature);
         } finally {

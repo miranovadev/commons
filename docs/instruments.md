@@ -9,6 +9,14 @@ creator. Completed unsuccessful observations spend the allowance; infrastructure
 failures without an execution/Receipt do not. Receipt consumption or unloading
 does not restore it. See [the Stage 2A contract](epistemic-evidence-stage-2a.md).
 
+Stage 2B adds the shared catalogue prerequisite: Persist offers Instrument only
+when no eligible unattached ordinary Receipt is available. If one exists, lawful
+Variant/Revise replace acquisition. Neither loading nor authorship controls this
+choice, and generation does not consume the Receipt. An exhausted allowance does
+not suppress independently lawful Attestation or Traverse. Disperse keeps its
+existing generation rules until Preparation and reading can be activated.
+See [the Stage 2B contract](epistemic-evidence-stage-2b.md).
+
 ## Hyperlink Artifact preservation (Stage 1)
 
 Successful Hyperlink observations now preserve the exact received resource as a

@@ -39,11 +39,10 @@ trait HorizonProofFixture
     protected function exercise($opening, $tragedy): array
     {
         $target = $this->continuingHeads[$opening->id];
-        $phase = $this->phase($target, PhaseKind::Persist);
+        $phase = $this->phase($opening, PhaseKind::Constrain);
         $this->resolveExpressiveFieldFixture(1);
         app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
-            ['action' => 'instrument.execute', 'proposition_id' => $target->id,
-                'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/terminal/'.$target->id]]);
+            ['action' => 'attestation.create', 'proposition_id' => $target->id, 'direction' => 'refute']);
         $terminal = $this->phase($target);
         $this->publishPotentialFixture($this->substrate);
 

@@ -2,16 +2,13 @@
 
 namespace Tests\Feature;
 
-use App\Models\Cycle;
+use App\Enums\PhaseKind;
 use App\Models\InstrumentExecution;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Receipt;
-use App\Models\Substrate;
-use App\Models\Supersession;
 use App\Services\ContributionDispatcher;
-use App\Services\LedgerService;
 use App\Services\ParticipationService;
 use App\Services\PotentialProjectionService;
 use App\Services\PropositionOptionService;
@@ -19,7 +16,8 @@ use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
-use Tests\Fixtures\PropositionBirth;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
+use Tests\Fixtures\ParticipantContextFixture;
 use Tests\TestCase;
 
 class PersistInstrumentTest extends TestCase
@@ -94,7 +92,7 @@ class PersistInstrumentTest extends TestCase
         try {
             app(ContributionDispatcher::class)->dispatch($grounder, $phase, $this->instrument($target, $signal));
             $this->fail('Direct dispatch must also reject invalid Instrument targets.');
-        } catch (DomainException) {
+        } catch (DomainException|ConflictHttpException) {
             $this->assertSame($counts, [InstrumentExecution::count(), Receipt::count()]);
         }
     }
@@ -116,58 +114,24 @@ class PersistInstrumentTest extends TestCase
 
     private function fixture(): array
     {
-        $substrate = new Substrate;
-        $substrate->forceFill(['slug' => 'persist-instrument', 'title' => 'Persist grounding',
-            'visibility' => 'public', 'configuration' => []])->save();
-        $author = new Participant;
-        $author->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'author', 'max_read_count' => 25])->save();
-        $service = app(ParticipationService::class);
-        $state = $service->enter($author, [
-            'statement' => 'Origin', 'attestation' => ['direction' => 'support'],
-            'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/origin'],
-        ]);
-        $state = app(ParticipationService::class)->contribute($author, $state['plan']['phase']['id'], [
-            'action' => 'proposition.variant', 'statement' => 'Signal',
-        ]);
-        $signal = Proposition::findOrFail($state['plan']['gate_id']);
-        $this->assertArrayHasKey('instrument.execute', $state['plan']['schema']['$defs']['actions']);
-        // A foreign Signal permits a new Stance Variant, intentionally without inherited evidence.
-        $signalOwner = new Participant;
-        $signalOwner->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'signal-owner', 'max_read_count' => 25])->save();
-        $ownerCycle = new Cycle;
-        $ownerCycle->forceFill(['participant_id' => $signalOwner->id, 'sequence' => 1,
-            'context_horizon_id' => $signal->phase->cycle->context_horizon_id,
-            'entry_committal_id' => $signal->phase->cycle->entry_committal_id])->save();
-        $ownerPhase = $signal->phase->replicate();
-        $ownerPhase->cycle_id = $ownerCycle->id;
-        $ownerPhase->save();
-        $parent = $signal->parents()->sole();
-        $signal = $signal->replicate();
-        $signal->forceFill(['phase_id' => $ownerPhase->id])->save();
-        app(LedgerService::class)->record($signal, $parent);
-        $edge = new Supersession;
-        $edge->forceFill(['phase_id' => $ownerPhase->id, 'source_proposition_id' => $parent->id,
-            'target_proposition_id' => $signal->id, 'type' => 'variant'])->save();
-        app(LedgerService::class)->record($edge);
-        PropositionBirth::complete($signal);
-        Phase::findOrFail($state['plan']['phase']['id'])->forceFill(['gate_proposition_id' => $signal->id])->save();
-        $author->forceFill(['current_proposition_id' => $signal->id])->save();
-        app(PotentialProjectionService::class)->refresh($author->substrate_id);
-        $state = $service->contribute($author, $state['plan']['phase']['id'], [
-            'action' => 'proposition.variant', 'statement' => 'Stance awaiting evidence',
-        ]);
-        $write = Proposition::findOrFail($state['plan']['gate_id']);
-        $this->receiptFixture($signal);
-        $grounder = new Participant;
-        $grounder->forceFill(['substrate_id' => $substrate->id, 'callsign' => 'grounder', 'max_read_count' => 25])->save();
-        app(PotentialProjectionService::class)->refresh($author->substrate_id);
-        $state = $service->enter($grounder);
-        $this->assertSame($signal->parents()->sole()->id, $state['plan']['gate_id']);
-        $this->assertSame($signal->register, $state['plan']['phase']['write_register']);
-        $this->assertArrayHasKey('attestation.create', $state['plan']['schema']['$defs']['actions'], json_encode($state['plan']));
-        app(ParticipationService::class)->contribute($grounder, $state['plan']['phase']['id'], [
-            'action' => 'attestation.create', 'proposition_id' => $signal->id, 'direction' => 'support',
-        ]);
+        // Structural history supplies an existing Write; acquisition is exercised
+        // by a separate Participant in a live Persist occurrence.
+        $f = new ParticipantContextFixture(1, 0, false);
+        $signal = $f->node($f->seed, 'activity', position: PhaseKind::Distinguish);
+        $write = $f->node($signal, 'frontier', position: PhaseKind::Persist);
+        $f->phase->forceFill(['kind' => PhaseKind::Constrain,
+            'gate_proposition_id' => $write->id, 'write_register' => 'canon'])->save();
+        $author = $f->viewer;
+        $author->forceFill(['current_proposition_id' => $write->id])->save();
+        $grounder = (new Participant)->forceFill(['substrate_id' => $f->substrate->id,
+            'callsign' => 'grounder', 'current_proposition_id' => $signal->id]);
+        $grounder->save();
+        $cycle = $f->phase->cycle->replicate();
+        $cycle->forceFill(['participant_id' => $grounder->id, 'sequence' => 1])->save();
+        $phase = $f->phase->replicate();
+        $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Persist,
+            'gate_proposition_id' => $signal->id, 'write_register' => 'frontier'])->save();
+        app(PotentialProjectionService::class)->refresh($f->substrate->id);
 
         return [$author, $grounder, $signal, $write];
     }

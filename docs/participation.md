@@ -172,7 +172,8 @@ Variant, Revise and Reconcile create new content/structure with fresh votes and 
 | Existing Proposition without available shared ordinary evidence | No Attest |
 | Available shared ordinary Commit Region Receipt | Attest, subject to ordinary eligibility |
 | Personal Attestation from an earlier Cycle | Same-side Traverse |
-| Phase 2 | Phase-neutral Instrument on current Gate once per Cycle; structural Variant governed by viable existing results |
+| Phase 2, no eligible unattached ordinary Receipt | Phase-neutral Instrument on current Gate if Cycle allowance remains; no Variant/Revise |
+| Phase 2, eligible unattached ordinary Receipt | Structurally lawful Variant/Revise; no Instrument |
 | Phase 3 | Reclassify an attested Phase-2 source with an available Receipt |
 | Phase 5 | Existing directed reconciliation and Correspondence rules |
 | Phase 6 | Reclassify an attested Phase-5 source with Receipt and lineage agreement |
@@ -180,7 +181,7 @@ Variant, Revise and Reconcile create new content/structure with fresh votes and 
 
 During Exploration, Variant eligibility does not depend on Potential Charge or Participant count. A further Variant requires all existing routes at its structural position to be spent in the current epoch, with genuine ordinary evidence and effective Attestation. Evidence may be shared or retained on the causal lineage; exact-Write Instrumentation is not required. Zero Potential does not suppress an otherwise structurally valid Variant; expression may increase Tension. A viable existing route blocks redundant generation. Only successful Variant advances that position's epoch; other positions remain unchanged. Receipt generation or consumption alone never reopens Variant. See [exploration epochs](exploration-epochs.md) and the [confirmed clarification](horizon-proof-variant-clarification.md).
 
-Instruments target only the mutable current Persist Gate, with one completed execution per Participant Cycle and no Phase advancement. Existing shared evidence makes Attestation available without a transfer from its author or a paid visibility action. Transactional execution rechecks the same rules advertised in the schema.
+Instruments target only the mutable current Persist Gate, with one completed execution per Participant Cycle and no Phase advancement. Stage 2B selects acquisition or generation using the existing shared, unconsumed ordinary Receipt catalogue, independently of personal loading. This prerequisite is additional to structural and epoch eligibility. Existing shared evidence makes Attestation available without a transfer from its author or a paid visibility action. Transactional execution rechecks the same rules advertised in the schema, including consumption that invalidates a stale generation request. Disperse retains its existing generation rules until Preparation and reading are available. See [Stage 2B](epistemic-evidence-stage-2b.md).
 
 ## Traverse and authoritative Rest
 

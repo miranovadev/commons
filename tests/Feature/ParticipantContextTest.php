@@ -11,7 +11,6 @@ use App\Services\ActiveParticipantLineage;
 use App\Services\InputPlanService;
 use App\Services\OpenAIResponseSchema;
 use App\Services\OpenAIResponsesClient;
-use App\Services\OperationalInstrumentService;
 use App\Services\ParticipantContextSerializer;
 use App\Services\ParticipantPromptFactory;
 use App\Services\Participation\ParticipationContext;
@@ -112,7 +111,7 @@ class ParticipantContextTest extends TestCase
         $fixture = new ParticipantContextFixture(2, 0);
         $observation = $fixture->node($fixture->seed, 'activity', position: PhaseKind::Distinguish);
         $fixture->phase->forceFill(['kind' => PhaseKind::Persist, 'gate_proposition_id' => $observation->id, 'write_register' => 'frontier'])->save();
-        $receipt = app(OperationalInstrumentService::class)->execute($fixture->phase, $observation, [
+        $receipt = $this->observationFixture($fixture->phase, $observation, [
             'kind' => 'citation', 'reference' => $fixture->seed->id,
         ]);
         $gate = $fixture->node($observation, 'frontier', position: PhaseKind::Persist);

@@ -1,7 +1,7 @@
 # Epistemic Evidence Stage 2B
 
-Approved implementation contract: Claire / Chat Nova's Stage 2B handoff,
-23 October 2026. The ten Core Invariants govern this contract.
+Approved implementation contract: Claire / Chat Nova's Stage 2B handoff.
+The ten Core Invariants govern this contract.
 
 Persist selects acquisition or generation from the existing shared catalogue:
 
@@ -48,6 +48,9 @@ under that lock for direct callers and observations prepared before a competing
 contribution. Observation/network work remains outside write transactions.
 The lower-level InstrumentExecution persistence primitive continues to record
 execution and Receipt provenance; it is not an alternative contribution API.
+Catalogue and measurement component tests construct observation records through
+that primitive. Their fixtures do not authorize live acquisition on historical
+Writes or outside Persist. Operational journeys acquire before development.
 
 Existing coupling remains between schema specialization, option lists and
 dispatch target validation. Keeping these callers on the same policy is useful;

@@ -21,7 +21,6 @@ use App\Services\InputPlanService;
 use App\Services\LedgerService;
 use App\Services\MediationReadService;
 use App\Services\OpenAIResponseSchema;
-use App\Services\OperationalInstrumentService;
 use App\Services\PhaseProgressionService;
 use App\Services\PropositionMeasurementService;
 use App\Services\PropositionOptionService;
@@ -215,7 +214,7 @@ class CommitRegionTest extends TestCase
         foreach ([$positive, $negative, $misaligned, $outside] as $candidate) {
             $this->attest($candidate, 'support');
             $this->loadedReceiptFixture($candidate);
-            app(OperationalInstrumentService::class)->execute($this->history, $candidate,
+            $this->observationFixture($this->history, $candidate,
                 ['kind' => 'hyperlink', 'reference' => 'https://example.test/'.$candidate->id]);
         }
         $phase = $this->phase(PhaseKind::Order, $gate, $third);

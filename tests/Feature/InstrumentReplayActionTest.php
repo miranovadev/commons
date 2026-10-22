@@ -10,7 +10,6 @@ use App\Services\ContributionService;
 use App\Services\InputSchemaService;
 use App\Services\InstrumentExecutionService;
 use App\Services\OpenAIResponseSchema;
-use App\Services\OperationalInstrumentService;
 use App\Services\ParticipationService;
 use App\Services\ReceiptReplayService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -30,7 +29,7 @@ class InstrumentReplayActionTest extends TestCase
         $target = $f->node($f->seed, 'activity', position: PhaseKind::Distinguish);
         $f->phase->forceFill(['kind' => PhaseKind::Persist, 'gate_proposition_id' => $target->id, 'write_register' => 'frontier'])->save();
         $f->viewer->forceFill(['current_proposition_id' => $target->id])->save();
-        $other = $f->node($f->gate, 'frontier', position: PhaseKind::Mediate);
+        $other = $f->seed;
         // Archival catalogue evidence can have distinct observation and grounding
         // targets. New execution must ground the observed target, not copy ownership.
         $execution = app(InstrumentExecutionService::class)->start($target->phase, $target, 'web_search', 'archival query',
@@ -63,9 +62,15 @@ class InstrumentReplayActionTest extends TestCase
     {
         [$f, $target, $other, $source] = $this->scenario();
         $service = app(ParticipationService::class);
-        $citation = app(OperationalInstrumentService::class)->execute($target->phase, $target, ['kind' => 'citation', 'reference' => $f->seed->id]);
+        $citation = $this->observationFixture($target->phase, $target, ['kind' => 'citation', 'reference' => $f->seed->id]);
+        // Historical observations remain replayable when no ordinary catalogue
+        // evidence remains available; attachment must precede new acquisition.
+        $this->consumeObservationFixture($f, $source);
+        $this->consumeObservationFixture($f, $citation);
         $this->publishPotentialFixture($f->viewer);
-        $schema = $service->stateFor($f->viewer)['plan']['schema'];
+        $plan = $service->stateFor($f->viewer)['plan'];
+        $this->assertTrue(collect($plan['receipts'])->firstWhere('id', $source->id)['can_replay'] ?? false, json_encode($plan['receipts']));
+        $schema = $plan['schema'];
         $this->assertNotEmpty($schema['x-commons']['instrument_exclusions'][$target->id]);
         $input = ['action' => 'instrument.execute', 'proposition_id' => $target->id,
             'instrument' => ['replay_receipt_id' => $source->id]];

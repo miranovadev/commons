@@ -24,7 +24,6 @@ use App\Services\Observables\ContextLineageComparisonService;
 use App\Services\Observables\LineageMeasurementService;
 use App\Services\Observables\LocalMeasurementService;
 use App\Services\Observables\ReinforcementService;
-use App\Services\OperationalInstrumentService;
 use App\Services\Participation\ParticipationContext;
 use App\Services\PropositionMeasurementService;
 use App\Services\ReceiptContextService;
@@ -126,7 +125,7 @@ class ReinforcementTest extends TestCase
 
     public function test_originating_evidence_can_be_loaded_later_without_reverification(): void
     {
-        $origin = app(OperationalInstrumentService::class)->execute($this->node->phase, $this->node,
+        $origin = $this->observationFixture($this->node->phase, $this->node,
             ['kind' => 'hyperlink', 'reference' => 'https://example.test/page']);
         $this->assertNotNull($origin->signature);
         $this->assertSame(1, $this->reinforcementCount());
@@ -354,7 +353,7 @@ class ReinforcementTest extends TestCase
     private function loadedReceipt(string $kind = 'hyperlink', string $reference = 'https://example.test/page', ?Phase $phase = null): Receipt
     {
         $phase ??= $this->later;
-        $receipt = app(OperationalInstrumentService::class)->execute($phase, $this->node, compact('kind', 'reference'));
+        $receipt = $this->observationFixture($phase, $this->node, compact('kind', 'reference'));
         if ($kind === 'hyperlink' && $receipt->signature !== null) {
             app(ReceiptContextService::class)->read($phase->cycle->participant, $phase, $receipt->id);
         }

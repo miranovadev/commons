@@ -60,11 +60,8 @@ class ParticipationRecoveryTest extends ScriptedParticipationTestCase
 
     public function test_actual_actionless_http_rest_recovers_by_the_traversed_edge_distance(): void
     {
-        $journey = $this->replayParticipationScript(__DIR__.'/../../Fixtures/participation/recovery-distance.json', 3);
-        $actor = $journey['participants']['actionless-recovery'];
-        $origin = $journey['responses'][0]['current_proposition_id'];
-        $first = $journey['responses'][1];
-        $before = $journey['responses'][2];
+        ['actor' => $actor, 'initial' => $initial, 'first' => $first, 'state' => $before] = $this->developPersist('actionless-recovery');
+        $origin = $initial['current_proposition_id'];
         foreach ([[$origin, $first['current_proposition_id']], [$first['current_proposition_id'], $before['current_proposition_id']]] as [$source, $target]) {
             $this->assertDatabaseHas('supersessions', ['source_proposition_id' => $source, 'target_proposition_id' => $target]);
         }
@@ -73,8 +70,7 @@ class ParticipationRecoveryTest extends ScriptedParticipationTestCase
             $participant->cycles()->latest('sequence')->first()->contextHorizon, $participant);
         $this->assertSame([$origin], $inspection['eligible_candidate_ids']);
         $this->assertSame(2, $inspection['selection']['distance']);
-        $after = $this->continueParticipationScript(1)['responses'][3];
-        $this->assertParticipationScriptComplete();
+        $after = $this->contribute($actor, ['action' => 'participant.rest']);
         $this->assertSame('distinguish', $after['plan']['phase']['kind']);
         $this->assertSame($origin, $after['current_proposition_id']);
         $this->assertSame($before['context_horizon_id'], $after['context_horizon_id']);
