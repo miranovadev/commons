@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\PhaseKind;
 use App\Models\InstrumentExecution;
+use App\Models\Participant;
 use App\Models\Proposition;
 use App\Models\Receipt;
 use App\Models\Substrate;
@@ -71,7 +72,10 @@ class InstrumentAllowanceConcurrencyTest extends TestCase
             $gate = $f->node($f->seed, 'activity', position: PhaseKind::Distinguish);
             $sibling = $f->node($f->seed, 'activity', position: PhaseKind::Distinguish);
             $source = $f->node($sibling, 'frontier', position: PhaseKind::Persist);
-            $target = $f->node($source, 'canon', 'reclassify', position: PhaseKind::Constrain);
+            $consumer = (new Participant)->forceFill(['substrate_id' => $f->substrate->id, 'callsign' => 'concurrent-consumer']);
+            $consumer->save();
+            $target = $f->node($source, 'canon', 'reclassify', position: PhaseKind::Constrain, participant: $consumer);
+            $this->assertNotSame($f->viewer->id, $target->phase->cycle->participant_id);
 
             return [$gate, $source, $target];
         });

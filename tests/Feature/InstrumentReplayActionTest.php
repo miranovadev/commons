@@ -100,7 +100,7 @@ class InstrumentReplayActionTest extends TestCase
         }
         Http::assertNothingSent();
         $original = $source->fresh()->getAttributes();
-        $invocation = $source->instrumentExecution->getAttributes();
+        $invocation = $source->instrumentExecution->fresh()->getAttributes();
         $next = $service->contribute($f->viewer, $f->phase->id, $input);
         $result = Receipt::where('phase_id', $f->phase->id)->sole();
         $this->assertSame($target->id, $result->receiptable_id);

@@ -59,7 +59,7 @@ class ReceiptGovernedGenerationTest extends TestCase
     private function observe(ParticipantContextFixture $f, Phase $phase): Receipt
     {
         app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase, [
-            'action' => 'instrument.execute', 'proposition_id' => $f->gate->id,
+            'action' => 'instrument.execute', 'proposition_id' => $phase->gate_proposition_id,
             'instrument' => ['kind' => 'citation', 'reference' => $f->seed->id],
         ]);
 
@@ -70,7 +70,10 @@ class ReceiptGovernedGenerationTest extends TestCase
     private function consume(ParticipantContextFixture $f, Receipt $receipt): void
     {
         $source = $f->node($f->gate, 'frontier', position: PhaseKind::Persist);
-        $target = $f->node($source, 'canon', 'reclassify', position: PhaseKind::Constrain);
+        $consumer = (new Participant)->forceFill(['substrate_id' => $f->substrate->id, 'callsign' => 'consumer-'.str()->ulid()]);
+        $consumer->save();
+        $target = $f->node($source, 'canon', 'reclassify', position: PhaseKind::Constrain, participant: $consumer);
+        $this->assertNotSame($f->viewer->id, $target->phase->cycle->participant_id);
         DB::transaction(fn () => app(HorizonReceiptService::class)->consume($target->phase, $source, $target, $receipt->id));
     }
 
@@ -113,7 +116,12 @@ class ReceiptGovernedGenerationTest extends TestCase
     {
         $f = $this->fixture();
         $observer = $this->observer($f);
+        $otherGate = $f->node($f->seed, 'activity', position: PhaseKind::Distinguish);
+        $observer->forceFill(['gate_proposition_id' => $otherGate->id])->save();
+        $observer->cycle->participant->forceFill(['current_proposition_id' => $otherGate->id])->save();
         $receipt = $this->observe($f, $observer);
+        $this->assertSame($otherGate->id, $receipt->instrumentExecution->proposition_id);
+        $this->assertNotSame($f->gate->id, $receipt->instrumentExecution->proposition_id);
         $this->assertDatabaseMissing('participant_receipt_contexts', ['participant_id' => $f->viewer->id, 'receipt_id' => $receipt->id]);
         $this->assertTrue(app(PhaseGenerationService::class)->available($f->phase, 'proposition.variant'));
         DB::table('participant_receipt_contexts')->where('receipt_id', $receipt->id)->update(['cleared_at' => now()]);
