@@ -84,6 +84,38 @@ Persist Gate Instrument encounter, retaining its evidence/projection invariants.
 The structural-history fixture uses a second Participant's lawful Attestation
 before Persist development, replacing its obsolete Distinguish Instrument call.
 
+## Separate lifecycle regression after the clarification
+
+The authorized Attestation correction is complete. The original exact-Write
+prerequisite is not a remaining blocker.
+
+The real `HorizonProofCycleTest` journey nevertheless no longer reaches Commit.
+The identical test passes on main (`24a4ab0`, SQLite: 1 test / 110 assertions).
+With Stage 2A's lawful Persist-first observation policy it reaches Disperse,
+successfully attests that Write on the next Cycle, then repeatedly rests at
+Mediate. A controlled diagnostic at Cycle 5 observed:
+
+- one Disperse Write, with one effective Attestation and no originating Instrument;
+- one Mediate Read and one Gate, hence no distinct reconciliation pair;
+- no continuation-failure records and no additional Disperse Variant eligibility;
+- only Rest in Mediate, followed by another Cycle traversing the same route.
+
+This is a newly reproduced progression regression, distinct from unavailable
+Attestation and from established baseline failures. The end-to-end test remains
+enabled. Its expected Commit and both Receipt-consumption boundaries have not
+been weakened. Resolving it must not silently change structural generation,
+Mediation, measurement, Tragedy authority or evidence provenance. The remaining
+exact-Write history check in `PhaseGenerationService` is outside this authorized
+Attestation correction; its removal alone would not explain the absence of a
+continuation failure in this trace.
+
 ## Validation
 
-Validation is being rerun after the authorised Attestation clarification.
+The corrected focused suite passes locally: 197 tests / 2,841 assertions. The
+updated inference round-trip contracts pass (9 tests / 850 assertions), as does
+HTTP evidence visibility (1 test / 50 assertions). These retain structural,
+isolation, evidence-eligibility and phase-completion assertions.
+
+Final CI results and baseline comparison are recorded in PR #267. Local SQLite
+cannot validate PostgreSQL row locking; the two-connection allowance test runs
+in Core CI. Do not interpret the focused results as full lifecycle readiness.
