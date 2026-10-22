@@ -460,7 +460,7 @@ class TransactionLockOrderTest extends TestCase
         $secondPhase = $this->activePhase($second);
         // Concurrency component: two active Persist acquisition contexts share
         // a Gate. Full entry/Attestation histories are covered by lifecycle tests.
-        $secondPhase->forceFill(['kind' => PhaseKind::Persist, 'write_register' => 'frontier',
+        $secondPhase->forceFill(['kind' => PhaseKind::Persist, 'write_register' => $initial->write_register,
             'gate_proposition_id' => $target->id])->save();
         $second->forceFill(['current_proposition_id' => $target->id])->save();
         app(PotentialProjectionService::class)->refresh($substrate->id);
