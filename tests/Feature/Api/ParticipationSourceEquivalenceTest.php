@@ -10,6 +10,7 @@ use App\Services\ParticipantPromptFactory;
 use Opis\JsonSchema\Helper;
 use Opis\JsonSchema\Validator;
 use PHPUnit\Framework\Attributes\Group;
+use Tests\Fixtures\PersistCommitHttpFixture;
 use Tests\Support\ScriptedParticipationTestCase;
 
 #[Group('http-participation')]
@@ -17,6 +18,8 @@ use Tests\Support\ScriptedParticipationTestCase;
 #[Group('constitutional')]
 class ParticipationSourceEquivalenceTest extends ScriptedParticipationTestCase
 {
+    use PersistCommitHttpFixture;
+
     public function test_the_real_worker_uses_the_http_action_plan_and_stops_after_rest_and_recovery(): void
     {
         $this->startSubstrate();
@@ -72,9 +75,8 @@ class ParticipationSourceEquivalenceTest extends ScriptedParticipationTestCase
 
     public function test_connection_driven_and_manual_participation_share_the_complete_action_contract(): void
     {
-        $journey = $this->replayParticipationScript(__DIR__.'/../../Fixtures/participation/source-equivalence.json', 1);
-        $actor = $journey['participants']['source-equivalence'];
-        $origin = $journey['responses'][0]['current_proposition_id'];
+        [$actor, $initial] = $this->beginPersistJourney('source-equivalence');
+        $origin = $initial['current_proposition_id'];
         $connection = $this->postJson('/api/connections', [
             'provider' => 'openai', 'name' => 'Deterministic inference',
             'configuration' => ['model' => 'example-model'], 'credentials' => ['api_key' => 'test-only'],
@@ -83,12 +85,12 @@ class ParticipationSourceEquivalenceTest extends ScriptedParticipationTestCase
         $link = $this->postJson($url, ['connection_id' => $connection, 'is_enabled' => false])
             ->assertCreated()->json('data.id');
         $seen = [];
-        for ($step = 1; $step <= 47; $step++) {
+        for ($step = 0; $step < count($this->persistJourneySteps); $step++) {
             $manual = $this->readParticipation($actor);
             $this->patchJson($url.'/'.$link, ['is_enabled' => true])->assertOk();
             $connected = $this->readParticipation($actor);
             $this->assertSame($manual, $connected, 'Connection identity must not change participation semantics.');
-            $input = $this->nextScriptInput();
+            $input = $this->persistJourneyInput($step);
             $prompt = app(ParticipantPromptFactory::class)->make(Connection::findOrFail($connection), $connected);
             $this->assertSame($connected['plan']['schema'], $prompt['schema']);
             $transport = app(OpenAIResponseSchema::class)->fromCommons($prompt['schema']);
@@ -98,11 +100,10 @@ class ParticipationSourceEquivalenceTest extends ScriptedParticipationTestCase
             $this->assertTrue(app(Validator::class)->validate(Helper::toJSON($envelope), Helper::toJSON($transport))->isValid());
             $seen[$connected['plan']['phase']['kind']] = true;
             $seen[$input['action']] = true;
-            $after = $this->continueParticipationScript(1)['responses'][$step];
+            $after = $this->executePersistJourneyStep($actor, $step);
             $this->patchJson($url.'/'.$link, ['is_enabled' => false])->assertOk();
             $this->assertSame($after, $this->readParticipation($actor));
         }
-        $this->assertParticipationScriptComplete();
         foreach (['distinguish', 'persist', 'constrain', 'disperse', 'mediate', 'bias', 'order',
             'participant.rest', 'proposition.commit'] as $position) {
             $this->assertArrayHasKey($position, $seen);

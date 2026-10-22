@@ -156,7 +156,7 @@ class ParticipantContextTest extends TestCase
 
     #[DataProvider('evidencePhases')]
     #[Group('query')]
-    public function test_dense_instrument_and_commitment_contexts_fit_the_same_budget(PhaseKind $kind): void
+    public function test_dense_evidence_and_commitment_contexts_fit_the_same_budget(PhaseKind $kind): void
     {
         $this->freezeTime();
         $fixture = new ParticipantContextFixture;
@@ -173,11 +173,7 @@ class ParticipantContextTest extends TestCase
         $fixture->phase->forceFill(['kind' => $kind, 'gate_proposition_id' => $gate->id, 'write_register' => 'canon'])->save();
         app(PotentialProjectionService::class)->rebuild($fixture->substrate->id, false);
         $plan = app(ParticipationService::class)->stateFor($fixture->viewer)['plan'];
-        if ($kind !== PhaseKind::Order) {
-            $this->assertArrayHasKey('instrument.execute', $plan['schema']['$defs']['actions']);
-        } else {
-            $this->assertArrayNotHasKey('instrument.execute', $plan['schema']['$defs']['actions']);
-        }
+        $this->assertArrayNotHasKey('instrument.execute', $plan['schema']['$defs']['actions']);
         if ($kind === PhaseKind::Order) {
             $this->assertArrayHasKey('commitment', $plan);
             $this->assertArrayHasKey('closure', $plan['commitment']);

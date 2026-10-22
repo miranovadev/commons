@@ -110,8 +110,28 @@ Audit classification: exact-Write eligibility checks and old phase/advancement
 contracts are obsolete; historical execution/Receipt identity, duplicate-invocation
 checks, immutable ownership, memory capability exclusions and terminal authority
 remain valid. Low-level historical evidence fixtures do not authorize operations;
-operational fixtures must use Persist acquisition. Full lifecycle validation and
-archived HTTP transcript reconciliation remain required before completion.
+operational fixtures must use Persist acquisition. Historical CSV reports and
+superseded JSON transcripts remain historical evidence, not current contracts.
+
+The live HTTP Commit fixture is now a fixed, authored 86-action skeptical journey
+(`persist-skeptical-commit.json`). It checks Phase, Cycle, Gate, fresh structural
+identities and every observation's provenance without selecting actions at replay
+time. Source equivalence, recovery, successful-route revisit, repeated exploration
+and Committal-slot isolation use that lawful history. Its shared observations are
+all acquired at Persist Gates; no expressive Write requires its own execution.
+
+This chronology is not the old all-support trajectory: the existing mathematical
+gates can lawfully reject aligned evidence. The new journey reaches a real Commit
+in Settlement, not the archived fixture's asserted Emergence. Cross-Committal
+epoch isolation is tested within the same Horizon. Canonical Chirality remains
+frozen; fresh unattested descendants have event-born neutral local Chirality,
+not a recomputed population value. No measurement implementation was changed.
+
+The audit preserves creator-load transaction checks, historical execution queries,
+relevance/replay identity, Receipt capability restrictions and all terminal checks.
+`instrumentedIds` remains a historical query, with no production eligibility
+caller. The schema's default Instrument options now come from the authoritative
+Persist-Gate selector rather than defaulting to Write options.
 
 ## Validation
 

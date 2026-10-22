@@ -12,7 +12,6 @@ use App\Services\InputPlanService;
 use App\Services\PhaseGenerationService;
 use App\Services\PotentialChargeService;
 use App\Services\PropositionOptionService;
-use App\Services\ReceiptContextService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\Fixtures\SpentContinuationFixture;
@@ -85,9 +84,7 @@ class SpentContinuationTest extends TestCase
 
         // Testing the same route in the changed field appends a second fact.
         $again = $this->phase($activity, PhaseKind::Mediate);
-        foreach (app(HorizonReceiptService::class)->ordinaryAvailable($again) as $receipt) {
-            app(ReceiptContextService::class)->read($again->cycle->participant, $again, $receipt->id);
-        }
+        $this->assertNotEmpty(app(HorizonReceiptService::class)->ordinaryAvailable($again));
         $this->measure($activity, 0);
         $this->rest($again);
         $this->assertTrue($epochs->spentNow($activity, $disperse));
@@ -105,9 +102,7 @@ class SpentContinuationTest extends TestCase
         $this->initializeExhaustionFixture();
         [$signal, , $terminal, $return] = $this->testedLineage();
         $this->rest($terminal);
-        foreach (app(HorizonReceiptService::class)->ordinaryAvailable($return) as $receipt) {
-            app(ReceiptContextService::class)->read($return->cycle->participant, $return, $receipt->id);
-        }
+        $this->assertNotEmpty(app(HorizonReceiptService::class)->ordinaryAvailable($return));
         foreach (Proposition::where('tier', 'expressive')->get() as $node) {
             $this->measure($node, 1);
         }
