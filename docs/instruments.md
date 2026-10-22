@@ -1,5 +1,14 @@
 # Instruments and immutable observations
 
+## Persist-only, phase-neutral Instrumentation (Stage 2A)
+
+One completed Instrument execution per Participant Cycle is permitted in Persist,
+against the exact current Gate. It leaves Phase, Cycle and position unchanged and
+returns fresh cognition with the ordinary Receipt automatically loaded for its
+creator. Completed unsuccessful observations spend the allowance; infrastructure
+failures without an execution/Receipt do not. Receipt consumption or unloading
+does not restore it. See [the Stage 2A contract](epistemic-evidence-stage-2a.md).
+
 ## Hyperlink Artifact preservation (Stage 1)
 
 Successful Hyperlink observations now preserve the exact received resource as a
@@ -47,7 +56,7 @@ The forms are mutually exclusive. The schema enumerates replay IDs for each exac
 eligible Instrument target. Catalogue visibility or replay capability alone grants
 no execution authority. The server restores the immutable originating invocation;
 the Participant does not restate its URL or query. Replay follows ordinary Instrument
-eligibility and Phase progression. Order admits no Instrument execution.
+Persist Gate eligibility and the once-per-Cycle allowance, without Phase progression.
 
 Loading is separate: optional Gate `receipt_options.load/unload` accompanies a
 successful forward contribution atomically. There is no standalone Receipt Read
@@ -72,8 +81,8 @@ The original observed Proposition is preserved; new Receipts ground it. Legacy A
 Receipt, execution result, invocation or provenance is rewritten. Domain model
 updates reject changes to saved Receipts and originating invocation fields.
 
-Execution and Replay never load a Receipt or create active Reinforcement.
-Explicit participant loading through Gate desired-state options is required. Even if multiple equivalent or changed observations
+Execution and Replay automatically load the new Receipt for its performer under C2.
+Qualifying loaded uptake uses the existing Reinforcement rules. Even if multiple equivalent or changed observations
 are loaded, each Participant still contributes at most one counted Reinforcement
 per active classification under the evidence inheritance rules. Reclassification
 attaches its selected Commit Region Receipt; committed results remain frozen.

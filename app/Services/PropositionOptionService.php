@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\PhaseKind;
+use App\Models\InstrumentExecution;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
@@ -95,24 +96,20 @@ final class PropositionOptionService
             ));
     }
 
-    /** Instruments support Written propositions, never incidental Gate neighbours. */
+    /** Persist observes its exact Gate once per Participant Cycle; Receipt uptake is independent. */
     public function instrumentOptionsFor(Phase $phase, ?ParticipationContext $context = null): Collection
     {
-        if ($phase->kind === PhaseKind::Order) {
+        if ($phase->kind !== PhaseKind::Persist || $phase->completed_at !== null
+            || $phase->cycle->completed_at !== null
+            || InstrumentExecution::query()->where('status', 'completed')
+                ->whereHas('phase', fn ($query) => $query->where('cycle_id', $phase->cycle_id))->exists()) {
             return collect();
         }
 
-        $writes = $this->unspentWrites($phase, $context);
-        if (in_array($phase->kind, [PhaseKind::Distinguish, PhaseKind::Disperse], true)) {
-            $receipts = app(HorizonReceiptService::class);
-            $instrumented = $receipts->instrumentedIds($phase, $writes->pluck('id'));
-            $shared = $receipts->ordinaryAvailable($phase, $context)->isNotEmpty();
+        $gate = $context?->propositions->get($phase->gate_proposition_id) ?? $phase->gate()->first();
 
-            return $writes->whereNotIn('id', $this->traversalOptionsFor($phase, $context)->pluck('id'))
-                ->filter(fn ($node) => ! $shared || ! $instrumented->contains($node->id))->values();
-        }
-
-        return $writes;
+        return $gate !== null && $this->availability->mutable($gate, $context)
+            ? collect([$gate]) : collect();
     }
 
     /**

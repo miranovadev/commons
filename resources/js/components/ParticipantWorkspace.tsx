@@ -84,6 +84,10 @@ export function ParticipantWorkspace({ plan, availableActions, onAction, onSubmi
                         <Button size="compact-xs" variant="subtle" color="gray" className="reconcile-action" leftSection={<OperationIcon operation="reconcile" />}
                           onClick={() => onAction('proposition.reconcile', { other_proposition_id: item.id })}>Reconcile</Button>
                       </Group>}
+                      {item.id === gate.id && allowed('instrument.execute') && targets.get('instrument.execute')?.has(item.id) && <Group className="write-option-card__context-actions" gap={4}>
+                        <Button size="compact-xs" variant="subtle" color="gray" leftSection={<IconTool size={13} />}
+                          onClick={() => onAction('instrument.execute', { proposition_id: item.id })}>Instrument</Button>
+                      </Group>}
                       {item.id === gate.id && allowed('proposition.variant') && <Group className="write-option-card__context-actions" gap={4}>
                         <Button size="compact-xs" variant="subtle" color="gray" leftSection={<OperationIcon operation="variant" />}
                           onClick={() => onAction('proposition.variant')}>Variant</Button>

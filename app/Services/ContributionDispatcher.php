@@ -76,6 +76,12 @@ final readonly class ContributionDispatcher
                 && ! $this->ownership->ownedBy($gate, $participant)) {
                 throw new DomainException('Reclassification requires ownership of the Gate.');
             }
+            // Recheck under the shared root lock, including when the Phase has not
+            // advanced since another Instrument request completed.
+            if ($action === 'instrument.execute'
+                && ! $this->options->instrumentOptionsFor($phase)->contains('id', $input['proposition_id'] ?? null)) {
+                throw new ConflictHttpException('Instrumentation requires the active Persist Gate and an unused Cycle allowance.');
+            }
             $targets = match ($action) {
                 'attestation.create' => $this->options->attestationOptionsFor($phase),
                 'instrument.execute' => $this->options->instrumentOptionsFor($phase),

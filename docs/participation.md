@@ -242,10 +242,10 @@ remain in place, and middle actions wrap without moving the directional slots.
 The UI renders Rest only from the authoritative schema, never from its own
 interpretation of the rest_available flag or visible cards.
 
-**No available move** means the current Phase has zero admissible Phase-advancing actions. The backend separately derives `no_remaining_potential` from an evidenced failure. That reason is a numerical diagnostic only. Neither Rest reason creates Tragedy or exhaustion.
+**No available move** means the current Phase has zero admissible contributions, including its optional Persist Instrument allowance. The backend separately derives `no_remaining_potential` from an evidenced failure. That reason is a numerical diagnostic only. Neither Rest reason creates Tragedy or exhaustion.
 The server first applies all phase-native, ownership, target and Commitment
-constraints, then specializes the complete action schema. When no Phase-advancing
-action remains it sets `rest_available: true` and injects `participant.rest`.
+constraints, then specializes the complete action schema. When no admissible contribution
+remains it sets `rest_available: true` and injects `participant.rest`.
 Informational Receipt metadata does not block Rest. Rest changes no Receipt load state.
 
 Rest is never a preference over a Phase-advancing action. An available
@@ -577,8 +577,7 @@ Proposition references remain metadata without standalone Load controls.
 `instrument: {"replay_receipt_id": "R"}` and the exact schema-authorized
 `proposition_id`. It restores the stored invocation, preserves ordinary eligibility
 and equivalent-evidence exclusions, and creates a new Proposition-grounded Receipt
-with replay provenance. Neither fresh execution nor replay automatically loads
-source or result. There are no standalone Receipt Read or Replay action families.
+with replay provenance. Fresh execution and replay automatically load the result for their performer under C2. Instrumentation is Persist-only, targets the current Gate, spends one completed-execution allowance per Cycle, and refreshes cognition without advancing the Phase. There are no standalone Receipt Read or Replay action families.
 
 A qualifying direct expressive Write encounter with resulting canonical Charge zero establishes the Region’s unique Tragedy and Receipt and permanently terminates that continuation. Resolution prohibits Variant and Revise throughout the Region while preserving ordinary authority on viable routes. Exhaustion follows atomically only when no lawful continuation remains; viable siblings and live committed descendants prevent it. Descendant Exhaustion closes only its corresponding route. No second catastrophe, Rest or Receipt consumption is required. Passive measurements and reads establish neither event. Recovery follows actual recorded backward lineage. See the approved [Tragedy/Resolution lifecycle](tragedy-resolution-target.md). Qualifying encounters include expressive birth, Attestation, Instrument and lawful expressive Traverse, including already-zero targets. An Exhausted Region offers Rest only. Historical alternatives remain visible and non-actionable.
 
