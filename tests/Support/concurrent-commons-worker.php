@@ -163,7 +163,7 @@ function contributeWithRetry(Participant $participant, string $phaseId, array $i
                         'proposition_id' => $actions['proposition.traverse']['properties']['proposition_id']['enum'][0]];
                 } elseif (isset($actions['instrument.execute'])) {
                     $contribution = ['action' => 'instrument.execute', 'proposition_id' => $actions['instrument.execute']['properties']['proposition_id']['enum'][0],
-                        'instrument' => ['kind' => 'citation', 'reference' => $phase->gate_proposition_id]];
+                        'instrument' => ['kind' => 'citation', 'reference' => $phase->cycle->entry_committal_id]];
                 } else {
                     throw new RuntimeException('No forward contribution is available to this concurrency worker.');
                 }
