@@ -23,8 +23,25 @@ final readonly class PhaseGenerationService
         private CausalWriteService $writes,
     ) {}
 
+    /** Shared catalogue availability selects acquisition or generation, never attachment. */
+    public function epistemicActionAvailable(Phase $phase, string $action, ?ParticipationContext $context = null): bool
+    {
+        // Disperse activates this policy only when Preparation and reading exist.
+        if ($phase->kind !== PhaseKind::Persist
+            || ! in_array($action, ['instrument.execute', 'proposition.variant', 'proposition.revise'], true)) {
+            return true;
+        }
+
+        $available = app(HorizonReceiptService::class)->ordinaryAvailable($phase, $context)->isNotEmpty();
+
+        return $action === 'instrument.execute' ? ! $available : $available;
+    }
+
     public function available(Phase $phase, string $action, ?ParticipationContext $context = null, ?Proposition $position = null): bool
     {
+        if (! $this->epistemicActionAvailable($phase, $action, $context)) {
+            return false;
+        }
         if (in_array($action, ['proposition.variant', 'proposition.revise'], true)
             && DB::table('tragedies')->where('governing_committal_id', $phase->cycle->entry_committal_id)->exists()) {
             return false;

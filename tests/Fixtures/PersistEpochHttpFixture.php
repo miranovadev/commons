@@ -22,11 +22,19 @@ trait PersistEpochHttpFixture
         $persist = $state['current_proposition_id'];
         $this->contribute($actor, ['action' => 'participant.rest']);
         $this->judge($actor, $a);
-        $this->observePersist($actor, $a, 'second');
+        // The first observation is still available until Constrain consumes it.
+        $this->assertActionUnavailable($this->readParticipation($actor), 'instrument.execute');
         $state = $this->judge($actor, $persist);
         $receipt = $state['plan']['schema']['$defs']['actions']['proposition.reclassify']['properties']['receipt_id']['enum'][0];
         $slot = $this->contribute($actor, ['action' => 'proposition.reclassify', 'proposition_id' => $persist, 'receipt_id' => $receipt]);
         $constrain = $slot['current_proposition_id'];
+        $state = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Disperse opportunity B']);
+        $b = $state['current_proposition_id'];
+        $this->contribute($actor, ['action' => 'participant.rest']);
+        $this->contribute($actor, ['action' => 'proposition.traverse', 'proposition_id' => $a]);
+        $this->observePersist($actor, $a, 'third');
+        // Constrain consumed the first observation. The returning actor's new
+        // Persist observation now supplies shared evidence for both observers.
         $observer = $this->joinParticipant('disperse-observer');
         $this->enterParticipant($observer);
         $this->judge($observer, $a);
@@ -37,11 +45,6 @@ trait PersistEpochHttpFixture
         $this->judge($witness, $a);
         $this->judge($witness, $persist);
         $witnessState = $this->judge($witness, $constrain);
-        $state = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Disperse opportunity B']);
-        $b = $state['current_proposition_id'];
-        $this->contribute($actor, ['action' => 'participant.rest']);
-        $this->contribute($actor, ['action' => 'proposition.traverse', 'proposition_id' => $a]);
-        $this->observePersist($actor, $a, 'third');
         $this->contribute($actor, ['action' => 'proposition.traverse', 'proposition_id' => $persist]);
         $this->judge($actor, $constrain);
         $this->judge($actor, $b);

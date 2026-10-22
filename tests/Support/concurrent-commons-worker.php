@@ -88,6 +88,24 @@ try {
             }
             throw new RuntimeException('Concurrent duplicate generation was accepted.');
         })(),
+        'generation-conflict', 'receipt-generation-conflict' => (function () use ($input): void {
+            $participant = Participant::findOrFail($input['participant_id']);
+            $plan = app(InputPlanService::class)->forParticipant($participant);
+            try {
+                if ($input['operation'] === 'receipt-generation-conflict') {
+                    app(ContributionDispatcher::class)->dispatch($participant, Phase::findOrFail($input['phase_id']), $input['contribution']);
+                } else {
+                    app(ParticipationService::class)->contribute($participant, $input['phase_id'], $input['contribution'], $plan['schema']);
+                }
+            } catch (ConflictHttpException $exception) {
+                if (str_contains($exception->getMessage(), 'field changed') || str_contains($exception->getMessage(), 'options changed')
+                    || str_contains($exception->getMessage(), 'Shared Receipt availability changed')) {
+                    return;
+                }
+                throw $exception;
+            }
+            throw new RuntimeException('A waiting contribution ignored shared Receipt consumption.');
+        })(),
         'read' => (function () use ($app, $input): void {
             $kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
             $request = Request::create($input['url'], 'GET', server: ['HTTP_ACCEPT' => 'application/json']);

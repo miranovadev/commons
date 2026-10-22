@@ -10,6 +10,7 @@ use App\Models\Receipt;
 use App\Services\ContributionDispatcher;
 use App\Services\Evidence\HyperlinkVerifier;
 use App\Services\ParticipationService;
+use App\Services\PhaseGenerationService;
 use App\Services\PotentialProjectionService;
 use App\Services\PropositionMeasurementService;
 use App\Services\PropositionOptionService;
@@ -71,7 +72,8 @@ class EpistemicInstrumentationTest extends TestCase
         $this->assertSame($f->gate->id, $f->viewer->fresh()->current_proposition_id);
         $this->assertArrayHasKey('instrument.execute', $before['plan']['schema']['$defs']['actions']);
         $this->assertArrayNotHasKey('instrument.execute', $after['plan']['schema']['$defs']['actions']);
-        $this->assertSame(array_values(array_diff(array_keys($before['plan']['schema']['$defs']['actions']), ['instrument.execute'])), array_keys($after['plan']['schema']['$defs']['actions']));
+        $this->assertArrayNotHasKey('proposition.variant', $before['plan']['schema']['$defs']['actions']);
+        $this->assertArrayHasKey('proposition.variant', $after['plan']['schema']['$defs']['actions']);
         $receipt = InstrumentExecution::where('phase_id', $f->phase->id)->sole()->receipt;
         $this->assertSame($f->gate->id, $receipt->receiptable_id);
         $this->assertContains($receipt->id, array_column($after['plan']['receipts'], 'id'));
@@ -145,14 +147,17 @@ class EpistemicInstrumentationTest extends TestCase
         $phase = $f->phase->replicate();
         $phase->cycle_id = $cycle->id;
         $phase->save();
-        $this->assertCount(1, app(PropositionOptionService::class)->instrumentOptionsFor($phase->fresh()));
+        $this->assertCount(0, app(PropositionOptionService::class)->instrumentOptionsFor($phase->fresh()));
+        $this->assertTrue(app(PhaseGenerationService::class)->available($phase->fresh(), 'proposition.variant'));
         $f->phase->cycle->forceFill(['completed_at' => now()])->save();
         $next = $f->phase->cycle->replicate();
         $next->forceFill(['completed_at' => null, 'sequence' => $next->sequence + 1])->save();
         $nextPhase = $f->phase->replicate();
         $nextPhase->cycle_id = $next->id;
         $nextPhase->save();
-        $this->assertCount(1, app(PropositionOptionService::class)->instrumentOptionsFor($nextPhase->fresh()));
+        $this->assertCount(0, app(PropositionOptionService::class)->instrumentOptionsFor($nextPhase->fresh()));
+        // An unused allowance does not override the shared evidence supply.
+        $this->assertFalse(InstrumentExecution::whereHas('phase', fn ($q) => $q->where('cycle_id', $next->id))->exists());
     }
 
     public function test_instrument_then_genuine_persist_action_advances_and_records_birth(): void
