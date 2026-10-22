@@ -114,7 +114,7 @@ class WriteOnceTest extends TestCase
         $this->assertArrayNotHasKey('proposition.variant', $plan['schema']['$defs']['actions']);
         $this->assertSame([], $this->targets($plan, 'proposition.revise'));
         $this->assertContains($write->id, $this->targets($plan, 'attestation.create'));
-        $this->assertContains($write->id, $this->targets($plan, 'instrument.execute'));
+        $this->assertSame([$gate->id], $this->targets($plan, 'instrument.execute'));
         $this->assertFalse($plan['rest_available']);
         $this->assertArrayNotHasKey('participant.rest', $plan['schema']['$defs']['actions']);
         app(ContributionDispatcher::class)->dispatch($participant, $return, [
@@ -150,7 +150,7 @@ class WriteOnceTest extends TestCase
         $this->assertUnavailable($participant, $return, $input);
         $plan = $this->plan($participant);
         $this->assertContains($revised->id, $this->targets($plan, 'attestation.create'));
-        $this->assertContains($revised->id, $this->targets($plan, 'instrument.execute'));
+        $this->assertSame([$gate->id], $this->targets($plan, 'instrument.execute'));
         $this->assertSame([], $this->targets($plan, 'proposition.revise'));
         $this->assertFalse($plan['rest_available']);
     }
@@ -305,7 +305,7 @@ class WriteOnceTest extends TestCase
         $this->phase($participant, PhaseKind::Bias, 'canon', $a);
         $local = $this->plan($participant);
         $this->assertContains($written->id, $this->targets($local, 'attestation.create'));
-        $this->assertContains($written->id, $this->targets($local, 'instrument.execute'));
+        $this->assertSame([], $this->targets($local, 'instrument.execute'));
         $other = $this->participant($participant->substrate, 'other');
         $otherPhase = $this->phase($other, PhaseKind::Bias, 'canon', $b);
         app(ContributionService::class)->validate($other, $this->reclassificationInputFixture($otherPhase, $b));

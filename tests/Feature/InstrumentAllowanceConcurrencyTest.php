@@ -33,8 +33,8 @@ class InstrumentAllowanceConcurrencyTest extends TestCase
         if (DB::getDriverName() !== 'pgsql') {
             $this->markTestSkipped('Requires independent PostgreSQL connections and row locks.');
         }
-        $f = new ParticipantContextFixture(1, 0, false);
-        $gate = $f->node($f->seed, 'activity', position: PhaseKind::Distinguish);
+        $f = DB::transaction(fn () => new ParticipantContextFixture(1, 0, false));
+        $gate = DB::transaction(fn () => $f->node($f->seed, 'activity', position: PhaseKind::Distinguish));
         $f->phase->forceFill(['kind' => PhaseKind::Persist, 'gate_proposition_id' => $gate->id, 'write_register' => 'frontier'])->save();
         $f->viewer->forceFill(['current_proposition_id' => $gate->id])->save();
         $input = ['action' => 'instrument.execute', 'proposition_id' => $gate->id,

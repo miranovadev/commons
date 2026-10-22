@@ -114,39 +114,34 @@ class InputSchemaServiceTest extends TestCase
         $expected = [
             PhaseKind::Distinguish->value => [
                 'proposition.variant',
-                'instrument.execute',
                 'attestation.create',
                 'proposition.traverse',
             ],
             PhaseKind::Persist->value => [
+                'instrument.execute',
                 'proposition.variant',
                 'proposition.revise',
-                'instrument.execute',
                 'attestation.create',
                 'proposition.traverse',
             ],
             PhaseKind::Constrain->value => [
                 'proposition.revise',
                 'proposition.reclassify',
-                'instrument.execute',
                 'attestation.create',
                 'proposition.traverse',
             ],
             PhaseKind::Disperse->value => [
                 'proposition.variant',
                 'proposition.revise',
-                'instrument.execute',
                 'attestation.create',
                 'proposition.traverse',
             ],
             PhaseKind::Mediate->value => [
                 'proposition.reconcile',
-                'instrument.execute',
                 'attestation.create',
             ],
             PhaseKind::Bias->value => [
                 'proposition.reclassify',
-                'instrument.execute',
                 'attestation.create',
                 'proposition.traverse',
             ],

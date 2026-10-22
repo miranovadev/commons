@@ -160,10 +160,9 @@ final class PropositionOptionService
         $expressive = in_array($phase->kind, [PhaseKind::Distinguish, PhaseKind::Disperse], true);
 
         $writes = $this->unspentWrites($phase, $context);
-        $instrumented = $expressive ? app(HorizonReceiptService::class)->instrumentedIds($phase, $writes->pluck('id')) : collect();
 
         return $writes->filter(fn (Proposition $node): bool => $this->availability->mutable($node, $context)
-            && ($expressive ? ($shared && $instrumented->contains($node->id))
+            && ($expressive ? $shared
                 : ($shared || $this->evidence->canAttest($node, $context))))->values();
     }
 

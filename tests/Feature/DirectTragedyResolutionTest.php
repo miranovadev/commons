@@ -15,6 +15,7 @@ use App\Services\ExhaustionService;
 use App\Services\InputPlanService;
 use App\Services\Participation\ParticipationContext;
 use App\Services\PhaseGenerationService;
+use App\Services\PhaseProgressionService;
 use App\Services\PropositionOptionService;
 use App\Services\TerminalContinuationService;
 use App\Services\TragedyService;
@@ -56,7 +57,7 @@ class DirectTragedyResolutionTest extends TestCase
     public function test_authorised_instrument_encounters_its_existing_zero_target(): void
     {
         $fixture = new GovernedExpressionFixture;
-        $fixture->writePersist();
+        $fixture->phase = app(PhaseProgressionService::class)->advance($fixture->phase, $fixture->expression);
         $this->measure($fixture->expression, 1);
         $this->resolveExpressiveFieldFixture(1);
         app(ContributionDispatcher::class)->dispatch($fixture->actor, $fixture->phase,
@@ -78,7 +79,7 @@ class DirectTragedyResolutionTest extends TestCase
         $fixture = new GovernedExpressionFixture;
         $fixture->writePersist();
         app(ContributionDispatcher::class)->dispatch($fixture->actor, $fixture->phase,
-            ['action' => 'instrument.execute', 'proposition_id' => $fixture->expression->id,
+            ['action' => 'instrument.execute', 'proposition_id' => $fixture->phase->gate_proposition_id,
                 'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/attested-terminal']]);
         $this->measure($fixture->expression, 1);
         $this->resolveExpressiveFieldFixture($result);
@@ -92,7 +93,9 @@ class DirectTragedyResolutionTest extends TestCase
     {
         $fixture = new GovernedExpressionFixture;
         $dispatcher = app(ContributionDispatcher::class);
-        $dispatcher->dispatch($fixture->actor, $fixture->phase,
+        $persist = $fixture->phase->replicate();
+        $persist->forceFill(['kind' => PhaseKind::Persist, 'gate_proposition_id' => $fixture->expression->id, 'write_register' => $fixture->phase->cycle->contextHorizon->domain->registerFor(PhaseKind::Persist)])->save();
+        $dispatcher->dispatch($persist->cycle->participant, $persist,
             ['action' => 'instrument.execute', 'proposition_id' => $fixture->expression->id,
                 'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/traverse-terminal']]);
         $dispatcher->dispatch($fixture->actor, $fixture->phase,
@@ -169,9 +172,10 @@ class DirectTragedyResolutionTest extends TestCase
         $sibling = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
         $this->encounter($first);
         $this->resolveExpressiveFieldFixture(.5);
+        $persist = $this->phase($sibling, PhaseKind::Persist);
         $this->assertContains($sibling->id, app(PropositionOptionService::class)
-            ->instrumentOptionsFor($sibling->phase)->pluck('id'));
-        app(ContributionDispatcher::class)->dispatch($sibling->phase->cycle->participant, $sibling->phase,
+            ->instrumentOptionsFor($persist)->pluck('id'));
+        app(ContributionDispatcher::class)->dispatch($persist->cycle->participant, $persist,
             ['action' => 'instrument.execute', 'proposition_id' => $sibling->id,
                 'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/surviving-route']]);
         $this->assertDatabaseCount('terminal_encounters', 1);
@@ -357,7 +361,7 @@ class DirectTragedyResolutionTest extends TestCase
         $this->assertFalse(app(ExhaustionService::class)->unavailable($child));
         foreach ([null, new ParticipationContext($phase)] as $context) {
             $this->assertNotContains($source->id, $options->traversalOptionsFor($phase, $context)->pluck('id'));
-            $this->assertContains($sibling->id, $options->instrumentOptionsFor($phase, $context)->pluck('id'));
+            $this->assertTrue($options->instrumentOptionsFor($phase, $context)->isEmpty(), 'Bias never offers Instrumentation');
         }
         $this->assertSame($snapshot, $child->fresh()->commitmentSnapshot->getAttributes());
         $this->expectException(DomainException::class);

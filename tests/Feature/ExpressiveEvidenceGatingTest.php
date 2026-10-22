@@ -51,20 +51,22 @@ class ExpressiveEvidenceGatingTest extends TestCase
     }
 
     #[DataProvider('expressivePhases')]
-    public function test_empty_position_then_instrument_then_attestation(PhaseKind $kind): void
+    public function test_empty_position_then_shared_persist_evidence_then_attestation(PhaseKind $kind): void
     {
         $phase = $this->position($kind);
         $this->assertArrayHasKey('proposition.variant', $this->actions($phase));
         $write = app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
             ['action' => 'proposition.variant', 'statement' => 'Explore this possibility']);
         $actions = $this->actions($phase);
-        $this->assertArrayHasKey('instrument.execute', $actions);
+        $this->assertArrayNotHasKey('instrument.execute', $actions);
         $this->assertArrayNotHasKey('proposition.variant', $actions);
         $this->assertArrayNotHasKey('attestation.create', $actions);
         $this->assertArrayNotHasKey('proposition.reclassify', $actions);
 
         $instruments = app(InstrumentExecutionService::class);
-        $receipt = $instruments->complete($instruments->start($phase, $write, 'citation', $this->origin->id), $write);
+        $observation = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
+        $persist = $this->phase($observation, PhaseKind::Persist);
+        $receipt = $instruments->complete($instruments->start($persist, $observation, 'citation', $this->origin->id), $observation);
         $actions = $this->actions($phase);
         $this->assertArrayHasKey('attestation.create', $actions);
         $this->assertArrayNotHasKey('instrument.execute', $actions);
@@ -138,8 +140,8 @@ class ExpressiveEvidenceGatingTest extends TestCase
             ['action' => 'proposition.variant', 'statement' => 'The next independent possibility']);
         $this->assertFalse($generation->available($phase, 'proposition.variant'));
         $actions = $this->actions($phase);
-        $this->assertContains($second->id, $actions['instrument.execute']['properties']['proposition_id']['enum']);
-        $this->assertNotContains($second->id, $actions['attestation.create']['properties']['proposition_id']['enum'] ?? []);
+        $this->assertArrayNotHasKey('instrument.execute', $actions);
+        $this->assertContains($second->id, $actions['attestation.create']['properties']['proposition_id']['enum'] ?? []);
         $instruments->complete($instruments->start($phase, $second, 'citation', $this->origin->id), $second);
         $this->assertFalse($generation->available($phase, 'proposition.variant'));
         $vote = (new Attestation)->forceFill(['phase_id' => $phase->id, 'proposition_id' => $second->id, 'direction' => 'support']);

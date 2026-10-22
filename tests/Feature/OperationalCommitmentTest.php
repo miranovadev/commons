@@ -190,15 +190,19 @@ class OperationalCommitmentTest extends TestCase
         $this->publishPotentialFixture($reader);
         $state = app(ParticipationService::class)->stateFor($reader);
         $this->assertContains($candidate->id, array_column($state['plan']['write_options'], 'id'));
-        $this->assertContains($candidate->id, $state['plan']['schema']['$defs']['actions']['instrument.execute']['properties']['proposition_id']['enum']);
-        $state = $this->move($reader, [
-            'action' => 'instrument.execute', 'proposition_id' => $candidate->id,
-            'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/concord'],
-        ]);
+        $this->assertArrayNotHasKey('instrument.execute', $state['plan']['schema']['$defs']['actions']);
+        // The existing classification Receipt isolates the unchanged Commit eligibility rule.
+        // This controlled Order placement does not claim Instrument-driven progression.
+        $bias->forceFill(['completed_at' => now()])->save();
+        $bias->cycle->forceFill(['completed_at' => now()])->save();
+        $this->phase($reader, PhaseKind::Order, $candidate->register, $candidate);
+        $reader->forceFill(['current_proposition_id' => $candidate->id])->save();
+        $this->publishPotentialFixture($reader);
+        $state = app(ParticipationService::class)->stateFor($reader);
         $this->assertSame('order', $state['plan']['phase']['kind']);
         $this->assertTrue($state['plan']['commitment']['requirements']['receipt']);
         $this->assertFalse($state['plan']['commitment']['requirements']['attestation']);
-        $receipt = $candidate->instrumentExecutions()->with('receipt')->firstOrFail()->receipt;
+        $receipt = app(PropositionStateService::class)->receipts($candidate)->firstOrFail();
         $this->assertSame(['participant.rest'], array_keys($state['plan']['schema']['$defs']['actions']));
         $attestor = $this->participant($this->participant->substrate, 'attestor');
         $this->phase($attestor, PhaseKind::Bias, 'concord', $left);
@@ -208,7 +212,7 @@ class OperationalCommitmentTest extends TestCase
         $this->move($reader, ['action' => 'proposition.commit']);
         $committed = Proposition::findOrFail($reader->fresh()->current_proposition_id);
         $this->assertSame('committal', $committed->tier);
-        $this->assertSame($candidate->id, $receipt->fresh()->receiptable_id);
+        $this->assertSame($left->id, $receipt->fresh()->receiptable_id);
         $this->assertSame(0, $committed->instrumentExecutions()->count());
     }
 
@@ -228,18 +232,22 @@ class OperationalCommitmentTest extends TestCase
         }
     }
 
-    public function test_constrain_instrument_targets_are_specialised_and_execute_normally(): void
+    public function test_constrain_rejects_instrument_without_advancing_or_creating_evidence(): void
     {
         [$reader, $phase, $candidate] = $this->instrumentFixture(PhaseKind::Constrain);
         $this->publishPotentialFixture($reader);
         $state = app(ParticipationService::class)->stateFor($reader);
-        $this->assertSame([$candidate->id], $state['plan']['schema']['$defs']['actions']['instrument.execute']['properties']['proposition_id']['enum']);
-        $state = $this->move($reader, ['action' => 'instrument.execute', 'proposition_id' => $candidate->id,
-            'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/constrain']]);
-        $this->assertSame('disperse', $state['plan']['phase']['kind']);
-        $this->assertNotNull($phase->fresh()->completed_at);
-        $this->assertNull($phase->cycle->fresh()->completed_at);
-        $this->assertSame($candidate->id, $candidate->instrumentExecutions()->with('receipt')->firstOrFail()->receipt->receiptable_id);
+        $this->assertArrayNotHasKey('instrument.execute', $state['plan']['schema']['$defs']['actions']);
+        $before = [Receipt::count(), InstrumentExecution::count()];
+        try {
+            $this->move($reader, ['action' => 'instrument.execute', 'proposition_id' => $candidate->id,
+                'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/constrain']]);
+            $this->fail('Constrain must reject Instrumentation.');
+        } catch (\InvalidArgumentException) {
+            $this->assertSame($before, [Receipt::count(), InstrumentExecution::count()]);
+            $this->assertNull($phase->fresh()->completed_at);
+            $this->assertNull($phase->cycle->fresh()->completed_at);
+        }
     }
 
     public function test_order_rejects_pre_terminal_actions_even_on_a_receipted_write(): void

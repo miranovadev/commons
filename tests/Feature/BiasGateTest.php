@@ -223,7 +223,7 @@ class BiasGateTest extends TestCase
         $this->assertSame([$this->gate->id], $bias->forPhase($this->phase)->pluck('id')->all());
     }
 
-    public function test_inference_keeps_bias_gate_ids_separate_from_write_instrument_and_attestation_ids(): void
+    public function test_inference_keeps_bias_gate_ids_separate_from_write_attestation_ids_and_rejects_instruments(): void
     {
         $this->fixture();
         $this->attest($this->gate, 'support');
@@ -231,7 +231,7 @@ class BiasGateTest extends TestCase
         $this->edge($this->gate, $concord);
         $this->receiptFixture($concord);
         $schema = $this->plan()['schema'];
-        $this->assertArrayHasKey('instrument.execute', $schema['$defs']['actions']);
+        $this->assertArrayNotHasKey('instrument.execute', $schema['$defs']['actions']);
         $this->assertArrayHasKey('attestation.create', $schema['$defs']['actions']);
         $transport = app(OpenAIResponseSchema::class)->fromCommons($schema);
         $variant = $transport['properties']['contribution']['anyOf'][0];
@@ -242,7 +242,7 @@ class BiasGateTest extends TestCase
             $this->assertInput($transport, ['contribution' => array_replace($empty, $input)], $target->is($this->gate));
             $input = ['action' => 'instrument.execute', 'proposition_id' => $target->id,
                 'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/concord']];
-            $this->assertInput($transport, ['contribution' => array_replace($empty, $input)], $target->is($concord));
+            $this->assertInput($transport, ['contribution' => array_replace($empty, $input)], false);
             $input = ['action' => 'attestation.create', 'proposition_id' => $target->id, 'direction' => 'support'];
             $this->assertInput($transport, ['contribution' => array_replace($empty, $input)], $target->is($concord));
         }

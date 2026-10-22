@@ -128,7 +128,7 @@ class ParticipantContextTest extends TestCase
         $prompt = app(ParticipantPromptFactory::class)->make($connection, $state);
         $packet = json_decode($prompt['user'], true, flags: JSON_THROW_ON_ERROR);
         $schema = $packet['actions'];
-        $this->assertArrayHasKey('instrument.execute', $schema['$defs']['actions']);
+        $this->assertArrayNotHasKey('instrument.execute', $schema['$defs']['actions']);
         $transportSchema = $prompt['schema'];
         unset($transportSchema['x-commons']['description'], $transportSchema['$comment']);
         $this->assertSame($schema, $transportSchema);
