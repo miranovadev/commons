@@ -117,7 +117,7 @@ class PropositionSearchTest extends TestCase
         $normalized = app(InstrumentInvocation::class)->normalize(['kind' => 'proposition_search']);
         $this->assertSame(['kind' => 'proposition_search', 'limit' => PropositionCollection::DEFAULT_LIMIT], $normalized);
 
-        $schema = app(InputSchemaService::class)->forPhase(PhaseKind::Constrain, ['instrument.execute']);
+        $schema = app(InputSchemaService::class)->forPhase(PhaseKind::Persist, ['instrument.execute']);
         $service = app(ContributionService::class);
         foreach ([null, 1, 10] as $limit) {
             $instrument = ['kind' => 'proposition_search'];

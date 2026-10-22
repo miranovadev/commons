@@ -52,8 +52,8 @@ trait HorizonCycleFixture
             $lastCommitment = $plan['commitment'] ?? $lastCommitment;
             $observe?->__invoke($participant, $state);
             $actions = $plan['schema']['$defs']['actions'];
-            $action = collect(['proposition.commit', 'proposition.reclassify', 'proposition.variant', 'proposition.reconcile',
-                'proposition.traverse', 'attestation.create', 'instrument.execute', 'participant.rest'])
+            $action = collect(['instrument.execute', 'proposition.commit', 'proposition.reclassify', 'proposition.variant', 'proposition.reconcile',
+                'proposition.traverse', 'attestation.create', 'participant.rest'])
                 ->first(fn ($candidate) => isset($actions[$candidate]));
             $definition = $actions[$action];
             $input = ['action' => $action];

@@ -5,11 +5,16 @@ namespace Tests\Feature;
 use App\Enums\SupersessionStrength;
 use App\Models\Attestation;
 use App\Models\InstrumentExecution;
+use App\Models\Participant;
+use App\Models\Phase;
 use App\Models\Receipt;
 use App\Models\Supersession;
 use App\Services\ContributionDispatcher;
+use App\Services\HorizonReceiptService;
 use App\Services\Observables\ProspectiveClosureService;
+use App\Services\ParticipationService;
 use App\Services\PhaseProgressionService;
+use App\Services\PotentialProjectionService;
 use App\Services\PropositionStateService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -38,26 +43,35 @@ class PropositionHistoryLifecycleTest extends TestCase
             $phase = $fixture->phase;
         } else {
             $source = $fixture->expression;
-            $phase = $fixture->phase;
+            $phase = $progression->advance($fixture->phase, $source);
             $dispatcher->dispatch($fixture->actor, $phase,
                 ['action' => 'instrument.execute', 'proposition_id' => $source->id,
                     'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/fresh-history']]);
-            $dispatcher->dispatch($fixture->actor, $phase,
+            // A second Participant lawfully attests the grounded distinction,
+            // then develops it in Persist; no Instrument in Distinguish is needed.
+            $actor = (new Participant)->forceFill(['substrate_id' => $fixture->actor->substrate_id, 'callsign' => 'developer']);
+            $actor->save();
+            app(PotentialProjectionService::class)->refresh($actor->substrate_id);
+            $state = app(ParticipationService::class)->enter($actor);
+            $phase = Phase::findOrFail($state['plan']['phase']['id']);
+            $dispatcher->dispatch($actor, $phase,
                 ['action' => 'attestation.create', 'proposition_id' => $source->id, 'direction' => 'support']);
             $phase = $progression->advance($phase, $source);
+            $fixture->actor = $actor;
         }
         $state = app(PropositionStateService::class);
         $sourceTouches = $state->touchCount($source);
         $votes = $state->attestations(collect([$source]))->pluck('id')->all();
         $receipts = $state->receipts($source)->pluck('id')->all();
         $this->assertCount(1, $votes);
-        $this->assertCount(1, $receipts);
+        $this->assertCount($operation === 'variant' ? 1 : 0, $receipts);
+        $availableReceipt = app(HorizonReceiptService::class)->ordinaryAvailable($phase)->sole();
         $this->assertGreaterThan(0, $sourceTouches);
         $before = [Attestation::count(), Receipt::count(), InstrumentExecution::count()];
         $closure = app(ProspectiveClosureService::class)->stored($source);
         $input = $operation === 'variant'
             ? ['action' => 'proposition.variant', 'statement' => 'A fresh development with its own judgments.']
-            : ['action' => 'proposition.reclassify', 'proposition_id' => $source->id, 'receipt_id' => $receipts[0]];
+            : ['action' => 'proposition.reclassify', 'proposition_id' => $source->id, 'receipt_id' => $availableReceipt->id];
         $target = $dispatcher->dispatch($fixture->actor, $phase, $input);
 
         $this->assertSame('expressive', $target->tier);
