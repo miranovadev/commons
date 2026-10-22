@@ -13,25 +13,30 @@ class ParticipationVisibilityLifecycleTest extends ScriptedParticipationTestCase
 {
     public function test_http_context_exposes_local_evidence_and_edges_without_leaking_foreign_or_distant_structure(): void
     {
-        $this->replayParticipationScript(__DIR__.'/../../Fixtures/participation/visibility.json', 0);
+        $this->startSubstrate();
         $localSlug = $this->substrateSlug;
         $this->substrateSlug = 'foreign-evidence';
         $this->postJson('/api/substrates', ['slug' => $this->substrateSlug, 'title' => 'Foreign', 'visibility' => 'private'])->assertCreated();
-        $journey = $this->continueParticipationScript(2);
-        $foreignOrigin = $journey['responses'][0]['current_proposition_id'];
-        $foreignChild = $journey['responses'][1]['current_proposition_id'];
-        $this->observeExistingWrite('foreign-evidence-author', $foreignChild);
+        $foreign = $this->joinParticipant('foreign');
+        $state = $this->enterParticipant($foreign, true);
+        $foreignOrigin = $state['current_proposition_id'];
+        $state = $this->contribute($foreign, ['action' => 'proposition.variant', 'statement' => 'Foreign branch content.'], $state);
+        $foreignChild = $state['current_proposition_id'];
+        $this->observePersistGate($foreign, $state);
         $foreignReceipts = DB::table('receipts')->pluck('id')->all();
         $foreignAttestations = DB::table('attestations')->pluck('id')->all();
         $foreignEdges = DB::table('supersessions')->pluck('id')->all();
         $this->substrateSlug = $localSlug;
-        $journey = $this->continueParticipationScript(4);
-        $this->assertParticipationScriptComplete();
-        $observer = $journey['participants']['local-observer'];
-        $origin = $journey['responses'][2]['current_proposition_id'];
-        $signal = $journey['responses'][4]['current_proposition_id'];
-        $distant = $journey['responses'][5]['current_proposition_id'];
-        $this->observeExistingWrite('local-evidence-author', $signal);
+        $author = $this->joinParticipant('local-author');
+        $state = $this->enterParticipant($author, true);
+        $origin = $state['current_proposition_id'];
+        $observer = $this->joinParticipant('local-observer');
+        $this->enterParticipant($observer);
+        $state = $this->contribute($author, ['action' => 'proposition.variant', 'statement' => 'Visible local distinction.'], $state);
+        $signal = $state['current_proposition_id'];
+        $state = $this->observePersistGate($author, $state);
+        $state = $this->contribute($author, ['action' => 'proposition.variant', 'statement' => 'Distant forward detail.'], $state);
+        $distant = $state['current_proposition_id'];
         $state = $this->readParticipation($observer);
         $originCard = $this->visibleProposition($state, $origin);
         $signalCard = $this->visibleProposition($state, $signal);
@@ -59,11 +64,13 @@ class ParticipationVisibilityLifecycleTest extends ScriptedParticipationTestCase
         $this->getJson('/api/substrates/'.$localSlug.'/propositions/'.$foreignChild)->assertNotFound();
     }
 
-    private function observeExistingWrite(string $callsign, string $write): void
+    private function observePersistGate(string $author, array $state): array
     {
-        $author = $this->joinParticipant($callsign);
-        $state = $this->enterParticipant($author);
-        $this->contribute($author, ['action' => 'instrument.execute', 'proposition_id' => $write,
-            'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://evidence.example.test/'.$callsign]], $state);
+        $this->assertSame('persist', $state['plan']['phase']['kind']);
+        $next = $this->contribute($author, ['action' => 'instrument.execute', 'proposition_id' => $state['plan']['gate_id'],
+            'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://evidence.example.test/'.$author]], $state);
+        $this->assertSame($state['plan']['phase']['id'], $next['plan']['phase']['id']);
+
+        return $next;
     }
 }

@@ -174,8 +174,8 @@ abstract class ParticipationHttpTestCase extends TestCase
     protected function chooseContribution(array $state): array
     {
         $actions = $this->actionDefinitions($state);
-        foreach (['proposition.commit', 'proposition.reclassify', 'proposition.variant', 'proposition.reconcile',
-            'proposition.traverse', 'attestation.create', 'instrument.execute', 'participant.rest'] as $action) {
+        foreach (['instrument.execute', 'proposition.commit', 'proposition.reclassify', 'proposition.variant', 'proposition.reconcile',
+            'proposition.traverse', 'attestation.create', 'participant.rest'] as $action) {
             if (isset($actions[$action])) {
                 $input = ['action' => $action];
                 foreach (['proposition_id', 'other_proposition_id', 'receipt_id'] as $key) {

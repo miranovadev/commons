@@ -3,9 +3,12 @@
 namespace Tests\Feature;
 
 use App\Enums\PhaseKind;
+use App\Models\Cycle;
 use App\Models\Participant;
+use App\Services\ContributionDispatcher;
 use App\Services\HorizonReceiptService;
 use App\Services\OperationalInstrumentService;
+use App\Services\Participation\ParticipationContext;
 use App\Services\PropositionOptionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -40,14 +43,30 @@ class EpistemicInstrumentationBoundaryTest extends TestCase
         $options = app(PropositionOptionService::class);
         $this->assertSame($withEvidence, app(HorizonReceiptService::class)->ordinaryAvailable($phase)->isNotEmpty());
         $this->assertContains($write->id, $options->writeOptionsFor($phase)->pluck('id')->all());
-        $this->assertSame($withEvidence, $options->attestationOptionsFor($phase)->contains('id', $write->id));
+        foreach ([null, new ParticipationContext($phase)] as $context) {
+            $this->assertSame($withEvidence, $options->attestationOptionsFor($phase, $context)->contains('id', $write->id));
+        }
         $this->assertEmpty($options->instrumentOptionsFor($phase));
         $this->assertNotContains('instrument.execute', config('phases.4.actions'));
         $this->assertEmpty(app(HorizonReceiptService::class)->instrumentedIds($phase, collect([$write->id])));
         // Another Participant can use the shared observation without originating it.
         $other = (new Participant)->forceFill(['substrate_id' => $f->substrate->id, 'callsign' => 'other']);
         $other->save();
-        $phase->cycle->forceFill(['participant_id' => $other->id])->save();
-        $this->assertSame($withEvidence, $options->attestationOptionsFor($phase->fresh())->contains('id', $write->id));
+        $cycle = (new Cycle)->forceFill(['participant_id' => $other->id, 'sequence' => 1,
+            'context_horizon_id' => $phase->cycle->context_horizon_id, 'entry_committal_id' => $f->seed->id]);
+        $cycle->save();
+        $otherPhase = $phase->replicate();
+        $otherPhase->forceFill(['cycle_id' => $cycle->id])->save();
+        $otherPhase = $otherPhase->fresh();
+        foreach ([null, new ParticipationContext($otherPhase)] as $context) {
+            $this->assertSame($withEvidence, $options->attestationOptionsFor($otherPhase, $context)->contains('id', $write->id));
+        }
+        $this->assertSame($f->viewer->id, $f->phase->cycle->fresh()->participant_id, 'Originating provenance stays unchanged');
+        if ($withEvidence) {
+            app(ContributionDispatcher::class)->dispatch($other, $otherPhase,
+                ['action' => 'attestation.create', 'proposition_id' => $write->id, 'direction' => 'support']);
+            $this->assertDatabaseHas('attestations', ['phase_id' => $otherPhase->id, 'proposition_id' => $write->id]);
+            $this->assertDatabaseMissing('instrument_executions', ['phase_id' => $otherPhase->id]);
+        }
     }
 }
