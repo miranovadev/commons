@@ -12,8 +12,8 @@ permits a sideways move. Calculation populations, visibility and action targets
 remain distinct. No edge means no movement.
 
 An empty viable structural position exposes Variant. Once a Variant exists,
-it must receive its own completed Instrument execution, producing a Receipt
-in the Horizon, and at least one effective Attestation. Only when those
+it must have genuine ordinary evidence (shared catalogue or retained causal
+evidence) and at least one effective Attestation. Only when those
 prerequisites have been met, every current route is proven spent in this
 position's current exploration epoch does another Variant become an available
 option. Potential Charge is not a permission condition, including at zero. A viable route
@@ -26,11 +26,13 @@ only while all other outgoing continuations are also resolved or currently
 failed; a live alternative prevents it. Their historical numerical gain does
 not establish remaining capacity. Ordinary epoch-scoped failures remain separate.
 
-Each new Variant repeats that sequence. A shared Receipt generated against a
-different Variant does not satisfy the new Variant's Instrument prerequisite.
-Any Participant may perform the Instrument or Attestation; neither is a
-personal quota. Receipts still belong to the Horizon and any eligible
-Participant may consume them through Reclassify.
+Each new Variant repeats that sequence. Stage 2A abolishes the exact-Write
+Instrument prerequisite: shared ordinary evidence can support later participation.
+Instrumentation occurs only in Persist, targets its current Gate, does not
+advance the Phase, and allows one completed execution per Participant Cycle.
+Receipts retain their existing Region/Horizon identity and any eligible
+Participant may consume them through Reclassify. This is not Stage 2B's future
+Receipt-governed generation policy.
 
 Receipt generation or consumption alone never reopens Variant. No prior
 Mediate Rest is required, and there is no fixed two-sibling limit. One
@@ -60,6 +62,6 @@ Receipt scope and the legacy exhaustion/recovery rules are retained pending thei
 later correction stages. See [Charge-boundary Tragedy](branch-tragedy.md).
 
 Tests: `ExpressiveEvidenceGatingTest` covers both expressive phases, positive
-and zero Potential, Instrument-only and Attestation-only failures, repetition
-beyond two Variants, same-Participant creation, shared-Receipt isolation,
+and zero Potential, evidence-only and Attestation-only failures, repetition
+beyond two Variants, same-Participant creation, shared-Receipt eligibility,
 consumption independence, and the existing next-Cycle Traverse rule.

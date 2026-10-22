@@ -41,7 +41,7 @@ final class HorizonFailureService
                 }
                 // A failed descendant cannot condemn an untested generative source.
                 if (in_array($node->phase->kind, [PhaseKind::Distinguish, PhaseKind::Disperse], true)
-                    && ! $this->exercised($node, instrumentRequired: true)) {
+                    && ! $this->exercised($node)) {
                     continue;
                 }
                 $children = DB::table('supersessions')->where('source_proposition_id', $id)->pluck('target_proposition_id');
@@ -138,15 +138,17 @@ final class HorizonFailureService
             && $children->diff(app(ExplorationEpochService::class)->currentFailures($phase->cycle->context_horizon_id, $children)->keys())->isEmpty();
     }
 
-    private function exercised(Proposition $node, bool $instrumentRequired = false): bool
+    private function exercised(Proposition $node): bool
     {
         $state = app(PropositionStateService::class);
         if ($state->attestations(collect([$node]))->isEmpty()) {
             return false;
         }
 
-        return $instrumentRequired
-            ? app(HorizonReceiptService::class)->instrumentedIds($node->phase, collect([$node->id]))->isNotEmpty()
-            : $state->evidenceReceipts($node)->isNotEmpty();
+        // Evidence can be inherited or shared; observing this exact Write is
+        // not required by Persist-only acquisition. Consumption does not erase
+        // genuine evidence already attached to its causal lineage.
+        return $state->evidenceReceipts($node)->isNotEmpty()
+            || app(HorizonReceiptService::class)->ordinaryAvailable($node->phase)->isNotEmpty();
     }
 }

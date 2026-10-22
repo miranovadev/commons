@@ -21,10 +21,10 @@ not region-wide traversal eligibility.
 
 | Phase | Structural flow |
 | --- | --- |
-| 1 Distinguish | Empty viable position: Variant. Existing uninstrumented Proposition: Instrument, even with other shared Receipts. Own completed Instrument plus available Horizon Receipt: Attest. Personal earlier-Cycle Attestation: Traverse on that side. |
-| 2 Persist | Develop the selected Distinguish Proposition through Variant; shared structural viability applies. |
+| 1 Distinguish | Empty viable position: Variant. Available shared ordinary Receipt: Attest. Personal earlier-Cycle Attestation: Traverse on that side. |
+| 2 Persist | Instrument the current Gate once per Participant Cycle without advancing; develop the selected Distinguish Proposition through Variant, subject to shared structural viability. |
 | 3 Constrain | Reclassify a grounded, attested Persist source with explicit `receipt_id`; attach/consume and advance atomically. |
-| 4 Disperse | Same Variant / Instrument / Attest / later-Cycle Traverse pattern as Distinguish. |
+| 4 Disperse | Same Variant / Attest / later-Cycle Traverse pattern as Distinguish; no Instrument action. |
 | 5 Mediate | Existing directed reconciliation and Correspondence conditions develop Disperse plurality. |
 | 6 Bias | Reclassify an eligible Mediate source with explicit `receipt_id`, preserving existing lineage agreement. |
 | 7 Order | Existing grounded, attested, Closure-aligned Commit or established Committal Traverse. |
@@ -33,7 +33,7 @@ Ordinary Receipt availability is Commit-Region-scoped and independent of authors
 
 Reclassification copies the exact statement and attaches only the selected Receipt. Effective Attestations and phase touches start fresh. It rejects missing, consumed, foreign-Horizon or structurally invalid inputs before publishing any new target. Other historical evidence remains on its original source. Shared classifications are unique per source/destination register.
 
-During Exploration, another Variant is an option only after every current viable Variant at that position is spent in the current exploration epoch and has its own completed Instrument and effective Attestation. Potential Charge does not govern this permission. Each new Variant repeats this sequence; a Receipt from another Variant does not replace its Instrument prerequisite. Receipt consumption alone never reopens Variant. There is no Participant quota, fixed sibling cap or prior Mediate Rest requirement. Mediate still needs a second Proposition. This is the [confirmed Variant clarification](horizon-proof-variant-clarification.md).
+During Exploration, another Variant is an option only after every current viable Variant at that position is spent in the current exploration epoch and has genuine ordinary evidence and effective Attestation. Evidence may be shared or retained on its causal lineage; exact-Write Instrumentation is not required. Potential Charge does not govern this permission. Receipt consumption alone never reopens Variant. There is no Participant quota, fixed sibling cap or prior Mediate Rest requirement. Mediate still needs a second Proposition. This is the [confirmed Variant clarification](horizon-proof-variant-clarification.md).
 
 A qualifying direct expressive Write encounter with resulting canonical Charge zero establishes the Region’s unique Tragedy and Receipt and permanently terminates that continuation. Resolution prohibits Variant and Revise throughout the Region while preserving ordinary authority on viable routes. Exhaustion follows atomically only when no lawful continuation remains; viable siblings and live committed descendants prevent it. Descendant Exhaustion closes only its corresponding route. No second catastrophe, Rest or Receipt consumption is required. Passive measurements and reads establish neither event. Recovery follows actual recorded backward lineage. See the approved [Tragedy/Resolution lifecycle](tragedy-resolution-target.md).
 

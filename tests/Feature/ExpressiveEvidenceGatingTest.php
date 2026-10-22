@@ -7,6 +7,7 @@ use App\Models\Attestation;
 use App\Models\Cycle;
 use App\Models\Phase;
 use App\Models\Proposition;
+use App\Models\Receipt;
 use App\Services\ContributionDispatcher;
 use App\Services\ExplorationEpochService;
 use App\Services\HorizonReceiptService;
@@ -48,6 +49,15 @@ class ExpressiveEvidenceGatingTest extends TestCase
     private function actions(Phase $phase): array
     {
         return app(InputPlanService::class)->forPhase($phase->cycle->participant, $phase)['schema']['$defs']['actions'];
+    }
+
+    private function sharedObservation(?Proposition $gate = null): Receipt
+    {
+        $gate ??= $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
+        $persist = $this->phase($gate, PhaseKind::Persist);
+        $instruments = app(InstrumentExecutionService::class);
+
+        return $instruments->complete($instruments->start($persist, $gate, 'citation', $this->origin->id), $gate);
     }
 
     #[DataProvider('expressivePhases')]
@@ -112,7 +122,7 @@ class ExpressiveEvidenceGatingTest extends TestCase
         $generation = app(PhaseGenerationService::class);
         $this->assertFalse($generation->available($phase, 'proposition.variant'));
         $instruments = app(InstrumentExecutionService::class);
-        $receipt = $instruments->complete($instruments->start($phase, $first, 'citation', $this->origin->id), $first);
+        $receipt = $this->sharedObservation($kind === PhaseKind::Distinguish ? $first : null);
         $this->assertFalse($generation->available($phase, 'proposition.variant'), 'Instrument alone is insufficient');
         $vote = (new Attestation)->forceFill(['phase_id' => $phase->id, 'proposition_id' => $first->id, 'direction' => 'support']);
         $vote->save();
@@ -142,7 +152,7 @@ class ExpressiveEvidenceGatingTest extends TestCase
         $actions = $this->actions($phase);
         $this->assertArrayNotHasKey('instrument.execute', $actions);
         $this->assertContains($second->id, $actions['attestation.create']['properties']['proposition_id']['enum'] ?? []);
-        $instruments->complete($instruments->start($phase, $second, 'citation', $this->origin->id), $second);
+        $this->assertEmpty(app(HorizonReceiptService::class)->instrumentedIds($phase, collect([$second->id])));
         $this->assertFalse($generation->available($phase, 'proposition.variant'));
         $vote = (new Attestation)->forceFill(['phase_id' => $phase->id, 'proposition_id' => $second->id, 'direction' => 'support']);
         $vote->save();
@@ -156,7 +166,7 @@ class ExpressiveEvidenceGatingTest extends TestCase
     }
 
     #[DataProvider('expressivePhases')]
-    public function test_attestation_without_own_instrument_and_positive_potential_does_not_unlock_variant(PhaseKind $kind): void
+    public function test_attestation_without_evidence_and_positive_potential_does_not_unlock_variant(PhaseKind $kind): void
     {
         $phase = $this->position($kind);
         $write = $this->node($phase, $phase->gate);
@@ -172,7 +182,7 @@ class ExpressiveEvidenceGatingTest extends TestCase
     }
 
     #[DataProvider('expressivePhases')]
-    public function test_zero_potential_does_not_bypass_own_evidence_or_current_epoch(PhaseKind $kind): void
+    public function test_zero_potential_does_not_bypass_evidence_or_current_epoch(PhaseKind $kind): void
     {
         // This is a controlled zero-Potential eligibility test. Keep its field
         // premise stable when evidence writes recalculate the projections too.
@@ -190,10 +200,9 @@ class ExpressiveEvidenceGatingTest extends TestCase
         $vote = (new Attestation)->forceFill(['phase_id' => $phase->id, 'proposition_id' => $write->id, 'direction' => 'support']);
         $vote->save();
         app(LedgerService::class)->record($vote);
-        $this->assertFalse($generation->available($phase, 'proposition.variant'), 'A spent attested route still needs its own Instrument');
+        $this->assertFalse($generation->available($phase, 'proposition.variant'), 'A spent attested route still needs genuine evidence');
         $vote->delete();
-        $instruments = app(InstrumentExecutionService::class);
-        $instruments->complete($instruments->start($phase, $write, 'citation', $this->origin->id), $write);
+        $this->sharedObservation($kind === PhaseKind::Distinguish ? $write : null);
         $this->assertFalse($generation->available($phase, 'proposition.variant'), 'A spent instrumented route still needs effective Attestation');
         $vote = (new Attestation)->forceFill(['phase_id' => $phase->id, 'proposition_id' => $write->id, 'direction' => 'support']);
         $vote->save();

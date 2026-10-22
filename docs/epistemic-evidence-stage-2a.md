@@ -22,8 +22,10 @@ PhaseProgressionService; the ordinary state builder then constructs fresh
 cognition for the same Phase, Cycle, Gate and position. The autonomous wake loop
 already re-enters cognition until the chosen Phase/Cycle completion boundary.
 
-No formula, structural generation gate, Reclassification
+No formula, independent structural generation constraint, Reclassification
 requirement, Tragedy authority, recovery or canonical Commit rule changes.
+Obsolete exact-Write Instrument prerequisites are removed throughout eligibility
+and failure propagation, as explicitly authorized by the architectural correction.
 Instrumentation remains subject to existing active/mutable Gate eligibility.
 Origin bootstrap is unchanged and requires no Instrument.
 
@@ -84,30 +86,32 @@ Persist Gate Instrument encounter, retaining its evidence/projection invariants.
 The structural-history fixture uses a second Participant's lawful Attestation
 before Persist development, replacing its obsolete Distinguish Instrument call.
 
-## Separate lifecycle regression after the clarification
+## Architectural dependency correction
 
-The authorized Attestation correction is complete. The original exact-Write
-prerequisite is not a remaining blocker.
+Claire / Chat Nova's subsequent Stage 2A clarification authorizes removal of all
+prerequisites on abolished Instrument behaviour, including failure and generation.
+The previous Mediate loop was caused by exact-Write history checks in both
+`HorizonFailureService` and `PhaseGenerationService`. Neither is independent
+domain authority. Both now accept genuine shared ordinary evidence or retained
+Proposition evidence, preserving effective Attestation and current-epoch spentness.
 
-The real `HorizonProofCycleTest` journey nevertheless no longer reaches Commit.
-The identical test passes on main (`24a4ab0`, SQLite: 1 test / 110 assertions).
-With Stage 2A's lawful Persist-first observation policy it reaches Disperse,
-successfully attests that Write on the next Cycle, then repeatedly rests at
-Mediate. A controlled diagnostic at Cycle 5 observed:
+Failure inspection still requires an authoritative actionless plan, genuine
+downstream failure, causal child checks, exact position provenance and terminal
+boundaries. Publication retains field-version, identity, completed-Rest and epoch
+revalidation. Variant still cannot bypass a healthy continuation, and advances
+only its own structural epoch. Receipt consumption and measurement code are unchanged.
 
-- one Disperse Write, with one effective Attestation and no originating Instrument;
-- one Mediate Read and one Gate, hence no distinct reconciliation pair;
-- no continuation-failure records and no additional Disperse Variant eligibility;
-- only Rest in Mediate, followed by another Cycle traversing the same route.
+`ExplorationEpochTest` now records a Disperse failure without an Instrument on that
+Write, using Persist acquisition. Its stale-proof, live-sibling, immutable-history
+and independent-epoch assertions remain. `ExpressiveEvidenceGatingTest` retains
+no-evidence, no-effective-Attestation, healthy-route and stale-epoch rejections.
 
-This is a newly reproduced progression regression, distinct from unavailable
-Attestation and from established baseline failures. The end-to-end test remains
-enabled. Its expected Commit and both Receipt-consumption boundaries have not
-been weakened. Resolving it must not silently change structural generation,
-Mediation, measurement, Tragedy authority or evidence provenance. The remaining
-exact-Write history check in `PhaseGenerationService` is outside this authorized
-Attestation correction; its removal alone would not explain the absence of a
-continuation failure in this trace.
+Audit classification: exact-Write eligibility checks and old phase/advancement
+contracts are obsolete; historical execution/Receipt identity, duplicate-invocation
+checks, immutable ownership, memory capability exclusions and terminal authority
+remain valid. Low-level historical evidence fixtures do not authorize operations;
+operational fixtures must use Persist acquisition. Full lifecycle validation and
+archived HTTP transcript reconciliation remain required before completion.
 
 ## Validation
 

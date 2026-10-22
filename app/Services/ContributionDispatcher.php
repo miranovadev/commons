@@ -171,7 +171,7 @@ final readonly class ContributionDispatcher
         if ($phase->cycle->participant_id !== $participant->id
             || ! in_array('instrument.execute', config("phases.{$phase->kind->value}.actions", []), true)
             || ! $this->options->instrumentOptionsFor($phase)->contains('id', $input['proposition_id'] ?? null)) {
-            throw new DomainException('Support requires an admissible Proposition in the current Write.');
+            throw new DomainException('Instrumentation requires the current Persist Gate and an unused Cycle allowance.');
         }
 
         if (array_key_exists('replay_receipt_id', $input['instrument'])) {

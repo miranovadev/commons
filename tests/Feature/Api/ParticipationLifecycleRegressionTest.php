@@ -4,6 +4,7 @@ namespace Tests\Feature\Api;
 
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Group;
+use Tests\Fixtures\PersistEpochHttpFixture;
 use Tests\Support\ScriptedParticipationTestCase;
 
 #[Group('http-participation')]
@@ -11,6 +12,8 @@ use Tests\Support\ScriptedParticipationTestCase;
 #[Group('constitutional')]
 class ParticipationLifecycleRegressionTest extends ScriptedParticipationTestCase
 {
+    use PersistEpochHttpFixture;
+
     public function test_successful_route_revisit_can_advance_through_bias_to_its_existing_commit(): void
     {
         $journey = $this->replayParticipationScript(__DIR__.'/../../Fixtures/participation/bias-revisit.json', 49);
@@ -76,14 +79,21 @@ class ParticipationLifecycleRegressionTest extends ScriptedParticipationTestCase
 
     public function test_disperse_under_another_constrain_gate_does_not_reopen_a_spent_slot(): void
     {
-        $journey = $this->replayParticipationScript(__DIR__.'/../../Fixtures/participation/disperse-epochs.json', 35);
-        $observer = $journey['participants']['disperse-observer'];
-        $firstSlot = $journey['responses'][6];
+        ['actor' => $actor, 'observer' => $observer, 'slot' => $firstSlot,
+            'parked' => $parked, 'b' => $first] = $this->stage2AEpochJourney();
         $firstGate = $firstSlot['plan']['gate_id'];
-        $parked = $journey['responses'][10];
         $this->assertSame($firstGate, $parked['plan']['gate_id']);
-        $first = $journey['responses'][11]['current_proposition_id'];
-        $secondSlot = $journey['responses'][34];
+        $state = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Independent Distinguish route']);
+        $signal = $state['current_proposition_id'];
+        $this->observePersist($actor, $signal, 'other-slot-first');
+        $state = $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Independent Persist route']);
+        $persist = $state['current_proposition_id'];
+        $this->contribute($actor, ['action' => 'participant.rest']);
+        $this->judge($actor, $signal);
+        $this->observePersist($actor, $signal, 'other-slot-second');
+        $state = $this->judge($actor, $persist);
+        $receipt = $state['plan']['schema']['$defs']['actions']['proposition.reclassify']['properties']['receipt_id']['enum'][0];
+        $secondSlot = $this->contribute($actor, ['action' => 'proposition.reclassify', 'proposition_id' => $persist, 'receipt_id' => $receipt]);
         $this->assertNotSame($firstGate, $secondSlot['plan']['gate_id']);
         $beforeState = $this->readParticipation($observer);
         $before = $this->visibleProposition($beforeState, $first);
@@ -92,8 +102,7 @@ class ParticipationLifecycleRegressionTest extends ScriptedParticipationTestCase
         $this->assertNotEmpty($failures);
         $this->assertSame($firstSlot['context_horizon_id'], $secondSlot['context_horizon_id']);
         $this->assertSame($firstSlot['last_commitment']['proposition_id'], $secondSlot['last_commitment']['proposition_id']);
-        $this->continueParticipationScript(1);
-        $this->assertParticipationScriptComplete();
+        $this->contribute($actor, ['action' => 'proposition.variant', 'statement' => 'Other Disperse slot']);
         $afterState = $this->readParticipation($observer);
         $this->assertSame($beforeState['plan']['phase']['id'], $afterState['plan']['phase']['id']);
         $this->assertSame($firstGate, $afterState['plan']['gate_id']);
