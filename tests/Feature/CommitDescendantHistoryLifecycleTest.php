@@ -103,6 +103,7 @@ class CommitDescendantHistoryLifecycleTest extends TestCase
         $this->assertNull($memory->signature);
         $this->assertFalse(app(CommitmentAdmissibilityService::class)->grounding($head)['requirements']['receipt']);
         $this->assertSame(0, app(ReinforcementService::class)->count($head));
+        $this->publishPotentialFixture($actor);
         $this->assertArrayNotHasKey('proposition.variant', $service->stateFor($actor)['plan']['schema']['$defs']['actions']);
         $load = app(ReceiptContextService::class)->read($actor, $phase, $memory->id);
         $this->assertNull($load->evidence_signature);

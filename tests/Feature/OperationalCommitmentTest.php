@@ -22,6 +22,7 @@ use App\Services\ParticipationService;
 use App\Services\PropositionStateService;
 use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Fixtures\ParticipantContextFixture;
 use Tests\TestCase;
 
 class OperationalCommitmentTest extends TestCase
@@ -99,12 +100,19 @@ class OperationalCommitmentTest extends TestCase
 
     public function test_citation_resolves_attestations_and_verified_hyperlinks_have_signatures(): void
     {
-        $gate = $this->candidate();
-        $attestation = $this->attest($gate);
+        $f = new ParticipantContextFixture(1, 0, false);
+        $f->phase->forceFill(['kind' => PhaseKind::Persist, 'write_register' => 'frontier'])->save();
+        $gate = $f->gate;
+        $attestation = (new Attestation)->forceFill(['phase_id' => $gate->phase_id, 'proposition_id' => $gate->id, 'direction' => 'support']);
+        $attestation->save();
+        app(LedgerService::class)->record($attestation);
         $service = app(OperationalInstrumentService::class);
-        $receipt = $this->observationFixture($gate->phase, $gate, ['kind' => 'citation', 'reference' => $attestation->id]);
+        $receipt = $service->execute($f->phase, $gate, ['kind' => 'citation', 'reference' => $attestation->id]);
         $this->assertSame($attestation->id, $receipt->metadata['target_id']);
-        $receipt = $this->observationFixture($gate->phase, $gate, ['kind' => 'hyperlink', 'reference' => ' https://example.test/evidence ']);
+        $other = new ParticipantContextFixture(1, 0, false);
+        $other->phase->forceFill(['kind' => PhaseKind::Persist, 'write_register' => 'frontier'])->save();
+        $gate = $other->gate;
+        $receipt = $service->execute($other->phase, $gate, ['kind' => 'hyperlink', 'reference' => ' https://example.test/evidence ']);
         $this->assertSame('https://example.test/evidence', $receipt->reference);
         $this->assertTrue($receipt->metadata['content_verified']);
         $this->assertNotNull($receipt->signature);

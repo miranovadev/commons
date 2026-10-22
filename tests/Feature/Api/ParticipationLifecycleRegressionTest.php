@@ -74,6 +74,7 @@ class ParticipationLifecycleRegressionTest extends ScriptedParticipationTestCase
         $mediated = $new['current_proposition_id'];
         $this->contribute($explorer, ['action' => 'participant.rest']);
         $traverse($signal);
+        $this->observePersist($explorer, $signal, 'after-independent-classification');
         $traverse($persist);
         $attest($constrain);
         $attest($activity);
