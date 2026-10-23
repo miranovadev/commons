@@ -3,7 +3,6 @@
 namespace App\Services\Evidence;
 
 use App\Exceptions\ArtifactReadingException;
-use Symfony\Component\Process\Exception\ProcessTimedOutException;
 use Symfony\Component\Process\Process;
 use Throwable;
 
@@ -48,6 +47,7 @@ final class PdfTextReader
             throw new ArtifactReadingException('reader_failure', 'Cannot create private PDF processing storage.');
         }
         $process = null;
+        $pipes = [];
         try {
             $input = $directory.'/source.pdf';
             if (file_put_contents($input, $body) !== strlen($body)) {
@@ -59,33 +59,55 @@ final class PdfTextReader
             $limit = max(1, min((int) config('preparation.representation_bytes'), (int) config('preparation.pdf.output_bytes')));
             // pdftotext only extracts local document text; it does not run PDF actions,
             // scripts, attachments, remote URIs or converters. No document-controlled argv.
-            $process = new Process([(string) config('preparation.pdf.limiter'),
+            $process = proc_open([(string) config('preparation.pdf.limiter'),
                 '--as='.$memory, '--cpu='.$seconds, '--fsize=0', '--core=0', '--nofile=32', '--',
                 (string) config('preparation.pdf.binary'), '-enc', 'UTF-8', '-eol', 'unix', '-nopgbrk', $input, '-'],
-                $directory, ['TMPDIR' => $directory], timeout: $seconds);
+                [0 => ['file', '/dev/null', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, $directory,
+                options: ['bypass_shell' => true]);
+            if (! is_resource($process)) {
+                throw new ArtifactReadingException('reader_failure', 'Cannot start the bounded PDF extraction process.');
+            }
+            foreach ($pipes as $pipe) {
+                stream_set_blocking($pipe, false);
+            }
+            $started = hrtime(true);
             $output = '';
             $diagnosticBytes = 0;
-            $process->start(function (string $type, string $chunk) use (&$output, &$diagnosticBytes, $limit): void {
-                if ($type === Process::OUT) {
-                    if (strlen($output) + strlen($chunk) > $limit) {
-                        throw new ArtifactReadingException('representation_limit', 'PDF extraction exceeds the bounded intermediate output limit.');
+            $exit = null;
+            do {
+                $status = proc_get_status($process);
+                if (! $status['running'] && $exit === null) {
+                    $exit = $status['exitcode'];
+                }
+                // Read at most one fixed-size chunk per stream before checking budgets
+                // and time. A continuously writing child cannot monopolise a pipe drain.
+                foreach ($pipes as $number => $pipe) {
+                    $chunk = fread($pipe, 8192);
+                    if ($chunk === false) {
+                        throw new ArtifactReadingException('reader_failure', 'PDF output could not be read.');
                     }
-                    $output .= $chunk;
-                } else {
-                    $diagnosticBytes += strlen($chunk);
-                    if ($diagnosticBytes > 16384) {
-                        throw new ArtifactReadingException('reader_failure', 'PDF extraction exceeded its diagnostic limit.');
+                    if ($number === 1) {
+                        if (strlen($output) + strlen($chunk) > $limit) {
+                            throw new ArtifactReadingException('representation_limit', 'PDF extraction exceeds the bounded intermediate output limit.');
+                        }
+                        $output .= $chunk;
+                    } else {
+                        $diagnosticBytes += strlen($chunk);
+                        if ($diagnosticBytes > 16384) {
+                            throw new ArtifactReadingException('reader_failure', 'PDF extraction exceeded its diagnostic limit.');
+                        }
                     }
                 }
-            });
-            while ($process->isRunning()) {
-                $process->checkTimeout();
-                $process->clearOutput();
-                $process->clearErrorOutput();
-                usleep(10000);
-            }
-            if (! $process->isSuccessful()) {
-                throw new ArtifactReadingException('reader_failure', 'PDF extraction failed or exceeded a process resource limit (exit '.($process->getExitCode() ?? 'unknown').').');
+                if (hrtime(true) - $started >= $seconds * 1000000000) {
+                    throw new ArtifactReadingException('reader_timeout', 'PDF text extraction exceeded its time limit.');
+                }
+                $pending = $status['running'] || ! feof($pipes[1]) || ! feof($pipes[2]);
+                if ($pending) {
+                    usleep(1000);
+                }
+            } while ($pending);
+            if ($exit !== 0) {
+                throw new ArtifactReadingException('reader_failure', 'PDF extraction failed or exceeded a process resource limit (exit '.($exit ?? 'unknown').').');
             }
             if (! mb_check_encoding($output, 'UTF-8') || preg_match('/[\x00-\x08\x0B\x0E-\x1F]/', $output)) {
                 throw new ArtifactReadingException('invalid_source', 'PDF extraction did not yield supported UTF-8 text.');
@@ -95,20 +117,27 @@ final class PdfTextReader
             }
 
             return $output;
-        } catch (ProcessTimedOutException $exception) {
-            throw new ArtifactReadingException('reader_timeout', 'PDF text extraction exceeded its time limit.');
         } catch (ArtifactReadingException $exception) {
             throw $exception;
         } catch (Throwable $exception) {
             throw new ArtifactReadingException('reader_failure', 'The bounded PDF extraction process could not complete.');
         } finally {
-            if ($process !== null && $process->isStarted()) {
-                $process->stop(0);
+            try {
+                if (is_resource($process)) {
+                    if (proc_get_status($process)['running']) {
+                        proc_terminate($process, 9);
+                    }
+                    foreach ($pipes as $pipe) {
+                        fclose($pipe);
+                    }
+                    proc_close($process);
+                }
+            } finally {
+                if (is_file($directory.'/source.pdf')) {
+                    unlink($directory.'/source.pdf');
+                }
+                rmdir($directory);
             }
-            if (is_file($directory.'/source.pdf')) {
-                unlink($directory.'/source.pdf');
-            }
-            rmdir($directory);
         }
     }
 }

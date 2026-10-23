@@ -94,6 +94,28 @@ class ExpandedArtifactReaderTest extends TestCase
         }
     }
 
+    public function test_runaway_pdf_output_is_stopped_and_private_temporary_input_is_removed(): void
+    {
+        $binary = tempnam(sys_get_temp_dir(), 'commons-reader-test-');
+        $before = glob(sys_get_temp_dir().'/commons-pdf-*');
+        try {
+            file_put_contents($binary, "#!/usr/bin/python3\nimport sys\nif '-v' in sys.argv:\n print('pdftotext version 99.0'); sys.exit(0)\nwhile True:\n sys.stdout.write('x' * 8192); sys.stdout.flush()\n");
+            chmod($binary, 0700);
+            config(['preparation.pdf.binary' => $binary, 'preparation.pdf.output_bytes' => 100]);
+            $started = microtime(true);
+            try {
+                $this->read(TextPdf::make(), 'application/pdf', 'text');
+                $this->fail('Unbounded reader output succeeded.');
+            } catch (ArtifactReadingException $exception) {
+                $this->assertSame('representation_limit', $exception->classification);
+                $this->assertLessThan(3, microtime(true) - $started);
+                $this->assertSame($before, glob(sys_get_temp_dir().'/commons-pdf-*'));
+            }
+        } finally {
+            unlink($binary);
+        }
+    }
+
     public function test_html_tables_retain_rows_cells_spans_headers_entities_and_nested_markup(): void
     {
         $body = '<table><tr><th>Name</th><th colspan="2">Values</th></tr><tr><td>A <strong>&amp; B</strong></td><td></td><td>💚</td></tr><tr></tr></table><table><tr><td>Second<script>bad()</script></td></tr></table>';

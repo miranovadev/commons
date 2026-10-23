@@ -156,7 +156,10 @@ application/worker hosts. CI installs the same dependencies. Defaults are
 change `PREPARATION_PDF_BINARY` and `PREPARATION_PDF_LIMITER`. No Composer PDF parser,
 external document service, OCR engine or provider-specific API is introduced.
 
-The adapter passes fixed argv directly through Symfony Process, without a shell.
+The adapter passes fixed argv directly through `proc_open`, without a shell.
+It drains fixed 8 KiB chunks with a deadline check between reads; a continuously
+writing process cannot bypass output limits. Symfony Process probes only the trusted
+executable version.
 It writes only a random private temporary directory (0700, input 0600), uses the
 local input path, UTF-8/Unix output and no page-break control characters, and removes
 temporary input in `finally`. It does not execute PDF actions, JavaScript, remote
