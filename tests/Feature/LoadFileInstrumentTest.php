@@ -5,8 +5,11 @@ namespace Tests\Feature;
 use App\Enums\PhaseKind;
 use App\Enums\ReceiptCapability;
 use App\Exceptions\ArtifactStorageException;
+use App\Jobs\WakeParticipant;
+use App\Models\Connection;
 use App\Models\EvidenceExecution;
 use App\Models\Participant;
+use App\Models\ParticipantConnection;
 use App\Models\Receipt;
 use App\Services\Evidence\ArtifactStore;
 use App\Services\Evidence\DownloadAcquisition;
@@ -262,5 +265,44 @@ class LoadFileInstrumentTest extends TestCase
         $this->assertNotSame($source->signature, $result->signature);
         $this->assertNull($result->consumption);
         $this->assertSame(2, EvidenceExecution::where('kind', 'load_file')->where('status', 'completed')->count());
+    }
+
+    public function test_autonomous_download_uses_existing_transport_and_refreshes_the_same_phase_before_generation(): void
+    {
+        $f = $this->fixture();
+        $this->publishPotentialFixture($f->viewer);
+        $connection = (new Connection)->forceFill(['name' => 'Download transport', 'provider' => 'openai',
+            'configuration' => ['model' => 'gpt-test'], 'credentials' => ['api_key' => 'test-secret']]);
+        $connection->save();
+        $link = (new ParticipantConnection)->forceFill(['participant_id' => $f->viewer->id, 'connection_id' => $connection->id,
+            'is_enabled' => true, 'configuration' => ['trigger' => ['mode' => 'manual'], 'wake' => ['termination' => 'phase']]]);
+        $link->save();
+        $inferences = [];
+        Http::fake(function ($request) use (&$inferences, $f) {
+            $this->assertSame(0, DB::transactionLevel());
+            if ($request->url() === $this->input()['reference']) {
+                return Http::response('Transient file body sentinel', 200, ['Content-Type' => 'text/plain']);
+            }
+            $inferences[] = $request->data();
+            $input = count($inferences) === 1
+                ? ['action' => 'instrument.execute', 'proposition_id' => $f->gate->id, 'instrument' => $this->input()]
+                : ['action' => 'proposition.variant', 'statement' => 'Develop using the acquired shared observation.'];
+
+            return Http::response(['id' => 'test-download-response',
+                'output' => [['content' => [['type' => 'output_text', 'text' => json_encode(['contribution' => $input])]]]]]);
+        });
+        app()->call([new WakeParticipant($link->id), 'handle']);
+        $this->assertCount(2, $inferences);
+        $this->assertStringContainsString('load_file', json_encode($inferences[0]['text']['format']['schema']));
+        $this->assertStringContainsString('download', json_encode($inferences[0]['text']['format']['schema']));
+        $this->assertStringNotContainsString('instrument.execute', json_encode($inferences[1]['text']['format']['schema']));
+        $this->assertStringContainsString('sha256:', json_encode($inferences[1]));
+        $this->assertStringNotContainsString('Transient file body sentinel', json_encode($inferences));
+        $receipt = Receipt::where('type', 'load_file')->sole();
+        $this->assertSame($f->phase->id, $receipt->evidenceExecution->phase_id);
+        $this->assertNull($receipt->consumption);
+        $this->assertNotNull($f->phase->fresh()->completed_at);
+        $this->assertSame(PhaseKind::Constrain, $f->phase->cycle->phases()->whereNull('completed_at')->sole()->kind);
+        Http::assertSentCount(3);
     }
 }

@@ -7,7 +7,6 @@ use DomainException;
 use GuzzleHttp\Psr7\Uri;
 use GuzzleHttp\Psr7\UriResolver;
 use Illuminate\Http\Client\Response;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Psr\Http\Message\ResponseInterface;
 
@@ -19,9 +18,6 @@ class PublicResourceRetriever
     /** @return array{response: Response, url: string} */
     public function retrieve(string $reference, Closure $validateUrl, int $maxBytes, string $label, string $accept = '*/*'): array
     {
-        if (DB::transactionLevel() > 0) {
-            throw new DomainException('Resource acquisition must occur outside database write transactions.');
-        }
         $url = $validateUrl($reference);
         for ($redirects = 0; $redirects <= 3; $redirects++) {
             $host = parse_url($url, PHP_URL_HOST);
