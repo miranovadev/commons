@@ -9,9 +9,9 @@ use App\Models\Proposition;
 use App\Models\Receipt;
 use App\Services\ContributionDispatcher;
 use App\Services\ContributionService;
+use App\Services\EvidenceExecutionService;
 use App\Services\HorizonReceiptService;
 use App\Services\InputPlanService;
-use App\Services\InstrumentExecutionService;
 use App\Services\LedgerService;
 use App\Services\Observables\ReinforcementService;
 use App\Services\Participation\ParticipationContext;
@@ -77,7 +77,7 @@ class TragedyWarrantSeparationTest extends TestCase
             $this->assertNotContains($write->id, app(PropositionOptionService::class)->attestationOptionsFor($phase, $context)->pluck('id'));
         }
         $this->assertEmpty($service->instrumentedIds($phase, collect([$write->id])));
-        $instruments = app(InstrumentExecutionService::class);
+        $instruments = app(EvidenceExecutionService::class);
         $persist = $this->phase($write, PhaseKind::Persist);
         $ordinary = $instruments->complete($instruments->start($persist, $write, 'citation', $this->origin->id), $write);
         $this->assertSame([$ordinary->id], $service->ordinaryAvailable($phase)->pluck('id')->all());

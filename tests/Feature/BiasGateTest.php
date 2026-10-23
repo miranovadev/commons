@@ -15,8 +15,8 @@ use App\Models\Substrate;
 use App\Models\Supersession;
 use App\Services\BiasGateService;
 use App\Services\ContributionDispatcher;
+use App\Services\EvidenceExecutionService;
 use App\Services\InputPlanService;
-use App\Services\InstrumentExecutionService;
 use App\Services\LedgerService;
 use App\Services\Observables\ChiralityCalculator;
 use App\Services\OpenAIResponseSchema;
@@ -126,7 +126,7 @@ class BiasGateTest extends TestCase
         $this->assertSame([$this->gate->id], $this->optionIds());
         // The Settlement projection is distinct from the raw population lean.
         $this->assertNotEquals($service->leanFor($this->phase), (float) $this->gate->fresh()->measurement->chirality);
-        $instruments = app(InstrumentExecutionService::class);
+        $instruments = app(EvidenceExecutionService::class);
         foreach (range(1, 4) as $i) {
             $this->loadedReceiptFixture($refute, $negative);
         }

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\PhaseKind;
 use App\Services\CausalContextService;
+use App\Services\FieldMutationService;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -31,7 +32,7 @@ class Phase extends Model
             }
         });
         $invalidate = function (self $phase): void {
-            app(\App\Services\FieldMutationService::class)->touch($phase, [
+            app(FieldMutationService::class)->touch($phase, [
                 $phase->gate_proposition_id, $phase->getOriginal('gate_proposition_id'),
             ]);
         };
@@ -81,8 +82,8 @@ class Phase extends Model
         return $this->hasMany(Attestation::class);
     }
 
-    public function instrumentExecutions(): HasMany
+    public function evidenceExecutions(): HasMany
     {
-        return $this->hasMany(InstrumentExecution::class);
+        return $this->hasMany(EvidenceExecution::class);
     }
 }

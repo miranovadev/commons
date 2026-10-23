@@ -41,10 +41,11 @@ final class ParticipationScaleFixture
                 'direction' => $i % 2 ? 'support' : 'refute', 'created_at' => $at, 'updated_at' => $at];
             $record('attestation', (new Attestation)->getMorphClass(), $attestation);
             $reference = 'https://example.test/history/'.$i;
-            $rows['instrument_executions'][] = ['id' => $execution, 'phase_id' => $phase->id, 'proposition_id' => $id,
+            $rows['evidence_executions'][] = ['id' => $execution, 'phase_id' => $phase->id, 'cycle_id' => $phase->cycle_id,
+                'type' => 'instrument', 'proposition_id' => $id,
                 'kind' => 'hyperlink', 'reference' => $reference, 'status' => 'completed',
                 'input' => json_encode(['kind' => 'hyperlink', 'reference' => $reference]), 'started_at' => $at, 'completed_at' => $at];
-            $rows['receipts'][] = ['id' => $receipt, 'instrument_execution_id' => $execution, 'receiptable_type' => (new Proposition)->getMorphClass(),
+            $rows['receipts'][] = ['id' => $receipt, 'evidence_execution_id' => $execution, 'receiptable_type' => (new Proposition)->getMorphClass(),
                 'receiptable_id' => $id, 'type' => 'hyperlink', 'reference' => $reference, 'capabilities' => json_encode(['readable', 'replayable']),
                 'signature' => hash('sha256', $reference), 'metadata' => json_encode(['content_verified' => true, 'reinforcement_version' => 'accepted-version']),
                 'created_at' => $at, 'updated_at' => $at];
@@ -56,7 +57,7 @@ final class ParticipationScaleFixture
             $record('receipt_context', (new ReceiptContextEvent)->getMorphClass(), $event);
         }
         // FK parents precede projections/events and ledger entries reference polymorphic subjects.
-        foreach (['propositions', 'supersessions', 'attestations', 'instrument_executions', 'receipts', 'participant_receipt_contexts',
+        foreach (['propositions', 'supersessions', 'attestations', 'evidence_executions', 'receipts', 'participant_receipt_contexts',
             'receipt_context_events', 'substrate_ledger_entries', 'context_horizon_memberships'] as $table) {
             foreach (array_chunk($rows[$table], 100) as $chunk) {
                 DB::table($table)->insert($chunk);

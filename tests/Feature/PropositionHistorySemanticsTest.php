@@ -7,7 +7,7 @@ use App\Enums\PhaseKind;
 use App\Enums\SupersessionStrength;
 use App\Models\Attestation;
 use App\Models\Cycle;
-use App\Models\InstrumentExecution;
+use App\Models\EvidenceExecution;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
@@ -17,7 +17,7 @@ use App\Models\Supersession;
 use App\Services\CommitmentAdmissibilityService;
 use App\Services\ContributionDispatcher;
 use App\Services\ContributionService;
-use App\Services\InstrumentExecutionService;
+use App\Services\EvidenceExecutionService;
 use App\Services\LedgerService;
 use App\Services\Observables\ChiralityCalculator;
 use App\Services\Observables\ReinforcementService;
@@ -166,7 +166,7 @@ class PropositionHistorySemanticsTest extends TestCase
             $this->assertCount(1, $state->attestations(collect([$item])));
             $this->assertCount(2, $state->receipts($item));
         }
-        $counts = [Attestation::count(), Receipt::count(), InstrumentExecution::count(), Phase::count()];
+        $counts = [Attestation::count(), Receipt::count(), EvidenceExecution::count(), Phase::count()];
         $attestationTargets = Attestation::pluck('proposition_id', 'id')->all();
         $receiptTargets = Receipt::pluck('receiptable_id', 'id')->all();
         $propositions = Proposition::count();
@@ -189,8 +189,8 @@ class PropositionHistorySemanticsTest extends TestCase
         $this->assertSame(0, $state->touchCount($target));
         $this->assertCount(0, $state->attestations(collect([$target])));
         $this->assertCount(in_array($operation, ['reclassify', 'bias'], true) ? 1 : 0, $state->receipts($target));
-        $this->assertSame(0, $target->instrumentExecutions()->count());
-        $this->assertSame($counts, [Attestation::count(), Receipt::count(), InstrumentExecution::count(), Phase::count()]);
+        $this->assertSame(0, $target->evidenceExecutions()->count());
+        $this->assertSame($counts, [Attestation::count(), Receipt::count(), EvidenceExecution::count(), Phase::count()]);
         $this->assertSame($attestationTargets, Attestation::pluck('proposition_id', 'id')->all());
         $this->assertSame($receiptTargets, Receipt::pluck('receiptable_id', 'id')->all());
         $this->assertSame(['missing_effective_attestation', ...(in_array($operation, ['reclassify', 'bias'], true) ? [] : ['missing_completed_receipt'])],
@@ -227,7 +227,7 @@ class PropositionHistorySemanticsTest extends TestCase
             'direction' => $direction, 'rationale' => 'Earned by the source only.',
         ])->save();
         app(LedgerService::class)->record($attestation);
-        $executions = app(InstrumentExecutionService::class);
+        $executions = app(EvidenceExecutionService::class);
         foreach ([$proposition, $attestation] as $contribution) {
             $execution = $executions->start($phases[0], $proposition, 'hyperlink',
                 'https://example.test/history/'.$contribution->id);

@@ -66,7 +66,7 @@ class RealtimeTest extends TestCase
             array_map(fn ($channel) => $channel->name, $created->broadcastOn()));
         $this->assertTrue(collect($this->notifications)->contains(fn ($event) => $event->broadcastWith() ===
             ['type' => 'participant.state_changed', 'participant_id' => $participant->id]));
-        $this->assertSame(0, $proposition->instrumentExecutions()->count());
+        $this->assertSame(0, $proposition->evidenceExecutions()->count());
         $this->getJson("/api/substrates/{$substrate->slug}/propositions/{$proposition->id}")
             ->assertOk()->assertJsonPath('data.id', $proposition->id)
             ->assertJsonPath('data.instruments', []);

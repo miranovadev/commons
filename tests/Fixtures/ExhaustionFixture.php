@@ -13,8 +13,9 @@ use App\Models\Substrate;
 use App\Models\Supersession;
 use App\Services\ContextHorizonProjector;
 use App\Services\Evidence\HyperlinkVerifier;
-use App\Services\InstrumentExecutionService;
+use App\Services\EvidenceExecutionService;
 use App\Services\LedgerService;
+use App\Services\Observables\ProspectiveClosureService;
 use App\Services\ParticipationService;
 use App\Services\PotentialProjectionService;
 use App\Services\PropositionMeasurementService;
@@ -41,7 +42,7 @@ trait ExhaustionFixture
 
     private function explore(Proposition $node): void
     {
-        $instruments = app(InstrumentExecutionService::class);
+        $instruments = app(EvidenceExecutionService::class);
         $reference = 'https://example.test/explored/'.$node->id;
         $execution = $instruments->start($node->phase, $node, 'hyperlink', $reference);
         $instruments->complete($execution, $node, verification: app(HyperlinkVerifier::class)->verify($reference));
@@ -116,7 +117,7 @@ trait ExhaustionFixture
         if ($tier === 'expressive') {
             PropositionBirth::complete($node);
         } elseif ($parent !== null) {
-            $closure = app(\App\Services\Observables\ProspectiveClosureService::class);
+            $closure = app(ProspectiveClosureService::class);
             $closure->preserve($node, $parent, $closure->stored($parent));
         }
 

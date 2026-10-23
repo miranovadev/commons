@@ -66,7 +66,7 @@ class EpistemicInstrumentationBoundaryTest extends TestCase
             app(ContributionDispatcher::class)->dispatch($other, $otherPhase,
                 ['action' => 'attestation.create', 'proposition_id' => $write->id, 'direction' => 'support']);
             $this->assertDatabaseHas('attestations', ['phase_id' => $otherPhase->id, 'proposition_id' => $write->id]);
-            $this->assertDatabaseMissing('instrument_executions', ['phase_id' => $otherPhase->id]);
+            $this->assertDatabaseMissing('evidence_executions', ['phase_id' => $otherPhase->id]);
         }
     }
 }

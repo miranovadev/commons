@@ -66,7 +66,7 @@ final class ParticipantReceiptProjection
                 && (($receipt['memory_active'] ?? false) || ($receipt['availability'] ?? null) === 'available')));
         $loads = ParticipantReceiptContext::active()->where('participant_id', $state['participant']['id'])
             ->whereIn('receipt_id', $catalogue->keys())->pluck('receipt_id')->flip();
-        $persisted = Receipt::with('instrumentExecution')->whereKey($catalogue->keys())->get()->keyBy('id');
+        $persisted = Receipt::with('evidenceExecution')->whereKey($catalogue->keys())->get()->keyBy('id');
         $visible = $references->unique()->flip();
         if ($references->diff($catalogue->keys())->isNotEmpty()) {
             throw new DomainException('A cognitive Receipt reference has no recorded metadata.');
@@ -119,7 +119,7 @@ final class ParticipantReceiptProjection
         // Tragedy keeps its plan-owned scope; ordinary search Receipts follow
         // these same causal associations without importing their result nodes.
         $receipts = Receipt::evidence()
-            ->whereHas('instrumentExecution', fn ($q) => $q->where('status', 'completed'))
+            ->whereHas('evidenceExecution', fn ($q) => $q->where('status', 'completed'))
             ->where(fn ($q) => $q->whereIn('id', $links->pluck('receipt_id'))
                 ->orWhere(fn ($q) => $q->where('receiptable_type', (new Proposition)->getMorphClass())->whereIn('receiptable_id', $all))
                 ->orWhere(fn ($q) => $q->where('receiptable_type', (new Attestation)->getMorphClass())->whereIn('receiptable_id', $attestations->pluck('id'))))

@@ -128,7 +128,7 @@ final class ParticipationContext
             ->where(fn ($q) => $q->where('receiptable_type', (new Proposition)->getMorphClass())->whereIn('receiptable_id', $ids))
             ->orWhere(fn ($q) => $q->where('receiptable_type', (new Attestation)->getMorphClass())->whereIn('receiptable_id', $this->attestations->keys()))
             ->orWhereIn('id', $this->receiptLinks->pluck('receipt_id')))
-            ->with(['ledgerEntry', 'instrumentExecution'])->get();
+            ->with(['ledgerEntry', 'evidenceExecution'])->get();
         // Historical load subjects need not match their Receipt's observed subject.
         // Resolve type in the existing batch even when that Receipt lies outside this graph.
         $this->receiptContexts = ParticipantReceiptContext::whereIn('proposition_id', $ids)

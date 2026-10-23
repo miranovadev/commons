@@ -31,8 +31,6 @@ final class ReceiptRegionService
         }
 
         return $receipt->context_horizon_id === $phase->cycle->context_horizon_id
-            && ($this->seeds($context)[$receipt->instrumentExecution?->proposition_id] ?? null) === $seed;
+            && ($this->seeds($context)[$receipt->evidenceExecution?->proposition_id] ?? null) === $seed;
     }
 }
-
-

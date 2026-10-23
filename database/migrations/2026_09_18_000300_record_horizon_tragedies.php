@@ -10,10 +10,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('receipts', function (Blueprint $table): void {
-            $table->ulid('instrument_execution_id')->nullable()->change();
+            $table->ulid('evidence_execution_id')->nullable()->change();
             $table->foreignUlid('phase_id')->nullable()->constrained()->restrictOnDelete();
         });
-        DB::statement('UPDATE receipts SET phase_id = (SELECT phase_id FROM instrument_executions WHERE instrument_executions.id = receipts.instrument_execution_id)');
+        DB::statement('UPDATE receipts SET phase_id = (SELECT phase_id FROM evidence_executions WHERE evidence_executions.id = receipts.evidence_execution_id)');
         if (DB::getDriverName() === 'pgsql') {
             DB::statement('ALTER TABLE receipts DROP CONSTRAINT IF EXISTS receipts_type_check');
             DB::statement("ALTER TABLE receipts ADD CONSTRAINT receipts_type_check CHECK (type IN ('citation','artefact','hyperlink','web_search','tragedy'))");

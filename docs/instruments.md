@@ -80,7 +80,7 @@ clearing does not change suppression. Gate memory selection remains independent.
 UI follows the server's target-bound Instrument schema. See
 [Receipt relevance and invocation exclusions](continuous-cycles-and-receipt-relevance.md).
 
-Replay stores a new `instrument_executions` row, copies the normalized structured
+Replay stores a new `evidence_executions` row, copies the normalized structured
 invocation from the source execution's `input`, and sets
 `replayed_from_receipt_id` on the **new execution**. Its new Receipt has the normal
 unique execution link and its own ledger entry. Replaying R2 links R3 to R2, so
@@ -237,3 +237,7 @@ and Receipt kind constraints and adds nullable capability/provenance columns,
 without rewriting observations or backfilling any loads. Rollback refuses to
 remove recorded Search or replay history.
 
+
+Stage 2C stores Instrument rows as `EvidenceExecution(type=instrument)`. Preparation
+shares execution storage and ordinary Receipt creation but cannot replay an Instrument.
+See [unified evidence executions](epistemic-evidence-stage-2c.md).

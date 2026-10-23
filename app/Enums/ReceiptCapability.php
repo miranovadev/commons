@@ -8,10 +8,10 @@ enum ReceiptCapability: string
     case Replayable = 'replayable';
 
     /** Capabilities are independent; unknown/archival Instruments grant neither. */
-    public static function forInstrument(string $kind): array
+    public static function forReceipt(string $kind): array
     {
         return match ($kind) {
-            'citation', 'tragedy', 'proposition_search' => [self::Readable->value],
+            'citation', 'tragedy', 'proposition_search', 'preparation' => [self::Readable->value],
             'hyperlink', 'web_search' => [self::Readable->value, self::Replayable->value],
             default => [],
         };

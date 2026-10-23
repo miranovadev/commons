@@ -492,7 +492,7 @@ class HomologousBiasTest extends TestCase
     {
         $tragedy = $this->warrant();
         DB::transaction(fn () => app(ReceiptContextService::class)->desired($this->actor, $this->bias, ['load' => [$tragedy->receipt_id]]));
-        DB::table('instrument_executions')->update(['status' => 'failed']);
+        DB::table('evidence_executions')->update(['status' => 'failed']);
         $this->assertNotContains($this->gateA->id, $this->biasOptionIds());
         $this->assertContains($this->gateB->id, $this->biasOptionIds());
         $this->reject($this->gateA, $tragedy->receipt_id);

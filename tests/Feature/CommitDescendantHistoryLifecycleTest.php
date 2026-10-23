@@ -98,8 +98,8 @@ class CommitDescendantHistoryLifecycleTest extends TestCase
         $memory = Receipt::where('type', 'proposition_search')->sole();
         $this->assertSame($expected, array_column($memory->metadata['proposition_collection']['results'], 'proposition_id'));
         $this->assertSame([2, 3, 4, 5, 6, 7], array_column($memory->metadata['proposition_collection']['results'], 'lineage_distance'));
-        $this->assertSame($head->id, $memory->instrumentExecution->proposition_id);
-        $this->assertSame(1, $head->instrumentExecutions()->count());
+        $this->assertSame($head->id, $memory->evidenceExecution->proposition_id);
+        $this->assertSame(1, $head->evidenceExecutions()->count());
         $this->assertSame($memory->metadata['observation_identity'], $memory->signature);
         $this->assertTrue(app(CommitmentAdmissibilityService::class)->grounding($head)['requirements']['receipt']);
         $this->assertSame(1, app(ReinforcementService::class)->count($head));

@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\PhaseKind;
-use App\Models\InstrumentExecution;
+use App\Models\EvidenceExecution;
 use App\Models\Participant;
 use App\Models\Proposition;
 use App\Models\Receipt;
@@ -50,9 +50,9 @@ class InstrumentAllowanceConcurrencyTest extends TestCase
             'participant_id' => $f->viewer->id, 'phase_id' => $f->phase->id, 'contribution' => $input],
             fn () => app(ContributionDispatcher::class)->dispatch($f->viewer, $f->phase, $input));
         $this->assertSame($before + 1, Receipt::count());
-        $this->assertSame(1, InstrumentExecution::where('phase_id', $f->phase->id)->where('status', 'completed')->count());
+        $this->assertSame(1, EvidenceExecution::where('phase_id', $f->phase->id)->where('status', 'completed')->count());
         $this->assertNull($f->phase->fresh()->completed_at);
-        $receipt = InstrumentExecution::where('phase_id', $f->phase->id)->sole()->receipt;
+        $receipt = EvidenceExecution::where('phase_id', $f->phase->id)->sole()->receipt;
         $this->assertSame(1, DB::table('participant_receipt_contexts')->where('receipt_id', $receipt->id)->count());
     }
 

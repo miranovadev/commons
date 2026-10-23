@@ -239,7 +239,7 @@ final readonly class InputPlanService
                 ->with([
                     'measurement',
                     'parents',
-                    'instrumentExecutions.receipt',
+                    'evidenceExecutions.receipt',
                     'effectiveAttestations' => $this->attestationsFor(
                         $participant
                     ),
@@ -259,7 +259,7 @@ final readonly class InputPlanService
         $provenance->loadMissing([
             'measurement',
             'parents',
-            'instrumentExecutions.receipt',
+            'evidenceExecutions.receipt',
             'effectiveAttestations' => $this->attestationsFor($participant),
             'phase.cycle.participant:id,callsign,substrate_id',
         ]);
@@ -320,7 +320,7 @@ final readonly class InputPlanService
         $collection->loadMissing([
             'measurement',
             'parents',
-            'instrumentExecutions.receipt',
+            'evidenceExecutions.receipt',
             'effectiveAttestations' => $this->attestationsFor($participant),
             'phase.cycle.participant:id,callsign,substrate_id',
         ]);
@@ -423,8 +423,8 @@ final readonly class InputPlanService
                 'rationale',
                 'created_at',
             ]),
-            'instruments' => ! $foreignOperand && $proposition->relationLoaded('instrumentExecutions')
-                ? $proposition->instrumentExecutions->map(fn ($execution): array => [
+            'instruments' => ! $foreignOperand && $proposition->relationLoaded('evidenceExecutions')
+                ? $proposition->evidenceExecutions->where('type', 'instrument')->values()->map(fn ($execution): array => [
                     'id' => $execution->getKey(),
                     'kind' => $execution->kind,
                     'reference' => $execution->reference,

@@ -19,7 +19,7 @@ final class ReceiptEvidenceService
         return $context->remember('loaded-citation-targets', function () use ($context): Collection {
             $references = Receipt::where('type', 'citation')->whereIn('id', ParticipantReceiptContext::active()
                 ->where('participant_id', $context->phase->cycle->participant_id)->select('receipt_id'))
-                ->whereHas('instrumentExecution', fn ($q) => $q->where('status', 'completed')
+                ->whereHas('evidenceExecution', fn ($q) => $q->where('status', 'completed')
                     ->whereHas('proposition.phase.cycle.participant', fn ($q) => $q->where('substrate_id', $context->substrate->id)))
                 ->get(['id', 'reference', 'type', 'capabilities'])
                 ->filter(fn ($receipt) => $receipt->supports(ReceiptCapability::Readable))->pluck('reference')->unique();
@@ -38,7 +38,7 @@ final class ReceiptEvidenceService
         if ($receipt->isSpecial()) {
             return null; // Tragedy retains its separate authority contract.
         }
-        $execution = $receipt->instrumentExecution;
+        $execution = $receipt->evidenceExecution;
         if (! $receipt->supports(ReceiptCapability::Readable) || $execution?->status !== 'completed'
             || ($receipt->context_horizon_id !== $context->phase->cycle->context_horizon_id
                 && ! $context->propositions->has($execution->proposition_id))) {
@@ -121,6 +121,13 @@ final class ReceiptEvidenceService
     {
         if (! $receipt->supports(ReceiptCapability::Readable) || ! $receipt->observationComplete()) {
             return null;
+        }
+        if ($receipt->type === 'preparation' && $receipt->evidenceExecution->type === 'prepare'
+            && $receipt->signature !== null && ($receipt->metadata['content_verified'] ?? false) === true
+            && ($receipt->metadata['reinforcement_version'] ?? null) === 'observed-preparation') {
+            // Historical delivery/outcome metadata grants no Artifact or Proposition expansion.
+            return ['signature' => $receipt->signature, 'evidence' => array_intersect_key($receipt->metadata,
+                array_flip(['originating_gate_id', 'participant_id', 'purpose', 'selections', 'deliveries', 'presented_at', 'outcome']))];
         }
         if ($receipt->type === 'proposition_search' && $receipt->signature !== null
             && ($receipt->metadata['content_verified'] ?? false) === true

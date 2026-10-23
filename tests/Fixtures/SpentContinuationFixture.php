@@ -7,7 +7,7 @@ use App\Models\Attestation;
 use App\Models\Cycle;
 use App\Models\Phase;
 use App\Models\Proposition;
-use App\Services\InstrumentExecutionService;
+use App\Services\EvidenceExecutionService;
 use App\Services\LedgerService;
 use App\Services\PotentialChargeService;
 
@@ -22,7 +22,7 @@ trait SpentContinuationFixture
         $observed = $separateObservation
             ? $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin) : $signal;
         $observation = $this->phase($observed, PhaseKind::Persist);
-        $instruments = app(InstrumentExecutionService::class);
+        $instruments = app(EvidenceExecutionService::class);
         $instruments->complete($instruments->start($observation, $observed, 'citation', $this->origin->id), $observed);
         $this->judgeContinuation($signal);
         $persist = $this->node($this->phase($signal, PhaseKind::Persist), $signal);

@@ -6,7 +6,7 @@ use App\Enums\ContextDomain;
 use App\Enums\PhaseKind;
 use App\Models\Attestation;
 use App\Models\Cycle;
-use App\Models\InstrumentExecution;
+use App\Models\EvidenceExecution;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
@@ -15,7 +15,7 @@ use App\Models\Substrate;
 use App\Models\Supersession;
 use App\Services\CommitmentAdmissibilityService;
 use App\Services\ContributionDispatcher;
-use App\Services\InstrumentExecutionService;
+use App\Services\EvidenceExecutionService;
 use App\Services\LedgerService;
 use App\Services\OperationalInstrumentService;
 use App\Services\ParticipationService;
@@ -87,7 +87,7 @@ class OperationalCommitmentTest extends TestCase
         $first = $this->attest($gate);
         $service = app(CommitmentAdmissibilityService::class);
         $this->assertFalse($service->grounding($gate)['admissible']); // Origin evidence is not inherited.
-        $executions = app(InstrumentExecutionService::class);
+        $executions = app(EvidenceExecutionService::class);
         $execution = $executions->start($gate->phase, $gate, 'hyperlink', 'https://example.test/attestation');
         $this->assertFalse($service->grounding($gate)['requirements']['receipt']);
         $executions->complete($execution, $first);
@@ -118,7 +118,7 @@ class OperationalCommitmentTest extends TestCase
         $this->assertNotNull($receipt->signature);
         $this->assertNotNull($gate->fresh()->measurement);
         $this->expectException(DomainException::class);
-        app(InstrumentExecutionService::class)->complete($receipt->instrumentExecution, $gate);
+        app(EvidenceExecutionService::class)->complete($receipt->evidenceExecution, $gate);
     }
 
     public function test_pending_and_failed_executions_are_visible_without_satisfying_grounding(): void
@@ -127,7 +127,7 @@ class OperationalCommitmentTest extends TestCase
         $this->attest($gate);
         $committer = $this->participant($this->participant->substrate, 'waiting-committer');
         $this->phase($committer, PhaseKind::Order, 'concord', $gate);
-        $service = app(InstrumentExecutionService::class);
+        $service = app(EvidenceExecutionService::class);
         $execution = $service->start($gate->phase, $gate, 'hyperlink', 'https://example.test/pending');
         $this->publishPotentialFixture($committer);
         $state = app(ParticipationService::class)->stateFor($committer);
@@ -163,7 +163,7 @@ class OperationalCommitmentTest extends TestCase
             } catch (\InvalidArgumentException) {
                 $this->assertDatabaseMissing('propositions', ['statement' => 'Rejected']);
                 $this->assertNull(Phase::findOrFail($state['plan']['phase']['id'])->completed_at);
-                $this->assertDatabaseCount('instrument_executions', 2);
+                $this->assertDatabaseCount('evidence_executions', 2);
             }
         }
         $this->expectException(DomainException::class);
@@ -223,7 +223,7 @@ class OperationalCommitmentTest extends TestCase
         $committed = Proposition::findOrFail($reader->fresh()->current_proposition_id);
         $this->assertSame('committal', $committed->tier);
         $this->assertSame($left->id, $receipt->fresh()->receiptable_id);
-        $this->assertSame(0, $committed->instrumentExecutions()->count());
+        $this->assertSame(0, $committed->evidenceExecutions()->count());
     }
 
     public function test_removed_reclassification_contracts_reject_payloads(): void
@@ -250,13 +250,13 @@ class OperationalCommitmentTest extends TestCase
         $this->publishPotentialFixture($reader);
         $state = app(ParticipationService::class)->stateFor($reader);
         $this->assertArrayNotHasKey('instrument.execute', $state['plan']['schema']['$defs']['actions']);
-        $before = [Receipt::count(), InstrumentExecution::count()];
+        $before = [Receipt::count(), EvidenceExecution::count()];
         try {
             $this->move($reader, ['action' => 'instrument.execute', 'proposition_id' => $candidate->id,
                 'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/constrain']]);
             $this->fail('Constrain must reject Instrumentation.');
         } catch (\InvalidArgumentException) {
-            $this->assertSame($before, [Receipt::count(), InstrumentExecution::count()]);
+            $this->assertSame($before, [Receipt::count(), EvidenceExecution::count()]);
             $this->assertNull($phase->fresh()->completed_at);
             $this->assertNull($phase->cycle->fresh()->completed_at);
         }
@@ -267,7 +267,7 @@ class OperationalCommitmentTest extends TestCase
         [$reader, $phase, $candidate] = $this->instrumentFixture(PhaseKind::Order);
         $this->receiptFixture($candidate);
         $receipt = app(PropositionStateService::class)->receipts($candidate)->firstOrFail();
-        $before = [Phase::count(), Attestation::count(), Receipt::count(), InstrumentExecution::count()];
+        $before = [Phase::count(), Attestation::count(), Receipt::count(), EvidenceExecution::count()];
         foreach ([
             ['action' => 'attestation.create', 'proposition_id' => $candidate->id, 'direction' => 'support'],
             ['action' => 'instrument.execute', 'proposition_id' => $candidate->id, 'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/order']],
@@ -282,7 +282,7 @@ class OperationalCommitmentTest extends TestCase
                 $this->assertNull($phase->fresh()->completed_at);
                 $this->assertNull($phase->cycle->fresh()->completed_at);
                 $this->assertSame($phase->gate_proposition_id, $reader->fresh()->current_proposition_id);
-                $this->assertSame($before, [Phase::count(), Attestation::count(), Receipt::count(), InstrumentExecution::count()]);
+                $this->assertSame($before, [Phase::count(), Attestation::count(), Receipt::count(), EvidenceExecution::count()]);
             }
         }
     }
@@ -290,7 +290,7 @@ class OperationalCommitmentTest extends TestCase
     public function test_invalid_order_actions_leave_phase_cycle_position_and_evidence_unchanged(): void
     {
         [$reader, $phase, $candidate] = $this->instrumentFixture(PhaseKind::Order);
-        $before = [Phase::count(), Attestation::count(), Receipt::count(), InstrumentExecution::count()];
+        $before = [Phase::count(), Attestation::count(), Receipt::count(), EvidenceExecution::count()];
         foreach ([
             ['action' => 'attestation.create', 'proposition_id' => $this->origin->id, 'direction' => 'support'],
             ['action' => 'instrument.execute', 'proposition_id' => $this->origin->id, 'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test']],
@@ -305,7 +305,7 @@ class OperationalCommitmentTest extends TestCase
                 $this->assertNull($phase->fresh()->completed_at);
                 $this->assertNull($phase->cycle->fresh()->completed_at);
                 $this->assertSame($phase->gate_proposition_id, $reader->fresh()->current_proposition_id);
-                $this->assertSame($before, [Phase::count(), Attestation::count(), Receipt::count(), InstrumentExecution::count()]);
+                $this->assertSame($before, [Phase::count(), Attestation::count(), Receipt::count(), EvidenceExecution::count()]);
             }
         }
     }

@@ -8,8 +8,8 @@ use App\Models\ParticipantReceiptContext;
 use App\Models\Proposition;
 use App\Models\Receipt;
 use App\Services\ContributionService;
+use App\Services\EvidenceExecutionService;
 use App\Services\InputSchemaService;
-use App\Services\InstrumentExecutionService;
 use App\Services\OpenAIResponseSchema;
 use App\Services\ParticipationService;
 use App\Services\ReceiptReplayService;
@@ -34,9 +34,9 @@ class InstrumentReplayActionTest extends TestCase
         $other = $f->node($f->gate, 'frontier', position: PhaseKind::Mediate);
         // Historical observations retain exact execution/Receipt provenance.
         // They do not spend the active occurrence's personal allowance.
-        $execution = app(InstrumentExecutionService::class)->start($target->phase, $target, 'web_search', 'archival query',
+        $execution = app(EvidenceExecutionService::class)->start($target->phase, $target, 'web_search', 'archival query',
             ['kind' => 'web_search', 'query' => 'archival query']);
-        $source = app(InstrumentExecutionService::class)->complete($execution, $target,
+        $source = app(EvidenceExecutionService::class)->complete($execution, $target,
             observation: new SearchObservation('archival query', CarbonImmutable::now(), [], 'fixture'));
         config(['services.web_search.provider' => 'tavily', 'services.tavily.api_key' => 'test']);
         Http::preventStrayRequests();
@@ -100,17 +100,17 @@ class InstrumentReplayActionTest extends TestCase
         }
         Http::assertNothingSent();
         $original = $source->fresh()->getAttributes();
-        $invocation = $source->instrumentExecution->fresh()->getAttributes();
+        $invocation = $source->evidenceExecution->fresh()->getAttributes();
         $next = $service->contribute($f->viewer, $f->phase->id, $input);
         $result = Receipt::where('phase_id', $f->phase->id)->sole();
         $this->assertSame($target->id, $result->receiptable_id);
         $this->assertSame((new Proposition)->getMorphClass(), $result->receiptable_type);
-        $this->assertSame($input['instrument'], $result->instrumentExecution->input);
-        $this->assertNull($result->instrumentExecution->replayed_from_receipt_id);
+        $this->assertSame($input['instrument'], $result->evidenceExecution->input);
+        $this->assertNull($result->evidenceExecution->replayed_from_receipt_id);
         $this->assertNotNull($result->signature);
         $this->assertNotNull($result->ledgerEntry);
         $this->assertSame($original, $source->fresh()->getAttributes());
-        $this->assertSame($invocation, $source->instrumentExecution->fresh()->getAttributes());
+        $this->assertSame($invocation, $source->evidenceExecution->fresh()->getAttributes());
         $this->assertSame(3, ParticipantReceiptContext::count());
         $this->assertNull($f->phase->fresh()->completed_at);
         $this->assertSame('persist', $next['plan']['phase']['kind']);

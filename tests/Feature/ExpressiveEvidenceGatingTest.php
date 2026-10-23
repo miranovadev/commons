@@ -9,10 +9,10 @@ use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Receipt;
 use App\Services\ContributionDispatcher;
+use App\Services\EvidenceExecutionService;
 use App\Services\ExplorationEpochService;
 use App\Services\HorizonReceiptService;
 use App\Services\InputPlanService;
-use App\Services\InstrumentExecutionService;
 use App\Services\LedgerService;
 use App\Services\Participation\ParticipationContext;
 use App\Services\PhaseGenerationService;
@@ -55,7 +55,7 @@ class ExpressiveEvidenceGatingTest extends TestCase
     {
         $gate ??= $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
         $persist = $this->phase($gate, PhaseKind::Persist);
-        $instruments = app(InstrumentExecutionService::class);
+        $instruments = app(EvidenceExecutionService::class);
 
         return $instruments->complete($instruments->start($persist, $gate, 'citation', $this->origin->id), $gate);
     }
@@ -73,7 +73,7 @@ class ExpressiveEvidenceGatingTest extends TestCase
         $this->assertArrayNotHasKey('attestation.create', $actions);
         $this->assertArrayNotHasKey('proposition.reclassify', $actions);
 
-        $instruments = app(InstrumentExecutionService::class);
+        $instruments = app(EvidenceExecutionService::class);
         $observation = $this->node($this->phase($this->origin, PhaseKind::Distinguish), $this->origin);
         $persist = $this->phase($observation, PhaseKind::Persist);
         $receipt = $instruments->complete($instruments->start($persist, $observation, 'citation', $this->origin->id), $observation);
@@ -121,7 +121,7 @@ class ExpressiveEvidenceGatingTest extends TestCase
         $first = $this->node($phase, $phase->gate);
         $generation = app(PhaseGenerationService::class);
         $this->assertFalse($generation->available($phase, 'proposition.variant'));
-        $instruments = app(InstrumentExecutionService::class);
+        $instruments = app(EvidenceExecutionService::class);
         $receipt = $this->sharedObservation($kind === PhaseKind::Distinguish ? $first : null);
         $this->assertFalse($generation->available($phase, 'proposition.variant'), 'Instrument alone is insufficient');
         $vote = (new Attestation)->forceFill(['phase_id' => $phase->id, 'proposition_id' => $first->id, 'direction' => 'support']);

@@ -60,7 +60,7 @@ class CommitSourceHistoryLifecycleTest extends TestCase
         $this->assertSame($votes->pluck('id')->all(), $state->attestations(collect([$commit]))->pluck('id')->all());
         $this->assertSame($receipts->pluck('id')->all(), $state->receipts($commit)->pluck('id')->all());
         $this->assertSame(0, $commit->attestations()->count());
-        $this->assertSame(0, $commit->instrumentExecutions()->count());
+        $this->assertSame(0, $commit->evidenceExecutions()->count());
         // Retain the actual authorised transcript as CI evidence for future
         // reusable history builders, instead of inferring a cheaper history.
         $directory = base_path('test-results');

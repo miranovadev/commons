@@ -51,10 +51,14 @@ class ReceiptCapabilitiesMigrationTest extends TestCase
         DB::table('substrate_ledger_entries')->where('kind', 'receipt_context')->whereIn('ledgerable_id', $eventIds)->delete();
         DB::table('receipt_context_events')->delete();
         DB::table('participant_receipt_contexts')->delete();
-        $original = $receipt->fresh()->only(['metadata', 'signature', 'reference', 'instrument_execution_id']);
+        $original = $receipt->fresh()->only(['metadata', 'signature', 'reference', 'evidence_execution_id']);
         $migration = require database_path('migrations/2026_09_14_120000_add_receipt_capabilities_and_replay.php');
+        // Unwind the later partial index before SQLite rebuilds the old schema.
+        $preparation = require database_path('migrations/2026_10_23_000000_enable_preparation_executions.php');
+        $preparation->down();
         $migration->down();
         $migration->up();
+        $preparation->up();
         $legacy = $receipt->fresh();
         $this->assertSame($original, $legacy->only(array_keys($original)));
         $this->assertNull($legacy->capabilities);

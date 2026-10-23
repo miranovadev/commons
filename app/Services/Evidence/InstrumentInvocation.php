@@ -40,8 +40,8 @@ final class InstrumentInvocation
     /** Read legacy rows without changing their stored invocation or Receipt. */
     public function fromReceipt(Receipt $receipt): ?array
     {
-        $execution = $receipt->instrumentExecution;
-        if ($execution?->status !== 'completed') {
+        $execution = $receipt->evidenceExecution;
+        if ($execution?->type !== 'instrument' || $execution->status !== 'completed') {
             return null;
         }
         $input = $execution->input;

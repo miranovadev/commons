@@ -7,8 +7,8 @@ use App\Enums\ContextDomain;
 use App\Enums\PhaseKind;
 use App\Models\Connection;
 use App\Models\Proposition;
+use App\Services\EvidenceExecutionService;
 use App\Services\InputPlanService;
-use App\Services\InstrumentExecutionService;
 use App\Services\MediationReadService;
 use App\Services\ParticipantContextSerializer;
 use App\Services\ParticipantPromptFactory;
@@ -36,7 +36,7 @@ class ParticipantContextC2ComparisonTest extends TestCase
         $connection = (new Connection)->forceFill(['configuration' => ['model' => 'test-model']]);
         $f = new ParticipantContextFixture(25, 6, false);
         $anchor = app(MediationReadService::class)->anchorFor($f->phase);
-        $executions = app(InstrumentExecutionService::class);
+        $executions = app(EvidenceExecutionService::class);
         foreach ([$anchor, $f->gate, Proposition::findOrFail($f->writes[0])] as $index => $node) {
             $executions->complete($executions->start($f->phase, $node, 'hyperlink', 'https://example.test/c2-'.$index), $node,
                 verification: new VerifiedHyperlink('example.test/c2-'.$index, hash('sha256', 'evidence-'.$index),

@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\SupersessionStrength;
 use App\Models\Attestation;
-use App\Models\InstrumentExecution;
+use App\Models\EvidenceExecution;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Receipt;
@@ -67,7 +67,7 @@ class PropositionHistoryLifecycleTest extends TestCase
         $this->assertCount($operation === 'variant' ? 1 : 0, $receipts);
         $availableReceipt = app(HorizonReceiptService::class)->ordinaryAvailable($phase)->sole();
         $this->assertGreaterThan(0, $sourceTouches);
-        $before = [Attestation::count(), Receipt::count(), InstrumentExecution::count()];
+        $before = [Attestation::count(), Receipt::count(), EvidenceExecution::count()];
         $closure = app(ProspectiveClosureService::class)->stored($source);
         $input = $operation === 'variant'
             ? ['action' => 'proposition.variant', 'statement' => 'A fresh development with its own judgments.']
@@ -86,8 +86,8 @@ class PropositionHistoryLifecycleTest extends TestCase
         $this->assertSame(0, $state->touchCount($target));
         $this->assertCount(0, $state->attestations(collect([$target])));
         $this->assertCount($operation === 'variant' ? 0 : 1, $state->receipts($target));
-        $this->assertSame(0, $target->instrumentExecutions()->count());
-        $this->assertSame($before, [Attestation::count(), Receipt::count(), InstrumentExecution::count()]);
+        $this->assertSame(0, $target->evidenceExecutions()->count());
+        $this->assertSame($before, [Attestation::count(), Receipt::count(), EvidenceExecution::count()]);
         $this->assertSame($closure, app(ProspectiveClosureService::class)->stored($source));
         $this->assertDatabaseHas('phase_profile_observations', ['proposition_id' => $target->id]);
         $next = $progression->advance($phase, $target);

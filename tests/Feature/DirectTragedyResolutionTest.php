@@ -65,7 +65,7 @@ class DirectTragedyResolutionTest extends TestCase
                 'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/direct-terminal']]);
         $this->assertDatabaseHas('terminal_encounters', ['proposition_id' => $fixture->expression->id,
             'action' => 'instrument.execute', 'participant_id' => $fixture->actor->id]);
-        $this->assertSame(1, $fixture->expression->instrumentExecutions()->count());
+        $this->assertSame(1, $fixture->expression->evidenceExecutions()->count());
     }
 
     public static function attestationResults(): array
@@ -177,7 +177,7 @@ class DirectTragedyResolutionTest extends TestCase
                 'instrument' => ['kind' => 'hyperlink', 'reference' => 'https://example.test/surviving-route']]);
         $this->assertDatabaseCount('terminal_encounters', 1);
         $this->assertDatabaseCount('commit_region_exhaustions', 0);
-        $this->assertSame(1, $sibling->instrumentExecutions()->count());
+        $this->assertSame(1, $sibling->evidenceExecutions()->count());
     }
 
     public function test_later_terminal_encounter_cannot_close_a_third_surviving_branch(): void
