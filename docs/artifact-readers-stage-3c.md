@@ -52,6 +52,10 @@ JSON-path and source-code variable extraction are not implemented.
   doubled quotes, embedded newlines, empty cells and UTF-8 values retain field
   boundaries. Formula-like values remain strings; nothing evaluates them.
 
+Table/list ranges still use character offsets: a selection can begin or end inside
+a rendered row or item. Its exact boundaries and continuation metadata make that
+partial representation explicit; the allocator does not secretly move a requested range.
+
 HTML parsing uses `LIBXML_NONET`, never fetches linked resources or executes script.
 XML DTD/entity declarations remain unsupported. Representation bodies stay transient.
 

@@ -24,6 +24,22 @@ class AdaptivePreparationJourneyTest extends TestCase
         Storage::fake('artifacts');
     }
 
+    /** JSON object key order is immaterial; selected/delivered array order and scalar types are not. */
+    private function canonical(array $value): array
+    {
+        foreach ($value as &$item) {
+            if (is_array($item)) {
+                $item = $this->canonical($item);
+            }
+        }
+        unset($item);
+        if (! array_is_list($value)) {
+            ksort($value);
+        }
+
+        return $value;
+    }
+
     public function test_shared_allocation_is_identical_for_humans_and_autonomous_delivery_and_history_survives_consumption(): void
     {
         $fixture = new PreparationFixture;
@@ -48,10 +64,10 @@ class AdaptivePreparationJourneyTest extends TestCase
         }
         $service->acknowledge($f->viewer, $execution, $human['presentation_token']);
         $receipt = $service->defer($f->viewer, $execution, 'Compare the remaining portion later.');
-        $this->assertSame($input['artifacts'], $receipt->metadata['selections']);
+        $this->assertSame($this->canonical($input['artifacts']), $this->canonical($receipt->metadata['selections']));
         foreach ($human['deliveries'] as $index => $delivery) {
             unset($delivery['content']);
-            $this->assertSame($delivery, $receipt->metadata['deliveries'][$index]);
+            $this->assertSame($this->canonical($delivery), $this->canonical($receipt->metadata['deliveries'][$index]));
         }
         $this->assertNull($receipt->consumption);
         $this->assertNull($f->phase->fresh()->completed_at);
