@@ -42,6 +42,16 @@ export function ReceiptContextPanel({ plan }: { plan: ParticipantPlan }) {
         {receipt.preparation_history.outcome.reason && <Text size="xs">Participant’s deferment reason: {receipt.preparation_history.outcome.reason}</Text>}
         <Text size="xs" c="dimmed">Historical investigation metadata. Source content is not replayed by loading this Receipt.</Text>
       </Stack>}
+      {receipt.acquisition && <Stack gap={3} mt="xs" aria-label="File acquisition">
+        <Text size="xs" fw={600}>Load File · Download · {receipt.acquisition.content_verified ? 'Acquired' : 'Retrieval failed'}</Text>
+        {receipt.acquisition.filename && <Text size="sm">{receipt.acquisition.filename}</Text>}
+        {receipt.acquisition.effective_url && <Text size="xs" style={{ overflowWrap: 'anywhere' }}>Retrieved from {receipt.acquisition.effective_url}</Text>}
+        {receipt.acquisition.artifacts.map(artifact => <Box key={artifact.hash}>
+          <Text size="xs">{artifact.media_type} · {artifact.size} bytes</Text>
+          <Text size="xs" style={{ overflowWrap: 'anywhere' }}>{artifact.hash}</Text>
+        </Box>)}
+        <Text size="xs" c="dimmed">Acquisition: {receipt.acquisition.processing_ms} ms. File contents are not loaded or rendered. Preparation is available when a supported reader exists.</Text>
+      </Stack>}
       {receipt.attached_proposition_id && <Text size="xs" c="dimmed">Attached to {receipt.attached_proposition_id}</Text>}
       {receipt.status === 'already-in-context' && <Text size="xs" c="dimmed">Referenced Proposition is already in this context.</Text>}
       {receipt.observation_error && <Text size="xs" c="dimmed">{receipt.observation_error}</Text>}

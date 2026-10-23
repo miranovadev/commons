@@ -219,6 +219,7 @@ export type ActionName =
 export type InstrumentInput =
   | { kind: 'citation' | 'hyperlink'; reference: string }
   | { kind: 'web_search'; query: string }
+  | { kind: 'load_file'; method: 'download'; reference: string }
   | { replay_receipt_id: string };
 
 export interface PreparationSelection { receipt_id: string; artifact_id: string; read_type: string; parameters?: { offset?: number; max_chars: number }; }
@@ -288,6 +289,9 @@ export interface WorkspaceHorizon {
 }
 
 export interface ReceiptContext {
+  acquisition?: { method: 'download'; source_url: string; effective_url?: string; filename?: string | null;
+    processing_ms: number; content_verified: boolean; observation_error?: string;
+    artifacts: Array<{ hash: string; media_type: string; size: number }> };
   load_mode?: 'memory';
   memory_active?: boolean;
   tragedy_memory?: {

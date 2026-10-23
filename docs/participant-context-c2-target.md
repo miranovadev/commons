@@ -1,5 +1,11 @@
 # The Commons: Participant Context C2
 
+> Stage 3B capability refinement: creator loading applies only to readable Receipts.
+> Load File / Download is ordinary and non-loadable; its acquisition metadata and
+> Artifact access remain available under the existing causal scope. See
+> [the Download contract](load-file-download-stage-3b.md).
+
+
 ## Receipt Visibility, Memory and Cognitive Minimalism
 
 Heya Work Nova! 💚🌌

@@ -9,12 +9,16 @@ use App\Models\Proposition;
 use App\Models\Receipt;
 use App\Models\Substrate;
 use App\Services\ContributionDispatcher;
+use App\Services\Evidence\PublicResourceAddress;
 use App\Services\HorizonReceiptService;
 use App\Services\InputPlanService;
+use App\Services\OperationalInstrumentService;
 use App\Services\PotentialProjectionService;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Component\Process\Process;
 use Tests\Fixtures\ParticipantContextFixture;
@@ -34,7 +38,13 @@ class InstrumentAllowanceConcurrencyTest extends TestCase
         });
     }
 
-    public function test_two_independent_connections_cannot_complete_the_same_cycle_allowance(): void
+    public static function instrumentKinds(): array
+    {
+        return [['citation'], ['load_file']];
+    }
+
+    #[DataProvider('instrumentKinds')]
+    public function test_two_independent_connections_cannot_complete_the_same_cycle_allowance(string $kind): void
     {
         if (DB::getDriverName() !== 'pgsql') {
             $this->markTestSkipped('Requires independent PostgreSQL connections and row locks.');
@@ -44,16 +54,25 @@ class InstrumentAllowanceConcurrencyTest extends TestCase
         $f->phase->forceFill(['kind' => PhaseKind::Persist, 'gate_proposition_id' => $gate->id, 'write_register' => 'frontier'])->save();
         $f->viewer->forceFill(['current_proposition_id' => $gate->id])->save();
         $input = ['action' => 'instrument.execute', 'proposition_id' => $gate->id,
-            'instrument' => ['kind' => 'citation', 'reference' => $f->seed->id]];
+            'instrument' => $kind === 'citation' ? ['kind' => 'citation', 'reference' => $f->seed->id]
+                : ['kind' => 'load_file', 'method' => 'download', 'reference' => 'https://example.com/concurrent']];
+        $observed = null;
+        if ($kind === 'load_file') {
+            Storage::fake('artifacts');
+            $this->mock(PublicResourceAddress::class, fn ($m) => $m->shouldReceive('resolve')->andReturn('93.184.216.34'));
+            Http::fake(['*' => Http::response('concurrent bytes')]);
+            $observed = app(OperationalInstrumentService::class)->observeFor($f->phase, $gate, $input['instrument']);
+        }
         $before = Receipt::count();
         $this->whileWorkerWaits($f->substrate, ['operation' => 'instrument-conflict',
-            'participant_id' => $f->viewer->id, 'phase_id' => $f->phase->id, 'contribution' => $input],
-            fn () => app(ContributionDispatcher::class)->dispatch($f->viewer, $f->phase, $input));
+            'participant_id' => $f->viewer->id, 'phase_id' => $f->phase->id, 'contribution' => $input,
+            ...($observed !== null ? ['download_observation' => $observed->download->metadata] : [])],
+            fn () => app(ContributionDispatcher::class)->dispatch($f->viewer, $f->phase, $input, observed: $observed));
         $this->assertSame($before + 1, Receipt::count());
         $this->assertSame(1, EvidenceExecution::where('phase_id', $f->phase->id)->where('status', 'completed')->count());
         $this->assertNull($f->phase->fresh()->completed_at);
         $receipt = EvidenceExecution::where('phase_id', $f->phase->id)->sole()->receipt;
-        $this->assertSame(1, DB::table('participant_receipt_contexts')->where('receipt_id', $receipt->id)->count());
+        $this->assertSame($kind === 'load_file' ? 0 : 1, DB::table('participant_receipt_contexts')->where('receipt_id', $receipt->id)->count());
     }
 
     public static function generationBoundaries(): array

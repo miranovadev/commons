@@ -4,8 +4,8 @@
 
 One completed Instrument execution per Participant Cycle is permitted in Persist,
 against the exact current Gate. It leaves Phase, Cycle and position unchanged and
-returns fresh cognition with the ordinary Receipt automatically loaded for its
-creator. Completed unsuccessful observations spend the allowance; infrastructure
+returns fresh cognition. Readable Receipts automatically load for their creator;
+Load File Receipts remain non-loadable. Completed unsuccessful observations spend the allowance; infrastructure
 failures without an execution/Receipt do not. Receipt consumption or unloading
 does not restore it. See [the Stage 2A contract](epistemic-evidence-stage-2a.md).
 
@@ -47,7 +47,7 @@ for limits, failure semantics, cognition and a persisted example.
 > associations, including Write and extended history.
 > **C2 update:** [Participant Context C2](participant-context-c2-implementation.md)
 > supersedes the inference Receipt layout and loading timing described below.
-> New Instrument Receipts auto-load for their performer; eligible local Write
+> New readable Instrument Receipts auto-load for their performer; eligible local Write
 > loads and personal same-substrate unloads are supported. Loaded Read/Gate
 > content appears once in the top-level catalogue; Write alone exposes metadata.
 > Operational evidence, causal authority and measurement formulas are unchanged.
@@ -70,7 +70,7 @@ Capability support does not bypass operational eligibility or evidence qualifica
 
 ## Instrument replay and Participant memory
 
-`instrument.execute` accepts a fresh Citation, Hyperlink or Web Search invocation,
+`instrument.execute` accepts a fresh Citation, Hyperlink, Web Search, Proposition Search or Load File invocation,
 or `instrument: {"replay_receipt_id": "R"}` with the normal `proposition_id`.
 The forms are mutually exclusive. The schema enumerates replay IDs for each exact
 eligible Instrument target. Catalogue visibility or replay capability alone grants
@@ -101,7 +101,8 @@ The original observed Proposition is preserved; new Receipts ground it. Legacy A
 Receipt, execution result, invocation or provenance is rewritten. Domain model
 updates reject changes to saved Receipts and originating invocation fields.
 
-Execution and Replay automatically load the new Receipt for its performer under C2.
+Execution and Replay automatically load readable Receipts for their performer under C2.
+Load File is ordinary but non-loadable and creates no loading event.
 Qualifying loaded uptake uses the existing Reinforcement rules. Even if multiple equivalent or changed observations
 are loaded, each Participant still contributes at most one counted Reinforcement
 per active classification under the evidence inheritance rules. Reclassification
@@ -253,3 +254,11 @@ remove recorded Search or replay history.
 Stage 2C stores Instrument rows as `EvidenceExecution(type=instrument)`. Preparation
 shares execution storage and ordinary Receipt creation but cannot replay an Instrument.
 See [unified evidence executions](epistemic-evidence-stage-2c.md).
+
+## Load File / Download (Stage 3B)
+
+Load File preserves a directly referenced HTTP(S) resource as an exact-byte Artifact.
+Its ordinary Receipt is non-loadable; acquisition metadata is visible in the existing
+catalogue and supported Artifacts remain preparable after consumption. See the
+[Download contract](load-file-download-stage-3b.md) for limits, identity, security,
+replay, examples and validation. No Upload method is implemented.

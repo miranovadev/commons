@@ -14,7 +14,7 @@ use App\Services\Evidence\ArtifactStore;
 use App\Services\Evidence\HyperlinkIdentity;
 use App\Services\Evidence\HyperlinkMetadataExtractor;
 use App\Services\Evidence\HyperlinkVerifier;
-use App\Services\Evidence\PublicResourceAddress;
+use App\Services\Evidence\PublicResourceRetriever;
 use App\Services\HorizonReceiptService;
 use App\Services\ParticipationService;
 use App\Services\PreparationService;
@@ -26,7 +26,7 @@ trait HorizonCycleFixture
     {
         // Preserve real immutable material for the activated reading workflow.
         $this->app->bind(HyperlinkVerifier::class, function ($app) {
-            return new class($app->make(HyperlinkIdentity::class), $app->make(PublicResourceAddress::class), $app->make(ArtifactStore::class), $app->make(HyperlinkMetadataExtractor::class)) extends HyperlinkVerifier
+            return new class($app->make(HyperlinkIdentity::class), $app->make(PublicResourceRetriever::class), $app->make(ArtifactStore::class), $app->make(HyperlinkMetadataExtractor::class)) extends HyperlinkVerifier
             {
                 public function verify(string $reference): VerifiedHyperlink
                 {

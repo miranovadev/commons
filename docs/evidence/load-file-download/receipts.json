@@ -1,0 +1,63 @@
+{
+  "note": "Illustrative records; IDs omitted. No file body belongs in either Receipt.",
+  "successful": {
+    "type": "load_file",
+    "reference": "https://example.org/file.txt?edition=2",
+    "capabilities": [
+      "replayable"
+    ],
+    "execution": {
+      "type": "instrument",
+      "kind": "load_file",
+      "status": "completed",
+      "input": {
+        "kind": "load_file",
+        "method": "download",
+        "reference": "https://example.org/file.txt?edition=2"
+      }
+    },
+    "signature": "b67ea1cb7e16b692e4b5c0ccc62036aeaa2d218b1144ae668757442ec8cef22f",
+    "metadata": {
+      "method": "download",
+      "source_url": "https://example.org/file.txt?edition=2",
+      "effective_url": "https://example.org/file.txt?edition=2",
+      "filename": "file.txt",
+      "processing_ms": 18,
+      "artifacts": [
+        {
+          "path": "artifacts/sha256/ec/38/ec38274cdb800f1e1fd7342b73a2646ef240b9d8e567c36877e4926fd3da4cbc",
+          "hash": "sha256:ec38274cdb800f1e1fd7342b73a2646ef240b9d8e567c36877e4926fd3da4cbc",
+          "media_type": "text/plain",
+          "size": 24
+        }
+      ],
+      "content_verified": true,
+      "reinforcement_version": "non-loadable",
+      "reinforcement_status": "not-loaded",
+      "observation_identity": "b67ea1cb7e16b692e4b5c0ccc62036aeaa2d218b1144ae668757442ec8cef22f"
+    },
+    "consumption": null
+  },
+  "failed_retrieval": {
+    "type": "load_file",
+    "reference": "https://example.org/file.txt?edition=2",
+    "capabilities": [
+      "replayable"
+    ],
+    "signature": null,
+    "execution_status": "completed",
+    "metadata": {
+      "method": "download",
+      "source_url": "https://example.org/file.txt?edition=2",
+      "processing_ms": 12,
+      "validation": "download-failed",
+      "observation_error": "Download resource could not be successfully retrieved.",
+      "content_verified": false,
+      "reinforcement_version": "non-loadable",
+      "reinforcement_status": "not-loaded",
+      "observation_identity": "9eda36d64c0d02aaaaf936400b77ddfde618e8359feeff2a7472e45ee5e105ee"
+    },
+    "consumption": null
+  },
+  "infrastructure_failure": "No successful Receipt or completed acquisition is created."
+}

@@ -2,7 +2,7 @@
 
 > **C2 update:** [Participant Context C2](participant-context-c2-implementation.md)
 > supersedes the inference Receipt layout and loading timing described below.
-> New Instrument Receipts auto-load for their performer; eligible local Write
+> New readable Instrument Receipts auto-load for their performer; eligible local Write
 > loads and personal same-substrate unloads are supported. Loaded Read/Gate
 > content appears once in the top-level catalogue; Write alone exposes metadata.
 > Operational evidence, causal authority and measurement formulas are unchanged.

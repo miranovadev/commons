@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Domain\Evidence\DownloadObservation;
 use App\Domain\Evidence\PreparationInput;
 use App\Domain\Evidence\PreparationPresentation;
 use App\Domain\Evidence\PropositionCollection;
@@ -70,6 +71,7 @@ final readonly class EvidenceExecutionService
         ?VerifiedHyperlink $verification = null,
         ?SearchObservation $observation = null,
         ?PropositionCollection $propositionCollection = null,
+        ?DownloadObservation $download = null,
     ): Receipt {
         return DB::transaction(function () use (
             $execution,
@@ -79,6 +81,7 @@ final readonly class EvidenceExecutionService
             $verification,
             $observation,
             $propositionCollection,
+            $download,
         ): Receipt {
             // Resolve ownership with a read; never lock the execution before its root.
             $substrateId = EvidenceExecution::query()->findOrFail($execution->getKey())->phase->cycle->participant->substrate_id;
@@ -104,6 +107,17 @@ final readonly class EvidenceExecutionService
                 : ['signature' => null, 'status' => 'non-reinforcing'];
             $metadata = [...$metadata, ...($signature !== null ? ['supplied_signature' => $signature] : []), ...($verification?->metadata() ?? ['content_verified' => false]),
                 'reinforcement_version' => $resolution['status']];
+            if ($locked->kind === 'load_file') {
+                if ($download === null || $download->sourceUrl !== ($locked->input['reference'] ?? null)
+                    || ($locked->input['method'] ?? null) !== 'download') {
+                    throw new DomainException('The Download observation must match its stored invocation.');
+                }
+                $resolution = ['signature' => $download->successful() ? $download->identity() : null];
+                $metadata = [...$metadata, ...$download->metadata, 'observation_identity' => $download->identity(),
+                    'reinforcement_version' => 'non-loadable'];
+            } elseif ($download !== null) {
+                throw new DomainException('Only Load File may persist a Download observation.');
+            }
             if ($locked->kind === 'proposition_search') {
                 if ($propositionCollection === null
                     || $propositionCollection->headPropositionId !== $locked->proposition_id

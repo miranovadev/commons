@@ -102,3 +102,25 @@ test('Replay is a disjoint Instrument form only where the schema supplies choice
   assert.match(html, /Replay Receipt/);
   assert.doesNotMatch(html, /Search query|>Reference</);
 });
+
+
+test('Load File exposes only Download and keeps method when choosing its input', () => {
+  const input = { kind: 'load_file', method: 'download', reference: 'https://example.com/file' };
+  assert.deepEqual(module.exports.change({ kind: 'hyperlink', reference: '' }, 'load_file'), { ...input, reference: '' });
+  const html = module.exports.fields(input);
+  assert.match(html, /Load File · Download/);
+  assert.match(html, /Download URL/);
+  assert.match(html, /not loadable/);
+  assert.doesNotMatch(html, /Upload/);
+});
+
+test('Non-loadable Download metadata renders safely without embedding a file', () => {
+  const html = module.exports.panel({ receipts: [{ id: 'file', type: 'load_file', reference: 'https://example.com/file', loaded: false,
+    acquisition: { method: 'download', source_url: 'https://example.com/file', effective_url: 'https://example.com/file',
+      filename: '<script>filename</script>', content_verified: true, processing_ms: 18,
+      artifacts: [{ hash: 'sha256:abc', media_type: 'application/pdf', size: 123 }] } }] });
+  assert.match(html, /&lt;script&gt;filename&lt;\/script&gt;/);
+  assert.match(html, /application\/pdf · 123 bytes/);
+  assert.match(html, /18 ms/);
+  assert.doesNotMatch(html, /<iframe|<object|<embed|<script>|>Loaded</);
+});

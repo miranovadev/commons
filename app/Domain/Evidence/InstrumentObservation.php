@@ -11,5 +11,6 @@ final readonly class InstrumentObservation
         public ?VerifiedHyperlink $verification = null,
         public ?SearchObservation $search = null,
         public ?PropositionCollection $propositions = null,
+        public ?DownloadObservation $download = null,
     ) {}
 }

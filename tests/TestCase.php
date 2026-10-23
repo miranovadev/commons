@@ -26,7 +26,7 @@ use App\Services\Evidence\ArtifactStore;
 use App\Services\Evidence\HyperlinkIdentity;
 use App\Services\Evidence\HyperlinkMetadataExtractor;
 use App\Services\Evidence\HyperlinkVerifier;
-use App\Services\Evidence\PublicResourceAddress;
+use App\Services\Evidence\PublicResourceRetriever;
 use App\Services\EvidenceExecutionService;
 use App\Services\HorizonReceiptService;
 use App\Services\LedgerService;
@@ -320,7 +320,7 @@ abstract class TestCase extends BaseTestCase
         // Semantic fixtures use deterministic external evidence and never the network.
         // HyperlinkVerificationTest explicitly restores the real verifier/HTTP boundary.
         $this->app->bind(HyperlinkVerifier::class, function ($app) {
-            return new class($app->make(HyperlinkIdentity::class), $app->make(PublicResourceAddress::class), $app->make(ArtifactStore::class), $app->make(HyperlinkMetadataExtractor::class)) extends HyperlinkVerifier
+            return new class($app->make(HyperlinkIdentity::class), $app->make(PublicResourceRetriever::class), $app->make(ArtifactStore::class), $app->make(HyperlinkMetadataExtractor::class)) extends HyperlinkVerifier
             {
                 public function verify(string $reference): VerifiedHyperlink
                 {
@@ -522,7 +522,7 @@ abstract class TestCase extends BaseTestCase
             $execution = $executions->start($phase, $node, $observed->input['kind'], $reference, $observed->input);
 
             return $executions->complete($execution, $node, metadata: $metadata,
-                verification: $observed->verification, observation: $observed->search);
+                verification: $observed->verification, observation: $observed->search, download: $observed->download);
         });
     }
 

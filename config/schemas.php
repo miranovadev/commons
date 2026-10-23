@@ -12,8 +12,16 @@ $statement = [
 ];
 
 $instrument = [
-    'description' => 'Citation references a substrate object; hyperlink retrieves a public URL; web_search finds external resources; proposition_search observes bounded historical lineage, including meaningful empty results. All four produce ordinary Receipts. Instruments record Receipts and load them for the performing Participant. Loading does not grant action permission.',
+    'description' => 'Citation references a substrate object; hyperlink retrieves a public URL; web_search finds external resources; proposition_search observes bounded historical lineage, including meaningful empty results. load_file with method download preserves a public HTTP(S) resource as an immutable Artifact. All produce ordinary Receipts. Load File Receipts contain acquisition metadata and are not loadable; other readable Instrument Receipts load for their creator. Loading does not grant action permission.',
     'anyOf' => [
+        [
+            'type' => 'object', 'additionalProperties' => false,
+            'required' => ['kind', 'method', 'reference'],
+            'properties' => [
+                'kind' => ['const' => 'load_file'], 'method' => ['const' => 'download'],
+                'reference' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 4096, 'pattern' => '^https?://'],
+            ],
+        ],
         [
             'type' => 'object', 'additionalProperties' => false,
             'required' => ['kind', 'reference'],
@@ -57,7 +65,7 @@ $proposition = static function (string $action, string $title) use ($statement):
 };
 
 return [
-    'version' => 28,
+    'version' => 29,
 
     'cache' => [
         'store' => env('COMMONS_SCHEMA_CACHE_STORE'),

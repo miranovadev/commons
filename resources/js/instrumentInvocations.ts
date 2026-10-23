@@ -3,6 +3,8 @@ import type { InstrumentInput, ParticipantPlan } from './types';
 export function normalizedInvocation(input: InstrumentInput): string | null {
   if ('replay_receipt_id' in input) return null;
   if (input.kind === 'web_search') return `web_search:${input.query.trim().replace(/\s+/gu, ' ')}`;
+  // Download versions require observed bytes; a URL alone cannot exclude an invocation.
+  if (input.kind === 'load_file') return null;
   if (input.kind === 'citation') return `citation:${input.reference.trim()}`;
   try {
     const url = new URL(input.reference.trim());
