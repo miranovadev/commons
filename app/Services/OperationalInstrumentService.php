@@ -24,7 +24,7 @@ use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 final readonly class OperationalInstrumentService
 {
     public function __construct(
-        private InstrumentExecutionService $executions,
+        private EvidenceExecutionService $executions,
         private HyperlinkVerifier $verifier,
         private HyperlinkIdentity $identity,
         private WebSearchProvider $search,

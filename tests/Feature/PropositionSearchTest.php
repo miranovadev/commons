@@ -66,7 +66,7 @@ class PropositionSearchTest extends TestCase
         };
 
         $receipts = $definition('receipts_type_check');
-        $executions = $definition('instrument_executions_kind_check');
+        $executions = $definition('evidence_executions_kind_check');
 
         $this->assertStringContainsString('tragedy', $receipts);
         $this->assertStringContainsString('proposition_search', $receipts);

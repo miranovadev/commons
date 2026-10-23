@@ -31,9 +31,9 @@ final class HorizonReceiptService
 
             return Receipt::whereDoesntHave('consumption')->where(fn ($q) => $q
                 ->where(fn ($ordinary) => $ordinary->whereNotIn('type', Receipt::SPECIAL_RECEIPT_TYPES)->where('context_horizon_id', $phase->cycle->context_horizon_id)
-                    ->whereHas('instrumentExecution', fn ($execution) => $execution->where('status', 'completed')->whereIn('proposition_id', $subjects)))
+                    ->whereHas('evidenceExecution', fn ($execution) => $execution->where('status', 'completed')->whereIn('proposition_id', $subjects)))
                 ->orWhere(fn ($special) => $special->where('type', 'tragedy')->whereKey($tragedies)))
-                ->with(['instrumentExecution', 'consumption', 'phase'])->orderBy('created_at')->orderBy('id')->get();
+                ->with(['evidenceExecution', 'consumption', 'phase'])->orderBy('created_at')->orderBy('id')->get();
         });
     }
 
@@ -63,9 +63,9 @@ final class HorizonReceiptService
     /** Generating an observation is separate from attaching or consuming it. */
     public function instrumentedIds(Phase $phase, Collection $ids): Collection
     {
-        return DB::table('instrument_executions as execution')
-            ->join('receipts as receipt', 'receipt.instrument_execution_id', '=', 'execution.id')
-            ->whereNotIn('receipt.type', Receipt::SPECIAL_RECEIPT_TYPES)->where('execution.status', 'completed')
+        return DB::table('evidence_executions as execution')
+            ->join('receipts as receipt', 'receipt.evidence_execution_id', '=', 'execution.id')
+            ->where('execution.type', 'instrument')->whereNotIn('receipt.type', Receipt::SPECIAL_RECEIPT_TYPES)->where('execution.status', 'completed')
             ->where('receipt.context_horizon_id', $phase->cycle->context_horizon_id)
             ->whereIn('execution.proposition_id', $ids)->distinct()->pluck('execution.proposition_id');
     }

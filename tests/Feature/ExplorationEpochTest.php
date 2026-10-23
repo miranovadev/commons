@@ -3,14 +3,14 @@
 namespace Tests\Feature;
 
 use App\Enums\PhaseKind;
-use App\Models\InstrumentExecution;
+use App\Models\EvidenceExecution;
 use App\Models\Tragedy;
 use App\Services\ContributionDispatcher;
+use App\Services\EvidenceExecutionService;
 use App\Services\ExhaustionAuditService;
 use App\Services\ExhaustionService;
 use App\Services\ExplorationEpochService;
 use App\Services\HorizonFailureService;
-use App\Services\InstrumentExecutionService;
 use App\Services\PhaseGenerationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -32,8 +32,8 @@ class ExplorationEpochTest extends TestCase
         // Isolate structural rules from a new Charge-boundary event.
         $this->resolveExpressiveFieldFixture(.8);
         [$signal, $activity, $terminal, $return] = $this->testedLineage();
-        $this->assertSame(0, $activity->instrumentExecutions()->count());
-        $this->assertSame([PhaseKind::Persist], InstrumentExecution::with('phase')->get()->pluck('phase.kind')->unique()->all());
+        $this->assertSame(0, $activity->evidenceExecutions()->count());
+        $this->assertSame([PhaseKind::Persist], EvidenceExecution::with('phase')->get()->pluck('phase.kind')->unique()->all());
         $horizon = $terminal->cycle->context_horizon_id;
         foreach ([[$signal, 3], [$activity, 7]] as [$node, $epoch]) {
             DB::table('horizon_exploration_states')->insert(['context_horizon_id' => $horizon,
@@ -86,7 +86,7 @@ class ExplorationEpochTest extends TestCase
         } catch (\DomainException) {
             $this->assertSame(1, $epochs->forPhase($phase));
         }
-        $instruments = app(InstrumentExecutionService::class);
+        $instruments = app(EvidenceExecutionService::class);
         $persist = $this->phase($node, PhaseKind::Persist);
         $receipt = $instruments->complete($instruments->start($persist, $node, 'citation', $this->origin->id), $node);
         app(ContributionDispatcher::class)->dispatch($phase->cycle->participant, $phase,
@@ -101,8 +101,8 @@ class ExplorationEpochTest extends TestCase
     {
         $this->resolveExpressiveFieldFixture(.8);
         [$signal, $activity, $terminal, $return] = $this->testedLineage(separateObservation: true);
-        $this->assertSame(0, $signal->instrumentExecutions()->count());
-        $this->assertSame(0, $activity->instrumentExecutions()->count());
+        $this->assertSame(0, $signal->evidenceExecutions()->count());
+        $this->assertSame(0, $activity->evidenceExecutions()->count());
         $this->rest($terminal);
         foreach ([$signal, $activity] as $node) {
             $this->assertTrue(app(ExplorationEpochService::class)->spentNow($node, $return));

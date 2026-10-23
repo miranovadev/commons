@@ -8,9 +8,10 @@ use App\Models\ParticipantReceiptContext;
 use App\Models\Proposition;
 use App\Models\Receipt;
 use App\Models\Substrate;
+use App\Services\ClosureGateService;
 use App\Services\ContributionDispatcher;
+use App\Services\EvidenceExecutionService;
 use App\Services\ExplorationEpochService;
-use App\Services\InstrumentExecutionService;
 use App\Services\LedgerService;
 use App\Services\ReceiptContextService;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
@@ -50,7 +51,7 @@ class HorizonProofConcurrencyTest extends TestCase
 
     private function observeAndAttest(Proposition $source): Receipt
     {
-        $instruments = app(InstrumentExecutionService::class);
+        $instruments = app(EvidenceExecutionService::class);
         $receipt = $instruments->complete($instruments->start($source->phase, $source, 'citation', $this->origin->id), $source);
         $vote = (new Attestation)->forceFill(['phase_id' => $source->phase_id, 'proposition_id' => $source->id, 'direction' => 'support']);
         $vote->save();
@@ -136,7 +137,7 @@ class HorizonProofConcurrencyTest extends TestCase
         $other = $this->phase($this->origin);
         $unresolved = $this->phase($this->origin);
         $this->publishPotentialFixture($this->substrate);
-        $service = app(\App\Services\ClosureGateService::class);
+        $service = app(ClosureGateService::class);
         $before = $service->preview($gate, $producer);
         $this->assertTrue($before['admissible']);
         $this->assertSame(1, $before['cadence_interval']);

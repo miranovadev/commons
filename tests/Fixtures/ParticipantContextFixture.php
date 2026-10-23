@@ -15,7 +15,7 @@ use App\Models\PropositionMeasurement;
 use App\Models\Substrate;
 use App\Models\Supersession;
 use App\Services\CommitRegionPolarityService;
-use App\Services\InstrumentExecutionService;
+use App\Services\EvidenceExecutionService;
 use App\Services\LedgerService;
 use App\Services\Observables\ProspectiveClosureService;
 use Illuminate\Support\Facades\DB;
@@ -180,8 +180,8 @@ final class ParticipantContextFixture
         $attestation->forceFill(['phase_id' => $node->phase_id, 'proposition_id' => $node->id, 'direction' => 'support',
             'rationale' => 'This interpretation agrees with the recorded observation; its assumptions can be checked by another participant.'])->save();
         app(LedgerService::class)->record($attestation);
-        $execution = app(InstrumentExecutionService::class)->start($node->phase, $node, 'hyperlink', 'https://example.test/evidence/'.$node->id);
-        app(InstrumentExecutionService::class)->complete($execution, $attestation, 'evidence-'.$node->id);
+        $execution = app(EvidenceExecutionService::class)->start($node->phase, $node, 'hyperlink', 'https://example.test/evidence/'.$node->id);
+        app(EvidenceExecutionService::class)->complete($execution, $attestation, 'evidence-'.$node->id);
     }
 
     public function growUnrelatedTo(int $count): void

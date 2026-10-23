@@ -86,7 +86,7 @@ class ParticipationApiTest extends TestCase
         $this->assertDatabaseCount('phases', 2);
         $this->assertDatabaseCount('propositions', 1);
         $this->assertDatabaseCount('attestations', 1);
-        $this->assertDatabaseCount('instrument_executions', 0);
+        $this->assertDatabaseCount('evidence_executions', 0);
         $this->assertDatabaseCount('receipts', 0);
         $this->assertDatabaseCount('substrate_ledger_entries', 2);
         $this->assertDatabaseCount('commitment_snapshots', 1);

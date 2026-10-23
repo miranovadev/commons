@@ -52,7 +52,7 @@ class OriginGroundingTest extends TestCase
         $this->assertSame(-0.5, $origin->commitmentSnapshot->chirality);
         $this->assertNotNull($origin->commitmentSnapshot);
         $this->assertDatabaseCount('receipts', 0);
-        $this->assertDatabaseCount('instrument_executions', 0);
+        $this->assertDatabaseCount('evidence_executions', 0);
         $snapshot = $origin->commitmentSnapshot->getAttributes();
 
         // The opposite human label is negative in the established immutable frame.

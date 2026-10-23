@@ -6,7 +6,7 @@ use App\Domain\Evidence\VerifiedHyperlink;
 use App\Enums\PhaseKind;
 use App\Models\Connection;
 use App\Models\ParticipantReceiptContext;
-use App\Services\InstrumentExecutionService;
+use App\Services\EvidenceExecutionService;
 use App\Services\MediationReadService;
 use App\Services\ParticipantPromptFactory;
 use App\Services\ParticipationService;
@@ -36,7 +36,7 @@ class ReceiptPhaseBoundaryTest extends TestCase
         $anchor = app(MediationReadService::class)->anchorFor($f->phase);
         $f->phase->forceFill(['kind' => PhaseKind::Disperse, 'gate_proposition_id' => $anchor->id, 'write_register' => 'activity'])->save();
         $f->viewer->forceFill(['current_proposition_id' => $anchor->id])->save();
-        $executions = app(InstrumentExecutionService::class);
+        $executions = app(EvidenceExecutionService::class);
         $subject = $role === 'gate' ? $anchor : $f->gate;
         $r = $executions->complete($executions->start($f->phase, $subject, 'hyperlink', 'https://example.test/boundary'), $subject,
             verification: new VerifiedHyperlink('example.test/boundary', hash('sha256', 'boundary'), CarbonImmutable::now(), contentExcerpt: 'BOUNDARY-BODY'));

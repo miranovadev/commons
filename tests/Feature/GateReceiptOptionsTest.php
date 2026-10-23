@@ -8,8 +8,8 @@ use App\Enums\RestReason;
 use App\Models\ParticipantReceiptContext;
 use App\Services\ContributionDispatcher;
 use App\Services\ContributionService;
+use App\Services\EvidenceExecutionService;
 use App\Services\InputPlanService;
-use App\Services\InstrumentExecutionService;
 use App\Services\OpenAIResponseSchema;
 use App\Services\ParticipationService;
 use App\Services\ReceiptContextService;
@@ -26,7 +26,7 @@ class GateReceiptOptionsTest extends TestCase
     private function scenario(): array
     {
         $f = new ParticipantContextFixture(1, 0, false);
-        $service = app(InstrumentExecutionService::class);
+        $service = app(EvidenceExecutionService::class);
         $r = $service->complete($service->start($f->phase, $f->gate, 'hyperlink', 'https://example.test/gate'), $f->gate,
             verification: new VerifiedHyperlink('example.test/gate', hash('sha256', 'gate'), CarbonImmutable::now(), contentExcerpt: 'Gate evidence'));
         $this->publishPotentialFixture($f->viewer);
@@ -73,7 +73,7 @@ class GateReceiptOptionsTest extends TestCase
         $gate = $f->node($f->seed, 'canon', position: PhaseKind::Bias);
         $f->phase->forceFill(['kind' => PhaseKind::Order, 'write_register' => 'canon', 'gate_proposition_id' => $gate->id])->save();
         $f->viewer->forceFill(['current_proposition_id' => $gate->id])->save();
-        $instruments = app(InstrumentExecutionService::class);
+        $instruments = app(EvidenceExecutionService::class);
         $r = $instruments->complete($instruments->start($f->phase, $gate, 'hyperlink', 'https://example.test/rest'), $gate,
             verification: new VerifiedHyperlink('example.test/rest', hash('sha256', 'rest'), CarbonImmutable::now()));
         $this->assertSame([$r->id], app(ReceiptContextService::class)->gateOptions($f->phase)->pluck('id')->all());
@@ -124,7 +124,7 @@ class GateReceiptOptionsTest extends TestCase
     public function test_existing_non_gate_and_foreign_region_receipts_cannot_be_injected(): void
     {
         [$f, $r, $input] = $this->scenario();
-        $service = app(InstrumentExecutionService::class);
+        $service = app(EvidenceExecutionService::class);
         $foreign = $f->node(null, 'canon', 'variant', 'committal');
         foreach ([$f->node($f->seed, 'activity'), $f->node($foreign, 'activity')] as $index => $node) {
             $receipt = $service->complete($service->start($f->phase, $node, 'hyperlink', 'https://example.test/'.$node->id), $node,

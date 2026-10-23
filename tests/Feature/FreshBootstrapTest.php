@@ -68,7 +68,7 @@ class FreshBootstrapTest extends TestCase
         $this->assertSame('negative', $origin->orientation_direction);
         $this->assertSame('negative', $origin->attestation_cadence_direction);
         $this->assertSame($label, $origin->proposition->attestations()->sole()->direction);
-        $this->assertSame(0, $origin->proposition->instrumentExecutions()->count());
+        $this->assertSame(0, $origin->proposition->evidenceExecutions()->count());
         $snapshot = $commit->commitmentSnapshot;
         $this->assertSame(0.0, $snapshot->depth);
         $this->assertSame(0.0, $snapshot->cadence);

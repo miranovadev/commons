@@ -25,10 +25,10 @@ return new class extends Migration
         // Ownership comes from the creating action, never its author or a later viewer.
         DB::table('receipts')->orderBy('id')->chunkById(500, function ($receipts): void {
             foreach ($receipts as $receipt) {
-                $horizon = DB::table('instrument_executions as execution')
+                $horizon = DB::table('evidence_executions as execution')
                     ->join('phases as phase', 'phase.id', '=', 'execution.phase_id')
                     ->join('cycles as cycle', 'cycle.id', '=', 'phase.cycle_id')
-                    ->where('execution.id', $receipt->instrument_execution_id)->value('cycle.context_horizon_id');
+                    ->where('execution.id', $receipt->evidence_execution_id)->value('cycle.context_horizon_id');
                 DB::table('receipts')->where('id', $receipt->id)->update(['context_horizon_id' => $horizon]);
                 // Reserve evidence already used by a historical classification. Keep
                 // all old links, including duplicates; do not invent new observations.

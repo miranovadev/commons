@@ -19,9 +19,9 @@ use App\Services\CommitRegionService;
 use App\Services\ContextHorizonProjector;
 use App\Services\ContributionDispatcher;
 use App\Services\CycleEntryService;
+use App\Services\EvidenceExecutionService;
 use App\Services\ExhaustionService;
 use App\Services\HorizonReceiptService;
-use App\Services\InstrumentExecutionService;
 use App\Services\LedgerService;
 use App\Services\Participation\ParticipationContext;
 use App\Services\ParticipationService;
@@ -75,7 +75,7 @@ class CausalRecoveryTest extends TestCase
                 $this->assertSame($this->commitSupersessionFixture($committal)->id, $committal->commitmentSnapshot->supersession_id);
             }
             $source = $this->expressive($horizon, $a);
-            $instruments = app(InstrumentExecutionService::class);
+            $instruments = app(EvidenceExecutionService::class);
             $receipt = $instruments->complete($instruments->start($source->phase, $source, 'citation', $a->id), $source);
             $service = app(HorizonReceiptService::class);
             $this->assertContains($receipt->id, $service->ordinaryAvailable($this->phase($horizon, $a, PhaseKind::Distinguish))->pluck('id'));

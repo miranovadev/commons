@@ -14,7 +14,7 @@ import re
 import sys
 
 TABLES = '''substrates participants cycles phases propositions supersessions
-attestations receipts instrument_executions participant_receipt_contexts
+attestations receipts evidence_executions participant_receipt_contexts
 proposition_receipt_links receipt_consumptions receipt_context_events
 context_horizons context_horizon_memberships substrate_ledger_entries
 commitment_snapshots canonical_measurements chirality_observations
@@ -103,7 +103,7 @@ def main(source, destination):
             if table == 'substrates':
                 row['slug'] = 'c3-' + row['id']
                 row['configuration'] = '{}'
-            if table in {'receipts', 'instrument_executions'}:
+            if table in {'receipts', 'evidence_executions'}:
                 if row.get('reference') and not re.fullmatch(r'[0-9a-hjkmnp-tv-z]{26}', row['reference']):
                     row['reference'] = scrub(row['reference'])
                 for key in ('metadata', 'input'):

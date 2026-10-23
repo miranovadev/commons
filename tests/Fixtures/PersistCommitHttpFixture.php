@@ -76,8 +76,8 @@ trait PersistCommitHttpFixture
             $this->assertSame(2, $step['phase']);
             $this->assertSame($before['plan']['phase'], $after['plan']['phase']);
             $this->assertSame($before['cycle'], $after['cycle']);
-            $receipt = Receipt::whereHas('instrumentExecution', fn ($q) => $q->where('phase_id', $before['plan']['phase']['id']))->sole();
-            $this->assertSame($before['plan']['gate_id'], $receipt->instrumentExecution->proposition_id);
+            $receipt = Receipt::whereHas('evidenceExecution', fn ($q) => $q->where('phase_id', $before['plan']['phase']['id']))->sole();
+            $this->assertSame($before['plan']['gate_id'], $receipt->evidenceExecution->proposition_id);
             $this->assertNotContains($receipt->id, $this->persistJourneyIds);
             $this->persistJourneyIds[$step['receipt']] = $receipt->id;
         } else {

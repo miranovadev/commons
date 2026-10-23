@@ -9,7 +9,7 @@ use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Services\AttestationEvidenceService;
-use App\Services\InstrumentExecutionService;
+use App\Services\EvidenceExecutionService;
 use App\Services\LedgerService;
 use App\Services\Observables\ReinforcementService;
 use App\Services\Participation\ParticipationContext;
@@ -49,7 +49,7 @@ class PropositionReceiptWeightTest extends TestCase
         };
         $a = $attest($f->phase, 'support');
         $b = $attest($otherPhase, 'refute');
-        $executions = app(InstrumentExecutionService::class);
+        $executions = app(EvidenceExecutionService::class);
         $r = $executions->complete($executions->start($f->phase, $f->gate, 'hyperlink', 'https://example.test/weight'), $a,
             verification: new VerifiedHyperlink('example.test/weight', hash('sha256', 'weight'), CarbonImmutable::now()));
         $this->assertSame((new Proposition)->getMorphClass(), $r->receiptable_type);
@@ -82,7 +82,7 @@ class PropositionReceiptWeightTest extends TestCase
         $a = (new Attestation)->forceFill(['phase_id' => $f->phase->id, 'proposition_id' => $f->gate->id, 'direction' => 'support']);
         $a->save();
         app(LedgerService::class)->record($a);
-        $executions = app(InstrumentExecutionService::class);
+        $executions = app(EvidenceExecutionService::class);
         $r = $executions->complete($executions->start($f->phase, $f->gate, 'hyperlink', 'https://example.test/legacy'), $a,
             verification: new VerifiedHyperlink('example.test/legacy', hash('sha256', 'legacy'), CarbonImmutable::now()));
         // A historical storage fixture, not a new application write path.

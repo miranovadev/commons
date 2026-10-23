@@ -94,7 +94,7 @@ Ordinary Variants, revisions and reconciliations start fresh evidence; they do n
 inherit arbitrary structural ancestry. Reclassification retains its selected Receipt
 reference, so equivalent invocation remains suppressed there. Once the
 effective set no longer includes an equivalent observation, the same resource can
-be observed again. Historical Receipts and InstrumentExecution rows are not expired,
+be observed again. Historical Receipts and EvidenceExecution rows are not expired,
 updated, deleted or backfilled. Legacy Attestation-owned evidence remains Proposition grounding after judgment supersession; no new Attestation-owned Receipt is created.
 
 `InstrumentInvocation` computes a separate versioned invocation signature:

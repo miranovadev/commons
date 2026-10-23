@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\PhaseKind;
-use App\Models\InstrumentExecution;
+use App\Models\EvidenceExecution;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
@@ -32,7 +32,7 @@ class PersistInstrumentTest extends TestCase
         $phase = Phase::findOrFail($state['plan']['phase']['id']);
         $this->assertSame([$signal->id], $state['plan']['schema']['$defs']['actions']['instrument.execute']['properties']['proposition_id']['enum']);
         $next = $service->contribute($grounder, $phase->id, $this->instrument($signal, $write));
-        $receipt = InstrumentExecution::where('phase_id', $phase->id)->sole()->receipt;
+        $receipt = EvidenceExecution::where('phase_id', $phase->id)->sole()->receipt;
         $this->assertSame($signal->id, $receipt->receiptable_id);
         $this->assertSame($phase->id, $next['plan']['phase']['id']);
         $this->assertSame($signal->id, $next['plan']['gate_id']);
@@ -82,7 +82,7 @@ class PersistInstrumentTest extends TestCase
         $state = $service->stateFor($grounder);
         $phase = Phase::findOrFail($state['plan']['phase']['id']);
         $this->assertNotContains($target->id, $state['plan']['schema']['$defs']['actions']['instrument.execute']['properties']['proposition_id']['enum']);
-        $counts = [InstrumentExecution::count(), Receipt::count()];
+        $counts = [EvidenceExecution::count(), Receipt::count()];
         try {
             app(ParticipationService::class)->contribute($grounder, $phase->id, $this->instrument($target, $signal));
             $this->fail('The input schema must reject invalid Instrument targets.');
@@ -93,7 +93,7 @@ class PersistInstrumentTest extends TestCase
             app(ContributionDispatcher::class)->dispatch($grounder, $phase, $this->instrument($target, $signal));
             $this->fail('Direct dispatch must also reject invalid Instrument targets.');
         } catch (DomainException|ConflictHttpException) {
-            $this->assertSame($counts, [InstrumentExecution::count(), Receipt::count()]);
+            $this->assertSame($counts, [EvidenceExecution::count(), Receipt::count()]);
         }
     }
 

@@ -49,7 +49,7 @@ trait PersistEpochHttpFixture
         $this->judge($actor, $constrain);
         $this->judge($actor, $b);
         $state = $this->contribute($actor, ['action' => 'participant.rest']);
-        $this->assertDatabaseMissing('instrument_executions', ['proposition_id' => $b]);
+        $this->assertDatabaseMissing('evidence_executions', ['proposition_id' => $b]);
 
         return compact('actor', 'originObserver', 'observer', 'witness', 'origin', 'a', 'b', 'slot', 'parked', 'witnessState', 'state');
     }

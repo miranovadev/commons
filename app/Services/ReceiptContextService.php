@@ -60,14 +60,14 @@ final readonly class ReceiptContextService
                 ->concat(Receipt::where('type', 'proposition_search')
                     ->whereIn('id', ParticipantReceiptContext::active()
                         ->where('participant_id', $phase->cycle->participant_id)->select('receipt_id'))
-                    ->whereHas('instrumentExecution.proposition.phase.cycle.participant',
+                    ->whereHas('evidenceExecution.proposition.phase.cycle.participant',
                         fn ($q) => $q->where('substrate_id', $context->substrate->id))->get());
             $receipts = $available
                 ->concat($memories)
                 ->concat($context->receipts->where('context_horizon_id', $phase->cycle->context_horizon_id)
                     ->whereIn('id', $context->receiptContexts->where('participant_id', $phase->cycle->participant_id)->whereNull('cleared_at')->pluck('receipt_id')))
                 ->concat($exposed->flatMap(fn ($node) => $this->state->receipts($node, $context)))->unique('id');
-            (new \Illuminate\Database\Eloquent\Collection($receipts->all()))->loadMissing(['consumption', 'phase', 'instrumentExecution']);
+            (new \Illuminate\Database\Eloquent\Collection($receipts->all()))->loadMissing(['consumption', 'phase', 'evidenceExecution']);
             $loads = ParticipantReceiptContext::where('participant_id', $phase->cycle->participant_id)
                 ->whereIn('receipt_id', $receipts->pluck('id'))->get()->keyBy('receipt_id');
             if ($receipts->contains('type', 'citation')) {
@@ -92,7 +92,7 @@ final readonly class ReceiptContextService
                 return [
                     'id' => $receipt->id, 'proposition_id' => $receipt->type === 'tragedy'
                         ? $receipt->metadata['terminal_proposition_id']
-                        : ($receipt->instrumentExecution?->proposition_id ?? $receipt->phase->gate_proposition_id),
+                        : ($receipt->evidenceExecution?->proposition_id ?? $receipt->phase->gate_proposition_id),
                     'context_horizon_id' => $receipt->context_horizon_id,
                     'availability' => $receipt->consumption !== null ? 'consumed' :
                         ($available->contains('id', $receipt->id)
@@ -106,12 +106,12 @@ final readonly class ReceiptContextService
                         'replayable' => $receipt->supports(ReceiptCapability::Replayable),
                     ],
                     'can_replay' => $receipt->supports(ReceiptCapability::Replayable)
-                        && $replayTargets->contains($receipt->instrumentExecution->proposition_id)
+                        && $replayTargets->contains($receipt->evidenceExecution->proposition_id)
                         && app(RelevantInstrumentService::class)->equivalent(
-                            $context->propositions->get($receipt->instrumentExecution->proposition_id),
+                            $context->propositions->get($receipt->evidenceExecution->proposition_id),
                             $receipt->replayInvocation(), $context,
                         ) === null,
-                    'replayed_from_receipt_id' => $receipt->instrumentExecution?->replayed_from_receipt_id,
+                    'replayed_from_receipt_id' => $receipt->evidenceExecution?->replayed_from_receipt_id,
                     'observation_error' => $receipt->metadata['observation_error'] ?? null,
                     'signature' => $verified['signature'] ?? null,
                     'loaded' => $loaded, 'active' => ! $memory && $loaded && $activeIds->contains($receipt->id),
@@ -216,7 +216,7 @@ final readonly class ReceiptContextService
         if (DB::transactionLevel() === 0 || ! $receipt->observationComplete()) {
             throw new DomainException('Creator loading requires completed Instrument persistence in its transaction.');
         }
-        $phase = $receipt->instrumentExecution->phase;
+        $phase = $receipt->evidenceExecution->phase;
         $participant = $phase->cycle->participant;
         Participant::query()->lockForUpdate()->findOrFail($participant->id);
         Phase::query()->lockForUpdate()->findOrFail($phase->id);
@@ -224,7 +224,7 @@ final readonly class ReceiptContextService
             ? ($this->evidence->describe($receipt, new ParticipationContext($phase))['signature'] ?? null)
             : ($this->evidence->observation($receipt)['signature'] ?? null);
 
-        return $this->persistLoad($participant, $phase, $receipt->id, $receipt->instrumentExecution->proposition_id, $signature);
+        return $this->persistLoad($participant, $phase, $receipt->id, $receipt->evidenceExecution->proposition_id, $signature);
     }
 
     private function persistLoad(Participant $participant, Phase $phase, string $id, string $propositionId, ?string $signature): ParticipantReceiptContext

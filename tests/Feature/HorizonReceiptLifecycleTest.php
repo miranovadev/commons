@@ -4,8 +4,8 @@ namespace Tests\Feature;
 
 use App\Enums\PhaseKind;
 use App\Models\Receipt;
+use App\Services\EvidenceExecutionService;
 use App\Services\HorizonReceiptService;
-use App\Services\InstrumentExecutionService;
 use App\Services\Participation\ParticipationContext;
 use App\Services\ReceiptContextService;
 use DomainException;
@@ -28,7 +28,7 @@ class HorizonReceiptLifecycleTest extends TestCase
     {
         $phase = $this->phase($this->origin, PhaseKind::Distinguish);
         $source = $this->node($phase, $this->origin);
-        $service = app(InstrumentExecutionService::class);
+        $service = app(EvidenceExecutionService::class);
         $execution = $service->start($phase, $source, 'citation', $this->origin->id);
         $receipt = $service->complete($execution, $source);
 
@@ -42,9 +42,9 @@ class HorizonReceiptLifecycleTest extends TestCase
         $this->assertNotSame($source->phase->cycle->participant_id, $other->cycle->participant_id);
         $this->assertSame($other->cycle->context_horizon_id, $receipt->context_horizon_id);
         $this->assertSame([$receipt->id], app(HorizonReceiptService::class)->ordinaryAvailable($other)->modelKeys());
-        $this->assertSame(1, Receipt::where('instrument_execution_id', $execution->id)->count());
+        $this->assertSame(1, Receipt::where('evidence_execution_id', $execution->id)->count());
         $this->expectException(DomainException::class);
-        app(InstrumentExecutionService::class)->complete($execution, $source);
+        app(EvidenceExecutionService::class)->complete($execution, $source);
     }
 
     public function test_receipt_evidence_remains_free_and_shared_when_its_producer_is_spent(): void
@@ -52,7 +52,7 @@ class HorizonReceiptLifecycleTest extends TestCase
         $producerPhase = $this->phase($this->origin, PhaseKind::Distinguish);
         // A spent producer and its unconsumed Receipt remain contextual evidence.
         $producer = $this->node($producerPhase, $this->origin);
-        $service = app(InstrumentExecutionService::class);
+        $service = app(EvidenceExecutionService::class);
         $receipt = $service->complete($service->start($producerPhase, $producer, 'citation', $this->origin->id), $producer);
         DB::table('continuation_failures')->insert(['proposition_id' => $producer->id,
             'context_horizon_id' => $producerPhase->cycle->context_horizon_id,

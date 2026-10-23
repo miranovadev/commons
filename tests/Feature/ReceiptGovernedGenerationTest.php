@@ -64,7 +64,7 @@ class ReceiptGovernedGenerationTest extends TestCase
             'instrument' => $kind === 'citation' ? ['kind' => 'citation', 'reference' => $f->seed->id] : ['kind' => $kind],
         ]);
 
-        return Receipt::whereHas('instrumentExecution', fn ($q) => $q->where('phase_id', $phase->id))->sole();
+        return Receipt::whereHas('evidenceExecution', fn ($q) => $q->where('phase_id', $phase->id))->sole();
     }
 
     /** Catalogue component: use the existing transactional attachment operation. */
@@ -127,8 +127,8 @@ class ReceiptGovernedGenerationTest extends TestCase
         $observer->forceFill(['gate_proposition_id' => $otherGate->id])->save();
         $observer->cycle->participant->forceFill(['current_proposition_id' => $otherGate->id])->save();
         $receipt = $this->observe($f, $observer, $kind);
-        $this->assertSame($otherGate->id, $receipt->instrumentExecution->proposition_id);
-        $this->assertNotSame($f->gate->id, $receipt->instrumentExecution->proposition_id);
+        $this->assertSame($otherGate->id, $receipt->evidenceExecution->proposition_id);
+        $this->assertNotSame($f->gate->id, $receipt->evidenceExecution->proposition_id);
         $this->assertDatabaseMissing('participant_receipt_contexts', ['participant_id' => $f->viewer->id, 'receipt_id' => $receipt->id]);
         $this->assertTrue(app(PhaseGenerationService::class)->available($f->phase, 'proposition.variant'));
         DB::table('participant_receipt_contexts')->where('receipt_id', $receipt->id)->update(['cleared_at' => now()]);
@@ -140,7 +140,7 @@ class ReceiptGovernedGenerationTest extends TestCase
         $this->assertDatabaseCount('receipt_consumptions', 0);
         $this->assertDatabaseMissing('proposition_receipt_links', ['receipt_id' => $receipt->id]);
         $this->assertDatabaseHas('supersessions', ['source_proposition_id' => $f->gate->id, 'target_proposition_id' => $after['current_proposition_id'], 'type' => 'variant']);
-        $this->assertSame($observer->id, $receipt->instrumentExecution->phase_id);
+        $this->assertSame($observer->id, $receipt->evidenceExecution->phase_id);
         $this->assertContains($receipt->id, array_column($after['plan']['receipts'], 'id'));
     }
 

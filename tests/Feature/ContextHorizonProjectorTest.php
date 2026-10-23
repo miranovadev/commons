@@ -17,7 +17,7 @@ use App\Models\Substrate;
 use App\Models\Supersession;
 use App\Services\CommitmentSnapshotService;
 use App\Services\ContextHorizonProjector;
-use App\Services\InstrumentExecutionService;
+use App\Services\EvidenceExecutionService;
 use App\Services\LedgerService;
 use App\Services\PropositionMeasurementService;
 use DomainException;
@@ -111,7 +111,7 @@ class ContextHorizonProjectorTest extends TestCase
     public function test_completed_receipts_enter_the_ledger_atomically(): void
     {
         $proposition = $this->proposition('Evidence target.');
-        $service = app(InstrumentExecutionService::class);
+        $service = app(EvidenceExecutionService::class);
         $execution = $service->start(
             $this->phase,
             $proposition,

@@ -1,0 +1,367 @@
+{
+    "description": "Rows from isolated domain tests; delivery acknowledgements use a test-only reader, not a Stage 2D implementation.",
+    "records": {
+        "instrument": {
+            "execution": {
+                "id": "01m5kx72mhxbnhp00fmk7vw1z5",
+                "cycle_id": "01m5kx72h0v7ngfxvgtdpacgnf",
+                "type": "instrument",
+                "phase_id": "01m5kx72m052dea4h6sghm0a37",
+                "proposition_id": "01m5kx72m3avmfssnaxyj156ap",
+                "kind": "hyperlink",
+                "reference": "https://example.test/artifact/01M5KX72MHXBNHP00FMK7VW1Z4",
+                "status": "completed",
+                "input": {
+                    "kind": "hyperlink",
+                    "reference": "https://example.test/artifact/01M5KX72MHXBNHP00FMK7VW1Z4"
+                },
+                "metadata": {
+                    "validation": "http-content-v1",
+                    "content_verified": true,
+                    "resource": "https://example.test/artifact/01M5KX72MHXBNHP00FMK7VW1Z4",
+                    "fingerprint": "2cdc15506a37b9f007936faea8eff1abb1e19e6c43e203769e4d5b1d9c44f1a7",
+                    "observed_at": "2026-10-23T08:14:39+00:00",
+                    "last_modified": null,
+                    "version_clock": "server-observed",
+                    "content_excerpt": null,
+                    "excerpt_truncated": false,
+                    "artifacts": [
+                        {
+                            "path": "artifacts/sha256/2c/dc/2cdc15506a37b9f007936faea8eff1abb1e19e6c43e203769e4d5b1d9c44f1a7",
+                            "hash": "sha256:2cdc15506a37b9f007936faea8eff1abb1e19e6c43e203769e4d5b1d9c44f1a7",
+                            "media_type": "application/octet-stream",
+                            "size": 23
+                        }
+                    ],
+                    "reinforcement_version": "accepted-version",
+                    "reinforcement_status": "not-loaded"
+                },
+                "presentation": null,
+                "outcome": null,
+                "resulting_proposition_id": null,
+                "presented_at": null,
+                "started_at": "2026-10-23T08:14:39.000000Z",
+                "completed_at": "2026-10-23T08:14:39.000000Z",
+                "failed_at": null,
+                "failure_reason": null,
+                "created_at": "2026-10-23T08:14:39.000000Z",
+                "updated_at": "2026-10-23T08:14:39.000000Z",
+                "replayed_from_receipt_id": null
+            },
+            "receipt": {
+                "id": "01m5kx72mmbshzm58emrbr7q7n",
+                "evidence_execution_id": "01m5kx72mhxbnhp00fmk7vw1z5",
+                "receiptable_type": "App\\Models\\Proposition",
+                "receiptable_id": "01m5kx72m3avmfssnaxyj156ap",
+                "type": "hyperlink",
+                "reference": "https://example.test/artifact/01M5KX72MHXBNHP00FMK7VW1Z4",
+                "signature": "550209b782ee3d97b8350fca2a07e54a63eda6ac507327b9855cccdaa61368eb",
+                "metadata": {
+                    "validation": "http-content-v1",
+                    "content_verified": true,
+                    "resource": "https://example.test/artifact/01M5KX72MHXBNHP00FMK7VW1Z4",
+                    "fingerprint": "2cdc15506a37b9f007936faea8eff1abb1e19e6c43e203769e4d5b1d9c44f1a7",
+                    "observed_at": "2026-10-23T08:14:39+00:00",
+                    "last_modified": null,
+                    "version_clock": "server-observed",
+                    "content_excerpt": null,
+                    "excerpt_truncated": false,
+                    "artifacts": [
+                        {
+                            "path": "artifacts/sha256/2c/dc/2cdc15506a37b9f007936faea8eff1abb1e19e6c43e203769e4d5b1d9c44f1a7",
+                            "hash": "sha256:2cdc15506a37b9f007936faea8eff1abb1e19e6c43e203769e4d5b1d9c44f1a7",
+                            "media_type": "application/octet-stream",
+                            "size": 23
+                        }
+                    ],
+                    "reinforcement_version": "accepted-version",
+                    "reinforcement_status": "not-loaded"
+                },
+                "created_at": "2026-10-23T08:14:39.000000Z",
+                "updated_at": "2026-10-23T08:14:39.000000Z",
+                "capabilities": [
+                    "readable",
+                    "replayable"
+                ],
+                "context_horizon_id": "01m5kx72gp5z202k9ydcnbr735",
+                "phase_id": "01m5kx72m052dea4h6sghm0a37"
+            }
+        },
+        "contributed": {
+            "execution": {
+                "id": "01m5kx72nx8g3zc22tew2f75d6",
+                "cycle_id": "01m5kx72khv716mfbrsrxbqkk6",
+                "type": "prepare",
+                "phase_id": "01m5kx72kz9b2a198dymrhmkzb",
+                "proposition_id": "01m5kx72m3avmfssnaxyj156ap",
+                "kind": null,
+                "reference": null,
+                "status": "completed",
+                "input": {
+                    "purpose": "  Compare the preserved observations. 💚  ",
+                    "artifacts": [
+                        {
+                            "receipt_id": "01m5kx72mmbshzm58emrbr7q7n",
+                            "artifact_id": "sha256:2cdc15506a37b9f007936faea8eff1abb1e19e6c43e203769e4d5b1d9c44f1a7"
+                        }
+                    ]
+                },
+                "metadata": {
+                    "originating_gate_id": "01m5kx72m3avmfssnaxyj156ap",
+                    "participant_id": "01m5kx72gm8y6s1dfskygvdb9n",
+                    "purpose": "  Compare the preserved observations. 💚  ",
+                    "selections": [
+                        {
+                            "receipt_id": "01m5kx72mmbshzm58emrbr7q7n",
+                            "artifact_id": "sha256:2cdc15506a37b9f007936faea8eff1abb1e19e6c43e203769e4d5b1d9c44f1a7"
+                        }
+                    ],
+                    "deliveries": [
+                        {
+                            "artifact_id": "sha256:2cdc15506a37b9f007936faea8eff1abb1e19e6c43e203769e4d5b1d9c44f1a7",
+                            "method": "test-acknowledgement",
+                            "version": "1",
+                            "representation": "test-extracted-text",
+                            "payload_hash": "sha256:a81f9acfbd59935336ffb8619452e63a39c6655f87a69cbb42598334e27bf380",
+                            "payload_bytes": 14,
+                            "delivery_id": "01M5KX72NX8G3ZC22TEW2F75D7"
+                        }
+                    ],
+                    "presented_at": "2026-10-23T08:14:39.000000Z",
+                    "outcome": {
+                        "type": "contributed",
+                        "proposition_id": "01m5kx72r2rymqm0ptkxw3xk2t"
+                    },
+                    "content_verified": true,
+                    "reinforcement_version": "observed-preparation",
+                    "reinforcement_status": "not-loaded"
+                },
+                "presentation": [
+                    {
+                        "artifact_id": "sha256:2cdc15506a37b9f007936faea8eff1abb1e19e6c43e203769e4d5b1d9c44f1a7",
+                        "method": "test-acknowledgement",
+                        "version": "1",
+                        "representation": "test-extracted-text",
+                        "payload_hash": "sha256:a81f9acfbd59935336ffb8619452e63a39c6655f87a69cbb42598334e27bf380",
+                        "payload_bytes": 14,
+                        "delivery_id": "01M5KX72NX8G3ZC22TEW2F75D7"
+                    }
+                ],
+                "outcome": "contributed",
+                "resulting_proposition_id": "01m5kx72r2rymqm0ptkxw3xk2t",
+                "presented_at": "2026-10-23T08:14:39.000000Z",
+                "started_at": "2026-10-23T08:14:39.000000Z",
+                "completed_at": "2026-10-23T08:14:39.000000Z",
+                "failed_at": null,
+                "failure_reason": null,
+                "created_at": "2026-10-23T08:14:39.000000Z",
+                "updated_at": "2026-10-23T08:14:39.000000Z",
+                "replayed_from_receipt_id": null
+            },
+            "receipt": {
+                "id": "01m5kx72rzpjy3s6kf71pxk6e1",
+                "evidence_execution_id": "01m5kx72nx8g3zc22tew2f75d6",
+                "receiptable_type": "App\\Models\\Proposition",
+                "receiptable_id": "01m5kx72m3avmfssnaxyj156ap",
+                "type": "preparation",
+                "reference": "01m5kx72nx8g3zc22tew2f75d6",
+                "signature": "151dd55cf6551eea5ad2266cd2741b247c8279a3a1d369b2b1cfbd4de1451aeb",
+                "metadata": {
+                    "originating_gate_id": "01m5kx72m3avmfssnaxyj156ap",
+                    "participant_id": "01m5kx72gm8y6s1dfskygvdb9n",
+                    "purpose": "  Compare the preserved observations. 💚  ",
+                    "selections": [
+                        {
+                            "receipt_id": "01m5kx72mmbshzm58emrbr7q7n",
+                            "artifact_id": "sha256:2cdc15506a37b9f007936faea8eff1abb1e19e6c43e203769e4d5b1d9c44f1a7"
+                        }
+                    ],
+                    "deliveries": [
+                        {
+                            "artifact_id": "sha256:2cdc15506a37b9f007936faea8eff1abb1e19e6c43e203769e4d5b1d9c44f1a7",
+                            "method": "test-acknowledgement",
+                            "version": "1",
+                            "representation": "test-extracted-text",
+                            "payload_hash": "sha256:a81f9acfbd59935336ffb8619452e63a39c6655f87a69cbb42598334e27bf380",
+                            "payload_bytes": 14,
+                            "delivery_id": "01M5KX72NX8G3ZC22TEW2F75D7"
+                        }
+                    ],
+                    "presented_at": "2026-10-23T08:14:39.000000Z",
+                    "outcome": {
+                        "type": "contributed",
+                        "proposition_id": "01m5kx72r2rymqm0ptkxw3xk2t"
+                    },
+                    "content_verified": true,
+                    "reinforcement_version": "observed-preparation",
+                    "reinforcement_status": "not-loaded"
+                },
+                "created_at": "2026-10-23T08:14:39.000000Z",
+                "updated_at": "2026-10-23T08:14:39.000000Z",
+                "capabilities": [
+                    "readable"
+                ],
+                "context_horizon_id": "01m5kx72gp5z202k9ydcnbr735",
+                "phase_id": "01m5kx72kz9b2a198dymrhmkzb"
+            }
+        },
+        "deferred": {
+            "execution": {
+                "id": "01m5kx72zj88x9jgnxh2ek7ts3",
+                "cycle_id": "01m5kx72x5e425qhg8v468dx34",
+                "type": "prepare",
+                "phase_id": "01m5kx72xmt40y5svj7z3h3vya",
+                "proposition_id": "01m5kx72xrw6v9byw841x1z8gb",
+                "kind": null,
+                "reference": null,
+                "status": "completed",
+                "input": {
+                    "purpose": "  Compare the preserved observations. 💚  ",
+                    "artifacts": [
+                        {
+                            "receipt_id": "01m5kx72y9a4sawrd7nc51r32h",
+                            "artifact_id": "sha256:2cdc15506a37b9f007936faea8eff1abb1e19e6c43e203769e4d5b1d9c44f1a7"
+                        }
+                    ]
+                },
+                "metadata": {
+                    "originating_gate_id": "01m5kx72xrw6v9byw841x1z8gb",
+                    "participant_id": "01m5kx72syr0nz5f9gbmk1hscw",
+                    "purpose": "  Compare the preserved observations. 💚  ",
+                    "selections": [
+                        {
+                            "receipt_id": "01m5kx72y9a4sawrd7nc51r32h",
+                            "artifact_id": "sha256:2cdc15506a37b9f007936faea8eff1abb1e19e6c43e203769e4d5b1d9c44f1a7"
+                        }
+                    ],
+                    "deliveries": [
+                        {
+                            "artifact_id": "sha256:2cdc15506a37b9f007936faea8eff1abb1e19e6c43e203769e4d5b1d9c44f1a7",
+                            "method": "test-acknowledgement",
+                            "version": "1",
+                            "representation": "test-extracted-text",
+                            "payload_hash": "sha256:a81f9acfbd59935336ffb8619452e63a39c6655f87a69cbb42598334e27bf380",
+                            "payload_bytes": 14,
+                            "delivery_id": "01M5KX72ZK2DT1WEBMZQX3ZCJD"
+                        }
+                    ],
+                    "presented_at": "2026-10-23T08:14:39.000000Z",
+                    "outcome": {
+                        "type": "deferred",
+                        "reason": "The comparison is inconclusive."
+                    },
+                    "content_verified": true,
+                    "reinforcement_version": "observed-preparation",
+                    "reinforcement_status": "not-loaded"
+                },
+                "presentation": [
+                    {
+                        "artifact_id": "sha256:2cdc15506a37b9f007936faea8eff1abb1e19e6c43e203769e4d5b1d9c44f1a7",
+                        "method": "test-acknowledgement",
+                        "version": "1",
+                        "representation": "test-extracted-text",
+                        "payload_hash": "sha256:a81f9acfbd59935336ffb8619452e63a39c6655f87a69cbb42598334e27bf380",
+                        "payload_bytes": 14,
+                        "delivery_id": "01M5KX72ZK2DT1WEBMZQX3ZCJD"
+                    }
+                ],
+                "outcome": "deferred",
+                "resulting_proposition_id": null,
+                "presented_at": "2026-10-23T08:14:39.000000Z",
+                "started_at": "2026-10-23T08:14:39.000000Z",
+                "completed_at": "2026-10-23T08:14:39.000000Z",
+                "failed_at": null,
+                "failure_reason": null,
+                "created_at": "2026-10-23T08:14:39.000000Z",
+                "updated_at": "2026-10-23T08:14:39.000000Z",
+                "replayed_from_receipt_id": null
+            },
+            "receipt": {
+                "id": "01m5kx72zthgdtdyt20ww93pyv",
+                "evidence_execution_id": "01m5kx72zj88x9jgnxh2ek7ts3",
+                "receiptable_type": "App\\Models\\Proposition",
+                "receiptable_id": "01m5kx72xrw6v9byw841x1z8gb",
+                "type": "preparation",
+                "reference": "01m5kx72zj88x9jgnxh2ek7ts3",
+                "signature": "9ec89867c6d767a2febf4d1579b4b401753f63e1f83be26c489a9b3c8098f0c5",
+                "metadata": {
+                    "originating_gate_id": "01m5kx72xrw6v9byw841x1z8gb",
+                    "participant_id": "01m5kx72syr0nz5f9gbmk1hscw",
+                    "purpose": "  Compare the preserved observations. 💚  ",
+                    "selections": [
+                        {
+                            "receipt_id": "01m5kx72y9a4sawrd7nc51r32h",
+                            "artifact_id": "sha256:2cdc15506a37b9f007936faea8eff1abb1e19e6c43e203769e4d5b1d9c44f1a7"
+                        }
+                    ],
+                    "deliveries": [
+                        {
+                            "artifact_id": "sha256:2cdc15506a37b9f007936faea8eff1abb1e19e6c43e203769e4d5b1d9c44f1a7",
+                            "method": "test-acknowledgement",
+                            "version": "1",
+                            "representation": "test-extracted-text",
+                            "payload_hash": "sha256:a81f9acfbd59935336ffb8619452e63a39c6655f87a69cbb42598334e27bf380",
+                            "payload_bytes": 14,
+                            "delivery_id": "01M5KX72ZK2DT1WEBMZQX3ZCJD"
+                        }
+                    ],
+                    "presented_at": "2026-10-23T08:14:39.000000Z",
+                    "outcome": {
+                        "type": "deferred",
+                        "reason": "The comparison is inconclusive."
+                    },
+                    "content_verified": true,
+                    "reinforcement_version": "observed-preparation",
+                    "reinforcement_status": "not-loaded"
+                },
+                "created_at": "2026-10-23T08:14:39.000000Z",
+                "updated_at": "2026-10-23T08:14:39.000000Z",
+                "capabilities": [
+                    "readable"
+                ],
+                "context_horizon_id": "01m5kx72t02ysb53kd75ajbefp",
+                "phase_id": "01m5kx72xmt40y5svj7z3h3vya"
+            }
+        },
+        "failed": {
+            "execution": {
+                "id": "01m5kx7364v8bae002pak1pv57",
+                "cycle_id": "01m5kx733qrw3x1h747x2w2vd2",
+                "type": "prepare",
+                "phase_id": "01m5kx7345kawqa5qa12bvrgen",
+                "proposition_id": "01m5kx734a151vh2rgw1pkwenq",
+                "kind": null,
+                "reference": null,
+                "status": "failed",
+                "input": {
+                    "purpose": "  Compare the preserved observations. 💚  ",
+                    "artifacts": [
+                        {
+                            "receipt_id": "01m5kx734vj1zyj78758psc7ne",
+                            "artifact_id": "sha256:2cdc15506a37b9f007936faea8eff1abb1e19e6c43e203769e4d5b1d9c44f1a7"
+                        }
+                    ]
+                },
+                "metadata": {
+                    "failure": {
+                        "method": "test-acknowledgement",
+                        "version": "1",
+                        "stage": "delivery"
+                    }
+                },
+                "presentation": null,
+                "outcome": null,
+                "resulting_proposition_id": null,
+                "presented_at": null,
+                "started_at": "2026-10-23T08:14:39.000000Z",
+                "completed_at": null,
+                "failed_at": "2026-10-23T08:14:39.000000Z",
+                "failure_reason": "No material reached the participant.",
+                "created_at": "2026-10-23T08:14:39.000000Z",
+                "updated_at": "2026-10-23T08:14:39.000000Z",
+                "replayed_from_receipt_id": null
+            },
+            "receipt": null
+        }
+    }
+}

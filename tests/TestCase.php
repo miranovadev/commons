@@ -27,8 +27,8 @@ use App\Services\Evidence\HyperlinkIdentity;
 use App\Services\Evidence\HyperlinkMetadataExtractor;
 use App\Services\Evidence\HyperlinkVerifier;
 use App\Services\Evidence\PublicResourceAddress;
+use App\Services\EvidenceExecutionService;
 use App\Services\HorizonReceiptService;
-use App\Services\InstrumentExecutionService;
 use App\Services\LedgerService;
 use App\Services\Observables\ClosureBirthService;
 use App\Services\Observables\LocalMeasurementService;
@@ -378,7 +378,7 @@ abstract class TestCase extends BaseTestCase
         $phase->forceFill(['cycle_id' => $cycle->id, 'kind' => PhaseKind::Order,
             'gate_proposition_id' => $node->id, 'write_register' => $node->register, 'started_at' => now()])->save();
         $reference = 'https://example.test/verified/'.$node->id;
-        $instruments = app(InstrumentExecutionService::class);
+        $instruments = app(EvidenceExecutionService::class);
         $execution = $instruments->start($phase, $node, 'hyperlink', $reference);
 
         $receipt = $instruments->complete($execution, $subject ?? $node,
@@ -493,7 +493,7 @@ abstract class TestCase extends BaseTestCase
     {
         $source ??= $phase->gate;
         $available = app(HorizonReceiptService::class)->ordinaryAvailable($phase);
-        $receipt = $available->first(fn ($item) => $item->instrumentExecution?->proposition_id === $source->id)
+        $receipt = $available->first(fn ($item) => $item->evidenceExecution?->proposition_id === $source->id)
             ?? $available->firstOrFail();
 
         return ['action' => 'proposition.reclassify', 'proposition_id' => $source->id, 'receipt_id' => $receipt->id];
@@ -516,7 +516,7 @@ abstract class TestCase extends BaseTestCase
             $metadata = [...$metadata, 'validation' => 'commons-reference',
                 'target_type' => $target->getMorphClass(), 'target_id' => $target->id];
         }
-        $executions = app(InstrumentExecutionService::class);
+        $executions = app(EvidenceExecutionService::class);
 
         return DB::transaction(function () use ($executions, $phase, $node, $observed, $reference, $metadata): Receipt {
             $execution = $executions->start($phase, $node, $observed->input['kind'], $reference, $observed->input);
@@ -539,7 +539,7 @@ abstract class TestCase extends BaseTestCase
         if (app(PropositionStateService::class)->receipts($node)->isNotEmpty()) {
             return;
         }
-        $executions = app(InstrumentExecutionService::class);
+        $executions = app(EvidenceExecutionService::class);
         $execution = $executions->start($node->phase, $node, 'citation', $node->id, ['kind' => 'citation', 'reference' => $node->id]);
         $executions->complete($execution, $node);
     }

@@ -6,7 +6,7 @@ use App\Enums\ContextDomain;
 use App\Enums\PhaseKind;
 use App\Models\Attestation;
 use App\Models\Cycle;
-use App\Models\InstrumentExecution;
+use App\Models\EvidenceExecution;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
@@ -342,21 +342,21 @@ class ObservableServiceTest extends TestCase
         string $type,
         ?string $signature,
     ): Receipt {
-        $execution = new InstrumentExecution;
+        $execution = new EvidenceExecution;
         $execution->forceFill([
             'phase_id' => $proposition->phase_id,
             'proposition_id' => $proposition->getKey(),
             'kind' => $type,
             'reference' => "{$type}:{$signature}",
-            'status' => 'completed',
+            'status' => 'pending',
             'started_at' => now(),
-            'completed_at' => now(),
         ]);
         $execution->save();
+        $execution->forceFill(['status' => 'completed', 'completed_at' => now()])->save();
 
         $receipt = new Receipt;
         $receipt->forceFill([
-            'instrument_execution_id' => $execution->getKey(),
+            'evidence_execution_id' => $execution->getKey(),
             'type' => $type,
             'reference' => "{$type}:{$signature}",
             'signature' => $signature,

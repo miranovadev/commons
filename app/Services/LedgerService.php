@@ -95,7 +95,7 @@ final readonly class LedgerService
                     $ledgerable instanceof Supersession => [$ledgerable->source_proposition_id, $ledgerable->target_proposition_id],
                     $ledgerable instanceof Attestation => [$ledgerable->proposition_id],
                     $ledgerable instanceof ReceiptContextEvent => [$ledgerable->context->proposition_id],
-                    $ledgerable instanceof Receipt => [$ledgerable->instrumentExecution?->proposition_id ?? $ledgerable->phase->gate_proposition_id],
+                    $ledgerable instanceof Receipt => [$ledgerable->evidenceExecution?->proposition_id ?? $ledgerable->phase->gate_proposition_id],
                     default => [],
                 };
                 $phase = $ledgerable->phase;
@@ -204,7 +204,7 @@ final readonly class LedgerService
         }
 
         if ($ledgerable instanceof Receipt) {
-            $execution = $ledgerable->instrumentExecution;
+            $execution = $ledgerable->evidenceExecution;
             $substrate = $this->substrateForPhase($ledgerable->phase);
             $receiptable = $ledgerable->receiptable;
             $receiptableSubstrate = match (true) {

@@ -12,7 +12,7 @@ use App\Models\Receipt;
 use App\Models\Substrate;
 use App\Models\Supersession;
 use App\Services\CommitmentAdmissibilityService;
-use App\Services\InstrumentExecutionService;
+use App\Services\EvidenceExecutionService;
 use App\Services\LedgerService;
 use App\Services\Observables\ChiralityCalculator;
 use App\Services\Observables\ContextLineageComparisonService;
@@ -101,12 +101,12 @@ class CommitParticipationStateTest extends TestCase
         $effective = new Attestation;
         $effective->forceFill(['phase_id' => $touch->id, 'proposition_id' => $gate->id,
             'supersedes_attestation_id' => $old->id, 'direction' => 'refute'])->save();
-        $executions = app(InstrumentExecutionService::class);
+        $executions = app(EvidenceExecutionService::class);
         $execution = $executions->start($this->phase, $gate, 'hyperlink', 'https://example.test/attestation');
         $receipt = $executions->complete($execution, $effective);
         $pending = $executions->start($this->phase, $gate, 'hyperlink', 'https://example.test/pending');
         $pendingReceipt = new Receipt;
-        $pendingReceipt->forceFill(['instrument_execution_id' => $pending->id, 'receiptable_type' => $gate->getMorphClass(),
+        $pendingReceipt->forceFill(['evidence_execution_id' => $pending->id, 'receiptable_type' => $gate->getMorphClass(),
             'receiptable_id' => $gate->id, 'type' => 'hyperlink', 'reference' => $pending->reference, 'signature' => 'pending'])->save();
         $commit = $this->node('committal');
         $this->edge($gate, $commit, 'commit');

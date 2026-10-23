@@ -13,7 +13,7 @@ use App\Models\CommitmentSnapshot;
 use App\Models\Connection;
 use App\Models\ContextHorizon;
 use App\Models\Cycle;
-use App\Models\InstrumentExecution;
+use App\Models\EvidenceExecution;
 use App\Models\Participant;
 use App\Models\ParticipantConnection;
 use App\Models\ParticipantReceiptContext;
@@ -29,8 +29,8 @@ use App\Services\ContextHorizonProjector;
 use App\Services\ContributionDispatcher;
 use App\Services\CycleEntryService;
 use App\Services\Evidence\HyperlinkVerifier;
+use App\Services\EvidenceExecutionService;
 use App\Services\ExhaustionAuditService;
-use App\Services\InstrumentExecutionService;
 use App\Services\LedgerService;
 use App\Services\ParticipantActivityService;
 use App\Services\ParticipantConnectionTriggerService;
@@ -144,7 +144,7 @@ class TransactionLockOrderTest extends TestCase
     public function test_standalone_instrument_completion_does_not_hold_the_execution_while_waiting_for_the_root(): void
     {
         [$substrate, , $phase] = $this->fixture();
-        $execution = app(InstrumentExecutionService::class)->start($phase, $phase->gate, 'citation', $phase->gate_proposition_id);
+        $execution = app(EvidenceExecutionService::class)->start($phase, $phase->gate, 'citation', $phase->gate_proposition_id);
         $this->whileWorkerWaits($substrate, [
             'operation' => 'complete', 'execution_id' => $execution->id, 'proposition_id' => $phase->gate_proposition_id,
         ], function () use ($execution): void {
@@ -469,7 +469,7 @@ class TransactionLockOrderTest extends TestCase
                 : ['kind' => $kind, 'query' => 'Observe outside the write lock']];
         // The other Participant may legitimately generate its own citation.
         // Only the stale invocation's Phase must retain exactly its old evidence.
-        $beforeExecutions = InstrumentExecution::where('phase_id', $initial->id)->orderBy('id')->pluck('id')->all();
+        $beforeExecutions = EvidenceExecution::where('phase_id', $initial->id)->orderBy('id')->pluck('id')->all();
         $beforeReceipts = Receipt::where('phase_id', $initial->id)->orderBy('id')->pluck('id')->all();
         $observed = false;
         $this->mock($kind === 'hyperlink' ? HyperlinkVerifier::class : WebSearchProvider::class, function ($mock) use ($kind, &$observed, $second, $secondPhase): void {
@@ -492,12 +492,12 @@ class TransactionLockOrderTest extends TestCase
         }
         $this->assertTrue($observed, 'External observation must run without a transaction.');
         $this->assertNull($secondPhase->fresh()->completed_at);
-        $this->assertSame(1, InstrumentExecution::where('phase_id', $secondPhase->id)->where('status', 'completed')->count());
-        $this->assertSame($beforeExecutions, InstrumentExecution::where('phase_id', $initial->id)->orderBy('id')->pluck('id')->all(),
+        $this->assertSame(1, EvidenceExecution::where('phase_id', $secondPhase->id)->where('status', 'completed')->count());
+        $this->assertSame($beforeExecutions, EvidenceExecution::where('phase_id', $initial->id)->orderBy('id')->pluck('id')->all(),
             'The stale observation must not persist an execution.');
         $this->assertSame($beforeReceipts, Receipt::where('phase_id', $initial->id)->orderBy('id')->pluck('id')->all(),
             'The stale observation must not persist a Receipt.');
-        $this->assertDatabaseMissing('instrument_executions', ['proposition_id' => $target->id, 'kind' => $kind]);
+        $this->assertDatabaseMissing('evidence_executions', ['proposition_id' => $target->id, 'kind' => $kind]);
     }
 
     #[Group('load')]
@@ -507,7 +507,7 @@ class TransactionLockOrderTest extends TestCase
         app(ParticipationService::class)->contribute($participant, $phase->id,
             ['action' => 'proposition.variant', 'statement' => 'Gate with qualifying memory evidence']);
         $phase = $this->activePhase($participant);
-        $instruments = app(InstrumentExecutionService::class);
+        $instruments = app(EvidenceExecutionService::class);
         $receipt = $instruments->complete($instruments->start($phase, $phase->gate, 'hyperlink', 'https://example.test/gate-memory'), $phase->gate,
             verification: new VerifiedHyperlink('example.test/gate-memory', hash('sha256', 'gate memory'), CarbonImmutable::now()));
         $this->assertSame([$receipt->id], app(ReceiptContextService::class)->gateOptions($phase)->pluck('id')->all());

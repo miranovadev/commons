@@ -6,8 +6,8 @@ use App\Domain\Evidence\VerifiedHyperlink;
 use App\Enums\ContextDomain;
 use App\Enums\PhaseKind;
 use App\Models\Connection;
+use App\Services\EvidenceExecutionService;
 use App\Services\InputPlanService;
-use App\Services\InstrumentExecutionService;
 use App\Services\MediationReadService;
 use App\Services\ParticipantContextSerializer;
 use App\Services\ParticipantPromptFactory;
@@ -39,7 +39,7 @@ class ParticipantContextC1ComparisonTest extends TestCase
         $connection = (new Connection)->forceFill(['configuration' => ['model' => 'test-model']]);
         $f = new ParticipantContextFixture(25, 6);
         $anchor = app(MediationReadService::class)->anchorFor($f->phase);
-        $executions = app(InstrumentExecutionService::class);
+        $executions = app(EvidenceExecutionService::class);
         $receipt = $executions->complete($executions->start($f->phase, $anchor, 'hyperlink', 'https://example.test/c1-evidence'),
             $anchor, verification: new VerifiedHyperlink('example.test/c1-evidence',
                 hash('sha256', 'c1-evidence'), CarbonImmutable::now(), contentExcerpt: 'A preserved external observation.'));

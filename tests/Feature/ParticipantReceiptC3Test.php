@@ -9,8 +9,8 @@ use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Services\ContributionDispatcher;
+use App\Services\EvidenceExecutionService;
 use App\Services\InputPlanService;
-use App\Services\InstrumentExecutionService;
 use App\Services\ParticipantContextSerializer;
 use App\Services\ParticipantReceiptProjection;
 use App\Services\PhaseProgressionService;
@@ -172,7 +172,7 @@ class ParticipantReceiptC3Test extends TestCase
 
     private function receipt(ParticipantContextFixture $f, Proposition $node, string $tag)
     {
-        $service = app(InstrumentExecutionService::class);
+        $service = app(EvidenceExecutionService::class);
 
         return $service->complete($service->start($f->phase, $node, 'hyperlink', 'https://example.test/'.$tag), $node,
             verification: new VerifiedHyperlink('example.test/'.$tag, hash('sha256', $tag), CarbonImmutable::now(), contentExcerpt: 'C3-BODY-'.$tag));
@@ -199,7 +199,7 @@ class ParticipantReceiptC3Test extends TestCase
 
     private function snapshot(): array
     {
-        $tables = ['propositions', 'supersessions', 'attestations', 'receipts', 'instrument_executions',
+        $tables = ['propositions', 'supersessions', 'attestations', 'receipts', 'evidence_executions',
             'proposition_receipt_links', 'receipt_consumptions', 'participant_receipt_contexts', 'receipt_context_events',
             'proposition_measurements', 'commitment_snapshots', 'phases', 'cycles', 'participants',
             'context_horizons', 'terminal_encounters', 'tragedies', 'commit_region_exhaustions', 'substrate_ledger_entries'];

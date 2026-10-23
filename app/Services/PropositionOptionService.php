@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Enums\PhaseKind;
-use App\Models\InstrumentExecution;
+use App\Models\EvidenceExecution;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
@@ -102,8 +102,8 @@ final class PropositionOptionService
         if ($phase->kind !== PhaseKind::Persist || $phase->completed_at !== null
             || $phase->cycle->completed_at !== null
             || ! $this->generation->epistemicActionAvailable($phase, 'instrument.execute', $context)
-            || InstrumentExecution::query()->where('status', 'completed')
-                ->whereHas('phase', fn ($query) => $query->where('cycle_id', $phase->cycle_id))->exists()) {
+            || EvidenceExecution::query()->where('type', 'instrument')->where('status', 'completed')
+                ->where('cycle_id', $phase->cycle_id)->exists()) {
             return collect();
         }
 

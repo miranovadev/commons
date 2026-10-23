@@ -2,17 +2,18 @@
 
 // A separate PHP process gives the regression tests a real, independent backend.
 use App\Models\CommitmentSnapshot;
-use App\Models\InstrumentExecution;
+use App\Models\EvidenceExecution;
 use App\Models\Participant;
 use App\Models\Phase;
 use App\Models\Proposition;
 use App\Models\Substrate;
 use App\Services\ContextHorizonProjector;
 use App\Services\ContributionDispatcher;
+use App\Services\EvidenceExecutionService;
 use App\Services\InputPlanService;
-use App\Services\InstrumentExecutionService;
 use App\Services\ParticipationService;
 use App\Services\PotentialProjectionService;
+use App\Services\PreparationService;
 use App\Services\PropositionMeasurementService;
 use App\Services\ReceiptContextService;
 use App\Services\TragedyService;
@@ -59,6 +60,23 @@ try {
         'receipt-desired' => DB::transaction(fn () => app(ReceiptContextService::class)->desired(
             Participant::findOrFail($input['participant_id']), Phase::findOrFail($input['phase_id']), $input['receipt_options'],
         )),
+        'preparation-start-conflict', 'preparation-defer-conflict' => (function () use ($input): void {
+            try {
+                $service = app(PreparationService::class);
+                $participant = Participant::findOrFail($input['participant_id']);
+                if ($input['operation'] === 'preparation-start-conflict') {
+                    $service->start($participant, Phase::findOrFail($input['phase_id']), $input['preparation']);
+                } else {
+                    $service->defer($participant, EvidenceExecution::findOrFail($input['execution_id']), 'Concurrent deferment loses.');
+                }
+            } catch (ConflictHttpException $exception) {
+                if (str_contains($exception->getMessage(), 'already reserved') || str_contains($exception->getMessage(), 'active Disperse')) {
+                    return;
+                }
+                throw $exception;
+            }
+            throw new RuntimeException('Concurrent Preparation was accepted twice.');
+        })(),
         'instrument-conflict' => (function () use ($input): void {
             try {
                 app(ContributionDispatcher::class)->dispatch(
@@ -129,8 +147,8 @@ try {
             $input['phase_id'],
             [], // Select from fresh shared structure after any optimistic retry.
         ),
-        'complete' => app(InstrumentExecutionService::class)->complete(
-            InstrumentExecution::findOrFail($input['execution_id']),
+        'complete' => app(EvidenceExecutionService::class)->complete(
+            EvidenceExecution::findOrFail($input['execution_id']),
             Proposition::findOrFail($input['proposition_id']),
         ),
         'project' => app(PropositionMeasurementService::class)->project(

@@ -18,7 +18,7 @@ use App\Services\CommitmentAdmissibilityService;
 use App\Services\CommitmentSnapshotService;
 use App\Services\Evidence\HyperlinkVerifier;
 use App\Services\Evidence\PublicResourceAddress;
-use App\Services\InstrumentExecutionService;
+use App\Services\EvidenceExecutionService;
 use App\Services\LedgerService;
 use App\Services\Observables\ContextLineageComparisonService;
 use App\Services\Observables\LineageMeasurementService;
@@ -89,8 +89,8 @@ class ReinforcementTest extends TestCase
         app(PropositionMeasurementService::class)->project($this->node, 1, 1, 1);
         $cite = $this->loadedReceipt('citation', $this->node->id);
         $this->assertNull($cite->signature);
-        $execution = app(InstrumentExecutionService::class)->start($this->later, $this->node, 'hyperlink', 'https://example.test/page');
-        $forged = app(InstrumentExecutionService::class)->complete($execution, $this->node, 'user-signature',
+        $execution = app(EvidenceExecutionService::class)->start($this->later, $this->node, 'hyperlink', 'https://example.test/page');
+        $forged = app(EvidenceExecutionService::class)->complete($execution, $this->node, 'user-signature',
             ['content_verified' => true, 'last_modified' => '2000-01-01', 'fingerprint' => 'fake']);
         $this->assertNull($forged->signature);
         $this->assertFalse($forged->metadata['content_verified']);

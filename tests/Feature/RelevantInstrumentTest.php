@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\PhaseKind;
 use App\Enums\ReceiptCapability;
-use App\Models\InstrumentExecution;
+use App\Models\EvidenceExecution;
 use App\Models\ParticipantReceiptContext;
 use App\Services\ContributionDispatcher;
 use App\Services\ContributionService;
@@ -55,8 +55,8 @@ class RelevantInstrumentTest extends TestCase
         $receipt = $this->observationFixture($target->phase, $target, $input);
         $this->consumeObservationFixture($f, $receipt);
         $history = $receipt->fresh()->getAttributes();
-        $execution = $receipt->instrumentExecution->fresh()->getAttributes();
-        $count = InstrumentExecution::count();
+        $execution = $receipt->evidenceExecution->fresh()->getAttributes();
+        $count = EvidenceExecution::count();
         $relevance = app(RelevantInstrumentService::class);
         $this->assertSame($receipt->id, $relevance->equivalent($target, $equivalent)->id);
         $this->assertSame($receipt->id, $relevance->equivalent($target, $equivalent, new ParticipationContext($f->phase))->id);
@@ -71,7 +71,7 @@ class RelevantInstrumentTest extends TestCase
             app(ContributionService::class)->validateSchema($schema, $action);
             $this->fail('The authoritative schema accepted an equivalent normalized invocation.');
         } catch (\InvalidArgumentException) {
-            $this->assertSame($count, InstrumentExecution::count());
+            $this->assertSame($count, EvidenceExecution::count());
         }
         foreach ([fn () => $instruments->execute($f->phase, $target, $equivalent),
             fn () => app(ContributionDispatcher::class)->dispatch($f->viewer, $f->phase, $action),
@@ -80,7 +80,7 @@ class RelevantInstrumentTest extends TestCase
                 $submit();
                 $this->fail('Equivalent effective observation was accepted.');
             } catch (ConflictHttpException|\InvalidArgumentException) {
-                $this->assertSame($count, InstrumentExecution::count());
+                $this->assertSame($count, EvidenceExecution::count());
                 $this->assertNull($f->phase->fresh()->completed_at);
             }
         }
@@ -95,7 +95,7 @@ class RelevantInstrumentTest extends TestCase
         $observedAgain = $instruments->execute($f->phase->fresh(), $fresh, $input);
         $this->assertNotSame($receipt->id, $observedAgain->id);
         $this->assertSame($history, $receipt->fresh()->getAttributes());
-        $this->assertSame($execution, $receipt->instrumentExecution->fresh()->getAttributes());
+        $this->assertSame($execution, $receipt->evidenceExecution->fresh()->getAttributes());
         $this->assertSame(2, ParticipantReceiptContext::active()->count());
         $this->assertSame(0, DB::table('reinforcements')->count());
     }
@@ -156,12 +156,12 @@ class RelevantInstrumentTest extends TestCase
         $plan = app(ParticipationService::class)->stateFor($f->viewer)['plan'];
         $this->assertFalse(collect($plan['receipts'])->firstWhere('id', $receipt->id)['can_replay']);
         $this->assertArrayNotHasKey('receipt.replay', $plan['schema']['$defs']['actions']);
-        $count = InstrumentExecution::count();
+        $count = EvidenceExecution::count();
         try {
             app(ReceiptReplayService::class)->replay($f->viewer, $f->phase, $receipt->id);
             $this->fail('Relevant receipt replay was allowed.');
         } catch (\DomainException) {
-            $this->assertSame($count, InstrumentExecution::count());
+            $this->assertSame($count, EvidenceExecution::count());
         }
     }
 }

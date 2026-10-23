@@ -11,7 +11,7 @@ use App\Services\Evidence\ArtifactStore;
 use App\Services\Evidence\HyperlinkVerifier;
 use App\Services\Evidence\PublicResourceAddress;
 use App\Services\Evidence\ReceiptEvidenceService;
-use App\Services\InstrumentExecutionService;
+use App\Services\EvidenceExecutionService;
 use App\Services\OperationalInstrumentService;
 use App\Services\ParticipantContextSerializer;
 use App\Services\ParticipationService;
@@ -101,7 +101,7 @@ class HyperlinkArtifactReceiptTest extends TestCase
         $this->assertSame('meta_description', $metadata['description_source']);
         $this->assertTrue($receipt->supports(ReceiptCapability::Readable));
         $this->assertTrue($receipt->supports(ReceiptCapability::Replayable));
-        $this->assertSame($metadata, $receipt->instrumentExecution->metadata);
+        $this->assertSame($metadata, $receipt->evidenceExecution->metadata);
         $this->assertDatabaseHas('participant_receipt_contexts', ['receipt_id' => $receipt->id, 'participant_id' => $f->viewer->id, 'cleared_at' => null]);
         $packet = app(ParticipantContextSerializer::class)->inference($state);
         $inline = collect($packet['receipts'])->firstWhere('id', $receipt->id)['loaded_inline_content'];
@@ -204,7 +204,7 @@ class HyperlinkArtifactReceiptTest extends TestCase
             $this->fail('Storage failure became an observation');
         } catch (ArtifactStorageException) {
             $this->assertDatabaseCount('receipts', 0);
-            $this->assertDatabaseCount('instrument_executions', 0);
+            $this->assertDatabaseCount('evidence_executions', 0);
             $this->assertDatabaseCount('participant_receipt_contexts', 0);
         }
     }
@@ -222,7 +222,7 @@ class HyperlinkArtifactReceiptTest extends TestCase
         } catch (RuntimeException $error) {
             $this->assertSame('completion failure', $error->getMessage());
             $this->assertDatabaseCount('receipts', 0);
-            $this->assertDatabaseCount('instrument_executions', 0);
+            $this->assertDatabaseCount('evidence_executions', 0);
             $this->assertDatabaseCount('participant_receipt_contexts', 0);
             $this->assertDatabaseCount('reinforcement_sources', 0);
             $paths = Storage::disk('artifacts')->allFiles();
@@ -251,9 +251,9 @@ class HyperlinkArtifactReceiptTest extends TestCase
     public function test_historical_receipt_without_artifacts_keeps_its_existing_readable_projection(): void
     {
         $f = $this->persistFixture();
-        $execution = app(InstrumentExecutionService::class)->start($f->phase, $f->gate, 'hyperlink', 'https://example.com/old', $this->input('old'));
+        $execution = app(EvidenceExecutionService::class)->start($f->phase, $f->gate, 'hyperlink', 'https://example.com/old', $this->input('old'));
         $execution->forceFill(['status' => 'completed', 'completed_at' => now()])->save();
-        $receipt = (new Receipt)->forceFill(['instrument_execution_id' => $execution->id,
+        $receipt = (new Receipt)->forceFill(['evidence_execution_id' => $execution->id,
             'type' => 'hyperlink', 'reference' => $execution->reference, 'signature' => 'historical-signature',
             'metadata' => ['content_verified' => true, 'reinforcement_version' => 'accepted-version',
                 'resource' => 'example.com/old', 'content_excerpt' => 'Historical excerpt', 'excerpt_truncated' => false]]);

@@ -9,13 +9,13 @@ use App\Enums\PhaseKind;
 use App\Enums\ReceiptCapability;
 use App\Models\Attestation;
 use App\Models\Connection;
-use App\Models\InstrumentExecution;
+use App\Models\EvidenceExecution;
 use App\Models\Participant;
 use App\Models\ParticipantReceiptContext;
 use App\Models\Proposition;
 use App\Models\Receipt;
 use App\Services\ContributionService;
-use App\Services\InstrumentExecutionService;
+use App\Services\EvidenceExecutionService;
 use App\Services\LedgerService;
 use App\Services\Observables\ReinforcementService;
 use App\Services\OpenAIResponseSchema;
@@ -92,8 +92,8 @@ class WebSearchReceiptTest extends TestCase
         $this->publishPotentialFixture($fixture->viewer);
         $next = $service->contribute($fixture->viewer, $fixture->phase->id, $input);
         $receipt = Receipt::where('type', 'web_search')->sole();
-        $this->assertSame(['kind' => 'web_search', 'query' => 'evidence discovery'], $receipt->instrumentExecution->input);
-        $this->assertSame('completed', $receipt->instrumentExecution->status);
+        $this->assertSame(['kind' => 'web_search', 'query' => 'evidence discovery'], $receipt->evidenceExecution->input);
+        $this->assertSame('completed', $receipt->evidenceExecution->status);
         $this->assertNotNull($receipt->ledgerEntry);
         $this->assertSame('https://example.com/paper?q=1', $receipt->metadata['observation']['results'][0]['url']);
         $this->assertSame('Observed resource content', $receipt->metadata['observation']['results'][0]['excerpt']);
@@ -134,18 +134,18 @@ class WebSearchReceiptTest extends TestCase
         [$fixture, $subject] = $this->scenario();
         $input = ['action' => 'instrument.execute', 'proposition_id' => $subject->id,
             'instrument' => ['kind' => 'web_search', 'query' => $query]];
-        $before = InstrumentExecution::count();
+        $before = EvidenceExecution::count();
         try {
             app(ContributionService::class)->validate($fixture->viewer, $input);
             $this->fail('Invalid query passed the schema.');
         } catch (InvalidArgumentException) {
-            $this->assertSame($before, InstrumentExecution::count());
+            $this->assertSame($before, EvidenceExecution::count());
         }
         try {
             app(OperationalInstrumentService::class)->execute($fixture->phase, $subject, $input['instrument']);
             $this->fail('Invalid query passed the domain.');
         } catch (DomainException) {
-            $this->assertSame($before, InstrumentExecution::count());
+            $this->assertSame($before, EvidenceExecution::count());
         }
         Http::assertNothingSent();
     }
@@ -195,10 +195,10 @@ class WebSearchReceiptTest extends TestCase
         $search = $this->observationFixture($fixture->phase, $subject, ['kind' => 'web_search', 'query' => 'evidence discovery']);
         // Construct archival and replay-only fixture rows before insertion, preserving immutable Receipts.
         foreach ([[], ['replayable']] as $capabilities) {
-            $execution = app(InstrumentExecutionService::class)->start($fixture->phase, $subject, 'web_search', 'evidence discovery', $search->instrumentExecution->input);
+            $execution = app(EvidenceExecutionService::class)->start($fixture->phase, $subject, 'web_search', 'evidence discovery', $search->evidenceExecution->input);
             $execution->forceFill(['status' => 'completed', 'completed_at' => now()])->save();
             $copy = $search->replicate();
-            $copy->forceFill(['instrument_execution_id' => $execution->id, 'capabilities' => $capabilities])->save();
+            $copy->forceFill(['evidence_execution_id' => $execution->id, 'capabilities' => $capabilities])->save();
             $this->publishPotentialFixture($fixture->viewer);
             $plan = app(ParticipationService::class)->stateFor($fixture->viewer)['plan'];
             $this->assertNotContains($copy->id, $plan['schema']['$defs']['actions']['receipt.read']['properties']['receipt_id']['enum'] ?? []);
@@ -252,7 +252,7 @@ class WebSearchReceiptTest extends TestCase
         [$retryFixture, $fresh] = $this->scenario();
         $retry = $this->search($retryFixture, $fresh);
         $this->assertNotNull($retry->signature);
-        $this->assertNull($retry->instrumentExecution->replayed_from_receipt_id);
+        $this->assertNull($retry->evidenceExecution->replayed_from_receipt_id);
         $this->assertSame('search-failed', $failed->fresh()->metadata['validation']);
         $this->assertSame(2, ParticipantReceiptContext::count());
         $this->assertSame(1, app(ReinforcementService::class)->count($subject)); // Existing load-based counting is unchanged.
@@ -309,9 +309,9 @@ class WebSearchReceiptTest extends TestCase
         $time = CarbonImmutable::parse('2026-09-01T00:00:00Z');
         $this->travelTo($time);
         $url = 'https://example.test/paper?ignored=1';
-        $execution = app(InstrumentExecutionService::class)->start($fixture->phase, $subject, 'hyperlink', $url,
+        $execution = app(EvidenceExecutionService::class)->start($fixture->phase, $subject, 'hyperlink', $url,
             ['kind' => 'hyperlink', 'reference' => $url]);
-        $first = app(InstrumentExecutionService::class)->complete($execution, $attestation,
+        $first = app(EvidenceExecutionService::class)->complete($execution, $attestation,
             verification: new VerifiedHyperlink('example.test/paper', hash('sha256', 'original'), $time));
         $original = $first->fresh()->getAttributes();
         $this->assertTrue($first->supports(ReceiptCapability::Readable));
@@ -320,10 +320,10 @@ class WebSearchReceiptTest extends TestCase
         // recorder must preserve that history even though new equivalent runtime
         // replays are now rejected by relevance checks.
         $record = function (Receipt $source) use ($fixture, $subject, $attestation): Receipt {
-            $execution = app(InstrumentExecutionService::class)->start($fixture->phase, $subject,
+            $execution = app(EvidenceExecutionService::class)->start($fixture->phase, $subject,
                 'hyperlink', $source->reference, $source->replayInvocation(), $source);
 
-            return app(InstrumentExecutionService::class)->complete($execution, $attestation,
+            return app(EvidenceExecutionService::class)->complete($execution, $attestation,
                 verification: new VerifiedHyperlink('example.test/paper', hash('sha256', 'changed'), CarbonImmutable::now()));
         };
         $pending = $record($first);
@@ -336,7 +336,7 @@ class WebSearchReceiptTest extends TestCase
         $this->assertNotNull($accepted->signature);
         $this->assertNotSame($first->signature, $accepted->signature);
         $this->assertSame('accepted-version', $accepted->metadata['reinforcement_version']);
-        $this->assertSame($pending->id, $accepted->instrumentExecution->replayed_from_receipt_id);
+        $this->assertSame($pending->id, $accepted->evidenceExecution->replayed_from_receipt_id);
         $this->assertSame($original, $first->fresh()->getAttributes());
         $this->assertSame(3, ParticipantReceiptContext::count());
         $this->assertSame(1, app(ReinforcementService::class)->count($subject));
@@ -348,7 +348,7 @@ class WebSearchReceiptTest extends TestCase
         [$fixture, $subject] = $this->scenario();
         $receipt = $this->search($fixture, $subject);
         $this->expectException(DomainException::class);
-        $receipt->instrumentExecution->forceFill(['input' => ['kind' => 'web_search', 'query' => 'changed invocation']])->save();
+        $receipt->evidenceExecution->forceFill(['input' => ['kind' => 'web_search', 'query' => 'changed invocation']])->save();
     }
 
     public function test_replay_history_blocks_destructive_migration_rollback(): void

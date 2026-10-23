@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\PhaseKind;
 use App\Exceptions\ArtifactStorageException;
-use App\Models\InstrumentExecution;
+use App\Models\EvidenceExecution;
 use App\Models\Participant;
 use App\Models\Receipt;
 use App\Services\ContributionDispatcher;
@@ -74,7 +74,7 @@ class EpistemicInstrumentationTest extends TestCase
         $this->assertArrayNotHasKey('instrument.execute', $after['plan']['schema']['$defs']['actions']);
         $this->assertArrayNotHasKey('proposition.variant', $before['plan']['schema']['$defs']['actions']);
         $this->assertArrayHasKey('proposition.variant', $after['plan']['schema']['$defs']['actions']);
-        $receipt = InstrumentExecution::where('phase_id', $f->phase->id)->sole()->receipt;
+        $receipt = EvidenceExecution::where('phase_id', $f->phase->id)->sole()->receipt;
         $this->assertSame($f->gate->id, $receipt->receiptable_id);
         $this->assertContains($receipt->id, array_column($after['plan']['receipts'], 'id'));
         $this->assertDatabaseHas('participant_receipt_contexts', ['receipt_id' => $receipt->id, 'participant_id' => $f->viewer->id, 'cleared_at' => null]);
@@ -106,7 +106,7 @@ class EpistemicInstrumentationTest extends TestCase
             $this->fail('The stale prepared request must conflict.');
         } catch (ConflictHttpException) {
             $this->assertSame($count, Receipt::count());
-            $this->assertSame(1, InstrumentExecution::where('phase_id', $f->phase->id)->where('status', 'completed')->count());
+            $this->assertSame(1, EvidenceExecution::where('phase_id', $f->phase->id)->where('status', 'completed')->count());
         }
     }
 
@@ -120,13 +120,13 @@ class EpistemicInstrumentationTest extends TestCase
             app(ParticipationService::class)->contribute($f->viewer, $f->phase->id, $input);
             $this->fail('Infrastructure failure must abort.');
         } catch (ArtifactStorageException) {
-            $this->assertSame(0, InstrumentExecution::where('phase_id', $f->phase->id)->count());
+            $this->assertSame(0, EvidenceExecution::where('phase_id', $f->phase->id)->count());
             $this->assertCount(1, app(PropositionOptionService::class)->instrumentOptionsFor($f->phase));
         }
         $this->mock(HyperlinkVerifier::class, fn ($mock) => $mock->shouldReceive('verify')->once()
             ->andThrow(new \DomainException('Verification failed')));
         $state = app(ParticipationService::class)->contribute($f->viewer, $f->phase->id, $input);
-        $execution = InstrumentExecution::where('phase_id', $f->phase->id)->sole();
+        $execution = EvidenceExecution::where('phase_id', $f->phase->id)->sole();
         $this->assertSame('completed', $execution->status);
         $this->assertFalse($execution->receipt->metadata['content_verified']);
         $this->assertArrayNotHasKey('instrument.execute', $state['plan']['schema']['$defs']['actions']);
@@ -136,7 +136,7 @@ class EpistemicInstrumentationTest extends TestCase
     {
         $f = $this->fixture();
         app(ParticipationService::class)->contribute($f->viewer, $f->phase->id, $this->input($f));
-        $receipt = InstrumentExecution::where('phase_id', $f->phase->id)->sole()->receipt;
+        $receipt = EvidenceExecution::where('phase_id', $f->phase->id)->sole()->receipt;
         DB::table('participant_receipt_contexts')->where('receipt_id', $receipt->id)->update(['cleared_at' => now()]);
         $this->assertCount(0, app(PropositionOptionService::class)->instrumentOptionsFor($f->phase));
         $other = (new Participant)->forceFill(['substrate_id' => $f->substrate->id, 'callsign' => 'other', 'current_proposition_id' => $f->gate->id]);
@@ -157,7 +157,7 @@ class EpistemicInstrumentationTest extends TestCase
         $nextPhase->save();
         $this->assertCount(0, app(PropositionOptionService::class)->instrumentOptionsFor($nextPhase->fresh()));
         // An unused allowance does not override the shared evidence supply.
-        $this->assertFalse(InstrumentExecution::whereHas('phase', fn ($q) => $q->where('cycle_id', $next->id))->exists());
+        $this->assertFalse(EvidenceExecution::whereHas('phase', fn ($q) => $q->where('cycle_id', $next->id))->exists());
     }
 
     public function test_instrument_then_genuine_persist_action_advances_and_records_birth(): void
